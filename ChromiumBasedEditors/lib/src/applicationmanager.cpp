@@ -339,17 +339,6 @@ CCefView* CAscApplicationManager::CreateCefView(CCefViewWidgetImpl* parent)
     pView->SetAppManager(this);
 
     m_pInternal->m_mapViews[m_pInternal->m_nIdCounter] = pView;
-
-    if (1 == m_pInternal->m_nIdCounter)
-    {
-        for (std::vector<NSEditorApi::CAscMenuEvent*>::iterator i = m_pInternal->m_arApplyEvents.begin();
-             i != m_pInternal->m_arApplyEvents.end(); i++)
-        {
-            pView->Apply(*i);
-        }
-        m_pInternal->m_arApplyEvents.clear();
-    }
-
     return pView;
 }
 

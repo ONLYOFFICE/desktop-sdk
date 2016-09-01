@@ -41,7 +41,7 @@ public:
     virtual void Check_Print(CGraphicsRenderer* pRenderer, CFontManager* pFontManager, int nRasterW, int nRasterH, double fPageWidth, double fPageHeight) {}
 
     virtual void Local_Save_Start() {}
-    virtual void Local_Save_End(bool bIsNeedSaveDialog, int nId, CefRefPtr<CefBrowser> browser);
+    virtual bool Local_Save_End(bool bIsNeedSaveDialog, int nId, CefRefPtr<CefBrowser> browser) { return false; }
 };
 
 CApplicationManagerAdditionalBase* Create_ApplicationManagerAdditional(CAscApplicationManager* pManager);

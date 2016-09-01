@@ -199,8 +199,6 @@ public:
     bool m_bIsClosing;
     bool m_bIsSavingDialog;
 
-    std::vector<NSEditorApi::CAscMenuEvent*> m_arApplyEvents;
-
     CNativeFileViewerInfo m_oNativeViewer;
 
 #if defined(_LINUX) && !defined(_MAC)
@@ -1376,7 +1374,14 @@ public:
 
                 CApplicationManagerAdditionalBase* pAdditional = m_pParent->GetAppManager()->m_pInternal->m_pAdditional;
                 if (pAdditional)
-                    pAdditional->Local_Save_End(bIsNeedSaveDialog, m_pParent->GetId(), m_pParent->m_pInternal->m_handler->GetBrowser());
+                {
+                    if (pAdditional->Local_Save_End(bIsNeedSaveDialog, m_pParent->GetId(), m_pParent->m_pInternal->m_handler->GetBrowser()))
+                        return true;
+                }
+                else
+                {
+                    pAdditional->Local_Save_End(true, -1, NULL);
+                }
 
                 m_pParent->m_pInternal->m_oLocalInfo.m_bIsRetina = (sParams.find("retina=true") != std::string::npos) ? true : false;
 
@@ -1479,12 +1484,20 @@ public:
         {
             if (m_pParent && m_pParent->m_pInternal)
             {
-                for (std::vector<NSEditorApi::CAscMenuEvent*>::iterator i = m_pParent->m_pInternal->m_arApplyEvents.begin();
-                     i != m_pParent->m_pInternal->m_arApplyEvents.end(); i++)
+                std::vector<NSEditorApi::CAscMenuEvent*>* pArr = NULL;
+                CApplicationManagerAdditionalBase* pAdditional = m_pParent->GetAppManager()->m_pInternal->m_pAdditional;
+
+                if (pAdditional && pAdditional->m_arApplyEvents)
                 {
-                    m_pParent->Apply(*i);
+                    for (std::vector<NSEditorApi::CAscMenuEvent*>::iterator i = pAdditional->m_arApplyEvents->begin();
+                         i != pAdditional->m_arApplyEvents->end(); i++)
+                    {
+                        m_pParent->Apply(*i);
+                    }
                 }
-                m_pParent->m_pInternal->m_arApplyEvents.clear();
+
+                pAdditional->m_arApplyEvents->clear();
+                pAdditional->m_arApplyEvents = NULL;
             }
             return true;
         }
