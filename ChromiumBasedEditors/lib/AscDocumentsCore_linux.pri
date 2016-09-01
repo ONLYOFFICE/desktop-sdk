@@ -6,7 +6,7 @@ DEFINES += \
 INCLUDEPATH += \
     $$PWD/src/cef/linux
 
-LIBS += -L$$PWD/../../../core/build/cef/$$PLATFORM_BUILD -lcef
+LIBS += -L$$PWD/../../../core/build/cef/$$CORE_BUILDS_PLATFORM_PREFIX -lcef
 
 HEADERS += \
     $$PWD/src/cef/linux/cefclient/browser/binding_test.h \
