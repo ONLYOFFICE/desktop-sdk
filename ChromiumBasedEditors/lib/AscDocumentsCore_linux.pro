@@ -8,7 +8,7 @@ CONFIG += shared
 CONFIG += plugin
 
 CONFIG += core_static_link_libstd
-CORE_ROOT_DIR = $$PWD/../../core
+CORE_ROOT_DIR = $$PWD/../../../core
 PWD_ROOT_DIR = $$PWD
 include(../../../core/Common/base.pri)
 
