@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Ivolga Pro
+Comment=Edit office documents
+Exec=/usr/bin/desktopeditors
+Type=Application
+Terminal=false
+Categories=Office
