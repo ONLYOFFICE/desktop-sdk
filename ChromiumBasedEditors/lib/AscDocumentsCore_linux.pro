@@ -19,12 +19,12 @@ QMAKE_LFLAGS += -Wl,--rpath=./
 # common projects --------------------------------------
 #zlib
 CONFIG += build_all_zlib build_zlib_as_sources
-include($$PWD/../../../core/OfficeUtils/OfficeUtils.pri)
+include($$CORE_ROOT_DIR/OfficeUtils/OfficeUtils.pri)
 
 #hunspell
 DEFINES += HUNSPELL_STATIC
 CONFIG += building_hunspell
-include($$PWD/../../../core/DesktopEditor/hunspell-1.3.3/src/qt/hunspell.pri)
+include($$CORE_ROOT_DIR/DesktopEditor/hunspell-1.3.3/src/qt/hunspell.pri)
 
 DEFINES += \
     PDFREADER_USE_DYNAMIC_LIBRARY \
