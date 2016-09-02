@@ -1055,6 +1055,7 @@
 		7CBEA1D61BF9D2E0001B02EB /* xmldom.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7CBEA1D31BF9D2E0001B02EB /* xmldom.cpp */; };
 		7CBEA1D71BF9D2E0001B02EB /* xmllight_private.h in Headers */ = {isa = PBXBuildFile; fileRef = 7CBEA1D41BF9D2E0001B02EB /* xmllight_private.h */; };
 		7CBEA1D81BF9D2E0001B02EB /* xmllight.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7CBEA1D51BF9D2E0001B02EB /* xmllight.cpp */; };
+		7CD198961D79810800F8841C /* create.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7CD198951D79810800F8841C /* create.cpp */; };
 		7CD391CA1CF870500097244C /* cef_resource_bundle.h in Headers */ = {isa = PBXBuildFile; fileRef = 7CD391C81CF870500097244C /* cef_resource_bundle.h */; };
 		7CD391CB1CF870500097244C /* cef_response_filter.h in Headers */ = {isa = PBXBuildFile; fileRef = 7CD391C91CF870500097244C /* cef_response_filter.h */; };
 		7CD392061CF887D70097244C /* resource_bundle_ctocpp.cc in Sources */ = {isa = PBXBuildFile; fileRef = 7CD392021CF887D70097244C /* resource_bundle_ctocpp.cc */; };
@@ -2126,6 +2127,7 @@
 		7CBEA1D31BF9D2E0001B02EB /* xmldom.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = xmldom.cpp; path = ../../../../core/DesktopEditor/xml/src/xmldom.cpp; sourceTree = SOURCE_ROOT; };
 		7CBEA1D41BF9D2E0001B02EB /* xmllight_private.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = xmllight_private.h; path = ../../../../core/DesktopEditor/xml/src/xmllight_private.h; sourceTree = SOURCE_ROOT; };
 		7CBEA1D51BF9D2E0001B02EB /* xmllight.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = xmllight.cpp; path = ../../../../core/DesktopEditor/xml/src/xmllight.cpp; sourceTree = SOURCE_ROOT; };
+		7CD198951D79810800F8841C /* create.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = create.cpp; path = ../../src/additional/create.cpp; sourceTree = "<group>"; };
 		7CD391C81CF870500097244C /* cef_resource_bundle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = cef_resource_bundle.h; path = ../src/cef/mac/include/cef_resource_bundle.h; sourceTree = "<group>"; };
 		7CD391C91CF870500097244C /* cef_response_filter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = cef_response_filter.h; path = ../src/cef/mac/include/cef_response_filter.h; sourceTree = "<group>"; };
 		7CD392021CF887D70097244C /* resource_bundle_ctocpp.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = resource_bundle_ctocpp.cc; path = ../src/cef/mac/libcef_dll/ctocpp/resource_bundle_ctocpp.cc; sourceTree = "<group>"; };
@@ -2196,6 +2198,7 @@
 		7C0B426F1BA7218D005A52DC /* ascdocumentscore */ = {
 			isa = PBXGroup;
 			children = (
+				7CD198951D79810800F8841C /* create.cpp */,
 				7CBEA1CE1BF9D20B001B02EB /* xml */,
 				7CBEA1C61BF9CF55001B02EB /* applicationmanager_p.h */,
 				7CBEA1C71BF9CF55001B02EB /* fileconverter.h */,
@@ -4024,7 +4027,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cp -R \"${TARGET_BUILD_DIR}\"/lib\"${TARGET_NAME}\".dylib \"${TARGET_BUILD_DIR}\"/../../../../../../../../../core/build/lib/mac_64\n\ncp -R \"${TARGET_BUILD_DIR}\"/lib\"${TARGET_NAME}\".dylib \"${TARGET_BUILD_DIR}\"/../../../../../../../../../desktop-apps/macos/Vendor/ONLYOFFICE/libs/corebuilds";
+			shellScript = "cp -R \"${TARGET_BUILD_DIR}\"/lib\"${TARGET_NAME}\".dylib \"${TARGET_BUILD_DIR}\"/../../../../../../../../../core/build/lib/mac_64\n\n#cp -R \"${TARGET_BUILD_DIR}\"/lib\"${TARGET_NAME}\".dylib \"${TARGET_BUILD_DIR}\"/../../../../../../../../../desktop-apps/macos/Vendor/ONLYOFFICE/libs/corebuilds";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -4212,6 +4215,7 @@
 				7C0B432E1BA81088005A52DC /* agg_arrowhead.cpp in Sources */,
 				7CD392101CF887FF0097244C /* response_filter_cpptoc.cc in Sources */,
 				7C5DD03B1BA82EBD00C6474A /* display_handler_cpptoc.cc in Sources */,
+				7CD198961D79810800F8841C /* create.cpp in Sources */,
 				7C5DD70E1BA865D900C6474A /* jdpostct.c in Sources */,
 				7C5DD5131BA84BB100C6474A /* pix3.cpp in Sources */,
 				7C5DD1F91BA8302800C6474A /* agg_bspline.cpp in Sources */,
