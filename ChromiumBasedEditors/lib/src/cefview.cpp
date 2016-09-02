@@ -1494,10 +1494,10 @@ public:
                     {
                         m_pParent->Apply(*i);
                     }
-                }
 
-                pAdditional->m_arApplyEvents->clear();
-                pAdditional->m_arApplyEvents = NULL;
+                    pAdditional->m_arApplyEvents->clear();
+                    pAdditional->m_arApplyEvents = NULL;
+                }                
             }
             return true;
         }

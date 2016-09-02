@@ -11,7 +11,7 @@ CApplicationRendererAdditionalBase* Create_ApplicationRendererAdditional()
 
 CApplicationManagerAdditionalBase* Create_ApplicationManagerAdditional(CAscApplicationManager* pManager)
 {
-    return NULL;
+    return new CApplicationManagerAdditionalBase(pManager);
 }
 
 #endif // ADDITIONAL_CREATE_H
