@@ -22,6 +22,8 @@
 
 #include "../../src/additional/renderer.h"
 
+#include "../../../../../core/Common/DocxFormat/Source/Base/SmartPtr.h"
+
 namespace asc_client_renderer
 {
 class CAscEditorNativeV8Handler : public CefV8Handler, public INativeViewer_Events
@@ -2417,7 +2419,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         return true;
     }
 
-    if (m_pAdditional && m_pAdditional->OnProcessMessageReceived(app, browser, source_process, message))
+    if (m_pAdditional.is_init() && m_pAdditional->OnProcessMessageReceived(app, browser, source_process, message))
         return true;
 
     return message_router_->OnProcessMessageReceived(
@@ -2431,7 +2433,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
   // Handles the renderer side of query routing.
   CefRefPtr<CefMessageRouterRendererSide> message_router_;
 
-  CApplicationRendererAdditionalBase* m_pAdditional;
+  NSCommon::smart_ptr<CApplicationRendererAdditionalBase> m_pAdditional;
 
   IMPLEMENT_REFCOUNTING(ClientRenderDelegate);
 };

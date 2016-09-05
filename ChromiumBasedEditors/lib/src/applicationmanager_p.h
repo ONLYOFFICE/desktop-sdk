@@ -336,6 +336,7 @@ public:
     virtual ~CAscApplicationManager_Private()
     {
         CloseApplication();
+        RELEASEOBJECT(m_pAdditional);
         m_oCS_Scripts.DeleteCriticalSection();
         m_oCS_LocalFiles.DeleteCriticalSection();
     }
