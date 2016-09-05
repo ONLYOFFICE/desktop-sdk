@@ -14,94 +14,8 @@ public:
 public:
     CPluginsManager()
     {
-        m_sPluginBase = "(function(window, undefined){\n\
-\n\
-                window.Asc = window.Asc || {};\n\
-                window.Asc.plugin = null;\n\
-\n\
-                window.plugin_sendMessage = function sendMessage(data)\n\
-                {\n\
-                    window.parent.postMessage(data, \"*\");\n\
-                };\n\
-\n\
-                function onMessage(event)\n\
-                {\n\
-                    if (!window.Asc.plugin)\n\
-                        return;\n\
-\n\
-                    if (typeof(event.data) == \"string\")\n\
-                    {\n\
-                        var pluginData = {};\n\
-                        try\n\
-                        {\n\
-                            pluginData = JSON.parse(event.data);\n\
-                        }\n\
-                        catch(err)\n\
-                        {\n\
-                            pluginData = {};\n\
-                        }\n\
-\n\
-                        if (pluginData.guid != window.Asc.plugin.guid)\n\
-                            return;\n\
-\n\
-                        var type = pluginData.type;\n\
-\n\
-                        if (type == \"init\")\n\
-                            window.Asc.plugin.info = pluginData;\n\
-\n\
-                        switch (type)\n\
-                        {\n\
-                            case \"init\":\n\
-                            {\n\
-                                window.Asc.plugin.executeCommand = function(type, data)\n\
-                                {\n\
-                                    window.Asc.plugin.info.type = type;\n\
-                                    window.Asc.plugin.info.data = data;\n\
-\n\
-                                    var _message = \"\";\n\
-                                    try\n\
-                                    {\n\
-                                        _message = JSON.stringify(window.Asc.plugin.info);\n\
-                                    }\n\
-                                    catch(err)\n\
-                                    {\n\
-                                        _message = \"{ \\\"\" + type + \"\\\" : \\\"\" + data + \"\\\" }\";\n\
-                                    }\n\
-                                    window.plugin_sendMessage(_message);\n\
-                                };\n\
-\n\
-                                window.Asc.plugin.init(window.Asc.plugin.info.data);\n\
-                                break;\n\
-                            }\n\
-                            case \"button\":\n\
-                            {\n\
-                                window.Asc.plugin.button(parseInt(pluginData.button));\n\
-                                break;\n\
-                            }\n\
-                            default:\n\
-                                break;\n\
-                        }\n\
-                    }\n\
-                }\n\
-\n\
-                if (window.addEventListener)\n\
-                {\n\
-                    window.addEventListener(\"message\", onMessage, false);\n\
-                }\n\
-                else\n\
-                {\n\
-                    window.attachEvent(\"onmessage\", onMessage);\n\
-                }\n\
-\n\
-                window.onload = function()\n\
-                {\n\
-                    var obj = {\n\
-                        type : \"initialize\",\n\
-                        guid : window.Asc.plugin.guid\n\
-                    };\n\
-                    window.plugin_sendMessage(JSON.stringify(obj));\n\
-                };\n\
-            })(window, undefined);";
+        // sdkjs-plugins/pluginBase.js
+        m_sPluginBase = "(function(n,t){function i(n,r){if(!n||!(\"object\"==typeof n||\"array\"==typeof n))return n;var e=r===t?{}:r,f,u;for(f in n)n.hasOwnProperty(f)&&(u=n[f],e[f]=u&&\"object\"==typeof u?i(u):u);return e}function r(t){if(n.Asc.plugin){if(n.plugin_onMessage){n.plugin_onMessage(t);return}if(typeof t.data==\"string\"){var i={};try{i=JSON.parse(t.data)}catch(r){i={}}(i.type==\"plugin_init\")&&eval(i.data)}}}n.Asc=n.Asc||{};n.Asc.plugin={};n.onload=function(){var t=new XMLHttpRequest;t.open(\"get\",\"./config.json\",!0);t.responseType=\"json\";t.onload=function(){var r,u;(t.status==200 || t.status==0)&&(r=t.response,i(r,n.Asc.plugin),u={type:\"initialize\",guid:n.Asc.plugin.guid},n.parent.postMessage(JSON.stringify(u),\"*\"))};t.send()};n.addEventListener?n.addEventListener(\"message\",r,!1):n.attachEvent(\"onmessage\",r)})(window,undefined);";
     }
 
     std::string GetPluginsJson()
@@ -135,22 +49,19 @@ public:
         for (int i = 0; i < nCount; ++i)
         {
             std::string sJson = "";
-            if (NSFile::CFileBinary::ReadAllTextUtf8A(_arPlugins[i] + L"/config.js", sJson))
+            if (NSFile::CFileBinary::ReadAllTextUtf8A(_arPlugins[i] + L"/config.json", sJson))
             {
-                if (sJson.find("window.Asc.plugin") != std::string::npos)
-                {
-                    std::string::size_type pos1 = sJson.find('{');
-                    std::string::size_type pos2 = sJson.find_last_of('}');
+                std::string::size_type pos1 = sJson.find('{');
+                std::string::size_type pos2 = sJson.find_last_of('}');
 
-                    if (pos1 != std::string::npos &&
-                        pos2 != std::string::npos &&
-                        pos2 > pos1)
-                    {
-                        if (nCountPlugins > 0)
-                            sData += ",";
-                        nCountPlugins++;
-                        sData += sJson.substr(pos1, pos2 - pos1 + 1);
-                    }
+                if (pos1 != std::string::npos &&
+                    pos2 != std::string::npos &&
+                    pos2 > pos1)
+                {
+                    if (nCountPlugins > 0)
+                        sData += ",";
+                    nCountPlugins++;
+                    sData += sJson.substr(pos1, pos2 - pos1 + 1);
                 }
             }
         }
@@ -179,27 +90,24 @@ public:
         COfficeUtils oOfficeUtils(NULL);
         if (S_OK == oOfficeUtils.ExtractToDirectory(sFilePlugin, sTemp, NULL, 0))
         {
-            std::wstring sConfig = sTemp + L"/config.js";
+            std::wstring sConfig = sTemp + L"/config.json";
 
             std::string sJson = "";
             if (NSFile::CFileBinary::ReadAllTextUtf8A(sConfig, sJson))
             {
-                if (sJson.find("window.Asc.plugin") != std::string::npos)
+                std::string::size_type pos = sJson.find("\"name\"");
+                if (pos != std::string::npos)
                 {
-                    std::string::size_type pos = sJson.find("\"name\"");
-                    if (pos != std::string::npos)
+                    pos += 6;
+                    std::string::size_type pos1 = sJson.find('\"', pos);
+                    if (pos1 != std::string::npos)
                     {
-                        pos += 6;
-                        std::string::size_type pos1 = sJson.find('\"', pos);
-                        if (pos1 != std::string::npos)
-                        {
-                            std::string::size_type pos2 = sJson.find('\"', pos1 + 1);
+                        std::string::size_type pos2 = sJson.find('\"', pos1 + 1);
 
-                            if (pos2 != std::string::npos && pos2 > pos1)
-                            {
-                                std::string sName = sJson.substr(pos1 + 1, pos2 - pos1 - 1);
-                                sPluginName = NSFile::CUtf8Converter::GetUnicodeStringFromUTF8((BYTE*)sName.c_str(), (LONG)sName.length());
-                            }
+                        if (pos2 != std::string::npos && pos2 > pos1)
+                        {
+                            std::string sName = sJson.substr(pos1 + 1, pos2 - pos1 - 1);
+                            sPluginName = NSFile::CUtf8Converter::GetUnicodeStringFromUTF8((BYTE*)sName.c_str(), (LONG)sName.length());
                         }
                     }
                 }
