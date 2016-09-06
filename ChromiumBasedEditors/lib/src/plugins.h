@@ -95,19 +95,30 @@ public:
             std::string sJson = "";
             if (NSFile::CFileBinary::ReadAllTextUtf8A(sConfig, sJson))
             {
-                std::string::size_type pos = sJson.find("\"name\"");
-                if (pos != std::string::npos)
+                std::string::size_type posUrl = sJson.find("\"url\"");
+                if (posUrl != std::string::npos)
                 {
-                    pos += 6;
-                    std::string::size_type pos1 = sJson.find('\"', pos);
+                    posUrl += 5;
+                    std::string::size_type pos1 = sJson.find('\"', posUrl);
                     if (pos1 != std::string::npos)
                     {
                         std::string::size_type pos2 = sJson.find('\"', pos1 + 1);
-
-                        if (pos2 != std::string::npos && pos2 > pos1)
+                        if (pos2 != std::string::npos)
                         {
-                            std::string sName = sJson.substr(pos1 + 1, pos2 - pos1 - 1);
-                            sPluginName = NSFile::CUtf8Converter::GetUnicodeStringFromUTF8((BYTE*)sName.c_str(), (LONG)sName.length());
+                            std::string sUrl = sJson.substr(pos1 + 1, pos2 - pos1 - 1);
+
+                            std::string::size_type posDst2 = sUrl.find_last_of('/');
+                            if (posDst2 != std::string::npos)
+                            {
+                                std::string::size_type posDst1 = sUrl.find_last_of('/', posDst2 - 1);
+                                if (posDst1 == std::string::npos)
+                                    posDst1 = 0;
+                                else
+                                    posDst1 += 1;
+
+                                std::string sName = sUrl.substr(posDst1, posDst2 - posDst1);
+                                sPluginName = NSFile::CUtf8Converter::GetUnicodeStringFromUTF8((BYTE*)sName.c_str(), (LONG)sName.length());
+                            }
                         }
                     }
                 }
