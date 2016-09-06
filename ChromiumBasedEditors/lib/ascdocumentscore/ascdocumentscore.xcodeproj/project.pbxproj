@@ -1037,12 +1037,9 @@
 		7C9325941C78812F004BCCD8 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7C9325931C78812E004BCCD8 /* IOKit.framework */; };
 		7CA98EDF1CAC2E6100362B1D /* Chromium Embedded Framework.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7CA98EDE1CAC2E6100362B1D /* Chromium Embedded Framework.framework */; };
 		7CA98EE51CAC2E8200362B1D /* libDjVuFile.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 7CA98EE01CAC2E8200362B1D /* libDjVuFile.dylib */; };
-		7CA98EE61CAC2E8200362B1D /* libLicenceManager.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 7CA98EE11CAC2E8200362B1D /* libLicenceManager.a */; };
 		7CA98EE71CAC2E8200362B1D /* libPdfReader.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 7CA98EE21CAC2E8200362B1D /* libPdfReader.dylib */; };
 		7CA98EE81CAC2E8200362B1D /* libPdfWriter.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 7CA98EE31CAC2E8200362B1D /* libPdfWriter.dylib */; };
 		7CA98EE91CAC2E8200362B1D /* libXpsFile.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 7CA98EE41CAC2E8200362B1D /* libXpsFile.dylib */; };
-		7CA98EEC1CAC2EC400362B1D /* libboost_filesystem.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 7CA98EEA1CAC2EC400362B1D /* libboost_filesystem.a */; };
-		7CA98EED1CAC2EC400362B1D /* libboost_system.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 7CA98EEB1CAC2EC400362B1D /* libboost_system.a */; };
 		7CBEA1C11BF9CEF6001B02EB /* OfficeFileFormatChecker2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7CBEA1C01BF9CEF6001B02EB /* OfficeFileFormatChecker2.cpp */; };
 		7CBEA1C31BF9CF0A001B02EB /* pole.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7CBEA1C21BF9CF0A001B02EB /* pole.cpp */; };
 		7CBEA1C51BF9CF1D001B02EB /* ASCSVGWriter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7CBEA1C41BF9CF1D001B02EB /* ASCSVGWriter.cpp */; };
@@ -2109,12 +2106,9 @@
 		7C9325931C78812E004BCCD8 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
 		7CA98EDE1CAC2E6100362B1D /* Chromium Embedded Framework.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = "Chromium Embedded Framework.framework"; path = "../../../../core/build/cef/mac/Chromium Embedded Framework.framework"; sourceTree = "<group>"; };
 		7CA98EE01CAC2E8200362B1D /* libDjVuFile.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libDjVuFile.dylib; path = ../../../../core/build/lib/mac_64/libDjVuFile.dylib; sourceTree = "<group>"; };
-		7CA98EE11CAC2E8200362B1D /* libLicenceManager.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libLicenceManager.a; path = ../../../../core/build/lib/mac_64/libLicenceManager.a; sourceTree = "<group>"; };
 		7CA98EE21CAC2E8200362B1D /* libPdfReader.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libPdfReader.dylib; path = ../../../../core/build/lib/mac_64/libPdfReader.dylib; sourceTree = "<group>"; };
 		7CA98EE31CAC2E8200362B1D /* libPdfWriter.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libPdfWriter.dylib; path = ../../../../core/build/lib/mac_64/libPdfWriter.dylib; sourceTree = "<group>"; };
 		7CA98EE41CAC2E8200362B1D /* libXpsFile.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libXpsFile.dylib; path = ../../../../core/build/lib/mac_64/libXpsFile.dylib; sourceTree = "<group>"; };
-		7CA98EEA1CAC2EC400362B1D /* libboost_filesystem.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libboost_filesystem.a; path = ../../../../core/Common/boost_1_58_0/stage/lib/libboost_filesystem.a; sourceTree = "<group>"; };
-		7CA98EEB1CAC2EC400362B1D /* libboost_system.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libboost_system.a; path = ../../../../core/Common/boost_1_58_0/stage/lib/libboost_system.a; sourceTree = "<group>"; };
 		7CBEA1C01BF9CEF6001B02EB /* OfficeFileFormatChecker2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = OfficeFileFormatChecker2.cpp; path = ../../../../core/Common/OfficeFileFormatChecker2.cpp; sourceTree = "<group>"; };
 		7CBEA1C21BF9CF0A001B02EB /* pole.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = pole.cpp; path = ../../../../core/Common/3dParty/pole/pole.cpp; sourceTree = "<group>"; };
 		7CBEA1C41BF9CF1D001B02EB /* ASCSVGWriter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ASCSVGWriter.cpp; path = ../../../../core/HtmlRenderer/src/ASCSVGWriter.cpp; sourceTree = "<group>"; };
@@ -2150,10 +2144,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				7C2E4FE71CD0F3750025806F /* libHtmlRenderer.dylib in Frameworks */,
-				7CA98EEC1CAC2EC400362B1D /* libboost_filesystem.a in Frameworks */,
-				7CA98EED1CAC2EC400362B1D /* libboost_system.a in Frameworks */,
 				7CA98EE51CAC2E8200362B1D /* libDjVuFile.dylib in Frameworks */,
-				7CA98EE61CAC2E8200362B1D /* libLicenceManager.a in Frameworks */,
 				7CA98EE71CAC2E8200362B1D /* libPdfReader.dylib in Frameworks */,
 				7CA98EE81CAC2E8200362B1D /* libPdfWriter.dylib in Frameworks */,
 				7CA98EE91CAC2E8200362B1D /* libXpsFile.dylib in Frameworks */,
@@ -2171,10 +2162,7 @@
 			isa = PBXGroup;
 			children = (
 				7C2E4FE61CD0F3750025806F /* libHtmlRenderer.dylib */,
-				7CA98EEA1CAC2EC400362B1D /* libboost_filesystem.a */,
-				7CA98EEB1CAC2EC400362B1D /* libboost_system.a */,
 				7CA98EE01CAC2E8200362B1D /* libDjVuFile.dylib */,
-				7CA98EE11CAC2E8200362B1D /* libLicenceManager.a */,
 				7CA98EE21CAC2E8200362B1D /* libPdfReader.dylib */,
 				7CA98EE31CAC2E8200362B1D /* libPdfWriter.dylib */,
 				7CA98EE41CAC2E8200362B1D /* libXpsFile.dylib */,
