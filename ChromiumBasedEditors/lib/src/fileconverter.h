@@ -497,7 +497,7 @@ public:
             oBuilder.WriteString(L"</m_sFileFrom><m_sFileTo>");
         }
         
-        std::wstring sTempPath = m_oInfo.m_sRecoveryDir + L"/asc_temp.tmp";
+        oBuilder.WriteEncodeXmlString(sLocalFilePath);
         
         oBuilder.WriteString(L"</m_sFileTo><m_nFormatTo>");
         oBuilder.WriteString(std::to_wstring(m_oInfo.m_nCurrentFileFormat));
