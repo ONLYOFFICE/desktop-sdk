@@ -93,8 +93,7 @@ public:
     CCefView* m_pView;
     std::wstring m_sName;
 
-    std::wstring m_sEncoding;
-    std::wstring m_sDelimiter;
+    std::wstring m_sAdditionalConvertation;
 
     bool m_bIsNativeOpening;
     std::wstring m_sNativeSrcPath;
@@ -227,21 +226,11 @@ public:
         NSFile::CFileBinary::SaveToFile(sNameInfo, oBuilderInfo.GetData(), true);
 
         std::wstring sParams = L"";
-        if (!m_sEncoding.empty())
+        if (!m_sAdditionalConvertation.empty())
         {
-            sParams += L"<m_nCsvTxtEncoding>";
-            sParams += m_sEncoding;
-            sParams += L"</m_nCsvTxtEncoding>";
+            sParams += m_sAdditionalConvertation;
         }
-        if (!m_sDelimiter.empty())
-        {
-            sParams += L"<m_nCsvDelimiter>";
-            sParams += m_sDelimiter;
-            sParams += L"</m_nCsvDelimiter>";
-        }
-
-        m_sEncoding = L"";
-        m_sDelimiter = L"";
+        m_sAdditionalConvertation = L"";
 
         std::wstring strDirectoryFonts = m_pManager->m_oSettings.fonts_cache_info_path;
         while (!NSFile::CFileBinary::Exists(strDirectoryFonts + L"/font_selection.bin"))

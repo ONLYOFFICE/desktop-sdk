@@ -1488,11 +1488,6 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
             std::vector<CefRefPtr<CefV8Value>>::const_iterator iter = arguments.begin();
             message->GetArgumentList()->SetString(0, (*iter)->GetStringValue()); ++iter;
 
-            if (2 == arguments.size())
-            {
-                message->GetArgumentList()->SetString(1, (*iter)->GetStringValue());
-            }
-
             browser->SendProcessMessage(PID_BROWSER, message);
 
             return true;
@@ -2534,7 +2529,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
         if (_frame)
         {
-            std::wstring sCode = L"window.asc_initAdvancedOptions();";
+            std::string sParam = std::to_string(message->GetArgumentList()->GetInt(0));
+            std::string sCode = "window.asc_initAdvancedOptions(" + sParam + ");";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
         }
         return true;

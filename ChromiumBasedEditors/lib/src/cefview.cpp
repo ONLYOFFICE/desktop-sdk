@@ -1436,9 +1436,7 @@ public:
             if (m_pParent)
             {
                 int nCount = (int)message->GetArgumentList()->GetSize();
-                m_pParent->m_pInternal->m_oConverterToEditor.m_sEncoding = message->GetArgumentList()->GetString(0).ToWString();
-                if (2 == nCount)
-                    m_pParent->m_pInternal->m_oConverterToEditor.m_sDelimiter = message->GetArgumentList()->GetString(1).ToWString();
+                m_pParent->m_pInternal->m_oConverterToEditor.m_sAdditionalConvertation = message->GetArgumentList()->GetString(0).ToWString();
 
                 m_pParent->m_pInternal->LocalFile_Start();
             }
@@ -2284,7 +2282,9 @@ void CCefView_Private::LocalFile_IncrementCounter()
 
     if (2 == m_oLocalInfo.m_oInfo.m_nCounterConvertion)
     {
-        if (89 == m_nLocalFileOpenError)
+        if (89 == m_nLocalFileOpenError ||
+            90 == m_nLocalFileOpenError ||
+            91 == m_nLocalFileOpenError)
         {
             --m_oLocalInfo.m_oInfo.m_nCounterConvertion;
 
@@ -2296,6 +2296,7 @@ void CCefView_Private::LocalFile_IncrementCounter()
             if (browser)
             {
                 CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_additionalparams");
+                message->GetArgumentList()->SetInt(0, m_nLocalFileOpenError);
                 browser->SendProcessMessage(PID_RENDERER, message);
             }
             return;
