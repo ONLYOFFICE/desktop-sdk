@@ -1,0 +1,12 @@
+**/core_build
+**/Release
+**/Debug
+*.user
+*.ncb
+*.suo
+.DS_Store
+Thumbs.db
+*.xcuserstate
+*.xcuserdatad
+**/DerivedData
+.idea/

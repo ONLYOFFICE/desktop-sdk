@@ -1,0 +1,5 @@
+onlyoffice-desktopeditor ({{PACKAGE_VERSION}}) stable; urgency=low
+
+  * Initial release.
+
+ -- ONLYOFFICE (Online documents editor) <support@onlyoffice.com>  Tue, 28 Apr 2015 09:50:00 +0000

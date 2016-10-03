@@ -1,0 +1,13 @@
+Source: onlyoffice-desktopeditor
+Section: office
+Priority: optional
+Maintainer: Ascensio System SIA <support@onlyoffice.com>
+Build-Depends: debhelper (>= 8.0.0)
+
+Package: onlyoffice-desktopeditor
+Architecture: amd64
+Depends: x11-common, libxss1, libcurl3, libgtkglext1, libcairo2, fonts-dejavu, fonts-opensymbol
+Recommends: fonts-liberation, ttf-mscorefonts-installer, fonts-crosextra-carlito, fonts-takao-gothic
+Description: Desktop editors for text, spreadsheet and presentation files.
+ Compatible with most office file formats including Office Open XML formats:
+ .docx, .xlsx, .pptx, and offer collaborative editing and commenting.
