@@ -719,7 +719,7 @@ public:
         return browser_id_;
     }
 
-    bool CheckPopup(std::wstring sUrl, bool bIsBeforeBrowse = false, bool bIsBackground = false)
+    bool CheckPopup(std::wstring sUrl, bool bIsBeforeBrowse = false, bool bIsBackground = false, bool bIsNotOpenLinks = false)
     {
         NSEditorApi::CAscMenuEventListener* pListener = NULL;
         if (NULL != m_pParent && NULL != m_pParent->GetAppManager())
@@ -733,7 +733,7 @@ public:
         else if (sUrl.find(L"filehandler.ashx?action=view") != std::wstring::npos)
             bIsDownload     = true;
 
-        if (!bIsBeforeBrowse && !bIsEditor && !bIsDownload)
+        if (!bIsBeforeBrowse && !bIsEditor && !bIsDownload && !bIsNotOpenLinks)
         {
             if (m_pParent && (m_pParent->GetType() == cvwtEditor || m_pParent->GetType() == cvwtSimple))
             {
@@ -834,6 +834,21 @@ public:
         std::wstring sUrl = target_url.ToWString();
 
         CheckPopup(sUrl, false, (WOD_NEW_BACKGROUND_TAB == target_disposition) ? true : false);
+
+        return true;
+    }
+
+    virtual bool OnOpenURLFromTab(
+        CefRefPtr<CefBrowser> browser,
+        CefRefPtr<CefFrame> frame,
+        const CefString& target_url,
+        CefRequestHandler::WindowOpenDisposition target_disposition,
+        bool user_gesture) OVERRIDE {
+        CEF_REQUIRE_IO_THREAD();
+
+        std::wstring sUrl = target_url.ToWString();
+
+        CheckPopup(sUrl, false, (WOD_NEW_BACKGROUND_TAB == target_disposition) ? true : false, true);
 
         return true;
     }
