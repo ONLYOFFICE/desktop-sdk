@@ -1393,7 +1393,9 @@ public:
         else if (name == "LocalFileSetSaved")
         {
             CefRefPtr<CefV8Value> val = *arguments.begin();
-            m_bLocalIsSaved = val->GetBoolValue();
+            // saved -> unsaved перейти не может
+            if (!m_bLocalIsSaved)
+                m_bLocalIsSaved = val->GetBoolValue();
             return true;
         }
         else if (name == "LocalFileGetImageUrl")
