@@ -56,12 +56,27 @@ public:
             NSDirectory::CreateDirectory(m_strDirectory);
 
         std::wstring strBase = m_strDirectory + L"/pluginBase.js";
-        if (!NSFile::CFileBinary::Exists(strBase))
+        if (NSFile::CFileBinary::Exists(strBase))
+            NSFile::CFileBinary::Remove(strBase);
+
+        std::wstring strBaseCSS = m_strDirectory + L"/plugins.css";
+        if (NSFile::CFileBinary::Exists(strBaseCSS))
+            NSFile::CFileBinary::Remove(strBaseCSS);
+
+        if (true)
         {
             NSFile::CFileBinary oFile;
             if (oFile.CreateFileW(strBase))
             {
                 oFile.WriteFile((BYTE*)m_sPluginBase.c_str(), (DWORD)m_sPluginBase.length());
+                oFile.CloseFile();
+            }
+
+            NSFile::CFileBinary oFileCSS;
+            if (oFile.CreateFileW(strBaseCSS))
+            {
+                std::string sCSS = ".btn-text-default{background:#fff;border:1px solid #cfcfcf;border-radius:2px;color:#444;font-size:11px;font-family:\"Helvetica Neue\",Helvetica,Arial,sans-serif;height:22px;cursor:pointer}.btn-text-default:focus{outline:0;outline-offset:0}.btn-text-default:hover{background-color:#d8dadc!important}.btn-text-default:active,.btn-text-default.active{background-color:#7d858c!important;color:#fff;-webkit-box-shadow:none;box-shadow:none}.btn-text-default[disabled]:hover,.btn-text-default.disabled:hover,.btn-text-default[disabled]:active,.btn-text-default[disabled].active,.btn-text-default.disabled:active,.btn-text-default.disabled.active{background-color:#fff!important;color:#444;cursor:default}.btn-text-default[disabled],.btn-text-default.disabled{opacity:.65}.form-control{border:1px solid #cfcfcf;border-radius:2px;box-sizing:border-box;color:#444;font-size:11px;height:22px;padding:1px 3px;-webkit-box-shadow:none;box-shadow:none;-webkit-user-select:text;-moz-user-select:text;-ms-user-select:text;user-select:text}.form-control:focus{border-color:#cfcfcf;outline:0;-webkit-box-shadow:none;box-shadow:none}.form-control[readonly]{background-color:#fff;cursor:pointer}.form-control[disabled]{background-color:#fff;cursor:default;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}.defaultlable{color:#444;cursor:default;font-family:\"Helvetica Neue\",Helvetica,Arial,sans-serif;font-size:11px;font-weight:400;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}.noselect{-khtml-user-select:none;user-select:none;-moz-user-select:none;-webkit-user-select:none}.ps-container .ps-scrollbar-y-rail{position:absolute;right:3px;width:10px}.ps-scrollbar-y{position:absolute;right:0;width:9px;background-color:#f1f1f1;-webkit-border-radius:2px;-moz-border-radius:2px;border-radius:2px;visibility:visible;display:block;box-sizing:border-box;background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAANCAQAAAAz1Zf0AAAAIUlEQVR42mNgAILz/0GQAQo+/gdBBqLAqE5ydH5k+sgEANHgUH2JtDRHAAAAAElFTkSuQmCC);background-repeat:no-repeat;background-position:0 center;border:1px solid #cfcfcf}.ps-container .ps-scrollbar-y-rail:hover .ps-scrollbar-y,.ps-container .ps-scrollbar-y-rail.hover .ps-scrollbar-y{background-color:#cfcfcf;background-position:-7px center}.ps-container.ps-in-scrolling .ps-scrollbar-y-rail .ps-scrollbar-y{background-color:#adadad;border-color:#adadad;background-position:-7px center}";
+                oFile.WriteFile((BYTE*)sCSS.c_str(), (DWORD)sCSS.length());
                 oFile.CloseFile();
             }
         }
