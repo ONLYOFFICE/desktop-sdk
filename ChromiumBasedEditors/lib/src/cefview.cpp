@@ -858,7 +858,7 @@ public:
                                 CefRefPtr<CefRequest> request,
                                 bool is_redirect)
     {
-         std::wstring sUrl = request->GetURL().ToWString();
+        std::wstring sUrl = request->GetURL().ToWString();
         if (frame->IsMain() && m_nBeforeBrowserCounter != 0 && sUrl.find(L"file://") == 0 && sUrl != m_pParent->m_pInternal->m_strUrl)
             return true;
 
@@ -2429,8 +2429,20 @@ CCefView::~CCefView()
     RELEASEOBJECT(m_pInternal);
 }
 
-void CCefView::load(const std::wstring& url)
-{    
+void CCefView::load(const std::wstring& urlInput)
+{
+    std::wstring url = urlInput;
+    std::wstring::size_type posQ = url.find_first_of('?');
+    if (std::wstring::npos != posQ)
+    {
+        if (std::wstring::npos == url.find(L"desktop=true"), posQ)
+            url = (url + L"&desktop=true");
+    }
+    else
+    {
+        url = (url + L"?desktop=true");
+    }
+
     if (!m_pInternal || !m_pInternal->m_pManager)
         return;
 
