@@ -580,7 +580,7 @@ SOURCES += \
     $$PWD/src/cef/windows/libcef_dll/wrapper/libcef_dll_wrapper2.cc \
     $$PWD/src/cef/windows/libcef_dll/transfer_util.cc
 
-LIBS += -L$$PWD/../../../core/build/cef/$$CORE_BUILDS_PLATFORM_PREFIX -llibcef
+LIBS += -L$$PWD/../../../core/Common/3dParty/cef/$$CORE_BUILDS_PLATFORM_PREFIX/build -llibcef
 
 INCLUDEPATH += \
     $$PWD/../../../core/DesktopEditor/agg-2.4/include \
