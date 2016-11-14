@@ -1,6 +1,6 @@
 #DESTDIR = $$PWD/linux
 DESTDIR = $$CORE_BUILDS_LIBRARIES_PATH
-LIBS += -L$$CORE_ROOT_DIR/build/cef/$$CORE_BUILDS_PLATFORM_PREFIX -llibcef
+LIBS += -L$$CORE_ROOT_DIR/Common/3dParty/cef/$$CORE_BUILDS_PLATFORM_PREFIX/build -lcef
 LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lgraphics -llibxml -lOfficeUtils
 
 SRC_PATH = $$PWD/../../ChromiumBasedEditors/lib/src/cef/linux
@@ -12,7 +12,7 @@ INCLUDEPATH += \
 CONFIG += link_pkgconfig c++11
 PKGCONFIG += glib-2.0 gdk-2.0 gtkglext-1.0 atk cairo gtk+-unix-print-2.0
 
-LIBS += -lcurl
+LIBS += -lcurl -lz
 
 DEFINES += \
     LINUX \
