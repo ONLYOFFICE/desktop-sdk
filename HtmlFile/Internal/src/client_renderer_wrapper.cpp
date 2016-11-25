@@ -67,7 +67,7 @@ public:
         sync_command_check = NULL;
     }
 
-    std::wstring GetImagePath(const std::wstring& sUrl)
+    std::wstring GetImagePath(const std::wstring& sUrl, bool bIsBase64 = false)
     {
         std::map<std::wstring, std::wstring>::iterator iter = m_mapImages.find(sUrl);
         if (iter != m_mapImages.end())
@@ -92,6 +92,38 @@ public:
             {
                 std::wstring strFileName = oDownloader.GetFilePath();
                 NSFile::CFileBinary::Remove(strFileName);
+            }
+        }
+        else if (bIsBase64)
+        {
+            std::wstring::size_type nBase64Start = sUrl.find(L"base64,");
+            if (nBase64Start != std::wstring::npos)
+            {
+                int nStartIndex = nBase64Start + 7;
+                int nCount = sUrl.length() - nStartIndex;
+                char* pData = new char[nCount];
+                const wchar_t* pDataSrc = sUrl.c_str();
+                for (int i = 0; i < nCount; ++i)
+                    pData[i] = pDataSrc[i + nStartIndex];
+
+                BYTE* pDataDecode = NULL;
+                int nLenDecode = 0;
+                NSFile::CBase64Converter::Decode(pData, nCount, pDataDecode, nLenDecode);
+
+                RELEASEARRAYOBJECTS(pData);
+
+                sTmpPath = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"IMG");
+                if (NSFile::CFileBinary::Exists(sTmpPath))
+                    NSFile::CFileBinary::Remove(sTmpPath);
+
+                NSFile::CFileBinary oFile;
+                if (oFile.CreateFileW(sTmpPath))
+                {
+                    oFile.WriteFile(pDataDecode, (DWORD)nLenDecode);
+                    oFile.CloseFile();
+                }
+
+                RELEASEARRAYOBJECTS(pDataDecode);
             }
         }
 
@@ -179,6 +211,15 @@ public:
             std::wstring sUrlBase = _frame->GetURL().ToWString();
             std::wstring sUrlFull = GetFullUrl(sUrl, sUrlBase);
 
+            bool bIsBase64 = false;
+            if (sUrl.find(L"data:") == 0)
+            {
+                std::wstring::size_type nPos = sUrl.find(L"base64");
+                if (nPos != std::wstring::npos && nPos < 20)
+                    sUrlFull = sUrl;
+                bIsBase64 = true;
+            }
+
             // delete file:///
             if (0 == sUrlFull.find(L"file:///"))
             {
@@ -190,7 +231,7 @@ public:
             else if (0 == sUrlFull.find(L"file:"))
                 sUrlFull = sUrlFull.substr(5);
 
-            std::wstring sReturn = GetImagePath(sUrlFull);
+            std::wstring sReturn = GetImagePath(sUrlFull, bIsBase64);
 
             retval = CefV8Value::CreateString(sReturn);
             return true;
