@@ -12,6 +12,8 @@ PWD_ROOT_DIR = $$PWD
 include(../../../core/Common/base.pri)
 
 DEFINES += HUNSPELL_STATIC
+CONFIG += building_hunspell
+include($$CORE_ROOT_DIR/DesktopEditor/hunspell-1.3.3/src/qt/hunspell.pri)
 
 DEFINES += \
     PDFREADER_USE_DYNAMIC_LIBRARY \
@@ -19,7 +21,7 @@ DEFINES += \
     XPS_USE_DYNAMIC_LIBRARY \
     HTMLRENDERER_USE_DYNAMIC_LIBRARY
 
-LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lOfficeUtils -lgraphics -lhunspell -llibxml
+LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lOfficeUtils -lgraphics -llibxml
 LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lPdfReader -lPdfWriter -lDjVuFile -lXpsFile -lHtmlRenderer
 # ------------------------------------------------------
 

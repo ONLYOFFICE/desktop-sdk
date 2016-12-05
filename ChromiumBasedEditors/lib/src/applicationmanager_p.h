@@ -54,8 +54,6 @@
 #include <stdio.h>
 #include <time.h>
 
-#include "../../../../core/LicenceManager/source/LicenceManager.h"
-
 #define ASC_CONSTANT_CANCEL_SAVE 0x00005678
 
 #define LOCK_CS_SCRIPT 0
