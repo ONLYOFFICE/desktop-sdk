@@ -3168,6 +3168,11 @@ int CCefViewEditor::GetFileFormat(const std::wstring& sFilePath)
         if (sExt != L"txt" && sExt != L"xml")
             return 0;
     }
+    else if (AVS_OFFICESTUDIO_FILE_OTHER_MS_OFFCRYPTO == oChecker.nFileType)
+    {
+        std::wstring sExt = NSCommon::GetFileExtention(sFilePath);
+        return COfficeFileFormatChecker::GetFormatByExtension(L"." + sExt);
+    }
 
     return oChecker.nFileType;
 }
