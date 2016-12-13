@@ -1034,6 +1034,7 @@
 		7C5DD79F1BA8677800C6474A /* jpc_tagtree.c in Sources */ = {isa = PBXBuildFile; fileRef = 7C5DD78C1BA8677800C6474A /* jpc_tagtree.c */; };
 		7C5DD7A01BA8677800C6474A /* jpc_tsfb.c in Sources */ = {isa = PBXBuildFile; fileRef = 7C5DD78D1BA8677800C6474A /* jpc_tsfb.c */; };
 		7C5DD7A11BA8677800C6474A /* jpc_util.c in Sources */ = {isa = PBXBuildFile; fileRef = 7C5DD78E1BA8677800C6474A /* jpc_util.c */; };
+		7C739E001E0005EC00520E69 /* libUnicodeConverter.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 7C739DFF1E0005EC00520E69 /* libUnicodeConverter.dylib */; };
 		7C9325941C78812F004BCCD8 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7C9325931C78812E004BCCD8 /* IOKit.framework */; };
 		7CA98EDF1CAC2E6100362B1D /* Chromium Embedded Framework.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7CA98EDE1CAC2E6100362B1D /* Chromium Embedded Framework.framework */; };
 		7CA98EE51CAC2E8200362B1D /* libDjVuFile.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 7CA98EE01CAC2E8200362B1D /* libDjVuFile.dylib */; };
@@ -2103,6 +2104,7 @@
 		7C5DD78C1BA8677800C6474A /* jpc_tagtree.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = jpc_tagtree.c; path = ../../../../core/DesktopEditor/cximage/jasper/jpc/jpc_tagtree.c; sourceTree = SOURCE_ROOT; };
 		7C5DD78D1BA8677800C6474A /* jpc_tsfb.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = jpc_tsfb.c; path = ../../../../core/DesktopEditor/cximage/jasper/jpc/jpc_tsfb.c; sourceTree = SOURCE_ROOT; };
 		7C5DD78E1BA8677800C6474A /* jpc_util.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = jpc_util.c; path = ../../../../core/DesktopEditor/cximage/jasper/jpc/jpc_util.c; sourceTree = SOURCE_ROOT; };
+		7C739DFF1E0005EC00520E69 /* libUnicodeConverter.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libUnicodeConverter.dylib; path = ../../../../core/build/lib/mac_64/libUnicodeConverter.dylib; sourceTree = "<group>"; };
 		7C9325931C78812E004BCCD8 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
 		7CA98EDE1CAC2E6100362B1D /* Chromium Embedded Framework.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = "Chromium Embedded Framework.framework"; path = "../../../../core/build/cef/mac/Chromium Embedded Framework.framework"; sourceTree = "<group>"; };
 		7CA98EE01CAC2E8200362B1D /* libDjVuFile.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libDjVuFile.dylib; path = ../../../../core/build/lib/mac_64/libDjVuFile.dylib; sourceTree = "<group>"; };
@@ -2143,6 +2145,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7C739E001E0005EC00520E69 /* libUnicodeConverter.dylib in Frameworks */,
 				7C2E4FE71CD0F3750025806F /* libHtmlRenderer.dylib in Frameworks */,
 				7CA98EE51CAC2E8200362B1D /* libDjVuFile.dylib in Frameworks */,
 				7CA98EE71CAC2E8200362B1D /* libPdfReader.dylib in Frameworks */,
@@ -2172,6 +2175,7 @@
 				7C0B43F41BA820DA005A52DC /* OpenGL.framework */,
 				7C0B426F1BA7218D005A52DC /* ascdocumentscore */,
 				7C0B426E1BA7218D005A52DC /* Products */,
+				7C739DFE1E0005EC00520E69 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -3591,6 +3595,14 @@
 			);
 			name = jpc;
 			sourceTree = SOURCE_ROOT;
+		};
+		7C739DFE1E0005EC00520E69 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				7C739DFF1E0005EC00520E69 /* libUnicodeConverter.dylib */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
 		};
 		7CBEA1BF1BF9CEBD001B02EB /* common */ = {
 			isa = PBXGroup;
