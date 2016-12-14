@@ -94,6 +94,26 @@ public:
 
 #endif
 
+#if defined(_LINUX) && !defined(_MAC)
+
+#include <pwd.h>
+static std::wstring GetHomeDirectory()
+{
+    const char* sHome = std::getenv("home");
+
+    if (sHome == NULL)
+    {
+        sHome = getpwuid(getuid())->pw_dir;
+    }
+
+    if (NULL == sHome)
+        return L"";
+
+    std::string temp = sHome;
+    return NSFile::CUtf8Converter::GetUnicodeStringFromUTF8((BYTE*)temp.c_str(), (LONG)temp.length());
+}
+
+#endif
 
 class CCefFileDownloaderThread : public NSThreads::CBaseThread, public IFileDownloaderEvents
 {
@@ -550,6 +570,15 @@ protected:
 
         if (m_pMain->m_oSettings.use_system_fonts)
             strFontsW_Cur = oApplicationF->GetSetupFontFiles();
+
+#if defined(_LINUX) && !defined(_MAC)
+        std::wstring sHome = GetHomeDirectory();
+        if (!sHome.empty())
+        {
+            NSDirectory::GetFiles2(sHome + L"/.fonts", strFontsW_Cur, true);
+            NSDirectory::GetFiles2(sHome + L"/.local/share/fonts", strFontsW_Cur, true);
+        }
+#endif
 
         for (std::vector<std::wstring>::iterator i = m_pMain->m_oSettings.additional_fonts_folder.begin(); i != m_pMain->m_oSettings.additional_fonts_folder.end(); i++)
         {
