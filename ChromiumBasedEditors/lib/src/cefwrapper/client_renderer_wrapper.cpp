@@ -1807,6 +1807,8 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
                 return sRet;
             }
         }
+        if (sUrl.find(L"image") == 0)
+            return sUrl;
         return L"error";
     }
     std::wstring GetLocalImageUrlLocal(const std::wstring& sUrl, const std::wstring& sUrlMap)
