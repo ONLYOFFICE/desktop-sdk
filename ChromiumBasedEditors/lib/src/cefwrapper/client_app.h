@@ -159,6 +159,7 @@ public:
             command_line->AppendSwitch("--disable-extensions");
             command_line->AppendSwitch("--enable-file-cookies");
             command_line->AppendSwitch("--disable-pinch");
+            command_line->AppendSwitch("--enable-aggressive-domstorage-flushing");
             command_line->AppendSwitchWithValue("--log-severity", "disable");
 
             //command_line->AppendSwitch("--allow-file-access-from-files");
@@ -216,6 +217,7 @@ public:
             command_line->AppendSwitch("--disable-extensions");
             command_line->AppendSwitch("--enable-file-cookies");
             command_line->AppendSwitch("--disable-pinch");
+            command_line->AppendSwitch("--enable-aggressive-domstorage-flushing");
             command_line->AppendSwitchWithValue("--log-severity", "disable");
 
             //command_line->AppendSwitch("--allow-file-access-from-files");
@@ -273,6 +275,7 @@ public:
             command_line->AppendSwitch("--disable-extensions");
             command_line->AppendSwitch("--enable-file-cookies");
             command_line->AppendSwitch("--disable-pinch");
+            command_line->AppendSwitch("--enable-aggressive-domstorage-flushing");
             command_line->AppendSwitchWithValue("--log-severity", "disable");
 
             //command_line->AppendSwitch("--allow-file-access-from-files");

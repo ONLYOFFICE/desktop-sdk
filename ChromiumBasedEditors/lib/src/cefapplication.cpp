@@ -282,6 +282,8 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     cef_string_from_wide(sCachePath.c_str(), sCachePath.length(), &_cache);
     settings.cache_path = _cache;
 
+    settings.persist_session_cookies = true;
+
     // Initialize CEF.
     bool bInit = m_pInternal->context->Initialize(main_args, settings, m_pInternal->m_app.get(), sandbox_info);
     bool bIsInitScheme = asc_scheme::InitScheme();
