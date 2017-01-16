@@ -94,7 +94,7 @@ public:
 
 #endif
 
-#if defined(_LINUX) && !defined(_MAC)
+#if defined(_LINUX)
 
 #include <pwd.h>
 static std::wstring GetHomeDirectory()
@@ -570,13 +570,17 @@ protected:
 
         if (m_pMain->m_oSettings.use_system_fonts)
             strFontsW_Cur = oApplicationF->GetSetupFontFiles();
-
-#if defined(_LINUX) && !defined(_MAC)
+        
+#if defined(_LINUX)
         std::wstring sHome = GetHomeDirectory();
         if (!sHome.empty())
         {
+#ifdef _MAC
+            NSDirectory::GetFiles2(sHome + L"/Library/Fonts", strFontsW_Cur, true);
+#else
             NSDirectory::GetFiles2(sHome + L"/.fonts", strFontsW_Cur, true);
             NSDirectory::GetFiles2(sHome + L"/.local/share/fonts", strFontsW_Cur, true);
+#endif
         }
 #endif
 
