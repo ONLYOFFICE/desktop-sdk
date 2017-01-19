@@ -535,6 +535,8 @@ public:
         //if (true) // печать пдф (лист = страница)
         //    nDoctRendererParam |= 0x02;
 
+        nDoctRendererParam |= 0x04; // disable fast doctrenderer (no rights to dump common information)
+
         oBuilder.WriteString(L"<m_nDoctParams>");
         oBuilder.WriteString(std::to_wstring(nDoctRendererParam));
         oBuilder.WriteString(L"</m_nDoctParams>");
