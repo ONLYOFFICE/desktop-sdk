@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		7C08EBEB1E446AB30061F86F /* EmfFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7C08EBEA1E446AB30061F86F /* EmfFile.cpp */; };
 		7C0B428F1BA722EF005A52DC /* applicationmanager_events.h in Headers */ = {isa = PBXBuildFile; fileRef = 7C0B42871BA722EF005A52DC /* applicationmanager_events.h */; };
 		7C0B42901BA722EF005A52DC /* applicationmanager.h in Headers */ = {isa = PBXBuildFile; fileRef = 7C0B42881BA722EF005A52DC /* applicationmanager.h */; };
 		7C0B42911BA722EF005A52DC /* base.h in Headers */ = {isa = PBXBuildFile; fileRef = 7C0B42891BA722EF005A52DC /* base.h */; };
@@ -1071,6 +1072,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		7C08EBEA1E446AB30061F86F /* EmfFile.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = EmfFile.cpp; path = ../../../../core/DesktopEditor/raster/Metafile/Emf/EmfFile.cpp; sourceTree = "<group>"; };
 		7C0B426D1BA7218D005A52DC /* libascdocumentscore.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libascdocumentscore.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		7C0B42871BA722EF005A52DC /* applicationmanager_events.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = applicationmanager_events.h; path = ../include/applicationmanager_events.h; sourceTree = SOURCE_ROOT; };
 		7C0B42881BA722EF005A52DC /* applicationmanager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = applicationmanager.h; path = ../include/applicationmanager.h; sourceTree = SOURCE_ROOT; };
@@ -2970,6 +2972,7 @@
 				7C5DD2791BA83C1400C6474A /* WmfTypes.h */,
 				7C5DD25E1BA83BFE00C6474A /* EmfClip.cpp */,
 				7C5DD25F1BA83BFE00C6474A /* EmfClip.h */,
+				7C08EBEA1E446AB30061F86F /* EmfFile.cpp */,
 				7C5DD2601BA83BFE00C6474A /* EmfFile.h */,
 				7C5DD2611BA83BFE00C6474A /* EmfObjects.cpp */,
 				7C5DD2621BA83BFE00C6474A /* EmfObjects.h */,
@@ -4302,6 +4305,7 @@
 				7C5DD1A21BA82F2500C6474A /* client_app_browser.cc in Sources */,
 				7C5DD7A01BA8677800C6474A /* jpc_tsfb.c in Sources */,
 				7C5DD76C1BA8670600C6474A /* pgx_enc.c in Sources */,
+				7C08EBEB1E446AB30061F86F /* EmfFile.cpp in Sources */,
 				7C0B43941BA813F9005A52DC /* FontFile.cpp in Sources */,
 				7C0B435F1BA811C8005A52DC /* ftotval.c in Sources */,
 				7C5DD1361BA82ED600C6474A /* v8stack_trace_ctocpp.cc in Sources */,
