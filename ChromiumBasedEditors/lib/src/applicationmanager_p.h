@@ -527,7 +527,7 @@ protected:
     {
         //DWORD dwTime1 = NSTimers::GetTickCount();
 
-        CArray<std::string> strFonts;
+        std::vector<std::string> strFonts;
         std::wstring strDirectory = m_pMain->m_oSettings.fonts_cache_info_path;
 
         std::wstring strAllFontsJSPath = strDirectory + L"/AllFonts.js";
@@ -555,7 +555,7 @@ protected:
                         if (nEnd > nStart)
                         {
                             std::string s(pBuffer + nStart, nEnd - nStart + 1);
-                            strFonts.Add(s);
+                            strFonts.push_back(s);
                         }
                         nStart = nCur + 1;
                     }
@@ -566,7 +566,7 @@ protected:
         }
 
         CApplicationFonts* oApplicationF = new CApplicationFonts();
-        CArray<std::wstring> strFontsW_Cur;
+        std::vector<std::wstring> strFontsW_Cur;
 
         if (m_pMain->m_oSettings.use_system_fonts)
             strFontsW_Cur = oApplicationF->GetSetupFontFiles();
@@ -590,12 +590,12 @@ protected:
         }
 
         bool bIsEqual = true;
-        if (strFonts.GetCount() != strFontsW_Cur.GetCount())
+        if (strFonts.size() != strFontsW_Cur.size())
             bIsEqual = false;
 
         if (bIsEqual)
         {
-            int nCount = strFonts.GetCount();
+            int nCount = (int)strFonts.size();
             for (int i = 0; i < nCount; ++i)
             {
                 if (strFonts[i] != NSFile::CUtf8Converter::GetUtf8StringFromUnicode2(strFontsW_Cur[i].c_str(), strFontsW_Cur[i].length()))
@@ -619,12 +619,12 @@ protected:
             if (NSFile::CFileBinary::Exists(strFontsSelectionBin))
                 NSFile::CFileBinary::Remove(strFontsSelectionBin);
             
-            if (strFonts.GetCount() != 0)
+            if (strFonts.size() != 0)
                 NSFile::CFileBinary::Remove(strDirectory + L"/fonts.log");
 
             NSFile::CFileBinary oFile;
             oFile.CreateFileW(strDirectory + L"/fonts.log");
-            int nCount = strFontsW_Cur.GetCount();
+            int nCount = (int)strFontsW_Cur.size();
             for (int i = 0; i < nCount; ++i)
             {
                 oFile.WriteStringUTF8(strFontsW_Cur[i]);
@@ -870,15 +870,15 @@ public:
     {
         CTemporaryCS oCS(&m_oCS_LocalFiles);
 
-        CArray<std::wstring> arDirectories = NSDirectory::GetDirectories(m_pMain->m_oSettings.recover_path);
-        int nCount = arDirectories.GetCount();
+        std::vector<std::wstring> arDirectories = NSDirectory::GetDirectories(m_pMain->m_oSettings.recover_path);
+        int nCount = (int)arDirectories.size();
 
         int nId = 0;
 
         for (int i = 0; i < nCount; ++i)
         {
-            CArray<std::wstring> arDirectoriesFiles = NSDirectory::GetFiles(arDirectories[i]);
-            int nCountFilesRecover = arDirectoriesFiles.GetCount();
+            std::vector<std::wstring> arDirectoriesFiles = NSDirectory::GetFiles(arDirectories[i]);
+            int nCountFilesRecover = (int)arDirectoriesFiles.size();
 
             std::wstring sName;
             int nType = -1;

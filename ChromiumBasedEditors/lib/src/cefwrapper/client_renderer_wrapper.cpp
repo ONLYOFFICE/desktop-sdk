@@ -1221,8 +1221,8 @@ public:
             if (!NSDirectory::Exists(m_sLocalFileFolderWithoutFile + L"/changes"))
                 NSDirectory::CreateDirectory(m_sLocalFileFolderWithoutFile + L"/changes");
 
-            CArray<std::wstring> arMedia = NSDirectory::GetFiles(m_sLocalFileFolderWithoutFile + L"/media");
-            m_nLocalImagesNextIndex = arMedia.GetCount() + 1;
+            std::vector<std::wstring> arMedia = NSDirectory::GetFiles(m_sLocalFileFolderWithoutFile + L"/media");
+            m_nLocalImagesNextIndex = (int)arMedia.size() + 1;
 
             if (0 == m_sLocalFileFolderWithoutFile.find('/'))
                 m_sLocalFileFolder = L"file://" + m_sLocalFileFolderWithoutFile;

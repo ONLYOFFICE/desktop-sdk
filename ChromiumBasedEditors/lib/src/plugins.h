@@ -91,8 +91,8 @@ public:
         std::string sData = "";
         int nCountPlugins = 0;
 
-        CArray<std::wstring> _arPlugins = NSDirectory::GetDirectories(m_strDirectory);
-        int nCount = _arPlugins.GetCount();
+        std::vector<std::wstring> _arPlugins = NSDirectory::GetDirectories(m_strDirectory);
+        int nCount = (int)_arPlugins.size();
         for (int i = 0; i < nCount; ++i)
         {
             std::string sJson = "";
