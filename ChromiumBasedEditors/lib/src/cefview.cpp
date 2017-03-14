@@ -52,6 +52,8 @@
 #include "../../../../core/DjVuFile/DjVu.h"
 #include "../../../../core/XpsFile/XpsFile.h"
 
+#include "cefwrapper/monitor_info.h"
+
 class CAscNativePrintDocument : public IAscNativePrintDocument
 {
 protected:
@@ -233,6 +235,9 @@ public:
 
     CNativeFileViewerInfo m_oNativeViewer;
 
+    int m_nDeviceScale;
+    bool m_bIsWindowsCheckZoom = false;
+
 #if defined(_LINUX) && !defined(_MAC)
     WindowHandleId m_lNaturalParent;
 #endif
@@ -266,6 +271,9 @@ public:
 #if defined(_LINUX) && !defined(_MAC)
         m_lNaturalParent = 0;
 #endif
+
+        m_nDeviceScale = 1;
+        m_bIsWindowsCheckZoom = false;
     }
 
     void Destroy()
@@ -300,6 +308,8 @@ public:
     {
         Destroy();
     }
+
+    void CheckZoom();
 
     void CloseBrowser(bool _force_close);
 
@@ -1576,7 +1586,7 @@ public:
             // We need to keep the main child window, but not popup windows
             browser_ = browser;
             browser_id_ = browser->GetIdentifier();
-        }
+        }        
     }
 
     virtual void OnBeforeClose(CefRefPtr<CefBrowser> browser) OVERRIDE
@@ -1612,6 +1622,22 @@ public:
         // event being sent.
         return false;
     }
+
+#ifdef WIN32
+    virtual void OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
+                                             bool isLoading,
+                                             bool canGoBack,
+                                             bool canGoForward) {
+      client::ClientHandler::OnLoadingStateChange(browser, isLoading, canGoBack, canGoForward);
+
+      if (!isLoading)
+      {
+          // вот тут уже можно делать зум!!!
+          m_pParent->m_pInternal->m_bIsWindowsCheckZoom = true;
+          m_pParent->resizeEvent();
+      }
+    }
+#endif
 
     virtual void OnLoadError(CefRefPtr<CefBrowser> browser,
                      CefRefPtr<CefFrame> frame,
@@ -2417,6 +2443,45 @@ void CCefView_Private::OnFileConvertToEditor(const int& nError)
     m_nLocalFileOpenError = nError;
     LocalFile_IncrementCounter();
 }
+void CCefView_Private::CheckZoom()
+{
+#ifdef WIN32
+    if (!m_bIsWindowsCheckZoom)
+        return;
+
+    if (!CefCurrentlyOn(TID_UI))
+    {
+        // Execute on the UI thread.
+        CefPostTask(TID_UI, base::Bind(&CCefView_Private::CheckZoom, this));
+        return;
+    }
+
+    if (!m_handler || !m_handler->GetBrowser() || !m_handler->GetBrowser()->GetHost())
+        return;
+
+    if (!m_pWidgetImpl || m_bIsClosing)
+        return;
+
+    CefRefPtr<CefBrowserHost> _host = m_handler->GetBrowser()->GetHost();
+    CefWindowHandle hwnd = _host->GetWindowHandle();
+
+    int nDeviceScale = NSMonitor::GetRawMonitorDpi(hwnd);
+
+    if (nDeviceScale != m_nDeviceScale)
+    {
+        m_nDeviceScale = nDeviceScale;
+
+        if (m_nDeviceScale >= 1)
+        {
+            double dScale = (m_nDeviceScale == 2) ? (log(2) / log(1.2)) : 0;
+
+            _host->SetZoomLevel(dScale);
+            _host->NotifyScreenInfoChanged();
+            _host->WasResized();
+        }
+    }
+#endif
+}
 
 void CCefView_Private::SendProcessMessage(CefProcessId target_process, CefRefPtr<CefProcessMessage> message)
 {
@@ -2707,8 +2772,8 @@ void CCefView::resizeEvent(int width, int height)
     RECT rect;
     rect.left = 0;
     rect.top = 0;
-    rect.right = (0 == width) ? (m_pInternal->m_pWidgetImpl->parent_width() - 1) : width;
-    rect.bottom = (0 == height) ? (m_pInternal->m_pWidgetImpl->parent_height() - 1) : height;
+    rect.right = (0 >= width) ? (m_pInternal->m_pWidgetImpl->parent_width() - 1) : width;
+    rect.bottom = (0 >= height) ? (m_pInternal->m_pWidgetImpl->parent_height() - 1) : height;
 
 #if 0
     SetWindowPos(hwnd, NULL, rect.left, rect.top, rect.right - rect.left + 1,
@@ -2749,6 +2814,8 @@ void CCefView::resizeEvent(int width, int height)
     fclose(fLog);
 #endif
     focus();
+
+    m_pInternal->CheckZoom();
 }
 
 void CCefView::moveEvent()
@@ -2758,6 +2825,12 @@ void CCefView::moveEvent()
     {
         m_pInternal->m_handler->GetBrowser()->GetHost()->NotifyMoveOrResizeStarted();
     }
+#endif
+
+#ifdef WIN32
+
+    m_pInternal->CheckZoom();
+
 #endif
 }
 

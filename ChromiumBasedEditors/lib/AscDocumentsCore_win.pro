@@ -74,3 +74,5 @@ SOURCES += \
 SOURCES += \
     ./src/additional/create.cpp
 
+SOURCES += \
+    ./src/cefwrapper/monitor_info.cpp

@@ -49,6 +49,7 @@
 static int IsForceDpiRound()
 {
 #ifdef WIN32
+    return 1;
     HWND hwnd = GetDesktopWindow();
     HDC hdc = GetDC(hwnd);
     int nX = GetDeviceCaps(hdc, LOGPIXELSX);

@@ -36,7 +36,7 @@
 #include "../include/base.h"
 
 #ifdef WIN32
-void SetParentNULL(WindowHandleId handle)
+static void SetParentNULL(WindowHandleId handle)
 {
     SetParent(handle, NULL);
 }

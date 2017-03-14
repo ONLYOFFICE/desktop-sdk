@@ -42,6 +42,12 @@
 #include "./cefview.h"
 #include "./cefapplication.h"
 
+#ifdef WIN32
+__declspec(dllexport) int __cdecl Core_SetProcessDpiAwareness(void);
+__declspec(dllexport) int __cdecl Core_GetMonitorRawDpi(WindowHandleId, unsigned int*, unsigned int*);
+__declspec(dllexport) int __cdecl Core_GetMonitorRawDpiByIndex(int, unsigned int*, unsigned int*);
+#endif
+
 class Q_DECL_EXPORT CAscApplicationSettings
 {
 public:
