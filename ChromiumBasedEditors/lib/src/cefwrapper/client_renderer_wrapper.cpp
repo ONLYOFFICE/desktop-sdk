@@ -281,6 +281,7 @@ public:
     bool                m_bLocalIsSaved;
     int                 m_nCurrentChangesIndex; // текущий индекс изменения, чтобы не парсить файл. а понять, надо ли удалять или нет быстро.
     int                 m_nOpenChangesIndex; // количество изменений, при открытии
+    bool                m_bIsPrinting;
 
     int                 m_nLocalImagesNextIndex;
     std::map<std::wstring, std::wstring> m_mapLocalAddImages;
@@ -324,6 +325,8 @@ public:
         m_pLocalApplicationFonts = NULL;
 
         m_nNativeOpenFileTimerID = -1;
+
+        m_bIsPrinting = false;
 
         m_oCompleteTasksCS.InitializeCriticalSection();
 
@@ -1003,6 +1006,7 @@ public:
             browser->SendProcessMessage(PID_BROWSER, message);
 
             m_nCurrentPrintIndex = 0;
+            m_bIsPrinting = true;
             return true;
         }
         else if (name == "Print_Page")
@@ -1030,6 +1034,7 @@ public:
             browser->SendProcessMessage(PID_BROWSER, message);
 
             m_nCurrentPrintIndex = 0;
+            m_bIsPrinting = false;
             return true;
         }
         else if (name == "Print")
@@ -1664,6 +1669,20 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
             retval = CefV8Value::CreateString(sData);
             return true;
         }
+        else if (name == "IsLocalFile")
+        {
+            if (m_sLocalFileFolderWithoutFile.empty())
+                retval = CefV8Value::CreateBool(false);
+            else
+                retval = CefV8Value::CreateBool(true);
+
+            return true;
+        }
+        else if (name == "IsFilePrinting")
+        {
+            retval = CefV8Value::CreateBool(m_bIsPrinting);
+            return true;
+        }
         // Function does not exist.
         return false;
     }
@@ -2105,6 +2124,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Value> _nativeFunction940 = CefV8Value::CreateFunction("GetInstallPlugins", _nativeHandler);
 
+    CefRefPtr<CefV8Value> _nativeFunction951 = CefV8Value::CreateFunction("IsLocalFile", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction952 = CefV8Value::CreateFunction("IsFilePrinting", _nativeHandler);
+
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Cut", _nativeFunctionCut, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -2205,6 +2227,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("NativeViewerGetCompleteTasks", _nativeFunction939, V8_PROPERTY_ATTRIBUTE_NONE);
 
     objNative->SetValue("GetInstallPlugins", _nativeFunction940, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("IsLocalFile", _nativeFunction951, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("IsFilePrinting", _nativeFunction952, V8_PROPERTY_ATTRIBUTE_NONE);
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 
