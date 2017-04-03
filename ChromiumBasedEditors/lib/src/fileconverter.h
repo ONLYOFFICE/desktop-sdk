@@ -1,5 +1,5 @@
 /*
- * (c) Copyright Ascensio System SIA 2010-2016
+ * (c) Copyright Ascensio System SIA 2010-2017
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
@@ -534,6 +534,8 @@ public:
             nDoctRendererParam |= 0x01;
         //if (true) // печать пдф (лист = страница)
         //    nDoctRendererParam |= 0x02;
+
+        nDoctRendererParam |= 0x04; // disable fast doctrenderer (no rights to dump common information)
 
         oBuilder.WriteString(L"<m_nDoctParams>");
         oBuilder.WriteString(std::to_wstring(nDoctRendererParam));

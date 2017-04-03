@@ -1,5 +1,5 @@
 /*
- * (c) Copyright Ascensio System SIA 2010-2016
+ * (c) Copyright Ascensio System SIA 2010-2017
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
@@ -111,6 +111,8 @@ public:
                 m_pCallback->OnDeleteCookie(m_bIsDeleted);
             }
         }
+
+        CefCookieManager::GetGlobalManager(NULL)->FlushStore(NULL);
     }
 
     virtual bool Visit(const CefCookie& cookie, int count, int total, bool& deleteCookie)
@@ -146,7 +148,7 @@ public:
                     std::string sDomainFind = *i;
                     if (sDomain.find(sDomainFind) != std::string::npos)
                     {
-                        m_mapFinds.insert(std::pair<std::string, std::string>(sDomain, sValue));
+                        m_mapFinds.insert(std::pair<std::string, std::string>(sDomainFind, sValue));
 
                         std::string sName = CefString(&cookie.name).ToString();
                         std::string sValue = CefString(&cookie.value).ToString();
@@ -194,6 +196,7 @@ public:
     }
     ~CCefCookieSetter()
     {
+        CefCookieManager::GetGlobalManager(NULL)->FlushStore(NULL);
     }
 
     void SetCookie(CefRefPtr<CefCookieManager> manager)

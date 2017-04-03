@@ -1,5 +1,5 @@
 /*
- * (c) Copyright Ascensio System SIA 2010-2016
+ * (c) Copyright Ascensio System SIA 2010-2017
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
@@ -49,6 +49,7 @@
 static int IsForceDpiRound()
 {
 #ifdef WIN32
+    return 1;
     HWND hwnd = GetDesktopWindow();
     HDC hdc = GetDC(hwnd);
     int nX = GetDeviceCaps(hdc, LOGPIXELSX);
@@ -159,6 +160,7 @@ public:
             command_line->AppendSwitch("--disable-extensions");
             command_line->AppendSwitch("--enable-file-cookies");
             command_line->AppendSwitch("--disable-pinch");
+            command_line->AppendSwitch("--enable-aggressive-domstorage-flushing");
             command_line->AppendSwitchWithValue("--log-severity", "disable");
 
             //command_line->AppendSwitch("--allow-file-access-from-files");
@@ -216,6 +218,7 @@ public:
             command_line->AppendSwitch("--disable-extensions");
             command_line->AppendSwitch("--enable-file-cookies");
             command_line->AppendSwitch("--disable-pinch");
+            command_line->AppendSwitch("--enable-aggressive-domstorage-flushing");
             command_line->AppendSwitchWithValue("--log-severity", "disable");
 
             //command_line->AppendSwitch("--allow-file-access-from-files");
@@ -273,6 +276,7 @@ public:
             command_line->AppendSwitch("--disable-extensions");
             command_line->AppendSwitch("--enable-file-cookies");
             command_line->AppendSwitch("--disable-pinch");
+            command_line->AppendSwitch("--enable-aggressive-domstorage-flushing");
             command_line->AppendSwitchWithValue("--log-severity", "disable");
 
             //command_line->AppendSwitch("--allow-file-access-from-files");

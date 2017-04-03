@@ -1,5 +1,5 @@
 /*
- * (c) Copyright Ascensio System SIA 2010-2016
+ * (c) Copyright Ascensio System SIA 2010-2017
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
@@ -91,8 +91,8 @@ public:
         std::string sData = "";
         int nCountPlugins = 0;
 
-        CArray<std::wstring> _arPlugins = NSDirectory::GetDirectories(m_strDirectory);
-        int nCount = _arPlugins.GetCount();
+        std::vector<std::wstring> _arPlugins = NSDirectory::GetDirectories(m_strDirectory);
+        int nCount = (int)_arPlugins.size();
         for (int i = 0; i < nCount; ++i)
         {
             std::string sJson = "";
@@ -142,31 +142,18 @@ public:
             std::string sJson = "";
             if (NSFile::CFileBinary::ReadAllTextUtf8A(sConfig, sJson))
             {
-                std::string::size_type posUrl = sJson.find("\"url\"");
-                if (posUrl != std::string::npos)
+                std::string::size_type pos1 = sJson.find("\"name\"");
+                std::string::size_type pos2 = sJson.find("\"guid\"");
+                std::string::size_type pos3 = sJson.find("\"variations\"");
+
+                if (pos1 != std::string::npos && pos2 != std::string::npos && pos3 != std::string::npos)
                 {
-                    posUrl += 5;
-                    std::string::size_type pos1 = sJson.find('\"', posUrl);
-                    if (pos1 != std::string::npos)
+                    std::string::size_type pos4 = sJson.find('{', pos2);
+                    std::string::size_type pos5 = sJson.find('}', pos2);
+                    if (pos4 != std::string::npos && pos5 != std::string::npos)
                     {
-                        std::string::size_type pos2 = sJson.find('\"', pos1 + 1);
-                        if (pos2 != std::string::npos)
-                        {
-                            std::string sUrl = sJson.substr(pos1 + 1, pos2 - pos1 - 1);
-
-                            std::string::size_type posDst2 = sUrl.find_last_of('/');
-                            if (posDst2 != std::string::npos)
-                            {
-                                std::string::size_type posDst1 = sUrl.find_last_of('/', posDst2 - 1);
-                                if (posDst1 == std::string::npos)
-                                    posDst1 = 0;
-                                else
-                                    posDst1 += 1;
-
-                                std::string sName = sUrl.substr(posDst1, posDst2 - posDst1);
-                                sPluginName = NSFile::CUtf8Converter::GetUnicodeStringFromUTF8((BYTE*)sName.c_str(), (LONG)sName.length());
-                            }
-                        }
+                        std::string sPluginNameA = sJson.substr(pos4, pos5 - pos4 + 1);
+                        sPluginName = NSFile::CUtf8Converter::GetUnicodeStringFromUTF8((BYTE*)sPluginNameA.c_str(), (LONG)sPluginNameA.length());
                     }
                 }
             }

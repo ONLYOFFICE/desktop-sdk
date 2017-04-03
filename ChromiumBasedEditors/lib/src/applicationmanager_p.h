@@ -1,5 +1,5 @@
 /*
- * (c) Copyright Ascensio System SIA 2010-2016
+ * (c) Copyright Ascensio System SIA 2010-2017
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
@@ -94,6 +94,26 @@ public:
 
 #endif
 
+#if defined(_LINUX)
+
+#include <pwd.h>
+static std::wstring GetHomeDirectory()
+{
+    const char* sHome = std::getenv("home");
+
+    if (sHome == NULL)
+    {
+        sHome = getpwuid(getuid())->pw_dir;
+    }
+
+    if (NULL == sHome)
+        return L"";
+
+    std::string temp = sHome;
+    return NSFile::CUtf8Converter::GetUnicodeStringFromUTF8((BYTE*)temp.c_str(), (LONG)temp.length());
+}
+
+#endif
 
 class CCefFileDownloaderThread : public NSThreads::CBaseThread, public IFileDownloaderEvents
 {
@@ -507,7 +527,7 @@ protected:
     {
         //DWORD dwTime1 = NSTimers::GetTickCount();
 
-        CArray<std::string> strFonts;
+        std::vector<std::string> strFonts;
         std::wstring strDirectory = m_pMain->m_oSettings.fonts_cache_info_path;
 
         std::wstring strAllFontsJSPath = strDirectory + L"/AllFonts.js";
@@ -535,7 +555,7 @@ protected:
                         if (nEnd > nStart)
                         {
                             std::string s(pBuffer + nStart, nEnd - nStart + 1);
-                            strFonts.Add(s);
+                            strFonts.push_back(s);
                         }
                         nStart = nCur + 1;
                     }
@@ -546,10 +566,23 @@ protected:
         }
 
         CApplicationFonts* oApplicationF = new CApplicationFonts();
-        CArray<std::wstring> strFontsW_Cur;
+        std::vector<std::wstring> strFontsW_Cur;
 
         if (m_pMain->m_oSettings.use_system_fonts)
             strFontsW_Cur = oApplicationF->GetSetupFontFiles();
+        
+#if defined(_LINUX)
+        std::wstring sHome = GetHomeDirectory();
+        if (!sHome.empty())
+        {
+#ifdef _MAC
+            NSDirectory::GetFiles2(sHome + L"/Library/Fonts", strFontsW_Cur, true);
+#else
+            NSDirectory::GetFiles2(sHome + L"/.fonts", strFontsW_Cur, true);
+            NSDirectory::GetFiles2(sHome + L"/.local/share/fonts", strFontsW_Cur, true);
+#endif
+        }
+#endif
 
         for (std::vector<std::wstring>::iterator i = m_pMain->m_oSettings.additional_fonts_folder.begin(); i != m_pMain->m_oSettings.additional_fonts_folder.end(); i++)
         {
@@ -557,12 +590,12 @@ protected:
         }
 
         bool bIsEqual = true;
-        if (strFonts.GetCount() != strFontsW_Cur.GetCount())
+        if (strFonts.size() != strFontsW_Cur.size())
             bIsEqual = false;
 
         if (bIsEqual)
         {
-            int nCount = strFonts.GetCount();
+            int nCount = (int)strFonts.size();
             for (int i = 0; i < nCount; ++i)
             {
                 if (strFonts[i] != NSFile::CUtf8Converter::GetUtf8StringFromUnicode2(strFontsW_Cur[i].c_str(), strFontsW_Cur[i].length()))
@@ -586,12 +619,12 @@ protected:
             if (NSFile::CFileBinary::Exists(strFontsSelectionBin))
                 NSFile::CFileBinary::Remove(strFontsSelectionBin);
             
-            if (strFonts.GetCount() != 0)
+            if (strFonts.size() != 0)
                 NSFile::CFileBinary::Remove(strDirectory + L"/fonts.log");
 
             NSFile::CFileBinary oFile;
             oFile.CreateFileW(strDirectory + L"/fonts.log");
-            int nCount = strFontsW_Cur.GetCount();
+            int nCount = (int)strFontsW_Cur.size();
             for (int i = 0; i < nCount; ++i)
             {
                 oFile.WriteStringUTF8(strFontsW_Cur[i]);
@@ -837,15 +870,15 @@ public:
     {
         CTemporaryCS oCS(&m_oCS_LocalFiles);
 
-        CArray<std::wstring> arDirectories = NSDirectory::GetDirectories(m_pMain->m_oSettings.recover_path);
-        int nCount = arDirectories.GetCount();
+        std::vector<std::wstring> arDirectories = NSDirectory::GetDirectories(m_pMain->m_oSettings.recover_path);
+        int nCount = (int)arDirectories.size();
 
         int nId = 0;
 
         for (int i = 0; i < nCount; ++i)
         {
-            CArray<std::wstring> arDirectoriesFiles = NSDirectory::GetFiles(arDirectories[i]);
-            int nCountFilesRecover = arDirectoriesFiles.GetCount();
+            std::vector<std::wstring> arDirectoriesFiles = NSDirectory::GetFiles(arDirectories[i]);
+            int nCountFilesRecover = (int)arDirectoriesFiles.size();
 
             std::wstring sName;
             int nType = -1;

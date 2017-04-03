@@ -1,5 +1,5 @@
 /*
- * (c) Copyright Ascensio System SIA 2010-2016
+ * (c) Copyright Ascensio System SIA 2010-2017
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
@@ -51,6 +51,8 @@
 #include "../../../../core/PdfReader/PdfReader.h"
 #include "../../../../core/DjVuFile/DjVu.h"
 #include "../../../../core/XpsFile/XpsFile.h"
+
+#include "cefwrapper/monitor_info.h"
 
 class CAscNativePrintDocument : public IAscNativePrintDocument
 {
@@ -233,6 +235,9 @@ public:
 
     CNativeFileViewerInfo m_oNativeViewer;
 
+    int m_nDeviceScale;
+    bool m_bIsWindowsCheckZoom = false;
+
 #if defined(_LINUX) && !defined(_MAC)
     WindowHandleId m_lNaturalParent;
 #endif
@@ -266,6 +271,9 @@ public:
 #if defined(_LINUX) && !defined(_MAC)
         m_lNaturalParent = 0;
 #endif
+
+        m_nDeviceScale = 1;
+        m_bIsWindowsCheckZoom = false;
     }
 
     void Destroy()
@@ -300,6 +308,8 @@ public:
     {
         Destroy();
     }
+
+    void CheckZoom();
 
     void CloseBrowser(bool _force_close);
 
@@ -1576,7 +1586,7 @@ public:
             // We need to keep the main child window, but not popup windows
             browser_ = browser;
             browser_id_ = browser->GetIdentifier();
-        }
+        }        
     }
 
     virtual void OnBeforeClose(CefRefPtr<CefBrowser> browser) OVERRIDE
@@ -1612,6 +1622,22 @@ public:
         // event being sent.
         return false;
     }
+
+#ifdef WIN32
+    virtual void OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
+                                             bool isLoading,
+                                             bool canGoBack,
+                                             bool canGoForward) {
+      client::ClientHandler::OnLoadingStateChange(browser, isLoading, canGoBack, canGoForward);
+
+      if (!isLoading)
+      {
+          // вот тут уже можно делать зум!!!
+          m_pParent->m_pInternal->m_bIsWindowsCheckZoom = true;
+          m_pParent->resizeEvent();
+      }
+    }
+#endif
 
     virtual void OnLoadError(CefRefPtr<CefBrowser> browser,
                      CefRefPtr<CefFrame> frame,
@@ -1805,9 +1831,61 @@ public:
             sAppData = "window[\"AscDesktopEditor_AppData\"] = function(){return \"" + sAppData + "\";}\n";
             sAppData += ("window[\"AscDesktopEditor_FontsData\"] = function(){return \"" + sFontsData + "\";}\n");
 
+            sAppData += "window.local_load = {};\n\
+window.local_correct_url = function(url)\n\
+{\n\
+    return url.substring(url.lastIndexOf('/')+1);\n\
+};\n\
+window.local_load_add = function(context, moduleName, url)\n\
+{\n\
+    var _url = window.local_correct_url(url);\n\
+    window.local_load[_url] = { context: context, name: moduleName };\n\
+};\n\
+window.local_load_remove = function(url)\n\
+{\n\
+    var _url = window.local_correct_url(url);\n\
+    delete window.local_load[_url];\n\
+};\n\
+window.asc_desktop_on_load_js=function(url)\n\
+{\n\
+    var _url = window.local_correct_url(url);\n\
+    var _data = window.local_load[_url];\n\
+    if (_data)\n\
+    {\n\
+        _data.context.completeLoad(_data.name);\n\
+        delete window.local_load[_url];\n\
+    }\n\
+    else if (window.asc_desktop_context)\n\
+    {\n\
+        window.asc_desktop_context.completeLoad();\n\
+    }\n\
+};\n\n";
+
+
+            std::string sFooter = "\n\n\
+require.load2 = require.load;\n\
+require.load = function (context, moduleName, url) {\n\
+    if (window.AscDesktopEditor && window.AscDesktopEditor.LoadJS)\n\
+    {\n\
+        window.local_load_add(context, moduleName, url);\n\
+        var _ret = window.AscDesktopEditor.LoadJS(url);\n\
+        if (2 != _ret)\n\
+            window.local_load_remove(url);\n\
+\n\
+        if (1 == _ret)\n\
+        {\n\
+            setTimeout(function() { context.completeLoad(moduleName); }, 1);\n\
+            return;\n\
+        }\n\
+        else if (2 == _ret)\n\
+            return;\n\
+    }\n\
+    return this.load2(context, moduleName, url);\n\
+};\n\n";
+
             std::wstring sPathToEditors = NSCommon::GetDirectoryName(m_pParent->GetAppManager()->m_oSettings.local_editors_path);
             sPathToEditors += L"/../../../vendor/requirejs/require.js";
-            return GetLocalFileRequest(sPathToEditors, sAppData);
+            return GetLocalFileRequest(sPathToEditors, sAppData, sFooter);
         }
 
         if (true)
@@ -1899,7 +1977,7 @@ public:
         return NULL;
     }
 
-    CefRefPtr<CefResourceHandler> GetLocalFileRequest(const std::wstring& strFileName, const std::string& sHeaderScript = "")
+    CefRefPtr<CefResourceHandler> GetLocalFileRequest(const std::wstring& strFileName, const std::string& sHeaderScript = "", const std::string& sFooter = "")
     {
         NSFile::CFileBinary oFileBinary;
         if (!oFileBinary.OpenFile(strFileName))
@@ -1907,13 +1985,14 @@ public:
 
         DWORD dwSize = (DWORD)oFileBinary.GetFileSize();
         DWORD dwOffset = 0;
+        DWORD dwFooterSize = (DWORD)sFooter.length();
 
         if (!sHeaderScript.empty())
         {
             dwOffset = (DWORD)sHeaderScript.length();
         }
 
-        BYTE* pBytes = new BYTE[dwOffset + dwSize];
+        BYTE* pBytes = new BYTE[dwOffset + dwSize + dwFooterSize];
         if (dwOffset != 0)
         {
             memcpy(pBytes, sHeaderScript.c_str(), dwOffset);
@@ -1929,6 +2008,11 @@ public:
             return NULL;
         }
 
+        if (!sFooter.empty())
+        {
+            memcpy(pBytes + dwOffset + dwSize, sFooter.c_str(), dwFooterSize);
+        }
+
         std::string mime_type = GetMimeType(strFileName);
         if (mime_type.empty())
         {
@@ -1937,7 +2021,7 @@ public:
         }
 
         CCefBinaryFileReaderCounter* pCounter = new CCefBinaryFileReaderCounter(pBytes);
-        CefRefPtr<CefStreamReader> stream = CefStreamReader::CreateForHandler(new CefByteReadHandler(pBytes, dwOffset + dwSize, pCounter));
+        CefRefPtr<CefStreamReader> stream = CefStreamReader::CreateForHandler(new CefByteReadHandler(pBytes, dwOffset + dwSize + dwFooterSize, pCounter));
         if (stream.get())
         {
 #if 0
@@ -2359,6 +2443,45 @@ void CCefView_Private::OnFileConvertToEditor(const int& nError)
     m_nLocalFileOpenError = nError;
     LocalFile_IncrementCounter();
 }
+void CCefView_Private::CheckZoom()
+{
+#ifdef WIN32
+    if (!m_bIsWindowsCheckZoom)
+        return;
+
+    if (!CefCurrentlyOn(TID_UI))
+    {
+        // Execute on the UI thread.
+        CefPostTask(TID_UI, base::Bind(&CCefView_Private::CheckZoom, this));
+        return;
+    }
+
+    if (!m_handler || !m_handler->GetBrowser() || !m_handler->GetBrowser()->GetHost())
+        return;
+
+    if (!m_pWidgetImpl || m_bIsClosing)
+        return;
+
+    CefRefPtr<CefBrowserHost> _host = m_handler->GetBrowser()->GetHost();
+    CefWindowHandle hwnd = _host->GetWindowHandle();
+
+    int nDeviceScale = NSMonitor::GetRawMonitorDpi(hwnd);
+
+    if (nDeviceScale != m_nDeviceScale)
+    {
+        m_nDeviceScale = nDeviceScale;
+
+        if (m_nDeviceScale >= 1)
+        {
+            double dScale = (m_nDeviceScale == 2) ? (log(2) / log(1.2)) : 0;
+
+            _host->SetZoomLevel(dScale);
+            _host->NotifyScreenInfoChanged();
+            _host->WasResized();
+        }
+    }
+#endif
+}
 
 void CCefView_Private::SendProcessMessage(CefProcessId target_process, CefRefPtr<CefProcessMessage> message)
 {
@@ -2649,8 +2772,8 @@ void CCefView::resizeEvent(int width, int height)
     RECT rect;
     rect.left = 0;
     rect.top = 0;
-    rect.right = (0 == width) ? (m_pInternal->m_pWidgetImpl->parent_width() - 1) : width;
-    rect.bottom = (0 == height) ? (m_pInternal->m_pWidgetImpl->parent_height() - 1) : height;
+    rect.right = (0 >= width) ? (m_pInternal->m_pWidgetImpl->parent_width() - 1) : width;
+    rect.bottom = (0 >= height) ? (m_pInternal->m_pWidgetImpl->parent_height() - 1) : height;
 
 #if 0
     SetWindowPos(hwnd, NULL, rect.left, rect.top, rect.right - rect.left + 1,
@@ -2691,6 +2814,8 @@ void CCefView::resizeEvent(int width, int height)
     fclose(fLog);
 #endif
     focus();
+
+    m_pInternal->CheckZoom();
 }
 
 void CCefView::moveEvent()
@@ -2700,6 +2825,12 @@ void CCefView::moveEvent()
     {
         m_pInternal->m_handler->GetBrowser()->GetHost()->NotifyMoveOrResizeStarted();
     }
+#endif
+
+#ifdef WIN32
+
+    m_pInternal->CheckZoom();
+
 #endif
 }
 
@@ -3167,6 +3298,11 @@ int CCefViewEditor::GetFileFormat(const std::wstring& sFilePath)
         std::wstring sExt = NSCommon::GetFileExtention(sFilePath);
         if (sExt != L"txt" && sExt != L"xml")
             return 0;
+    }
+    else if (AVS_OFFICESTUDIO_FILE_OTHER_MS_OFFCRYPTO == oChecker.nFileType)
+    {
+        std::wstring sExt = NSCommon::GetFileExtention(sFilePath);
+        return COfficeFileFormatChecker::GetFormatByExtension(L"." + sExt);
     }
 
     return oChecker.nFileType;

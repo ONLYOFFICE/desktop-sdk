@@ -1,5 +1,5 @@
 /*
- * (c) Copyright Ascensio System SIA 2010-2016
+ * (c) Copyright Ascensio System SIA 2010-2017
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
@@ -41,6 +41,12 @@
 #include "./spellchecker.h"
 #include "./cefview.h"
 #include "./cefapplication.h"
+
+#ifdef WIN32
+__declspec(dllexport) int __cdecl Core_SetProcessDpiAwareness(void);
+__declspec(dllexport) int __cdecl Core_GetMonitorRawDpi(WindowHandleId, unsigned int*, unsigned int*);
+__declspec(dllexport) int __cdecl Core_GetMonitorRawDpiByIndex(int, unsigned int*, unsigned int*);
+#endif
 
 class Q_DECL_EXPORT CAscApplicationSettings
 {

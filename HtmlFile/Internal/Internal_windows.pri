@@ -1,7 +1,7 @@
 #DESTDIR = $$PWD/windows
 DESTDIR = $$CORE_BUILDS_LIBRARIES_PATH
 LIBS += -L$$CORE_ROOT_DIR/Common/3dParty/cef/$$CORE_BUILDS_PLATFORM_PREFIX/build -llibcef
-LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lgraphics -llibxml -lOfficeUtils
+LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lgraphics -llibxml -lOfficeUtils -lUnicodeConverter
 
 SRC_PATH = $$PWD/../../ChromiumBasedEditors/lib/src/cef/windows
 

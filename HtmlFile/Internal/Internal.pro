@@ -10,6 +10,7 @@ DEFINES += ASC_HIDE_WINDOW
 CORE_ROOT_DIR = $$PWD/../../../core
 PWD_ROOT_DIR = $$PWD
 include($$CORE_ROOT_DIR/Common/base.pri)
+include($$CORE_ROOT_DIR/Common/3dParty/icu/icu.pri)
 
 win32 {
     include(./Internal_windows.pri)
