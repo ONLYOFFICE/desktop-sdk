@@ -120,9 +120,15 @@ window.onload = function ()\
     window.iframes_convert = [" + sFilesHTML + L"];\
     \
     var _current_iframe_convert = 0;\
+    window.htmlOnLoadTimerID = -1;\
     \
     window.on_load_iframe = function ()\
     {\
+        if (-1 != window.htmlOnLoadTimerID)\
+        {\
+            clearTimeout(window.htmlOnLoadTimerID);\
+            window.htmlOnLoadTimerID = -1;\
+        }\
         window.Native.AddHtml(\"pasteFrame\");\
         \
         ++_current_iframe_convert;\
@@ -153,6 +159,7 @@ window.onload = function ()\
         ifr.style.overflow = 'hidden';\
         ifr.style.zIndex = -1000;\
         ifr.onload = window.on_load_iframe;\
+        window.htmlOnLoadTimerID = setTimeout(window.on_load_iframe, 20000);\
         ifr.src = window.iframes_convert[_current_iframe_convert];\
         \
         document.body.appendChild(ifr);\
@@ -260,7 +267,8 @@ window.onload = function ()\
     {
         CEF_REQUIRE_UI_THREAD();
 
-        // TODO: exit with error
+        if (m_pManager)
+            m_pManager->CloseAllWindows(false);
     }
 
 public:
