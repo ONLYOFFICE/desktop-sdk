@@ -178,6 +178,7 @@ protected:
     friend class CCefViewEditor;
     friend class CAscClientHandler;
     friend class CASCFileConverterFromEditor;
+    friend class CApplicationCEF;
 };
 
 #endif // APPLICATION_MANAGER_H

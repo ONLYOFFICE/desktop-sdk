@@ -2467,6 +2467,9 @@ void CCefView_Private::CheckZoom()
 
     int nDeviceScale = NSMonitor::GetRawMonitorDpi(hwnd);
 
+    if (-1 != m_pManager->m_pInternal->m_nForceDisplayScale && m_pManager->m_pInternal->m_nForceDisplayScale > 0)
+        nDeviceScale = m_pManager->m_pInternal->m_nForceDisplayScale;
+
     if (nDeviceScale != m_nDeviceScale)
     {
         m_nDeviceScale = nDeviceScale;

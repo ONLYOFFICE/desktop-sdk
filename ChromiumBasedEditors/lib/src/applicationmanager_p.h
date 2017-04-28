@@ -333,6 +333,8 @@ public:
     CApplicationCEF* m_pApplication;
     bool m_bDebugInfoSupport;
 
+    int m_nForceDisplayScale;
+
     int m_nIsCefSaveDialogWait;
 
     CTimerKeyboardChecker m_oKeyboardTimer;
@@ -377,6 +379,8 @@ public:
         m_sAdditionalUrlParams = L"";
 
         m_pAdditional = NULL;
+
+        m_nForceDisplayScale = -1;
     }
     bool GetEditorPermission()
     {

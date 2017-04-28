@@ -263,14 +263,66 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     std::string sCommandLine = GetCommandLineA();
     if (sCommandLine.find("--ascdesktop-support-debug-info") != std::string::npos)
         pManager->SetDebugInfoSupport(true);
+
+    if (true)
+    {
+        std::string sFindValue = "--force-scale=";
+        std::string::size_type posFind = sCommandLine.find(sFindValue);
+        if (posFind != std::string::npos)
+        {
+            std::string::size_type start = posFind + sFindValue.length();
+            std::string::size_type end = start;
+            std::string::size_type max = sCommandLine.length();
+
+            while (end < max)
+            {
+                char c = sCommandLine[end];
+                if (c < '0' || c > '9')
+                    break;
+                ++end;
+            }
+
+            if (end > start)
+            {
+                std::string sValue = sCommandLine.substr(start, end - start);
+                pManager->m_pInternal->m_nForceDisplayScale = std::stoi(sValue);
+            }
+        }
+    }
 #else
     for (int i = 0; i < argc; ++i)
     {
         std::string sCommandLine(argv[i]);
-        if (sCommandLine.find("--ascdesktop-support-debug-info") != std::string::npos)
+
+        std::string sFindValue = "--ascdesktop-support-debug-info";
+        std::string::size_type posFind = sCommandLine.find(sFindValue);
+
+        if (posFind != std::string::npos)
         {
-            pManager->SetDebugInfoSupport(true);
-            break;
+            pManager->SetDebugInfoSupport(true);            
+        }
+
+        sFindValue = "--force-scale=";
+        posFind = sCommandLine.find(sFindValue);
+        if (posFind != std::string::npos)
+        {
+            std::string::size_type start = posFind + sFindValue.length();
+            std::string::size_type end = start;
+            std::string::size_type max = sCommandLine.length();
+
+            while (end < max)
+            {
+                char c = sCommandLine[end];
+                if (c < '0' || c > '9')
+                    break;
+                ++end;
+            }
+
+            if (end > start)
+            {
+                std::string sValue = sCommandLine.substr(start, end - start);
+                pManager->m_pInternal->m_nForceDisplayScale = std::stoi(sValue);
+            }
         }
     }
 #endif
