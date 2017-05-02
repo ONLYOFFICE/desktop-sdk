@@ -51,7 +51,7 @@ int NSMonitor::GetRawMonitorDpi(WindowHandleId handle)
     UINT iuH = 0;
     g_monitor_info.m_func_GetDpiForMonitor(hMonitor, MDT_RAW_DPI, &iuW, &iuH);
 
-    if (iuW > 144 && iuH > 144)
+    if (iuW > 180 && iuH > 180)
         return 2;
     return 1;
 }
