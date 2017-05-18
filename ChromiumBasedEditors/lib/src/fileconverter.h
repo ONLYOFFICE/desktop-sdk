@@ -35,6 +35,8 @@
 
 #include "./applicationmanager_p.h"
 #include "../../../../core/Common/OfficeFileFormatChecker.h"
+#include "../../../../core/DesktopEditor/xmlsec/src/include/OOXMLVerifier.h"
+#include "../../../../core/OfficeUtils/src/OfficeUtils.h"
 
 #ifdef LINUX
 #include <unistd.h>
@@ -132,6 +134,8 @@ public:
 
     bool m_bIsNativeSupport;
 
+    COOXMLVerifier* m_pVerifier;
+
 public:
     CASCFileConverterToEditor() : NSThreads::CBaseThread()
     {
@@ -141,10 +145,13 @@ public:
 
         m_bIsNativeOpening = false;
         m_bIsNativeSupport = true;
+
+        m_pVerifier = NULL;
     }
     virtual ~CASCFileConverterToEditor()
     {
         Stop();
+        RELEASEOBJECT(m_pVerifier);
     }
 
     virtual void Stop()
@@ -441,12 +448,77 @@ public:
         NSFile::CFileBinary::Remove(sTempFileForParams);
         m_pEvents->OnFileConvertToEditor(nReturnCode);
 
+        if (0 == nReturnCode)
+            CheckSignatures(sDestinationPath);
+
         m_bRunThread = FALSE;
         return 0;
     }
 
     void NativeViewerOpen(bool bIsEnabled = false);
     void NativeViewerOpenEnd(const std::string& sBase64);
+
+    void CheckSignatures(const std::wstring& sFile)
+    {
+        RELEASEOBJECT(m_pVerifier);
+        if (m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX ||
+            m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX ||
+            m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX)
+        {
+            std::wstring sUnzipDir = NSCommon::GetDirectoryName(sFile) + L"/" + NSCommon::GetFileName(sFile) + L"_uncompress";
+            NSDirectory::CreateDirectory(sUnzipDir);
+
+            COfficeUtils oCOfficeUtils(NULL);
+            if (S_OK == oCOfficeUtils.ExtractToDirectory(sFile, sUnzipDir, NULL, 0))
+            {
+                m_pVerifier = new COOXMLVerifier(sUnzipDir);
+                NSDirectory::DeleteDirectory(sUnzipDir);
+            }
+        }
+    }
+
+    std::wstring GetSignaturesJSON()
+    {
+        if (NULL == m_pVerifier)
+            return L"";
+
+        int nCount = m_pVerifier->GetSignatureCount();
+        if (0 == nCount)
+            return L"";
+
+        NSStringUtils::CStringBuilder oBuilder;
+        oBuilder.WriteString(L"{\"count\":");
+        oBuilder.AddInt(nCount);
+        oBuilder.WriteString(L", \"data\":[");
+
+        for (int i = 0; i < nCount; i++)
+        {
+            COOXMLSignature* pSign = m_pVerifier->GetSignature(i);
+
+            if (0 != i)
+                oBuilder.WriteString(L",");
+            oBuilder.WriteString(L"{\"name\":\"");
+            std::wstring sParam = pSign->GetCertificate()->GetSignerName();
+            NSCommon::string_replace(sParam, L"\"", L"\\\"");
+            oBuilder.WriteString(sParam);
+            oBuilder.WriteString(L"\",\"giud\":\"");
+            std::string sGuid = pSign->GetGuid();
+            oBuilder.WriteString(UTF8_TO_U(sGuid));
+            oBuilder.WriteString(L"\",\"valid\":");
+            oBuilder.AddInt(pSign->GetValid());
+            oBuilder.WriteString(L",\"image_valid\":\"");
+            sGuid = pSign->GetImageValidBase64();
+            oBuilder.WriteString(UTF8_TO_U(sGuid));
+            oBuilder.WriteString(L"\",\"image_invalid\":\"");
+            sGuid = pSign->GetImageInvalidBase64();
+            oBuilder.WriteString(UTF8_TO_U(sGuid));
+            oBuilder.WriteString(L"\"}");
+        }
+
+        oBuilder.WriteString(L"]}");
+
+        return oBuilder.GetData();
+    }
 };
 
 class CASCFileConverterFromEditor : public NSThreads::CBaseThread

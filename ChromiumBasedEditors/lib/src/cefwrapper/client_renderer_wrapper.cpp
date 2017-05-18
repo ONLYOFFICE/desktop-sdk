@@ -2437,6 +2437,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
             bool bIsSaved = message->GetArgumentList()->GetBool(2);
 
+            std::wstring sSignatures = message->GetArgumentList()->GetString(3).ToWString();
+            NSCommon::string_replace(sSignatures, L"\"", L"\\\"");
+
             if (bIsSaved)
                 _frame->ExecuteJavaScript("window.AscDesktopEditor.LocalFileSetSaved(true);", _frame->GetURL(), 0);
             else
@@ -2475,6 +2478,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
             sCode = "";
             sCode = "window.DesktopOfflineAppDocumentEndLoad(\"" + U_TO_UTF8(sFolder) + "\", \"" + sFileData + "\");";
+            _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+
+            sCode = "window.DesktopOfflineAppDocumentSignatures(\"" + U_TO_UTF8(sSignatures) + "\");";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
         }
         return true;

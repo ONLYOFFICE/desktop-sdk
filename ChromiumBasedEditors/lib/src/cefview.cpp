@@ -2294,6 +2294,7 @@ void CCefView_Private::LocalFile_End()
 
     message->GetArgumentList()->SetString(1, m_oLocalInfo.m_oInfo.m_sFileSrc);
     message->GetArgumentList()->SetBool(2, m_oLocalInfo.m_oInfo.m_bIsSaved);
+    message->GetArgumentList()->SetString(3, m_oConverterToEditor.GetSignaturesJSON());
     m_handler->GetBrowser()->SendProcessMessage(PID_RENDERER, message);
 
     m_oLocalInfo.m_oInfo.m_nCounterConvertion = 1; // for reload enable
