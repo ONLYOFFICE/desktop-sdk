@@ -1565,6 +1565,54 @@ public:
             }
             return true;
         }
+        else if (message_name == "on_signature_sign")
+        {
+            if (m_pParent && m_pParent->m_pInternal)
+            {
+                std::wstring sGuid = message->GetArgumentList()->GetString(0).ToWString();
+
+                std::wstring sFile = m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_sFileSrc;
+
+                std::wstring sUnzipDir = NSDirectory::CreateDirectoryWithUniqueName(NSDirectory::GetTempPath());
+                NSDirectory::CreateDirectory(sUnzipDir);
+
+                COfficeUtils oCOfficeUtils(NULL);
+                oCOfficeUtils.ExtractToDirectory(sFile, sUnzipDir, NULL, 0);
+
+                ICertificate* pCertificate = ICertificate::CreateInstance();
+                if (pCertificate->ShowSelectDialog())
+                {
+                    COOXMLSigner oOOXMLSigner(sUnzipDir, pCertificate);
+
+                    oOOXMLSigner.SetGuid(sGuid);
+                    oOOXMLSigner.SetImageValid(NSFile::GetProcessDirectory() + L"D:/GIT/core/DesktopEditor/xmlsec/test/windows_list_serts/resources/valid.png");
+                    oOOXMLSigner.SetImageInvalid(NSFile::GetProcessDirectory() + L"D:/GIT/core/DesktopEditor/xmlsec/test/windows_list_serts/resources/invalid.png");
+
+                    oOOXMLSigner.Sign();
+                }
+
+                RELEASEOBJECT(pCertificate);
+
+                oCOfficeUtils.CompressFileOrDirectory(sUnzipDir, sFile, true);
+
+                NSDirectory::DeleteDirectory(sUnzipDir);
+            }
+            return true;
+        }
+        else if (message_name == "on_signature_viewsign")
+        {
+            if (m_pParent && m_pParent->m_pInternal)
+            {
+                int nIndex = message->GetArgumentList()->GetInt(0);
+                COOXMLVerifier* pVerifier = m_pParent->m_pInternal->m_oConverterToEditor.m_pVerifier;
+                if (NULL != pVerifier)
+                {
+                    COOXMLSignature* pSign = pVerifier->GetSignature(nIndex);
+                    pSign->GetCertificate()->ShowCertificate();
+                }
+            }
+            return true;
+        }
 
         CAscApplicationManager_Private* pInternalMan = m_pParent->GetAppManager()->m_pInternal;
         if (pInternalMan->m_pAdditional && pInternalMan->m_pAdditional->OnProcessMessageReceived(browser, source_process, message))

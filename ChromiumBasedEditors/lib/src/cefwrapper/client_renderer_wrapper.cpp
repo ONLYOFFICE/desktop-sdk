@@ -1683,6 +1683,28 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
             retval = CefV8Value::CreateBool(m_bIsPrinting);
             return true;
         }
+        else if (name == "Sign")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_sign");
+
+            std::vector<CefRefPtr<CefV8Value>>::const_iterator iter = arguments.begin();
+            message->GetArgumentList()->SetString(0, (*iter)->GetStringValue());
+
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "ViewCertificate")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_viewsign");
+
+            std::vector<CefRefPtr<CefV8Value>>::const_iterator iter = arguments.begin();
+            message->GetArgumentList()->SetInt(0, (*iter)->GetIntValue());
+
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
         // Function does not exist.
         return false;
     }
@@ -2127,6 +2149,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction951 = CefV8Value::CreateFunction("IsLocalFile", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction952 = CefV8Value::CreateFunction("IsFilePrinting", _nativeHandler);
 
+    CefRefPtr<CefV8Value> _nativeFunction953 = CefV8Value::CreateFunction("Sign", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction954 = CefV8Value::CreateFunction("ViewCertificate", _nativeHandler);
+
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Cut", _nativeFunctionCut, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -2229,6 +2254,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("GetInstallPlugins", _nativeFunction940, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("IsLocalFile", _nativeFunction951, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("IsFilePrinting", _nativeFunction952, V8_PROPERTY_ATTRIBUTE_NONE);
+
+    objNative->SetValue("Sign", _nativeFunction953, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("ViewCertificate", _nativeFunction954, V8_PROPERTY_ATTRIBUTE_NONE);
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 

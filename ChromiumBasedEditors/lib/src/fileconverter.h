@@ -36,6 +36,7 @@
 #include "./applicationmanager_p.h"
 #include "../../../../core/Common/OfficeFileFormatChecker.h"
 #include "../../../../core/DesktopEditor/xmlsec/src/include/OOXMLVerifier.h"
+#include "../../../../core/DesktopEditor/xmlsec/src/include/OOXMLSigner.h"
 #include "../../../../core/OfficeUtils/src/OfficeUtils.h"
 
 #ifdef LINUX
@@ -501,7 +502,7 @@ public:
             std::wstring sParam = pSign->GetCertificate()->GetSignerName();
             NSCommon::string_replace(sParam, L"\"", L"\\\"");
             oBuilder.WriteString(sParam);
-            oBuilder.WriteString(L"\",\"giud\":\"");
+            oBuilder.WriteString(L"\",\"guid\":\"");
             std::string sGuid = pSign->GetGuid();
             oBuilder.WriteString(UTF8_TO_U(sGuid));
             oBuilder.WriteString(L"\",\"valid\":");
