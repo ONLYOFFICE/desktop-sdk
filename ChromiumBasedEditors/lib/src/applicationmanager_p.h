@@ -63,6 +63,77 @@
 #include "./additional/manager.h"
 #include "./additional/renderer.h"
 
+class CJSONSimple
+{
+private:
+    NSStringUtils::CStringBuilder builder;
+    bool m_isSlash;
+
+public:
+    CJSONSimple(bool isSlash = false)
+    {
+        m_isSlash = isSlash;
+    }
+
+public:
+    std::wstring GetData()
+    {
+        return builder.GetData();
+    }
+
+    void Start()
+    {
+        builder.WriteString(L"{");
+    }
+
+    void End()
+    {
+        builder.WriteString(L"}");
+    }
+
+    void Next()
+    {
+        builder.WriteString(L",");
+    }
+
+    void Write(const std::wstring& name, const std::wstring& value)
+    {
+        m_isSlash ? builder.WriteString(L"\\\"") : builder.WriteString(L"\"");
+        builder.WriteString(name);
+        m_isSlash ? builder.WriteString(L"\\\":") : builder.WriteString(L"\":");
+
+        std::wstring s = value;
+        if (m_isSlash)
+            NSCommon::string_replace(s, L"\"", L"\\\"");
+
+        m_isSlash ? builder.WriteString(L"\\\"") : builder.WriteString(L"\"");
+        builder.WriteString(s);
+        m_isSlash ? builder.WriteString(L"\\\"") : builder.WriteString(L"\"");
+    }
+    void Write(const std::wstring& name, const std::string& value)
+    {
+        m_isSlash ? builder.WriteString(L"\\\"") : builder.WriteString(L"\"");
+        builder.WriteString(name);
+        m_isSlash ? builder.WriteString(L"\\\":") : builder.WriteString(L"\":");
+
+        std::wstring s = UTF8_TO_U(value);
+        if (m_isSlash)
+            NSCommon::string_replace(s, L"\"", L"\\\"");
+
+        m_isSlash ? builder.WriteString(L"\\\"") : builder.WriteString(L"\"");
+        builder.WriteString(s);
+        m_isSlash ? builder.WriteString(L"\\\"") : builder.WriteString(L"\"");
+    }
+    void Write(const std::wstring& name, const int& value)
+    {
+        m_isSlash ? builder.WriteString(L"\\\"") : builder.WriteString(L"\"");
+        builder.WriteString(name);
+        m_isSlash ? builder.WriteString(L"\\\":") : builder.WriteString(L"\":");
+
+        builder.AddInt(value);
+    }
+};
+
 #ifdef LINUX
 #include "signal.h"
 void posix_death_signal(int signum);

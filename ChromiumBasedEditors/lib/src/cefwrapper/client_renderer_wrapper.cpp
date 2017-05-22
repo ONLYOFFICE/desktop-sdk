@@ -1689,7 +1689,35 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_sign");
 
             std::vector<CefRefPtr<CefV8Value>>::const_iterator iter = arguments.begin();
-            message->GetArgumentList()->SetString(0, (*iter)->GetStringValue());
+            message->GetArgumentList()->SetString(0, (*iter)->GetStringValue()); ++iter;
+
+            if (iter != arguments.end())
+            {
+                message->GetArgumentList()->SetString(1, (*iter)->GetStringValue()); ++iter;
+            }
+            else
+                message->GetArgumentList()->SetString(1, "");
+
+            if (iter != arguments.end())
+            {
+                message->GetArgumentList()->SetString(2, (*iter)->GetStringValue()); ++iter;
+            }
+            else
+                message->GetArgumentList()->SetString(2, "");
+
+            if (iter != arguments.end())
+            {
+                message->GetArgumentList()->SetString(3, (*iter)->GetStringValue()); ++iter;
+            }
+            else
+                message->GetArgumentList()->SetString(3, "");
+
+            if (iter != arguments.end())
+            {
+                message->GetArgumentList()->SetString(4, (*iter)->GetStringValue()); ++iter;
+            }
+            else
+                message->GetArgumentList()->SetString(4, "");
 
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
@@ -1697,11 +1725,25 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
         else if (name == "ViewCertificate")
         {
             CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
-            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_viewsign");
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_viewcertificate");
 
             std::vector<CefRefPtr<CefV8Value>>::const_iterator iter = arguments.begin();
             message->GetArgumentList()->SetInt(0, (*iter)->GetIntValue());
 
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "SelectCertificate")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_selectsertificate");
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "GetDefaultCertificate")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_defaultcertificate");
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
@@ -2151,6 +2193,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Value> _nativeFunction953 = CefV8Value::CreateFunction("Sign", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction954 = CefV8Value::CreateFunction("ViewCertificate", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction955 = CefV8Value::CreateFunction("SelectCertificate", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction956 = CefV8Value::CreateFunction("GetDefaultCertificate", _nativeHandler);
 
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -2257,6 +2301,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     objNative->SetValue("Sign", _nativeFunction953, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("ViewCertificate", _nativeFunction954, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("SelectCertificate", _nativeFunction955, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("GetDefaultCertificate", _nativeFunction956, V8_PROPERTY_ATTRIBUTE_NONE);
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 
@@ -2660,6 +2706,22 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
         }
         return true;
+    }
+    else if (sMessageName == "on_signature_defaultcertificate_ret" ||
+             sMessageName == "on_signature_selectsertificate_ret" ||
+             sMessageName == "on_signature_viewcertificate_ret")
+    {
+        std::string sParam = message->GetArgumentList()->GetString(0).ToString();
+
+        std::string sCode = "window.OnNativeReturnCallback(\"" + sMessageName + "\", " + sParam + ");";
+
+        FILE* f = fopen("D:\\1.txt", "a+");
+        fprintf(f, sCode.c_str());
+        fprintf(f, "\n");
+        fclose(f);
+
+        CefRefPtr<CefFrame> _frame = browser->GetFrame("frameEditor");
+        _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
     }
 
     if (m_pAdditional.is_init() && m_pAdditional->OnProcessMessageReceived(app, browser, source_process, message))

@@ -1569,7 +1569,10 @@ public:
         {
             if (m_pParent && m_pParent->m_pInternal)
             {
-                std::wstring sGuid = message->GetArgumentList()->GetString(0).ToWString();
+                std::string sId = message->GetArgumentList()->GetString(0).ToString();
+                std::wstring sGuid = message->GetArgumentList()->GetString(1).ToWString();
+                std::wstring sUrl = message->GetArgumentList()->GetString(2).ToWString();
+                std::wstring sUrl2 = message->GetArgumentList()->GetString(3).ToWString();
 
                 std::wstring sFile = m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_sFileSrc;
 
@@ -1579,14 +1582,14 @@ public:
                 COfficeUtils oCOfficeUtils(NULL);
                 oCOfficeUtils.ExtractToDirectory(sFile, sUnzipDir, NULL, 0);
 
-                ICertificate* pCertificate = ICertificate::CreateInstance();
-                if (pCertificate->ShowSelectDialog())
+                ICertificate* pCertificate = ICertificate::GetById(sId);
+                if (true)
                 {
                     COOXMLSigner oOOXMLSigner(sUnzipDir, pCertificate);
 
                     oOOXMLSigner.SetGuid(sGuid);
-                    oOOXMLSigner.SetImageValid(NSFile::GetProcessDirectory() + L"D:/GIT/core/DesktopEditor/xmlsec/test/windows_list_serts/resources/valid.png");
-                    oOOXMLSigner.SetImageInvalid(NSFile::GetProcessDirectory() + L"D:/GIT/core/DesktopEditor/xmlsec/test/windows_list_serts/resources/invalid.png");
+                    oOOXMLSigner.SetImageValid(sUrl);
+                    oOOXMLSigner.SetImageInvalid(sUrl2);
 
                     oOOXMLSigner.Sign();
                 }
@@ -1599,7 +1602,7 @@ public:
             }
             return true;
         }
-        else if (message_name == "on_signature_viewsign")
+        else if (message_name == "on_signature_viewcertificate")
         {
             if (m_pParent && m_pParent->m_pInternal)
             {
@@ -1608,8 +1611,61 @@ public:
                 if (NULL != pVerifier)
                 {
                     COOXMLSignature* pSign = pVerifier->GetSignature(nIndex);
-                    pSign->GetCertificate()->ShowCertificate();
+                    int nRet = pSign ? pSign->GetCertificate()->ShowCertificate() : 0;
+
+                    CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_viewcertificate_ret");
+                    message->GetArgumentList()->SetString(0, std::to_string(nRet));
+                    browser->SendProcessMessage(PID_RENDERER, message);
                 }
+            }
+            return true;
+        }
+        else if (message_name == "on_signature_defaultcertificate")
+        {
+            if (m_pParent && m_pParent->m_pInternal)
+            {
+                CCertificateInfo info = ICertificate::GetDefault();
+
+                CJSONSimple serializer;
+                serializer.Start();
+                serializer.Write(L"name", info.m_name);
+                serializer.Next();
+                serializer.Write(L"id", info.m_id);
+                serializer.Next();
+                serializer.Write(L"date", info.m_date);
+                serializer.End();
+
+                CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_defaultcertificate_ret");
+                message->GetArgumentList()->SetString(0, serializer.GetData());
+                browser->SendProcessMessage(PID_RENDERER, message);
+            }
+            return true;
+        }
+        else if (message_name == "on_signature_selectsertificate")
+        {
+            if (m_pParent && m_pParent->m_pInternal)
+            {
+                CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_selectsertificate_ret");
+
+                ICertificate* pCert = ICertificate::CreateInstance();
+                if (pCert->ShowSelectDialog())
+                {
+                    CCertificateInfo info = pCert->GetInfo();
+
+                    CJSONSimple serializer;
+                    serializer.Start();
+                    serializer.Write(L"name", info.m_name);
+                    serializer.Next();
+                    serializer.Write(L"id", info.m_id);
+                    serializer.Next();
+                    serializer.Write(L"date", info.m_date);
+                    serializer.End();
+
+                    message->GetArgumentList()->SetString(0, serializer.GetData());
+                }
+
+                RELEASEOBJECT(pCert);
+                browser->SendProcessMessage(PID_RENDERER, message);
             }
             return true;
         }
