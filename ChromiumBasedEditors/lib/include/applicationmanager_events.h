@@ -96,6 +96,8 @@
 #define ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_ADD_PLUGIN      7013
 #define ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_VIEW_DELAY      7014
 
+#define ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_OPENFILENAME_DIALOG 7015
+
 #define ASC_MENU_EVENT_TYPE_WINDOWS_MESSAGE_USER_COUNT      10
 
 namespace NSEditorApi
@@ -530,6 +532,7 @@ namespace NSEditorApi
     private:
         int m_nId;
         std::wstring m_sPath;
+        std::wstring m_sFilter;
 
     public:
         CAscLocalOpenFileDialog()
@@ -542,6 +545,7 @@ namespace NSEditorApi
 
         LINK_PROPERTY_INT(Id)
         LINK_PROPERTY_STRING(Path)
+        LINK_PROPERTY_STRING(Filter)
     };
 
     class CAscLocalOpenFiles : public IMenuEventDataBase

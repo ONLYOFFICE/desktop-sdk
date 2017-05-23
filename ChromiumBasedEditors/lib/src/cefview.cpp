@@ -1669,6 +1669,16 @@ public:
             }
             return true;
         }
+        else if (message_name == "on_open_filename_dialog")
+        {
+            NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent(ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_OPENFILENAME_DIALOG);
+            NSEditorApi::CAscLocalOpenFileDialog* pData = new NSEditorApi::CAscLocalOpenFileDialog();
+            pData->put_Id(m_pParent->GetId());
+            pData->put_Filter(message->GetArgumentList()->GetString(0).ToWString());
+            pEvent->m_pData = pData;
+            m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+            return true;
+        }
 
         CAscApplicationManager_Private* pInternalMan = m_pParent->GetAppManager()->m_pInternal;
         if (pInternalMan->m_pAdditional && pInternalMan->m_pAdditional->OnProcessMessageReceived(browser, source_process, message))
@@ -3269,6 +3279,15 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
         case ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_ADD_PLUGIN:
         {
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("update_install_plugins");
+            browser->SendProcessMessage(PID_RENDERER, message);
+            break;
+        }
+        case ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_OPENFILENAME_DIALOG:
+        {
+            NSEditorApi::CAscLocalOpenFileDialog* pData = (NSEditorApi::CAscLocalOpenFileDialog*)pEvent->m_pData;
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_open_filename_dialog");
+            message->GetArgumentList()->SetString(0, pData->get_Path());
+
             browser->SendProcessMessage(PID_RENDERER, message);
             break;
         }

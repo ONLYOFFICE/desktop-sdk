@@ -348,6 +348,18 @@ void CAscApplicationManager::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 
             break;
         }
+        case ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_OPENFILENAME_DIALOG:
+        {
+            NSEditorApi::CAscLocalOpenFileDialog* pData = (NSEditorApi::CAscLocalOpenFileDialog*)pEvent->m_pData;
+
+            CCefView* pView = GetViewById(pData->get_Id());
+            if (NULL != pView)
+            {
+                ADDREFINTERFACE(pEvent);
+                pView->Apply(pEvent);
+            }
+            break;
+        }
         default:
         {
             if (NULL != m_pInternal->m_pAdditional)

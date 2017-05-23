@@ -1747,6 +1747,15 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
+        else if (name == "OpenFilenameDialog")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_open_filename_dialog");
+            std::vector<CefRefPtr<CefV8Value>>::const_iterator iter = arguments.begin();
+            message->GetArgumentList()->SetString(0, (*iter)->GetStringValue());
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
         // Function does not exist.
         return false;
     }
@@ -2195,6 +2204,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction954 = CefV8Value::CreateFunction("ViewCertificate", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction955 = CefV8Value::CreateFunction("SelectCertificate", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction956 = CefV8Value::CreateFunction("GetDefaultCertificate", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction957 = CefV8Value::CreateFunction("OpenFilenameDialog", _nativeHandler);
 
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -2303,6 +2313,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("ViewCertificate", _nativeFunction954, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("SelectCertificate", _nativeFunction955, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("GetDefaultCertificate", _nativeFunction956, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("OpenFilenameDialog", _nativeFunction957, V8_PROPERTY_ATTRIBUTE_NONE);
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 
@@ -2722,6 +2733,20 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
         CefRefPtr<CefFrame> _frame = browser->GetFrame("frameEditor");
         _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+    }
+    else if (sMessageName == "on_open_filename_dialog")
+    {
+        CefRefPtr<CefFrame> _frame = browser->GetFrame("frameEditor");
+
+        if (_frame)
+        {
+            std::wstring sPath = message->GetArgumentList()->GetString(0).ToWString();
+            NSCommon::string_replace(sPath, L"\\", L"\\\\");
+
+            std::wstring sCode = L"window.OnNativeOpenFilenameDialog(\"" + sPath + L"\");";
+            _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+        }
+        return true;
     }
 
     if (m_pAdditional.is_init() && m_pAdditional->OnProcessMessageReceived(app, browser, source_process, message))
