@@ -39,6 +39,9 @@
 #include "../../../../core/DesktopEditor/xmlsec/src/include/OOXMLSigner.h"
 #include "../../../../core/OfficeUtils/src/OfficeUtils.h"
 
+#include "../../../../core/DesktopEditor/raster/BgraFrame.h"
+#include "../../../../core/DesktopEditor/raster/Metafile/MetaFile.h"
+
 #ifdef LINUX
 #include <unistd.h>
 #include <sys/wait.h>
@@ -136,6 +139,7 @@ public:
     bool m_bIsNativeSupport;
 
     COOXMLVerifier* m_pVerifier;
+    CApplicationFonts* m_pFonts;
 
 public:
     CASCFileConverterToEditor() : NSThreads::CBaseThread()
@@ -148,11 +152,14 @@ public:
         m_bIsNativeSupport = true;
 
         m_pVerifier = NULL;
+
+        m_pFonts = NULL;
     }
     virtual ~CASCFileConverterToEditor()
     {
         Stop();
         RELEASEOBJECT(m_pVerifier);
+        RELEASEOBJECT(m_pFonts);
     }
 
     virtual void Stop()
@@ -508,10 +515,10 @@ public:
             oBuilder.WriteString(L"\",\"valid\":");
             oBuilder.AddInt(pSign->GetValid());
             oBuilder.WriteString(L",\"image_valid\":\"");
-            sGuid = pSign->GetImageValidBase64();
+            sGuid = GetPngFromBase64(pSign->GetImageValidBase64());
             oBuilder.WriteString(UTF8_TO_U(sGuid));
             oBuilder.WriteString(L"\",\"image_invalid\":\"");
-            sGuid = pSign->GetImageInvalidBase64();
+            sGuid = GetPngFromBase64(pSign->GetImageInvalidBase64());
             oBuilder.WriteString(UTF8_TO_U(sGuid));
             oBuilder.WriteString(L"\"}");
         }
@@ -519,6 +526,69 @@ public:
         oBuilder.WriteString(L"]}");
 
         return oBuilder.GetData();
+    }
+
+    std::string GetPngFromBase64(const std::string& sBase64)
+    {
+        std::wstring sTmp = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"IMG");
+        std::wstring sTmp2 = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"IMG");
+
+        BYTE* pData = NULL;
+        int nBase64InputLen = 0;
+        NSFile::CBase64Converter::Decode(sBase64.c_str(), (int)sBase64.length(), pData, nBase64InputLen);
+
+        NSFile::CFileBinary oFile;
+        oFile.CreateFileW(sTmp);
+        oFile.WriteFile(pData, (DWORD)nBase64InputLen);
+        oFile.CloseFile();
+
+        RELEASEARRAYOBJECTS(pData);
+        nBase64InputLen = 0;
+
+        if (NULL == m_pFonts)
+        {
+            m_pFonts = new CApplicationFonts();
+            m_pFonts->InitializeFromFolder(m_pManager->m_oSettings.fonts_cache_info_path);
+        }
+
+        bool bIsGood = false;
+        MetaFile::CMetaFile oMeta(m_pFonts);
+        if (oMeta.LoadFromFile(sTmp.c_str()))
+        {
+            oMeta.ConvertToRaster(sTmp2.c_str(), 4, 300);
+            bIsGood = true;
+        }
+        else
+        {
+            CBgraFrame oFrame;
+            if (oFrame.OpenFile(sTmp))
+            {
+                oFrame.SaveFile(sTmp2, 4);
+                bIsGood = true;
+            }
+        }
+
+        NSFile::CFileBinary::Remove(sTmp);
+        if (!bIsGood)
+        {
+            NSFile::CFileBinary::Remove(sTmp2);
+            return sBase64;
+        }
+
+        DWORD dwLen = 0;
+        NSFile::CFileBinary::ReadAllBytes(sTmp2, &pData, dwLen);
+
+        char* base64 = NULL;
+        int base64Len = 0;
+
+        NSFile::CBase64Converter::Encode(pData, (int)dwLen, base64, base64Len, NSBase64::B64_BASE64_FLAG_NOCRLF);
+
+        std::string sRet(base64, base64Len);
+
+        RELEASEARRAYOBJECTS(base64);
+
+        NSFile::CFileBinary::Remove(sTmp2);
+        return sRet;
     }
 };
 
