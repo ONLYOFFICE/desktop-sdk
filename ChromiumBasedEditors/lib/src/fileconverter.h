@@ -485,6 +485,12 @@ public:
         }
     }
 
+    void CheckSignaturesByDir(const std::wstring& sFolder)
+    {
+        RELEASEOBJECT(m_pVerifier);
+        m_pVerifier = new COOXMLVerifier(sFolder);
+    }
+
     std::wstring GetSignaturesJSON()
     {
         if (NULL == m_pVerifier)

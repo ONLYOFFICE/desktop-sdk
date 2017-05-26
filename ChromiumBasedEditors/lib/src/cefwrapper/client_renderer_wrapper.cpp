@@ -2741,6 +2741,20 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         }
         return true;
     }
+    else if (sMessageName == "on_signature_update_signatures")
+    {
+        CefRefPtr<CefFrame> _frame = browser->GetFrame("frameEditor");
+
+        if (_frame)
+        {
+            std::wstring sSignatures = message->GetArgumentList()->GetString(0).ToWString();
+            NSCommon::string_replace(sSignatures, L"\"", L"\\\"");
+
+            std::string sCode = "window.DesktopOfflineAppDocumentSignatures(\"" + U_TO_UTF8(sSignatures) + "\");";
+            _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+        }
+        return true;
+    }
 
     if (m_pAdditional.is_init() && m_pAdditional->OnProcessMessageReceived(app, browser, source_process, message))
         return true;

@@ -1592,6 +1592,15 @@ public:
                     oOOXMLSigner.SetImageInvalid(sUrl2);
 
                     oOOXMLSigner.Sign();
+
+                    CASCFileConverterToEditor* pConverter = &m_pParent->m_pInternal->m_oConverterToEditor;
+                    pConverter->CheckSignaturesByDir(sUnzipDir);
+
+                    std::wstring sSignatures = pConverter->GetSignaturesJSON();
+
+                    CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_update_signatures");
+                    message->GetArgumentList()->SetString(0, sSignatures);
+                    browser->SendProcessMessage(PID_RENDERER, message);
                 }
 
                 RELEASEOBJECT(pCertificate);
