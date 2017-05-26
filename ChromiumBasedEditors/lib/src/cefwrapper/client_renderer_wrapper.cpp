@@ -1712,13 +1712,6 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
             else
                 message->GetArgumentList()->SetString(3, "");
 
-            if (iter != arguments.end())
-            {
-                message->GetArgumentList()->SetString(4, (*iter)->GetStringValue()); ++iter;
-            }
-            else
-                message->GetArgumentList()->SetString(4, "");
-
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
