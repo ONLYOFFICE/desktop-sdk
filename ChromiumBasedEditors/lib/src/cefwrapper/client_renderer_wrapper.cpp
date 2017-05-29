@@ -2730,11 +2730,6 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
         std::string sCode = "window.OnNativeReturnCallback(\"" + sMessageName + "\", " + sParam + ");";
 
-        FILE* f = fopen("D:\\1.txt", "a+");
-        fprintf(f, sCode.c_str());
-        fprintf(f, "\n");
-        fclose(f);
-
         CefRefPtr<CefFrame> _frame = browser->GetFrame("frameEditor");
         _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
     }
