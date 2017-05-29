@@ -98,6 +98,8 @@
 
 #define ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_OPENFILENAME_DIALOG 7015
 
+#define ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_SAVE_YES_NO     7016
+
 #define ASC_MENU_EVENT_TYPE_WINDOWS_MESSAGE_USER_COUNT      10
 
 namespace NSEditorApi
@@ -438,6 +440,26 @@ namespace NSEditorApi
         LINK_PROPERTY_STRING(Url)
         LINK_PROPERTY_STRING(Destination)
         LINK_PROPERTY_INT(FrameId)
+    };
+
+    class CAscEditorSaveQuestion : public IMenuEventDataBase
+    {
+    private:
+        int m_nId;
+        bool m_bValue;
+
+    public:
+        CAscEditorSaveQuestion()
+        {
+            m_nId = -1;
+            m_bValue = false;
+        }
+        virtual ~CAscEditorSaveQuestion()
+        {
+        }
+
+        LINK_PROPERTY_BOOL(Value)
+        LINK_PROPERTY_INT(Id)
     };
 }
 

@@ -1749,6 +1749,13 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
+        else if (name == "SaveQuestion")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_file_save_question");
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
         // Function does not exist.
         return false;
     }
@@ -2199,6 +2206,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction956 = CefV8Value::CreateFunction("GetDefaultCertificate", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction957 = CefV8Value::CreateFunction("OpenFilenameDialog", _nativeHandler);
 
+    CefRefPtr<CefV8Value> _nativeFunction958 = CefV8Value::CreateFunction("SaveQuestion", _nativeHandler);
+
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Cut", _nativeFunctionCut, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -2307,6 +2316,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("SelectCertificate", _nativeFunction955, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("GetDefaultCertificate", _nativeFunction956, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("OpenFilenameDialog", _nativeFunction957, V8_PROPERTY_ATTRIBUTE_NONE);
+
+    objNative->SetValue("SaveQuestion", _nativeFunction958, V8_PROPERTY_ATTRIBUTE_NONE);
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 
@@ -2751,6 +2762,20 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
             NSCommon::string_replace(sSignatures, L"\"", L"\\\"");
 
             std::string sCode = "window.DesktopOfflineAppDocumentSignatures(\"" + U_TO_UTF8(sSignatures) + "\");";
+            _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+        }
+        return true;
+    }
+    else if (sMessageName == "on_file_save_question")
+    {
+        CefRefPtr<CefFrame> _frame = browser->GetFrame("frameEditor");
+
+        if (_frame)
+        {
+            bool bValue = message->GetArgumentList()->GetBool(0);
+            std::string sCode = "window.DesktopSaveQuestionReturn(";
+            sCode += (bValue ? "true" : "false");
+            sCode += ");";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
         }
         return true;
