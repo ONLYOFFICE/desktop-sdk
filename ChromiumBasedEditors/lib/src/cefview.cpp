@@ -869,7 +869,18 @@ public:
                                 bool is_redirect)
     {
         std::wstring sUrl = request->GetURL().ToWString();
-        if (frame->IsMain() && m_nBeforeBrowserCounter != 0 && sUrl.find(L"file://") == 0 && sUrl != m_pParent->m_pInternal->m_strUrl)
+
+        std::wstring sTest1 = sUrl;
+        std::wstring sTest2 = m_pParent->m_pInternal->m_strUrl;
+        NSCommon::url_correct(sTest1);
+        NSCommon::url_correct(sTest2);
+
+        NSCommon::string_replace(sTest1, L" ", L"%20");
+        NSCommon::string_replace(sTest2, L" ", L"%20");
+        NSCommon::string_replace(sTest1, L"\\", L"/");
+        NSCommon::string_replace(sTest2, L"\\", L"/");
+
+        if (frame->IsMain() && m_nBeforeBrowserCounter != 0 && sUrl.find(L"file://") == 0 && sTest1 != sTest2)
             return true;
 
         m_nBeforeBrowserCounter++;
