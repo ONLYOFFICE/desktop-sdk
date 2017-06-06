@@ -1950,6 +1950,9 @@ public:
             {
             }
 #endif
+
+            if (((nMods & EVENTFLAG_CONTROL_DOWN) != 0) && event.windows_key_code == 9)
+                return true; // tab!!!
         }
 
         return false;
