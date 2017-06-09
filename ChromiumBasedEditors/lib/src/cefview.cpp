@@ -1648,11 +1648,11 @@ public:
 
                 CJSONSimple serializer;
                 serializer.Start();
-                serializer.Write(L"name", info.m_name);
+                serializer.Write(L"name", info.GetName());
                 serializer.Next();
-                serializer.Write(L"id", info.m_id);
+                serializer.Write(L"id", info.GetId());
                 serializer.Next();
-                serializer.Write(L"date", info.m_date);
+                serializer.Write(L"date", info.GetDate());
                 serializer.End();
 
                 CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_defaultcertificate_ret");
@@ -1674,11 +1674,11 @@ public:
 
                     CJSONSimple serializer;
                     serializer.Start();
-                    serializer.Write(L"name", info.m_name);
+                    serializer.Write(L"name", info.GetName());
                     serializer.Next();
-                    serializer.Write(L"id", info.m_id);
+                    serializer.Write(L"id", info.GetId());
                     serializer.Next();
-                    serializer.Write(L"date", info.m_date);
+                    serializer.Write(L"date", info.GetDate());
                     serializer.End();
 
                     message->GetArgumentList()->SetString(0, serializer.GetData());

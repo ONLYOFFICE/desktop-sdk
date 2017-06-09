@@ -610,4 +610,23 @@ void CAscApplicationManager::InitAdditionalEditorParams(std::wstring& sParams)
     m_pInternal->m_sAdditionalUrlParams = sParams;
 }
 
+#ifdef DOCUMENTSCORE_OPENSSL_SUPPORT
+
+#include "../../../../core/DesktopEditor/xmlsec/src/src/XmlSigner_openssl.h"
+void CAscApplicationManager::OpenSsl_SetDialog(ICertificateSelectDialogOpenSsl* pDialog)
+{
+    m_pInternal->m_pOpenSslDialog = pDialog;
+}
+
+int CAscApplicationManager::OpenSsl_LoadKey(std::wstring file, std::string password)
+{
+    return CCertificate_openssl::LoadKey(file, password);
+}
+
+int CAscApplicationManager::OpenSsl_LoadCert(std::wstring file, std::string password)
+{
+    return CCertificate_openssl::LoadCert(file, password);
+}
+#endif
+
 /////////////////////////////////////////////////////////////

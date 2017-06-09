@@ -36,6 +36,8 @@ LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lgraphics -llibxml
 LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lPdfReader -lPdfWriter -lDjVuFile -lXpsFile -lHtmlRenderer -lUnicodeConverter -looxmlsignature
 # ------------------------------------------------------
 
+DEFINES += DOCUMENTSCORE_OPENSSL_SUPPORT
+
 include($$PWD/AscDocumentsCore_linux.pri)
 
 ####################  BOOST  ###########################

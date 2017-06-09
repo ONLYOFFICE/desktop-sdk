@@ -427,6 +427,10 @@ public:
 
     CApplicationManagerAdditionalBase* m_pAdditional;
 
+#ifdef DOCUMENTSCORE_OPENSSL_SUPPORT
+    ICertificateSelectDialogOpenSsl* m_pOpenSslDialog;
+#endif
+
 public:
     CAscApplicationManager_Private() : m_oKeyboardTimer(this)
     {
@@ -452,6 +456,10 @@ public:
         m_pAdditional = NULL;
 
         m_nForceDisplayScale = -1;
+
+#ifdef DOCUMENTSCORE_OPENSSL_SUPPORT
+        m_pOpenSslDialog = NULL;
+#endif
     }
     bool GetEditorPermission()
     {
