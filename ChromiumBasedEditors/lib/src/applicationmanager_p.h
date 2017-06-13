@@ -404,8 +404,6 @@ public:
     CApplicationCEF* m_pApplication;
     bool m_bDebugInfoSupport;
 
-    int m_nForceDisplayScale;
-
     int m_nIsCefSaveDialogWait;
 
     CTimerKeyboardChecker m_oKeyboardTimer;
@@ -426,6 +424,10 @@ public:
     std::vector<NSEditorApi::CAscMenuEvent*> m_arApplyEvents;
 
     CApplicationManagerAdditionalBase* m_pAdditional;
+
+    std::map<std::string, std::string> m_mapSettings;
+    int m_nForceDisplayScale;
+    bool m_bIsUpdateFontsAttack;
 
 #ifdef DOCUMENTSCORE_OPENSSL_SUPPORT
     ICertificateSelectDialogOpenSsl* m_pOpenSslDialog;
@@ -456,6 +458,7 @@ public:
         m_pAdditional = NULL;
 
         m_nForceDisplayScale = -1;
+        m_bIsUpdateFontsAttack = false;
 
 #ifdef DOCUMENTSCORE_OPENSSL_SUPPORT
         m_pOpenSslDialog = NULL;
@@ -489,6 +492,117 @@ public:
         pVisitor->m_sDomain         = NSFile::CUtf8Converter::GetUtf8StringFromUnicode2(strUrl.c_str(), strUrl.length());
 
         pVisitor->CheckCookiePresent(CefCookieManager::GetGlobalManager(NULL));
+    }
+
+    void LoadSettings()
+    {
+        std::wstring sFile = m_pMain->m_oSettings.fonts_cache_info_path + L"/settings.xml";
+        XmlUtils::CXmlNode oNode;
+        if (!oNode.FromXmlFile(sFile))
+            return;
+
+        XmlUtils::CXmlNodes oNodes;
+        if (!oNode.GetChilds(oNodes))
+            return;
+
+        int nCount = oNodes.GetCount();
+        for (int i = 0; i < nCount; ++i)
+        {
+            XmlUtils::CXmlNode oSetting;
+            oNodes.GetAt(i, oSetting);
+
+            std::wstring nameW = oSetting.GetName();
+            std::string name = U_TO_UTF8(nameW);
+            std::wstring valueW = oSetting.GetText();
+            std::string value = U_TO_UTF8(valueW);
+
+            m_mapSettings.insert(std::pair<std::string, std::string>(name, value));
+        }
+    }
+    void SaveSettings()
+    {
+        std::wstring sFile = m_pMain->m_oSettings.fonts_cache_info_path + L"/settings.xml";
+        NSStringUtils::CStringBuilder oBuilder;
+        oBuilder.WriteString(L"<Settings>");
+
+        for (std::map<std::string, std::string>::iterator pair = m_mapSettings.begin(); pair != m_mapSettings.end(); pair++)
+        {
+            std::string name = pair->first;
+            std::string value = pair->second;
+            std::wstring nameW = UTF8_TO_U(name);
+            std::wstring valueW = UTF8_TO_U(value);
+
+            oBuilder.AddCharSafe('<');
+            oBuilder.WriteString(nameW);
+            oBuilder.AddCharSafe('>');
+            oBuilder.WriteEncodeXmlString(valueW);
+            oBuilder.AddCharSafe('<');
+            oBuilder.AddCharSafe('/');
+            oBuilder.WriteString(nameW);
+            oBuilder.AddCharSafe('>');
+        }
+
+        oBuilder.WriteString(L"</Settings>");
+
+        NSFile::CFileBinary::SaveToFile(sFile, oBuilder.GetData());
+
+        // after - check settings
+        std::map<std::string, std::string>::iterator pairForceDisplayScale = m_mapSettings.find("force-scale");
+        if (pairForceDisplayScale != m_mapSettings.end())
+            m_nForceDisplayScale = std::stoi(pairForceDisplayScale->second);
+    }
+
+    void CheckSetting(const std::string& sName, const std::string& sValue)
+    {
+        if ("--ascdesktop-support-debug-info" == sName)
+        {
+            m_bDebugInfoSupport = true;
+            return;
+        }
+
+        bool bIsChanged = false;
+        const char* namePtr = sName.c_str();
+
+        while (*namePtr != '\0')
+        {
+            char c = *namePtr++;
+            if ('&' == c || '\'' == c || '<' == c || '>' == c || '\"' == c)
+                return;
+        }
+
+        if (0 != sName.find("--"))
+            return;
+
+        std::string name = sName.substr(2);
+        std::map<std::string, std::string>::iterator pair = m_mapSettings.find(name);
+        if (pair != m_mapSettings.end())
+        {
+            if (sValue != "default")
+            {
+                if (pair->second != sValue)
+                    bIsChanged = true;
+
+                pair->second = sValue;
+            }
+            else
+            {
+                m_mapSettings.erase(pair);
+                bIsChanged = true;
+            }
+        }
+        else
+        {
+            if (sValue != "default")
+            {
+                m_mapSettings.insert(std::pair<std::string, std::string>(name, sValue));
+                bIsChanged = true;
+            }
+        }
+
+        if ("--use-opentype-fonts" == sName && bIsChanged)
+        {
+            m_bIsUpdateFontsAttack = true;
+        }
     }
 
     virtual void OnFoundCookie(bool bIsPresent, std::string sValue)
@@ -695,6 +809,9 @@ protected:
                 bIsEqual = false;
         }
 
+        if (m_bIsUpdateFontsAttack)
+            bIsEqual = false;
+
         if (!bIsEqual)
         {
             if (NSFile::CFileBinary::Exists(strAllFontsJSPath))
@@ -715,10 +832,13 @@ protected:
             }
             oFile.CloseFile();
             
-            int nFlag = 0;
-#if 1
-            nFlag = 2;
-#endif
+            int nFlag = 3;
+            std::map<std::string, std::string>::iterator pairOTF = m_mapSettings.find("use-opentype-fonts");
+            if (pairOTF != m_mapSettings.end())
+            {
+                if ("0" == pairOTF->second)
+                    nFlag = 2;
+            }
 
             oApplicationF->InitializeFromArrayFiles(strFontsW_Cur, nFlag);
 

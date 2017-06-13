@@ -259,73 +259,19 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 #endif
 
     // ASC command line props
-#ifdef WIN32
-    std::string sCommandLine = GetCommandLineA();
-    if (sCommandLine.find("--ascdesktop-support-debug-info") != std::string::npos)
-        pManager->SetDebugInfoSupport(true);
-
-    if (true)
-    {
-        std::string sFindValue = "--force-scale=";
-        std::string::size_type posFind = sCommandLine.find(sFindValue);
-        if (posFind != std::string::npos)
-        {
-            std::string::size_type start = posFind + sFindValue.length();
-            std::string::size_type end = start;
-            std::string::size_type max = sCommandLine.length();
-
-            while (end < max)
-            {
-                char c = sCommandLine[end];
-                if (c < '0' || c > '9')
-                    break;
-                ++end;
-            }
-
-            if (end > start)
-            {
-                std::string sValue = sCommandLine.substr(start, end - start);
-                pManager->m_pInternal->m_nForceDisplayScale = std::stoi(sValue);
-            }
-        }
-    }
-#else
+    pManager->m_pInternal->LoadSettings();
     for (int i = 0; i < argc; ++i)
     {
         std::string sCommandLine(argv[i]);
 
-        std::string sFindValue = "--ascdesktop-support-debug-info";
-        std::string::size_type posFind = sCommandLine.find(sFindValue);
+        std::string::size_type posSeparate = sCommandLine.find('=');
 
-        if (posFind != std::string::npos)
-        {
-            pManager->SetDebugInfoSupport(true);            
-        }
+        std::string sName = (std::string::npos == posSeparate) ? sCommandLine : sCommandLine.substr(0, posSeparate);
+        std::string sValue = (std::string::npos == posSeparate) ? "" : sCommandLine.substr(posSeparate + 1);
 
-        sFindValue = "--force-scale=";
-        posFind = sCommandLine.find(sFindValue);
-        if (posFind != std::string::npos)
-        {
-            std::string::size_type start = posFind + sFindValue.length();
-            std::string::size_type end = start;
-            std::string::size_type max = sCommandLine.length();
-
-            while (end < max)
-            {
-                char c = sCommandLine[end];
-                if (c < '0' || c > '9')
-                    break;
-                ++end;
-            }
-
-            if (end > start)
-            {
-                std::string sValue = sCommandLine.substr(start, end - start);
-                pManager->m_pInternal->m_nForceDisplayScale = std::stoi(sValue);
-            }
-        }
+        pManager->m_pInternal->CheckSetting(sName, sValue);
     }
-#endif
+    pManager->m_pInternal->SaveSettings();
 
     std::wstring sCachePath = pManager->m_oSettings.cache_path;
 
