@@ -614,7 +614,7 @@ void CAscApplicationManager::InitAdditionalEditorParams(std::wstring& sParams)
 
 void CAscApplicationManager::OpenSsl_SetDialog(ICertificateSelectDialogOpenSsl* pDialog)
 {
-    m_pInternal->m_pOpenSslDialog = pDialog;
+    ICertificateSelectDialogOpenSsl::SetOpenSslDialogApplication(pDialog);
 }
 
 int CAscApplicationManager::OpenSsl_LoadKey(std::wstring file, std::string password)

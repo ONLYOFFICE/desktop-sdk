@@ -429,10 +429,6 @@ public:
     int m_nForceDisplayScale;
     bool m_bIsUpdateFontsAttack;
 
-#ifdef DOCUMENTSCORE_OPENSSL_SUPPORT
-    ICertificateSelectDialogOpenSsl* m_pOpenSslDialog;
-#endif
-
 public:
     CAscApplicationManager_Private() : m_oKeyboardTimer(this)
     {
@@ -459,10 +455,6 @@ public:
 
         m_nForceDisplayScale = -1;
         m_bIsUpdateFontsAttack = false;
-
-#ifdef DOCUMENTSCORE_OPENSSL_SUPPORT
-        m_pOpenSslDialog = NULL;
-#endif
     }
     bool GetEditorPermission()
     {
