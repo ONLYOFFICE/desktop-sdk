@@ -48,6 +48,9 @@
 #include <stdio.h>
 #endif
 
+// AFTER FULL REALIZE - DELETE THIS MACRO
+//#define DISABLE_OOXML_SIGNATURE
+
 class CAscLocalFileInfo
 {
 public:
@@ -468,6 +471,10 @@ public:
 
     void CheckSignatures(const std::wstring& sFile)
     {
+#ifdef DISABLE_OOXML_SIGNATURE
+        return;
+#endif
+
         RELEASEOBJECT(m_pVerifier);
         if (m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX ||
             m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX ||
