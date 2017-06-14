@@ -1586,6 +1586,8 @@ public:
                 std::wstring sUrl2 = message->GetArgumentList()->GetString(3).ToWString();
 
                 std::wstring sFile = m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_sFileSrc;
+                if (sFile.empty())
+                    sFile = m_pParent->m_pInternal->m_oConverterToEditor.m_oInfo.m_sFileSrc;
 
                 std::wstring sUnzipDir = NSDirectory::CreateDirectoryWithUniqueName(NSDirectory::GetTempPath());
                 NSDirectory::CreateDirectory(sUnzipDir);
