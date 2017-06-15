@@ -1596,7 +1596,7 @@ public:
                 oCOfficeUtils.ExtractToDirectory(sFile, sUnzipDir, NULL, 0);
 
                 ICertificate* pCertificate = ICertificate::GetById(sId);
-                if (true)
+                if (pCertificate)
                 {
                     COOXMLSigner oOOXMLSigner(sUnzipDir, pCertificate);
 
