@@ -35,12 +35,21 @@
 
 #include "./applicationmanager_p.h"
 #include "../../../../core/Common/OfficeFileFormatChecker.h"
+#include "../../../../core/DesktopEditor/xmlsec/src/include/OOXMLVerifier.h"
+#include "../../../../core/DesktopEditor/xmlsec/src/include/OOXMLSigner.h"
+#include "../../../../core/OfficeUtils/src/OfficeUtils.h"
+
+#include "../../../../core/DesktopEditor/raster/BgraFrame.h"
+#include "../../../../core/DesktopEditor/raster/Metafile/MetaFile.h"
 
 #ifdef LINUX
 #include <unistd.h>
 #include <sys/wait.h>
 #include <stdio.h>
 #endif
+
+// AFTER FULL REALIZE - DELETE THIS MACRO
+//#define DISABLE_OOXML_SIGNATURE
 
 class CAscLocalFileInfo
 {
@@ -132,6 +141,9 @@ public:
 
     bool m_bIsNativeSupport;
 
+    COOXMLVerifier* m_pVerifier;
+    CApplicationFonts* m_pFonts;
+
 public:
     CASCFileConverterToEditor() : NSThreads::CBaseThread()
     {
@@ -141,10 +153,16 @@ public:
 
         m_bIsNativeOpening = false;
         m_bIsNativeSupport = true;
+
+        m_pVerifier = NULL;
+
+        m_pFonts = NULL;
     }
     virtual ~CASCFileConverterToEditor()
     {
         Stop();
+        RELEASEOBJECT(m_pVerifier);
+        RELEASEOBJECT(m_pFonts);
     }
 
     virtual void Stop()
@@ -441,12 +459,150 @@ public:
         NSFile::CFileBinary::Remove(sTempFileForParams);
         m_pEvents->OnFileConvertToEditor(nReturnCode);
 
+        if (0 == nReturnCode)
+            CheckSignatures(sDestinationPath);
+
         m_bRunThread = FALSE;
         return 0;
     }
 
     void NativeViewerOpen(bool bIsEnabled = false);
     void NativeViewerOpenEnd(const std::string& sBase64);
+
+    void CheckSignatures(const std::wstring& sFile)
+    {
+#ifdef DISABLE_OOXML_SIGNATURE
+        return;
+#endif
+
+        RELEASEOBJECT(m_pVerifier);
+        if (m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX ||
+            m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX ||
+            m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX)
+        {
+            std::wstring sUnzipDir = NSCommon::GetDirectoryName(sFile) + L"/" + NSCommon::GetFileName(sFile) + L"_uncompress";
+            NSDirectory::CreateDirectory(sUnzipDir);
+
+            COfficeUtils oCOfficeUtils(NULL);
+            if (S_OK == oCOfficeUtils.ExtractToDirectory(sFile, sUnzipDir, NULL, 0))
+            {
+                m_pVerifier = new COOXMLVerifier(sUnzipDir);
+                NSDirectory::DeleteDirectory(sUnzipDir);
+            }
+        }
+    }
+
+    void CheckSignaturesByDir(const std::wstring& sFolder)
+    {
+        RELEASEOBJECT(m_pVerifier);
+        m_pVerifier = new COOXMLVerifier(sFolder);
+    }
+
+    std::wstring GetSignaturesJSON()
+    {
+        if (NULL == m_pVerifier)
+            return L"";
+
+        int nCount = m_pVerifier->GetSignatureCount();
+        if (0 == nCount)
+            return L"";
+
+        NSStringUtils::CStringBuilder oBuilder;
+        oBuilder.WriteString(L"{\"count\":");
+        oBuilder.AddInt(nCount);
+        oBuilder.WriteString(L", \"data\":[");
+
+        for (int i = 0; i < nCount; i++)
+        {
+            COOXMLSignature* pSign = m_pVerifier->GetSignature(i);
+
+            if (0 != i)
+                oBuilder.WriteString(L",");
+            oBuilder.WriteString(L"{\"name\":\"");
+            std::wstring sParam = pSign->GetCertificate()->GetSignerName();
+            NSCommon::string_replace(sParam, L"\"", L"\\\"");
+            oBuilder.WriteString(sParam);
+            oBuilder.WriteString(L"\",\"guid\":\"");
+            std::string sGuid = pSign->GetGuid();
+            oBuilder.WriteString(UTF8_TO_U(sGuid));
+            oBuilder.WriteString(L"\",\"valid\":");
+            oBuilder.AddInt(pSign->GetValid());
+            oBuilder.WriteString(L",\"image_valid\":\"");
+            sGuid = GetPngFromBase64(pSign->GetImageValidBase64());
+            oBuilder.WriteString(UTF8_TO_U(sGuid));
+            oBuilder.WriteString(L"\",\"image_invalid\":\"");
+            sGuid = GetPngFromBase64(pSign->GetImageInvalidBase64());
+            oBuilder.WriteString(UTF8_TO_U(sGuid));
+            oBuilder.WriteString(L"\"}");
+        }
+
+        oBuilder.WriteString(L"]}");
+
+        return oBuilder.GetData();
+    }
+
+    std::string GetPngFromBase64(const std::string& sBase64)
+    {
+        std::wstring sTmp = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"IMG");
+        std::wstring sTmp2 = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"IMG");
+
+        BYTE* pData = NULL;
+        int nBase64InputLen = 0;
+        NSFile::CBase64Converter::Decode(sBase64.c_str(), (int)sBase64.length(), pData, nBase64InputLen);
+
+        NSFile::CFileBinary oFile;
+        oFile.CreateFileW(sTmp);
+        oFile.WriteFile(pData, (DWORD)nBase64InputLen);
+        oFile.CloseFile();
+
+        RELEASEARRAYOBJECTS(pData);
+        nBase64InputLen = 0;
+
+        if (NULL == m_pFonts)
+        {
+            m_pFonts = new CApplicationFonts();
+            m_pFonts->InitializeFromFolder(m_pManager->m_oSettings.fonts_cache_info_path);
+        }
+
+        bool bIsGood = false;
+        MetaFile::CMetaFile oMeta(m_pFonts);
+        if (oMeta.LoadFromFile(sTmp.c_str()))
+        {
+            oMeta.ConvertToRaster(sTmp2.c_str(), 4, 300);
+            bIsGood = true;
+        }
+        else
+        {
+            CBgraFrame oFrame;
+            if (oFrame.OpenFile(sTmp))
+            {
+                oFrame.SaveFile(sTmp2, 4);
+                bIsGood = true;
+            }
+        }
+
+        NSFile::CFileBinary::Remove(sTmp);
+        if (!bIsGood)
+        {
+            NSFile::CFileBinary::Remove(sTmp2);
+            return sBase64;
+        }
+
+        DWORD dwLen = 0;
+        NSFile::CFileBinary::ReadAllBytes(sTmp2, &pData, dwLen);
+
+        char* base64 = NULL;
+        int base64Len = 0;
+
+        NSFile::CBase64Converter::Encode(pData, (int)dwLen, base64, base64Len, NSBase64::B64_BASE64_FLAG_NOCRLF);
+
+        std::string sRet(base64, base64Len);
+
+        RELEASEARRAYOBJECTS(base64);
+
+        NSFile::CFileBinary::Remove(sTmp2);
+        return sRet;
+    }
 };
 
 class CASCFileConverterFromEditor : public NSThreads::CBaseThread

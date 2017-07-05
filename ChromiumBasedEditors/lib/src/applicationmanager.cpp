@@ -348,6 +348,18 @@ void CAscApplicationManager::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 
             break;
         }
+        case ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_OPENFILENAME_DIALOG:
+        {
+            NSEditorApi::CAscLocalOpenFileDialog* pData = (NSEditorApi::CAscLocalOpenFileDialog*)pEvent->m_pData;
+
+            CCefView* pView = GetViewById(pData->get_Id());
+            if (NULL != pView)
+            {
+                ADDREFINTERFACE(pEvent);
+                pView->Apply(pEvent);
+            }
+            break;
+        }
         default:
         {
             if (NULL != m_pInternal->m_pAdditional)
@@ -597,5 +609,23 @@ void CAscApplicationManager::InitAdditionalEditorParams(std::wstring& sParams)
 {
     m_pInternal->m_sAdditionalUrlParams = sParams;
 }
+
+#ifdef DOCUMENTSCORE_OPENSSL_SUPPORT
+
+void CAscApplicationManager::OpenSsl_SetDialog(ICertificateSelectDialogOpenSsl* pDialog)
+{
+    ICertificateSelectDialogOpenSsl::SetOpenSslDialogApplication(pDialog);
+}
+
+int CAscApplicationManager::OpenSsl_LoadKey(std::wstring file, std::string password)
+{
+    return ICertificateSelectDialogOpenSsl::LoadKey(file, password);
+}
+
+int CAscApplicationManager::OpenSsl_LoadCert(std::wstring file, std::string password)
+{
+    return ICertificateSelectDialogOpenSsl::LoadCert(file, password);
+}
+#endif
 
 /////////////////////////////////////////////////////////////

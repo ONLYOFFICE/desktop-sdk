@@ -17,4 +17,15 @@ win32 {
 }
 linux-g++ | linux-g++-64 | linux-g++-32 {
     include(./Internal_linux.pri)
+
+    #CONFIG += build_for_centos6
+
+    QMAKE_LFLAGS += "-Wl,-rpath,\'\$$ORIGIN\'"
+    QMAKE_LFLAGS += "-Wl,-rpath,\'\$$ORIGIN/converter\'"
+    QMAKE_LFLAGS += -static-libstdc++ -static-libgcc
+
+    build_for_centos6 {
+        QMAKE_LFLAGS += -Wl,--dynamic-linker=./ld-linux-x86-64.so.2
+        DESTDIR = $$DESTDIR/CentOS6
+    }
 }

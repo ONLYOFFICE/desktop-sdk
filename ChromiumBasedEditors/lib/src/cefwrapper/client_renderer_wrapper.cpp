@@ -1683,6 +1683,79 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
             retval = CefV8Value::CreateBool(m_bIsPrinting);
             return true;
         }
+        else if (name == "Sign")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_sign");
+
+            std::vector<CefRefPtr<CefV8Value>>::const_iterator iter = arguments.begin();
+            message->GetArgumentList()->SetString(0, (*iter)->GetStringValue()); ++iter;
+
+            if (iter != arguments.end())
+            {
+                message->GetArgumentList()->SetString(1, (*iter)->GetStringValue()); ++iter;
+            }
+            else
+                message->GetArgumentList()->SetString(1, "");
+
+            if (iter != arguments.end())
+            {
+                message->GetArgumentList()->SetString(2, (*iter)->GetStringValue()); ++iter;
+            }
+            else
+                message->GetArgumentList()->SetString(2, "");
+
+            if (iter != arguments.end())
+            {
+                message->GetArgumentList()->SetString(3, (*iter)->GetStringValue()); ++iter;
+            }
+            else
+                message->GetArgumentList()->SetString(3, "");
+
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "ViewCertificate")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_viewcertificate");
+
+            std::vector<CefRefPtr<CefV8Value>>::const_iterator iter = arguments.begin();
+            message->GetArgumentList()->SetInt(0, (*iter)->GetIntValue());
+
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "SelectCertificate")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_selectsertificate");
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "GetDefaultCertificate")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_defaultcertificate");
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "OpenFilenameDialog")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_open_filename_dialog");
+            std::vector<CefRefPtr<CefV8Value>>::const_iterator iter = arguments.begin();
+            message->GetArgumentList()->SetString(0, (*iter)->GetStringValue());
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "SaveQuestion")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_file_save_question");
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
         // Function does not exist.
         return false;
     }
@@ -2127,6 +2200,14 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction951 = CefV8Value::CreateFunction("IsLocalFile", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction952 = CefV8Value::CreateFunction("IsFilePrinting", _nativeHandler);
 
+    CefRefPtr<CefV8Value> _nativeFunction953 = CefV8Value::CreateFunction("Sign", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction954 = CefV8Value::CreateFunction("ViewCertificate", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction955 = CefV8Value::CreateFunction("SelectCertificate", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction956 = CefV8Value::CreateFunction("GetDefaultCertificate", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction957 = CefV8Value::CreateFunction("OpenFilenameDialog", _nativeHandler);
+
+    CefRefPtr<CefV8Value> _nativeFunction958 = CefV8Value::CreateFunction("SaveQuestion", _nativeHandler);
+
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Cut", _nativeFunctionCut, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -2229,6 +2310,14 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("GetInstallPlugins", _nativeFunction940, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("IsLocalFile", _nativeFunction951, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("IsFilePrinting", _nativeFunction952, V8_PROPERTY_ATTRIBUTE_NONE);
+
+    objNative->SetValue("Sign", _nativeFunction953, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("ViewCertificate", _nativeFunction954, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("SelectCertificate", _nativeFunction955, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("GetDefaultCertificate", _nativeFunction956, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("OpenFilenameDialog", _nativeFunction957, V8_PROPERTY_ATTRIBUTE_NONE);
+
+    objNative->SetValue("SaveQuestion", _nativeFunction958, V8_PROPERTY_ATTRIBUTE_NONE);
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 
@@ -2437,6 +2526,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
             bool bIsSaved = message->GetArgumentList()->GetBool(2);
 
+            std::wstring sSignatures = message->GetArgumentList()->GetString(3).ToWString();
+            NSCommon::string_replace(sSignatures, L"\"", L"\\\"");
+
             if (bIsSaved)
                 _frame->ExecuteJavaScript("window.AscDesktopEditor.LocalFileSetSaved(true);", _frame->GetURL(), 0);
             else
@@ -2475,6 +2567,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
             sCode = "";
             sCode = "window.DesktopOfflineAppDocumentEndLoad(\"" + U_TO_UTF8(sFolder) + "\", \"" + sFileData + "\");";
+            _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+
+            sCode = "window.DesktopOfflineAppDocumentSignatures(\"" + U_TO_UTF8(sSignatures) + "\");";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
         }
         return true;
@@ -2623,6 +2718,59 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         if (_frame)
         {
             std::string sCode = "if (window.UpdateInstallPlugins) window.UpdateInstallPlugins();";
+            _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+        }
+        return true;
+    }
+    else if (sMessageName == "on_signature_defaultcertificate_ret" ||
+             sMessageName == "on_signature_selectsertificate_ret" ||
+             sMessageName == "on_signature_viewcertificate_ret")
+    {
+        std::string sParam = message->GetArgumentList()->GetString(0).ToString();
+
+        std::string sCode = "window.OnNativeReturnCallback(\"" + sMessageName + "\", " + sParam + ");";
+
+        CefRefPtr<CefFrame> _frame = browser->GetFrame("frameEditor");
+        _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+    }
+    else if (sMessageName == "on_open_filename_dialog")
+    {
+        CefRefPtr<CefFrame> _frame = browser->GetFrame("frameEditor");
+
+        if (_frame)
+        {
+            std::wstring sPath = message->GetArgumentList()->GetString(0).ToWString();
+            NSCommon::string_replace(sPath, L"\\", L"\\\\");
+
+            std::wstring sCode = L"window.OnNativeOpenFilenameDialog(\"" + sPath + L"\");";
+            _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+        }
+        return true;
+    }
+    else if (sMessageName == "on_signature_update_signatures")
+    {
+        CefRefPtr<CefFrame> _frame = browser->GetFrame("frameEditor");
+
+        if (_frame)
+        {
+            std::wstring sSignatures = message->GetArgumentList()->GetString(0).ToWString();
+            NSCommon::string_replace(sSignatures, L"\"", L"\\\"");
+
+            std::string sCode = "window.DesktopOfflineAppDocumentSignatures(\"" + U_TO_UTF8(sSignatures) + "\");";
+            _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+        }
+        return true;
+    }
+    else if (sMessageName == "on_file_save_question")
+    {
+        CefRefPtr<CefFrame> _frame = browser->GetFrame("frameEditor");
+
+        if (_frame)
+        {
+            bool bValue = message->GetArgumentList()->GetBool(0);
+            std::string sCode = "window.DesktopSaveQuestionReturn(";
+            sCode += (bValue ? "true" : "false");
+            sCode += ");";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
         }
         return true;

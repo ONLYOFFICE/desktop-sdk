@@ -869,7 +869,18 @@ public:
                                 bool is_redirect)
     {
         std::wstring sUrl = request->GetURL().ToWString();
-        if (frame->IsMain() && m_nBeforeBrowserCounter != 0 && sUrl.find(L"file://") == 0 && sUrl != m_pParent->m_pInternal->m_strUrl)
+
+        std::wstring sTest1 = sUrl;
+        std::wstring sTest2 = m_pParent->m_pInternal->m_strUrl;
+        NSCommon::url_correct(sTest1);
+        NSCommon::url_correct(sTest2);
+
+        NSCommon::string_replace(sTest1, L" ", L"%20");
+        NSCommon::string_replace(sTest2, L" ", L"%20");
+        NSCommon::string_replace(sTest1, L"\\", L"/");
+        NSCommon::string_replace(sTest2, L"\\", L"/");
+
+        if (frame->IsMain() && m_nBeforeBrowserCounter != 0 && sUrl.find(L"file://") == 0 && sTest1 != sTest2)
             return true;
 
         m_nBeforeBrowserCounter++;
@@ -1565,6 +1576,140 @@ public:
             }
             return true;
         }
+        else if (message_name == "on_signature_sign")
+        {
+            if (m_pParent && m_pParent->m_pInternal)
+            {
+                std::string sId = message->GetArgumentList()->GetString(0).ToString();
+                std::wstring sGuid = message->GetArgumentList()->GetString(1).ToWString();
+                std::wstring sUrl = message->GetArgumentList()->GetString(2).ToWString();
+                std::wstring sUrl2 = message->GetArgumentList()->GetString(3).ToWString();
+
+                std::wstring sFile = m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_sFileSrc;
+                if (sFile.empty())
+                    sFile = m_pParent->m_pInternal->m_oConverterToEditor.m_oInfo.m_sFileSrc;
+
+                std::wstring sUnzipDir = NSDirectory::CreateDirectoryWithUniqueName(NSDirectory::GetTempPath());
+                NSDirectory::CreateDirectory(sUnzipDir);
+
+                COfficeUtils oCOfficeUtils(NULL);
+                oCOfficeUtils.ExtractToDirectory(sFile, sUnzipDir, NULL, 0);
+
+                ICertificate* pCertificate = ICertificate::GetById(sId);
+                if (pCertificate)
+                {
+                    COOXMLSigner oOOXMLSigner(sUnzipDir, pCertificate);
+
+                    oOOXMLSigner.SetGuid(sGuid);
+                    oOOXMLSigner.SetImageValid(sUrl);
+                    oOOXMLSigner.SetImageInvalid(sUrl2);
+
+                    oOOXMLSigner.Sign();
+
+                    CASCFileConverterToEditor* pConverter = &m_pParent->m_pInternal->m_oConverterToEditor;
+                    pConverter->CheckSignaturesByDir(sUnzipDir);
+
+                    std::wstring sSignatures = pConverter->GetSignaturesJSON();
+
+                    CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_update_signatures");
+                    message->GetArgumentList()->SetString(0, sSignatures);
+                    browser->SendProcessMessage(PID_RENDERER, message);
+                }
+
+                RELEASEOBJECT(pCertificate);
+
+                oCOfficeUtils.CompressFileOrDirectory(sUnzipDir, sFile, true);
+
+                NSDirectory::DeleteDirectory(sUnzipDir);
+            }
+            return true;
+        }
+        else if (message_name == "on_signature_viewcertificate")
+        {
+            if (m_pParent && m_pParent->m_pInternal)
+            {
+                int nIndex = message->GetArgumentList()->GetInt(0);
+                COOXMLVerifier* pVerifier = m_pParent->m_pInternal->m_oConverterToEditor.m_pVerifier;
+                if (NULL != pVerifier)
+                {
+                    COOXMLSignature* pSign = pVerifier->GetSignature(nIndex);
+                    int nRet = pSign ? pSign->GetCertificate()->ShowCertificate() : 0;
+
+                    CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_viewcertificate_ret");
+                    message->GetArgumentList()->SetString(0, std::to_string(nRet));
+                    browser->SendProcessMessage(PID_RENDERER, message);
+                }
+            }
+            return true;
+        }
+        else if (message_name == "on_signature_defaultcertificate")
+        {
+            if (m_pParent && m_pParent->m_pInternal)
+            {
+                CCertificateInfo info = ICertificate::GetDefault();
+
+                CJSONSimple serializer;
+                serializer.Start();
+                serializer.Write(L"name", info.GetName());
+                serializer.Next();
+                serializer.Write(L"id", info.GetId());
+                serializer.Next();
+                serializer.Write(L"date", info.GetDate());
+                serializer.End();
+
+                CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_defaultcertificate_ret");
+                message->GetArgumentList()->SetString(0, serializer.GetData());
+                browser->SendProcessMessage(PID_RENDERER, message);
+            }
+            return true;
+        }
+        else if (message_name == "on_signature_selectsertificate")
+        {
+            if (m_pParent && m_pParent->m_pInternal)
+            {
+                CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_selectsertificate_ret");
+
+                ICertificate* pCert = ICertificate::CreateInstance();
+                if (pCert->ShowSelectDialog())
+                {
+                    CCertificateInfo info = pCert->GetInfo();
+
+                    CJSONSimple serializer;
+                    serializer.Start();
+                    serializer.Write(L"name", info.GetName());
+                    serializer.Next();
+                    serializer.Write(L"id", info.GetId());
+                    serializer.Next();
+                    serializer.Write(L"date", info.GetDate());
+                    serializer.End();
+
+                    message->GetArgumentList()->SetString(0, serializer.GetData());
+                }
+
+                RELEASEOBJECT(pCert);
+                browser->SendProcessMessage(PID_RENDERER, message);
+            }
+            return true;
+        }
+        else if (message_name == "on_open_filename_dialog")
+        {
+            NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent(ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_OPENFILENAME_DIALOG);
+            NSEditorApi::CAscLocalOpenFileDialog* pData = new NSEditorApi::CAscLocalOpenFileDialog();
+            pData->put_Id(m_pParent->GetId());
+            pData->put_Filter(message->GetArgumentList()->GetString(0).ToWString());
+            pEvent->m_pData = pData;
+            m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+            return true;
+        }
+        else if (message_name == "on_file_save_question")
+        {
+            NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent(ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_SAVE_YES_NO);
+            NSEditorApi::CAscEditorSaveQuestion* pData = new NSEditorApi::CAscEditorSaveQuestion();
+            pData->put_Id(m_pParent->GetId());
+            pEvent->m_pData = pData;
+            m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+            return true;
+        }
 
         CAscApplicationManager_Private* pInternalMan = m_pParent->GetAppManager()->m_pInternal;
         if (pInternalMan->m_pAdditional && pInternalMan->m_pAdditional->OnProcessMessageReceived(browser, source_process, message))
@@ -1807,6 +1952,9 @@ public:
             {
             }
 #endif
+
+            if (((nMods & EVENTFLAG_CONTROL_DOWN) != 0) && event.windows_key_code == 9)
+                return true; // tab!!!
         }
 
         return false;
@@ -2294,6 +2442,7 @@ void CCefView_Private::LocalFile_End()
 
     message->GetArgumentList()->SetString(1, m_oLocalInfo.m_oInfo.m_sFileSrc);
     message->GetArgumentList()->SetBool(2, m_oLocalInfo.m_oInfo.m_bIsSaved);
+    message->GetArgumentList()->SetString(3, m_oConverterToEditor.GetSignaturesJSON());
     m_handler->GetBrowser()->SendProcessMessage(PID_RENDERER, message);
 
     m_oLocalInfo.m_oInfo.m_nCounterConvertion = 1; // for reload enable
@@ -2466,6 +2615,9 @@ void CCefView_Private::CheckZoom()
     CefWindowHandle hwnd = _host->GetWindowHandle();
 
     int nDeviceScale = NSMonitor::GetRawMonitorDpi(hwnd);
+
+    if (-1 != m_pManager->m_pInternal->m_nForceDisplayScale && m_pManager->m_pInternal->m_nForceDisplayScale > 0)
+        nDeviceScale = m_pManager->m_pInternal->m_nForceDisplayScale;
 
     if (nDeviceScale != m_nDeviceScale)
     {
@@ -3161,6 +3313,24 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
         case ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_ADD_PLUGIN:
         {
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("update_install_plugins");
+            browser->SendProcessMessage(PID_RENDERER, message);
+            break;
+        }
+        case ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_OPENFILENAME_DIALOG:
+        {
+            NSEditorApi::CAscLocalOpenFileDialog* pData = (NSEditorApi::CAscLocalOpenFileDialog*)pEvent->m_pData;
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_open_filename_dialog");
+            message->GetArgumentList()->SetString(0, pData->get_Path());
+
+            browser->SendProcessMessage(PID_RENDERER, message);
+            break;
+        }
+        case ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_SAVE_YES_NO:
+        {
+            NSEditorApi::CAscEditorSaveQuestion* pData = (NSEditorApi::CAscEditorSaveQuestion*)pEvent->m_pData;
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_file_save_question");
+            message->GetArgumentList()->SetBool(0, pData->get_Value());
+
             browser->SendProcessMessage(PID_RENDERER, message);
             break;
         }

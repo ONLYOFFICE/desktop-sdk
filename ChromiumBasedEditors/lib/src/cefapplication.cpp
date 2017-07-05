@@ -259,21 +259,19 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 #endif
 
     // ASC command line props
-#ifdef WIN32
-    std::string sCommandLine = GetCommandLineA();
-    if (sCommandLine.find("--ascdesktop-support-debug-info") != std::string::npos)
-        pManager->SetDebugInfoSupport(true);
-#else
+    pManager->m_pInternal->LoadSettings();
     for (int i = 0; i < argc; ++i)
     {
         std::string sCommandLine(argv[i]);
-        if (sCommandLine.find("--ascdesktop-support-debug-info") != std::string::npos)
-        {
-            pManager->SetDebugInfoSupport(true);
-            break;
-        }
+
+        std::string::size_type posSeparate = sCommandLine.find('=');
+
+        std::string sName = (std::string::npos == posSeparate) ? sCommandLine : sCommandLine.substr(0, posSeparate);
+        std::string sValue = (std::string::npos == posSeparate) ? "" : sCommandLine.substr(posSeparate + 1);
+
+        pManager->m_pInternal->CheckSetting(sName, sValue);
     }
-#endif
+    pManager->m_pInternal->SaveSettings();
 
     std::wstring sCachePath = pManager->m_oSettings.cache_path;
 

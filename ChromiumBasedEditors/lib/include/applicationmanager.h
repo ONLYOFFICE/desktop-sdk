@@ -42,6 +42,10 @@
 #include "./cefview.h"
 #include "./cefapplication.h"
 
+#ifdef DOCUMENTSCORE_OPENSSL_SUPPORT
+#include "./../../../../core/DesktopEditor/xmlsec/src/include/XmlCertificate.h"
+#endif
+
 #ifdef WIN32
 __declspec(dllexport) int __cdecl Core_SetProcessDpiAwareness(void);
 __declspec(dllexport) int __cdecl Core_GetMonitorRawDpi(WindowHandleId, unsigned int*, unsigned int*);
@@ -170,6 +174,12 @@ public:
 
     void InitAdditionalEditorParams(std::wstring& sParams);
 
+#ifdef DOCUMENTSCORE_OPENSSL_SUPPORT
+    void OpenSsl_SetDialog(ICertificateSelectDialogOpenSsl* pDialog);
+    static int OpenSsl_LoadKey(std::wstring file, std::string password);
+    static int OpenSsl_LoadCert(std::wstring file, std::string password);
+#endif
+
 protected:
     CAscApplicationManager_Private* m_pInternal;
     
@@ -178,6 +188,7 @@ protected:
     friend class CCefViewEditor;
     friend class CAscClientHandler;
     friend class CASCFileConverterFromEditor;
+    friend class CApplicationCEF;
 };
 
 #endif // APPLICATION_MANAGER_H
