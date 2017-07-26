@@ -21,18 +21,13 @@ QMAKE_LFLAGS += -Wl,--rpath=./
 CONFIG += build_all_zlib build_zlib_as_sources
 include($$CORE_ROOT_DIR/OfficeUtils/OfficeUtils.pri)
 
-#hunspell
-DEFINES += HUNSPELL_STATIC
-CONFIG += building_hunspell
-include($$CORE_ROOT_DIR/DesktopEditor/hunspell-1.3.3/src/qt/hunspell.pri)
-
 DEFINES += \
     PDFREADER_USE_DYNAMIC_LIBRARY \
     DJVU_USE_DYNAMIC_LIBRARY \
     XPS_USE_DYNAMIC_LIBRARY \
     HTMLRENDERER_USE_DYNAMIC_LIBRARY
 
-LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lgraphics -llibxml
+LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lgraphics -llibxml -lhunspell
 LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lPdfReader -lPdfWriter -lDjVuFile -lXpsFile -lHtmlRenderer -lUnicodeConverter -looxmlsignature
 # ------------------------------------------------------
 
