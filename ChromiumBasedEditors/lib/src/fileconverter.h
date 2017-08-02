@@ -197,13 +197,12 @@ public:
                     oFile.CloseFile();
                 }
 
-                NSEditorApi::CAscMenuEventListener* pListener = m_pManager->GetEventListener();
+                NSEditorApi::CAscCefMenuEventListener* pListener = m_pManager->GetEventListener();
                 NSEditorApi::CAscTabEditorType* pData = new NSEditorApi::CAscTabEditorType();
                 pData->put_Id(m_pView->GetId());
                 pData->put_Type((int)eType);
 
-                NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
-                pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_TABEDITORTYPE;
+                NSEditorApi::CAscCefMenuEvent* pEvent = m_pView->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_TABEDITORTYPE);
                 pEvent->m_pData = pData;
                 pListener->OnEvent(pEvent);
             }
@@ -223,7 +222,7 @@ public:
 
         if (true)
         {
-            NSEditorApi::CAscMenuEventListener* pListener = m_pManager->GetEventListener();
+            NSEditorApi::CAscCefMenuEventListener* pListener = m_pManager->GetEventListener();
             NSEditorApi::CAscTabEditorType* pData = new NSEditorApi::CAscTabEditorType();
             pData->put_Id(m_pView->GetId());
 
@@ -235,8 +234,7 @@ public:
 
             pData->put_Type((int)eType);
 
-            NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
-            pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_TABEDITORTYPE;
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pView->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_TABEDITORTYPE);
             pEvent->m_pData = pData;
             pListener->OnEvent(pEvent);
         }

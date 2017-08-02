@@ -169,12 +169,12 @@ void CAscApplicationManager::CheckFonts(bool bAsync)
     }
 }
 
-void CAscApplicationManager::SetEventListener(NSEditorApi::CAscMenuEventListener* pListener)
+void CAscApplicationManager::SetEventListener(NSEditorApi::CAscCefMenuEventListener* pListener)
 {
     m_pInternal->m_pListener = pListener;
 }
 
-NSEditorApi::CAscMenuEventListener* CAscApplicationManager::GetEventListener()
+NSEditorApi::CAscCefMenuEventListener* CAscApplicationManager::GetEventListener()
 {
     return m_pInternal->m_pListener;
 }
@@ -234,8 +234,11 @@ void CAscApplicationManager::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 
             if (m_pInternal->m_pListener && !bIsPrivate)
             {
-                ADDREFINTERFACE(pEvent);
-                m_pInternal->m_pListener->OnEvent(pEvent);
+                NSEditorApi::CAscCefMenuEvent* pCefEvent = new NSEditorApi::CAscCefMenuEvent(ASC_MENU_EVENT_TYPE_CEF_DOWNLOAD);
+                pCefEvent->put_SenderId(pData->get_Id());
+                ADDREFINTERFACE(pData);
+                pCefEvent->m_pData = pData;
+                m_pInternal->m_pListener->OnEvent(pCefEvent);
             }
 
             break;

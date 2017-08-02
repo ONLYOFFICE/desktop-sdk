@@ -83,6 +83,8 @@ public:
 
     void Apply(NSEditorApi::CAscMenuEvent* );
     NSEditorApi::CAscMenuEvent* ApplySync(NSEditorApi::CAscMenuEvent* );
+
+    NSEditorApi::CAscCefMenuEvent* CreateCefEvent(int nType);
     
     bool StartDownload(const std::wstring& sUrl);
 

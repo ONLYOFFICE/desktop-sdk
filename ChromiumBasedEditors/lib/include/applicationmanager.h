@@ -131,8 +131,8 @@ public:
 
     void CheckFonts(bool bAsync = true);
 
-    void SetEventListener(NSEditorApi::CAscMenuEventListener* );
-    NSEditorApi::CAscMenuEventListener* GetEventListener();
+    void SetEventListener(NSEditorApi::CAscCefMenuEventListener* );
+    NSEditorApi::CAscCefMenuEventListener* GetEventListener();
 
     void Apply(NSEditorApi::CAscMenuEvent* );
     NSEditorApi::CAscMenuEvent* ApplySync(NSEditorApi::CAscMenuEvent* );

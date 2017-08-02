@@ -390,7 +390,7 @@ public:
 
     int                 m_nIdCounter;
 
-    NSEditorApi::CAscMenuEventListener* m_pListener;
+    NSEditorApi::CAscCefMenuEventListener* m_pListener;
 
     std::map<int, CCefView*> m_mapViews;    
 
@@ -616,9 +616,7 @@ public:
     {
         if (NULL != m_pMain && NULL != m_pMain->GetEventListener())
         {
-            NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
-            pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_ONLOGOUT;
-
+            NSEditorApi::CAscCefMenuEvent* pEvent = new NSEditorApi::CAscCefMenuEvent(ASC_MENU_EVENT_TYPE_CEF_ONLOGOUT);
             m_pMain->GetEventListener()->OnEvent(pEvent);
         }
     }
