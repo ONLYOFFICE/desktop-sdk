@@ -443,7 +443,13 @@ public:
                 CefRefPtr<CefV8Value> retval;
                 CefRefPtr<CefV8Exception> exception;
 
-                bool bIsVersion = browser->GetMainFrame()->GetV8Context()->Eval("window.DocsAPI.DocEditor.version();", retval, exception);
+                bool bIsVersion = browser->GetMainFrame()->GetV8Context()->Eval(
+"(function() { \n\
+if (window.DocsAPI && window.DocsAPI.DocEditor) \n\
+    return window.DocsAPI.DocEditor.version(); \n\
+else \n\
+    return undefined; \n\
+})();", retval, exception);
                 if (bIsVersion)
                 {
                     if (retval->IsString())
@@ -1756,6 +1762,41 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
+        else if (name == "startReporter")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_start_reporter");
+            std::vector<CefRefPtr<CefV8Value>>::const_iterator iter = arguments.begin();
+            message->GetArgumentList()->SetString(0, (*iter)->GetStringValue());
+            message->GetArgumentList()->SetString(1, m_sLocalFileFolder);
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "endReporter")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_end_reporter");
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "sendToReporter")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("send_to_reporter");
+            std::vector<CefRefPtr<CefV8Value>>::const_iterator iter = arguments.begin();
+            message->GetArgumentList()->SetString(0, (*iter)->GetStringValue());
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "sendFromReporter")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("send_from_reporter");
+            std::vector<CefRefPtr<CefV8Value>>::const_iterator iter = arguments.begin();
+            message->GetArgumentList()->SetString(0, (*iter)->GetStringValue());
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
         // Function does not exist.
         return false;
     }
@@ -2208,6 +2249,11 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Value> _nativeFunction958 = CefV8Value::CreateFunction("SaveQuestion", _nativeHandler);
 
+    CefRefPtr<CefV8Value> _nativeFunction960 = CefV8Value::CreateFunction("startReporter", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction961 = CefV8Value::CreateFunction("endReporter", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction962 = CefV8Value::CreateFunction("sendToReporter", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction963 = CefV8Value::CreateFunction("sendFromReporter", _nativeHandler);
+
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Cut", _nativeFunctionCut, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -2319,6 +2365,11 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     objNative->SetValue("SaveQuestion", _nativeFunction958, V8_PROPERTY_ATTRIBUTE_NONE);
 
+    objNative->SetValue("startReporter", _nativeFunction960, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("endReporter", _nativeFunction961, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("sendToReporter", _nativeFunction962, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("sendFromReporter", _nativeFunction963, V8_PROPERTY_ATTRIBUTE_NONE);
+
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 
     CefRefPtr<CefFrame> _frame = context->GetFrame();
@@ -2382,7 +2433,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     }
     else if (sMessageName == "cef_control_id")
     {
-        CefRefPtr<CefFrame> _frame = browser->GetFrame("frameEditor");
+        CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
         if (_frame)
         {
             int nControlId = message->GetArgumentList()->GetInt(0);
@@ -2460,7 +2511,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     }
     else if (sMessageName == "document_save")
     {
-        CefRefPtr<CefFrame> _frame = browser->GetFrame("frameEditor");
+        CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
 
         if (_frame)
         {
@@ -2471,7 +2522,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     }
     else if (sMessageName == "print")
     {
-        CefRefPtr<CefFrame> _frame = browser->GetFrame("frameEditor");
+        CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
 
         if (_frame)
         {
@@ -2517,7 +2568,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     }
     else if (sMessageName == "onlocaldocument_loadend")
     {
-        CefRefPtr<CefFrame> _frame = browser->GetFrame("frameEditor");
+        CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
+        if (!_frame)
+            _frame = browser->GetMainFrame();
 
         if (_frame)
         {
@@ -2576,7 +2629,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     }
     else if (sMessageName == "onlocaldocument_onsaveend")
     {
-        CefRefPtr<CefFrame> _frame = browser->GetFrame("frameEditor");
+        CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
 
         if (_frame)
         {
@@ -2633,7 +2686,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     }
     else if (sMessageName == "onlocaldocument_onaddimage")
     {
-        CefRefPtr<CefFrame> _frame = browser->GetFrame("frameEditor");
+        CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
 
         if (_frame)
         {
@@ -2667,7 +2720,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     }
     else if (sMessageName == "on_editor_native_message")
     {
-        CefRefPtr<CefFrame> _frame = browser->GetFrame("frameEditor");
+        CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
 
         if (_frame)
         {
@@ -2681,7 +2734,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     }
     else if (sMessageName == "onlocaldocument_additionalparams")
     {
-        CefRefPtr<CefFrame> _frame = browser->GetFrame("frameEditor");
+        CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
 
         if (_frame)
         {
@@ -2693,7 +2746,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     }    
     else if (sMessageName == "native_viewer_onopened")
     {
-        CefRefPtr<CefFrame> _frame = browser->GetFrame("frameEditor");
+        CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
         if (_frame)
         {
             std::wstring s1 = message->GetArgumentList()->GetString(0).ToWString();
@@ -2714,7 +2767,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     }
     else if (sMessageName == "update_install_plugins")
     {
-        CefRefPtr<CefFrame> _frame = browser->GetFrame("frameEditor");
+        CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
         if (_frame)
         {
             std::string sCode = "if (window.UpdateInstallPlugins) window.UpdateInstallPlugins();";
@@ -2730,12 +2783,12 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
         std::string sCode = "window.OnNativeReturnCallback(\"" + sMessageName + "\", " + sParam + ");";
 
-        CefRefPtr<CefFrame> _frame = browser->GetFrame("frameEditor");
+        CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
         _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
     }
     else if (sMessageName == "on_open_filename_dialog")
     {
-        CefRefPtr<CefFrame> _frame = browser->GetFrame("frameEditor");
+        CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
 
         if (_frame)
         {
@@ -2749,7 +2802,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     }
     else if (sMessageName == "on_signature_update_signatures")
     {
-        CefRefPtr<CefFrame> _frame = browser->GetFrame("frameEditor");
+        CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
 
         if (_frame)
         {
@@ -2763,7 +2816,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     }
     else if (sMessageName == "on_file_save_question")
     {
-        CefRefPtr<CefFrame> _frame = browser->GetFrame("frameEditor");
+        CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
 
         if (_frame)
         {
@@ -2775,6 +2828,32 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         }
         return true;
     }
+    else if (sMessageName == "from_reporter_message")
+    {
+        CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
+
+        if (_frame)
+        {
+            std::string sParam = message->GetArgumentList()->GetString(0);
+            NSCommon::string_replaceA(sParam, "\"", "\\\"");
+            _frame->ExecuteJavaScript("window.editor.DemonstrationReporterMessages({ data : \"" + sParam + "\" });", _frame->GetURL(), 0);
+        }
+
+        return true;
+    }
+    else if (sMessageName == "to_reporter_message")
+    {
+        CefRefPtr<CefFrame> _frame = browser->GetMainFrame();
+
+        if (_frame)
+        {
+            std::string sParam = message->GetArgumentList()->GetString(0);
+            NSCommon::string_replaceA(sParam, "\"", "\\\"");
+            _frame->ExecuteJavaScript("window.editor.DemonstrationToReporterMessages({ data : \"" + sParam + "\" });", _frame->GetURL(), 0);
+        }
+
+        return true;
+    }
 
     if (m_pAdditional.is_init() && m_pAdditional->OnProcessMessageReceived(app, browser, source_process, message))
         return true;
@@ -2782,6 +2861,15 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     return message_router_->OnProcessMessageReceived(
         browser, source_process, message);
 }
+
+private:
+  CefRefPtr<CefFrame> GetEditorFrame(CefRefPtr<CefBrowser> browser)
+  {
+    CefRefPtr<CefFrame> _frame = browser->GetFrame("frameEditor");
+    if (_frame)
+        return _frame;
+    return browser->GetMainFrame();
+  }
 
  private:
   bool last_node_is_editable_;

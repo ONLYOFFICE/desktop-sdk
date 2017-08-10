@@ -63,6 +63,23 @@
 #include "./additional/manager.h"
 #include "./additional/renderer.h"
 
+class CAscReporterData
+{
+public:
+    int Id;
+    int ParentId;
+    std::wstring Url;
+    std::wstring LocalRecoverFolder;
+
+public:
+
+    CAscReporterData()
+    {
+        Id = -1;
+        ParentId = -1;
+    }
+};
+
 class CJSONSimple
 {
 private:

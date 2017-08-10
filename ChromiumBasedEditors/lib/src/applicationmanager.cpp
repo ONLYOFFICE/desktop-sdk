@@ -378,6 +378,12 @@ NSEditorApi::CAscMenuEvent* CAscApplicationManager::ApplySync(NSEditorApi::CAscM
     return NULL;
 }
 
+int CAscApplicationManager::GenerateNextViewId()
+{
+    m_pInternal->m_nIdCounter++;
+    return m_pInternal->m_nIdCounter;
+}
+
 CCefView* CAscApplicationManager::CreateCefView(CCefViewWidgetImpl* parent)
 {
     m_pInternal->m_nIdCounter++;
@@ -397,6 +403,25 @@ CCefViewEditor* CAscApplicationManager::CreateCefEditor(CCefViewWidgetImpl* pare
     pView->SetAppManager(this);
 
     m_pInternal->m_mapViews[m_pInternal->m_nIdCounter] = pView;
+    return pView;
+}
+
+CCefViewEditor* CAscApplicationManager::CreateCefPresentationReporter(CCefViewWidgetImpl* parent, CAscReporterData* data)
+{    
+    m_pInternal->m_nWindowCounter++;
+    CCefViewEditor* pView = new CCefViewEditor(parent, data->Id);
+    pView->SetAppManager(this);
+
+    m_pInternal->m_mapViews[m_pInternal->m_nIdCounter] = pView;
+
+    pView->LoadReporter(data->ParentId, data->Url);
+    if (!data->LocalRecoverFolder.empty())
+    {
+        pView->OpenReporter(data->LocalRecoverFolder);
+    }
+
+    // remove data here
+    delete data;
     return pView;
 }
 

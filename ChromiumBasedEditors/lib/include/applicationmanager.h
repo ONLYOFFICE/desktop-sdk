@@ -106,6 +106,7 @@ public:
     }
 };
 
+class CAscReporterData;
 class CAscApplicationManager_Private;
 class CApplicationFonts;
 class Q_DECL_EXPORT CAscApplicationManager
@@ -139,6 +140,7 @@ public:
 
     CCefView* CreateCefView(CCefViewWidgetImpl* parent);
     CCefViewEditor* CreateCefEditor(CCefViewWidgetImpl* parent);
+    CCefViewEditor* CreateCefPresentationReporter(CCefViewWidgetImpl* parent, CAscReporterData* data);
 
     CCefView* GetViewById(int nId);
     CCefView* GetViewByUrl(const std::wstring& url);
@@ -179,6 +181,9 @@ public:
     static int OpenSsl_LoadKey(std::wstring file, std::string password);
     static int OpenSsl_LoadCert(std::wstring file, std::string password);
 #endif
+
+protected:
+    int GenerateNextViewId();
 
 protected:
     CAscApplicationManager_Private* m_pInternal;

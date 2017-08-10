@@ -71,6 +71,7 @@ public:
 
     CCefView* GetCefView();
     void Create(CAscApplicationManager* pManager, CefViewWrapperType eType);
+    void CreateReporter(CAscApplicationManager* pManager, CAscReporterData* data);
 
 protected:
     CCefView* m_pCefView;

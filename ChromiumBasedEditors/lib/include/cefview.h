@@ -110,6 +110,9 @@ public:
     void SetModified(bool bIsModified);
     bool GetModified();
 
+    bool IsPresentationReporter();
+    void LoadReporter(int nParentId, std::wstring url);
+
 protected:
     int m_nId;
     CefViewWrapperType m_eWrapperType;
@@ -137,6 +140,7 @@ public:
     void CreateLocalFile(const int& nFileFormat, const std::wstring& sName = L""); // AscEditorType
     bool OpenRecoverFile(const int& nId);
     bool OpenRecentFile(const int& nId);
+    bool OpenReporter(const std::wstring& sFolder);
 };
 
 class IFileDownloaderEvents

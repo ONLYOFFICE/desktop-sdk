@@ -238,6 +238,10 @@ public:
     int m_nDeviceScale;
     bool m_bIsWindowsCheckZoom = false;
 
+    bool m_bIsReporter;
+    int m_nReporterParentId;
+    int m_nReporterChildId;
+
 #if defined(_LINUX) && !defined(_MAC)
     WindowHandleId m_lNaturalParent;
 #endif
@@ -274,6 +278,10 @@ public:
 
         m_nDeviceScale = 1;
         m_bIsWindowsCheckZoom = false;
+
+        m_bIsReporter = false;
+        m_nReporterParentId = -1;
+        m_nReporterChildId = -1;
     }
 
     void Destroy()
@@ -1696,6 +1704,52 @@ public:
             NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_SAVE_YES_NO);
             NSEditorApi::CAscEditorSaveQuestion* pData = new NSEditorApi::CAscEditorSaveQuestion();
             pData->put_Id(m_pParent->GetId());
+            pEvent->m_pData = pData;
+            m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+            return true;
+        }
+        else if (message_name == "on_start_reporter")
+        {
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_REPORTER_CREATE);
+            NSEditorApi::CAscReporterCreate* pData = new NSEditorApi::CAscReporterCreate();
+            m_pParent->m_pInternal->m_nReporterChildId = m_pParent->GetAppManager()->GenerateNextViewId();
+
+            CAscReporterData* pCreate = new CAscReporterData();
+            pCreate->Id = m_pParent->m_pInternal->m_nReporterChildId;
+            pCreate->ParentId = m_pParent->GetId();
+            pCreate->Url = message->GetArgumentList()->GetString(0).ToWString();
+            pCreate->LocalRecoverFolder = message->GetArgumentList()->GetString(1).ToWString();
+            pData->put_Data(pCreate);
+
+            pEvent->m_pData = pData;
+            m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+            return true;
+        }
+        else if (message_name == "on_end_reporter")
+        {
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_REPORTER_END);
+            NSEditorApi::CAscTypeId* pData = new NSEditorApi::CAscTypeId();
+            pData->put_Id(m_pParent->m_pInternal->m_nReporterChildId);
+            pEvent->m_pData = pData;
+            m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+            return true;
+        }
+        else if (message_name == "send_to_reporter")
+        {
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_REPORTER_MESSAGE_TO);
+            NSEditorApi::CAscReporterMessage* pData = new NSEditorApi::CAscReporterMessage();
+            pData->put_ReceiverId(m_pParent->m_pInternal->m_nReporterChildId);
+            pData->put_Message(message->GetArgumentList()->GetString(0).ToWString());
+            pEvent->m_pData = pData;
+            m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+            return true;
+        }
+        else if (message_name == "send_from_reporter")
+        {
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_REPORTER_MESSAGE_FROM);
+            NSEditorApi::CAscReporterMessage* pData = new NSEditorApi::CAscReporterMessage();
+            pData->put_ReceiverId(m_pParent->m_pInternal->m_nReporterParentId);
+            pData->put_Message(message->GetArgumentList()->GetString(0).ToWString());
             pEvent->m_pData = pData;
             m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
             return true;
@@ -3318,6 +3372,22 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             browser->SendProcessMessage(PID_RENDERER, message);
             break;
         }
+        case ASC_MENU_EVENT_TYPE_REPORTER_MESSAGE_FROM:
+        {
+            NSEditorApi::CAscReporterMessage* pData = (NSEditorApi::CAscReporterMessage*)pEvent->m_pData;
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("from_reporter_message");
+            message->GetArgumentList()->SetString(0, pData->get_Message());
+            browser->SendProcessMessage(PID_RENDERER, message);
+            break;
+        }
+        case ASC_MENU_EVENT_TYPE_REPORTER_MESSAGE_TO:
+        {
+            NSEditorApi::CAscReporterMessage* pData = (NSEditorApi::CAscReporterMessage*)pEvent->m_pData;
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("to_reporter_message");
+            message->GetArgumentList()->SetString(0, pData->get_Message());
+            browser->SendProcessMessage(PID_RENDERER, message);
+            break;
+        }
         default:
         {
             CApplicationManagerAdditionalBase* pAdditional = GetAppManager()->m_pInternal->m_pAdditional;
@@ -3426,6 +3496,27 @@ void CCefView::SetModified(bool bIsModified)
 bool CCefView::GetModified()
 {
     return m_pInternal->m_oLocalInfo.m_oInfo.m_bIsModified;
+}
+
+bool CCefView::IsPresentationReporter()
+{
+    return m_pInternal->m_bIsReporter;
+}
+
+void CCefView::LoadReporter(int nParentId, std::wstring url)
+{
+    m_pInternal->m_nReporterParentId = nParentId;
+
+    // url - parent url
+    std::wstring urlReporter = url;
+    std::wstring::size_type pos = url.rfind(L"/index.html");
+    if (std::wstring::npos != pos)
+    {
+        urlReporter = url.substr(0, pos);
+        urlReporter += L"/index.reporter.html";
+    }
+
+    this->load(urlReporter);
 }
 
 /////////////////////////////////////////////////////////////
@@ -3685,6 +3776,30 @@ bool CCefViewEditor::OpenRecoverFile(const int& nId)
     this->load(sUrl + sParams);
 
     this->GetAppManager()->m_pInternal->Recovers_Remove(nId);
+    return true;
+}
+
+bool CCefViewEditor::OpenReporter(const std::wstring& sFolderInput)
+{
+    std::wstring sFolder = sFolderInput;
+    if (0 == sFolder.find(L"file:///"))
+    {
+        sFolder = sFolder.substr(7);
+        if (!NSDirectory::Exists(sFolder))
+            sFolder = sFolder.substr(1);
+    }
+
+    m_pInternal->m_oLocalInfo.m_oInfo.m_bIsSaved = false;
+
+    m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
+
+    m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc = sFolder + L"/Editor.bin";
+    NSCommon::string_replace(m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc, L"\\", L"/");
+
+    m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir = sFolder;
+    NSCommon::string_replace(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir, L"\\", L"/");
+
+    m_pInternal->LocalFile_Start();
     return true;
 }
 
