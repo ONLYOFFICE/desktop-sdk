@@ -49,7 +49,6 @@
 #endif
 
 // AFTER FULL REALIZE - DELETE THIS MACRO
-//#define DISABLE_OOXML_SIGNATURE
 
 class CAscLocalFileInfo
 {
@@ -314,6 +313,7 @@ public:
         oBuilder.WriteString(L"/Editor.bin</m_sFileTo><m_nFormatTo>8192</m_nFormatTo>");
         oBuilder.WriteString(L"<m_sThemeDir>./themes</m_sThemeDir><m_bDontSaveAdditional>true</m_bDontSaveAdditional>");
         oBuilder.WriteString(sParams);
+        //oBuilder.WriteString(L"<m_bIsNoBase64>false</m_bIsNoBase64>");
         oBuilder.WriteString(L"</TaskQueueDataConvert>");
 
         std::wstring sXmlConvert = oBuilder.GetData();

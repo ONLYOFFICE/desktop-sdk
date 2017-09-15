@@ -1797,6 +1797,15 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
+        else if (name == "IsSignaturesSupport")
+        {
+#ifdef DISABLE_OOXML_SIGNATURE
+            retval = CefV8Value::CreateBool(false);
+#else
+            retval = CefV8Value::CreateBool(true);
+#endif
+            return true;
+        }
         // Function does not exist.
         return false;
     }
@@ -2254,6 +2263,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction962 = CefV8Value::CreateFunction("sendToReporter", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction963 = CefV8Value::CreateFunction("sendFromReporter", _nativeHandler);
 
+    CefRefPtr<CefV8Value> _nativeFunction964 = CefV8Value::CreateFunction("IsSignaturesSupport", _nativeHandler);
+
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Cut", _nativeFunctionCut, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -2369,6 +2380,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("endReporter", _nativeFunction961, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("sendToReporter", _nativeFunction962, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("sendFromReporter", _nativeFunction963, V8_PROPERTY_ATTRIBUTE_NONE);
+
+    objNative->SetValue("IsSignaturesSupport", _nativeFunction964, V8_PROPERTY_ATTRIBUTE_NONE);
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 
@@ -2587,8 +2600,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
             else
                 _frame->ExecuteJavaScript("window.AscDesktopEditor.LocalFileSetSaved(false);", _frame->GetURL(), 0);
 
-            std::string sFileData = "";
-            NSFile::CFileBinary::ReadAllTextUtf8A(sFolder + L"/Editor.bin", sFileData);
+            int nFileDataLen = 0;
+            std::string sFileData = GetFileData(sFolder + L"/Editor.bin", nFileDataLen);
 
             std::string sCode = "window.AscDesktopEditor.LocalFileRecoverFolder(\"" + U_TO_UTF8(sFolder) +
                     "\");window.AscDesktopEditor.LocalFileSetSourcePath(\"" + U_TO_UTF8(sFileSrc) + "\");";
@@ -2619,7 +2632,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
             }
 
             sCode = "";
-            sCode = "window.DesktopOfflineAppDocumentEndLoad(\"" + U_TO_UTF8(sFolder) + "\", \"" + sFileData + "\");";
+            sCode = "window.DesktopOfflineAppDocumentEndLoad(\"" + U_TO_UTF8(sFolder) + "\", \"" + sFileData + "\", " + std::to_string(nFileDataLen) + ");";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
 
             sCode = "window.DesktopOfflineAppDocumentSignatures(\"" + U_TO_UTF8(sSignatures) + "\");";
@@ -2869,6 +2882,33 @@ private:
     if (_frame)
         return _frame;
     return browser->GetMainFrame();
+  }
+
+  std::string GetFileData(const std::wstring& sFile, int& nLen)
+  {
+#if 0
+    std::string sFileData;
+    NSFile::CFileBinary::ReadAllTextUtf8A(sFile, sFileData);
+    return sFileData;
+#endif
+
+    BYTE* pData = NULL;
+    DWORD dwFileLen = 0;
+    NSFile::CFileBinary::ReadAllBytes(sFile, &pData, dwFileLen);
+
+    char* pDataBase64 = NULL;
+    int nDataBase64Len = 0;
+
+    nLen = (int)dwFileLen;
+
+    NSFile::CBase64Converter::Encode(pData, nLen, pDataBase64, nDataBase64Len, NSBase64::B64_BASE64_FLAG_NOCRLF);
+
+    std::string sFileData(pDataBase64, nDataBase64Len);
+
+    RELEASEARRAYOBJECTS(pDataBase64);
+    RELEASEARRAYOBJECTS(pData);
+
+    return sFileData;
   }
 
  private:
