@@ -139,7 +139,15 @@ void CAscApplicationManager::CheckFonts(bool bAsync)
     m_pInternal->LocalFiles_Init();
 
     if (!NSDirectory::Exists(m_oSettings.fonts_cache_info_path))
+    {
+#ifdef WIN32
+        std::wstring sTmpDir = m_oSettings.fonts_cache_info_path;
+        NSCommon::string_replace(sTmpDir, L"/", L"\\");
+        NSDirectory::CreateDirectories(sTmpDir);
+#else
         NSDirectory::CreateDirectories(m_oSettings.fonts_cache_info_path);
+#endif
+    }
 
     bool bIsStarted = m_pInternal->IsRunned();
     bool bIsInit = IsInitFonts();
