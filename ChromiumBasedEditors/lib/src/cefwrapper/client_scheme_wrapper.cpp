@@ -38,6 +38,7 @@
 #include "include/cef_scheme.h"
 #include "include/wrapper/cef_helpers.h"
 #include "../../../../../core/DesktopEditor/common/File.h"
+#include "include/cef_parser.h"
 
 namespace asc_scheme
 {
@@ -121,7 +122,17 @@ public:
 
         if (url.find("ascdesktop://fonts/") != std::string::npos)
         {
-            std::wstring sFontFile = request->GetURL().ToWString().substr(19);
+            int nFlag = UU_SPACES | UU_REPLACE_PLUS_WITH_SPACE;
+#if defined (_LINUX) && !defined(_MAC)
+            nFlag |= UU_URL_SPECIAL_CHARS_EXCEPT_PATH_SEPARATORS;
+#else
+            nFlag |= UU_URL_SPECIAL_CHARS;
+#endif
+
+            CefString cefUrl = request->GetURL();
+            CefString cefFile = CefURIDecode(cefUrl, false, static_cast<cef_uri_unescape_rule_t>(nFlag));
+
+            std::wstring sFontFile = cefFile.ToWString().substr(19);
 
             DWORD dwSize = 0;
             NSFile::CFileBinary::ReadAllBytes(sFontFile, &data_binary_, dwSize);

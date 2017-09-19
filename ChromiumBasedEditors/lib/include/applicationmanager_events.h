@@ -100,6 +100,11 @@
 
 #define ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_SAVE_YES_NO     7016
 
+#define ASC_MENU_EVENT_TYPE_REPORTER_MESSAGE_TO             7017
+#define ASC_MENU_EVENT_TYPE_REPORTER_MESSAGE_FROM           7018
+#define ASC_MENU_EVENT_TYPE_REPORTER_CREATE                 7019
+#define ASC_MENU_EVENT_TYPE_REPORTER_END                    7020
+
 #define ASC_MENU_EVENT_TYPE_WINDOWS_MESSAGE_USER_COUNT      10
 
 namespace NSEditorApi
@@ -624,6 +629,46 @@ namespace NSEditorApi
         }
 
         LINK_PROPERTY_STRING(Path)
+    };
+}
+
+namespace NSEditorApi
+{
+    class CAscReporterMessage : public IMenuEventDataBase
+    {
+    private:
+        std::wstring m_sMessage;
+        int m_nReceiverId;
+
+    public:
+        CAscReporterMessage()
+        {
+            m_nReceiverId = -1;
+        }
+        virtual ~CAscReporterMessage()
+        {
+        }
+
+        LINK_PROPERTY_STRING(Message)
+        LINK_PROPERTY_INT(ReceiverId)
+    };
+
+    class CAscReporterCreate : public IMenuEventDataBase
+    {
+    private:
+        void* m_pData;
+
+    public:
+        CAscReporterCreate()
+        {
+            m_pData = NULL;
+        }
+        virtual ~CAscReporterCreate()
+        {
+        }
+
+        void* get_Data() { return m_pData; }
+        void put_Data(void* data) { m_pData = data; }
     };
 }
 

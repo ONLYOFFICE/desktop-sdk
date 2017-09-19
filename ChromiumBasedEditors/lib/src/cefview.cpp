@@ -238,6 +238,10 @@ public:
     int m_nDeviceScale;
     bool m_bIsWindowsCheckZoom = false;
 
+    bool m_bIsReporter;
+    int m_nReporterParentId;
+    int m_nReporterChildId;
+
 #if defined(_LINUX) && !defined(_MAC)
     WindowHandleId m_lNaturalParent;
 #endif
@@ -274,6 +278,10 @@ public:
 
         m_nDeviceScale = 1;
         m_bIsWindowsCheckZoom = false;
+
+        m_bIsReporter = false;
+        m_nReporterParentId = -1;
+        m_nReporterChildId = -1;
     }
 
     void Destroy()
@@ -731,7 +739,7 @@ public:
 
     bool CheckPopup(std::wstring sUrl, bool bIsBeforeBrowse = false, bool bIsBackground = false, bool bIsNotOpenLinks = false)
     {
-        NSEditorApi::CAscMenuEventListener* pListener = NULL;
+        NSEditorApi::CAscCefMenuEventListener* pListener = NULL;
         if (NULL != m_pParent && NULL != m_pParent->GetAppManager())
             pListener = m_pParent->GetAppManager()->GetEventListener();
 
@@ -751,8 +759,7 @@ public:
                 pData->put_Id(m_pParent->GetId());
                 pData->put_Url(sUrl);
 
-                NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
-                pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_ONOPENLINK;
+                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONOPENLINK);
                 pEvent->m_pData = pData;
 
                 pListener->OnEvent(pEvent);
@@ -808,8 +815,7 @@ public:
                         pData->put_IdEqual(pEqual->GetId());
                 }
 
-                NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
-                pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_CREATETAB;
+                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_CREATETAB);
                 pEvent->m_pData = pData;
 
                 pListener->OnEvent(pEvent);
@@ -926,7 +932,7 @@ public:
     {
         CEF_REQUIRE_UI_THREAD();
 
-        NSEditorApi::CAscMenuEventListener* pListener = NULL;
+        NSEditorApi::CAscCefMenuEventListener* pListener = NULL;
         if (NULL != m_pParent && NULL != m_pParent->GetAppManager())
             pListener = m_pParent->GetAppManager()->GetEventListener();
 
@@ -945,8 +951,7 @@ public:
                 pData->put_Id(m_pParent->GetId());
                 pData->put_Type(nType);
 
-                NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
-                pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_TABEDITORTYPE;
+                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_TABEDITORTYPE);
                 pEvent->m_pData = pData;
 
                 pListener->OnEvent(pEvent);
@@ -1034,8 +1039,9 @@ public:
         {
             if (m_pParent && m_pParent->GetAppManager()->GetEventListener())
             {
-                NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
+                NSEditorApi::CAscCefMenuEvent* pEvent = new NSEditorApi::CAscCefMenuEvent();
                 pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_MODIFY_CHANGED;
+                pEvent->put_SenderId(m_pParent->GetId());
 
                 bool bValue = message->GetArgumentList()->GetBool(0);
                 /*
@@ -1064,8 +1070,7 @@ public:
         {
             if (m_pParent && m_pParent->GetAppManager()->GetEventListener())
             {
-                NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
-                pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_DOCUMENT_NAME;
+                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_DOCUMENT_NAME);
 
                 NSEditorApi::CAscDocumentName* pData = new NSEditorApi::CAscDocumentName();
                 pData->put_Id(m_pParent->GetId());
@@ -1127,8 +1132,7 @@ public:
             {
                 m_pParent->m_pInternal->m_bIsNativeSave = false;
 
-                NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
-                pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_ONSAVE;
+                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONSAVE);
 
                 NSEditorApi::CAscDocumentOnSaveData* pData = new NSEditorApi::CAscDocumentOnSaveData();
                 pData->put_Id(m_pParent->GetId());
@@ -1143,8 +1147,7 @@ public:
         {
             if (m_pParent && m_pParent->GetAppManager()->GetEventListener())
             {
-                NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
-                pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_JS_MESSAGE;
+                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_JS_MESSAGE);
 
                 NSEditorApi::CAscJSMessage* pData = new NSEditorApi::CAscJSMessage();
                 pData->put_Id(m_pParent->GetId());
@@ -1161,8 +1164,7 @@ public:
         {
             if (m_pParent && m_pParent->GetAppManager()->GetEventListener())
             {
-                NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
-                pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_EXECUTE_COMMAND;
+                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_EXECUTE_COMMAND);
 
                 NSEditorApi::CAscExecCommand* pData = new NSEditorApi::CAscExecCommand();
                 pData->put_Command(message->GetArgumentList()->GetString(0).ToWString());
@@ -1195,8 +1197,7 @@ public:
 
                 if (m_pParent->GetAppManager()->GetEventListener())
                 {
-                    NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
-                    pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_ONBEFORE_PRINT_START;
+                    NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONBEFORE_PRINT_START);
 
                     NSEditorApi::CAscTypeId* pData = new NSEditorApi::CAscTypeId();
                     pData->put_Id(m_pParent->GetId());
@@ -1223,8 +1224,7 @@ public:
 
                 if (m_pParent->GetAppManager()->GetEventListener())
                 {
-                    NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
-                    pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_ONBEFORE_PRINT_PROGRESS;
+                    NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONBEFORE_PRINT_PROGRESS);
 
                     NSEditorApi::CAscPrintProgress* pData = new NSEditorApi::CAscPrintProgress();
                     pData->put_Id(m_pParent->GetId());
@@ -1243,8 +1243,7 @@ public:
             {
                 if (m_pParent->GetAppManager()->GetEventListener())
                 {
-                    NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
-                    pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_ONBEFORE_PRINT_END;
+                    NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONBEFORE_PRINT_END);
 
                     NSEditorApi::CAscPrintEnd* pData = new NSEditorApi::CAscPrintEnd();
                     pData->put_Id(m_pParent->GetId());
@@ -1299,7 +1298,7 @@ public:
         {
             if (m_pParent && m_pParent->GetAppManager() && m_pParent->GetAppManager()->GetEventListener())
             {
-                NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent(ASC_MENU_EVENT_TYPE_CEF_ONFULLSCREENENTER);
+                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONFULLSCREENENTER);
                 m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
             }
 
@@ -1309,7 +1308,7 @@ public:
         {
             if (m_pParent && m_pParent->GetAppManager() && m_pParent->GetAppManager()->GetEventListener())
             {
-                NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent(ASC_MENU_EVENT_TYPE_CEF_ONFULLSCREENLEAVE);
+                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONFULLSCREENLEAVE);
                 m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
             }
 
@@ -1328,7 +1327,7 @@ public:
         {
             if (m_pParent && m_pParent->GetAppManager() && m_pParent->GetAppManager()->GetEventListener())
             {
-                NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_OPEN);
+                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_OPEN);
                 NSEditorApi::CAscLocalFileOpen* pData = new NSEditorApi::CAscLocalFileOpen();
                 if (message->GetArgumentList()->GetSize() == 1)
                     pData->put_Directory(message->GetArgumentList()->GetString(0).ToWString());
@@ -1343,7 +1342,7 @@ public:
         {
             if (m_pParent && m_pParent->GetAppManager() && m_pParent->GetAppManager()->GetEventListener())
             {
-                NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_CREATE);
+                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_CREATE);
                 NSEditorApi::CAscLocalFileCreate* pData = new NSEditorApi::CAscLocalFileCreate();
                 pData->put_Type(message->GetArgumentList()->GetInt(0));
                 pEvent->m_pData = pData;
@@ -1369,7 +1368,7 @@ public:
                 pData->put_IsRecover(false);
                 pData->put_Path(m_pParent->GetAppManager()->m_pInternal->m_arRecents[pData->get_Id()].m_sPath);
 
-                NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_RECENTOPEN);
+                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_RECENTOPEN);
                 pEvent->m_pData = pData;
                 m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
             }
@@ -1408,7 +1407,7 @@ public:
                 pData->put_IsRecover(true);
                 pData->put_Path(m_pParent->GetAppManager()->m_pInternal->m_arRecovers[pData->get_Id()].m_sPath);
 
-                NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_RECOVEROPEN);
+                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_RECOVEROPEN);
                 pEvent->m_pData = pData;
                 m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
             }
@@ -1455,7 +1454,7 @@ public:
 
                 if (bIsNeedSaveDialog)
                 {
-                    NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_SAVE);
+                    NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_SAVE);
                     NSEditorApi::CAscLocalSaveFileDialog* pData = new NSEditorApi::CAscLocalSaveFileDialog();
                     pData->put_Id(m_pParent->GetId());
 
@@ -1482,7 +1481,7 @@ public:
         {
             if (m_pParent && m_pParent->GetAppManager() && m_pParent->GetAppManager()->GetEventListener())
             {
-                NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_ADDIMAGE);
+                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_ADDIMAGE);
                 NSEditorApi::CAscLocalOpenFileDialog* pData = new NSEditorApi::CAscLocalOpenFileDialog();
                 pData->put_Id(m_pParent->GetId());
                 pEvent->m_pData = pData;
@@ -1538,8 +1537,7 @@ public:
                     }
                 }
 
-                NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
-                pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_LOCALFILES_OPEN;
+                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILES_OPEN);
                 pEvent->m_pData = pData;
 
                 m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
@@ -1693,7 +1691,7 @@ public:
         }
         else if (message_name == "on_open_filename_dialog")
         {
-            NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent(ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_OPENFILENAME_DIALOG);
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_OPENFILENAME_DIALOG);
             NSEditorApi::CAscLocalOpenFileDialog* pData = new NSEditorApi::CAscLocalOpenFileDialog();
             pData->put_Id(m_pParent->GetId());
             pData->put_Filter(message->GetArgumentList()->GetString(0).ToWString());
@@ -1703,9 +1701,55 @@ public:
         }
         else if (message_name == "on_file_save_question")
         {
-            NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent(ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_SAVE_YES_NO);
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_SAVE_YES_NO);
             NSEditorApi::CAscEditorSaveQuestion* pData = new NSEditorApi::CAscEditorSaveQuestion();
             pData->put_Id(m_pParent->GetId());
+            pEvent->m_pData = pData;
+            m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+            return true;
+        }
+        else if (message_name == "on_start_reporter")
+        {
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_REPORTER_CREATE);
+            NSEditorApi::CAscReporterCreate* pData = new NSEditorApi::CAscReporterCreate();
+            m_pParent->m_pInternal->m_nReporterChildId = m_pParent->GetAppManager()->GenerateNextViewId();
+
+            CAscReporterData* pCreate = new CAscReporterData();
+            pCreate->Id = m_pParent->m_pInternal->m_nReporterChildId;
+            pCreate->ParentId = m_pParent->GetId();
+            pCreate->Url = message->GetArgumentList()->GetString(0).ToWString();
+            pCreate->LocalRecoverFolder = message->GetArgumentList()->GetString(1).ToWString();
+            pData->put_Data(pCreate);
+
+            pEvent->m_pData = pData;
+            m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+            return true;
+        }
+        else if (message_name == "on_end_reporter")
+        {
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_REPORTER_END);
+            NSEditorApi::CAscTypeId* pData = new NSEditorApi::CAscTypeId();
+            pData->put_Id(m_pParent->m_pInternal->m_nReporterChildId);
+            pEvent->m_pData = pData;
+            m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+            return true;
+        }
+        else if (message_name == "send_to_reporter")
+        {
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_REPORTER_MESSAGE_TO);
+            NSEditorApi::CAscReporterMessage* pData = new NSEditorApi::CAscReporterMessage();
+            pData->put_ReceiverId(m_pParent->m_pInternal->m_nReporterChildId);
+            pData->put_Message(message->GetArgumentList()->GetString(0).ToWString());
+            pEvent->m_pData = pData;
+            m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+            return true;
+        }
+        else if (message_name == "send_from_reporter")
+        {
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_REPORTER_MESSAGE_FROM);
+            NSEditorApi::CAscReporterMessage* pData = new NSEditorApi::CAscReporterMessage();
+            pData->put_ReceiverId(m_pParent->m_pInternal->m_nReporterParentId);
+            pData->put_Message(message->GetArgumentList()->GetString(0).ToWString());
             pEvent->m_pData = pData;
             m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
             return true;
@@ -1939,7 +1983,7 @@ public:
                 pData->put_IsCommandMac(true);
 #endif
 
-            NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent(ASC_MENU_EVENT_TYPE_CEF_ONKEYBOARDDOWN);
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONKEYBOARDDOWN);
             pEvent->m_pData = pData;
             m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
             
@@ -2465,8 +2509,7 @@ void CCefView_Private::LocalFile_SaveEnd(int nError)
         {
             m_bIsNativeSave = false;
 
-            NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
-            pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_ONSAVE;
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pCefView->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONSAVE);
 
             NSEditorApi::CAscDocumentOnSaveData* pData = new NSEditorApi::CAscDocumentOnSaveData();
             pData->put_Id(m_pCefView->GetId());
@@ -2513,8 +2556,7 @@ void CCefView_Private::LocalFile_SaveEnd(int nError)
 
         if (m_pManager->GetEventListener() && m_pCefView != NULL)
         {
-            NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
-            pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_DOCUMENT_NAME;
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pCefView->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_DOCUMENT_NAME);
 
             NSEditorApi::CAscDocumentName* pData = new NSEditorApi::CAscDocumentName();
             pData->put_Id(m_pCefView->GetId());
@@ -2537,8 +2579,7 @@ void CCefView_Private::LocalFile_SaveEnd(int nError)
         {
             m_bIsNativeSave = false;
 
-            NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
-            pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_ONSAVE;
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pCefView->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONSAVE);
 
             NSEditorApi::CAscDocumentOnSaveData* pData = new NSEditorApi::CAscDocumentOnSaveData();
             pData->put_Id(m_pCefView->GetId());
@@ -3056,8 +3097,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             if (!this->GetModified())
             {
                 // здесь потом делать запрос на то, сохранен ли файл. пока просто считаем что все сохранено
-                NSEditorApi::CAscMenuEvent* pData = new NSEditorApi::CAscMenuEvent();
-                pData->m_nType = ASC_MENU_EVENT_TYPE_CEF_ONCLOSE;
+                NSEditorApi::CAscCefMenuEvent* pData = this->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONCLOSE);
 
                 NSEditorApi::CAscTypeId* pDataId = new NSEditorApi::CAscTypeId();
                 pDataId->put_Id(m_nId);
@@ -3068,8 +3108,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             }
             else
             {
-                NSEditorApi::CAscMenuEvent* pData = new NSEditorApi::CAscMenuEvent();
-                pData->m_nType = ASC_MENU_EVENT_TYPE_CEF_ONBEFORECLOSE;
+                NSEditorApi::CAscCefMenuEvent* pData = this->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONBEFORECLOSE);
 
                 NSEditorApi::CAscTypeId* pDataId = new NSEditorApi::CAscTypeId();
                 pDataId->put_Id(m_nId);
@@ -3163,8 +3202,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                 // analog message "print_end"
                 if (m_pInternal->m_pManager->GetEventListener())
                 {
-                    NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
-                    pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_ONBEFORE_PRINT_END;
+                    NSEditorApi::CAscCefMenuEvent* pEvent = this->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONBEFORE_PRINT_END);
 
                     NSEditorApi::CAscPrintEnd* pData = new NSEditorApi::CAscPrintEnd();
                     pData->put_Id(GetId());
@@ -3334,6 +3372,22 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             browser->SendProcessMessage(PID_RENDERER, message);
             break;
         }
+        case ASC_MENU_EVENT_TYPE_REPORTER_MESSAGE_FROM:
+        {
+            NSEditorApi::CAscReporterMessage* pData = (NSEditorApi::CAscReporterMessage*)pEvent->m_pData;
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("from_reporter_message");
+            message->GetArgumentList()->SetString(0, pData->get_Message());
+            browser->SendProcessMessage(PID_RENDERER, message);
+            break;
+        }
+        case ASC_MENU_EVENT_TYPE_REPORTER_MESSAGE_TO:
+        {
+            NSEditorApi::CAscReporterMessage* pData = (NSEditorApi::CAscReporterMessage*)pEvent->m_pData;
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("to_reporter_message");
+            message->GetArgumentList()->SetString(0, pData->get_Message());
+            browser->SendProcessMessage(PID_RENDERER, message);
+            break;
+        }
         default:
         {
             CApplicationManagerAdditionalBase* pAdditional = GetAppManager()->m_pInternal->m_pAdditional;
@@ -3350,6 +3404,13 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 NSEditorApi::CAscMenuEvent* CCefView::ApplySync(NSEditorApi::CAscMenuEvent* pEvent)
 {
     return NULL;
+}
+
+NSEditorApi::CAscCefMenuEvent* CCefView::CreateCefEvent(int nType)
+{
+    NSEditorApi::CAscCefMenuEvent* pEvent = new NSEditorApi::CAscCefMenuEvent(nType);
+    pEvent->put_SenderId(m_nId);
+    return pEvent;
 }
 
 bool CCefView::StartDownload(const std::wstring& sUrl)
@@ -3435,6 +3496,27 @@ void CCefView::SetModified(bool bIsModified)
 bool CCefView::GetModified()
 {
     return m_pInternal->m_oLocalInfo.m_oInfo.m_bIsModified;
+}
+
+bool CCefView::IsPresentationReporter()
+{
+    return m_pInternal->m_bIsReporter;
+}
+
+void CCefView::LoadReporter(int nParentId, std::wstring url)
+{
+    m_pInternal->m_nReporterParentId = nParentId;
+
+    // url - parent url
+    std::wstring urlReporter = url;
+    std::wstring::size_type pos = url.rfind(L"/index.html");
+    if (std::wstring::npos != pos)
+    {
+        urlReporter = url.substr(0, pos);
+        urlReporter += L"/index.reporter.html";
+    }
+
+    this->load(urlReporter);
 }
 
 /////////////////////////////////////////////////////////////
@@ -3694,6 +3776,30 @@ bool CCefViewEditor::OpenRecoverFile(const int& nId)
     this->load(sUrl + sParams);
 
     this->GetAppManager()->m_pInternal->Recovers_Remove(nId);
+    return true;
+}
+
+bool CCefViewEditor::OpenReporter(const std::wstring& sFolderInput)
+{
+    std::wstring sFolder = sFolderInput;
+    if (0 == sFolder.find(L"file:///"))
+    {
+        sFolder = sFolder.substr(7);
+        if (!NSDirectory::Exists(sFolder))
+            sFolder = sFolder.substr(1);
+    }
+
+    m_pInternal->m_oLocalInfo.m_oInfo.m_bIsSaved = false;
+
+    m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
+
+    m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc = sFolder + L"/Editor.bin";
+    NSCommon::string_replace(m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc, L"\\", L"/");
+
+    m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir = sFolder;
+    NSCommon::string_replace(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir, L"\\", L"/");
+
+    m_pInternal->LocalFile_Start();
     return true;
 }
 

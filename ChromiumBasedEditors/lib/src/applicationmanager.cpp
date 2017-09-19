@@ -169,12 +169,12 @@ void CAscApplicationManager::CheckFonts(bool bAsync)
     }
 }
 
-void CAscApplicationManager::SetEventListener(NSEditorApi::CAscMenuEventListener* pListener)
+void CAscApplicationManager::SetEventListener(NSEditorApi::CAscCefMenuEventListener* pListener)
 {
     m_pInternal->m_pListener = pListener;
 }
 
-NSEditorApi::CAscMenuEventListener* CAscApplicationManager::GetEventListener()
+NSEditorApi::CAscCefMenuEventListener* CAscApplicationManager::GetEventListener()
 {
     return m_pInternal->m_pListener;
 }
@@ -234,8 +234,11 @@ void CAscApplicationManager::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 
             if (m_pInternal->m_pListener && !bIsPrivate)
             {
-                ADDREFINTERFACE(pEvent);
-                m_pInternal->m_pListener->OnEvent(pEvent);
+                NSEditorApi::CAscCefMenuEvent* pCefEvent = new NSEditorApi::CAscCefMenuEvent(ASC_MENU_EVENT_TYPE_CEF_DOWNLOAD);
+                pCefEvent->put_SenderId(pData->get_Id());
+                ADDREFINTERFACE(pData);
+                pCefEvent->m_pData = pData;
+                m_pInternal->m_pListener->OnEvent(pCefEvent);
             }
 
             break;
@@ -375,6 +378,12 @@ NSEditorApi::CAscMenuEvent* CAscApplicationManager::ApplySync(NSEditorApi::CAscM
     return NULL;
 }
 
+int CAscApplicationManager::GenerateNextViewId()
+{
+    m_pInternal->m_nIdCounter++;
+    return m_pInternal->m_nIdCounter;
+}
+
 CCefView* CAscApplicationManager::CreateCefView(CCefViewWidgetImpl* parent)
 {
     m_pInternal->m_nIdCounter++;
@@ -394,6 +403,25 @@ CCefViewEditor* CAscApplicationManager::CreateCefEditor(CCefViewWidgetImpl* pare
     pView->SetAppManager(this);
 
     m_pInternal->m_mapViews[m_pInternal->m_nIdCounter] = pView;
+    return pView;
+}
+
+CCefViewEditor* CAscApplicationManager::CreateCefPresentationReporter(CCefViewWidgetImpl* parent, CAscReporterData* data)
+{    
+    m_pInternal->m_nWindowCounter++;
+    CCefViewEditor* pView = new CCefViewEditor(parent, data->Id);
+    pView->SetAppManager(this);
+
+    m_pInternal->m_mapViews[m_pInternal->m_nIdCounter] = pView;
+
+    pView->LoadReporter(data->ParentId, data->Url);
+    if (!data->LocalRecoverFolder.empty())
+    {
+        pView->OpenReporter(data->LocalRecoverFolder);
+    }
+
+    // remove data here
+    delete data;
     return pView;
 }
 
@@ -597,7 +625,9 @@ int CAscApplicationManager::GetFileFormatByExtentionForSave(const std::wstring& 
         nFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_CSV;
 
     if (sName == L"pptx")
-        nFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
+        nFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX; else
+    if (sName == L"odp")
+        nFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_ODP;
 
     if (sName == L"pdf")
         nFormat = AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF;

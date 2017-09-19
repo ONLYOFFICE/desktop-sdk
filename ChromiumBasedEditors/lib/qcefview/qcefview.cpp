@@ -162,6 +162,11 @@ void QCefView::Create(CAscApplicationManager* pManager, CefViewWrapperType eType
     }
 }
 
+void QCefView::CreateReporter(CAscApplicationManager* pManager, CAscReporterData* data)
+{
+    m_pCefView = pManager->CreateCefPresentationReporter(this, data);
+}
+
 // CCefViewWidgetImpl
 int QCefView::parent_x() { return this->pos().x(); }
 int QCefView::parent_y() { return this->pos().y(); }

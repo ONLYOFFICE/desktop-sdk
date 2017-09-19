@@ -417,8 +417,8 @@ protected :
 #include <fcntl.h>
 #include <stdio.h>
 
-#include "../../../../core/Common/3dParty/curl/include/curl/curl.h"
-#include "../../../../core/Common/3dParty/curl/include/curl/easy.h"
+#include <curl/curl.h>
+#include <curl/easy.h>
 
 class CFileDownloader : public NSThreads::CBaseThread
 {
