@@ -245,18 +245,22 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     m_pInternal->context->PopulateSettings(&settings);
 
 #ifdef WIN32
-    settings.multi_threaded_message_loop = 1;
+    if (!m_pInternal->m_pManager->IsExternalEventLoop())
+        settings.multi_threaded_message_loop = 1;
     //settings.windowless_rendering_enabled = 1;
 #endif
 
+    if (/*!m_pInternal->m_pManager->IsExternalEventLoop()*/true)
+    {
 #ifdef WIN32
-    if (settings.multi_threaded_message_loop)
-        m_pInternal->message_loop.reset(new client::MainMessageLoopMultithreadedWin);
-    else
-        m_pInternal->message_loop.reset(new client::MainMessageLoopStd);
+        if (settings.multi_threaded_message_loop)
+            m_pInternal->message_loop.reset(new client::MainMessageLoopMultithreadedWin);
+        else
+            m_pInternal->message_loop.reset(new client::MainMessageLoopStd);
 #else
-    m_pInternal->message_loop.reset(new client::MainMessageLoopStd);
+        m_pInternal->message_loop.reset(new client::MainMessageLoopStd);
 #endif
+    }
 
     // ASC command line props
     pManager->m_pInternal->LoadSettings();
@@ -321,6 +325,9 @@ void CApplicationCEF::Close()
 
 int CApplicationCEF::RunMessageLoop(bool& is_runned)
 {
+    if (m_pInternal->m_pManager->IsExternalEventLoop())
+        return 0;
+
     is_runned = true;
 #ifdef LINUX
     CLinuxData::Check(m_pInternal->m_pManager);
@@ -335,7 +342,10 @@ void CApplicationCEF::DoMessageLoopEvent()
 
 bool CApplicationCEF::ExitMessageLoop()
 {
-    m_pInternal->message_loop->Quit();
+    if (!this->m_pInternal->m_pManager->IsExternalEventLoop())
+        m_pInternal->message_loop->Quit();
+    else
+        m_pInternal->m_pManager->ExitExternalEventLoop();
     return true;
 }
 

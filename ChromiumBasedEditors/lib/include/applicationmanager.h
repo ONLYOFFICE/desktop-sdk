@@ -182,6 +182,11 @@ public:
     static int OpenSsl_LoadCert(std::wstring file, std::string password);
 #endif
 
+    static void DoMessageLoopWork();
+
+    virtual bool IsExternalEventLoop();
+    virtual void ExitExternalEventLoop();
+
 protected:
     int GenerateNextViewId();
 

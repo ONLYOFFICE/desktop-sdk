@@ -633,7 +633,7 @@ int CAscApplicationManager::GetFileFormatByExtentionForSave(const std::wstring& 
         nFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_CSV;
 
     if (sName == L"pptx")
-        nFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX; else
+        nFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
     if (sName == L"odp")
         nFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_ODP;
 
@@ -646,6 +646,21 @@ int CAscApplicationManager::GetFileFormatByExtentionForSave(const std::wstring& 
 void CAscApplicationManager::InitAdditionalEditorParams(std::wstring& sParams)
 {
     m_pInternal->m_sAdditionalUrlParams = sParams;
+}
+
+void CAscApplicationManager::DoMessageLoopWork()
+{
+    CefDoMessageLoopWork();
+}
+
+bool CAscApplicationManager::IsExternalEventLoop()
+{
+    return false;
+}
+
+void CAscApplicationManager::ExitExternalEventLoop()
+{
+    // none
 }
 
 #ifdef DOCUMENTSCORE_OPENSSL_SUPPORT
