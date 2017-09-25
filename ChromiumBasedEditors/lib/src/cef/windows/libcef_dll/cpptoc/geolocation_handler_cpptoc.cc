@@ -1,4 +1,4 @@
-// Copyright (c) 2016 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,19 +9,22 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
+// $hash=ce7a038d21350b0d6379a9bdc0cb10cf32ff69cc$
+//
 
 #include "libcef_dll/cpptoc/geolocation_handler_cpptoc.h"
 #include "libcef_dll/ctocpp/browser_ctocpp.h"
 #include "libcef_dll/ctocpp/geolocation_callback_ctocpp.h"
-
 
 namespace {
 
 // MEMBER FUNCTIONS - Body may be edited by hand.
 
 int CEF_CALLBACK geolocation_handler_on_request_geolocation_permission(
-    struct _cef_geolocation_handler_t* self, cef_browser_t* browser,
-    const cef_string_t* requesting_url, int request_id,
+    struct _cef_geolocation_handler_t* self,
+    cef_browser_t* browser,
+    const cef_string_t* requesting_url,
+    int request_id,
     cef_geolocation_callback_t* callback) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -42,19 +45,18 @@ int CEF_CALLBACK geolocation_handler_on_request_geolocation_permission(
     return 0;
 
   // Execute
-  bool _retval = CefGeolocationHandlerCppToC::Get(
-      self)->OnRequestGeolocationPermission(
-      CefBrowserCToCpp::Wrap(browser),
-      CefString(requesting_url),
-      request_id,
-      CefGeolocationCallbackCToCpp::Wrap(callback));
+  bool _retval =
+      CefGeolocationHandlerCppToC::Get(self)->OnRequestGeolocationPermission(
+          CefBrowserCToCpp::Wrap(browser), CefString(requesting_url),
+          request_id, CefGeolocationCallbackCToCpp::Wrap(callback));
 
   // Return type: bool
   return _retval;
 }
 
 void CEF_CALLBACK geolocation_handler_on_cancel_geolocation_permission(
-    struct _cef_geolocation_handler_t* self, cef_browser_t* browser,
+    struct _cef_geolocation_handler_t* self,
+    cef_browser_t* browser,
     int request_id) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -68,12 +70,10 @@ void CEF_CALLBACK geolocation_handler_on_cancel_geolocation_permission(
 
   // Execute
   CefGeolocationHandlerCppToC::Get(self)->OnCancelGeolocationPermission(
-      CefBrowserCToCpp::Wrap(browser),
-      request_id);
+      CefBrowserCToCpp::Wrap(browser), request_id);
 }
 
 }  // namespace
-
 
 // CONSTRUCTOR - Do not edit by hand.
 
@@ -84,18 +84,26 @@ CefGeolocationHandlerCppToC::CefGeolocationHandlerCppToC() {
       geolocation_handler_on_cancel_geolocation_permission;
 }
 
-template<> CefRefPtr<CefGeolocationHandler> CefCppToC<CefGeolocationHandlerCppToC,
-    CefGeolocationHandler, cef_geolocation_handler_t>::UnwrapDerived(
-    CefWrapperType type, cef_geolocation_handler_t* s) {
+template <>
+CefRefPtr<CefGeolocationHandler> CefCppToCRefCounted<
+    CefGeolocationHandlerCppToC,
+    CefGeolocationHandler,
+    cef_geolocation_handler_t>::UnwrapDerived(CefWrapperType type,
+                                              cef_geolocation_handler_t* s) {
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
 
-#ifndef NDEBUG
-template<> base::AtomicRefCount CefCppToC<CefGeolocationHandlerCppToC,
-    CefGeolocationHandler, cef_geolocation_handler_t>::DebugObjCt = 0;
+#if DCHECK_IS_ON()
+template <>
+base::AtomicRefCount CefCppToCRefCounted<CefGeolocationHandlerCppToC,
+                                         CefGeolocationHandler,
+                                         cef_geolocation_handler_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
-template<> CefWrapperType CefCppToC<CefGeolocationHandlerCppToC,
-    CefGeolocationHandler, cef_geolocation_handler_t>::kWrapperType =
+template <>
+CefWrapperType CefCppToCRefCounted<CefGeolocationHandlerCppToC,
+                                   CefGeolocationHandler,
+                                   cef_geolocation_handler_t>::kWrapperType =
     WT_GEOLOCATION_HANDLER;

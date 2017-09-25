@@ -1,4 +1,4 @@
-// Copyright (c) 2016 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,16 +9,19 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
+// $hash=8e55451fcdabc0cf875fc530982e7abeec82ca17$
+//
 
 #include "libcef_dll/cpptoc/write_handler_cpptoc.h"
-
 
 namespace {
 
 // MEMBER FUNCTIONS - Body may be edited by hand.
 
 size_t CEF_CALLBACK write_handler_write(struct _cef_write_handler_t* self,
-    const void* ptr, size_t size, size_t n) {
+                                        const void* ptr,
+                                        size_t size,
+                                        size_t n) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -30,17 +33,15 @@ size_t CEF_CALLBACK write_handler_write(struct _cef_write_handler_t* self,
     return 0;
 
   // Execute
-  size_t _retval = CefWriteHandlerCppToC::Get(self)->Write(
-      ptr,
-      size,
-      n);
+  size_t _retval = CefWriteHandlerCppToC::Get(self)->Write(ptr, size, n);
 
   // Return type: simple
   return _retval;
 }
 
 int CEF_CALLBACK write_handler_seek(struct _cef_write_handler_t* self,
-    int64 offset, int whence) {
+                                    int64 offset,
+                                    int whence) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -48,9 +49,7 @@ int CEF_CALLBACK write_handler_seek(struct _cef_write_handler_t* self,
     return 0;
 
   // Execute
-  int _retval = CefWriteHandlerCppToC::Get(self)->Seek(
-      offset,
-      whence);
+  int _retval = CefWriteHandlerCppToC::Get(self)->Seek(offset, whence);
 
   // Return type: simple
   return _retval;
@@ -100,7 +99,6 @@ int CEF_CALLBACK write_handler_may_block(struct _cef_write_handler_t* self) {
 
 }  // namespace
 
-
 // CONSTRUCTOR - Do not edit by hand.
 
 CefWriteHandlerCppToC::CefWriteHandlerCppToC() {
@@ -111,17 +109,26 @@ CefWriteHandlerCppToC::CefWriteHandlerCppToC() {
   GetStruct()->may_block = write_handler_may_block;
 }
 
-template<> CefRefPtr<CefWriteHandler> CefCppToC<CefWriteHandlerCppToC,
-    CefWriteHandler, cef_write_handler_t>::UnwrapDerived(CefWrapperType type,
-    cef_write_handler_t* s) {
+template <>
+CefRefPtr<CefWriteHandler> CefCppToCRefCounted<
+    CefWriteHandlerCppToC,
+    CefWriteHandler,
+    cef_write_handler_t>::UnwrapDerived(CefWrapperType type,
+                                        cef_write_handler_t* s) {
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
 
-#ifndef NDEBUG
-template<> base::AtomicRefCount CefCppToC<CefWriteHandlerCppToC,
-    CefWriteHandler, cef_write_handler_t>::DebugObjCt = 0;
+#if DCHECK_IS_ON()
+template <>
+base::AtomicRefCount CefCppToCRefCounted<CefWriteHandlerCppToC,
+                                         CefWriteHandler,
+                                         cef_write_handler_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
-template<> CefWrapperType CefCppToC<CefWriteHandlerCppToC, CefWriteHandler,
-    cef_write_handler_t>::kWrapperType = WT_WRITE_HANDLER;
+template <>
+CefWrapperType CefCppToCRefCounted<CefWriteHandlerCppToC,
+                                   CefWriteHandler,
+                                   cef_write_handler_t>::kWrapperType =
+    WT_WRITE_HANDLER;

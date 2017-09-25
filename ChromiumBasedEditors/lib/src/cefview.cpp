@@ -33,9 +33,9 @@
 #include "include/cef_browser.h"
 #include "include/base/cef_bind.h"
 #include "include/wrapper/cef_closure_task.h"
-#include "cefclient/browser/client_handler.h"
-#include "cefclient/common/client_switches.h"
-#include "cefclient/renderer/client_renderer.h"
+#include "tests/cefclient/browser/client_handler.h"
+#include "tests/shared/common/client_switches.h"
+#include "tests/cefclient/renderer/client_renderer.h"
 
 #include "include/cef_menu_model.h"
 
@@ -160,7 +160,7 @@ LRESULT CALLBACK MyMouseHook(int nCode, WPARAM wp, LPARAM lp)
 #include "mac_common.h"
 #endif
 
-class CCefBinaryFileReaderCounter : public CefBase
+class CCefBinaryFileReaderCounter : public CefBaseRefCounted
 {
 public:
     BYTE* data;
@@ -666,7 +666,7 @@ public:
         virtual ~CAscCefJSDialogHandler()
         {
         }
-#if defined(_LINUX) && !defined(_MAC)
+#if !defined(_MAC)
         // since 51 version
         virtual bool OnJSDialog(CefRefPtr<CefBrowser> browser,
                                 const CefString& origin_url,

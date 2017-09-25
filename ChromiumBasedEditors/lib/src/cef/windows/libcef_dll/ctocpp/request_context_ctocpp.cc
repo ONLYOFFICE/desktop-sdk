@@ -1,4 +1,4 @@
-// Copyright (c) 2016 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,17 +9,18 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
+// $hash=eb7605c00ee71d056306cd6b9d0e7eb55112927a$
+//
 
+#include "libcef_dll/ctocpp/request_context_ctocpp.h"
 #include "libcef_dll/cpptoc/completion_callback_cpptoc.h"
 #include "libcef_dll/cpptoc/request_context_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/resolve_callback_cpptoc.h"
 #include "libcef_dll/cpptoc/scheme_handler_factory_cpptoc.h"
 #include "libcef_dll/ctocpp/cookie_manager_ctocpp.h"
 #include "libcef_dll/ctocpp/dictionary_value_ctocpp.h"
-#include "libcef_dll/ctocpp/request_context_ctocpp.h"
 #include "libcef_dll/ctocpp/value_ctocpp.h"
 #include "libcef_dll/transfer_util.h"
-
 
 // STATIC METHODS - Body may be edited by hand.
 
@@ -42,8 +43,7 @@ CefRefPtr<CefRequestContext> CefRequestContext::CreateContext(
 
   // Execute
   cef_request_context_t* _retval = cef_request_context_create_context(
-      &settings,
-      CefRequestContextHandlerCppToC::Wrap(handler));
+      &settings, CefRequestContextHandlerCppToC::Wrap(handler));
 
   // Return type: refptr_same
   return CefRequestContextCToCpp::Wrap(_retval);
@@ -61,14 +61,13 @@ CefRefPtr<CefRequestContext> CefRequestContext::CreateContext(
   // Unverified params: handler
 
   // Execute
-  cef_request_context_t* _retval = create_context_shared(
-      CefRequestContextCToCpp::Unwrap(other),
-      CefRequestContextHandlerCppToC::Wrap(handler));
+  cef_request_context_t* _retval =
+      cef_create_context_shared(CefRequestContextCToCpp::Unwrap(other),
+                                CefRequestContextHandlerCppToC::Wrap(handler));
 
   // Return type: refptr_same
   return CefRequestContextCToCpp::Wrap(_retval);
 }
-
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
@@ -85,11 +84,11 @@ bool CefRequestContextCToCpp::IsSame(CefRefPtr<CefRequestContext> other) {
     return false;
 
   // Execute
-  int _retval = _struct->is_same(_struct,
-      CefRequestContextCToCpp::Unwrap(other));
+  int _retval =
+      _struct->is_same(_struct, CefRequestContextCToCpp::Unwrap(other));
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 bool CefRequestContextCToCpp::IsSharingWith(
@@ -106,11 +105,11 @@ bool CefRequestContextCToCpp::IsSharingWith(
     return false;
 
   // Execute
-  int _retval = _struct->is_sharing_with(_struct,
-      CefRequestContextCToCpp::Unwrap(other));
+  int _retval =
+      _struct->is_sharing_with(_struct, CefRequestContextCToCpp::Unwrap(other));
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 bool CefRequestContextCToCpp::IsGlobal() {
@@ -124,7 +123,7 @@ bool CefRequestContextCToCpp::IsGlobal() {
   int _retval = _struct->is_global(_struct);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 CefRefPtr<CefRequestContextHandler> CefRequestContextCToCpp::GetHandler() {
@@ -168,15 +167,16 @@ CefRefPtr<CefCookieManager> CefRequestContextCToCpp::GetDefaultCookieManager(
   // Unverified params: callback
 
   // Execute
-  cef_cookie_manager_t* _retval = _struct->get_default_cookie_manager(_struct,
-      CefCompletionCallbackCppToC::Wrap(callback));
+  cef_cookie_manager_t* _retval = _struct->get_default_cookie_manager(
+      _struct, CefCompletionCallbackCppToC::Wrap(callback));
 
   // Return type: refptr_same
   return CefCookieManagerCToCpp::Wrap(_retval);
 }
 
 bool CefRequestContextCToCpp::RegisterSchemeHandlerFactory(
-    const CefString& scheme_name, const CefString& domain_name,
+    const CefString& scheme_name,
+    const CefString& domain_name,
     CefRefPtr<CefSchemeHandlerFactory> factory) {
   cef_request_context_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, register_scheme_handler_factory))
@@ -191,13 +191,12 @@ bool CefRequestContextCToCpp::RegisterSchemeHandlerFactory(
   // Unverified params: domain_name, factory
 
   // Execute
-  int _retval = _struct->register_scheme_handler_factory(_struct,
-      scheme_name.GetStruct(),
-      domain_name.GetStruct(),
+  int _retval = _struct->register_scheme_handler_factory(
+      _struct, scheme_name.GetStruct(), domain_name.GetStruct(),
       CefSchemeHandlerFactoryCppToC::Wrap(factory));
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 bool CefRequestContextCToCpp::ClearSchemeHandlerFactories() {
@@ -211,7 +210,7 @@ bool CefRequestContextCToCpp::ClearSchemeHandlerFactories() {
   int _retval = _struct->clear_scheme_handler_factories(_struct);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 void CefRequestContextCToCpp::PurgePluginListCache(bool reload_pages) {
@@ -222,8 +221,7 @@ void CefRequestContextCToCpp::PurgePluginListCache(bool reload_pages) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  _struct->purge_plugin_list_cache(_struct,
-      reload_pages);
+  _struct->purge_plugin_list_cache(_struct, reload_pages);
 }
 
 bool CefRequestContextCToCpp::HasPreference(const CefString& name) {
@@ -239,11 +237,10 @@ bool CefRequestContextCToCpp::HasPreference(const CefString& name) {
     return false;
 
   // Execute
-  int _retval = _struct->has_preference(_struct,
-      name.GetStruct());
+  int _retval = _struct->has_preference(_struct, name.GetStruct());
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 CefRefPtr<CefValue> CefRequestContextCToCpp::GetPreference(
@@ -260,8 +257,7 @@ CefRefPtr<CefValue> CefRequestContextCToCpp::GetPreference(
     return NULL;
 
   // Execute
-  cef_value_t* _retval = _struct->get_preference(_struct,
-      name.GetStruct());
+  cef_value_t* _retval = _struct->get_preference(_struct, name.GetStruct());
 
   // Return type: refptr_same
   return CefValueCToCpp::Wrap(_retval);
@@ -276,8 +272,8 @@ CefRefPtr<CefDictionaryValue> CefRequestContextCToCpp::GetAllPreferences(
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_dictionary_value_t* _retval = _struct->get_all_preferences(_struct,
-      include_defaults);
+  cef_dictionary_value_t* _retval =
+      _struct->get_all_preferences(_struct, include_defaults);
 
   // Return type: refptr_same
   return CefDictionaryValueCToCpp::Wrap(_retval);
@@ -296,15 +292,15 @@ bool CefRequestContextCToCpp::CanSetPreference(const CefString& name) {
     return false;
 
   // Execute
-  int _retval = _struct->can_set_preference(_struct,
-      name.GetStruct());
+  int _retval = _struct->can_set_preference(_struct, name.GetStruct());
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 bool CefRequestContextCToCpp::SetPreference(const CefString& name,
-    CefRefPtr<CefValue> value, CefString& error) {
+                                            CefRefPtr<CefValue> value,
+                                            CefString& error) {
   cef_request_context_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, set_preference))
     return false;
@@ -318,13 +314,12 @@ bool CefRequestContextCToCpp::SetPreference(const CefString& name,
   // Unverified params: value
 
   // Execute
-  int _retval = _struct->set_preference(_struct,
-      name.GetStruct(),
-      CefValueCToCpp::Unwrap(value),
-      error.GetWritableStruct());
+  int _retval = _struct->set_preference(_struct, name.GetStruct(),
+                                        CefValueCToCpp::Unwrap(value),
+                                        error.GetWritableStruct());
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 void CefRequestContextCToCpp::ClearCertificateExceptions(
@@ -338,8 +333,8 @@ void CefRequestContextCToCpp::ClearCertificateExceptions(
   // Unverified params: callback
 
   // Execute
-  _struct->clear_certificate_exceptions(_struct,
-      CefCompletionCallbackCppToC::Wrap(callback));
+  _struct->clear_certificate_exceptions(
+      _struct, CefCompletionCallbackCppToC::Wrap(callback));
 }
 
 void CefRequestContextCToCpp::CloseAllConnections(
@@ -354,10 +349,11 @@ void CefRequestContextCToCpp::CloseAllConnections(
 
   // Execute
   _struct->close_all_connections(_struct,
-      CefCompletionCallbackCppToC::Wrap(callback));
+                                 CefCompletionCallbackCppToC::Wrap(callback));
 }
 
-void CefRequestContextCToCpp::ResolveHost(const CefString& origin,
+void CefRequestContextCToCpp::ResolveHost(
+    const CefString& origin,
     CefRefPtr<CefResolveCallback> callback) {
   cef_request_context_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, resolve_host))
@@ -375,13 +371,13 @@ void CefRequestContextCToCpp::ResolveHost(const CefString& origin,
     return;
 
   // Execute
-  _struct->resolve_host(_struct,
-      origin.GetStruct(),
-      CefResolveCallbackCppToC::Wrap(callback));
+  _struct->resolve_host(_struct, origin.GetStruct(),
+                        CefResolveCallbackCppToC::Wrap(callback));
 }
 
 cef_errorcode_t CefRequestContextCToCpp::ResolveHostCached(
-    const CefString& origin, std::vector<CefString>& resolved_ips) {
+    const CefString& origin,
+    std::vector<CefString>& resolved_ips) {
   cef_request_context_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, resolve_host_cached))
     return ERR_FAILED;
@@ -400,9 +396,8 @@ cef_errorcode_t CefRequestContextCToCpp::ResolveHostCached(
     transfer_string_list_contents(resolved_ips, resolved_ipsList);
 
   // Execute
-  cef_errorcode_t _retval = _struct->resolve_host_cached(_struct,
-      origin.GetStruct(),
-      resolved_ipsList);
+  cef_errorcode_t _retval = _struct->resolve_host_cached(
+      _struct, origin.GetStruct(), resolved_ipsList);
 
   // Restore param:resolved_ips; type: string_vec_byref
   if (resolved_ipsList) {
@@ -415,23 +410,30 @@ cef_errorcode_t CefRequestContextCToCpp::ResolveHostCached(
   return _retval;
 }
 
-
 // CONSTRUCTOR - Do not edit by hand.
 
-CefRequestContextCToCpp::CefRequestContextCToCpp() {
-}
+CefRequestContextCToCpp::CefRequestContextCToCpp() {}
 
-template<> cef_request_context_t* CefCToCpp<CefRequestContextCToCpp,
-    CefRequestContext, cef_request_context_t>::UnwrapDerived(
-    CefWrapperType type, CefRequestContext* c) {
+template <>
+cef_request_context_t* CefCToCppRefCounted<
+    CefRequestContextCToCpp,
+    CefRequestContext,
+    cef_request_context_t>::UnwrapDerived(CefWrapperType type,
+                                          CefRequestContext* c) {
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
 
-#ifndef NDEBUG
-template<> base::AtomicRefCount CefCToCpp<CefRequestContextCToCpp,
-    CefRequestContext, cef_request_context_t>::DebugObjCt = 0;
+#if DCHECK_IS_ON()
+template <>
+base::AtomicRefCount CefCToCppRefCounted<CefRequestContextCToCpp,
+                                         CefRequestContext,
+                                         cef_request_context_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
-template<> CefWrapperType CefCToCpp<CefRequestContextCToCpp, CefRequestContext,
-    cef_request_context_t>::kWrapperType = WT_REQUEST_CONTEXT;
+template <>
+CefWrapperType CefCToCppRefCounted<CefRequestContextCToCpp,
+                                   CefRequestContext,
+                                   cef_request_context_t>::kWrapperType =
+    WT_REQUEST_CONTEXT;

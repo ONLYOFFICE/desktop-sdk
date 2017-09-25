@@ -42,7 +42,7 @@ class CefSchemeRegistrar;
 namespace asc_scheme
 {
     // Register the scheme.
-    void RegisterCustomSchemes(CefRefPtr<CefSchemeRegistrar> registrar,
+    void RegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar,
                            std::vector<CefString>& cookiable_schemes);
 
     // Create the scheme handler.

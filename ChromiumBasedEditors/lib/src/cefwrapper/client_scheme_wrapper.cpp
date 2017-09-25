@@ -126,7 +126,7 @@ public:
 #if defined (_LINUX) && !defined(_MAC)
             nFlag |= UU_URL_SPECIAL_CHARS_EXCEPT_PATH_SEPARATORS;
 #else
-            nFlag |= UU_URL_SPECIAL_CHARS;
+            nFlag |= UU_URL_SPECIAL_CHARS_EXCEPT_PATH_SEPARATORS;
 #endif
 
             CefString cefUrl = request->GetURL();
@@ -282,10 +282,10 @@ public:
     IMPLEMENT_REFCOUNTING(ClientSchemeHandlerFactory);
 };
 
-void RegisterCustomSchemes(CefRefPtr<CefSchemeRegistrar> registrar,
+void RegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar,
                            std::vector<CefString>& cookiable_schemes)
 {
-    registrar->AddCustomScheme("ascdesktop", true, false, false);
+    registrar->AddCustomScheme("ascdesktop", true, false, false, false, false, false);
 }
 
 bool InitScheme()

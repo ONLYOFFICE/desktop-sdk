@@ -449,7 +449,7 @@ if (window.DocsAPI && window.DocsAPI.DocEditor) \n\
     return window.DocsAPI.DocEditor.version(); \n\
 else \n\
     return undefined; \n\
-})();", retval, exception);
+})();", "", 0, retval, exception);
                 if (bIsVersion)
                 {
                     if (retval->IsString())
@@ -462,7 +462,7 @@ else \n\
                 CefRefPtr<CefV8Value> retval2;
                 CefRefPtr<CefV8Exception> exception2;
 
-                bool bIsAppData = CefV8Context::GetCurrentContext()->Eval("window[\"AscDesktopEditor_AppData\"]();", retval2, exception2);
+                bool bIsAppData = CefV8Context::GetCurrentContext()->Eval("window[\"AscDesktopEditor_AppData\"]();", "", 0, retval2, exception2);
                 if (bIsAppData)
                 {
                     if (retval2->IsString())
@@ -473,7 +473,7 @@ else \n\
                 }
                 retval = NULL;
                 exception2 = NULL;
-                bool bIsFontsData = CefV8Context::GetCurrentContext()->Eval("window[\"AscDesktopEditor_FontsData\"]();", retval2, exception2);
+                bool bIsFontsData = CefV8Context::GetCurrentContext()->Eval("window[\"AscDesktopEditor_FontsData\"]();", "", 0, retval2, exception2);
                 if (bIsAppData)
                 {
                     if (retval2->IsString())
@@ -1568,7 +1568,7 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
             CefRefPtr<CefV8Value> _timerID;
             CefRefPtr<CefV8Exception> _exception;
             if (CefV8Context::GetCurrentContext()->Eval("(function(){ var intervalID = setInterval(function(){ window.AscDesktopEditor.NativeFunctionTimer(intervalID); }, 100); return intervalID; })();",
-                                                    _timerID, _exception))
+                                                    "", 0, _timerID, _exception))
             {
                 m_nNativeOpenFileTimerID = _timerID->GetIntValue();
                 //LOGGER_STRING2("timer created: " + std::to_string(m_nNativeOpenFileTimerID));
@@ -1596,7 +1596,7 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
                     CefRefPtr<CefV8Value> _timerID;
                     CefRefPtr<CefV8Exception> _exception;
                     std::string sCode = "clearTimeout(" + std::to_string(m_nNativeOpenFileTimerID) + ");";
-                    if (CefV8Context::GetCurrentContext()->Eval(sCode, _timerID, _exception))
+                    if (CefV8Context::GetCurrentContext()->Eval(sCode, "", 0, _timerID, _exception))
                     {
                         //LOGGER_STRING2("timer stoped: " + std::to_string(m_nNativeOpenFileTimerID));
                     }
@@ -2136,7 +2136,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     // add AscEditorNative
     CefRefPtr<CefV8Value> object = context->GetGlobal();
 
-    CefRefPtr<CefV8Value> objNative = CefV8Value::CreateObject(NULL);
+    CefRefPtr<CefV8Value> objNative = CefV8Value::CreateObject(NULL, NULL);
     CAscEditorNativeV8Handler* pNativeHandlerWrapper = new CAscEditorNativeV8Handler();
     pNativeHandlerWrapper->sync_command_check = &sync_command_check;
 

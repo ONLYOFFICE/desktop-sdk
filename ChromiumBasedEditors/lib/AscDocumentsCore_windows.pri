@@ -61,6 +61,8 @@ DEFINES += \
     "NVALGRIND" \
     "DYNAMIC_ANNOTATIONS_ENABLED=0"
 
+DEFINES += WRAPPING_CEF_SHARED
+
 LIBS += -lwininet \
         -ldnsapi \
         -lversion \
@@ -90,55 +92,13 @@ LIBS += -lwininet \
         -lrpcrt4 \
         -lgdiplus \
         -lUrlmon \
-        -lOpenGL32
+        -lOpenGL32 \
+        -lImm32
 
 INCLUDEPATH += \
     $$PWD/src/cef/windows
 
 HEADERS += \
-    $$PWD/src/cef/windows/cefclient/browser/binding_test.h \
-    $$PWD/src/cef/windows/cefclient/browser/browser_window.h \
-    $$PWD/src/cef/windows/cefclient/browser/browser_window_osr_win.h \
-    $$PWD/src/cef/windows/cefclient/browser/browser_window_std_win.h \
-    $$PWD/src/cef/windows/cefclient/browser/bytes_write_handler.h \
-    $$PWD/src/cef/windows/cefclient/browser/client_app_browser.h \
-    $$PWD/src/cef/windows/cefclient/browser/client_handler.h \
-    $$PWD/src/cef/windows/cefclient/browser/client_handler_osr.h \
-    $$PWD/src/cef/windows/cefclient/browser/client_handler_std.h \
-    $$PWD/src/cef/windows/cefclient/browser/client_types.h \
-    $$PWD/src/cef/windows/cefclient/browser/dialog_test.h \
-    $$PWD/src/cef/windows/cefclient/browser/geometry_util.h \
-    $$PWD/src/cef/windows/cefclient/browser/main_context.h \
-    $$PWD/src/cef/windows/cefclient/browser/main_context_impl.h \
-    $$PWD/src/cef/windows/cefclient/browser/main_message_loop.h \
-    $$PWD/src/cef/windows/cefclient/browser/main_message_loop_multithreaded_win.h \
-    $$PWD/src/cef/windows/cefclient/browser/main_message_loop_std.h \
-    $$PWD/src/cef/windows/cefclient/browser/osr_dragdrop_events.h \
-    $$PWD/src/cef/windows/cefclient/browser/osr_dragdrop_win.h \
-    $$PWD/src/cef/windows/cefclient/browser/osr_renderer.h \
-    $$PWD/src/cef/windows/cefclient/browser/osr_window_win.h \
-    $$PWD/src/cef/windows/cefclient/browser/preferences_test.h \
-    $$PWD/src/cef/windows/cefclient/browser/resource.h \
-    $$PWD/src/cef/windows/cefclient/browser/resource_util.h \
-    $$PWD/src/cef/windows/cefclient/browser/response_filter_test.h \
-    $$PWD/src/cef/windows/cefclient/browser/root_window.h \
-    $$PWD/src/cef/windows/cefclient/browser/root_window_manager.h \
-    $$PWD/src/cef/windows/cefclient/browser/root_window_win.h \
-    $$PWD/src/cef/windows/cefclient/browser/scheme_test.h \
-    $$PWD/src/cef/windows/cefclient/browser/temp_window.h \
-    $$PWD/src/cef/windows/cefclient/browser/temp_window_win.h \
-    $$PWD/src/cef/windows/cefclient/browser/test_runner.h \
-    $$PWD/src/cef/windows/cefclient/browser/urlrequest_test.h \
-    $$PWD/src/cef/windows/cefclient/browser/util_win.h \
-    $$PWD/src/cef/windows/cefclient/browser/window_test.h \
-    $$PWD/src/cef/windows/cefclient/common/client_app.h \
-    $$PWD/src/cef/windows/cefclient/common/client_app_other.h \
-    $$PWD/src/cef/windows/cefclient/common/client_switches.h \
-    $$PWD/src/cef/windows/cefclient/common/scheme_test_common.h \
-    $$PWD/src/cef/windows/cefclient/renderer/client_app_renderer.h \
-    $$PWD/src/cef/windows/cefclient/renderer/client_renderer.h \
-    $$PWD/src/cef/windows/cefclient/renderer/performance_test.h \
-    $$PWD/src/cef/windows/cefclient/renderer/performance_test_setup.h \
     $$PWD/src/cef/windows/include/base/internal/cef_atomicops_x86_msvc.h \
     $$PWD/src/cef/windows/include/base/internal/cef_bind_internal.h \
     $$PWD/src/cef/windows/include/base/internal/cef_bind_internal_win.h \
@@ -171,6 +131,29 @@ HEADERS += \
     $$PWD/src/cef/windows/include/base/cef_trace_event.h \
     $$PWD/src/cef/windows/include/base/cef_tuple.h \
     $$PWD/src/cef/windows/include/base/cef_weak_ptr.h \
+    $$PWD/src/cef/windows/include/capi/test/cef_test_helpers_capi.h \
+    $$PWD/src/cef/windows/include/capi/test/cef_translator_test_capi.h \
+    $$PWD/src/cef/windows/include/capi/views/cef_box_layout_capi.h \
+    $$PWD/src/cef/windows/include/capi/views/cef_browser_view_capi.h \
+    $$PWD/src/cef/windows/include/capi/views/cef_browser_view_delegate_capi.h \
+    $$PWD/src/cef/windows/include/capi/views/cef_button_capi.h \
+    $$PWD/src/cef/windows/include/capi/views/cef_button_delegate_capi.h \
+    $$PWD/src/cef/windows/include/capi/views/cef_display_capi.h \
+    $$PWD/src/cef/windows/include/capi/views/cef_fill_layout_capi.h \
+    $$PWD/src/cef/windows/include/capi/views/cef_label_button_capi.h \
+    $$PWD/src/cef/windows/include/capi/views/cef_layout_capi.h \
+    $$PWD/src/cef/windows/include/capi/views/cef_menu_button_capi.h \
+    $$PWD/src/cef/windows/include/capi/views/cef_menu_button_delegate_capi.h \
+    $$PWD/src/cef/windows/include/capi/views/cef_panel_capi.h \
+    $$PWD/src/cef/windows/include/capi/views/cef_panel_delegate_capi.h \
+    $$PWD/src/cef/windows/include/capi/views/cef_scroll_view_capi.h \
+    $$PWD/src/cef/windows/include/capi/views/cef_textfield_capi.h \
+    $$PWD/src/cef/windows/include/capi/views/cef_textfield_delegate_capi.h \
+    $$PWD/src/cef/windows/include/capi/views/cef_view_capi.h \
+    $$PWD/src/cef/windows/include/capi/views/cef_view_delegate_capi.h \
+    $$PWD/src/cef/windows/include/capi/views/cef_window_capi.h \
+    $$PWD/src/cef/windows/include/capi/views/cef_window_delegate_capi.h \
+    $$PWD/src/cef/windows/include/capi/cef_accessibility_handler_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_app_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_auth_callback_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_base_capi.h \
@@ -181,6 +164,7 @@ HEADERS += \
     $$PWD/src/cef/windows/include/capi/cef_command_line_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_context_menu_handler_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_cookie_capi.h \
+    $$PWD/src/cef/windows/include/capi/cef_crash_util_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_dialog_handler_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_display_handler_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_dom_capi.h \
@@ -188,16 +172,19 @@ HEADERS += \
     $$PWD/src/cef/windows/include/capi/cef_download_item_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_drag_data_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_drag_handler_capi.h \
+    $$PWD/src/cef/windows/include/capi/cef_file_util_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_find_handler_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_focus_handler_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_frame_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_geolocation_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_geolocation_handler_capi.h \
+    $$PWD/src/cef/windows/include/capi/cef_image_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_jsdialog_handler_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_keyboard_handler_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_life_span_handler_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_load_handler_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_menu_model_capi.h \
+    $$PWD/src/cef/windows/include/capi/cef_menu_model_delegate_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_navigation_entry_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_origin_whitelist_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_parser_capi.h \
@@ -219,14 +206,18 @@ HEADERS += \
     $$PWD/src/cef/windows/include/capi/cef_response_filter_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_scheme_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_ssl_info_capi.h \
+    $$PWD/src/cef/windows/include/capi/cef_ssl_status_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_stream_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_string_visitor_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_task_capi.h \
+    $$PWD/src/cef/windows/include/capi/cef_thread_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_trace_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_urlrequest_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_v8_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_values_capi.h \
+    $$PWD/src/cef/windows/include/capi/cef_waitable_event_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_web_plugin_capi.h \
+    $$PWD/src/cef/windows/include/capi/cef_x509_certificate_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_xml_reader_capi.h \
     $$PWD/src/cef/windows/include/capi/cef_zip_reader_capi.h \
     $$PWD/src/cef/windows/include/internal/cef_export.h \
@@ -245,14 +236,38 @@ HEADERS += \
     $$PWD/src/cef/windows/include/internal/cef_types_win.h \
     $$PWD/src/cef/windows/include/internal/cef_types_wrappers.h \
     $$PWD/src/cef/windows/include/internal/cef_win.h \
+    $$PWD/src/cef/windows/include/test/cef_test_helpers.h \
+    $$PWD/src/cef/windows/include/test/cef_translator_test.h \
+    $$PWD/src/cef/windows/include/views/cef_box_layout.h \
+    $$PWD/src/cef/windows/include/views/cef_browser_view.h \
+    $$PWD/src/cef/windows/include/views/cef_browser_view_delegate.h \
+    $$PWD/src/cef/windows/include/views/cef_button.h \
+    $$PWD/src/cef/windows/include/views/cef_button_delegate.h \
+    $$PWD/src/cef/windows/include/views/cef_display.h \
+    $$PWD/src/cef/windows/include/views/cef_fill_layout.h \
+    $$PWD/src/cef/windows/include/views/cef_label_button.h \
+    $$PWD/src/cef/windows/include/views/cef_layout.h \
+    $$PWD/src/cef/windows/include/views/cef_menu_button.h \
+    $$PWD/src/cef/windows/include/views/cef_menu_button_delegate.h \
+    $$PWD/src/cef/windows/include/views/cef_panel.h \
+    $$PWD/src/cef/windows/include/views/cef_panel_delegate.h \
+    $$PWD/src/cef/windows/include/views/cef_scroll_view.h \
+    $$PWD/src/cef/windows/include/views/cef_textfield.h \
+    $$PWD/src/cef/windows/include/views/cef_textfield_delegate.h \
+    $$PWD/src/cef/windows/include/views/cef_view.h \
+    $$PWD/src/cef/windows/include/views/cef_view_delegate.h \
+    $$PWD/src/cef/windows/include/views/cef_window.h \
+    $$PWD/src/cef/windows/include/views/cef_window_delegate.h \
     $$PWD/src/cef/windows/include/wrapper/cef_byte_read_handler.h \
     $$PWD/src/cef/windows/include/wrapper/cef_closure_task.h \
     $$PWD/src/cef/windows/include/wrapper/cef_helpers.h \
     $$PWD/src/cef/windows/include/wrapper/cef_message_router.h \
     $$PWD/src/cef/windows/include/wrapper/cef_resource_manager.h \
+    $$PWD/src/cef/windows/include/wrapper/cef_scoped_temp_dir.h \
     $$PWD/src/cef/windows/include/wrapper/cef_stream_resource_handler.h \
     $$PWD/src/cef/windows/include/wrapper/cef_xml_object.h \
     $$PWD/src/cef/windows/include/wrapper/cef_zip_archive.h \
+    $$PWD/src/cef/windows/include/cef_accessibility_handler.h \
     $$PWD/src/cef/windows/include/cef_app.h \
     $$PWD/src/cef/windows/include/cef_auth_callback.h \
     $$PWD/src/cef/windows/include/cef_base.h \
@@ -263,6 +278,7 @@ HEADERS += \
     $$PWD/src/cef/windows/include/cef_command_line.h \
     $$PWD/src/cef/windows/include/cef_context_menu_handler.h \
     $$PWD/src/cef/windows/include/cef_cookie.h \
+    $$PWD/src/cef/windows/include/cef_crash_util.h \
     $$PWD/src/cef/windows/include/cef_dialog_handler.h \
     $$PWD/src/cef/windows/include/cef_display_handler.h \
     $$PWD/src/cef/windows/include/cef_dom.h \
@@ -270,16 +286,19 @@ HEADERS += \
     $$PWD/src/cef/windows/include/cef_download_item.h \
     $$PWD/src/cef/windows/include/cef_drag_data.h \
     $$PWD/src/cef/windows/include/cef_drag_handler.h \
+    $$PWD/src/cef/windows/include/cef_file_util.h \
     $$PWD/src/cef/windows/include/cef_find_handler.h \
     $$PWD/src/cef/windows/include/cef_focus_handler.h \
     $$PWD/src/cef/windows/include/cef_frame.h \
     $$PWD/src/cef/windows/include/cef_geolocation.h \
     $$PWD/src/cef/windows/include/cef_geolocation_handler.h \
+    $$PWD/src/cef/windows/include/cef_image.h \
     $$PWD/src/cef/windows/include/cef_jsdialog_handler.h \
     $$PWD/src/cef/windows/include/cef_keyboard_handler.h \
     $$PWD/src/cef/windows/include/cef_life_span_handler.h \
     $$PWD/src/cef/windows/include/cef_load_handler.h \
     $$PWD/src/cef/windows/include/cef_menu_model.h \
+    $$PWD/src/cef/windows/include/cef_menu_model_delegate.h \
     $$PWD/src/cef/windows/include/cef_navigation_entry.h \
     $$PWD/src/cef/windows/include/cef_origin_whitelist.h \
     $$PWD/src/cef/windows/include/cef_pack_resources.h \
@@ -301,34 +320,54 @@ HEADERS += \
     $$PWD/src/cef/windows/include/cef_resource_handler.h \
     $$PWD/src/cef/windows/include/cef_response.h \
     $$PWD/src/cef/windows/include/cef_response_filter.h \
-    $$PWD/src/cef/windows/include/cef_runnable.h \
     $$PWD/src/cef/windows/include/cef_sandbox_win.h \
     $$PWD/src/cef/windows/include/cef_scheme.h \
     $$PWD/src/cef/windows/include/cef_ssl_info.h \
+    $$PWD/src/cef/windows/include/cef_ssl_status.h \
     $$PWD/src/cef/windows/include/cef_stream.h \
     $$PWD/src/cef/windows/include/cef_string_visitor.h \
     $$PWD/src/cef/windows/include/cef_task.h \
+    $$PWD/src/cef/windows/include/cef_thread.h \
     $$PWD/src/cef/windows/include/cef_trace.h \
     $$PWD/src/cef/windows/include/cef_urlrequest.h \
     $$PWD/src/cef/windows/include/cef_v8.h \
     $$PWD/src/cef/windows/include/cef_values.h \
     $$PWD/src/cef/windows/include/cef_version.h \
+    $$PWD/src/cef/windows/include/cef_waitable_event.h \
     $$PWD/src/cef/windows/include/cef_web_plugin.h \
+    $$PWD/src/cef/windows/include/cef_x509_certificate.h \
     $$PWD/src/cef/windows/include/cef_xml_reader.h \
-    $$PWD/src/cef/windows/include/cef_zip_reader.h \
+    $$PWD/src/cef/windows/include/cef_zip_reader.h
+
+HEADERS += \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/test/translator_test_ref_ptr_client_child_cpptoc.h \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/test/translator_test_ref_ptr_client_cpptoc.h \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/test/translator_test_scoped_client_child_cpptoc.h \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/test/translator_test_scoped_client_cpptoc.h \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/views/browser_view_delegate_cpptoc.h \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/views/button_delegate_cpptoc.h \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/views/menu_button_delegate_cpptoc.h \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/views/panel_delegate_cpptoc.h \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/views/textfield_delegate_cpptoc.h \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/views/view_delegate_cpptoc.h \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/views/window_delegate_cpptoc.h \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/accessibility_handler_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/app_cpptoc.h \
-    $$PWD/src/cef/windows/libcef_dll/cpptoc/base_cpptoc.h \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/base_ref_counted_cpptoc.h \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/base_scoped_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/browser_process_handler_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/client_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/completion_callback_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/context_menu_handler_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/cookie_visitor_cpptoc.h \
-    $$PWD/src/cef/windows/libcef_dll/cpptoc/cpptoc.h \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/cpptoc_ref_counted.h \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/cpptoc_scoped.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/delete_cookies_callback_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/dialog_handler_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/display_handler_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/domvisitor_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/download_handler_cpptoc.h \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/download_image_callback_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/drag_handler_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/end_tracing_callback_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/find_handler_cpptoc.h \
@@ -339,18 +378,20 @@ HEADERS += \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/keyboard_handler_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/life_span_handler_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/load_handler_cpptoc.h \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/menu_model_delegate_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/navigation_entry_visitor_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/pdf_print_callback_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/print_handler_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/read_handler_cpptoc.h \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/register_cdm_callback_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/render_handler_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/render_process_handler_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/request_context_handler_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/request_handler_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/resolve_callback_cpptoc.h \
-    $$PWD/src/cef/windows/libcef_dll/cpptoc/response_filter_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/resource_bundle_handler_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/resource_handler_cpptoc.h \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/response_filter_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/run_file_dialog_callback_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/scheme_handler_factory_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/set_cookie_callback_cpptoc.h \
@@ -359,9 +400,30 @@ HEADERS += \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/urlrequest_client_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/v8accessor_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/v8handler_cpptoc.h \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/v8interceptor_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/web_plugin_info_visitor_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/web_plugin_unstable_callback_cpptoc.h \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/write_handler_cpptoc.h \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/test/translator_test_ctocpp.h \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/test/translator_test_ref_ptr_library_child_child_ctocpp.h \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/test/translator_test_ref_ptr_library_child_ctocpp.h \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/test/translator_test_ref_ptr_library_ctocpp.h \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/test/translator_test_scoped_library_child_child_ctocpp.h \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/test/translator_test_scoped_library_child_ctocpp.h \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/test/translator_test_scoped_library_ctocpp.h \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/views/box_layout_ctocpp.h \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/views/browser_view_ctocpp.h \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/views/button_ctocpp.h \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/views/display_ctocpp.h \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/views/fill_layout_ctocpp.h \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/views/label_button_ctocpp.h \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/views/layout_ctocpp.h \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/views/menu_button_ctocpp.h \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/views/panel_ctocpp.h \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/views/scroll_view_ctocpp.h \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/views/textfield_ctocpp.h \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/views/view_ctocpp.h \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/views/window_ctocpp.h \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/auth_callback_ctocpp.h \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/before_download_callback_ctocpp.h \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/binary_value_ctocpp.h \
@@ -371,7 +433,8 @@ HEADERS += \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/command_line_ctocpp.h \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/context_menu_params_ctocpp.h \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/cookie_manager_ctocpp.h \
-    $$PWD/src/cef/windows/libcef_dll/ctocpp/ctocpp.h \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/ctocpp_ref_counted.h \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/ctocpp_scoped.h \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/dictionary_value_ctocpp.h \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/domdocument_ctocpp.h \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/domnode_ctocpp.h \
@@ -381,6 +444,7 @@ HEADERS += \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/file_dialog_callback_ctocpp.h \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/frame_ctocpp.h \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/geolocation_callback_ctocpp.h \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/image_ctocpp.h \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/jsdialog_callback_ctocpp.h \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/list_value_ctocpp.h \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/menu_model_ctocpp.h \
@@ -398,11 +462,13 @@ HEADERS += \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/response_ctocpp.h \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/run_context_menu_callback_ctocpp.h \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/scheme_registrar_ctocpp.h \
-    $$PWD/src/cef/windows/libcef_dll/ctocpp/sslcert_principal_ctocpp.h \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/select_client_certificate_callback_ctocpp.h \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/sslinfo_ctocpp.h \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/sslstatus_ctocpp.h \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/stream_reader_ctocpp.h \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/stream_writer_ctocpp.h \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/task_runner_ctocpp.h \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/thread_ctocpp.h \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/urlrequest_ctocpp.h \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/v8context_ctocpp.h \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/v8exception_ctocpp.h \
@@ -410,58 +476,18 @@ HEADERS += \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/v8stack_trace_ctocpp.h \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/v8value_ctocpp.h \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/value_ctocpp.h \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/waitable_event_ctocpp.h \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/web_plugin_info_ctocpp.h \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/x509cert_principal_ctocpp.h \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/x509certificate_ctocpp.h \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/xml_reader_ctocpp.h \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/zip_reader_ctocpp.h \
     $$PWD/src/cef/windows/libcef_dll/wrapper/cef_browser_info_map.h \
+    $$PWD/src/cef/windows/libcef_dll/ptr_util.h \
     $$PWD/src/cef/windows/libcef_dll/transfer_util.h \
     $$PWD/src/cef/windows/libcef_dll/wrapper_types.h
 
 SOURCES += \
-    $$PWD/src/cef/windows/cefclient/browser/binding_test.cc \
-    $$PWD/src/cef/windows/cefclient/browser/browser_window.cc \
-    $$PWD/src/cef/windows/cefclient/browser/browser_window_osr_win.cc \
-    $$PWD/src/cef/windows/cefclient/browser/browser_window_std_win.cc \
-    $$PWD/src/cef/windows/cefclient/browser/bytes_write_handler.cc \
-    $$PWD/src/cef/windows/cefclient/browser/client_app_browser.cc \
-    $$PWD/src/cef/windows/cefclient/browser/client_app_delegates_browser.cc \
-    $$PWD/src/cef/windows/cefclient/browser/client_handler.cc \
-    $$PWD/src/cef/windows/cefclient/browser/client_handler_osr.cc \
-    $$PWD/src/cef/windows/cefclient/browser/client_handler_std.cc \
-    $$PWD/src/cef/windows/cefclient/browser/dialog_test.cc \
-    $$PWD/src/cef/windows/cefclient/browser/geometry_util.cc \
-    $$PWD/src/cef/windows/cefclient/browser/main_context.cc \
-    $$PWD/src/cef/windows/cefclient/browser/main_context_impl.cc \
-    $$PWD/src/cef/windows/cefclient/browser/main_context_impl_win.cc \
-    $$PWD/src/cef/windows/cefclient/browser/main_message_loop.cc \
-    $$PWD/src/cef/windows/cefclient/browser/main_message_loop_multithreaded_win.cc \
-    $$PWD/src/cef/windows/cefclient/browser/main_message_loop_std.cc \
-    $$PWD/src/cef/windows/cefclient/browser/osr_dragdrop_win.cc \
-    $$PWD/src/cef/windows/cefclient/browser/osr_renderer.cc \
-    $$PWD/src/cef/windows/cefclient/browser/osr_window_win.cc \
-    $$PWD/src/cef/windows/cefclient/browser/preferences_test.cc \
-    $$PWD/src/cef/windows/cefclient/browser/resource_util_win.cc \
-    $$PWD/src/cef/windows/cefclient/browser/response_filter_test.cc \
-    $$PWD/src/cef/windows/cefclient/browser/root_window.cc \
-    $$PWD/src/cef/windows/cefclient/browser/root_window_manager.cc \
-    $$PWD/src/cef/windows/cefclient/browser/root_window_win.cc \
-    $$PWD/src/cef/windows/cefclient/browser/scheme_test.cc \
-    $$PWD/src/cef/windows/cefclient/browser/temp_window_win.cc \
-    $$PWD/src/cef/windows/cefclient/browser/test_runner.cc \
-    $$PWD/src/cef/windows/cefclient/browser/urlrequest_test.cc \
-    $$PWD/src/cef/windows/cefclient/browser/util_win.cc \
-    $$PWD/src/cef/windows/cefclient/browser/window_test.cc \
-    $$PWD/src/cef/windows/cefclient/browser/window_test_win.cc \
-    $$PWD/src/cef/windows/cefclient/common/client_app.cc \
-    $$PWD/src/cef/windows/cefclient/common/client_app_delegates_common.cc \
-    $$PWD/src/cef/windows/cefclient/common/client_app_other.cc \
-    $$PWD/src/cef/windows/cefclient/common/client_switches.cc \
-    $$PWD/src/cef/windows/cefclient/common/scheme_test_common.cc \
-    $$PWD/src/cef/windows/cefclient/renderer/client_app_delegates_renderer.cc \
-    $$PWD/src/cef/windows/cefclient/renderer/client_app_renderer.cc \
-    $$PWD/src/cef/windows/cefclient/renderer/client_renderer.cc \
-    $$PWD/src/cef/windows/cefclient/renderer/performance_test.cc \
-    $$PWD/src/cef/windows/cefclient/renderer/performance_test_tests.cc \
     $$PWD/src/cef/windows/libcef_dll/base/cef_atomicops_x86_gcc.cc \
     $$PWD/src/cef/windows/libcef_dll/base/cef_bind_helpers.cc \
     $$PWD/src/cef/windows/libcef_dll/base/cef_callback_helpers.cc \
@@ -474,8 +500,21 @@ SOURCES += \
     $$PWD/src/cef/windows/libcef_dll/base/cef_thread_checker_impl.cc \
     $$PWD/src/cef/windows/libcef_dll/base/cef_thread_collision_warner.cc \
     $$PWD/src/cef/windows/libcef_dll/base/cef_weak_ptr.cc \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/test/translator_test_ref_ptr_client_child_cpptoc.cc \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/test/translator_test_ref_ptr_client_cpptoc.cc \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/test/translator_test_scoped_client_child_cpptoc.cc \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/test/translator_test_scoped_client_cpptoc.cc \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/views/browser_view_delegate_cpptoc.cc \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/views/button_delegate_cpptoc.cc \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/views/menu_button_delegate_cpptoc.cc \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/views/panel_delegate_cpptoc.cc \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/views/textfield_delegate_cpptoc.cc \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/views/view_delegate_cpptoc.cc \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/views/window_delegate_cpptoc.cc \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/accessibility_handler_cpptoc.cc \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/app_cpptoc.cc \
-    $$PWD/src/cef/windows/libcef_dll/cpptoc/base_cpptoc.cc \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/base_ref_counted_cpptoc.cc \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/base_scoped_cpptoc.cc \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/browser_process_handler_cpptoc.cc \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/client_cpptoc.cc \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/completion_callback_cpptoc.cc \
@@ -486,6 +525,7 @@ SOURCES += \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/display_handler_cpptoc.cc \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/domvisitor_cpptoc.cc \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/download_handler_cpptoc.cc \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/download_image_callback_cpptoc.cc \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/drag_handler_cpptoc.cc \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/end_tracing_callback_cpptoc.cc \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/find_handler_cpptoc.cc \
@@ -496,18 +536,20 @@ SOURCES += \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/keyboard_handler_cpptoc.cc \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/life_span_handler_cpptoc.cc \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/load_handler_cpptoc.cc \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/menu_model_delegate_cpptoc.cc \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/navigation_entry_visitor_cpptoc.cc \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/pdf_print_callback_cpptoc.cc \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/print_handler_cpptoc.cc \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/read_handler_cpptoc.cc \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/register_cdm_callback_cpptoc.cc \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/render_handler_cpptoc.cc \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/render_process_handler_cpptoc.cc \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/request_context_handler_cpptoc.cc \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/request_handler_cpptoc.cc \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/resolve_callback_cpptoc.cc \
-    $$PWD/src/cef/windows/libcef_dll/cpptoc/response_filter_cpptoc.cc \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/resource_bundle_handler_cpptoc.cc \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/resource_handler_cpptoc.cc \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/response_filter_cpptoc.cc \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/run_file_dialog_callback_cpptoc.cc \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/scheme_handler_factory_cpptoc.cc \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/set_cookie_callback_cpptoc.cc \
@@ -516,9 +558,30 @@ SOURCES += \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/urlrequest_client_cpptoc.cc \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/v8accessor_cpptoc.cc \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/v8handler_cpptoc.cc \
+    $$PWD/src/cef/windows/libcef_dll/cpptoc/v8interceptor_cpptoc.cc \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/web_plugin_info_visitor_cpptoc.cc \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/web_plugin_unstable_callback_cpptoc.cc \
     $$PWD/src/cef/windows/libcef_dll/cpptoc/write_handler_cpptoc.cc \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/test/translator_test_ctocpp.cc \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/test/translator_test_ref_ptr_library_child_child_ctocpp.cc \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/test/translator_test_ref_ptr_library_child_ctocpp.cc \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/test/translator_test_ref_ptr_library_ctocpp.cc \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/test/translator_test_scoped_library_child_child_ctocpp.cc \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/test/translator_test_scoped_library_child_ctocpp.cc \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/test/translator_test_scoped_library_ctocpp.cc \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/views/box_layout_ctocpp.cc \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/views/browser_view_ctocpp.cc \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/views/button_ctocpp.cc \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/views/display_ctocpp.cc \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/views/fill_layout_ctocpp.cc \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/views/label_button_ctocpp.cc \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/views/layout_ctocpp.cc \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/views/menu_button_ctocpp.cc \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/views/panel_ctocpp.cc \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/views/scroll_view_ctocpp.cc \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/views/textfield_ctocpp.cc \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/views/view_ctocpp.cc \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/views/window_ctocpp.cc \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/auth_callback_ctocpp.cc \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/before_download_callback_ctocpp.cc \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/binary_value_ctocpp.cc \
@@ -537,6 +600,7 @@ SOURCES += \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/file_dialog_callback_ctocpp.cc \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/frame_ctocpp.cc \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/geolocation_callback_ctocpp.cc \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/image_ctocpp.cc \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/jsdialog_callback_ctocpp.cc \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/list_value_ctocpp.cc \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/menu_model_ctocpp.cc \
@@ -554,11 +618,13 @@ SOURCES += \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/response_ctocpp.cc \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/run_context_menu_callback_ctocpp.cc \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/scheme_registrar_ctocpp.cc \
-    $$PWD/src/cef/windows/libcef_dll/ctocpp/sslcert_principal_ctocpp.cc \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/select_client_certificate_callback_ctocpp.cc \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/sslinfo_ctocpp.cc \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/sslstatus_ctocpp.cc \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/stream_reader_ctocpp.cc \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/stream_writer_ctocpp.cc \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/task_runner_ctocpp.cc \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/thread_ctocpp.cc \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/urlrequest_ctocpp.cc \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/v8context_ctocpp.cc \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/v8exception_ctocpp.cc \
@@ -566,19 +632,171 @@ SOURCES += \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/v8stack_trace_ctocpp.cc \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/v8value_ctocpp.cc \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/value_ctocpp.cc \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/waitable_event_ctocpp.cc \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/web_plugin_info_ctocpp.cc \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/x509cert_principal_ctocpp.cc \
+    $$PWD/src/cef/windows/libcef_dll/ctocpp/x509certificate_ctocpp.cc \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/xml_reader_ctocpp.cc \
     $$PWD/src/cef/windows/libcef_dll/ctocpp/zip_reader_ctocpp.cc \
     $$PWD/src/cef/windows/libcef_dll/wrapper/cef_byte_read_handler.cc \
     $$PWD/src/cef/windows/libcef_dll/wrapper/cef_closure_task.cc \
     $$PWD/src/cef/windows/libcef_dll/wrapper/cef_message_router.cc \
     $$PWD/src/cef/windows/libcef_dll/wrapper/cef_resource_manager.cc \
+    $$PWD/src/cef/windows/libcef_dll/wrapper/cef_scoped_temp_dir.cc \
     $$PWD/src/cef/windows/libcef_dll/wrapper/cef_stream_resource_handler.cc \
     $$PWD/src/cef/windows/libcef_dll/wrapper/cef_xml_object.cc \
     $$PWD/src/cef/windows/libcef_dll/wrapper/cef_zip_archive.cc \
     $$PWD/src/cef/windows/libcef_dll/wrapper/libcef_dll_wrapper.cc \
     $$PWD/src/cef/windows/libcef_dll/wrapper/libcef_dll_wrapper2.cc \
     $$PWD/src/cef/windows/libcef_dll/transfer_util.cc
+
+# BROWSER_BROWSER
+HEADERS += \
+    $$PWD/src/cef/windows/tests/cefclient/browser/binding_test.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/browser_window.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/bytes_write_handler.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/client_browser.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/client_handler.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/client_handler_osr.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/client_handler_std.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/client_types.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/dialog_test.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/drm_test.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/main_context.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/main_context_impl.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/osr_dragdrop_events.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/osr_renderer.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/preferences_test.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/resource.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/response_filter_test.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/root_window.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/root_window_manager.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/scheme_test.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/temp_window.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/test_runner.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/urlrequest_test.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/window_test.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/window_test_runner.h
+
+SOURCES += \
+    $$PWD/src/cef/windows/tests/cefclient/browser/binding_test.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/browser_window.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/bytes_write_handler.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/client_app_delegates_browser.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/client_browser.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/client_handler.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/client_handler_osr.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/client_handler_std.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/dialog_test.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/drm_test.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/main_context.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/main_context_impl.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/osr_renderer.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/preferences_test.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/response_filter_test.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/root_window.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/root_window_create.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/root_window_manager.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/scheme_test.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/test_runner.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/urlrequest_test.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/window_test.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/window_test_runner.cc
+
+# BROWSER_SHARED_BROWSER
+HEADERS += \
+    $$PWD/src/cef/windows/tests/shared/browser/client_app_browser.h \
+    $$PWD/src/cef/windows/tests/shared/browser/geometry_util.h \
+    $$PWD/src/cef/windows/tests/shared/browser/main_message_loop.h \
+    $$PWD/src/cef/windows/tests/shared/browser/main_message_loop_external_pump.h \
+    $$PWD/src/cef/windows/tests/shared/browser/main_message_loop_std.h \
+    $$PWD/src/cef/windows/tests/shared/browser/resource_util.h
+
+SOURCES += \
+    $$PWD/src/cef/windows/tests/shared/browser/client_app_browser.cc \
+    $$PWD/src/cef/windows/tests/shared/browser/geometry_util.cc \
+    $$PWD/src/cef/windows/tests/shared/browser/main_message_loop.cc \
+    $$PWD/src/cef/windows/tests/shared/browser/main_message_loop_external_pump.cc \
+    $$PWD/src/cef/windows/tests/shared/browser/main_message_loop_std.cc \
+    $$PWD/src/cef/windows/tests/shared/browser/resource_util.cc
+
+# COMMON
+HEADERS += \
+    $$PWD/src/cef/windows/tests/cefclient/common/scheme_test_common.h \
+    \
+    $$PWD/src/cef/windows/tests/shared/common/client_app.h \
+    $$PWD/src/cef/windows/tests/shared/common/client_app_other.h \
+    $$PWD/src/cef/windows/tests/shared/common/client_switches.h
+
+SOURCES += \
+    $$PWD/src/cef/windows/tests/cefclient/common/client_app_delegates_common.cc \
+    $$PWD/src/cef/windows/tests/cefclient/common/scheme_test_common.cc \
+    \
+    $$PWD/src/cef/windows/tests/shared/common/client_app.cc \
+    $$PWD/src/cef/windows/tests/shared/common/client_app_other.cc \
+    $$PWD/src/cef/windows/tests/shared/common/client_switches.cc
+
+# RENDERER
+HEADERS += \
+    $$PWD/src/cef/windows/tests/cefclient/renderer/client_renderer.h \
+    $$PWD/src/cef/windows/tests/cefclient/renderer/performance_test.h \
+    $$PWD/src/cef/windows/tests/cefclient/renderer/performance_test_setup.h \
+    \
+    $$PWD/src/cef/windows/tests/shared/renderer/client_app_renderer.h
+
+SOURCES += \
+    $$PWD/src/cef/windows/tests/cefclient/renderer/client_app_delegates_renderer.cc \
+    $$PWD/src/cef/windows/tests/cefclient/renderer/client_renderer.cc \
+    $$PWD/src/cef/windows/tests/cefclient/renderer/performance_test.cc \
+    $$PWD/src/cef/windows/tests/cefclient/renderer/performance_test_tests.cc \
+    \
+    $$PWD/src/cef/windows/tests/shared/renderer/client_app_renderer.cc
+
+# WINDOWS
+HEADERS += \
+    $$PWD/src/cef/windows/tests/cefclient/browser/browser_window_osr_win.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/browser_window_std_win.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/main_message_loop_multithreaded_win.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/osr_accessibility_helper.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/osr_accessibility_node.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/osr_dragdrop_win.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/osr_ime_handler_win.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/osr_window_win.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/root_window_views.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/root_window_win.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/temp_window_win.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/views_menu_bar.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/views_style.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/views_window.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/window_test_runner_views.h \
+    $$PWD/src/cef/windows/tests/cefclient/browser/window_test_runner_win.h \
+    \
+    $$PWD/src/cef/windows/tests/shared/browser/util_win.h
+
+SOURCES += \
+    $$PWD/src/cef/windows/tests/cefclient/browser/browser_window_osr_win.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/browser_window_std_win.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/main_context_impl_win.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/main_message_loop_multithreaded_win.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/osr_accessibility_helper.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/osr_accessibility_node.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/osr_accessibility_node_win.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/osr_dragdrop_win.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/osr_ime_handler_win.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/osr_window_win.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/resource_util_win_idmap.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/root_window_views.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/root_window_win.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/temp_window_win.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/views_menu_bar.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/views_style.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/views_window.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/window_test_runner_views.cc \
+    $$PWD/src/cef/windows/tests/cefclient/browser/window_test_runner_win.cc \
+    \
+    $$PWD/src/cef/windows/tests/shared/browser/main_message_loop_external_pump_win.cc \
+    $$PWD/src/cef/windows/tests/shared/browser/resource_util_win.cc \
+    $$PWD/src/cef/windows/tests/shared/browser/util_win.cc
 
 LIBS += -L$$PWD/../../../core/Common/3dParty/cef/$$CORE_BUILDS_PLATFORM_PREFIX/build -llibcef
 
