@@ -29,7 +29,7 @@ CONFIG += core_boost_libs
 include(../../../core/Common/3dParty/boost/boost.pri)
 
 ########################################################
-
+include($$PWD/AscDocumentsCore_base.pri)
 include($$PWD/AscDocumentsCore_windows.pri)
 
 HEADERS += \
