@@ -1,4 +1,4 @@
-// Copyright (c) 2016 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,26 +9,28 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
+// $hash=ce64517474af4fd801c702c68d9e6acbb38cdea7$
+//
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_VIEWS_LABEL_BUTTON_CTOCPP_H_
 #define CEF_LIBCEF_DLL_CTOCPP_VIEWS_LABEL_BUTTON_CTOCPP_H_
 #pragma once
 
-#ifndef USING_CEF_SHARED
-#pragma message("Warning: "__FILE__" may be accessed wrapper-side only")
-#else  // USING_CEF_SHARED
+#if !defined(WRAPPING_CEF_SHARED)
+#error This file can be included wrapper-side only
+#endif
 
-#include "include/views/cef_label_button.h"
 #include "include/capi/views/cef_label_button_capi.h"
-#include "include/views/cef_menu_button.h"
 #include "include/capi/views/cef_menu_button_capi.h"
-#include "libcef_dll/ctocpp/ctocpp.h"
+#include "include/views/cef_label_button.h"
+#include "include/views/cef_menu_button.h"
+#include "libcef_dll/ctocpp/ctocpp_ref_counted.h"
 
 // Wrap a C structure with a C++ class.
 // This class may be instantiated and accessed wrapper-side only.
-class CefLabelButtonCToCpp
-    : public CefCToCpp<CefLabelButtonCToCpp, CefLabelButton,
-        cef_label_button_t> {
+class CefLabelButtonCToCpp : public CefCToCppRefCounted<CefLabelButtonCToCpp,
+                                                        CefLabelButton,
+                                                        cef_label_button_t> {
  public:
   CefLabelButtonCToCpp();
 
@@ -37,7 +39,7 @@ class CefLabelButtonCToCpp
   void SetText(const CefString& text) OVERRIDE;
   CefString GetText() OVERRIDE;
   void SetImage(cef_button_state_t button_state,
-      CefRefPtr<CefImage> image) OVERRIDE;
+                CefRefPtr<CefImage> image) OVERRIDE;
   CefRefPtr<CefImage> GetImage(cef_button_state_t button_state) OVERRIDE;
   void SetTextColor(cef_button_state_t for_state, cef_color_t color) OVERRIDE;
   void SetEnabledTextColors(cef_color_t color) OVERRIDE;
@@ -50,6 +52,7 @@ class CefLabelButtonCToCpp
   CefRefPtr<CefLabelButton> AsLabelButton() OVERRIDE;
   void SetState(cef_button_state_t state) OVERRIDE;
   cef_button_state_t GetState() OVERRIDE;
+  void SetInkDropEnabled(bool enabled) OVERRIDE;
   void SetTooltipText(const CefString& tooltip_text) OVERRIDE;
   void SetAccessibleName(const CefString& name) OVERRIDE;
 
@@ -68,6 +71,8 @@ class CefLabelButtonCToCpp
   CefRefPtr<CefWindow> GetWindow() OVERRIDE;
   int GetID() OVERRIDE;
   void SetID(int id) OVERRIDE;
+  int GetGroupID() OVERRIDE;
+  void SetGroupID(int group_id) OVERRIDE;
   CefRefPtr<CefView> GetParentView() OVERRIDE;
   CefRefPtr<CefView> GetViewForID(int id) OVERRIDE;
   void SetBounds(const CefRect& bounds) OVERRIDE;
@@ -102,5 +107,4 @@ class CefLabelButtonCToCpp
   bool ConvertPointFromView(CefRefPtr<CefView> view, CefPoint& point) OVERRIDE;
 };
 
-#endif  // USING_CEF_SHARED
 #endif  // CEF_LIBCEF_DLL_CTOCPP_VIEWS_LABEL_BUTTON_CTOCPP_H_

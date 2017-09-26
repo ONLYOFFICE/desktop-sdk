@@ -1,4 +1,4 @@
-// Copyright (c) 2016 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,23 +9,26 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
+// $hash=66a00808f5796a34066e53c70fadcbff51158f03$
+//
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_VIEWS_SCROLL_VIEW_CTOCPP_H_
 #define CEF_LIBCEF_DLL_CTOCPP_VIEWS_SCROLL_VIEW_CTOCPP_H_
 #pragma once
 
-#ifndef USING_CEF_SHARED
-#pragma message("Warning: "__FILE__" may be accessed wrapper-side only")
-#else  // USING_CEF_SHARED
+#if !defined(WRAPPING_CEF_SHARED)
+#error This file can be included wrapper-side only
+#endif
 
-#include "include/views/cef_scroll_view.h"
 #include "include/capi/views/cef_scroll_view_capi.h"
-#include "libcef_dll/ctocpp/ctocpp.h"
+#include "include/views/cef_scroll_view.h"
+#include "libcef_dll/ctocpp/ctocpp_ref_counted.h"
 
 // Wrap a C structure with a C++ class.
 // This class may be instantiated and accessed wrapper-side only.
-class CefScrollViewCToCpp
-    : public CefCToCpp<CefScrollViewCToCpp, CefScrollView, cef_scroll_view_t> {
+class CefScrollViewCToCpp : public CefCToCppRefCounted<CefScrollViewCToCpp,
+                                                       CefScrollView,
+                                                       cef_scroll_view_t> {
  public:
   CefScrollViewCToCpp();
 
@@ -53,6 +56,8 @@ class CefScrollViewCToCpp
   CefRefPtr<CefWindow> GetWindow() OVERRIDE;
   int GetID() OVERRIDE;
   void SetID(int id) OVERRIDE;
+  int GetGroupID() OVERRIDE;
+  void SetGroupID(int group_id) OVERRIDE;
   CefRefPtr<CefView> GetParentView() OVERRIDE;
   CefRefPtr<CefView> GetViewForID(int id) OVERRIDE;
   void SetBounds(const CefRect& bounds) OVERRIDE;
@@ -87,5 +92,4 @@ class CefScrollViewCToCpp
   bool ConvertPointFromView(CefRefPtr<CefView> view, CefPoint& point) OVERRIDE;
 };
 
-#endif  // USING_CEF_SHARED
 #endif  // CEF_LIBCEF_DLL_CTOCPP_VIEWS_SCROLL_VIEW_CTOCPP_H_

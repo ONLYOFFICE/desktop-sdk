@@ -1,4 +1,4 @@
-// Copyright (c) 2016 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,25 +9,27 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
+// $hash=e96ae0220686ce1cb36adf65a51dd725eba8786e$
+//
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_VIEWS_BUTTON_CTOCPP_H_
 #define CEF_LIBCEF_DLL_CTOCPP_VIEWS_BUTTON_CTOCPP_H_
 #pragma once
 
-#ifndef USING_CEF_SHARED
-#pragma message("Warning: "__FILE__" may be accessed wrapper-side only")
-#else  // USING_CEF_SHARED
+#if !defined(WRAPPING_CEF_SHARED)
+#error This file can be included wrapper-side only
+#endif
 
-#include "include/views/cef_button.h"
 #include "include/capi/views/cef_button_capi.h"
-#include "include/views/cef_label_button.h"
 #include "include/capi/views/cef_label_button_capi.h"
-#include "libcef_dll/ctocpp/ctocpp.h"
+#include "include/views/cef_button.h"
+#include "include/views/cef_label_button.h"
+#include "libcef_dll/ctocpp/ctocpp_ref_counted.h"
 
 // Wrap a C structure with a C++ class.
 // This class may be instantiated and accessed wrapper-side only.
 class CefButtonCToCpp
-    : public CefCToCpp<CefButtonCToCpp, CefButton, cef_button_t> {
+    : public CefCToCppRefCounted<CefButtonCToCpp, CefButton, cef_button_t> {
  public:
   CefButtonCToCpp();
 
@@ -35,6 +37,7 @@ class CefButtonCToCpp
   CefRefPtr<CefLabelButton> AsLabelButton() OVERRIDE;
   void SetState(cef_button_state_t state) OVERRIDE;
   cef_button_state_t GetState() OVERRIDE;
+  void SetInkDropEnabled(bool enabled) OVERRIDE;
   void SetTooltipText(const CefString& tooltip_text) OVERRIDE;
   void SetAccessibleName(const CefString& name) OVERRIDE;
 
@@ -53,6 +56,8 @@ class CefButtonCToCpp
   CefRefPtr<CefWindow> GetWindow() OVERRIDE;
   int GetID() OVERRIDE;
   void SetID(int id) OVERRIDE;
+  int GetGroupID() OVERRIDE;
+  void SetGroupID(int group_id) OVERRIDE;
   CefRefPtr<CefView> GetParentView() OVERRIDE;
   CefRefPtr<CefView> GetViewForID(int id) OVERRIDE;
   void SetBounds(const CefRect& bounds) OVERRIDE;
@@ -87,5 +92,4 @@ class CefButtonCToCpp
   bool ConvertPointFromView(CefRefPtr<CefView> view, CefPoint& point) OVERRIDE;
 };
 
-#endif  // USING_CEF_SHARED
 #endif  // CEF_LIBCEF_DLL_CTOCPP_VIEWS_BUTTON_CTOCPP_H_

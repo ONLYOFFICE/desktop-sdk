@@ -1,4 +1,4 @@
-// Copyright (c) 2016 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,23 +9,25 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
+// $hash=bab06218d38588e89c2e80ebb1d4a883ab8bfd1c$
+//
 
+#include "libcef_dll/cpptoc/views/view_delegate_cpptoc.h"
 #include "libcef_dll/cpptoc/views/browser_view_delegate_cpptoc.h"
 #include "libcef_dll/cpptoc/views/button_delegate_cpptoc.h"
 #include "libcef_dll/cpptoc/views/menu_button_delegate_cpptoc.h"
 #include "libcef_dll/cpptoc/views/panel_delegate_cpptoc.h"
 #include "libcef_dll/cpptoc/views/textfield_delegate_cpptoc.h"
-#include "libcef_dll/cpptoc/views/view_delegate_cpptoc.h"
 #include "libcef_dll/cpptoc/views/window_delegate_cpptoc.h"
 #include "libcef_dll/ctocpp/views/view_ctocpp.h"
-
 
 namespace {
 
 // MEMBER FUNCTIONS - Body may be edited by hand.
 
-cef_size_t CEF_CALLBACK view_delegate_get_preferred_size(
-    struct _cef_view_delegate_t* self, cef_view_t* view) {
+cef_size_t CEF_CALLBACK
+view_delegate_get_preferred_size(struct _cef_view_delegate_t* self,
+                                 cef_view_t* view) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -44,8 +46,9 @@ cef_size_t CEF_CALLBACK view_delegate_get_preferred_size(
   return _retval;
 }
 
-cef_size_t CEF_CALLBACK view_delegate_get_minimum_size(
-    struct _cef_view_delegate_t* self, cef_view_t* view) {
+cef_size_t CEF_CALLBACK
+view_delegate_get_minimum_size(struct _cef_view_delegate_t* self,
+                               cef_view_t* view) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -64,8 +67,9 @@ cef_size_t CEF_CALLBACK view_delegate_get_minimum_size(
   return _retval;
 }
 
-cef_size_t CEF_CALLBACK view_delegate_get_maximum_size(
-    struct _cef_view_delegate_t* self, cef_view_t* view) {
+cef_size_t CEF_CALLBACK
+view_delegate_get_maximum_size(struct _cef_view_delegate_t* self,
+                               cef_view_t* view) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -84,8 +88,10 @@ cef_size_t CEF_CALLBACK view_delegate_get_maximum_size(
   return _retval;
 }
 
-int CEF_CALLBACK view_delegate_get_height_for_width(
-    struct _cef_view_delegate_t* self, cef_view_t* view, int width) {
+int CEF_CALLBACK
+view_delegate_get_height_for_width(struct _cef_view_delegate_t* self,
+                                   cef_view_t* view,
+                                   int width) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -98,16 +104,17 @@ int CEF_CALLBACK view_delegate_get_height_for_width(
 
   // Execute
   int _retval = CefViewDelegateCppToC::Get(self)->GetHeightForWidth(
-      CefViewCToCpp::Wrap(view),
-      width);
+      CefViewCToCpp::Wrap(view), width);
 
   // Return type: simple
   return _retval;
 }
 
-void CEF_CALLBACK view_delegate_on_parent_view_changed(
-    struct _cef_view_delegate_t* self, cef_view_t* view, int added,
-    cef_view_t* parent) {
+void CEF_CALLBACK
+view_delegate_on_parent_view_changed(struct _cef_view_delegate_t* self,
+                                     cef_view_t* view,
+                                     int added,
+                                     cef_view_t* parent) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -124,14 +131,15 @@ void CEF_CALLBACK view_delegate_on_parent_view_changed(
 
   // Execute
   CefViewDelegateCppToC::Get(self)->OnParentViewChanged(
-      CefViewCToCpp::Wrap(view),
-      added?true:false,
+      CefViewCToCpp::Wrap(view), added ? true : false,
       CefViewCToCpp::Wrap(parent));
 }
 
-void CEF_CALLBACK view_delegate_on_child_view_changed(
-    struct _cef_view_delegate_t* self, cef_view_t* view, int added,
-    cef_view_t* child) {
+void CEF_CALLBACK
+view_delegate_on_child_view_changed(struct _cef_view_delegate_t* self,
+                                    cef_view_t* view,
+                                    int added,
+                                    cef_view_t* child) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -148,13 +156,43 @@ void CEF_CALLBACK view_delegate_on_child_view_changed(
 
   // Execute
   CefViewDelegateCppToC::Get(self)->OnChildViewChanged(
-      CefViewCToCpp::Wrap(view),
-      added?true:false,
+      CefViewCToCpp::Wrap(view), added ? true : false,
       CefViewCToCpp::Wrap(child));
 }
 
-}  // namespace
+void CEF_CALLBACK view_delegate_on_focus(struct _cef_view_delegate_t* self,
+                                         cef_view_t* view) {
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
+  DCHECK(self);
+  if (!self)
+    return;
+  // Verify param: view; type: refptr_diff
+  DCHECK(view);
+  if (!view)
+    return;
+
+  // Execute
+  CefViewDelegateCppToC::Get(self)->OnFocus(CefViewCToCpp::Wrap(view));
+}
+
+void CEF_CALLBACK view_delegate_on_blur(struct _cef_view_delegate_t* self,
+                                        cef_view_t* view) {
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self)
+    return;
+  // Verify param: view; type: refptr_diff
+  DCHECK(view);
+  if (!view)
+    return;
+
+  // Execute
+  CefViewDelegateCppToC::Get(self)->OnBlur(CefViewCToCpp::Wrap(view));
+}
+
+}  // namespace
 
 // CONSTRUCTOR - Do not edit by hand.
 
@@ -165,11 +203,16 @@ CefViewDelegateCppToC::CefViewDelegateCppToC() {
   GetStruct()->get_height_for_width = view_delegate_get_height_for_width;
   GetStruct()->on_parent_view_changed = view_delegate_on_parent_view_changed;
   GetStruct()->on_child_view_changed = view_delegate_on_child_view_changed;
+  GetStruct()->on_focus = view_delegate_on_focus;
+  GetStruct()->on_blur = view_delegate_on_blur;
 }
 
-template<> CefRefPtr<CefViewDelegate> CefCppToC<CefViewDelegateCppToC,
-    CefViewDelegate, cef_view_delegate_t>::UnwrapDerived(CefWrapperType type,
-    cef_view_delegate_t* s) {
+template <>
+CefRefPtr<CefViewDelegate> CefCppToCRefCounted<
+    CefViewDelegateCppToC,
+    CefViewDelegate,
+    cef_view_delegate_t>::UnwrapDerived(CefWrapperType type,
+                                        cef_view_delegate_t* s) {
   if (type == WT_BROWSER_VIEW_DELEGATE) {
     return CefBrowserViewDelegateCppToC::Unwrap(
         reinterpret_cast<cef_browser_view_delegate_t*>(s));
@@ -198,10 +241,16 @@ template<> CefRefPtr<CefViewDelegate> CefCppToC<CefViewDelegateCppToC,
   return NULL;
 }
 
-#ifndef NDEBUG
-template<> base::AtomicRefCount CefCppToC<CefViewDelegateCppToC,
-    CefViewDelegate, cef_view_delegate_t>::DebugObjCt = 0;
+#if DCHECK_IS_ON()
+template <>
+base::AtomicRefCount CefCppToCRefCounted<CefViewDelegateCppToC,
+                                         CefViewDelegate,
+                                         cef_view_delegate_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
-template<> CefWrapperType CefCppToC<CefViewDelegateCppToC, CefViewDelegate,
-    cef_view_delegate_t>::kWrapperType = WT_VIEW_DELEGATE;
+template <>
+CefWrapperType CefCppToCRefCounted<CefViewDelegateCppToC,
+                                   CefViewDelegate,
+                                   cef_view_delegate_t>::kWrapperType =
+    WT_VIEW_DELEGATE;

@@ -1,4 +1,4 @@
-// Copyright (c) 2016 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,11 +9,12 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
+// $hash=3d9a6d1eac11b56ccf6282e552f4d668de89e161$
+//
 
+#include "libcef_dll/ctocpp/views/layout_ctocpp.h"
 #include "libcef_dll/ctocpp/views/box_layout_ctocpp.h"
 #include "libcef_dll/ctocpp/views/fill_layout_ctocpp.h"
-#include "libcef_dll/ctocpp/views/layout_ctocpp.h"
-
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
@@ -56,33 +57,37 @@ bool CefLayoutCToCpp::IsValid() {
   int _retval = _struct->is_valid(_struct);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
-
 
 // CONSTRUCTOR - Do not edit by hand.
 
-CefLayoutCToCpp::CefLayoutCToCpp() {
-}
+CefLayoutCToCpp::CefLayoutCToCpp() {}
 
-template<> cef_layout_t* CefCToCpp<CefLayoutCToCpp, CefLayout,
-    cef_layout_t>::UnwrapDerived(CefWrapperType type, CefLayout* c) {
+template <>
+cef_layout_t*
+CefCToCppRefCounted<CefLayoutCToCpp, CefLayout, cef_layout_t>::UnwrapDerived(
+    CefWrapperType type,
+    CefLayout* c) {
   if (type == WT_BOX_LAYOUT) {
-    return reinterpret_cast<cef_layout_t*>(CefBoxLayoutCToCpp::Unwrap(
-        reinterpret_cast<CefBoxLayout*>(c)));
+    return reinterpret_cast<cef_layout_t*>(
+        CefBoxLayoutCToCpp::Unwrap(reinterpret_cast<CefBoxLayout*>(c)));
   }
   if (type == WT_FILL_LAYOUT) {
-    return reinterpret_cast<cef_layout_t*>(CefFillLayoutCToCpp::Unwrap(
-        reinterpret_cast<CefFillLayout*>(c)));
+    return reinterpret_cast<cef_layout_t*>(
+        CefFillLayoutCToCpp::Unwrap(reinterpret_cast<CefFillLayout*>(c)));
   }
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
 
-#ifndef NDEBUG
-template<> base::AtomicRefCount CefCToCpp<CefLayoutCToCpp, CefLayout,
-    cef_layout_t>::DebugObjCt = 0;
+#if DCHECK_IS_ON()
+template <>
+base::AtomicRefCount
+    CefCToCppRefCounted<CefLayoutCToCpp, CefLayout, cef_layout_t>::DebugObjCt
+        ATOMIC_DECLARATION;
 #endif
 
-template<> CefWrapperType CefCToCpp<CefLayoutCToCpp, CefLayout,
-    cef_layout_t>::kWrapperType = WT_LAYOUT;
+template <>
+CefWrapperType CefCToCppRefCounted<CefLayoutCToCpp, CefLayout, cef_layout_t>::
+    kWrapperType = WT_LAYOUT;

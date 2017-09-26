@@ -1,4 +1,4 @@
-// Copyright (c) 2016 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,24 +9,26 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
+// $hash=88ac661252337963a1857c77a4f103a377874b01$
+//
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_VIEWS_WINDOW_CTOCPP_H_
 #define CEF_LIBCEF_DLL_CTOCPP_VIEWS_WINDOW_CTOCPP_H_
 #pragma once
 
-#ifndef USING_CEF_SHARED
-#pragma message("Warning: "__FILE__" may be accessed wrapper-side only")
-#else  // USING_CEF_SHARED
+#if !defined(WRAPPING_CEF_SHARED)
+#error This file can be included wrapper-side only
+#endif
 
 #include <vector>
-#include "include/views/cef_window.h"
 #include "include/capi/views/cef_window_capi.h"
-#include "libcef_dll/ctocpp/ctocpp.h"
+#include "include/views/cef_window.h"
+#include "libcef_dll/ctocpp/ctocpp_ref_counted.h"
 
 // Wrap a C structure with a C++ class.
 // This class may be instantiated and accessed wrapper-side only.
 class CefWindowCToCpp
-    : public CefCToCpp<CefWindowCToCpp, CefWindow, cef_window_t> {
+    : public CefCToCppRefCounted<CefWindowCToCpp, CefWindow, cef_window_t> {
  public:
   CefWindowCToCpp();
 
@@ -56,8 +58,8 @@ class CefWindowCToCpp
   void SetWindowAppIcon(CefRefPtr<CefImage> image) OVERRIDE;
   CefRefPtr<CefImage> GetWindowAppIcon() OVERRIDE;
   void ShowMenu(CefRefPtr<CefMenuModel> menu_model,
-      const CefPoint& screen_point,
-      cef_menu_anchor_position_t anchor_position) OVERRIDE;
+                const CefPoint& screen_point,
+                cef_menu_anchor_position_t anchor_position) OVERRIDE;
   void CancelMenu() OVERRIDE;
   CefRefPtr<CefDisplay> GetDisplay() OVERRIDE;
   CefRect GetClientAreaBoundsInScreen() OVERRIDE;
@@ -66,8 +68,16 @@ class CefWindowCToCpp
   CefWindowHandle GetWindowHandle() OVERRIDE;
   void SendKeyPress(int key_code, uint32 event_flags) OVERRIDE;
   void SendMouseMove(int screen_x, int screen_y) OVERRIDE;
-  void SendMouseEvents(cef_mouse_button_type_t button, bool mouse_down,
-      bool mouse_up) OVERRIDE;
+  void SendMouseEvents(cef_mouse_button_type_t button,
+                       bool mouse_down,
+                       bool mouse_up) OVERRIDE;
+  void SetAccelerator(int command_id,
+                      int key_code,
+                      bool shift_pressed,
+                      bool ctrl_pressed,
+                      bool alt_pressed) OVERRIDE;
+  void RemoveAccelerator(int command_id) OVERRIDE;
+  void RemoveAllAccelerators() OVERRIDE;
 
   // CefPanel methods.
   CefRefPtr<CefWindow> AsWindow() OVERRIDE;
@@ -99,6 +109,8 @@ class CefWindowCToCpp
   CefRefPtr<CefWindow> GetWindow() OVERRIDE;
   int GetID() OVERRIDE;
   void SetID(int id) OVERRIDE;
+  int GetGroupID() OVERRIDE;
+  void SetGroupID(int group_id) OVERRIDE;
   CefRefPtr<CefView> GetParentView() OVERRIDE;
   CefRefPtr<CefView> GetViewForID(int id) OVERRIDE;
   void SetBounds(const CefRect& bounds) OVERRIDE;
@@ -133,5 +145,4 @@ class CefWindowCToCpp
   bool ConvertPointFromView(CefRefPtr<CefView> view, CefPoint& point) OVERRIDE;
 };
 
-#endif  // USING_CEF_SHARED
 #endif  // CEF_LIBCEF_DLL_CTOCPP_VIEWS_WINDOW_CTOCPP_H_

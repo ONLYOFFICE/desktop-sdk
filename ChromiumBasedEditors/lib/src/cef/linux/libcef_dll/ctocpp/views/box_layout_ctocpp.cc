@@ -1,4 +1,4 @@
-// Copyright (c) 2016 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,11 +9,12 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
+// $hash=12c969efc3a366f77f484907a7bc856ce0508862$
+//
 
 #include "libcef_dll/ctocpp/views/box_layout_ctocpp.h"
 #include "libcef_dll/ctocpp/views/fill_layout_ctocpp.h"
 #include "libcef_dll/ctocpp/views/view_ctocpp.h"
-
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
@@ -30,9 +31,7 @@ void CefBoxLayoutCToCpp::SetFlexForView(CefRefPtr<CefView> view, int flex) {
     return;
 
   // Execute
-  _struct->set_flex_for_view(_struct,
-      CefViewCToCpp::Unwrap(view),
-      flex);
+  _struct->set_flex_for_view(_struct, CefViewCToCpp::Unwrap(view), flex);
 }
 
 void CefBoxLayoutCToCpp::ClearFlexForView(CefRefPtr<CefView> view) {
@@ -48,8 +47,7 @@ void CefBoxLayoutCToCpp::ClearFlexForView(CefRefPtr<CefView> view) {
     return;
 
   // Execute
-  _struct->clear_flex_for_view(_struct,
-      CefViewCToCpp::Unwrap(view));
+  _struct->clear_flex_for_view(_struct, CefViewCToCpp::Unwrap(view));
 }
 
 CefRefPtr<CefBoxLayout> CefBoxLayoutCToCpp::AsBoxLayout() {
@@ -91,25 +89,30 @@ bool CefBoxLayoutCToCpp::IsValid() {
   int _retval = _struct->is_valid(_struct);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
-
 
 // CONSTRUCTOR - Do not edit by hand.
 
-CefBoxLayoutCToCpp::CefBoxLayoutCToCpp() {
-}
+CefBoxLayoutCToCpp::CefBoxLayoutCToCpp() {}
 
-template<> cef_box_layout_t* CefCToCpp<CefBoxLayoutCToCpp, CefBoxLayout,
-    cef_box_layout_t>::UnwrapDerived(CefWrapperType type, CefBoxLayout* c) {
+template <>
+cef_box_layout_t*
+CefCToCppRefCounted<CefBoxLayoutCToCpp, CefBoxLayout, cef_box_layout_t>::
+    UnwrapDerived(CefWrapperType type, CefBoxLayout* c) {
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
 
-#ifndef NDEBUG
-template<> base::AtomicRefCount CefCToCpp<CefBoxLayoutCToCpp, CefBoxLayout,
-    cef_box_layout_t>::DebugObjCt = 0;
+#if DCHECK_IS_ON()
+template <>
+base::AtomicRefCount
+    CefCToCppRefCounted<CefBoxLayoutCToCpp, CefBoxLayout, cef_box_layout_t>::
+        DebugObjCt ATOMIC_DECLARATION;
 #endif
 
-template<> CefWrapperType CefCToCpp<CefBoxLayoutCToCpp, CefBoxLayout,
-    cef_box_layout_t>::kWrapperType = WT_BOX_LAYOUT;
+template <>
+CefWrapperType CefCToCppRefCounted<CefBoxLayoutCToCpp,
+                                   CefBoxLayout,
+                                   cef_box_layout_t>::kWrapperType =
+    WT_BOX_LAYOUT;

@@ -27,7 +27,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 #ifndef CEF_INCLUDE_INTERNAL_CEF_TYPES_H_
 #define CEF_INCLUDE_INTERNAL_CEF_TYPES_H_
 #pragma once
@@ -48,36 +47,34 @@
 
 // 32-bit ARGB color value, not premultiplied. The color components are always
 // in a known order. Equivalent to the SkColor type.
-typedef uint32              cef_color_t;
+typedef uint32 cef_color_t;
 
 // Return the alpha byte from a cef_color_t value.
-#define CefColorGetA(color)      (((color) >> 24) & 0xFF)
+#define CefColorGetA(color) (((color) >> 24) & 0xFF)
 // Return the red byte from a cef_color_t value.
-#define CefColorGetR(color)      (((color) >> 16) & 0xFF)
+#define CefColorGetR(color) (((color) >> 16) & 0xFF)
 // Return the green byte from a cef_color_t value.
-#define CefColorGetG(color)      (((color) >>  8) & 0xFF)
+#define CefColorGetG(color) (((color) >> 8) & 0xFF)
 // Return the blue byte from a cef_color_t value.
-#define CefColorGetB(color)      (((color) >>  0) & 0xFF)
+#define CefColorGetB(color) (((color) >> 0) & 0xFF)
 
 // Return an cef_color_t value with the specified byte component values.
-#define CefColorSetARGB(a, r, g, b) \
-    static_cast<cef_color_t>( \
-        (static_cast<unsigned>(a) << 24) | \
-        (static_cast<unsigned>(r) << 16) | \
-        (static_cast<unsigned>(g) << 8) | \
-        (static_cast<unsigned>(b) << 0))
+#define CefColorSetARGB(a, r, g, b)                                         \
+  static_cast<cef_color_t>(                                                 \
+      (static_cast<unsigned>(a) << 24) | (static_cast<unsigned>(r) << 16) | \
+      (static_cast<unsigned>(g) << 8) | (static_cast<unsigned>(b) << 0))
 
 // Return an int64 value with the specified low and high int32 component values.
-#define CefInt64Set(int32_low, int32_high) \
-    static_cast<int64>((static_cast<uint32>(int32_low)) | \
-        (static_cast<int64>(static_cast<int32>(int32_high))) << 32)
+#define CefInt64Set(int32_low, int32_high)                                \
+  static_cast<int64>((static_cast<uint32>(int32_low)) |                   \
+                     (static_cast<int64>(static_cast<int32>(int32_high))) \
+                         << 32)
 
 // Return the low int32 value from an int64 value.
 #define CefInt64GetLow(int64_val) static_cast<int32>(int64_val)
 // Return the high int32 value from an int64 value.
 #define CefInt64GetHigh(int64_val) \
-    static_cast<int32>((static_cast<int64>(int64_val) >> 32) & 0xFFFFFFFFL)
-
+  static_cast<int32>((static_cast<int64>(int64_val) >> 32) & 0xFFFFFFFFL)
 
 #ifdef __cplusplus
 extern "C" {
@@ -166,11 +163,22 @@ typedef struct _cef_settings_t {
 
   ///
   // The path to a separate executable that will be launched for sub-processes.
-  // By default the browser process executable is used. See the comments on
-  // CefExecuteProcess() for details. Also configurable using the
-  // "browser-subprocess-path" command-line switch.
+  // If this value is empty on Windows or Linux then the main process executable
+  // will be used. If this value is empty on macOS then a helper executable must
+  // exist at "Contents/Frameworks/<app> Helper.app/Contents/MacOS/<app> Helper"
+  // in the top-level app bundle. See the comments on CefExecuteProcess() for
+  // details. Also configurable using the "browser-subprocess-path" command-line
+  // switch.
   ///
   cef_string_t browser_subprocess_path;
+
+  ///
+  // The path to the CEF framework directory on macOS. If this value is empty
+  // then the framework must exist at "Contents/Frameworks/Chromium Embedded
+  // Framework.framework" in the top-level app bundle. Also configurable using
+  // the "framework-dir-path" command-line switch.
+  ///
+  cef_string_t framework_dir_path;
 
   ///
   // Set to true (1) to have the browser process message loop run in a separate
@@ -179,6 +187,18 @@ typedef struct _cef_settings_t {
   // Windows.
   ///
   int multi_threaded_message_loop;
+
+  ///
+  // Set to true (1) to control browser process main (UI) thread message pump
+  // scheduling via the CefBrowserProcessHandler::OnScheduleMessagePumpWork()
+  // callback. This option is recommended for use in combination with the
+  // CefDoMessageLoopWork() function in cases where the CEF message loop must be
+  // integrated into an existing application message loop (see additional
+  // comments and warnings on CefDoMessageLoopWork). Enabling this option is not
+  // recommended for most users; leave this option disabled and use either the
+  // CefRunMessageLoop() function or multi_threaded_message_loop if possible.
+  ///
+  int external_message_pump;
 
   ///
   // Set to true (1) to enable windowless (off-screen) rendering support. Do not
@@ -332,28 +352,6 @@ typedef struct _cef_settings_t {
   int uncaught_exception_stack_size;
 
   ///
-  // By default CEF V8 references will be invalidated (the IsValid() method will
-  // return false) after the owning context has been released. This reduces the
-  // need for external record keeping and avoids crashes due to the use of V8
-  // references after the associated context has been released.
-  //
-  // CEF currently offers two context safety implementations with different
-  // performance characteristics. The default implementation (value of 0) uses a
-  // map of hash values and should provide better performance in situations with
-  // a small number contexts. The alternate implementation (value of 1) uses a
-  // hidden value attached to each context and should provide better performance
-  // in situations with a large number of contexts.
-  //
-  // If you need better performance in the creation of V8 references and you
-  // plan to manually track context lifespan you can disable context safety by
-  // specifying a value of -1.
-  //
-  // Also configurable using the "context-safety-implementation" command-line
-  // switch.
-  ///
-  int context_safety_implementation;
-
-  ///
   // Set to true (1) to ignore errors related to invalid SSL certificates.
   // Enabling this setting can lead to potential security vulnerabilities like
   // "man in the middle" attacks. Applications that load content from the
@@ -365,10 +363,27 @@ typedef struct _cef_settings_t {
   int ignore_certificate_errors;
 
   ///
-  // Opaque background color used for accelerated content. By default the
-  // background color will be white. Only the RGB compontents of the specified
-  // value will be used. The alpha component must greater than 0 to enable use
-  // of the background color but will be otherwise ignored.
+  // Set to true (1) to enable date-based expiration of built in network
+  // security information (i.e. certificate transparency logs, HSTS preloading
+  // and pinning information). Enabling this option improves network security
+  // but may cause HTTPS load failures when using CEF binaries built more than
+  // 10 weeks in the past. See https://www.certificate-transparency.org/ and
+  // https://www.chromium.org/hsts for details. Also configurable using the
+  // "enable-net-security-expiration" command-line switch. Can be overridden for
+  // individual CefRequestContext instances via the
+  // CefRequestContextSettings.enable_net_security_expiration value.
+  ///
+  int enable_net_security_expiration;
+
+  ///
+  // Background color used for the browser before a document is loaded and when
+  // no document color is specified. The alpha component must be either fully
+  // opaque (0xFF) or fully transparent (0x00). If the alpha component is fully
+  // opaque then the RGB components will be used as the background color. If the
+  // alpha component is fully transparent for a windowed browser then the
+  // default value of opaque white be used. If the alpha component is fully
+  // transparent for a windowless (off-screen) browser then transparent painting
+  // will be enabled.
   ///
   cef_color_t background_color;
 
@@ -430,6 +445,17 @@ typedef struct _cef_request_context_settings_t {
   // |cache_path| matches the CefSettings.cache_path value.
   ///
   int ignore_certificate_errors;
+
+  ///
+  // Set to true (1) to enable date-based expiration of built in network
+  // security information (i.e. certificate transparency logs, HSTS preloading
+  // and pinning information). Enabling this option improves network security
+  // but may cause HTTPS load failures when using CEF binaries built more than
+  // 10 weeks in the past. See https://www.certificate-transparency.org/ and
+  // https://www.chromium.org/hsts for details. Can be set globally using the
+  // CefSettings.enable_net_security_expiration value.
+  ///
+  int enable_net_security_expiration;
 
   ///
   // Comma delimited ordered list of language codes without any whitespace that
@@ -498,13 +524,6 @@ typedef struct _cef_browser_settings_t {
   cef_state_t javascript;
 
   ///
-  // Controls whether JavaScript can be used for opening windows. Also
-  // configurable using the "disable-javascript-open-windows" command-line
-  // switch.
-  ///
-  cef_state_t javascript_open_windows;
-
-  ///
   // Controls whether JavaScript can be used to close windows that were not
   // opened via JavaScript. JavaScript can still be used to close windows that
   // were opened via JavaScript or that have no back/forward history. Also
@@ -526,12 +545,6 @@ typedef struct _cef_browser_settings_t {
   // command-line switch.
   ///
   cef_state_t javascript_dom_paste;
-
-  ///
-  // Controls whether the caret position will be drawn. Also configurable using
-  // the "enable-caret-browsing" command-line switch.
-  ///
-  cef_state_t caret_browsing;
 
   ///
   // Controls whether any plugins will be loaded. Also configurable using the
@@ -611,11 +624,14 @@ typedef struct _cef_browser_settings_t {
   cef_state_t webgl;
 
   ///
-  // Opaque background color used for the browser before a document is loaded
-  // and when no document color is specified. By default the background color
-  // will be the same as CefSettings.background_color. Only the RGB compontents
-  // of the specified value will be used. The alpha component must greater than
-  // 0 to enable use of the background color but will be otherwise ignored.
+  // Background color used for the browser before a document is loaded and when
+  // no document color is specified. The alpha component must be either fully
+  // opaque (0xFF) or fully transparent (0x00). If the alpha component is fully
+  // opaque then the RGB components will be used as the background color. If the
+  // alpha component is fully transparent for a windowed browser then the
+  // CefSettings.background_color value will be used. If the alpha component is
+  // fully transparent for a windowless (off-screen) browser then transparent
+  // painting will be enabled.
   ///
   cef_color_t background_color;
 
@@ -930,11 +946,12 @@ typedef enum {
 } cef_cert_status_t;
 
 ///
-// The manner in which a link click should be opened.
+// The manner in which a link click should be opened. These constants match
+// their equivalents in Chromium's window_open_disposition.h and should not be
+// renumbered.
 ///
 typedef enum {
   WOD_UNKNOWN,
-  WOD_SUPPRESS_OPEN,
   WOD_CURRENT_TAB,
   WOD_SINGLETON_TAB,
   WOD_NEW_FOREGROUND_TAB,
@@ -952,23 +969,23 @@ typedef enum {
 // DragActions.h and should not be renumbered.
 ///
 typedef enum {
-    DRAG_OPERATION_NONE    = 0,
-    DRAG_OPERATION_COPY    = 1,
-    DRAG_OPERATION_LINK    = 2,
-    DRAG_OPERATION_GENERIC = 4,
-    DRAG_OPERATION_PRIVATE = 8,
-    DRAG_OPERATION_MOVE    = 16,
-    DRAG_OPERATION_DELETE  = 32,
-    DRAG_OPERATION_EVERY   = UINT_MAX
+  DRAG_OPERATION_NONE = 0,
+  DRAG_OPERATION_COPY = 1,
+  DRAG_OPERATION_LINK = 2,
+  DRAG_OPERATION_GENERIC = 4,
+  DRAG_OPERATION_PRIVATE = 8,
+  DRAG_OPERATION_MOVE = 16,
+  DRAG_OPERATION_DELETE = 32,
+  DRAG_OPERATION_EVERY = UINT_MAX
 } cef_drag_operations_mask_t;
 
 ///
 // V8 access control values.
 ///
 typedef enum {
-  V8_ACCESS_CONTROL_DEFAULT               = 0,
-  V8_ACCESS_CONTROL_ALL_CAN_READ          = 1,
-  V8_ACCESS_CONTROL_ALL_CAN_WRITE         = 1 << 1,
+  V8_ACCESS_CONTROL_DEFAULT = 0,
+  V8_ACCESS_CONTROL_ALL_CAN_READ = 1,
+  V8_ACCESS_CONTROL_ALL_CAN_WRITE = 1 << 1,
   V8_ACCESS_CONTROL_PROHIBITS_OVERWRITING = 1 << 2
 } cef_v8_accesscontrol_t;
 
@@ -976,18 +993,18 @@ typedef enum {
 // V8 property attribute values.
 ///
 typedef enum {
-  V8_PROPERTY_ATTRIBUTE_NONE       = 0,       // Writeable, Enumerable,
-                                              //   Configurable
-  V8_PROPERTY_ATTRIBUTE_READONLY   = 1 << 0,  // Not writeable
-  V8_PROPERTY_ATTRIBUTE_DONTENUM   = 1 << 1,  // Not enumerable
-  V8_PROPERTY_ATTRIBUTE_DONTDELETE = 1 << 2   // Not configurable
+  V8_PROPERTY_ATTRIBUTE_NONE = 0,            // Writeable, Enumerable,
+                                             //   Configurable
+  V8_PROPERTY_ATTRIBUTE_READONLY = 1 << 0,   // Not writeable
+  V8_PROPERTY_ATTRIBUTE_DONTENUM = 1 << 1,   // Not enumerable
+  V8_PROPERTY_ATTRIBUTE_DONTDELETE = 1 << 2  // Not configurable
 } cef_v8_propertyattribute_t;
 
 ///
 // Post data elements may represent either bytes or files.
 ///
 typedef enum {
-  PDE_TYPE_EMPTY  = 0,
+  PDE_TYPE_EMPTY = 0,
   PDE_TYPE_BYTES,
   PDE_TYPE_FILE,
 } cef_postdataelement_type_t;
@@ -1196,35 +1213,35 @@ typedef enum {
   ///
   // Default behavior.
   ///
-  UR_FLAG_NONE                      = 0,
+  UR_FLAG_NONE = 0,
 
   ///
   // If set the cache will be skipped when handling the request.
   ///
-  UR_FLAG_SKIP_CACHE                = 1 << 0,
+  UR_FLAG_SKIP_CACHE = 1 << 0,
 
   ///
   // If set user name, password, and cookies may be sent with the request, and
   // cookies may be saved from the response.
   ///
-  UR_FLAG_ALLOW_CACHED_CREDENTIALS  = 1 << 1,
+  UR_FLAG_ALLOW_CACHED_CREDENTIALS = 1 << 1,
 
   ///
   // If set upload progress events will be generated when a request has a body.
   ///
-  UR_FLAG_REPORT_UPLOAD_PROGRESS    = 1 << 3,
+  UR_FLAG_REPORT_UPLOAD_PROGRESS = 1 << 3,
 
   ///
   // If set the CefURLRequestClient::OnDownloadData method will not be called.
   ///
-  UR_FLAG_NO_DOWNLOAD_DATA          = 1 << 6,
+  UR_FLAG_NO_DOWNLOAD_DATA = 1 << 6,
 
   ///
   // If set 5XX redirect errors will be propagated to the observer instead of
   // automatically re-tried. This currently only applies for requests
   // originated in the browser process.
   ///
-  UR_FLAG_NO_RETRY_ON_5XX           = 1 << 7,
+  UR_FLAG_NO_RETRY_ON_5XX = 1 << 7,
 } cef_urlrequest_flags_t;
 
 ///
@@ -1335,7 +1352,7 @@ typedef enum {
 // Existing thread IDs.
 ///
 typedef enum {
-// BROWSER PROCESS THREADS -- Only available in the browser process.
+  // BROWSER PROCESS THREADS -- Only available in the browser process.
 
   ///
   // The main thread in the browser. This will be the same as the main
@@ -1375,13 +1392,80 @@ typedef enum {
   ///
   TID_IO,
 
-// RENDER PROCESS THREADS -- Only available in the render process.
+  // RENDER PROCESS THREADS -- Only available in the render process.
 
   ///
   // The main thread in the renderer. Used for all WebKit and V8 interaction.
   ///
   TID_RENDERER,
 } cef_thread_id_t;
+
+///
+// Thread priority values listed in increasing order of importance.
+///
+typedef enum {
+  ///
+  // Suitable for threads that shouldn't disrupt high priority work.
+  ///
+  TP_BACKGROUND,
+
+  ///
+  // Default priority level.
+  ///
+  TP_NORMAL,
+
+  ///
+  // Suitable for threads which generate data for the display (at ~60Hz).
+  ///
+  TP_DISPLAY,
+
+  ///
+  // Suitable for low-latency, glitch-resistant audio.
+  ///
+  TP_REALTIME_AUDIO,
+} cef_thread_priority_t;
+
+///
+// Message loop types. Indicates the set of asynchronous events that a message
+// loop can process.
+///
+typedef enum {
+  ///
+  // Supports tasks and timers.
+  ///
+  ML_TYPE_DEFAULT,
+
+  ///
+  // Supports tasks, timers and native UI events (e.g. Windows messages).
+  ///
+  ML_TYPE_UI,
+
+  ///
+  // Supports tasks, timers and asynchronous IO events.
+  ///
+  ML_TYPE_IO,
+} cef_message_loop_type_t;
+
+///
+// Windows COM initialization mode. Specifies how COM will be initialized for a
+// new thread.
+///
+typedef enum {
+  ///
+  // No COM initialization.
+  ///
+  COM_INIT_MODE_NONE,
+
+  ///
+  // Initialize COM using single-threaded apartments.
+  ///
+  COM_INIT_MODE_STA,
+
+  ///
+  // Initialize COM using multi-threaded apartments.
+  ///
+  COM_INIT_MODE_MTA,
+} cef_com_init_mode_t;
 
 ///
 // Supported value types.
@@ -1469,53 +1553,53 @@ typedef struct _cef_screen_info_t {
 ///
 typedef enum {
   // Navigation.
-  MENU_ID_BACK                = 100,
-  MENU_ID_FORWARD             = 101,
-  MENU_ID_RELOAD              = 102,
-  MENU_ID_RELOAD_NOCACHE      = 103,
-  MENU_ID_STOPLOAD            = 104,
+  MENU_ID_BACK = 100,
+  MENU_ID_FORWARD = 101,
+  MENU_ID_RELOAD = 102,
+  MENU_ID_RELOAD_NOCACHE = 103,
+  MENU_ID_STOPLOAD = 104,
 
   // Editing.
-  MENU_ID_UNDO                = 110,
-  MENU_ID_REDO                = 111,
-  MENU_ID_CUT                 = 112,
-  MENU_ID_COPY                = 113,
-  MENU_ID_PASTE               = 114,
-  MENU_ID_DELETE              = 115,
-  MENU_ID_SELECT_ALL          = 116,
+  MENU_ID_UNDO = 110,
+  MENU_ID_REDO = 111,
+  MENU_ID_CUT = 112,
+  MENU_ID_COPY = 113,
+  MENU_ID_PASTE = 114,
+  MENU_ID_DELETE = 115,
+  MENU_ID_SELECT_ALL = 116,
 
   // Miscellaneous.
-  MENU_ID_FIND                = 130,
-  MENU_ID_PRINT               = 131,
-  MENU_ID_VIEW_SOURCE         = 132,
+  MENU_ID_FIND = 130,
+  MENU_ID_PRINT = 131,
+  MENU_ID_VIEW_SOURCE = 132,
 
   // Spell checking word correction suggestions.
-  MENU_ID_SPELLCHECK_SUGGESTION_0        = 200,
-  MENU_ID_SPELLCHECK_SUGGESTION_1        = 201,
-  MENU_ID_SPELLCHECK_SUGGESTION_2        = 202,
-  MENU_ID_SPELLCHECK_SUGGESTION_3        = 203,
-  MENU_ID_SPELLCHECK_SUGGESTION_4        = 204,
-  MENU_ID_SPELLCHECK_SUGGESTION_LAST     = 204,
-  MENU_ID_NO_SPELLING_SUGGESTIONS        = 205,
-  MENU_ID_ADD_TO_DICTIONARY              = 206,
+  MENU_ID_SPELLCHECK_SUGGESTION_0 = 200,
+  MENU_ID_SPELLCHECK_SUGGESTION_1 = 201,
+  MENU_ID_SPELLCHECK_SUGGESTION_2 = 202,
+  MENU_ID_SPELLCHECK_SUGGESTION_3 = 203,
+  MENU_ID_SPELLCHECK_SUGGESTION_4 = 204,
+  MENU_ID_SPELLCHECK_SUGGESTION_LAST = 204,
+  MENU_ID_NO_SPELLING_SUGGESTIONS = 205,
+  MENU_ID_ADD_TO_DICTIONARY = 206,
 
   // Custom menu items originating from the renderer process. For example,
   // plugin placeholder menu items or Flash menu items.
-  MENU_ID_CUSTOM_FIRST        = 220,
-  MENU_ID_CUSTOM_LAST         = 250,
+  MENU_ID_CUSTOM_FIRST = 220,
+  MENU_ID_CUSTOM_LAST = 250,
 
   // All user-defined menu IDs should come between MENU_ID_USER_FIRST and
   // MENU_ID_USER_LAST to avoid overlapping the Chromium and CEF ID ranges
   // defined in the tools/gritsettings/resource_ids file.
-  MENU_ID_USER_FIRST          = 26500,
-  MENU_ID_USER_LAST           = 28500,
+  MENU_ID_USER_FIRST = 26500,
+  MENU_ID_USER_LAST = 28500,
 } cef_menu_id_t;
 
 ///
 // Mouse button types.
 ///
 typedef enum {
-  MBT_LEFT   = 0,
+  MBT_LEFT = 0,
   MBT_MIDDLE,
   MBT_RIGHT,
 } cef_mouse_button_type_t;
@@ -1545,7 +1629,7 @@ typedef struct _cef_mouse_event_t {
 // Paint element types.
 ///
 typedef enum {
-  PET_VIEW  = 0,
+  PET_VIEW = 0,
   PET_POPUP,
 } cef_paint_element_type_t;
 
@@ -1553,20 +1637,20 @@ typedef enum {
 // Supported event bit flags.
 ///
 typedef enum {
-  EVENTFLAG_NONE                = 0,
-  EVENTFLAG_CAPS_LOCK_ON        = 1 << 0,
-  EVENTFLAG_SHIFT_DOWN          = 1 << 1,
-  EVENTFLAG_CONTROL_DOWN        = 1 << 2,
-  EVENTFLAG_ALT_DOWN            = 1 << 3,
-  EVENTFLAG_LEFT_MOUSE_BUTTON   = 1 << 4,
+  EVENTFLAG_NONE = 0,
+  EVENTFLAG_CAPS_LOCK_ON = 1 << 0,
+  EVENTFLAG_SHIFT_DOWN = 1 << 1,
+  EVENTFLAG_CONTROL_DOWN = 1 << 2,
+  EVENTFLAG_ALT_DOWN = 1 << 3,
+  EVENTFLAG_LEFT_MOUSE_BUTTON = 1 << 4,
   EVENTFLAG_MIDDLE_MOUSE_BUTTON = 1 << 5,
-  EVENTFLAG_RIGHT_MOUSE_BUTTON  = 1 << 6,
+  EVENTFLAG_RIGHT_MOUSE_BUTTON = 1 << 6,
   // Mac OS-X command key.
-  EVENTFLAG_COMMAND_DOWN        = 1 << 7,
-  EVENTFLAG_NUM_LOCK_ON         = 1 << 8,
-  EVENTFLAG_IS_KEY_PAD          = 1 << 9,
-  EVENTFLAG_IS_LEFT             = 1 << 10,
-  EVENTFLAG_IS_RIGHT            = 1 << 11,
+  EVENTFLAG_COMMAND_DOWN = 1 << 7,
+  EVENTFLAG_NUM_LOCK_ON = 1 << 8,
+  EVENTFLAG_IS_KEY_PAD = 1 << 9,
+  EVENTFLAG_IS_LEFT = 1 << 10,
+  EVENTFLAG_IS_RIGHT = 1 << 11,
 } cef_event_flags_t;
 
 ///
@@ -1588,31 +1672,31 @@ typedef enum {
   ///
   // No node is selected.
   ///
-  CM_TYPEFLAG_NONE        = 0,
+  CM_TYPEFLAG_NONE = 0,
   ///
   // The top page is selected.
   ///
-  CM_TYPEFLAG_PAGE        = 1 << 0,
+  CM_TYPEFLAG_PAGE = 1 << 0,
   ///
   // A subframe page is selected.
   ///
-  CM_TYPEFLAG_FRAME       = 1 << 1,
+  CM_TYPEFLAG_FRAME = 1 << 1,
   ///
   // A link is selected.
   ///
-  CM_TYPEFLAG_LINK        = 1 << 2,
+  CM_TYPEFLAG_LINK = 1 << 2,
   ///
   // A media node is selected.
   ///
-  CM_TYPEFLAG_MEDIA       = 1 << 3,
+  CM_TYPEFLAG_MEDIA = 1 << 3,
   ///
   // There is a textual or mixed selection that is selected.
   ///
-  CM_TYPEFLAG_SELECTION   = 1 << 4,
+  CM_TYPEFLAG_SELECTION = 1 << 4,
   ///
   // An editable element is selected.
   ///
-  CM_TYPEFLAG_EDITABLE    = 1 << 5,
+  CM_TYPEFLAG_EDITABLE = 1 << 5,
 } cef_context_menu_type_flags_t;
 
 ///
@@ -1649,32 +1733,32 @@ typedef enum {
 // Supported context menu media state bit flags.
 ///
 typedef enum {
-  CM_MEDIAFLAG_NONE                  = 0,
-  CM_MEDIAFLAG_ERROR                 = 1 << 0,
-  CM_MEDIAFLAG_PAUSED                = 1 << 1,
-  CM_MEDIAFLAG_MUTED                 = 1 << 2,
-  CM_MEDIAFLAG_LOOP                  = 1 << 3,
-  CM_MEDIAFLAG_CAN_SAVE              = 1 << 4,
-  CM_MEDIAFLAG_HAS_AUDIO             = 1 << 5,
-  CM_MEDIAFLAG_HAS_VIDEO             = 1 << 6,
-  CM_MEDIAFLAG_CONTROL_ROOT_ELEMENT  = 1 << 7,
-  CM_MEDIAFLAG_CAN_PRINT             = 1 << 8,
-  CM_MEDIAFLAG_CAN_ROTATE            = 1 << 9,
+  CM_MEDIAFLAG_NONE = 0,
+  CM_MEDIAFLAG_ERROR = 1 << 0,
+  CM_MEDIAFLAG_PAUSED = 1 << 1,
+  CM_MEDIAFLAG_MUTED = 1 << 2,
+  CM_MEDIAFLAG_LOOP = 1 << 3,
+  CM_MEDIAFLAG_CAN_SAVE = 1 << 4,
+  CM_MEDIAFLAG_HAS_AUDIO = 1 << 5,
+  CM_MEDIAFLAG_HAS_VIDEO = 1 << 6,
+  CM_MEDIAFLAG_CONTROL_ROOT_ELEMENT = 1 << 7,
+  CM_MEDIAFLAG_CAN_PRINT = 1 << 8,
+  CM_MEDIAFLAG_CAN_ROTATE = 1 << 9,
 } cef_context_menu_media_state_flags_t;
 
 ///
 // Supported context menu edit state bit flags.
 ///
 typedef enum {
-  CM_EDITFLAG_NONE            = 0,
-  CM_EDITFLAG_CAN_UNDO        = 1 << 0,
-  CM_EDITFLAG_CAN_REDO        = 1 << 1,
-  CM_EDITFLAG_CAN_CUT         = 1 << 2,
-  CM_EDITFLAG_CAN_COPY        = 1 << 3,
-  CM_EDITFLAG_CAN_PASTE       = 1 << 4,
-  CM_EDITFLAG_CAN_DELETE      = 1 << 5,
-  CM_EDITFLAG_CAN_SELECT_ALL  = 1 << 6,
-  CM_EDITFLAG_CAN_TRANSLATE   = 1 << 7,
+  CM_EDITFLAG_NONE = 0,
+  CM_EDITFLAG_CAN_UNDO = 1 << 0,
+  CM_EDITFLAG_CAN_REDO = 1 << 1,
+  CM_EDITFLAG_CAN_CUT = 1 << 2,
+  CM_EDITFLAG_CAN_COPY = 1 << 3,
+  CM_EDITFLAG_CAN_PASTE = 1 << 4,
+  CM_EDITFLAG_CAN_DELETE = 1 << 5,
+  CM_EDITFLAG_CAN_SELECT_ALL = 1 << 6,
+  CM_EDITFLAG_CAN_TRANSLATE = 1 << 7,
 } cef_context_menu_edit_state_flags_t;
 
 ///
@@ -1832,13 +1916,7 @@ typedef struct _cef_popup_features_t {
   int menuBarVisible;
   int statusBarVisible;
   int toolBarVisible;
-  int locationBarVisible;
   int scrollbarsVisible;
-  int resizable;
-
-  int fullscreen;
-  int dialog;
-  cef_string_list_t additionalFeatures;
 } cef_popup_features_t;
 
 ///
@@ -2030,15 +2108,15 @@ typedef enum {
   COLOR_MODEL_RGB,
   COLOR_MODEL_RGB16,
   COLOR_MODEL_RGBA,
-  COLOR_MODEL_COLORMODE_COLOR,  // Used in samsung printer ppds.
-  COLOR_MODEL_COLORMODE_MONOCHROME,  // Used in samsung printer ppds.
-  COLOR_MODEL_HP_COLOR_COLOR,  // Used in HP color printer ppds.
-  COLOR_MODEL_HP_COLOR_BLACK,  // Used in HP color printer ppds.
-  COLOR_MODEL_PRINTOUTMODE_NORMAL,  // Used in foomatic ppds.
-  COLOR_MODEL_PRINTOUTMODE_NORMAL_GRAY,  // Used in foomatic ppds.
-  COLOR_MODEL_PROCESSCOLORMODEL_CMYK,  // Used in canon printer ppds.
+  COLOR_MODEL_COLORMODE_COLOR,              // Used in samsung printer ppds.
+  COLOR_MODEL_COLORMODE_MONOCHROME,         // Used in samsung printer ppds.
+  COLOR_MODEL_HP_COLOR_COLOR,               // Used in HP color printer ppds.
+  COLOR_MODEL_HP_COLOR_BLACK,               // Used in HP color printer ppds.
+  COLOR_MODEL_PRINTOUTMODE_NORMAL,          // Used in foomatic ppds.
+  COLOR_MODEL_PRINTOUTMODE_NORMAL_GRAY,     // Used in foomatic ppds.
+  COLOR_MODEL_PROCESSCOLORMODEL_CMYK,       // Used in canon printer ppds.
   COLOR_MODEL_PROCESSCOLORMODEL_GREYSCALE,  // Used in canon printer ppds.
-  COLOR_MODEL_PROCESSCOLORMODEL_RGB,  // Used in canon printer ppds
+  COLOR_MODEL_PROCESSCOLORMODEL_RGB,        // Used in canon printer ppds
 } cef_color_model_t;
 
 ///
@@ -2288,6 +2366,13 @@ typedef struct _cef_pdf_print_settings_t {
   int page_height;
 
   ///
+  // The percentage to scale the PDF by before printing (e.g. 50 is 50%).
+  // If this value is less than or equal to zero the default value of 100
+  // will be used.
+  ///
+  int scale_factor;
+
+  ///
   // Margins in millimeters. Only used if |margin_type| is set to
   // PDF_PRINT_MARGIN_CUSTOM.
   ///
@@ -2373,42 +2458,61 @@ typedef enum {
 // Policy for how the Referrer HTTP header value will be sent during navigation.
 // If the `--no-referrers` command-line flag is specified then the policy value
 // will be ignored and the Referrer value will never be sent.
+// Must be kept synchronized with net::URLRequest::ReferrerPolicy from Chromium.
 ///
 typedef enum {
   ///
-  // Always send the complete Referrer value.
+  // Clear the referrer header if the header value is HTTPS but the request
+  // destination is HTTP. This is the default behavior.
   ///
-  REFERRER_POLICY_ALWAYS,
+  REFERRER_POLICY_CLEAR_REFERRER_ON_TRANSITION_FROM_SECURE_TO_INSECURE,
+  REFERRER_POLICY_DEFAULT =
+      REFERRER_POLICY_CLEAR_REFERRER_ON_TRANSITION_FROM_SECURE_TO_INSECURE,
 
   ///
-  // Use the default policy. This is REFERRER_POLICY_ORIGIN_WHEN_CROSS_ORIGIN
-  // when the `--reduced-referrer-granularity` command-line flag is specified
-  // and REFERRER_POLICY_NO_REFERRER_WHEN_DOWNGRADE otherwise.
-  //
+  // A slight variant on CLEAR_REFERRER_ON_TRANSITION_FROM_SECURE_TO_INSECURE:
+  // If the request destination is HTTP, an HTTPS referrer will be cleared. If
+  // the request's destination is cross-origin with the referrer (but does not
+  // downgrade), the referrer's granularity will be stripped down to an origin
+  // rather than a full URL. Same-origin requests will send the full referrer.
   ///
-  REFERRER_POLICY_DEFAULT,
+  REFERRER_POLICY_REDUCE_REFERRER_GRANULARITY_ON_TRANSITION_CROSS_ORIGIN,
 
   ///
-  // When navigating from HTTPS to HTTP do not send the Referrer value.
-  // Otherwise, send the complete Referrer value.
+  // Strip the referrer down to an origin when the origin of the referrer is
+  // different from the destination's origin.
   ///
-  REFERRER_POLICY_NO_REFERRER_WHEN_DOWNGRADE,
+  REFERRER_POLICY_ORIGIN_ONLY_ON_TRANSITION_CROSS_ORIGIN,
 
   ///
-  // Never send the Referrer value.
+  // Never change the referrer.
   ///
-  REFERRER_POLICY_NEVER,
+  REFERRER_POLICY_NEVER_CLEAR_REFERRER,
 
   ///
-  // Only send the origin component of the Referrer value.
+  // Strip the referrer down to the origin regardless of the redirect location.
   ///
   REFERRER_POLICY_ORIGIN,
 
   ///
-  // When navigating cross-origin only send the origin component of the Referrer
-  // value. Otherwise, send the complete Referrer value.
+  // Clear the referrer when the request's referrer is cross-origin with the
+  // request's destination.
   ///
-  REFERRER_POLICY_ORIGIN_WHEN_CROSS_ORIGIN,
+  REFERRER_POLICY_CLEAR_REFERRER_ON_TRANSITION_CROSS_ORIGIN,
+
+  ///
+  // Strip the referrer down to the origin, but clear it entirely if the
+  // referrer value is HTTPS and the destination is HTTP.
+  ///
+  REFERRER_POLICY_ORIGIN_CLEAR_ON_TRANSITION_FROM_SECURE_TO_INSECURE,
+
+  ///
+  // Always clear the referrer regardless of the request destination.
+  ///
+  REFERRER_POLICY_NO_REFERRER,
+
+  // Always the last value in this enumeration.
+  REFERRER_POLICY_LAST_VALUE,
 } cef_referrer_policy_t;
 
 ///
@@ -2461,7 +2565,7 @@ typedef enum {
   // Transparency with pre-multiplied alpha component.
   ///
   CEF_ALPHA_TYPE_PREMULTIPLIED,
-  
+
   ///
   // Transparency with post-multiplied alpha component.
   ///
@@ -2622,6 +2726,92 @@ typedef enum {
   CEF_MENU_ANCHOR_TOPRIGHT,
   CEF_MENU_ANCHOR_BOTTOMCENTER,
 } cef_menu_anchor_position_t;
+
+///
+// Supported color types for menu items.
+///
+typedef enum {
+  CEF_MENU_COLOR_TEXT,
+  CEF_MENU_COLOR_TEXT_HOVERED,
+  CEF_MENU_COLOR_TEXT_ACCELERATOR,
+  CEF_MENU_COLOR_TEXT_ACCELERATOR_HOVERED,
+  CEF_MENU_COLOR_BACKGROUND,
+  CEF_MENU_COLOR_BACKGROUND_HOVERED,
+  CEF_MENU_COLOR_COUNT,
+} cef_menu_color_type_t;
+
+// Supported SSL version values. See net/ssl/ssl_connection_status_flags.h
+// for more information.
+typedef enum {
+  SSL_CONNECTION_VERSION_UNKNOWN = 0,  // Unknown SSL version.
+  SSL_CONNECTION_VERSION_SSL2 = 1,
+  SSL_CONNECTION_VERSION_SSL3 = 2,
+  SSL_CONNECTION_VERSION_TLS1 = 3,
+  SSL_CONNECTION_VERSION_TLS1_1 = 4,
+  SSL_CONNECTION_VERSION_TLS1_2 = 5,
+  // Reserve 6 for TLS 1.3.
+  SSL_CONNECTION_VERSION_QUIC = 7,
+} cef_ssl_version_t;
+
+// Supported SSL content status flags. See content/public/common/ssl_status.h
+// for more information.
+typedef enum {
+  SSL_CONTENT_NORMAL_CONTENT = 0,
+  SSL_CONTENT_DISPLAYED_INSECURE_CONTENT = 1 << 0,
+  SSL_CONTENT_RAN_INSECURE_CONTENT = 1 << 1,
+} cef_ssl_content_status_t;
+
+///
+// Error codes for CDM registration. See cef_web_plugin.h for details.
+///
+typedef enum {
+  ///
+  // No error. Registration completed successfully.
+  ///
+  CEF_CDM_REGISTRATION_ERROR_NONE,
+
+  ///
+  // Required files or manifest contents are missing.
+  ///
+  CEF_CDM_REGISTRATION_ERROR_INCORRECT_CONTENTS,
+
+  ///
+  // The CDM is incompatible with the current Chromium version.
+  ///
+  CEF_CDM_REGISTRATION_ERROR_INCOMPATIBLE,
+
+  ///
+  // CDM registration is not supported at this time.
+  ///
+  CEF_CDM_REGISTRATION_ERROR_NOT_SUPPORTED,
+} cef_cdm_registration_error_t;
+
+///
+// Structure representing IME composition underline information. This is a thin
+// wrapper around Blink's WebCompositionUnderline class and should be kept in
+// sync with that.
+///
+typedef struct _cef_composition_underline_t {
+  ///
+  // Underline character range.
+  ///
+  cef_range_t range;
+
+  ///
+  // Text color.
+  ///
+  cef_color_t color;
+
+  ///
+  // Background color.
+  ///
+  cef_color_t background_color;
+
+  ///
+  // Set to true (1) for thick underline.
+  ///
+  int thick;
+} cef_composition_underline_t;
 
 #ifdef __cplusplus
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2016 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,9 +9,10 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
+// $hash=9fadbedea9a784ce5d674141fa36b54e87150061$
+//
 
 #include "libcef_dll/ctocpp/v8exception_ctocpp.h"
-
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
@@ -133,23 +134,28 @@ int CefV8ExceptionCToCpp::GetEndColumn() {
   return _retval;
 }
 
-
 // CONSTRUCTOR - Do not edit by hand.
 
-CefV8ExceptionCToCpp::CefV8ExceptionCToCpp() {
-}
+CefV8ExceptionCToCpp::CefV8ExceptionCToCpp() {}
 
-template<> cef_v8exception_t* CefCToCpp<CefV8ExceptionCToCpp, CefV8Exception,
-    cef_v8exception_t>::UnwrapDerived(CefWrapperType type,
-    CefV8Exception* c) {
+template <>
+cef_v8exception_t*
+CefCToCppRefCounted<CefV8ExceptionCToCpp, CefV8Exception, cef_v8exception_t>::
+    UnwrapDerived(CefWrapperType type, CefV8Exception* c) {
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
 
-#ifndef NDEBUG
-template<> base::AtomicRefCount CefCToCpp<CefV8ExceptionCToCpp, CefV8Exception,
-    cef_v8exception_t>::DebugObjCt = 0;
+#if DCHECK_IS_ON()
+template <>
+base::AtomicRefCount CefCToCppRefCounted<CefV8ExceptionCToCpp,
+                                         CefV8Exception,
+                                         cef_v8exception_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
-template<> CefWrapperType CefCToCpp<CefV8ExceptionCToCpp, CefV8Exception,
-    cef_v8exception_t>::kWrapperType = WT_V8EXCEPTION;
+template <>
+CefWrapperType CefCToCppRefCounted<CefV8ExceptionCToCpp,
+                                   CefV8Exception,
+                                   cef_v8exception_t>::kWrapperType =
+    WT_V8EXCEPTION;

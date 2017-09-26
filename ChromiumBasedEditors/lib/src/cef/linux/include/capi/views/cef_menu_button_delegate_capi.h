@@ -1,4 +1,4 @@
-// Copyright (c) 2016 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2017 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,6 +33,8 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
+// $hash=a2b3912f8188f19f3d5109aec1b1d03227e31429$
+//
 
 #ifndef CEF_INCLUDE_CAPI_VIEWS_CEF_MENU_BUTTON_DELEGATE_CAPI_H_
 #define CEF_INCLUDE_CAPI_VIEWS_CEF_MENU_BUTTON_DELEGATE_CAPI_H_
@@ -61,12 +63,11 @@ typedef struct _cef_menu_button_delegate_t {
   // Called when |button| is pressed. Call cef_menu_button_t::show_menu() to
   // show the resulting menu at |screen_point|.
   ///
-  void (CEF_CALLBACK *on_menu_button_pressed)(
+  void(CEF_CALLBACK* on_menu_button_pressed)(
       struct _cef_menu_button_delegate_t* self,
       struct _cef_menu_button_t* menu_button,
       const cef_point_t* screen_point);
 } cef_menu_button_delegate_t;
-
 
 #ifdef __cplusplus
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2016 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,35 +9,37 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
+// $hash=8a0511296741305bd92e37397a1587afc35565c2$
+//
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_VIEWS_VIEW_CTOCPP_H_
 #define CEF_LIBCEF_DLL_CTOCPP_VIEWS_VIEW_CTOCPP_H_
 #pragma once
 
-#ifndef USING_CEF_SHARED
-#pragma message("Warning: "__FILE__" may be accessed wrapper-side only")
-#else  // USING_CEF_SHARED
+#if !defined(WRAPPING_CEF_SHARED)
+#error This file can be included wrapper-side only
+#endif
 
-#include "include/views/cef_view.h"
-#include "include/capi/views/cef_view_capi.h"
-#include "include/views/cef_browser_view.h"
 #include "include/capi/views/cef_browser_view_capi.h"
-#include "include/views/cef_button.h"
 #include "include/capi/views/cef_button_capi.h"
-#include "include/views/cef_panel.h"
 #include "include/capi/views/cef_panel_capi.h"
-#include "include/views/cef_scroll_view.h"
 #include "include/capi/views/cef_scroll_view_capi.h"
-#include "include/views/cef_textfield.h"
 #include "include/capi/views/cef_textfield_capi.h"
-#include "include/views/cef_window.h"
+#include "include/capi/views/cef_view_capi.h"
 #include "include/capi/views/cef_window_capi.h"
-#include "libcef_dll/ctocpp/ctocpp.h"
+#include "include/views/cef_browser_view.h"
+#include "include/views/cef_button.h"
+#include "include/views/cef_panel.h"
+#include "include/views/cef_scroll_view.h"
+#include "include/views/cef_textfield.h"
+#include "include/views/cef_view.h"
+#include "include/views/cef_window.h"
+#include "libcef_dll/ctocpp/ctocpp_ref_counted.h"
 
 // Wrap a C structure with a C++ class.
 // This class may be instantiated and accessed wrapper-side only.
 class CefViewCToCpp
-    : public CefCToCpp<CefViewCToCpp, CefView, cef_view_t> {
+    : public CefCToCppRefCounted<CefViewCToCpp, CefView, cef_view_t> {
  public:
   CefViewCToCpp();
 
@@ -56,6 +58,8 @@ class CefViewCToCpp
   CefRefPtr<CefWindow> GetWindow() OVERRIDE;
   int GetID() OVERRIDE;
   void SetID(int id) OVERRIDE;
+  int GetGroupID() OVERRIDE;
+  void SetGroupID(int group_id) OVERRIDE;
   CefRefPtr<CefView> GetParentView() OVERRIDE;
   CefRefPtr<CefView> GetViewForID(int id) OVERRIDE;
   void SetBounds(const CefRect& bounds) OVERRIDE;
@@ -90,5 +94,4 @@ class CefViewCToCpp
   bool ConvertPointFromView(CefRefPtr<CefView> view, CefPoint& point) OVERRIDE;
 };
 
-#endif  // USING_CEF_SHARED
 #endif  // CEF_LIBCEF_DLL_CTOCPP_VIEWS_VIEW_CTOCPP_H_

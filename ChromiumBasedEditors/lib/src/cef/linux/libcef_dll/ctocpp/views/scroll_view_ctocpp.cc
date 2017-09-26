@@ -1,4 +1,4 @@
-// Copyright (c) 2016 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,16 +9,17 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
+// $hash=caaa818b6a1fbcd357b964f27bdf2250ee3a3954$
+//
 
+#include "libcef_dll/ctocpp/views/scroll_view_ctocpp.h"
 #include "libcef_dll/cpptoc/views/view_delegate_cpptoc.h"
 #include "libcef_dll/ctocpp/views/browser_view_ctocpp.h"
 #include "libcef_dll/ctocpp/views/button_ctocpp.h"
 #include "libcef_dll/ctocpp/views/panel_ctocpp.h"
-#include "libcef_dll/ctocpp/views/scroll_view_ctocpp.h"
 #include "libcef_dll/ctocpp/views/textfield_ctocpp.h"
 #include "libcef_dll/ctocpp/views/view_ctocpp.h"
 #include "libcef_dll/ctocpp/views/window_ctocpp.h"
-
 
 // STATIC METHODS - Body may be edited by hand.
 
@@ -29,13 +30,12 @@ CefRefPtr<CefScrollView> CefScrollView::CreateScrollView(
   // Unverified params: delegate
 
   // Execute
-  cef_scroll_view_t* _retval = cef_scroll_view_create(
-      CefViewDelegateCppToC::Wrap(delegate));
+  cef_scroll_view_t* _retval =
+      cef_scroll_view_create(CefViewDelegateCppToC::Wrap(delegate));
 
   // Return type: refptr_same
   return CefScrollViewCToCpp::Wrap(_retval);
 }
-
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
@@ -52,8 +52,7 @@ void CefScrollViewCToCpp::SetContentView(CefRefPtr<CefView> view) {
     return;
 
   // Execute
-  _struct->set_content_view(_struct,
-      CefViewCToCpp::Unwrap(view));
+  _struct->set_content_view(_struct, CefViewCToCpp::Unwrap(view));
 }
 
 CefRefPtr<CefView> CefScrollViewCToCpp::GetContentView() {
@@ -95,7 +94,7 @@ bool CefScrollViewCToCpp::HasHorizontalScrollbar() {
   int _retval = _struct->has_horizontal_scrollbar(_struct);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 int CefScrollViewCToCpp::GetHorizontalScrollbarHeight() {
@@ -123,7 +122,7 @@ bool CefScrollViewCToCpp::HasVerticalScrollbar() {
   int _retval = _struct->has_vertical_scrollbar(_struct);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 int CefScrollViewCToCpp::GetVerticalScrollbarWidth() {
@@ -234,8 +233,7 @@ CefString CefScrollViewCToCpp::ToString(bool include_children) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_string_userfree_t _retval = _struct->to_string(_struct,
-      include_children);
+  cef_string_userfree_t _retval = _struct->to_string(_struct, include_children);
 
   // Return type: string
   CefString _retvalStr;
@@ -254,7 +252,7 @@ bool CefScrollViewCToCpp::IsValid() {
   int _retval = _struct->is_valid(_struct);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 bool CefScrollViewCToCpp::IsAttached() {
@@ -268,7 +266,7 @@ bool CefScrollViewCToCpp::IsAttached() {
   int _retval = _struct->is_attached(_struct);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 bool CefScrollViewCToCpp::IsSame(CefRefPtr<CefView> that) {
@@ -284,11 +282,10 @@ bool CefScrollViewCToCpp::IsSame(CefRefPtr<CefView> that) {
     return false;
 
   // Execute
-  int _retval = _struct->is_same(_struct,
-      CefViewCToCpp::Unwrap(that));
+  int _retval = _struct->is_same(_struct, CefViewCToCpp::Unwrap(that));
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 CefRefPtr<CefViewDelegate> CefScrollViewCToCpp::GetDelegate() {
@@ -341,8 +338,32 @@ void CefScrollViewCToCpp::SetID(int id) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  _struct->set_id(_struct,
-      id);
+  _struct->set_id(_struct, id);
+}
+
+int CefScrollViewCToCpp::GetGroupID() {
+  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (CEF_MEMBER_MISSING(_struct, get_group_id))
+    return 0;
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  int _retval = _struct->get_group_id(_struct);
+
+  // Return type: simple
+  return _retval;
+}
+
+void CefScrollViewCToCpp::SetGroupID(int group_id) {
+  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (CEF_MEMBER_MISSING(_struct, set_group_id))
+    return;
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  _struct->set_group_id(_struct, group_id);
 }
 
 CefRefPtr<CefView> CefScrollViewCToCpp::GetParentView() {
@@ -367,8 +388,7 @@ CefRefPtr<CefView> CefScrollViewCToCpp::GetViewForID(int id) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_view_t* _retval = _struct->get_view_for_id(_struct,
-      id);
+  cef_view_t* _retval = _struct->get_view_for_id(_struct, id);
 
   // Return type: refptr_same
   return CefViewCToCpp::Wrap(_retval);
@@ -382,8 +402,7 @@ void CefScrollViewCToCpp::SetBounds(const CefRect& bounds) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  _struct->set_bounds(_struct,
-      &bounds);
+  _struct->set_bounds(_struct, &bounds);
 }
 
 CefRect CefScrollViewCToCpp::GetBounds() {
@@ -422,8 +441,7 @@ void CefScrollViewCToCpp::SetSize(const CefSize& size) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  _struct->set_size(_struct,
-      &size);
+  _struct->set_size(_struct, &size);
 }
 
 CefSize CefScrollViewCToCpp::GetSize() {
@@ -448,8 +466,7 @@ void CefScrollViewCToCpp::SetPosition(const CefPoint& position) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  _struct->set_position(_struct,
-      &position);
+  _struct->set_position(_struct, &position);
 }
 
 CefPoint CefScrollViewCToCpp::GetPosition() {
@@ -527,8 +544,7 @@ int CefScrollViewCToCpp::GetHeightForWidth(int width) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  int _retval = _struct->get_height_for_width(_struct,
-      width);
+  int _retval = _struct->get_height_for_width(_struct, width);
 
   // Return type: simple
   return _retval;
@@ -553,8 +569,7 @@ void CefScrollViewCToCpp::SetVisible(bool visible) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  _struct->set_visible(_struct,
-      visible);
+  _struct->set_visible(_struct, visible);
 }
 
 bool CefScrollViewCToCpp::IsVisible() {
@@ -568,7 +583,7 @@ bool CefScrollViewCToCpp::IsVisible() {
   int _retval = _struct->is_visible(_struct);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 bool CefScrollViewCToCpp::IsDrawn() {
@@ -582,7 +597,7 @@ bool CefScrollViewCToCpp::IsDrawn() {
   int _retval = _struct->is_drawn(_struct);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 void CefScrollViewCToCpp::SetEnabled(bool enabled) {
@@ -593,8 +608,7 @@ void CefScrollViewCToCpp::SetEnabled(bool enabled) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  _struct->set_enabled(_struct,
-      enabled);
+  _struct->set_enabled(_struct, enabled);
 }
 
 bool CefScrollViewCToCpp::IsEnabled() {
@@ -608,7 +622,7 @@ bool CefScrollViewCToCpp::IsEnabled() {
   int _retval = _struct->is_enabled(_struct);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 void CefScrollViewCToCpp::SetFocusable(bool focusable) {
@@ -619,8 +633,7 @@ void CefScrollViewCToCpp::SetFocusable(bool focusable) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  _struct->set_focusable(_struct,
-      focusable);
+  _struct->set_focusable(_struct, focusable);
 }
 
 bool CefScrollViewCToCpp::IsFocusable() {
@@ -634,7 +647,7 @@ bool CefScrollViewCToCpp::IsFocusable() {
   int _retval = _struct->is_focusable(_struct);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 bool CefScrollViewCToCpp::IsAccessibilityFocusable() {
@@ -648,7 +661,7 @@ bool CefScrollViewCToCpp::IsAccessibilityFocusable() {
   int _retval = _struct->is_accessibility_focusable(_struct);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 void CefScrollViewCToCpp::RequestFocus() {
@@ -670,8 +683,7 @@ void CefScrollViewCToCpp::SetBackgroundColor(cef_color_t color) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  _struct->set_background_color(_struct,
-      color);
+  _struct->set_background_color(_struct, color);
 }
 
 cef_color_t CefScrollViewCToCpp::GetBackgroundColor() {
@@ -696,11 +708,10 @@ bool CefScrollViewCToCpp::ConvertPointToScreen(CefPoint& point) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  int _retval = _struct->convert_point_to_screen(_struct,
-      &point);
+  int _retval = _struct->convert_point_to_screen(_struct, &point);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 bool CefScrollViewCToCpp::ConvertPointFromScreen(CefPoint& point) {
@@ -711,11 +722,10 @@ bool CefScrollViewCToCpp::ConvertPointFromScreen(CefPoint& point) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  int _retval = _struct->convert_point_from_screen(_struct,
-      &point);
+  int _retval = _struct->convert_point_from_screen(_struct, &point);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 bool CefScrollViewCToCpp::ConvertPointToWindow(CefPoint& point) {
@@ -726,11 +736,10 @@ bool CefScrollViewCToCpp::ConvertPointToWindow(CefPoint& point) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  int _retval = _struct->convert_point_to_window(_struct,
-      &point);
+  int _retval = _struct->convert_point_to_window(_struct, &point);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 bool CefScrollViewCToCpp::ConvertPointFromWindow(CefPoint& point) {
@@ -741,15 +750,14 @@ bool CefScrollViewCToCpp::ConvertPointFromWindow(CefPoint& point) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  int _retval = _struct->convert_point_from_window(_struct,
-      &point);
+  int _retval = _struct->convert_point_from_window(_struct, &point);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 bool CefScrollViewCToCpp::ConvertPointToView(CefRefPtr<CefView> view,
-    CefPoint& point) {
+                                             CefPoint& point) {
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, convert_point_to_view))
     return false;
@@ -762,16 +770,15 @@ bool CefScrollViewCToCpp::ConvertPointToView(CefRefPtr<CefView> view,
     return false;
 
   // Execute
-  int _retval = _struct->convert_point_to_view(_struct,
-      CefViewCToCpp::Unwrap(view),
-      &point);
+  int _retval = _struct->convert_point_to_view(
+      _struct, CefViewCToCpp::Unwrap(view), &point);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 bool CefScrollViewCToCpp::ConvertPointFromView(CefRefPtr<CefView> view,
-    CefPoint& point) {
+                                               CefPoint& point) {
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, convert_point_from_view))
     return false;
@@ -784,30 +791,34 @@ bool CefScrollViewCToCpp::ConvertPointFromView(CefRefPtr<CefView> view,
     return false;
 
   // Execute
-  int _retval = _struct->convert_point_from_view(_struct,
-      CefViewCToCpp::Unwrap(view),
-      &point);
+  int _retval = _struct->convert_point_from_view(
+      _struct, CefViewCToCpp::Unwrap(view), &point);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
-
 
 // CONSTRUCTOR - Do not edit by hand.
 
-CefScrollViewCToCpp::CefScrollViewCToCpp() {
-}
+CefScrollViewCToCpp::CefScrollViewCToCpp() {}
 
-template<> cef_scroll_view_t* CefCToCpp<CefScrollViewCToCpp, CefScrollView,
-    cef_scroll_view_t>::UnwrapDerived(CefWrapperType type, CefScrollView* c) {
+template <>
+cef_scroll_view_t*
+CefCToCppRefCounted<CefScrollViewCToCpp, CefScrollView, cef_scroll_view_t>::
+    UnwrapDerived(CefWrapperType type, CefScrollView* c) {
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
 
-#ifndef NDEBUG
-template<> base::AtomicRefCount CefCToCpp<CefScrollViewCToCpp, CefScrollView,
-    cef_scroll_view_t>::DebugObjCt = 0;
+#if DCHECK_IS_ON()
+template <>
+base::AtomicRefCount
+    CefCToCppRefCounted<CefScrollViewCToCpp, CefScrollView, cef_scroll_view_t>::
+        DebugObjCt ATOMIC_DECLARATION;
 #endif
 
-template<> CefWrapperType CefCToCpp<CefScrollViewCToCpp, CefScrollView,
-    cef_scroll_view_t>::kWrapperType = WT_SCROLL_VIEW;
+template <>
+CefWrapperType CefCToCppRefCounted<CefScrollViewCToCpp,
+                                   CefScrollView,
+                                   cef_scroll_view_t>::kWrapperType =
+    WT_SCROLL_VIEW;

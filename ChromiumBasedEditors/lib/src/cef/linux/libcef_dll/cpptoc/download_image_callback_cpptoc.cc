@@ -1,4 +1,4 @@
-// Copyright (c) 2016 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,18 +9,21 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
+// $hash=63e1b0a0910dd98821c2ecea2bd70b4e09ebe5e6$
+//
 
 #include "libcef_dll/cpptoc/download_image_callback_cpptoc.h"
 #include "libcef_dll/ctocpp/image_ctocpp.h"
-
 
 namespace {
 
 // MEMBER FUNCTIONS - Body may be edited by hand.
 
 void CEF_CALLBACK download_image_callback_on_download_image_finished(
-    struct _cef_download_image_callback_t* self, const cef_string_t* image_url,
-    int http_status_code, struct _cef_image_t* image) {
+    struct _cef_download_image_callback_t* self,
+    const cef_string_t* image_url,
+    int http_status_code,
+    struct _cef_image_t* image) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -34,13 +37,10 @@ void CEF_CALLBACK download_image_callback_on_download_image_finished(
 
   // Execute
   CefDownloadImageCallbackCppToC::Get(self)->OnDownloadImageFinished(
-      CefString(image_url),
-      http_status_code,
-      CefImageCToCpp::Wrap(image));
+      CefString(image_url), http_status_code, CefImageCToCpp::Wrap(image));
 }
 
 }  // namespace
-
 
 // CONSTRUCTOR - Do not edit by hand.
 
@@ -49,18 +49,28 @@ CefDownloadImageCallbackCppToC::CefDownloadImageCallbackCppToC() {
       download_image_callback_on_download_image_finished;
 }
 
-template<> CefRefPtr<CefDownloadImageCallback> CefCppToC<CefDownloadImageCallbackCppToC,
-    CefDownloadImageCallback, cef_download_image_callback_t>::UnwrapDerived(
-    CefWrapperType type, cef_download_image_callback_t* s) {
+template <>
+CefRefPtr<CefDownloadImageCallback> CefCppToCRefCounted<
+    CefDownloadImageCallbackCppToC,
+    CefDownloadImageCallback,
+    cef_download_image_callback_t>::UnwrapDerived(CefWrapperType type,
+                                                  cef_download_image_callback_t*
+                                                      s) {
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
 
-#ifndef NDEBUG
-template<> base::AtomicRefCount CefCppToC<CefDownloadImageCallbackCppToC,
-    CefDownloadImageCallback, cef_download_image_callback_t>::DebugObjCt = 0;
+#if DCHECK_IS_ON()
+template <>
+base::AtomicRefCount CefCppToCRefCounted<
+    CefDownloadImageCallbackCppToC,
+    CefDownloadImageCallback,
+    cef_download_image_callback_t>::DebugObjCt ATOMIC_DECLARATION;
 #endif
 
-template<> CefWrapperType CefCppToC<CefDownloadImageCallbackCppToC,
-    CefDownloadImageCallback, cef_download_image_callback_t>::kWrapperType =
-    WT_DOWNLOAD_IMAGE_CALLBACK;
+template <>
+CefWrapperType
+    CefCppToCRefCounted<CefDownloadImageCallbackCppToC,
+                        CefDownloadImageCallback,
+                        cef_download_image_callback_t>::kWrapperType =
+        WT_DOWNLOAD_IMAGE_CALLBACK;

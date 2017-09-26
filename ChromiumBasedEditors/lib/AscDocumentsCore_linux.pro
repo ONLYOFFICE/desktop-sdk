@@ -33,6 +33,7 @@ LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lPdfReader -lPdfWriter -lDjVuFile -lXpsF
 
 DEFINES += DOCUMENTSCORE_OPENSSL_SUPPORT
 
+include($$PWD/AscDocumentsCore_base.pri)
 include($$PWD/AscDocumentsCore_linux.pri)
 
 ####################  BOOST  ###########################
