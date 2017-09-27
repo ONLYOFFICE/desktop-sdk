@@ -1950,6 +1950,9 @@ public:
                 model->AddItem(CLIENT_ID_INSPECT_ELEMENT, "Inspect Element");
             }
         }
+
+        if (delegate_)
+          delegate_->OnBeforeContextMenu(model);
     }
 
     virtual bool OnConsoleMessage(CefRefPtr<CefBrowser> browser,
