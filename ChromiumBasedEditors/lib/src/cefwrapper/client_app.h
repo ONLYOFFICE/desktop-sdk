@@ -291,16 +291,6 @@ public:
                 command_line->AppendSwitchWithValue("--force-device-scale-factor", std::to_string(forceDpi));
         }
     }
-
-    virtual void OnRenderThreadCreated(CefRefPtr<CefListValue> extra_info)
-                                       OVERRIDE
-    {
-        asc_client_renderer::CreateRenderDelegates(delegates_);
-
-        DelegateSet::iterator it = delegates_.begin();
-        for (; it != delegates_.end(); ++it)
-          (*it)->OnRenderThreadCreated(this, extra_info);
-    }
 };
 
 #endif

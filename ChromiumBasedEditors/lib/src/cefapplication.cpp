@@ -117,6 +117,10 @@ CApplicationCEF::CApplicationCEF()
     m_pInternal = new CApplicationCEF_Private();
 }
 
+#if defined(_LINUX) && !defined(_MAC)
+//#define CEF_USE_SANDBOX
+#endif
+
 int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* argv[])
 {
 #if 0
@@ -140,15 +144,6 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     // internally (see issue #620).
     m_pInternal->argc_copy = new CefScopedArgArray(argc, argv);
     char** argv_copy = m_pInternal->argc_copy->array();
-#endif
-
-    void* sandbox_info = NULL;
-
-#if defined(CEF_USE_SANDBOX)
-    // Manage the life span of the sandbox information object. This is necessary
-    // for sandbox support on Windows. See cef_sandbox_win.h for complete details.
-    CefScopedSandboxInfo scoped_sandbox;
-    sandbox_info = scoped_sandbox.sandbox_info();
 #endif
 
 #ifdef WIN32
@@ -207,7 +202,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 
 #if 1
     // Execute the secondary process, if any.
-    m_pInternal->m_nReturnCodeInitCef = CefExecuteProcess(main_args, m_pInternal->m_app.get(), sandbox_info);
+    m_pInternal->m_nReturnCodeInitCef = CefExecuteProcess(main_args, m_pInternal->m_app.get(), NULL);
     if (m_pInternal->m_nReturnCodeInitCef >= 0)
     {        
         return m_pInternal->m_nReturnCodeInitCef;
@@ -287,7 +282,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     settings.persist_session_cookies = true;
 
     // Initialize CEF.
-    bool bInit = m_pInternal->context->Initialize(main_args, settings, m_pInternal->m_app.get(), sandbox_info);
+    bool bInit = m_pInternal->context->Initialize(main_args, settings, m_pInternal->m_app.get(), NULL);
     bool bIsInitScheme = asc_scheme::InitScheme();
 
 #if defined(_LINUX) && !defined(_MAC)

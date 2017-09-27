@@ -668,7 +668,6 @@ HEADERS += \
     $$CEF_SRC_PATH/tests/shared/renderer/client_app_renderer.h
 
 SOURCES += \
-    $$CEF_SRC_PATH/tests/cefclient/renderer/client_app_delegates_renderer.cc \
     $$CEF_SRC_PATH/tests/cefclient/renderer/client_renderer.cc \
     $$CEF_SRC_PATH/tests/cefclient/renderer/performance_test.cc \
     $$CEF_SRC_PATH/tests/cefclient/renderer/performance_test_tests.cc \

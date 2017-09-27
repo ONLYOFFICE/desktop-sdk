@@ -2927,4 +2927,9 @@ void CreateRenderDelegates(client::ClientAppRenderer::DelegateSet& delegates) {
   delegates.insert(new ClientRenderDelegate);
 }
 
+// static
 }  // namespace client_renderer
+
+void client::ClientAppRenderer::CreateDelegates(client::ClientAppRenderer::DelegateSet& delegates) {
+    asc_client_renderer::CreateRenderDelegates(delegates);
+}
