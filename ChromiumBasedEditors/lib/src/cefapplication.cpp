@@ -189,15 +189,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
     command_line->InitFromArgv(argc, argv);
 
-    // Create a ClientApp of the correct type.
-    client::ClientApp::ProcessType process_type = client::ClientApp::GetProcessType(command_line);
-    if (process_type == client::ClientApp::BrowserProcess)
-        m_pInternal->m_app = new CAscClientAppBrowser();
-    else if (process_type == client::ClientApp::RendererProcess ||
-             process_type == client::ClientApp::ZygoteProcess)
-        m_pInternal->m_app = new CAscClientAppRenderer();
-    else if (process_type == client::ClientApp::OtherProcess)
-        m_pInternal->m_app = new CAscClientAppOther();
+    m_pInternal->m_app = new CAscClientAppBrowser();
 #endif
 
 #if 1

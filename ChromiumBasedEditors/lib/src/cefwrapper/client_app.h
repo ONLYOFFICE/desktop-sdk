@@ -34,10 +34,6 @@
 #define CEF_ASC_CLIENT_APP_H_
 
 #include "tests/shared/common/client_app.h"
-#include "tests/shared/browser/client_app_browser.h"
-#include "tests/shared/renderer/client_app_renderer.h"
-#include "tests/shared/common/client_app_other.h"
-#include "client_renderer.h"
 
 #if defined(_LINUX) && !defined(_MAC)
 #include <gdk/gdk.h>
@@ -122,6 +118,9 @@ static int IsForceDpiRound()
     return 0;
 }
 
+#ifndef MAC_NO_MAIN_PROCESS
+#include "tests/shared/browser/client_app_browser.h"
+
 class CAscClientAppBrowser : public client::ClientAppBrowser
 {
 public:
@@ -179,6 +178,11 @@ public:
 public:
     IMPLEMENT_REFCOUNTING(CAscClientAppBrowser);
 };
+#endif
+
+#ifndef MAC_NO_SUB_PROCESS
+#include "tests/shared/renderer/client_app_renderer.h"
+#include "tests/shared/common/client_app_other.h"
 
 class CAscClientAppOther : public client::ClientAppOther
 {
@@ -292,5 +296,6 @@ public:
         }
     }
 };
+#endif
 
 #endif
