@@ -1042,13 +1042,12 @@ public:
 
         if (bIsSend)
         {
-            CCefView* pMainView = m_pMain->GetViewById(1);
             NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_RECENTS);
             NSEditorApi::CAscLocalRecentsAll* pData = new NSEditorApi::CAscLocalRecentsAll();
-            pData->put_Id(pMainView->GetId());
             pData->put_JSON(Recents_GetJSON());
             pEvent->m_pData = pData;
-            pMainView->Apply(pEvent);
+
+            SetEventToAllMainWindows(pEvent);
         }
     }
     std::wstring Recents_GetJSON()
@@ -1214,13 +1213,27 @@ public:
         oBuilder.WriteString(L"]");
         std::wstring sJSON = oBuilder.GetData();
 
-        CCefView* pMainView = m_pMain->GetViewById(1);
         NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_RECOVERS);
         NSEditorApi::CAscLocalRecentsAll* pData = new NSEditorApi::CAscLocalRecentsAll();
-        pData->put_Id(pMainView->GetId());
         pData->put_JSON(sJSON);
         pEvent->m_pData = pData;
-        pMainView->Apply(pEvent);
+
+        SetEventToAllMainWindows(pEvent);
+    }
+
+    void SetEventToAllMainWindows(NSEditorApi::CAscMenuEvent* pEvent)
+    {
+        for (std::map<int, CCefView*>::iterator i = m_mapViews.begin(); i != m_mapViews.end(); i++)
+        {
+           CCefView* pView = i->second;
+           if (pView->GetType() == cvwtSimple)
+           {
+               pEvent->AddRef();
+               pView->Apply(pEvent);
+           }
+        }
+
+        pEvent->Release();
     }
 };
 
