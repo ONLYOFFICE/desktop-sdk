@@ -204,10 +204,10 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     CefSettings settings;
     
 #ifdef _MAC
-#if 0
+#if 1
     std::wstring sSubprocessPath = NSFile::GetProcessDirectory();
     std::wstring sName = NSCommon::GetFileName(NSFile::GetProcessPath());
-    sSubprocessPath += L"/../Frameworks/DocumentsCore Helper.app/Contents/MacOS/DocumentsCore Helper";
+    sSubprocessPath += L"/../Frameworks/ONLYOFFICE Helper.app/Contents/MacOS/ONLYOFFICE Helper";
     
     cef_string_t _subprocess;
     memset(&_subprocess, 0, sizeof(_subprocess));
