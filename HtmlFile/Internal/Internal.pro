@@ -28,6 +28,8 @@ SOURCES += \
 
 CONFIG += desktop_sdk_html
 
+DESTDIR = $$CORE_BUILDS_LIBRARIES_PATH
+
 win32 {
     include($$CORE_ROOT_DIR/../desktop-sdk/ChromiumBasedEditors/lib/AscDocumentsCore_windows.pri)
 
