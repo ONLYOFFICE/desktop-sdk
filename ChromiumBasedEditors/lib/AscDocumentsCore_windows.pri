@@ -68,7 +68,6 @@ HEADERS += \
 
 SOURCES += \
     $$CEF_SRC_PATH/tests/cefclient/browser/browser_window_osr_win.cc \
-    $$CEF_SRC_PATH/tests/cefclient/browser/browser_window_std_win.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/main_context_impl_win.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/main_message_loop_multithreaded_win.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/osr_accessibility_helper.cc \
@@ -90,3 +89,8 @@ SOURCES += \
     $$CEF_SRC_PATH/tests/shared/browser/main_message_loop_external_pump_win.cc \
     $$CEF_SRC_PATH/tests/shared/browser/resource_util_win.cc \
     $$CEF_SRC_PATH/tests/shared/browser/util_win.cc
+
+!desktop_sdk_html {
+SOURCES += \
+    $$CEF_SRC_PATH/tests/cefclient/browser/browser_window_std_win.cc
+}

@@ -12,11 +12,37 @@ PWD_ROOT_DIR = $$PWD
 include($$CORE_ROOT_DIR/Common/base.pri)
 include($$CORE_ROOT_DIR/Common/3dParty/icu/icu.pri)
 
+include($$CORE_ROOT_DIR/../desktop-sdk/ChromiumBasedEditors/lib/AscDocumentsCore_base.pri)
+LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lgraphics -llibxml -lOfficeUtils -lUnicodeConverter
+
+INCLUDEPATH += \
+    $$CORE_ROOT_DIR/DesktopEditor/agg-2.4/include \
+    $$CORE_ROOT_DIR/DesktopEditor/freetype-2.5.2/include
+
+HEADERS += \
+    $$PWD/src/clienthandler.h \
+    $$PWD/src/client_app.h
+
+SOURCES += \
+    $$PWD/src/client_renderer_wrapper.cpp
+
+CONFIG += desktop_sdk_html
+
 win32 {
-    include(./Internal_windows.pri)
+    include($$CORE_ROOT_DIR/../desktop-sdk/ChromiumBasedEditors/lib/AscDocumentsCore_windows.pri)
+
+SOURCES += \
+    $$PWD/src/main_windows.cpp
 }
 linux-g++ | linux-g++-64 | linux-g++-32 {
-    include(./Internal_linux.pri)
+    include($$CORE_ROOT_DIR/../desktop-sdk/ChromiumBasedEditors/lib/AscDocumentsCore_linux.pri)
+
+SOURCES += \
+    $$PWD/src/main_linux.cpp
+
+CONFIG += link_pkgconfig c++11
+PKGCONFIG += glib-2.0 gdk-2.0 gtkglext-1.0 atk cairo gtk+-unix-print-2.0
+LIBS += -lcurl -lz
 
     #CONFIG += build_for_centos6
 

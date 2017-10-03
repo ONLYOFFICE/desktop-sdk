@@ -43,10 +43,10 @@
 
 #include "src/client_app.h"
 #include "src/clienthandler.h"
-#include "cefclient/common/client_switches.h"
-#include "cefclient/browser/main_context_impl.h"
-#include "cefclient/browser/main_message_loop_multithreaded_win.h"
-#include "cefclient/browser/main_message_loop_std.h"
+#include "tests/shared/common/client_switches.h"
+#include "tests/cefclient/browser/main_context_impl.h"
+#include "tests/cefclient/browser/main_message_loop_multithreaded_win.h"
+#include "tests/shared/browser/main_message_loop_std.h"
 
 class CGlobalHtmlFileParams
 {
@@ -66,8 +66,8 @@ public:
 CGlobalHtmlFileParams* g_globalParams;
 
 #if 1
-#include "cefclient/browser/browser_window_std_win.h"
-#include "cefclient/browser/client_handler_std.h"
+#include "tests/cefclient/browser/browser_window_std_win.h"
+#include "tests/cefclient/browser/client_handler_std.h"
 // подменяем функции окна
 
 namespace client {
