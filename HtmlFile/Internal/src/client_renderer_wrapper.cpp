@@ -247,24 +247,19 @@ public:
                     NSFile::CFileBinary oFile;
                     oFile.CreateFileW(m_sDocumentPath + L"/Editor.bin");
 
-#ifdef ASC_HTML_FILE_INTERNAL_LOG
-                    int nnn = (int)sFile.length();
-#endif
+                    BYTE* pDataDst = NULL;
+                    int nDataDstLen = 0;
+                    NSFile::CBase64Converter::Decode(sFile.c_str(), (int)sFile.length(), pDataDst, nDataDstLen);
 
-                    oFile.WriteFile((BYTE*)sFile.c_str(), (DWORD)sFile.length());
+                    oFile.WriteFile(pDataDst, (DWORD)nDataDstLen);
                     oFile.CloseFile();
 
-#ifdef ASC_HTML_FILE_INTERNAL_LOG
-                    std::string sLog = U_TO_UTF8((NSFile::GetProcessDirectory())) + "/convert.log";
-                    FILE* f = fopen(sLog.c_str(), "a+");
-                    fprintf(f, "SaveDocument: %d\n", (int)nnn);
-                    fclose(f);
-#endif
+                    RELEASEARRAYOBJECTS(pDataDst);
                 }
             }
             else
             {
-                std::string sCode = "window.Native.SaveDocument(window.editor.asc_nativeGetFile());";
+                std::string sCode = "window.Native.SaveDocument(window.editor.asc_nativeGetFile2());";
 
                 CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetFrame();
                 _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
