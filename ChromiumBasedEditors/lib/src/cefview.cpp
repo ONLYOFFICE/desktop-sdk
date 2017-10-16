@@ -352,15 +352,15 @@ public:
     }
 
     void LocalFile_End();
-    void LocalFile_SaveEnd(int nError);
+    void LocalFile_SaveEnd(int nError, const std::wstring& sPass = L"");
 
     void LocalFile_IncrementCounter();
 
     virtual void OnFileConvertToEditor(const int& nError);
 
-    virtual void OnFileConvertFromEditor(const int& nError)
+    virtual void OnFileConvertFromEditor(const int& nError, const std::wstring& sPass = L"")
     {
-        LocalFile_SaveEnd(nError);
+        LocalFile_SaveEnd(nError, sPass);
     }
 
     void LocalFile_GetSupportSaveFormats(std::vector<int>& arFormats)
@@ -1423,6 +1423,7 @@ public:
             {
                 bool bIsNeedSave = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_bIsSaved ? false : true;
                 std::string sParams = message->GetArgumentList()->GetString(0).ToString();
+                std::wstring sPassword = message->GetArgumentList()->GetString(1).ToWString();
 
                 bool bIsSaveAs = (sParams.find("saveas=true") != std::string::npos) ? true : false;
                 bool bIsNeedSaveDialog = bIsNeedSave || bIsSaveAs || (!m_pParent->m_pInternal->LocalFile_IsSupportSaveCurrentFormat());
@@ -1439,6 +1440,7 @@ public:
                 }
 
                 m_pParent->m_pInternal->m_oLocalInfo.m_bIsRetina = (sParams.find("retina=true") != std::string::npos) ? true : false;
+                m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sPassword = sPassword;
 
                 if (bIsNeedSaveDialog)
                 {
@@ -2482,7 +2484,7 @@ void CCefView_Private::LocalFile_End()
 
     m_oLocalInfo.m_oInfo.m_nCounterConvertion = 1; // for reload enable
 }
-void CCefView_Private::LocalFile_SaveEnd(int nError)
+void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
 {
     m_oConverterFromEditor.m_nTypeEditorFormat = -1;
     m_oLocalInfo.m_bIsRetina = false;
@@ -2584,6 +2586,17 @@ void CCefView_Private::LocalFile_SaveEnd(int nError)
     CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_onsaveend");
     message->GetArgumentList()->SetString(0, (0 == nError) ? m_oLocalInfo.m_oInfo.m_sFileSrc : L"");
     message->GetArgumentList()->SetInt(1, (0 == nError) ? 0 : 2);
+
+    if (!sPass.empty() && (0 == nError))
+    {
+        message->GetArgumentList()->SetString(2, sPass);
+
+        ICertificate* pCert = ICertificate::CreateInstance();
+        std::string sHash = pCert->GetHash(m_oLocalInfo.m_oInfo.m_sFileSrc, OOXML_HASH_ALG_SHA1);
+        delete pCert;
+
+        message->GetArgumentList()->SetString(3, sHash);
+    }
     m_handler->GetBrowser()->SendProcessMessage(PID_RENDERER, message);
 }
 
@@ -2609,6 +2622,16 @@ void CCefView_Private::LocalFile_IncrementCounter()
             {
                 CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_additionalparams");
                 message->GetArgumentList()->SetInt(0, m_nLocalFileOpenError);
+
+                if (90 == m_nLocalFileOpenError || 91 == m_nLocalFileOpenError)
+                {
+                    ICertificate* pCert = ICertificate::CreateInstance();
+                    std::string sHash = pCert->GetHash(m_oLocalInfo.m_oInfo.m_sFileSrc, OOXML_HASH_ALG_SHA1);
+                    delete pCert;
+
+                    message->GetArgumentList()->SetString(1, sHash);
+                }
+
                 browser->SendProcessMessage(PID_RENDERER, message);
             }
             return;

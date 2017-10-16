@@ -66,6 +66,8 @@ public:
 
     bool m_bIsModified;
 
+    std::wstring m_sPassword;
+
 public:
     CAscLocalFileInfo()
     {
@@ -87,6 +89,8 @@ public:
 
         m_nCurrentFileFormat = oSrc.m_nCurrentFileFormat;
         m_bIsSaved = oSrc.m_bIsSaved;
+
+        m_sPassword = oSrc.m_sPassword;
         return *this;
     }
 };
@@ -120,7 +124,7 @@ class IASCFileConverterEvents
 {
 public:
     virtual void OnFileConvertToEditor(const int& nError) = 0;
-    virtual void OnFileConvertFromEditor(const int& nError) = 0;
+    virtual void OnFileConvertFromEditor(const int& nError, const std::wstring& sPass = L"") = 0;
 };
 
 class CASCFileConverterToEditor : public NSThreads::CBaseThread
@@ -619,7 +623,7 @@ public:
     CASCFileConverterFromEditor() : NSThreads::CBaseThread()
     {
         m_bIsRetina = false;
-        m_nTypeEditorFormat = -1;        
+        m_nTypeEditorFormat = -1;
     }
     virtual ~CASCFileConverterFromEditor()
     {
@@ -682,6 +686,13 @@ public:
         oBuilder.WriteEncodeXmlString(m_pManager->m_oSettings.fonts_cache_info_path);
         oBuilder.WriteString(L"/AllFonts.js</m_sAllFontsPath><m_nCsvTxtEncoding>46</m_nCsvTxtEncoding><m_nCsvDelimiter>4</m_nCsvDelimiter>");
         oBuilder.WriteString(sParams);
+
+        if (!m_oInfo.m_sPassword.empty())
+        {
+            oBuilder.WriteString(L"<m_sPassword>");
+            oBuilder.WriteString(m_oInfo.m_sPassword);
+            oBuilder.WriteString(L"</m_sPassword>");
+        }
 
         int nDoctRendererParam = 0;
         if (m_bIsRetina)
@@ -850,7 +861,7 @@ public:
         m_bIsRetina = false;
 
         NSFile::CFileBinary::Remove(sTempFileForParams);
-        m_pEvents->OnFileConvertFromEditor(nReturnCode);
+        m_pEvents->OnFileConvertFromEditor(nReturnCode, m_oInfo.m_sPassword);
 
         if (m_pManager->m_pInternal->m_pAdditional)
             m_pManager->m_pInternal->m_pAdditional->CheckSaveEnd();

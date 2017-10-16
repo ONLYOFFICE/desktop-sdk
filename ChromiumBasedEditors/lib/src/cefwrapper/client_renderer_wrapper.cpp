@@ -1382,6 +1382,19 @@ else \n\
             CefRefPtr<CefV8Value> val = *arguments.begin();
             message->GetArgumentList()->SetString(0, val->GetStringValue());
 
+            if (arguments.size() > 1)
+            {
+                std::vector<CefRefPtr<CefV8Value> >::const_iterator iter = arguments.begin();
+                ++iter;
+                CefRefPtr<CefV8Value> val_pass = *iter;
+                if (val_pass->IsString())
+                    message->GetArgumentList()->SetString(1, val_pass->GetStringValue());
+                else
+                    message->GetArgumentList()->SetString(1, "");
+            }
+            else
+                message->GetArgumentList()->SetString(1, "");
+
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
@@ -2664,7 +2677,21 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
                 _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
             }
 
-            std::string sCode = "window.DesktopOfflineAppDocumentEndSave(" + std::to_string(nIsSaved) + ");";
+            std::string sCode = "window.DesktopOfflineAppDocumentEndSave(" + std::to_string(nIsSaved);
+
+            if (4 == message->GetArgumentList()->GetSize())
+            {
+                std::string sPass = message->GetArgumentList()->GetString(2).ToString();
+                std::string sHash = message->GetArgumentList()->GetString(3).ToString();
+
+                sCode += ", \"";
+                sCode += sHash;
+                sCode += "\", \"";
+                sCode += sPass;
+                sCode += "\"";
+            }
+
+            sCode += ");";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
         }
         return true;
@@ -2752,7 +2779,17 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         if (_frame)
         {
             std::string sParam = std::to_string(message->GetArgumentList()->GetInt(0));
-            std::string sCode = "window.asc_initAdvancedOptions(" + sParam + ");";
+            std::string sCode = "window.asc_initAdvancedOptions(" + sParam;
+
+            if (2 == message->GetArgumentList()->GetSize())
+            {
+                std::string sHash = message->GetArgumentList()->GetString(1).ToString();
+                sCode += ",\"";
+                sCode += sHash;
+                sCode += "\"";
+            }
+
+            sCode += ");";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
         }
         return true;
