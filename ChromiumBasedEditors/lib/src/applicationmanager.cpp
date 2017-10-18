@@ -663,6 +663,11 @@ void CAscApplicationManager::ExitExternalEventLoop()
     // none
 }
 
+void CAscApplicationManager::SetEventToAllMainWindows(NSEditorApi::CAscMenuEvent* pEvent)
+{
+    m_pInternal->SetEventToAllMainWindows(pEvent);
+}
+
 #ifdef DOCUMENTSCORE_OPENSSL_SUPPORT
 
 void CAscApplicationManager::OpenSsl_SetDialog(ICertificateSelectDialogOpenSsl* pDialog)

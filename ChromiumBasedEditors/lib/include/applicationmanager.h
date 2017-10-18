@@ -187,6 +187,8 @@ public:
     virtual bool IsExternalEventLoop();
     virtual void ExitExternalEventLoop();
 
+    void SetEventToAllMainWindows(NSEditorApi::CAscMenuEvent* pEvent);
+
 protected:
     int GenerateNextViewId();
 
