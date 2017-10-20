@@ -1960,6 +1960,12 @@ public:
     {
         if (event.type == KEYEVENT_RAWKEYDOWN && m_pParent && m_pParent->GetAppManager() && m_pParent->GetAppManager()->GetEventListener())
         {
+            if ((112 == event.windows_key_code) && m_pParent->GetAppManager()->GetDebugInfoSupport())
+            {
+                m_pParent->m_pInternal->m_handler->ShowDevTools(m_pParent->m_pInternal->m_handler->GetBrowser(), CefPoint());
+                return false;
+            }
+
             NSEditorApi::CAscKeyboardDown* pData = new NSEditorApi::CAscKeyboardDown();
             pData->put_KeyCode(event.windows_key_code);
             int nMods = event.modifiers;
