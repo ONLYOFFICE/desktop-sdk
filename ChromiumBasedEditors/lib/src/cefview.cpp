@@ -303,6 +303,9 @@ public:
             bIsNeedRemove = true;
         }
 
+        if (m_bIsReporter)
+            bIsNeedRemove = false;
+
         if (bIsNeedRemove)
         {
             if (NSDirectory::Exists(m_oLocalInfo.m_oInfo.m_sRecoveryDir))
@@ -310,6 +313,20 @@ public:
         }
 
         m_oLocalInfo.m_oCS.Leave();
+
+        if (m_bIsReporter)
+        {
+            CCefView* pViewParent = m_pManager->GetViewById(m_nReporterParentId);
+            if (pViewParent)
+            {
+                NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent(ASC_MENU_EVENT_TYPE_REPORTER_MESSAGE_FROM);
+                NSEditorApi::CAscReporterMessage* pData = new NSEditorApi::CAscReporterMessage();
+                pData->put_ReceiverId(m_nReporterParentId);
+                pData->put_Message(L"{ \"reporter_command\" : \"end\" }");
+                pEvent->m_pData = pData;
+                pViewParent->Apply(pEvent);
+            }
+        }
     }
 
     ~CCefView_Private()
@@ -3525,6 +3542,7 @@ bool CCefView::IsPresentationReporter()
 
 void CCefView::LoadReporter(int nParentId, std::wstring url)
 {
+    m_pInternal->m_bIsReporter = true;
     m_pInternal->m_nReporterParentId = nParentId;
 
     // url - parent url
