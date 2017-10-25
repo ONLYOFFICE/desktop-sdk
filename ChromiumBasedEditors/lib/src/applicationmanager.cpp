@@ -58,11 +58,11 @@ CAscApplicationSettings::CAscApplicationSettings()
     cookie_path                     = sApplicationPath + L"/data";
 
     use_system_fonts                = true;
-    fonts_cache_info_path           = app_data_path + L"/webdata/cloud/fonts";
+    fonts_cache_info_path           = app_data_path + L"/data/fonts";
 
-    local_editors_path              = sApplicationPath + L"/Local/editors/web-apps/apps/api/documents/index.html";
-    file_converter_path             = sApplicationPath + L"/Local/converter";
-    recover_path                    = sApplicationPath + L"/Local/recover";
+    local_editors_path              = sApplicationPath + L"/editors/web-apps/apps/api/documents/index.html";
+    file_converter_path             = sApplicationPath + L"/converter";
+    recover_path                    = app_data_path + L"/data/recover";
 
     country                         = "RU";
 }
@@ -76,7 +76,8 @@ void CAscApplicationSettings::SetUserDataPath(std::wstring sPath)
     cookie_path                     = app_data_path + L"/data";
 
     use_system_fonts                = true;
-    fonts_cache_info_path           = app_data_path + L"/webdata/cloud/fonts";
+    fonts_cache_info_path           = app_data_path + L"/data/fonts";
+    recover_path                    = app_data_path + L"/data/recover";
 }
 
 void CTimerKeyboardChecker::OnTimer()
