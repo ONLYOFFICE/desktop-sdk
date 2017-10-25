@@ -1451,10 +1451,6 @@ public:
                     if (pAdditional->Local_Save_End(bIsNeedSaveDialog, m_pParent->GetId(), m_pParent->m_pInternal->m_handler->GetBrowser()))
                         return true;
                 }
-                else
-                {
-                    pAdditional->Local_Save_End(true, -1, NULL);
-                }
 
                 m_pParent->m_pInternal->m_oLocalInfo.m_bIsRetina = (sParams.find("retina=true") != std::string::npos) ? true : false;
                 m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sPassword = sPassword;
@@ -2788,7 +2784,7 @@ void CCefView::load(const std::wstring& urlInput)
     std::wstring::size_type posQ = url.find_first_of('?');
     if (std::wstring::npos != posQ)
     {
-        if (std::wstring::npos == url.find(L"desktop=true"), posQ)
+        if (std::wstring::npos == url.find(L"desktop=true", posQ))
             url = (url + L"&desktop=true");
     }
     else

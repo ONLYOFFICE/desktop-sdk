@@ -440,7 +440,7 @@ public:
 
             if (m_sVersion.empty())
             {                
-                CefRefPtr<CefV8Value> retval;
+                CefRefPtr<CefV8Value> retval3;
                 CefRefPtr<CefV8Exception> exception;
 
                 bool bIsVersion = browser->GetMainFrame()->GetV8Context()->Eval(
@@ -449,11 +449,11 @@ if (window.DocsAPI && window.DocsAPI.DocEditor) \n\
     return window.DocsAPI.DocEditor.version(); \n\
 else \n\
     return undefined; \n\
-})();", "", 0, retval, exception);
+})();", "", 0, retval3, exception);
                 if (bIsVersion)
                 {
-                    if (retval->IsString())
-                        m_sVersion = retval->GetStringValue().ToString();
+                    if (retval3->IsString())
+                        m_sVersion = retval3->GetStringValue().ToString();
                 }
 
                 if (m_sVersion.empty())
@@ -471,7 +471,7 @@ else \n\
                         m_sAppData = NSFile::CUtf8Converter::GetUnicodeStringFromUTF8((BYTE*)sAppDataA.c_str(), (LONG)sAppDataA.length());
                     }
                 }
-                retval = NULL;
+                retval2 = NULL;
                 exception2 = NULL;
                 bool bIsFontsData = CefV8Context::GetCurrentContext()->Eval("window[\"AscDesktopEditor_FontsData\"]();", "", 0, retval2, exception2);
                 if (bIsAppData)
