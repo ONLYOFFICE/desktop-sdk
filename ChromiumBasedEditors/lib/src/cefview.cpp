@@ -3679,6 +3679,7 @@ void CCefViewEditor::CreateLocalFile(const int& nFileFormat, const std::wstring&
     }
 
     std::wstring sFilePath = this->GetAppManager()->m_oSettings.file_converter_path + L"/empty/" + sPrefix + L"new.";
+    std::wstring sExtension = L"docx";
 
     std::wstring sParams = L"placement=desktop";
     int nType = nFileFormat;
@@ -3687,15 +3688,24 @@ void CCefViewEditor::CreateLocalFile(const int& nFileFormat, const std::wstring&
         sParams = L"placement=desktop&doctype=presentation";
         m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
         sFilePath += L"pptx";
+        sExtension = L"pptx";
     }
     else if (nFileFormat == etSpreadsheet)
     {
         sParams = L"placement=desktop&doctype=spreadsheet";
         m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX;
         sFilePath += L"xlsx";
+        sExtension = L"xlsx";
     }
     else
         sFilePath += L"docx";
+
+    if (!NSFile::CFileBinary::Exists(sFilePath))
+    {
+        std::wstring sTestName = this->GetAppManager()->m_oSettings.file_converter_path + L"/empty/" + L"new." + sExtension;
+        if (NSFile::CFileBinary::Exists(sTestName))
+            sFilePath = sTestName;
+    }
     
     if (!GetAppManager()->m_pInternal->GetEditorPermission())
         sParams += L"&mode=view";
