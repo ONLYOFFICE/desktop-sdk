@@ -242,6 +242,8 @@ public:
     int m_nReporterParentId;
     int m_nReporterChildId;
 
+    bool m_bIsSSO;
+
 #if defined(_LINUX) && !defined(_MAC)
     WindowHandleId m_lNaturalParent;
 #endif
@@ -282,6 +284,8 @@ public:
         m_bIsReporter = false;
         m_nReporterParentId = -1;
         m_nReporterChildId = -1;
+
+        m_bIsSSO = false;
     }
 
     void Destroy()
@@ -880,6 +884,35 @@ public:
                                 bool is_redirect)
     {
         std::wstring sUrl = request->GetURL().ToWString();
+
+        if (m_pParent->m_pInternal->m_bIsSSO)
+        {
+            std::wstring::size_type pos1 = sUrl.find(L"?token=");
+            if (pos1 != std::wstring::npos)
+            {
+                std::wstring sToken = sUrl.substr(pos1 + 7);
+                std::wstring sUrlPortal = sUrl.substr(0, pos1);
+
+                NSEditorApi::CAscCefMenuEventListener* pListener = NULL;
+                if (NULL != m_pParent && NULL != m_pParent->GetAppManager())
+                    pListener = m_pParent->GetAppManager()->GetEventListener();
+
+                if (pListener)
+                {
+                    NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_SSO_TOKEN);
+                    NSEditorApi::CAscSSOToken* pData = new NSEditorApi::CAscSSOToken();
+                    pData->put_Token(sToken);
+                    pData->put_Url(sUrlPortal);
+                    pEvent->m_pData = pData;
+
+                    pListener->OnEvent(pEvent);
+                }
+
+                sUrlPortal += L"products/files/?desktop=true";
+                m_pParent->load(sUrlPortal);
+                return true;
+            }
+        }
 
         std::wstring sTest1 = sUrl;
         std::wstring sTest2 = m_pParent->m_pInternal->m_strUrl;
@@ -2794,6 +2827,13 @@ void CCefView::load(const std::wstring& urlInput)
 
     if (!m_pInternal || !m_pInternal->m_pManager)
         return;
+
+    m_pInternal->m_bIsSSO = false;
+    if (0 == url.find(L"sso:"))
+    {
+        url = url.substr(4);
+        m_pInternal->m_bIsSSO = true;
+    }
 
     m_pInternal->m_oConverterToEditor.m_pManager = this->GetAppManager();
     m_pInternal->m_oConverterToEditor.m_pView = this;
