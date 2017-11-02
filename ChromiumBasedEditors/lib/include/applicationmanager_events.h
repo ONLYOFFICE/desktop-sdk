@@ -108,6 +108,8 @@
 
 #define ASC_MENU_EVENT_TYPE_SSO_TOKEN                       7030
 
+#define ASC_MENU_EVENT_TYPE_CEF_DESTROYWINDOW               8000
+
 
 #define ASC_MENU_EVENT_TYPE_WINDOWS_MESSAGE_USER_COUNT      10
 

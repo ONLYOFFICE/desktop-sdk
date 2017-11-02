@@ -244,6 +244,8 @@ public:
 
     bool m_bIsSSO;
 
+    bool m_bIsDestroy;
+
 #if defined(_LINUX) && !defined(_MAC)
     WindowHandleId m_lNaturalParent;
 #endif
@@ -286,10 +288,15 @@ public:
         m_nReporterChildId = -1;
 
         m_bIsSSO = false;
+
+        m_bIsDestroy = false;
     }
 
     void Destroy()
     {
+        if (m_bIsDestroy)
+            return;
+
         m_oConverterToEditor.Stop();
         m_oConverterFromEditor.Stop();
 
@@ -331,6 +338,10 @@ public:
                 pViewParent->Apply(pEvent);
             }
         }
+
+        NSEditorApi::CAscCefMenuEvent* pEvent = m_pCefView->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_DESTROYWINDOW);
+        m_pCefView->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+        m_bIsDestroy = true;
     }
 
     ~CCefView_Private()
