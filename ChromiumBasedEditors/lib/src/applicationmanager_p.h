@@ -500,6 +500,11 @@ public:
         pVisitor->m_bIsDelete       = true;
         pVisitor->m_sDomain         = NSFile::CUtf8Converter::GetUtf8StringFromUnicode2(strUrl.c_str(), strUrl.length());
 
+        if (0 == pVisitor->m_sDomain.find("https://"))
+            pVisitor->m_sDomain = pVisitor->m_sDomain.substr(8);
+        else if (0 == pVisitor->m_sDomain.find("http://"))
+            pVisitor->m_sDomain = pVisitor->m_sDomain.substr(7);
+
         pVisitor->CheckCookiePresent(CefCookieManager::GetGlobalManager(NULL));
     }
 
