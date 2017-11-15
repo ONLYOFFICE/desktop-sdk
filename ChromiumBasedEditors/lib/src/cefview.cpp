@@ -244,6 +244,10 @@ public:
 
     bool m_bIsSSO;
 
+    bool m_bIsFirstLoadSSO;
+    std::wstring m_strSSOFirstDomain;
+    std::map<std::wstring, bool> m_arSSOSecondDomain;
+
     bool m_bIsDestroy;
 
 #if defined(_LINUX) && !defined(_MAC)
@@ -288,6 +292,8 @@ public:
         m_nReporterChildId = -1;
 
         m_bIsSSO = false;
+        m_bIsFirstLoadSSO = true;
+        m_strSSOFirstDomain = L"";
 
         m_bIsDestroy = false;
     }
@@ -889,6 +895,21 @@ public:
         return true;
     }
 
+    std::wstring GetBaseDomain(const std::wstring& url)
+    {
+        std::wstring::size_type pos1 = url.find(L"//");
+        if (std::wstring::npos == pos1)
+            pos1 = 0;
+
+        pos1 += 2;
+
+        std::wstring::size_type pos2 = url.find(L"/", pos1);
+        if (std::wstring::npos == pos2)
+            return L"";
+
+        return url.substr(pos1, pos2 - pos1);
+    }
+
     virtual bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
                                 CefRefPtr<CefFrame> frame,
                                 CefRefPtr<CefRequest> request,
@@ -898,6 +919,28 @@ public:
 
         if (m_pParent->m_pInternal->m_bIsSSO)
         {
+            if (m_pParent->m_pInternal->m_bIsFirstLoadSSO)
+            {
+                m_pParent->m_pInternal->m_strSSOFirstDomain = GetBaseDomain(sUrl);
+                m_pParent->m_pInternal->m_bIsFirstLoadSSO = false;
+            }
+            else
+            {
+                if (!m_pParent->m_pInternal->m_strSSOFirstDomain.empty())
+                {
+                    std::wstring sCurrentBaseDomain = GetBaseDomain(sUrl);
+
+                    if (!sCurrentBaseDomain.empty() && sCurrentBaseDomain != m_pParent->m_pInternal->m_strSSOFirstDomain)
+                    {
+                        if (m_pParent->m_pInternal->m_arSSOSecondDomain.find(sCurrentBaseDomain) ==
+                                m_pParent->m_pInternal->m_arSSOSecondDomain.end())
+                        {
+                            m_pParent->m_pInternal->m_arSSOSecondDomain.insert(std::pair<std::wstring, bool>(sCurrentBaseDomain, true));
+                        }
+                    }
+                }
+            }
+
             std::wstring::size_type pos1 = sUrl.find(L"?token=");
             if (pos1 != std::wstring::npos)
             {
@@ -920,6 +963,16 @@ public:
                 }
 
                 sUrlPortal += L"products/files/?desktop=true";
+
+                if (!m_pParent->m_pInternal->m_strSSOFirstDomain.empty())
+                {
+                    for (std::map<std::wstring, bool>::iterator i = m_pParent->m_pInternal->m_arSSOSecondDomain.begin();
+                         i != m_pParent->m_pInternal->m_arSSOSecondDomain.end(); i++)
+                    {
+                        m_pParent->GetAppManager()->Logout(i->first);
+                    }
+                }
+
                 m_pParent->load(sUrlPortal);
                 return true;
             }
@@ -2966,6 +3019,10 @@ void CCefView::load(const std::wstring& urlInput)
 #endif
 
     CefString sUrl = url;
+
+    m_pInternal->m_bIsFirstLoadSSO = true;
+    m_pInternal->m_strSSOFirstDomain = L"";
+    m_pInternal->m_arSSOSecondDomain.clear();
 
     // Creat the new child browser window
     CefBrowserHost::CreateBrowser(info, m_pInternal->m_handler.get(), sUrl, _settings, NULL);
