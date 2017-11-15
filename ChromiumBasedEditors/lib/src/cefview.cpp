@@ -1870,9 +1870,21 @@ public:
       {
           // вот тут уже можно делать зум!!!
           m_pParent->m_pInternal->m_bIsWindowsCheckZoom = true;
+          m_pParent->m_pInternal->m_nDeviceScale = -1;
           m_pParent->resizeEvent();
       }
     }
+
+    virtual void OnLoadStart(CefRefPtr<CefBrowser> browser,
+                             CefRefPtr<CefFrame> frame,
+                             TransitionType transition_type)
+    {
+        // вот тут уже можно делать зум!!!
+        m_pParent->m_pInternal->m_bIsWindowsCheckZoom = true;
+        m_pParent->m_pInternal->m_nDeviceScale = -1;
+        m_pParent->resizeEvent();
+    }
+
 #endif
 
     virtual void OnLoadError(CefRefPtr<CefBrowser> browser,
