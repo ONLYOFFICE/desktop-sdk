@@ -1722,6 +1722,40 @@ public:
             }
             return true;
         }
+        else if (message_name == "on_signature_remove")
+        {
+            if (m_pParent && m_pParent->m_pInternal)
+            {
+                std::string sGuid;
+                if (message->GetArgumentList()->GetSize() > 0)
+                    sGuid = message->GetArgumentList()->GetString(0).ToString();
+
+                std::wstring sFile = m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_sFileSrc;
+                if (sFile.empty())
+                    sFile = m_pParent->m_pInternal->m_oConverterToEditor.m_oInfo.m_sFileSrc;
+
+                std::wstring sUnzipDir = NSDirectory::CreateDirectoryWithUniqueName(NSDirectory::GetTempPath());
+                NSDirectory::CreateDirectory(sUnzipDir);
+
+                COfficeUtils oCOfficeUtils(NULL);
+                oCOfficeUtils.ExtractToDirectory(sFile, sUnzipDir, NULL, 0);
+
+                CASCFileConverterToEditor* pConverter = &m_pParent->m_pInternal->m_oConverterToEditor;
+                pConverter->CheckSignaturesByDir(sUnzipDir);
+                pConverter->m_pVerifier->RemoveSignature(sGuid);
+
+                std::wstring sSignatures = pConverter->GetSignaturesJSON();
+
+                CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_update_signatures");
+                message->GetArgumentList()->SetString(0, sSignatures);
+                browser->SendProcessMessage(PID_RENDERER, message);
+
+                oCOfficeUtils.CompressFileOrDirectory(sUnzipDir, sFile, true);
+
+                NSDirectory::DeleteDirectory(sUnzipDir);
+            }
+            return true;
+        }
         else if (message_name == "on_signature_viewcertificate")
         {
             if (m_pParent && m_pParent->m_pInternal)

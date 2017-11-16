@@ -1734,6 +1734,25 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
+        else if (name == "RemoveSignature")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_remove");
+
+            std::vector<CefRefPtr<CefV8Value>>::const_iterator iter = arguments.begin();
+            message->GetArgumentList()->SetString(0, (*iter)->GetStringValue()); ++iter;
+
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "RemoveAllSignatures")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_remove");
+
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
         else if (name == "ViewCertificate")
         {
             CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
@@ -2278,6 +2297,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Value> _nativeFunction964 = CefV8Value::CreateFunction("IsSignaturesSupport", _nativeHandler);
 
+    CefRefPtr<CefV8Value> _nativeFunction965 = CefV8Value::CreateFunction("RemoveSignature", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction966 = CefV8Value::CreateFunction("RemoveAllSignatures", _nativeHandler);
+
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Cut", _nativeFunctionCut, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -2395,6 +2417,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("sendFromReporter", _nativeFunction963, V8_PROPERTY_ATTRIBUTE_NONE);
 
     objNative->SetValue("IsSignaturesSupport", _nativeFunction964, V8_PROPERTY_ATTRIBUTE_NONE);
+
+    objNative->SetValue("RemoveSignature", _nativeFunction965, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("RemoveAllSignatures", _nativeFunction966, V8_PROPERTY_ATTRIBUTE_NONE);
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 
