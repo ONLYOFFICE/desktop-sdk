@@ -60,12 +60,12 @@ private:
     bool m_bIsUsePainter;
 
 public:
-    QAscPrinterContext() : NSEditorApi::CAscPrinterContextBase(), m_oPrinter(QPrinter::HighResolution)
+    QAscPrinterContext(QPrinter::PrinterMode eMode = QPrinter::HighResolution) : NSEditorApi::CAscPrinterContextBase(), m_oPrinter(eMode)
     {
         m_bIsUsePainter = false;
     }
-    QAscPrinterContext(const QPrinterInfo& pi) : NSEditorApi::CAscPrinterContextBase(),
-        m_oPrinter(pi, QPrinter::HighResolution), m_bIsUsePainter(false)
+    QAscPrinterContext(const QPrinterInfo& pi, QPrinter::PrinterMode eMode = QPrinter::HighResolution) : NSEditorApi::CAscPrinterContextBase(),
+        m_oPrinter(pi, eMode), m_bIsUsePainter(false)
     {
     }
 
