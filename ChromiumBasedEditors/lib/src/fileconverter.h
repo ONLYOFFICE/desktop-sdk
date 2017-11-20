@@ -527,6 +527,9 @@ public:
             oBuilder.WriteString(L"\",\"guid\":\"");
             std::string sGuid = pSign->GetGuid();
             oBuilder.WriteString(UTF8_TO_U(sGuid));
+            oBuilder.WriteString(L"\",\"date\":\"");
+            std::string sDate = pSign->GetDate();
+            oBuilder.WriteString(UTF8_TO_U(sDate));
             oBuilder.WriteString(L"\",\"valid\":");
             oBuilder.AddInt(pSign->GetValid());
             oBuilder.WriteString(L",\"image_valid\":\"");
