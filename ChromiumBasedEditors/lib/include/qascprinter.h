@@ -45,11 +45,6 @@
 #include <signal.h>
 #include <iostream>
 typedef void (*SignalHandlerPointer)(int);
-void SignalHandler(int signal)
-{
-    std::cout << "Signal " << signal << std::endl;
-    throw "!Access Violation!";
-}
 #endif
 
 class QAscPrinterContext : public NSEditorApi::CAscPrinterContextBase
@@ -76,7 +71,10 @@ public:
 
 #ifdef WIN32
         SignalHandlerPointer previousHandler;
-        previousHandler = signal(SIGSEGV, SignalHandler);
+        previousHandler = signal(SIGSEGV, [](int signum){
+            std::cout << "Signal " << signum << std::endl;
+            throw "!Access Violation!";
+        });
 #endif
         try
         {
