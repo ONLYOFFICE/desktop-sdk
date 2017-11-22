@@ -473,9 +473,8 @@ public:
 
     void CheckSignatures(const std::wstring& sFile)
     {
-#ifdef DISABLE_OOXML_SIGNATURE
-        return;
-#endif
+        if (!m_pManager->m_oSettings.sign_support)
+            return;
 
         RELEASEOBJECT(m_pVerifier);
         if (m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX ||

@@ -65,6 +65,8 @@ CAscApplicationSettings::CAscApplicationSettings()
     recover_path                    = app_data_path + L"/data/recover";
 
     country                         = "RU";
+
+    sign_support                    = true;
 }
 
 void CAscApplicationSettings::SetUserDataPath(std::wstring sPath)

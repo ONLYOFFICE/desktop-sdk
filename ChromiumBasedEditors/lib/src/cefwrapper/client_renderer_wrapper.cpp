@@ -1831,11 +1831,7 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
         }
         else if (name == "IsSignaturesSupport")
         {
-#ifdef DISABLE_OOXML_SIGNATURE
-            retval = CefV8Value::CreateBool(false);
-#else
             retval = CefV8Value::CreateBool(true);
-#endif
             return true;
         }
         // Function does not exist.
