@@ -1605,6 +1605,17 @@ public:
                 int nCount = (int)message->GetArgumentList()->GetSize();
                 m_pParent->m_pInternal->m_oConverterToEditor.m_sAdditionalConvertation = message->GetArgumentList()->GetString(0).ToWString();
 
+                // detect password
+                std::wstring sWrap = L"<info>" + m_pParent->m_pInternal->m_oConverterToEditor.m_sAdditionalConvertation + L"</info>";
+                XmlUtils::CXmlNode node;
+                if (node.FromXmlString(sWrap))
+                {
+                    XmlUtils::CXmlNode nodePass = node.ReadNode(L"m_sPassword");
+
+                    if (nodePass.IsValid())
+                        m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sPassword = nodePass.GetTextExt();
+                }
+
                 m_pParent->m_pInternal->LocalFile_Start();
             }
             return true;
@@ -1684,14 +1695,16 @@ public:
                 std::wstring sUrl2 = message->GetArgumentList()->GetString(3).ToWString();
 
                 std::wstring sFile = m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_sFileSrc;
+                std::wstring sPassword = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sPassword;
                 if (sFile.empty())
+                {
                     sFile = m_pParent->m_pInternal->m_oConverterToEditor.m_oInfo.m_sFileSrc;
+                }
 
-                std::wstring sUnzipDir = NSDirectory::CreateDirectoryWithUniqueName(NSDirectory::GetTempPath());
-                NSDirectory::CreateDirectory(sUnzipDir);
+                NSOOXMLPassword::COOXMLZipDirectory oZIP(m_pParent->GetAppManager());
+                oZIP.Open(sFile, sPassword);
 
-                COfficeUtils oCOfficeUtils(NULL);
-                oCOfficeUtils.ExtractToDirectory(sFile, sUnzipDir, NULL, 0);
+                std::wstring sUnzipDir = oZIP.GetDirectory();
 
                 ICertificate* pCertificate = ICertificate::GetById(sId);
                 if (pCertificate)
@@ -1716,9 +1729,7 @@ public:
 
                 RELEASEOBJECT(pCertificate);
 
-                oCOfficeUtils.CompressFileOrDirectory(sUnzipDir, sFile, true);
-
-                NSDirectory::DeleteDirectory(sUnzipDir);
+                oZIP.Close();
             }
             return true;
         }
@@ -1731,14 +1742,16 @@ public:
                     sGuid = message->GetArgumentList()->GetString(0).ToString();
 
                 std::wstring sFile = m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_sFileSrc;
+                std::wstring sPassword = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sPassword;
                 if (sFile.empty())
+                {
                     sFile = m_pParent->m_pInternal->m_oConverterToEditor.m_oInfo.m_sFileSrc;
+                }
 
-                std::wstring sUnzipDir = NSDirectory::CreateDirectoryWithUniqueName(NSDirectory::GetTempPath());
-                NSDirectory::CreateDirectory(sUnzipDir);
+                NSOOXMLPassword::COOXMLZipDirectory oZIP(m_pParent->GetAppManager());
+                oZIP.Open(sFile, sPassword);
 
-                COfficeUtils oCOfficeUtils(NULL);
-                oCOfficeUtils.ExtractToDirectory(sFile, sUnzipDir, NULL, 0);
+                std::wstring sUnzipDir = oZIP.GetDirectory();
 
                 CASCFileConverterToEditor* pConverter = &m_pParent->m_pInternal->m_oConverterToEditor;
                 pConverter->CheckSignaturesByDir(sUnzipDir);
@@ -1750,9 +1763,7 @@ public:
                 message->GetArgumentList()->SetString(0, sSignatures);
                 browser->SendProcessMessage(PID_RENDERER, message);
 
-                oCOfficeUtils.CompressFileOrDirectory(sUnzipDir, sFile, true);
-
-                NSDirectory::DeleteDirectory(sUnzipDir);
+                oZIP.Close();
             }
             return true;
         }
