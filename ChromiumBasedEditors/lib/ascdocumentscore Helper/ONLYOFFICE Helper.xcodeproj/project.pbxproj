@@ -212,6 +212,7 @@
 		7C6D05B21CAC216B000EFBB0 /* liblibxml.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 7C6D05AF1CAC216B000EFBB0 /* liblibxml.a */; };
 		7C6D05B31CAC216B000EFBB0 /* libOfficeUtils.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 7C6D05B01CAC216B000EFBB0 /* libOfficeUtils.a */; };
 		7C6D05B51CAC217C000EFBB0 /* Chromium Embedded Framework.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7C6D05B41CAC217C000EFBB0 /* Chromium Embedded Framework.framework */; };
+		7C7DC79B1FC6BAD6008DAC1F /* unicode_util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7C7DC79A1FC6BAD6008DAC1F /* unicode_util.cpp */; };
 		7CC7F7DA1F7D3ACD00E99DC9 /* menu_model_delegate_cpptoc.cc in Sources */ = {isa = PBXBuildFile; fileRef = 7CC7F5A31F7D3ACB00E99DC9 /* menu_model_delegate_cpptoc.cc */; };
 		7CC7F7DD1F7D3ACD00E99DC9 /* completion_callback_cpptoc.cc in Sources */ = {isa = PBXBuildFile; fileRef = 7CC7F5A41F7D3ACB00E99DC9 /* completion_callback_cpptoc.cc */; };
 		7CC7F7E01F7D3ACD00E99DC9 /* read_handler_cpptoc.cc in Sources */ = {isa = PBXBuildFile; fileRef = 7CC7F5A61F7D3ACB00E99DC9 /* read_handler_cpptoc.cc */; };
@@ -408,6 +409,7 @@
 		7C6D05AF1CAC216B000EFBB0 /* liblibxml.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = liblibxml.a; path = ../../../../core/build/lib/mac_64/liblibxml.a; sourceTree = "<group>"; };
 		7C6D05B01CAC216B000EFBB0 /* libOfficeUtils.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libOfficeUtils.a; path = ../../../../core/build/lib/mac_64/libOfficeUtils.a; sourceTree = "<group>"; };
 		7C6D05B41CAC217C000EFBB0 /* Chromium Embedded Framework.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = "Chromium Embedded Framework.framework"; path = "../../../../core/build/cef/mac/Chromium Embedded Framework.framework"; sourceTree = "<group>"; };
+		7C7DC79A1FC6BAD6008DAC1F /* unicode_util.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = unicode_util.cpp; path = ../../../../../core/Common/DocxFormat/Source/Base/unicode_util.cpp; sourceTree = "<group>"; };
 		7CC7F4A91F7D3ACB00E99DC9 /* cef_render_handler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cef_render_handler.h; sourceTree = "<group>"; };
 		7CC7F4AA1F7D3ACB00E99DC9 /* cef_pack_strings.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cef_pack_strings.h; sourceTree = "<group>"; };
 		7CC7F4AB1F7D3ACB00E99DC9 /* cef_response_filter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cef_response_filter.h; sourceTree = "<group>"; };
@@ -1048,6 +1050,7 @@
 		7C5DD7AD1BA98BCF00C6474A /* ONLYOFFICE Helper */ = {
 			isa = PBXGroup;
 			children = (
+				7C7DC79A1FC6BAD6008DAC1F /* unicode_util.cpp */,
 				7CC7F4A81F7D3ACB00E99DC9 /* include */,
 				7CC7F5A11F7D3ACB00E99DC9 /* libcef_dll */,
 				7CC7F6DE1F7D3ACC00E99DC9 /* tests */,
@@ -2340,6 +2343,7 @@
 				7CC7F9A21F7D3ACE00E99DC9 /* cef_atomicops_x86_gcc.cc in Sources */,
 				7CC7F9421F7D3ACD00E99DC9 /* stream_writer_ctocpp.cc in Sources */,
 				7CC7F9301F7D3ACD00E99DC9 /* v8exception_ctocpp.cc in Sources */,
+				7C7DC79B1FC6BAD6008DAC1F /* unicode_util.cpp in Sources */,
 				7CD198921D7972AD00F8841C /* create.cpp in Sources */,
 				7CC7F9C61F7D3ACE00E99DC9 /* performance_test_tests.cc in Sources */,
 				7CC7F80A1F7D3ACD00E99DC9 /* resource_bundle_handler_cpptoc.cc in Sources */,

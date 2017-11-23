@@ -690,6 +690,7 @@
 		7C5DD7A01BA8677800C6474A /* jpc_tsfb.c in Sources */ = {isa = PBXBuildFile; fileRef = 7C5DD78D1BA8677800C6474A /* jpc_tsfb.c */; };
 		7C5DD7A11BA8677800C6474A /* jpc_util.c in Sources */ = {isa = PBXBuildFile; fileRef = 7C5DD78E1BA8677800C6474A /* jpc_util.c */; };
 		7C739E001E0005EC00520E69 /* libUnicodeConverter.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 7C739DFF1E0005EC00520E69 /* libUnicodeConverter.dylib */; };
+		7C7DC7991FC6BA21008DAC1F /* unicode_util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7C7DC7981FC6BA21008DAC1F /* unicode_util.cpp */; };
 		7C9325941C78812F004BCCD8 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7C9325931C78812E004BCCD8 /* IOKit.framework */; };
 		7CA98EDF1CAC2E6100362B1D /* Chromium Embedded Framework.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7CA98EDE1CAC2E6100362B1D /* Chromium Embedded Framework.framework */; };
 		7CA98EE51CAC2E8200362B1D /* libDjVuFile.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 7CA98EE01CAC2E8200362B1D /* libDjVuFile.dylib */; };
@@ -2035,6 +2036,7 @@
 		7C5DD78D1BA8677800C6474A /* jpc_tsfb.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = jpc_tsfb.c; path = ../../../../core/DesktopEditor/cximage/jasper/jpc/jpc_tsfb.c; sourceTree = SOURCE_ROOT; };
 		7C5DD78E1BA8677800C6474A /* jpc_util.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = jpc_util.c; path = ../../../../core/DesktopEditor/cximage/jasper/jpc/jpc_util.c; sourceTree = SOURCE_ROOT; };
 		7C739DFF1E0005EC00520E69 /* libUnicodeConverter.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libUnicodeConverter.dylib; path = ../../../../core/build/lib/mac_64/libUnicodeConverter.dylib; sourceTree = "<group>"; };
+		7C7DC7981FC6BA21008DAC1F /* unicode_util.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = unicode_util.cpp; path = ../../../../core/Common/DocxFormat/Source/Base/unicode_util.cpp; sourceTree = "<group>"; };
 		7C9325931C78812E004BCCD8 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
 		7CA98EDE1CAC2E6100362B1D /* Chromium Embedded Framework.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = "Chromium Embedded Framework.framework"; path = "../../../../core/build/cef/mac/Chromium Embedded Framework.framework"; sourceTree = "<group>"; };
 		7CA98EE01CAC2E8200362B1D /* libDjVuFile.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libDjVuFile.dylib; path = ../../../../core/build/lib/mac_64/libDjVuFile.dylib; sourceTree = "<group>"; };
@@ -3716,6 +3718,7 @@
 		7CBEA1BF1BF9CEBD001B02EB /* common */ = {
 			isa = PBXGroup;
 			children = (
+				7C7DC7981FC6BA21008DAC1F /* unicode_util.cpp */,
 				7CBEA1C41BF9CF1D001B02EB /* ASCSVGWriter.cpp */,
 				7CBEA1C21BF9CF0A001B02EB /* pole.cpp */,
 				7CBEA1C01BF9CEF6001B02EB /* OfficeFileFormatChecker2.cpp */,
@@ -5350,6 +5353,7 @@
 				7CC7F1CF1F7D216300E99DC9 /* domvisitor_cpptoc.cc in Sources */,
 				7CC7F42E1F7D219800E99DC9 /* client_handler_osr.cc in Sources */,
 				7C0B43E21BA81637005A52DC /* ftfstype.c in Sources */,
+				7C7DC7991FC6BA21008DAC1F /* unicode_util.cpp in Sources */,
 				7C5DD4C91BA84BB100C6474A /* binexpand.cpp in Sources */,
 				7C5DD6A51BA864CA00C6474A /* type_tool.c in Sources */,
 				7CC7F2881F7D216400E99DC9 /* navigation_entry_ctocpp.cc in Sources */,
