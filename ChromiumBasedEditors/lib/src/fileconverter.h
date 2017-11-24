@@ -253,6 +253,146 @@ namespace NSX2T
     }
 }
 
+namespace NSOOXMLPassword
+{
+    class COOXMLZipDirectory
+    {
+    private:
+        std::wstring m_sFile;
+        std::wstring m_sDirectory;
+        std::wstring m_sPassword;
+
+        CAscApplicationManager* m_pManager;
+
+    public:
+
+        COOXMLZipDirectory(CAscApplicationManager* pManager)
+        {
+            m_pManager = pManager;
+        }
+
+        int Open(const std::wstring& sFile, const std::wstring& sPassword)
+        {
+            m_sFile = sFile;
+            m_sPassword = sPassword;
+
+            std::wstring sTempFile = m_sFile;
+            if (!m_sPassword.empty())
+            {
+                int nFormatType = CCefViewEditor::GetFileFormat(m_sFile);
+
+                sTempFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"PASS");
+                if (NSFile::CFileBinary::Exists(sTempFile))
+                    NSFile::CFileBinary::Remove(sTempFile);
+
+                std::wstring sTempFileXml = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"XML");
+                if (NSFile::CFileBinary::Exists(sTempFileXml))
+                    NSFile::CFileBinary::Remove(sTempFileXml);
+                sTempFileXml += L".xml";
+
+                NSStringUtils::CStringBuilder oBuilder;
+                oBuilder.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><TaskQueueDataConvert><m_sFileFrom>");
+                oBuilder.WriteEncodeXmlString(m_sFile);
+                oBuilder.WriteString(L"</m_sFileFrom><m_sFileTo>");
+                oBuilder.WriteEncodeXmlString(sTempFile);
+                oBuilder.WriteString(L"</m_sFileTo><m_nFormatTo>");
+                oBuilder.WriteString(std::to_wstring(nFormatType));
+                oBuilder.WriteString(L"</m_nFormatTo>");
+                oBuilder.WriteString(L"<m_sThemeDir>./themes</m_sThemeDir><m_bDontSaveAdditional>true</m_bDontSaveAdditional>");
+                oBuilder.WriteString(L"<m_sPassword>");
+                oBuilder.WriteString(m_sPassword);
+                oBuilder.WriteString(L"</m_sPassword>");
+                oBuilder.WriteString(L"<m_sFontDir>");
+                oBuilder.WriteEncodeXmlString(m_pManager->m_oSettings.fonts_cache_info_path);
+                oBuilder.WriteString(L"</m_sFontDir>");
+                oBuilder.WriteString(L"</TaskQueueDataConvert>");
+
+                std::wstring sConverterExe = m_pManager->m_oSettings.file_converter_path + L"/x2t";
+                NSFile::CFileBinary::SaveToFile(sTempFileXml, oBuilder.GetData(), true);
+
+                int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileXml);
+
+                NSFile::CFileBinary::Remove(sTempFileXml);
+            }
+
+            m_sDirectory = NSDirectory::CreateDirectoryWithUniqueName(NSDirectory::GetTempPath());
+            NSDirectory::CreateDirectory(m_sDirectory);
+
+            COfficeUtils oCOfficeUtils(NULL);
+            oCOfficeUtils.ExtractToDirectory(sTempFile, m_sDirectory, NULL, 0);
+
+            if (!m_sPassword.empty())
+                NSFile::CFileBinary::Remove(sTempFile);
+
+            return 0;
+        }
+
+        int Close()
+        {
+            if (m_sPassword.empty())
+            {
+                NSFile::CFileBinary::Remove(m_sFile);
+                COfficeUtils oCOfficeUtils(NULL);
+                oCOfficeUtils.CompressFileOrDirectory(m_sDirectory, m_sFile, true);
+                NSDirectory::DeleteDirectory(m_sDirectory);
+                return 0;
+            }
+
+            std::wstring sTempFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"PASS");
+            if (NSFile::CFileBinary::Exists(sTempFile))
+                NSFile::CFileBinary::Remove(sTempFile);
+
+            sTempFile += (L"." + NSCommon::GetFileExtention(m_sFile));
+
+            COfficeUtils oCOfficeUtils(NULL);
+            oCOfficeUtils.CompressFileOrDirectory(m_sDirectory, sTempFile, true);
+            NSDirectory::DeleteDirectory(m_sDirectory);
+
+            int nFormatType = CCefViewEditor::GetFileFormat(m_sFile);
+
+            std::wstring sTempFileXml = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"XML");
+            if (NSFile::CFileBinary::Exists(sTempFileXml))
+                NSFile::CFileBinary::Remove(sTempFileXml);
+            sTempFileXml += L".xml";
+
+            NSFile::CFileBinary::Remove(m_sFile);
+
+            NSStringUtils::CStringBuilder oBuilder;
+            oBuilder.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><TaskQueueDataConvert><m_sFileFrom>");
+            oBuilder.WriteEncodeXmlString(sTempFile);
+            oBuilder.WriteString(L"</m_sFileFrom><m_sFileTo>");
+            oBuilder.WriteEncodeXmlString(m_sFile);
+            oBuilder.WriteString(L"</m_sFileTo><m_nFormatTo>");
+            oBuilder.WriteString(std::to_wstring(nFormatType));
+            oBuilder.WriteString(L"</m_nFormatTo>");
+            oBuilder.WriteString(L"<m_sThemeDir>./themes</m_sThemeDir><m_bDontSaveAdditional>true</m_bDontSaveAdditional>");
+            oBuilder.WriteString(L"<m_sSavePassword>");
+            oBuilder.WriteString(m_sPassword);
+            oBuilder.WriteString(L"</m_sSavePassword>");
+            oBuilder.WriteString(L"<m_sFontDir>");
+            oBuilder.WriteEncodeXmlString(m_pManager->m_oSettings.fonts_cache_info_path);
+            oBuilder.WriteString(L"</m_sFontDir>");
+            oBuilder.WriteString(L"</TaskQueueDataConvert>");
+
+            std::wstring sConverterExe = m_pManager->m_oSettings.file_converter_path + L"/x2t";
+            NSFile::CFileBinary::SaveToFile(sTempFileXml, oBuilder.GetData(), true);
+
+            int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileXml);
+
+            NSFile::CFileBinary::Remove(sTempFile);
+            NSFile::CFileBinary::Remove(sTempFileXml);
+
+            return 0;
+        }
+
+    public:
+        std::wstring GetDirectory()
+        {
+            return m_sDirectory;
+        }
+    };
+}
+
 class IASCFileConverterEvents
 {
 public:
@@ -463,10 +603,11 @@ public:
         int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileForParams);
 
         NSFile::CFileBinary::Remove(sTempFileForParams);
-        m_pEvents->OnFileConvertToEditor(nReturnCode);
 
         if (0 == nReturnCode)
             CheckSignatures(sDestinationPath);
+
+        m_pEvents->OnFileConvertToEditor(nReturnCode);
 
         m_bRunThread = FALSE;
         return 0;
@@ -485,14 +626,28 @@ public:
             m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX ||
             m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX)
         {
-            std::wstring sUnzipDir = NSCommon::GetDirectoryName(sFile) + L"/" + NSCommon::GetFileName(sFile) + L"_uncompress";
-            NSDirectory::CreateDirectory(sUnzipDir);
-
-            COfficeUtils oCOfficeUtils(NULL);
-            if (S_OK == oCOfficeUtils.ExtractToDirectory(sFile, sUnzipDir, NULL, 0))
+            COfficeFileFormatChecker oChecker;
+            oChecker.isOfficeFile(sFile);
+            if (AVS_OFFICESTUDIO_FILE_OTHER_MS_OFFCRYPTO == oChecker.nFileType)
             {
-                m_pVerifier = new COOXMLVerifier(sUnzipDir);
-                NSDirectory::DeleteDirectory(sUnzipDir);
+                NSOOXMLPassword::COOXMLZipDirectory oZIP(m_pManager);
+                oZIP.Open(sFile, m_oInfo.m_sPassword);
+
+                m_pVerifier = new COOXMLVerifier(oZIP.GetDirectory());
+
+                oZIP.Close();
+            }
+            else
+            {
+                std::wstring sUnzipDir = NSCommon::GetDirectoryName(sFile) + L"/" + NSCommon::GetFileName(sFile) + L"_uncompress";
+                NSDirectory::CreateDirectory(sUnzipDir);
+
+                COfficeUtils oCOfficeUtils(NULL);
+                if (S_OK == oCOfficeUtils.ExtractToDirectory(sFile, sUnzipDir, NULL, 0))
+                {
+                    m_pVerifier = new COOXMLVerifier(sUnzipDir);
+                    NSDirectory::DeleteDirectory(sUnzipDir);
+                }
             }
         }
     }
@@ -747,133 +902,5 @@ public:
         return 0;
     }
 };
-
-namespace NSOOXMLPassword
-{
-    class COOXMLZipDirectory
-    {
-    private:
-        std::wstring m_sFile;
-        std::wstring m_sDirectory;
-        std::wstring m_sPassword;
-
-        CAscApplicationManager* m_pManager;
-
-    public:
-
-        COOXMLZipDirectory(CAscApplicationManager* pManager)
-        {
-            m_pManager = pManager;
-        }
-
-        int Open(const std::wstring& sFile, const std::wstring& sPassword)
-        {
-            m_sFile = sFile;
-            m_sPassword = sPassword;
-
-            std::wstring sTempFile = m_sFile;
-            if (!m_sPassword.empty())
-            {
-                int nFormatType = CCefViewEditor::GetFileFormat(m_sFile);
-
-                sTempFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"PASS");
-                if (NSFile::CFileBinary::Exists(sTempFile))
-                    NSFile::CFileBinary::Remove(sTempFile);
-
-                std::wstring sTempFileXml = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"XML");
-                if (NSFile::CFileBinary::Exists(sTempFileXml))
-                    NSFile::CFileBinary::Remove(sTempFileXml);
-                sTempFileXml += L".xml";
-
-                NSStringUtils::CStringBuilder oBuilder;
-                oBuilder.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><TaskQueueDataConvert><m_sFileFrom>");
-                oBuilder.WriteEncodeXmlString(m_sFile);
-                oBuilder.WriteString(L"</m_sFileFrom><m_sFileTo>");
-                oBuilder.WriteEncodeXmlString(sTempFile);
-                oBuilder.WriteString(L"</m_sFileTo><m_nFormatTo>");
-                oBuilder.WriteString(std::to_wstring(nFormatType));
-                oBuilder.WriteString(L"</m_nFormatTo>");
-                oBuilder.WriteString(L"<m_sThemeDir>./themes</m_sThemeDir><m_bDontSaveAdditional>true</m_bDontSaveAdditional>");
-                oBuilder.WriteString(L"<m_sPassword>");
-                oBuilder.WriteString(m_sPassword);
-                oBuilder.WriteString(L"</m_sPassword>");
-                oBuilder.WriteString(L"<m_sFontDir>");
-                oBuilder.WriteEncodeXmlString(m_pManager->m_oSettings.fonts_cache_info_path);
-                oBuilder.WriteString(L"</m_sFontDir>");
-                oBuilder.WriteString(L"</TaskQueueDataConvert>");
-
-                std::wstring sConverterExe = m_pManager->m_oSettings.file_converter_path + L"/x2t";
-                NSFile::CFileBinary::SaveToFile(sTempFileXml, oBuilder.GetData(), true);
-
-                int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileXml);
-
-                NSFile::CFileBinary::Remove(sTempFileXml);
-            }
-
-            m_sDirectory = NSDirectory::CreateDirectoryWithUniqueName(NSDirectory::GetTempPath());
-            NSDirectory::CreateDirectory(m_sDirectory);
-
-            COfficeUtils oCOfficeUtils(NULL);
-            oCOfficeUtils.ExtractToDirectory(sTempFile, m_sDirectory, NULL, 0);
-
-            if (!m_sPassword.empty())
-                NSFile::CFileBinary::Remove(sTempFile);
-
-            return 0;
-        }
-
-        int Close()
-        {
-            COfficeUtils oCOfficeUtils(NULL);
-            oCOfficeUtils.CompressFileOrDirectory(m_sDirectory, m_sFile, true);
-            NSDirectory::DeleteDirectory(m_sDirectory);
-
-            if (!m_sPassword.empty())
-            {
-                COfficeFileFormatChecker oChecker;
-                oChecker.isOfficeFile(m_sFile);
-                int nFormatType = oChecker.nFileType;
-
-                std::wstring sTempFileXml = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"XML");
-                if (NSFile::CFileBinary::Exists(sTempFileXml))
-                    NSFile::CFileBinary::Remove(sTempFileXml);
-                sTempFileXml += L".xml";
-
-                NSStringUtils::CStringBuilder oBuilder;
-                oBuilder.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><TaskQueueDataConvert><m_sFileFrom>");
-                oBuilder.WriteEncodeXmlString(m_sFile);
-                oBuilder.WriteString(L"</m_sFileFrom><m_sFileTo>");
-                oBuilder.WriteEncodeXmlString(m_sFile);
-                oBuilder.WriteString(L"</m_sFileTo><m_nFormatTo>");
-                oBuilder.WriteString(std::to_wstring(nFormatType));
-                oBuilder.WriteString(L"</m_nFormatTo>");
-                oBuilder.WriteString(L"<m_sThemeDir>./themes</m_sThemeDir><m_bDontSaveAdditional>true</m_bDontSaveAdditional>");
-                oBuilder.WriteString(L"<m_sSavePassword>");
-                oBuilder.WriteString(m_sPassword);
-                oBuilder.WriteString(L"</m_sSavePassword>");
-                oBuilder.WriteString(L"<m_sFontDir>");
-                oBuilder.WriteEncodeXmlString(m_pManager->m_oSettings.fonts_cache_info_path);
-                oBuilder.WriteString(L"</m_sFontDir>");
-                oBuilder.WriteString(L"</TaskQueueDataConvert>");
-
-                std::wstring sConverterExe = m_pManager->m_oSettings.file_converter_path + L"/x2t";
-                NSFile::CFileBinary::SaveToFile(sTempFileXml, oBuilder.GetData(), true);
-
-                int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileXml);
-
-                NSFile::CFileBinary::Remove(sTempFileXml);
-            }
-
-            return 0;
-        }
-
-    public:
-        std::wstring GetDirectory()
-        {
-            return m_sDirectory;
-        }
-    };
-}
-
 
 #endif // ASC_CEFCONVERTER_FILECONVERTER_H
