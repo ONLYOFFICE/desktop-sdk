@@ -706,6 +706,9 @@ public:
 
     std::string GetPngFromBase64(const std::string& sBase64)
     {
+        if (sBase64.empty())
+            return "";
+
         std::wstring sTmp = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"IMG");
         std::wstring sTmp2 = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"IMG");
 
