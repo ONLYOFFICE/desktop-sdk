@@ -295,6 +295,8 @@ public:
     CNativeViewer m_oNativeViewer;
     int m_nNativeOpenFileTimerID;
 
+    bool m_bIsSupportSigs;
+
     std::list<CSavedPageInfo> m_arCompleteTasks;
 
     std::list<CSavedPageTextInfo> m_arCompleteTextTasks;
@@ -327,6 +329,8 @@ public:
         m_nNativeOpenFileTimerID = -1;
 
         m_bIsPrinting = false;
+
+        m_bIsSupportSigs = true;
 
         m_oCompleteTasksCS.InitializeCriticalSection();
 
@@ -1831,7 +1835,12 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
         }
         else if (name == "IsSignaturesSupport")
         {
-            retval = CefV8Value::CreateBool(true);
+            retval = CefV8Value::CreateBool(m_bIsSupportSigs);
+            return true;
+        }
+        else if (name == "SetSupportSign")
+        {
+            m_bIsSupportSigs = arguments[0]->GetBoolValue();
             return true;
         }
         // Function does not exist.
@@ -2296,6 +2305,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction965 = CefV8Value::CreateFunction("RemoveSignature", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction966 = CefV8Value::CreateFunction("RemoveAllSignatures", _nativeHandler);
 
+    CefRefPtr<CefV8Value> _nativeFunction967 = CefV8Value::CreateFunction("SetSupportSign", _nativeHandler);
+
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Cut", _nativeFunctionCut, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -2417,6 +2428,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("RemoveSignature", _nativeFunction965, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("RemoveAllSignatures", _nativeFunction966, V8_PROPERTY_ATTRIBUTE_NONE);
 
+    objNative->SetValue("SetSupportSign", _nativeFunction967, V8_PROPERTY_ATTRIBUTE_NONE);
+
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 
     CefRefPtr<CefFrame> _frame = context->GetFrame();
@@ -2484,8 +2497,14 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         if (_frame)
         {
             int nControlId = message->GetArgumentList()->GetInt(0);
+            bool isSupportSign = message->GetArgumentList()->GetBool(1);
             std::string sControlId = std::to_string(nControlId);
             std::string sCode = "window[\"AscDesktopEditor\"][\"SetEditorId\"](" + sControlId + ");";
+
+            if (isSupportSign)
+                sCode += "window[\"AscDesktopEditor\"][\"SetSupportSign\"](true);";
+            else
+                sCode += "window[\"AscDesktopEditor\"][\"SetSupportSign\"](false);";
 
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
         }

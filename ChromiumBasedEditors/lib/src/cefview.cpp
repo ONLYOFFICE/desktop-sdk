@@ -3281,6 +3281,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
         {
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("cef_control_id");
             message->GetArgumentList()->SetInt(0, m_nId);
+            message->GetArgumentList()->SetBool(1, GetAppManager()->m_oSettings.sign_support);
             browser->SendProcessMessage(PID_RENDERER, message);
             break;
         }
