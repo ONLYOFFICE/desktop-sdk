@@ -66,6 +66,8 @@ public:
 
     bool m_bIsModified;
 
+    std::wstring m_sPassword;
+
 public:
     CAscLocalFileInfo()
     {
@@ -87,6 +89,8 @@ public:
 
         m_nCurrentFileFormat = oSrc.m_nCurrentFileFormat;
         m_bIsSaved = oSrc.m_bIsSaved;
+
+        m_sPassword = oSrc.m_sPassword;
         return *this;
     }
 };
@@ -116,11 +120,284 @@ public:
     }
 };
 
+namespace NSX2T
+{
+    int Convert(const std::wstring& sConverterPath, const std::wstring sXmlPath)
+    {
+        int nReturnCode = 0;
+        std::wstring sConverterExe = sConverterPath;
+
+#ifdef WIN32
+        sConverterExe += L".exe";
+        std::wstring sApp = L"x2t ";
+
+        STARTUPINFO sturtupinfo;
+        ZeroMemory(&sturtupinfo,sizeof(STARTUPINFO));
+        sturtupinfo.cb = sizeof(STARTUPINFO);
+
+        sApp += (L"\"" + sXmlPath + L"\"");
+        wchar_t* pCommandLine = NULL;
+        if (true)
+        {
+            pCommandLine = new wchar_t[sApp.length() + 1];
+            memcpy(pCommandLine, sApp.c_str(), sApp.length() * sizeof(wchar_t));
+            pCommandLine[sApp.length()] = (wchar_t)'\0';
+        }
+
+        HANDLE ghJob = CreateJobObject(NULL, NULL);
+
+        if (ghJob)
+        {
+            JOBOBJECT_EXTENDED_LIMIT_INFORMATION jeli = { 0 };
+
+            // Configure all child processes associated with the job to terminate when the
+            jeli.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+            if ( 0 == SetInformationJobObject( ghJob, JobObjectExtendedLimitInformation, &jeli, sizeof(jeli)))
+            {
+                CloseHandle(ghJob);
+                ghJob = NULL;
+            }
+        }
+
+        PROCESS_INFORMATION processinfo;
+        ZeroMemory(&processinfo,sizeof(PROCESS_INFORMATION));
+        BOOL bResult = CreateProcessW(sConverterExe.c_str(), pCommandLine,
+                                   NULL, NULL, TRUE, CREATE_NO_WINDOW, NULL, NULL, &sturtupinfo, &processinfo);
+
+        if (bResult && ghJob)
+        {
+            AssignProcessToJobObject(ghJob, processinfo.hProcess);
+        }
+
+        ::WaitForSingleObject(processinfo.hProcess, INFINITE);
+
+        RELEASEARRAYOBJECTS(pCommandLine);
+
+        //get exit code
+        DWORD dwExitCode = 0;
+        if (GetExitCodeProcess(processinfo.hProcess, &dwExitCode))
+        {
+            nReturnCode = (int)dwExitCode;
+        }
+
+        CloseHandle(processinfo.hProcess);
+        CloseHandle(processinfo.hThread);
+
+        if (ghJob)
+        {
+            CloseHandle(ghJob);
+            ghJob = NULL;
+        }
+
+#endif
+
+#ifdef LINUX
+        pid_t pid = fork(); // create child process
+        int status;
+
+        std::string sProgramm = U_TO_UTF8(sConverterExe);
+        std::string sXmlA = U_TO_UTF8(sXmlPath);
+
+        switch (pid)
+        {
+        case -1: // error
+            break;
+
+        case 0: // child process
+        {
+            std::string sLibraryDir = sProgramm;
+            std::string sPATH = sProgramm;
+            if (std::string::npos != sProgramm.find_last_of('/'))
+            {
+                sLibraryDir = "LD_LIBRARY_PATH=" + sProgramm.substr(0, sProgramm.find_last_of('/'));
+                sPATH = "PATH=" + sProgramm.substr(0, sProgramm.find_last_of('/'));
+            }
+
+#ifdef _MAC
+            sLibraryDir = "DY" + sLibraryDir;
+#endif
+
+            const char* nargs[3];
+            nargs[0] = sProgramm.c_str();
+            nargs[1] = sXmlA.c_str();
+            nargs[2] = NULL;
+
+#ifndef _MAC
+            const char* nenv[2];
+            nenv[0] = sLibraryDir.c_str();
+            nenv[1] = NULL;
+#else
+            const char* nenv[3];
+            nenv[0] = sLibraryDir.c_str();
+            nenv[1] = sPATH.c_str();
+            nenv[2] = NULL;
+#endif
+
+            execve(sProgramm.c_str(),
+                   (char * const *)nargs,
+                   (char * const *)nenv);
+            exit(EXIT_SUCCESS);
+            break;
+        }
+        default: // parent process, pid now contains the child pid
+            while (-1 == waitpid(pid, &status, 0)); // wait for child to complete
+            if (WIFEXITED(status))
+            {
+                nReturnCode =  WEXITSTATUS(status);
+            }
+            break;
+        }
+#endif
+
+        return nReturnCode;
+    }
+}
+
+namespace NSOOXMLPassword
+{
+    class COOXMLZipDirectory
+    {
+    private:
+        std::wstring m_sFile;
+        std::wstring m_sDirectory;
+        std::wstring m_sPassword;
+
+        CAscApplicationManager* m_pManager;
+
+    public:
+
+        COOXMLZipDirectory(CAscApplicationManager* pManager)
+        {
+            m_pManager = pManager;
+        }
+
+        int Open(const std::wstring& sFile, const std::wstring& sPassword)
+        {
+            m_sFile = sFile;
+            m_sPassword = sPassword;
+
+            std::wstring sTempFile = m_sFile;
+            if (!m_sPassword.empty())
+            {
+                int nFormatType = CCefViewEditor::GetFileFormat(m_sFile);
+
+                sTempFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"PASS");
+                if (NSFile::CFileBinary::Exists(sTempFile))
+                    NSFile::CFileBinary::Remove(sTempFile);
+
+                std::wstring sTempFileXml = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"XML");
+                if (NSFile::CFileBinary::Exists(sTempFileXml))
+                    NSFile::CFileBinary::Remove(sTempFileXml);
+                sTempFileXml += L".xml";
+
+                NSStringUtils::CStringBuilder oBuilder;
+                oBuilder.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><TaskQueueDataConvert><m_sFileFrom>");
+                oBuilder.WriteEncodeXmlString(m_sFile);
+                oBuilder.WriteString(L"</m_sFileFrom><m_sFileTo>");
+                oBuilder.WriteEncodeXmlString(sTempFile);
+                oBuilder.WriteString(L"</m_sFileTo><m_nFormatTo>");
+                oBuilder.WriteString(std::to_wstring(nFormatType));
+                oBuilder.WriteString(L"</m_nFormatTo>");
+                oBuilder.WriteString(L"<m_sThemeDir>./themes</m_sThemeDir><m_bDontSaveAdditional>true</m_bDontSaveAdditional>");
+                oBuilder.WriteString(L"<m_sPassword>");
+                oBuilder.WriteString(m_sPassword);
+                oBuilder.WriteString(L"</m_sPassword>");
+                oBuilder.WriteString(L"<m_sFontDir>");
+                oBuilder.WriteEncodeXmlString(m_pManager->m_oSettings.fonts_cache_info_path);
+                oBuilder.WriteString(L"</m_sFontDir>");
+                oBuilder.WriteString(L"</TaskQueueDataConvert>");
+
+                std::wstring sConverterExe = m_pManager->m_oSettings.file_converter_path + L"/x2t";
+                NSFile::CFileBinary::SaveToFile(sTempFileXml, oBuilder.GetData(), true);
+
+                int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileXml);
+
+                NSFile::CFileBinary::Remove(sTempFileXml);
+            }
+
+            m_sDirectory = NSDirectory::CreateDirectoryWithUniqueName(NSDirectory::GetTempPath());
+            NSDirectory::CreateDirectory(m_sDirectory);
+
+            COfficeUtils oCOfficeUtils(NULL);
+            oCOfficeUtils.ExtractToDirectory(sTempFile, m_sDirectory, NULL, 0);
+
+            if (!m_sPassword.empty())
+                NSFile::CFileBinary::Remove(sTempFile);
+
+            return 0;
+        }
+
+        int Close()
+        {
+            if (m_sPassword.empty())
+            {
+                NSFile::CFileBinary::Remove(m_sFile);
+                COfficeUtils oCOfficeUtils(NULL);
+                oCOfficeUtils.CompressFileOrDirectory(m_sDirectory, m_sFile, true);
+                NSDirectory::DeleteDirectory(m_sDirectory);
+                return 0;
+            }
+
+            std::wstring sTempFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"PASS");
+            if (NSFile::CFileBinary::Exists(sTempFile))
+                NSFile::CFileBinary::Remove(sTempFile);
+
+            sTempFile += (L"." + NSCommon::GetFileExtention(m_sFile));
+
+            COfficeUtils oCOfficeUtils(NULL);
+            oCOfficeUtils.CompressFileOrDirectory(m_sDirectory, sTempFile, true);
+            NSDirectory::DeleteDirectory(m_sDirectory);
+
+            int nFormatType = CCefViewEditor::GetFileFormat(m_sFile);
+
+            std::wstring sTempFileXml = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"XML");
+            if (NSFile::CFileBinary::Exists(sTempFileXml))
+                NSFile::CFileBinary::Remove(sTempFileXml);
+            sTempFileXml += L".xml";
+
+            NSFile::CFileBinary::Remove(m_sFile);
+
+            NSStringUtils::CStringBuilder oBuilder;
+            oBuilder.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><TaskQueueDataConvert><m_sFileFrom>");
+            oBuilder.WriteEncodeXmlString(sTempFile);
+            oBuilder.WriteString(L"</m_sFileFrom><m_sFileTo>");
+            oBuilder.WriteEncodeXmlString(m_sFile);
+            oBuilder.WriteString(L"</m_sFileTo><m_nFormatTo>");
+            oBuilder.WriteString(std::to_wstring(nFormatType));
+            oBuilder.WriteString(L"</m_nFormatTo>");
+            oBuilder.WriteString(L"<m_sThemeDir>./themes</m_sThemeDir><m_bDontSaveAdditional>true</m_bDontSaveAdditional>");
+            oBuilder.WriteString(L"<m_sSavePassword>");
+            oBuilder.WriteString(m_sPassword);
+            oBuilder.WriteString(L"</m_sSavePassword>");
+            oBuilder.WriteString(L"<m_sFontDir>");
+            oBuilder.WriteEncodeXmlString(m_pManager->m_oSettings.fonts_cache_info_path);
+            oBuilder.WriteString(L"</m_sFontDir>");
+            oBuilder.WriteString(L"</TaskQueueDataConvert>");
+
+            std::wstring sConverterExe = m_pManager->m_oSettings.file_converter_path + L"/x2t";
+            NSFile::CFileBinary::SaveToFile(sTempFileXml, oBuilder.GetData(), true);
+
+            int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileXml);
+
+            NSFile::CFileBinary::Remove(sTempFile);
+            NSFile::CFileBinary::Remove(sTempFileXml);
+
+            return 0;
+        }
+
+    public:
+        std::wstring GetDirectory()
+        {
+            return m_sDirectory;
+        }
+    };
+}
+
 class IASCFileConverterEvents
 {
 public:
     virtual void OnFileConvertToEditor(const int& nError) = 0;
-    virtual void OnFileConvertFromEditor(const int& nError) = 0;
+    virtual void OnFileConvertFromEditor(const int& nError, const std::wstring& sPass = L"") = 0;
 };
 
 class CASCFileConverterToEditor : public NSThreads::CBaseThread
@@ -320,145 +597,17 @@ public:
 
         std::wstring sConverterExe = m_pManager->m_oSettings.file_converter_path + L"/x2t";
 
-        int nReturnCode = 0;
-
         std::wstring sTempFileForParams = m_oInfo.m_sRecoveryDir + L"/params_from.xml";
         NSFile::CFileBinary::SaveToFile(sTempFileForParams, sXmlConvert, true);
 
-#ifdef WIN32
-        std::wstring sApp = L"x2t32 ";
-
-        if (NSFile::CFileBinary::Exists(sConverterExe + L".exe"))
-        {
-            sApp = L"x2t ";
-            sConverterExe += L".exe";
-        }
-        else
-            sConverterExe += L"32.exe";
-
-        STARTUPINFO sturtupinfo;
-        ZeroMemory(&sturtupinfo,sizeof(STARTUPINFO));
-        sturtupinfo.cb = sizeof(STARTUPINFO);
-
-        sApp += (L"\"" + sTempFileForParams + L"\"");
-        wchar_t* pCommandLine = NULL;
-        if (true)
-        {
-            pCommandLine = new wchar_t[sApp.length() + 1];
-            memcpy(pCommandLine, sApp.c_str(), sApp.length() * sizeof(wchar_t));
-            pCommandLine[sApp.length()] = (wchar_t)'\0';
-        }
-
-        HANDLE ghJob = CreateJobObject(NULL, NULL);
-
-        if (ghJob)
-        {
-            JOBOBJECT_EXTENDED_LIMIT_INFORMATION jeli = { 0 };
-
-            // Configure all child processes associated with the job to terminate when the
-            jeli.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
-            if ( 0 == SetInformationJobObject( ghJob, JobObjectExtendedLimitInformation, &jeli, sizeof(jeli)))
-            {
-                CloseHandle(ghJob);
-                ghJob = NULL;
-            }
-        }
-
-        PROCESS_INFORMATION processinfo;
-        ZeroMemory(&processinfo,sizeof(PROCESS_INFORMATION));
-        BOOL bResult = CreateProcessW(sConverterExe.c_str(), pCommandLine,
-                                   NULL, NULL, TRUE, CREATE_NO_WINDOW, NULL, NULL, &sturtupinfo, &processinfo);
-
-        if (bResult && ghJob)
-        {
-            AssignProcessToJobObject(ghJob, processinfo.hProcess);
-        }
-
-        ::WaitForSingleObject(processinfo.hProcess, INFINITE);
-
-        RELEASEARRAYOBJECTS(pCommandLine);
-
-        //get exit code
-        DWORD dwExitCode = 0;
-        if (GetExitCodeProcess(processinfo.hProcess, &dwExitCode))
-        {
-            nReturnCode = (int)dwExitCode;
-        }
-
-        CloseHandle(processinfo.hProcess);
-        CloseHandle(processinfo.hThread);
-
-        if (ghJob)
-        {
-            CloseHandle(ghJob);
-            ghJob = NULL;
-        }
-
-#endif
-
-#ifdef LINUX
-        pid_t pid = fork(); // create child process
-        int status;
-
-        std::string sProgramm = U_TO_UTF8(sConverterExe);
-        std::string sXmlA = U_TO_UTF8(sTempFileForParams);
-
-        switch (pid)
-        {
-        case -1: // error
-            break;
-
-        case 0: // child process
-        {
-            std::string sLibraryDir = sProgramm;
-            std::string sPATH = sProgramm;
-            if (std::string::npos != sProgramm.find_last_of('/'))
-            {
-                sLibraryDir = "LD_LIBRARY_PATH=" + sProgramm.substr(0, sProgramm.find_last_of('/'));
-                sPATH = "PATH=" + sProgramm.substr(0, sProgramm.find_last_of('/'));
-            }
-
-#ifdef _MAC
-            sLibraryDir = "DY" + sLibraryDir;
-#endif
-
-            const char* nargs[3];
-            nargs[0] = sProgramm.c_str();
-            nargs[1] = sXmlA.c_str();
-            nargs[2] = NULL;
-
-#ifndef _MAC
-            const char* nenv[2];
-            nenv[0] = sLibraryDir.c_str();
-            nenv[1] = NULL;
-#else
-            const char* nenv[3];
-            nenv[0] = sLibraryDir.c_str();
-            nenv[1] = sPATH.c_str();
-            nenv[2] = NULL;
-#endif
-
-            execve(sProgramm.c_str(),
-                   (char * const *)nargs,
-                   (char * const *)nenv);
-            exit(EXIT_SUCCESS);
-            break;
-        }
-        default: // parent process, pid now contains the child pid
-            while (-1 == waitpid(pid, &status, 0)); // wait for child to complete
-            if (WIFEXITED(status))
-            {
-                nReturnCode =  WEXITSTATUS(status);
-            }
-            break;
-        }
-#endif
+        int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileForParams);
 
         NSFile::CFileBinary::Remove(sTempFileForParams);
-        m_pEvents->OnFileConvertToEditor(nReturnCode);
 
         if (0 == nReturnCode)
             CheckSignatures(sDestinationPath);
+
+        m_pEvents->OnFileConvertToEditor(nReturnCode);
 
         m_bRunThread = FALSE;
         return 0;
@@ -469,23 +618,36 @@ public:
 
     void CheckSignatures(const std::wstring& sFile)
     {
-#ifdef DISABLE_OOXML_SIGNATURE
-        return;
-#endif
+        if (!m_pManager->m_oSettings.sign_support)
+            return;
 
         RELEASEOBJECT(m_pVerifier);
         if (m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX ||
             m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX ||
             m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX)
         {
-            std::wstring sUnzipDir = NSCommon::GetDirectoryName(sFile) + L"/" + NSCommon::GetFileName(sFile) + L"_uncompress";
-            NSDirectory::CreateDirectory(sUnzipDir);
-
-            COfficeUtils oCOfficeUtils(NULL);
-            if (S_OK == oCOfficeUtils.ExtractToDirectory(sFile, sUnzipDir, NULL, 0))
+            COfficeFileFormatChecker oChecker;
+            oChecker.isOfficeFile(sFile);
+            if (AVS_OFFICESTUDIO_FILE_OTHER_MS_OFFCRYPTO == oChecker.nFileType)
             {
-                m_pVerifier = new COOXMLVerifier(sUnzipDir);
-                NSDirectory::DeleteDirectory(sUnzipDir);
+                NSOOXMLPassword::COOXMLZipDirectory oZIP(m_pManager);
+                oZIP.Open(sFile, m_oInfo.m_sPassword);
+
+                m_pVerifier = new COOXMLVerifier(oZIP.GetDirectory());
+
+                oZIP.Close();
+            }
+            else
+            {
+                std::wstring sUnzipDir = NSCommon::GetDirectoryName(sFile) + L"/" + NSCommon::GetFileName(sFile) + L"_uncompress";
+                NSDirectory::CreateDirectory(sUnzipDir);
+
+                COfficeUtils oCOfficeUtils(NULL);
+                if (S_OK == oCOfficeUtils.ExtractToDirectory(sFile, sUnzipDir, NULL, 0))
+                {
+                    m_pVerifier = new COOXMLVerifier(sUnzipDir);
+                    NSDirectory::DeleteDirectory(sUnzipDir);
+                }
             }
         }
     }
@@ -523,6 +685,9 @@ public:
             oBuilder.WriteString(L"\",\"guid\":\"");
             std::string sGuid = pSign->GetGuid();
             oBuilder.WriteString(UTF8_TO_U(sGuid));
+            oBuilder.WriteString(L"\",\"date\":\"");
+            std::string sDate = pSign->GetDate();
+            oBuilder.WriteString(UTF8_TO_U(sDate));
             oBuilder.WriteString(L"\",\"valid\":");
             oBuilder.AddInt(pSign->GetValid());
             oBuilder.WriteString(L",\"image_valid\":\"");
@@ -541,6 +706,9 @@ public:
 
     std::string GetPngFromBase64(const std::string& sBase64)
     {
+        if (sBase64.empty())
+            return "";
+
         std::wstring sTmp = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"IMG");
         std::wstring sTmp2 = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"IMG");
 
@@ -619,7 +787,7 @@ public:
     CASCFileConverterFromEditor() : NSThreads::CBaseThread()
     {
         m_bIsRetina = false;
-        m_nTypeEditorFormat = -1;        
+        m_nTypeEditorFormat = -1;
     }
     virtual ~CASCFileConverterFromEditor()
     {
@@ -683,6 +851,13 @@ public:
         oBuilder.WriteString(L"/AllFonts.js</m_sAllFontsPath><m_nCsvTxtEncoding>46</m_nCsvTxtEncoding><m_nCsvDelimiter>4</m_nCsvDelimiter>");
         oBuilder.WriteString(sParams);
 
+        if (!m_oInfo.m_sPassword.empty())
+        {
+            oBuilder.WriteString(L"<m_sSavePassword>");
+            oBuilder.WriteString(m_oInfo.m_sPassword);
+            oBuilder.WriteString(L"</m_sSavePassword>");
+        }
+
         int nDoctRendererParam = 0;
         if (m_bIsRetina)
             nDoctRendererParam |= 0x01;
@@ -701,8 +876,6 @@ public:
 
         std::wstring sConverterExe = m_pManager->m_oSettings.file_converter_path + L"/x2t";
 
-        int nReturnCode = 0;
-
         std::wstring sTempFileForParams = m_oInfo.m_sRecoveryDir + L"/params_to.xml";
         NSFile::CFileBinary::SaveToFile(sTempFileForParams, sXmlConvert, true);
         
@@ -717,140 +890,13 @@ public:
         if (m_pManager->m_pInternal->m_pAdditional)
             m_pManager->m_pInternal->m_pAdditional->CheckSaveStart(m_oInfo.m_sRecoveryDir, m_nTypeEditorFormat);
 
-#ifdef WIN32
-        std::wstring sApp = L"x2t32 ";
+        int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileForParams);
 
-        if (NSFile::CFileBinary::Exists(sConverterExe + L".exe"))
-        {
-            sApp = L"x2t ";
-            sConverterExe += L".exe";
-        }
-        else
-            sConverterExe += L"32.exe";
-
-        STARTUPINFO sturtupinfo;
-        ZeroMemory(&sturtupinfo,sizeof(STARTUPINFO));
-        sturtupinfo.cb = sizeof(STARTUPINFO);
-
-        sApp += (L"\"" + sTempFileForParams + L"\"");
-        wchar_t* pCommandLine = NULL;
-        if (true)
-        {
-            pCommandLine = new wchar_t[sApp.length() + 1];
-            memcpy(pCommandLine, sApp.c_str(), sApp.length() * sizeof(wchar_t));
-            pCommandLine[sApp.length()] = (wchar_t)'\0';
-        }
-
-        HANDLE ghJob = CreateJobObject(NULL, NULL);
-
-        if (ghJob)
-        {
-            JOBOBJECT_EXTENDED_LIMIT_INFORMATION jeli = { 0 };
-
-            // Configure all child processes associated with the job to terminate when the
-            jeli.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
-            if ( 0 == SetInformationJobObject( ghJob, JobObjectExtendedLimitInformation, &jeli, sizeof(jeli)))
-            {
-                CloseHandle(ghJob);
-                ghJob = NULL;
-            }
-        }
-
-        PROCESS_INFORMATION processinfo;
-        ZeroMemory(&processinfo,sizeof(PROCESS_INFORMATION));
-        BOOL bResult = CreateProcessW(sConverterExe.c_str(), pCommandLine,
-                                   NULL, NULL, TRUE, CREATE_NO_WINDOW, NULL, NULL, &sturtupinfo, &processinfo);
-
-        if (bResult && ghJob)
-        {
-            AssignProcessToJobObject(ghJob, processinfo.hProcess);
-        }
-
-        ::WaitForSingleObject(processinfo.hProcess, INFINITE);
-
-        RELEASEARRAYOBJECTS(pCommandLine);
-
-        //get exit code
-        DWORD dwExitCode = 0;
-        if (GetExitCodeProcess(processinfo.hProcess, &dwExitCode))
-        {
-            nReturnCode = (int)dwExitCode;
-        }
-
-        CloseHandle(processinfo.hProcess);
-        CloseHandle(processinfo.hThread);
-
-        if (ghJob)
-        {
-            CloseHandle(ghJob);
-            ghJob = NULL;
-        }
-
-#endif
-
-#ifdef LINUX
-        pid_t pid = fork(); // create child process
-        int status;
-
-        std::string sProgramm = U_TO_UTF8(sConverterExe);
-        std::string sXmlA = U_TO_UTF8(sTempFileForParams);
-
-        switch (pid)
-        {
-        case -1: // error
-            break;
-
-        case 0: // child process
-        {
-            std::string sLibraryDir = sProgramm;
-            std::string sPATH = sProgramm;
-            if (std::string::npos != sProgramm.find_last_of('/'))
-            {
-                sLibraryDir = "LD_LIBRARY_PATH=" + sProgramm.substr(0, sProgramm.find_last_of('/'));
-                sPATH = "PATH=" + sProgramm.substr(0, sProgramm.find_last_of('/'));
-            }
-
-#ifdef _MAC
-            sLibraryDir = "DY" + sLibraryDir;
-#endif
-
-            const char* nargs[3];
-            nargs[0] = sProgramm.c_str();
-            nargs[1] = sXmlA.c_str();
-            nargs[2] = NULL;
-
-#ifndef _MAC
-            const char* nenv[2];
-            nenv[0] = sLibraryDir.c_str();
-            nenv[1] = NULL;
-#else
-            const char* nenv[3];
-            nenv[0] = sLibraryDir.c_str();
-            nenv[1] = sPATH.c_str();
-            nenv[2] = NULL;
-#endif
-
-            execve(sProgramm.c_str(),
-                   (char * const *)nargs,
-                   (char * const *)nenv);
-            exit(EXIT_SUCCESS);
-            break;
-        }
-        default: // parent process, pid now contains the child pid
-            while (-1 == waitpid(pid, &status, 0)); // wait for child to complete
-            if (WIFEXITED(status))
-            {
-                nReturnCode =  WEXITSTATUS(status);
-            }
-            break;
-        }
-#endif
-        
         m_sOriginalFileNameCrossPlatform = L"";
         m_bIsRetina = false;
 
         NSFile::CFileBinary::Remove(sTempFileForParams);
-        m_pEvents->OnFileConvertFromEditor(nReturnCode);
+        m_pEvents->OnFileConvertFromEditor(nReturnCode, m_oInfo.m_sPassword);
 
         if (m_pManager->m_pInternal->m_pAdditional)
             m_pManager->m_pInternal->m_pAdditional->CheckSaveEnd();
@@ -859,6 +905,5 @@ public:
         return 0;
     }
 };
-
 
 #endif // ASC_CEFCONVERTER_FILECONVERTER_H

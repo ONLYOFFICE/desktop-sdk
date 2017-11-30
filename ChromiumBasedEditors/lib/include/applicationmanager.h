@@ -70,6 +70,8 @@ public:
     std::wstring                    recover_path;
     std::string                     country;
 
+    bool                            sign_support;
+
 public:
     CAscApplicationSettings();
     void SetUserDataPath(std::wstring sPath);
@@ -186,6 +188,8 @@ public:
 
     virtual bool IsExternalEventLoop();
     virtual void ExitExternalEventLoop();
+
+    void SetEventToAllMainWindows(NSEditorApi::CAscMenuEvent* pEvent);
 
 protected:
     int GenerateNextViewId();

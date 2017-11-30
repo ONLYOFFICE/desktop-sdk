@@ -59,6 +59,8 @@ public:
 
 public:
 
+    virtual ~IAscNativePrintDocument() {}
+
     virtual void Draw(IRenderer* pRenderer, int nPageIndex) = 0;
     virtual void PreOpen(int nFileType) = 0;
     virtual void Open(const std::wstring& sPath, const std::wstring& sRecoveryDir) = 0;

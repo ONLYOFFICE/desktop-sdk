@@ -1,4 +1,4 @@
-// Copyright (c) 2016 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,9 +9,10 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
+// $hash=097e5a79e3e4988d5498f94ff9ec53586a65bbb1$
+//
 
 #include "libcef_dll/ctocpp/callback_ctocpp.h"
-
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
@@ -37,22 +38,26 @@ void CefCallbackCToCpp::Cancel() {
   _struct->cancel(_struct);
 }
 
-
 // CONSTRUCTOR - Do not edit by hand.
 
-CefCallbackCToCpp::CefCallbackCToCpp() {
-}
+CefCallbackCToCpp::CefCallbackCToCpp() {}
 
-template<> cef_callback_t* CefCToCpp<CefCallbackCToCpp, CefCallback,
-    cef_callback_t>::UnwrapDerived(CefWrapperType type, CefCallback* c) {
+template <>
+cef_callback_t*
+CefCToCppRefCounted<CefCallbackCToCpp, CefCallback, cef_callback_t>::
+    UnwrapDerived(CefWrapperType type, CefCallback* c) {
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
 
-#ifndef NDEBUG
-template<> base::AtomicRefCount CefCToCpp<CefCallbackCToCpp, CefCallback,
-    cef_callback_t>::DebugObjCt = 0;
+#if DCHECK_IS_ON()
+template <>
+base::AtomicRefCount
+    CefCToCppRefCounted<CefCallbackCToCpp, CefCallback, cef_callback_t>::
+        DebugObjCt ATOMIC_DECLARATION;
 #endif
 
-template<> CefWrapperType CefCToCpp<CefCallbackCToCpp, CefCallback,
-    cef_callback_t>::kWrapperType = WT_CALLBACK;
+template <>
+CefWrapperType CefCToCppRefCounted<CefCallbackCToCpp,
+                                   CefCallback,
+                                   cef_callback_t>::kWrapperType = WT_CALLBACK;

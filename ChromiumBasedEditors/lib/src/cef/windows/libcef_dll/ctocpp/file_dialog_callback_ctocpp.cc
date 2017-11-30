@@ -1,4 +1,4 @@
-// Copyright (c) 2016 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,14 +9,16 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
+// $hash=a00508f71ab303aff4779b1ae48df50b61cd3bed$
+//
 
 #include "libcef_dll/ctocpp/file_dialog_callback_ctocpp.h"
 #include "libcef_dll/transfer_util.h"
 
-
 // VIRTUAL METHODS - Body may be edited by hand.
 
-void CefFileDialogCallbackCToCpp::Continue(int selected_accept_filter,
+void CefFileDialogCallbackCToCpp::Continue(
+    int selected_accept_filter,
     const std::vector<CefString>& file_paths) {
   cef_file_dialog_callback_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, cont))
@@ -37,9 +39,7 @@ void CefFileDialogCallbackCToCpp::Continue(int selected_accept_filter,
     transfer_string_list_contents(file_paths, file_pathsList);
 
   // Execute
-  _struct->cont(_struct,
-      selected_accept_filter,
-      file_pathsList);
+  _struct->cont(_struct, selected_accept_filter, file_pathsList);
 
   // Restore param:file_paths; type: string_vec_byref_const
   if (file_pathsList)
@@ -57,24 +57,30 @@ void CefFileDialogCallbackCToCpp::Cancel() {
   _struct->cancel(_struct);
 }
 
-
 // CONSTRUCTOR - Do not edit by hand.
 
-CefFileDialogCallbackCToCpp::CefFileDialogCallbackCToCpp() {
-}
+CefFileDialogCallbackCToCpp::CefFileDialogCallbackCToCpp() {}
 
-template<> cef_file_dialog_callback_t* CefCToCpp<CefFileDialogCallbackCToCpp,
-    CefFileDialogCallback, cef_file_dialog_callback_t>::UnwrapDerived(
-    CefWrapperType type, CefFileDialogCallback* c) {
+template <>
+cef_file_dialog_callback_t* CefCToCppRefCounted<
+    CefFileDialogCallbackCToCpp,
+    CefFileDialogCallback,
+    cef_file_dialog_callback_t>::UnwrapDerived(CefWrapperType type,
+                                               CefFileDialogCallback* c) {
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
 
-#ifndef NDEBUG
-template<> base::AtomicRefCount CefCToCpp<CefFileDialogCallbackCToCpp,
-    CefFileDialogCallback, cef_file_dialog_callback_t>::DebugObjCt = 0;
+#if DCHECK_IS_ON()
+template <>
+base::AtomicRefCount CefCToCppRefCounted<CefFileDialogCallbackCToCpp,
+                                         CefFileDialogCallback,
+                                         cef_file_dialog_callback_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
-template<> CefWrapperType CefCToCpp<CefFileDialogCallbackCToCpp,
-    CefFileDialogCallback, cef_file_dialog_callback_t>::kWrapperType =
+template <>
+CefWrapperType CefCToCppRefCounted<CefFileDialogCallbackCToCpp,
+                                   CefFileDialogCallback,
+                                   cef_file_dialog_callback_t>::kWrapperType =
     WT_FILE_DIALOG_CALLBACK;

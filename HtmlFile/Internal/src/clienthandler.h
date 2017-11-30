@@ -40,18 +40,18 @@
 #include "include/base/cef_bind.h"
 #include "include/cef_frame.h"
 #include "include/wrapper/cef_closure_task.h"
-#include "cefclient/browser/client_handler.h"
-#include "cefclient/common/client_switches.h"
+#include "tests/cefclient/browser/client_handler.h"
+#include "tests/shared/common/client_switches.h"
 #include "include/cef_app.h"
 
-#include "cefclient/renderer/client_renderer.h"
-#include "cefclient/browser/main_message_loop.h"
+#include "tests/cefclient/renderer/client_renderer.h"
+#include "tests/shared/browser/main_message_loop.h"
 
 #include "../../../core/DesktopEditor/common/File.h"
 #include <string>
 #include <vector>
 
-#include "cefclient/browser/root_window_manager.h"
+#include "tests/cefclient/browser/root_window_manager.h"
 
 class CHtmlClientHandler : public client::ClientHandler
 {

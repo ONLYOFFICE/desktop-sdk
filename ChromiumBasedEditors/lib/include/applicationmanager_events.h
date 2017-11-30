@@ -106,6 +106,10 @@
 #define ASC_MENU_EVENT_TYPE_REPORTER_CREATE                 7019
 #define ASC_MENU_EVENT_TYPE_REPORTER_END                    7020
 
+#define ASC_MENU_EVENT_TYPE_SSO_TOKEN                       7030
+
+#define ASC_MENU_EVENT_TYPE_CEF_DESTROYWINDOW               8000
+
 
 #define ASC_MENU_EVENT_TYPE_WINDOWS_MESSAGE_USER_COUNT      10
 
@@ -671,6 +675,27 @@ namespace NSEditorApi
 
         void* get_Data() { return m_pData; }
         void put_Data(void* data) { m_pData = data; }
+    };
+}
+
+namespace NSEditorApi
+{
+    class CAscSSOToken : public IMenuEventDataBase
+    {
+    private:
+        std::wstring m_sUrl;
+        std::wstring m_sToken;
+
+    public:
+        CAscSSOToken()
+        {
+        }
+        virtual ~CAscSSOToken()
+        {
+        }
+
+        LINK_PROPERTY_STRING(Url)
+        LINK_PROPERTY_STRING(Token)
     };
 }
 

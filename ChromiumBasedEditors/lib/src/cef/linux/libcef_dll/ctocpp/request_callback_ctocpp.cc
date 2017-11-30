@@ -1,4 +1,4 @@
-// Copyright (c) 2016 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,9 +9,10 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
+// $hash=61da15e97126d0c2142ae7b71c9c1833520d6f7c$
+//
 
 #include "libcef_dll/ctocpp/request_callback_ctocpp.h"
-
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
@@ -23,8 +24,7 @@ void CefRequestCallbackCToCpp::Continue(bool allow) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  _struct->cont(_struct,
-      allow);
+  _struct->cont(_struct, allow);
 }
 
 void CefRequestCallbackCToCpp::Cancel() {
@@ -38,24 +38,30 @@ void CefRequestCallbackCToCpp::Cancel() {
   _struct->cancel(_struct);
 }
 
-
 // CONSTRUCTOR - Do not edit by hand.
 
-CefRequestCallbackCToCpp::CefRequestCallbackCToCpp() {
-}
+CefRequestCallbackCToCpp::CefRequestCallbackCToCpp() {}
 
-template<> cef_request_callback_t* CefCToCpp<CefRequestCallbackCToCpp,
-    CefRequestCallback, cef_request_callback_t>::UnwrapDerived(
-    CefWrapperType type, CefRequestCallback* c) {
+template <>
+cef_request_callback_t* CefCToCppRefCounted<
+    CefRequestCallbackCToCpp,
+    CefRequestCallback,
+    cef_request_callback_t>::UnwrapDerived(CefWrapperType type,
+                                           CefRequestCallback* c) {
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
 
-#ifndef NDEBUG
-template<> base::AtomicRefCount CefCToCpp<CefRequestCallbackCToCpp,
-    CefRequestCallback, cef_request_callback_t>::DebugObjCt = 0;
+#if DCHECK_IS_ON()
+template <>
+base::AtomicRefCount CefCToCppRefCounted<CefRequestCallbackCToCpp,
+                                         CefRequestCallback,
+                                         cef_request_callback_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
-template<> CefWrapperType CefCToCpp<CefRequestCallbackCToCpp,
-    CefRequestCallback, cef_request_callback_t>::kWrapperType =
+template <>
+CefWrapperType CefCToCppRefCounted<CefRequestCallbackCToCpp,
+                                   CefRequestCallback,
+                                   cef_request_callback_t>::kWrapperType =
     WT_REQUEST_CALLBACK;

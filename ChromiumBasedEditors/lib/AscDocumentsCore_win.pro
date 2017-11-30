@@ -17,8 +17,6 @@ DEFINES += \
     XPS_USE_DYNAMIC_LIBRARY \
     HTMLRENDERER_USE_DYNAMIC_LIBRARY
 
-#DEFINES += DISABLE_OOXML_SIGNATURE
-
 LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lOfficeUtils -lgraphics -llibxml -lhunspell
 LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lPdfReader -lPdfWriter -lDjVuFile -lXpsFile -lHtmlRenderer -lUnicodeConverter -looxmlsignature
 # ------------------------------------------------------
@@ -29,7 +27,7 @@ CONFIG += core_boost_libs
 include(../../../core/Common/3dParty/boost/boost.pri)
 
 ########################################################
-
+include($$PWD/AscDocumentsCore_base.pri)
 include($$PWD/AscDocumentsCore_windows.pri)
 
 HEADERS += \
@@ -67,6 +65,7 @@ SOURCES += \
 SOURCES += \
     ./../../../core/Common/OfficeFileFormatChecker2.cpp \
     ./../../../core/Common/3dParty/pole/pole.cpp \
+    ./../../../core/Common/DocxFormat/Source/Base/unicode_util.cpp \
     ./../../../core/HtmlRenderer/src/ASCSVGWriter.cpp
 
 SOURCES += \

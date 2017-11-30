@@ -70,12 +70,12 @@ int XIOErrorHandlerImpl(Display *display)
 #include "cefwrapper/client_app.h"
 #include "cefwrapper/client_scheme.h"
 
-#include "cefclient/browser/main_context_impl.h"
+#include "tests/cefclient/browser/main_context_impl.h"
 
 #ifdef WIN32
-#include "cefclient/browser/main_message_loop_multithreaded_win.h"
+#include "tests/cefclient/browser/main_message_loop_multithreaded_win.h"
 #endif
-#include "cefclient/browser/main_message_loop_std.h"
+#include "tests/shared/browser/main_message_loop_std.h"
 
 class CApplicationCEF_Private
 {
@@ -117,6 +117,10 @@ CApplicationCEF::CApplicationCEF()
     m_pInternal = new CApplicationCEF_Private();
 }
 
+#if defined(_LINUX) && !defined(_MAC)
+//#define CEF_USE_SANDBOX
+#endif
+
 int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* argv[])
 {
 #if 0
@@ -140,15 +144,6 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     // internally (see issue #620).
     m_pInternal->argc_copy = new CefScopedArgArray(argc, argv);
     char** argv_copy = m_pInternal->argc_copy->array();
-#endif
-
-    void* sandbox_info = NULL;
-
-#if defined(CEF_USE_SANDBOX)
-    // Manage the life span of the sandbox information object. This is necessary
-    // for sandbox support on Windows. See cef_sandbox_win.h for complete details.
-    CefScopedSandboxInfo scoped_sandbox;
-    sandbox_info = scoped_sandbox.sandbox_info();
 #endif
 
 #ifdef WIN32
@@ -194,20 +189,12 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
     command_line->InitFromArgv(argc, argv);
 
-    // Create a ClientApp of the correct type.
-    client::ClientApp::ProcessType process_type = client::ClientApp::GetProcessType(command_line);
-    if (process_type == client::ClientApp::BrowserProcess)
-        m_pInternal->m_app = new CAscClientAppBrowser();
-    else if (process_type == client::ClientApp::RendererProcess ||
-             process_type == client::ClientApp::ZygoteProcess)
-        m_pInternal->m_app = new CAscClientAppRenderer();
-    else if (process_type == client::ClientApp::OtherProcess)
-        m_pInternal->m_app = new CAscClientAppOther();
+    m_pInternal->m_app = new CAscClientAppBrowser();
 #endif
 
 #if 1
     // Execute the secondary process, if any.
-    m_pInternal->m_nReturnCodeInitCef = CefExecuteProcess(main_args, m_pInternal->m_app.get(), sandbox_info);
+    m_pInternal->m_nReturnCodeInitCef = CefExecuteProcess(main_args, m_pInternal->m_app.get(), NULL);
     if (m_pInternal->m_nReturnCodeInitCef >= 0)
     {        
         return m_pInternal->m_nReturnCodeInitCef;
@@ -217,10 +204,10 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     CefSettings settings;
     
 #ifdef _MAC
-#if 0
+#if 1
     std::wstring sSubprocessPath = NSFile::GetProcessDirectory();
     std::wstring sName = NSCommon::GetFileName(NSFile::GetProcessPath());
-    sSubprocessPath += L"/../Frameworks/DocumentsCore Helper.app/Contents/MacOS/DocumentsCore Helper";
+    sSubprocessPath += L"/../Frameworks/ONLYOFFICE Helper.app/Contents/MacOS/ONLYOFFICE Helper";
     
     cef_string_t _subprocess;
     memset(&_subprocess, 0, sizeof(_subprocess));
@@ -287,7 +274,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     settings.persist_session_cookies = true;
 
     // Initialize CEF.
-    bool bInit = m_pInternal->context->Initialize(main_args, settings, m_pInternal->m_app.get(), sandbox_info);
+    bool bInit = m_pInternal->context->Initialize(main_args, settings, m_pInternal->m_app.get(), NULL);
     bool bIsInitScheme = asc_scheme::InitScheme();
 
 #if defined(_LINUX) && !defined(_MAC)
