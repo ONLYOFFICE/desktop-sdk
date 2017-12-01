@@ -13,7 +13,15 @@ include($$CORE_ROOT_DIR/Common/base.pri)
 include($$CORE_ROOT_DIR/Common/3dParty/icu/icu.pri)
 
 include($$CORE_ROOT_DIR/../desktop-sdk/ChromiumBasedEditors/lib/AscDocumentsCore_base.pri)
-LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lgraphics -llibxml -lOfficeUtils -lUnicodeConverter
+LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -llibxml -lOfficeUtils -lUnicodeConverter
+
+core_windows {
+    LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lgraphics
+}
+
+core_linux {
+    include($$CORE_ROOT_DIR/DesktopEditor/Qt_build/graphics/project/graphics.pri)
+}
 
 INCLUDEPATH += \
     $$CORE_ROOT_DIR/DesktopEditor/agg-2.4/include \
