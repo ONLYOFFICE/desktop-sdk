@@ -2156,6 +2156,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
   {
     m_pAdditional = Create_ApplicationRendererAdditional();
     sync_command_check = false;
+    m_bIsNativeViewer = false;
   }
 
   virtual void OnWebKitInitialized(CefRefPtr<client::ClientAppRenderer> app) OVERRIDE {
@@ -2836,6 +2837,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     }    
     else if (sMessageName == "native_viewer_onopened")
     {
+        m_bIsNativeViewer = true;
         CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
         if (_frame)
         {
@@ -2963,11 +2965,16 @@ private:
 
   std::string GetFileData(const std::wstring& sFile, int& nLen)
   {
-#if 0
-    std::string sFileData;
-    NSFile::CFileBinary::ReadAllTextUtf8A(sFile, sFileData);
-    return sFileData;
-#endif
+    if (m_bIsNativeViewer)
+    {
+        std::string sFileData;
+        NSFile::CFileBinary::ReadAllTextUtf8A(sFile, sFileData);
+
+        std::string::size_type pos = sFileData.find(";");
+        nLen = std::stoi(sFileData.substr(0, pos));
+        sFileData = sFileData.substr(pos + 1);
+        return sFileData;
+    }
 
     BYTE* pData = NULL;
     DWORD dwFileLen = 0;
@@ -2996,6 +3003,7 @@ private:
   CefRefPtr<CefMessageRouterRendererSide> message_router_;
 
   NSCommon::smart_ptr<CApplicationRendererAdditionalBase> m_pAdditional;
+  bool m_bIsNativeViewer;
 
   IMPLEMENT_REFCOUNTING(ClientRenderDelegate);
 };
