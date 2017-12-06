@@ -271,6 +271,9 @@ public:
     std::wstring        m_sAppData;
     std::wstring        m_sFontsData;
 
+    std::wstring        m_sSystemPlugins;
+    std::wstring        m_sUserPlugins;
+
     int                 m_nSkipMouseWhellMax;
     int                 m_nSkipMouseWhellCounter;
 
@@ -486,6 +489,31 @@ else \n\
                         m_sFontsData = NSFile::CUtf8Converter::GetUnicodeStringFromUTF8((BYTE*)sFontsDataA.c_str(), (LONG)sFontsDataA.length());
                     }
                 }
+
+                retval2 = NULL;
+                exception2 = NULL;
+                bool bIsSPData = CefV8Context::GetCurrentContext()->Eval("window[\"AscDesktopEditor_SP\"]();", "", 0, retval2, exception2);
+                if (bIsSPData)
+                {
+                    if (retval2->IsString())
+                    {
+                        std::string sDataA = retval2->GetStringValue().ToString();
+                        m_sSystemPlugins = UTF8_TO_U(sDataA);
+                    }
+                }
+
+                retval2 = NULL;
+                exception2 = NULL;
+                bool bIsUPData = CefV8Context::GetCurrentContext()->Eval("window[\"AscDesktopEditor_UP\"]();", "", 0, retval2, exception2);
+                if (bIsUPData)
+                {
+                    if (retval2->IsString())
+                    {
+                        std::string sDataA = retval2->GetStringValue().ToString();
+                        m_sUserPlugins = UTF8_TO_U(sDataA);
+                    }
+                }
+
 
                 /*
                 FILE* f = fopen("D:\\editor_version.txt", "a+");
@@ -1687,7 +1715,8 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
         else if (name == "GetInstallPlugins")
         {
             CPluginsManager oPlugins;
-            oPlugins.m_strDirectory = m_sFontsData + L"/sdkjs-plugins";
+            oPlugins.m_strDirectory = m_sSystemPlugins;
+            oPlugins.m_strUserDirectory = m_sUserPlugins;
             std::string sData = oPlugins.GetPluginsJson();
             retval = CefV8Value::CreateString(sData);
             return true;

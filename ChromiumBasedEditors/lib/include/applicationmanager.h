@@ -62,6 +62,8 @@ public:
     bool                            use_system_fonts;
     std::vector<std::wstring>       additional_fonts_folder;
     std::wstring                    fonts_cache_info_path;
+    std::wstring                    system_plugins_path;
+    std::wstring                    user_plugins_path;
 
     std::wstring                    app_data_path;
 

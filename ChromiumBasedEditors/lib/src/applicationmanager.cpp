@@ -60,6 +60,9 @@ CAscApplicationSettings::CAscApplicationSettings()
     use_system_fonts                = true;
     fonts_cache_info_path           = app_data_path + L"/data/fonts";
 
+    system_plugins_path             = app_data_path + L"/editors/sdkjs-plugins";
+    user_plugins_path               = app_data_path + L"/editors/sdkjs-plugins-user";
+
     local_editors_path              = sApplicationPath + L"/editors/web-apps/apps/api/documents/index.html";
     file_converter_path             = sApplicationPath + L"/converter";
     recover_path                    = app_data_path + L"/data/recover";
@@ -80,6 +83,8 @@ void CAscApplicationSettings::SetUserDataPath(std::wstring sPath)
     use_system_fonts                = true;
     fonts_cache_info_path           = app_data_path + L"/data/fonts";
     recover_path                    = app_data_path + L"/data/recover";
+
+    user_plugins_path               = app_data_path + L"/data/sdkjs-plugins";
 }
 
 void CTimerKeyboardChecker::OnTimer()
@@ -350,7 +355,8 @@ void CAscApplicationManager::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             NSEditorApi::CAscAddPlugin* pData = (NSEditorApi::CAscAddPlugin*)pEvent->m_pData;
 
             CPluginsManager oPlugins;
-            oPlugins.m_strDirectory = m_oSettings.fonts_cache_info_path + L"/sdkjs-plugins";
+            oPlugins.m_strDirectory = m_oSettings.system_plugins_path;
+            oPlugins.m_strUserDirectory = m_oSettings.user_plugins_path;
             oPlugins.AddPlugin(pData->get_Path());
 
             for (std::map<int, CCefView*>::iterator i = m_pInternal->m_mapViews.begin(); i != m_pInternal->m_mapViews.end(); ++i)
