@@ -45,7 +45,9 @@
 static int IsForceDpiRound()
 {
 #ifdef WIN32
+#if 1
     return 1;
+#else
     HWND hwnd = GetDesktopWindow();
     HDC hdc = GetDC(hwnd);
     int nX = GetDeviceCaps(hdc, LOGPIXELSX);
@@ -79,6 +81,7 @@ static int IsForceDpiRound()
 
         return nScale;
     }
+#endif
 #endif
 
 #if defined(_LINUX) && !defined(_MAC)

@@ -1642,7 +1642,8 @@ public:
                         if (AVS_OFFICESTUDIO_FILE_DOCUMENT_TXT == oChecker.nFileType)
                         {
                             std::wstring sExt = NSCommon::GetFileExtention(sValue);
-                            if (sExt == L"txt" || sExt == L"xml")
+                            NSCommon::makeUpperW(sExt);
+                            if (sExt == L"TXT" || sExt == L"XML")
                                 arFolder.push_back(sValue);
                         }
                         else
@@ -2007,11 +2008,13 @@ public:
     {
         CEF_REQUIRE_UI_THREAD();
         
+#if 0
         if (m_pParent && !m_pParent->GetAppManager()->GetDebugInfoSupport())
         {
             model->Clear();
             return;
         }
+#endif
 
         int _remove_commands[] = {MENU_ID_BACK,
                                   MENU_ID_FORWARD,
@@ -3781,7 +3784,8 @@ int CCefViewEditor::GetFileFormat(const std::wstring& sFilePath)
     if (AVS_OFFICESTUDIO_FILE_DOCUMENT_TXT == oChecker.nFileType)
     {
         std::wstring sExt = NSCommon::GetFileExtention(sFilePath);
-        if (sExt != L"txt" && sExt != L"xml")
+        NSCommon::makeUpperW(sExt);
+        if (sExt != L"TXT" && sExt != L"XML")
             return 0;
     }
     else if (AVS_OFFICESTUDIO_FILE_OTHER_MS_OFFCRYPTO == oChecker.nFileType)
