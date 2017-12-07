@@ -250,6 +250,8 @@ public:
 
     bool m_bIsDestroy;
 
+    std::string m_sIFrameIDMethod;
+
 #if defined(_LINUX) && !defined(_MAC)
     WindowHandleId m_lNaturalParent;
 #endif
@@ -1842,6 +1844,7 @@ public:
             pData->put_Filter(message->GetArgumentList()->GetString(0).ToWString());
             pEvent->m_pData = pData;
             m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+            m_pParent->m_pInternal->m_sIFrameIDMethod = message->GetArgumentList()->GetString(1);
             return true;
         }
         else if (message_name == "on_file_save_question")
@@ -2254,6 +2257,25 @@ require.load = function (context, moduleName, url) {\n\
             std::wstring sPathToEditors = NSCommon::GetDirectoryName(m_pParent->GetAppManager()->m_oSettings.local_editors_path);
             sPathToEditors += L"/../../../vendor/requirejs/require.js";
             return GetLocalFileRequest(sPathToEditors, sAppData, sFooter);
+        }
+
+        if (url.find(L"{8D67F3C5-7736-4BAE-A0F2-8C7127DC4BB8}/code.js") != std::wstring::npos ||
+            url.find(L"%7B8D67F3C5-7736-4BAE-A0F2-8C7127DC4BB8%7D/code.js") != std::wstring::npos)
+        {
+            std::string sHeader = "";
+            const std::wstring& sSystemPlugunsPath = m_pParent->GetAppManager()->m_oSettings.system_plugins_path;
+            std::string sSystemPluguns = NSFile::CUtf8Converter::GetUtf8StringFromUnicode2(sSystemPlugunsPath.c_str(),
+                                                                                     (LONG)sSystemPlugunsPath.length());
+            const std::wstring& sUserPlugunsPath = m_pParent->GetAppManager()->m_oSettings.user_plugins_path;
+            std::string sUserPluguns = NSFile::CUtf8Converter::GetUtf8StringFromUnicode2(sUserPlugunsPath.c_str(),
+                                                                                     (LONG)sUserPlugunsPath.length());
+
+            sHeader += ("window[\"AscDesktopEditor_SP\"] = function(){return \"" + sSystemPluguns + "\";}\n");
+            sHeader += ("window[\"AscDesktopEditor_UP\"] = function(){return \"" + sUserPluguns + "\";}\n");
+
+            std::wstring sPath = m_pParent->GetAppManager()->m_oSettings.system_plugins_path +
+                    L"/{8D67F3C5-7736-4BAE-A0F2-8C7127DC4BB8}/code.js";
+            return GetLocalFileRequest(sPath, sHeader, "");
         }
 
         if (true)
@@ -3568,6 +3590,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             NSEditorApi::CAscLocalOpenFileDialog* pData = (NSEditorApi::CAscLocalOpenFileDialog*)pEvent->m_pData;
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_open_filename_dialog");
             message->GetArgumentList()->SetString(0, pData->get_Path());
+            message->GetArgumentList()->SetString(1, m_pInternal->m_sIFrameIDMethod);
 
             browser->SendProcessMessage(PID_RENDERER, message);
             break;

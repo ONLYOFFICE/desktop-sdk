@@ -1714,11 +1714,81 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
         }
         else if (name == "GetInstallPlugins")
         {
+            if (m_sSystemPlugins.empty())
+            {
+                CefRefPtr<CefV8Value> retval2;
+                CefRefPtr<CefV8Exception> exception2;
+
+                retval2 = NULL;
+                exception2 = NULL;
+                bool bIsSPData = CefV8Context::GetCurrentContext()->Eval("window[\"AscDesktopEditor_SP\"]();", "", 0, retval2, exception2);
+                if (bIsSPData)
+                {
+                    if (retval2->IsString())
+                    {
+                        std::string sDataA = retval2->GetStringValue().ToString();
+                        m_sSystemPlugins = UTF8_TO_U(sDataA);
+                    }
+                }
+
+                retval2 = NULL;
+                exception2 = NULL;
+                bool bIsUPData = CefV8Context::GetCurrentContext()->Eval("window[\"AscDesktopEditor_UP\"]();", "", 0, retval2, exception2);
+                if (bIsUPData)
+                {
+                    if (retval2->IsString())
+                    {
+                        std::string sDataA = retval2->GetStringValue().ToString();
+                        m_sUserPlugins = UTF8_TO_U(sDataA);
+                    }
+                }
+            }
+
             CPluginsManager oPlugins;
             oPlugins.m_strDirectory = m_sSystemPlugins;
             oPlugins.m_strUserDirectory = m_sUserPlugins;
             std::string sData = oPlugins.GetPluginsJson();
             retval = CefV8Value::CreateString(sData);
+            return true;
+        }
+        else if (name == "PluginInstall")
+        {
+            CPluginsManager oPlugins;
+            oPlugins.m_strDirectory = m_sSystemPlugins;
+            oPlugins.m_strUserDirectory = m_sUserPlugins;
+
+            std::wstring sFile = ((*arguments.begin())->GetStringValue()).ToWString();
+            oPlugins.AddPlugin(sFile);
+
+            // send to editor
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefFrame> _frame = browser->GetFrame("frameEditor");
+            if (!_frame)
+                _frame = browser->GetMainFrame();
+
+            std::string sCode = "if (window.UpdateInstallPlugins) window.UpdateInstallPlugins();";
+            _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+
+            return true;
+        }
+        else if (name == "PluginUninstall")
+        {
+            CPluginsManager oPlugins;
+            oPlugins.m_strDirectory = m_sSystemPlugins;
+            oPlugins.m_strUserDirectory = m_sUserPlugins;
+
+            std::wstring sGuid = ((*arguments.begin())->GetStringValue()).ToWString();
+            oPlugins.RemovePlugin(sGuid);
+
+            // send to editor
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefFrame> _frame = browser->GetFrame("frameEditor");
+            if (!_frame)
+                _frame = browser->GetMainFrame();
+
+            std::string sCode = "if (window.UpdateInstallPlugins) window.UpdateInstallPlugins();";
+            _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+
             return true;
         }
         else if (name == "IsLocalFile")
@@ -1817,6 +1887,8 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_open_filename_dialog");
             std::vector<CefRefPtr<CefV8Value>>::const_iterator iter = arguments.begin();
             message->GetArgumentList()->SetString(0, (*iter)->GetStringValue());
+            int64 id = CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier();
+            message->GetArgumentList()->SetString(1, std::to_string(id));
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
@@ -1871,7 +1943,7 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
         {
             m_bIsSupportSigs = arguments[0]->GetBoolValue();
             return true;
-        }
+        }    
         // Function does not exist.
         return false;
     }
@@ -2337,6 +2409,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Value> _nativeFunction967 = CefV8Value::CreateFunction("SetSupportSign", _nativeHandler);
 
+    CefRefPtr<CefV8Value> _nativeFunction968 = CefV8Value::CreateFunction("PluginInstall", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction969 = CefV8Value::CreateFunction("PluginUninstall", _nativeHandler);
+
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Cut", _nativeFunctionCut, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -2459,6 +2534,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("RemoveAllSignatures", _nativeFunction966, V8_PROPERTY_ATTRIBUTE_NONE);
 
     objNative->SetValue("SetSupportSign", _nativeFunction967, V8_PROPERTY_ATTRIBUTE_NONE);
+
+    objNative->SetValue("PluginInstall", _nativeFunction968, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("PluginUninstall", _nativeFunction969, V8_PROPERTY_ATTRIBUTE_NONE);
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 
@@ -2909,7 +2987,16 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     }
     else if (sMessageName == "on_open_filename_dialog")
     {
-        CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
+        CefRefPtr<CefFrame> _frame;
+
+        std::string sId = message->GetArgumentList()->GetString(1).ToString();
+        if (sId.empty())
+            _frame = GetEditorFrame(browser);
+        else
+        {
+            int64 nId = (int64)std::stoll(sId);
+            _frame = browser->GetFrame(nId);
+        }
 
         if (_frame)
         {

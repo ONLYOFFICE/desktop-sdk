@@ -188,6 +188,16 @@ public:
         return true;
     }
 
+    void RemovePlugin(const std::wstring& sGuid)
+    {
+        std::wstring sAdd = sGuid;
+        std::wstring::size_type pos = sGuid.find(L"{");
+        if (pos != std::wstring::npos && pos != 0)
+            sAdd = sGuid.substr(pos);
+
+        NSDirectory::DeleteDirectory(m_strUserDirectory + L"/" + sAdd);
+    }
+
     void string_replaceA(std::string& text, const std::string& replaceFrom, const std::string& replaceTo)
     {
         size_t posn = 0;
