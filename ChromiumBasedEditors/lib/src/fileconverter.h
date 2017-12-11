@@ -525,6 +525,34 @@ public:
 
             if (sExtA != "HTML" && sExtA != "HTM")
                 sDestinationPath += L".html";
+
+            if (true)
+            {
+                // ***_files
+                size_t nIndex = sLocalFilePath.length();
+                if (nIndex > sExt.length())
+                    nIndex -= (sExt.length() + 1);
+
+                if (nIndex > 0)
+                {
+                    std::wstring sTestDirectory = sLocalFilePath.substr(0, nIndex);
+                    sTestDirectory += L"_files";
+                    if (NSDirectory::Exists(sTestDirectory))
+                    {
+                        // copy
+                        std::wstring sDestinationCopyDir = m_oInfo.m_sRecoveryDir + L"/" + NSCommon::GetFileName(sTestDirectory);
+                        NSDirectory::CreateDirectory(sDestinationCopyDir);
+
+                        std::vector<std::wstring> arrFiles = NSDirectory::GetFiles(sTestDirectory, false);
+
+                        for (std::vector<std::wstring>::iterator i = arrFiles.begin(); i != arrFiles.end(); i++)
+                        {
+                            std::wstring sTestFileCopy = NSCommon::GetFileName(*i);
+                            NSFile::CFileBinary::Copy(*i, sDestinationCopyDir + L"/" + sTestFileCopy);
+                        }
+                    }
+                }
+            }
         }
 
         NSFile::CFileBinary::Copy(sLocalFilePath, sDestinationPath);

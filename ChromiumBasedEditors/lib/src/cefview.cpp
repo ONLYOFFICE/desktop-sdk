@@ -2577,6 +2577,7 @@ require.load = function (context, moduleName, url) {\n\
         std::vector<CefString> arFiles;
         dragData->GetFileNames(arFiles);
 
+        /*
         if (1 == arFiles.size() && m_pParent)
         {
             std::wstring sFile = arFiles.begin()->ToWString();
@@ -2591,6 +2592,7 @@ require.load = function (context, moduleName, url) {\n\
                 return true;
             }
         }
+        */
 
         if (0 != arFiles.size())
         {
