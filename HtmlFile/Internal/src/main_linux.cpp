@@ -30,15 +30,6 @@
  *
  */
 
-#include <gtk/gtk.h>
-#include <gtk/gtkgl.h>
-#include <gdk/gdk.h>
-#include <gdk/gdkx.h>
-
-#include <X11/Xlib.h>
-#undef Success     // Definition conflicts with cef_message_router.h
-#undef RootWindow  // Definition conflicts with root_window.h
-
 #include <stdlib.h>
 #include <unistd.h>
 #include <string>
@@ -58,26 +49,9 @@
 #include "tests/cefclient/browser/main_context_impl.h"
 #include "tests/shared/browser/main_message_loop_std.h"
 
-#include <sys/prctl.h>
-
-class CGlobalHtmlFileParams
-{
-public:
-    std::vector<std::wstring> sSdkPath;
-    std::wstring sDstPath;
-    std::vector<std::wstring> arFiles;
-
-    client::RootWindowManager* m_pManager;
-
-public:
-    CGlobalHtmlFileParams()
-    {
-    }
-};
-
 CGlobalHtmlFileParams* g_globalParams;
 
-#if 1
+#if 0
 #include "tests/cefclient/browser/browser_window_std_gtk.h"
 #include "tests/cefclient/browser/client_handler_std.h"
 // подменяем функции окна
@@ -263,29 +237,44 @@ ClientWindowHandle BrowserWindowStdGtk::GetWindowHandle() const {
 }  // namespace client
 #endif
 
-int XErrorHandlerImpl(Display *display, XErrorEvent *event) {
-  LOG(WARNING)
-        << "X error received: "
-        << "type " << event->type << ", "
-        << "serial " << event->serial << ", "
-        << "error_code " << static_cast<int>(event->error_code) << ", "
-        << "request_code " << static_cast<int>(event->request_code) << ", "
-        << "minor_code " << static_cast<int>(event->minor_code);
-  return 0;
-}
+#if defined(_WIN32) || defined(_WIN64) ||defined(_WIN32_WCE)
 
-int XIOErrorHandlerImpl(Display *display) {
-  return 0;
+#include "windows.h"
+#include "winbase.h"
+
+#else
+
+#include <pthread.h>
+#include <signal.h>
+#include "time.h"
+
+#endif
+
+namespace NSThreads
+{
+    static void Sleep(int nMilliseconds)
+    {
+#if defined(_WIN32) || defined(_WIN64) || defined(_WIN32_WCE)
+        ::Sleep((DWORD)nMilliseconds);
+#else
+        struct timespec tim, tim2;
+        tim.tv_sec = nMilliseconds / 1000;
+        tim.tv_nsec = (nMilliseconds % 1000) * 1000000;
+
+        ::nanosleep(&tim , &tim2);
+#endif
+    }
 }
 
 void TerminationSignalHandler(int signatl) {
   LOG(ERROR) << "Received termination signal: " << signatl;
   client::MainContext::Get()->GetRootWindowManager()->CloseAllWindows(true);
 }
-
+#include <iostream>
 int main(int argc, char* argv[])
 {
-    ::prctl(PR_SET_PDEATHSIG, SIGHUP);
+    //::prctl(PR_SET_PDEATHSIG, SIGHUP);
+    std::cout << "main!!!" << std::endl;
     std::wstring sXml;
 
     for (int i = 0; i < argc && i < 2; ++i)
@@ -347,11 +336,6 @@ int main(int argc, char* argv[])
             return 1;
     }
 
-    // Create a copy of |argv| on Linux because Chromium mangles the value
-    // internally (see issue #620).
-    CefScopedArgArray scoped_arg_array(argc, argv);
-    char** argv_copy = scoped_arg_array.array();
-
     CefMainArgs main_args(argc, argv);
 
     // Parse command-line arguments.
@@ -379,6 +363,7 @@ int main(int argc, char* argv[])
     CefSettings settings;
 
     settings.no_sandbox = true;
+    settings.windowless_rendering_enabled = true;
 
     std::wstring sCachePath = g_globalParams->sDstPath;
     if (NSDirectory::Exists(sCachePath))
@@ -397,9 +382,6 @@ int main(int argc, char* argv[])
     // Populate the settings based on command line arguments.
     context->PopulateSettings(&settings);
 
-    // Create the main message loop object.
-    scoped_ptr<client::MainMessageLoop> message_loop(new client::MainMessageLoopStd);
-
     // Initialize CEF.
     context->Initialize(main_args, settings, app, NULL);
 
@@ -407,24 +389,11 @@ int main(int argc, char* argv[])
     manager->SetStoragePath(sCachePath, true, NULL);
     manager = NULL;
 
-    g_globalParams->m_pManager = context->GetRootWindowManager();
-
-    // The Chromium sandbox requires that there only be a single thread during
-    // initialization. Therefore initialize GTK after CEF.
-    gtk_init(&argc, &argv_copy);
-
-    // Perform gtkglext initialization required by the OSR example.
-    gtk_gl_init(&argc, &argv_copy);
-
-    // Install xlib error handlers so that the application won't be terminated
-    // on non-fatal errors. Must be done after initializing GTK.
-    XSetErrorHandler(XErrorHandlerImpl);
-    XSetIOErrorHandler(XIOErrorHandlerImpl);
-
     // Install a signal handler so we clean up after ourselves.
     signal(SIGINT, TerminationSignalHandler);
     signal(SIGTERM, TerminationSignalHandler);
 
+    /*
     // Create the first window.
     context->GetRootWindowManager()->CreateRootWindow(
         false,             // Show controls.
@@ -435,12 +404,33 @@ int main(int argc, char* argv[])
     // Run the message loop. This will block until Quit() is called by the
     // RootWindowManager after all windows have been destroyed.
     int result = message_loop->Run();
+    */
+
+    CefRefPtr<CHtmlClientHandler> client_handler_ = new CHtmlClientHandler("asc_html_file_internal", g_globalParams);
+    client_handler_->Init(g_globalParams->sSdkPath, g_globalParams->arFiles, g_globalParams->sDstPath);
+
+    CefWindowInfo window_info;
+    window_info.SetAsWindowless(NULL);
+
+    // Create the browser asynchronously.
+    CefString sUrl = client_handler_->GetUrl();
+    CefRefPtr<CefRequestContext> request_context;
+    CefBrowserSettings _settings;
+    CefBrowserHost::CreateBrowser(window_info, client_handler_.get(), sUrl, _settings, request_context);
+
+    scoped_ptr<client::MainMessageLoop> message_loop;
+    message_loop.reset(new client::MainMessageLoopStd);
+    message_loop->Run();
+    /*
+    while (g_globalParams->m_bIsRunned)
+    {
+        CefDoMessageLoopWork();
+        ::NSThreads::Sleep(40);
+    }
+    */
 
     // Shut down CEF.
     context->Shutdown();
-
-    // Release objects in reverse order of creation.
-    message_loop.reset();
     context.reset();
 
     if (!sCachePath.empty())
@@ -448,5 +438,5 @@ int main(int argc, char* argv[])
 
     RELEASEOBJECT(g_globalParams);
 
-    return result;
+    return 0;
 }

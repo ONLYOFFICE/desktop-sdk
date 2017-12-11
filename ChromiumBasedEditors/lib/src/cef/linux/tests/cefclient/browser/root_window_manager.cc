@@ -114,17 +114,20 @@ scoped_refptr<RootWindow> RootWindowManager::GetWindowForBrowser(
   return NULL;
 }
 
-void RootWindowManager::CloseAllWindows(bool force) {
+void RootWindowManager::CloseAllWindows(bool force) {printf("main:Exit999\n");
   if (!CURRENTLY_ON_MAIN_THREAD()) {
+      printf("main:ExitEEE\n");
     // Execute this method on the main thread.
     MAIN_POST_CLOSURE(base::Bind(&RootWindowManager::CloseAllWindows,
                                  base::Unretained(this), force));
     return;
   }
 
+  printf("main:Exit1\n");
   if (root_windows_.empty())
     return;
 
+  printf("main:Exit2\n");
   RootWindowSet::const_iterator it = root_windows_.begin();
   for (; it != root_windows_.end(); ++it)
     (*it)->Close(force);

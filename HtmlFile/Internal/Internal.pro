@@ -5,7 +5,7 @@ TARGET   = HtmlFileInternal
 CONFIG   += app_bundle
 TEMPLATE = app
 
-DEFINES += ASC_HIDE_WINDOW
+#DEFINES += ASC_HIDE_WINDOW
 
 CORE_ROOT_DIR = $$PWD/../../../core
 PWD_ROOT_DIR = $$PWD
@@ -36,7 +36,7 @@ SOURCES += \
 
 CONFIG += desktop_sdk_html
 
-DESTDIR = $$CORE_BUILDS_LIBRARIES_PATH
+DESTDIR = $$PWD/core_build/linux_64/debug
 
 win32 {
     include($$CORE_ROOT_DIR/../desktop-sdk/ChromiumBasedEditors/lib/AscDocumentsCore_windows.pri)
