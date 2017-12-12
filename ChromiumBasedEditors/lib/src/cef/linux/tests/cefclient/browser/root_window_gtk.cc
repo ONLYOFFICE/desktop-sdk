@@ -144,10 +144,6 @@ void RootWindowGtk::Show(ShowMode mode) {
 
   // Show the GTK window.
   gtk_widget_show_all(window_);
-  
-#ifdef ASC_HIDE_WINDOW
-  gtk_widget_hide(window_);
-#endif
 
   if (mode == ShowMinimized)
     MinimizeWindow(GTK_WINDOW(window_));

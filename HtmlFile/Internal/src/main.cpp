@@ -30,8 +30,6 @@
  *
  */
 
-#include <string>
-#include <stdio.h>
 #include "../../../core/DesktopEditor/common/File.h"
 #include "../../../core/DesktopEditor/common/Directory.h"
 #include "./src/clienthandler.h"
@@ -39,153 +37,37 @@
 
 #include "../../../core/DesktopEditor/xml/include/xmlutils.h"
 
-//#define ASC_HTML_FILE_INTERNAL_LOG
-
 #include "src/client_app.h"
 #include "src/clienthandler.h"
 #include "tests/shared/common/client_switches.h"
 #include "tests/cefclient/browser/main_context_impl.h"
-#include "tests/cefclient/browser/main_message_loop_multithreaded_win.h"
 #include "tests/shared/browser/main_message_loop_std.h"
-
-class CGlobalHtmlFileParams
-{
-public:
-    std::vector<std::wstring> sSdkPath;
-    std::wstring sDstPath;
-    std::vector<std::wstring> arFiles;
-
-    client::RootWindowManager* m_pManager;
-
-public:
-    CGlobalHtmlFileParams()
-    {
-    }
-};
 
 CGlobalHtmlFileParams* g_globalParams;
 
-#if 1
-#include "tests/cefclient/browser/browser_window_std_win.h"
-#include "tests/cefclient/browser/client_handler_std.h"
-// подменяем функции окна
+#ifdef _LINUX
+void TerminationSignalHandler(int signatl) {
+  LOG(ERROR) << "Received termination signal: " << signatl;
+  ((CHtmlClientHandler*)g_globalParams->m_client.get())->Exit();
+}
 
-namespace client {
+#include <sys/prctl.h>
 
-BrowserWindowStdWin::BrowserWindowStdWin(Delegate* delegate,
-                                         const std::string& startup_url)
-    : BrowserWindow(delegate) {
+int main(int argc, char* argv[])
+{
+    ::prctl(PR_SET_PDEATHSIG, SIGHUP);
+    std::wstring sXml;
 
-    if (startup_url == "asc_html_file_internal")
+    for (int i = 0; i < argc && i < 2; ++i)
     {
-        client_handler_ = new CHtmlClientHandler(this, startup_url, g_globalParams->m_pManager);
-        ((CHtmlClientHandler*)(client_handler_.operator ->()))->Init(g_globalParams->sSdkPath, g_globalParams->arFiles, g_globalParams->sDstPath);
+        std::string sXmlA(argv[i]);
+
+        if (0 == sXmlA.find("<html>"))
+        {
+            sXml = NSFile::CUtf8Converter::GetUnicodeStringFromUTF8((BYTE*)sXmlA.c_str(), (LONG)sXmlA.length());
+        }
     }
-    else
-    {
-        client_handler_ = new ClientHandlerStd(this, startup_url);
-    }
-}
-
-void BrowserWindowStdWin::CreateBrowser(
-    ClientWindowHandle parent_handle,
-    const CefRect& rect,
-    const CefBrowserSettings& settings,
-    CefRefPtr<CefRequestContext> request_context) {
-  REQUIRE_MAIN_THREAD();
-
-  CefWindowInfo window_info;
-  RECT wnd_rect = {rect.x, rect.y, rect.x + rect.width, rect.y + rect.height};
-  window_info.SetAsChild(parent_handle, wnd_rect);
-
-  if ("asc_html_file_internal" == client_handler_->startup_url())
-  {
-    CefBrowserHost::CreateBrowser(window_info, client_handler_,
-                                ((CHtmlClientHandler*)(client_handler_.operator ->()))->GetUrl(),
-                                settings, request_context);
-  }
-  else
-  {
-    CefBrowserHost::CreateBrowser(window_info, client_handler_,
-                                  client_handler_->startup_url(),
-                                  settings, request_context);
-  }
-}
-
-void BrowserWindowStdWin::GetPopupConfig(CefWindowHandle temp_handle,
-                                         CefWindowInfo& windowInfo,
-                                         CefRefPtr<CefClient>& client,
-                                         CefBrowserSettings& settings) {
-  // Note: This method may be called on any thread.
-  // The window will be properly sized after the browser is created.
-  windowInfo.SetAsChild(temp_handle, RECT());
-  client = client_handler_;
-}
-
-void BrowserWindowStdWin::ShowPopup(ClientWindowHandle parent_handle,
-                                    int x, int y, size_t width, size_t height) {
-  REQUIRE_MAIN_THREAD();
-
-  HWND hwnd = GetWindowHandle();
-  if (hwnd) {
-    SetParent(hwnd, parent_handle);
-    SetWindowPos(hwnd, NULL, x, y,
-                 static_cast<int>(width), static_cast<int>(height),
-                 SWP_NOZORDER);
-    ShowWindow(hwnd, SW_SHOW);
-  }
-}
-
-void BrowserWindowStdWin::Show() {
-  REQUIRE_MAIN_THREAD();
-
-#if 0
-  HWND hwnd = GetWindowHandle();
-  if (hwnd && !::IsWindowVisible(hwnd))
-    ShowWindow(hwnd, SW_SHOW);
-#endif
-}
-
-void BrowserWindowStdWin::Hide() {
-  REQUIRE_MAIN_THREAD();
-
-  HWND hwnd = GetWindowHandle();
-  if (hwnd) {
-    // When the frame window is minimized set the browser window size to 0x0 to
-    // reduce resource usage.
-    SetWindowPos(hwnd, NULL,
-        0, 0, 0, 0, SWP_NOZORDER | SWP_NOMOVE | SWP_NOACTIVATE);
-  }
-}
-
-void BrowserWindowStdWin::SetBounds(int x, int y, size_t width, size_t height) {
-  REQUIRE_MAIN_THREAD();
-
-  HWND hwnd = GetWindowHandle();
-  if (hwnd) {
-    // Set the browser window bounds.
-    SetWindowPos(hwnd, NULL, x, y,
-                 static_cast<int>(width), static_cast<int>(height),
-                 SWP_NOZORDER);
-  }
-}
-
-void BrowserWindowStdWin::SetFocus(bool focus) {
-  REQUIRE_MAIN_THREAD();
-
-  if (browser_)
-    browser_->GetHost()->SetFocus(focus);
-}
-
-ClientWindowHandle BrowserWindowStdWin::GetWindowHandle() const {
-  REQUIRE_MAIN_THREAD();
-
-  if (browser_)
-    return browser_->GetHost()->GetWindowHandle();
-  return NULL;
-}
-}  // namespace client
-#endif
+#else
 
 int APIENTRY wWinMain(HINSTANCE hInstance,
                       HINSTANCE hPrevInstance,
@@ -193,6 +75,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
                       int       nCmdShow)
 {
     std::wstring sXml(lpCmdLine);
+#endif
 
     bool bIsChromiumSubprocess = true;
     if (0 == sXml.find(L"<html>"))
@@ -243,16 +126,20 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
             return 1;
     }
 
-    // Enable High-DPI support on Windows 7 or newer.
-    CefEnableHighDPISupport();
-
+#ifdef _LINUX
+    CefMainArgs main_args(argc, argv);
+#else
     CefMainArgs main_args(hInstance);
-
-    void* sandbox_info = NULL;
+#endif
 
     // Parse command-line arguments.
     CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
+
+#ifdef _LINUX
+    command_line->InitFromArgv(argc, argv);
+#else
     command_line->InitFromString(::GetCommandLineW());
+#endif
 
     // Create a ClientApp of the correct type.
     CefRefPtr<CefApp> app;
@@ -265,9 +152,9 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
         app = new CAscClientAppOther();
 
     // Execute the secondary process, if any.
-    int exit_code = CefExecuteProcess(main_args, app, sandbox_info);
+    int exit_code = CefExecuteProcess(main_args, app, NULL);
     if (exit_code >= 0)
-    return exit_code;
+        return exit_code;
 
     // Create the main context object.
     scoped_ptr<client::MainContextImpl> context(new client::MainContextImpl(command_line, true));
@@ -275,6 +162,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
     CefSettings settings;
 
     settings.no_sandbox = true;
+    settings.windowless_rendering_enabled = true;
 
     std::wstring sCachePath = g_globalParams->sDstPath;
     if (NSDirectory::Exists(sCachePath))
@@ -293,38 +181,36 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
     // Populate the settings based on command line arguments.
     context->PopulateSettings(&settings);
 
-    // Create the main message loop object.
-    scoped_ptr<client::MainMessageLoop> message_loop;
-    if (settings.multi_threaded_message_loop)
-        message_loop.reset(new client::MainMessageLoopMultithreadedWin);
-    else
-        message_loop.reset(new client::MainMessageLoopStd);
-
     // Initialize CEF.
-    context->Initialize(main_args, settings, app, sandbox_info);
+    context->Initialize(main_args, settings, app, NULL);
 
     CefRefPtr<CefCookieManager> manager = CefCookieManager::GetGlobalManager(NULL);
     manager->SetStoragePath(sCachePath, true, NULL);
     manager = NULL;
 
-    g_globalParams->m_pManager = context->GetRootWindowManager();
+#ifdef _LINUX
+    // Install a signal handler so we clean up after ourselves.
+    signal(SIGINT, TerminationSignalHandler);
+    signal(SIGTERM, TerminationSignalHandler);
+#endif
 
-    // Create the first window.
-    context->GetRootWindowManager()->CreateRootWindow(
-        false,             // Show controls.
-        settings.windowless_rendering_enabled ? true : false,
-        CefRect(),        // Use default system size.
-        "asc_html_file_internal");   // Use default URL.
+    CefRefPtr<CHtmlClientHandler> client_handler = new CHtmlClientHandler(g_globalParams);
+    client_handler->Init();
 
-    // Run the message loop. This will block until Quit() is called by the
-    // RootWindowManager after all windows have been destroyed.
-    int result = message_loop->Run();
+    CefWindowInfo window_info;
+    window_info.SetAsWindowless(NULL);
+
+    CefRefPtr<CefRequestContext> request_context;
+    CefBrowserSettings browser_settings;
+    browser_settings.plugins = STATE_DISABLED;
+    CefBrowserHost::CreateBrowser(window_info, client_handler.get(), client_handler->GetUrl(), browser_settings, request_context);
+
+    scoped_ptr<client::MainMessageLoop> message_loop;
+    message_loop.reset(new client::MainMessageLoopStd);
+    message_loop->Run();
 
     // Shut down CEF.
     context->Shutdown();
-
-    // Release objects in reverse order of creation.
-    message_loop.reset();
     context.reset();
 
     if (!sCachePath.empty())
@@ -332,5 +218,5 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
 
     RELEASEOBJECT(g_globalParams);
 
-    return result;
+    return 0;
 }

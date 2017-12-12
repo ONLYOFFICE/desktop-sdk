@@ -57,47 +57,29 @@
 class CGlobalHtmlFileParams
 {
 public:
-    std::vector<std::wstring> sSdkPath;
-    std::wstring sDstPath;
-    std::vector<std::wstring> arFiles;
+    std::vector<std::wstring>   sSdkPath;
+    std::wstring                sDstPath;
+    std::vector<std::wstring>   arFiles;
 
-    bool m_bIsRunned;
+    CefRefPtr<client::ClientHandler> m_client;
 
 public:
     CGlobalHtmlFileParams()
-    {
-        m_bIsRunned = true;
+    {        
     }
 };
 
-class CRenderHandler : public CefRenderHandler
+class CHtmlRenderHandler : public CefRenderHandler
 {
 public:
-    CRenderHandler() {}
+    CHtmlRenderHandler() {}
 
-    // FrameListener interface
-public:
-    ///
-    // Called to retrieve the view rectangle which is relative to screen
-    // coordinates. Return true if the rectangle was provided.
-    ///
-    /*--cef()--*/
+public:    
     virtual bool GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
     {
         rect = CefRect(0, 0, 1000, 1000);
+        return true;
     }
-
-    ///
-    // Called when an element should be painted. Pixel values passed to this
-    // method are scaled relative to view coordinates based on the value of
-    // CefScreenInfo.device_scale_factor returned from GetScreenInfo. |type|
-    // indicates whether the element is the view or the popup widget. |buffer|
-    // contains the pixel data for the whole image. |dirtyRects| contains the set
-    // of rectangles in pixel coordinates that need to be repainted. |buffer| will
-    // be |width|*|height|*4 bytes in size and represents a BGRA image with an
-    // upper-left origin.
-    ///
-    /*--cef()--*/
     virtual void OnPaint(CefRefPtr<CefBrowser> browser,
                          PaintElementType type,
                          const RectList& dirtyRects,
@@ -109,7 +91,7 @@ public:
     }
 
 public:
-    IMPLEMENT_REFCOUNTING(CRenderHandler);
+    IMPLEMENT_REFCOUNTING(CHtmlRenderHandler);
 
 };
 
@@ -122,14 +104,14 @@ private:
 public:
     CGlobalHtmlFileParams* m_global;
 
-    CefRefPtr<CRenderHandler> m_render;
+    CefRefPtr<CHtmlRenderHandler> m_render;
     CefRefPtr<CefBrowser> m_browser;
 
 public:
-    CHtmlClientHandler(std::string sUrl, CGlobalHtmlFileParams* params) : client::ClientHandler(this, true, sUrl)
+    CHtmlClientHandler(CGlobalHtmlFileParams* params) : client::ClientHandler(this, true, "html_file")
     {
         m_global = params;
-        m_render = new CRenderHandler();
+        m_render = new CHtmlRenderHandler();
     }
 
     virtual CefRefPtr<CefRenderHandler> GetRenderHandler()
@@ -137,8 +119,12 @@ public:
         return m_render;
     }
 
-    void Init(const std::vector<std::wstring>& arSdks, const std::vector<std::wstring>& arFiles, const std::wstring& sDestinationFile)
+    void Init()
     {
+        std::vector<std::wstring>& arSdks = m_global->sSdkPath;
+        std::vector<std::wstring>& arFiles = m_global->arFiles;
+        std::wstring& sDestinationFile = m_global->sDstPath;
+
         m_sCachePath = sDestinationFile;
         std::wstring sUniquePath = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"HTML");
 
@@ -302,15 +288,12 @@ window.onload = function ()\
                                           CefRefPtr<CefProcessMessage> message)
     {
         CEF_REQUIRE_UI_THREAD();
-        std::cout << "main:Exit" << std::endl;
 
         // Check for messages from the client renderer.
         std::string message_name = message->GetName();
         if (message_name == "Exit")
         {
-            m_global->m_bIsRunned = false;
-            m_browser->GetHost()->CloseBrowser(true);
-            client::MainMessageLoop::Get()->Quit();
+            this->Exit();
             return true;
         }
 
@@ -338,40 +321,41 @@ window.onload = function ()\
     {
         CEF_REQUIRE_UI_THREAD();
 
-        std::cout << "renderer:crash" << std::endl;
-        m_global->m_bIsRunned = false;
+        this->Exit();
+    }
+
+    void Exit()
+    {
+        if (m_browser && m_browser->GetHost())
+            m_browser->GetHost()->CloseBrowser(true);
+        client::MainMessageLoop::Get()->Quit();
     }
 
     /////////////////////////////////////////////////////
     // Called when the browser is created.
     virtual void OnBrowserCreated(CefRefPtr<CefBrowser> browser)
       {
-          std::cout << "CDelegate::OnBrowserCreated" << std::endl;
           m_browser = browser;
       }
 
     // Called when the browser is closing.
     virtual void OnBrowserClosing(CefRefPtr<CefBrowser> browser)
       {
-          std::cout << "CDelegate::OnBrowserClosing" << std::endl;
       }
 
     // Called when the browser has been closed.
     virtual void OnBrowserClosed(CefRefPtr<CefBrowser> browser)
       {
-          std::cout << "CDelegate::OnBrowserClosed" << std::endl;
       }
 
     // Set the window URL address.
     virtual void OnSetAddress(const std::string& url)
       {
-          std::cout << "CDelegate::OnSetAddress" << std::endl;
       }
 
     // Set the window title.
     virtual void OnSetTitle(const std::string& title)
       {
-          std::cout << "CDelegate::OnSetTitle" << std::endl;
       }
 
     // Set the Favicon image.
@@ -380,7 +364,6 @@ window.onload = function ()\
     // Set fullscreen mode.
     virtual void OnSetFullscreen(bool fullscreen)
       {
-          std::cout << "CDelegate::OnSetFullscreen" << std::endl;
       }
 
     // Set the loading state.
@@ -388,14 +371,12 @@ window.onload = function ()\
                                    bool canGoBack,
                                    bool canGoForward)
       {
-          std::cout << "CDelegate::OnSetLoadingState" << std::endl;
       }
 
     // Set the draggable regions.
     virtual void OnSetDraggableRegions(
         const std::vector<CefDraggableRegion>& regions)
       {
-          std::cout << "CDelegate::OnSetDraggableRegions" << std::endl;
       }
 
     // Set focus to the next/previous control.
