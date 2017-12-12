@@ -137,7 +137,11 @@ public:
         m_Canvas = true;
 
 #ifndef _MAC
+#ifdef WIN32
+        m_Canvas = true;
+#else
         m_Canvas = false;
+#endif
 #endif
 
 #if defined(_LINUX) && !defined(_MAC)
