@@ -1,4 +1,4 @@
-// Copyright (c) 2016 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,17 +9,19 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
+// $hash=45ae3379337399f920ccc9e443e4bd3b0fad0fdc$
+//
 
-#include "libcef_dll/cpptoc/urlrequest_client_cpptoc.h"
-#include "libcef_dll/ctocpp/request_ctocpp.h"
-#include "libcef_dll/ctocpp/request_context_ctocpp.h"
-#include "libcef_dll/ctocpp/response_ctocpp.h"
 #include "libcef_dll/ctocpp/urlrequest_ctocpp.h"
-
+#include "libcef_dll/cpptoc/urlrequest_client_cpptoc.h"
+#include "libcef_dll/ctocpp/request_context_ctocpp.h"
+#include "libcef_dll/ctocpp/request_ctocpp.h"
+#include "libcef_dll/ctocpp/response_ctocpp.h"
 
 // STATIC METHODS - Body may be edited by hand.
 
-CefRefPtr<CefURLRequest> CefURLRequest::Create(CefRefPtr<CefRequest> request,
+CefRefPtr<CefURLRequest> CefURLRequest::Create(
+    CefRefPtr<CefRequest> request,
     CefRefPtr<CefURLRequestClient> client,
     CefRefPtr<CefRequestContext> request_context) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
@@ -35,15 +37,14 @@ CefRefPtr<CefURLRequest> CefURLRequest::Create(CefRefPtr<CefRequest> request,
   // Unverified params: request_context
 
   // Execute
-  cef_urlrequest_t* _retval = cef_urlrequest_create(
-      CefRequestCToCpp::Unwrap(request),
-      CefURLRequestClientCppToC::Wrap(client),
-      CefRequestContextCToCpp::Unwrap(request_context));
+  cef_urlrequest_t* _retval =
+      cef_urlrequest_create(CefRequestCToCpp::Unwrap(request),
+                            CefURLRequestClientCppToC::Wrap(client),
+                            CefRequestContextCToCpp::Unwrap(request_context));
 
   // Return type: refptr_same
   return CefURLRequestCToCpp::Wrap(_retval);
 }
-
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
@@ -128,22 +129,27 @@ void CefURLRequestCToCpp::Cancel() {
   _struct->cancel(_struct);
 }
 
-
 // CONSTRUCTOR - Do not edit by hand.
 
-CefURLRequestCToCpp::CefURLRequestCToCpp() {
-}
+CefURLRequestCToCpp::CefURLRequestCToCpp() {}
 
-template<> cef_urlrequest_t* CefCToCpp<CefURLRequestCToCpp, CefURLRequest,
-    cef_urlrequest_t>::UnwrapDerived(CefWrapperType type, CefURLRequest* c) {
+template <>
+cef_urlrequest_t*
+CefCToCppRefCounted<CefURLRequestCToCpp, CefURLRequest, cef_urlrequest_t>::
+    UnwrapDerived(CefWrapperType type, CefURLRequest* c) {
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
 
-#ifndef NDEBUG
-template<> base::AtomicRefCount CefCToCpp<CefURLRequestCToCpp, CefURLRequest,
-    cef_urlrequest_t>::DebugObjCt = 0;
+#if DCHECK_IS_ON()
+template <>
+base::AtomicRefCount
+    CefCToCppRefCounted<CefURLRequestCToCpp, CefURLRequest, cef_urlrequest_t>::
+        DebugObjCt ATOMIC_DECLARATION;
 #endif
 
-template<> CefWrapperType CefCToCpp<CefURLRequestCToCpp, CefURLRequest,
-    cef_urlrequest_t>::kWrapperType = WT_URLREQUEST;
+template <>
+CefWrapperType CefCToCppRefCounted<CefURLRequestCToCpp,
+                                   CefURLRequest,
+                                   cef_urlrequest_t>::kWrapperType =
+    WT_URLREQUEST;

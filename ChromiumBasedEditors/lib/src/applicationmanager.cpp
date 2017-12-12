@@ -58,13 +58,18 @@ CAscApplicationSettings::CAscApplicationSettings()
     cookie_path                     = sApplicationPath + L"/data";
 
     use_system_fonts                = true;
-    fonts_cache_info_path           = app_data_path + L"/webdata/cloud/fonts";
+    fonts_cache_info_path           = app_data_path + L"/data/fonts";
 
-    local_editors_path              = sApplicationPath + L"/Local/editors/web-apps/apps/api/documents/index.html";
-    file_converter_path             = sApplicationPath + L"/Local/converter";
-    recover_path                    = sApplicationPath + L"/Local/recover";
+    system_plugins_path             = app_data_path + L"/editors/sdkjs-plugins";
+    user_plugins_path               = app_data_path + L"/editors/sdkjs-plugins-user";
+
+    local_editors_path              = sApplicationPath + L"/editors/web-apps/apps/api/documents/index.html";
+    file_converter_path             = sApplicationPath + L"/converter";
+    recover_path                    = app_data_path + L"/data/recover";
 
     country                         = "RU";
+
+    sign_support                    = true;
 }
 
 void CAscApplicationSettings::SetUserDataPath(std::wstring sPath)
@@ -76,7 +81,10 @@ void CAscApplicationSettings::SetUserDataPath(std::wstring sPath)
     cookie_path                     = app_data_path + L"/data";
 
     use_system_fonts                = true;
-    fonts_cache_info_path           = app_data_path + L"/webdata/cloud/fonts";
+    fonts_cache_info_path           = app_data_path + L"/data/fonts";
+    recover_path                    = app_data_path + L"/data/recover";
+
+    user_plugins_path               = app_data_path + L"/data/sdkjs-plugins";
 }
 
 void CTimerKeyboardChecker::OnTimer()
@@ -139,7 +147,15 @@ void CAscApplicationManager::CheckFonts(bool bAsync)
     m_pInternal->LocalFiles_Init();
 
     if (!NSDirectory::Exists(m_oSettings.fonts_cache_info_path))
+    {
+#ifdef WIN32
+        std::wstring sTmpDir = m_oSettings.fonts_cache_info_path;
+        NSCommon::string_replace(sTmpDir, L"/", L"\\");
+        NSDirectory::CreateDirectories(sTmpDir);
+#else
         NSDirectory::CreateDirectories(m_oSettings.fonts_cache_info_path);
+#endif
+    }
 
     bool bIsStarted = m_pInternal->IsRunned();
     bool bIsInit = IsInitFonts();
@@ -339,7 +355,8 @@ void CAscApplicationManager::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             NSEditorApi::CAscAddPlugin* pData = (NSEditorApi::CAscAddPlugin*)pEvent->m_pData;
 
             CPluginsManager oPlugins;
-            oPlugins.m_strDirectory = m_oSettings.fonts_cache_info_path + L"/sdkjs-plugins";
+            oPlugins.m_strDirectory = m_oSettings.system_plugins_path;
+            oPlugins.m_strUserDirectory = m_oSettings.user_plugins_path;
             oPlugins.AddPlugin(pData->get_Path());
 
             for (std::map<int, CCefView*>::iterator i = m_pInternal->m_mapViews.begin(); i != m_pInternal->m_mapViews.end(); ++i)
@@ -625,7 +642,7 @@ int CAscApplicationManager::GetFileFormatByExtentionForSave(const std::wstring& 
         nFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_CSV;
 
     if (sName == L"pptx")
-        nFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX; else
+        nFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
     if (sName == L"odp")
         nFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_ODP;
 
@@ -638,6 +655,26 @@ int CAscApplicationManager::GetFileFormatByExtentionForSave(const std::wstring& 
 void CAscApplicationManager::InitAdditionalEditorParams(std::wstring& sParams)
 {
     m_pInternal->m_sAdditionalUrlParams = sParams;
+}
+
+void CAscApplicationManager::DoMessageLoopWork()
+{
+    CefDoMessageLoopWork();
+}
+
+bool CAscApplicationManager::IsExternalEventLoop()
+{
+    return false;
+}
+
+void CAscApplicationManager::ExitExternalEventLoop()
+{
+    // none
+}
+
+void CAscApplicationManager::SetEventToAllMainWindows(NSEditorApi::CAscMenuEvent* pEvent)
+{
+    m_pInternal->SetEventToAllMainWindows(pEvent);
 }
 
 #ifdef DOCUMENTSCORE_OPENSSL_SUPPORT

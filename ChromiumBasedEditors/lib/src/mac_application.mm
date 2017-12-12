@@ -34,11 +34,11 @@
 
 #include "include/cef_app.h"
 #import "include/cef_application_mac.h"
-#include "cefclient/browser/client_app_browser.h"
-#include "cefclient/browser/main_context_impl.h"
-#include "cefclient/browser/main_message_loop_std.h"
+#include "tests/shared/browser/client_app_browser.h"
+#include "tests/cefclient/browser/main_context_impl.h"
+#include "tests/shared/browser/main_message_loop_std.h"
 
-#include "../../../graphics/BaseThread.h"
+#include "../../../../core/DesktopEditor/graphics/BaseThread.h"
 
 namespace
 {

@@ -21,18 +21,22 @@ QMAKE_LFLAGS += -Wl,--rpath=./
 CONFIG += build_all_zlib build_zlib_as_sources
 include($$CORE_ROOT_DIR/OfficeUtils/OfficeUtils.pri)
 
+CONFIG += build_cximage_zlib_disable
+include($$CORE_ROOT_DIR/DesktopEditor/Qt_build/graphics/project/graphics.pri)
+
 DEFINES += \
     PDFREADER_USE_DYNAMIC_LIBRARY \
     DJVU_USE_DYNAMIC_LIBRARY \
     XPS_USE_DYNAMIC_LIBRARY \
     HTMLRENDERER_USE_DYNAMIC_LIBRARY
 
-LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lgraphics -llibxml -lhunspell
+LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -llibxml -lhunspell
 LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lPdfReader -lPdfWriter -lDjVuFile -lXpsFile -lHtmlRenderer -lUnicodeConverter -looxmlsignature
 # ------------------------------------------------------
 
 DEFINES += DOCUMENTSCORE_OPENSSL_SUPPORT
 
+include($$PWD/AscDocumentsCore_base.pri)
 include($$PWD/AscDocumentsCore_linux.pri)
 
 ####################  BOOST  ###########################
@@ -80,6 +84,7 @@ SOURCES += \
 SOURCES += \
     ./../../../core/Common/OfficeFileFormatChecker2.cpp \
     ./../../../core/Common/3dParty/pole/pole.cpp \
+    ./../../../core/Common/DocxFormat/Source/Base/unicode_util.cpp \
     ./../../../core/HtmlRenderer/src/ASCSVGWriter.cpp
 
 SOURCES += \

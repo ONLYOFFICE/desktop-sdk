@@ -1,4 +1,4 @@
-// Copyright (c) 2016 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,9 +9,10 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
+// $hash=a97be83f7680a0fd89df2450271bcb8adb2e2e53$
+//
 
 #include "libcef_dll/ctocpp/v8stack_frame_ctocpp.h"
-
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
@@ -26,7 +27,7 @@ bool CefV8StackFrameCToCpp::IsValid() {
   int _retval = _struct->is_valid(_struct);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 CefString CefV8StackFrameCToCpp::GetScriptName() {
@@ -53,8 +54,8 @@ CefString CefV8StackFrameCToCpp::GetScriptNameOrSourceURL() {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_string_userfree_t _retval = _struct->get_script_name_or_source_url(
-      _struct);
+  cef_string_userfree_t _retval =
+      _struct->get_script_name_or_source_url(_struct);
 
   // Return type: string
   CefString _retvalStr;
@@ -117,7 +118,7 @@ bool CefV8StackFrameCToCpp::IsEval() {
   int _retval = _struct->is_eval(_struct);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 bool CefV8StackFrameCToCpp::IsConstructor() {
@@ -131,26 +132,33 @@ bool CefV8StackFrameCToCpp::IsConstructor() {
   int _retval = _struct->is_constructor(_struct);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
-
 
 // CONSTRUCTOR - Do not edit by hand.
 
-CefV8StackFrameCToCpp::CefV8StackFrameCToCpp() {
-}
+CefV8StackFrameCToCpp::CefV8StackFrameCToCpp() {}
 
-template<> cef_v8stack_frame_t* CefCToCpp<CefV8StackFrameCToCpp,
-    CefV8StackFrame, cef_v8stack_frame_t>::UnwrapDerived(CefWrapperType type,
-    CefV8StackFrame* c) {
+template <>
+cef_v8stack_frame_t*
+CefCToCppRefCounted<CefV8StackFrameCToCpp,
+                    CefV8StackFrame,
+                    cef_v8stack_frame_t>::UnwrapDerived(CefWrapperType type,
+                                                        CefV8StackFrame* c) {
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
 
-#ifndef NDEBUG
-template<> base::AtomicRefCount CefCToCpp<CefV8StackFrameCToCpp,
-    CefV8StackFrame, cef_v8stack_frame_t>::DebugObjCt = 0;
+#if DCHECK_IS_ON()
+template <>
+base::AtomicRefCount CefCToCppRefCounted<CefV8StackFrameCToCpp,
+                                         CefV8StackFrame,
+                                         cef_v8stack_frame_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
-template<> CefWrapperType CefCToCpp<CefV8StackFrameCToCpp, CefV8StackFrame,
-    cef_v8stack_frame_t>::kWrapperType = WT_V8STACK_FRAME;
+template <>
+CefWrapperType CefCToCppRefCounted<CefV8StackFrameCToCpp,
+                                   CefV8StackFrame,
+                                   cef_v8stack_frame_t>::kWrapperType =
+    WT_V8STACK_FRAME;

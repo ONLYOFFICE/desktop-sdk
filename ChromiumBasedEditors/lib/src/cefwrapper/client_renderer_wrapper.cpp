@@ -271,6 +271,9 @@ public:
     std::wstring        m_sAppData;
     std::wstring        m_sFontsData;
 
+    std::wstring        m_sSystemPlugins;
+    std::wstring        m_sUserPlugins;
+
     int                 m_nSkipMouseWhellMax;
     int                 m_nSkipMouseWhellCounter;
 
@@ -294,6 +297,8 @@ public:
 
     CNativeViewer m_oNativeViewer;
     int m_nNativeOpenFileTimerID;
+
+    bool m_bIsSupportSigs;
 
     std::list<CSavedPageInfo> m_arCompleteTasks;
 
@@ -327,6 +332,8 @@ public:
         m_nNativeOpenFileTimerID = -1;
 
         m_bIsPrinting = false;
+
+        m_bIsSupportSigs = true;
 
         m_oCompleteTasksCS.InitializeCriticalSection();
 
@@ -440,7 +447,7 @@ public:
 
             if (m_sVersion.empty())
             {                
-                CefRefPtr<CefV8Value> retval;
+                CefRefPtr<CefV8Value> retval3;
                 CefRefPtr<CefV8Exception> exception;
 
                 bool bIsVersion = browser->GetMainFrame()->GetV8Context()->Eval(
@@ -449,11 +456,11 @@ if (window.DocsAPI && window.DocsAPI.DocEditor) \n\
     return window.DocsAPI.DocEditor.version(); \n\
 else \n\
     return undefined; \n\
-})();", retval, exception);
+})();", "", 0, retval3, exception);
                 if (bIsVersion)
                 {
-                    if (retval->IsString())
-                        m_sVersion = retval->GetStringValue().ToString();
+                    if (retval3->IsString())
+                        m_sVersion = retval3->GetStringValue().ToString();
                 }
 
                 if (m_sVersion.empty())
@@ -462,7 +469,7 @@ else \n\
                 CefRefPtr<CefV8Value> retval2;
                 CefRefPtr<CefV8Exception> exception2;
 
-                bool bIsAppData = CefV8Context::GetCurrentContext()->Eval("window[\"AscDesktopEditor_AppData\"]();", retval2, exception2);
+                bool bIsAppData = CefV8Context::GetCurrentContext()->Eval("window[\"AscDesktopEditor_AppData\"]();", "", 0, retval2, exception2);
                 if (bIsAppData)
                 {
                     if (retval2->IsString())
@@ -471,9 +478,9 @@ else \n\
                         m_sAppData = NSFile::CUtf8Converter::GetUnicodeStringFromUTF8((BYTE*)sAppDataA.c_str(), (LONG)sAppDataA.length());
                     }
                 }
-                retval = NULL;
+                retval2 = NULL;
                 exception2 = NULL;
-                bool bIsFontsData = CefV8Context::GetCurrentContext()->Eval("window[\"AscDesktopEditor_FontsData\"]();", retval2, exception2);
+                bool bIsFontsData = CefV8Context::GetCurrentContext()->Eval("window[\"AscDesktopEditor_FontsData\"]();", "", 0, retval2, exception2);
                 if (bIsAppData)
                 {
                     if (retval2->IsString())
@@ -482,6 +489,31 @@ else \n\
                         m_sFontsData = NSFile::CUtf8Converter::GetUnicodeStringFromUTF8((BYTE*)sFontsDataA.c_str(), (LONG)sFontsDataA.length());
                     }
                 }
+
+                retval2 = NULL;
+                exception2 = NULL;
+                bool bIsSPData = CefV8Context::GetCurrentContext()->Eval("window[\"AscDesktopEditor_SP\"]();", "", 0, retval2, exception2);
+                if (bIsSPData)
+                {
+                    if (retval2->IsString())
+                    {
+                        std::string sDataA = retval2->GetStringValue().ToString();
+                        m_sSystemPlugins = UTF8_TO_U(sDataA);
+                    }
+                }
+
+                retval2 = NULL;
+                exception2 = NULL;
+                bool bIsUPData = CefV8Context::GetCurrentContext()->Eval("window[\"AscDesktopEditor_UP\"]();", "", 0, retval2, exception2);
+                if (bIsUPData)
+                {
+                    if (retval2->IsString())
+                    {
+                        std::string sDataA = retval2->GetStringValue().ToString();
+                        m_sUserPlugins = UTF8_TO_U(sDataA);
+                    }
+                }
+
 
                 /*
                 FILE* f = fopen("D:\\editor_version.txt", "a+");
@@ -1382,6 +1414,19 @@ else \n\
             CefRefPtr<CefV8Value> val = *arguments.begin();
             message->GetArgumentList()->SetString(0, val->GetStringValue());
 
+            if (arguments.size() > 1)
+            {
+                std::vector<CefRefPtr<CefV8Value> >::const_iterator iter = arguments.begin();
+                ++iter;
+                CefRefPtr<CefV8Value> val_pass = *iter;
+                if (val_pass->IsString())
+                    message->GetArgumentList()->SetString(1, val_pass->GetStringValue());
+                else
+                    message->GetArgumentList()->SetString(1, "");
+            }
+            else
+                message->GetArgumentList()->SetString(1, "");
+
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
@@ -1568,7 +1613,7 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
             CefRefPtr<CefV8Value> _timerID;
             CefRefPtr<CefV8Exception> _exception;
             if (CefV8Context::GetCurrentContext()->Eval("(function(){ var intervalID = setInterval(function(){ window.AscDesktopEditor.NativeFunctionTimer(intervalID); }, 100); return intervalID; })();",
-                                                    _timerID, _exception))
+                                                    "", 0, _timerID, _exception))
             {
                 m_nNativeOpenFileTimerID = _timerID->GetIntValue();
                 //LOGGER_STRING2("timer created: " + std::to_string(m_nNativeOpenFileTimerID));
@@ -1596,7 +1641,7 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
                     CefRefPtr<CefV8Value> _timerID;
                     CefRefPtr<CefV8Exception> _exception;
                     std::string sCode = "clearTimeout(" + std::to_string(m_nNativeOpenFileTimerID) + ");";
-                    if (CefV8Context::GetCurrentContext()->Eval(sCode, _timerID, _exception))
+                    if (CefV8Context::GetCurrentContext()->Eval(sCode, "", 0, _timerID, _exception))
                     {
                         //LOGGER_STRING2("timer stoped: " + std::to_string(m_nNativeOpenFileTimerID));
                     }
@@ -1669,10 +1714,81 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
         }
         else if (name == "GetInstallPlugins")
         {
+            if (m_sSystemPlugins.empty())
+            {
+                CefRefPtr<CefV8Value> retval2;
+                CefRefPtr<CefV8Exception> exception2;
+
+                retval2 = NULL;
+                exception2 = NULL;
+                bool bIsSPData = CefV8Context::GetCurrentContext()->Eval("window[\"AscDesktopEditor_SP\"]();", "", 0, retval2, exception2);
+                if (bIsSPData)
+                {
+                    if (retval2->IsString())
+                    {
+                        std::string sDataA = retval2->GetStringValue().ToString();
+                        m_sSystemPlugins = UTF8_TO_U(sDataA);
+                    }
+                }
+
+                retval2 = NULL;
+                exception2 = NULL;
+                bool bIsUPData = CefV8Context::GetCurrentContext()->Eval("window[\"AscDesktopEditor_UP\"]();", "", 0, retval2, exception2);
+                if (bIsUPData)
+                {
+                    if (retval2->IsString())
+                    {
+                        std::string sDataA = retval2->GetStringValue().ToString();
+                        m_sUserPlugins = UTF8_TO_U(sDataA);
+                    }
+                }
+            }
+
             CPluginsManager oPlugins;
-            oPlugins.m_strDirectory = m_sFontsData + L"/sdkjs-plugins";
+            oPlugins.m_strDirectory = m_sSystemPlugins;
+            oPlugins.m_strUserDirectory = m_sUserPlugins;
             std::string sData = oPlugins.GetPluginsJson();
             retval = CefV8Value::CreateString(sData);
+            return true;
+        }
+        else if (name == "PluginInstall")
+        {
+            CPluginsManager oPlugins;
+            oPlugins.m_strDirectory = m_sSystemPlugins;
+            oPlugins.m_strUserDirectory = m_sUserPlugins;
+
+            std::wstring sFile = ((*arguments.begin())->GetStringValue()).ToWString();
+            oPlugins.AddPlugin(sFile);
+
+            // send to editor
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefFrame> _frame = browser->GetFrame("frameEditor");
+            if (!_frame)
+                _frame = browser->GetMainFrame();
+
+            std::string sCode = "if (window.UpdateInstallPlugins) window.UpdateInstallPlugins();";
+            _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+
+            return true;
+        }
+        else if (name == "PluginUninstall")
+        {
+            CPluginsManager oPlugins;
+            oPlugins.m_strDirectory = m_sSystemPlugins;
+            oPlugins.m_strUserDirectory = m_sUserPlugins;
+
+            std::wstring sGuid = ((*arguments.begin())->GetStringValue()).ToWString();
+            oPlugins.RemovePlugin(sGuid);
+
+            // send to editor
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefFrame> _frame = browser->GetFrame("frameEditor");
+            if (!_frame)
+                _frame = browser->GetMainFrame();
+
+            std::string sCode = "if (window.UpdateInstallPlugins) window.UpdateInstallPlugins();";
+            _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+
             return true;
         }
         else if (name == "IsLocalFile")
@@ -1721,6 +1837,25 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
+        else if (name == "RemoveSignature")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_remove");
+
+            std::vector<CefRefPtr<CefV8Value>>::const_iterator iter = arguments.begin();
+            message->GetArgumentList()->SetString(0, (*iter)->GetStringValue()); ++iter;
+
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "RemoveAllSignatures")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_remove");
+
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
         else if (name == "ViewCertificate")
         {
             CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
@@ -1752,6 +1887,8 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_open_filename_dialog");
             std::vector<CefRefPtr<CefV8Value>>::const_iterator iter = arguments.begin();
             message->GetArgumentList()->SetString(0, (*iter)->GetStringValue());
+            int64 id = CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier();
+            message->GetArgumentList()->SetString(1, std::to_string(id));
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
@@ -1797,6 +1934,16 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
+        else if (name == "IsSignaturesSupport")
+        {
+            retval = CefV8Value::CreateBool(m_bIsSupportSigs);
+            return true;
+        }
+        else if (name == "SetSupportSign")
+        {
+            m_bIsSupportSigs = arguments[0]->GetBoolValue();
+            return true;
+        }    
         // Function does not exist.
         return false;
     }
@@ -2110,6 +2257,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
   {
     m_pAdditional = Create_ApplicationRendererAdditional();
     sync_command_check = false;
+    m_bIsNativeViewer = false;
   }
 
   virtual void OnWebKitInitialized(CefRefPtr<client::ClientAppRenderer> app) OVERRIDE {
@@ -2127,7 +2275,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     // add AscEditorNative
     CefRefPtr<CefV8Value> object = context->GetGlobal();
 
-    CefRefPtr<CefV8Value> objNative = CefV8Value::CreateObject(NULL);
+    CefRefPtr<CefV8Value> objNative = CefV8Value::CreateObject(NULL, NULL);
     CAscEditorNativeV8Handler* pNativeHandlerWrapper = new CAscEditorNativeV8Handler();
     pNativeHandlerWrapper->sync_command_check = &sync_command_check;
 
@@ -2254,6 +2402,16 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction962 = CefV8Value::CreateFunction("sendToReporter", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction963 = CefV8Value::CreateFunction("sendFromReporter", _nativeHandler);
 
+    CefRefPtr<CefV8Value> _nativeFunction964 = CefV8Value::CreateFunction("IsSignaturesSupport", _nativeHandler);
+
+    CefRefPtr<CefV8Value> _nativeFunction965 = CefV8Value::CreateFunction("RemoveSignature", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction966 = CefV8Value::CreateFunction("RemoveAllSignatures", _nativeHandler);
+
+    CefRefPtr<CefV8Value> _nativeFunction967 = CefV8Value::CreateFunction("SetSupportSign", _nativeHandler);
+
+    CefRefPtr<CefV8Value> _nativeFunction968 = CefV8Value::CreateFunction("PluginInstall", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction969 = CefV8Value::CreateFunction("PluginUninstall", _nativeHandler);
+
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Cut", _nativeFunctionCut, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -2370,6 +2528,16 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("sendToReporter", _nativeFunction962, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("sendFromReporter", _nativeFunction963, V8_PROPERTY_ATTRIBUTE_NONE);
 
+    objNative->SetValue("IsSignaturesSupport", _nativeFunction964, V8_PROPERTY_ATTRIBUTE_NONE);
+
+    objNative->SetValue("RemoveSignature", _nativeFunction965, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("RemoveAllSignatures", _nativeFunction966, V8_PROPERTY_ATTRIBUTE_NONE);
+
+    objNative->SetValue("SetSupportSign", _nativeFunction967, V8_PROPERTY_ATTRIBUTE_NONE);
+
+    objNative->SetValue("PluginInstall", _nativeFunction968, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("PluginUninstall", _nativeFunction969, V8_PROPERTY_ATTRIBUTE_NONE);
+
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 
     CefRefPtr<CefFrame> _frame = context->GetFrame();
@@ -2437,8 +2605,14 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         if (_frame)
         {
             int nControlId = message->GetArgumentList()->GetInt(0);
+            bool isSupportSign = message->GetArgumentList()->GetBool(1);
             std::string sControlId = std::to_string(nControlId);
             std::string sCode = "window[\"AscDesktopEditor\"][\"SetEditorId\"](" + sControlId + ");";
+
+            if (isSupportSign)
+                sCode += "window[\"AscDesktopEditor\"][\"SetSupportSign\"](true);";
+            else
+                sCode += "window[\"AscDesktopEditor\"][\"SetSupportSign\"](false);";
 
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
         }
@@ -2587,8 +2761,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
             else
                 _frame->ExecuteJavaScript("window.AscDesktopEditor.LocalFileSetSaved(false);", _frame->GetURL(), 0);
 
-            std::string sFileData = "";
-            NSFile::CFileBinary::ReadAllTextUtf8A(sFolder + L"/Editor.bin", sFileData);
+            int nFileDataLen = 0;
+            std::string sFileData = GetFileData(sFolder + L"/Editor.bin", nFileDataLen);
 
             std::string sCode = "window.AscDesktopEditor.LocalFileRecoverFolder(\"" + U_TO_UTF8(sFolder) +
                     "\");window.AscDesktopEditor.LocalFileSetSourcePath(\"" + U_TO_UTF8(sFileSrc) + "\");";
@@ -2619,7 +2793,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
             }
 
             sCode = "";
-            sCode = "window.DesktopOfflineAppDocumentEndLoad(\"" + U_TO_UTF8(sFolder) + "\", \"" + sFileData + "\");";
+            sCode = "window.DesktopOfflineAppDocumentEndLoad(\"" + U_TO_UTF8(sFolder) + "\", \"" + sFileData + "\", " + std::to_string(nFileDataLen) + ");";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
 
             sCode = "window.DesktopOfflineAppDocumentSignatures(\"" + U_TO_UTF8(sSignatures) + "\");";
@@ -2651,7 +2825,21 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
                 _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
             }
 
-            std::string sCode = "window.DesktopOfflineAppDocumentEndSave(" + std::to_string(nIsSaved) + ");";
+            std::string sCode = "window.DesktopOfflineAppDocumentEndSave(" + std::to_string(nIsSaved);
+
+            if (4 == message->GetArgumentList()->GetSize())
+            {
+                std::string sPass = message->GetArgumentList()->GetString(2).ToString();
+                std::string sHash = message->GetArgumentList()->GetString(3).ToString();
+
+                sCode += ", \"";
+                sCode += sHash;
+                sCode += "\", \"";
+                sCode += sPass;
+                sCode += "\"";
+            }
+
+            sCode += ");";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
         }
         return true;
@@ -2739,13 +2927,24 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         if (_frame)
         {
             std::string sParam = std::to_string(message->GetArgumentList()->GetInt(0));
-            std::string sCode = "window.asc_initAdvancedOptions(" + sParam + ");";
+            std::string sCode = "window.asc_initAdvancedOptions(" + sParam;
+
+            if (2 == message->GetArgumentList()->GetSize())
+            {
+                std::string sHash = message->GetArgumentList()->GetString(1).ToString();
+                sCode += ",\"";
+                sCode += sHash;
+                sCode += "\"";
+            }
+
+            sCode += ");";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
         }
         return true;
     }    
     else if (sMessageName == "native_viewer_onopened")
     {
+        m_bIsNativeViewer = true;
         CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
         if (_frame)
         {
@@ -2788,7 +2987,16 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     }
     else if (sMessageName == "on_open_filename_dialog")
     {
-        CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
+        CefRefPtr<CefFrame> _frame;
+
+        std::string sId = message->GetArgumentList()->GetString(1).ToString();
+        if (sId.empty())
+            _frame = GetEditorFrame(browser);
+        else
+        {
+            int64 nId = (int64)std::stoll(sId);
+            _frame = browser->GetFrame(nId);
+        }
 
         if (_frame)
         {
@@ -2871,6 +3079,38 @@ private:
     return browser->GetMainFrame();
   }
 
+  std::string GetFileData(const std::wstring& sFile, int& nLen)
+  {
+    if (m_bIsNativeViewer)
+    {
+        std::string sFileData;
+        NSFile::CFileBinary::ReadAllTextUtf8A(sFile, sFileData);
+
+        std::string::size_type pos = sFileData.find(";");
+        nLen = std::stoi(sFileData.substr(0, pos));
+        sFileData = sFileData.substr(pos + 1);
+        return sFileData;
+    }
+
+    BYTE* pData = NULL;
+    DWORD dwFileLen = 0;
+    NSFile::CFileBinary::ReadAllBytes(sFile, &pData, dwFileLen);
+
+    char* pDataBase64 = NULL;
+    int nDataBase64Len = 0;
+
+    nLen = (int)dwFileLen;
+
+    NSFile::CBase64Converter::Encode(pData, nLen, pDataBase64, nDataBase64Len, NSBase64::B64_BASE64_FLAG_NOCRLF);
+
+    std::string sFileData(pDataBase64, nDataBase64Len);
+
+    RELEASEARRAYOBJECTS(pDataBase64);
+    RELEASEARRAYOBJECTS(pData);
+
+    return sFileData;
+  }
+
  private:
   bool last_node_is_editable_;
   bool sync_command_check;
@@ -2879,6 +3119,7 @@ private:
   CefRefPtr<CefMessageRouterRendererSide> message_router_;
 
   NSCommon::smart_ptr<CApplicationRendererAdditionalBase> m_pAdditional;
+  bool m_bIsNativeViewer;
 
   IMPLEMENT_REFCOUNTING(ClientRenderDelegate);
 };
@@ -2887,4 +3128,9 @@ void CreateRenderDelegates(client::ClientAppRenderer::DelegateSet& delegates) {
   delegates.insert(new ClientRenderDelegate);
 }
 
+// static
 }  // namespace client_renderer
+
+void client::ClientAppRenderer::CreateDelegates(client::ClientAppRenderer::DelegateSet& delegates) {
+    asc_client_renderer::CreateRenderDelegates(delegates);
+}

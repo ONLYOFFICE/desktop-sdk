@@ -33,11 +33,7 @@
 #ifndef CEF_ASC_CLIENT_APP_H_
 #define CEF_ASC_CLIENT_APP_H_
 
-#include "cefclient/common/client_app.h"
-#include "cefclient/browser/client_app_browser.h"
-#include "cefclient/renderer/client_app_renderer.h"
-#include "cefclient/common/client_app_other.h"
-#include "client_renderer.h"
+#include "tests/shared/common/client_app.h"
 
 #if defined(_LINUX) && !defined(_MAC)
 #include <gdk/gdk.h>
@@ -49,7 +45,9 @@
 static int IsForceDpiRound()
 {
 #ifdef WIN32
+#if 1
     return 1;
+#else
     HWND hwnd = GetDesktopWindow();
     HDC hdc = GetDC(hwnd);
     int nX = GetDeviceCaps(hdc, LOGPIXELSX);
@@ -83,6 +81,7 @@ static int IsForceDpiRound()
 
         return nScale;
     }
+#endif
 #endif
 
 #if defined(_LINUX) && !defined(_MAC)
@@ -121,6 +120,9 @@ static int IsForceDpiRound()
 
     return 0;
 }
+
+#ifndef MAC_NO_MAIN_PROCESS
+#include "tests/shared/browser/client_app_browser.h"
 
 class CAscClientAppBrowser : public client::ClientAppBrowser
 {
@@ -179,6 +181,11 @@ public:
 public:
     IMPLEMENT_REFCOUNTING(CAscClientAppBrowser);
 };
+#endif
+
+#ifndef MAC_NO_SUB_PROCESS
+#include "tests/shared/renderer/client_app_renderer.h"
+#include "tests/shared/common/client_app_other.h"
 
 class CAscClientAppOther : public client::ClientAppOther
 {
@@ -291,16 +298,7 @@ public:
                 command_line->AppendSwitchWithValue("--force-device-scale-factor", std::to_string(forceDpi));
         }
     }
-
-    virtual void OnRenderThreadCreated(CefRefPtr<CefListValue> extra_info)
-                                       OVERRIDE
-    {
-        asc_client_renderer::CreateRenderDelegates(delegates_);
-
-        DelegateSet::iterator it = delegates_.begin();
-        for (; it != delegates_.end(); ++it)
-          (*it)->OnRenderThreadCreated(this, extra_info);
-    }
 };
+#endif
 
 #endif

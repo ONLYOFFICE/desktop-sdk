@@ -1,4 +1,4 @@
-// Copyright (c) 2016 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,10 +9,11 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
+// $hash=5b6bd94aebe436d85e66fbc939e49b2e30c2b43e$
+//
 
 #include "libcef_dll/ctocpp/domdocument_ctocpp.h"
 #include "libcef_dll/ctocpp/domnode_ctocpp.h"
-
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
@@ -102,8 +103,7 @@ CefRefPtr<CefDOMNode> CefDOMDocumentCToCpp::GetElementById(
     return NULL;
 
   // Execute
-  cef_domnode_t* _retval = _struct->get_element_by_id(_struct,
-      id.GetStruct());
+  cef_domnode_t* _retval = _struct->get_element_by_id(_struct, id.GetStruct());
 
   // Return type: refptr_same
   return CefDOMNodeCToCpp::Wrap(_retval);
@@ -134,7 +134,7 @@ bool CefDOMDocumentCToCpp::HasSelection() {
   int _retval = _struct->has_selection(_struct);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 int CefDOMDocumentCToCpp::GetSelectionStartOffset() {
@@ -226,8 +226,8 @@ CefString CefDOMDocumentCToCpp::GetCompleteURL(const CefString& partialURL) {
     return CefString();
 
   // Execute
-  cef_string_userfree_t _retval = _struct->get_complete_url(_struct,
-      partialURL.GetStruct());
+  cef_string_userfree_t _retval =
+      _struct->get_complete_url(_struct, partialURL.GetStruct());
 
   // Return type: string
   CefString _retvalStr;
@@ -235,23 +235,28 @@ CefString CefDOMDocumentCToCpp::GetCompleteURL(const CefString& partialURL) {
   return _retvalStr;
 }
 
-
 // CONSTRUCTOR - Do not edit by hand.
 
-CefDOMDocumentCToCpp::CefDOMDocumentCToCpp() {
-}
+CefDOMDocumentCToCpp::CefDOMDocumentCToCpp() {}
 
-template<> cef_domdocument_t* CefCToCpp<CefDOMDocumentCToCpp, CefDOMDocument,
-    cef_domdocument_t>::UnwrapDerived(CefWrapperType type,
-    CefDOMDocument* c) {
+template <>
+cef_domdocument_t*
+CefCToCppRefCounted<CefDOMDocumentCToCpp, CefDOMDocument, cef_domdocument_t>::
+    UnwrapDerived(CefWrapperType type, CefDOMDocument* c) {
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
 
-#ifndef NDEBUG
-template<> base::AtomicRefCount CefCToCpp<CefDOMDocumentCToCpp, CefDOMDocument,
-    cef_domdocument_t>::DebugObjCt = 0;
+#if DCHECK_IS_ON()
+template <>
+base::AtomicRefCount CefCToCppRefCounted<CefDOMDocumentCToCpp,
+                                         CefDOMDocument,
+                                         cef_domdocument_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
-template<> CefWrapperType CefCToCpp<CefDOMDocumentCToCpp, CefDOMDocument,
-    cef_domdocument_t>::kWrapperType = WT_DOMDOCUMENT;
+template <>
+CefWrapperType CefCToCppRefCounted<CefDOMDocumentCToCpp,
+                                   CefDOMDocument,
+                                   cef_domdocument_t>::kWrapperType =
+    WT_DOMDOCUMENT;

@@ -1,4 +1,4 @@
-// Copyright (c) 2016 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,25 +9,28 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
+// $hash=37ce1fd4db4480afc4d43cfc1ff16bdfdd4a232b$
+//
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_CONTEXT_MENU_PARAMS_CTOCPP_H_
 #define CEF_LIBCEF_DLL_CTOCPP_CONTEXT_MENU_PARAMS_CTOCPP_H_
 #pragma once
 
-#ifndef USING_CEF_SHARED
-#pragma message("Warning: "__FILE__" may be accessed wrapper-side only")
-#else  // USING_CEF_SHARED
+#if !defined(WRAPPING_CEF_SHARED)
+#error This file can be included wrapper-side only
+#endif
 
 #include <vector>
-#include "include/cef_context_menu_handler.h"
 #include "include/capi/cef_context_menu_handler_capi.h"
-#include "libcef_dll/ctocpp/ctocpp.h"
+#include "include/cef_context_menu_handler.h"
+#include "libcef_dll/ctocpp/ctocpp_ref_counted.h"
 
 // Wrap a C structure with a C++ class.
 // This class may be instantiated and accessed wrapper-side only.
 class CefContextMenuParamsCToCpp
-    : public CefCToCpp<CefContextMenuParamsCToCpp, CefContextMenuParams,
-        cef_context_menu_params_t> {
+    : public CefCToCppRefCounted<CefContextMenuParamsCToCpp,
+                                 CefContextMenuParams,
+                                 cef_context_menu_params_t> {
  public:
   CefContextMenuParamsCToCpp();
 
@@ -39,6 +42,7 @@ class CefContextMenuParamsCToCpp
   CefString GetUnfilteredLinkUrl() OVERRIDE;
   CefString GetSourceUrl() OVERRIDE;
   bool HasImageContents() OVERRIDE;
+  CefString GetTitleText() OVERRIDE;
   CefString GetPageUrl() OVERRIDE;
   CefString GetFrameUrl() OVERRIDE;
   CefString GetFrameCharset() OVERRIDE;
@@ -54,5 +58,4 @@ class CefContextMenuParamsCToCpp
   bool IsPepperMenu() OVERRIDE;
 };
 
-#endif  // USING_CEF_SHARED
 #endif  // CEF_LIBCEF_DLL_CTOCPP_CONTEXT_MENU_PARAMS_CTOCPP_H_

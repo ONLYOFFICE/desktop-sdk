@@ -30,7 +30,7 @@
  *
  */
 
-#include "cefclient/renderer/client_renderer.h"
+#include "tests/cefclient/renderer/client_renderer.h"
 
 #include <sstream>
 #include <string>
@@ -392,12 +392,13 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
                                 CefRefPtr<CefBrowser> browser,
                                 CefRefPtr<CefFrame> frame,
                                 CefRefPtr<CefV8Context> context) OVERRIDE {
+
     message_router_->OnContextCreated(browser,  frame, context);
 
     // add AscEditorNative
     CefRefPtr<CefV8Value> object = context->GetGlobal();
 
-    CefRefPtr<CefV8Value> objNative = CefV8Value::CreateObject(NULL);
+    CefRefPtr<CefV8Value> objNative = CefV8Value::CreateObject(NULL, NULL);
     CAscEditorNativeV8Handler* pNativeHandlerWrapper = new CAscEditorNativeV8Handler();
     pNativeHandlerWrapper->sync_command_check = &sync_command_check;
 
@@ -475,3 +476,7 @@ void CreateRenderDelegates(client::ClientAppRenderer::DelegateSet& delegates) {
 }
 
 }  // namespace client_renderer
+
+void client::ClientAppRenderer::CreateDelegates(client::ClientAppRenderer::DelegateSet& delegates) {
+  delegates.insert(new asc_client_renderer::ClientRenderDelegate);
+}

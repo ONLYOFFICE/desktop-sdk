@@ -399,7 +399,7 @@ public:
     }
 };
 
-class CAscApplicationManager_Private : public CefBase, public CCookieFoundCallback, public NSThreads::CBaseThread, public CCefScriptLoader::ICefScriptLoaderCallback
+class CAscApplicationManager_Private : public CefBaseRefCounted, public CCookieFoundCallback, public NSThreads::CBaseThread, public CCefScriptLoader::ICefScriptLoaderCallback
 {
 public:
     CAscSpellChecker    m_oSpellChecker;
@@ -499,6 +499,11 @@ public:
         pVisitor->m_pCallback       = this;
         pVisitor->m_bIsDelete       = true;
         pVisitor->m_sDomain         = NSFile::CUtf8Converter::GetUtf8StringFromUnicode2(strUrl.c_str(), strUrl.length());
+
+        if (0 == pVisitor->m_sDomain.find("https://"))
+            pVisitor->m_sDomain = pVisitor->m_sDomain.substr(8);
+        else if (0 == pVisitor->m_sDomain.find("http://"))
+            pVisitor->m_sDomain = pVisitor->m_sDomain.substr(7);
 
         pVisitor->CheckCookiePresent(CefCookieManager::GetGlobalManager(NULL));
     }
@@ -1042,13 +1047,12 @@ public:
 
         if (bIsSend)
         {
-            CCefView* pMainView = m_pMain->GetViewById(1);
             NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_RECENTS);
             NSEditorApi::CAscLocalRecentsAll* pData = new NSEditorApi::CAscLocalRecentsAll();
-            pData->put_Id(pMainView->GetId());
             pData->put_JSON(Recents_GetJSON());
             pEvent->m_pData = pData;
-            pMainView->Apply(pEvent);
+
+            SetEventToAllMainWindows(pEvent);
         }
     }
     std::wstring Recents_GetJSON()
@@ -1214,13 +1218,27 @@ public:
         oBuilder.WriteString(L"]");
         std::wstring sJSON = oBuilder.GetData();
 
-        CCefView* pMainView = m_pMain->GetViewById(1);
         NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_RECOVERS);
         NSEditorApi::CAscLocalRecentsAll* pData = new NSEditorApi::CAscLocalRecentsAll();
-        pData->put_Id(pMainView->GetId());
         pData->put_JSON(sJSON);
         pEvent->m_pData = pData;
-        pMainView->Apply(pEvent);
+
+        SetEventToAllMainWindows(pEvent);
+    }
+
+    void SetEventToAllMainWindows(NSEditorApi::CAscMenuEvent* pEvent)
+    {
+        for (std::map<int, CCefView*>::iterator i = m_mapViews.begin(); i != m_mapViews.end(); i++)
+        {
+           CCefView* pView = i->second;
+           if (pView->GetType() == cvwtSimple)
+           {
+               pEvent->AddRef();
+               pView->Apply(pEvent);
+           }
+        }
+
+        pEvent->Release();
     }
 };
 

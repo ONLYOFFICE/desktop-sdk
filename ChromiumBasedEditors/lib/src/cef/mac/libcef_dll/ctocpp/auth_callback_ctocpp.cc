@@ -1,4 +1,4 @@
-// Copyright (c) 2016 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,14 +9,15 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
+// $hash=7ee7e6684f3703ede9b5dcfb40170923a9d5242e$
+//
 
 #include "libcef_dll/ctocpp/auth_callback_ctocpp.h"
-
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
 void CefAuthCallbackCToCpp::Continue(const CefString& username,
-    const CefString& password) {
+                                     const CefString& password) {
   cef_auth_callback_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, cont))
     return;
@@ -27,15 +28,10 @@ void CefAuthCallbackCToCpp::Continue(const CefString& username,
   DCHECK(!username.empty());
   if (username.empty())
     return;
-  // Verify param: password; type: string_byref_const
-  DCHECK(!password.empty());
-  if (password.empty())
-    return;
+  // Unverified params: password
 
   // Execute
-  _struct->cont(_struct,
-      username.GetStruct(),
-      password.GetStruct());
+  _struct->cont(_struct, username.GetStruct(), password.GetStruct());
 }
 
 void CefAuthCallbackCToCpp::Cancel() {
@@ -49,23 +45,30 @@ void CefAuthCallbackCToCpp::Cancel() {
   _struct->cancel(_struct);
 }
 
-
 // CONSTRUCTOR - Do not edit by hand.
 
-CefAuthCallbackCToCpp::CefAuthCallbackCToCpp() {
-}
+CefAuthCallbackCToCpp::CefAuthCallbackCToCpp() {}
 
-template<> cef_auth_callback_t* CefCToCpp<CefAuthCallbackCToCpp,
-    CefAuthCallback, cef_auth_callback_t>::UnwrapDerived(CefWrapperType type,
-    CefAuthCallback* c) {
+template <>
+cef_auth_callback_t*
+CefCToCppRefCounted<CefAuthCallbackCToCpp,
+                    CefAuthCallback,
+                    cef_auth_callback_t>::UnwrapDerived(CefWrapperType type,
+                                                        CefAuthCallback* c) {
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
 
-#ifndef NDEBUG
-template<> base::AtomicRefCount CefCToCpp<CefAuthCallbackCToCpp,
-    CefAuthCallback, cef_auth_callback_t>::DebugObjCt = 0;
+#if DCHECK_IS_ON()
+template <>
+base::AtomicRefCount CefCToCppRefCounted<CefAuthCallbackCToCpp,
+                                         CefAuthCallback,
+                                         cef_auth_callback_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
-template<> CefWrapperType CefCToCpp<CefAuthCallbackCToCpp, CefAuthCallback,
-    cef_auth_callback_t>::kWrapperType = WT_AUTH_CALLBACK;
+template <>
+CefWrapperType CefCToCppRefCounted<CefAuthCallbackCToCpp,
+                                   CefAuthCallback,
+                                   cef_auth_callback_t>::kWrapperType =
+    WT_AUTH_CALLBACK;
