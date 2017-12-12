@@ -29,10 +29,7 @@ SOURCES += \
     $$CEF_SRC_PATH/tests/cefclient/browser/window_test_runner_views.cc \
     \
     $$CEF_SRC_PATH/tests/shared/browser/main_message_loop_external_pump_linux.cc \
-    $$CEF_SRC_PATH/tests/shared/browser/resource_util_posix.cc
-
-!desktop_sdk_html {
-SOURCES += \
+    $$CEF_SRC_PATH/tests/shared/browser/resource_util_posix.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/browser_window_std_gtk.cc
-}
+
 

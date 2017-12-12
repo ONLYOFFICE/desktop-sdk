@@ -198,10 +198,9 @@ void RootWindowWin::Show(ShowMode mode) {
     default:
       break;
   }
-#ifndef ASC_HIDE_WINDOW
+
   ShowWindow(hwnd_, nCmdShow);
   UpdateWindow(hwnd_);
-#endif
 }
 
 void RootWindowWin::Hide() {

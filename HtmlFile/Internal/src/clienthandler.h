@@ -52,24 +52,79 @@
 #include <vector>
 
 #include "tests/cefclient/browser/root_window_manager.h"
+#include <iostream>
 
-class CHtmlClientHandler : public client::ClientHandler
+class CGlobalHtmlFileParams
+{
+public:
+    std::vector<std::wstring>   sSdkPath;
+    std::wstring                sDstPath;
+    std::vector<std::wstring>   arFiles;
+
+    CefRefPtr<client::ClientHandler> m_client;
+
+public:
+    CGlobalHtmlFileParams()
+    {        
+    }
+};
+
+class CHtmlRenderHandler : public CefRenderHandler
+{
+public:
+    CHtmlRenderHandler() {}
+
+public:    
+    virtual bool GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
+    {
+        rect = CefRect(0, 0, 1000, 1000);
+        return true;
+    }
+    virtual void OnPaint(CefRefPtr<CefBrowser> browser,
+                         PaintElementType type,
+                         const RectList& dirtyRects,
+                         const void* buffer,
+                         int width,
+                         int height)
+    {
+        return;
+    }
+
+public:
+    IMPLEMENT_REFCOUNTING(CHtmlRenderHandler);
+
+};
+
+class CHtmlClientHandler : public client::ClientHandler, public client::ClientHandler::Delegate
 {
 private:
     std::wstring m_sTempFile;
     std::wstring m_sCachePath;
 
 public:
-    client::RootWindowManager* m_pManager;
+    CGlobalHtmlFileParams* m_global;
+
+    CefRefPtr<CHtmlRenderHandler> m_render;
+    CefRefPtr<CefBrowser> m_browser;
 
 public:
-    CHtmlClientHandler(Delegate* delegate, std::string sUrl, client::RootWindowManager* pManager = NULL) : client::ClientHandler(delegate, false, sUrl)
+    CHtmlClientHandler(CGlobalHtmlFileParams* params) : client::ClientHandler(this, true, "html_file")
     {
-        m_pManager = pManager;
+        m_global = params;
+        m_render = new CHtmlRenderHandler();
     }
 
-    void Init(const std::vector<std::wstring>& arSdks, const std::vector<std::wstring>& arFiles, const std::wstring& sDestinationFile)
+    virtual CefRefPtr<CefRenderHandler> GetRenderHandler()
     {
+        return m_render;
+    }
+
+    void Init()
+    {
+        std::vector<std::wstring>& arSdks = m_global->sSdkPath;
+        std::vector<std::wstring>& arFiles = m_global->arFiles;
+        std::wstring& sDestinationFile = m_global->sDstPath;
+
         m_sCachePath = sDestinationFile;
         std::wstring sUniquePath = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"HTML");
 
@@ -238,8 +293,7 @@ window.onload = function ()\
         std::string message_name = message->GetName();
         if (message_name == "Exit")
         {
-            if (m_pManager)
-                m_pManager->CloseAllWindows(false);
+            this->Exit();
             return true;
         }
 
@@ -267,9 +321,69 @@ window.onload = function ()\
     {
         CEF_REQUIRE_UI_THREAD();
 
-        if (m_pManager)
-            m_pManager->CloseAllWindows(false);
+        this->Exit();
     }
+
+    void Exit()
+    {
+        if (m_browser && m_browser->GetHost())
+            m_browser->GetHost()->CloseBrowser(true);
+        client::MainMessageLoop::Get()->Quit();
+    }
+
+    /////////////////////////////////////////////////////
+    // Called when the browser is created.
+    virtual void OnBrowserCreated(CefRefPtr<CefBrowser> browser)
+      {
+          m_browser = browser;
+      }
+
+    // Called when the browser is closing.
+    virtual void OnBrowserClosing(CefRefPtr<CefBrowser> browser)
+      {
+      }
+
+    // Called when the browser has been closed.
+    virtual void OnBrowserClosed(CefRefPtr<CefBrowser> browser)
+      {
+      }
+
+    // Set the window URL address.
+    virtual void OnSetAddress(const std::string& url)
+      {
+      }
+
+    // Set the window title.
+    virtual void OnSetTitle(const std::string& title)
+      {
+      }
+
+    // Set the Favicon image.
+    virtual void OnSetFavicon(CefRefPtr<CefImage> image){};
+
+    // Set fullscreen mode.
+    virtual void OnSetFullscreen(bool fullscreen)
+      {
+      }
+
+    // Set the loading state.
+    virtual void OnSetLoadingState(bool isLoading,
+                                   bool canGoBack,
+                                   bool canGoForward)
+      {
+      }
+
+    // Set the draggable regions.
+    virtual void OnSetDraggableRegions(
+        const std::vector<CefDraggableRegion>& regions)
+      {
+      }
+
+    // Set focus to the next/previous control.
+    virtual void OnTakeFocus(bool next) {}
+
+    // Called on the UI thread before a context menu is displayed.
+    virtual void OnBeforeContextMenu(CefRefPtr<CefMenuModel> model) {}
 
 public:
     IMPLEMENT_REFCOUNTING(CHtmlClientHandler);

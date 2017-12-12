@@ -5,8 +5,6 @@ TARGET   = HtmlFileInternal
 CONFIG   += app_bundle
 TEMPLATE = app
 
-DEFINES += ASC_HIDE_WINDOW
-
 CORE_ROOT_DIR = $$PWD/../../../core
 PWD_ROOT_DIR = $$PWD
 include($$CORE_ROOT_DIR/Common/base.pri)
@@ -23,6 +21,8 @@ core_linux {
     include($$CORE_ROOT_DIR/DesktopEditor/Qt_build/graphics/project/graphics.pri)
 }
 
+DESTDIR=$$CORE_BUILDS_LIBRARIES_PATH
+
 INCLUDEPATH += \
     $$CORE_ROOT_DIR/DesktopEditor/agg-2.4/include \
     $$CORE_ROOT_DIR/DesktopEditor/freetype-2.5.2/include
@@ -34,25 +34,18 @@ HEADERS += \
 SOURCES += \
     $$PWD/src/client_renderer_wrapper.cpp
 
-CONFIG += desktop_sdk_html
-
-DESTDIR = $$CORE_BUILDS_LIBRARIES_PATH
+SOURCES += \
+    $$PWD/src/main.cpp
 
 win32 {
     include($$CORE_ROOT_DIR/../desktop-sdk/ChromiumBasedEditors/lib/AscDocumentsCore_windows.pri)
-
-SOURCES += \
-    $$PWD/src/main_windows.cpp
 }
 linux-g++ | linux-g++-64 | linux-g++-32 {
     include($$CORE_ROOT_DIR/../desktop-sdk/ChromiumBasedEditors/lib/AscDocumentsCore_linux.pri)
 
-SOURCES += \
-    $$PWD/src/main_linux.cpp
-
-CONFIG += link_pkgconfig c++11
-PKGCONFIG += glib-2.0 gdk-2.0 gtkglext-1.0 atk cairo gtk+-unix-print-2.0
-LIBS += -lcurl -lz
+    CONFIG += link_pkgconfig c++11
+    PKGCONFIG += glib-2.0 gdk-2.0 gtkglext-1.0 atk cairo gtk+-unix-print-2.0
+    LIBS += -lcurl -lz
 
     #CONFIG += build_for_centos6
 

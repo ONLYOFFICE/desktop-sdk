@@ -392,6 +392,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
                                 CefRefPtr<CefBrowser> browser,
                                 CefRefPtr<CefFrame> frame,
                                 CefRefPtr<CefV8Context> context) OVERRIDE {
+
     message_router_->OnContextCreated(browser,  frame, context);
 
     // add AscEditorNative
