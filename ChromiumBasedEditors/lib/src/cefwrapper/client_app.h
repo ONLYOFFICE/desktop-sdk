@@ -121,21 +121,18 @@ static int IsForceDpiRound()
     return 0;
 }
 
-#ifndef MAC_NO_MAIN_PROCESS
-#include "tests/shared/browser/client_app_browser.h"
-
 class CAppSettings
 {
 public:
     bool m_GPU;
     bool m_Canvas;
-
+    
 public:
     CAppSettings(std::map<std::string, std::string>& mapSettings)
     {
         m_GPU = true;
         m_Canvas = true;
-
+        
 #ifndef _MAC
 #ifdef WIN32
         m_Canvas = true;
@@ -143,11 +140,11 @@ public:
         m_Canvas = false;
 #endif
 #endif
-
+        
 #if defined(_LINUX) && !defined(_MAC)
         m_GPU = false;
 #endif
-
+        
         std::map<std::string, std::string>::iterator pairGPU = mapSettings.find("disable-gpu");
         if (pairGPU != mapSettings.end())
         {
@@ -165,14 +162,14 @@ public:
                 m_Canvas = false;
         }
     }
-
+    
     void Process(CefRefPtr<CefCommandLine> command_line)
     {
         if (!m_GPU)
         {
             command_line->AppendSwitch("--disable-gpu");
         }
-
+        
         if (!m_Canvas)
         {
             command_line->AppendSwitch("--disable-accelerated-2d-canvas");
@@ -180,6 +177,9 @@ public:
         }
     }
 };
+
+#ifndef MAC_NO_MAIN_PROCESS
+#include "tests/shared/browser/client_app_browser.h"
 
 class CAscClientAppBrowser : public client::ClientAppBrowser, public CAppSettings
 {
