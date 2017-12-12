@@ -149,6 +149,24 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 #ifdef WIN32
     CefMainArgs main_args((HINSTANCE)GetModuleHandle(NULL));
 
+    if (true)
+    {
+        // ASC command line props
+        pManager->m_pInternal->LoadSettings();
+        for (int i = 0; i < argc; ++i)
+        {
+            std::string sCommandLine(argv[i]);
+
+            std::string::size_type posSeparate = sCommandLine.find('=');
+
+            std::string sName = (std::string::npos == posSeparate) ? sCommandLine : sCommandLine.substr(0, posSeparate);
+            std::string sValue = (std::string::npos == posSeparate) ? "" : sCommandLine.substr(posSeparate + 1);
+
+            pManager->m_pInternal->CheckSetting(sName, sValue);
+        }
+        pManager->m_pInternal->SaveSettings();
+    }
+
     // Parse command-line arguments.
     CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
     command_line->InitFromString(::GetCommandLineW());
@@ -156,12 +174,12 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     // Create a ClientApp of the correct type.
     client::ClientApp::ProcessType process_type = client::ClientApp::GetProcessType(command_line);
     if (process_type == client::ClientApp::BrowserProcess)
-        m_pInternal->m_app = new CAscClientAppBrowser();
+        m_pInternal->m_app = new CAscClientAppBrowser(pManager->m_pInternal->m_mapSettings);
     else if (process_type == client::ClientApp::RendererProcess ||
              process_type == client::ClientApp::ZygoteProcess)
-        m_pInternal->m_app = new CAscClientAppRenderer();
+        m_pInternal->m_app = new CAscClientAppRenderer(pManager->m_pInternal->m_mapSettings);
     else if (process_type == client::ClientApp::OtherProcess)
-        m_pInternal->m_app = new CAscClientAppOther();
+        m_pInternal->m_app = new CAscClientAppOther(pManager->m_pInternal->m_mapSettings);
 #endif
 
 #if defined(_LINUX) && !defined(_MAC)
@@ -174,12 +192,12 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     // Create a ClientApp of the correct type.
     client::ClientApp::ProcessType process_type = client::ClientApp::GetProcessType(command_line);
     if (process_type == client::ClientApp::BrowserProcess)
-        m_pInternal->m_app = new CAscClientAppBrowser();
+        m_pInternal->m_app = new CAscClientAppBrowser(pManager->m_pInternal->m_mapSettings);
     else if (process_type == client::ClientApp::RendererProcess ||
              process_type == client::ClientApp::ZygoteProcess)
-        m_pInternal->m_app = new CAscClientAppRenderer();
+        m_pInternal->m_app = new CAscClientAppRenderer(pManager->m_pInternal->m_mapSettings);
     else if (process_type == client::ClientApp::OtherProcess)
-        m_pInternal->m_app = new CAscClientAppOther();
+        m_pInternal->m_app = new CAscClientAppOther(pManager->m_pInternal->m_mapSettings);
 #endif
 
 #ifdef _MAC
@@ -189,7 +207,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
     command_line->InitFromArgv(argc, argv);
 
-    m_pInternal->m_app = new CAscClientAppBrowser();
+    m_pInternal->m_app = new CAscClientAppBrowser(pManager->m_pInternal->m_mapSettings);
 #endif
 
 #if 1
@@ -248,21 +266,6 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
         m_pInternal->message_loop.reset(new client::MainMessageLoopStd);
 #endif
     }
-
-    // ASC command line props
-    pManager->m_pInternal->LoadSettings();
-    for (int i = 0; i < argc; ++i)
-    {
-        std::string sCommandLine(argv[i]);
-
-        std::string::size_type posSeparate = sCommandLine.find('=');
-
-        std::string sName = (std::string::npos == posSeparate) ? sCommandLine : sCommandLine.substr(0, posSeparate);
-        std::string sValue = (std::string::npos == posSeparate) ? "" : sCommandLine.substr(posSeparate + 1);
-
-        pManager->m_pInternal->CheckSetting(sName, sValue);
-    }
-    pManager->m_pInternal->SaveSettings();
 
     std::wstring sCachePath = pManager->m_oSettings.cache_path;
 

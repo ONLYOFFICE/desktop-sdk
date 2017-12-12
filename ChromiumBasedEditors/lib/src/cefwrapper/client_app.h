@@ -124,10 +124,67 @@ static int IsForceDpiRound()
 #ifndef MAC_NO_MAIN_PROCESS
 #include "tests/shared/browser/client_app_browser.h"
 
-class CAscClientAppBrowser : public client::ClientAppBrowser
+class CAppSettings
 {
 public:
-    CAscClientAppBrowser() : client::ClientAppBrowser()
+    bool m_GPU;
+    bool m_Canvas;
+
+public:
+    CAppSettings(std::map<std::string, std::string>& mapSettings)
+    {
+        m_GPU = true;
+        m_Canvas = true;
+
+#ifndef _MAC
+        m_Canvas = false;
+#endif
+
+#if defined(_LINUX) && !defined(_MAC)
+        m_GPU = false;
+#endif
+
+        std::map<std::string, std::string>::iterator pairGPU = mapSettings.find("disable-gpu");
+        if (pairGPU != mapSettings.end())
+        {
+            if ("1" == pairGPU->second)
+                m_GPU = true;
+            else if ("0" == pairGPU->second)
+                m_GPU = false;
+        }
+        std::map<std::string, std::string>::iterator pairCanvas = mapSettings.find("disable-gpu-canvas2d");
+        if (pairCanvas != mapSettings.end())
+        {
+            if ("1" == pairCanvas->second)
+                m_Canvas = true;
+            else if ("0" == pairCanvas->second)
+                m_Canvas = false;
+        }
+    }
+
+    void Process(CefRefPtr<CefCommandLine> command_line)
+    {
+        if (!m_GPU)
+        {
+            command_line->AppendSwitch("--disable-gpu");
+        }
+
+        if (!m_Canvas)
+        {
+            command_line->AppendSwitch("--disable-accelerated-2d-canvas");
+            command_line->AppendSwitch("--disable-d3d11");
+        }
+    }
+};
+
+class CAscClientAppBrowser : public client::ClientAppBrowser, public CAppSettings
+{
+public:
+    bool m_GPU;
+    bool m_Canvas;
+
+public:
+    CAscClientAppBrowser(std::map<std::string, std::string>& mapSettings) : client::ClientAppBrowser(), CAppSettings(mapSettings)
     {
     }
 
@@ -141,14 +198,9 @@ public:
     {
         if (process_type.empty())
         {
-#ifndef _MAC
-            command_line->AppendSwitch("--disable-accelerated-2d-canvas");
-            command_line->AppendSwitch("--disable-d3d11");
-#endif
+            CAppSettings::Process(command_line);
 
 #if defined(_LINUX) && !defined(_MAC)
-            command_line->AppendSwitch("--disable-gpu");
-
             if (true)
             {
                 // заглушка для АльтЛинукс
@@ -187,10 +239,10 @@ public:
 #include "tests/shared/renderer/client_app_renderer.h"
 #include "tests/shared/common/client_app_other.h"
 
-class CAscClientAppOther : public client::ClientAppOther
+class CAscClientAppOther : public client::ClientAppOther, public CAppSettings
 {
 public:
-    CAscClientAppOther() : client::ClientAppOther()
+    CAscClientAppOther(std::map<std::string, std::string>& mapSettings) : client::ClientAppOther(), CAppSettings(mapSettings)
     {
     }
 
@@ -204,14 +256,9 @@ public:
     {
         if (process_type.empty())
         {
-#ifndef _MAC
-            command_line->AppendSwitch("--disable-accelerated-2d-canvas");
-            command_line->AppendSwitch("--disable-d3d11");
-#endif
+            CAppSettings::Process(command_line);
 
 #if defined(_LINUX) && !defined(_MAC)
-            command_line->AppendSwitch("--disable-gpu");
-
             if (true)
             {
                 // заглушка для АльтЛинукс
@@ -245,10 +292,10 @@ public:
     IMPLEMENT_REFCOUNTING(CAscClientAppOther);
 };
 
-class CAscClientAppRenderer : public client::ClientAppRenderer
+class CAscClientAppRenderer : public client::ClientAppRenderer, public CAppSettings
 {
 public:
-    CAscClientAppRenderer() : client::ClientAppRenderer()
+    CAscClientAppRenderer(std::map<std::string, std::string>& mapSettings) : client::ClientAppRenderer(), CAppSettings(mapSettings)
     {
     }
 
@@ -262,14 +309,9 @@ public:
     {
         if (process_type.empty())
         {
-#ifndef _MAC
-            command_line->AppendSwitch("--disable-accelerated-2d-canvas");
-            command_line->AppendSwitch("--disable-d3d11");
-#endif
+            CAppSettings::Process(command_line);
 
 #if defined(_LINUX) && !defined(_MAC)
-            command_line->AppendSwitch("--disable-gpu");
-
             if (true)
             {
                 // заглушка для АльтЛинукс
