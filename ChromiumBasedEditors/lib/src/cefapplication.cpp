@@ -145,10 +145,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     m_pInternal->argc_copy = new CefScopedArgArray(argc, argv);
     char** argv_copy = m_pInternal->argc_copy->array();
 #endif
-
-#ifdef WIN32
-    CefMainArgs main_args((HINSTANCE)GetModuleHandle(NULL));
-
+    
     if (true)
     {
         // ASC command line props
@@ -156,16 +153,19 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
         for (int i = 0; i < argc; ++i)
         {
             std::string sCommandLine(argv[i]);
-
+            
             std::string::size_type posSeparate = sCommandLine.find('=');
-
+            
             std::string sName = (std::string::npos == posSeparate) ? sCommandLine : sCommandLine.substr(0, posSeparate);
             std::string sValue = (std::string::npos == posSeparate) ? "" : sCommandLine.substr(posSeparate + 1);
-
+            
             pManager->m_pInternal->CheckSetting(sName, sValue);
         }
         pManager->m_pInternal->SaveSettings();
     }
+
+#ifdef WIN32
+    CefMainArgs main_args((HINSTANCE)GetModuleHandle(NULL));
 
     // Parse command-line arguments.
     CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
