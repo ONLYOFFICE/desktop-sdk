@@ -126,12 +126,15 @@ class CAppSettings
 public:
     bool m_GPU;
     bool m_Canvas;
+    std::string m_ColorProfile;
     
 public:
     CAppSettings(std::map<std::string, std::string>& mapSettings)
     {
         m_GPU = true;
         m_Canvas = true;
+
+        m_ColorProfile = "sRGB";
         
 #ifndef _MAC
 #ifdef WIN32
@@ -161,6 +164,14 @@ public:
             else if ("0" == pairCanvas->second)
                 m_Canvas = false;
         }
+        std::map<std::string, std::string>::iterator pairColorProfile = mapSettings.find("force-color-profile");
+        if (pairColorProfile != mapSettings.end())
+        {
+            if ("default" == pairColorProfile->second)
+                m_ColorProfile = "";
+            else
+                m_ColorProfile = pairColorProfile->second;
+        }
     }
     
     void Process(CefRefPtr<CefCommandLine> command_line)
@@ -174,6 +185,11 @@ public:
         {
             command_line->AppendSwitch("--disable-accelerated-2d-canvas");
             command_line->AppendSwitch("--disable-d3d11");
+        }
+
+        if (!m_ColorProfile.empty())
+        {
+            command_line->AppendSwitchWithValue("--force-color-profile", m_ColorProfile);
         }
     }
 };
@@ -219,6 +235,7 @@ public:
             command_line->AppendSwitch("--enable-file-cookies");
             command_line->AppendSwitch("--disable-pinch");
             command_line->AppendSwitch("--enable-aggressive-domstorage-flushing");
+            command_line->AppendSwitch("--enable-color-correct-rendering");
             command_line->AppendSwitchWithValue("--log-severity", "disable");
 
             //command_line->AppendSwitch("--allow-file-access-from-files");
@@ -277,6 +294,7 @@ public:
             command_line->AppendSwitch("--enable-file-cookies");
             command_line->AppendSwitch("--disable-pinch");
             command_line->AppendSwitch("--enable-aggressive-domstorage-flushing");
+            command_line->AppendSwitch("--enable-color-correct-rendering");
             command_line->AppendSwitchWithValue("--log-severity", "disable");
 
             //command_line->AppendSwitch("--allow-file-access-from-files");
@@ -330,6 +348,7 @@ public:
             command_line->AppendSwitch("--enable-file-cookies");
             command_line->AppendSwitch("--disable-pinch");
             command_line->AppendSwitch("--enable-aggressive-domstorage-flushing");
+            command_line->AppendSwitch("--enable-color-correct-rendering");
             command_line->AppendSwitchWithValue("--log-severity", "disable");
 
             //command_line->AppendSwitch("--allow-file-access-from-files");
