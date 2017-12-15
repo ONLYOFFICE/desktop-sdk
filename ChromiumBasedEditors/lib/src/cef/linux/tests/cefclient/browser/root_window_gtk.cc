@@ -190,7 +190,7 @@ void RootWindowGtk::SetBounds(int x, int y, size_t width, size_t height) {
 
 void RootWindowGtk::Close(bool force) {
   REQUIRE_MAIN_THREAD();
-printf("close111\n");
+
   if (window_) {
     force_close_ = force;
     gtk_widget_destroy(window_);
