@@ -1276,7 +1276,7 @@ else \n\
         }
         else if (name == "CheckUserId")
         {
-            std::wstring sUserPath = m_sLocalFileFolderWithoutFile + L"/changes/user_name.log";
+            std::wstring sUserPath = m_sLocalFileFolderWithoutFile + L"/user_name.log";
             int nUserIndex = 1;
             std::string sUserLog = "";
 

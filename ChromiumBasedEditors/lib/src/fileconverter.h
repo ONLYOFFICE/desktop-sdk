@@ -210,6 +210,9 @@ namespace NSX2T
             if (std::string::npos != sProgramm.find_last_of('/'))
             {
                 sLibraryDir = "LD_LIBRARY_PATH=" + sProgramm.substr(0, sProgramm.find_last_of('/'));
+#ifndef _MAC
+                sLibraryDir += ":$LD_LIBRARY_PATH";
+#endif
                 sPATH = "PATH=" + sProgramm.substr(0, sProgramm.find_last_of('/'));
             }
 
@@ -874,7 +877,15 @@ public:
         oBuilder.WriteString(std::to_wstring(m_oInfo.m_nCurrentFileFormat));
         oBuilder.WriteString(L"</m_nFormatTo><m_sThemeDir>");
         oBuilder.WriteEncodeXmlString(sThemesPath);
-        oBuilder.WriteString(L"</m_sThemeDir><m_bFromChanges>true</m_bFromChanges><m_bDontSaveAdditional>true</m_bDontSaveAdditional><m_sAllFontsPath>");
+        oBuilder.WriteString(L"</m_sThemeDir>");
+
+        if (NSFile::CFileBinary::Exists(m_oInfo.m_sRecoveryDir + L"/changes/changes0.json"))
+            oBuilder.WriteString(L"<m_bFromChanges>true</m_bFromChanges>");
+        else
+            oBuilder.WriteString(L"<m_bFromChanges>false</m_bFromChanges>");
+
+        oBuilder.WriteString(L"<m_bDontSaveAdditional>true</m_bDontSaveAdditional><m_sAllFontsPath>");
+
         oBuilder.WriteEncodeXmlString(m_pManager->m_oSettings.fonts_cache_info_path);
         oBuilder.WriteString(L"/AllFonts.js</m_sAllFontsPath><m_nCsvTxtEncoding>46</m_nCsvTxtEncoding><m_nCsvDelimiter>4</m_nCsvDelimiter>");
         oBuilder.WriteString(sParams);
