@@ -134,7 +134,7 @@ public:
         m_GPU = true;
         m_Canvas = true;
 
-        m_ColorProfile = "sRGB";
+        m_ColorProfile = "srgb";
         
 #ifndef _MAC
 #ifdef WIN32
