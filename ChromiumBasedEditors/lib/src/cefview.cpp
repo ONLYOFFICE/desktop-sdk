@@ -783,6 +783,9 @@ public:
         {
             if (m_pParent && (m_pParent->GetType() == cvwtEditor || m_pParent->GetType() == cvwtSimple))
             {
+                if (L"about:blank" == sUrl)
+                    return true;
+
                 NSEditorApi::CAscOnOpenExternalLink* pData = new NSEditorApi::CAscOnOpenExternalLink();
                 pData->put_Id(m_pParent->GetId());
                 pData->put_Url(sUrl);
