@@ -424,6 +424,7 @@ public:
         else if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_PRESENTATION)
         {
             arFormats.push_back(AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX);
+            arFormats.push_back(AVS_OFFICESTUDIO_FILE_PRESENTATION_ODP);
             arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF);
         }
         else if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
