@@ -1193,6 +1193,10 @@ public:
                     {
                         std::wstring sUrl = _frame->GetURL().ToWString();
                         NSCommon::url_correct(sUrl);
+
+                        if (sUrl.find(L"/index.reporter.html") != std::wstring::npos)
+                            return true;
+
                         std::wstring sPath = L"";
 
                         std::wstring::size_type pos = 0;
@@ -1889,22 +1893,36 @@ public:
         }
         else if (message_name == "send_to_reporter")
         {
-            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_REPORTER_MESSAGE_TO);
+            CCefView* pViewSend = m_pParent->GetAppManager()->GetViewById(m_pParent->m_pInternal->m_nReporterChildId);
+            if (!pViewSend)
+                return true;
+
+            std::wstring sMessage = message->GetArgumentList()->GetString(0).ToWString();
+
+            NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent(ASC_MENU_EVENT_TYPE_REPORTER_MESSAGE_TO);
             NSEditorApi::CAscReporterMessage* pData = new NSEditorApi::CAscReporterMessage();
             pData->put_ReceiverId(m_pParent->m_pInternal->m_nReporterChildId);
-            pData->put_Message(message->GetArgumentList()->GetString(0).ToWString());
+            pData->put_Message(sMessage);
             pEvent->m_pData = pData;
-            m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+
+            pViewSend->Apply(pEvent);
             return true;
         }
         else if (message_name == "send_from_reporter")
         {
-            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_REPORTER_MESSAGE_FROM);
+            CCefView* pViewSend = m_pParent->GetAppManager()->GetViewById(m_pParent->m_pInternal->m_nReporterParentId);
+            if (!pViewSend)
+                return true;
+
+            std::wstring sMessage = message->GetArgumentList()->GetString(0).ToWString();
+
+            NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent(ASC_MENU_EVENT_TYPE_REPORTER_MESSAGE_FROM);
             NSEditorApi::CAscReporterMessage* pData = new NSEditorApi::CAscReporterMessage();
             pData->put_ReceiverId(m_pParent->m_pInternal->m_nReporterParentId);
-            pData->put_Message(message->GetArgumentList()->GetString(0).ToWString());
+            pData->put_Message(sMessage);
             pEvent->m_pData = pData;
-            m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+
+            pViewSend->Apply(pEvent);
             return true;
         }
 
@@ -2203,11 +2221,15 @@ public:
             std::string sUserPluguns = NSFile::CUtf8Converter::GetUtf8StringFromUnicode2(sUserPlugunsPath.c_str(),
                                                                                      (LONG)sUserPlugunsPath.length());
 
+
             sAppData = "window[\"AscDesktopEditor_AppData\"] = function(){return \"" + sAppData + "\";}\n";
             sAppData += ("window[\"AscDesktopEditor_FontsData\"] = function(){return \"" + sFontsData + "\";}\n");
 
             sAppData += ("window[\"AscDesktopEditor_SP\"] = function(){return \"" + sSystemPluguns + "\";}\n");
             sAppData += ("window[\"AscDesktopEditor_UP\"] = function(){return \"" + sUserPluguns + "\";}\n");
+
+            if (m_pParent->GetAppManager()->GetDebugInfoSupport())
+                sAppData += ("window[\"desktop_debug_mode\"] = true;\n");
 
             sAppData += "window.local_load = {};\n\
 window.local_correct_url = function(url)\n\

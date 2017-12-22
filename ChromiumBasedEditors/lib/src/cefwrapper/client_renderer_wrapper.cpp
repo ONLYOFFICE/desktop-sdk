@@ -304,6 +304,8 @@ public:
 
     std::list<CSavedPageTextInfo> m_arCompleteTextTasks;
 
+    bool m_bIsDebugMode;
+
     NSCriticalSection::CRITICAL_SECTION m_oCompleteTasksCS;
 
     CAscEditorNativeV8Handler()
@@ -334,6 +336,8 @@ public:
         m_bIsPrinting = false;
 
         m_bIsSupportSigs = true;
+
+        m_bIsDebugMode = false;
 
         m_oCompleteTasksCS.InitializeCriticalSection();
 
@@ -514,47 +518,87 @@ else \n\
                     }
                 }
 
-
-                /*
-                FILE* f = fopen("D:\\editor_version.txt", "a+");
-                fprintf(f, m_sVersion.c_str());
-                fprintf(f, "\n");
-                fclose(f);
-                */
-            }
-
-            //std::wstring strAppPath = NSFile::GetProcessDirectory();
-            std::wstring strAppPath = m_sAppData + L"/webdata/cloud";
-            std::wstring strAppPathEditors = strAppPath + L"/" + NSFile::CUtf8Converter::GetUnicodeStringFromUTF8((BYTE*)m_sVersion.c_str(), (LONG)m_sVersion.length());
-            if (!bIsLocal && !NSDirectory::Exists(strAppPathEditors))
-            {
-                NSDirectory::CreateDirectory(strAppPathEditors);
-                NSDirectory::CreateDirectory(strAppPathEditors + L"/word");
-                NSDirectory::CreateDirectory(strAppPathEditors + L"/cell");
-                NSDirectory::CreateDirectory(strAppPathEditors + L"/slide");
+                retval2 = NULL;
+                exception2 = NULL;
+                bool bIsDebugMode = CefV8Context::GetCurrentContext()->Eval("(function() { return (window[\"desktop_debug_mode\"] === true) ? true : false; })();", "", 0, retval2, exception2);
+                if (bIsDebugMode)
+                {
+                    if (retval2->IsBool())
+                    {
+                        m_bIsDebugMode = retval2->GetBoolValue();
+                    }
+                }
             }
 
             CefRefPtr<CefV8Value> val = *arguments.begin();
-            if (val->IsValid() && val->IsString())
+            if (!val->IsValid() || !val->IsString())
             {
-                CefString scriptUrl = val->GetStringValue();
-                std::wstring strUrl = scriptUrl.ToWString();
+                retval = CefV8Value::CreateInt(0);
+                return true;
+            }
 
-                // 0 - грузить из облака
-                // 1 - загружен и исполнен
-                // 2 - ждать ответа
-                int nResult = 0;
+            CefString scriptUrl = val->GetStringValue();
+            std::wstring strUrl = scriptUrl.ToWString();
 
-                std::wstring strPath = L"";
-                //if (strUrl.find("api/documents/api.js") != std::string::npos)
-                //    strPath = strAppPath + L"/api.js";
-                if (strUrl.find(L"sdk/Common/AllFonts.js") != std::wstring::npos ||
-                    strUrl.find(L"sdkjs/common/AllFonts.js") != std::wstring::npos)
+            // 0 - грузить из облака
+            // 1 - загружен и исполнен
+            // 2 - ждать ответа
+            int nResult = 0;
+            std::wstring strPath = L"";
+
+            if (strUrl.find(L"sdk/Common/AllFonts.js") != std::wstring::npos ||
+                strUrl.find(L"sdkjs/common/AllFonts.js") != std::wstring::npos)
+            {
+                strPath = m_sFontsData + L"/AllFonts.js";
+                nResult = 2;
+            }
+            else if (m_sVersion == "undefined" || m_bIsDebugMode || bIsLocal)
+            {
+                std::string sUrl = CefV8Context::GetCurrentContext()->GetFrame()->GetURL().ToString();
+                if (sUrl.find("index.reporter.html") != std::string::npos)
                 {
-                    strPath = m_sFontsData + L"/AllFonts.js";
-                    nResult = 2;
+                    m_sVersion = "reporter_cloud";
+                    if (m_etType != Presentation)
+                    {
+                        m_etType = Presentation;
+                        CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+                        CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("EditorType");
+                        message->GetArgumentList()->SetInt(0, (int)m_etType);
+                        browser->SendProcessMessage(PID_BROWSER, message);
+                    }
                 }
-                else if (strUrl.find(L"sdk-all.js") != std::wstring::npos && !bIsLocal)
+                else if (strUrl.find(L"app.js") != std::wstring::npos)
+                {
+                    // сначала определим тип редактора
+                    if (sUrl.find("documenteditor") != std::wstring::npos)
+                        m_etType = Document;
+                    else if (sUrl.find("presentationeditor") != std::wstring::npos)
+                        m_etType = Presentation;
+                    else if (sUrl.find("spreadsheeteditor") != std::wstring::npos)
+                        m_etType = Spreadsheet;
+
+                    CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+                    CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("EditorType");
+                    message->GetArgumentList()->SetInt(0, (int)m_etType);
+                    browser->SendProcessMessage(PID_BROWSER, message);
+                }
+                retval = CefV8Value::CreateInt(0);
+                return true;
+            }
+
+            if (0 == nResult)
+            {
+                std::wstring strAppPath = m_sAppData + L"/webdata/cloud";
+                std::wstring strAppPathEditors = strAppPath + L"/" + NSFile::CUtf8Converter::GetUnicodeStringFromUTF8((BYTE*)m_sVersion.c_str(), (LONG)m_sVersion.length());
+                if (!NSDirectory::Exists(strAppPathEditors))
+                {
+                    NSDirectory::CreateDirectory(strAppPathEditors);
+                    NSDirectory::CreateDirectory(strAppPathEditors + L"/word");
+                    NSDirectory::CreateDirectory(strAppPathEditors + L"/cell");
+                    NSDirectory::CreateDirectory(strAppPathEditors + L"/slide");
+                }
+
+                if (strUrl.find(L"sdk-all.js") != std::wstring::npos)
                 {
                     if (m_etType == Document)
                         strPath = strAppPathEditors + L"/word/sdk-all.js";
@@ -563,14 +607,9 @@ else \n\
                     else if (m_etType == Spreadsheet)
                         strPath = strAppPathEditors + L"/cell/sdk-all.js";
 
-#if 0
-                    retval = CefV8Value::CreateInt(0);
-                    return true;
-#endif
-
                     nResult = 2;
                 }
-                else if (strUrl.find(L"sdk-all-min.js") != std::wstring::npos && !bIsLocal)
+                else if (strUrl.find(L"sdk-all-min.js") != std::wstring::npos)
                 {
                     if (m_etType == Document)
                         strPath = strAppPathEditors + L"/word/sdk-all-min.js";
@@ -579,14 +618,9 @@ else \n\
                     else if (m_etType == Spreadsheet)
                         strPath = strAppPathEditors + L"/cell/sdk-all-min.js";
 
-#if 0
-                    retval = CefV8Value::CreateInt(0);
-                    return true;
-#endif
-
                     nResult = 2;
                 }
-                else if (strUrl.find(L"app.js") != std::wstring::npos && !bIsLocal)
+                else if (strUrl.find(L"app.js") != std::wstring::npos)
                 {
                     std::wstring sStringUrl = CefV8Context::GetCurrentContext()->GetFrame()->GetURL().ToWString();
 
@@ -610,60 +644,45 @@ else \n\
                     else if (m_etType == Spreadsheet)
                         strPath = strAppPathEditors + L"/cell/app.js";
 
-#if 0
-                    retval = CefV8Value::CreateInt(0);
-                    return true;
-#endif
-
                     nResult = 2;
                 }
+            }
 
-                if (strPath != L"" && nResult != 0)
+            if (strPath != L"" && nResult != 0)
+            {
+                if (nResult == 1)
                 {
-                    if (nResult == 1)
+                    NSFile::CFileBinary oFile;
+                    if (oFile.OpenFile(strPath))
                     {
-                        NSFile::CFileBinary oFile;
-                        if (oFile.OpenFile(strPath))
-                        {
-    #if 0
-                            FILE* f = fopen("D:\\log_local_url.txt", "a+");
-                            fprintf(f, "url: %s\n", strUrl.c_str());
-                            fclose(f);
-    #endif
+                        int nSize = (int)oFile.GetFileSize();
+                        BYTE* scriptData = new BYTE[nSize];
+                        DWORD dwReadSize = 0;
+                        oFile.ReadFile(scriptData, (DWORD)nSize, dwReadSize);
 
-                            int nSize = (int)oFile.GetFileSize();
-                            BYTE* scriptData = new BYTE[nSize];
-                            DWORD dwReadSize = 0;
-                            oFile.ReadFile(scriptData, (DWORD)nSize, dwReadSize);
+                        std::string strUTF8((char*)scriptData, (LONG)nSize);
 
-                            std::string strUTF8((char*)scriptData, (LONG)nSize);
+                        delete [] scriptData;
 
-                            delete [] scriptData;
-
-                            CefV8Context::GetCurrentContext()->GetFrame()->ExecuteJavaScript(strUTF8, "", 0);
-                            retval = CefV8Value::CreateInt(1);
-                        }
-                        else
-                        {
-                            retval = CefV8Value::CreateInt(0);
-                        }
+                        CefV8Context::GetCurrentContext()->GetFrame()->ExecuteJavaScript(strUTF8, "", 0);
+                        retval = CefV8Value::CreateInt(1);
                     }
                     else
                     {
-                        CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
-                        CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("load_js");
-                        int64 frameId = CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier();
-                        message->GetArgumentList()->SetString(0, GetFullUrl(strUrl, CefV8Context::GetCurrentContext()->GetFrame()->GetURL().ToWString()));
-                        message->GetArgumentList()->SetString(1, strPath);
-                        message->GetArgumentList()->SetInt(2, (int)frameId);
-                        browser->SendProcessMessage(PID_BROWSER, message);
-
-                        retval = CefV8Value::CreateInt(2);
+                        retval = CefV8Value::CreateInt(0);
                     }
                 }
                 else
                 {
-                    retval = CefV8Value::CreateInt(0);
+                    CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+                    CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("load_js");
+                    int64 frameId = CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier();
+                    message->GetArgumentList()->SetString(0, GetFullUrl(strUrl, CefV8Context::GetCurrentContext()->GetFrame()->GetURL().ToWString()));
+                    message->GetArgumentList()->SetString(1, strPath);
+                    message->GetArgumentList()->SetInt(2, (int)frameId);
+                    browser->SendProcessMessage(PID_BROWSER, message);
+
+                    retval = CefV8Value::CreateInt(2);
                 }
             }
             else
@@ -3043,6 +3062,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         if (_frame)
         {
             std::string sParam = message->GetArgumentList()->GetString(0);
+            NSCommon::string_replaceA(sParam, "\\", "\\\\");
             NSCommon::string_replaceA(sParam, "\"", "\\\"");
             _frame->ExecuteJavaScript("window.editor.DemonstrationReporterMessages({ data : \"" + sParam + "\" });", _frame->GetURL(), 0);
         }
@@ -3056,6 +3076,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         if (_frame)
         {
             std::string sParam = message->GetArgumentList()->GetString(0);
+            NSCommon::string_replaceA(sParam, "\\", "\\\\");
             NSCommon::string_replaceA(sParam, "\"", "\\\"");
             _frame->ExecuteJavaScript("window.editor.DemonstrationToReporterMessages({ data : \"" + sParam + "\" });", _frame->GetURL(), 0);
         }
