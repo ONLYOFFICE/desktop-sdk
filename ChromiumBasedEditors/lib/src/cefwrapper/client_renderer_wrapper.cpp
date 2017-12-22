@@ -552,10 +552,10 @@ else \n\
                 strPath = m_sFontsData + L"/AllFonts.js";
                 nResult = 2;
             }
-            else if (m_sVersion == "undefined" || m_bIsDebugMode || bIsLocal)
+            else if (m_sVersion == "undefined" || m_sVersion == "reporter_cloud" || m_bIsDebugMode || bIsLocal)
             {
                 std::string sUrl = CefV8Context::GetCurrentContext()->GetFrame()->GetURL().ToString();
-                if (sUrl.find("index.reporter.html") != std::string::npos)
+                if ((m_sVersion == "undefined") && (sUrl.find("index.reporter.html") != std::string::npos))
                 {
                     m_sVersion = "reporter_cloud";
                     if (m_etType != Presentation)
