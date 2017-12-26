@@ -460,7 +460,11 @@ if (window.DocsAPI && window.DocsAPI.DocEditor) \n\
     return window.DocsAPI.DocEditor.version(); \n\
 else \n\
     return undefined; \n\
-})();", "", 0, retval3, exception);
+})();",
+#ifndef CEF_2623
+            "", 0,
+#endif
+            retval3, exception);
                 if (bIsVersion)
                 {
                     if (retval3->IsString())
@@ -473,7 +477,11 @@ else \n\
                 CefRefPtr<CefV8Value> retval2;
                 CefRefPtr<CefV8Exception> exception2;
 
-                bool bIsAppData = CefV8Context::GetCurrentContext()->Eval("window[\"AscDesktopEditor_AppData\"]();", "", 0, retval2, exception2);
+                bool bIsAppData = CefV8Context::GetCurrentContext()->Eval("window[\"AscDesktopEditor_AppData\"]();",
+                                                                          #ifndef CEF_2623
+                                                                                      "", 0,
+                                                                          #endif
+                                                                          retval2, exception2);
                 if (bIsAppData)
                 {
                     if (retval2->IsString())
@@ -484,7 +492,11 @@ else \n\
                 }
                 retval2 = NULL;
                 exception2 = NULL;
-                bool bIsFontsData = CefV8Context::GetCurrentContext()->Eval("window[\"AscDesktopEditor_FontsData\"]();", "", 0, retval2, exception2);
+                bool bIsFontsData = CefV8Context::GetCurrentContext()->Eval("window[\"AscDesktopEditor_FontsData\"]();",
+                                                                            #ifndef CEF_2623
+                                                                                        "", 0,
+                                                                            #endif
+                                                                            retval2, exception2);
                 if (bIsAppData)
                 {
                     if (retval2->IsString())
@@ -496,7 +508,11 @@ else \n\
 
                 retval2 = NULL;
                 exception2 = NULL;
-                bool bIsSPData = CefV8Context::GetCurrentContext()->Eval("window[\"AscDesktopEditor_SP\"]();", "", 0, retval2, exception2);
+                bool bIsSPData = CefV8Context::GetCurrentContext()->Eval("window[\"AscDesktopEditor_SP\"]();",
+                                                                         #ifndef CEF_2623
+                                                                                     "", 0,
+                                                                         #endif
+                                                                         retval2, exception2);
                 if (bIsSPData)
                 {
                     if (retval2->IsString())
@@ -508,7 +524,11 @@ else \n\
 
                 retval2 = NULL;
                 exception2 = NULL;
-                bool bIsUPData = CefV8Context::GetCurrentContext()->Eval("window[\"AscDesktopEditor_UP\"]();", "", 0, retval2, exception2);
+                bool bIsUPData = CefV8Context::GetCurrentContext()->Eval("window[\"AscDesktopEditor_UP\"]();",
+                                                                         #ifndef CEF_2623
+                                                                                     "", 0,
+                                                                         #endif
+                                                                         retval2, exception2);
                 if (bIsUPData)
                 {
                     if (retval2->IsString())
@@ -520,7 +540,11 @@ else \n\
 
                 retval2 = NULL;
                 exception2 = NULL;
-                bool bIsDebugMode = CefV8Context::GetCurrentContext()->Eval("(function() { return (window[\"desktop_debug_mode\"] === true) ? true : false; })();", "", 0, retval2, exception2);
+                bool bIsDebugMode = CefV8Context::GetCurrentContext()->Eval("(function() { return (window[\"desktop_debug_mode\"] === true) ? true : false; })();",
+                                                                            #ifndef CEF_2623
+                                                                                        "", 0,
+                                                                            #endif
+                                                                            retval2, exception2);
                 if (bIsDebugMode)
                 {
                     if (retval2->IsBool())
@@ -1632,7 +1656,10 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
             CefRefPtr<CefV8Value> _timerID;
             CefRefPtr<CefV8Exception> _exception;
             if (CefV8Context::GetCurrentContext()->Eval("(function(){ var intervalID = setInterval(function(){ window.AscDesktopEditor.NativeFunctionTimer(intervalID); }, 100); return intervalID; })();",
-                                                    "", 0, _timerID, _exception))
+                                                        #ifndef CEF_2623
+                                                                    "", 0,
+                                                        #endif
+                                                        _timerID, _exception))
             {
                 m_nNativeOpenFileTimerID = _timerID->GetIntValue();
                 //LOGGER_STRING2("timer created: " + std::to_string(m_nNativeOpenFileTimerID));
@@ -1660,7 +1687,11 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
                     CefRefPtr<CefV8Value> _timerID;
                     CefRefPtr<CefV8Exception> _exception;
                     std::string sCode = "clearTimeout(" + std::to_string(m_nNativeOpenFileTimerID) + ");";
-                    if (CefV8Context::GetCurrentContext()->Eval(sCode, "", 0, _timerID, _exception))
+                    if (CefV8Context::GetCurrentContext()->Eval(sCode,
+                                                                #ifndef CEF_2623
+                                                                            "", 0,
+                                                                #endif
+                                                                _timerID, _exception))
                     {
                         //LOGGER_STRING2("timer stoped: " + std::to_string(m_nNativeOpenFileTimerID));
                     }
@@ -1740,7 +1771,11 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
 
                 retval2 = NULL;
                 exception2 = NULL;
-                bool bIsSPData = CefV8Context::GetCurrentContext()->Eval("window[\"AscDesktopEditor_SP\"]();", "", 0, retval2, exception2);
+                bool bIsSPData = CefV8Context::GetCurrentContext()->Eval("window[\"AscDesktopEditor_SP\"]();",
+                                                                         #ifndef CEF_2623
+                                                                                     "", 0,
+                                                                         #endif
+                                                                         retval2, exception2);
                 if (bIsSPData)
                 {
                     if (retval2->IsString())
@@ -1752,7 +1787,11 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
 
                 retval2 = NULL;
                 exception2 = NULL;
-                bool bIsUPData = CefV8Context::GetCurrentContext()->Eval("window[\"AscDesktopEditor_UP\"]();", "", 0, retval2, exception2);
+                bool bIsUPData = CefV8Context::GetCurrentContext()->Eval("window[\"AscDesktopEditor_UP\"]();",
+                                                                         #ifndef CEF_2623
+                                                                                     "", 0,
+                                                                         #endif
+                                                                         retval2, exception2);
                 if (bIsUPData)
                 {
                     if (retval2->IsString())
@@ -2294,7 +2333,11 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     // add AscEditorNative
     CefRefPtr<CefV8Value> object = context->GetGlobal();
 
+#ifdef CEF_2623
+    CefRefPtr<CefV8Value> objNative = CefV8Value::CreateObject(NULL);
+#else
     CefRefPtr<CefV8Value> objNative = CefV8Value::CreateObject(NULL, NULL);
+#endif
     CAscEditorNativeV8Handler* pNativeHandlerWrapper = new CAscEditorNativeV8Handler();
     pNativeHandlerWrapper->sync_command_check = &sync_command_check;
 

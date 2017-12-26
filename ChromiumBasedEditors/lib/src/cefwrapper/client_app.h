@@ -33,7 +33,11 @@
 #ifndef CEF_ASC_CLIENT_APP_H_
 #define CEF_ASC_CLIENT_APP_H_
 
+#ifndef CEF_2623
 #include "tests/shared/common/client_app.h"
+#else
+#include "cefclient/common/client_app.h"
+#endif
 
 #if defined(_LINUX) && !defined(_MAC)
 #include <gdk/gdk.h>
@@ -195,7 +199,12 @@ public:
 };
 
 #ifndef MAC_NO_MAIN_PROCESS
+
+#ifdef CEF_2623
+#include "cefclient/browser/client_app_browser.h"
+#else
 #include "tests/shared/browser/client_app_browser.h"
+#endif
 
 class CAscClientAppBrowser : public client::ClientAppBrowser, public CAppSettings
 {
@@ -257,8 +266,14 @@ public:
 #endif
 
 #ifndef MAC_NO_SUB_PROCESS
+
+#ifdef CEF_2623
+#include "cefclient/renderer/client_app_renderer.h"
+#include "cefclient/common/client_app_other.h"
+#else
 #include "tests/shared/renderer/client_app_renderer.h"
 #include "tests/shared/common/client_app_other.h"
+#endif
 
 class CAscClientAppOther : public client::ClientAppOther, public CAppSettings
 {

@@ -33,9 +33,16 @@
 #include "include/cef_browser.h"
 #include "include/base/cef_bind.h"
 #include "include/wrapper/cef_closure_task.h"
+
+#ifdef CEF_2623
+#include "cefclient/browser/client_handler.h"
+#include "cefclient/common/client_switches.h"
+#include "cefclient/renderer/client_renderer.h"
+#else
 #include "tests/cefclient/browser/client_handler.h"
 #include "tests/shared/common/client_switches.h"
 #include "tests/cefclient/renderer/client_renderer.h"
+#endif
 
 #include "include/cef_menu_model.h"
 
@@ -160,7 +167,12 @@ LRESULT CALLBACK MyMouseHook(int nCode, WPARAM wp, LPARAM lp)
 #include "mac_common.h"
 #endif
 
-class CCefBinaryFileReaderCounter : public CefBaseRefCounted
+#ifdef CEF_2623
+#define CefBase_Class CefBase
+#else
+#define CefBase_Class CefBaseRefCounted
+#endif
+class CCefBinaryFileReaderCounter : public CefBase_Class
 {
 public:
     BYTE* data;
@@ -709,6 +721,9 @@ public:
         }
         virtual bool OnJSDialog(CefRefPtr<CefBrowser> browser,
                                 const CefString& origin_url,
+                        #ifdef CEF_2623
+                                const CefString& accept_lang,
+                        #endif
                                 JSDialogType dialog_type,
                                 const CefString& message_text,
                                 const CefString& default_prompt_text,
@@ -2000,8 +2015,11 @@ public:
     }
 
     virtual void OnLoadStart(CefRefPtr<CefBrowser> browser,
-                             CefRefPtr<CefFrame> frame,
-                             TransitionType transition_type)
+                             CefRefPtr<CefFrame> frame
+                         #ifndef CEF_2623
+                             , TransitionType transition_type
+                         #endif
+                             )
     {
         // вот тут уже можно делать зум!!!
         m_pParent->m_pInternal->m_bIsWindowsCheckZoom = true;
@@ -2136,8 +2154,10 @@ public:
             }
         }
 
+#ifndef CEF_2623
         if (delegate_)
           delegate_->OnBeforeContextMenu(model);
+#endif
     }
 
     virtual bool OnConsoleMessage(CefRefPtr<CefBrowser> browser,

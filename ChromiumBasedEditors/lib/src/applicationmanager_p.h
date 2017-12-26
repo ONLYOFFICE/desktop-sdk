@@ -399,7 +399,7 @@ public:
     }
 };
 
-class CAscApplicationManager_Private : public CefBaseRefCounted, public CCookieFoundCallback, public NSThreads::CBaseThread, public CCefScriptLoader::ICefScriptLoaderCallback
+class CAscApplicationManager_Private : public CefBase_Class, public CCookieFoundCallback, public NSThreads::CBaseThread, public CCefScriptLoader::ICefScriptLoaderCallback
 {
 public:
     CAscSpellChecker    m_oSpellChecker;

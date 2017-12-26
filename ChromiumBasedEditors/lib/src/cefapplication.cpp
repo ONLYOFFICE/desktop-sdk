@@ -70,12 +70,18 @@ int XIOErrorHandlerImpl(Display *display)
 #include "cefwrapper/client_app.h"
 #include "cefwrapper/client_scheme.h"
 
+#ifdef CEF_2623
+#include "cefclient/browser/main_context_impl.h"
+#include "cefclient/browser/main_message_loop_multithreaded_win.h"
+#include "cefclient/browser/main_message_loop_std.h"
+#else
 #include "tests/cefclient/browser/main_context_impl.h"
 
 #ifdef WIN32
 #include "tests/cefclient/browser/main_message_loop_multithreaded_win.h"
 #endif
 #include "tests/shared/browser/main_message_loop_std.h"
+#endif
 
 class CApplicationCEF_Private
 {

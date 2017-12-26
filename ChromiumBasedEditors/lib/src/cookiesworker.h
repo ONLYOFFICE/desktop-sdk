@@ -179,7 +179,12 @@ public:
     IMPLEMENT_REFCOUNTING(CCefCookieVisitor);
 };
 
-class CCefCookieSetter : public CefBaseRefCounted
+#ifdef CEF_2623
+#define CefBase_Class CefBase
+#else
+#define CefBase_Class CefBaseRefCounted
+#endif
+class CCefCookieSetter : public CefBase_Class
 {
 public:
     std::string                         m_sUrl;
