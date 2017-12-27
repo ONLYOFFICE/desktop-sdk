@@ -575,7 +575,7 @@ core_win_64 {
     LIBS += -L$$PWD/../../../core/build/cef/winxp_64 -llibcef
 }
 
-core_win_64 {
+core_win_32 {
     LIBS += -L$$PWD/../../../core/build/cef/winxp_32 -llibcef
 }
 
