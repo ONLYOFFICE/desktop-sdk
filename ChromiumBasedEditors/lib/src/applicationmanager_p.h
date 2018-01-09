@@ -446,6 +446,8 @@ public:
     int m_nForceDisplayScale;
     bool m_bIsUpdateFontsAttack;
 
+    std::string m_sLD_LIBRARY_PATH;
+
 public:
     CAscApplicationManager_Private() : m_oKeyboardTimer(this)
     {

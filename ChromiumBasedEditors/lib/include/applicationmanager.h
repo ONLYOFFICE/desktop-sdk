@@ -159,6 +159,8 @@ public:
 
     bool IsInitFonts();
 
+    std::string GetLibraryPathVariable();
+
     CApplicationCEF* GetApplication();
     void SetApplication(CApplicationCEF* );
 

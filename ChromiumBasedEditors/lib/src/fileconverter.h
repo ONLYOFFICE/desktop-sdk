@@ -122,7 +122,7 @@ public:
 
 namespace NSX2T
 {
-    int Convert(const std::wstring& sConverterPath, const std::wstring sXmlPath)
+    int Convert(const std::wstring& sConverterPath, const std::wstring sXmlPath, CAscApplicationManager* pManager)
     {
         int nReturnCode = 0;
         std::wstring sConverterExe = sConverterPath;
@@ -211,7 +211,8 @@ namespace NSX2T
             {
                 sLibraryDir = "LD_LIBRARY_PATH=" + sProgramm.substr(0, sProgramm.find_last_of('/'));
 #ifndef _MAC
-                sLibraryDir += ":$LD_LIBRARY_PATH";
+                sLibraryDir += ":";
+                sLibraryDir += pManager->GetLibraryPathVariable();
 #endif
                 sPATH = "PATH=" + sProgramm.substr(0, sProgramm.find_last_of('/'));
             }
@@ -313,7 +314,7 @@ namespace NSOOXMLPassword
                 std::wstring sConverterExe = m_pManager->m_oSettings.file_converter_path + L"/x2t";
                 NSFile::CFileBinary::SaveToFile(sTempFileXml, oBuilder.GetData(), true);
 
-                int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileXml);
+                int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileXml, m_pManager);
 
                 NSFile::CFileBinary::Remove(sTempFileXml);
             }
@@ -380,7 +381,7 @@ namespace NSOOXMLPassword
             std::wstring sConverterExe = m_pManager->m_oSettings.file_converter_path + L"/x2t";
             NSFile::CFileBinary::SaveToFile(sTempFileXml, oBuilder.GetData(), true);
 
-            int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileXml);
+            int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileXml, m_pManager);
 
             NSFile::CFileBinary::Remove(sTempFile);
             NSFile::CFileBinary::Remove(sTempFileXml);
@@ -631,7 +632,7 @@ public:
         std::wstring sTempFileForParams = m_oInfo.m_sRecoveryDir + L"/params_from.xml";
         NSFile::CFileBinary::SaveToFile(sTempFileForParams, sXmlConvert, true);
 
-        int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileForParams);
+        int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileForParams, m_pManager);
 
         NSFile::CFileBinary::Remove(sTempFileForParams);
 
@@ -929,7 +930,7 @@ public:
         if (m_pManager->m_pInternal->m_pAdditional)
             m_pManager->m_pInternal->m_pAdditional->CheckSaveStart(m_oInfo.m_sRecoveryDir, m_nTypeEditorFormat);
 
-        int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileForParams);
+        int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileForParams, m_pManager);
 
         m_sOriginalFileNameCrossPlatform = L"";
         m_bIsRetina = false;

@@ -514,6 +514,19 @@ bool CAscApplicationManager::IsInitFonts()
     return (NULL != m_pInternal->m_pApplicationFonts) ? true : false;
 }
 
+std::string CAscApplicationManager::GetLibraryPathVariable()
+{
+#if defined(_LINUX) && !defined(_MAC)
+    if (m_pInternal->m_sLD_LIBRARY_PATH.empty())
+    {
+        char* pEnv = getenv("LD_LIBRARY_PATH");
+        m_pInternal->m_sLD_LIBRARY_PATH = std::string(pEnv);
+    }
+    return m_pInternal->m_sLD_LIBRARY_PATH;
+#endif
+    return "";
+}
+
 CApplicationCEF* CAscApplicationManager::GetApplication()
 {
     return m_pInternal->m_pApplication;
