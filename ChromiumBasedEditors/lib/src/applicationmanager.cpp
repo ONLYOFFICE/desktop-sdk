@@ -685,6 +685,16 @@ void CAscApplicationManager::ExitExternalEventLoop()
     // none
 }
 
+int CAscApplicationManager::GetDeviceScale(const int& nDpiX, const int& nDpiY)
+{
+    if (-1 != m_pInternal->m_nForceDisplayScale && m_pInternal->m_nForceDisplayScale > 0)
+        return m_pInternal->m_nForceDisplayScale;
+
+    if (nDpiX > 180 && nDpiY > 180)
+        return 2;
+    return 1;
+}
+
 void CAscApplicationManager::SetEventToAllMainWindows(NSEditorApi::CAscMenuEvent* pEvent)
 {
     m_pInternal->SetEventToAllMainWindows(pEvent);
