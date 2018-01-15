@@ -151,8 +151,14 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     m_pInternal->argc_copy = new CefScopedArgArray(argc, argv);
     char** argv_copy = m_pInternal->argc_copy->array();
 #endif
-    
-    if (true)
+
+    // Parse command-line arguments.
+    CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
+    command_line->InitFromString(::GetCommandLineW());
+
+    client::ClientApp::ProcessType process_type = client::ClientApp::GetProcessType(command_line);
+
+    if (process_type == client::ClientApp::BrowserProcess)
     {
         // ASC command line props
         pManager->m_pInternal->LoadSettings();
@@ -173,12 +179,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 #ifdef WIN32
     CefMainArgs main_args((HINSTANCE)GetModuleHandle(NULL));
 
-    // Parse command-line arguments.
-    CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
-    command_line->InitFromString(::GetCommandLineW());
-
     // Create a ClientApp of the correct type.
-    client::ClientApp::ProcessType process_type = client::ClientApp::GetProcessType(command_line);
     if (process_type == client::ClientApp::BrowserProcess)
         m_pInternal->m_app = new CAscClientAppBrowser(pManager->m_pInternal->m_mapSettings);
     else if (process_type == client::ClientApp::RendererProcess ||
