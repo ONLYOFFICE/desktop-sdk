@@ -1,4 +1,4 @@
-// Copyright (c) 2016 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,11 +9,12 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
+// $hash=bf38d3d982e86d37a2201c77c7a40e684e8bbb7d$
+//
 
-#include "libcef_dll/ctocpp/domdocument_ctocpp.h"
 #include "libcef_dll/ctocpp/domnode_ctocpp.h"
+#include "libcef_dll/ctocpp/domdocument_ctocpp.h"
 #include "libcef_dll/transfer_util.h"
-
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
@@ -42,7 +43,7 @@ bool CefDOMNodeCToCpp::IsText() {
   int _retval = _struct->is_text(_struct);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 bool CefDOMNodeCToCpp::IsElement() {
@@ -56,7 +57,7 @@ bool CefDOMNodeCToCpp::IsElement() {
   int _retval = _struct->is_element(_struct);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 bool CefDOMNodeCToCpp::IsEditable() {
@@ -70,7 +71,7 @@ bool CefDOMNodeCToCpp::IsEditable() {
   int _retval = _struct->is_editable(_struct);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 bool CefDOMNodeCToCpp::IsFormControlElement() {
@@ -84,7 +85,7 @@ bool CefDOMNodeCToCpp::IsFormControlElement() {
   int _retval = _struct->is_form_control_element(_struct);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 CefString CefDOMNodeCToCpp::GetFormControlElementType() {
@@ -95,8 +96,8 @@ CefString CefDOMNodeCToCpp::GetFormControlElementType() {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_string_userfree_t _retval = _struct->get_form_control_element_type(
-      _struct);
+  cef_string_userfree_t _retval =
+      _struct->get_form_control_element_type(_struct);
 
   // Return type: string
   CefString _retvalStr;
@@ -117,11 +118,10 @@ bool CefDOMNodeCToCpp::IsSame(CefRefPtr<CefDOMNode> that) {
     return false;
 
   // Execute
-  int _retval = _struct->is_same(_struct,
-      CefDOMNodeCToCpp::Unwrap(that));
+  int _retval = _struct->is_same(_struct, CefDOMNodeCToCpp::Unwrap(that));
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 CefString CefDOMNodeCToCpp::GetName() {
@@ -169,11 +169,10 @@ bool CefDOMNodeCToCpp::SetValue(const CefString& value) {
     return false;
 
   // Execute
-  int _retval = _struct->set_value(_struct,
-      value.GetStruct());
+  int _retval = _struct->set_value(_struct, value.GetStruct());
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 CefString CefDOMNodeCToCpp::GetAsMarkup() {
@@ -259,7 +258,7 @@ bool CefDOMNodeCToCpp::HasChildren() {
   int _retval = _struct->has_children(_struct);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 CefRefPtr<CefDOMNode> CefDOMNodeCToCpp::GetFirstChild() {
@@ -317,7 +316,7 @@ bool CefDOMNodeCToCpp::HasElementAttributes() {
   int _retval = _struct->has_element_attributes(_struct);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 bool CefDOMNodeCToCpp::HasElementAttribute(const CefString& attrName) {
@@ -333,11 +332,10 @@ bool CefDOMNodeCToCpp::HasElementAttribute(const CefString& attrName) {
     return false;
 
   // Execute
-  int _retval = _struct->has_element_attribute(_struct,
-      attrName.GetStruct());
+  int _retval = _struct->has_element_attribute(_struct, attrName.GetStruct());
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 CefString CefDOMNodeCToCpp::GetElementAttribute(const CefString& attrName) {
@@ -353,8 +351,8 @@ CefString CefDOMNodeCToCpp::GetElementAttribute(const CefString& attrName) {
     return CefString();
 
   // Execute
-  cef_string_userfree_t _retval = _struct->get_element_attribute(_struct,
-      attrName.GetStruct());
+  cef_string_userfree_t _retval =
+      _struct->get_element_attribute(_struct, attrName.GetStruct());
 
   // Return type: string
   CefString _retvalStr;
@@ -376,8 +374,7 @@ void CefDOMNodeCToCpp::GetElementAttributes(AttributeMap& attrMap) {
     transfer_string_map_contents(attrMap, attrMapMap);
 
   // Execute
-  _struct->get_element_attributes(_struct,
-      attrMapMap);
+  _struct->get_element_attributes(_struct, attrMapMap);
 
   // Restore param:attrMap; type: string_map_single_byref
   if (attrMapMap) {
@@ -388,7 +385,7 @@ void CefDOMNodeCToCpp::GetElementAttributes(AttributeMap& attrMap) {
 }
 
 bool CefDOMNodeCToCpp::SetElementAttribute(const CefString& attrName,
-    const CefString& value) {
+                                           const CefString& value) {
   cef_domnode_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, set_element_attribute))
     return false;
@@ -405,12 +402,11 @@ bool CefDOMNodeCToCpp::SetElementAttribute(const CefString& attrName,
     return false;
 
   // Execute
-  int _retval = _struct->set_element_attribute(_struct,
-      attrName.GetStruct(),
-      value.GetStruct());
+  int _retval = _struct->set_element_attribute(_struct, attrName.GetStruct(),
+                                               value.GetStruct());
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 CefString CefDOMNodeCToCpp::GetElementInnerText() {
@@ -429,22 +425,41 @@ CefString CefDOMNodeCToCpp::GetElementInnerText() {
   return _retvalStr;
 }
 
+CefRect CefDOMNodeCToCpp::GetElementBounds() {
+  cef_domnode_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, get_element_bounds))
+    return CefRect();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  cef_rect_t _retval = _struct->get_element_bounds(_struct);
+
+  // Return type: simple
+  return _retval;
+}
 
 // CONSTRUCTOR - Do not edit by hand.
 
-CefDOMNodeCToCpp::CefDOMNodeCToCpp() {
-}
+CefDOMNodeCToCpp::CefDOMNodeCToCpp() {}
 
-template<> cef_domnode_t* CefCToCpp<CefDOMNodeCToCpp, CefDOMNode,
-    cef_domnode_t>::UnwrapDerived(CefWrapperType type, CefDOMNode* c) {
+template <>
+cef_domnode_t*
+CefCToCppRefCounted<CefDOMNodeCToCpp, CefDOMNode, cef_domnode_t>::UnwrapDerived(
+    CefWrapperType type,
+    CefDOMNode* c) {
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
 
-#ifndef NDEBUG
-template<> base::AtomicRefCount CefCToCpp<CefDOMNodeCToCpp, CefDOMNode,
-    cef_domnode_t>::DebugObjCt = 0;
+#if DCHECK_IS_ON()
+template <>
+base::AtomicRefCount
+    CefCToCppRefCounted<CefDOMNodeCToCpp, CefDOMNode, cef_domnode_t>::DebugObjCt
+        ATOMIC_DECLARATION;
 #endif
 
-template<> CefWrapperType CefCToCpp<CefDOMNodeCToCpp, CefDOMNode,
-    cef_domnode_t>::kWrapperType = WT_DOMNODE;
+template <>
+CefWrapperType CefCToCppRefCounted<CefDOMNodeCToCpp,
+                                   CefDOMNode,
+                                   cef_domnode_t>::kWrapperType = WT_DOMNODE;

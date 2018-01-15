@@ -34,7 +34,7 @@
 #define CEF_ASC_CLIENT_RENDERER_H_
 
 #include "include/cef_base.h"
-#include "cefclient/renderer/client_app_renderer.h"
+#include "tests/shared/renderer/client_app_renderer.h"
 
 namespace asc_client_renderer
 {

@@ -1,4 +1,4 @@
-// Copyright (c) 2016 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,9 +9,10 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
+// $hash=85d400500ae15b1750ac10905cac8c90e3ab1541$
+//
 
 #include "libcef_dll/ctocpp/post_data_element_ctocpp.h"
-
 
 // STATIC METHODS - Body may be edited by hand.
 
@@ -24,7 +25,6 @@ CefRefPtr<CefPostDataElement> CefPostDataElement::Create() {
   // Return type: refptr_same
   return CefPostDataElementCToCpp::Wrap(_retval);
 }
-
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
@@ -39,7 +39,7 @@ bool CefPostDataElementCToCpp::IsReadOnly() {
   int _retval = _struct->is_read_only(_struct);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 void CefPostDataElementCToCpp::SetToEmpty() {
@@ -66,8 +66,7 @@ void CefPostDataElementCToCpp::SetToFile(const CefString& fileName) {
     return;
 
   // Execute
-  _struct->set_to_file(_struct,
-      fileName.GetStruct());
+  _struct->set_to_file(_struct, fileName.GetStruct());
 }
 
 void CefPostDataElementCToCpp::SetToBytes(size_t size, const void* bytes) {
@@ -83,9 +82,7 @@ void CefPostDataElementCToCpp::SetToBytes(size_t size, const void* bytes) {
     return;
 
   // Execute
-  _struct->set_to_bytes(_struct,
-      size,
-      bytes);
+  _struct->set_to_bytes(_struct, size, bytes);
 }
 
 CefPostDataElement::Type CefPostDataElementCToCpp::GetType() {
@@ -145,32 +142,36 @@ size_t CefPostDataElementCToCpp::GetBytes(size_t size, void* bytes) {
     return 0;
 
   // Execute
-  size_t _retval = _struct->get_bytes(_struct,
-      size,
-      bytes);
+  size_t _retval = _struct->get_bytes(_struct, size, bytes);
 
   // Return type: simple
   return _retval;
 }
 
-
 // CONSTRUCTOR - Do not edit by hand.
 
-CefPostDataElementCToCpp::CefPostDataElementCToCpp() {
-}
+CefPostDataElementCToCpp::CefPostDataElementCToCpp() {}
 
-template<> cef_post_data_element_t* CefCToCpp<CefPostDataElementCToCpp,
-    CefPostDataElement, cef_post_data_element_t>::UnwrapDerived(
-    CefWrapperType type, CefPostDataElement* c) {
+template <>
+cef_post_data_element_t* CefCToCppRefCounted<
+    CefPostDataElementCToCpp,
+    CefPostDataElement,
+    cef_post_data_element_t>::UnwrapDerived(CefWrapperType type,
+                                            CefPostDataElement* c) {
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
 
-#ifndef NDEBUG
-template<> base::AtomicRefCount CefCToCpp<CefPostDataElementCToCpp,
-    CefPostDataElement, cef_post_data_element_t>::DebugObjCt = 0;
+#if DCHECK_IS_ON()
+template <>
+base::AtomicRefCount CefCToCppRefCounted<CefPostDataElementCToCpp,
+                                         CefPostDataElement,
+                                         cef_post_data_element_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
-template<> CefWrapperType CefCToCpp<CefPostDataElementCToCpp,
-    CefPostDataElement, cef_post_data_element_t>::kWrapperType =
+template <>
+CefWrapperType CefCToCppRefCounted<CefPostDataElementCToCpp,
+                                   CefPostDataElement,
+                                   cef_post_data_element_t>::kWrapperType =
     WT_POST_DATA_ELEMENT;

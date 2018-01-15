@@ -38,6 +38,8 @@
 class CApplicationRendererAdditionalBase
 {
 public:
+    virtual ~CApplicationRendererAdditionalBase() {}
+
     virtual bool OnProcessMessageReceived(
         CefRefPtr<client::ClientAppRenderer> app,
         CefRefPtr<CefBrowser> browser,

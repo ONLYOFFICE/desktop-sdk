@@ -1,4 +1,4 @@
-// Copyright (c) 2016 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,14 +9,20 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
+// $hash=3d60233df1edf4d3afba07d63a5e56cddc791430$
+//
 
 #include "libcef_dll/ctocpp/scheme_registrar_ctocpp.h"
-
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
 bool CefSchemeRegistrarCToCpp::AddCustomScheme(const CefString& scheme_name,
-    bool is_standard, bool is_local, bool is_display_isolated) {
+                                               bool is_standard,
+                                               bool is_local,
+                                               bool is_display_isolated,
+                                               bool is_secure,
+                                               bool is_cors_enabled,
+                                               bool is_csp_bypassing) {
   cef_scheme_registrar_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, add_custom_scheme))
     return false;
@@ -29,34 +35,48 @@ bool CefSchemeRegistrarCToCpp::AddCustomScheme(const CefString& scheme_name,
     return false;
 
   // Execute
-  int _retval = _struct->add_custom_scheme(_struct,
-      scheme_name.GetStruct(),
-      is_standard,
-      is_local,
-      is_display_isolated);
+  int _retval = _struct->add_custom_scheme(
+      _struct, scheme_name.GetStruct(), is_standard, is_local,
+      is_display_isolated, is_secure, is_cors_enabled, is_csp_bypassing);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
-
 
 // CONSTRUCTOR - Do not edit by hand.
 
-CefSchemeRegistrarCToCpp::CefSchemeRegistrarCToCpp() {
-}
+CefSchemeRegistrarCToCpp::CefSchemeRegistrarCToCpp() {}
 
-template<> cef_scheme_registrar_t* CefCToCpp<CefSchemeRegistrarCToCpp,
-    CefSchemeRegistrar, cef_scheme_registrar_t>::UnwrapDerived(
-    CefWrapperType type, CefSchemeRegistrar* c) {
+template <>
+cef_scheme_registrar_t* CefCToCppScoped<
+    CefSchemeRegistrarCToCpp,
+    CefSchemeRegistrar,
+    cef_scheme_registrar_t>::UnwrapDerivedOwn(CefWrapperType type,
+                                              CefOwnPtr<CefSchemeRegistrar> c) {
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
 
-#ifndef NDEBUG
-template<> base::AtomicRefCount CefCToCpp<CefSchemeRegistrarCToCpp,
-    CefSchemeRegistrar, cef_scheme_registrar_t>::DebugObjCt = 0;
+template <>
+cef_scheme_registrar_t* CefCToCppScoped<
+    CefSchemeRegistrarCToCpp,
+    CefSchemeRegistrar,
+    cef_scheme_registrar_t>::UnwrapDerivedRaw(CefWrapperType type,
+                                              CefRawPtr<CefSchemeRegistrar> c) {
+  NOTREACHED() << "Unexpected class type: " << type;
+  return NULL;
+}
+
+#if DCHECK_IS_ON()
+template <>
+base::AtomicRefCount CefCToCppScoped<CefSchemeRegistrarCToCpp,
+                                     CefSchemeRegistrar,
+                                     cef_scheme_registrar_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
-template<> CefWrapperType CefCToCpp<CefSchemeRegistrarCToCpp,
-    CefSchemeRegistrar, cef_scheme_registrar_t>::kWrapperType =
+template <>
+CefWrapperType CefCToCppScoped<CefSchemeRegistrarCToCpp,
+                               CefSchemeRegistrar,
+                               cef_scheme_registrar_t>::kWrapperType =
     WT_SCHEME_REGISTRAR;

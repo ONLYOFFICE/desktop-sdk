@@ -1,4 +1,4 @@
-// Copyright (c) 2016 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,14 +9,15 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
+// $hash=5ab00c7405600a7fd3dad9c1703b9658d7f9edf6$
+//
 
+#include "libcef_dll/ctocpp/v8context_ctocpp.h"
 #include "libcef_dll/ctocpp/browser_ctocpp.h"
 #include "libcef_dll/ctocpp/frame_ctocpp.h"
 #include "libcef_dll/ctocpp/task_runner_ctocpp.h"
-#include "libcef_dll/ctocpp/v8context_ctocpp.h"
 #include "libcef_dll/ctocpp/v8exception_ctocpp.h"
 #include "libcef_dll/ctocpp/v8value_ctocpp.h"
-
 
 // STATIC METHODS - Body may be edited by hand.
 
@@ -47,9 +48,8 @@ bool CefV8Context::InContext() {
   int _retval = cef_v8context_in_context();
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
-
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
@@ -78,7 +78,7 @@ bool CefV8ContextCToCpp::IsValid() {
   int _retval = _struct->is_valid(_struct);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 CefRefPtr<CefBrowser> CefV8ContextCToCpp::GetBrowser() {
@@ -134,7 +134,7 @@ bool CefV8ContextCToCpp::Enter() {
   int _retval = _struct->enter(_struct);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 bool CefV8ContextCToCpp::Exit() {
@@ -148,7 +148,7 @@ bool CefV8ContextCToCpp::Exit() {
   int _retval = _struct->exit(_struct);
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 bool CefV8ContextCToCpp::IsSame(CefRefPtr<CefV8Context> that) {
@@ -164,15 +164,17 @@ bool CefV8ContextCToCpp::IsSame(CefRefPtr<CefV8Context> that) {
     return false;
 
   // Execute
-  int _retval = _struct->is_same(_struct,
-      CefV8ContextCToCpp::Unwrap(that));
+  int _retval = _struct->is_same(_struct, CefV8ContextCToCpp::Unwrap(that));
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
 
 bool CefV8ContextCToCpp::Eval(const CefString& code,
-    CefRefPtr<CefV8Value>& retval, CefRefPtr<CefV8Exception>& exception) {
+                              const CefString& script_url,
+                              int start_line,
+                              CefRefPtr<CefV8Value>& retval,
+                              CefRefPtr<CefV8Exception>& exception) {
   cef_v8context_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, eval))
     return false;
@@ -183,6 +185,7 @@ bool CefV8ContextCToCpp::Eval(const CefString& code,
   DCHECK(!code.empty());
   if (code.empty())
     return false;
+  // Unverified params: script_url
 
   // Translate param: retval; type: refptr_same_byref
   cef_v8value_t* retvalStruct = NULL;
@@ -196,10 +199,8 @@ bool CefV8ContextCToCpp::Eval(const CefString& code,
   cef_v8exception_t* exceptionOrig = exceptionStruct;
 
   // Execute
-  int _retval = _struct->eval(_struct,
-      code.GetStruct(),
-      &retvalStruct,
-      &exceptionStruct);
+  int _retval = _struct->eval(_struct, code.GetStruct(), script_url.GetStruct(),
+                              start_line, &retvalStruct, &exceptionStruct);
 
   // Restore param:retval; type: refptr_same_byref
   if (retvalStruct) {
@@ -219,25 +220,30 @@ bool CefV8ContextCToCpp::Eval(const CefString& code,
   }
 
   // Return type: bool
-  return _retval?true:false;
+  return _retval ? true : false;
 }
-
 
 // CONSTRUCTOR - Do not edit by hand.
 
-CefV8ContextCToCpp::CefV8ContextCToCpp() {
-}
+CefV8ContextCToCpp::CefV8ContextCToCpp() {}
 
-template<> cef_v8context_t* CefCToCpp<CefV8ContextCToCpp, CefV8Context,
-    cef_v8context_t>::UnwrapDerived(CefWrapperType type, CefV8Context* c) {
+template <>
+cef_v8context_t*
+CefCToCppRefCounted<CefV8ContextCToCpp, CefV8Context, cef_v8context_t>::
+    UnwrapDerived(CefWrapperType type, CefV8Context* c) {
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
 
-#ifndef NDEBUG
-template<> base::AtomicRefCount CefCToCpp<CefV8ContextCToCpp, CefV8Context,
-    cef_v8context_t>::DebugObjCt = 0;
+#if DCHECK_IS_ON()
+template <>
+base::AtomicRefCount
+    CefCToCppRefCounted<CefV8ContextCToCpp, CefV8Context, cef_v8context_t>::
+        DebugObjCt ATOMIC_DECLARATION;
 #endif
 
-template<> CefWrapperType CefCToCpp<CefV8ContextCToCpp, CefV8Context,
-    cef_v8context_t>::kWrapperType = WT_V8CONTEXT;
+template <>
+CefWrapperType CefCToCppRefCounted<CefV8ContextCToCpp,
+                                   CefV8Context,
+                                   cef_v8context_t>::kWrapperType =
+    WT_V8CONTEXT;

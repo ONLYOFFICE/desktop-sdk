@@ -62,6 +62,8 @@ public:
     bool                            use_system_fonts;
     std::vector<std::wstring>       additional_fonts_folder;
     std::wstring                    fonts_cache_info_path;
+    std::wstring                    system_plugins_path;
+    std::wstring                    user_plugins_path;
 
     std::wstring                    app_data_path;
 
@@ -69,6 +71,8 @@ public:
     std::wstring                    file_converter_path;
     std::wstring                    recover_path;
     std::string                     country;
+
+    bool                            sign_support;
 
 public:
     CAscApplicationSettings();
@@ -181,6 +185,13 @@ public:
     static int OpenSsl_LoadKey(std::wstring file, std::string password);
     static int OpenSsl_LoadCert(std::wstring file, std::string password);
 #endif
+
+    static void DoMessageLoopWork();
+
+    virtual bool IsExternalEventLoop();
+    virtual void ExitExternalEventLoop();
+
+    void SetEventToAllMainWindows(NSEditorApi::CAscMenuEvent* pEvent);
 
 protected:
     int GenerateNextViewId();

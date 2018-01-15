@@ -45,11 +45,6 @@
 #include <signal.h>
 #include <iostream>
 typedef void (*SignalHandlerPointer)(int);
-void SignalHandler(int signal)
-{
-    std::cout << "Signal " << signal << std::endl;
-    throw "!Access Violation!";
-}
 #endif
 
 class QAscPrinterContext : public NSEditorApi::CAscPrinterContextBase
@@ -60,12 +55,12 @@ private:
     bool m_bIsUsePainter;
 
 public:
-    QAscPrinterContext() : NSEditorApi::CAscPrinterContextBase(), m_oPrinter(QPrinter::HighResolution)
+    QAscPrinterContext(QPrinter::PrinterMode eMode = QPrinter::HighResolution) : NSEditorApi::CAscPrinterContextBase(), m_oPrinter(eMode)
     {
         m_bIsUsePainter = false;
     }
-    QAscPrinterContext(const QPrinterInfo& pi) : NSEditorApi::CAscPrinterContextBase(),
-        m_oPrinter(pi, QPrinter::HighResolution), m_bIsUsePainter(false)
+    QAscPrinterContext(const QPrinterInfo& pi, QPrinter::PrinterMode eMode = QPrinter::HighResolution) : NSEditorApi::CAscPrinterContextBase(),
+        m_oPrinter(pi, eMode), m_bIsUsePainter(false)
     {
     }
 
@@ -76,7 +71,10 @@ public:
 
 #ifdef WIN32
         SignalHandlerPointer previousHandler;
-        previousHandler = signal(SIGSEGV, SignalHandler);
+        previousHandler = signal(SIGSEGV, [](int signum){
+            std::cout << "Signal " << signum << std::endl;
+            throw "!Access Violation!";
+        });
 #endif
         try
         {
