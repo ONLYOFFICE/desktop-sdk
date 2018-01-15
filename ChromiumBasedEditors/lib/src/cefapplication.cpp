@@ -152,9 +152,28 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     char** argv_copy = m_pInternal->argc_copy->array();
 #endif
 
+#ifdef WIN32
+    CefMainArgs main_args((HINSTANCE)GetModuleHandle(NULL));
     // Parse command-line arguments.
     CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
     command_line->InitFromString(::GetCommandLineW());
+#endif
+
+#if defined(_LINUX) && !defined(_MAC)
+    CefMainArgs main_args(argc, argv_copy);
+
+    // Parse command-line arguments.
+    CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
+    command_line->InitFromArgv(argc, argv_copy);
+#endif
+
+#ifdef _MAC
+    CefMainArgs main_args(argc, argv);
+
+    // Parse command-line arguments.
+    CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
+    command_line->InitFromArgv(argc, argv);
+#endif
 
     client::ClientApp::ProcessType process_type = client::ClientApp::GetProcessType(command_line);
 
@@ -177,8 +196,6 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     }
 
 #ifdef WIN32
-    CefMainArgs main_args((HINSTANCE)GetModuleHandle(NULL));
-
     // Create a ClientApp of the correct type.
     if (process_type == client::ClientApp::BrowserProcess)
         m_pInternal->m_app = new CAscClientAppBrowser(pManager->m_pInternal->m_mapSettings);
@@ -190,14 +207,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 #endif
 
 #if defined(_LINUX) && !defined(_MAC)
-    CefMainArgs main_args(argc, argv_copy);
-
-    // Parse command-line arguments.
-    CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
-    command_line->InitFromArgv(argc, argv_copy);
-
-    // Create a ClientApp of the correct type.
-    client::ClientApp::ProcessType process_type = client::ClientApp::GetProcessType(command_line);
+    // Create a ClientApp of the correct type.    
     if (process_type == client::ClientApp::BrowserProcess)
         m_pInternal->m_app = new CAscClientAppBrowser(pManager->m_pInternal->m_mapSettings);
     else if (process_type == client::ClientApp::RendererProcess ||
@@ -208,12 +218,6 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 #endif
 
 #ifdef _MAC
-    CefMainArgs main_args(argc, argv);
-
-    // Parse command-line arguments.
-    CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
-    command_line->InitFromArgv(argc, argv);
-
     m_pInternal->m_app = new CAscClientAppBrowser(pManager->m_pInternal->m_mapSettings);
 #endif
 
