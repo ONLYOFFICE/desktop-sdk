@@ -685,14 +685,40 @@ void CAscApplicationManager::ExitExternalEventLoop()
     // none
 }
 
-int CAscApplicationManager::GetDeviceScale(const int& nDpiX, const int& nDpiY)
+int CAscApplicationManager::GetMonitorScaleByIndex(const int& nIndex, unsigned int& nDpiX, unsigned int& nDpiY)
 {
-    if (-1 != m_pInternal->m_nForceDisplayScale && m_pInternal->m_nForceDisplayScale > 0)
+    if (m_pInternal->m_nForceDisplayScale > 0)
         return m_pInternal->m_nForceDisplayScale;
+
+#ifdef WIN32
+    if (0 != Core_GetMonitorRawDpiByIndex(nIndex, &nDpiX, &nDpiY))
+        return -1;
 
     if (nDpiX > 180 && nDpiY > 180)
         return 2;
+
     return 1;
+#endif
+
+    return -1;
+}
+
+int CAscApplicationManager::GetMonitorScaleByWindow(const WindowHandleId& nHandle, unsigned int& nDpiX, unsigned int& nDpiY)
+{
+    if (m_pInternal->m_nForceDisplayScale > 0)
+        return m_pInternal->m_nForceDisplayScale;
+
+#ifdef WIN32
+    if (0 != Core_GetMonitorRawDpi(nHandle, &nDpiX, &nDpiY))
+        return -1;
+
+    if (nDpiX > 180 && nDpiY > 180)
+        return 2;
+
+    return 1;
+#endif
+
+    return -1;
 }
 
 void CAscApplicationManager::SetEventToAllMainWindows(NSEditorApi::CAscMenuEvent* pEvent)

@@ -193,7 +193,8 @@ public:
     virtual bool IsExternalEventLoop();
     virtual void ExitExternalEventLoop();
 
-    int GetDeviceScale(const int& nDpiX, const int& nDpiY);
+    int GetMonitorScaleByIndex(const int& nIndex, unsigned int& nDpiX, unsigned int& nDpiY);
+    int GetMonitorScaleByWindow(const WindowHandleId& nHandle, unsigned int& nDpiX, unsigned int& nDpiY);
 
     void SetEventToAllMainWindows(NSEditorApi::CAscMenuEvent* pEvent);
 
