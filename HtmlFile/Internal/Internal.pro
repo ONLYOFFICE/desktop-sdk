@@ -54,7 +54,11 @@ linux-g++ | linux-g++-64 | linux-g++-32 {
     QMAKE_LFLAGS += -static-libstdc++ -static-libgcc
 
     build_for_centos6 {
-        QMAKE_LFLAGS += -Wl,--dynamic-linker=./ld-linux-x86-64.so.2
-        DESTDIR = $$DESTDIR/CentOS6
+		core_linux_64 {
+			QMAKE_LFLAGS += -Wl,--dynamic-linker=./ld-linux-x86-64.so.2
+		} else {
+			QMAKE_LFLAGS += -Wl,--dynamic-linker=./ld-linux.so.2
+		}
+		DESTDIR = $$DESTDIR/CentOS6
     }
 }
