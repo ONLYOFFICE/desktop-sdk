@@ -63,6 +63,8 @@
 #include "./additional/manager.h"
 #include "./additional/renderer.h"
 
+#define ONLYOFFICE_FONTS_VERSION_ 1
+
 class CAscReporterData
 {
 public:
@@ -774,6 +776,25 @@ protected:
 
                 delete[] pBuffer;
             }
+
+            if (0 != strFonts.size())
+            {
+                // check version!!!
+                std::string sOO_Version = strFonts[0];
+                if (0 != sOO_Version.find("ONLYOFFICE_FONTS_VERSION_"))
+                {
+                    strFonts.clear();
+                }
+                else
+                {
+                    std::string sVersion = sOO_Version.substr(25);
+                    int nVersion = std::stoi(sVersion);
+                    if (nVersion != ONLYOFFICE_FONTS_VERSION_)
+                        strFonts.clear();
+                    else
+                        strFonts.erase(strFonts.begin());
+                }
+            }
         }
 
         CApplicationFonts* oApplicationF = new CApplicationFonts();
@@ -838,6 +859,9 @@ protected:
 
             NSFile::CFileBinary oFile;
             oFile.CreateFileW(strDirectory + L"/fonts.log");
+            oFile.WriteStringUTF8(L"ONLYOFFICE_FONTS_VERSION_");
+            oFile.WriteStringUTF8(std::to_wstring(ONLYOFFICE_FONTS_VERSION_));
+            oFile.WriteFile((BYTE*)"\n", 1);
             int nCount = (int)strFontsW_Cur.size();
             for (int i = 0; i < nCount; ++i)
             {
