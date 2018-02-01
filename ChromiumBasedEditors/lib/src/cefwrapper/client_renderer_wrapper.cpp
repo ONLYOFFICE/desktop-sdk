@@ -299,6 +299,7 @@ public:
     int m_nNativeOpenFileTimerID;
 
     bool m_bIsSupportSigs;
+    bool m_bIsSupportOnlyPass;
 
     std::list<CSavedPageInfo> m_arCompleteTasks;
 
@@ -338,6 +339,7 @@ public:
         m_bIsSupportSigs = true;
 
         m_bIsDebugMode = false;
+        m_bIsSupportOnlyPass = true;
 
         m_oCompleteTasksCS.InitializeCriticalSection();
 
@@ -2001,7 +2003,40 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
         {
             m_bIsSupportSigs = arguments[0]->GetBoolValue();
             return true;
-        }    
+        }
+        else if (name == "SetInitFlags")
+        {
+            int nFlags = arguments[0]->GetIntValue();
+            m_bIsSupportOnlyPass = ((nFlags & 0x01) == 0x01) ? true : false;
+
+            CPluginsManager oPlugins;
+            oPlugins.m_strDirectory = m_sSystemPlugins;
+            oPlugins.m_strUserDirectory = m_sUserPlugins;
+
+            return true;
+        }
+        else if (name == "isBlockchainSupport")
+        {
+            retval = CefV8Value::CreateBool(m_bIsSupportOnlyPass);
+            return true;
+        }
+        else if (name == "OpenAsLocal")
+        {
+            CefRefPtr<CefV8Value> obj = arguments[0];
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("open_as_local");
+            message->GetArgumentList()->SetString(0, obj->GetValue("downloadLink")->GetStringValue());
+            message->GetArgumentList()->SetString(1, obj->GetValue("saveLink")->GetStringValue());
+            message->GetArgumentList()->SetString(2, obj->GetValue("title")->GetStringValue());
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "SaveAsCloud")
+        {
+            // TODO:
+            return true;
+        }
+
         // Function does not exist.
         return false;
     }
@@ -2474,6 +2509,12 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction968 = CefV8Value::CreateFunction("PluginInstall", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction969 = CefV8Value::CreateFunction("PluginUninstall", _nativeHandler);
 
+    CefRefPtr<CefV8Value> _nativeFunction970 = CefV8Value::CreateFunction("SetInitFlags", _nativeHandler);
+
+    CefRefPtr<CefV8Value> _nativeFunction971 = CefV8Value::CreateFunction("isBlockchainSupport", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction972 = CefV8Value::CreateFunction("OpenAsLocal", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction973 = CefV8Value::CreateFunction("SaveAsCloud", _nativeHandler);
+
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Cut", _nativeFunctionCut, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -2600,6 +2641,12 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("PluginInstall", _nativeFunction968, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("PluginUninstall", _nativeFunction969, V8_PROPERTY_ATTRIBUTE_NONE);
 
+    objNative->SetValue("SetInitFlags", _nativeFunction970, V8_PROPERTY_ATTRIBUTE_NONE);
+
+    objNative->SetValue("isBlockchainSupport", _nativeFunction971, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("OpenAsLocal", _nativeFunction972, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("SaveAsCloud", _nativeFunction973, V8_PROPERTY_ATTRIBUTE_NONE);
+
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 
     CefRefPtr<CefFrame> _frame = context->GetFrame();
@@ -2608,6 +2655,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     if (_frame)
         _frame->ExecuteJavaScript("window.AscDesktopEditor.InitJSContext();", _frame->GetURL(), 0);
+
+    CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_js_context_created");
+    browser->SendProcessMessage(PID_BROWSER, message);
   }
 
   virtual void OnContextReleased(CefRefPtr<client::ClientAppRenderer> app,
@@ -2668,6 +2718,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         {
             int nControlId = message->GetArgumentList()->GetInt(0);
             bool isSupportSign = message->GetArgumentList()->GetBool(1);
+            int nParams = message->GetArgumentList()->GetInt(2);
             std::string sControlId = std::to_string(nControlId);
             std::string sCode = "window[\"AscDesktopEditor\"][\"SetEditorId\"](" + sControlId + ");";
 
@@ -2675,6 +2726,19 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
                 sCode += "window[\"AscDesktopEditor\"][\"SetSupportSign\"](true);";
             else
                 sCode += "window[\"AscDesktopEditor\"][\"SetSupportSign\"](false);";
+
+            _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+        }
+
+        return true;
+    }
+    else if (sMessageName == "on_js_context_created_callback")
+    {
+        CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
+        if (_frame)
+        {
+            int nParams = message->GetArgumentList()->GetInt(0);
+            std::string sCode = ("window[\"AscDesktopEditor\"][\"SetInitFlags\"](" + std::to_string(nParams) + ");");
 
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
         }
@@ -2889,20 +2953,31 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
             std::string sCode = "window.DesktopOfflineAppDocumentEndSave(" + std::to_string(nIsSaved);
 
-            if (4 == message->GetArgumentList()->GetSize())
+            if (4 <= message->GetArgumentList()->GetSize())
             {
                 std::string sPass = message->GetArgumentList()->GetString(2).ToString();
                 std::string sHash = message->GetArgumentList()->GetString(3).ToString();
 
-                sCode += ", \"";
-                sCode += sHash;
-                sCode += "\", \"";
-                sCode += sPass;
-                sCode += "\"";
+                if (!sPass.empty() && !sHash.empty())
+                {
+                    sCode += ", \"";
+                    sCode += sHash;
+                    sCode += "\", \"";
+                    sCode += sPass;
+                    sCode += "\"";
+                }
             }
 
             sCode += ");";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+
+            if (5 <= message->GetArgumentList()->GetSize())
+            {
+                std::string sUrlDst = message->GetArgumentList()->GetString(4).ToString();
+
+                sCode = "window.DesktopUploadFileToUrl(\"" + sFileSrc + "\", \"" + sUrlDst + "\");";
+                _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+            }
         }
         return true;
     }

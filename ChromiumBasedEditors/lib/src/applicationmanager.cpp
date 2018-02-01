@@ -70,6 +70,7 @@ CAscApplicationSettings::CAscApplicationSettings()
     country                         = "RU";
 
     sign_support                    = true;
+    pass_support                    = true;
 }
 
 void CAscApplicationSettings::SetUserDataPath(std::wstring sPath)

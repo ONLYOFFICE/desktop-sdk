@@ -61,6 +61,8 @@
 
 #include "cefwrapper/monitor_info.h"
 
+#include "./plugins.h"
+
 class CAscNativePrintDocument : public IAscNativePrintDocument
 {
 protected:
@@ -264,6 +266,12 @@ public:
 
     std::string m_sIFrameIDMethod;
 
+    std::wstring m_sOpenAsLocalSrc;
+    std::wstring m_sOpenAsLocalDst;
+    std::wstring m_sOpenAsLocalName;
+    CCefView* m_pDownloadViewCallback;
+    std::wstring m_sDownloadViewPath;
+
 #if defined(_LINUX) && !defined(_MAC)
     WindowHandleId m_lNaturalParent;
 #endif
@@ -310,6 +318,8 @@ public:
         m_strSSOFirstDomain = L"";
 
         m_bIsDestroy = false;
+
+        m_pDownloadViewCallback = NULL;
     }
 
     void Destroy()
@@ -372,6 +382,19 @@ public:
     void CheckZoom();
 
     void CloseBrowser(bool _force_close);
+
+    std::wstring GetViewDownloadPath()
+    {
+        return m_sDownloadViewPath;
+    }
+    void OnViewDownloadFile()
+    {
+        if (!m_sOpenAsLocalSrc.empty() && !m_sOpenAsLocalDst.empty())
+        {
+            CCefViewEditor* pEditorThis = (CCefViewEditor*)m_pCefView;
+            pEditorThis->OpenLocalFile(m_sDownloadViewPath, CCefViewEditor::GetFileFormat(m_sDownloadViewPath));
+        }
+    }
 
     void LocalFile_Start()
     {
@@ -1113,6 +1136,40 @@ public:
                 m_pParent->m_pInternal->m_oConverterToEditor.NativeViewerOpen();
             }
 
+            return true;
+        }
+        else if (message_name == "on_js_context_created")
+        {
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_js_context_created_callback");
+
+            bool bIsOnlyPassSupport = m_pParent->GetAppManager()->m_oSettings.pass_support;
+            if (bIsOnlyPassSupport)
+            {
+                CPluginsManager oPlugins;
+                oPlugins.m_strDirectory = m_pParent->GetAppManager()->m_oSettings.system_plugins_path;
+                oPlugins.m_strUserDirectory = m_pParent->GetAppManager()->m_oSettings.user_plugins_path;
+
+                bool bIsFound = false;
+                std::vector<std::string> arPlugins = oPlugins.GetInstalledPlugins();
+                for (std::vector<std::string>::iterator i = arPlugins.begin(); i != arPlugins.end(); i++)
+                {
+                    if (*i == "asc.{F2402876-659F-47FB-A646-67B49F2B57D0}")
+                    {
+                        bIsFound = true;
+                        break;
+                    }
+                }
+
+                if (!bIsFound)
+                    bIsOnlyPassSupport = false;
+            }
+
+            int nFlags = 0;
+            if (bIsOnlyPassSupport)
+                nFlags |= 0x01;
+
+            message->GetArgumentList()->SetInt(0, nFlags);
+            browser->SendProcessMessage(PID_RENDERER, message);
             return true;
         }
         else if (message_name == "is_cookie_present")
@@ -1940,6 +1997,44 @@ public:
             pViewSend->Apply(pEvent);
             return true;
         }
+        else if (message_name == "open_as_local")
+        {
+            NSEditorApi::CAscCefMenuEventListener* pListener = NULL;
+            if (NULL != m_pParent && NULL != m_pParent->GetAppManager())
+                pListener = m_pParent->GetAppManager()->GetEventListener();
+
+            if (!pListener)
+                return true;
+
+            std::wstring sDownloadLink = message->GetArgumentList()->GetString(0).ToWString();
+            std::wstring sSaveLink = message->GetArgumentList()->GetString(1).ToWString();
+            std::wstring sName = message->GetArgumentList()->GetString(2).ToWString();
+
+            std::wstring sBaseUrl = m_pParent->GetUrl();
+            std::wstring::size_type pos = sBaseUrl.find(L"/products/files");
+            if (pos != std::wstring::npos)
+                sBaseUrl = sBaseUrl.substr(0, pos);
+
+            sDownloadLink = sBaseUrl + sDownloadLink;
+            sSaveLink = sBaseUrl + sSaveLink;
+            sDownloadLink = sDownloadLink + L"<openaslocal>" + sSaveLink + L"</openaslocal><openaslocalname>" + sName + L"</openaslocalname>";
+
+            NSEditorApi::CAscCreateTab* pData = new NSEditorApi::CAscCreateTab();
+            pData->put_Url(sDownloadLink);
+
+            if (true)
+            {
+                CCefView* pEqual = m_pParent->GetAppManager()->GetViewByUrl(sDownloadLink);
+                if (NULL != pEqual)
+                    pData->put_IdEqual(pEqual->GetId());
+            }
+
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_CREATETAB);
+            pEvent->m_pData = pData;
+
+            pListener->OnEvent(pEvent);
+            return true;
+        }
 
         CAscApplicationManager_Private* pInternalMan = m_pParent->GetAppManager()->m_pInternal;
         if (pInternalMan->m_pAdditional && pInternalMan->m_pAdditional->OnProcessMessageReceived(browser, source_process, message))
@@ -2247,6 +2342,7 @@ public:
 
             sAppData += ("window[\"AscDesktopEditor_SP\"] = function(){return \"" + sSystemPluguns + "\";}\n");
             sAppData += ("window[\"AscDesktopEditor_UP\"] = function(){return \"" + sUserPluguns + "\";}\n");
+            sAppData += ("window[\"AscDesktopEditor_SupportOP\"] = function(){return \"" + std::to_string(m_pParent->GetAppManager()->m_oSettings.pass_support ? 1 : 0) + "\";}\n");
 
             if (m_pParent->GetAppManager()->GetDebugInfoSupport())
                 sAppData += ("window[\"desktop_debug_mode\"] = true;\n");
@@ -2533,6 +2629,12 @@ require.load = function (context, moduleName, url) {\n\
         CefRefPtr<CefBeforeDownloadCallback> callback)
     {
         CEF_REQUIRE_UI_THREAD();
+
+        if (NULL != m_pParent->m_pInternal->m_pDownloadViewCallback)
+        {
+            callback->Continue(m_pParent->m_pInternal->m_pDownloadViewCallback->m_pInternal->GetViewDownloadPath(), false);
+            return;
+        }
         
         std::wstring s1 = download_item->GetURL().ToWString();
         std::wstring s2 = m_pParent->GetAppManager()->m_pInternal->GetPrivateDownloadUrl();
@@ -2564,6 +2666,16 @@ require.load = function (context, moduleName, url) {\n\
 
         if (NULL == m_pParent)
             return;
+
+        if (NULL != m_pParent->m_pInternal->m_pDownloadViewCallback)
+        {
+            if (download_item->IsComplete())
+            {
+                m_pParent->m_pInternal->m_pDownloadViewCallback->m_pInternal->OnViewDownloadFile();
+                m_pParent->m_pInternal->m_pDownloadViewCallback = NULL;
+            }
+            return;
+        }
         
         std::wstring sUrl = download_item->GetURL().ToWString();
         std::wstring sPath = download_item->GetFullPath().ToWString();
@@ -2801,7 +2913,8 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
 
     if (bIsSaved && m_pManager && m_pManager->m_pInternal)
     {
-        m_pManager->m_pInternal->Recents_Add(m_oLocalInfo.m_oInfo.m_sFileSrc, m_oLocalInfo.m_oInfo.m_nCurrentFileFormat);
+        if (m_sOpenAsLocalSrc.empty())
+            m_pManager->m_pInternal->Recents_Add(m_oLocalInfo.m_oInfo.m_sFileSrc, m_oLocalInfo.m_oInfo.m_nCurrentFileFormat);
 
         if (m_pManager->GetEventListener() && m_pCefView != NULL)
         {
@@ -2843,8 +2956,10 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
     message->GetArgumentList()->SetString(0, (0 == nError) ? m_oLocalInfo.m_oInfo.m_sFileSrc : L"");
     message->GetArgumentList()->SetInt(1, (0 == nError) ? 0 : 2);
 
+    bool bIsPassAdd = false;
     if (!sPass.empty() && (0 == nError))
     {
+        bIsPassAdd = true;
         message->GetArgumentList()->SetString(2, sPass);
 
         ICertificate* pCert = ICertificate::CreateInstance();
@@ -2853,6 +2968,16 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
 
         message->GetArgumentList()->SetString(3, sHash);
     }
+    if (!m_sOpenAsLocalDst.empty())
+    {
+        if (!bIsPassAdd)
+        {
+            message->GetArgumentList()->SetString(2, "");
+            message->GetArgumentList()->SetString(3, "");
+        }
+        message->GetArgumentList()->SetString(4, m_sOpenAsLocalDst);
+    }
+
     m_handler->GetBrowser()->SendProcessMessage(PID_RENDERER, message);
 }
 
@@ -3017,6 +3142,34 @@ CCefView::~CCefView()
 
 void CCefView::load(const std::wstring& urlInput)
 {
+    // check openaslocal
+    std::wstring::size_type pos1 = urlInput.find(L"<openaslocal>");
+    std::wstring::size_type pos2 = urlInput.find(L"</openaslocal>");
+
+    if (pos1 != std::wstring::npos && pos2 != std::wstring::npos)
+    {
+        std::wstring sFileUrl1 = urlInput.substr(0, pos1);
+        std::wstring sFileUrl2 = urlInput.substr(pos1 + 13, pos2 - pos1 - 13);
+
+        m_pInternal->m_sOpenAsLocalSrc = sFileUrl1;
+        m_pInternal->m_sOpenAsLocalDst = sFileUrl2;
+
+        pos1 = urlInput.find(L"<openaslocalname>");
+        pos2 = urlInput.find(L"</openaslocalname>");
+
+        if (pos1 != std::wstring::npos && pos2 != std::wstring::npos)
+        {
+            m_pInternal->m_sOpenAsLocalName = urlInput.substr(pos1 + 17, pos2 - pos1 - 17);
+        }
+
+        if (m_pInternal->m_sOpenAsLocalName.empty())
+            m_pInternal->m_sOpenAsLocalName = L"Document";
+
+        CCefViewEditor* pEditor = ((CCefViewEditor*)this);
+        pEditor->OpenLocalFile(L"", 0);
+        return;
+    }
+
     std::wstring url = urlInput;
     std::wstring::size_type posQ = url.find_first_of('?');
     if (std::wstring::npos != posQ)
@@ -3847,6 +4000,27 @@ int CCefViewEditor::GetFileFormat(const std::wstring& sFilePath)
 
 void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFileFormat_)
 {
+    if (sFilePath.empty())
+    {
+        if (!m_pInternal->m_sOpenAsLocalSrc.empty() && !m_pInternal->m_sOpenAsLocalDst.empty())
+        {
+            CCefView* pMainView = GetAppManager()->GetViewById(1);
+            if (!pMainView)
+                return;
+
+            pMainView->m_pInternal->m_pDownloadViewCallback = this;
+            m_pInternal->m_sDownloadViewPath = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"OL");
+            if (NSFile::CFileBinary::Exists(m_pInternal->m_sDownloadViewPath))
+                NSFile::CFileBinary::Remove(m_pInternal->m_sDownloadViewPath);
+
+            m_pInternal->m_sDownloadViewPath += (L"." + NSCommon::GetFileExtention(m_pInternal->m_sOpenAsLocalName));
+
+            // load preview...
+            pMainView->m_pInternal->m_handler->GetBrowser()->GetHost()->StartDownload(m_pInternal->m_sOpenAsLocalSrc);
+            return;
+        }
+    }
+
     int nFileFormat = nFileFormat_;
     if (nFileFormat == AVS_OFFICESTUDIO_FILE_TEAMLAB_DOCY)
         nFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX;
@@ -3878,7 +4052,42 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
     if (!sAdditionalParams.empty())
         sParams += (L"&" + sAdditionalParams);
 
-    this->GetAppManager()->m_pInternal->Recents_Add(sFilePath, nFileFormat);
+    if (!m_pInternal->m_sOpenAsLocalSrc.empty())
+    {
+        NSDirectory::CreateDirectory(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/openaslocal");
+
+        std::wstring sFilePathSrc = m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/openaslocal/" + m_pInternal->m_sOpenAsLocalName;
+        NSCommon::string_replace(sFilePathSrc, L"\\", L"/");
+
+        NSFile::CFileBinary::Copy(sFilePath, sFilePathSrc);
+        m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc = sFilePathSrc;
+
+        NSFile::CFileBinary::Remove(sFilePath);
+
+        std::wstring sRecentUrl = m_pInternal->m_sOpenAsLocalSrc + L"<openaslocal>" + m_pInternal->m_sOpenAsLocalDst + L"</openaslocal><openaslocalname>" + m_pInternal->m_sOpenAsLocalName + L"</openaslocalname>";
+
+        std::wstring sPath = m_pInternal->m_sOpenAsLocalSrc;
+
+        std::wstring::size_type pos = 0;
+        std::wstring::size_type pos1 = sPath.find(L"//");
+        if (pos1 != std::wstring::npos)
+            pos = pos1 + 3;
+
+        pos1 = sPath.find(L"/", pos);
+        if (0 < pos1)
+            sPath = sPath.substr(0, pos1);
+
+        sPath += (L"/" + m_pInternal->m_sOpenAsLocalName);
+
+        this->GetAppManager()->m_pInternal->Recents_Add(sPath, nFileFormat, sRecentUrl);
+    }
+    else
+    {
+        m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc = sFilePath;
+        NSCommon::string_replace(m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc, L"\\", L"/");
+
+        this->GetAppManager()->m_pInternal->Recents_Add(sFilePath, nFileFormat);
+    }
 
     std::wstring sUrl = this->GetAppManager()->m_oSettings.local_editors_path;
     if (0 == sUrl.find('/'))
@@ -3892,9 +4101,6 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
     m_pInternal->m_oConverterToEditor.m_pManager = this->GetAppManager();
     m_pInternal->m_oConverterToEditor.m_pView = this;
     m_pInternal->m_oConverterFromEditor.m_pManager = this->GetAppManager();
-
-    m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc = sFilePath;
-    NSCommon::string_replace(m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc, L"\\", L"/");
 
     m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir = NSFile::CFileBinary::CreateTempFileWithUniqueName(m_pInternal->m_pManager->m_oSettings.recover_path, L"DE_");
     if (NSFile::CFileBinary::Exists(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir))

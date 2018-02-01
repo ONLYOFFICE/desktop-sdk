@@ -141,6 +141,37 @@ public:
         return sPluginsJSON;
     }
 
+    std::vector<std::string> GetInstalledPlugins()
+    {
+        std::vector<std::string> arCongigs;
+
+        for (int i = 0; i < 2; i++)
+        {
+            std::wstring sDir = (i == 0) ? m_strDirectory : m_strUserDirectory;
+
+            std::vector<std::wstring> _arPlugins = NSDirectory::GetDirectories(sDir);
+            int nCount = (int)_arPlugins.size();
+            for (int i = 0; i < nCount; ++i)
+            {
+                std::string sJson;
+                if (NSFile::CFileBinary::ReadAllTextUtf8A(_arPlugins[i] + L"/config.json", sJson))
+                {
+                    std::string::size_type pos1 = sJson.find("asc.{");
+                    std::string::size_type pos2 = sJson.find('}', pos1);
+
+                    if (pos1 != std::string::npos &&
+                        pos2 != std::string::npos &&
+                        pos2 > pos1)
+                    {
+                        arCongigs.push_back(sJson.substr(pos1, pos2 - pos1 + 1));
+                    }
+                }
+            }
+        }
+
+        return arCongigs;
+    }
+
     bool AddPlugin(std::wstring sFilePlugin)
     {
         if (!NSDirectory::Exists(m_strUserDirectory))

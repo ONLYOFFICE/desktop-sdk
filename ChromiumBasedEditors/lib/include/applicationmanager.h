@@ -73,6 +73,7 @@ public:
     std::string                     country;
 
     bool                            sign_support;
+    bool                            pass_support;
 
 public:
     CAscApplicationSettings();

@@ -121,6 +121,7 @@ protected:
     friend class CAscClientHandler;
     friend class CAscApplicationManager;
     friend class CASCFileConverterToEditor;
+    friend class CCefViewEditor;
 };
 
 class Q_DECL_EXPORT CCefViewEditor : public CCefView
