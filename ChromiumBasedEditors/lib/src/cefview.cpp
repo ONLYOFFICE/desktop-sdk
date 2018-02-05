@@ -440,27 +440,53 @@ public:
 
     void LocalFile_GetSupportSaveFormats(std::vector<int>& arFormats)
     {
+        CPluginsManager oPlugins;
+        oPlugins.m_strDirectory = m_pCefView->GetAppManager()->m_oSettings.system_plugins_path;
+        oPlugins.m_strUserDirectory = m_pCefView->GetAppManager()->m_oSettings.user_plugins_path;
+
+        bool bIsFound = false;
+        std::vector<std::string> arPlugins = oPlugins.GetInstalledPlugins();
+        for (std::vector<std::string>::iterator i = arPlugins.begin(); i != arPlugins.end(); i++)
+        {
+            if (*i == "asc.{F2402876-659F-47FB-A646-67B49F2B57D0}")
+            {
+                bIsFound = true;
+                break;
+            }
+        }
+
         if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_DOCUMENT)
         {
             arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX);
-            arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_ODT);
-            arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_RTF);
-            arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_TXT);
-            //arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_HTML);
-            arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF);
+
+            if (!bIsFound)
+            {
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_ODT);
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_RTF);
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_TXT);
+                //arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_HTML);
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF);
+            }
         }
         else if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
         {
             arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX);
-            arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_ODS);
-            arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_CSV);
-            arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF);
+
+            if (!bIsFound)
+            {
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_ODS);
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_CSV);
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF);
+            }
         }
         else if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_PRESENTATION)
         {
-            arFormats.push_back(AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX);
-            arFormats.push_back(AVS_OFFICESTUDIO_FILE_PRESENTATION_ODP);
-            arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF);
+            if (!bIsFound)
+            {
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX);
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_PRESENTATION_ODP);
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF);
+            }
         }
         else if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
         {

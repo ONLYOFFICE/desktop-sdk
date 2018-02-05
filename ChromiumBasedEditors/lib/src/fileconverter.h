@@ -304,7 +304,7 @@ namespace NSOOXMLPassword
                 oBuilder.WriteString(L"</m_nFormatTo>");
                 oBuilder.WriteString(L"<m_sThemeDir>./themes</m_sThemeDir><m_bDontSaveAdditional>true</m_bDontSaveAdditional>");
                 oBuilder.WriteString(L"<m_sPassword>");
-                oBuilder.WriteString(m_sPassword);
+                oBuilder.WriteEncodeXmlString(m_sPassword);
                 oBuilder.WriteString(L"</m_sPassword>");
                 oBuilder.WriteString(L"<m_sFontDir>");
                 oBuilder.WriteEncodeXmlString(m_pManager->m_oSettings.fonts_cache_info_path);
@@ -371,7 +371,7 @@ namespace NSOOXMLPassword
             oBuilder.WriteString(L"</m_nFormatTo>");
             oBuilder.WriteString(L"<m_sThemeDir>./themes</m_sThemeDir><m_bDontSaveAdditional>true</m_bDontSaveAdditional>");
             oBuilder.WriteString(L"<m_sSavePassword>");
-            oBuilder.WriteString(m_sPassword);
+            oBuilder.WriteEncodeXmlString(m_sPassword);
             oBuilder.WriteString(L"</m_sSavePassword>");
             oBuilder.WriteString(L"<m_sFontDir>");
             oBuilder.WriteEncodeXmlString(m_pManager->m_oSettings.fonts_cache_info_path);
@@ -894,7 +894,7 @@ public:
         if (!m_oInfo.m_sPassword.empty())
         {
             oBuilder.WriteString(L"<m_sSavePassword>");
-            oBuilder.WriteString(m_oInfo.m_sPassword);
+            oBuilder.WriteEncodeXmlString(m_oInfo.m_sPassword);
             oBuilder.WriteString(L"</m_sSavePassword>");
         }
 

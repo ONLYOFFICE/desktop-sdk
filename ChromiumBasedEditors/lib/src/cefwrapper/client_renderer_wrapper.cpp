@@ -2958,6 +2958,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
                 std::string sPass = message->GetArgumentList()->GetString(2).ToString();
                 std::string sHash = message->GetArgumentList()->GetString(3).ToString();
 
+                NSCommon::string_replaceA(sPass, "\\", "\\\\");
+                NSCommon::string_replaceA(sPass, "\"", "\\\"");
+
                 if (!sPass.empty() && !sHash.empty())
                 {
                     sCode += ", \"";
