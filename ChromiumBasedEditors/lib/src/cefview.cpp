@@ -2989,7 +2989,7 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
         message->GetArgumentList()->SetString(2, sPass);
 
         ICertificate* pCert = ICertificate::CreateInstance();
-        std::string sHash = pCert->GetHash(m_oLocalInfo.m_oInfo.m_sFileSrc, OOXML_HASH_ALG_SHA1);
+        std::string sHash = pCert->GetHash(m_oLocalInfo.m_oInfo.m_sFileSrc, OOXML_HASH_ALG_SHA256);
         delete pCert;
 
         message->GetArgumentList()->SetString(3, sHash);
@@ -3033,7 +3033,7 @@ void CCefView_Private::LocalFile_IncrementCounter()
                 if (90 == m_nLocalFileOpenError || 91 == m_nLocalFileOpenError)
                 {
                     ICertificate* pCert = ICertificate::CreateInstance();
-                    std::string sHash = pCert->GetHash(m_oLocalInfo.m_oInfo.m_sFileSrc, OOXML_HASH_ALG_SHA1);
+                    std::string sHash = pCert->GetHash(m_oLocalInfo.m_oInfo.m_sFileSrc, OOXML_HASH_ALG_SHA256);
                     delete pCert;
 
                     message->GetArgumentList()->SetString(1, sHash);
