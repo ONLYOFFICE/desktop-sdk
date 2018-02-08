@@ -1643,6 +1643,14 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
             CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_init_js_context");
             browser->SendProcessMessage(PID_BROWSER, message);
+
+            CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetFrame();
+            if (_frame)
+            {
+                _frame->ExecuteJavaScript("window.AscDesktopEditor.sendSystemMessage = function(arg) { window.AscDesktopEditor._sendSystemMessage(JSON.stringify(arg)); };", _frame->GetURL(), 0);
+                _frame->ExecuteJavaScript("window.AscDesktopEditor.GetHash = function(arg, callback) { window.AscDesktopEditor.getHashCallback = callback; window.AscDesktopEditor._GetHash(arg); };", _frame->GetURL(), 0);
+            }
+
             return true;
         }
         else if (name == "NativeViewerOpen")
@@ -2034,6 +2042,35 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
         else if (name == "SaveAsCloud")
         {
             // TODO:
+            return true;
+        }
+        else if (name == "_sendSystemMessage")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("send_system_message");
+
+            int64 frameID = CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier();
+
+            message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
+            message->GetArgumentList()->SetString(1, std::to_string(frameID));
+
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "_GetHash")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("file_get_hash");
+            message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
+            if (arguments.size() > 1)
+                message->GetArgumentList()->SetString(1, arguments[1]->GetStringValue());
+            else
+                message->GetArgumentList()->SetString(1, "sha-256");
+
+            int64 frameID = CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier();
+            message->GetArgumentList()->SetString(2, std::to_string(frameID));
+
+            browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
 
@@ -2514,6 +2551,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction971 = CefV8Value::CreateFunction("isBlockchainSupport", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction972 = CefV8Value::CreateFunction("OpenAsLocal", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction973 = CefV8Value::CreateFunction("SaveAsCloud", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction974 = CefV8Value::CreateFunction("_sendSystemMessage", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction975 = CefV8Value::CreateFunction("_GetHash", _nativeHandler);
 
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -2646,6 +2685,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("isBlockchainSupport", _nativeFunction971, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("OpenAsLocal", _nativeFunction972, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("SaveAsCloud", _nativeFunction973, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("_sendSystemMessage", _nativeFunction974, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("_GetHash", _nativeFunction975, V8_PROPERTY_ATTRIBUTE_NONE);
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 
@@ -3202,6 +3243,77 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
             _frame->ExecuteJavaScript("window.editor.DemonstrationToReporterMessages({ data : \"" + sParam + "\" });", _frame->GetURL(), 0);
         }
 
+        return true;
+    }
+    else if (sMessageName == "file_get_hash_callback")
+    {
+        int64 frameID = (int64)std::stoll(message->GetArgumentList()->GetString(1).ToString());
+        CefRefPtr<CefFrame> _frame = browser->GetFrame(frameID);
+
+        if (_frame)
+        {
+            std::string sCode = "if (window.AscDesktopEditor.getHashCallback) { window.AscDesktopEditor.getHashCallback(\"";
+            sCode += message->GetArgumentList()->GetString(0).ToString();
+            sCode += "\"); window.AscDesktopEditor.getHashCallback = null; }";
+            _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+        }
+        return true;
+    }
+    else if (sMessageName == "send_system_message")
+    {
+        std::string sArg = message->GetArgumentList()->GetString(0);
+        NSCommon::string_replaceA(sArg, "\\", "\\\\");
+        NSCommon::string_replaceA(sArg, "\"", "\\\"");
+
+        if (message->GetArgumentList()->GetSize() == 1)
+        {
+            // main view
+            std::vector<int64> identifiers;
+            browser->GetFrameIdentifiers(identifiers);
+
+            for (std::vector<int64>::iterator i = identifiers.begin(); i != identifiers.end(); i++)
+            {
+                int64 k = *i;
+                CefRefPtr<CefFrame> frame = browser->GetFrame(k);
+
+                if (frame && (frame->GetName().ToString().find("system_asc") == 0))
+                {
+                    std::string sCode = "\
+    (function(){\n\
+    try {\n\
+    var _arg = JSON.parse(\"" + sArg + "\");\n\
+    if (window.Asc && window.Asc.plugin && window.Asc.plugin.onSystemMessage)\n\
+    { window.Asc.plugin.onSystemMessage(_arg); } else if (window.onSystemMessage)\n\
+    { window.onSystemMessage(_arg); }\n\
+    }\n\
+    catch (err) {}\n\
+    })();";
+
+                    frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
+                    break;
+                }
+            }
+        }
+        else
+        {
+            int64 frameID = (int64)std::stoll(message->GetArgumentList()->GetString(1).ToString());
+            CefRefPtr<CefFrame> _frame = browser->GetFrame(frameID);
+
+            if (_frame)
+            {
+                std::string sCode = "\
+(function(){\n\
+try {\n\
+var _arg = JSON.parse(\"" + sArg + "\");\n\
+if (window.Asc && window.Asc.plugin && window.Asc.plugin.onSystemMessage)\n\
+{ window.Asc.plugin.onSystemMessage(_arg); } else if (window.onSystemMessage)\n\
+{ window.onSystemMessage(_arg); }\n\
+}\n\
+catch (err) {}\n\
+})();";
+                _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+            }
+        }
         return true;
     }
 

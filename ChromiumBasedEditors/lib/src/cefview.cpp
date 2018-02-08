@@ -272,9 +272,48 @@ public:
     CCefView* m_pDownloadViewCallback;
     std::wstring m_sDownloadViewPath;
 
+    // hash info (GetHash js function)
+    std::string m_sGetHashAlg;
+    std::string m_sGetHashFrame;
+
+    bool m_bIsOnlyPassSupport;
+
 #if defined(_LINUX) && !defined(_MAC)
     WindowHandleId m_lNaturalParent;
 #endif
+
+public:
+    class CSystemMessage
+    {
+    public:
+        int ViewID;
+        std::string FrameID;
+        std::string Message;
+
+        CSystemMessage()
+        {
+            ViewID = -1;
+            FrameID = "";
+            Message = "";
+        }
+
+        CSystemMessage(const CSystemMessage& oSrc)
+        {
+            ViewID = oSrc.ViewID;
+            FrameID = oSrc.FrameID;
+            Message = oSrc.Message;
+        }
+
+        CSystemMessage& operator=(const CSystemMessage& oSrc)
+        {
+            ViewID = oSrc.ViewID;
+            FrameID = oSrc.FrameID;
+            Message = oSrc.Message;
+            return *this;
+        }
+    };
+
+    std::vector<CSystemMessage> m_arSystemMessages;
 
 public:
     CCefView_Private()
@@ -320,6 +359,8 @@ public:
         m_bIsDestroy = false;
 
         m_pDownloadViewCallback = NULL;
+
+        m_bIsOnlyPassSupport = false;
     }
 
     void Destroy()
@@ -383,16 +424,81 @@ public:
 
     void CloseBrowser(bool _force_close);
 
+    CefRefPtr<CefBrowser> GetBrowser() const;
+
     std::wstring GetViewDownloadPath()
     {
         return m_sDownloadViewPath;
     }
     void OnViewDownloadFile()
     {
+        std::wstring::size_type posHash = m_sDownloadViewPath.rfind(L".asc_file_get_hash");
+        if (std::wstring::npos != posHash)
+        {
+            std::wstring sTest = m_sDownloadViewPath.substr(posHash);
+            if (sTest == L".asc_file_get_hash")
+            {
+                ICertificate* pCert = ICertificate::CreateInstance();
+                std::string sHash = pCert->GetHash(m_sDownloadViewPath, OOXML_HASH_ALG_SHA256);
+                delete pCert;
+
+                NSFile::CFileBinary::Remove(m_sDownloadViewPath);
+
+                CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("file_get_hash_callback");
+                message->GetArgumentList()->SetString(0, sHash);
+                message->GetArgumentList()->SetString(1, m_sGetHashFrame);
+                GetBrowser()->SendProcessMessage(PID_RENDERER, message);
+
+                return;
+            }
+        }
+
         if (!m_sOpenAsLocalSrc.empty() && !m_sOpenAsLocalDst.empty())
         {
             CCefViewEditor* pEditorThis = (CCefViewEditor*)m_pCefView;
             pEditorThis->OpenLocalFile(m_sDownloadViewPath, CCefViewEditor::GetFileFormat(m_sDownloadViewPath));
+        }
+    }
+
+    void SendSystemMessage(CSystemMessage& sysMessage)
+    {
+        CCefView* pMainView = m_pCefView->GetAppManager()->m_pInternal->GetViewForSystemMessages();
+
+        if (pMainView != m_pCefView)
+        {
+            if (pMainView->m_pInternal->m_arSystemMessages.size() == 0)
+            {
+                pMainView->m_pInternal->m_arSystemMessages.push_back(sysMessage);
+
+                CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("send_system_message");
+                message->GetArgumentList()->SetString(0, sysMessage.Message);
+                pMainView->m_pInternal->GetBrowser()->SendProcessMessage(PID_RENDERER, message);
+            }
+            else
+            {
+                pMainView->m_pInternal->m_arSystemMessages.push_back(sysMessage);
+            }
+        }
+        else
+        {
+            CSystemMessage messageSrc = m_arSystemMessages[0];
+            m_arSystemMessages.erase(m_arSystemMessages.begin());
+
+            CCefView* pSrcSender = m_pCefView->GetAppManager()->GetViewById(messageSrc.ViewID);
+            if (pSrcSender)
+            {
+                CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("send_system_message");
+                message->GetArgumentList()->SetString(0, sysMessage.Message);
+                message->GetArgumentList()->SetString(1, messageSrc.FrameID);
+                pSrcSender->m_pInternal->GetBrowser()->SendProcessMessage(PID_RENDERER, message);
+            }
+
+            if (0 != m_arSystemMessages.size())
+            {
+                CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("send_system_message");
+                message->GetArgumentList()->SetString(0, m_arSystemMessages[0].Message);
+                pMainView->m_pInternal->GetBrowser()->SendProcessMessage(PID_RENDERER, message);
+            }
         }
     }
 
@@ -1194,6 +1300,7 @@ public:
             if (bIsOnlyPassSupport)
                 nFlags |= 0x01;
 
+            m_pParent->m_pInternal->m_bIsOnlyPassSupport = bIsOnlyPassSupport;
             message->GetArgumentList()->SetInt(0, nFlags);
             browser->SendProcessMessage(PID_RENDERER, message);
             return true;
@@ -2061,6 +2168,29 @@ public:
             pListener->OnEvent(pEvent);
             return true;
         }
+        else if (message_name == "file_get_hash")
+        {
+            m_pParent->m_pInternal->m_pDownloadViewCallback = m_pParent;
+            m_pParent->m_pInternal->m_sDownloadViewPath = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"OL");
+            if (NSFile::CFileBinary::Exists(m_pParent->m_pInternal->m_sDownloadViewPath))
+                NSFile::CFileBinary::Remove(m_pParent->m_pInternal->m_sDownloadViewPath);
+
+            m_pParent->m_pInternal->m_sDownloadViewPath += (L".asc_file_get_hash");
+            m_pParent->m_pInternal->m_sGetHashAlg = message->GetArgumentList()->GetString(1).ToString();
+            m_pParent->m_pInternal->m_sGetHashFrame = message->GetArgumentList()->GetString(2).ToString();
+            m_pParent->m_pInternal->m_handler->GetBrowser()->GetHost()->StartDownload(message->GetArgumentList()->GetString(0));
+            return true;
+        }
+        else if (message_name == "send_system_message")
+        {
+            CCefView_Private::CSystemMessage sysMessage;
+            sysMessage.ViewID = m_pParent->GetId();
+            sysMessage.FrameID = message->GetArgumentList()->GetString(1).ToString();
+            sysMessage.Message = message->GetArgumentList()->GetString(0).ToString();
+
+            m_pParent->m_pInternal->SendSystemMessage(sysMessage);
+            return true;
+        }
 
         CAscApplicationManager_Private* pInternalMan = m_pParent->GetAppManager()->m_pInternal;
         if (pInternalMan->m_pAdditional && pInternalMan->m_pAdditional->OnProcessMessageReceived(browser, source_process, message))
@@ -2149,6 +2279,38 @@ public:
     }
 
 #endif
+
+    virtual void OnLoadEnd(CefRefPtr<CefBrowser> browser,
+                           CefRefPtr<CefFrame> frame,
+                           int httpStatusCode)
+    {
+        if (frame->IsMain())
+        {
+            std::wstring sUrl = m_pParent->GetUrl();
+            if ((0 != sUrl.find(L"file:///")) || !m_pParent->m_pInternal->m_bIsOnlyPassSupport)
+                return;
+
+            std::wstring sSrc = m_pParent->GetAppManager()->m_oSettings.system_plugins_path + L"/{F2402876-659F-47FB-A646-67B49F2B57D0}/index.html";
+            NSCommon::url_correct(sSrc);
+
+            std::wstring sCode = L"(function() {\n\
+var ifr = document.createElement(\"iframe\");\n\
+ifr.name = \"system_asc.{F2402876-659F-47FB-A646-67B49F2B57D0}\";\n\
+ifr.id = \"system_asc.{F2402876-659F-47FB-A646-67B49F2B57D0}\";\n\
+ifr.src = \"" + sSrc + L"\";\n\
+ifr.style.position = \"absolute\";\n\
+ifr.style.top      = '-100px';\n\
+ifr.style.left     = '0px';\n\
+ifr.style.width    = '100px';\n\
+ifr.style.height   = '100px';\n\
+ifr.style.overflow = 'hidden';\n\
+ifr.style.zIndex   = -1000;\n\
+document.body.appendChild(ifr);\n\
+})();";
+
+            frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
+        }
+    }
 
     virtual void OnLoadError(CefRefPtr<CefBrowser> browser,
                      CefRefPtr<CefFrame> frame,
@@ -2860,6 +3022,12 @@ void CCefView_Private::CloseBrowser(bool _force_close)
 
     if (m_handler && m_handler->GetBrowser() && m_handler->GetBrowser()->GetHost())
         m_handler->GetBrowser()->GetHost()->CloseBrowser(_force_close);
+}
+CefRefPtr<CefBrowser> CCefView_Private::GetBrowser() const
+{
+    if (!m_handler)
+        return NULL;
+    return m_handler->GetBrowser();
 }
 void CCefView_Private::LocalFile_End()
 {

@@ -1266,6 +1266,23 @@ public:
 
         pEvent->Release();
     }
+
+    CCefView* GetViewForSystemMessages()
+    {
+        int nMin = 0xFFFF;
+        CCefView* pViewRet = NULL;
+        for (std::map<int, CCefView*>::iterator i = m_mapViews.begin(); i != m_mapViews.end(); i++)
+        {
+           CCefView* pView = i->second;
+           if (pView->GetType() == cvwtSimple && pView->GetId() < nMin)
+           {
+               nMin = pView->GetId();
+               pViewRet = pView;
+           }
+        }
+
+        return pViewRet;
+    }
 };
 
 #endif // APPLICATION_MANAGER_PRIVATE_H
