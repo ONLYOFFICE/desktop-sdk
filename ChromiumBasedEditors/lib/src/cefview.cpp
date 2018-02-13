@@ -2178,7 +2178,17 @@ public:
             m_pParent->m_pInternal->m_sDownloadViewPath += (L".asc_file_get_hash");
             m_pParent->m_pInternal->m_sGetHashAlg = message->GetArgumentList()->GetString(1).ToString();
             m_pParent->m_pInternal->m_sGetHashFrame = message->GetArgumentList()->GetString(2).ToString();
-            m_pParent->m_pInternal->m_handler->GetBrowser()->GetHost()->StartDownload(message->GetArgumentList()->GetString(0));
+
+            std::wstring sBaseUrl = m_pParent->GetUrl();
+            std::wstring::size_type pos = sBaseUrl.find(L"/products/files");
+            if (pos != std::wstring::npos)
+                sBaseUrl = sBaseUrl.substr(0, pos);
+
+            std::wstring sHashFileUrl = message->GetArgumentList()->GetString(0);
+            if ((0 != sHashFileUrl.find(L"www")) && (0 != sHashFileUrl.find(L"http")) && (0 != sHashFileUrl.find(L"ftp")))
+                sHashFileUrl = sBaseUrl + sHashFileUrl;
+
+            m_pParent->m_pInternal->m_handler->GetBrowser()->GetHost()->StartDownload(sHashFileUrl);
             return true;
         }
         else if (message_name == "send_system_message")
