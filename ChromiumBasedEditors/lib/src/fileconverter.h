@@ -122,7 +122,7 @@ public:
 
 namespace NSX2T
 {
-    int Convert(const std::wstring& sConverterPath, const std::wstring sXmlPath)
+    int Convert(const std::wstring& sConverterPath, const std::wstring sXmlPath, CAscApplicationManager* pManager)
     {
         int nReturnCode = 0;
         std::wstring sConverterExe = sConverterPath;
@@ -210,6 +210,10 @@ namespace NSX2T
             if (std::string::npos != sProgramm.find_last_of('/'))
             {
                 sLibraryDir = "LD_LIBRARY_PATH=" + sProgramm.substr(0, sProgramm.find_last_of('/'));
+#ifndef _MAC
+                sLibraryDir += ":";
+                sLibraryDir += pManager->GetLibraryPathVariable();
+#endif
                 sPATH = "PATH=" + sProgramm.substr(0, sProgramm.find_last_of('/'));
             }
 
@@ -300,7 +304,7 @@ namespace NSOOXMLPassword
                 oBuilder.WriteString(L"</m_nFormatTo>");
                 oBuilder.WriteString(L"<m_sThemeDir>./themes</m_sThemeDir><m_bDontSaveAdditional>true</m_bDontSaveAdditional>");
                 oBuilder.WriteString(L"<m_sPassword>");
-                oBuilder.WriteString(m_sPassword);
+                oBuilder.WriteEncodeXmlString(m_sPassword);
                 oBuilder.WriteString(L"</m_sPassword>");
                 oBuilder.WriteString(L"<m_sFontDir>");
                 oBuilder.WriteEncodeXmlString(m_pManager->m_oSettings.fonts_cache_info_path);
@@ -310,7 +314,7 @@ namespace NSOOXMLPassword
                 std::wstring sConverterExe = m_pManager->m_oSettings.file_converter_path + L"/x2t";
                 NSFile::CFileBinary::SaveToFile(sTempFileXml, oBuilder.GetData(), true);
 
-                int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileXml);
+                int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileXml, m_pManager);
 
                 NSFile::CFileBinary::Remove(sTempFileXml);
             }
@@ -367,7 +371,7 @@ namespace NSOOXMLPassword
             oBuilder.WriteString(L"</m_nFormatTo>");
             oBuilder.WriteString(L"<m_sThemeDir>./themes</m_sThemeDir><m_bDontSaveAdditional>true</m_bDontSaveAdditional>");
             oBuilder.WriteString(L"<m_sSavePassword>");
-            oBuilder.WriteString(m_sPassword);
+            oBuilder.WriteEncodeXmlString(m_sPassword);
             oBuilder.WriteString(L"</m_sSavePassword>");
             oBuilder.WriteString(L"<m_sFontDir>");
             oBuilder.WriteEncodeXmlString(m_pManager->m_oSettings.fonts_cache_info_path);
@@ -377,7 +381,7 @@ namespace NSOOXMLPassword
             std::wstring sConverterExe = m_pManager->m_oSettings.file_converter_path + L"/x2t";
             NSFile::CFileBinary::SaveToFile(sTempFileXml, oBuilder.GetData(), true);
 
-            int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileXml);
+            int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileXml, m_pManager);
 
             NSFile::CFileBinary::Remove(sTempFile);
             NSFile::CFileBinary::Remove(sTempFileXml);
@@ -628,7 +632,7 @@ public:
         std::wstring sTempFileForParams = m_oInfo.m_sRecoveryDir + L"/params_from.xml";
         NSFile::CFileBinary::SaveToFile(sTempFileForParams, sXmlConvert, true);
 
-        int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileForParams);
+        int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileForParams, m_pManager);
 
         NSFile::CFileBinary::Remove(sTempFileForParams);
 
@@ -874,7 +878,15 @@ public:
         oBuilder.WriteString(std::to_wstring(m_oInfo.m_nCurrentFileFormat));
         oBuilder.WriteString(L"</m_nFormatTo><m_sThemeDir>");
         oBuilder.WriteEncodeXmlString(sThemesPath);
-        oBuilder.WriteString(L"</m_sThemeDir><m_bFromChanges>true</m_bFromChanges><m_bDontSaveAdditional>true</m_bDontSaveAdditional><m_sAllFontsPath>");
+        oBuilder.WriteString(L"</m_sThemeDir>");
+
+        if (NSFile::CFileBinary::Exists(m_oInfo.m_sRecoveryDir + L"/changes/changes0.json"))
+            oBuilder.WriteString(L"<m_bFromChanges>true</m_bFromChanges>");
+        else
+            oBuilder.WriteString(L"<m_bFromChanges>false</m_bFromChanges>");
+
+        oBuilder.WriteString(L"<m_bDontSaveAdditional>true</m_bDontSaveAdditional><m_sAllFontsPath>");
+
         oBuilder.WriteEncodeXmlString(m_pManager->m_oSettings.fonts_cache_info_path);
         oBuilder.WriteString(L"/AllFonts.js</m_sAllFontsPath><m_nCsvTxtEncoding>46</m_nCsvTxtEncoding><m_nCsvDelimiter>4</m_nCsvDelimiter>");
         oBuilder.WriteString(sParams);
@@ -882,7 +894,7 @@ public:
         if (!m_oInfo.m_sPassword.empty())
         {
             oBuilder.WriteString(L"<m_sSavePassword>");
-            oBuilder.WriteString(m_oInfo.m_sPassword);
+            oBuilder.WriteEncodeXmlString(m_oInfo.m_sPassword);
             oBuilder.WriteString(L"</m_sSavePassword>");
         }
 
@@ -918,7 +930,7 @@ public:
         if (m_pManager->m_pInternal->m_pAdditional)
             m_pManager->m_pInternal->m_pAdditional->CheckSaveStart(m_oInfo.m_sRecoveryDir, m_nTypeEditorFormat);
 
-        int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileForParams);
+        int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileForParams, m_pManager);
 
         m_sOriginalFileNameCrossPlatform = L"";
         m_bIsRetina = false;

@@ -27,8 +27,16 @@ CONFIG += core_boost_libs
 include(../../../core/Common/3dParty/boost/boost.pri)
 
 ########################################################
-include($$PWD/AscDocumentsCore_base.pri)
-include($$PWD/AscDocumentsCore_windows.pri)
+#CONFIG += build_xp
+
+!build_xp {
+    include($$PWD/AscDocumentsCore_base.pri)
+    include($$PWD/AscDocumentsCore_windows.pri)
+} else {
+    DEFINES += CEF_2623
+    DESTDIR=$$DESTDIR/xp
+    include($$PWD/AscDocumentsCore_base_xp.pri)
+}
 
 HEADERS += \
     ./src/cookiesworker.h \

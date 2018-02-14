@@ -118,9 +118,11 @@ protected:
     CefViewWrapperType m_eWrapperType;
     CCefView_Private* m_pInternal;
 
+    friend class CCefView_Private;
     friend class CAscClientHandler;
     friend class CAscApplicationManager;
     friend class CASCFileConverterToEditor;
+    friend class CCefViewEditor;
 };
 
 class Q_DECL_EXPORT CCefViewEditor : public CCefView

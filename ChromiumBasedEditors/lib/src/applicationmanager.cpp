@@ -70,6 +70,7 @@ CAscApplicationSettings::CAscApplicationSettings()
     country                         = "RU";
 
     sign_support                    = true;
+    pass_support                    = true;
 }
 
 void CAscApplicationSettings::SetUserDataPath(std::wstring sPath)
@@ -514,6 +515,19 @@ bool CAscApplicationManager::IsInitFonts()
     return (NULL != m_pInternal->m_pApplicationFonts) ? true : false;
 }
 
+std::string CAscApplicationManager::GetLibraryPathVariable()
+{
+#if defined(_LINUX) && !defined(_MAC)
+    if (m_pInternal->m_sLD_LIBRARY_PATH.empty())
+    {
+        char* pEnv = getenv("LD_LIBRARY_PATH");
+        m_pInternal->m_sLD_LIBRARY_PATH = std::string(pEnv);
+    }
+    return m_pInternal->m_sLD_LIBRARY_PATH;
+#endif
+    return "";
+}
+
 CApplicationCEF* CAscApplicationManager::GetApplication()
 {
     return m_pInternal->m_pApplication;
@@ -670,6 +684,42 @@ bool CAscApplicationManager::IsExternalEventLoop()
 void CAscApplicationManager::ExitExternalEventLoop()
 {
     // none
+}
+
+int CAscApplicationManager::GetMonitorScaleByIndex(const int& nIndex, unsigned int& nDpiX, unsigned int& nDpiY)
+{
+    if (m_pInternal->m_nForceDisplayScale > 0)
+        return m_pInternal->m_nForceDisplayScale;
+
+#ifdef WIN32
+    if (0 != Core_GetMonitorRawDpiByIndex(nIndex, &nDpiX, &nDpiY))
+        return -1;
+
+    if (nDpiX > 180 && nDpiY > 180)
+        return 2;
+
+    return 1;
+#endif
+
+    return -1;
+}
+
+int CAscApplicationManager::GetMonitorScaleByWindow(const WindowHandleId& nHandle, unsigned int& nDpiX, unsigned int& nDpiY)
+{
+    if (m_pInternal->m_nForceDisplayScale > 0)
+        return m_pInternal->m_nForceDisplayScale;
+
+#ifdef WIN32
+    if (0 != Core_GetMonitorRawDpi(nHandle, &nDpiX, &nDpiY))
+        return -1;
+
+    if (nDpiX > 180 && nDpiY > 180)
+        return 2;
+
+    return 1;
+#endif
+
+    return -1;
 }
 
 void CAscApplicationManager::SetEventToAllMainWindows(NSEditorApi::CAscMenuEvent* pEvent)

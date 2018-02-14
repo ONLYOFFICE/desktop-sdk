@@ -18,14 +18,16 @@ int RunMain(int argc, char* argv[]) {
   // Parse command-line arguments.
   CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
   command_line->InitFromArgv(argc, argv);
+    
+  std::map<std::string, std::string> mapSettings;
 
   // Create a ClientApp of the correct type.
   CefRefPtr<CefApp> app;
   ClientApp::ProcessType process_type = ClientApp::GetProcessType(command_line);
   if (process_type == ClientApp::RendererProcess)
-    app = new CAscClientAppRenderer();
+    app = new CAscClientAppRenderer(mapSettings);
   else if (process_type == ClientApp::OtherProcess)
-    app = new CAscClientAppOther();
+    app = new CAscClientAppOther(mapSettings);
 
   // Execute the secondary process.
   return CefExecuteProcess(main_args, app, NULL);

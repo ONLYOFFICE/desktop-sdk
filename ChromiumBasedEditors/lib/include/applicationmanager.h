@@ -73,6 +73,7 @@ public:
     std::string                     country;
 
     bool                            sign_support;
+    bool                            pass_support;
 
 public:
     CAscApplicationSettings();
@@ -159,6 +160,8 @@ public:
 
     bool IsInitFonts();
 
+    std::string GetLibraryPathVariable();
+
     CApplicationCEF* GetApplication();
     void SetApplication(CApplicationCEF* );
 
@@ -190,6 +193,9 @@ public:
 
     virtual bool IsExternalEventLoop();
     virtual void ExitExternalEventLoop();
+
+    int GetMonitorScaleByIndex(const int& nIndex, unsigned int& nDpiX, unsigned int& nDpiY);
+    int GetMonitorScaleByWindow(const WindowHandleId& nHandle, unsigned int& nDpiX, unsigned int& nDpiY);
 
     void SetEventToAllMainWindows(NSEditorApi::CAscMenuEvent* pEvent);
 

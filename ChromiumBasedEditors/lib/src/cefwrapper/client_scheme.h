@@ -39,6 +39,10 @@
 class CefBrowser;
 class CefSchemeRegistrar;
 
+#ifdef CEF_2623
+#define CefRawPtr CefRefPtr
+#endif
+
 namespace asc_scheme
 {
     // Register the scheme.
