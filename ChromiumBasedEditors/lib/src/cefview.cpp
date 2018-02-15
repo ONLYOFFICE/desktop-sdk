@@ -2297,7 +2297,7 @@ public:
         if (frame->IsMain())
         {
             std::wstring sUrl = m_pParent->GetUrl();
-            if ((0 != sUrl.find(L"file:///")) || !m_pParent->m_pInternal->m_bIsOnlyPassSupport)
+            if ((0 != sUrl.find(L"file:///")) || !m_pParent->m_pInternal->m_bIsOnlyPassSupport || m_pParent->GetType() == cvwtEditor)
                 return;
 
             std::wstring sSrc = m_pParent->GetAppManager()->m_oSettings.system_plugins_path + L"/{F2402876-659F-47FB-A646-67B49F2B57D0}/index.html";
@@ -4256,6 +4256,20 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
     if (!sAdditionalParams.empty())
         sParams += (L"&" + sAdditionalParams);
 
+    m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir = NSFile::CFileBinary::CreateTempFileWithUniqueName(m_pInternal->m_pManager->m_oSettings.recover_path, L"DE_");
+    if (NSFile::CFileBinary::Exists(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir))
+        NSFile::CFileBinary::Remove(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir);
+
+    NSCommon::string_replace(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir, L"\\", L"/");
+
+    std::wstring::size_type nPosPoint = m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir.rfind('.');
+    if (nPosPoint != std::wstring::npos && nPosPoint > m_pInternal->m_pManager->m_oSettings.recover_path.length())
+    {
+        m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir = m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir.substr(0, nPosPoint);
+    }
+
+    NSDirectory::CreateDirectory(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir);
+
     if (!m_pInternal->m_sOpenAsLocalSrc.empty())
     {
         NSDirectory::CreateDirectory(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/openaslocal");
@@ -4305,20 +4319,6 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
     m_pInternal->m_oConverterToEditor.m_pManager = this->GetAppManager();
     m_pInternal->m_oConverterToEditor.m_pView = this;
     m_pInternal->m_oConverterFromEditor.m_pManager = this->GetAppManager();
-
-    m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir = NSFile::CFileBinary::CreateTempFileWithUniqueName(m_pInternal->m_pManager->m_oSettings.recover_path, L"DE_");
-    if (NSFile::CFileBinary::Exists(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir))
-        NSFile::CFileBinary::Remove(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir);
-
-    NSCommon::string_replace(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir, L"\\", L"/");
-
-    std::wstring::size_type nPosPoint = m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir.rfind('.');
-    if (nPosPoint != std::wstring::npos && nPosPoint > m_pInternal->m_pManager->m_oSettings.recover_path.length())
-    {
-        m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir = m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir.substr(0, nPosPoint);
-    }
-
-    NSDirectory::CreateDirectory(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir);
 
     m_pInternal->LocalFile_Start();
 

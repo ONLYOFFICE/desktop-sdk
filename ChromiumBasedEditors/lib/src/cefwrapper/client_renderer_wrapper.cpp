@@ -2994,10 +2994,11 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
             std::string sCode = "window.DesktopOfflineAppDocumentEndSave(" + std::to_string(nIsSaved);
 
+            std::string sHash = "";
             if (4 <= message->GetArgumentList()->GetSize())
             {
                 std::string sPass = message->GetArgumentList()->GetString(2).ToString();
-                std::string sHash = message->GetArgumentList()->GetString(3).ToString();
+                sHash = message->GetArgumentList()->GetString(3).ToString();
 
                 NSCommon::string_replaceA(sPass, "\\", "\\\\");
                 NSCommon::string_replaceA(sPass, "\"", "\\\"");
@@ -3019,7 +3020,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
             {
                 std::string sUrlDst = message->GetArgumentList()->GetString(4).ToString();
 
-                sCode = "window.DesktopUploadFileToUrl(\"" + sFileSrc + "\", \"" + sUrlDst + "\");";
+                sCode = "window.DesktopUploadFileToUrl(\"" + sFileSrc + "\", \"" + sUrlDst + "\", \"" + sHash + "\");";
                 _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
             }
         }
