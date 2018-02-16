@@ -3284,9 +3284,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     (function(){\n\
     try {\n\
     var _arg = JSON.parse(\"" + sArg + "\");\n\
-    if (window.Asc && window.Asc.plugin && window.Asc.plugin.onSystemMessage)\n\
-    { window.Asc.plugin.onSystemMessage(_arg); } else if (window.onSystemMessage)\n\
-    { window.onSystemMessage(_arg); }\n\
+    if (window.onSystemMessage)\n\
+    { window.onSystemMessage(_arg); } else if (window.Asc && window.Asc.plugin && window.Asc.plugin.onSystemMessage)\n\
+    { window.Asc.plugin.onSystemMessage(_arg); }\n\
     }\n\
     catch (err) {}\n\
     })();";
@@ -3304,16 +3304,44 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
             if (_frame)
             {
                 std::string sCode = "\
-(function(){\n\
-try {\n\
-var _arg = JSON.parse(\"" + sArg + "\");\n\
-if (window.Asc && window.Asc.plugin && window.Asc.plugin.onSystemMessage)\n\
-{ window.Asc.plugin.onSystemMessage(_arg); } else if (window.onSystemMessage)\n\
-{ window.onSystemMessage(_arg); }\n\
-}\n\
-catch (err) {}\n\
-})();";
+    (function(){\n\
+    try {\n\
+    var _arg = JSON.parse(\"" + sArg + "\");\n\
+    if (window.onSystemMessage)\n\
+    { window.onSystemMessage(_arg); } else if (window.Asc && window.Asc.plugin && window.Asc.plugin.onSystemMessage)\n\
+    { window.Asc.plugin.onSystemMessage(_arg); }\n\
+    }\n\
+    catch (err) {}\n\
+    })();";
                 _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+            }
+
+            if (true)
+            {
+                std::vector<int64> identifiers;
+                browser->GetFrameIdentifiers(identifiers);
+
+                for (std::vector<int64>::iterator i = identifiers.begin(); i != identifiers.end(); i++)
+                {
+                    int64 k = *i;
+                    CefRefPtr<CefFrame> _frameOP = browser->GetFrame(k);
+
+                    if (_frameOP && (k != frameID) && (_frameOP->GetName().ToString().find("iframe_asc.{") == 0))
+                    {
+                        std::string sCode = "\
+        (function(){\n\
+        try {\n\
+        var _arg = JSON.parse(\"" + sArg + "\");\n\
+        if (window.Asc && window.Asc.plugin && window.Asc.plugin.onSystemMessage)\n\
+        { window.Asc.plugin.onSystemMessage(_arg); } \n\
+        }\n\
+        catch (err) {}\n\
+        })();";
+
+                        _frameOP->ExecuteJavaScript(sCode, _frameOP->GetURL(), 0);
+                        break;
+                    }
+                }
             }
         }
         return true;
