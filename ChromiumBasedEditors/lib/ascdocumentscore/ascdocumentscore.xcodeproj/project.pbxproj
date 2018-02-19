@@ -407,7 +407,6 @@
 		7C5DD5471BA84BB100C6474A /* textops.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7C5DD4B41BA84BB100C6474A /* textops.cpp */; };
 		7C5DD5481BA84BB100C6474A /* tiffio.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7C5DD4B51BA84BB100C6474A /* tiffio.cpp */; };
 		7C5DD5491BA84BB100C6474A /* tiffiostub.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7C5DD4B61BA84BB100C6474A /* tiffiostub.cpp */; };
-		7C5DD54A1BA84BB100C6474A /* viewfiles.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7C5DD4B71BA84BB100C6474A /* viewfiles.cpp */; };
 		7C5DD54B1BA84BB100C6474A /* warper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7C5DD4B81BA84BB100C6474A /* warper.cpp */; };
 		7C5DD54C1BA84BB100C6474A /* watershed.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7C5DD4B91BA84BB100C6474A /* watershed.cpp */; };
 		7C5DD54D1BA84BB100C6474A /* webpio.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7C5DD4BA1BA84BB100C6474A /* webpio.cpp */; };
@@ -1753,7 +1752,6 @@
 		7C5DD4B41BA84BB100C6474A /* textops.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = textops.cpp; path = ../../../../core/DesktopEditor/raster/JBig2/source/LeptonLib/textops.cpp; sourceTree = "<group>"; };
 		7C5DD4B51BA84BB100C6474A /* tiffio.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = tiffio.cpp; path = ../../../../core/DesktopEditor/raster/JBig2/source/LeptonLib/tiffio.cpp; sourceTree = "<group>"; };
 		7C5DD4B61BA84BB100C6474A /* tiffiostub.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = tiffiostub.cpp; path = ../../../../core/DesktopEditor/raster/JBig2/source/LeptonLib/tiffiostub.cpp; sourceTree = "<group>"; };
-		7C5DD4B71BA84BB100C6474A /* viewfiles.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = viewfiles.cpp; path = ../../../../core/DesktopEditor/raster/JBig2/source/LeptonLib/viewfiles.cpp; sourceTree = "<group>"; };
 		7C5DD4B81BA84BB100C6474A /* warper.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = warper.cpp; path = ../../../../core/DesktopEditor/raster/JBig2/source/LeptonLib/warper.cpp; sourceTree = "<group>"; };
 		7C5DD4B91BA84BB100C6474A /* watershed.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = watershed.cpp; path = ../../../../core/DesktopEditor/raster/JBig2/source/LeptonLib/watershed.cpp; sourceTree = "<group>"; };
 		7C5DD4BA1BA84BB100C6474A /* webpio.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = webpio.cpp; path = ../../../../core/DesktopEditor/raster/JBig2/source/LeptonLib/webpio.cpp; sourceTree = "<group>"; };
@@ -3261,7 +3259,6 @@
 				7C5DD4B41BA84BB100C6474A /* textops.cpp */,
 				7C5DD4B51BA84BB100C6474A /* tiffio.cpp */,
 				7C5DD4B61BA84BB100C6474A /* tiffiostub.cpp */,
-				7C5DD4B71BA84BB100C6474A /* viewfiles.cpp */,
 				7C5DD4B81BA84BB100C6474A /* warper.cpp */,
 				7C5DD4B91BA84BB100C6474A /* watershed.cpp */,
 				7C5DD4BA1BA84BB100C6474A /* webpio.cpp */,
@@ -5432,7 +5429,6 @@
 				7CC7F1F41F7D216300E99DC9 /* download_handler_cpptoc.cc in Sources */,
 				7C5DD4F71BA84BB100C6474A /* gifiostub.cpp in Sources */,
 				7C5DD50A1BA84BB100C6474A /* numabasic.cpp in Sources */,
-				7C5DD54A1BA84BB100C6474A /* viewfiles.cpp in Sources */,
 				7C5DD6381BA8644100C6474A /* libmng_object_prc.c in Sources */,
 				7C0B43611BA811C8005A52DC /* ftpfr.c in Sources */,
 				7C5DD4F31BA84BB100C6474A /* fpix1.cpp in Sources */,
