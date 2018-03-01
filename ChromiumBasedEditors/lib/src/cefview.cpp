@@ -971,7 +971,7 @@ public:
 
         if (bIsDownload)
         {
-            if (NULL != m_pParent && NULL != pListener)
+            if (NULL != m_pParent && NULL != pListener && NULL == m_pParent->m_pInternal->m_before_callback)
             {
                 GetBrowser()->GetHost()->StartDownload(sUrl);
                 
@@ -2154,6 +2154,32 @@ public:
 
             NSEditorApi::CAscCreateTab* pData = new NSEditorApi::CAscCreateTab();
             pData->put_Url(sDownloadLink);
+
+            if (true)
+            {
+                std::map<std::wstring, int>& mapOP = m_pParent->GetAppManager()->m_pInternal->m_mapOnlyPass;
+                std::map<std::wstring, int>::iterator findOP = mapOP.find(sDownloadLink);
+
+                if (mapOP.end() != findOP)
+                {
+                    CCefView* pView = m_pParent->GetAppManager()->GetViewById(findOP->second);
+                    if (pView)
+                    {
+                        pView->focus(true);
+                        return true;
+                    }
+
+                    mapOP.erase(findOP);
+                }
+
+                if (-1 == findOP->second)
+                {
+                    // загрузка только идет, а вью еще не добавилась
+                    return true;
+                }
+
+                mapOP.insert(std::pair<std::wstring, int>(sDownloadLink, -1));
+            }
 
             if (true)
             {
@@ -3352,6 +3378,12 @@ void CCefView::load(const std::wstring& urlInput)
 
     if (pos1 != std::wstring::npos && pos2 != std::wstring::npos)
     {
+        std::map<std::wstring, int>& mapOP = GetAppManager()->m_pInternal->m_mapOnlyPass;
+        std::map<std::wstring, int>::iterator findOP = mapOP.find(urlInput);
+
+        if (mapOP.end() != findOP)
+            findOP->second = GetId();
+
         std::wstring sFileUrl1 = urlInput.substr(0, pos1);
         std::wstring sFileUrl2 = urlInput.substr(pos1 + 13, pos2 - pos1 - 13);
 
