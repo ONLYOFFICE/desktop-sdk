@@ -74,6 +74,7 @@ public:
 
     void load(const std::wstring& url);
     std::wstring GetUrl();
+    std::wstring GetUrlAsLocal();
 
     void focus(bool value = true);
 

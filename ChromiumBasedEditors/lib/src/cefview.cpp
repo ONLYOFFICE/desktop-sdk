@@ -272,6 +272,8 @@ public:
     CCefView* m_pDownloadViewCallback;
     std::wstring m_sDownloadViewPath;
 
+    std::wstring m_sOpenAsLocalUrl;
+
     // hash info (GetHash js function)
     std::string m_sGetHashAlg;
     std::string m_sGetHashFrame;
@@ -2162,6 +2164,12 @@ public:
 
                 if (mapOP.end() != findOP)
                 {
+                    if (-1 == findOP->second)
+                    {
+                        // загрузка только идет, а вью еще не добавилась
+                        return true;
+                    }
+
                     CCefView* pView = m_pParent->GetAppManager()->GetViewById(findOP->second);
                     if (pView)
                     {
@@ -2170,12 +2178,6 @@ public:
                     }
 
                     mapOP.erase(findOP);
-                }
-
-                if (-1 == findOP->second)
-                {
-                    // загрузка только идет, а вью еще не добавилась
-                    return true;
                 }
 
                 mapOP.insert(std::pair<std::wstring, int>(sDownloadLink, -1));
@@ -2895,8 +2897,16 @@ require.load = function (context, moduleName, url) {\n\
         {
             if (download_item->IsComplete())
             {
-                m_pParent->m_pInternal->m_pDownloadViewCallback->m_pInternal->OnViewDownloadFile();
-                m_pParent->m_pInternal->m_pDownloadViewCallback = NULL;
+                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_UI_THREAD_MESSAGE);
+                NSEditorApi::CAscUIThreadMessage* pData = new NSEditorApi::CAscUIThreadMessage();
+                pData->put_Type(0);
+                pEvent->m_pData = pData;
+
+                m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+
+                // OpenLocalFile нужно запускать в главном потоке
+                //m_pParent->m_pInternal->m_pDownloadViewCallback->m_pInternal->OnViewDownloadFile();
+                //m_pParent->m_pInternal->m_pDownloadViewCallback = NULL;
             }
             return;
         }
@@ -3378,11 +3388,21 @@ void CCefView::load(const std::wstring& urlInput)
 
     if (pos1 != std::wstring::npos && pos2 != std::wstring::npos)
     {
-        std::map<std::wstring, int>& mapOP = GetAppManager()->m_pInternal->m_mapOnlyPass;
-        std::map<std::wstring, int>::iterator findOP = mapOP.find(urlInput);
+        m_pInternal->m_sOpenAsLocalUrl = urlInput;
+        if (true)
+        {
+            std::map<std::wstring, int>& mapOP = GetAppManager()->m_pInternal->m_mapOnlyPass;
+            std::map<std::wstring, int>::iterator findOP = mapOP.find(urlInput);
 
-        if (mapOP.end() != findOP)
-            findOP->second = GetId();
+            if (mapOP.end() != findOP)
+            {
+                findOP->second = GetId();
+            }
+            else
+            {
+                mapOP.insert(std::pair<std::wstring, int>(urlInput, GetId()));
+            }
+        }
 
         std::wstring sFileUrl1 = urlInput.substr(0, pos1);
         std::wstring sFileUrl2 = urlInput.substr(pos1 + 13, pos2 - pos1 - 13);
@@ -3553,6 +3573,14 @@ std::wstring CCefView::GetUrl()
         return L"";
 
     return m_pInternal->m_strUrl;
+}
+
+std::wstring CCefView::GetUrlAsLocal()
+{
+    if (!m_pInternal)
+        return L"";
+
+    return m_pInternal->m_sOpenAsLocalUrl;
 }
 
 void CCefView::focus(bool value)
@@ -4058,6 +4086,25 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("to_reporter_message");
             message->GetArgumentList()->SetString(0, pData->get_Message());
             browser->SendProcessMessage(PID_RENDERER, message);
+            break;
+        }
+        case ASC_MENU_EVENT_TYPE_UI_THREAD_MESSAGE:
+        {
+            NSEditorApi::CAscUIThreadMessage* pData = (NSEditorApi::CAscUIThreadMessage*)pEvent->m_pData;
+            int nType = pData->get_Type();
+
+            switch (nType)
+            {
+            case 0:
+            {
+                m_pInternal->m_pDownloadViewCallback->m_pInternal->OnViewDownloadFile();
+                m_pInternal->m_pDownloadViewCallback = NULL;
+                break;
+            }
+            default:
+                break;
+            }
+
             break;
         }
         default:
