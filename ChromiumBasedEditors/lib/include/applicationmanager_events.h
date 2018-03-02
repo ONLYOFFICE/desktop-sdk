@@ -109,6 +109,8 @@
 #define ASC_MENU_EVENT_TYPE_SSO_TOKEN                       7030
 
 #define ASC_MENU_EVENT_TYPE_UI_THREAD_MESSAGE               7031
+#define ASC_MENU_EVENT_TYPE_PAGE_LOAD_START                 7032
+#define ASC_MENU_EVENT_TYPE_PAGE_LOAD_END                   7033
 
 #define ASC_MENU_EVENT_TYPE_CEF_DESTROYWINDOW               8000
 

@@ -3048,7 +3048,14 @@ require.load = function (context, moduleName, url) {\n\
     // Set the loading state.
     virtual void OnSetLoadingState(bool isLoading,
                                      bool canGoBack,
-                                     bool canGoForward) OVERRIDE {}
+                                     bool canGoForward) OVERRIDE
+    {
+        if (!isLoading && m_pParent && m_pParent->GetAppManager() && m_pParent->GetAppManager()->GetEventListener())
+        {
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_PAGE_LOAD_END);
+            m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+        }
+    }
 
     // Set the draggable regions.
     virtual void OnSetDraggableRegions(const std::vector<CefDraggableRegion>& regions) OVERRIDE {}
