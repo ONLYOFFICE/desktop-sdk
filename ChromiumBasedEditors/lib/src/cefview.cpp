@@ -2230,6 +2230,27 @@ public:
             m_pParent->m_pInternal->SendSystemMessage(sysMessage);
             return true;
         }
+        else if (message_name == "call_in_all_windows")
+        {
+            CAscApplicationManager_Private* pPrivate = m_pParent->GetAppManager()->m_pInternal;
+
+            for (std::map<int, CCefView*>::iterator iterView = pPrivate->m_mapViews.begin(); iterView != pPrivate->m_mapViews.end(); iterView++)
+            {
+                CCefView* pTmp = iterView->second;
+                CefRefPtr<CefBrowser> pBrowser = pTmp->m_pInternal->GetBrowser();
+                if (pBrowser)
+                {
+                    // may be send to all frames?!
+                    CefRefPtr<CefFrame> pFrame = pBrowser->GetMainFrame();
+                    if (pFrame)
+                    {
+                        pFrame->ExecuteJavaScript(message->GetArgumentList()->GetString(0), pFrame->GetURL(), 0);
+                    }
+                }
+            }
+
+            return true;
+        }
 
         CAscApplicationManager_Private* pInternalMan = m_pParent->GetAppManager()->m_pInternal;
         if (pInternalMan->m_pAdditional && pInternalMan->m_pAdditional->OnProcessMessageReceived(browser, source_process, message))
