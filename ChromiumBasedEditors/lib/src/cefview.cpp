@@ -273,6 +273,7 @@ public:
     std::wstring m_sDownloadViewPath;
 
     std::wstring m_sOpenAsLocalUrl;
+    std::wstring m_sOriginalUrl;
 
     // hash info (GetHash js function)
     std::string m_sGetHashAlg;
@@ -3389,6 +3390,8 @@ CCefView::~CCefView()
 
 void CCefView::load(const std::wstring& urlInput)
 {
+    m_pInternal->m_sOriginalUrl = urlInput;
+
     // check openaslocal
     std::wstring::size_type pos1 = urlInput.find(L"<openaslocal>");
     std::wstring::size_type pos2 = urlInput.find(L"</openaslocal>");
@@ -3580,6 +3583,14 @@ std::wstring CCefView::GetUrl()
         return L"";
 
     return m_pInternal->m_strUrl;
+}
+
+std::wstring CCefView::GetOriginalUrl()
+{
+    if (!m_pInternal)
+        return L"";
+
+    return m_pInternal->m_sOriginalUrl;
 }
 
 std::wstring CCefView::GetUrlAsLocal()

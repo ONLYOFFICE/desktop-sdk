@@ -471,6 +471,9 @@ CCefView* CAscApplicationManager::GetViewByUrl(const std::wstring& url)
         if (pView->GetUrl() == url)
             return i->second;
 
+        if (pView->GetOriginalUrl() == url)
+            return i->second;
+
         if (pView->GetUrlAsLocal() == url)
             return i->second;
     }
