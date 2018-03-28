@@ -450,6 +450,8 @@ public:
 
     std::string m_sLD_LIBRARY_PATH;
 
+    std::map<std::wstring, int> m_mapOnlyPass;
+
 public:
     CAscApplicationManager_Private() : m_oKeyboardTimer(this)
     {

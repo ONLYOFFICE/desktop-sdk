@@ -1649,6 +1649,7 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
             {
                 _frame->ExecuteJavaScript("window.AscDesktopEditor.sendSystemMessage = function(arg) { window.AscDesktopEditor._sendSystemMessage(JSON.stringify(arg)); };", _frame->GetURL(), 0);
                 _frame->ExecuteJavaScript("window.AscDesktopEditor.GetHash = function(arg, callback) { window.AscDesktopEditor.getHashCallback = callback; window.AscDesktopEditor._GetHash(arg); };", _frame->GetURL(), 0);
+                _frame->ExecuteJavaScript("window.AscDesktopEditor.CallInAllWindows = function(arg) { window.AscDesktopEditor._CallInAllWindows(\"(\" + arg.toString() + \")();\"); };", _frame->GetURL(), 0);
             }
 
             return true;
@@ -2070,6 +2071,14 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
             int64 frameID = CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier();
             message->GetArgumentList()->SetString(2, std::to_string(frameID));
 
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "_CallInAllWindows")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("call_in_all_windows");
+            message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
@@ -2553,6 +2562,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction973 = CefV8Value::CreateFunction("SaveAsCloud", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction974 = CefV8Value::CreateFunction("_sendSystemMessage", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction975 = CefV8Value::CreateFunction("_GetHash", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction976 = CefV8Value::CreateFunction("_CallInAllWindows", _nativeHandler);
 
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -2687,6 +2697,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("SaveAsCloud", _nativeFunction973, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("_sendSystemMessage", _nativeFunction974, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("_GetHash", _nativeFunction975, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("_CallInAllWindows", _nativeFunction976, V8_PROPERTY_ATTRIBUTE_NONE);
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 
@@ -2994,10 +3005,12 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
             std::string sCode = "window.DesktopOfflineAppDocumentEndSave(" + std::to_string(nIsSaved);
 
+            std::string sHash = "";
+            std::string sPass = "";
             if (4 <= message->GetArgumentList()->GetSize())
             {
-                std::string sPass = message->GetArgumentList()->GetString(2).ToString();
-                std::string sHash = message->GetArgumentList()->GetString(3).ToString();
+                sPass = message->GetArgumentList()->GetString(2).ToString();
+                sHash = message->GetArgumentList()->GetString(3).ToString();
 
                 NSCommon::string_replaceA(sPass, "\\", "\\\\");
                 NSCommon::string_replaceA(sPass, "\"", "\\\"");
@@ -3019,7 +3032,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
             {
                 std::string sUrlDst = message->GetArgumentList()->GetString(4).ToString();
 
-                sCode = "window.DesktopUploadFileToUrl(\"" + sFileSrc + "\", \"" + sUrlDst + "\");";
+                sCode = "window.DesktopUploadFileToUrl(\"" + sFileSrc + "\", \"" + sUrlDst + "\", \"" + sHash + "\", \"" + sPass + "\");";
                 _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
             }
         }
@@ -3282,9 +3295,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     (function(){\n\
     try {\n\
     var _arg = JSON.parse(\"" + sArg + "\");\n\
-    if (window.Asc && window.Asc.plugin && window.Asc.plugin.onSystemMessage)\n\
-    { window.Asc.plugin.onSystemMessage(_arg); } else if (window.onSystemMessage)\n\
-    { window.onSystemMessage(_arg); }\n\
+    if (window.onSystemMessage)\n\
+    { window.onSystemMessage(_arg); } else if (window.Asc && window.Asc.plugin && window.Asc.plugin.onSystemMessage)\n\
+    { window.Asc.plugin.onSystemMessage(_arg); }\n\
     }\n\
     catch (err) {}\n\
     })();";
@@ -3302,16 +3315,44 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
             if (_frame)
             {
                 std::string sCode = "\
-(function(){\n\
-try {\n\
-var _arg = JSON.parse(\"" + sArg + "\");\n\
-if (window.Asc && window.Asc.plugin && window.Asc.plugin.onSystemMessage)\n\
-{ window.Asc.plugin.onSystemMessage(_arg); } else if (window.onSystemMessage)\n\
-{ window.onSystemMessage(_arg); }\n\
-}\n\
-catch (err) {}\n\
-})();";
+    (function(){\n\
+    try {\n\
+    var _arg = JSON.parse(\"" + sArg + "\");\n\
+    if (window.onSystemMessage)\n\
+    { window.onSystemMessage(_arg); } else if (window.Asc && window.Asc.plugin && window.Asc.plugin.onSystemMessage)\n\
+    { window.Asc.plugin.onSystemMessage(_arg); }\n\
+    }\n\
+    catch (err) {}\n\
+    })();";
                 _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+            }
+
+            if (true)
+            {
+                std::vector<int64> identifiers;
+                browser->GetFrameIdentifiers(identifiers);
+
+                for (std::vector<int64>::iterator i = identifiers.begin(); i != identifiers.end(); i++)
+                {
+                    int64 k = *i;
+                    CefRefPtr<CefFrame> _frameOP = browser->GetFrame(k);
+
+                    if (_frameOP && (k != frameID) && (_frameOP->GetName().ToString().find("iframe_asc.{") == 0))
+                    {
+                        std::string sCode = "\
+        (function(){\n\
+        try {\n\
+        var _arg = JSON.parse(\"" + sArg + "\");\n\
+        if (window.Asc && window.Asc.plugin && window.Asc.plugin.onSystemMessage)\n\
+        { window.Asc.plugin.onSystemMessage(_arg); } \n\
+        }\n\
+        catch (err) {}\n\
+        })();";
+
+                        _frameOP->ExecuteJavaScript(sCode, _frameOP->GetURL(), 0);
+                        break;
+                    }
+                }
             }
         }
         return true;

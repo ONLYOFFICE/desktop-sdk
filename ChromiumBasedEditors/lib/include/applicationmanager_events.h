@@ -108,6 +108,10 @@
 
 #define ASC_MENU_EVENT_TYPE_SSO_TOKEN                       7030
 
+#define ASC_MENU_EVENT_TYPE_UI_THREAD_MESSAGE               7031
+#define ASC_MENU_EVENT_TYPE_PAGE_LOAD_START                 7032
+#define ASC_MENU_EVENT_TYPE_PAGE_LOAD_END                   7033
+
 #define ASC_MENU_EVENT_TYPE_CEF_DESTROYWINDOW               8000
 
 
@@ -696,6 +700,27 @@ namespace NSEditorApi
 
         LINK_PROPERTY_STRING(Url)
         LINK_PROPERTY_STRING(Token)
+    };
+}
+
+namespace NSEditorApi
+{
+    class CAscUIThreadMessage : public IMenuEventDataBase
+    {
+    private:
+        int m_nType;
+        std::vector<std::wstring> m_arArgs;
+
+    public:
+        CAscUIThreadMessage()
+        {
+        }
+        virtual ~CAscUIThreadMessage()
+        {
+        }
+
+        LINK_PROPERTY_INT(Type)
+        std::vector<std::wstring>& GetArgs() { return m_arArgs; }
     };
 }
 
