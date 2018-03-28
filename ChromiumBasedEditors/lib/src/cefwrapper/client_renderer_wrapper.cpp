@@ -1649,6 +1649,7 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
             {
                 _frame->ExecuteJavaScript("window.AscDesktopEditor.sendSystemMessage = function(arg) { window.AscDesktopEditor._sendSystemMessage(JSON.stringify(arg)); };", _frame->GetURL(), 0);
                 _frame->ExecuteJavaScript("window.AscDesktopEditor.GetHash = function(arg, callback) { window.AscDesktopEditor.getHashCallback = callback; window.AscDesktopEditor._GetHash(arg); };", _frame->GetURL(), 0);
+                _frame->ExecuteJavaScript("window.AscDesktopEditor.CallInAllWindows = function(arg) { window.AscDesktopEditor._CallInAllWindows(\"(\" + arg.toString() + \")();\"); };", _frame->GetURL(), 0);
             }
 
             return true;
@@ -2070,6 +2071,14 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
             int64 frameID = CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier();
             message->GetArgumentList()->SetString(2, std::to_string(frameID));
 
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "_CallInAllWindows")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("call_in_all_windows");
+            message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
@@ -2553,6 +2562,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction973 = CefV8Value::CreateFunction("SaveAsCloud", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction974 = CefV8Value::CreateFunction("_sendSystemMessage", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction975 = CefV8Value::CreateFunction("_GetHash", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction976 = CefV8Value::CreateFunction("_CallInAllWindows", _nativeHandler);
 
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -2687,6 +2697,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("SaveAsCloud", _nativeFunction973, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("_sendSystemMessage", _nativeFunction974, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("_GetHash", _nativeFunction975, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("_CallInAllWindows", _nativeFunction976, V8_PROPERTY_ATTRIBUTE_NONE);
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 

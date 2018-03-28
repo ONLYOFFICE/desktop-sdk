@@ -272,6 +272,9 @@ public:
     CCefView* m_pDownloadViewCallback;
     std::wstring m_sDownloadViewPath;
 
+    std::wstring m_sOpenAsLocalUrl;
+    std::wstring m_sOriginalUrl;
+
     // hash info (GetHash js function)
     std::string m_sGetHashAlg;
     std::string m_sGetHashFrame;
@@ -971,7 +974,7 @@ public:
 
         if (bIsDownload)
         {
-            if (NULL != m_pParent && NULL != pListener)
+            if (NULL != m_pParent && NULL != pListener && NULL == m_pParent->m_pInternal->m_before_callback)
             {
                 GetBrowser()->GetHost()->StartDownload(sUrl);
                 
@@ -2157,6 +2160,32 @@ public:
 
             if (true)
             {
+                std::map<std::wstring, int>& mapOP = m_pParent->GetAppManager()->m_pInternal->m_mapOnlyPass;
+                std::map<std::wstring, int>::iterator findOP = mapOP.find(sDownloadLink);
+
+                if (mapOP.end() != findOP)
+                {
+                    if (-1 == findOP->second)
+                    {
+                        // загрузка только идет, а вью еще не добавилась
+                        return true;
+                    }
+
+                    CCefView* pView = m_pParent->GetAppManager()->GetViewById(findOP->second);
+                    if (pView)
+                    {
+                        pView->focus(true);
+                        return true;
+                    }
+
+                    mapOP.erase(findOP);
+                }
+
+                mapOP.insert(std::pair<std::wstring, int>(sDownloadLink, -1));
+            }
+
+            if (true)
+            {
                 CCefView* pEqual = m_pParent->GetAppManager()->GetViewByUrl(sDownloadLink);
                 if (NULL != pEqual)
                     pData->put_IdEqual(pEqual->GetId());
@@ -2199,6 +2228,27 @@ public:
             sysMessage.Message = message->GetArgumentList()->GetString(0).ToString();
 
             m_pParent->m_pInternal->SendSystemMessage(sysMessage);
+            return true;
+        }
+        else if (message_name == "call_in_all_windows")
+        {
+            CAscApplicationManager_Private* pPrivate = m_pParent->GetAppManager()->m_pInternal;
+
+            for (std::map<int, CCefView*>::iterator iterView = pPrivate->m_mapViews.begin(); iterView != pPrivate->m_mapViews.end(); iterView++)
+            {
+                CCefView* pTmp = iterView->second;
+                CefRefPtr<CefBrowser> pBrowser = pTmp->m_pInternal->GetBrowser();
+                if (pBrowser)
+                {
+                    // may be send to all frames?!
+                    CefRefPtr<CefFrame> pFrame = pBrowser->GetMainFrame();
+                    if (pFrame)
+                    {
+                        pFrame->ExecuteJavaScript(message->GetArgumentList()->GetString(0), pFrame->GetURL(), 0);
+                    }
+                }
+            }
+
             return true;
         }
 
@@ -2869,8 +2919,16 @@ require.load = function (context, moduleName, url) {\n\
         {
             if (download_item->IsComplete())
             {
-                m_pParent->m_pInternal->m_pDownloadViewCallback->m_pInternal->OnViewDownloadFile();
-                m_pParent->m_pInternal->m_pDownloadViewCallback = NULL;
+                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_UI_THREAD_MESSAGE);
+                NSEditorApi::CAscUIThreadMessage* pData = new NSEditorApi::CAscUIThreadMessage();
+                pData->put_Type(0);
+                pEvent->m_pData = pData;
+
+                m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+
+                // OpenLocalFile нужно запускать в главном потоке
+                //m_pParent->m_pInternal->m_pDownloadViewCallback->m_pInternal->OnViewDownloadFile();
+                //m_pParent->m_pInternal->m_pDownloadViewCallback = NULL;
             }
             return;
         }
@@ -3012,7 +3070,14 @@ require.load = function (context, moduleName, url) {\n\
     // Set the loading state.
     virtual void OnSetLoadingState(bool isLoading,
                                      bool canGoBack,
-                                     bool canGoForward) OVERRIDE {}
+                                     bool canGoForward) OVERRIDE
+    {
+        if (!isLoading && m_pParent && m_pParent->GetAppManager() && m_pParent->GetAppManager()->GetEventListener())
+        {
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_PAGE_LOAD_END);
+            m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+        }
+    }
 
     // Set the draggable regions.
     virtual void OnSetDraggableRegions(const std::vector<CefDraggableRegion>& regions) OVERRIDE {}
@@ -3346,12 +3411,30 @@ CCefView::~CCefView()
 
 void CCefView::load(const std::wstring& urlInput)
 {
+    m_pInternal->m_sOriginalUrl = urlInput;
+
     // check openaslocal
     std::wstring::size_type pos1 = urlInput.find(L"<openaslocal>");
     std::wstring::size_type pos2 = urlInput.find(L"</openaslocal>");
 
     if (pos1 != std::wstring::npos && pos2 != std::wstring::npos)
     {
+        m_pInternal->m_sOpenAsLocalUrl = urlInput;
+        if (true)
+        {
+            std::map<std::wstring, int>& mapOP = GetAppManager()->m_pInternal->m_mapOnlyPass;
+            std::map<std::wstring, int>::iterator findOP = mapOP.find(urlInput);
+
+            if (mapOP.end() != findOP)
+            {
+                findOP->second = GetId();
+            }
+            else
+            {
+                mapOP.insert(std::pair<std::wstring, int>(urlInput, GetId()));
+            }
+        }
+
         std::wstring sFileUrl1 = urlInput.substr(0, pos1);
         std::wstring sFileUrl2 = urlInput.substr(pos1 + 13, pos2 - pos1 - 13);
 
@@ -3521,6 +3604,22 @@ std::wstring CCefView::GetUrl()
         return L"";
 
     return m_pInternal->m_strUrl;
+}
+
+std::wstring CCefView::GetOriginalUrl()
+{
+    if (!m_pInternal)
+        return L"";
+
+    return m_pInternal->m_sOriginalUrl;
+}
+
+std::wstring CCefView::GetUrlAsLocal()
+{
+    if (!m_pInternal)
+        return L"";
+
+    return m_pInternal->m_sOpenAsLocalUrl;
 }
 
 void CCefView::focus(bool value)
@@ -4026,6 +4125,25 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("to_reporter_message");
             message->GetArgumentList()->SetString(0, pData->get_Message());
             browser->SendProcessMessage(PID_RENDERER, message);
+            break;
+        }
+        case ASC_MENU_EVENT_TYPE_UI_THREAD_MESSAGE:
+        {
+            NSEditorApi::CAscUIThreadMessage* pData = (NSEditorApi::CAscUIThreadMessage*)pEvent->m_pData;
+            int nType = pData->get_Type();
+
+            switch (nType)
+            {
+            case 0:
+            {
+                m_pInternal->m_pDownloadViewCallback->m_pInternal->OnViewDownloadFile();
+                m_pInternal->m_pDownloadViewCallback = NULL;
+                break;
+            }
+            default:
+                break;
+            }
+
             break;
         }
         default:

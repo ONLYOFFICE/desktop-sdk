@@ -381,6 +381,19 @@ void CAscApplicationManager::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             }
             break;
         }
+        case ASC_MENU_EVENT_TYPE_UI_THREAD_MESSAGE:
+        {
+            int nId = ((NSEditorApi::CAscCefMenuEvent*)pEvent)->get_SenderId();
+            CCefView* pView = GetViewById(nId);
+
+            if (NULL != pView)
+            {
+                ADDREFINTERFACE(pEvent);
+                pView->Apply(pEvent);
+            }
+
+            break;
+        }
         default:
         {
             if (NULL != m_pInternal->m_pAdditional)
@@ -454,7 +467,14 @@ CCefView* CAscApplicationManager::GetViewByUrl(const std::wstring& url)
 {
     for (std::map<int, CCefView*>::iterator i = m_pInternal->m_mapViews.begin(); i != m_pInternal->m_mapViews.end(); ++i)
     {
-        if (i->second->GetUrl() == url)
+        CCefView* pView = i->second;
+        if (pView->GetUrl() == url)
+            return i->second;
+
+        if (pView->GetOriginalUrl() == url)
+            return i->second;
+
+        if (pView->GetUrlAsLocal() == url)
             return i->second;
     }
     return NULL;
