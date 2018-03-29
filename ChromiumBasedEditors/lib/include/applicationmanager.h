@@ -149,6 +149,7 @@ public:
 
     CCefView* GetViewById(int nId);
     CCefView* GetViewByUrl(const std::wstring& url);
+    CCefView* GetViewByRecentId(int nId);
 
     void Logout(std::wstring strUrl);
     void CancelDownload(unsigned int nDownloadId);

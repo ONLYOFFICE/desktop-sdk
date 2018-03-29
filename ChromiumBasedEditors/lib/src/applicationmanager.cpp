@@ -479,6 +479,23 @@ CCefView* CAscApplicationManager::GetViewByUrl(const std::wstring& url)
     }
     return NULL;
 }
+CCefView* CAscApplicationManager::GetViewByRecentId(int nId)
+{
+    CAscEditorFileInfo oInfo;
+    for (std::vector<CAscEditorFileInfo>::iterator i = m_pInternal->m_arRecents.begin(); i != m_pInternal->m_arRecents.end(); i++)
+    {
+        if (i->m_nId == nId)
+        {
+            oInfo = *i;
+            break;
+        }
+    }
+
+    if (-1 == oInfo.m_nId)
+        return NULL;
+
+    return this->GetViewByUrl(oInfo.m_sUrl);
+}
 
 void CAscApplicationManager::DestroyCefView(int nId, bool bIsSafe)
 {
