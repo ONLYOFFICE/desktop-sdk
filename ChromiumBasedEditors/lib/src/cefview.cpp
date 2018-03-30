@@ -4656,6 +4656,11 @@ bool CCefViewEditor::OpenRecentFile(const int& nId)
     return true;
 }
 
+std::wstring CCefViewEditor::GetLocalFilePath()
+{
+    return m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc;
+}
+
 // NATIVE file converter
 void CASCFileConverterToEditor::NativeViewerOpen(bool bIsEnabled)
 {

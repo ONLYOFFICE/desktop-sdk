@@ -465,6 +465,9 @@ CCefView* CAscApplicationManager::GetViewById(int nId)
 }
 CCefView* CAscApplicationManager::GetViewByUrl(const std::wstring& url)
 {
+    if (url.empty())
+        return NULL;
+
     for (std::map<int, CCefView*>::iterator i = m_pInternal->m_mapViews.begin(); i != m_pInternal->m_mapViews.end(); ++i)
     {
         CCefView* pView = i->second;
@@ -493,6 +496,29 @@ CCefView* CAscApplicationManager::GetViewByRecentId(int nId)
 
     if (-1 == oInfo.m_nId)
         return NULL;
+
+    if (oInfo.m_sUrl.empty() && !oInfo.m_sPath.empty())
+    {
+        for (std::map<int, CCefView*>::iterator i = m_pInternal->m_mapViews.begin(); i != m_pInternal->m_mapViews.end(); ++i)
+        {
+            CCefView* pView = i->second;
+
+            if (pView->GetType() == cvwtEditor)
+            {
+                CCefViewEditor* pViewEditor = (CCefViewEditor*)pView;
+
+                std::wstring sPath1 = pViewEditor->GetLocalFilePath();
+                std::wstring sPath2 = oInfo.m_sPath;
+
+                NSStringUtils::string_replace(sPath1, L"\\", L"/");
+                NSStringUtils::string_replace(sPath2, L"\\", L"/");
+
+                if (sPath1 == sPath2)
+                    return pView;
+            }
+        }
+        return NULL;
+    }
 
     return this->GetViewByUrl(oInfo.m_sUrl);
 }
