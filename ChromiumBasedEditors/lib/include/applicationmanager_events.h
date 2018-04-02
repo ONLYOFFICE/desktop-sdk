@@ -112,6 +112,8 @@
 #define ASC_MENU_EVENT_TYPE_PAGE_LOAD_START                 7032
 #define ASC_MENU_EVENT_TYPE_PAGE_LOAD_END                   7033
 
+#define ASC_MENU_EVENT_TYPE_PAGE_GOT_FOCUS                  7050
+
 #define ASC_MENU_EVENT_TYPE_CEF_DESTROYWINDOW               8000
 
 
