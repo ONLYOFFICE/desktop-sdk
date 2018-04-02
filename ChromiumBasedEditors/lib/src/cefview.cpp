@@ -2977,6 +2977,12 @@ require.load = function (context, moduleName, url) {\n\
         m_pParent->GetAppManager()->Apply(pEvent);
     }
 
+    void OnGotFocus(CefRefPtr<CefBrowser> browser) OVERRIDE
+    {
+        NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_PAGE_GOT_FOCUS);
+        m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+    }
+
     bool OnDragEnter(CefRefPtr<CefBrowser> browser,
                      CefRefPtr<CefDragData> dragData,
                      CefDragHandler::DragOperationsMask mask) OVERRIDE
@@ -4654,6 +4660,11 @@ bool CCefViewEditor::OpenRecentFile(const int& nId)
 
     this->load(oInfo.m_sUrl);
     return true;
+}
+
+std::wstring CCefViewEditor::GetLocalFilePath()
+{
+    return m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc;
 }
 
 // NATIVE file converter
