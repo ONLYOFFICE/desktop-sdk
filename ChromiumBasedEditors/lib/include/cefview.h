@@ -145,6 +145,8 @@ public:
     bool OpenRecoverFile(const int& nId);
     bool OpenRecentFile(const int& nId);
     bool OpenReporter(const std::wstring& sFolder);
+
+    std::wstring GetLocalFilePath();
 };
 
 class IFileDownloaderEvents

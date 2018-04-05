@@ -489,7 +489,7 @@ public:
                 }
                 if (NULL == pCurrent)
                 {
-                    m_oItem.AddBool(false);
+                    m_oItem.AddBool(true);
                 }
                 else
                 {
