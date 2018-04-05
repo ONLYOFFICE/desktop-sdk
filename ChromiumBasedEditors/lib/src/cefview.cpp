@@ -281,6 +281,8 @@ public:
 
     bool m_bIsOnlyPassSupport;
 
+    bool m_bIsCrashed;
+
 #if defined(_LINUX) && !defined(_MAC)
     WindowHandleId m_lNaturalParent;
 #endif
@@ -364,6 +366,8 @@ public:
         m_pDownloadViewCallback = NULL;
 
         m_bIsOnlyPassSupport = false;
+
+        m_bIsCrashed = false;
     }
 
     void Destroy()
@@ -381,14 +385,22 @@ public:
         if (!m_bIsSavingDialog && (!m_oLocalInfo.m_oInfo.m_bIsModified || m_bIsRemoveRecoveryOnClose))
             bIsNeedRemove = true;
 
+        bool bIsChangesExist = false;
         std::wstring sChangesFile = m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/changes/changes0.json";
         if (!NSFile::CFileBinary::Exists(sChangesFile))
         {
             // нет изменений - нечего рековерить. актуально для НОВОГО файла
-            bIsNeedRemove = true;
+            bIsNeedRemove = true;            
+        }
+        else
+        {
+            bIsChangesExist = true;
         }
 
         if (m_bIsReporter)
+            bIsNeedRemove = false;
+
+        if (m_bIsCrashed && bIsChangesExist)
             bIsNeedRemove = false;
 
         if (bIsNeedRemove)
@@ -854,6 +866,8 @@ public:
 
     CefRefPtr<CefBrowser> browser_;
     int browser_id_;
+
+    bool m_bIsCrashed;
 
     CefRefPtr<CefJSDialogHandler> m_pCefJSDialogHandler;
 
@@ -2869,6 +2883,9 @@ require.load = function (context, moduleName, url) {\n\
         // Load the startup URL if that's not the website that we terminated on.
         CefRefPtr<CefFrame> frame = browser->GetMainFrame();
         frame->LoadURL("ascdesktop://crash.html");
+
+        if (m_pParent && m_pParent->m_pInternal)
+            m_pParent->m_pInternal->m_bIsCrashed = true;
     }
 
     virtual void OnBeforeDownload(CefRefPtr<CefBrowser> browser,
