@@ -55,10 +55,10 @@ namespace NSFileDownloader
 {
     static bool IsNeedDownload(const std::wstring& FilePath)
     {
-        int n1 = FilePath.find(L"www.");
-        int n2 = FilePath.find(L"http://");
-        int n3 = FilePath.find(L"ftp://");
-        int n4 = FilePath.find(L"https://");
+        std::wstring::size_type n1 = FilePath.find(L"www.");
+        std::wstring::size_type n2 = FilePath.find(L"http://");
+        std::wstring::size_type n3 = FilePath.find(L"ftp://");
+        std::wstring::size_type n4 = FilePath.find(L"https://");
 
         if (n1 != std::wstring::npos && n1 < 10)
             return true;
