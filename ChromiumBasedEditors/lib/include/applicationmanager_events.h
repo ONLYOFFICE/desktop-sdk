@@ -112,6 +112,8 @@
 #define ASC_MENU_EVENT_TYPE_PAGE_LOAD_START                 7032
 #define ASC_MENU_EVENT_TYPE_PAGE_LOAD_END                   7033
 
+#define ASC_MENU_EVENT_TYPE_PAGE_SELECT_OPENSSL_CERTIFICATE 7034
+
 #define ASC_MENU_EVENT_TYPE_PAGE_GOT_FOCUS                  7050
 
 #define ASC_MENU_EVENT_TYPE_CEF_DESTROYWINDOW               8000
@@ -723,6 +725,32 @@ namespace NSEditorApi
 
         LINK_PROPERTY_INT(Type)
         std::vector<std::wstring>& GetArgs() { return m_arArgs; }
+    };
+}
+
+namespace NSEditorApi
+{
+    class CAscOpenSslData : public IMenuEventDataBase
+    {
+    private:
+        std::wstring m_sCertPath;
+        std::wstring m_sCertPassword;
+
+        std::wstring m_sKeyPath;
+        std::wstring m_sKeyPassword;
+
+    public:
+        CAscOpenSslData()
+        {
+        }
+        virtual ~CAscOpenSslData()
+        {
+        }
+
+        LINK_PROPERTY_STRING(CertPath)
+        LINK_PROPERTY_STRING(CertPassword)
+        LINK_PROPERTY_STRING(KeyPath)
+        LINK_PROPERTY_STRING(KeyPassword)
     };
 }
 

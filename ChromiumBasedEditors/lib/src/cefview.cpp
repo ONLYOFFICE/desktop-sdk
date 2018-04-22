@@ -2043,10 +2043,19 @@ public:
         {
             if (m_pParent && m_pParent->m_pInternal)
             {
-                CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_selectsertificate_ret");
-
                 ICertificate* pCert = ICertificate::CreateInstance();
-                if (pCert->ShowSelectDialog())
+                int nShowDialogResult = pCert->ShowSelectDialog();
+
+                if (-1 == nShowDialogResult)
+                {
+                    NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_PAGE_SELECT_OPENSSL_CERTIFICATE);
+                    m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+                    RELEASEOBJECT(pCert);
+                    return true;
+                }
+
+                CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_selectsertificate_ret");
+                if (1 == nShowDialogResult)
                 {
                     CCertificateInfo info = pCert->GetInfo();
 
@@ -2061,7 +2070,6 @@ public:
 
                     message->GetArgumentList()->SetString(0, serializer.GetData());
                 }
-
                 RELEASEOBJECT(pCert);
                 browser->SendProcessMessage(PID_RENDERER, message);
             }
@@ -4167,6 +4175,43 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                 break;
             }
 
+            break;
+        }
+        case ASC_MENU_EVENT_TYPE_PAGE_SELECT_OPENSSL_CERTIFICATE:
+        {
+            NSEditorApi::CAscOpenSslData* pData = (NSEditorApi::CAscOpenSslData*)pEvent->m_pData;
+
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_selectsertificate_ret");
+
+            if (pData)
+            {
+                ICertificate* pCert = ICertificate::CreateInstance();
+                std::wstring sCertPass = pData->get_CertPassword();
+                std::wstring sKeyPass = pData->get_KeyPassword();
+                std::string sCertPassA = U_TO_UTF8(sCertPass);
+                std::string sKeyPassA = U_TO_UTF8(sKeyPass);
+                bool bFromFiles = pCert->FromFiles(pData->get_KeyPath(), sKeyPassA, pData->get_CertPath(), sCertPassA);
+
+                if (bFromFiles)
+                {
+                    CCertificateInfo info = pCert->GetInfo();
+
+                    CJSONSimple serializer;
+                    serializer.Start();
+                    serializer.Write(L"name", info.GetName());
+                    serializer.Next();
+                    serializer.Write(L"id", info.GetId());
+                    serializer.Next();
+                    serializer.Write(L"date", info.GetDate());
+                    serializer.End();
+
+                    message->GetArgumentList()->SetString(0, serializer.GetData());
+                }
+
+                RELEASEOBJECT(pCert);
+            }
+
+            browser->SendProcessMessage(PID_RENDERER, message);
             break;
         }
         default:
