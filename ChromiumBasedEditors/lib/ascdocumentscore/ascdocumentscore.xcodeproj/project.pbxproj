@@ -21,8 +21,6 @@
 		7C0B42A81BA7230D005A52DC /* ceffiledownloader.h in Headers */ = {isa = PBXBuildFile; fileRef = 7C0B42991BA7230D005A52DC /* ceffiledownloader.h */; };
 		7C0B42A91BA7230D005A52DC /* cefview.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7C0B429A1BA7230D005A52DC /* cefview.cpp */; };
 		7C0B42AA1BA7230D005A52DC /* cookiesworker.h in Headers */ = {isa = PBXBuildFile; fileRef = 7C0B429C1BA7230D005A52DC /* cookiesworker.h */; };
-		7C0B42AB1BA7230D005A52DC /* filedownloader.h in Headers */ = {isa = PBXBuildFile; fileRef = 7C0B429D1BA7230D005A52DC /* filedownloader.h */; };
-		7C0B42AC1BA7230D005A52DC /* filedownloader.mm in Sources */ = {isa = PBXBuildFile; fileRef = 7C0B429E1BA7230D005A52DC /* filedownloader.mm */; };
 		7C0B42AD1BA7230D005A52DC /* keyboardchecker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7C0B429F1BA7230D005A52DC /* keyboardchecker.cpp */; };
 		7C0B42AF1BA7230D005A52DC /* mac_application.mm in Sources */ = {isa = PBXBuildFile; fileRef = 7C0B42A11BA7230D005A52DC /* mac_application.mm */; };
 		7C0B42B01BA7230D005A52DC /* mac_common.h in Headers */ = {isa = PBXBuildFile; fileRef = 7C0B42A21BA7230D005A52DC /* mac_common.h */; };
@@ -185,6 +183,8 @@
 		7C0B43F01BA81F09005A52DC /* ftinit.c in Sources */ = {isa = PBXBuildFile; fileRef = 7C0B43EF1BA81F09005A52DC /* ftinit.c */; };
 		7C0B43F51BA820DA005A52DC /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7C0B43F31BA820DA005A52DC /* AppKit.framework */; };
 		7C0B43F61BA820DA005A52DC /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7C0B43F41BA820DA005A52DC /* OpenGL.framework */; };
+		7C1B16B9208A2AA10077F150 /* FileDownloader.h in Headers */ = {isa = PBXBuildFile; fileRef = 7C1B16B7208A2AA00077F150 /* FileDownloader.h */; };
+		7C1B16BA208A2AA10077F150 /* FileDownloader_mac.mm in Sources */ = {isa = PBXBuildFile; fileRef = 7C1B16B8208A2AA10077F150 /* FileDownloader_mac.mm */; };
 		7C2E4FE71CD0F3750025806F /* libHtmlRenderer.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 7C2E4FE61CD0F3750025806F /* libHtmlRenderer.dylib */; };
 		7C5DD1F91BA8302800C6474A /* agg_bspline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7C5DD1F81BA8302800C6474A /* agg_bspline.cpp */; };
 		7C5DD1FF1BA8306E00C6474A /* client_app.h in Headers */ = {isa = PBXBuildFile; fileRef = 7C5DD1FA1BA8306E00C6474A /* client_app.h */; };
@@ -1365,8 +1365,6 @@
 		7C0B42991BA7230D005A52DC /* ceffiledownloader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ceffiledownloader.h; path = ../src/ceffiledownloader.h; sourceTree = SOURCE_ROOT; };
 		7C0B429A1BA7230D005A52DC /* cefview.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = cefview.cpp; path = ../src/cefview.cpp; sourceTree = SOURCE_ROOT; };
 		7C0B429C1BA7230D005A52DC /* cookiesworker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = cookiesworker.h; path = ../src/cookiesworker.h; sourceTree = SOURCE_ROOT; };
-		7C0B429D1BA7230D005A52DC /* filedownloader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = filedownloader.h; path = ../src/filedownloader.h; sourceTree = SOURCE_ROOT; };
-		7C0B429E1BA7230D005A52DC /* filedownloader.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = filedownloader.mm; path = ../src/filedownloader.mm; sourceTree = SOURCE_ROOT; };
 		7C0B429F1BA7230D005A52DC /* keyboardchecker.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = keyboardchecker.cpp; path = ../src/keyboardchecker.cpp; sourceTree = SOURCE_ROOT; };
 		7C0B42A11BA7230D005A52DC /* mac_application.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = mac_application.mm; path = ../src/mac_application.mm; sourceTree = SOURCE_ROOT; };
 		7C0B42A21BA7230D005A52DC /* mac_common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mac_common.h; path = ../src/mac_common.h; sourceTree = SOURCE_ROOT; };
@@ -1530,6 +1528,8 @@
 		7C0B43EF1BA81F09005A52DC /* ftinit.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = ftinit.c; path = "../../../../core/DesktopEditor/freetype-2.5.2/src/base/ftinit.c"; sourceTree = SOURCE_ROOT; };
 		7C0B43F31BA820DA005A52DC /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
 		7C0B43F41BA820DA005A52DC /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
+		7C1B16B7208A2AA00077F150 /* FileDownloader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = FileDownloader.h; path = ../../../../core/Common/FileDownloader/FileDownloader.h; sourceTree = "<group>"; };
+		7C1B16B8208A2AA10077F150 /* FileDownloader_mac.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = FileDownloader_mac.mm; path = ../../../../core/Common/FileDownloader/FileDownloader_mac.mm; sourceTree = "<group>"; };
 		7C2E4FE61CD0F3750025806F /* libHtmlRenderer.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libHtmlRenderer.dylib; path = ../../../../core/build/lib/mac_64/libHtmlRenderer.dylib; sourceTree = "<group>"; };
 		7C5DD1F81BA8302800C6474A /* agg_bspline.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = agg_bspline.cpp; path = "../../../../core/DesktopEditor/agg-2.4/src/agg_bspline.cpp"; sourceTree = SOURCE_ROOT; };
 		7C5DD1FA1BA8306E00C6474A /* client_app.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = client_app.h; path = ../src/cefwrapper/client_app.h; sourceTree = SOURCE_ROOT; };
@@ -2768,8 +2768,6 @@
 				7C0B42991BA7230D005A52DC /* ceffiledownloader.h */,
 				7C0B429A1BA7230D005A52DC /* cefview.cpp */,
 				7C0B429C1BA7230D005A52DC /* cookiesworker.h */,
-				7C0B429D1BA7230D005A52DC /* filedownloader.h */,
-				7C0B429E1BA7230D005A52DC /* filedownloader.mm */,
 				7C0B429F1BA7230D005A52DC /* keyboardchecker.cpp */,
 				7CC7F4A41F7D31F500E99DC9 /* mac_application.h */,
 				7C0B42A11BA7230D005A52DC /* mac_application.mm */,
@@ -3715,6 +3713,8 @@
 		7CBEA1BF1BF9CEBD001B02EB /* common */ = {
 			isa = PBXGroup;
 			children = (
+				7C1B16B8208A2AA10077F150 /* FileDownloader_mac.mm */,
+				7C1B16B7208A2AA00077F150 /* FileDownloader.h */,
 				7C7DC7981FC6BA21008DAC1F /* unicode_util.cpp */,
 				7CBEA1C41BF9CF1D001B02EB /* ASCSVGWriter.cpp */,
 				7CBEA1C21BF9CF0A001B02EB /* pole.cpp */,
@@ -4598,7 +4598,6 @@
 				7CC7EFEE1F7D213900E99DC9 /* cef_process_message_capi.h in Headers */,
 				7CC7F0121F7D213900E99DC9 /* cef_file_util.h in Headers */,
 				7CC7F1E11F7D216300E99DC9 /* navigation_entry_visitor_cpptoc.h in Headers */,
-				7C0B42AB1BA7230D005A52DC /* filedownloader.h in Headers */,
 				7CBEA1CA1BF9CF55001B02EB /* applicationmanager_p.h in Headers */,
 				7CC7F1D61F7D216300E99DC9 /* translator_test_ref_ptr_client_cpptoc.h in Headers */,
 				7CC7F0331F7D213A00E99DC9 /* cef_stream.h in Headers */,
@@ -5042,6 +5041,7 @@
 				7CC7F0051F7D213900E99DC9 /* cef_command_line_capi.h in Headers */,
 				7C0B42E91BA80AD9005A52DC /* hunzip.hxx in Headers */,
 				7CC7F24B1F7D216400E99DC9 /* file_dialog_callback_ctocpp.h in Headers */,
+				7C1B16B9208A2AA10077F150 /* FileDownloader.h in Headers */,
 				7C5DD4251BA8444600C6474A /* jbig2enc.h in Headers */,
 				7C0B434A1BA810D3005A52DC /* agg_vcgen_markers_term.h in Headers */,
 				7CC7F03F1F7D213A00E99DC9 /* cef_web_plugin.h in Headers */,
@@ -5407,7 +5407,6 @@
 				7C5DD4CE1BA84BB100C6474A /* bmf.cpp in Sources */,
 				7C5DD4DF1BA84BB100C6474A /* conncomp.cpp in Sources */,
 				7C5DD5351BA84BB100C6474A /* rotateamlow.cpp in Sources */,
-				7C0B42AC1BA7230D005A52DC /* filedownloader.mm in Sources */,
 				7C0B42A61BA7230D005A52DC /* applicationmanager.cpp in Sources */,
 				7C5DD4E61BA84BB100C6474A /* dwacomb.2.cpp in Sources */,
 				7C0B432E1BA81088005A52DC /* agg_arrowhead.cpp in Sources */,
@@ -5800,6 +5799,7 @@
 				7CC7F1C71F7D216200E99DC9 /* focus_handler_cpptoc.cc in Sources */,
 				7C5DD6A01BA864CA00C6474A /* stream.c in Sources */,
 				7CC7F1D01F7D216300E99DC9 /* base_scoped_cpptoc.cc in Sources */,
+				7C1B16BA208A2AA10077F150 /* FileDownloader_mac.mm in Sources */,
 				7C0B43371BA81088005A52DC /* agg_trans_affine.cpp in Sources */,
 				7C5DD5331BA84BB100C6474A /* rotate.cpp in Sources */,
 				7C0B43F01BA81F09005A52DC /* ftinit.c in Sources */,
@@ -6126,6 +6126,7 @@
 					HTMLRENDERER_USE_DYNAMIC_LIBRARY,
 					WRAPPING_CEF_SHARED,
 					MAC_NO_SUB_PROCESS,
+					DOCUMENTSCORE_OPENSSL_SUPPORT,
 				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Resources/converter";
@@ -6192,6 +6193,7 @@
 					HTMLRENDERER_USE_DYNAMIC_LIBRARY,
 					WRAPPING_CEF_SHARED,
 					MAC_NO_SUB_PROCESS,
+					DOCUMENTSCORE_OPENSSL_SUPPORT,
 				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Resources/converter";
