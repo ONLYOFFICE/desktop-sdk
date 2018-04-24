@@ -2009,7 +2009,8 @@ public:
                 if (NULL != pVerifier)
                 {
                     COOXMLSignature* pSign = pVerifier->GetSignature(nIndex);
-                    int nRet = pSign ? pSign->GetCertificate()->ShowCertificate() : 0;
+                    WindowHandleId _handle = m_pParent->GetWidgetImpl()->parent_wid();
+                    int nRet = pSign ? pSign->GetCertificate()->ShowCertificate(&_handle) : 0;
 
                     CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_viewcertificate_ret");
                     message->GetArgumentList()->SetString(0, std::to_string(nRet));
@@ -2044,7 +2045,9 @@ public:
             if (m_pParent && m_pParent->m_pInternal)
             {
                 ICertificate* pCert = ICertificate::CreateInstance();
-                int nShowDialogResult = pCert->ShowSelectDialog();
+
+                WindowHandleId _handle = m_pParent->GetWidgetImpl()->parent_wid();
+                int nShowDialogResult = pCert->ShowSelectDialog(&_handle);
 
                 if (-1 == nShowDialogResult)
                 {
