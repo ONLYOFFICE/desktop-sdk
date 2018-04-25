@@ -2370,6 +2370,7 @@
 					XPS_USE_DYNAMIC_LIBRARY,
 					HTMLRENDERER_USE_DYNAMIC_LIBRARY,
 					WRAPPING_CEF_SHARED,
+					_ASC_USE_ARC_,
 				);
 				INFOPLIST_FILE = "ascdocumentscore Helper/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
@@ -2400,6 +2401,7 @@
 					XPS_USE_DYNAMIC_LIBRARY,
 					HTMLRENDERER_USE_DYNAMIC_LIBRARY,
 					WRAPPING_CEF_SHARED,
+					_ASC_USE_ARC_,
 				);
 				INFOPLIST_FILE = "ascdocumentscore Helper/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
@@ -2523,6 +2525,7 @@
 					XPS_USE_DYNAMIC_LIBRARY,
 					HTMLRENDERER_USE_DYNAMIC_LIBRARY,
 					WRAPPING_CEF_SHARED,
+					_ASC_USE_ARC_,
 				);
 				INFOPLIST_FILE = "ascdocumentscore Helper/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
@@ -2553,6 +2556,7 @@
 					XPS_USE_DYNAMIC_LIBRARY,
 					HTMLRENDERER_USE_DYNAMIC_LIBRARY,
 					WRAPPING_CEF_SHARED,
+					_ASC_USE_ARC_,
 				);
 				INFOPLIST_FILE = "ascdocumentscore Helper/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";

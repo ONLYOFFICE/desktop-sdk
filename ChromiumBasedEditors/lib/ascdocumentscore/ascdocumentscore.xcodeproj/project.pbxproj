@@ -6127,6 +6127,7 @@
 					WRAPPING_CEF_SHARED,
 					MAC_NO_SUB_PROCESS,
 					DOCUMENTSCORE_OPENSSL_SUPPORT,
+					_ASC_USE_ARC_,
 				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Resources/converter";
@@ -6194,6 +6195,7 @@
 					WRAPPING_CEF_SHARED,
 					MAC_NO_SUB_PROCESS,
 					DOCUMENTSCORE_OPENSSL_SUPPORT,
+					_ASC_USE_ARC_,
 				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Resources/converter";
