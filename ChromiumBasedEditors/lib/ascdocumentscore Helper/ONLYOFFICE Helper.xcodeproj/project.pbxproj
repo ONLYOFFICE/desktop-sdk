@@ -2380,6 +2380,7 @@
 					"-I./../../../../core/DesktopEditor/freetype-2.5.2/include",
 					"-I./../../../../core/DesktopEditor/agg-2.4/include",
 				);
+				OTHER_LDFLAGS = "-headerpad_max_install_names";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -2411,6 +2412,7 @@
 					"-I./../../../../core/DesktopEditor/freetype-2.5.2/include",
 					"-I./../../../../core/DesktopEditor/agg-2.4/include",
 				);
+				OTHER_LDFLAGS = "-headerpad_max_install_names";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -2535,6 +2537,7 @@
 					"-I./../../../../core/DesktopEditor/freetype-2.5.2/include",
 					"-I./../../../../core/DesktopEditor/agg-2.4/include",
 				);
+				OTHER_LDFLAGS = "-headerpad_max_install_names";
 				PRODUCT_NAME = "ONLYOFFICE Helper";
 			};
 			name = Debug;
@@ -2566,6 +2569,7 @@
 					"-I./../../../../core/DesktopEditor/freetype-2.5.2/include",
 					"-I./../../../../core/DesktopEditor/agg-2.4/include",
 				);
+				OTHER_LDFLAGS = "-headerpad_max_install_names";
 				PRODUCT_NAME = "ONLYOFFICE Helper";
 			};
 			name = Release;
