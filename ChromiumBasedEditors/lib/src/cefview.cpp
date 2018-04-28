@@ -33,6 +33,7 @@
 #include "include/cef_browser.h"
 #include "include/base/cef_bind.h"
 #include "include/wrapper/cef_closure_task.h"
+#include "include/cef_parser.h"
 
 #ifdef CEF_2623
 #include "cefclient/browser/client_handler.h"
@@ -4444,6 +4445,17 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
     std::wstring sAdditionalParams = GetAppManager()->m_pInternal->m_sAdditionalUrlParams;
     if (!sAdditionalParams.empty())
         sParams += (L"&" + sAdditionalParams);
+
+    std::wstring sLocalFileName = L"";
+    if (NSFile::CFileBinary::Exists(sFilePath))
+        sLocalFileName = NSCommon::GetFileName(sFilePath);
+
+    if (!sLocalFileName.empty())
+    {
+        CefString sTmp = sLocalFileName;
+        CefString sEncode = CefURIEncode(sTmp, false);
+        sParams += (L"&title=" + sEncode.ToWString());
+    }
 
     m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir = NSFile::CFileBinary::CreateTempFileWithUniqueName(m_pInternal->m_pManager->m_oSettings.recover_path, L"DE_");
     if (NSFile::CFileBinary::Exists(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir))
