@@ -474,6 +474,8 @@ public:
 
     std::map<std::wstring, int> m_mapOnlyPass;
 
+    std::string m_sEncriptionGuid;
+
 public:
     CAscApplicationManager_Private() : m_oKeyboardTimer(this)
     {
@@ -500,6 +502,8 @@ public:
 
         m_nForceDisplayScale = -1;
         m_bIsUpdateFontsAttack = false;
+
+        m_sEncriptionGuid = "";
     }
     bool GetEditorPermission()
     {

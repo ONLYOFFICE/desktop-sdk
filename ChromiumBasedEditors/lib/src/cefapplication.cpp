@@ -83,6 +83,8 @@ int XIOErrorHandlerImpl(Display *display)
 #include "tests/shared/browser/main_message_loop_std.h"
 #endif
 
+#include "./plugins.h"
+
 class CApplicationCEF_Private
 {
 public:
@@ -306,6 +308,13 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 #endif
 
     pManager->SetApplication(this);
+
+    CPluginsManager oPlugins;
+    oPlugins.m_strDirectory = pManager->m_oSettings.system_plugins_path;
+    oPlugins.m_strUserDirectory = pManager->m_oSettings.user_plugins_path;
+    oPlugins.GetInstalledPlugins();
+    pManager->m_pInternal->m_sEncriptionGuid = oPlugins.m_strGuidEncryption;
+
     return 0;
 }
 

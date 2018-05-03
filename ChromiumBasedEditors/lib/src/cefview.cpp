@@ -562,26 +562,13 @@ public:
 
     void LocalFile_GetSupportSaveFormats(std::vector<int>& arFormats)
     {
-        CPluginsManager oPlugins;
-        oPlugins.m_strDirectory = m_pCefView->GetAppManager()->m_oSettings.system_plugins_path;
-        oPlugins.m_strUserDirectory = m_pCefView->GetAppManager()->m_oSettings.user_plugins_path;
-
-        bool bIsFound = false;
-        std::vector<std::string> arPlugins = oPlugins.GetInstalledPlugins();
-        for (std::vector<std::string>::iterator i = arPlugins.begin(); i != arPlugins.end(); i++)
-        {
-            if (*i == "asc.{F2402876-659F-47FB-A646-67B49F2B57D0}")
-            {
-                bIsFound = true;
-                break;
-            }
-        }
+        bool bEncryption = !m_pCefView->GetAppManager()->m_pInternal->m_sEncriptionGuid.empty();
 
         if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_DOCUMENT)
         {
             arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX);
 
-            if (!bIsFound)
+            if (!bEncryption)
             {
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_ODT);
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_RTF);
@@ -594,7 +581,7 @@ public:
         {
             arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX);
 
-            if (!bIsFound)
+            if (!bEncryption)
             {
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_ODS);
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_CSV);
@@ -603,7 +590,7 @@ public:
         }
         else if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_PRESENTATION)
         {
-            if (!bIsFound)
+            if (!bEncryption)
             {
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX);
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_PRESENTATION_ODP);
@@ -1295,22 +1282,7 @@ public:
             bool bIsOnlyPassSupport = m_pParent->GetAppManager()->m_oSettings.pass_support;
             if (bIsOnlyPassSupport)
             {
-                CPluginsManager oPlugins;
-                oPlugins.m_strDirectory = m_pParent->GetAppManager()->m_oSettings.system_plugins_path;
-                oPlugins.m_strUserDirectory = m_pParent->GetAppManager()->m_oSettings.user_plugins_path;
-
-                bool bIsFound = false;
-                std::vector<std::string> arPlugins = oPlugins.GetInstalledPlugins();
-                for (std::vector<std::string>::iterator i = arPlugins.begin(); i != arPlugins.end(); i++)
-                {
-                    if (*i == "asc.{F2402876-659F-47FB-A646-67B49F2B57D0}")
-                    {
-                        bIsFound = true;
-                        break;
-                    }
-                }
-
-                if (!bIsFound)
+                if (m_pParent->GetAppManager()->m_pInternal->m_sEncriptionGuid.empty())
                     bIsOnlyPassSupport = false;
             }
 
@@ -2376,13 +2348,21 @@ public:
             if ((0 != sUrl.find(L"file:///")) || !m_pParent->m_pInternal->m_bIsOnlyPassSupport || m_pParent->GetType() == cvwtEditor)
                 return;
 
-            std::wstring sSrc = m_pParent->GetAppManager()->m_oSettings.system_plugins_path + L"/{F2402876-659F-47FB-A646-67B49F2B57D0}/index.html";
+            std::string sEncryptionG = m_pParent->m_pInternal->m_pManager->m_pInternal->m_sEncriptionGuid;
+            if (!sEncryptionG.empty())
+                return;
+
+            std::wstring sGuid = UTF8_TO_U(sEncryptionG);
+            if (0 == sGuid.find(L"asc."))
+                sGuid = sGuid.substr(4);
+
+            std::wstring sSrc = m_pParent->GetAppManager()->m_oSettings.system_plugins_path + L"/" + sGuid + L"/index.html";
             NSCommon::url_correct(sSrc);
 
             std::wstring sCode = L"(function() {\n\
 var ifr = document.createElement(\"iframe\");\n\
-ifr.name = \"system_asc.{F2402876-659F-47FB-A646-67B49F2B57D0}\";\n\
-ifr.id = \"system_asc.{F2402876-659F-47FB-A646-67B49F2B57D0}\";\n\
+ifr.name = \"system_asc." + sGuid + L"\";\n\
+ifr.id = \"system_asc." + sGuid + L"\";\n\
 ifr.src = \"" + sSrc + L"\";\n\
 ifr.style.position = \"absolute\";\n\
 ifr.style.top      = '-100px';\n\
