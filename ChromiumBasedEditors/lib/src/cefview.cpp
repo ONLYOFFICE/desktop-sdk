@@ -284,6 +284,8 @@ public:
 
     bool m_bIsCrashed;
 
+    bool m_bIsReceiveOnce_OnDocumentModified;
+
 #if defined(_LINUX) && !defined(_MAC)
     WindowHandleId m_lNaturalParent;
 #endif
@@ -369,6 +371,8 @@ public:
         m_bIsOnlyPassSupport = false;
 
         m_bIsCrashed = false;
+
+        m_bIsReceiveOnce_OnDocumentModified = false;
     }
 
     void Destroy()
@@ -383,7 +387,7 @@ public:
         m_oLocalInfo.m_oCS.Enter();
 
         bool bIsNeedRemove = false;
-        if (!m_bIsSavingDialog && (!m_oLocalInfo.m_oInfo.m_bIsModified || m_bIsRemoveRecoveryOnClose))
+        if (!m_bIsSavingDialog && ((!m_oLocalInfo.m_oInfo.m_bIsModified && m_bIsReceiveOnce_OnDocumentModified) || m_bIsRemoveRecoveryOnClose))
             bIsNeedRemove = true;
 
         bool bIsChangesExist = false;
@@ -1364,6 +1368,7 @@ public:
                 pData->put_Changed(bValue);
                 pEvent->m_pData = pData;
 
+                m_pParent->m_pInternal->m_bIsReceiveOnce_OnDocumentModified = true;
                 m_pParent->SetModified(bValue);
                 m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
             }
@@ -2986,11 +2991,13 @@ require.load = function (context, moduleName, url) {\n\
         m_pParent->GetAppManager()->Apply(pEvent);
     }
 
+#ifndef CEF_2623
     void OnGotFocus(CefRefPtr<CefBrowser> browser) OVERRIDE
     {
         NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_PAGE_GOT_FOCUS);
         m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
     }
+#endif
 
     bool OnDragEnter(CefRefPtr<CefBrowser> browser,
                      CefRefPtr<CefDragData> dragData,
@@ -3879,7 +3886,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
         case ASC_MENU_EVENT_TYPE_CEF_DESTROY:
         case ASC_MENU_EVENT_TYPE_CEF_DESTROY_SAFE:
         {
-            if (m_pInternal && pEvent->m_nType == ASC_MENU_EVENT_TYPE_CEF_DESTROY_SAFE)
+            if (m_pInternal && pEvent->m_nType == ASC_MENU_EVENT_TYPE_CEF_DESTROY_SAFE && m_pInternal->m_bIsReceiveOnce_OnDocumentModified)
                 m_pInternal->m_bIsRemoveRecoveryOnClose = true;
             
             m_pInternal->m_oConverterFromEditor.Stop();
@@ -4721,6 +4728,8 @@ bool CCefViewEditor::OpenRecentFile(const int& nId)
 
 std::wstring CCefViewEditor::GetLocalFilePath()
 {
+    if (!m_pInternal->m_oLocalInfo.m_oInfo.m_bIsSaved)
+        return L"";
     return m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc;
 }
 
