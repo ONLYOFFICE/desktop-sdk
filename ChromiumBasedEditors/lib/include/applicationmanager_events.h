@@ -114,6 +114,8 @@
 
 #define ASC_MENU_EVENT_TYPE_PAGE_SELECT_OPENSSL_CERTIFICATE 7034
 
+#define ASC_MENU_EVENT_TYPE_BINARY_FROM_RENDERER            7035
+
 #define ASC_MENU_EVENT_TYPE_PAGE_GOT_FOCUS                  7050
 
 #define ASC_MENU_EVENT_TYPE_CEF_DESTROYWINDOW               8000
@@ -753,5 +755,47 @@ namespace NSEditorApi
         LINK_PROPERTY_STRING(KeyPassword)
     };
 }
+
+namespace NSEditorApi
+{
+    class CAscBinaryMessage : public IMenuEventDataBase
+    {
+    private:
+        std::string     m_sMessageName;
+        unsigned char*  m_pData;
+        unsigned int    m_nDataSize;
+
+    public:
+        CAscBinaryMessage()
+        {
+            m_pData = NULL;
+            m_nDataSize = 0;
+        }
+        virtual ~CAscBinaryMessage()
+        {
+        }
+
+        LINK_PROPERTY_STRINGA(MessageName)
+
+        inline unsigned char* get_Data()
+        {
+            return m_pData;
+        }
+        inline void put_Data(unsigned char* pData)
+        {
+            m_pData = pData;
+        }
+
+        inline unsigned int get_DataSize()
+        {
+            return m_nDataSize;
+        }
+        inline void put_DataSize(unsigned int nSize)
+        {
+            m_nDataSize = nSize;
+        }
+    };
+}
+
 
 #endif // APPLICATION_MANAGER_EVENTS_H

@@ -4205,6 +4205,17 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             browser->SendProcessMessage(PID_RENDERER, message);
             break;
         }
+        case ASC_MENU_EVENT_TYPE_BINARY_FROM_RENDERER:
+        {
+            NSEditorApi::CAscBinaryMessage* pData = (NSEditorApi::CAscBinaryMessage*)pEvent->m_pData;
+
+            BYTE* pBinaryData = pData->get_Data();
+            unsigned int nBinaryLen = pData->get_DataSize();
+            std::string sMessage = pData->get_MessageName();
+
+            RELEASEARRAYOBJECTS(pBinaryData);
+            break;
+        }
         default:
         {
             CApplicationManagerAdditionalBase* pAdditional = GetAppManager()->m_pInternal->m_pAdditional;

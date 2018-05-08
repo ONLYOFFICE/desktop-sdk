@@ -46,10 +46,12 @@ namespace asc_scheme
 class ClientSchemeHandler : public CefResourceHandler
 {
 public:
-    ClientSchemeHandler() : offset_(0)
+    ClientSchemeHandler(CAscApplicationManager* pManager = NULL) : offset_(0)
     {
         data_binary_ = NULL;
         data_binary_len_ = 0;
+
+        m_pManager = pManager;
     }
     virtual ~ClientSchemeHandler()
     {
@@ -67,7 +69,8 @@ public:
 
         std::string url = request->GetURL();
 
-        if (url.find("ascdesktop://crash.html") != std::string::npos)
+        std::string::size_type posFind = url.find("ascdesktop://crash.html");
+        if (posFind != std::string::npos)
         {
 #if 0
             std::string sPageCrash1 = "<html><head><meta charset=\"utf-8\"><title>crash</title></head><body><img style=\"position: fixed;top: 50%;left: 50%; margin-top: -157px; margin-left: -146px;\" src=\"data:image/png;base64,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";
@@ -94,7 +97,8 @@ public:
             mime_type_ = "text/html";
         }
 
-        if (url.find("ascdesktop://loaderror.html") != std::string::npos)
+        posFind = url.find("ascdesktop://loaderror.html");
+        if (posFind != std::string::npos)
         {
             std::string sPageCrash1 = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>crash</title></head><style>.image_crash { background-image: url(\"data:image/png;base64,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\");  background-size: 170px 170px;  width: 170px;  height: 170px;} @media only screen and (-Webkit-min-device-pixel-ratio: 1.5),only screen and (-moz-min-device-pixel-ratio: 1.5),only screen and (-o-min-device-pixel-ratio: 3/2),only screen and (min-device-pixel-ratio: 1.5) {  .image_crash {    background-image: url(\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAVQAAAFUCAMAAABMTDSHAAAABGdBTUEAALGPC/xhBQAAAGBQTFRFMzMz/1JS/1JS/1JS/1JSMzMz/1JS/1JS/1JS/1JS/1JSMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzVDg4MzMzMzMzMzMzMzMzAAAA/29v/+Dg/5GR/7Gx//X1/////1JSjj5UDwAAABl0Uk5T4RHE8Sn5hqRn3kaDlF5ySzamtgfDESLMAMWS87gAAA44SURBVHja7Z3ZgqMqEIbJnggIbuicnum8/1uepOOWxERAKLFT/8Vc9XTjZ20gUKRCORdBBAgVoSJUFEJFqAgVhVARKkJFIVSEilBRCBWhIlQUQkWoCBWFUBEqQkUhVISKUFEIFaEiVBRCRagIFaGiECpCRagohIpQESoKoSJUhIpCqAgVoaIQKkJFqCiEilARKgqhIlSEikKoCBWhohAqQkWoCBWFUBEqQkUhVISKUFEIFaEiVBRCRagIFYVQESpCRSFUhIpQUQgVoSJUFEJFqAgVhVARKkJFqCiEilARKgqhIlSEikKoCBWhohAqQkWoKISKUBEqCqEiVISKQqgIFaGiECpCRagohIpQESpCRSFUhOpXSvKYsiRN87LM8zxNGI25VAjVlqeIkwvKQeUJ5SpDqEYqBEvLMeWMK4Sqa6JxUuoqjSVCHbdRrk+04aoQ6jtJWtqIiQyhvpBIhjJSzIVURVFVWVEoJQWn7Dl/pTxDqENIH1NTEotXjl1I/kg2h8VKFmillwQ0ykg+hF9Qa10AVMXsUs9DWkslQm2UxX03pmZkVNwPG0wh1Jsbp30XLszfST905ByhXpD0qqhE2L6XXvhgxcdDVZ2ZpmKKuXfWmosPhypyZyVRrySLsw+G2stQtHDw29o3lBQfC7Vgjmsh1caAVH0o1CJxaKa1sfI2msiPhNqmKKeJpa3PPFP1DXW1jY77w037/THaroyYJspPTPFbBHiEmkX7w+n8pNNhH2WaTJnzTN1mP7FAqNvjenN+qc36uNVgGvuo0wAigBeoq+P6PKr18UUkKBqmfiaVMvdO1QPU6HDW1CEaihqJZwdtqarFQI3WZwOtn7Ey70GvoZoWy4BqhnQIKwdIJA1VtgSoW2OkP1i3A1nK7yKd9Bq1XULN9mdL7bPHuVRc+VXjDzJwqNHpbK1TdE+VeV9Jin2GVTK7mT4bawGwlJzV+ZAGDHW1Pk/UelWBqqmGRbBQo815sjYRLNU6WaVZoFCPZxfaHGGpxt7mwiQYphfBUs3qAKBChLo/O9N+jgBAA4TqkCk0VeqpWCVBMQWmWuR+ZqsklHg6S1yN/UTViVCjs3NF8KZKg4K63biHutkCUq3XAIqAoGbrswetM3BTjQOCejh70QE8qqbhQI3OngQYVpWPqmoC1JV2QP36+6Mv7bAKuLjCPKQqAuD8/33X+i/AAHD7ZJ1nYUDVdv6/363+hhcAsty9/9tDPRkb6vf3P+1PAdBzVRoEVP2p1L8O6neAEyvhPv/bQs1OfqGewIrVwv1UlXg3VDuogKaaOP+sQrwbqiVUOFONnQdV4t1QLaHCmeptrTqZH+raP9Q1bFB1WanaQd2e/UM9g61Wpa4zlR3UAwRUsGkVc13+W0HNNhBQN1CpirrerGYF1Wx5yhYq2FyVu15TJd693x4qlP8L1zWVFdQTDFSoBQDp+puqDVSj3D8BKlT+V64LVRuoRyioR0io6bxQD1BQgYJqEQLUExTU0+dAXZ2hoJ5XHwM1goMafQzUIxxUmEwVQvbfw0HdfwzUAxxUmPQfQvG/hoMKs6YawjT1BAcVpqaKA1hQ2cBB3QAu/QmE6lJJAIvUZzioZxCoeQCfU34b1FtFlVefAhXE/YXzIyoYU+s8FSNUl0qd76XEOlW5P6ACMKOy2Z8KOKPiznf9QMz9vyx2UgPO/Zn7K2oAVqm6/emmTCFWqYoyiO3p5sdR//wcT/n6E+";
             std::string sPageCrash2 = "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\");  }} </style> <body style=\"background-color:#E8E8E8;-webkit-user-select:none\"> <div class=\"image_crash\" style=\"position: fixed;top: 50%;left: 50%; margin-top: -200px; margin-left: -85px;\" width=\"170\" height=\"170\" /> <div style=\"position:fixed; top:50%; left: 0; width:100%;text-align: center;font-family: Open Sans Semibold,sans-serif,Arial;font-size:18px;color:#313437;\">Internet connection failed...<div style=\"position:fixed; top:50%; margin-top:46px; margin-left: -330px; left: 50%; width:660px;text-align: center;font-family: Open Sans,sans-serif,Arial;font-size:12px;color:#666666;\">You are unable to edit the document because the Internet connection is lost or restricted. Please check your connection and re-open the document to continue.</div> </div> </body></html>";
@@ -109,7 +113,8 @@ public:
             mime_type_ = "text/html";
         }
 
-        if (url.find("ascdesktop://emptydownload.html") != std::string::npos)
+        posFind = url.find("ascdesktop://emptydownload.html");
+        if (posFind != std::string::npos)
         {
             std::string sPageCrash = "<html><head><meta charset=\"utf-8\"><title>download</title></head><body></body></html>";
             data_ = sPageCrash;
@@ -120,7 +125,8 @@ public:
             mime_type_ = "text/html";
         }
 
-        if (url.find("ascdesktop://fonts/") != std::string::npos)
+        posFind = url.find("ascdesktop://fonts/");
+        if (posFind != std::string::npos)
         {
             int nFlag = UU_SPACES | UU_REPLACE_PLUS_WITH_SPACE;
 #if defined (_LINUX) && !defined(_MAC)
@@ -147,39 +153,56 @@ public:
         }
 
 #if 0
-    if (strstr(url.c_str(), "handler.html") != NULL) {
-      // Build the response html
-      data_ = "<html><head><title>Client Scheme Handler</title></head>"
-              "<body bgcolor=\"white\">"
-              "This contents of this page page are served by the "
-              "ClientSchemeHandler class handling the client:// protocol."
-              "<br/>You should see an image:"
-              "<br/><img src=\"client://tests/logo.png\"><pre>";
+        posFind = url.find("ascdesktop://binary/");
+        if (posFind != std::string::npos)
+        {
+            std::string::size_type posStart1 = posFind + 20; // length(ascdesktop://binary/) == 20
+            std::string::size_type posStart2 = url.find('/', posStart1);
 
-      // Output a string representation of the request
-      std::string dump;
-      DumpRequestContents(request, dump);
-      data_.append(dump);
+            if (posStart2 != std::string::npos)
+            {
+                int nId = std::stoi(url.substr(posStart1, posStart2 - posStart1));
+                std::string sName = url.substr(posStart2 + 1);
 
-      data_.append("</pre><br/>Try the test form:"
-                   "<form method=\"POST\" action=\"handler.html\">"
-                   "<input type=\"text\" name=\"field1\">"
-                   "<input type=\"text\" name=\"field2\">"
-                   "<input type=\"submit\">"
-                   "</form></body></html>");
+                CefRefPtr<CefPostData> postData = request->GetPostData();
+                size_t nElementsCount = (postData.get() == NULL) ? 0 : postData->GetElementCount();
 
-      handled = true;
+                if (nElementsCount > 0)
+                {
+                    std::vector<CefRefPtr<CefPostDataElement>> arrElements;
+                    postData->GetElements(arrElements);
 
-      // Set the resulting mime type
-      mime_type_ = "text/html";
-    } else if (strstr(url.c_str(), "logo.png") != NULL) {
-      // Load the response image
-      if (LoadBinaryResource("logo.png", data_)) {
-        handled = true;
-        // Set the resulting mime type
-        mime_type_ = "image/png";
-      }
-    }
+                    size_t nDataSize = 0;
+                    for (std::vector<CefRefPtr<CefPostDataElement>>::iterator iter = arrElements.begin(); iter != arrElements.end(); iter++)
+                    {
+                        nDataSize += (*iter)->GetBytesCount();
+                    }
+
+                    BYTE* pDataBytes = new BYTE[nDataSize];
+                    BYTE* pDataBytesCurrent = pDataBytes;
+                    for (std::vector<CefRefPtr<CefPostDataElement>>::iterator iter = arrElements.begin(); iter != arrElements.end(); iter++)
+                    {
+                        size_t nCurrentSize = (*iter)->GetBytesCount();
+                        (*iter)->GetBytes(nCurrentSize, &pDataBytesCurrent);
+                        pDataBytesCurrent += nCurrentSize;
+                    }
+
+                    CCefView* pView = m_pManager->GetViewById(nId);
+
+                    NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
+                    pEvent->m_nType = ASC_MENU_EVENT_TYPE_BINARY_FROM_RENDERER;
+                    NSEditorApi::CAscBinaryMessage* pMessage = new NSEditorApi::CAscBinaryMessage();
+                    pMessage->put_MessageName(sName);
+                    pMessage->put_DataSize((unsigned int)nDataSize);
+                    pMessage->put_Data(pDataBytes);
+                    pEvent->m_pData = pMessage;
+                    pView->Apply(pEvent);
+
+                    handled = true;
+                    mime_type_ = "*/*";
+                }
+            }
+        }
 #endif
 
         if (handled)
@@ -219,6 +242,8 @@ public:
                             OVERRIDE
     {
         CEF_REQUIRE_IO_THREAD();
+
+        BYTE* pDataSrc = (BYTE*)data_out;
 
         bool has_data = false;
         bytes_read = 0;
@@ -263,12 +288,23 @@ private:
     BYTE* data_binary_;
     size_t data_binary_len_;
 
+    CAscApplicationManager* m_pManager;
+
     IMPLEMENT_REFCOUNTING(ClientSchemeHandler);
 };
 
 // Implementation of the factory for for creating schema handlers.
 class ClientSchemeHandlerFactory : public CefSchemeHandlerFactory
 {
+private:
+    CAscApplicationManager* m_pManager;
+
+public:
+    ClientSchemeHandlerFactory(CAscApplicationManager* pManager = NULL)
+    {
+        m_pManager = pManager;
+    }
+
 public:
     // Return a new scheme handler instance to handle the request.
     virtual CefRefPtr<CefResourceHandler> Create(CefRefPtr<CefBrowser> browser,
@@ -278,7 +314,7 @@ public:
                                                OVERRIDE
     {
         CEF_REQUIRE_IO_THREAD();
-        return new ClientSchemeHandler();
+        return new ClientSchemeHandler(m_pManager);
     }
 
     IMPLEMENT_REFCOUNTING(ClientSchemeHandlerFactory);
@@ -298,9 +334,9 @@ void RegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar,
 }
 #endif
 
-bool InitScheme()
-{
-    return CefRegisterSchemeHandlerFactory("ascdesktop", "", new ClientSchemeHandlerFactory());
+bool InitScheme(CAscApplicationManager* pManager)
+{    
+    return CefRegisterSchemeHandlerFactory("ascdesktop", "", new ClientSchemeHandlerFactory(pManager));
 }
 
 }  // namespace asc_scheme

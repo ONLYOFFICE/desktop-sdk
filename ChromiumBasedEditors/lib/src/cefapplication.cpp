@@ -291,7 +291,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 
     // Initialize CEF.
     bool bInit = m_pInternal->context->Initialize(main_args, settings, m_pInternal->m_app.get(), NULL);
-    bool bIsInitScheme = asc_scheme::InitScheme();
+    bool bIsInitScheme = asc_scheme::InitScheme(pManager);
 
 #if defined(_LINUX) && !defined(_MAC)
     // The Chromium sandbox requires that there only be a single thread during

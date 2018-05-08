@@ -441,6 +441,11 @@ public:
             }
             return true;
         }
+        else if (name == "GetEditorId")
+        {
+            retval = CefV8Value::CreateInt(m_nEditorId);
+            return true;
+        }
         else if (name == "LoadJS")
         {
             bool bIsLocal = false;
@@ -1650,6 +1655,14 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
                 _frame->ExecuteJavaScript("window.AscDesktopEditor.sendSystemMessage = function(arg) { window.AscDesktopEditor._sendSystemMessage(JSON.stringify(arg)); };", _frame->GetURL(), 0);
                 _frame->ExecuteJavaScript("window.AscDesktopEditor.GetHash = function(arg, callback) { window.AscDesktopEditor.getHashCallback = callback; window.AscDesktopEditor._GetHash(arg); };", _frame->GetURL(), 0);
                 _frame->ExecuteJavaScript("window.AscDesktopEditor.CallInAllWindows = function(arg) { window.AscDesktopEditor._CallInAllWindows(\"(\" + arg.toString() + \")();\"); };", _frame->GetURL(), 0);
+
+                _frame->ExecuteJavaScript("window.AscDesktopEditor.SendBinary = function(name, value) { \n\
+var xhr = new XMLHttpRequest();\n\
+//xhr.setRequestHeader(\"Content-Type\", \"application/upload\");\n\
+xhr.open(\"POST\", \"ascdesktop://binary/\" + window.AscDesktopEditor.GetEditorId() + \"/\" + name, false);\n\
+xhr.send(value);\n\
+};",
+                _frame->GetURL(), 0);
             }
 
             return true;
@@ -2432,6 +2445,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction11 = CefV8Value::CreateFunction("LoadFontBase64", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction22 = CefV8Value::CreateFunction("getFontsSprite", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction33 = CefV8Value::CreateFunction("SetEditorId", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction34 = CefV8Value::CreateFunction("GetEditorId", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction44 = CefV8Value::CreateFunction("SpellCheck", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction55 = CefV8Value::CreateFunction("CreateEditorApi", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction66 = CefV8Value::CreateFunction("ConsoleLog", _nativeHandler);
@@ -2572,6 +2586,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("LoadFontBase64", _nativeFunction11, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("getFontsSprite", _nativeFunction22, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("SetEditorId", _nativeFunction33, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("GetEditorId", _nativeFunction34, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("SpellCheck", _nativeFunction44, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("CreateEditorApi", _nativeFunction55, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("ConsoleLog", _nativeFunction66, V8_PROPERTY_ATTRIBUTE_NONE);
