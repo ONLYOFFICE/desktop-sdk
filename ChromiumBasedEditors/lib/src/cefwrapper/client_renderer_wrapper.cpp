@@ -1655,6 +1655,7 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
                 _frame->ExecuteJavaScript("window.AscDesktopEditor.sendSystemMessage = function(arg) { window.AscDesktopEditor._sendSystemMessage(JSON.stringify(arg)); };", _frame->GetURL(), 0);
                 _frame->ExecuteJavaScript("window.AscDesktopEditor.GetHash = function(arg, callback) { window.AscDesktopEditor.getHashCallback = callback; window.AscDesktopEditor._GetHash(arg); };", _frame->GetURL(), 0);
                 _frame->ExecuteJavaScript("window.AscDesktopEditor.CallInAllWindows = function(arg) { window.AscDesktopEditor._CallInAllWindows(\"(\" + arg.toString() + \")();\"); };", _frame->GetURL(), 0);
+                _frame->ExecuteJavaScript("window.AscDesktopEditor.OpenFileCrypt = function(name, url, callback) { window.AscDesktopEditor.openFileCryptCallback = callback; window.AscDesktopEditor._OpenFileCrypt(name, url); };", _frame->GetURL(), 0);
 
                 _frame->ExecuteJavaScript("window.AscDesktopEditor.SendBinary = function(name, value) { \n\
 var xhr = new XMLHttpRequest();\n\
@@ -2092,6 +2093,15 @@ xhr.send(value);\n\
             CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("call_in_all_windows");
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "_OpenFileCrypt")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("open_file_crypt");
+            message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
+            message->GetArgumentList()->SetString(1, arguments[1]->GetStringValue());
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
@@ -2577,6 +2587,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction974 = CefV8Value::CreateFunction("_sendSystemMessage", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction975 = CefV8Value::CreateFunction("_GetHash", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction976 = CefV8Value::CreateFunction("_CallInAllWindows", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction977 = CefV8Value::CreateFunction("_OpenFileCrypt", _nativeHandler);
 
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -2713,6 +2724,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("_sendSystemMessage", _nativeFunction974, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("_GetHash", _nativeFunction975, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("_CallInAllWindows", _nativeFunction976, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("_OpenFileCrypt", _nativeFunction977, V8_PROPERTY_ATTRIBUTE_NONE);
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 
@@ -3370,6 +3382,38 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
                 }
             }
         }
+        return true;
+    }
+    else if (sMessageName == "onload_crypt_document")
+    {
+        std::string sFilePath = message->GetArgumentList()->GetString(0);
+
+        CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
+
+        if (_frame)
+        {
+            std::string sCode = "\
+var xhr = new XMLHttpRequest();\n\
+xhr.open(\"GET\", \"ascdesktop://fonts/" + sFilePath + "\", true);\n\
+xhr.responseType = \"arraybuffer\";\n\
+if (xhr.overrideMimeType)\n\
+    xhr.overrideMimeType('text/plain; charset=x-user-defined');\n\
+else\n\
+    xhr.setRequestHeader('Accept-Charset', 'x-user-defined');\n\
+\n\
+xhr.onload = function()\n\
+{\n\
+    var fileData = new Uint8Array(this.response);\n\
+\n\
+    window.AscDesktopEditor.openFileCryptCallback(fileData);\n\
+    window.AscDesktopEditor.openFileCryptCallback = null;\n\
+};\n\
+\n\
+xhr.send(null);";
+
+            _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+        }
+
         return true;
     }
 

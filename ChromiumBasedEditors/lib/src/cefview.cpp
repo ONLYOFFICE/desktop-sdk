@@ -272,6 +272,7 @@ public:
     std::wstring m_sOpenAsLocalName;
     CCefView* m_pDownloadViewCallback;
     std::wstring m_sDownloadViewPath;
+    bool m_bIsCloudCryptFile;
 
     std::wstring m_sOpenAsLocalUrl;
     std::wstring m_sOriginalUrl;
@@ -373,6 +374,8 @@ public:
         m_bIsCrashed = false;
 
         m_bIsReceiveOnce_OnDocumentModified = false;
+
+        m_bIsCloudCryptFile = false;
     }
 
     void Destroy()
@@ -1193,7 +1196,7 @@ public:
 #else
             // если делать, как выше, то множественные логины отрубятся.
             // и дебаггер тоже
-            if (sUrl.find(L"files/#") != std::wstring::npos)
+            if (false && sUrl.find(L"files/#") != std::wstring::npos)
                 return true;
 #endif
         }
@@ -2254,6 +2257,23 @@ public:
 
             return true;
         }
+        else if (message_name == "open_file_crypt")
+        {
+            std::wstring sName = message->GetArgumentList()->GetString(0).ToWString();
+            std::wstring sDownloadLink = message->GetArgumentList()->GetString(1).ToWString();
+
+            std::wstring sBaseUrl = m_pParent->GetUrl();
+            std::wstring::size_type pos = sBaseUrl.find(L"/products/files");
+            if (pos != std::wstring::npos)
+                sBaseUrl = sBaseUrl.substr(0, pos);
+
+            sDownloadLink = sBaseUrl + sDownloadLink;
+
+            std::wstring sOpenUrl = sDownloadLink + L"<openaslocal></openaslocal><openaslocalname>" + sName + L"</openaslocalname>";
+
+            ((CCefViewEditor*)m_pParent)->OpenLocalFile(sOpenUrl, 0);
+            return true;
+        }
 
         CAscApplicationManager_Private* pInternalMan = m_pParent->GetAppManager()->m_pInternal;
         if (pInternalMan->m_pAdditional && pInternalMan->m_pAdditional->OnProcessMessageReceived(browser, source_process, message))
@@ -3128,14 +3148,23 @@ CefRefPtr<CefBrowser> CCefView_Private::GetBrowser() const
 }
 void CCefView_Private::LocalFile_End()
 {
-    CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_loadend");
-    message->GetArgumentList()->SetString(0, m_oLocalInfo.m_oInfo.m_sRecoveryDir);
-
     if (!m_oConverterToEditor.m_sName.empty())
     {
         m_oLocalInfo.m_oInfo.m_sFileSrc = m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/" + m_oConverterToEditor.m_sName;
     }
 
+    if (m_bIsCloudCryptFile)
+    {
+        CefRefPtr<CefProcessMessage> messageCrypt = CefProcessMessage::Create("onload_crypt_document");
+        messageCrypt->GetArgumentList()->SetString(0, m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/Editor.bin");
+
+        m_handler->GetBrowser()->SendProcessMessage(PID_RENDERER, messageCrypt);
+        m_oLocalInfo.m_oInfo.m_nCounterConvertion = 1; // for reload enable
+        return;
+    }
+
+    CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_loadend");
+    message->GetArgumentList()->SetString(0, m_oLocalInfo.m_oInfo.m_sRecoveryDir);
     message->GetArgumentList()->SetString(1, m_oLocalInfo.m_oInfo.m_sFileSrc);
     message->GetArgumentList()->SetBool(2, m_oLocalInfo.m_oInfo.m_bIsSaved);
     message->GetArgumentList()->SetString(3, m_oConverterToEditor.GetSignaturesJSON());
@@ -4394,8 +4423,10 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
 {
     if (sFilePath.empty())
     {
-        if (!m_pInternal->m_sOpenAsLocalSrc.empty() && !m_pInternal->m_sOpenAsLocalDst.empty())
+        if (!m_pInternal->m_sOpenAsLocalSrc.empty())
         {
+            m_pInternal->m_bIsCloudCryptFile = m_pInternal->m_sOpenAsLocalDst.empty();
+
             CCefView* pMainView = GetAppManager()->GetViewById(1);
             if (!pMainView)
                 return;
@@ -4423,36 +4454,41 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
 
     m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = nFileFormat;
 
-    std::wstring sParams = L"placement=desktop";
-    if (nFileFormat & AVS_OFFICESTUDIO_FILE_PRESENTATION)
-    {
-        sParams = L"placement=desktop&doctype=presentation";
-    }
-    else if (nFileFormat & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
-    {
-        sParams = L"placement=desktop&doctype=spreadsheet";
-    }
-    else if (nFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
-    {
-        sParams = L"placement=desktop&mode=view";
-    }
-    
-    if (!GetAppManager()->m_pInternal->GetEditorPermission() && sParams.find(L"mode=view") == std::wstring::npos)
-        sParams += L"&mode=view";
-    
-    std::wstring sAdditionalParams = GetAppManager()->m_pInternal->m_sAdditionalUrlParams;
-    if (!sAdditionalParams.empty())
-        sParams += (L"&" + sAdditionalParams);
+    std::wstring sParams = L"";
 
-    std::wstring sLocalFileName = L"";
-    if (NSFile::CFileBinary::Exists(sFilePath))
-        sLocalFileName = NSCommon::GetFileName(sFilePath);
-
-    if (!sLocalFileName.empty())
+    if (!m_pInternal->m_bIsCloudCryptFile)
     {
-        CefString sTmp = sLocalFileName;
-        CefString sEncode = CefURIEncode(sTmp, false);
-        sParams += (L"&title=" + sEncode.ToWString());
+        sParams += L"placement=desktop";
+        if (nFileFormat & AVS_OFFICESTUDIO_FILE_PRESENTATION)
+        {
+            sParams = L"placement=desktop&doctype=presentation";
+        }
+        else if (nFileFormat & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
+        {
+            sParams = L"placement=desktop&doctype=spreadsheet";
+        }
+        else if (nFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
+        {
+            sParams = L"placement=desktop&mode=view";
+        }
+
+        if (!GetAppManager()->m_pInternal->GetEditorPermission() && sParams.find(L"mode=view") == std::wstring::npos)
+            sParams += L"&mode=view";
+
+        std::wstring sAdditionalParams = GetAppManager()->m_pInternal->m_sAdditionalUrlParams;
+        if (!sAdditionalParams.empty())
+            sParams += (L"&" + sAdditionalParams);
+
+        std::wstring sLocalFileName = L"";
+        if (NSFile::CFileBinary::Exists(sFilePath))
+            sLocalFileName = NSCommon::GetFileName(sFilePath);
+
+        if (!sLocalFileName.empty())
+        {
+            CefString sTmp = sLocalFileName;
+            CefString sEncode = CefURIEncode(sTmp, false);
+            sParams += (L"&title=" + sEncode.ToWString());
+        }
     }
 
     m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir = NSFile::CFileBinary::CreateTempFileWithUniqueName(m_pInternal->m_pManager->m_oSettings.recover_path, L"DE_");
@@ -4481,22 +4517,25 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
 
         NSFile::CFileBinary::Remove(sFilePath);
 
-        std::wstring sRecentUrl = m_pInternal->m_sOpenAsLocalSrc + L"<openaslocal>" + m_pInternal->m_sOpenAsLocalDst + L"</openaslocal><openaslocalname>" + m_pInternal->m_sOpenAsLocalName + L"</openaslocalname>";
+        if (!m_pInternal->m_bIsCloudCryptFile)
+        {
+            std::wstring sRecentUrl = m_pInternal->m_sOpenAsLocalSrc + L"<openaslocal>" + m_pInternal->m_sOpenAsLocalDst + L"</openaslocal><openaslocalname>" + m_pInternal->m_sOpenAsLocalName + L"</openaslocalname>";
 
-        std::wstring sPath = m_pInternal->m_sOpenAsLocalSrc;
+            std::wstring sPath = m_pInternal->m_sOpenAsLocalSrc;
 
-        std::wstring::size_type pos = 0;
-        std::wstring::size_type pos1 = sPath.find(L"//");
-        if (pos1 != std::wstring::npos)
-            pos = pos1 + 3;
+            std::wstring::size_type pos = 0;
+            std::wstring::size_type pos1 = sPath.find(L"//");
+            if (pos1 != std::wstring::npos)
+                pos = pos1 + 3;
 
-        pos1 = sPath.find(L"/", pos);
-        if (0 < pos1)
-            sPath = sPath.substr(0, pos1);
+            pos1 = sPath.find(L"/", pos);
+            if (0 < pos1)
+                sPath = sPath.substr(0, pos1);
 
-        sPath += (L"/" + m_pInternal->m_sOpenAsLocalName);
+            sPath += (L"/" + m_pInternal->m_sOpenAsLocalName);
 
-        this->GetAppManager()->m_pInternal->Recents_Add(sPath, nFileFormat, sRecentUrl);
+            this->GetAppManager()->m_pInternal->Recents_Add(sPath, nFileFormat, sRecentUrl);
+        }
     }
     else
     {
@@ -4506,6 +4545,15 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
         this->GetAppManager()->m_pInternal->Recents_Add(sFilePath, nFileFormat);
     }
 
+    m_pInternal->m_oConverterToEditor.m_pManager = this->GetAppManager();
+    m_pInternal->m_oConverterToEditor.m_pView = this;
+    m_pInternal->m_oConverterFromEditor.m_pManager = this->GetAppManager();
+
+    m_pInternal->LocalFile_Start();
+
+    if (m_pInternal->m_bIsCloudCryptFile)
+        return;
+
     std::wstring sUrl = this->GetAppManager()->m_oSettings.local_editors_path;
     if (0 == sUrl.find('/'))
         sUrl = L"file://" + sUrl;
@@ -4514,12 +4562,6 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
 
     if (!sParams.empty())
         sUrl += L"?";
-
-    m_pInternal->m_oConverterToEditor.m_pManager = this->GetAppManager();
-    m_pInternal->m_oConverterToEditor.m_pView = this;
-    m_pInternal->m_oConverterFromEditor.m_pManager = this->GetAppManager();
-
-    m_pInternal->LocalFile_Start();
 
     // start convert file
     this->load(sUrl + sParams);
@@ -4573,6 +4615,13 @@ void CCefViewEditor::CreateLocalFile(const int& nFileFormat, const std::wstring&
     std::wstring sAdditionalParams = GetAppManager()->m_pInternal->m_sAdditionalUrlParams;
     if (!sAdditionalParams.empty())
         sParams += (L"&" + sAdditionalParams);
+
+    if (!sName.empty())
+    {
+        CefString sTmp = sName;
+        CefString sEncode = CefURIEncode(sTmp, false);
+        sParams += (L"&title=" + sEncode.ToWString());
+    }
 
     std::wstring sUrl = this->GetAppManager()->m_oSettings.local_editors_path;
     if (0 == sUrl.find('/'))
