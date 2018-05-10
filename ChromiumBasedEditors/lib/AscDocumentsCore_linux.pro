@@ -11,7 +11,6 @@ CONFIG += core_static_link_libstd
 CORE_ROOT_DIR = $$PWD/../../../core
 PWD_ROOT_DIR = $$PWD
 include(../../../core/Common/base.pri)
-include(../../../core/Common/curl/curl.pri)
 
 QMAKE_CXXFLAGS += -fPIC
 
@@ -47,6 +46,8 @@ CONFIG += core_boost_fpic
 include($$CORE_ROOT_DIR/Common/3dParty/boost/boost.pri)
 
 ########################################################
+
+include($$CORE_ROOT_DIR/Common/3dParty/curl/curl.pri)
 
 CONFIG += link_pkgconfig c++11
 PKGCONFIG += glib-2.0 gdk-2.0 gtkglext-1.0 atk cairo gtk+-unix-print-2.0
