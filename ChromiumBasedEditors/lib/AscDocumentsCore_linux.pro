@@ -47,10 +47,10 @@ include($$CORE_ROOT_DIR/Common/3dParty/boost/boost.pri)
 
 ########################################################
 
+include($$CORE_ROOT_DIR/Common/3dParty/curl/curl.pri)
+
 CONFIG += link_pkgconfig c++11
 PKGCONFIG += glib-2.0 gdk-2.0 gtkglext-1.0 atk cairo gtk+-unix-print-2.0
-
-LIBS += -lcurl
 
 HEADERS += \
     ./src/cookiesworker.h \
