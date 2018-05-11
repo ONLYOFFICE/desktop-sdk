@@ -2274,6 +2274,10 @@ public:
             ((CCefViewEditor*)m_pParent)->OpenLocalFile(sOpenUrl, 0);
             return true;
         }
+        else if (message_name == "build_crypted")
+        {
+            return true;
+        }
 
         CAscApplicationManager_Private* pInternalMan = m_pParent->GetAppManager()->m_pInternal;
         if (pInternalMan->m_pAdditional && pInternalMan->m_pAdditional->OnProcessMessageReceived(browser, source_process, message))
@@ -4245,6 +4249,12 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             RELEASEARRAYOBJECTS(pBinaryData);
             break;
         }
+        case ASC_MENU_EVENT_TYPE_ENCRYPTED_CLOUD_BUILD:
+        {
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("build_crypted_file");
+            m_pInternal->SendProcessMessage(PID_RENDERER, message);
+            break;
+        }
         default:
         {
             CApplicationManagerAdditionalBase* pAdditional = GetAppManager()->m_pInternal->m_pAdditional;
@@ -4783,6 +4793,16 @@ bool CCefViewEditor::OpenRecentFile(const int& nId)
     }
 
     this->load(oInfo.m_sUrl);
+    return true;
+}
+
+bool CCefViewEditor::CheckCloudCryptoNeedBuild()
+{
+    if (!m_pInternal->m_bIsCloudCryptFile)
+        return false;
+
+    CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("is_need_build_crypted_file");
+    m_pInternal->SendProcessMessage(PID_RENDERER, message);
     return true;
 }
 

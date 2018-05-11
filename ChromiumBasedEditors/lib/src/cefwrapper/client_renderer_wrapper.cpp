@@ -2105,6 +2105,34 @@ xhr.send(value);\n\
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
+        else if (name == "buildCrypted")
+        {
+            CefRefPtr<CefV8Value> retval;
+            CefRefPtr<CefV8Exception> exception;
+            bool bRun = CefV8Context::GetCurrentContext()->Eval("(function(){ var _editor = window.Asc.editor ? window.Asc.editor : window.editor; return _editor.asc_nativeGetFile(); })();",
+                                                              #ifndef CEF_2623
+                                                                          "", 0,
+                                                              #endif
+                                                              retval, exception);
+
+            std::string sContent = retval->GetStringValue().ToString();
+            BYTE* pDataDst = NULL;
+            int nLenDst = 0;
+
+            NSFile::CBase64Converter::Decode(sContent.c_str(), sContent.length(), pDataDst, nLenDst);
+
+            NSFile::CFileBinary oFileWithChanges;
+            oFileWithChanges.CreateFile(m_sLocalFileFolderWithoutFile + L"/EditorWithChanges.bin");
+            oFileWithChanges.WriteFile(pDataDst, nLenDst);
+            oFileWithChanges.CloseFile();
+
+            RELEASEARRAYOBJECTS(pDataDst);
+
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("build_crypted");
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
 
         // Function does not exist.
         return false;
@@ -2588,6 +2616,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction975 = CefV8Value::CreateFunction("_GetHash", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction976 = CefV8Value::CreateFunction("_CallInAllWindows", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction977 = CefV8Value::CreateFunction("_OpenFileCrypt", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction978 = CefV8Value::CreateFunction("buildCrypted", _nativeHandler);
 
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -2725,6 +2754,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("_GetHash", _nativeFunction975, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("_CallInAllWindows", _nativeFunction976, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("_OpenFileCrypt", _nativeFunction977, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("buildCrypted", _nativeFunction978, V8_PROPERTY_ATTRIBUTE_NONE);
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 
@@ -3414,6 +3444,20 @@ xhr.send(null);";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
         }
 
+        return true;
+    }
+    else if (sMessageName == "is_need_build_crypted_file")
+    {
+        CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
+        if (_frame)
+            _frame->ExecuteJavaScript("window.asc_IsNeedBuildCryptedFile();", _frame->GetURL(), 0);
+        return true;
+    }
+    else if (sMessageName == "build_crypted_file")
+    {
+        CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
+        if (_frame)
+            _frame->ExecuteJavaScript("window.AscDesktopEditor.buildCrypted();", _frame->GetURL(), 0);
         return true;
     }
 
