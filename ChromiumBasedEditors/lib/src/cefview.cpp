@@ -476,7 +476,7 @@ public:
             }
         }
 
-        if (!m_sOpenAsLocalSrc.empty() && !m_sOpenAsLocalDst.empty())
+        if (!m_sOpenAsLocalSrc.empty())
         {
             CCefViewEditor* pEditorThis = (CCefViewEditor*)m_pCefView;
             pEditorThis->OpenLocalFile(m_sDownloadViewPath, CCefViewEditor::GetFileFormat(m_sDownloadViewPath));
@@ -2267,11 +2267,12 @@ public:
             if (pos != std::wstring::npos)
                 sBaseUrl = sBaseUrl.substr(0, pos);
 
-            sDownloadLink = sBaseUrl + sDownloadLink;
+            if (0 != sDownloadLink.find(sBaseUrl))
+                sDownloadLink = sBaseUrl + sDownloadLink;
 
             std::wstring sOpenUrl = sDownloadLink + L"<openaslocal></openaslocal><openaslocalname>" + sName + L"</openaslocalname>";
 
-            ((CCefViewEditor*)m_pParent)->OpenLocalFile(sOpenUrl, 0);
+            ((CCefViewEditor*)m_pParent)->load(sOpenUrl);
             return true;
         }
         else if (message_name == "build_crypted")
@@ -4545,6 +4546,10 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
             sPath += (L"/" + m_pInternal->m_sOpenAsLocalName);
 
             this->GetAppManager()->m_pInternal->Recents_Add(sPath, nFileFormat, sRecentUrl);
+        }
+        else
+        {
+            m_pInternal->LocalFile_IncrementCounter();
         }
     }
     else

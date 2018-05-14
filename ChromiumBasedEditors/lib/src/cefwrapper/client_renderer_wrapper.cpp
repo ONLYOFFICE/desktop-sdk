@@ -3433,7 +3433,7 @@ else\n\
 \n\
 xhr.onload = function()\n\
 {\n\
-    var fileData = new Uint8Array(this.response);\n\
+    var fileData = new Uint8Array(xhr.response);\n\
 \n\
     window.AscDesktopEditor.openFileCryptCallback(fileData);\n\
     window.AscDesktopEditor.openFileCryptCallback = null;\n\
