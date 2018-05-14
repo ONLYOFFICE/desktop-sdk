@@ -4253,6 +4253,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
         case ASC_MENU_EVENT_TYPE_ENCRYPTED_CLOUD_BUILD:
         {
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("build_crypted_file");
+            message->GetArgumentList()->SetString(0, m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir);
             m_pInternal->SendProcessMessage(PID_RENDERER, message);
             break;
         }

@@ -2107,6 +2107,8 @@ xhr.send(value);\n\
         }
         else if (name == "buildCrypted")
         {
+            std::wstring sFolder = arguments[0]->GetStringValue().ToWString();
+
             CefRefPtr<CefV8Value> retval;
             CefRefPtr<CefV8Exception> exception;
             bool bRun = CefV8Context::GetCurrentContext()->Eval("(function(){ var _editor = window.Asc.editor ? window.Asc.editor : window.editor; return _editor.asc_nativeGetFile(); })();",
@@ -2122,7 +2124,7 @@ xhr.send(value);\n\
             NSFile::CBase64Converter::Decode(sContent.c_str(), sContent.length(), pDataDst, nLenDst);
 
             NSFile::CFileBinary oFileWithChanges;
-            oFileWithChanges.CreateFile(m_sLocalFileFolderWithoutFile + L"/EditorWithChanges.bin");
+            oFileWithChanges.CreateFile(sFolder + L"/EditorWithChanges.bin");
             oFileWithChanges.WriteFile(pDataDst, nLenDst);
             oFileWithChanges.CloseFile();
 
@@ -3455,9 +3457,10 @@ xhr.send(null);";
     }
     else if (sMessageName == "build_crypted_file")
     {
+        std::string sFolderName = message->GetArgumentList()->GetString(0);
         CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
         if (_frame)
-            _frame->ExecuteJavaScript("window.AscDesktopEditor.buildCrypted();", _frame->GetURL(), 0);
+            _frame->ExecuteJavaScript("window.AscDesktopEditor.buildCrypted(\"" + sFolderName + "\");", _frame->GetURL(), 0);
         return true;
     }
 
