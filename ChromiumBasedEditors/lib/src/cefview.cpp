@@ -2297,7 +2297,9 @@ public:
         {
             if (m_pParent && m_pParent->GetAppManager()->GetEventListener())
             {
-                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_ENCRYPTED_CLOUD_BUILD_END);
+                bool bIsClose = message->GetArgumentList()->GetBool(0);
+                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(bIsClose ?
+                    ASC_MENU_EVENT_TYPE_ENCRYPTED_CLOUD_BUILD_END : ASC_MENU_EVENT_TYPE_ENCRYPTED_CLOUD_BUILD_END_ERROR);
                 m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
             }
             return true;

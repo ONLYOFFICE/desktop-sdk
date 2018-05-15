@@ -307,6 +307,8 @@ public:
 
     bool m_bIsDebugMode;
 
+    std::wstring m_sCryptDocumentFolder; // recover
+
     NSCriticalSection::CRITICAL_SECTION m_oCompleteTasksCS;
 
     CAscEditorNativeV8Handler()
@@ -2114,7 +2116,7 @@ xhr.send(value);\n\
             NSFile::CBase64Converter::Decode(sContent.c_str(), sContent.length(), pDataDst, nLenDst);
 
             NSFile::CFileBinary oFileWithChanges;
-            oFileWithChanges.CreateFileW(m_sLocalFileFolderWithoutFile + L"/EditorWithChanges.bin");
+            oFileWithChanges.CreateFileW(m_sCryptDocumentFolder + L"/EditorWithChanges.bin");
             oFileWithChanges.WriteFile(pDataDst, nLenDst);
             oFileWithChanges.CloseFile();
 
@@ -2122,7 +2124,7 @@ xhr.send(value);\n\
 
             CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("build_crypted");
-            message->GetArgumentList()->SetString(0, arguments[1]->GetStringValue());
+            message->GetArgumentList()->SetString(0, arguments[2]->GetStringValue());
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
@@ -2130,7 +2132,14 @@ xhr.send(value);\n\
         {
             CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("build_crypted_end");
+            bool bIsClosed = arguments[0]->GetBoolValue();
+            message->GetArgumentList()->SetBool(0, bIsClosed);
             browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "SetCryptDocumentFolder")
+        {
+            m_sCryptDocumentFolder = arguments[0]->GetStringValue().ToWString();
             return true;
         }
 
@@ -2618,6 +2627,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction977 = CefV8Value::CreateFunction("_OpenFileCrypt", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction978 = CefV8Value::CreateFunction("buildCryptedStart", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction979 = CefV8Value::CreateFunction("buildCryptedEnd", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction980 = CefV8Value::CreateFunction("SetCryptDocumentFolder", _nativeHandler);
 
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -2757,6 +2767,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("_OpenFileCrypt", _nativeFunction977, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("buildCryptedStart", _nativeFunction978, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("buildCryptedEnd", _nativeFunction979, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("SetCryptDocumentFolder", _nativeFunction980, V8_PROPERTY_ATTRIBUTE_NONE);
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 
@@ -3418,12 +3429,17 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     }
     else if (sMessageName == "onload_crypt_document")
     {
-        std::string sFilePath = message->GetArgumentList()->GetString(0);
+        std::wstring sFilePathW = message->GetArgumentList()->GetString(0).ToWString();
+        std::string sFilePath = U_TO_UTF8(sFilePathW);
 
         CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
 
         if (_frame)
         {
+            std::wstring sDirectoryRecover = NSFile::GetDirectoryName(sFilePathW);
+            std::string sDirectoryRecoverA = U_TO_UTF8(sDirectoryRecover);
+            std::string sCode1 = "window.AscDesktopEditor.SetCryptDocumentFolder(\"" + sDirectoryRecoverA + "\");\n";
+
             std::string sCode = "\
 var xhr = new XMLHttpRequest();\n\
 xhr.open(\"GET\", \"ascdesktop://fonts/" + sFilePath + "\", true);\n\
@@ -3443,7 +3459,7 @@ xhr.onload = function()\n\
 \n\
 xhr.send(null);";
 
-            _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+            _frame->ExecuteJavaScript(sCode1 + sCode, _frame->GetURL(), 0);
         }
 
         return true;
