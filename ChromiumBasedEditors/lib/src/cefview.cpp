@@ -2277,6 +2277,29 @@ public:
         }
         else if (message_name == "build_crypted")
         {
+            std::wstring sPass = message->GetArgumentList()->GetString(0).ToWString();
+
+            int nType = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX;
+            if  (2 == m_pParent->m_pInternal->m_nEditorType)
+                nType = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX;
+            else if  (1 ==m_pParent->m_pInternal->m_nEditorType)
+                nType = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
+
+            m_pParent->m_pInternal->m_oLocalInfo.SetupOptions(m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo);
+            m_pParent->m_pInternal->m_oConverterFromEditor.m_bIsEditorWithChanges = true;
+            m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat = nType;
+            m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_sFileSrc = m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_sRecoveryDir + L"/EditorCrypted.bin";
+            m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_sPassword = sPass;
+            m_pParent->m_pInternal->m_oConverterFromEditor.Start(0);
+            return true;
+        }
+        else if (message_name == "build_crypted_end")
+        {
+            if (m_pParent && m_pParent->GetAppManager()->GetEventListener())
+            {
+                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_ENCRYPTED_CLOUD_BUILD_END);
+                m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+            }
             return true;
         }
 
@@ -3213,72 +3236,82 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
         return;
     }
 
-    bool bIsSaved = ((0 == nError) && NSFile::CFileBinary::Exists(m_oConverterFromEditor.m_oInfo.m_sFileSrc)) ? true : false;
-
-    if (bIsSaved && !m_oLocalInfo.m_oInfo.m_bIsSaved)
+    if (m_sOpenAsLocalSrc.empty())
     {
-        m_oLocalInfo.m_oInfo.m_bIsSaved = true;
-    }
+        bool bIsSaved = ((0 == nError) && NSFile::CFileBinary::Exists(m_oConverterFromEditor.m_oInfo.m_sFileSrc)) ? true : false;
 
-    if (bIsSaved)
-    {
-        m_oLocalInfo.m_oInfo.m_sFileSrc = m_oConverterFromEditor.m_oInfo.m_sFileSrc;
-        m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat;
+        if (bIsSaved && !m_oLocalInfo.m_oInfo.m_bIsSaved)
+        {
+            m_oLocalInfo.m_oInfo.m_bIsSaved = true;
+        }
 
-        std::wstring sNameInfo = m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/asc_name.info";
-        if (NSFile::CFileBinary::Exists(sNameInfo))
-            NSFile::CFileBinary::Remove(sNameInfo);
+        if (bIsSaved)
+        {
+            m_oLocalInfo.m_oInfo.m_sFileSrc = m_oConverterFromEditor.m_oInfo.m_sFileSrc;
+            m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat;
 
-        NSStringUtils::CStringBuilder oBuilderInfo;
-        oBuilderInfo.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><info type=\"" + std::to_wstring(m_oLocalInfo.m_oInfo.m_nCurrentFileFormat) + L"\" name=\"");
-        oBuilderInfo.WriteEncodeXmlString(NSCommon::GetFileName(m_oLocalInfo.m_oInfo.m_sFileSrc));
-        oBuilderInfo.WriteString(L"\" />");
-        NSFile::CFileBinary::SaveToFile(sNameInfo, oBuilderInfo.GetData(), true);
-    }
+            std::wstring sNameInfo = m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/asc_name.info";
+            if (NSFile::CFileBinary::Exists(sNameInfo))
+                NSFile::CFileBinary::Remove(sNameInfo);
 
-    if (bIsSaved && m_pManager && m_pManager->m_pInternal)
-    {
-        if (m_sOpenAsLocalSrc.empty())
+            NSStringUtils::CStringBuilder oBuilderInfo;
+            oBuilderInfo.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><info type=\"" + std::to_wstring(m_oLocalInfo.m_oInfo.m_nCurrentFileFormat) + L"\" name=\"");
+            oBuilderInfo.WriteEncodeXmlString(NSCommon::GetFileName(m_oLocalInfo.m_oInfo.m_sFileSrc));
+            oBuilderInfo.WriteString(L"\" />");
+            NSFile::CFileBinary::SaveToFile(sNameInfo, oBuilderInfo.GetData(), true);
+        }
+
+        if (bIsSaved && m_pManager && m_pManager->m_pInternal)
+        {
             m_pManager->m_pInternal->Recents_Add(m_oLocalInfo.m_oInfo.m_sFileSrc, m_oLocalInfo.m_oInfo.m_nCurrentFileFormat);
 
-        if (m_pManager->GetEventListener() && m_pCefView != NULL)
-        {
-            NSEditorApi::CAscCefMenuEvent* pEvent = m_pCefView->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_DOCUMENT_NAME);
-
-            NSEditorApi::CAscDocumentName* pData = new NSEditorApi::CAscDocumentName();
-            pData->put_Id(m_pCefView->GetId());
-            pData->put_Name(NSCommon::GetFileName(m_oLocalInfo.m_oInfo.m_sFileSrc));
-            if (m_oLocalInfo.m_oInfo.m_bIsSaved)
+            if (m_pManager->GetEventListener() && m_pCefView != NULL)
             {
-                std::wstring sPath = m_oLocalInfo.m_oInfo.m_sFileSrc;
+                NSEditorApi::CAscCefMenuEvent* pEvent = m_pCefView->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_DOCUMENT_NAME);
+
+                NSEditorApi::CAscDocumentName* pData = new NSEditorApi::CAscDocumentName();
+                pData->put_Id(m_pCefView->GetId());
+                pData->put_Name(NSCommon::GetFileName(m_oLocalInfo.m_oInfo.m_sFileSrc));
+                if (m_oLocalInfo.m_oInfo.m_bIsSaved)
+                {
+                    std::wstring sPath = m_oLocalInfo.m_oInfo.m_sFileSrc;
 #ifdef WIN32
-                NSCommon::string_replace(sPath, L"/", L"\\");
+                    NSCommon::string_replace(sPath, L"/", L"\\");
 #endif
-                pData->put_Path(sPath);
+                    pData->put_Path(sPath);
+                }
+
+                pEvent->m_pData = pData;
+
+                m_pManager->GetEventListener()->OnEvent(pEvent);
             }
 
-            pEvent->m_pData = pData;
+            if (m_pManager->GetEventListener() && m_pCefView != NULL)
+            {
+                m_bIsNativeSave = false;
 
-            m_pManager->GetEventListener()->OnEvent(pEvent);
-        }
+                NSEditorApi::CAscCefMenuEvent* pEvent = m_pCefView->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONSAVE);
 
-        if (m_pManager->GetEventListener() && m_pCefView != NULL)
-        {
-            m_bIsNativeSave = false;
+                NSEditorApi::CAscDocumentOnSaveData* pData = new NSEditorApi::CAscDocumentOnSaveData();
+                pData->put_Id(m_pCefView->GetId());
 
-            NSEditorApi::CAscCefMenuEvent* pEvent = m_pCefView->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONSAVE);
+                pEvent->m_pData = pData;
 
-            NSEditorApi::CAscDocumentOnSaveData* pData = new NSEditorApi::CAscDocumentOnSaveData();
-            pData->put_Id(m_pCefView->GetId());
-
-            pEvent->m_pData = pData;
-
-            m_pManager->GetEventListener()->OnEvent(pEvent);
+                m_pManager->GetEventListener()->OnEvent(pEvent);
+            }
         }
     }
 
-    CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_onsaveend");
-    message->GetArgumentList()->SetString(0, (0 == nError) ? m_oLocalInfo.m_oInfo.m_sFileSrc : L"");
+    std::string sMessageName = "onlocaldocument_onsaveend";
+    std::wstring sFileSrc = m_oLocalInfo.m_oInfo.m_sFileSrc;
+    if (!m_sOpenAsLocalSrc.empty() && m_sOpenAsLocalDst.empty())
+    {
+        sMessageName = "build_crypted_file_end";
+        sFileSrc = m_oConverterFromEditor.m_oInfo.m_sFileSrc;
+    }
+
+    CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create(sMessageName);
+    message->GetArgumentList()->SetString(0, (0 == nError) ? sFileSrc : L"");
     message->GetArgumentList()->SetInt(1, (0 == nError) ? 0 : 2);
 
     bool bIsPassAdd = false;
