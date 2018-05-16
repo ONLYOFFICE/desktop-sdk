@@ -2122,7 +2122,7 @@ xhr.send(value);\n\
             NSFile::CBase64Converter::Decode(sContent.c_str(), sContent.length(), pDataDst, nLenDst);
 
             NSFile::CFileBinary oFileWithChanges;
-            oFileWithChanges.CreateFile(m_sLocalFileFolderWithoutFile + L"/EditorWithChanges.bin");
+            oFileWithChanges.CreateFileW(m_sLocalFileFolderWithoutFile + L"/EditorWithChanges.bin");
             oFileWithChanges.WriteFile(pDataDst, nLenDst);
             oFileWithChanges.CloseFile();
 
