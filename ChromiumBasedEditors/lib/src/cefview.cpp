@@ -282,6 +282,7 @@ public:
     std::string m_sGetHashFrame;
 
     bool m_bIsOnlyPassSupport;
+    std::map<std::wstring, std::wstring> m_arCryptoImages;
 
     bool m_bIsCrashed;
 
@@ -2304,6 +2305,43 @@ public:
             }
             return true;
         }
+        else if (message_name == "preload_crypto_image")
+        {
+            std::wstring sUrl1 = message->GetArgumentList()->GetString(0).ToWString();
+            std::wstring sUrl2 = message->GetArgumentList()->GetString(1).ToWString();
+
+            if (sUrl2.empty() && 0 == sUrl1.find(L"image"))
+            {
+                sUrl2 = L"media/" + sUrl1;
+            }
+
+            if (0 == sUrl2.find(L"media/"))
+            {
+                std::wstring sNum = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/" + sUrl2;
+                if (NSFile::CFileBinary::Exists(sNum))
+                {
+                    CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_preload_crypto_image");
+                    message->GetArgumentList()->SetInt(0, 0);
+                    message->GetArgumentList()->SetString(1, sNum);
+                    message->GetArgumentList()->SetString(2, sUrl1);
+                    browser->SendProcessMessage(PID_RENDERER, message);
+                }
+                else
+                {
+                    m_pParent->m_pInternal->m_arCryptoImages.insert(std::pair<std::wstring, std::wstring>(sUrl1, sNum));
+                    m_pParent->m_pInternal->GetBrowser()->GetHost()->StartDownload(sUrl1);
+                }
+            }
+            else
+            {
+                CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_preload_crypto_image");
+                message->GetArgumentList()->SetInt(0, 1);
+                message->GetArgumentList()->SetString(1, sUrl1);
+                browser->SendProcessMessage(PID_RENDERER, message);
+            }
+
+            return true;
+        }
 
         CAscApplicationManager_Private* pInternalMan = m_pParent->GetAppManager()->m_pInternal;
         if (pInternalMan->m_pAdditional && pInternalMan->m_pAdditional->OnProcessMessageReceived(browser, source_process, message))
@@ -2956,6 +2994,18 @@ require.load = function (context, moduleName, url) {\n\
             callback->Continue(m_pParent->GetAppManager()->m_pInternal->GetPrivateDownloadPath(), false);
             return;
         }
+
+        std::map<std::wstring, std::wstring>::iterator findCryptoImage = m_pParent->m_pInternal->m_arCryptoImages.find(s1);
+        if (findCryptoImage != m_pParent->m_pInternal->m_arCryptoImages.end())
+        {
+            std::wstring sRetTemp = findCryptoImage->second;
+#ifdef WIN32
+            NSCommon::string_replace(sRetTemp, L"/", L"\\");
+#endif
+
+            callback->Continue(sRetTemp, false);
+            return;
+        }
         
         m_pParent->m_pInternal->m_before_callback = callback;
         callback->AddRef();
@@ -2999,6 +3049,25 @@ require.load = function (context, moduleName, url) {\n\
         
         std::wstring sUrl = download_item->GetURL().ToWString();
         std::wstring sPath = download_item->GetFullPath().ToWString();
+
+        if (!m_pParent->m_pInternal->m_arCryptoImages.empty())
+        {
+            std::map<std::wstring, std::wstring>::iterator findCryptoImage = m_pParent->m_pInternal->m_arCryptoImages.find(sUrl);
+            if (findCryptoImage != m_pParent->m_pInternal->m_arCryptoImages.end())
+            {
+                if (download_item->IsComplete())
+                {
+                    CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_preload_crypto_image");
+                    message->GetArgumentList()->SetInt(0, 0);
+                    message->GetArgumentList()->SetString(1, findCryptoImage->second);
+                    message->GetArgumentList()->SetString(2, findCryptoImage->first);
+                    browser->SendProcessMessage(PID_RENDERER, message);
+
+                    m_pParent->m_pInternal->m_arCryptoImages.erase(findCryptoImage);
+                }
+                return;
+            }
+        }
         
         unsigned int uId = (unsigned int)download_item->GetId();
 

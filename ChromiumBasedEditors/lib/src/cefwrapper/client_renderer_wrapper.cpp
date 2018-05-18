@@ -2142,6 +2142,18 @@ xhr.send(value);\n\
             m_sCryptDocumentFolder = arguments[0]->GetStringValue().ToWString();
             return true;
         }
+        else if (name == "PreloadCryptoImage")
+        {
+            std::wstring sUrl1 = arguments[0]->GetStringValue().ToWString();
+            std::wstring sUrl2 = arguments[1]->GetStringValue().ToWString();
+
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("preload_crypto_image");
+            message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
+            message->GetArgumentList()->SetString(1, arguments[1]->GetStringValue());
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
 
         // Function does not exist.
         return false;
@@ -2628,6 +2640,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction978 = CefV8Value::CreateFunction("buildCryptedStart", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction979 = CefV8Value::CreateFunction("buildCryptedEnd", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction980 = CefV8Value::CreateFunction("SetCryptDocumentFolder", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction981 = CefV8Value::CreateFunction("PreloadCryptoImage", _nativeHandler);
 
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -2768,6 +2781,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("buildCryptedStart", _nativeFunction978, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("buildCryptedEnd", _nativeFunction979, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("SetCryptDocumentFolder", _nativeFunction980, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("PreloadCryptoImage", _nativeFunction981, V8_PROPERTY_ATTRIBUTE_NONE);
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 
@@ -3523,6 +3537,58 @@ xhr.send(null);";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
         }
         return true;
+    }
+    else if (sMessageName == "on_preload_crypto_image")
+    {
+        CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
+
+        if (_frame)
+        {
+            int nType = message->GetArgumentList()->GetInt(0);
+            std::wstring sFileSrc = message->GetArgumentList()->GetString(1).ToWString();
+
+            std::string sUrl = U_TO_UTF8(sFileSrc);
+            std::string sUrlNatural = sUrl;
+            std::string sData = "";
+            if (0 == nType)
+            {
+                sUrlNatural = message->GetArgumentList()->GetString(2).ToString();
+                sUrl = "ascdesktop://fonts/" + sUrl;
+
+                std::string sTest = "";
+                NSFile::CFileBinary oFile;
+                if (oFile.OpenFile(sFileSrc))
+                {
+                    if (oFile.GetFileSize() > 12)
+                    {
+                        BYTE data[13];
+                        memset(data, 0, 13);
+                        DWORD dwSize = 0;
+                        oFile.ReadFile(data, 12, dwSize);
+                        sTest = std::string((char*)data);
+                    }
+                }
+                oFile.CloseFile();
+
+                if (sTest == "image_crypto;")
+                {
+                    NSFile::CFileBinary::ReadAllTextUtf8A(sFileSrc, sData);
+                }
+            }
+            else
+            {
+                // not local url
+            }
+
+            std::string sCode = "(function(){\n\
+var _image = window[\"crypto_images_map\"][\"" + sUrlNatural + "\"];\n\
+if (!_image) { return; }\n\
+_image.onload_crypto(\"" + sUrl + "\", \"" + sData + "\");\n\
+})();";
+
+            _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+            return true;
+        }
     }
 
     if (m_pAdditional.is_init() && m_pAdditional->OnProcessMessageReceived(app, browser, source_process, message))
