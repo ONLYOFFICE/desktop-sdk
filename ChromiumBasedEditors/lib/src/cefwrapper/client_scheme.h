@@ -43,6 +43,8 @@ class CefSchemeRegistrar;
 #define CefRawPtr CefRefPtr
 #endif
 
+#include "../../include/applicationmanager.h"
+
 namespace asc_scheme
 {
     // Register the scheme.
@@ -53,8 +55,10 @@ namespace asc_scheme
 #ifdef ASC_AUTO_TEST
     bool InitScheme(const std::wstring& sTestPath);
 #else
-    bool InitScheme();
+    bool InitScheme(CAscApplicationManager* pManager);
 #endif
+
+
 }
 
 #endif

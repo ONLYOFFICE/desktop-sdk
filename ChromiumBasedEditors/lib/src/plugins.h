@@ -45,6 +45,8 @@ public:
     std::wstring m_strDirectory;
     std::wstring m_strUserDirectory;
 
+    std::string m_strGuidEncryption;
+
 public:
     CPluginsManager()
     {
@@ -164,6 +166,9 @@ public:
                         pos2 > pos1)
                     {
                         arCongigs.push_back(sJson.substr(pos1, pos2 - pos1 + 1));
+
+                        if (m_strGuidEncryption.empty())
+                            m_strGuidEncryption = GetEncryption(sJson);
                     }
                 }
             }
@@ -237,6 +242,32 @@ public:
             text.replace(posn, replaceFrom.length(), replaceTo);
             posn += replaceTo.length();
         }
+    }
+
+private:
+    std::string GetEncryption(const std::string& strJson)
+    {
+        if ("desktop" == GetStringValue(strJson, "initDataType") && "encryption" == GetStringValue(strJson, "initData"))
+            return GetStringValue(strJson, "guid");
+        return "";
+    }
+
+    std::string GetStringValue(const std::string& strJson, const std::string& strName)
+    {
+        std::string::size_type nPosStartName = strJson.find("\"" + strName + "\"");
+        if (nPosStartName == std::string::npos)
+            return "";
+
+        nPosStartName += (strName.length() + 2);
+        std::string::size_type pos1 = strJson.find("\"", nPosStartName);
+        if (pos1 == std::string::npos)
+            return "";
+
+        std::string::size_type pos2 = strJson.find("\"", pos1 + 1);
+        if (pos2 == std::string::npos)
+            return "";
+
+        return strJson.substr(pos1 + 1, pos2 - pos1 - 1);
     }
 };
 

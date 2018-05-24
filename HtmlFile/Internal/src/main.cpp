@@ -32,16 +32,22 @@
 
 #include "../../../core/DesktopEditor/common/File.h"
 #include "../../../core/DesktopEditor/common/Directory.h"
+#include "../../../core/DesktopEditor/xml/include/xmlutils.h"
+
 #include "./src/clienthandler.h"
 #include "./src/client_app.h"
 
-#include "../../../core/DesktopEditor/xml/include/xmlutils.h"
-
-#include "src/client_app.h"
-#include "src/clienthandler.h"
 #include "tests/shared/common/client_switches.h"
 #include "tests/cefclient/browser/main_context_impl.h"
 #include "tests/shared/browser/main_message_loop_std.h"
+
+#ifdef GetTempPath
+#undef GetTempPath
+#endif
+
+#ifdef CreateDirectory
+#undef CreateDirectory
+#endif
 
 CGlobalHtmlFileParams* g_globalParams;
 

@@ -44,11 +44,34 @@
 #include "../../../core/DesktopEditor/common/Directory.h"
 #include "../../../core/DesktopEditor/raster/BgraFrame.h"
 #include "../../../core/DesktopEditor/raster/ImageFileFormatChecker.h"
+#include "../../../core/DesktopEditor/graphics/BaseThread.h"
 
 #include "./client_app.h"
-#include "../../../ChromiumBasedEditors/lib/src/filedownloader.h"
+#include "../../../core/Common/FileDownloader/FileDownloader.h"
 
 //#define ASC_HTML_FILE_INTERNAL_LOG
+
+namespace NSFileDownloader
+{
+    static bool IsNeedDownload(const std::wstring& FilePath)
+    {
+        std::wstring::size_type n1 = FilePath.find(L"www.");
+        std::wstring::size_type n2 = FilePath.find(L"http://");
+        std::wstring::size_type n3 = FilePath.find(L"ftp://");
+        std::wstring::size_type n4 = FilePath.find(L"https://");
+
+        if (n1 != std::wstring::npos && n1 < 10)
+            return true;
+        if (n2 != std::wstring::npos && n2 < 10)
+            return true;
+        if (n3 != std::wstring::npos && n3 < 10)
+            return true;
+        if (n4 != std::wstring::npos && n4 < 10)
+            return true;
+
+        return false;
+    }
+}
 
 namespace asc_client_renderer
 {
@@ -76,7 +99,7 @@ public:
         }
 
         std::wstring sTmpPath = L"";
-        if (CFileDownloader::IsNeedDownload(sUrl))
+        if (NSFileDownloader::IsNeedDownload(sUrl))
         {
             CFileDownloader oDownloader(sUrl, false);
             oDownloader.Start( 0 );
@@ -313,7 +336,7 @@ public:
     std::wstring GetFullUrl(const std::wstring& sUrl, const std::wstring& sBaseUrl)
     {
         std::wstring sUrlSrc = L"";
-        if (CFileDownloader::IsNeedDownload(sUrl))
+        if (NSFileDownloader::IsNeedDownload(sUrl))
         {
             sUrlSrc = sUrl;
         }

@@ -85,7 +85,8 @@ SOURCES += \
     ./../../../core/Common/OfficeFileFormatChecker2.cpp \
     ./../../../core/Common/3dParty/pole/pole.cpp \
     ./../../../core/Common/DocxFormat/Source/Base/unicode_util.cpp \
-    ./../../../core/HtmlRenderer/src/ASCSVGWriter.cpp
+    ./../../../core/HtmlRenderer/src/ASCSVGWriter.cpp \
+	./../../../core/Common/FileDownloader/FileDownloader_curl.cpp
 
 SOURCES += \
     ./src/additional/create.cpp

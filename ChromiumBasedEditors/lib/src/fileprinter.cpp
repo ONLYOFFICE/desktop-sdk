@@ -115,7 +115,7 @@ std::wstring CPrintData::DownloadImage(const std::wstring& strFile)
 void CPrintData::CalculateImagePaths()
 {
     m_sDocumentImagesPath = L"";
-    if (CFileDownloader::IsNeedDownload(m_sFrameUrl) && !CFileDownloader::IsNeedDownload(m_sDocumentUrl))
+    if (NSFileDownloader::IsNeedDownload(m_sFrameUrl) && !NSFileDownloader::IsNeedDownload(m_sDocumentUrl))
     {
         if (0 == m_sDocumentUrl.find(wchar_t('/')))
         {
@@ -157,8 +157,8 @@ void CPrintData::CalculateImagePaths()
     }
 
     m_sPresentationThemesPath = L"";
-    if ((CFileDownloader::IsNeedDownload(m_sFrameUrl) || (m_sFrameUrl.find(L"file://") == 0))
-            && !CFileDownloader::IsNeedDownload(m_sThemesUrl))
+    if ((NSFileDownloader::IsNeedDownload(m_sFrameUrl) || (m_sFrameUrl.find(L"file://") == 0))
+            && !NSFileDownloader::IsNeedDownload(m_sThemesUrl))
     {
         if (0 == m_sThemesUrl.find(wchar_t('/')))
         {
@@ -265,7 +265,7 @@ std::wstring CPrintData::GetImagePath(const std::wstring& sPath)
     }
 
     // 3) смотрим, может это прямая ссылка
-    if (CFileDownloader::IsNeedDownload(sPath))
+    if (NSFileDownloader::IsNeedDownload(sPath))
     {
         std::wstring sFileDownload = this->DownloadImage(sPath);
         m_mapImages.insert(std::pair<std::wstring, std::wstring>(sPath, sFileDownload));
@@ -295,7 +295,7 @@ std::wstring CPrintData::GetImagePath(const std::wstring& sPath)
             sUrl2 = m_sDocumentImagesPath + sPath2.substr(0, nPos) + L".wmf";
         }
 
-        if (CFileDownloader::IsNeedDownload(m_sDocumentImagesPath))
+        if (NSFileDownloader::IsNeedDownload(m_sDocumentImagesPath))
         {
             std::wstring s1 = this->DownloadImage(sUrl);
             if (!s1.empty())
@@ -388,7 +388,7 @@ std::wstring CPrintData::GetImagePath(const std::wstring& sPath)
             sUrl2 = sPresentationThemesPath + sPath.substr(0, nPos) + L".wmf";
         }
 
-        if (CFileDownloader::IsNeedDownload(m_sPresentationThemesPath))
+        if (NSFileDownloader::IsNeedDownload(m_sPresentationThemesPath))
         {
             std::wstring s1 = this->DownloadImage(sUrl);
             if (!s1.empty())
