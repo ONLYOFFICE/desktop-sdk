@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		7C1B16BE208A2E930077F150 /* FileDownloader_mac.mm in Sources */ = {isa = PBXBuildFile; fileRef = 7C1B16BD208A2E930077F150 /* FileDownloader_mac.mm */; };
+		7C1B16BF208A33130077F150 /* libgraphics.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 7C6D05AE1CAC216B000EFBB0 /* libgraphics.a */; };
 		7C2BBCAB1F822A0B00A239D8 /* select_client_certificate_callback_ctocpp.cc in Sources */ = {isa = PBXBuildFile; fileRef = 7CC7F69E1F7D3ACC00E99DC9 /* select_client_certificate_callback_ctocpp.cc */; };
 		7C2BBCAC1F822A0B00A239D8 /* cef_resource_manager.cc in Sources */ = {isa = PBXBuildFile; fileRef = 7CC7F62C1F7D3ACC00E99DC9 /* cef_resource_manager.cc */; };
 		7C2BBCAD1F822A0B00A239D8 /* delete_cookies_callback_cpptoc.cc in Sources */ = {isa = PBXBuildFile; fileRef = 7CC7F6051F7D3ACC00E99DC9 /* delete_cookies_callback_cpptoc.cc */; };
@@ -31,7 +33,6 @@
 		7C2BBCC01F822A0B00A239D8 /* sslstatus_ctocpp.cc in Sources */ = {isa = PBXBuildFile; fileRef = 7CC7F6841F7D3ACC00E99DC9 /* sslstatus_ctocpp.cc */; };
 		7C2BBCC11F822A0B00A239D8 /* client_scheme_wrapper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7C5DDA3C1BA98FFA00C6474A /* client_scheme_wrapper.cpp */; };
 		7C2BBCC21F822A0B00A239D8 /* geolocation_handler_cpptoc.cc in Sources */ = {isa = PBXBuildFile; fileRef = 7CC7F5E61F7D3ACC00E99DC9 /* geolocation_handler_cpptoc.cc */; };
-		7C2BBCC31F822A0B00A239D8 /* filedownloader.mm in Sources */ = {isa = PBXBuildFile; fileRef = 7C3160481C06FCB000011FBC /* filedownloader.mm */; };
 		7C2BBCC41F822A0B00A239D8 /* cookie_manager_ctocpp.cc in Sources */ = {isa = PBXBuildFile; fileRef = 7CC7F6481F7D3ACC00E99DC9 /* cookie_manager_ctocpp.cc */; };
 		7C2BBCC51F822A0B00A239D8 /* translator_test_ref_ptr_library_ctocpp.cc in Sources */ = {isa = PBXBuildFile; fileRef = 7CC7F64E1F7D3ACC00E99DC9 /* translator_test_ref_ptr_library_ctocpp.cc */; };
 		7C2BBCC61F822A0B00A239D8 /* callback_ctocpp.cc in Sources */ = {isa = PBXBuildFile; fileRef = 7CC7F6391F7D3ACC00E99DC9 /* callback_ctocpp.cc */; };
@@ -203,12 +204,10 @@
 		7C2E4FFF1CD0FDA70025806F /* OfficeFileFormatChecker2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7C2E4FFE1CD0FDA70025806F /* OfficeFileFormatChecker2.cpp */; };
 		7C2E50011CD0FDD10025806F /* pole.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7C2E50001CD0FDD10025806F /* pole.cpp */; };
 		7C3160471C06FAD500011FBC /* ASCSVGWriter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7C3160461C06FAD500011FBC /* ASCSVGWriter.cpp */; };
-		7C3160491C06FCB000011FBC /* filedownloader.mm in Sources */ = {isa = PBXBuildFile; fileRef = 7C3160481C06FCB000011FBC /* filedownloader.mm */; };
 		7C5DDA3D1BA98FFA00C6474A /* client_renderer_wrapper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7C5DDA3B1BA98FFA00C6474A /* client_renderer_wrapper.cpp */; };
 		7C5DDA3E1BA98FFA00C6474A /* client_scheme_wrapper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7C5DDA3C1BA98FFA00C6474A /* client_scheme_wrapper.cpp */; };
 		7C5DDA441BA9925400C6474A /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7C5DDA431BA9925400C6474A /* AppKit.framework */; };
 		7C5DDA461BA9925E00C6474A /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7C5DDA451BA9925E00C6474A /* OpenGL.framework */; };
-		7C6D05B11CAC216B000EFBB0 /* libgraphics.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 7C6D05AE1CAC216B000EFBB0 /* libgraphics.a */; };
 		7C6D05B21CAC216B000EFBB0 /* liblibxml.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 7C6D05AF1CAC216B000EFBB0 /* liblibxml.a */; };
 		7C6D05B31CAC216B000EFBB0 /* libOfficeUtils.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 7C6D05B01CAC216B000EFBB0 /* libOfficeUtils.a */; };
 		7C6D05B51CAC217C000EFBB0 /* Chromium Embedded Framework.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7C6D05B41CAC217C000EFBB0 /* Chromium Embedded Framework.framework */; };
@@ -389,6 +388,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		7C1B16BD208A2E930077F150 /* FileDownloader_mac.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = FileDownloader_mac.mm; path = ../../../../../core/Common/FileDownloader/FileDownloader_mac.mm; sourceTree = "<group>"; };
 		7C2BBD6E1F822A0B00A239D8 /* DocumentsCore Helper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DocumentsCore Helper.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		7C2E4FE81CD0F67D0025806F /* libDjVuFile.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libDjVuFile.dylib; path = ../../../../core/build/lib/mac_64/libDjVuFile.dylib; sourceTree = "<group>"; };
 		7C2E4FE91CD0F67D0025806F /* libHtmlRenderer.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libHtmlRenderer.dylib; path = ../../../../core/build/lib/mac_64/libHtmlRenderer.dylib; sourceTree = "<group>"; };
@@ -397,7 +397,6 @@
 		7C2E4FFE1CD0FDA70025806F /* OfficeFileFormatChecker2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = OfficeFileFormatChecker2.cpp; path = ../../../../../core/Common/OfficeFileFormatChecker2.cpp; sourceTree = "<group>"; };
 		7C2E50001CD0FDD10025806F /* pole.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = pole.cpp; path = ../../../../../core/Common/3dParty/pole/pole.cpp; sourceTree = "<group>"; };
 		7C3160461C06FAD500011FBC /* ASCSVGWriter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ASCSVGWriter.cpp; path = ../../../../../core/HtmlRenderer/src/ASCSVGWriter.cpp; sourceTree = "<group>"; };
-		7C3160481C06FCB000011FBC /* filedownloader.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = filedownloader.mm; path = ../../src/filedownloader.mm; sourceTree = "<group>"; };
 		7C5DD7AB1BA98BCF00C6474A /* ONLYOFFICE Helper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ONLYOFFICE Helper.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		7C5DD7AF1BA98BCF00C6474A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		7C5DDA3B1BA98FFA00C6474A /* client_renderer_wrapper.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = client_renderer_wrapper.cpp; path = ../../src/cefwrapper/client_renderer_wrapper.cpp; sourceTree = "<group>"; };
@@ -1001,13 +1000,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7C1B16BF208A33130077F150 /* libgraphics.a in Frameworks */,
 				7CC7FBA81F7D3E1900E99DC9 /* libUnicodeConverter.dylib in Frameworks */,
 				7C2E4FEC1CD0F67D0025806F /* libDjVuFile.dylib in Frameworks */,
 				7C2E4FED1CD0F67D0025806F /* libHtmlRenderer.dylib in Frameworks */,
 				7C2E4FEE1CD0F67D0025806F /* libPdfReader.dylib in Frameworks */,
 				7C2E4FEF1CD0F67D0025806F /* libXpsFile.dylib in Frameworks */,
 				7C6D05B51CAC217C000EFBB0 /* Chromium Embedded Framework.framework in Frameworks */,
-				7C6D05B11CAC216B000EFBB0 /* libgraphics.a in Frameworks */,
 				7C6D05B21CAC216B000EFBB0 /* liblibxml.a in Frameworks */,
 				7C6D05B31CAC216B000EFBB0 /* libOfficeUtils.a in Frameworks */,
 				7C5DDA461BA9925E00C6474A /* OpenGL.framework in Frameworks */,
@@ -1050,6 +1049,7 @@
 		7C5DD7AD1BA98BCF00C6474A /* ONLYOFFICE Helper */ = {
 			isa = PBXGroup;
 			children = (
+				7C1B16BD208A2E930077F150 /* FileDownloader_mac.mm */,
 				7C7DC79A1FC6BAD6008DAC1F /* unicode_util.cpp */,
 				7CC7F4A81F7D3ACB00E99DC9 /* include */,
 				7CC7F5A11F7D3ACB00E99DC9 /* libcef_dll */,
@@ -1057,7 +1057,6 @@
 				7CD198911D7972AD00F8841C /* create.cpp */,
 				7C2E50001CD0FDD10025806F /* pole.cpp */,
 				7C2E4FFE1CD0FDA70025806F /* OfficeFileFormatChecker2.cpp */,
-				7C3160481C06FCB000011FBC /* filedownloader.mm */,
 				7C3160461C06FAD500011FBC /* ASCSVGWriter.cpp */,
 				7C5DDA3B1BA98FFA00C6474A /* client_renderer_wrapper.cpp */,
 				7C5DDA3C1BA98FFA00C6474A /* client_scheme_wrapper.cpp */,
@@ -2009,7 +2008,6 @@
 				7C2BBCC01F822A0B00A239D8 /* sslstatus_ctocpp.cc in Sources */,
 				7C2BBCC11F822A0B00A239D8 /* client_scheme_wrapper.cpp in Sources */,
 				7C2BBCC21F822A0B00A239D8 /* geolocation_handler_cpptoc.cc in Sources */,
-				7C2BBCC31F822A0B00A239D8 /* filedownloader.mm in Sources */,
 				7C2BBCC41F822A0B00A239D8 /* cookie_manager_ctocpp.cc in Sources */,
 				7C2BBCC51F822A0B00A239D8 /* translator_test_ref_ptr_library_ctocpp.cc in Sources */,
 				7C2BBCC61F822A0B00A239D8 /* callback_ctocpp.cc in Sources */,
@@ -2194,7 +2192,6 @@
 				7CC7F9331F7D3ACD00E99DC9 /* sslstatus_ctocpp.cc in Sources */,
 				7C5DDA3E1BA98FFA00C6474A /* client_scheme_wrapper.cpp in Sources */,
 				7CC7F83D1F7D3ACD00E99DC9 /* geolocation_handler_cpptoc.cc in Sources */,
-				7C3160491C06FCB000011FBC /* filedownloader.mm in Sources */,
 				7CC7F8D91F7D3ACD00E99DC9 /* cookie_manager_ctocpp.cc in Sources */,
 				7CC7F8E51F7D3ACD00E99DC9 /* translator_test_ref_ptr_library_ctocpp.cc in Sources */,
 				7CC7F8BB1F7D3ACD00E99DC9 /* callback_ctocpp.cc in Sources */,
@@ -2262,6 +2259,7 @@
 				7CC7F97E1F7D3ACE00E99DC9 /* box_layout_ctocpp.cc in Sources */,
 				7CC7F87F1F7D3ACD00E99DC9 /* window_delegate_cpptoc.cc in Sources */,
 				7CC7F9361F7D3ACD00E99DC9 /* scheme_registrar_ctocpp.cc in Sources */,
+				7C1B16BE208A2E930077F150 /* FileDownloader_mac.mm in Sources */,
 				7CC7F7E01F7D3ACD00E99DC9 /* read_handler_cpptoc.cc in Sources */,
 				7CC7F94B1F7D3ACD00E99DC9 /* before_download_callback_ctocpp.cc in Sources */,
 				7CC7F8B51F7D3ACD00E99DC9 /* value_ctocpp.cc in Sources */,
@@ -2372,6 +2370,7 @@
 					XPS_USE_DYNAMIC_LIBRARY,
 					HTMLRENDERER_USE_DYNAMIC_LIBRARY,
 					WRAPPING_CEF_SHARED,
+					_ASC_USE_ARC_,
 				);
 				INFOPLIST_FILE = "ascdocumentscore Helper/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
@@ -2381,6 +2380,7 @@
 					"-I./../../../../core/DesktopEditor/freetype-2.5.2/include",
 					"-I./../../../../core/DesktopEditor/agg-2.4/include",
 				);
+				OTHER_LDFLAGS = "-headerpad_max_install_names";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -2402,6 +2402,7 @@
 					XPS_USE_DYNAMIC_LIBRARY,
 					HTMLRENDERER_USE_DYNAMIC_LIBRARY,
 					WRAPPING_CEF_SHARED,
+					_ASC_USE_ARC_,
 				);
 				INFOPLIST_FILE = "ascdocumentscore Helper/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
@@ -2411,6 +2412,7 @@
 					"-I./../../../../core/DesktopEditor/freetype-2.5.2/include",
 					"-I./../../../../core/DesktopEditor/agg-2.4/include",
 				);
+				OTHER_LDFLAGS = "-headerpad_max_install_names";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -2525,6 +2527,7 @@
 					XPS_USE_DYNAMIC_LIBRARY,
 					HTMLRENDERER_USE_DYNAMIC_LIBRARY,
 					WRAPPING_CEF_SHARED,
+					_ASC_USE_ARC_,
 				);
 				INFOPLIST_FILE = "ascdocumentscore Helper/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
@@ -2534,6 +2537,7 @@
 					"-I./../../../../core/DesktopEditor/freetype-2.5.2/include",
 					"-I./../../../../core/DesktopEditor/agg-2.4/include",
 				);
+				OTHER_LDFLAGS = "-headerpad_max_install_names";
 				PRODUCT_NAME = "ONLYOFFICE Helper";
 			};
 			name = Debug;
@@ -2555,6 +2559,7 @@
 					XPS_USE_DYNAMIC_LIBRARY,
 					HTMLRENDERER_USE_DYNAMIC_LIBRARY,
 					WRAPPING_CEF_SHARED,
+					_ASC_USE_ARC_,
 				);
 				INFOPLIST_FILE = "ascdocumentscore Helper/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
@@ -2564,6 +2569,7 @@
 					"-I./../../../../core/DesktopEditor/freetype-2.5.2/include",
 					"-I./../../../../core/DesktopEditor/agg-2.4/include",
 				);
+				OTHER_LDFLAGS = "-headerpad_max_install_names";
 				PRODUCT_NAME = "ONLYOFFICE Helper";
 			};
 			name = Release;

@@ -45,9 +45,9 @@
 #include <iostream>
 #include <set>
 
-#include "./filedownloader.h"
 #include "../../../../core/DesktopEditor/xml/include/xmlutils.h"
 #include "../../../../core/Common/OfficeFileFormatChecker.h"
+#include "../../../../core/Common/FileDownloader/FileDownloader.h"
 
 #include "../../../../core/DesktopEditor/fontengine/application_generate_fonts.h"
 
@@ -64,6 +64,28 @@
 #include "./additional/renderer.h"
 
 #define ONLYOFFICE_FONTS_VERSION_ 1
+
+namespace NSFileDownloader
+{
+    static bool IsNeedDownload(const std::wstring& FilePath)
+    {
+        std::wstring::size_type n1 = FilePath.find(L"www.");
+        std::wstring::size_type n2 = FilePath.find(L"http://");
+        std::wstring::size_type n3 = FilePath.find(L"ftp://");
+        std::wstring::size_type n4 = FilePath.find(L"https://");
+
+        if (n1 != std::wstring::npos && n1 < 10)
+            return true;
+        if (n2 != std::wstring::npos && n2 < 10)
+            return true;
+        if (n3 != std::wstring::npos && n3 < 10)
+            return true;
+        if (n4 != std::wstring::npos && n4 < 10)
+            return true;
+
+        return false;
+    }
+}
 
 class CAscReporterData
 {
@@ -452,6 +474,8 @@ public:
 
     std::map<std::wstring, int> m_mapOnlyPass;
 
+    std::string m_sEncriptionGuid;
+
 public:
     CAscApplicationManager_Private() : m_oKeyboardTimer(this)
     {
@@ -478,6 +502,8 @@ public:
 
         m_nForceDisplayScale = -1;
         m_bIsUpdateFontsAttack = false;
+
+        m_sEncriptionGuid = "";
     }
     bool GetEditorPermission()
     {
@@ -983,7 +1009,7 @@ public:
 
         std::wstring sPath = sPathSrc;
 #ifdef WIN32
-        if (!CFileDownloader::IsNeedDownload(sPath))
+        if (!NSFileDownloader::IsNeedDownload(sPath))
             NSCommon::string_replace(sPath, L"/", L"\\");
 #endif
 

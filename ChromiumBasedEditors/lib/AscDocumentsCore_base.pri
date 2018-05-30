@@ -652,7 +652,7 @@ HEADERS += \
     $$CEF_SRC_PATH/tests/shared/common/client_switches.h
 
 SOURCES += \
-    $$CEF_SRC_PATH/tests/cefclient/common/client_app_delegates_common.cc \
+    #$$CEF_SRC_PATH/tests/cefclient/common/client_app_delegates_common.cc \
     $$CEF_SRC_PATH/tests/cefclient/common/scheme_test_common.cc \
     \
     $$CEF_SRC_PATH/tests/shared/common/client_app.cc \

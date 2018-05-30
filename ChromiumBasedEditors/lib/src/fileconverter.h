@@ -815,11 +815,14 @@ public:
     IASCFileConverterEvents* m_pEvents;
     CAscApplicationManager* m_pManager;
 
+    bool m_bIsEditorWithChanges;
+
 public:
     CASCFileConverterFromEditor() : NSThreads::CBaseThread()
     {
         m_bIsRetina = false;
         m_nTypeEditorFormat = -1;
+        m_bIsEditorWithChanges = false;
     }
     virtual ~CASCFileConverterFromEditor()
     {
@@ -863,7 +866,11 @@ public:
         if (m_sOriginalFileNameCrossPlatform.empty())
         {
             oBuilder.WriteEncodeXmlString(m_oInfo.m_sRecoveryDir);
-            oBuilder.WriteString(L"/Editor.bin</m_sFileFrom><m_sFileTo>");
+
+            if (!m_bIsEditorWithChanges)
+                oBuilder.WriteString(L"/Editor.bin</m_sFileFrom><m_sFileTo>");
+            else
+                oBuilder.WriteString(L"/EditorWithChanges.bin</m_sFileFrom><m_sFileTo>");
         }
         else
         {
