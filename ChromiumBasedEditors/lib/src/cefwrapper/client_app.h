@@ -257,6 +257,11 @@ public:
             int forceDpi = IsForceDpiRound();
             if (0 != forceDpi)
                 command_line->AppendSwitchWithValue("--force-device-scale-factor", std::to_string(forceDpi));
+
+            if (true)
+            {
+                command_line->AppendSwitch("--disable-web-security");
+            }
         }
     }
 
@@ -322,6 +327,11 @@ public:
             int forceDpi = IsForceDpiRound();
             if (0 != forceDpi)
                 command_line->AppendSwitchWithValue("--force-device-scale-factor", std::to_string(forceDpi));
+
+            if (true)
+            {
+                command_line->AppendSwitch("--disable-web-security");
+            }
         }
     }
 
@@ -376,6 +386,11 @@ public:
             int forceDpi = IsForceDpiRound();
             if (0 != forceDpi)
                 command_line->AppendSwitchWithValue("--force-device-scale-factor", std::to_string(forceDpi));
+
+            if (true)
+            {
+                command_line->AppendSwitch("--disable-web-security");
+            }
         }
     }
 };

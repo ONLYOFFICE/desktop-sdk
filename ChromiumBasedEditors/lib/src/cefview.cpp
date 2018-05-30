@@ -282,6 +282,7 @@ public:
     std::string m_sGetHashFrame;
 
     bool m_bIsOnlyPassSupport;
+    std::map<std::wstring, std::wstring> m_arCryptoImages;
 
     bool m_bIsCrashed;
 
@@ -476,7 +477,7 @@ public:
             }
         }
 
-        if (!m_sOpenAsLocalSrc.empty() && !m_sOpenAsLocalDst.empty())
+        if (!m_sOpenAsLocalSrc.empty())
         {
             CCefViewEditor* pEditorThis = (CCefViewEditor*)m_pCefView;
             pEditorThis->OpenLocalFile(m_sDownloadViewPath, CCefViewEditor::GetFileFormat(m_sDownloadViewPath));
@@ -2267,15 +2268,78 @@ public:
             if (pos != std::wstring::npos)
                 sBaseUrl = sBaseUrl.substr(0, pos);
 
-            sDownloadLink = sBaseUrl + sDownloadLink;
+            if (0 != sDownloadLink.find(sBaseUrl))
+                sDownloadLink = sBaseUrl + sDownloadLink;
 
             std::wstring sOpenUrl = sDownloadLink + L"<openaslocal></openaslocal><openaslocalname>" + sName + L"</openaslocalname>";
 
-            ((CCefViewEditor*)m_pParent)->OpenLocalFile(sOpenUrl, 0);
+            ((CCefViewEditor*)m_pParent)->load(sOpenUrl);
             return true;
         }
         else if (message_name == "build_crypted")
         {
+            std::wstring sPass = message->GetArgumentList()->GetString(0).ToWString();
+
+            int nType = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX;
+            if  (2 == m_pParent->m_pInternal->m_nEditorType)
+                nType = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX;
+            else if  (1 ==m_pParent->m_pInternal->m_nEditorType)
+                nType = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
+
+            m_pParent->m_pInternal->m_oLocalInfo.SetupOptions(m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo);
+            m_pParent->m_pInternal->m_oConverterFromEditor.m_bIsEditorWithChanges = true;
+            m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat = nType;
+            m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_sFileSrc = m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_sRecoveryDir + L"/EditorCrypted.bin";
+            m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_sPassword = sPass;
+            m_pParent->m_pInternal->m_oConverterFromEditor.Start(0);
+            return true;
+        }
+        else if (message_name == "build_crypted_end")
+        {
+            if (m_pParent && m_pParent->GetAppManager()->GetEventListener())
+            {
+                bool bIsClose = message->GetArgumentList()->GetBool(0);
+                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(bIsClose ?
+                    ASC_MENU_EVENT_TYPE_ENCRYPTED_CLOUD_BUILD_END : ASC_MENU_EVENT_TYPE_ENCRYPTED_CLOUD_BUILD_END_ERROR);
+                m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+            }
+            return true;
+        }
+        else if (message_name == "preload_crypto_image")
+        {
+            std::wstring sUrl1 = message->GetArgumentList()->GetString(0).ToWString();
+            std::wstring sUrl2 = message->GetArgumentList()->GetString(1).ToWString();
+
+            if (sUrl2.empty() && 0 == sUrl1.find(L"image"))
+            {
+                sUrl2 = L"media/" + sUrl1;
+            }
+
+            if (0 == sUrl2.find(L"media/"))
+            {
+                std::wstring sNum = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/" + sUrl2;
+                if (NSFile::CFileBinary::Exists(sNum))
+                {
+                    CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_preload_crypto_image");
+                    message->GetArgumentList()->SetInt(0, 0);
+                    message->GetArgumentList()->SetString(1, sNum);
+                    message->GetArgumentList()->SetString(2, sUrl1);
+                    browser->SendProcessMessage(PID_RENDERER, message);
+                }
+                else
+                {
+                    m_pParent->m_pInternal->m_arCryptoImages.insert(std::pair<std::wstring, std::wstring>(sUrl1, sNum));
+                    m_pParent->m_pInternal->GetBrowser()->GetHost()->StartDownload(sUrl1);
+                }
+            }
+            else
+            {
+                CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_preload_crypto_image");
+                message->GetArgumentList()->SetInt(0, 1);
+                message->GetArgumentList()->SetString(1, sUrl1);
+                browser->SendProcessMessage(PID_RENDERER, message);
+            }
+
             return true;
         }
 
@@ -2930,6 +2994,18 @@ require.load = function (context, moduleName, url) {\n\
             callback->Continue(m_pParent->GetAppManager()->m_pInternal->GetPrivateDownloadPath(), false);
             return;
         }
+
+        std::map<std::wstring, std::wstring>::iterator findCryptoImage = m_pParent->m_pInternal->m_arCryptoImages.find(s1);
+        if (findCryptoImage != m_pParent->m_pInternal->m_arCryptoImages.end())
+        {
+            std::wstring sRetTemp = findCryptoImage->second;
+#ifdef WIN32
+            NSCommon::string_replace(sRetTemp, L"/", L"\\");
+#endif
+
+            callback->Continue(sRetTemp, false);
+            return;
+        }
         
         m_pParent->m_pInternal->m_before_callback = callback;
         callback->AddRef();
@@ -2973,6 +3049,25 @@ require.load = function (context, moduleName, url) {\n\
         
         std::wstring sUrl = download_item->GetURL().ToWString();
         std::wstring sPath = download_item->GetFullPath().ToWString();
+
+        if (!m_pParent->m_pInternal->m_arCryptoImages.empty())
+        {
+            std::map<std::wstring, std::wstring>::iterator findCryptoImage = m_pParent->m_pInternal->m_arCryptoImages.find(sUrl);
+            if (findCryptoImage != m_pParent->m_pInternal->m_arCryptoImages.end())
+            {
+                if (download_item->IsComplete())
+                {
+                    CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_preload_crypto_image");
+                    message->GetArgumentList()->SetInt(0, 0);
+                    message->GetArgumentList()->SetString(1, findCryptoImage->second);
+                    message->GetArgumentList()->SetString(2, findCryptoImage->first);
+                    browser->SendProcessMessage(PID_RENDERER, message);
+
+                    m_pParent->m_pInternal->m_arCryptoImages.erase(findCryptoImage);
+                }
+                return;
+            }
+        }
         
         unsigned int uId = (unsigned int)download_item->GetId();
 
@@ -3212,72 +3307,82 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
         return;
     }
 
-    bool bIsSaved = ((0 == nError) && NSFile::CFileBinary::Exists(m_oConverterFromEditor.m_oInfo.m_sFileSrc)) ? true : false;
-
-    if (bIsSaved && !m_oLocalInfo.m_oInfo.m_bIsSaved)
+    if (m_sOpenAsLocalSrc.empty())
     {
-        m_oLocalInfo.m_oInfo.m_bIsSaved = true;
-    }
+        bool bIsSaved = ((0 == nError) && NSFile::CFileBinary::Exists(m_oConverterFromEditor.m_oInfo.m_sFileSrc)) ? true : false;
 
-    if (bIsSaved)
-    {
-        m_oLocalInfo.m_oInfo.m_sFileSrc = m_oConverterFromEditor.m_oInfo.m_sFileSrc;
-        m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat;
+        if (bIsSaved && !m_oLocalInfo.m_oInfo.m_bIsSaved)
+        {
+            m_oLocalInfo.m_oInfo.m_bIsSaved = true;
+        }
 
-        std::wstring sNameInfo = m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/asc_name.info";
-        if (NSFile::CFileBinary::Exists(sNameInfo))
-            NSFile::CFileBinary::Remove(sNameInfo);
+        if (bIsSaved)
+        {
+            m_oLocalInfo.m_oInfo.m_sFileSrc = m_oConverterFromEditor.m_oInfo.m_sFileSrc;
+            m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat;
 
-        NSStringUtils::CStringBuilder oBuilderInfo;
-        oBuilderInfo.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><info type=\"" + std::to_wstring(m_oLocalInfo.m_oInfo.m_nCurrentFileFormat) + L"\" name=\"");
-        oBuilderInfo.WriteEncodeXmlString(NSCommon::GetFileName(m_oLocalInfo.m_oInfo.m_sFileSrc));
-        oBuilderInfo.WriteString(L"\" />");
-        NSFile::CFileBinary::SaveToFile(sNameInfo, oBuilderInfo.GetData(), true);
-    }
+            std::wstring sNameInfo = m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/asc_name.info";
+            if (NSFile::CFileBinary::Exists(sNameInfo))
+                NSFile::CFileBinary::Remove(sNameInfo);
 
-    if (bIsSaved && m_pManager && m_pManager->m_pInternal)
-    {
-        if (m_sOpenAsLocalSrc.empty())
+            NSStringUtils::CStringBuilder oBuilderInfo;
+            oBuilderInfo.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><info type=\"" + std::to_wstring(m_oLocalInfo.m_oInfo.m_nCurrentFileFormat) + L"\" name=\"");
+            oBuilderInfo.WriteEncodeXmlString(NSCommon::GetFileName(m_oLocalInfo.m_oInfo.m_sFileSrc));
+            oBuilderInfo.WriteString(L"\" />");
+            NSFile::CFileBinary::SaveToFile(sNameInfo, oBuilderInfo.GetData(), true);
+        }
+
+        if (bIsSaved && m_pManager && m_pManager->m_pInternal)
+        {
             m_pManager->m_pInternal->Recents_Add(m_oLocalInfo.m_oInfo.m_sFileSrc, m_oLocalInfo.m_oInfo.m_nCurrentFileFormat);
 
-        if (m_pManager->GetEventListener() && m_pCefView != NULL)
-        {
-            NSEditorApi::CAscCefMenuEvent* pEvent = m_pCefView->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_DOCUMENT_NAME);
-
-            NSEditorApi::CAscDocumentName* pData = new NSEditorApi::CAscDocumentName();
-            pData->put_Id(m_pCefView->GetId());
-            pData->put_Name(NSCommon::GetFileName(m_oLocalInfo.m_oInfo.m_sFileSrc));
-            if (m_oLocalInfo.m_oInfo.m_bIsSaved)
+            if (m_pManager->GetEventListener() && m_pCefView != NULL)
             {
-                std::wstring sPath = m_oLocalInfo.m_oInfo.m_sFileSrc;
+                NSEditorApi::CAscCefMenuEvent* pEvent = m_pCefView->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_DOCUMENT_NAME);
+
+                NSEditorApi::CAscDocumentName* pData = new NSEditorApi::CAscDocumentName();
+                pData->put_Id(m_pCefView->GetId());
+                pData->put_Name(NSCommon::GetFileName(m_oLocalInfo.m_oInfo.m_sFileSrc));
+                if (m_oLocalInfo.m_oInfo.m_bIsSaved)
+                {
+                    std::wstring sPath = m_oLocalInfo.m_oInfo.m_sFileSrc;
 #ifdef WIN32
-                NSCommon::string_replace(sPath, L"/", L"\\");
+                    NSCommon::string_replace(sPath, L"/", L"\\");
 #endif
-                pData->put_Path(sPath);
+                    pData->put_Path(sPath);
+                }
+
+                pEvent->m_pData = pData;
+
+                m_pManager->GetEventListener()->OnEvent(pEvent);
             }
 
-            pEvent->m_pData = pData;
+            if (m_pManager->GetEventListener() && m_pCefView != NULL)
+            {
+                m_bIsNativeSave = false;
 
-            m_pManager->GetEventListener()->OnEvent(pEvent);
-        }
+                NSEditorApi::CAscCefMenuEvent* pEvent = m_pCefView->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONSAVE);
 
-        if (m_pManager->GetEventListener() && m_pCefView != NULL)
-        {
-            m_bIsNativeSave = false;
+                NSEditorApi::CAscDocumentOnSaveData* pData = new NSEditorApi::CAscDocumentOnSaveData();
+                pData->put_Id(m_pCefView->GetId());
 
-            NSEditorApi::CAscCefMenuEvent* pEvent = m_pCefView->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONSAVE);
+                pEvent->m_pData = pData;
 
-            NSEditorApi::CAscDocumentOnSaveData* pData = new NSEditorApi::CAscDocumentOnSaveData();
-            pData->put_Id(m_pCefView->GetId());
-
-            pEvent->m_pData = pData;
-
-            m_pManager->GetEventListener()->OnEvent(pEvent);
+                m_pManager->GetEventListener()->OnEvent(pEvent);
+            }
         }
     }
 
-    CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_onsaveend");
-    message->GetArgumentList()->SetString(0, (0 == nError) ? m_oLocalInfo.m_oInfo.m_sFileSrc : L"");
+    std::string sMessageName = "onlocaldocument_onsaveend";
+    std::wstring sFileSrc = m_oLocalInfo.m_oInfo.m_sFileSrc;
+    if (!m_sOpenAsLocalSrc.empty() && m_sOpenAsLocalDst.empty())
+    {
+        sMessageName = "build_crypted_file_end";
+        sFileSrc = m_oConverterFromEditor.m_oInfo.m_sFileSrc;
+    }
+
+    CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create(sMessageName);
+    message->GetArgumentList()->SetString(0, (0 == nError) ? sFileSrc : L"");
     message->GetArgumentList()->SetInt(1, (0 == nError) ? 0 : 2);
 
     bool bIsPassAdd = false;
@@ -3287,7 +3392,7 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
         message->GetArgumentList()->SetString(2, sPass);
 
         ICertificate* pCert = ICertificate::CreateInstance();
-        std::string sHash = pCert->GetHash(m_oLocalInfo.m_oInfo.m_sFileSrc, OOXML_HASH_ALG_SHA256);
+        std::string sHash = pCert->GetHash(sFileSrc, OOXML_HASH_ALG_SHA256);
         delete pCert;
 
         message->GetArgumentList()->SetString(3, sHash);
@@ -4252,6 +4357,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
         case ASC_MENU_EVENT_TYPE_ENCRYPTED_CLOUD_BUILD:
         {
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("build_crypted_file");
+            message->GetArgumentList()->SetString(0, m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir);
             m_pInternal->SendProcessMessage(PID_RENDERER, message);
             break;
         }
@@ -4545,6 +4651,10 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
             sPath += (L"/" + m_pInternal->m_sOpenAsLocalName);
 
             this->GetAppManager()->m_pInternal->Recents_Add(sPath, nFileFormat, sRecentUrl);
+        }
+        else
+        {
+            m_pInternal->LocalFile_IncrementCounter();
         }
     }
     else

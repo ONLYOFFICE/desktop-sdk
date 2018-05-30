@@ -307,6 +307,8 @@ public:
 
     bool m_bIsDebugMode;
 
+    std::wstring m_sCryptDocumentFolder; // recover
+
     NSCriticalSection::CRITICAL_SECTION m_oCompleteTasksCS;
 
     CAscEditorNativeV8Handler()
@@ -556,7 +558,7 @@ else \n\
                 {
                     if (retval2->IsBool())
                     {
-                        m_bIsDebugMode = retval2->GetBoolValue();
+                        //m_bIsDebugMode = retval2->GetBoolValue();
                     }
                 }
             }
@@ -2105,24 +2107,16 @@ xhr.send(value);\n\
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
-        else if (name == "buildCrypted")
+        else if (name == "buildCryptedStart")
         {
-            CefRefPtr<CefV8Value> retval;
-            CefRefPtr<CefV8Exception> exception;
-            bool bRun = CefV8Context::GetCurrentContext()->Eval("(function(){ var _editor = window.Asc.editor ? window.Asc.editor : window.editor; return _editor.asc_nativeGetFile(); })();",
-                                                              #ifndef CEF_2623
-                                                                          "", 0,
-                                                              #endif
-                                                              retval, exception);
-
-            std::string sContent = retval->GetStringValue().ToString();
+            std::string sContent = arguments[0]->GetStringValue().ToString();
             BYTE* pDataDst = NULL;
             int nLenDst = 0;
 
             NSFile::CBase64Converter::Decode(sContent.c_str(), sContent.length(), pDataDst, nLenDst);
 
             NSFile::CFileBinary oFileWithChanges;
-            oFileWithChanges.CreateFileW(m_sLocalFileFolderWithoutFile + L"/EditorWithChanges.bin");
+            oFileWithChanges.CreateFileW(m_sCryptDocumentFolder + L"/EditorWithChanges.bin");
             oFileWithChanges.WriteFile(pDataDst, nLenDst);
             oFileWithChanges.CloseFile();
 
@@ -2130,6 +2124,33 @@ xhr.send(value);\n\
 
             CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("build_crypted");
+            message->GetArgumentList()->SetString(0, arguments[2]->GetStringValue());
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "buildCryptedEnd")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("build_crypted_end");
+            bool bIsClosed = arguments[0]->GetBoolValue();
+            message->GetArgumentList()->SetBool(0, bIsClosed);
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "SetCryptDocumentFolder")
+        {
+            m_sCryptDocumentFolder = arguments[0]->GetStringValue().ToWString();
+            return true;
+        }
+        else if (name == "PreloadCryptoImage")
+        {
+            std::wstring sUrl1 = arguments[0]->GetStringValue().ToWString();
+            std::wstring sUrl2 = arguments[1]->GetStringValue().ToWString();
+
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("preload_crypto_image");
+            message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
+            message->GetArgumentList()->SetString(1, arguments[1]->GetStringValue());
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
@@ -2616,7 +2637,10 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction975 = CefV8Value::CreateFunction("_GetHash", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction976 = CefV8Value::CreateFunction("_CallInAllWindows", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction977 = CefV8Value::CreateFunction("_OpenFileCrypt", _nativeHandler);
-    CefRefPtr<CefV8Value> _nativeFunction978 = CefV8Value::CreateFunction("buildCrypted", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction978 = CefV8Value::CreateFunction("buildCryptedStart", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction979 = CefV8Value::CreateFunction("buildCryptedEnd", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction980 = CefV8Value::CreateFunction("SetCryptDocumentFolder", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction981 = CefV8Value::CreateFunction("PreloadCryptoImage", _nativeHandler);
 
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -2754,7 +2778,10 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("_GetHash", _nativeFunction975, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("_CallInAllWindows", _nativeFunction976, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("_OpenFileCrypt", _nativeFunction977, V8_PROPERTY_ATTRIBUTE_NONE);
-    objNative->SetValue("buildCrypted", _nativeFunction978, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("buildCryptedStart", _nativeFunction978, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("buildCryptedEnd", _nativeFunction979, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("SetCryptDocumentFolder", _nativeFunction980, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("PreloadCryptoImage", _nativeFunction981, V8_PROPERTY_ATTRIBUTE_NONE);
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 
@@ -3416,12 +3443,17 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     }
     else if (sMessageName == "onload_crypt_document")
     {
-        std::string sFilePath = message->GetArgumentList()->GetString(0);
+        std::wstring sFilePathW = message->GetArgumentList()->GetString(0).ToWString();
+        std::string sFilePath = U_TO_UTF8(sFilePathW);
 
         CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
 
         if (_frame)
         {
+            std::wstring sDirectoryRecover = NSFile::GetDirectoryName(sFilePathW);
+            std::string sDirectoryRecoverA = U_TO_UTF8(sDirectoryRecover);
+            std::string sCode1 = "window.AscDesktopEditor.SetCryptDocumentFolder(\"" + sDirectoryRecoverA + "\");\n";
+
             std::string sCode = "\
 var xhr = new XMLHttpRequest();\n\
 xhr.open(\"GET\", \"ascdesktop://fonts/" + sFilePath + "\", true);\n\
@@ -3433,7 +3465,7 @@ else\n\
 \n\
 xhr.onload = function()\n\
 {\n\
-    var fileData = new Uint8Array(this.response);\n\
+    var fileData = new Uint8Array(xhr.response);\n\
 \n\
     window.AscDesktopEditor.openFileCryptCallback(fileData);\n\
     window.AscDesktopEditor.openFileCryptCallback = null;\n\
@@ -3441,7 +3473,7 @@ xhr.onload = function()\n\
 \n\
 xhr.send(null);";
 
-            _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+            _frame->ExecuteJavaScript(sCode1 + sCode, _frame->GetURL(), 0);
         }
 
         return true;
@@ -3455,10 +3487,108 @@ xhr.send(null);";
     }
     else if (sMessageName == "build_crypted_file")
     {
+        std::string sFolderName = message->GetArgumentList()->GetString(0);
         CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
         if (_frame)
-            _frame->ExecuteJavaScript("window.AscDesktopEditor.buildCrypted();", _frame->GetURL(), 0);
+            _frame->ExecuteJavaScript("window.buildCryptoFile_Start();", _frame->GetURL(), 0);
         return true;
+    }
+    else if (sMessageName == "build_crypted_file_end")
+    {
+        CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
+
+        if (_frame)
+        {
+            std::string sFileSrc = message->GetArgumentList()->GetString(0).ToString();
+            int nIsSaved = message->GetArgumentList()->GetInt(1);
+
+            // 0 - ok
+            // 1 - cancel
+            // 2 - error
+            if (!sFileSrc.empty())
+            {
+                std::string sCode = "window.AscDesktopEditor.LocalFileSetSourcePath(\"" + sFileSrc + "\");";
+                _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+            }
+
+            std::string sCode = "window.buildCryptoFile_End(\"" + sFileSrc + "\", " + std::to_string(nIsSaved);
+
+            std::string sHash = "";
+            std::string sPass = "";
+            if (4 <= message->GetArgumentList()->GetSize())
+            {
+                sPass = message->GetArgumentList()->GetString(2).ToString();
+                sHash = message->GetArgumentList()->GetString(3).ToString();
+
+                NSCommon::string_replaceA(sPass, "\\", "\\\\");
+                NSCommon::string_replaceA(sPass, "\"", "\\\"");
+
+                if (!sPass.empty() && !sHash.empty())
+                {
+                    sCode += ", \"";
+                    sCode += sHash;
+                    sCode += "\", \"";
+                    sCode += sPass;
+                    sCode += "\"";
+                }
+            }
+
+            sCode += ");";
+            _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+        }
+        return true;
+    }
+    else if (sMessageName == "on_preload_crypto_image")
+    {
+        CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
+
+        if (_frame)
+        {
+            int nType = message->GetArgumentList()->GetInt(0);
+            std::wstring sFileSrc = message->GetArgumentList()->GetString(1).ToWString();
+
+            std::string sUrl = U_TO_UTF8(sFileSrc);
+            std::string sUrlNatural = sUrl;
+            std::string sData = "";
+            if (0 == nType)
+            {
+                sUrlNatural = message->GetArgumentList()->GetString(2).ToString();
+                sUrl = "ascdesktop://fonts/" + sUrl;
+
+                std::string sTest = "";
+                NSFile::CFileBinary oFile;
+                if (oFile.OpenFile(sFileSrc))
+                {
+                    if (oFile.GetFileSize() > 12)
+                    {
+                        BYTE data[13];
+                        memset(data, 0, 13);
+                        DWORD dwSize = 0;
+                        oFile.ReadFile(data, 12, dwSize);
+                        sTest = std::string((char*)data);
+                    }
+                }
+                oFile.CloseFile();
+
+                if (sTest == "image_crypto;")
+                {
+                    NSFile::CFileBinary::ReadAllTextUtf8A(sFileSrc, sData);
+                }
+            }
+            else
+            {
+                // not local url
+            }
+
+            std::string sCode = "(function(){\n\
+var _image = window[\"crypto_images_map\"][\"" + sUrlNatural + "\"];\n\
+if (!_image) { return; }\n\
+_image.onload_crypto(\"" + sUrl + "\", \"" + sData + "\");\n\
+})();";
+
+            _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+            return true;
+        }
     }
 
     if (m_pAdditional.is_init() && m_pAdditional->OnProcessMessageReceived(app, browser, source_process, message))

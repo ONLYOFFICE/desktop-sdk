@@ -31,6 +31,7 @@
  */
 
 #include "./client_scheme.h"
+#include "./client_app.h"
 
 #include <algorithm>
 #include <string>
@@ -57,6 +58,26 @@ public:
     {
         if (NULL != data_binary_)
             delete [] data_binary_;
+    }
+
+    std::string GetMimeTypeFromExt(const std::wstring& sFile)
+    {
+        std::wstring sExt = NSFile::GetFileExtention(sFile);
+
+        if (sExt == L"html")
+            return "text/html";
+        if (sExt == L"js")
+            return "text/javascript";
+        if (sExt == L"css")
+            return "text/css";
+        if (sExt == L"json")
+            return "application/json";
+        if (sExt == L"png")
+            return "image/png";
+        if (sExt == L"jpg" || sExt == L"jpeg")
+            return "image/jpeg";
+
+        return "*/*";
     }
 
     virtual bool ProcessRequest(CefRefPtr<CefRequest> request,
@@ -141,7 +162,6 @@ public:
             CefString cefFile = CefURIDecode(cefUrl, false, static_cast<cef_uri_unescape_rule_t>(nFlag));
 
             std::wstring sFontFile = cefFile.ToWString().substr(19);
-
             DWORD dwSize = 0;
             NSFile::CFileBinary::ReadAllBytes(sFontFile, &data_binary_, dwSize);
             data_binary_len_ = (size_t)dwSize;
@@ -150,6 +170,40 @@ public:
 
             // Set the resulting mime type
             mime_type_ = "*/*";
+        }
+
+        posFind = url.find("ascdesktop://plugin_content/");
+        if (posFind != std::string::npos)
+        {
+            int nFlag = UU_SPACES | UU_REPLACE_PLUS_WITH_SPACE;
+#if defined (_LINUX) && !defined(_MAC)
+            nFlag |= UU_URL_SPECIAL_CHARS_EXCEPT_PATH_SEPARATORS;
+#else
+#ifndef CEF_2623
+            nFlag |= UU_URL_SPECIAL_CHARS_EXCEPT_PATH_SEPARATORS;
+#endif
+#endif
+
+            CefString cefUrl = request->GetURL();
+            CefString cefFile = CefURIDecode(cefUrl, false, static_cast<cef_uri_unescape_rule_t>(nFlag));
+
+            std::wstring sFile = cefFile.ToWString().substr(28);
+
+            if (0 == sFile.find(L"file:///"))
+            {
+                sFile = sFile.substr(7);
+                if (!NSFile::CFileBinary::Exists(sFile))
+                    sFile = sFile.substr(1);
+            }
+
+            DWORD dwSize = 0;
+            NSFile::CFileBinary::ReadAllBytes(sFile, &data_binary_, dwSize);
+            data_binary_len_ = (size_t)dwSize;
+
+            handled = true;
+
+            // Set the resulting mime type
+            mime_type_ = GetMimeTypeFromExt(sFile);
         }
 
 #if 0
@@ -243,8 +297,6 @@ public:
     {
         CEF_REQUIRE_IO_THREAD();
 
-        BYTE* pDataSrc = (BYTE*)data_out;
-
         bool has_data = false;
         bytes_read = 0;
 
@@ -330,7 +382,7 @@ void RegisterCustomSchemes(CefRefPtr<CefSchemeRegistrar> registrar,
 void RegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar,
                            std::vector<CefString>& cookiable_schemes)
 {
-    registrar->AddCustomScheme("ascdesktop", true, false, false, false, false, false);
+    registrar->AddCustomScheme("ascdesktop", true, false, false, true, true, false);
 }
 #endif
 
@@ -340,3 +392,9 @@ bool InitScheme(CAscApplicationManager* pManager)
 }
 
 }  // namespace asc_scheme
+
+void client::ClientApp::RegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar,
+                                              std::vector<CefString>& cookiable_schemes)
+{
+    return asc_scheme::RegisterCustomSchemes(registrar, cookiable_schemes);
+}
