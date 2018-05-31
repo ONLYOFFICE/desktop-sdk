@@ -1878,6 +1878,21 @@ xhr.send(value);\n\
         }
         else if (name == "IsLocalFile")
         {
+            bool isUrlCheck = false;
+            if (arguments.size() > 0 && m_sLocalFileFolderWithoutFile.empty())
+            {
+                isUrlCheck = (*arguments.begin())->GetBoolValue();
+                if (isUrlCheck)
+                {
+                    std::string sUrl = CefV8Context::GetCurrentContext()->GetFrame()->GetURL().ToString();
+                    if (0 == sUrl.find("file:/"))
+                    {
+                        retval = CefV8Value::CreateBool(true);
+                        return true;
+                    }
+                }
+            }
+
             if (m_sLocalFileFolderWithoutFile.empty())
                 retval = CefV8Value::CreateBool(false);
             else
