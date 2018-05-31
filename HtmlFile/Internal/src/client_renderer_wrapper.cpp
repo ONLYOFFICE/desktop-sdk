@@ -51,6 +51,10 @@
 
 //#define ASC_HTML_FILE_INTERNAL_LOG
 
+void client::ClientApp::RegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar, std::vector<CefString> &cookiable_schemes)
+{
+}
+
 namespace NSFileDownloader
 {
     static bool IsNeedDownload(const std::wstring& FilePath)
