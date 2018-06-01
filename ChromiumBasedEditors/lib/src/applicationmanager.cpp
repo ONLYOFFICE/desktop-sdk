@@ -272,6 +272,7 @@ void CAscApplicationManager::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             {
                 // он качается. нужно записать id в список тех, кто хочет получить скрипт после его загрузки
                 CEditorFrameId _id;
+                _id.Url = pData->get_Url();
                 _id.EditorId = pData->get_Id();
                 _id.FrameId = pData->get_FrameId();
                 _find->second.push_back(_id);
@@ -293,6 +294,7 @@ void CAscApplicationManager::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                     // создаем список ожидания
                     std::vector<CEditorFrameId> _arr;
                     CEditorFrameId _id;
+                    _id.Url = pData->get_Url();
                     _id.EditorId = pData->get_Id();
                     _id.FrameId = pData->get_FrameId();
                     _arr.push_back(_id);
@@ -302,7 +304,8 @@ void CAscApplicationManager::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                     if (std::wstring::npos == pData->get_Url().find(L"sdk/Common/AllFonts.js") &&
                         std::wstring::npos == pData->get_Url().find(L"sdkjs/common/AllFonts.js"))
                     {
-                        m_pInternal->Start_PrivateDownloadScript(pData->get_Url(), pData->get_Destination());
+                        if (m_pInternal->m_strPrivateDownloadUrl.empty())
+                            m_pInternal->Start_PrivateDownloadScript(pData->get_Url(), pData->get_Destination());
                     }
                     else
                     {

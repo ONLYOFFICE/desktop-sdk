@@ -361,6 +361,7 @@ class CEditorFrameId
 public:
     int EditorId;
     int FrameId;
+    std::wstring Url;
 };
 
 class CAscApplicationManager_Private;
@@ -719,10 +720,29 @@ public:
     }
     void End_PrivateDownloadScript()
     {
-        m_pMain->LockCS(LOCK_CS_SCRIPT);
         private_OnLoad(m_strPrivateDownloadUrl, m_strPrivateDownloadPath);
+
+        m_pMain->LockCS(LOCK_CS_SCRIPT);
+
         m_strPrivateDownloadUrl = L"";
         m_strPrivateDownloadPath = L"";
+
+        if (!m_mapLoadedScripts.empty())
+        {
+            for (std::map<std::wstring, std::vector<CEditorFrameId>>::iterator i = m_mapLoadedScripts.begin(); i != m_mapLoadedScripts.end(); i++)
+            {
+                std::wstring _url = i->second[0].Url;
+                std::wstring _dst = i->first;
+
+                if (std::wstring::npos == _url.find(L"sdk/Common/AllFonts.js") &&
+                    std::wstring::npos == _url.find(L"sdkjs/common/AllFonts.js"))
+                {
+                    Start_PrivateDownloadScript(_url, _dst);
+                    break;
+                }
+            }
+        }
+
         m_pMain->UnlockCS(LOCK_CS_SCRIPT);
     }
 
@@ -730,6 +750,8 @@ protected:
     
     void private_OnLoad(const std::wstring& sUrl, const std::wstring& sDestination)
     {
+        m_pMain->LockCS(LOCK_CS_SCRIPT);
+
         std::map<std::wstring, std::vector<CEditorFrameId>>::iterator i = m_mapLoadedScripts.find(sDestination);
         
         if (i != m_mapLoadedScripts.end())
@@ -762,6 +784,8 @@ protected:
         }
         
         m_mapLoadedScripts.erase(i);
+
+        m_pMain->UnlockCS(LOCK_CS_SCRIPT);
     }
 
     virtual DWORD ThreadProc()

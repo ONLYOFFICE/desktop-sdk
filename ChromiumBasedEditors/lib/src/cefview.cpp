@@ -4543,11 +4543,13 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
         {
             m_pInternal->m_bIsCloudCryptFile = m_pInternal->m_sOpenAsLocalDst.empty();
 
+            /*
             CCefView* pMainView = GetAppManager()->GetViewById(1);
             if (!pMainView)
                 return;
+            */
 
-            pMainView->m_pInternal->m_pDownloadViewCallback = this;
+            m_pInternal->m_pDownloadViewCallback = this;
             m_pInternal->m_sDownloadViewPath = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"OL");
             if (NSFile::CFileBinary::Exists(m_pInternal->m_sDownloadViewPath))
                 NSFile::CFileBinary::Remove(m_pInternal->m_sDownloadViewPath);
@@ -4555,7 +4557,7 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
             m_pInternal->m_sDownloadViewPath += (L"." + NSCommon::GetFileExtention(m_pInternal->m_sOpenAsLocalName));
 
             // load preview...
-            pMainView->m_pInternal->m_handler->GetBrowser()->GetHost()->StartDownload(m_pInternal->m_sOpenAsLocalSrc);
+            m_pInternal->m_handler->GetBrowser()->GetHost()->StartDownload(m_pInternal->m_sOpenAsLocalSrc);
             return;
         }
     }
