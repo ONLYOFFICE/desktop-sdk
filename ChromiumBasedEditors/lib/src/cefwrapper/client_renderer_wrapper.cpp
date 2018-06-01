@@ -558,7 +558,7 @@ else \n\
                 {
                     if (retval2->IsBool())
                     {
-                        //m_bIsDebugMode = retval2->GetBoolValue();
+                        m_bIsDebugMode = retval2->GetBoolValue();
                     }
                 }
             }
