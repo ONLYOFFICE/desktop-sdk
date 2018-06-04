@@ -558,7 +558,7 @@ else \n\
                 {
                     if (retval2->IsBool())
                     {
-                        m_bIsDebugMode = retval2->GetBoolValue();
+                        //m_bIsDebugMode = retval2->GetBoolValue();
                     }
                 }
             }
@@ -1173,7 +1173,7 @@ else \n\
         }
         else if (name == "GetImageBase64")
         {
-            if (arguments.size() != 1)
+            if (arguments.size() < 1)
             {
                 retval = CefV8Value::CreateString("");
                 return true;
@@ -1212,22 +1212,29 @@ else \n\
             oFileBinary.ReadFile(pData, (DWORD)nDetectSize, dwRead);
             oFileBinary.CloseFile();
 
-            CImageFileFormatChecker _checker;
+            bool bIsNoHeader = false;
+            if (arguments.size() >= 2)
+                bIsNoHeader = arguments[1]->GetBoolValue();
 
-            if (_checker.isBmpFile(pData, nDetectSize))
-                sHeader = "data:image/bmp;base64,";
-            else if (_checker.isJpgFile(pData, nDetectSize))
-                sHeader = "data:image/jpeg;base64,";
-            else if (_checker.isPngFile(pData, nDetectSize))
-                sHeader = "data:image/png;base64,";
-            else if (_checker.isGifFile(pData, nDetectSize))
-                sHeader = "data:image/gif;base64,";
-            else if (_checker.isTiffFile(pData, nDetectSize))
-                sHeader = "data:image/tiff;base64,";
+            if (!bIsNoHeader)
+            {
+                CImageFileFormatChecker _checker;
+
+                if (_checker.isBmpFile(pData, nDetectSize))
+                    sHeader = "data:image/bmp;base64,";
+                else if (_checker.isJpgFile(pData, nDetectSize))
+                    sHeader = "data:image/jpeg;base64,";
+                else if (_checker.isPngFile(pData, nDetectSize))
+                    sHeader = "data:image/png;base64,";
+                else if (_checker.isGifFile(pData, nDetectSize))
+                    sHeader = "data:image/gif;base64,";
+                else if (_checker.isTiffFile(pData, nDetectSize))
+                    sHeader = "data:image/tiff;base64,";
+            }
 
             RELEASEARRAYOBJECTS(pData);
 
-            if (sHeader.empty())
+            if (sHeader.empty() && !bIsNoHeader)
             {
                 retval = CefV8Value::CreateString("");
                 return true;
@@ -1244,7 +1251,7 @@ else \n\
 
             char* pDataDst = NULL;
             int nDataDst = 0;
-            NSFile::CBase64Converter::Encode(pFontData, nSize1, pDataDst, nDataDst);
+            NSFile::CBase64Converter::Encode(pFontData, nSize1, pDataDst, nDataDst, NSBase64::B64_BASE64_FLAG_NOCRLF);
 
             std::string sFontBase64(pDataDst, nDataDst);
             RELEASEARRAYOBJECTS(pDataDst);
@@ -1666,6 +1673,11 @@ xhr.open(\"POST\", \"ascdesktop://binary/\" + window.AscDesktopEditor.GetEditorI
 xhr.send(value);\n\
 };",
                 _frame->GetURL(), 0);
+
+                _frame->ExecuteJavaScript("window.AscDesktopEditor.OpenFilenameDialog = function(filter, ismulti, callback) {\n\
+window.on_native_open_filename_dialog = callback;\n\
+window.AscDesktopEditor._OpenFilenameDialog(filter, ismulti);\n\
+};", _frame->GetURL(), 0);
             }
 
             return true;
@@ -1981,14 +1993,19 @@ xhr.send(value);\n\
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
-        else if (name == "OpenFilenameDialog")
+        else if (name == "_OpenFilenameDialog")
         {
             CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_open_filename_dialog");
             std::vector<CefRefPtr<CefV8Value>>::const_iterator iter = arguments.begin();
-            message->GetArgumentList()->SetString(0, (*iter)->GetStringValue());
+            message->GetArgumentList()->SetString(0, (*iter)->GetStringValue());            
             int64 id = CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier();
             message->GetArgumentList()->SetString(1, std::to_string(id));
+            if (arguments.size() > 1)
+            {
+                iter++;
+                message->GetArgumentList()->SetBool(2, (*iter)->GetBoolValue());
+            }
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
@@ -2167,6 +2184,37 @@ xhr.send(value);\n\
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
             message->GetArgumentList()->SetString(1, arguments[1]->GetStringValue());
             browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "ResaveFile")
+        {
+            std::wstring sFile = /*m_sCryptDocumentFolder + */arguments[0]->GetStringValue().ToWString();
+            std::string sData = arguments[1]->GetStringValue().ToString();
+
+            std::wstring sFileHeader = L"ascdesktop://fonts/";
+            if (0 == sFile.find(sFileHeader))
+            {
+                sFile = sFile.substr(sFileHeader.length());
+
+#ifdef WIN32
+                NSCommon::string_replace(sFile, L"/", L"\\");
+#endif
+            }
+
+            BYTE* pDataDst = NULL;
+            int nSizeDst = 0;
+            NSFile::CBase64Converter::Decode(sData.c_str(), (int)sData.length(), pDataDst, nSizeDst);
+
+            if (NSFile::CFileBinary::Exists(sFile))
+                NSFile::CFileBinary::Remove(sFile);
+
+            NSFile::CFileBinary oFile;
+            oFile.CreateFileW(sFile);
+            oFile.WriteFile(pDataDst, (DWORD)nSizeDst);
+            oFile.CloseFile();
+
+            RELEASEARRAYOBJECTS(pDataDst);
+
             return true;
         }
 
@@ -2624,7 +2672,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction954 = CefV8Value::CreateFunction("ViewCertificate", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction955 = CefV8Value::CreateFunction("SelectCertificate", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction956 = CefV8Value::CreateFunction("GetDefaultCertificate", _nativeHandler);
-    CefRefPtr<CefV8Value> _nativeFunction957 = CefV8Value::CreateFunction("OpenFilenameDialog", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction957 = CefV8Value::CreateFunction("_OpenFilenameDialog", _nativeHandler);
 
     CefRefPtr<CefV8Value> _nativeFunction958 = CefV8Value::CreateFunction("SaveQuestion", _nativeHandler);
 
@@ -2656,6 +2704,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction979 = CefV8Value::CreateFunction("buildCryptedEnd", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction980 = CefV8Value::CreateFunction("SetCryptDocumentFolder", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction981 = CefV8Value::CreateFunction("PreloadCryptoImage", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction982 = CefV8Value::CreateFunction("ResaveFile", _nativeHandler);
 
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -2765,7 +2814,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("ViewCertificate", _nativeFunction954, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("SelectCertificate", _nativeFunction955, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("GetDefaultCertificate", _nativeFunction956, V8_PROPERTY_ATTRIBUTE_NONE);
-    objNative->SetValue("OpenFilenameDialog", _nativeFunction957, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("_OpenFilenameDialog", _nativeFunction957, V8_PROPERTY_ATTRIBUTE_NONE);
 
     objNative->SetValue("SaveQuestion", _nativeFunction958, V8_PROPERTY_ATTRIBUTE_NONE);
 
@@ -2797,6 +2846,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("buildCryptedEnd", _nativeFunction979, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("SetCryptDocumentFolder", _nativeFunction980, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("PreloadCryptoImage", _nativeFunction981, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("ResaveFile", _nativeFunction982, V8_PROPERTY_ATTRIBUTE_NONE);
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 
@@ -3282,7 +3332,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     {
         CefRefPtr<CefFrame> _frame;
 
-        std::string sId = message->GetArgumentList()->GetString(1).ToString();
+        std::string sId = message->GetArgumentList()->GetString(0).ToString();
         if (sId.empty())
             _frame = GetEditorFrame(browser);
         else
@@ -3290,13 +3340,39 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
             int64 nId = (int64)std::stoll(sId);
             _frame = browser->GetFrame(nId);
         }
+        bool bIsMulti = message->GetArgumentList()->GetBool(1);
+
+        std::wstring sParamCallback = L"";
+        if (!bIsMulti)
+        {
+            std::wstring sPath = message->GetArgumentList()->GetString(2).ToWString();
+            NSCommon::string_replace(sPath, L"\\", L"\\\\");
+            sParamCallback = L"\"" + sPath + L"\"";
+        }
+        else
+        {
+            sParamCallback = L"[";
+
+            int nCount = message->GetArgumentList()->GetSize();
+            for (int nIndex = 2; nIndex < nCount; nIndex++)
+            {
+                std::wstring sPath = message->GetArgumentList()->GetString(nIndex).ToWString();
+                NSCommon::string_replace(sPath, L"\\", L"\\\\");
+                sParamCallback += (L"\"" + sPath + L"\"");
+
+                if (nIndex < (nCount - 1))
+                    sParamCallback += L",";
+            }
+
+            sParamCallback += L"]";
+        }
 
         if (_frame)
         {
             std::wstring sPath = message->GetArgumentList()->GetString(0).ToWString();
             NSCommon::string_replace(sPath, L"\\", L"\\\\");
 
-            std::wstring sCode = L"window.OnNativeOpenFilenameDialog(\"" + sPath + L"\");";
+            std::wstring sCode = L"(function() { window.on_native_open_filename_dialog(" + sParamCallback + L"); delete window.on_native_open_filename_dialog; })();";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
         }
         return true;
@@ -3574,20 +3650,25 @@ xhr.send(null);";
                 NSFile::CFileBinary oFile;
                 if (oFile.OpenFile(sFileSrc))
                 {
-                    if (oFile.GetFileSize() > 12)
+                    if (oFile.GetFileSize() > 11)
                     {
-                        BYTE data[13];
-                        memset(data, 0, 13);
+                        BYTE data[11];
+                        memset(data, 0, 11);
                         DWORD dwSize = 0;
-                        oFile.ReadFile(data, 12, dwSize);
+                        oFile.ReadFile(data, 10, dwSize);
                         sTest = std::string((char*)data);
                     }
                 }
                 oFile.CloseFile();
 
-                if (sTest == "image_crypto;")
+                if (sTest == "ENCRYPTED;")
                 {
                     NSFile::CFileBinary::ReadAllTextUtf8A(sFileSrc, sData);
+
+                    // read extension
+                    std::string::size_type nPos = sData.find(';', 10);
+                    if (nPos != std::string::npos)
+                        sData = sData.substr(nPos + 1);
                 }
             }
             else

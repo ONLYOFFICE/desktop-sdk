@@ -581,10 +581,14 @@ namespace NSEditorApi
         std::wstring m_sPath;
         std::wstring m_sFilter;
 
+        bool m_bIsMultiselect;
+        std::vector<std::wstring> m_arPaths;
+
     public:
         CAscLocalOpenFileDialog()
         {
             m_nId  = -1;
+            m_bIsMultiselect = false;
         }
         virtual ~CAscLocalOpenFileDialog()
         {
@@ -593,6 +597,13 @@ namespace NSEditorApi
         LINK_PROPERTY_INT(Id)
         LINK_PROPERTY_STRING(Path)
         LINK_PROPERTY_STRING(Filter)
+
+        LINK_PROPERTY_BOOL(IsMultiselect)
+
+        std::vector<std::wstring>& get_Files()
+        {
+            return m_arPaths;
+        }
     };
 
     class CAscLocalOpenFiles : public IMenuEventDataBase

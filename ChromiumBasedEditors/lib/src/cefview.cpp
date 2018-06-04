@@ -2066,6 +2066,10 @@ public:
             NSEditorApi::CAscLocalOpenFileDialog* pData = new NSEditorApi::CAscLocalOpenFileDialog();
             pData->put_Id(m_pParent->GetId());
             pData->put_Filter(message->GetArgumentList()->GetString(0).ToWString());
+
+            if (message->GetArgumentList()->GetSize() > 2)
+                pData->put_IsMultiselect(message->GetArgumentList()->GetBool(2));
+
             pEvent->m_pData = pData;
             m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
             m_pParent->m_pInternal->m_sIFrameIDMethod = message->GetArgumentList()->GetString(1);
@@ -4256,8 +4260,23 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
         {
             NSEditorApi::CAscLocalOpenFileDialog* pData = (NSEditorApi::CAscLocalOpenFileDialog*)pEvent->m_pData;
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_open_filename_dialog");
-            message->GetArgumentList()->SetString(0, pData->get_Path());
-            message->GetArgumentList()->SetString(1, m_pInternal->m_sIFrameIDMethod);
+            message->GetArgumentList()->SetString(0, m_pInternal->m_sIFrameIDMethod);
+            message->GetArgumentList()->SetBool(1, pData->get_IsMultiselect());
+
+            if (!pData->get_IsMultiselect())
+            {
+                message->GetArgumentList()->SetString(2, pData->get_Path());
+            }
+            else
+            {
+                int nIndex = 2;
+                std::vector<std::wstring>& arPaths = pData->get_Files();
+
+                for (std::vector<std::wstring>::iterator i = arPaths.begin(); i != arPaths.end(); i++)
+                {
+                    message->GetArgumentList()->SetString(nIndex++, *i);
+                }
+            }
 
             browser->SendProcessMessage(PID_RENDERER, message);
             break;
