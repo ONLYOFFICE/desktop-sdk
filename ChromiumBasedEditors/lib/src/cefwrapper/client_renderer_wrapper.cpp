@@ -1678,6 +1678,11 @@ xhr.send(value);\n\
 window.on_native_open_filename_dialog = callback;\n\
 window.AscDesktopEditor._OpenFilenameDialog(filter, ismulti);\n\
 };", _frame->GetURL(), 0);
+
+                _frame->ExecuteJavaScript("window.AscDesktopEditor.DownloadFiles = function(filesSrc, filesDst, callback) {\n\
+window.on_native_download_files = callback;\n\
+window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst);\n\
+};", _frame->GetURL(), 0);
             }
 
             return true;
@@ -2217,6 +2222,57 @@ window.AscDesktopEditor._OpenFilenameDialog(filter, ismulti);\n\
 
             return true;
         }
+        else if (name == "_DownloadFiles")
+        {
+            std::wstring sDirTmp = m_sCryptDocumentFolder;
+            if (sDirTmp.empty())
+                sDirTmp = m_sLocalFileFolderWithoutFile;
+            if (sDirTmp.empty())
+                sDirTmp = NSFile::CFileBinary::GetTempPathW();
+
+            CefRefPtr<CefV8Value> val = arguments[0];
+            int nCount = val->GetArrayLength();
+
+            int nCount2 = 0;
+            CefRefPtr<CefV8Value> val2 = NULL;
+            if (arguments.size() > 1)
+            {
+                val2 = arguments[1];
+                nCount2 = val2->GetArrayLength();
+            }
+
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("download_files");
+
+            int nIndex = 0;
+            for (int i = 0; i < nCount; ++i)
+            {
+                message->GetArgumentList()->SetString(nIndex++, val->GetValue(i)->GetStringValue());
+
+                if (i < nCount2)
+                {
+                    message->GetArgumentList()->SetString(nIndex++, val2->GetValue(i)->GetStringValue());
+                }
+                else
+                {
+                    std::wstring sFileTmp = NSFile::CFileBinary::CreateTempFileWithUniqueName(sDirTmp, L"IMG");
+                    if (NSFile::CFileBinary::Exists(sFileTmp))
+                        NSFile::CFileBinary::Remove(sFileTmp);
+                    message->GetArgumentList()->SetString(nIndex++, sFileTmp);
+                }
+            }
+
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            browser->SendProcessMessage(PID_BROWSER, message);
+
+            return true;
+        }
+        else if (name == "RemoveFile")
+        {
+            std::wstring sFile = arguments[0]->GetStringValue();
+            if (NSFile::CFileBinary::Exists(sFile))
+                NSFile::CFileBinary::Remove(sFile);
+            return true;
+        }
 
         // Function does not exist.
         return false;
@@ -2705,6 +2761,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction980 = CefV8Value::CreateFunction("SetCryptDocumentFolder", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction981 = CefV8Value::CreateFunction("PreloadCryptoImage", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction982 = CefV8Value::CreateFunction("ResaveFile", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction983 = CefV8Value::CreateFunction("_DownloadFiles", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction984 = CefV8Value::CreateFunction("RemoveFile", _nativeHandler);
 
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -2847,6 +2905,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("SetCryptDocumentFolder", _nativeFunction980, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("PreloadCryptoImage", _nativeFunction981, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("ResaveFile", _nativeFunction982, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("_DownloadFiles", _nativeFunction983, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("RemoveFile", _nativeFunction984, V8_PROPERTY_ATTRIBUTE_NONE);
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 
@@ -3677,14 +3737,45 @@ xhr.send(null);";
             }
 
             std::string sCode = "(function(){\n\
-var _image = window[\"crypto_images_map\"][\"" + sUrlNatural + "\"];\n\
-if (!_image) { return; }\n\
-_image.onload_crypto(\"" + sUrl + "\", \"" + sData + "\");\n\
+var _url = \"" + sUrlNatural + "\";\n\
+var _images = window[\"crypto_images_map\"][_url];\n\
+if (!_images) { return; }\n\
+for (var i = 0; i < _images.length; i++) \n\
+{\n\
+_images[i].onload_crypto(\"" + sUrl + "\", \"" + sData + "\");\n\
+}\n\
+delete window[\"crypto_images_map\"][_url];\n\
 })();";
 
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
             return true;
         }
+    }
+    else if (sMessageName == "on_download_files")
+    {
+        CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
+        if (_frame)
+        {
+            std::string sParam = "{";
+            int nCount = message->GetArgumentList()->GetSize();
+            int nIndex = 0;
+            while (nIndex < nCount)
+            {
+                sParam += ("\"" + message->GetArgumentList()->GetString(nIndex++).ToString() + "\" : \"");
+
+                std::string sFile = message->GetArgumentList()->GetString(nIndex++).ToString();
+                NSCommon::string_replaceA(sFile, "\\", "/");
+
+                sParam += (sFile + "\"");
+
+                if (nIndex < nCount)
+                    sParam += ", ";
+            }
+            sParam += "}";
+
+            _frame->ExecuteJavaScript("(function() { window.on_native_download_files(" + sParam + "); delete window.on_native_download_files; })();", _frame->GetURL(), 0);
+        }
+        return true;
     }
 
     if (m_pAdditional.is_init() && m_pAdditional->OnProcessMessageReceived(app, browser, source_process, message))

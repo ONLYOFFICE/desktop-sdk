@@ -284,6 +284,9 @@ public:
     bool m_bIsOnlyPassSupport;
     std::map<std::wstring, std::wstring> m_arCryptoImages;
 
+    std::map<std::wstring, std::wstring> m_arDownloadedFiles;
+    std::map<std::wstring, std::wstring> m_arDownloadedFilesComplete;
+
     bool m_bIsCrashed;
 
     bool m_bIsReceiveOnce_OnDocumentModified;
@@ -2332,8 +2335,11 @@ public:
                 }
                 else
                 {
-                    m_pParent->m_pInternal->m_arCryptoImages.insert(std::pair<std::wstring, std::wstring>(sUrl1, sNum));
-                    m_pParent->m_pInternal->GetBrowser()->GetHost()->StartDownload(sUrl1);
+                    if (m_pParent->m_pInternal->m_arCryptoImages.find(sUrl1) == m_pParent->m_pInternal->m_arCryptoImages.end())
+                    {
+                        m_pParent->m_pInternal->m_arCryptoImages.insert(std::pair<std::wstring, std::wstring>(sUrl1, sNum));
+                        m_pParent->m_pInternal->GetBrowser()->GetHost()->StartDownload(sUrl1);
+                    }
                 }
             }
             else
@@ -2342,6 +2348,34 @@ public:
                 message->GetArgumentList()->SetInt(0, 1);
                 message->GetArgumentList()->SetString(1, sUrl1);
                 browser->SendProcessMessage(PID_RENDERER, message);
+            }
+
+            return true;
+        }
+        else if (message_name == "download_files")
+        {
+            int nCount = message->GetArgumentList()->GetSize();
+
+            if (nCount == 0 || ((nCount & 0x01) == 0x01))
+                return true;
+
+            int nIndex = 0;
+            while (nIndex < nCount)
+            {
+                std::wstring sUrl  = message->GetArgumentList()->GetString(nIndex++);
+                std::wstring sFile = message->GetArgumentList()->GetString(nIndex++);
+
+#ifdef WIN32
+                NSCommon::string_replace(sFile, L"/", L"\\");
+#endif
+
+                m_pParent->m_pInternal->m_arDownloadedFiles.insert(std::pair<std::wstring, std::wstring>(sUrl, sFile));
+            }
+
+            for (std::map<std::wstring, std::wstring>::iterator iter = m_pParent->m_pInternal->m_arDownloadedFiles.begin();
+                 iter != m_pParent->m_pInternal->m_arDownloadedFiles.end(); iter++)
+            {
+                m_pParent->m_pInternal->GetBrowser()->GetHost()->StartDownload(iter->first);
             }
 
             return true;
@@ -3010,6 +3044,13 @@ require.load = function (context, moduleName, url) {\n\
             callback->Continue(sRetTemp, false);
             return;
         }
+
+        std::map<std::wstring, std::wstring>::iterator findDownloadFile = m_pParent->m_pInternal->m_arDownloadedFiles.find(s1);
+        if (findDownloadFile != m_pParent->m_pInternal->m_arDownloadedFiles.end())
+        {
+            callback->Continue(findDownloadFile->second, false);
+            return;
+        }
         
         m_pParent->m_pInternal->m_before_callback = callback;
         callback->AddRef();
@@ -3068,6 +3109,40 @@ require.load = function (context, moduleName, url) {\n\
                     browser->SendProcessMessage(PID_RENDERER, message);
 
                     m_pParent->m_pInternal->m_arCryptoImages.erase(findCryptoImage);
+                }
+                return;
+            }
+        }
+
+        if (!m_pParent->m_pInternal->m_arDownloadedFiles.empty())
+        {
+            std::map<std::wstring, std::wstring>::iterator findDownloadFile = m_pParent->m_pInternal->m_arDownloadedFiles.find(sUrl);
+            if (findDownloadFile != m_pParent->m_pInternal->m_arDownloadedFiles.end())
+            {
+                if (download_item->IsComplete())
+                {
+                    m_pParent->m_pInternal->m_arDownloadedFilesComplete.insert(
+                                std::pair<std::wstring, std::wstring>(findDownloadFile->first, findDownloadFile->second));
+
+                    m_pParent->m_pInternal->m_arDownloadedFiles.erase(findDownloadFile);
+
+                    if (m_pParent->m_pInternal->m_arDownloadedFiles.empty())
+                    {
+                        CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_download_files");
+
+                        int nIndex = 0;
+                        for (std::map<std::wstring, std::wstring>::iterator iter = m_pParent->m_pInternal->m_arDownloadedFilesComplete.begin();
+                             iter != m_pParent->m_pInternal->m_arDownloadedFilesComplete.end(); iter++)
+                        {
+                            message->GetArgumentList()->SetString(nIndex++, iter->first);
+                            message->GetArgumentList()->SetString(nIndex++, iter->second);
+                        }
+
+                        browser->SendProcessMessage(PID_RENDERER, message);
+
+                        m_pParent->m_pInternal->m_arDownloadedFilesComplete.clear();
+                        m_pParent->m_pInternal->m_arDownloadedFiles.clear();
+                    }
                 }
                 return;
             }
