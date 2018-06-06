@@ -64,6 +64,139 @@
 
 #include "./plugins.h"
 
+#include "../../../../core/DesktopEditor/graphics/BaseThread.h"
+
+class CDownloadFilesAborted : public NSTimers::CTimer
+{
+protected:
+    class CefDownloadItemAborted : public CefDownloadItem
+    {
+    private:
+        std::wstring m_sUrl;
+
+    public:
+        CefDownloadItemAborted(const std::wstring& sUrl) : CefDownloadItem()
+        {
+            m_sUrl = sUrl;
+            this->AddRef();
+        }
+
+    public:
+        virtual bool IsValid() { return false; }
+        virtual bool IsInProgress() { return false; }
+        virtual bool IsComplete() { return false; }
+        virtual bool IsCanceled() { return true; }
+        virtual int64 GetCurrentSpeed() { return 0; }
+        virtual int GetPercentComplete() { return 0; }
+        virtual int64 GetTotalBytes() { return 0; }
+        virtual int64 GetReceivedBytes() { return 0; }
+        virtual CefTime GetStartTime() { return CefTime(); }
+        virtual CefTime GetEndTime() { return CefTime(); }
+        virtual CefString GetFullPath() { return ""; }
+        virtual uint32 GetId() { return 0; }
+        virtual CefString GetURL() { return m_sUrl; }
+        virtual CefString GetOriginalUrl() { return m_sUrl; }
+        virtual CefString GetSuggestedFileName() { return ""; }
+        virtual CefString GetContentDisposition() { return ""; }
+        virtual CefString GetMimeType() { return "download_aborted_timer"; }
+
+        IMPLEMENT_REFCOUNTING(CefDownloadItemAborted)
+    };
+
+public:
+    CDownloadFilesAborted() : NSTimers::CTimer()
+    {
+        m_oCS.InitializeCriticalSection();
+        m_bIsFromTimer = false;
+        m_dwIntervalCheck = 2000;
+        m_bIsSkipNextIteration = false;
+        SetInterval(m_dwIntervalCheck);
+    }
+    virtual ~CDownloadFilesAborted()
+    {
+        m_oCS.DeleteCriticalSection();
+    }
+
+public:
+    NSCriticalSection::CRITICAL_SECTION m_oCS;
+    CefDownloadHandler* m_pHandler;
+
+    bool m_bIsFromTimer;
+    DWORD m_dwIntervalCheck;
+    bool m_bIsSkipNextIteration;
+
+    std::map<std::wstring, DWORD> m_mapUrls;
+
+public:
+    void StartDownload(const std::wstring& sUrl)
+    {
+        CTemporaryCS oCS(&m_oCS);
+        m_mapUrls.insert(std::pair<std::wstring, DWORD>(sUrl, NSTimers::GetTickCount()));
+        if (!IsRunned())
+        {
+            Start(0);
+            return;
+        }
+        else
+        {
+            m_bIsSkipNextIteration = true;
+        }
+    }
+    void EndDownload(const std::wstring& sUrl)
+    {
+        if (m_bIsFromTimer)
+            return;
+
+        CTemporaryCS oCS(&m_oCS);
+
+        std::map<std::wstring, DWORD>::iterator find = m_mapUrls.find(sUrl);
+        if (find != m_mapUrls.end())
+            m_mapUrls.erase(find);
+
+        if (m_mapUrls.empty() && IsRunned())
+            Stop();
+    }
+
+    virtual void OnTimer()
+    {
+        if (!IsRunned())
+            return;
+
+        CTemporaryCS oCS(&m_oCS);
+
+        if (m_bIsSkipNextIteration)
+        {
+            m_bIsSkipNextIteration = false;
+            return;
+        }
+
+        std::vector<std::wstring> arRemoved;
+        for (std::map<std::wstring, DWORD>::iterator iter = m_mapUrls.begin(); iter != m_mapUrls.end(); iter++)
+        {
+            if (NSTimers::GetTickCount() > (iter->second + m_dwIntervalCheck))
+                arRemoved.push_back(iter->first);
+        }
+
+        for (std::vector<std::wstring>::iterator iter = arRemoved.begin(); iter != arRemoved.end(); iter++)
+        {
+            m_mapUrls.erase(*iter);
+            if (m_pHandler)
+            {
+                m_bIsFromTimer = true;
+                CefDownloadItemAborted* item = new CefDownloadItemAborted(*iter);
+                m_pHandler->OnDownloadUpdated(NULL, item, NULL);
+                item->Release();
+                m_bIsFromTimer = false;
+            }
+        }
+
+        if (m_mapUrls.empty())
+        {
+            StopNoJoin();
+        }
+    }
+};
+
 class CAscNativePrintDocument : public IAscNativePrintDocument
 {
 protected:
@@ -294,6 +427,8 @@ public:
 #if defined(_LINUX) && !defined(_MAC)
     WindowHandleId m_lNaturalParent;
 #endif
+
+    CDownloadFilesAborted m_oDownloaderAbortChecker;
 
 public:
     class CSystemMessage
@@ -989,7 +1124,7 @@ public:
         {
             if (NULL != m_pParent && NULL != pListener && NULL == m_pParent->m_pInternal->m_before_callback)
             {
-                GetBrowser()->GetHost()->StartDownload(sUrl);
+                m_pParent->StartDownload(sUrl);
                 
 #if 0
                 NSEditorApi::CAscDownloadFileInfo* pData = new NSEditorApi::CAscDownloadFileInfo();
@@ -2231,7 +2366,7 @@ public:
             if ((0 != sHashFileUrl.find(L"www")) && (0 != sHashFileUrl.find(L"http")) && (0 != sHashFileUrl.find(L"ftp")))
                 sHashFileUrl = sBaseUrl + sHashFileUrl;
 
-            m_pParent->m_pInternal->m_handler->GetBrowser()->GetHost()->StartDownload(sHashFileUrl);
+            m_pParent->StartDownload(sHashFileUrl);
             return true;
         }
         else if (message_name == "send_system_message")
@@ -2338,7 +2473,7 @@ public:
                     if (m_pParent->m_pInternal->m_arCryptoImages.find(sUrl1) == m_pParent->m_pInternal->m_arCryptoImages.end())
                     {
                         m_pParent->m_pInternal->m_arCryptoImages.insert(std::pair<std::wstring, std::wstring>(sUrl1, sNum));
-                        m_pParent->m_pInternal->GetBrowser()->GetHost()->StartDownload(sUrl1);
+                        m_pParent->StartDownload(sUrl1);
                     }
                 }
             }
@@ -2375,7 +2510,7 @@ public:
             for (std::map<std::wstring, std::wstring>::iterator iter = m_pParent->m_pInternal->m_arDownloadedFiles.begin();
                  iter != m_pParent->m_pInternal->m_arDownloadedFiles.end(); iter++)
             {
-                m_pParent->m_pInternal->GetBrowser()->GetHost()->StartDownload(iter->first);
+                m_pParent->StartDownload(iter->first);
             }
 
             return true;
@@ -3018,13 +3153,15 @@ require.load = function (context, moduleName, url) {\n\
     {
         CEF_REQUIRE_UI_THREAD();
 
+        std::wstring s1 = download_item->GetURL().ToWString();
+        m_pParent->m_pInternal->m_oDownloaderAbortChecker.EndDownload(s1);
+
         if (NULL != m_pParent->m_pInternal->m_pDownloadViewCallback)
         {
             callback->Continue(m_pParent->m_pInternal->m_pDownloadViewCallback->m_pInternal->GetViewDownloadPath(), false);
             return;
-        }
-        
-        std::wstring s1 = download_item->GetURL().ToWString();
+        }               
+
         std::wstring s2 = m_pParent->GetAppManager()->m_pInternal->GetPrivateDownloadUrl();
         
         if (s1 == s2)
@@ -3074,6 +3211,9 @@ require.load = function (context, moduleName, url) {\n\
         if (NULL == m_pParent)
             return;
 
+        std::wstring sUrl = download_item->GetURL().ToWString();
+        m_pParent->m_pInternal->m_oDownloaderAbortChecker.EndDownload(sUrl);
+
         if (NULL != m_pParent->m_pInternal->m_pDownloadViewCallback)
         {
             if (download_item->IsComplete())
@@ -3092,7 +3232,6 @@ require.load = function (context, moduleName, url) {\n\
             return;
         }
         
-        std::wstring sUrl = download_item->GetURL().ToWString();
         std::wstring sPath = download_item->GetFullPath().ToWString();
 
         if (!m_pParent->m_pInternal->m_arCryptoImages.empty())
@@ -3100,12 +3239,15 @@ require.load = function (context, moduleName, url) {\n\
             std::map<std::wstring, std::wstring>::iterator findCryptoImage = m_pParent->m_pInternal->m_arCryptoImages.find(sUrl);
             if (findCryptoImage != m_pParent->m_pInternal->m_arCryptoImages.end())
             {
-                if (download_item->IsComplete())
+                if (download_item->IsComplete() || download_item->IsCanceled())
                 {
                     CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_preload_crypto_image");
                     message->GetArgumentList()->SetInt(0, 0);
                     message->GetArgumentList()->SetString(1, findCryptoImage->second);
                     message->GetArgumentList()->SetString(2, findCryptoImage->first);
+
+                    if (!browser)
+                        browser = m_pParent->m_pInternal->GetBrowser();
                     browser->SendProcessMessage(PID_RENDERER, message);
 
                     m_pParent->m_pInternal->m_arCryptoImages.erase(findCryptoImage);
@@ -3119,7 +3261,7 @@ require.load = function (context, moduleName, url) {\n\
             std::map<std::wstring, std::wstring>::iterator findDownloadFile = m_pParent->m_pInternal->m_arDownloadedFiles.find(sUrl);
             if (findDownloadFile != m_pParent->m_pInternal->m_arDownloadedFiles.end())
             {
-                if (download_item->IsComplete())
+                if (download_item->IsComplete() || download_item->IsCanceled())
                 {
                     m_pParent->m_pInternal->m_arDownloadedFilesComplete.insert(
                                 std::pair<std::wstring, std::wstring>(findDownloadFile->first, findDownloadFile->second));
@@ -3138,6 +3280,8 @@ require.load = function (context, moduleName, url) {\n\
                             message->GetArgumentList()->SetString(nIndex++, iter->second);
                         }
 
+                        if (!browser)
+                            browser = m_pParent->m_pInternal->GetBrowser();
                         browser->SendProcessMessage(PID_RENDERER, message);
 
                         m_pParent->m_pInternal->m_arDownloadedFilesComplete.clear();
@@ -3757,6 +3901,7 @@ void CCefView::load(const std::wstring& urlInput)
     CAscClientHandler* pClientHandler = new CAscClientHandler();
     pClientHandler->m_pParent = this;
     m_pInternal->m_handler = pClientHandler;
+    m_pInternal->m_oDownloaderAbortChecker.m_pHandler = pClientHandler;
 
     CAscClientHandler::CAscCefJSDialogHandler* pAscCEfJSDialogHandler = static_cast<CAscClientHandler::CAscCefJSDialogHandler*>(pClientHandler->m_pCefJSDialogHandler.get());
     if (pAscCEfJSDialogHandler)
@@ -4488,7 +4633,8 @@ bool CCefView::StartDownload(const std::wstring& sUrl)
     if (!m_pInternal->m_handler->GetBrowser()->GetHost())
         return false;
     
-    m_pInternal->m_handler->GetBrowser()->GetHost()->StartDownload(sUrl);
+    m_pInternal->m_oDownloaderAbortChecker.StartDownload(sUrl);
+    m_pInternal->m_handler->GetBrowser()->GetHost()->StartDownload(sUrl);    
     return true;
 }
 
@@ -4651,7 +4797,7 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
             m_pInternal->m_sDownloadViewPath += (L"." + NSCommon::GetFileExtention(m_pInternal->m_sOpenAsLocalName));
 
             // load preview...
-            m_pInternal->m_handler->GetBrowser()->GetHost()->StartDownload(m_pInternal->m_sOpenAsLocalSrc);
+            StartDownload(m_pInternal->m_sOpenAsLocalSrc);
             return;
         }
     }
