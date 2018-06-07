@@ -65,6 +65,8 @@
 
 #define ONLYOFFICE_FONTS_VERSION_ 1
 
+#include "crypto_mode.h"
+
 namespace NSFileDownloader
 {
     static bool IsNeedDownload(const std::wstring& FilePath)
@@ -477,6 +479,9 @@ public:
 
     std::string m_sEncriptionGuid;
 
+    std::wstring m_sCryptoModePassword;
+    int m_nCryptoMode;
+
 public:
     CAscApplicationManager_Private() : m_oKeyboardTimer(this)
     {
@@ -505,6 +510,8 @@ public:
         m_bIsUpdateFontsAttack = false;
 
         m_sEncriptionGuid = "";
+
+        m_nCryptoMode = 0;
     }
     bool GetEditorPermission()
     {
@@ -1334,6 +1341,19 @@ public:
         }
 
         return pViewRet;
+    }
+
+    void LoadCryptoData()
+    {
+        CCryptoMode oCryptoMode;
+        oCryptoMode.Load(m_pMain->m_oSettings.app_data_path + L"/user.data");
+
+        m_sCryptoModePassword = oCryptoMode.m_sPassword;
+        m_nCryptoMode = oCryptoMode.m_nMode;
+    }
+
+    void SendCryptoData()
+    {
     }
 };
 

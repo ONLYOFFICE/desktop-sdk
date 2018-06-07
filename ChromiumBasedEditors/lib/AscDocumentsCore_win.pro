@@ -60,7 +60,8 @@ HEADERS += \
     ./include/applicationmanager_events.h \
     ./src/applicationmanager_p.h \    
     ./src/nativeviewer.h \
-    ./src/plugins.h
+    ./src/plugins.h \
+    ./src/crypto_mode.h
 
 SOURCES += \
     ./src/applicationmanager.cpp \
@@ -68,7 +69,8 @@ SOURCES += \
     ./src/spellchecker.cpp \
     ./src/cefapplication.cpp \
     ./src/cefview.cpp \
-    ./src/fileprinter.cpp
+    ./src/fileprinter.cpp \
+    ./src/crypto_mode.cpp
 
 SOURCES += \
     ./../../../core/Common/OfficeFileFormatChecker2.cpp \

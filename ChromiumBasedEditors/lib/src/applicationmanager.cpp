@@ -793,4 +793,18 @@ void CAscApplicationManager::SetEventToAllMainWindows(NSEditorApi::CAscMenuEvent
     m_pInternal->SetEventToAllMainWindows(pEvent);
 }
 
+void CAscApplicationManager::SetCryptoMode(const std::wstring& sPassword, const int& nMode)
+{
+    m_pInternal->m_sCryptoModePassword = sPassword;
+    m_pInternal->m_nCryptoMode = nMode;
+
+    CCryptoMode oCryptoMode;
+    oCryptoMode.m_sPassword = m_pInternal->m_sCryptoModePassword;
+    oCryptoMode.m_nMode = m_pInternal->m_nCryptoMode;
+
+    oCryptoMode.Save(m_oSettings.app_data_path + L"/user.data");
+
+    m_pInternal->SendCryptoData();
+}
+
 /////////////////////////////////////////////////////////////
