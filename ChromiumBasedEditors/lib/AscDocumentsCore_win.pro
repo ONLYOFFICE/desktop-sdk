@@ -19,6 +19,8 @@ DEFINES += \
 
 LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lOfficeUtils -lgraphics -llibxml -lhunspell
 LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lPdfReader -lPdfWriter -lDjVuFile -lXpsFile -lHtmlRenderer -lUnicodeConverter -looxmlsignature
+
+LIBS += -lCrypt32
 # ------------------------------------------------------
 
 ####################  BOOST  ###########################

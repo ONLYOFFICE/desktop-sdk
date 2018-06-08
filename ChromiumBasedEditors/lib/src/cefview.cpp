@@ -2515,6 +2515,13 @@ public:
 
             return true;
         }
+        else if (message_name == "set_crypto_mode")
+        {
+            std::wstring sPass = message->GetArgumentList()->GetString(0).ToWString();
+            int nMode = message->GetArgumentList()->GetInt(1);
+            m_pParent->GetAppManager()->SetCryptoMode(sPass, nMode);
+            return true;
+        }
 
         CAscApplicationManager_Private* pInternalMan = m_pParent->GetAppManager()->m_pInternal;
         if (pInternalMan->m_pAdditional && pInternalMan->m_pAdditional->OnProcessMessageReceived(browser, source_process, message))
@@ -2608,6 +2615,9 @@ public:
                            CefRefPtr<CefFrame> frame,
                            int httpStatusCode)
     {
+        if (frame)
+            m_pParent->GetAppManager()->m_pInternal->SendCryptoData(frame);
+
         if (frame->IsMain())
         {
             std::wstring sUrl = m_pParent->GetUrl();
@@ -4599,6 +4609,25 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             message->GetArgumentList()->SetString(0, m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir);
             m_pInternal->SendProcessMessage(PID_RENDERER, message);
             break;
+        }
+        case ASC_MENU_EVENT_TYPE_EXECUTE_JS_CODE:
+        {
+            NSEditorApi::CAscJSMessage* pData = (NSEditorApi::CAscJSMessage*)pEvent->m_pData;
+            CefRefPtr<CefBrowser> pBrowser = m_pInternal->GetBrowser();
+            if (pBrowser)
+            {
+                std::wstring sCode = pData->get_Value();
+
+                std::vector<int64> arIds;
+                pBrowser->GetFrameIdentifiers(arIds);
+
+                for (std::vector<int64>::iterator iter = arIds.begin(); iter != arIds.end(); iter++)
+                {
+                    CefRefPtr<CefFrame> frame = pBrowser->GetFrame(*iter);
+                    if (frame)
+                        frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
+                }
+            }
         }
         default:
         {

@@ -315,6 +315,8 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     oPlugins.GetInstalledPlugins();
     pManager->m_pInternal->m_sEncriptionGuid = oPlugins.m_strGuidEncryption;
 
+    pManager->m_pInternal->LoadCryptoData();
+
     return 0;
 }
 

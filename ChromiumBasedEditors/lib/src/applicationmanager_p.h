@@ -1352,8 +1352,36 @@ public:
         m_nCryptoMode = oCryptoMode.m_nMode;
     }
 
-    void SendCryptoData()
+    void SendCryptoData(CefRefPtr<CefFrame> frame = NULL)
     {
+        std::wstring sPass = m_sCryptoModePassword;
+        NSCommon::string_replace(sPass, L"\\", L"\\\\");
+
+        std::wstring sCode = L"(function() { \n\
+    window.AscDesktopEditor.CryptoMode = " + std::to_wstring(m_nCryptoMode) + L";\n\
+    window.AscDesktopEditor.CryptoPassword = \"" + sPass + L"\";\n\
+    })();";
+
+        if (frame)
+        {
+            frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
+            return;
+        }
+
+        NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent(ASC_MENU_EVENT_TYPE_EXECUTE_JS_CODE);
+        NSEditorApi::CAscJSMessage* pData = new NSEditorApi::CAscJSMessage();
+        pData->put_Value(sCode);
+        pEvent->m_pData = pData;
+
+        for (std::map<int, CCefView*>::iterator iterView = m_mapViews.begin(); iterView != m_mapViews.end(); iterView++)
+        {
+            CCefView* pTmp = iterView->second;
+
+            ADDREFINTERFACE(pEvent);
+            pTmp->Apply(pEvent);
+        }
+
+        RELEASEINTERFACE(pEvent);
     }
 };
 

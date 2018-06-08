@@ -34,6 +34,10 @@
 #include "aes256.cpp"
 #include "./../../../../core/DesktopEditor/common/File.h"
 
+#ifdef WIN32
+#include "Wincrypt.h"
+#endif
+
 CCryptoMode::CCryptoMode()
 {
     m_sPassword = L"";
@@ -54,9 +58,11 @@ void CCryptoMode::Save(const std::wstring& sPassFile)
     std::string alphanum = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
     int alphanumlen = alphanum.length();
     ByteArray keyEncArray;
+    BYTE keyEncArrayBuffer[256];
     for (int i = 0; i < 256; ++i)
     {
-        keyEncArray.push_back((BYTE)alphanum[rand() % (alphanumlen - 1)]);
+        keyEncArrayBuffer[i] = (BYTE)alphanum[rand() % (alphanumlen - 1)];
+        keyEncArray.push_back(keyEncArrayBuffer[i]);
     }
 
     // password utf8 => vector<BYTE>
@@ -71,23 +77,46 @@ void CCryptoMode::Save(const std::wstring& sPassFile)
     ByteArray passEnc;
     Aes256::encrypt(keyEncArray, passArray, passEnc);
 
+    BYTE* keyEncArrayCrypt = NULL;
+    int keyEncArrayCryptLen = 0;
+
     // crypt encKey!!!
-    // TODO:
+#ifdef WIN32
+    DATA_BLOB DataIn;
+    DataIn.pbData = keyEncArrayBuffer;
+    DataIn.cbData = 256;
+
+    DATA_BLOB DataOut;
+    CryptProtectData(&DataIn, L"", NULL, NULL, NULL, 0, &DataOut);
+    keyEncArrayCrypt = DataOut.pbData;
+    keyEncArrayCryptLen = DataOut.cbData;
+#endif
+
+#if defined(_LINUX) && !defined(_MAC)
+    keyEncArrayCrypt = keyEncArrayBuffer;
+    keyEncArrayCryptLen = 256;
+    // TODO
+#endif
+
+#ifdef _MAC
+    keyEncArrayCrypt = keyEncArrayBuffer;
+    keyEncArrayCryptLen = 256;
+    // TODO
+#endif
 
     // Save to file
-    int nFileSize = 4 + 256 + 4 + (int)passEnc.size() + 1;
+    int nFileSize = 4 + keyEncArrayCryptLen + 4 + (int)passEnc.size() + 1;
     BYTE* pFileData = new BYTE[nFileSize];
 
     int nIndex = 0;
-    int nIntValue = 256;
+    int nIntValue = keyEncArrayCryptLen;
     pFileData[nIndex++] = nIntValue & 0xFF;
     pFileData[nIndex++] = (nIntValue >> 8) & 0xFF;
     pFileData[nIndex++] = (nIntValue >> 16) & 0xFF;
     pFileData[nIndex++] = (nIntValue >> 24) & 0xFF;
 
-    int nSize = (int)keyEncArray.size();
-    for (int i = 0; i < nSize; ++i)
-        pFileData[nIndex++] = keyEncArray[i];
+    memcpy(pFileData + nIndex, keyEncArrayCrypt, keyEncArrayCryptLen);
+    nIndex += keyEncArrayCryptLen;
 
     nIntValue = (int)passEnc.size();
     pFileData[nIndex++] = nIntValue & 0xFF;
@@ -95,7 +124,7 @@ void CCryptoMode::Save(const std::wstring& sPassFile)
     pFileData[nIndex++] = (nIntValue >> 16) & 0xFF;
     pFileData[nIndex++] = (nIntValue >> 24) & 0xFF;
 
-    nSize = (int)passEnc.size();
+    int nSize = (int)passEnc.size();
     for (int i = 0; i < nSize; ++i)
         pFileData[nIndex++] = passEnc[i];
 
@@ -105,6 +134,10 @@ void CCryptoMode::Save(const std::wstring& sPassFile)
     oFile.CloseFile();
 
     RELEASEARRAYOBJECTS(pFileData);
+
+#ifdef WIN32
+    LocalFree((HLOCAL)DataOut.pbData);
+#endif
 }
 
 void CCryptoMode::Load(const std::wstring& sPassFile)
@@ -126,10 +159,40 @@ void CCryptoMode::Load(const std::wstring& sPassFile)
     int nIndex = 0;
     int nLenEncKey = (pFileData[nIndex++]) | (pFileData[nIndex++] << 8) | (pFileData[nIndex++] << 16) | (pFileData[nIndex++] << 24);
 
+    // decrypt encKey!!!
+    BYTE* keyEncArrayCrypto = pFileData + nIndex;
+    BYTE* keyEncArrayBuffer = NULL;
+    int keyEncArrayBufferLen = 0;
+    nIndex += nLenEncKey;
+
+#ifdef WIN32
+    DATA_BLOB DataIn;
+    DataIn.pbData = keyEncArrayCrypto;
+    DataIn.cbData = nLenEncKey;
+
+    DATA_BLOB DataOut;
+    LPWSTR pDescrOut =  NULL;
+    CryptUnprotectData(&DataIn, &pDescrOut, NULL, NULL, NULL, 0, &DataOut);
+    keyEncArrayBuffer = DataOut.pbData;
+    keyEncArrayBufferLen = DataOut.cbData;
+#endif
+
+#if defined(_LINUX) && !defined(_MAC)
+    keyEncArrayCrypt = keyEncArrayBuffer;
+    keyEncArrayCryptLen = nLenEncKey;
+    // TODO
+#endif
+
+#ifdef _MAC
+    keyEncArrayCrypt = keyEncArrayBuffer;
+    keyEncArrayCryptLen = nLenEncKey;
+    // TODO
+#endif
+
     ByteArray keyEncArray;
-    for (int i = 0; i < nLenEncKey; ++i)
+    for (int i = 0; i < keyEncArrayBufferLen; ++i)
     {
-        keyEncArray.push_back(pFileData[nIndex++]);
+        keyEncArray.push_back(keyEncArrayBuffer[i]);
     }
 
     int nLenPass = (pFileData[nIndex++]) | (pFileData[nIndex++] << 8) | (pFileData[nIndex++] << 16) | (pFileData[nIndex++] << 24);
@@ -158,4 +221,8 @@ void CCryptoMode::Load(const std::wstring& sPassFile)
     m_sPassword = UTF8_TO_U(sPassD);
 
     RELEASEARRAYOBJECTS(pDst);
+
+#ifdef WIN32
+    LocalFree((HLOCAL)DataOut.pbData);
+#endif
 }

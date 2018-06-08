@@ -2273,6 +2273,32 @@ window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst);\n\
                 NSFile::CFileBinary::Remove(sFile);
             return true;
         }
+        else if (name == "SetCryptoMode")
+        {
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("set_crypto_mode");
+            message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
+            message->GetArgumentList()->SetInt(1, arguments[1]->GetIntValue());
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "GetImageFormat")
+        {
+            std::wstring sFile = arguments[0]->GetStringValue();
+            std::string sExt = "jpg";
+
+            CImageFileFormatChecker _checker;
+            if (_checker.isPngFile(sFile))
+                sExt = "png";
+
+            retval = CefV8Value::CreateString(sExt);
+            return true;
+        }
+        else if (name == "GetEncryptedHeader")
+        {
+            retval = CefV8Value::CreateString("ENCRYPTED;");
+            return true;
+        }
 
         // Function does not exist.
         return false;
@@ -2763,6 +2789,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction982 = CefV8Value::CreateFunction("ResaveFile", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction983 = CefV8Value::CreateFunction("_DownloadFiles", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction984 = CefV8Value::CreateFunction("RemoveFile", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction985 = CefV8Value::CreateFunction("GetImageFormat", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction986 = CefV8Value::CreateFunction("SetCryptoMode", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction987 = CefV8Value::CreateFunction("GetEncryptedHeader", _nativeHandler);
 
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -2907,6 +2936,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("ResaveFile", _nativeFunction982, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("_DownloadFiles", _nativeFunction983, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("RemoveFile", _nativeFunction984, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("GetImageFormat", _nativeFunction985, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("SetCryptoMode", _nativeFunction986, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("GetEncryptedHeader", _nativeFunction987, V8_PROPERTY_ATTRIBUTE_NONE);
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 
