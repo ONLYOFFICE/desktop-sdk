@@ -157,7 +157,8 @@ void CCryptoMode::Load(const std::wstring& sPassFile)
 
     // encryption key
     int nIndex = 0;
-    int nLenEncKey = (pFileData[nIndex++]) | (pFileData[nIndex++] << 8) | (pFileData[nIndex++] << 16) | (pFileData[nIndex++] << 24);
+    int nLenEncKey = (pFileData[nIndex]) | (pFileData[nIndex+1] << 8) | (pFileData[nIndex+2] << 16) | (pFileData[nIndex+3] << 24);
+    nIndex += 4;
 
     // decrypt encKey!!!
     BYTE* keyEncArrayCrypto = pFileData + nIndex;
@@ -195,7 +196,9 @@ void CCryptoMode::Load(const std::wstring& sPassFile)
         keyEncArray.push_back(keyEncArrayBuffer[i]);
     }
 
-    int nLenPass = (pFileData[nIndex++]) | (pFileData[nIndex++] << 8) | (pFileData[nIndex++] << 16) | (pFileData[nIndex++] << 24);
+    int nLenPass = (pFileData[nIndex]) | (pFileData[nIndex+1] << 8) | (pFileData[nIndex+2] << 16) | (pFileData[nIndex+3] << 24);
+    nIndex += 4;
+
     ByteArray passArray;
     for (int i = 0; i < nLenPass; ++i)
     {

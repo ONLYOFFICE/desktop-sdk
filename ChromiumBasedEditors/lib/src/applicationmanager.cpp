@@ -802,7 +802,7 @@ void CAscApplicationManager::SetCryptoMode(const std::wstring& sPassword, const 
     oCryptoMode.m_sPassword = m_pInternal->m_sCryptoModePassword;
     oCryptoMode.m_nMode = m_pInternal->m_nCryptoMode;
 
-    oCryptoMode.Save(m_oSettings.app_data_path + L"/user.data");
+    oCryptoMode.Save(m_oSettings.cookie_path + L"/user.data");
 
     m_pInternal->SendCryptoData();
 }

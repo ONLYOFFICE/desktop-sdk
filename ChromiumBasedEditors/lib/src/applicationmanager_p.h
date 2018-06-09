@@ -1346,7 +1346,7 @@ public:
     void LoadCryptoData()
     {
         CCryptoMode oCryptoMode;
-        oCryptoMode.Load(m_pMain->m_oSettings.app_data_path + L"/user.data");
+        oCryptoMode.Load(m_pMain->m_oSettings.cookie_path + L"/user.data");
 
         m_sCryptoModePassword = oCryptoMode.m_sPassword;
         m_nCryptoMode = oCryptoMode.m_nMode;
