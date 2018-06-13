@@ -46,11 +46,12 @@ public:
     std::wstring m_strUserDirectory;
 
     std::string m_strGuidEncryption;
+    int m_nCryptoMode;
 
 public:
     CPluginsManager()
     {
-        
+        m_nCryptoMode = 0;
     }
 
     std::string GetPluginsJson()
@@ -110,6 +111,17 @@ public:
                 std::string sJson = "";
                 if (NSFile::CFileBinary::ReadAllTextUtf8A(_arPlugins[i] + L"/config.json", sJson))
                 {
+                    bool bIsEncryptionPlugin = false;
+                    std::string sEncGuid = GetEncryption(sJson, bIsEncryptionPlugin);
+
+                    if (bIsEncryptionPlugin)
+                    {
+                        if (!m_strGuidEncryption.empty() || sEncGuid.empty())
+                            continue;
+
+                        m_strGuidEncryption = sEncGuid;
+                    }
+
                     std::string::size_type pos1 = sJson.find('{');
                     std::string::size_type pos2 = sJson.find_last_of('}');
 
@@ -158,6 +170,17 @@ public:
                 std::string sJson;
                 if (NSFile::CFileBinary::ReadAllTextUtf8A(_arPlugins[i] + L"/config.json", sJson))
                 {
+                    bool bIsEncryptionPlugin = false;
+                    std::string sEncGuid = GetEncryption(sJson, bIsEncryptionPlugin);
+
+                    if (bIsEncryptionPlugin)
+                    {
+                        if (!m_strGuidEncryption.empty() || sEncGuid.empty())
+                            continue;
+
+                        m_strGuidEncryption = sEncGuid;
+                    }
+
                     std::string::size_type pos1 = sJson.find("asc.{");
                     std::string::size_type pos2 = sJson.find('}', pos1);
 
@@ -166,9 +189,6 @@ public:
                         pos2 > pos1)
                     {
                         arCongigs.push_back(sJson.substr(pos1, pos2 - pos1 + 1));
-
-                        if (m_strGuidEncryption.empty())
-                            m_strGuidEncryption = GetEncryption(sJson);
                     }
                 }
             }
@@ -245,10 +265,22 @@ public:
     }
 
 private:
-    std::string GetEncryption(const std::string& strJson)
+    std::string GetEncryption(const std::string& strJson, bool& bIsEncryption)
     {
         if ("desktop" == GetStringValue(strJson, "initDataType") && "encryption" == GetStringValue(strJson, "initData"))
-            return GetStringValue(strJson, "guid");
+        {
+            bIsEncryption = true;
+
+            int nMode = 1;
+            std::string sMode = GetStringValue(strJson, "cryptoMode");
+            if (!sMode.empty())
+                nMode = std::stoi(sMode);
+            if ((m_nCryptoMode == 0 || m_nCryptoMode == 1) && (nMode == 0 || nMode == 1))
+                return GetStringValue(strJson, "guid");
+
+            if (m_nCryptoMode == nMode)
+                return GetStringValue(strJson, "guid");
+        }
         return "";
     }
 

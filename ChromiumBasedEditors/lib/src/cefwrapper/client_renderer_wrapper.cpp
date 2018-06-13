@@ -300,6 +300,7 @@ public:
 
     bool m_bIsSupportSigs;
     bool m_bIsSupportOnlyPass;
+    int m_nCryptoMode;
 
     std::list<CSavedPageInfo> m_arCompleteTasks;
 
@@ -342,6 +343,8 @@ public:
 
         m_bIsDebugMode = false;
         m_bIsSupportOnlyPass = true;
+
+        m_nCryptoMode = 0;
 
         m_oCompleteTasksCS.InitializeCriticalSection();
 
@@ -1849,6 +1852,7 @@ window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst);\n\
             CPluginsManager oPlugins;
             oPlugins.m_strDirectory = m_sSystemPlugins;
             oPlugins.m_strUserDirectory = m_sUserPlugins;
+            oPlugins.m_nCryptoMode = m_nCryptoMode;
             std::string sData = oPlugins.GetPluginsJson();
             retval = CefV8Value::CreateString(sData);
             return true;
@@ -2071,9 +2075,8 @@ window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst);\n\
             int nFlags = arguments[0]->GetIntValue();
             m_bIsSupportOnlyPass = ((nFlags & 0x01) == 0x01) ? true : false;
 
-            CPluginsManager oPlugins;
-            oPlugins.m_strDirectory = m_sSystemPlugins;
-            oPlugins.m_strUserDirectory = m_sUserPlugins;
+            if (1 < arguments.size())
+                m_nCryptoMode = arguments[1]->GetIntValue();
 
             return true;
         }
@@ -3031,7 +3034,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         if (_frame)
         {
             int nParams = message->GetArgumentList()->GetInt(0);
-            std::string sCode = ("window[\"AscDesktopEditor\"][\"SetInitFlags\"](" + std::to_string(nParams) + ");");
+            int nCryptoMode = message->GetArgumentList()->GetInt(1);
+            std::string sCode = ("window[\"AscDesktopEditor\"][\"SetInitFlags\"](" + std::to_string(nParams) + ", " + std::to_string(nCryptoMode) + ");");
 
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
         }

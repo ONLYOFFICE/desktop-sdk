@@ -192,6 +192,7 @@ public:
 
     // 0 - none, 1 - simple, 2 - advanced
     void SetCryptoMode(const std::wstring& sPassword, const int& nMode);
+    int GetCryptoMode();
 
 protected:
     int GenerateNextViewId();

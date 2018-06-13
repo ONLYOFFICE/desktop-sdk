@@ -795,7 +795,9 @@ void CAscApplicationManager::SetEventToAllMainWindows(NSEditorApi::CAscMenuEvent
 
 void CAscApplicationManager::SetCryptoMode(const std::wstring& sPassword, const int& nMode)
 {
-    m_pInternal->m_sCryptoModePassword = sPassword;
+    if (0 != nMode)
+        m_pInternal->m_sCryptoModePassword = sPassword;
+
     m_pInternal->m_nCryptoMode = nMode;
 
     CCryptoMode oCryptoMode;
@@ -805,6 +807,19 @@ void CAscApplicationManager::SetCryptoMode(const std::wstring& sPassword, const 
     oCryptoMode.Save(m_oSettings.cookie_path + L"/user.data");
 
     m_pInternal->SendCryptoData();
+
+    std::string sCryptoMode = "default";
+    if (!sCryptoMode.empty())
+        sCryptoMode = std::to_string(m_pInternal->m_nCryptoMode);
+
+    m_pInternal->CheckSetting("--crypto-mode", sCryptoMode);
+    m_pInternal->m_mapSettings.insert(std::pair<std::string, std::string>("crypto-mode", std::to_string(m_pInternal->m_nCryptoMode)));
+    m_pInternal->SaveSettings();
+}
+
+int CAscApplicationManager::GetCryptoMode()
+{
+    return m_pInternal->m_nCryptoMode;
 }
 
 /////////////////////////////////////////////////////////////

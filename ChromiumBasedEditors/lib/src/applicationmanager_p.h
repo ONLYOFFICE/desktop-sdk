@@ -604,6 +604,10 @@ public:
         std::map<std::string, std::string>::iterator pairForceDisplayScale = m_mapSettings.find("force-scale");
         if (pairForceDisplayScale != m_mapSettings.end())
             m_nForceDisplayScale = std::stoi(pairForceDisplayScale->second);
+
+        std::map<std::string, std::string>::iterator pairCryptoMode = m_mapSettings.find("crypto-mode");
+        if (pairCryptoMode != m_mapSettings.end())
+            m_nCryptoMode = std::stoi(pairCryptoMode->second);
     }
 
     void CheckSetting(const std::string& sName, const std::string& sValue)
@@ -1358,9 +1362,14 @@ public:
         NSCommon::string_replace(sPass, L"\\", L"\\\\");
 
         std::wstring sCode = L"(function() { \n\
-    window.AscDesktopEditor.CryptoMode = " + std::to_wstring(m_nCryptoMode) + L";\n\
-    window.AscDesktopEditor.CryptoPassword = \"" + sPass + L"\";\n\
-    })();";
+var newMode = " + std::to_wstring(m_nCryptoMode) + L";\n\
+if (window.AscDesktopEditor.CryptoMode == 2 && newMode != 2)\n\
+    return;\n\
+if (window.AscDesktopEditor.CryptoMode > 0 && newMode > 0 && window.AscDesktopEditor.CryptoMode != newMode)\n\
+    return;\n\
+window.AscDesktopEditor.CryptoMode = " + std::to_wstring(m_nCryptoMode) + L";\n\
+window.AscDesktopEditor.CryptoPassword = \"" + sPass + L"\";\n\
+})();";
 
         if (frame)
         {
