@@ -822,4 +822,14 @@ int CAscApplicationManager::GetCryptoMode()
     return m_pInternal->m_nCryptoMode;
 }
 
+std::vector<int> CAscApplicationManager::GetSupportCryptoModes()
+{
+    CPluginsManager oPlugins;
+    oPlugins.m_strDirectory = m_oSettings.system_plugins_path;
+    oPlugins.m_strUserDirectory = m_oSettings.user_plugins_path;
+
+    oPlugins.GetInstalledPlugins();
+    return oPlugins.m_arCryptoModes;
+}
+
 /////////////////////////////////////////////////////////////

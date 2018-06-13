@@ -48,6 +48,7 @@ public:
     std::string m_strGuidEncryption;
     int m_nCryptoMode;
 
+    std::vector<int> m_arCryptoModes;
 public:
     CPluginsManager()
     {
@@ -275,6 +276,9 @@ private:
             std::string sMode = GetStringValue(strJson, "cryptoMode");
             if (!sMode.empty())
                 nMode = std::stoi(sMode);
+
+            m_arCryptoModes.push_back(nMode);
+
             if ((m_nCryptoMode == 0 || m_nCryptoMode == 1) && (nMode == 0 || nMode == 1))
                 return GetStringValue(strJson, "guid");
 
