@@ -1439,6 +1439,9 @@ public:
             m_pParent->m_pInternal->m_bIsOnlyPassSupport = bIsOnlyPassSupport;
             message->GetArgumentList()->SetInt(0, nFlags);
             message->GetArgumentList()->SetInt(1, m_pParent->GetAppManager()->m_pInternal->m_nCryptoMode);
+            message->GetArgumentList()->SetString(2, m_pParent->GetAppManager()->m_oSettings.system_plugins_path);
+            message->GetArgumentList()->SetString(3, m_pParent->GetAppManager()->m_oSettings.user_plugins_path);
+
             browser->SendProcessMessage(PID_RENDERER, message);
             return true;
         }

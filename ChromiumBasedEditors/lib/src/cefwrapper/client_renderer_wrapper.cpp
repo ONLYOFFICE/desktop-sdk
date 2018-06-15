@@ -2078,6 +2078,18 @@ window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst);\n\
             if (1 < arguments.size())
                 m_nCryptoMode = arguments[1]->GetIntValue();
 
+            if (2 < arguments.size())
+            {
+                CefRefPtr<CefV8Value> _array = arguments[2];
+                int nLen = _array->GetArrayLength();
+
+                if (nLen > 0)
+                    m_sSystemPlugins = _array->GetValue(0)->GetStringValue().ToWString();
+
+                if (nLen > 1)
+                    m_sUserPlugins = _array->GetValue(1)->GetStringValue().ToWString();
+            }
+
             return true;
         }
         else if (name == "isBlockchainSupport")
@@ -2300,6 +2312,27 @@ window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst);\n\
         else if (name == "GetEncryptedHeader")
         {
             retval = CefV8Value::CreateString("ENCRYPTED;");
+            return true;
+        }
+        else if (name == "GetCryptoMode")
+        {
+            retval = CefV8Value::CreateInt(m_nCryptoMode);
+            return true;
+        }
+        else if (name == "GetSupportCryptoModes")
+        {
+            CPluginsManager oPlugins;
+            oPlugins.m_strDirectory = m_sSystemPlugins;
+            oPlugins.m_strUserDirectory = m_sUserPlugins;
+            oPlugins.m_nCryptoMode = m_nCryptoMode;
+            oPlugins.GetInstalledPlugins();
+
+            int nCount = (int)oPlugins.m_arCryptoModes.size();
+            retval = CefV8Value::CreateArray(nCount);
+            for (int i = 0; i < nCount; ++i)
+            {
+                retval->SetValue(i, CefV8Value::CreateInt(oPlugins.m_arCryptoModes[i]));
+            }
             return true;
         }
 
@@ -2795,6 +2828,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction985 = CefV8Value::CreateFunction("GetImageFormat", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction986 = CefV8Value::CreateFunction("SetCryptoMode", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction987 = CefV8Value::CreateFunction("GetEncryptedHeader", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction988 = CefV8Value::CreateFunction("GetCryptoMode", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction989 = CefV8Value::CreateFunction("GetSupportCryptoModes", _nativeHandler);
 
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -2942,6 +2977,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("GetImageFormat", _nativeFunction985, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("SetCryptoMode", _nativeFunction986, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("GetEncryptedHeader", _nativeFunction987, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("GetCryptoMode", _nativeFunction988, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("GetSupportCryptoModes", _nativeFunction989, V8_PROPERTY_ATTRIBUTE_NONE);
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 
@@ -3035,7 +3072,25 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         {
             int nParams = message->GetArgumentList()->GetInt(0);
             int nCryptoMode = message->GetArgumentList()->GetInt(1);
-            std::string sCode = ("window[\"AscDesktopEditor\"][\"SetInitFlags\"](" + std::to_string(nParams) + ", " + std::to_string(nCryptoMode) + ");");
+
+            std::string sSystemPath = message->GetArgumentList()->GetString(2);
+            std::string sUserPath = message->GetArgumentList()->GetString(3);
+            int nSizeCount = (int)(message->GetArgumentList()->GetSize()) - 2;
+
+            std::string sObject = "[";
+            for (int i = 0; i < nSizeCount; i++)
+            {
+                std::string sValue = message->GetArgumentList()->GetString(i + 2);
+
+                NSCommon::string_replaceA(sValue, "\"", "\\\"");
+
+                sObject += ("\"" + sValue + "\"");
+                if (i != (nSizeCount - 1))
+                    sObject += ",";
+            }
+            sObject += "]";
+
+            std::string sCode = ("window[\"AscDesktopEditor\"][\"SetInitFlags\"](" + std::to_string(nParams) + ", " + std::to_string(nCryptoMode) + ", " + sObject + ");");
 
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
         }
