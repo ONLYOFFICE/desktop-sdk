@@ -53,6 +53,7 @@
 #include "../../src/plugins.h"
 
 #include "../../src/additional/renderer.h"
+#include "../crypto_mode.h"
 
 namespace NSCommon
 {
@@ -309,6 +310,8 @@ public:
     bool m_bIsDebugMode;
 
     std::wstring m_sCryptDocumentFolder; // recover
+
+    std::wstring m_sCookiesPath;
 
     NSCriticalSection::CRITICAL_SECTION m_oCompleteTasksCS;
 
@@ -2088,6 +2091,9 @@ window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst);\n\
 
                 if (nLen > 1)
                     m_sUserPlugins = _array->GetValue(1)->GetStringValue().ToWString();
+
+                if (nLen > 2)
+                    m_sCookiesPath = _array->GetValue(2)->GetStringValue().ToWString();
             }
 
             return true;
@@ -2321,6 +2327,9 @@ window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst);\n\
         }
         else if (name == "GetSupportCryptoModes")
         {
+            CCryptoMode oCryptoMode;
+            oCryptoMode.Load(m_sCookiesPath + L"/user.data");
+
             CPluginsManager oPlugins;
             oPlugins.m_strDirectory = m_sSystemPlugins;
             oPlugins.m_strUserDirectory = m_sUserPlugins;
@@ -2331,7 +2340,11 @@ window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst);\n\
             retval = CefV8Value::CreateArray(nCount);
             for (int i = 0; i < nCount; ++i)
             {
-                retval->SetValue(i, CefV8Value::CreateInt(oPlugins.m_arCryptoModes[i]));
+                CefRefPtr<CefV8Value> val = CefV8Value::CreateObject(NULL, NULL);
+                val->SetValue("type", CefV8Value::CreateInt(oPlugins.m_arCryptoModes[i]), V8_PROPERTY_ATTRIBUTE_NONE);
+                val->SetValue("info_presented", CefV8Value::CreateBool((oCryptoMode.m_nMode == oPlugins.m_arCryptoModes[i]) ? true : false), V8_PROPERTY_ATTRIBUTE_NONE);
+
+                retval->SetValue(i, val);
             }
             return true;
         }

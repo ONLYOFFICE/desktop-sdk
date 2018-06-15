@@ -1441,6 +1441,7 @@ public:
             message->GetArgumentList()->SetInt(1, m_pParent->GetAppManager()->m_pInternal->m_nCryptoMode);
             message->GetArgumentList()->SetString(2, m_pParent->GetAppManager()->m_oSettings.system_plugins_path);
             message->GetArgumentList()->SetString(3, m_pParent->GetAppManager()->m_oSettings.user_plugins_path);
+            message->GetArgumentList()->SetString(4, m_pParent->GetAppManager()->m_oSettings.cookie_path);
 
             browser->SendProcessMessage(PID_RENDERER, message);
             return true;
