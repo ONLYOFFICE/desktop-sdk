@@ -68,6 +68,8 @@ public:
 
     std::wstring m_sPassword;
 
+    std::wstring m_sDocumentInfo;
+
 public:
     CAscLocalFileInfo()
     {
@@ -91,6 +93,7 @@ public:
         m_bIsSaved = oSrc.m_bIsSaved;
 
         m_sPassword = oSrc.m_sPassword;
+        m_sDocumentInfo = oSrc.m_sDocumentInfo;
         return *this;
     }
 };
@@ -904,6 +907,14 @@ public:
             oBuilder.WriteEncodeXmlString(m_oInfo.m_sPassword);
             oBuilder.WriteString(L"</m_sSavePassword>");
         }
+
+        if (!m_oInfo.m_sDocumentInfo.empty())
+        {
+            oBuilder.WriteString(L"<m_sDocumentID>");
+            oBuilder.WriteEncodeXmlString(m_oInfo.m_sDocumentInfo);
+            oBuilder.WriteString(L"</m_sDocumentID>");
+        }
+        m_oInfo.m_sDocumentInfo = L"";
 
         int nDoctRendererParam = 0;
         if (m_bIsRetina)

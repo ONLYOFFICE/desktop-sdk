@@ -1481,9 +1481,7 @@ else \n\
 
             if (arguments.size() > 1)
             {
-                std::vector<CefRefPtr<CefV8Value> >::const_iterator iter = arguments.begin();
-                ++iter;
-                CefRefPtr<CefV8Value> val_pass = *iter;
+                CefRefPtr<CefV8Value> val_pass = arguments[1];
                 if (val_pass->IsString())
                     message->GetArgumentList()->SetString(1, val_pass->GetStringValue());
                 else
@@ -1491,6 +1489,17 @@ else \n\
             }
             else
                 message->GetArgumentList()->SetString(1, "");
+
+            if (arguments.size() > 2)
+            {
+                CefRefPtr<CefV8Value> val_info = arguments[2];
+                if (val_info->IsString())
+                    message->GetArgumentList()->SetString(2, val_info->GetStringValue());
+                else
+                    message->GetArgumentList()->SetString(2, "");
+            }
+            else
+                message->GetArgumentList()->SetString(2, "");
 
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
@@ -2183,6 +2192,7 @@ window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst);\n\
             CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("build_crypted");
             message->GetArgumentList()->SetString(0, arguments[2]->GetStringValue());
+            message->GetArgumentList()->SetString(1, arguments[3]->GetStringValue());
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
@@ -3436,11 +3446,18 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
             std::string sParam = std::to_string(message->GetArgumentList()->GetInt(0));
             std::string sCode = "window.asc_initAdvancedOptions(" + sParam;
 
-            if (2 == message->GetArgumentList()->GetSize())
+            if (2 <= message->GetArgumentList()->GetSize())
             {
                 std::string sHash = message->GetArgumentList()->GetString(1).ToString();
                 sCode += ",\"";
                 sCode += sHash;
+                sCode += "\"";
+            }
+            if (3 <= message->GetArgumentList()->GetSize())
+            {
+                std::string sDocInfo = message->GetArgumentList()->GetString(2).ToString();
+                sCode += ",\"";
+                sCode += sDocInfo;
                 sCode += "\"";
             }
 

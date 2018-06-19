@@ -680,6 +680,8 @@ public:
     void LocalFile_SaveStart(std::wstring sPath = L"", int nType = -1)
     {
         m_oLocalInfo.SetupOptions(m_oConverterFromEditor.m_oInfo);
+        m_oLocalInfo.m_oInfo.m_sDocumentInfo = L"";
+
         m_oConverterFromEditor.m_nTypeEditorFormat = m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat;
 
         if (!sPath.empty())
@@ -1895,6 +1897,7 @@ public:
                 bool bIsNeedSave = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_bIsSaved ? false : true;
                 std::string sParams = message->GetArgumentList()->GetString(0).ToString();
                 std::wstring sPassword = message->GetArgumentList()->GetString(1).ToWString();
+                std::wstring sDocInfo = message->GetArgumentList()->GetString(2).ToWString();
 
                 bool bIsSaveAs = (sParams.find("saveas=true") != std::string::npos) ? true : false;
                 bool bIsNeedSaveDialog = bIsNeedSave || bIsSaveAs || (!m_pParent->m_pInternal->LocalFile_IsSupportSaveCurrentFormat());
@@ -1908,6 +1911,7 @@ public:
 
                 m_pParent->m_pInternal->m_oLocalInfo.m_bIsRetina = (sParams.find("retina=true") != std::string::npos) ? true : false;
                 m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sPassword = sPassword;
+                m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sDocumentInfo = sDocInfo;
 
                 if (bIsNeedSaveDialog)
                 {
@@ -2426,6 +2430,7 @@ public:
         else if (message_name == "build_crypted")
         {
             std::wstring sPass = message->GetArgumentList()->GetString(0).ToWString();
+            std::wstring sDocInfo = message->GetArgumentList()->GetString(1).ToWString();
 
             int nType = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX;
             if  (2 == m_pParent->m_pInternal->m_nEditorType)
@@ -2438,6 +2443,7 @@ public:
             m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat = nType;
             m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_sFileSrc = m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_sRecoveryDir + L"/EditorCrypted.bin";
             m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_sPassword = sPass;
+            m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_sDocumentInfo = sDocInfo;
             m_pParent->m_pInternal->m_oConverterFromEditor.Start(0);
             return true;
         }
@@ -3678,6 +3684,12 @@ void CCefView_Private::LocalFile_IncrementCounter()
                     delete pCert;
 
                     message->GetArgumentList()->SetString(1, sHash);
+
+                    std::wstring sDocInfo;
+                    COfficeFileFormatChecker oChecker;
+                    bool bIsStorage = oChecker.isMS_OFFCRYPTOFormatFile(m_oLocalInfo.m_oInfo.m_sFileSrc, sDocInfo);
+                    if (bIsStorage && !sDocInfo.empty())
+                        message->GetArgumentList()->SetString(2, sDocInfo);
                 }
 
                 browser->SendProcessMessage(PID_RENDERER, message);
