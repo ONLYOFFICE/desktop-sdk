@@ -806,7 +806,8 @@ void CAscApplicationManager::SetCryptoMode(const std::wstring& sPassword, const 
 
     oCryptoMode.Save(m_oSettings.cookie_path + L"/user.data");
 
-    m_pInternal->SendCryptoData();
+    // не меняем режим для уже открылись
+    // m_pInternal->SendCryptoData();
 
     std::string sCryptoMode = "default";
     if (!sCryptoMode.empty())

@@ -3008,30 +3008,23 @@ require.load = function (context, moduleName, url) {\n\
         }
 
 #if 0
-
         // TEST
-        std::wstring sPathVersion = m_pParent->GetAppManager()->m_oSettings.app_data_path + L"/webdata/cloud/3.0b.1439/word/";
         if (true)
         {
-            int nPos = url.find(L"sdk-all.js");
+            std::wstring::size_type pos = url.find(L"/sdk-all.js");
+            if (std::wstring::npos == pos)
+                pos = url.find(L"/sdk-all-min.js");
 
-            if (nPos != std::wstring::npos)
+            if (std::wstring::npos != pos)
             {
-                std::wstring urlFind = sPathVersion + L"sdk-all.js";
-                return GetLocalFileRequest(urlFind);
+                std::wstring sPathVersion = m_pParent->GetAppManager()->m_oSettings.app_data_path + L"/webdata/cloud/5.1.5";
+                std::wstring::size_type posEnd = url.rfind('/', pos - 1);
+                if (std::wstring::npos != posEnd)
+                {
+                    return GetLocalFileRequest(sPathVersion + url.substr(posEnd));
+                }
             }
         }
-        if (true)
-        {
-            int nPos = url.find(L"app.js");
-
-            if (nPos != std::wstring::npos)
-            {
-                std::wstring urlFind = sPathVersion + L"app.js";
-                return GetLocalFileRequest(urlFind);
-            }
-        }
-
 #endif
 
         if (false)
