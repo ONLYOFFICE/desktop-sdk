@@ -3007,7 +3007,7 @@ require.load = function (context, moduleName, url) {\n\
             }
         }
 
-#if 0
+#if 1
         // TEST
         if (true)
         {
@@ -4512,9 +4512,18 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                 int nIndex = 2;
                 std::vector<std::wstring>& arPaths = pData->get_Files();
 
-                for (std::vector<std::wstring>::iterator i = arPaths.begin(); i != arPaths.end(); i++)
+                if (arPaths.size() > 0)
                 {
-                    message->GetArgumentList()->SetString(nIndex++, *i);
+                    for (std::vector<std::wstring>::iterator i = arPaths.begin(); i != arPaths.end(); i++)
+                    {
+                        message->GetArgumentList()->SetString(nIndex++, *i);
+                    }
+                }
+                else
+                {
+                    std::wstring sPath1 = pData->get_Path();
+                    if (!sPath1.empty())
+                        message->GetArgumentList()->SetString(nIndex++, sPath1);
                 }
             }
 
