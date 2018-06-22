@@ -4828,6 +4828,17 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
                 return;
             */
 
+            if (m_pInternal->m_bIsReporter)
+            {
+                CCefViewEditor* pParentView = (CCefViewEditor*)GetAppManager()->GetViewById(m_pInternal->m_nReporterParentId);
+                m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
+                m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir = pParentView->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir;
+                m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc = pParentView->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc;
+                m_pInternal->LocalFile_IncrementCounter();
+                m_pInternal->LocalFile_IncrementCounter();
+                return;
+            }
+
             m_pInternal->m_pDownloadViewCallback = this;
             m_pInternal->m_sDownloadViewPath = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"OL");
             if (NSFile::CFileBinary::Exists(m_pInternal->m_sDownloadViewPath))

@@ -2109,7 +2109,7 @@ window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst);\n\
         }
         else if (name == "isBlockchainSupport")
         {
-            retval = CefV8Value::CreateBool(m_bIsSupportOnlyPass);
+            retval = CefV8Value::CreateBool(m_bIsSupportOnlyPass && (m_nCryptoMode > 0));
             return true;
         }
         else if (name == "OpenAsLocal")
