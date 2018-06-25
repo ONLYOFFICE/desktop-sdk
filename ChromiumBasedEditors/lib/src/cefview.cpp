@@ -3007,7 +3007,7 @@ require.load = function (context, moduleName, url) {\n\
             }
         }
 
-#if 1
+#if 0
         // TEST
         if (true)
         {
@@ -4464,8 +4464,16 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
         {
             NSEditorApi::CAscLocalOpenFileDialog* pData = (NSEditorApi::CAscLocalOpenFileDialog*)pEvent->m_pData;
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_onaddimage");
-            message->GetArgumentList()->SetString(0, pData->get_Path());
 
+            std::wstring sPath = pData->get_Path();
+            if (pData->get_IsMultiselect() || sPath.empty())
+            {
+                std::vector<std::wstring>& arPaths = pData->get_Files();
+                if (arPaths.size() > 0)
+                    sPath = arPaths[0];
+            }
+
+            message->GetArgumentList()->SetString(0, sPath);
             browser->SendProcessMessage(PID_RENDERER, message);
             break;
         }
