@@ -46,6 +46,8 @@
 #include <X11/Xlib.h>
 #endif
 
+#include "../../../../../core/DesktopEditor/common/File.h"
+
 static int IsForceDpiRound()
 {
 #ifdef WIN32

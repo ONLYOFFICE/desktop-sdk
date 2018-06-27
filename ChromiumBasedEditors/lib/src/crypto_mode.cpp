@@ -179,14 +179,14 @@ void CCryptoMode::Load(const std::wstring& sPassFile)
 #endif
 
 #if defined(_LINUX) && !defined(_MAC)
-    keyEncArrayCrypt = keyEncArrayBuffer;
-    keyEncArrayCryptLen = nLenEncKey;
+    keyEncArrayCrypto = keyEncArrayBuffer;
+    keyEncArrayBufferLen = nLenEncKey;
     // TODO
 #endif
 
 #ifdef _MAC
-    keyEncArrayCrypt = keyEncArrayBuffer;
-    keyEncArrayCryptLen = nLenEncKey;
+    keyEncArrayCrypto = keyEncArrayBuffer;
+    keyEncArrayBufferLen = nLenEncKey;
     // TODO
 #endif
 

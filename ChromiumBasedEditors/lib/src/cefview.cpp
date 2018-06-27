@@ -710,7 +710,7 @@ public:
 
     void LocalFile_GetSupportSaveFormats(std::vector<int>& arFormats)
     {
-        bool bEncryption = !m_pCefView->GetAppManager()->m_pInternal->m_sEncriptionGuid.empty();
+        bool bEncryption = (m_pCefView->GetAppManager()->m_pInternal->m_nCryptoMode != 0) ? true : false;
 
         if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_DOCUMENT)
         {

@@ -600,40 +600,54 @@ public:
 
     void Init(std::wstring sDirectory)
     {
-        #define DictionaryRec_count 31
+        #define DictionaryRec_count 45
         static const DictionaryRec Dictionaries[DictionaryRec_count] =
         {
+            {"az_Latn_AZ", 1068},
+            {"bg_BG", 1026},
             {"ca_ES", 1027},
+            {"ca_ES_valencia", 2051},
             {"cs_CZ", 1029},
             {"da_DK", 1030},
+            {"de_AT", 3079},
+            {"de_CH", 2055},
             {"de_DE", 1031},
             {"el_GR", 1032},
+            {"en_AU", 3081},
+            {"en_CA", 4105},
+            {"en_GB", 2057},
             {"en_US", 1033},
+            {"en_ZA", 7177},
+            {"es_ES", 3082},
+            {"eu_ES", 1069},
             {"fr_FR", 1036},
+            {"gl_ES", 1110},
+            {"hr_HR", 1050},
             {"hu_HU", 1038},
+            {"id_ID", 1057},
             {"it_IT", 1040},
+            {"kk_KZ", 1087},
             {"ko_KR", 1042},
-            {"nl_NL", 1043},
+            {"lb_LU", 1134},
+            {"lt_LT", 1063},
+            {"lv_LV", 1062},
+            {"mn_MN", 1104},
             {"nb_NO", 1044},
+            {"nl_NL", 1043},
+            {"nn_NO", 2068},
             {"pl_PL", 1045},
             {"pt_BR", 1046},
+            {"pt_PT", 2070},
             {"ro_RO", 1048},
             {"ru_RU", 1049},
             {"sk_SK", 1051},
+            {"sl_SI", 1060},
+            {"sr_Cyrl_RS", 10266},
+            {"sr_Latn_RS", 9242},
             {"sv_SE", 1053},
             {"tr_TR", 1055},
             {"uk_UA", 1058},
-            {"lv_LV", 1062},
-            {"lt_LT", 1063},
-            {"vi_VN", 1066},
-            {"az_Latn_AZ", 1068},
-            {"de_CH", 2055},
-            {"en_GB", 2057},
-            {"nn_NO", 2068},
-            {"pt_PT", 2070},
-            {"de_AT", 3079},
-            {"en_AU", 3081},
-            {"es_ES", 3082}
+            {"vi_VN", 1066}
         };
 
         for (int i = 0; i < DictionaryRec_count; ++i)

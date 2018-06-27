@@ -2259,7 +2259,7 @@ window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst);\n\
             if (sDirTmp.empty())
                 sDirTmp = m_sLocalFileFolderWithoutFile;
             if (sDirTmp.empty())
-                sDirTmp = NSFile::CFileBinary::GetTempPathW();
+                sDirTmp = NSFile::CFileBinary::GetTempPath();
 
             CefRefPtr<CefV8Value> val = arguments[0];
             int nCount = val->GetArrayLength();
