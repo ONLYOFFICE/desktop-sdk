@@ -63,7 +63,8 @@ HEADERS += \
     ./src/applicationmanager_p.h \    
     ./src/nativeviewer.h \
     ./src/plugins.h \
-    ./src/crypto_mode.h
+    ./src/crypto_mode.h \
+    ./include/keychain.h
 
 SOURCES += \
     ./src/applicationmanager.cpp \
@@ -72,7 +73,8 @@ SOURCES += \
     ./src/cefapplication.cpp \
     ./src/cefview.cpp \
     ./src/fileprinter.cpp \
-    ./src/crypto_mode.cpp
+    ./src/crypto_mode.cpp \
+    ./src/keychain.cpp
 
 SOURCES += \
     ./../../../core/Common/OfficeFileFormatChecker2.cpp \

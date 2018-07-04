@@ -1865,7 +1865,7 @@ window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst);\n\
             oPlugins.m_strDirectory = m_sSystemPlugins;
             oPlugins.m_strUserDirectory = m_sUserPlugins;
             oPlugins.m_nCryptoMode = m_nCryptoMode;
-            std::string sData = oPlugins.GetPluginsJson();
+            std::string sData = oPlugins.GetPluginsJson(true);
             retval = CefV8Value::CreateString(sData);
             return true;
         }
@@ -2337,24 +2337,26 @@ window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst);\n\
         }
         else if (name == "GetSupportCryptoModes")
         {
-            CCryptoMode oCryptoMode;
-            oCryptoMode.Load(m_sCookiesPath + L"/user.data");
+            NSAscCrypto::CCryptoMode oCryptoMode;
+            NSAscCrypto::CCryptoKey keyEnc, keyDec;
+            oCryptoMode.Load(keyEnc, keyDec, m_sCookiesPath + L"/user.data");
 
             CPluginsManager oPlugins;
             oPlugins.m_strDirectory = m_sSystemPlugins;
             oPlugins.m_strUserDirectory = m_sUserPlugins;
-            oPlugins.m_nCryptoMode = m_nCryptoMode;
             oPlugins.GetInstalledPlugins();
 
             int nCount = (int)oPlugins.m_arCryptoModes.size();
             retval = CefV8Value::CreateArray(nCount);
-            for (int i = 0; i < nCount; ++i)
+            int nCurIndex = 0;
+            for (std::map<int, std::string>::iterator iter = oPlugins.m_arCryptoModes.begin(); iter != oPlugins.m_arCryptoModes.end(); iter++)
             {
+                int nMode = iter->first;
                 CefRefPtr<CefV8Value> val = CefV8Value::CreateObject(NULL, NULL);
-                val->SetValue("type", CefV8Value::CreateInt(oPlugins.m_arCryptoModes[i]), V8_PROPERTY_ATTRIBUTE_NONE);
-                val->SetValue("info_presented", CefV8Value::CreateBool((oCryptoMode.m_nMode == oPlugins.m_arCryptoModes[i]) ? true : false), V8_PROPERTY_ATTRIBUTE_NONE);
+                val->SetValue("type", CefV8Value::CreateInt(nMode), V8_PROPERTY_ATTRIBUTE_NONE);
+                val->SetValue("info_presented", CefV8Value::CreateBool(true), V8_PROPERTY_ATTRIBUTE_NONE);
 
-                retval->SetValue(i, val);
+                retval->SetValue(nCurIndex++, val);
             }
             return true;
         }

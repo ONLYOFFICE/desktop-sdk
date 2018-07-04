@@ -30,48 +30,83 @@
  *
  */
 
-#ifndef APPLICATION_CRYPTO_MODE_H
-#define APPLICATION_CRYPTO_MODE_H
+#ifndef APPLICATION_KEYCHAIN_H
+#define APPLICATION_KEYCHAIN_H
 
 #include <string>
-#include <map>
-#include <vector>
-#include "../include/keychain.h"
 
 namespace NSAscCrypto
 {
-    enum AscCryptoType
+    class CCryptoKey
     {
-        None        = 0,
-        Simple      = 1,
-        Standart    = 2,
-        Advanvced   = 3
+    public:
+        unsigned char*  data;
+        int             len;
+
+    public:
+        CCryptoKey()
+        {
+            data = NULL;
+            len = 0;
+        }
+
+        CCryptoKey(const CCryptoKey& oSrc)
+        {
+            len = oSrc.len;
+            if (0 != len)
+            {
+                data = new unsigned char[len];
+                memcpy(data, oSrc.data, len);
+            }
+        }
+
+        CCryptoKey& operator =(const CCryptoKey& oSrc)
+        {
+            len = oSrc.len;
+            if (0 != len)
+            {
+                data = new unsigned char[len];
+                memcpy(data, oSrc.data, len);
+            }
+            return *this;
+        }
+
+        void Create(int length)
+        {
+            len = length;
+            data = new unsigned char[len];
+        }
+
+        ~CCryptoKey()
+        {
+            if (data)
+                delete [] data;
+        }
     };
 
-    class CAscCryptoJsonValue
+    class IAscKeyChainListener
     {
     public:
-        AscCryptoType   m_eType;
-        std::string     m_sValue;
-        std::string     m_sGuid;
-
-    public:
-        CAscCryptoJsonValue() { m_eType = NSAscCrypto::None; }
-        ~CAscCryptoJsonValue() {}
+        // keyEnc - это тот, что хранится на диске
+        // keyDec - это натуральный ключ
+        virtual void OnKeyChainComplete(CCryptoKey& keyEnc, CCryptoKey& keyDec) = 0;
     };
 
-    class CCryptoMode
+    class CAscKeychain
     {
     public:
-        std::vector<CAscCryptoJsonValue> m_modes;
+        IAscKeyChainListener* m_pListener;
 
     public:
-        CCryptoMode();
+        CAscKeychain(IAscKeyChainListener* pListener) { m_pListener = pListener; }
+        virtual ~CAscKeychain() {}
+
+        void Check(std::wstring& sFile);
 
     public:
-        void Save(CCryptoKey& keyEnc, CCryptoKey& keyDec, std::map<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue>& map, const std::wstring& sFile);
-        void Load(CCryptoKey& keyEnc, CCryptoKey& keyDec, const std::wstring& sFile);
+        virtual void Load(const std::string& name, CCryptoKey& keyEnc);
+        virtual void Save(const std::string& name, CCryptoKey& keyDec);
     };
 }
 
-#endif // APPLICATION_CRYPTO_MODE_H
+#endif // APPLICATION_KEYCHAIN_H

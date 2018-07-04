@@ -313,8 +313,14 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     oPlugins.m_strDirectory = pManager->m_oSettings.system_plugins_path;
     oPlugins.m_strUserDirectory = pManager->m_oSettings.user_plugins_path;
     oPlugins.GetInstalledPlugins();
-    pManager->m_pInternal->m_sEncriptionGuid = oPlugins.m_strGuidEncryption;
 
+    for (std::map<int, std::string>::iterator iterCrypto = oPlugins.m_arCryptoModes.begin(); iterCrypto != oPlugins.m_arCryptoModes.end(); iterCrypto++)
+    {
+        NSAscCrypto::CAscCryptoJsonValue value;
+        value.m_eType = (NSAscCrypto::AscCryptoType)iterCrypto->first;
+        value.m_sGuid = iterCrypto->second;
+        pManager->m_pInternal->m_mapCrypto.insert(std::pair<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue>(value.m_eType, value));
+    }
     pManager->m_pInternal->LoadCryptoData();
 
     return 0;

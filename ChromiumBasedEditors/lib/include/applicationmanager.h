@@ -41,6 +41,7 @@
 #include "./spellchecker.h"
 #include "./cefview.h"
 #include "./cefapplication.h"
+#include "./keychain.h"
 
 #ifdef WIN32
 __declspec(dllexport) int __cdecl Core_SetProcessDpiAwareness(void);
@@ -191,9 +192,11 @@ public:
     void SetEventToAllMainWindows(NSEditorApi::CAscMenuEvent* pEvent);
 
     // 0 - none, 1 - simple, 2 - advanced
-    void SetCryptoMode(const std::wstring& sPassword, const int& nMode);
+    void SetCryptoMode(const std::string& sPassword, const int& nMode);
     int GetCryptoMode();
     std::vector<int> GetSupportCryptoModes();
+
+    virtual NSAscCrypto::CAscKeychain* GetKeychainEngine();
 
 protected:
     int GenerateNextViewId();

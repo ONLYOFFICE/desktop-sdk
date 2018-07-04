@@ -426,7 +426,11 @@ public:
     }
 };
 
-class CAscApplicationManager_Private : public CefBase_Class, public CCookieFoundCallback, public NSThreads::CBaseThread, public CCefScriptLoader::ICefScriptLoaderCallback
+class CAscApplicationManager_Private : public CefBase_Class,
+        public CCookieFoundCallback,
+        public NSThreads::CBaseThread,
+        public CCefScriptLoader::ICefScriptLoaderCallback,
+        public NSAscCrypto::IAscKeyChainListener
 {
 public:
     CAscSpellChecker    m_oSpellChecker;
@@ -477,10 +481,12 @@ public:
 
     std::map<std::wstring, int> m_mapOnlyPass;
 
-    std::string m_sEncriptionGuid;
+    std::map<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue> m_mapCrypto;
+    NSAscCrypto::AscCryptoType m_nCurrentCryptoMode;
+    NSAscCrypto::CCryptoKey m_cryptoKeyEnc;
+    NSAscCrypto::CCryptoKey m_cryptoKeyDec;
 
-    std::wstring m_sCryptoModePassword;
-    int m_nCryptoMode;
+    NSAscCrypto::CAscKeychain* m_pKeyChain;
 
 public:
     CAscApplicationManager_Private() : m_oKeyboardTimer(this)
@@ -509,9 +515,7 @@ public:
         m_nForceDisplayScale = -1;
         m_bIsUpdateFontsAttack = false;
 
-        m_sEncriptionGuid = "";
-
-        m_nCryptoMode = 0;
+        m_nCurrentCryptoMode = NSAscCrypto::None;
     }
     bool GetEditorPermission()
     {
@@ -607,7 +611,7 @@ public:
 
         std::map<std::string, std::string>::iterator pairCryptoMode = m_mapSettings.find("crypto-mode");
         if (pairCryptoMode != m_mapSettings.end())
-            m_nCryptoMode = std::stoi(pairCryptoMode->second);
+            m_nCurrentCryptoMode = (NSAscCrypto::AscCryptoType)std::stoi(pairCryptoMode->second);
     }
 
     void CheckSetting(const std::string& sName, const std::string& sValue)
@@ -1349,25 +1353,30 @@ public:
 
     void LoadCryptoData()
     {
-        CCryptoMode oCryptoMode;
-        oCryptoMode.Load(m_pMain->m_oSettings.cookie_path + L"/user.data");
-
-        m_sCryptoModePassword = oCryptoMode.m_sPassword;
-        m_nCryptoMode = oCryptoMode.m_nMode;
+        m_pKeyChain = m_pMain->GetKeychainEngine();
+        m_pKeyChain->Check(m_pMain->m_oSettings.cookie_path + L"/user.data");
     }
 
     void SendCryptoData(CefRefPtr<CefFrame> frame = NULL)
     {
-        std::wstring sPass = m_sCryptoModePassword;
+        std::wstring sPass = L"";
+        if (0 != m_nCurrentCryptoMode)
+        {
+            std::map<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue>::iterator find = m_mapCrypto.find(m_nCurrentCryptoMode);
+            if (find != m_mapCrypto.end())
+                sPass = UTF8_TO_U(find->second.m_sValue);
+        }
+
         NSCommon::string_replace(sPass, L"\\", L"\\\\");
+        NSCommon::string_replace(sPass, L"\"", L"\\\"");
 
         std::wstring sCode = L"(function() { \n\
-var newMode = " + std::to_wstring(m_nCryptoMode) + L";\n\
-if (window.AscDesktopEditor.CryptoMode == 2 && newMode != 2)\n\
+var newMode = " + std::to_wstring(m_nCurrentCryptoMode) + L";\n\
+if (window.AscDesktopEditor.CryptoMode > 1 && newMode != 1)\n\
     return;\n\
 if (window.AscDesktopEditor.CryptoMode > 0 && newMode > 0 && window.AscDesktopEditor.CryptoMode != newMode)\n\
     return;\n\
-window.AscDesktopEditor.CryptoMode = " + std::to_wstring(m_nCryptoMode) + L";\n\
+window.AscDesktopEditor.CryptoMode = " + std::to_wstring(m_nCurrentCryptoMode) + L";\n\
 window.AscDesktopEditor.CryptoPassword = \"" + sPass + L"\";\n\
 })();";
 
@@ -1391,6 +1400,22 @@ window.AscDesktopEditor.CryptoPassword = \"" + sPass + L"\";\n\
         }
 
         RELEASEINTERFACE(pEvent);
+    }
+
+    virtual void OnKeyChainComplete(NSAscCrypto::CCryptoKey& keyEnc, NSAscCrypto::CCryptoKey& keyDec)
+    {
+        m_cryptoKeyEnc = keyEnc;
+        m_cryptoKeyDec = keyDec;
+
+        NSAscCrypto::CCryptoMode oCryptoMode;
+        oCryptoMode.Load(m_cryptoKeyEnc, m_cryptoKeyDec, m_pMain->m_oSettings.cookie_path + L"/user.data");
+
+        for (std::vector<NSAscCrypto::CAscCryptoJsonValue>::iterator iter = oCryptoMode.m_modes.begin(); iter != oCryptoMode.m_modes.end(); iter++)
+        {
+            m_mapCrypto.insert(std::pair<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue>(iter->m_eType, *iter));
+        }
+
+        RELEASEOBJECT(m_pKeyChain);
     }
 };
 

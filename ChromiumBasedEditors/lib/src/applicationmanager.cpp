@@ -397,6 +397,33 @@ void CAscApplicationManager::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 
             break;
         }
+        case ASC_MENU_EVENT_TYPE_ENCRYPT_PERSONAL_KEY_EXPORT:
+        {
+            NSEditorApi::CEncryptData* pData = (NSEditorApi::CEncryptData*)pEvent->m_pData;
+            std::map<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue>::iterator find = m_pInternal->m_mapCrypto.find(m_pInternal->m_nCurrentCryptoMode);
+            if (find != m_pInternal->m_mapCrypto.end())
+            {
+                std::string sData = find->second.m_sValue;
+                NSFile::CFileBinary oFile;
+                oFile.CreateFileW(pData->get_Path());
+                oFile.WriteFile((BYTE*)sData.c_str(), (DWORD)sData.length());
+                oFile.CloseFile();
+            }
+            break;
+        }
+        case ASC_MENU_EVENT_TYPE_ENCRYPT_PERSONAL_KEY_IMPORT:
+        {
+            NSEditorApi::CEncryptData* pData = (NSEditorApi::CEncryptData*)pEvent->m_pData;
+            std::map<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue>::iterator find = m_pInternal->m_mapCrypto.find(m_pInternal->m_nCurrentCryptoMode);
+            if (find != m_pInternal->m_mapCrypto.end())
+            {
+                std::string sData;
+                NSFile::CFileBinary::ReadAllTextUtf8A(pData->get_Path(), sData);
+
+                this->SetCryptoMode(sData, (int)m_pInternal->m_nCurrentCryptoMode);
+            }
+            break;
+        }
         default:
         {
             if (NULL != m_pInternal->m_pAdditional)
@@ -793,34 +820,37 @@ void CAscApplicationManager::SetEventToAllMainWindows(NSEditorApi::CAscMenuEvent
     m_pInternal->SetEventToAllMainWindows(pEvent);
 }
 
-void CAscApplicationManager::SetCryptoMode(const std::wstring& sPassword, const int& nMode)
+void CAscApplicationManager::SetCryptoMode(const std::string& sPassword, const int& nMode)
 {
-    if (0 != nMode && !sPassword.empty())
-        m_pInternal->m_sCryptoModePassword = sPassword;
+    if (0 < nMode && !sPassword.empty())
+    {
+        std::map<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue>::iterator find = m_pInternal->m_mapCrypto.find((NSAscCrypto::AscCryptoType)nMode);
+        if (find != m_pInternal->m_mapCrypto.end())
+        {
+            find->second.m_sValue = sPassword;
+        }
+    }
 
-    m_pInternal->m_nCryptoMode = nMode;
+    m_pInternal->m_nCurrentCryptoMode = (NSAscCrypto::AscCryptoType)nMode;
 
-    CCryptoMode oCryptoMode;
-    oCryptoMode.m_sPassword = m_pInternal->m_sCryptoModePassword;
-    oCryptoMode.m_nMode = m_pInternal->m_nCryptoMode;
-
-    oCryptoMode.Save(m_oSettings.cookie_path + L"/user.data");
+    NSAscCrypto::CCryptoMode oCryptoMode;
+    oCryptoMode.Save(m_pInternal->m_cryptoKeyEnc, m_pInternal->m_cryptoKeyDec, m_pInternal->m_mapCrypto, m_oSettings.cookie_path + L"/user.data");
 
     // не меняем режим для уже открылись
     // m_pInternal->SendCryptoData();
 
     std::string sCryptoMode = "default";
     if (!sCryptoMode.empty())
-        sCryptoMode = std::to_string(m_pInternal->m_nCryptoMode);
+        sCryptoMode = std::to_string(m_pInternal->m_nCurrentCryptoMode);
 
     m_pInternal->CheckSetting("--crypto-mode", sCryptoMode);
-    m_pInternal->m_mapSettings.insert(std::pair<std::string, std::string>("crypto-mode", std::to_string(m_pInternal->m_nCryptoMode)));
+    m_pInternal->m_mapSettings.insert(std::pair<std::string, std::string>("crypto-mode", std::to_string(m_pInternal->m_nCurrentCryptoMode)));
     m_pInternal->SaveSettings();
 }
 
 int CAscApplicationManager::GetCryptoMode()
 {
-    return m_pInternal->m_nCryptoMode;
+    return m_pInternal->m_nCurrentCryptoMode;
 }
 
 std::vector<int> CAscApplicationManager::GetSupportCryptoModes()
@@ -830,7 +860,19 @@ std::vector<int> CAscApplicationManager::GetSupportCryptoModes()
     oPlugins.m_strUserDirectory = m_oSettings.user_plugins_path;
 
     oPlugins.GetInstalledPlugins();
-    return oPlugins.m_arCryptoModes;
+    std::vector<int> retValue;
+
+    for (std::map<int, std::string>::iterator iter = oPlugins.m_arCryptoModes.begin(); iter != oPlugins.m_arCryptoModes.end(); iter++)
+    {
+        retValue.push_back(iter->first);
+    }
+
+    return retValue;
+}
+
+NSAscCrypto::CAscKeychain* CAscApplicationManager::GetKeychainEngine()
+{
+    return new NSAscCrypto::CAscKeychain(m_pInternal);
 }
 
 /////////////////////////////////////////////////////////////

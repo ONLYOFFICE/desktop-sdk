@@ -710,7 +710,7 @@ public:
 
     void LocalFile_GetSupportSaveFormats(std::vector<int>& arFormats)
     {
-        bool bEncryption = (m_pCefView->GetAppManager()->m_pInternal->m_nCryptoMode != 0) ? true : false;
+        bool bEncryption = (m_pCefView->GetAppManager()->m_pInternal->m_nCurrentCryptoMode != 0) ? true : false;
 
         if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_DOCUMENT)
         {
@@ -1430,7 +1430,7 @@ public:
             bool bIsOnlyPassSupport = m_pParent->GetAppManager()->m_oSettings.pass_support;
             if (bIsOnlyPassSupport)
             {
-                if (m_pParent->GetAppManager()->m_pInternal->m_sEncriptionGuid.empty())
+                if (0 == m_pParent->GetAppManager()->m_pInternal->m_mapCrypto.size())
                     bIsOnlyPassSupport = false;
             }
 
@@ -1440,7 +1440,7 @@ public:
 
             m_pParent->m_pInternal->m_bIsOnlyPassSupport = bIsOnlyPassSupport;
             message->GetArgumentList()->SetInt(0, nFlags);
-            message->GetArgumentList()->SetInt(1, m_pParent->GetAppManager()->m_pInternal->m_nCryptoMode);
+            message->GetArgumentList()->SetInt(1, m_pParent->GetAppManager()->m_pInternal->m_nCurrentCryptoMode);
             message->GetArgumentList()->SetString(2, m_pParent->GetAppManager()->m_oSettings.system_plugins_path);
             message->GetArgumentList()->SetString(3, m_pParent->GetAppManager()->m_oSettings.user_plugins_path);
             message->GetArgumentList()->SetString(4, m_pParent->GetAppManager()->m_oSettings.cookie_path);
@@ -2528,7 +2528,7 @@ public:
         }
         else if (message_name == "set_crypto_mode")
         {
-            std::wstring sPass = message->GetArgumentList()->GetString(0).ToWString();
+            std::string sPass = message->GetArgumentList()->GetString(0).ToString();
             int nMode = message->GetArgumentList()->GetInt(1);
             m_pParent->GetAppManager()->SetCryptoMode(sPass, nMode);
             return true;
@@ -2635,9 +2635,13 @@ public:
             if ((0 != sUrl.find(L"file:///")) || !m_pParent->m_pInternal->m_bIsOnlyPassSupport || m_pParent->GetType() == cvwtEditor)
                 return;
 
-            std::string sEncryptionG = m_pParent->m_pInternal->m_pManager->m_pInternal->m_sEncriptionGuid;
-            if (!sEncryptionG.empty())
+            std::map<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue>::iterator findCryptoPlugin =
+                    m_pParent->m_pInternal->m_pManager->m_pInternal->m_mapCrypto.find(m_pParent->m_pInternal->m_pManager->m_pInternal->m_nCurrentCryptoMode);
+
+            if (findCryptoPlugin == m_pParent->m_pInternal->m_pManager->m_pInternal->m_mapCrypto.end())
                 return;
+
+            std::string sEncryptionG = findCryptoPlugin->second.m_sGuid;
 
             std::wstring sGuid = UTF8_TO_U(sEncryptionG);
             if (0 == sGuid.find(L"asc."))

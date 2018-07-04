@@ -38,194 +38,131 @@
 #include "Wincrypt.h"
 #endif
 
-CCryptoMode::CCryptoMode()
+namespace NSAscCrypto
 {
-    m_sPassword = L"";
-    m_nMode = 0;
-}
-
-void CCryptoMode::Save(const std::wstring& sPassFile)
-{
-    std::string sPass = U_TO_UTF8(m_sPassword);
-
-    if (NSFile::CFileBinary::Exists(sPassFile))
-        NSFile::CFileBinary::Remove(sPassFile);
-
-    NSFile::CFileBinary oFile;
-    oFile.CreateFileW(sPassFile);
-
-    // encryption key (random)
-    std::string alphanum = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-    int alphanumlen = alphanum.length();
-    ByteArray keyEncArray;
-    BYTE keyEncArrayBuffer[256];
-    for (int i = 0; i < 256; ++i)
+    bool WriteData(NSFile::CFileBinary& oFile, BYTE* pData, int nLen)
     {
-        keyEncArrayBuffer[i] = (BYTE)alphanum[rand() % (alphanumlen - 1)];
-        keyEncArray.push_back(keyEncArrayBuffer[i]);
+        return oFile.WriteFile(pData, (DWORD)nLen);
     }
 
-    // password utf8 => vector<BYTE>
-    int nLenPass = (int)sPass.length();
-    ByteArray passArray;
-    for (int i = 0; i < nLenPass; ++i)
+    bool ReadData(NSFile::CFileBinary& oFile, BYTE* pData, int nLen)
     {
-        passArray.push_back((BYTE)sPass.c_str()[i]);
+        DWORD dwW = 0;
+        oFile.ReadFile(pData, (DWORD)nLen, dwW);
+        return (dwW == (DWORD)nLen) ? true : false;
     }
 
-    // encode
-    ByteArray passEnc;
-    Aes256::encrypt(keyEncArray, passArray, passEnc);
-
-    BYTE* keyEncArrayCrypt = NULL;
-    int keyEncArrayCryptLen = 0;
-
-    // crypt encKey!!!
-#ifdef WIN32
-    DATA_BLOB DataIn;
-    DataIn.pbData = keyEncArrayBuffer;
-    DataIn.cbData = 256;
-
-    DATA_BLOB DataOut;
-    CryptProtectData(&DataIn, L"", NULL, NULL, NULL, 0, &DataOut);
-    keyEncArrayCrypt = DataOut.pbData;
-    keyEncArrayCryptLen = DataOut.cbData;
-#endif
-
-#if defined(_LINUX) && !defined(_MAC)
-    keyEncArrayCrypt = keyEncArrayBuffer;
-    keyEncArrayCryptLen = 256;
-    // TODO
-#endif
-
-#ifdef _MAC
-    keyEncArrayCrypt = keyEncArrayBuffer;
-    keyEncArrayCryptLen = 256;
-    // TODO
-#endif
-
-    // Save to file
-    int nFileSize = 4 + keyEncArrayCryptLen + 4 + (int)passEnc.size() + 1;
-    BYTE* pFileData = new BYTE[nFileSize];
-
-    int nIndex = 0;
-    int nIntValue = keyEncArrayCryptLen;
-    pFileData[nIndex++] = nIntValue & 0xFF;
-    pFileData[nIndex++] = (nIntValue >> 8) & 0xFF;
-    pFileData[nIndex++] = (nIntValue >> 16) & 0xFF;
-    pFileData[nIndex++] = (nIntValue >> 24) & 0xFF;
-
-    memcpy(pFileData + nIndex, keyEncArrayCrypt, keyEncArrayCryptLen);
-    nIndex += keyEncArrayCryptLen;
-
-    nIntValue = (int)passEnc.size();
-    pFileData[nIndex++] = nIntValue & 0xFF;
-    pFileData[nIndex++] = (nIntValue >> 8) & 0xFF;
-    pFileData[nIndex++] = (nIntValue >> 16) & 0xFF;
-    pFileData[nIndex++] = (nIntValue >> 24) & 0xFF;
-
-    int nSize = (int)passEnc.size();
-    for (int i = 0; i < nSize; ++i)
-        pFileData[nIndex++] = passEnc[i];
-
-    pFileData[nIndex++] = m_nMode;
-
-    oFile.WriteFile(pFileData, (DWORD)nFileSize);
-    oFile.CloseFile();
-
-    RELEASEARRAYOBJECTS(pFileData);
-
-#ifdef WIN32
-    LocalFree((HLOCAL)DataOut.pbData);
-#endif
-}
-
-void CCryptoMode::Load(const std::wstring& sPassFile)
-{
-    NSFile::CFileBinary oFile;
-    if (!oFile.OpenFile(sPassFile))
+    bool WriteInt(NSFile::CFileBinary& oFile, int val)
     {
-        m_sPassword = L"";
-        m_nMode = 0;
-        return;
+        BYTE pFileData[4];
+        pFileData[0] = val & 0xFF;
+        pFileData[1] = (val >> 8) & 0xFF;
+        pFileData[2] = (val >> 16) & 0xFF;
+        pFileData[3] = (val >> 24) & 0xFF;
+        return WriteData(oFile, pFileData, 4);
     }
 
-    int nFileSize = (int)oFile.GetFileSize();
-    BYTE* pFileData = new BYTE[nFileSize];
-    DWORD dwRead = 0;
-    oFile.ReadFile(pFileData, (DWORD)nFileSize, dwRead);
-
-    // encryption key
-    int nIndex = 0;
-    int nLenEncKey = (pFileData[nIndex]) | (pFileData[nIndex+1] << 8) | (pFileData[nIndex+2] << 16) | (pFileData[nIndex+3] << 24);
-    nIndex += 4;
-
-    // decrypt encKey!!!
-    BYTE* keyEncArrayCrypto = pFileData + nIndex;
-    BYTE* keyEncArrayBuffer = NULL;
-    int keyEncArrayBufferLen = 0;
-    nIndex += nLenEncKey;
-
-#ifdef WIN32
-    DATA_BLOB DataIn;
-    DataIn.pbData = keyEncArrayCrypto;
-    DataIn.cbData = nLenEncKey;
-
-    DATA_BLOB DataOut;
-    LPWSTR pDescrOut =  NULL;
-    CryptUnprotectData(&DataIn, &pDescrOut, NULL, NULL, NULL, 0, &DataOut);
-    keyEncArrayBuffer = DataOut.pbData;
-    keyEncArrayBufferLen = DataOut.cbData;
-#endif
-
-#if defined(_LINUX) && !defined(_MAC)
-    keyEncArrayCrypto = keyEncArrayBuffer;
-    keyEncArrayBufferLen = nLenEncKey;
-    // TODO
-#endif
-
-#ifdef _MAC
-    keyEncArrayCrypto = keyEncArrayBuffer;
-    keyEncArrayBufferLen = nLenEncKey;
-    // TODO
-#endif
-
-    ByteArray keyEncArray;
-    for (int i = 0; i < keyEncArrayBufferLen; ++i)
+    int ReadInt(NSFile::CFileBinary& oFile)
     {
-        keyEncArray.push_back(keyEncArrayBuffer[i]);
+        BYTE pFileData[4];
+        ReadData(oFile, pFileData, 4);
+        return (int)((pFileData[0]) | (pFileData[1] << 8) | (pFileData[2] << 16) | (pFileData[3] << 24));
     }
 
-    int nLenPass = (pFileData[nIndex]) | (pFileData[nIndex+1] << 8) | (pFileData[nIndex+2] << 16) | (pFileData[nIndex+3] << 24);
-    nIndex += 4;
-
-    ByteArray passArray;
-    for (int i = 0; i < nLenPass; ++i)
+    CCryptoMode::CCryptoMode()
     {
-        passArray.push_back(pFileData[nIndex++]);
     }
 
-    m_nMode = pFileData[nIndex++];
+    void CCryptoMode::Save(CCryptoKey& keyEnc, CCryptoKey& keyDec, std::map<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue>& map, const std::wstring& sPassFile)
+    {
+        if (NSFile::CFileBinary::Exists(sPassFile))
+            NSFile::CFileBinary::Remove(sPassFile);
 
-    // decrypt encKey!!!
-    // TODO:
+        NSFile::CFileBinary oFile;
+        oFile.CreateFileW(sPassFile);
 
-    // decode
-    ByteArray passDec;
-    Aes256::decrypt(keyEncArray, passArray, passDec);
+        // 1) Save enc key
+        WriteInt(oFile, keyEnc.len);
+        WriteData(oFile, keyEnc.data, keyEnc.len);
 
-    int nLen = (int)passDec.size();
-    char* pDst = new char[nLen + 1];
-    for (int i = 0; i < nLen; ++i)
-        pDst[i] = (char)passDec[i];
-    pDst[nLen] = 0;
+        // 2) prepare key for encoding (keyDec)
+        ByteArray keyEncArray;
+        for (int i = 0; i < keyDec.len; ++i)
+        {
+            keyEncArray.push_back(keyDec.data[i]);
+        }
 
-    std::string sPassD(pDst);
-    m_sPassword = UTF8_TO_U(sPassD);
+        // 3) Save all modes
+        WriteInt(oFile, (int)map.size());
 
-    RELEASEARRAYOBJECTS(pDst);
+        for (std::map<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue>::iterator iter = map.begin(); iter != map.end(); iter++)
+        {
+            NSAscCrypto::CAscCryptoJsonValue& item = iter->second;
 
-#ifdef WIN32
-    LocalFree((HLOCAL)DataOut.pbData);
-#endif
+            WriteInt(oFile, (int)item.m_eType);
+
+            ByteArray passArray;
+            int nPassLen = (int)item.m_sValue.length();
+            for (int i = 0; i < nPassLen; ++i)
+                passArray.push_back((BYTE)item.m_sValue.c_str()[i]);
+
+            ByteArray passEnc;
+            Aes256::encrypt(keyEncArray, passArray, passEnc);
+
+            int nPassCryptDataLen = (int)passEnc.size();
+            BYTE* pPassCryptData = new BYTE[nPassCryptDataLen];
+            for (int i = 0; i < nPassCryptDataLen; ++i)
+                pPassCryptData[i] = passEnc[i];
+
+            WriteInt(oFile, nPassCryptDataLen);
+            WriteData(oFile, pPassCryptData, nPassCryptDataLen);
+
+            RELEASEARRAYOBJECTS(pPassCryptData);
+        }
+    }
+
+    void CCryptoMode::Load(CCryptoKey& keyEnc, CCryptoKey& keyDec, const std::wstring& sPassFile)
+    {
+        NSFile::CFileBinary oFile;
+        if (!oFile.OpenFile(sPassFile))
+            return;
+
+        // 1) Skip keyEnc
+        int nEncKeySize = ReadInt(oFile);
+        oFile.SeekFile(4 + nEncKeySize);
+
+        // 2) prepare key for encoding (keyDec)
+        ByteArray keyEncArray;
+        for (int i = 0; i < keyDec.len; ++i)
+        {
+            keyEncArray.push_back(keyDec.data[i]);
+        }
+
+        // 3) Load all modes
+        int nModesCount = ReadInt(oFile);
+        for (int nIndexMode = 0; nIndexMode < nModesCount; ++nIndexMode)
+        {
+            NSAscCrypto::CAscCryptoJsonValue val;
+            val.m_eType = (NSAscCrypto::AscCryptoType)ReadInt(oFile);
+
+            int nEncodedPassLen = ReadInt(oFile);
+            BYTE* pEncodedPassData = new BYTE[nEncodedPassLen];
+            ReadData(oFile, pEncodedPassData, nEncodedPassLen);
+
+            ByteArray passEncArray;
+            for (int i = 0; i < nEncodedPassLen; ++i)
+                passEncArray.push_back(pEncodedPassData[i]);
+
+            RELEASEARRAYOBJECTS(pEncodedPassData);
+
+            ByteArray passArray;
+            Aes256::decrypt(keyEncArray, passEncArray, passArray);
+
+            int nPassDataLen = (int)passArray.size();
+            for (int i = 0; i < nPassDataLen; ++i)
+                val.m_sValue += ((char)passArray[i]);
+
+            m_modes.push_back(val);
+        }
+    }
 }
