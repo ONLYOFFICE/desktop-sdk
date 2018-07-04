@@ -57,6 +57,7 @@ namespace NSAscCrypto
             BYTE pDataLen[4];
             DWORD dwReadLen = 0;
             oFile.ReadFile(pDataLen, 4, dwReadLen);
+            nLen = (int)((pDataLen[0]) | (pDataLen[1] << 8) | (pDataLen[2] << 16) | (pDataLen[3] << 24));
 
             key.data = new BYTE[nLen];
             key.len = nLen;
