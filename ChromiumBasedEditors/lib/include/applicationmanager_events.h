@@ -774,6 +774,17 @@ namespace NSEditorApi
         LINK_PROPERTY_STRING(KeyPath)
         LINK_PROPERTY_STRING(KeyPassword)
     };
+
+    class CEncryptData : public IMenuEventDataBase
+    {
+    public:
+        CEncryptData(){}
+        virtual ~CEncryptData(){}
+
+        LINK_PROPERTY_STRING(Path)
+    private:
+        std::wstring m_sPath;
+    };
 }
 
 namespace NSEditorApi
