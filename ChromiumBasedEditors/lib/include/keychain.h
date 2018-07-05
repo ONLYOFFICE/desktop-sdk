@@ -35,6 +35,9 @@
 
 #include <string>
 
+#define ASC_ENCRYPTED_USER_MASK     0x54434E45
+#define ASC_ENCRYPTED_USER_VERSION  1
+
 namespace NSAscCrypto
 {
     class CCryptoKey
@@ -52,6 +55,7 @@ namespace NSAscCrypto
 
         CCryptoKey(const CCryptoKey& oSrc)
         {
+            data = NULL;
             len = oSrc.len;
             if (0 != len)
             {
@@ -62,6 +66,8 @@ namespace NSAscCrypto
 
         CCryptoKey& operator =(const CCryptoKey& oSrc)
         {
+            if (data)
+                delete [] data;
             len = oSrc.len;
             if (0 != len)
             {

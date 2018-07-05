@@ -1371,11 +1371,6 @@ public:
         NSCommon::string_replace(sPass, L"\"", L"\\\"");
 
         std::wstring sCode = L"(function() { \n\
-var newMode = " + std::to_wstring(m_nCurrentCryptoMode) + L";\n\
-if (window.AscDesktopEditor.CryptoMode > 1 && newMode != 1)\n\
-    return;\n\
-if (window.AscDesktopEditor.CryptoMode > 0 && newMode > 0 && window.AscDesktopEditor.CryptoMode != newMode)\n\
-    return;\n\
 window.AscDesktopEditor.CryptoMode = " + std::to_wstring(m_nCurrentCryptoMode) + L";\n\
 window.AscDesktopEditor.CryptoPassword = \"" + sPass + L"\";\n\
 })();";
@@ -1412,7 +1407,43 @@ window.AscDesktopEditor.CryptoPassword = \"" + sPass + L"\";\n\
 
         for (std::vector<NSAscCrypto::CAscCryptoJsonValue>::iterator iter = oCryptoMode.m_modes.begin(); iter != oCryptoMode.m_modes.end(); iter++)
         {
-            m_mapCrypto.insert(std::pair<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue>(iter->m_eType, *iter));
+            std::map<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue>::iterator find = m_mapCrypto.find(iter->m_eType);
+            if (find == m_mapCrypto.end())
+            {
+                m_mapCrypto.insert(std::pair<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue>(iter->m_eType, *iter));
+            }
+            else
+            {
+                find->second.m_sValue = iter->m_sValue;
+            }
+        }
+
+        // создаем ключи для режимов
+        bool bIsResave = false;
+
+        // 1) simple
+        std::map<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue>::iterator findSimple = m_mapCrypto.find(NSAscCrypto::Simple);
+        if (findSimple != m_mapCrypto.end())
+        {
+            NSAscCrypto::CAscCryptoJsonValue& simple = findSimple->second;
+            if (simple.m_sValue.empty())
+            {
+                std::string alphanum = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+                char data[1025];
+                int alphanumlen = alphanum.length();
+                for (int i = 0; i < 1024; ++i)
+                {
+                    data[i] = (char)alphanum[rand() % (alphanumlen - 1)];
+                }
+                data[1024] = 0;
+                simple.m_sValue = std::string(data);
+                bIsResave = true;
+            }
+        }
+
+        if (bIsResave)
+        {
+            m_pMain->SetCryptoMode("", m_nCurrentCryptoMode);
         }
 
         RELEASEOBJECT(m_pKeyChain);

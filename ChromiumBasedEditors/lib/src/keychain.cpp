@@ -49,10 +49,33 @@ namespace NSAscCrypto
 {
     void CAscKeychain::Check(std::wstring &sFile)
     {
+        if (true)
+        {
+            NSFile::CFileBinary oFile;
+            if (oFile.OpenFile(sFile))
+            {
+                BYTE pCheckData[8];
+                memset(pCheckData, 0, 8);
+                DWORD dwRead = 0;
+                oFile.ReadFile(pCheckData, 8, dwRead);
+                oFile.CloseFile();
+
+                DWORD nMagic = ((pCheckData[0]) | (pCheckData[1] << 8) | (pCheckData[2] << 16) | (pCheckData[3] << 24));
+                DWORD nVersion = ((pCheckData[4]) | (pCheckData[5] << 8) | (pCheckData[6] << 16) | (pCheckData[7] << 24));
+
+                if (nMagic != ASC_ENCRYPTED_USER_MASK || nVersion != ASC_ENCRYPTED_USER_VERSION)
+                {
+                    NSFile::CFileBinary::Remove(sFile);
+                }
+            }
+        }
+
         CCryptoKey key;
         NSFile::CFileBinary oFile;
         if (oFile.OpenFile(sFile))
         {
+            oFile.SeekFile(8); // magic, version
+
             int nLen = 0;
             BYTE pDataLen[4];
             DWORD dwReadLen = 0;
@@ -65,8 +88,6 @@ namespace NSAscCrypto
             oFile.CloseFile();
 
             this->Load("asc-desktop-crypto-key", key);
-
-            delete [] key.data;
         }
         else
         {

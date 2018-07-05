@@ -52,6 +52,16 @@ namespace NSAscCrypto
         return (dwW == (DWORD)nLen) ? true : false;
     }
 
+    bool WriteDWORD(NSFile::CFileBinary& oFile, DWORD val)
+    {
+        BYTE pFileData[4];
+        pFileData[0] = val & 0xFF;
+        pFileData[1] = (val >> 8) & 0xFF;
+        pFileData[2] = (val >> 16) & 0xFF;
+        pFileData[3] = (val >> 24) & 0xFF;
+        return WriteData(oFile, pFileData, 4);
+    }
+
     bool WriteInt(NSFile::CFileBinary& oFile, int val)
     {
         BYTE pFileData[4];
@@ -80,6 +90,10 @@ namespace NSAscCrypto
 
         NSFile::CFileBinary oFile;
         oFile.CreateFileW(sPassFile);
+
+        // 0) magic & version
+        WriteDWORD(oFile, ASC_ENCRYPTED_USER_MASK);
+        WriteDWORD(oFile, ASC_ENCRYPTED_USER_VERSION);
 
         // 1) Save enc key
         WriteInt(oFile, keyEnc.len);
@@ -127,9 +141,12 @@ namespace NSAscCrypto
         if (!oFile.OpenFile(sPassFile))
             return;
 
+        // 0) Skip magic
+        oFile.SeekFile(8);
+
         // 1) Skip keyEnc
         int nEncKeySize = ReadInt(oFile);
-        oFile.SeekFile(4 + nEncKeySize);
+        oFile.SeekFile(8 + 4 + nEncKeySize);
 
         // 2) prepare key for encoding (keyDec)
         ByteArray keyEncArray;

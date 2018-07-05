@@ -399,8 +399,12 @@ void CAscApplicationManager::Apply(NSEditorApi::CAscMenuEvent* pEvent)
         }
         case ASC_MENU_EVENT_TYPE_ENCRYPT_PERSONAL_KEY_EXPORT:
         {
+            NSAscCrypto::AscCryptoType eType = m_pInternal->m_nCurrentCryptoMode;
+            if (NSAscCrypto::None == eType)
+                eType = NSAscCrypto::Simple;
+
             NSEditorApi::CEncryptData* pData = (NSEditorApi::CEncryptData*)pEvent->m_pData;
-            std::map<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue>::iterator find = m_pInternal->m_mapCrypto.find(m_pInternal->m_nCurrentCryptoMode);
+            std::map<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue>::iterator find = m_pInternal->m_mapCrypto.find(eType);
             if (find != m_pInternal->m_mapCrypto.end())
             {
                 std::string sData = find->second.m_sValue;
@@ -413,14 +417,18 @@ void CAscApplicationManager::Apply(NSEditorApi::CAscMenuEvent* pEvent)
         }
         case ASC_MENU_EVENT_TYPE_ENCRYPT_PERSONAL_KEY_IMPORT:
         {
+            NSAscCrypto::AscCryptoType eType = m_pInternal->m_nCurrentCryptoMode;
+            if (NSAscCrypto::None == eType)
+                eType = NSAscCrypto::Simple;
+
             NSEditorApi::CEncryptData* pData = (NSEditorApi::CEncryptData*)pEvent->m_pData;
-            std::map<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue>::iterator find = m_pInternal->m_mapCrypto.find(m_pInternal->m_nCurrentCryptoMode);
+            std::map<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue>::iterator find = m_pInternal->m_mapCrypto.find(eType);
             if (find != m_pInternal->m_mapCrypto.end())
             {
                 std::string sData;
                 NSFile::CFileBinary::ReadAllTextUtf8A(pData->get_Path(), sData);
 
-                this->SetCryptoMode(sData, (int)m_pInternal->m_nCurrentCryptoMode);
+                this->SetCryptoMode(sData, (int)eType);
             }
             break;
         }
@@ -551,6 +559,16 @@ CCefView* CAscApplicationManager::GetViewByRecentId(int nId)
     }
 
     return this->GetViewByUrl(oInfo.m_sUrl);
+}
+
+std::vector<int> CAscApplicationManager::GetViewsId()
+{
+    std::vector<int> ret;
+    for (std::map<int, CCefView*>::iterator i = m_pInternal->m_mapViews.begin(); i != m_pInternal->m_mapViews.end(); ++i)
+    {
+        ret.push_back(i->first);
+    }
+    return ret;
 }
 
 void CAscApplicationManager::DestroyCefView(int nId, bool bIsSafe)
