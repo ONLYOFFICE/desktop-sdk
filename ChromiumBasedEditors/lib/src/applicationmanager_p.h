@@ -1431,6 +1431,7 @@ window.AscDesktopEditor.CryptoPassword = \"" + sPass + L"\";\n\
                 std::string alphanum = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
                 char data[1025];
                 int alphanumlen = alphanum.length();
+                srand((unsigned int)NSTimers::GetTickCount());
                 for (int i = 0; i < 1024; ++i)
                 {
                     data[i] = (char)alphanum[rand() % (alphanumlen - 1)];

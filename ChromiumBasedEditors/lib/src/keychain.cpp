@@ -45,6 +45,8 @@
 #include <Security/Security.h>
 #endif
 
+#include "../../../../core/DesktopEditor/graphics/Timer.h"
+
 namespace NSAscCrypto
 {
     void CAscKeychain::Check(std::wstring &sFile)
@@ -95,6 +97,8 @@ namespace NSAscCrypto
             int alphanumlen = alphanum.length();
             key.data = new BYTE[ENC_KEY_LENGTH];
             key.len = ENC_KEY_LENGTH;
+
+            srand((unsigned int)NSTimers::GetTickCount());
             for (int i = 0; i < ENC_KEY_LENGTH; ++i)
             {
                 key.data[i] = (BYTE)alphanum[rand() % (alphanumlen - 1)];
