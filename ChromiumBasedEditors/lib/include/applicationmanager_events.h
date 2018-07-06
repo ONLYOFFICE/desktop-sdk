@@ -782,8 +782,10 @@ namespace NSEditorApi
         virtual ~CEncryptData(){}
 
         LINK_PROPERTY_STRING(Path)
+        LINK_PROPERTY_STRING(Value)
     private:
         std::wstring m_sPath;
+        std::wstring m_sValue;
     };
 }
 

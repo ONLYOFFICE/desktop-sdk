@@ -426,7 +426,15 @@ void CAscApplicationManager::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             if (find != m_pInternal->m_mapCrypto.end())
             {
                 std::string sData;
-                NSFile::CFileBinary::ReadAllTextUtf8A(pData->get_Path(), sData);
+                if (!pData->get_Path().empty())
+                {
+                    NSFile::CFileBinary::ReadAllTextUtf8A(pData->get_Path(), sData);
+                }
+                else
+                {
+                    std::wstring sValueW = pData->get_Value();
+                    sData = U_TO_UTF8(sValueW);
+                }
 
                 this->SetCryptoMode(sData, (int)eType);
             }
