@@ -49,7 +49,7 @@
 
 namespace NSAscCrypto
 {
-    void CAscKeychain::Check(std::wstring &sFile)
+    void CAscKeychain::Check(const std::wstring &sFile)
     {
         if (true)
         {
@@ -133,7 +133,7 @@ namespace NSAscCrypto
 #if defined(_LINUX) && !defined(_MAC)
         // QtKeychain!
 
-        CCryptoKey keyDec = keySrc;
+        CCryptoKey keyDec = keyEnc;
         if (m_pListener)
             m_pListener->OnKeyChainComplete(keyEnc, keyDec);
 #endif

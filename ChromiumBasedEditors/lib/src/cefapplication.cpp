@@ -42,6 +42,7 @@
 #undef Status   // Definition conflicts with cef_urlrequest.h
 #undef Success  // Definition conflicts with cef_message_router.h
 #undef RootWindow
+#undef None
 
 #include "include/wrapper/cef_helpers.h"
 

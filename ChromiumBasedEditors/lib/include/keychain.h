@@ -34,6 +34,7 @@
 #define APPLICATION_KEYCHAIN_H
 
 #include <string>
+#include <string.h>
 
 #define ASC_ENCRYPTED_USER_MASK     0x54434E45
 #define ASC_ENCRYPTED_USER_VERSION  1
@@ -107,7 +108,7 @@ namespace NSAscCrypto
         CAscKeychain(IAscKeyChainListener* pListener) { m_pListener = pListener; }
         virtual ~CAscKeychain() {}
 
-        void Check(std::wstring& sFile);
+        void Check(const std::wstring& sFile);
 
     public:
         virtual void Load(const std::string& name, CCryptoKey& keyEnc);
