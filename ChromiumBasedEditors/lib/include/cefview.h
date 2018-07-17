@@ -146,6 +146,8 @@ public:
     bool OpenRecentFile(const int& nId);
     bool OpenReporter(const std::wstring& sFolder);
 
+    bool CheckCloudCryptoNeedBuild();
+
     std::wstring GetLocalFilePath();
 };
 

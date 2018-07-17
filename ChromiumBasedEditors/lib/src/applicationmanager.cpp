@@ -790,22 +790,4 @@ void CAscApplicationManager::SetEventToAllMainWindows(NSEditorApi::CAscMenuEvent
     m_pInternal->SetEventToAllMainWindows(pEvent);
 }
 
-#ifdef DOCUMENTSCORE_OPENSSL_SUPPORT
-
-void CAscApplicationManager::OpenSsl_SetDialog(ICertificateSelectDialogOpenSsl* pDialog)
-{
-    ICertificateSelectDialogOpenSsl::SetOpenSslDialogApplication(pDialog);
-}
-
-int CAscApplicationManager::OpenSsl_LoadKey(std::wstring file, std::string password)
-{
-    return ICertificateSelectDialogOpenSsl::LoadKey(file, password);
-}
-
-int CAscApplicationManager::OpenSsl_LoadCert(std::wstring file, std::string password)
-{
-    return ICertificateSelectDialogOpenSsl::LoadCert(file, password);
-}
-#endif
-
 /////////////////////////////////////////////////////////////

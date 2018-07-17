@@ -199,8 +199,8 @@ bool ClientDialogHandlerGtk::OnFileDialog(
   }
 
   GtkWindow* window = GetWindow(browser);
-  if (!window)
-    return false;
+  //if (!window)
+  //  return false;
 
   GtkWidget* dialog = gtk_file_chooser_dialog_new(
       title_str.c_str(), GTK_WINDOW(window), action, GTK_STOCK_CANCEL,
