@@ -9,13 +9,25 @@ CORE_ROOT_DIR = $$PWD/../../../core
 PWD_ROOT_DIR = $$PWD
 include($$CORE_ROOT_DIR/Common/base.pri)
 include($$CORE_ROOT_DIR/Common/3dParty/icu/icu.pri)
-include($$CORE_ROOT_DIR/Common/3dParty/curl/curl.pri)
 
 include($$CORE_ROOT_DIR/../desktop-sdk/ChromiumBasedEditors/lib/AscDocumentsCore_base.pri)
-LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lUnicodeConverter -lkernel -lgraphics
+LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -llibxml -lOfficeUtils -lUnicodeConverter
 
+core_windows {
+    LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lgraphics
+    SOURCES += $$CORE_ROOT_DIR/Common/FileDownloader/FileDownloader_win.cpp
+}
+
+core_linux {
+    include($$CORE_ROOT_DIR/DesktopEditor/Qt_build/graphics/project/graphics.pri)
+    SOURCES += $$CORE_ROOT_DIR/Common/FileDownloader/FileDownloader_curl.cpp
+}
 
 DESTDIR=$$CORE_BUILDS_LIBRARIES_PATH
+
+INCLUDEPATH += \
+    $$CORE_ROOT_DIR/DesktopEditor/agg-2.4/include \
+    $$CORE_ROOT_DIR/DesktopEditor/freetype-2.5.2/include
 
 HEADERS += \
     $$PWD/src/clienthandler.h \
@@ -35,7 +47,7 @@ linux-g++ | linux-g++-64 | linux-g++-32 {
 
     CONFIG += link_pkgconfig c++11
     PKGCONFIG += glib-2.0 gdk-2.0 gtkglext-1.0 atk cairo gtk+-unix-print-2.0
-    LIBS += -lz
+    LIBS += -lcurl -lz
 
     #CONFIG += build_for_centos6
 
@@ -44,11 +56,11 @@ linux-g++ | linux-g++-64 | linux-g++-32 {
     QMAKE_LFLAGS += -static-libstdc++ -static-libgcc
 
     build_for_centos6 {
-		core_linux_64 {
-			QMAKE_LFLAGS += -Wl,--dynamic-linker=./ld-linux-x86-64.so.2
-		} else {
-			QMAKE_LFLAGS += -Wl,--dynamic-linker=./ld-linux.so.2
-		}
-		DESTDIR = $$DESTDIR/CentOS6
+        core_linux_64 {
+                QMAKE_LFLAGS += -Wl,--dynamic-linker=./ld-linux-x86-64.so.2
+        } else {
+                QMAKE_LFLAGS += -Wl,--dynamic-linker=./ld-linux.so.2
+        }
+        DESTDIR = $$DESTDIR/CentOS6
     }
 }

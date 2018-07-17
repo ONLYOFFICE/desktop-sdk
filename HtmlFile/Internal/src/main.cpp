@@ -31,6 +31,11 @@
  */
 
 #include "../../../core/DesktopEditor/common/File.h"
+
+#ifdef CreateDirectory
+#undef CreateDirectory
+#endif
+
 #include "../../../core/DesktopEditor/common/Directory.h"
 #include "../../../core/DesktopEditor/xml/include/xmlutils.h"
 
