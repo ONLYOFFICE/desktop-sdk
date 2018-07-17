@@ -31,13 +31,14 @@
  */
 
 #include "../include/keychain.h"
-#include "../../../../core/DesktopEditor/common/File.h"
 #include <stdlib.h>
 
 #define ENC_KEY_LENGTH 256
 
 #ifdef WIN32
-#include "Wincrypt.h"
+#include <wchar.h>
+#include <windows.h>
+#include <wincrypt.h>
 #endif
 
 #ifdef _MAC
@@ -45,6 +46,7 @@
 #include <Security/Security.h>
 #endif
 
+#include "../../../../core/DesktopEditor/common/File.h"
 #include "../../../../core/DesktopEditor/graphics/Timer.h"
 
 namespace NSAscCrypto

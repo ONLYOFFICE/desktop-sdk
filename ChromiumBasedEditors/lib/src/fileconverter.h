@@ -40,7 +40,7 @@
 #include "../../../../core/OfficeUtils/src/OfficeUtils.h"
 
 #include "../../../../core/DesktopEditor/raster/BgraFrame.h"
-#include "../../../../core/DesktopEditor/raster/Metafile/MetaFile.h"
+#include "../../../../core/DesktopEditor/graphics/pro/Image.h"
 
 #ifdef LINUX
 #include <unistd.h>
@@ -425,7 +425,7 @@ public:
     bool m_bIsNativeSupport;
 
     COOXMLVerifier* m_pVerifier;
-    CApplicationFonts* m_pFonts;
+    NSFonts::IApplicationFonts* m_pFonts;
 
 public:
     CASCFileConverterToEditor() : NSThreads::CBaseThread()
@@ -761,15 +761,15 @@ public:
 
         if (NULL == m_pFonts)
         {
-            m_pFonts = new CApplicationFonts();
+            m_pFonts = NSFonts::NSApplication::Create();
             m_pFonts->InitializeFromFolder(m_pManager->m_oSettings.fonts_cache_info_path);
         }
 
         bool bIsGood = false;
-        MetaFile::CMetaFile oMeta(m_pFonts);
-        if (oMeta.LoadFromFile(sTmp.c_str()))
+        MetaFile::IMetaFile* pMeta = MetaFile::Create(m_pFonts);
+        if (pMeta->LoadFromFile(sTmp.c_str()))
         {
-            oMeta.ConvertToRaster(sTmp2.c_str(), 4, 300);
+            pMeta->ConvertToRaster(sTmp2.c_str(), 4, 300);
             bIsGood = true;
         }
         else
@@ -781,6 +781,7 @@ public:
                 bIsGood = true;
             }
         }
+        RELEASEOBJECT(pMeta);
 
         NSFile::CFileBinary::Remove(sTmp);
         if (!bIsGood)

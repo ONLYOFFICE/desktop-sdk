@@ -45,7 +45,7 @@
 #include "../../src/applicationmanager_p.h"
 
 #include "../../../../../core/DesktopEditor/raster/BgraFrame.h"
-#include "../../../../../core/DesktopEditor/raster/Metafile/MetaFile.h"
+#include "../../../../../core/DesktopEditor/graphics/pro/Image.h"
 
 #include "../../../../../core/HtmlRenderer/include/ASCSVGWriter.h"
 
@@ -290,7 +290,7 @@ public:
     int                 m_nLocalImagesNextIndex;
     std::map<std::wstring, std::wstring> m_mapLocalAddImages;
 
-    CApplicationFonts* m_pLocalApplicationFonts;
+    NSFonts::IApplicationFonts* m_pLocalApplicationFonts;
 
     std::string        m_sScrollStyle;
 
@@ -2541,20 +2541,20 @@ window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst);\n\
 
         if (NULL == m_pLocalApplicationFonts)
         {
-            m_pLocalApplicationFonts = new CApplicationFonts();
+            m_pLocalApplicationFonts = NSFonts::NSApplication::Create();
             m_pLocalApplicationFonts->InitializeFromFolder(m_sFontsData);
         }
 
-        MetaFile::CMetaFile oMetafile(m_pLocalApplicationFonts);
-        oMetafile.LoadFromFile(sUrl.c_str());
+        MetaFile::IMetaFile* pMetafile = MetaFile::Create(m_pLocalApplicationFonts);
+        pMetafile->LoadFromFile(sUrl.c_str());
 
-        if (oMetafile.GetType() == MetaFile::c_lMetaEmf || oMetafile.GetType() == MetaFile::c_lMetaWmf)
+        if (pMetafile->GetType() == MetaFile::c_lMetaEmf || pMetafile->GetType() == MetaFile::c_lMetaWmf)
         {
             std::wstring sRet = L"image" + std::to_wstring(m_nLocalImagesNextIndex) + L".svg";
-            std::wstring sRet1 = L"image" + std::to_wstring(m_nLocalImagesNextIndex++) + ((oMetafile.GetType() == MetaFile::c_lMetaEmf) ? L".emf" : L".wmf");
+            std::wstring sRet1 = L"image" + std::to_wstring(m_nLocalImagesNextIndex++) + ((pMetafile->GetType() == MetaFile::c_lMetaEmf) ? L".emf" : L".wmf");
 
             double x = 0, y = 0, w = 0, h = 0;
-            oMetafile.GetBounds(&x, &y, &w, &h);
+            pMetafile->GetBounds(&x, &y, &w, &h);
 
             double _max = (w >= h) ? w : h;
             double dKoef = 100000.0 / _max;
@@ -2566,19 +2566,19 @@ window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst);\n\
             oWriterSVG.SetFontManager(m_pLocalApplicationFonts->GenerateFontManager());
             oWriterSVG.put_Width(WW);
             oWriterSVG.put_Height(HH);
-            oMetafile.DrawOnRenderer(&oWriterSVG, 0, 0, WW, HH);
+            pMetafile->DrawOnRenderer(&oWriterSVG, 0, 0, WW, HH);
 
             oWriterSVG.SaveFile(m_sLocalFileFolderWithoutFile + L"/media/" + sRet);
 
             m_mapLocalAddImages.insert(std::pair<std::wstring, std::wstring>(sUrlMap, sRet));
             return sRet;
         }
-        if (oMetafile.GetType() == MetaFile::c_lMetaSvg || oMetafile.GetType() == MetaFile::c_lMetaSvm)
+        if (pMetafile->GetType() == MetaFile::c_lMetaSvg || pMetafile->GetType() == MetaFile::c_lMetaSvm)
         {
             std::wstring sRet = L"image" + std::to_wstring(m_nLocalImagesNextIndex++) + L".png";
 
             double x = 0, y = 0, w = 0, h = 0;
-            oMetafile.GetBounds(&x, &y, &w, &h);
+            pMetafile->GetBounds(&x, &y, &w, &h);
 
             double _max = (w >= h) ? w : h;
             double dKoef = 1000.0 / _max;
@@ -2587,11 +2587,13 @@ window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst);\n\
             int HH = (int)(dKoef * h + 0.5);
 
             std::wstring sSaveRet = m_sLocalFileFolderWithoutFile + L"/media/" + sRet;
-            oMetafile.ConvertToRaster(sSaveRet.c_str(), _CXIMAGE_FORMAT_PNG, WW, HH);
+            pMetafile->ConvertToRaster(sSaveRet.c_str(), _CXIMAGE_FORMAT_PNG, WW, HH);
 
             m_mapLocalAddImages.insert(std::pair<std::wstring, std::wstring>(sUrlMap, sRet));
             return sRet;
         }
+
+        RELEASEOBJECT(pMetafile);
 
         return L"error";
     }

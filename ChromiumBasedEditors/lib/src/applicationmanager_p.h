@@ -444,7 +444,7 @@ public:
 
     CAscApplicationManager* m_pMain;
 
-    CApplicationFonts* m_pApplicationFonts;
+    NSFonts::IApplicationFonts* m_pApplicationFonts;
 
     NSCriticalSection::CRITICAL_SECTION m_oCS_Scripts;
     std::map<std::wstring, std::vector<CEditorFrameId>> m_mapLoadedScripts;
@@ -864,7 +864,7 @@ protected:
             }
         }
 
-        CApplicationFonts* oApplicationF = new CApplicationFonts();
+        NSFonts::IApplicationFonts* oApplicationF = NSFonts::NSApplication::Create();
         std::vector<std::wstring> strFontsW_Cur;
 
         if (m_pMain->m_oSettings.use_system_fonts)
@@ -947,7 +947,7 @@ protected:
 
             oApplicationF->InitializeFromArrayFiles(strFontsW_Cur, nFlag);
 
-            NSCommon::SaveAllFontsJS(*oApplicationF, strAllFontsJSPath, strThumbnailsFolder, strFontsSelectionBin);
+            NSCommon::SaveAllFontsJS(oApplicationF, strAllFontsJSPath, strThumbnailsFolder, strFontsSelectionBin);
 
             //NSFile::CFileBinary::Copy(strAllFontsJSPath, m_pMain->m_oSettings.file_converter_path + L"/../editors/sdk/Common/AllFonts.js");
 

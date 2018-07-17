@@ -679,7 +679,7 @@ void CAscApplicationManager::CloseApplication()
         m_pInternal->m_pApplication->Close();
 }
 
-CApplicationFonts* CAscApplicationManager::GetApplicationFonts()
+NSFonts::IApplicationFonts* CAscApplicationManager::GetApplicationFonts()
 {
     return m_pInternal->m_pApplicationFonts;
 }

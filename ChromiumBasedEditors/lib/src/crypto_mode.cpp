@@ -34,10 +34,6 @@
 #include "aes256.cpp"
 #include "./../../../../core/DesktopEditor/common/File.h"
 
-#ifdef WIN32
-#include "Wincrypt.h"
-#endif
-
 namespace NSAscCrypto
 {
     bool WriteData(NSFile::CFileBinary& oFile, BYTE* pData, int nLen)
