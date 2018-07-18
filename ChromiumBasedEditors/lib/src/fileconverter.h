@@ -445,7 +445,7 @@ public:
     {
         Stop();
         RELEASEOBJECT(m_pVerifier);
-        RELEASEOBJECT(m_pFonts);
+        NSBase::Release(m_pFonts);
     }
 
     virtual void Stop()
@@ -781,7 +781,7 @@ public:
                 bIsGood = true;
             }
         }
-        RELEASEOBJECT(pMeta);
+        RELEASEINTERFACE(pMeta);
 
         NSFile::CFileBinary::Remove(sTmp);
         if (!bIsGood)

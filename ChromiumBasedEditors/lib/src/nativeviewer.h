@@ -159,7 +159,7 @@ public:
         RELEASEARRAYOBJECTS(m_pPageWidths);
         RELEASEARRAYOBJECTS(m_pPageHeights);
 
-        RELEASEOBJECT(m_pFonts);
+        NSBase::Release(m_pFonts);
     }
 
 public:
@@ -247,7 +247,7 @@ public:
             m_pFontManager->SetOwnerCache(pFontsCache);
             m_pImageCache = NSImages::NSFilesCache::Create(m_pFonts);
             pFontsCache->SetCacheSize(16);
-           // m_pFontManager->SetSubpixelRendering(true, false);
+            //m_pFontManager->SetSubpixelRendering(true, false);
 
             m_lPagesCount = m_pReader->GetPagesCount();
 
@@ -472,7 +472,7 @@ protected:
 
         m_pReader->DrawPageOnRenderer(pRenderer, m_oCurrentTask.Page, NULL);
 
-        RELEASEOBJECT(pRenderer);
+        RELEASEINTERFACE(pRenderer);
 
         std::wstring sPath = GetPathPageImage(m_oCurrentTask);
         oFrame.SaveFile(sPath, 4);

@@ -1055,7 +1055,7 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
         m_pNativePrinter->Draw(pRenderer, nPageIndex);
     }
 
-    RELEASEOBJECT(pRenderer);
+    RELEASEINTERFACE(pRenderer);
 
 #if 0
     oFrame.SaveFile(L"D:\\ttttt.png", 4);
@@ -1109,7 +1109,7 @@ void CPrintData::TestSaveToRasterFile(std::wstring sFile, int nWidth, int nHeigh
 
     this->DrawOnRenderer(pRenderer, nPageIndex);
 
-    RELEASEOBJECT(pRenderer);
+    RELEASEINTERFACE(pRenderer);
 
     oFrame.SaveFile(sFile, 4);
 }

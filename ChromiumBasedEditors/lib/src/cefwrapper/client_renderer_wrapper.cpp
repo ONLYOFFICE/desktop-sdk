@@ -370,7 +370,7 @@ public:
 
     virtual ~CAscEditorNativeV8Handler()
     {
-        RELEASEOBJECT(m_pLocalApplicationFonts);
+        NSBase::Release(m_pLocalApplicationFonts);
         m_oCompleteTasksCS.DeleteCriticalSection();
     }
 
@@ -2593,7 +2593,7 @@ window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst);\n\
             return sRet;
         }
 
-        RELEASEOBJECT(pMetafile);
+        RELEASEINTERFACE(pMetafile);
 
         return L"error";
     }
