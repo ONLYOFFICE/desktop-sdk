@@ -38,8 +38,8 @@
 #include "../../../../core/DesktopEditor/graphics/Timer.h"
 #include "../../../../core/DesktopEditor/common/File.h"
 #include "../../../../core/DesktopEditor/common/Directory.h"
-#include "../../../../core/DesktopEditor/fontengine/ApplicationFonts.h"
-#include "../../../../core/DesktopEditor/graphics/GraphicsRenderer.h"
+#include "../../../../core/DesktopEditor/graphics/pro/Fonts.h"
+#include "../../../../core/DesktopEditor/graphics/pro/Graphics.h"
 #include "../../../../core/DesktopEditor/raster/BgraFrame.h"
 
 #include "../../../../core/Common/OfficeFileFormatChecker.h"
@@ -99,14 +99,14 @@ private:
     CNativeViewerPageInfo m_oCurrentTask;
     NSCriticalSection::CRITICAL_SECTION m_oCS;
 
-    CApplicationFonts       m_oFonts;
+    NSFonts::IApplicationFonts* m_pFonts;
 
     int                     m_lPagesCount;
 
     INativeViewer_Events*   m_pEvents;
 
-    CFontManager*           m_pFontManager;
-    CImageFilesCache*       m_pImageCache;
+    NSFonts::IFontManager*      m_pFontManager;
+    NSImages::IImageFilesCache* m_pImageCache;
 
     std::wstring            m_sOpeningFilePath;
     std::string             m_sBase64File;
@@ -142,6 +142,8 @@ public:
         m_nIntervalTimer = 1;
         m_nIntervalTimerDraw = 40;
         SetInterval(m_nIntervalTimer);
+
+        m_pFonts = NSFonts::NSApplication::Create();
     }
 
     virtual ~CNativeViewer()
@@ -156,6 +158,8 @@ public:
 
         RELEASEARRAYOBJECTS(m_pPageWidths);
         RELEASEARRAYOBJECTS(m_pPageHeights);
+
+        NSBase::Release(m_pFonts);
     }
 
 public:
@@ -197,7 +201,7 @@ public:
         }
 
         if (0 != nFileType)
-            m_oFonts.InitializeFromFolder(m_sFontsDir);
+            m_pFonts->InitializeFromFolder(m_sFontsDir);
 
         int nFileTypeOpen = 0;
 
@@ -205,19 +209,19 @@ public:
         {
         case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF:
         {
-            m_pReader = new PdfReader::CPdfReader(&m_oFonts);
+            m_pReader = new PdfReader::CPdfReader(m_pFonts);
             nFileTypeOpen = AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF;
             break;
         }
         case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_XPS:
         {
-            m_pReader = new CXpsFile(&m_oFonts);
+            m_pReader = new CXpsFile(m_pFonts);
             nFileTypeOpen = AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_XPS;
             break;
         }
         case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_DJVU:
         {
-            m_pReader = new CDjVuFile(&m_oFonts);
+            m_pReader = new CDjVuFile(m_pFonts);
             nFileTypeOpen = AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_DJVU;
             break;
         }
@@ -237,13 +241,13 @@ public:
         std::string sBase64Info = "";
         if (m_nFileType > 0)
         {
-            m_pFontManager = m_oFonts.GenerateFontManager();
-            CFontsCache* pFontsCache = new CFontsCache();
-            pFontsCache->SetStreams(m_oFonts.GetStreams());
+            m_pFontManager = m_pFonts->GenerateFontManager();
+            NSFonts::IFontsCache* pFontsCache = NSFonts::NSFontCache::Create();
+            pFontsCache->SetStreams(m_pFonts->GetStreams());
             m_pFontManager->SetOwnerCache(pFontsCache);
-            m_pImageCache = new CImageFilesCache(&m_oFonts);
+            m_pImageCache = NSImages::NSFilesCache::Create(m_pFonts);
             pFontsCache->SetCacheSize(16);
-           // m_pFontManager->SetSubpixelRendering(true, false);
+            //m_pFontManager->SetSubpixelRendering(true, false);
 
             m_lPagesCount = m_pReader->GetPagesCount();
 
@@ -455,18 +459,20 @@ protected:
         memset(pDataRaster, 0xFF, 4 * nRasterW * nRasterH);
         oFrame.put_Data(pDataRaster);
 
-        CGraphicsRenderer oRenderer;
-        oRenderer.SetFontManager(m_pFontManager);
-        oRenderer.SetImageCache(m_pImageCache);
+        NSGraphics::IGraphicsRenderer* pRenderer = NSGraphics::Create();
+        pRenderer->SetFontManager(m_pFontManager);
+        pRenderer->SetImageCache(m_pImageCache);
 
-        oRenderer.CreateFromBgraFrame(&oFrame);
-        oRenderer.SetTileImageDpi(96.0);
+        pRenderer->CreateFromBgraFrame(&oFrame);
+        pRenderer->SetTileImageDpi(96.0);
 
-        oRenderer.SetSwapRGB(false);
-        oRenderer.put_Width(m_pPageWidths[m_oCurrentTask.Page]);
-        oRenderer.put_Height(m_pPageHeights[m_oCurrentTask.Page]);
+        pRenderer->SetSwapRGB(false);
+        pRenderer->put_Width(m_pPageWidths[m_oCurrentTask.Page]);
+        pRenderer->put_Height(m_pPageHeights[m_oCurrentTask.Page]);
 
-        m_pReader->DrawPageOnRenderer(&oRenderer, m_oCurrentTask.Page, NULL);
+        m_pReader->DrawPageOnRenderer(pRenderer, m_oCurrentTask.Page, NULL);
+
+        RELEASEINTERFACE(pRenderer);
 
         std::wstring sPath = GetPathPageImage(m_oCurrentTask);
         oFrame.SaveFile(sPath, 4);

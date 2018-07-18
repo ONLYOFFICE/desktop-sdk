@@ -16,21 +16,13 @@ QMAKE_CXXFLAGS += -fPIC
 
 QMAKE_LFLAGS += -Wl,--rpath=./
 
-# common projects --------------------------------------
-#zlib
-CONFIG += build_all_zlib build_zlib_as_sources
-include($$CORE_ROOT_DIR/OfficeUtils/OfficeUtils.pri)
-
-CONFIG += build_cximage_zlib_disable
-include($$CORE_ROOT_DIR/DesktopEditor/Qt_build/graphics/project/graphics.pri)
-
 DEFINES += \
     PDFREADER_USE_DYNAMIC_LIBRARY \
     DJVU_USE_DYNAMIC_LIBRARY \
     XPS_USE_DYNAMIC_LIBRARY \
     HTMLRENDERER_USE_DYNAMIC_LIBRARY
 
-LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -llibxml -lhunspell
+LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lkernel -lgraphics -lhunspell
 LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lPdfReader -lPdfWriter -lDjVuFile -lXpsFile -lHtmlRenderer -lUnicodeConverter -looxmlsignature
 # ------------------------------------------------------
 
