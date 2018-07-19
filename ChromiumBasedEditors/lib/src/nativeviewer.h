@@ -51,6 +51,7 @@
 #include "Logger.h"
 
 #include <list>
+#include <math.h>
 
 class INativeViewer_Events
 {
