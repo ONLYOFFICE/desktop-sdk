@@ -211,13 +211,13 @@ namespace NSAscCrypto
         std::string sName = "asc-desktop-crypto-key";
 
         CCryptoKey keyEnc;
-        const OSStatus ret = SecKeychainFindGenericPassword( NULL, // default keychain
+        const OSStatus ret = SecKeychainAddGenericPassword( NULL, // default keychain
                                                              sName.length(),
                                                              sName.c_str(),
                                                              0,
                                                              NULL,
-                                                             &len,
-                                                             &data,
+                                                             len,
+                                                             data,
                                                              NULL );
 
         if ( ret == noErr )
