@@ -301,6 +301,7 @@ public:
 
     bool m_bIsSupportSigs;
     bool m_bIsSupportOnlyPass;
+    bool m_bIsSupportProtect;
     int m_nCryptoMode;
 
     std::list<CSavedPageInfo> m_arCompleteTasks;
@@ -346,6 +347,7 @@ public:
 
         m_bIsDebugMode = false;
         m_bIsSupportOnlyPass = true;
+        m_bIsSupportProtect = true;
 
         m_nCryptoMode = 0;
 
@@ -2077,6 +2079,11 @@ window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst);\n\
             retval = CefV8Value::CreateBool(m_bIsSupportSigs);
             return true;
         }
+        else if (name == "IsProtectionSupport")
+        {
+            retval = CefV8Value::CreateBool(m_bIsSupportProtect);
+            return true;
+        }
         else if (name == "SetSupportSign")
         {
             m_bIsSupportSigs = arguments[0]->GetBoolValue();
@@ -2086,6 +2093,7 @@ window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst);\n\
         {
             int nFlags = arguments[0]->GetIntValue();
             m_bIsSupportOnlyPass = ((nFlags & 0x01) == 0x01) ? true : false;
+            m_bIsSupportProtect = ((nFlags & 0x02) == 0x02) ? true : false;
 
             if (1 < arguments.size())
                 m_nCryptoMode = arguments[1]->GetIntValue();
@@ -2857,6 +2865,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction987 = CefV8Value::CreateFunction("GetEncryptedHeader", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction988 = CefV8Value::CreateFunction("GetCryptoMode", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction989 = CefV8Value::CreateFunction("GetSupportCryptoModes", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction990 = CefV8Value::CreateFunction("IsProtectionSupport", _nativeHandler);
 
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -3006,6 +3015,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("GetEncryptedHeader", _nativeFunction987, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("GetCryptoMode", _nativeFunction988, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("GetSupportCryptoModes", _nativeFunction989, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("IsProtectionSupport", _nativeFunction990, V8_PROPERTY_ATTRIBUTE_NONE);
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 

@@ -208,6 +208,7 @@ public:
         switch (nFileType)
         {
         case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF:
+        case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA:
         {
             m_pReader = new PdfReader::CPdfReader(m_pFonts);
             nFileTypeOpen = AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF;

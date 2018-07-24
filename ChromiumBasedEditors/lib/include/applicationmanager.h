@@ -71,6 +71,7 @@ public:
 
     bool                            sign_support;
     bool                            pass_support;
+    bool                            protect_support;
 
 public:
     CAscApplicationSettings();

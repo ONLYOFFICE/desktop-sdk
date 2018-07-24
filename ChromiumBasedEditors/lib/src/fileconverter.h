@@ -886,7 +886,17 @@ public:
         oBuilder.WriteEncodeXmlString(sLocalFilePath);
         
         oBuilder.WriteString(L"</m_sFileTo><m_nFormatTo>");
-        oBuilder.WriteString(std::to_wstring(m_oInfo.m_nCurrentFileFormat));
+
+        if (AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA == m_oInfo.m_nCurrentFileFormat)
+        {
+            oBuilder.WriteString(std::to_wstring(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF));
+            sParams += L"<m_bIsPDFA>true</m_bIsPDFA>";
+        }
+        else
+        {
+            oBuilder.WriteString(std::to_wstring(m_oInfo.m_nCurrentFileFormat));
+        }
+
         oBuilder.WriteString(L"</m_nFormatTo><m_sThemeDir>");
         oBuilder.WriteEncodeXmlString(sThemesPath);
         oBuilder.WriteString(L"</m_sThemeDir>");
