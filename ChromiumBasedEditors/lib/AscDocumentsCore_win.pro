@@ -83,7 +83,7 @@ SOURCES += \
     ./../../../core/HtmlRenderer/src/ASCSVGWriter.cpp
 
 SOURCES += \
-    ./src/additional/create.cpp
+    ./src/cefwrapper/monitor_info.cpp
 
 SOURCES += \
-    ./src/cefwrapper/monitor_info.cpp
+    ./src/additional/create.cpp
