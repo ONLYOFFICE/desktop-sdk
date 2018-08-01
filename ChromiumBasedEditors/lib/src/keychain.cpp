@@ -205,19 +205,19 @@ namespace NSAscCrypto
 #endif
 
 #ifdef _MAC
-        void* data = 0;
-        UInt32 len = 0;
+        void* data = (void*)keyDec.data;
+        UInt32 len = (UInt32)keyDec.len;
 
         std::string sName = "asc-desktop-crypto-key";
 
         CCryptoKey keyEnc;
-        const OSStatus ret = SecKeychainFindGenericPassword( NULL, // default keychain
+        const OSStatus ret = SecKeychainAddGenericPassword( NULL, // default keychain
                                                              sName.length(),
                                                              sName.c_str(),
                                                              0,
                                                              NULL,
-                                                             key.len,
-                                                             key.data,
+                                                             len,
+                                                             data,
                                                              NULL );
 
         if ( ret == noErr )
