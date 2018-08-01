@@ -53,9 +53,9 @@ public:
 class IAscNativePrintDocument
 {
 public:
-    std::wstring        m_sFilePath;
-    CApplicationFonts*  m_pApplicationFonts;
-    std::wstring        m_sTempFolder;
+    std::wstring            m_sFilePath;
+    NSFonts::IApplicationFonts*  m_pApplicationFonts;
+    std::wstring            m_sTempFolder;
 
 public:
 
@@ -84,10 +84,10 @@ public:
     std::wstring m_sDocumentImagesPath;
     std::wstring m_sPresentationThemesPath;
 
-    CFontManager* m_pFontManager;
-    CImageFilesCache* m_pCache;
+    NSFonts::IFontManager* m_pFontManager;
+    NSImages::IImageFilesCache* m_pCache;
 
-    CApplicationFonts* m_pApplicationFonts;
+    NSFonts::IApplicationFonts* m_pApplicationFonts;
     AscEditorType m_eEditorType;
 
     IAscNativePrintDocument* m_pNativePrinter;
@@ -108,7 +108,7 @@ public:
 
     void Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAscPrintSettings& settings, const int& nPageIndex);
     bool CheckPrintRotate(NSEditorApi::CAscPrinterContextBase* pContext, const CAscPrintSettings& settings, const int& nPageIndex);
-    void DrawOnRenderer(CGraphicsRenderer* pRenderer, int nPageIndex);
+    void DrawOnRenderer(NSGraphics::IGraphicsRenderer* pRenderer, int nPageIndex);
     void TestSaveToRasterFile(std::wstring sFile, int nWidth, int nHeight, int nPageIndex);
     std::wstring GetImagePath(const std::wstring& sPath);
     void FitToPage(float fSourceWidth, float  fSourceHeight, float  fTargetWidth, float fTargetHeight, float& fResX, float& fResY, float& fResWidth, float& fResHeight);

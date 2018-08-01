@@ -31,13 +31,14 @@
  */
 
 #include "../include/keychain.h"
-#include "../../../../core/DesktopEditor/common/File.h"
 #include <stdlib.h>
 
 #define ENC_KEY_LENGTH 256
 
 #ifdef WIN32
-#include "Wincrypt.h"
+#include <wchar.h>
+#include <windows.h>
+#include <wincrypt.h>
 #endif
 
 #ifdef _MAC
@@ -45,6 +46,7 @@
 #include <Security/Security.h>
 #endif
 
+#include "../../../../core/DesktopEditor/common/File.h"
 #include "../../../../core/DesktopEditor/graphics/Timer.h"
 
 namespace NSAscCrypto
@@ -203,19 +205,19 @@ namespace NSAscCrypto
 #endif
 
 #ifdef _MAC
-        void* data = 0;
-        UInt32 len = 0;
+        void* data = (void*)keyDec.data;
+        UInt32 len = (UInt32)keyDec.len;
 
         std::string sName = "asc-desktop-crypto-key";
 
         CCryptoKey keyEnc;
-        const OSStatus ret = SecKeychainFindGenericPassword( NULL, // default keychain
+        const OSStatus ret = SecKeychainAddGenericPassword( NULL, // default keychain
                                                              sName.length(),
                                                              sName.c_str(),
                                                              0,
                                                              NULL,
-                                                             key.len,
-                                                             key.data,
+                                                             len,
+                                                             data,
                                                              NULL );
 
         if ( ret == noErr )

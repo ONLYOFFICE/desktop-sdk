@@ -17,7 +17,7 @@ DEFINES += \
     XPS_USE_DYNAMIC_LIBRARY \
     HTMLRENDERER_USE_DYNAMIC_LIBRARY
 
-LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lOfficeUtils -lgraphics -llibxml -lhunspell
+LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lkernel -lgraphics -lhunspell
 LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lPdfReader -lPdfWriter -lDjVuFile -lXpsFile -lHtmlRenderer -lUnicodeConverter -looxmlsignature
 
 LIBS += -lCrypt32
@@ -80,11 +80,10 @@ SOURCES += \
     ./../../../core/Common/OfficeFileFormatChecker2.cpp \
     ./../../../core/Common/3dParty/pole/pole.cpp \
     ./../../../core/Common/DocxFormat/Source/Base/unicode_util.cpp \
-    ./../../../core/HtmlRenderer/src/ASCSVGWriter.cpp \
-    ./../../../core/Common/FileDownloader/FileDownloader_win.cpp
-
-SOURCES += \
-    ./src/additional/create.cpp
+    ./../../../core/HtmlRenderer/src/ASCSVGWriter.cpp
 
 SOURCES += \
     ./src/cefwrapper/monitor_info.cpp
+
+SOURCES += \
+    ./src/additional/create.cpp

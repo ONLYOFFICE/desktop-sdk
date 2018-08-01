@@ -45,7 +45,7 @@
 #include "../../src/applicationmanager_p.h"
 
 #include "../../../../../core/DesktopEditor/raster/BgraFrame.h"
-#include "../../../../../core/DesktopEditor/raster/Metafile/MetaFile.h"
+#include "../../../../../core/DesktopEditor/graphics/pro/Image.h"
 
 #include "../../../../../core/HtmlRenderer/include/ASCSVGWriter.h"
 
@@ -290,7 +290,7 @@ public:
     int                 m_nLocalImagesNextIndex;
     std::map<std::wstring, std::wstring> m_mapLocalAddImages;
 
-    CApplicationFonts* m_pLocalApplicationFonts;
+    NSFonts::IApplicationFonts* m_pLocalApplicationFonts;
 
     std::string        m_sScrollStyle;
 
@@ -301,6 +301,7 @@ public:
 
     bool m_bIsSupportSigs;
     bool m_bIsSupportOnlyPass;
+    bool m_bIsSupportProtect;
     int m_nCryptoMode;
 
     std::list<CSavedPageInfo> m_arCompleteTasks;
@@ -346,6 +347,7 @@ public:
 
         m_bIsDebugMode = false;
         m_bIsSupportOnlyPass = true;
+        m_bIsSupportProtect = true;
 
         m_nCryptoMode = 0;
 
@@ -370,7 +372,7 @@ public:
 
     virtual ~CAscEditorNativeV8Handler()
     {
-        RELEASEOBJECT(m_pLocalApplicationFonts);
+        NSBase::Release(m_pLocalApplicationFonts);
         m_oCompleteTasksCS.DeleteCriticalSection();
     }
 
@@ -2077,6 +2079,11 @@ window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst);\n\
             retval = CefV8Value::CreateBool(m_bIsSupportSigs);
             return true;
         }
+        else if (name == "IsProtectionSupport")
+        {
+            retval = CefV8Value::CreateBool(m_bIsSupportProtect);
+            return true;
+        }
         else if (name == "SetSupportSign")
         {
             m_bIsSupportSigs = arguments[0]->GetBoolValue();
@@ -2086,6 +2093,7 @@ window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst);\n\
         {
             int nFlags = arguments[0]->GetIntValue();
             m_bIsSupportOnlyPass = ((nFlags & 0x01) == 0x01) ? true : false;
+            m_bIsSupportProtect = ((nFlags & 0x02) == 0x02) ? true : false;
 
             if (1 < arguments.size())
                 m_nCryptoMode = arguments[1]->GetIntValue();
@@ -2541,20 +2549,20 @@ window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst);\n\
 
         if (NULL == m_pLocalApplicationFonts)
         {
-            m_pLocalApplicationFonts = new CApplicationFonts();
+            m_pLocalApplicationFonts = NSFonts::NSApplication::Create();
             m_pLocalApplicationFonts->InitializeFromFolder(m_sFontsData);
         }
 
-        MetaFile::CMetaFile oMetafile(m_pLocalApplicationFonts);
-        oMetafile.LoadFromFile(sUrl.c_str());
+        MetaFile::IMetaFile* pMetafile = MetaFile::Create(m_pLocalApplicationFonts);
+        pMetafile->LoadFromFile(sUrl.c_str());
 
-        if (oMetafile.GetType() == MetaFile::c_lMetaEmf || oMetafile.GetType() == MetaFile::c_lMetaWmf)
+        if (pMetafile->GetType() == MetaFile::c_lMetaEmf || pMetafile->GetType() == MetaFile::c_lMetaWmf)
         {
             std::wstring sRet = L"image" + std::to_wstring(m_nLocalImagesNextIndex) + L".svg";
-            std::wstring sRet1 = L"image" + std::to_wstring(m_nLocalImagesNextIndex++) + ((oMetafile.GetType() == MetaFile::c_lMetaEmf) ? L".emf" : L".wmf");
+            std::wstring sRet1 = L"image" + std::to_wstring(m_nLocalImagesNextIndex++) + ((pMetafile->GetType() == MetaFile::c_lMetaEmf) ? L".emf" : L".wmf");
 
             double x = 0, y = 0, w = 0, h = 0;
-            oMetafile.GetBounds(&x, &y, &w, &h);
+            pMetafile->GetBounds(&x, &y, &w, &h);
 
             double _max = (w >= h) ? w : h;
             double dKoef = 100000.0 / _max;
@@ -2566,19 +2574,19 @@ window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst);\n\
             oWriterSVG.SetFontManager(m_pLocalApplicationFonts->GenerateFontManager());
             oWriterSVG.put_Width(WW);
             oWriterSVG.put_Height(HH);
-            oMetafile.DrawOnRenderer(&oWriterSVG, 0, 0, WW, HH);
+            pMetafile->DrawOnRenderer(&oWriterSVG, 0, 0, WW, HH);
 
             oWriterSVG.SaveFile(m_sLocalFileFolderWithoutFile + L"/media/" + sRet);
 
             m_mapLocalAddImages.insert(std::pair<std::wstring, std::wstring>(sUrlMap, sRet));
             return sRet;
         }
-        if (oMetafile.GetType() == MetaFile::c_lMetaSvg || oMetafile.GetType() == MetaFile::c_lMetaSvm)
+        if (pMetafile->GetType() == MetaFile::c_lMetaSvg || pMetafile->GetType() == MetaFile::c_lMetaSvm)
         {
             std::wstring sRet = L"image" + std::to_wstring(m_nLocalImagesNextIndex++) + L".png";
 
             double x = 0, y = 0, w = 0, h = 0;
-            oMetafile.GetBounds(&x, &y, &w, &h);
+            pMetafile->GetBounds(&x, &y, &w, &h);
 
             double _max = (w >= h) ? w : h;
             double dKoef = 1000.0 / _max;
@@ -2587,11 +2595,13 @@ window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst);\n\
             int HH = (int)(dKoef * h + 0.5);
 
             std::wstring sSaveRet = m_sLocalFileFolderWithoutFile + L"/media/" + sRet;
-            oMetafile.ConvertToRaster(sSaveRet.c_str(), _CXIMAGE_FORMAT_PNG, WW, HH);
+            pMetafile->ConvertToRaster(sSaveRet.c_str(), _CXIMAGE_FORMAT_PNG, WW, HH);
 
             m_mapLocalAddImages.insert(std::pair<std::wstring, std::wstring>(sUrlMap, sRet));
             return sRet;
         }
+
+        RELEASEINTERFACE(pMetafile);
 
         return L"error";
     }
@@ -2855,6 +2865,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction987 = CefV8Value::CreateFunction("GetEncryptedHeader", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction988 = CefV8Value::CreateFunction("GetCryptoMode", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction989 = CefV8Value::CreateFunction("GetSupportCryptoModes", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction990 = CefV8Value::CreateFunction("IsProtectionSupport", _nativeHandler);
 
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -3004,6 +3015,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("GetEncryptedHeader", _nativeFunction987, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("GetCryptoMode", _nativeFunction988, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("GetSupportCryptoModes", _nativeFunction989, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("IsProtectionSupport", _nativeFunction990, V8_PROPERTY_ATTRIBUTE_NONE);
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 

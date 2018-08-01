@@ -225,6 +225,7 @@ public:
         switch (nFileType)
         {
         case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF:
+        case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA:
         {
             m_pReader = new PdfReader::CPdfReader(m_pApplicationFonts);
             break;
@@ -718,11 +719,13 @@ public:
 
             if (!bEncryption)
             {
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOTX);
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_ODT);
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_RTF);
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_TXT);
                 //arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_HTML);
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF);
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA);
             }
         }
         else if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
@@ -731,23 +734,29 @@ public:
 
             if (!bEncryption)
             {
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLTX);
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_ODS);
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_CSV);
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF);
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA);
             }
         }
         else if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_PRESENTATION)
         {
+            arFormats.push_back(AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX);
+
             if (!bEncryption)
             {
-                arFormats.push_back(AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX);
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_PRESENTATION_POTX);
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_PRESENTATION_ODP);
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF);
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA);
             }
         }
         else if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
         {
             arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF);
+            arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA);
         }
     }
 
@@ -1437,6 +1446,9 @@ public:
             int nFlags = 0;
             if (bIsOnlyPassSupport)
                 nFlags |= 0x01;
+
+            if (m_pParent->GetAppManager()->m_oSettings.protect_support)
+                nFlags |= 0x02;
 
             m_pParent->m_pInternal->m_bIsOnlyPassSupport = bIsOnlyPassSupport;
             message->GetArgumentList()->SetInt(0, nFlags);
@@ -4316,6 +4328,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                 switch (m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat)
                 {
                 case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF:
+                case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA:
                 case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_XPS:
                 case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_DJVU:
                 {

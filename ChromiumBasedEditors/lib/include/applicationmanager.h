@@ -71,6 +71,7 @@ public:
 
     bool                            sign_support;
     bool                            pass_support;
+    bool                            protect_support;
 
 public:
     CAscApplicationSettings();
@@ -110,7 +111,7 @@ public:
 
 class CAscReporterData;
 class CAscApplicationManager_Private;
-class CApplicationFonts;
+namespace NSFonts { class IApplicationFonts; }
 class Q_DECL_EXPORT CAscApplicationManager
 {
 public:
@@ -168,7 +169,7 @@ public:
     bool GetDebugInfoSupport();
 
     void CloseApplication();
-    CApplicationFonts* GetApplicationFonts();
+    NSFonts::IApplicationFonts* GetApplicationFonts();
 
     virtual void StartSaveDialog(const std::wstring& sName, unsigned int nId);
     virtual void EndSaveDialog(const std::wstring& sPath, unsigned int nId);

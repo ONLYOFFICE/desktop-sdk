@@ -71,6 +71,7 @@ CAscApplicationSettings::CAscApplicationSettings()
 
     sign_support                    = true;
     pass_support                    = true;
+    protect_support                 = true;
 }
 
 void CAscApplicationSettings::SetUserDataPath(std::wstring sPath)
@@ -679,7 +680,7 @@ void CAscApplicationManager::CloseApplication()
         m_pInternal->m_pApplication->Close();
 }
 
-CApplicationFonts* CAscApplicationManager::GetApplicationFonts()
+NSFonts::IApplicationFonts* CAscApplicationManager::GetApplicationFonts()
 {
     return m_pInternal->m_pApplicationFonts;
 }
@@ -758,6 +759,8 @@ int CAscApplicationManager::GetFileFormatByExtentionForSave(const std::wstring& 
     int nFormat = -1;
     if (sName == L"docx")
         nFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX;
+    if (sName == L"dotx")
+        nFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOTX;
     if (sName == L"odt")
         nFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_ODT;
     if (sName == L"rtf")
@@ -769,6 +772,8 @@ int CAscApplicationManager::GetFileFormatByExtentionForSave(const std::wstring& 
 
     if (sName == L"xlsx")
         nFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX;
+    if (sName == L"xltx")
+        nFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLTX;
     if (sName == L"ods")
         nFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_ODS;
     if (sName == L"csv")
@@ -776,6 +781,8 @@ int CAscApplicationManager::GetFileFormatByExtentionForSave(const std::wstring& 
 
     if (sName == L"pptx")
         nFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
+    if (sName == L"potx")
+        nFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_POTX;
     if (sName == L"odp")
         nFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_ODP;
 
