@@ -73,6 +73,9 @@ public:
     bool                            pass_support;
     bool                            protect_support;
 
+    std::string                     converter_application_name;
+    std::string                     converter_application_company;
+
 public:
     CAscApplicationSettings();
     void SetUserDataPath(std::wstring sPath);
