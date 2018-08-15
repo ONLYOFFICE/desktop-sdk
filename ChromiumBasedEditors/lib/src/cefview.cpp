@@ -644,6 +644,9 @@ public:
         }
         else
         {
+            if (m_arSystemMessages.empty())
+                return; // error!!!
+
             CSystemMessage messageSrc = m_arSystemMessages[0];
             m_arSystemMessages.erase(m_arSystemMessages.begin());
 
@@ -2647,37 +2650,36 @@ public:
             if ((0 != sUrl.find(L"file:///")) || !m_pParent->m_pInternal->m_bIsOnlyPassSupport || m_pParent->GetType() == cvwtEditor)
                 return;
 
-            std::map<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue>::iterator findCryptoPlugin =
-                    m_pParent->m_pInternal->m_pManager->m_pInternal->m_mapCrypto.find(m_pParent->m_pInternal->m_pManager->m_pInternal->m_nCurrentCryptoMode);
+            std::vector<std::string>& arPluginsExternal = m_pParent->m_pInternal->m_pManager->m_pInternal->m_arExternalPlugins;
+            std::wstring sSystemPluginsPath = m_pParent->GetAppManager()->m_oSettings.system_plugins_path;
 
-            if (findCryptoPlugin == m_pParent->m_pInternal->m_pManager->m_pInternal->m_mapCrypto.end())
-                return;
+            for (std::vector<std::string>::iterator iterExt = arPluginsExternal.begin(); iterExt != arPluginsExternal.end(); iterExt++)
+            {
+                std::string sGuidA = *iterExt;
+                if (0 == sGuidA.find("asc."))
+                    sGuidA = sGuidA.substr(4);
+                std::wstring sGuid = UTF8_TO_U(sGuidA);
 
-            std::string sEncryptionG = findCryptoPlugin->second.m_sGuid;
+                std::wstring sSrc = sSystemPluginsPath + L"/" + sGuid + L"/index.html";
+                NSCommon::url_correct(sSrc);
 
-            std::wstring sGuid = UTF8_TO_U(sEncryptionG);
-            if (0 == sGuid.find(L"asc."))
-                sGuid = sGuid.substr(4);
+                std::wstring sCode = L"(function() {\n\
+    var ifr = document.createElement(\"iframe\");\n\
+    ifr.name = \"system_asc." + sGuid + L"\";\n\
+    ifr.id = \"system_asc." + sGuid + L"\";\n\
+    ifr.src = \"" + sSrc + L"\";\n\
+    ifr.style.position = \"absolute\";\n\
+    ifr.style.top      = '-100px';\n\
+    ifr.style.left     = '0px';\n\
+    ifr.style.width    = '100px';\n\
+    ifr.style.height   = '100px';\n\
+    ifr.style.overflow = 'hidden';\n\
+    ifr.style.zIndex   = -1000;\n\
+    document.body.appendChild(ifr);\n\
+    })();";
 
-            std::wstring sSrc = m_pParent->GetAppManager()->m_oSettings.system_plugins_path + L"/" + sGuid + L"/index.html";
-            NSCommon::url_correct(sSrc);
-
-            std::wstring sCode = L"(function() {\n\
-var ifr = document.createElement(\"iframe\");\n\
-ifr.name = \"system_asc." + sGuid + L"\";\n\
-ifr.id = \"system_asc." + sGuid + L"\";\n\
-ifr.src = \"" + sSrc + L"\";\n\
-ifr.style.position = \"absolute\";\n\
-ifr.style.top      = '-100px';\n\
-ifr.style.left     = '0px';\n\
-ifr.style.width    = '100px';\n\
-ifr.style.height   = '100px';\n\
-ifr.style.overflow = 'hidden';\n\
-ifr.style.zIndex   = -1000;\n\
-document.body.appendChild(ifr);\n\
-})();";
-
-            frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
+                frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
+            }
         }
     }
 

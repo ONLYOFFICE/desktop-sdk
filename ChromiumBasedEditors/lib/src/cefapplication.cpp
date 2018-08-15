@@ -322,6 +322,12 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
         value.m_sGuid = iterCrypto->second;
         pManager->m_pInternal->m_mapCrypto.insert(std::pair<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue>(value.m_eType, value));
     }
+
+    for (std::vector<std::string>::iterator iterExt = oPlugins.m_arExternals.begin(); iterExt != oPlugins.m_arExternals.end(); iterExt++)
+    {
+        pManager->m_pInternal->m_arExternalPlugins.push_back(*iterExt);
+    }
+
     pManager->m_pInternal->LoadCryptoData();
 
 #ifdef WIN32

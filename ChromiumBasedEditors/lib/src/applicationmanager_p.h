@@ -488,6 +488,8 @@ public:
 
     NSAscCrypto::CAscKeychain* m_pKeyChain;
 
+    std::vector<std::string> m_arExternalPlugins;
+
 public:
     CAscApplicationManager_Private() : m_oKeyboardTimer(this)
     {
