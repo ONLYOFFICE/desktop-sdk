@@ -2663,6 +2663,7 @@ public:
                 std::wstring sSrc = sSystemPluginsPath + L"/" + sGuid + L"/index.html";
                 NSCommon::url_correct(sSrc);
 
+#if 0
                 std::wstring sCode = L"(function() {\n\
     var ifr = document.createElement(\"iframe\");\n\
     ifr.name = \"system_asc." + sGuid + L"\";\n\
@@ -2677,6 +2678,31 @@ public:
     ifr.style.zIndex   = -1000;\n\
     document.body.appendChild(ifr);\n\
     })();";
+#endif
+                std::wstring sCode = L"(function() {\n\
+window.testTimer = setInterval(function(){\n\
+var abouts = document.getElementsByClassName(\"about\");\n\
+if (!abouts || !abouts[0])\n\
+    return;\n\
+var about = abouts[0];\n\
+clearInterval(window.testTimer);\n\
+var ifr = document.createElement(\"iframe\");\n\
+ifr.name = \"system_asc." + sGuid + L"\";\n\
+ifr.id = \"system_asc." + sGuid + L"\";\n\
+ifr.src = \"" + sSrc + L"\";\n\
+ifr.style.position = \"relative\";\n\
+ifr.style.top      = '0px';\n\
+ifr.style.left     = '0px';\n\
+ifr.style.width    = '100%';\n\
+ifr.style.height   = '100%';\n\
+ifr.style.overflow = 'hidden';\n\
+ifr.style.zIndex   = 100;\n\
+ifr.style.margin   = '0px';\n\
+ifr.style.padding  = '0px';\n\
+about.innerHTML = '';\n\
+about.appendChild(ifr);\n\
+}, 100);\n\
+})();";
 
                 frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
             }
