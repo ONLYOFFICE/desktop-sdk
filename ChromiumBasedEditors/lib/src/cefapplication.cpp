@@ -336,8 +336,8 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 #else
     std::string s1 = "APPLICATION_NAME=" + pManager->m_oSettings.converter_application_name;
     std::string s2 = "COMPANY_NAME=" + pManager->m_oSettings.converter_application_company;
-    putenv(s1.c_str());
-    putenv(s2.c_str());
+    putenv((char*)s1.c_str());
+    putenv((char*)s2.c_str());
 #endif
 
     return 0;
