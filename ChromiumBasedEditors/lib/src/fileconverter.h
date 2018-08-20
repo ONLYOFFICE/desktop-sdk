@@ -870,6 +870,17 @@ public:
         }
 #endif
 
+        bool bIsUseTmpFileDst = false;
+        std::wstring sUseTmpFileDst = L"";
+        if (0 == sLocalFilePath.find(L"\\\\") || 0 == sLocalFilePath.find(L"//"))
+        {
+            bIsUseTmpFileDst = true;
+
+            sUseTmpFileDst = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"OL");
+            if (NSFile::CFileBinary::Exists(sUseTmpFileDst))
+                NSFile::CFileBinary::Remove(sUseTmpFileDst);
+        }
+
         std::wstring sThemesPath = m_pManager->m_oSettings.local_editors_path;
         std::wstring::size_type nPosThemes = sThemesPath.rfind(L"apps/api/documents/index.html");
         if (nPosThemes != std::wstring::npos)
@@ -910,7 +921,10 @@ public:
             oBuilder.WriteString(L"</m_sFileFrom><m_sFileTo>");
         }
         
-        oBuilder.WriteEncodeXmlString(sLocalFilePath);
+        if (bIsUseTmpFileDst)
+            oBuilder.WriteEncodeXmlString(sUseTmpFileDst);
+        else
+            oBuilder.WriteEncodeXmlString(sLocalFilePath);
         
         oBuilder.WriteString(L"</m_sFileTo><m_nFormatTo>");
 
@@ -987,6 +1001,13 @@ public:
             m_pManager->m_pInternal->m_pAdditional->CheckSaveStart(m_oInfo.m_sRecoveryDir, m_nTypeEditorFormat);
 
         int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileForParams, m_pManager);
+
+        if (bIsUseTmpFileDst)
+        {
+            NSFile::CFileBinary::Remove(sLocalFilePath);
+            NSFile::CFileBinary::Copy(sUseTmpFileDst, sLocalFilePath);
+            NSFile::CFileBinary::Remove(sUseTmpFileDst);
+        }
 
         m_sOriginalFileNameCrossPlatform = L"";
         m_bIsRetina = false;
