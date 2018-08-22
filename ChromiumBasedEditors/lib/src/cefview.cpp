@@ -1003,7 +1003,7 @@ void CCefFileDownloader::DownloadFile(CAscApplicationManager* pManager, const st
     CefBrowserHost::CreateBrowser(info, m_pInternal, "ascdesktop://emptydownload.html", _settings, NULL);
 }
 
-class CAscClientHandler : public client::ClientHandler, public CCookieFoundCallback, public client::ClientHandler::Delegate
+class CAscClientHandler : public client::ClientHandler, public CCookieFoundCallback, public client::ClientHandler::Delegate, public CefDialogHandler
 {
 public:
     CCefView* m_pParent;
@@ -1018,6 +1018,8 @@ public:
     bool m_bIsCrashed;
 
     CefRefPtr<CefJSDialogHandler> m_pCefJSDialogHandler;
+
+    CefRefPtr<CefFileDialogCallback> m_pFileDialogCallback;
 
     enum client_menu_ids
     {
@@ -1085,6 +1087,7 @@ public:
         browser_id_ = 0;
 
         m_pCefJSDialogHandler = new CAscCefJSDialogHandler();
+        m_pFileDialogCallback = NULL;
     }
 
     virtual ~CAscClientHandler()
@@ -1099,6 +1102,48 @@ public:
     int GetBrowserId() const
     {
         return browser_id_;
+    }
+
+    CefRefPtr<CefDialogHandler> GetDialogHandler() OVERRIDE
+    {
+        return this;
+    }
+
+    virtual bool OnFileDialog(CefRefPtr<CefBrowser> browser,
+                              CefDialogHandler::FileDialogMode mode,
+                              const CefString& title,
+                              const CefString& default_file_path,
+                              const std::vector<CefString>& accept_filters,
+                              int selected_accept_filter,
+                              CefRefPtr<CefFileDialogCallback> callback)
+    {
+#ifdef WIN32
+
+        // BUG with crash renderer process after upload files to cloud
+
+        NSEditorApi::CAscCefMenuEventListener* pListener = NULL;
+        if (NULL != m_pParent && NULL != m_pParent->GetAppManager())
+            pListener = m_pParent->GetAppManager()->GetEventListener();
+
+        int nMode = (mode & 0xFF);
+        if ((nMode == 0 || nMode == 1) && accept_filters.empty() && pListener)
+        {
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_OPENFILENAME_DIALOG);
+            NSEditorApi::CAscLocalOpenFileDialog* pData = new NSEditorApi::CAscLocalOpenFileDialog();
+            pData->put_Id(m_pParent->GetId());
+            pData->put_IsMultiselect((nMode == 1) ? true : false);
+            pData->put_Filter(L"any");
+            pEvent->m_pData = pData;
+
+            m_pFileDialogCallback = callback;
+
+            pListener->OnEvent(pEvent);
+            return true;
+        }
+
+#endif
+
+        return false;
     }
 
     bool CheckPopup(std::wstring sUrl, bool bIsBeforeBrowse = false, bool bIsBackground = false, bool bIsNotOpenLinks = false)
@@ -1258,6 +1303,26 @@ public:
     {
         std::wstring sUrl = request->GetURL().ToWString();
 
+#if 0
+        std::string sUrlA = "";
+        int nLen = (int)sUrl.length();
+        for (int i = 0; i < nLen; ++i)
+        {
+            char p = (char)sUrl.c_str()[i];
+            if (p == '%')
+                p = '!';
+            if (p >= 32 && p <= 122)
+                sUrlA += p;
+            else
+                sUrlA += ' ';
+        }
+
+        FILE* f = fopen("D:\\111333.txt", "a+");
+        fprintf(f, sUrlA.c_str());
+        fprintf(f, "\n");
+        fclose(f);
+#endif
+
         if (m_pParent->m_pInternal->m_bIsSSO)
         {
             if (m_pParent->m_pInternal->m_bIsFirstLoadSSO)
@@ -1315,6 +1380,35 @@ public:
                 }
 
                 m_pParent->load(sUrlPortal);
+                return true;
+            }
+
+            std::wstring sTestSUP = m_pParent->m_pInternal->m_strSSOFirstDomain + L"/auth.aspx?sup=";
+            if (std::wstring::npos != sUrl.find(sTestSUP) && std::wstring::npos == sUrl.find(L"desktop=true"))
+            {
+                if (sUrl.rfind('&') == (sUrl.length() - 1))
+                    sUrl += L"desktop=true";
+                else
+                    sUrl += L"&desktop=true";
+
+                sUrl = L"sso:" + sUrl;
+
+                m_pParent->load(sUrl);
+                return true;
+            }
+
+            std::wstring sTestSUP_Simple = m_pParent->m_pInternal->m_strSSOFirstDomain + L"/";
+            std::wstring sTestUrl_Simple = sUrl;
+            std::wstring::size_type nFindSS = sTestUrl_Simple.find(L"//");
+            if (std::wstring::npos != nFindSS)
+                sTestUrl_Simple = sTestUrl_Simple.substr(nFindSS + 2);
+
+            if (0 == sTestSUP_Simple.find(sTestUrl_Simple) && std::wstring::npos == sUrl.find(L"desktop=true"))
+            {
+                if (sUrl.rfind(L"/") == (sUrl.length() - 1))
+                    sUrl += L"/";
+
+                m_pParent->load(sUrl + L"products/files/?desktop=true");
                 return true;
             }
         }
@@ -4552,6 +4646,44 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
         case ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_OPENFILENAME_DIALOG:
         {
             NSEditorApi::CAscLocalOpenFileDialog* pData = (NSEditorApi::CAscLocalOpenFileDialog*)pEvent->m_pData;
+
+            if (m_pInternal->m_handler->m_pFileDialogCallback)
+            {
+                std::vector<CefString> file_paths;
+
+                if (!pData->get_IsMultiselect())
+                {
+                    std::wstring sPathRet = pData->get_Path();
+                    if (!sPathRet.empty())
+                        file_paths.push_back(sPathRet);
+                }
+                else
+                {
+                    std::vector<std::wstring>& arPaths = pData->get_Files();
+                    if (arPaths.size() > 0)
+                    {
+                        for (std::vector<std::wstring>::iterator i = arPaths.begin(); i != arPaths.end(); i++)
+                        {
+                            std::wstring sPathRet = *i;
+                            if (!sPathRet.empty())
+                                file_paths.push_back(sPathRet);
+                        }
+                    }
+                    else
+                    {
+                        std::wstring sPathRet = pData->get_Path();
+                        if (!sPathRet.empty())
+                            file_paths.push_back(sPathRet);
+                    }
+                }
+
+                m_pInternal->m_handler->m_pFileDialogCallback->Continue(0, file_paths);
+                m_pInternal->m_handler->m_pFileDialogCallback = NULL;
+
+                break;
+            }
+
+
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_open_filename_dialog");
             message->GetArgumentList()->SetString(0, m_pInternal->m_sIFrameIDMethod);
             message->GetArgumentList()->SetBool(1, pData->get_IsMultiselect());
