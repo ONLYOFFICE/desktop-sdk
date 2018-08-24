@@ -1117,7 +1117,7 @@ public:
                               int selected_accept_filter,
                               CefRefPtr<CefFileDialogCallback> callback)
     {
-#ifdef WIN32
+#ifndef _MAC
 
         // BUG with crash renderer process after upload files to cloud
 
