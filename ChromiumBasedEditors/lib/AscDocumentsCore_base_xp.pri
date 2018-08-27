@@ -529,10 +529,11 @@ HEADERS += \
 
 SOURCES += \
     $$CEF_SRC_PATH/cefclient/common/client_app.cc \
-    $$CEF_SRC_PATH/cefclient/common/client_app_delegates_common.cc \
     $$CEF_SRC_PATH/cefclient/common/client_app_other.cc \
     $$CEF_SRC_PATH/cefclient/common/client_switches.cc \
     $$CEF_SRC_PATH/cefclient/common/scheme_test_common.cc
+
+#SOURCES += $$CEF_SRC_PATH/cefclient/common/client_app_delegates_common.cc
 
 HEADERS += \
     $$CEF_SRC_PATH/cefclient/renderer/client_app_renderer.h \

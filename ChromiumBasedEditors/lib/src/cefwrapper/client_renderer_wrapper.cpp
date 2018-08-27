@@ -2360,7 +2360,11 @@ window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst);\n\
             for (std::map<int, std::string>::iterator iter = oPlugins.m_arCryptoModes.begin(); iter != oPlugins.m_arCryptoModes.end(); iter++)
             {
                 int nMode = iter->first;
+#ifdef CEF_2623
+                CefRefPtr<CefV8Value> val = CefV8Value::CreateObject(NULL);
+#else
                 CefRefPtr<CefV8Value> val = CefV8Value::CreateObject(NULL, NULL);
+#endif
                 val->SetValue("type", CefV8Value::CreateInt(nMode), V8_PROPERTY_ATTRIBUTE_NONE);
                 val->SetValue("info_presented", CefV8Value::CreateBool(true), V8_PROPERTY_ATTRIBUTE_NONE);
 
