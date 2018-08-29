@@ -39,6 +39,7 @@ namespace agg
 
 CPrintData::CPrintData()
 {
+    m_pApplicationFonts = NULL;
     m_pFontManager = NULL;
     m_pCache = NULL;
 
@@ -57,8 +58,11 @@ CPrintData::~CPrintData()
     RELEASEINTERFACE(m_pCache);
 }
 
-void CPrintData::Print_Start()
+void CPrintData::Print_Start(NSFonts::IApplicationFonts* pFonts)
 {
+    if (NULL == m_pApplicationFonts)
+        m_pApplicationFonts = pFonts;
+
     m_pFontManager = m_pApplicationFonts->GenerateFontManager();
     NSFonts::IFontsCache* pFontsCache = NSFonts::NSFontCache::Create();
     pFontsCache->SetStreams(m_pApplicationFonts->GetStreams());
@@ -279,7 +283,8 @@ std::wstring CPrintData::GetImagePath(const std::wstring& sPath)
     }
 
     // 4) может это файл файла?
-    if (0 == sPath.find(L"media/image") || 0 == sPath.find(L"image"))
+    if (0 == sPath.find(L"media/image") || 0 == sPath.find(L"image") ||
+        0 == sPath.find(L"image/display") || 0 == sPath.find(L"display"))
     {
         std::wstring sExt = L"";
         int nPos = sPath.find_last_of(wchar_t('.'));
@@ -289,8 +294,11 @@ std::wstring CPrintData::GetImagePath(const std::wstring& sPath)
         }
 
         std::wstring sPath2 = sPath;
-        if (0 == sPath.find(L"image"))
+        if (0 == sPath.find(L"image") || 0 == sPath.find(L"display"))
+        {
+            nPos += 6;
             sPath2 = L"media/" + sPath;
+        }
         
         std::wstring sUrl = m_sDocumentImagesPath + sPath2;
         std::wstring sUrl2 = L"";
