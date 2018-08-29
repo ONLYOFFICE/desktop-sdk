@@ -129,6 +129,8 @@
 #define ASC_MENU_EVENT_TYPE_ENCRYPT_PERSONAL_KEY_IMPORT     8005
 #define ASC_MENU_EVENT_TYPE_ENCRYPT_PERSONAL_KEY_EXPORT     8006
 
+#define ASC_MENU_EVENT_TYPE_SYSTEM_EXERNAL_PLUGINS          8007
+
 
 #define ASC_MENU_EVENT_TYPE_WINDOWS_MESSAGE_USER_COUNT      10
 
@@ -826,6 +828,46 @@ namespace NSEditorApi
         inline void put_DataSize(unsigned int nSize)
         {
             m_nDataSize = nSize;
+        }
+    };
+}
+
+namespace NSEditorApi
+{
+    class CAscSystemExternalPlugins : public IMenuEventDataBase
+    {
+    public:
+        class CItem
+        {
+        public:
+            std::wstring& name;
+            std::wstring& id;
+            std::wstring& url;
+        };
+
+    private:
+        std::vector<CItem> m_items;
+
+    public:
+        CAscSystemExternalPlugins()
+        {
+        }
+        virtual ~CAscSystemExternalPlugins()
+        {
+        }
+
+        std::vector<CItem>& get_Items()
+        {
+            return m_items;
+        }
+
+        void addItem(const std::wstring& name, const std::wstring& id, const std::wstring& url)
+        {
+            CItem item;
+            item.name = name;
+            item.id = id;
+            item.url = url;
+            m_items.push_back(item);
         }
     };
 }
