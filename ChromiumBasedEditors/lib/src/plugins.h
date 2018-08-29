@@ -40,6 +40,13 @@
 //#include "./plugins_resources.h"
 #include <map>
 
+class CExternalPluginInfo
+{
+public:
+    std::string sGuid;
+    std::string sName;
+};
+
 class CPluginsManager
 {
 public:
@@ -50,7 +57,7 @@ public:
     std::map<int, std::string> m_arCryptoModes;
 
     // плагин не для редактора, а для главной страницы (для системных сообщенией)
-    std::vector<std::string> m_arExternals;
+    std::vector<CExternalPluginInfo> m_arExternals;
 public:
     CPluginsManager()
     {
@@ -294,7 +301,11 @@ private:
                 pos2 != std::string::npos &&
                 pos2 > pos1)
             {
-                m_arExternals.push_back(sJson.substr(pos1, pos2 - pos1 + 1));
+                CExternalPluginInfo info;
+                info.sGuid = sJson.substr(pos1, pos2 - pos1 + 1);
+                info.sName = GetStringValue(sJson, "name");
+
+                m_arExternals.push_back(info);
             }
             return true;
         }

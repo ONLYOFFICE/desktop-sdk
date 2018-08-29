@@ -346,7 +346,7 @@ public:
 };
 
 class CAscClientHandler;
-class CCefView_Private : public NSEditorApi::IMenuEventDataBase, public IASCFileConverterEvents
+class CCefView_Private : public NSEditorApi::IMenuEventDataBase, public IASCFileConverterEvents, public CTextDocxConverterCallback
 {
 public:
     CefRefPtr<CAscClientHandler>        m_handler;
@@ -371,6 +371,8 @@ public:
     CAscLocalFileInfoCS m_oLocalInfo;
     CASCFileConverterToEditor m_oConverterToEditor;
     CASCFileConverterFromEditor m_oConverterFromEditor;
+
+    CTextDocxConverter m_oTxtToDocx;
 
     int m_nLocalFileOpenError;
 
@@ -525,6 +527,7 @@ public:
 
         m_oConverterToEditor.Stop();
         m_oConverterFromEditor.Stop();
+        m_oTxtToDocx.Stop();
 
         // смотрим, есть ли несохраненные данные
         m_oLocalInfo.m_oCS.Enter();
@@ -786,6 +789,14 @@ public:
             return false;
 
         return true;
+    }
+
+    virtual void CTextDocxConverterCallback_OnConvert(std::wstring sData)
+    {
+        CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create(m_oTxtToDocx.m_bIsToDocx ? "set_advanced_encrypted_data" : "get_advanced_encrypted_data");
+        message->GetArgumentList()->SetInt(0, m_oTxtToDocx.m_nFrameId);
+        message->GetArgumentList()->SetString(1, m_oTxtToDocx.m_sData);
+        GetBrowser()->SendProcessMessage(PID_RENDERER, message);
     }
 
     void SendProcessMessage(CefProcessId target_process, CefRefPtr<CefProcessMessage> message);
@@ -2639,7 +2650,53 @@ public:
         {
             std::string sPass = message->GetArgumentList()->GetString(0).ToString();
             int nMode = message->GetArgumentList()->GetInt(1);
-            m_pParent->GetAppManager()->SetCryptoMode(sPass, nMode);
+            bool bIsCallback = message->GetArgumentList()->GetBool(2);
+            int nFrameId = message->GetArgumentList()->GetInt(3);
+
+            if (!bIsCallback)
+            {
+                m_pParent->GetAppManager()->SetCryptoMode(sPass, nMode);
+            }
+            else
+            {
+                std::map<int, CCefView*>& mapViews = m_pParent->GetAppManager()->m_pInternal->m_mapViews;
+                bool bIsEditorPresent = false;
+                for (std::map<int, CCefView*>::iterator iter = mapViews.begin(); iter != mapViews.end(); iter++)
+                {
+                    CCefView* tmp = iter->second;
+                    if (tmp->GetType() == cvwtEditor)
+                    {
+                        bIsEditorPresent = true;
+                        break;
+                    }
+                }
+
+                CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("set_crypto_mode");
+                message->GetArgumentList()->SetInt(0, bIsEditorPresent ? 1 : 0);
+                message->GetArgumentList()->SetInt(1, nFrameId);
+                browser->SendProcessMessage(PID_RENDERER, message);
+            }
+
+            return true;
+        }
+        else if (message_name == "get_advanced_encrypted_data")
+        {
+            m_pParent->m_pInternal->m_oTxtToDocx.m_nFrameId = message->GetArgumentList()->GetInt(0);
+            m_pParent->m_pInternal->m_oTxtToDocx.m_sPassword = message->GetArgumentList()->GetString(1);
+            m_pParent->m_pInternal->m_oTxtToDocx.ToData();
+
+            return true;
+        }
+        else if (message_name == "set_advanced_encrypted_data")
+        {
+            std::wstring sPassword = message->GetArgumentList()->GetString(0).ToWString();
+            std::wstring sData = message->GetArgumentList()->GetString(1).ToWString();
+
+            m_pParent->m_pInternal->m_oTxtToDocx.m_nFrameId = message->GetArgumentList()->GetInt(0);
+            m_pParent->m_pInternal->m_oTxtToDocx.m_sPassword = message->GetArgumentList()->GetString(1);
+            m_pParent->m_pInternal->m_oTxtToDocx.m_sData = message->GetArgumentList()->GetString(2);
+            m_pParent->m_pInternal->m_oTxtToDocx.ToDocx();
+
             return true;
         }
 
@@ -2744,61 +2801,59 @@ public:
             if ((0 != sUrl.find(L"file:///")) || !m_pParent->m_pInternal->m_bIsOnlyPassSupport || m_pParent->GetType() == cvwtEditor)
                 return;
 
-            std::vector<std::string>& arPluginsExternal = m_pParent->m_pInternal->m_pManager->m_pInternal->m_arExternalPlugins;
+            std::vector<CExternalPluginInfo>& arPluginsExternal = m_pParent->m_pInternal->m_pManager->m_pInternal->m_arExternalPlugins;
             std::wstring sSystemPluginsPath = m_pParent->GetAppManager()->m_oSettings.system_plugins_path;
 
-            for (std::vector<std::string>::iterator iterExt = arPluginsExternal.begin(); iterExt != arPluginsExternal.end(); iterExt++)
+            if (arPluginsExternal.size() != 0 && NULL != m_pParent->GetAppManager()->GetEventListener())
             {
-                std::string sGuidA = *iterExt;
-                if (0 == sGuidA.find("asc."))
-                    sGuidA = sGuidA.substr(4);
-                std::wstring sGuid = UTF8_TO_U(sGuidA);
+                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_SYSTEM_EXTERNAL_PLUGINS);
+                NSEditorApi::CAscSystemExternalPlugins* pEventData = new NSEditorApi::CAscSystemExternalPlugins();
+                pEvent->m_pData = pEventData;
 
-                std::wstring sSrc = sSystemPluginsPath + L"/" + sGuid + L"/index.html";
-                NSCommon::url_correct(sSrc);
+                for (std::vector<CExternalPluginInfo>::iterator iterExt = arPluginsExternal.begin(); iterExt != arPluginsExternal.end(); iterExt++)
+                {
+                    std::string sGuidA = iterExt->sGuid;
+                    if (0 == sGuidA.find("asc."))
+                        sGuidA = sGuidA.substr(4);
+                    std::wstring sGuid = UTF8_TO_U(sGuidA);
 
-#if 0
-                std::wstring sCode = L"(function() {\n\
+                    std::wstring sSrc = sSystemPluginsPath + L"/" + sGuid + L"/index.html";
+                    NSCommon::url_correct(sSrc);
+
+    #if 0
+                    std::wstring sCode = L"(function() {\n\
+    window.testTimer = setInterval(function(){\n\
+    var abouts = document.getElementsByClassName(\"about\");\n\
+    if (!abouts || !abouts[0])\n\
+        return;\n\
+    var about = abouts[0];\n\
+    clearInterval(window.testTimer);\n\
     var ifr = document.createElement(\"iframe\");\n\
     ifr.name = \"system_asc." + sGuid + L"\";\n\
     ifr.id = \"system_asc." + sGuid + L"\";\n\
     ifr.src = \"" + sSrc + L"\";\n\
-    ifr.style.position = \"absolute\";\n\
-    ifr.style.top      = '-100px';\n\
+    ifr.style.position = \"relative\";\n\
+    ifr.style.top      = '0px';\n\
     ifr.style.left     = '0px';\n\
-    ifr.style.width    = '100px';\n\
-    ifr.style.height   = '100px';\n\
+    ifr.style.width    = '100%';\n\
+    ifr.style.height   = '100%';\n\
     ifr.style.overflow = 'hidden';\n\
-    ifr.style.zIndex   = -1000;\n\
-    document.body.appendChild(ifr);\n\
+    ifr.style.zIndex   = 100;\n\
+    ifr.style.margin   = '0px';\n\
+    ifr.style.padding  = '0px';\n\
+    about.innerHTML = '';\n\
+    about.appendChild(ifr);\n\
+    }, 100);\n\
     })();";
-#endif
-                std::wstring sCode = L"(function() {\n\
-window.testTimer = setInterval(function(){\n\
-var abouts = document.getElementsByClassName(\"about\");\n\
-if (!abouts || !abouts[0])\n\
-    return;\n\
-var about = abouts[0];\n\
-clearInterval(window.testTimer);\n\
-var ifr = document.createElement(\"iframe\");\n\
-ifr.name = \"system_asc." + sGuid + L"\";\n\
-ifr.id = \"system_asc." + sGuid + L"\";\n\
-ifr.src = \"" + sSrc + L"\";\n\
-ifr.style.position = \"relative\";\n\
-ifr.style.top      = '0px';\n\
-ifr.style.left     = '0px';\n\
-ifr.style.width    = '100%';\n\
-ifr.style.height   = '100%';\n\
-ifr.style.overflow = 'hidden';\n\
-ifr.style.zIndex   = 100;\n\
-ifr.style.margin   = '0px';\n\
-ifr.style.padding  = '0px';\n\
-about.innerHTML = '';\n\
-about.appendChild(ifr);\n\
-}, 100);\n\
-})();";
 
-                frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
+                    frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
+    #endif
+
+                    std::wstring sNameG = UTF8_TO_U((iterExt->sName));
+                    pEventData->addItem(sNameG, L"system_asc." + sGuid, sSrc);
+                }
+
+                m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
             }
         }
     }
@@ -3952,6 +4007,9 @@ CCefView::~CCefView()
 
 void CCefView::load(const std::wstring& urlInput)
 {
+    m_pInternal->m_oTxtToDocx.m_pManager = this->GetAppManager();
+    m_pInternal->m_oTxtToDocx.m_pCallback = m_pInternal;
+
     m_pInternal->m_sOriginalUrl = urlInput;
 
     // check openaslocal

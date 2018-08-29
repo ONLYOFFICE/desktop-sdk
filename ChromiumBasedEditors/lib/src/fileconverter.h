@@ -1023,4 +1023,167 @@ public:
     }
 };
 
+class CTextDocxConverterCallback
+{
+public:
+    virtual void CTextDocxConverterCallback_OnConvert(std::wstring sData) = 0;
+};
+
+class CTextDocxConverter : public NSThreads::CBaseThread
+{
+public:
+    int m_nFrameId;
+
+    std::wstring m_sData;
+    std::wstring m_sPassword;
+
+    std::wstring m_sFileDocx;
+    bool m_bIsToDocx;
+
+    CAscApplicationManager* m_pManager;
+    CTextDocxConverterCallback* m_pCallback;
+
+public:
+    CTextDocxConverter() : NSThreads::CBaseThread()
+    {
+        m_nFrameId = 0;
+        m_pManager = NULL;
+        m_bIsToDocx = false;
+        m_pCallback = NULL;
+    }
+    virtual ~CTextDocxConverter()
+    {
+        Stop();
+    }
+
+    void ToDocx()
+    {
+        m_bIsToDocx = true;
+        Start(0);
+    }
+
+    void ToData()
+    {
+        m_bIsToDocx = false;
+        Start(0);
+    }
+
+    virtual DWORD ThreadProc()
+    {
+        m_sFileDocx = m_pManager->m_oSettings.user_plugins_path + L"/advanced_crypto_data.docx";
+
+        if (m_bIsToDocx)
+        {
+            std::wstring sTxtFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"OL");
+            if (NSFile::CFileBinary::Exists(sTxtFile))
+                NSFile::CFileBinary::Remove(sTxtFile);
+
+            NSFile::CFileBinary oFile;
+            oFile.CreateFileW(sTxtFile);
+            oFile.WriteStringUTF8(L"[data]" + m_sData + L"[data]", true);
+            oFile.CloseFile();
+
+            std::wstring strDirectoryFonts = m_pManager->m_oSettings.fonts_cache_info_path;
+            while (!NSFile::CFileBinary::Exists(strDirectoryFonts + L"/font_selection.bin"))
+                NSThreads::Sleep(100);
+
+            NSStringUtils::CStringBuilder oBuilder;
+            oBuilder.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><TaskQueueDataConvert><m_sFileFrom>");
+            oBuilder.WriteEncodeXmlString(sTxtFile);
+            oBuilder.WriteString(L"</m_sFileFrom><m_sFileTo>");
+            oBuilder.WriteEncodeXmlString(m_sFileDocx);
+            oBuilder.WriteString(L"</m_sFileTo><m_nFormatTo>65</m_nFormatTo><m_sFontDir>");
+            oBuilder.WriteEncodeXmlString(strDirectoryFonts);
+            oBuilder.WriteString(L"</m_sFontDir>");
+
+            if (!m_sPassword.empty())
+            {
+                oBuilder.WriteString(L"<m_sSavePassword>");
+                oBuilder.WriteEncodeXmlString(m_sPassword);
+                oBuilder.WriteString(L"</m_sSavePassword>");
+            }
+
+            oBuilder.WriteString(L"</TaskQueueDataConvert>");
+
+            std::wstring sTempFileForParams = sTxtFile + L"_params_from.xml";
+            NSFile::CFileBinary::SaveToFile(sTempFileForParams, oBuilder.GetData(), true);
+
+            int nReturnCode = NSX2T::Convert(m_pManager->m_oSettings.file_converter_path + L"/x2t", sTempFileForParams, m_pManager);
+
+            NSFile::CFileBinary::Remove(sTempFileForParams);
+            NSFile::CFileBinary::Remove(sTxtFile);
+
+            if (0 != nReturnCode)
+                m_sData = L"";
+        }
+        else
+        {
+            std::wstring sTxtFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"OL");
+            if (NSFile::CFileBinary::Exists(sTxtFile))
+                NSFile::CFileBinary::Remove(sTxtFile);
+
+            std::wstring strDirectoryFonts = m_pManager->m_oSettings.fonts_cache_info_path;
+            while (!NSFile::CFileBinary::Exists(strDirectoryFonts + L"/font_selection.bin"))
+                NSThreads::Sleep(100);
+
+            NSStringUtils::CStringBuilder oBuilder;
+            oBuilder.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><TaskQueueDataConvert><m_sFileFrom>");
+            oBuilder.WriteEncodeXmlString(m_sFileDocx);
+            oBuilder.WriteString(L"</m_sFileFrom><m_sFileTo>");
+            oBuilder.WriteEncodeXmlString(sTxtFile);
+            oBuilder.WriteString(L"</m_sFileTo><m_nFormatTo>69</m_nFormatTo><m_sFontDir>");
+            oBuilder.WriteEncodeXmlString(strDirectoryFonts);
+            oBuilder.WriteString(L"</m_sFontDir>");
+
+            if (!m_sPassword.empty())
+            {
+                oBuilder.WriteString(L"<m_sPassword>");
+                oBuilder.WriteEncodeXmlString(m_sPassword);
+                oBuilder.WriteString(L"</m_sPassword>");
+            }
+
+            oBuilder.WriteString(L"</TaskQueueDataConvert>");
+
+            std::wstring sTempFileForParams = sTxtFile + L"_params_from.xml";
+            NSFile::CFileBinary::SaveToFile(sTempFileForParams, oBuilder.GetData(), true);
+
+            int nReturnCode = NSX2T::Convert(m_pManager->m_oSettings.file_converter_path + L"/x2t", sTempFileForParams, m_pManager);
+
+            NSFile::CFileBinary::Remove(sTempFileForParams);
+
+            if (nReturnCode == 0)
+            {
+                NSFile::CFileBinary::ReadAllTextUtf8(sTxtFile, m_sData);
+
+                std::wstring::size_type pos1 = m_sData.find(L"[data]");
+                std::wstring::size_type pos2 = m_sData.rfind(L"[data]");
+
+                if (pos1 != std::wstring::npos && pos2 != std::wstring::npos)
+                {
+                    m_sData = m_sData.substr(pos1 + 6, pos2 - pos1 - 6);
+                }
+                else
+                {
+                    m_sData = L"";
+                }
+            }
+            else
+            {
+                m_sData = L"";
+            }
+
+            NSFile::CFileBinary::Remove(sTxtFile);
+        }
+
+        m_pCallback->CTextDocxConverterCallback_OnConvert(m_sData);
+
+        m_nFrameId = 0;
+        m_sData = L"";
+        m_sPassword = L"";
+
+        m_bRunThread = FALSE;
+        return 0;
+    }
+};
+
 #endif // ASC_CEFCONVERTER_FILECONVERTER_H

@@ -66,6 +66,7 @@
 #define ONLYOFFICE_FONTS_VERSION_ 1
 
 #include "crypto_mode.h"
+#include "plugins.h"
 
 namespace NSFileDownloader
 {
@@ -488,7 +489,7 @@ public:
 
     NSAscCrypto::CAscKeychain* m_pKeyChain;
 
-    std::vector<std::string> m_arExternalPlugins;
+    std::vector<CExternalPluginInfo> m_arExternalPlugins;
 
 public:
     CAscApplicationManager_Private() : m_oKeyboardTimer(this)

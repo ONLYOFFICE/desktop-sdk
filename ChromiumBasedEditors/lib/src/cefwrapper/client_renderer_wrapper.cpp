@@ -1700,6 +1700,21 @@ window.AscDesktopEditor._OpenFilenameDialog(filter, ismulti);\n\
 window.on_native_download_files = callback;\n\
 window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst);\n\
 };", _frame->GetURL(), 0);
+
+                _frame->ExecuteJavaScript("window.AscDesktopEditor.SetCryptoMode = function(password, mode, callback) {\n\
+window.on_set_crypto_mode = callback;\n\
+window.AscDesktopEditor._SetCryptoMode(password, mode, callback ? true : false);\n\
+                };", _frame->GetURL(), 0);
+
+                _frame->ExecuteJavaScript("window.AscDesktopEditor.GetAdvancedEncryptedData = function(password, callback) {\n\
+window.on_get_advanced_encrypted_data = callback;\n\
+window.AscDesktopEditor._GetAdvancedEncryptedData(password);\n\
+};", _frame->GetURL(), 0);
+
+                _frame->ExecuteJavaScript("window.AscDesktopEditor.SetAdvancedEncryptedData = function(password, data, callback) {\n\
+window.on_set_advanced_encrypted_data = callback;\n\
+window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
+};", _frame->GetURL(), 0);
             }
 
             return true;
@@ -2312,11 +2327,20 @@ window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst);\n\
                 NSFile::CFileBinary::Remove(sFile);
             return true;
         }
-        else if (name == "SetCryptoMode")
+        else if (name == "_SetCryptoMode")
         {
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("set_crypto_mode");
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
             message->GetArgumentList()->SetInt(1, arguments[1]->GetIntValue());
+
+            if (arguments.size() > 2)
+                message->GetArgumentList()->SetBool(2, arguments[2]->GetBoolValue());
+            else
+                message->GetArgumentList()->SetBool(2, false);
+
+            int64 frameId = CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier();
+            message->GetArgumentList()->SetInt(3, (int)frameId);
+
             CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
@@ -2370,6 +2394,25 @@ window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst);\n\
 
                 retval->SetValue(nCurIndex++, val);
             }
+            return true;
+        }
+        else if (name == "_GetAdvancedEncryptedData")
+        {
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("get_advanced_encrypted_data");
+            message->GetArgumentList()->SetInt(0, (int)CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
+            message->GetArgumentList()->SetString(1, arguments[0]->GetStringValue());
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "_SetAdvancedEncryptedData")
+        {
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("set_advanced_encrypted_data");
+            message->GetArgumentList()->SetInt(0, (int)CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
+            message->GetArgumentList()->SetString(1, arguments[0]->GetStringValue());
+            message->GetArgumentList()->SetString(2, arguments[1]->GetStringValue());
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
 
@@ -2865,11 +2908,14 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction983 = CefV8Value::CreateFunction("_DownloadFiles", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction984 = CefV8Value::CreateFunction("RemoveFile", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction985 = CefV8Value::CreateFunction("GetImageFormat", _nativeHandler);
-    CefRefPtr<CefV8Value> _nativeFunction986 = CefV8Value::CreateFunction("SetCryptoMode", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction986 = CefV8Value::CreateFunction("_SetCryptoMode", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction987 = CefV8Value::CreateFunction("GetEncryptedHeader", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction988 = CefV8Value::CreateFunction("GetCryptoMode", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction989 = CefV8Value::CreateFunction("GetSupportCryptoModes", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction990 = CefV8Value::CreateFunction("IsProtectionSupport", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction991 = CefV8Value::CreateFunction("_GetAdvancedEncryptedData", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction992 = CefV8Value::CreateFunction("_SetAdvancedEncryptedData", _nativeHandler);
+
 
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -3015,11 +3061,13 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("_DownloadFiles", _nativeFunction983, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("RemoveFile", _nativeFunction984, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("GetImageFormat", _nativeFunction985, V8_PROPERTY_ATTRIBUTE_NONE);
-    objNative->SetValue("SetCryptoMode", _nativeFunction986, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("_SetCryptoMode", _nativeFunction986, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("GetEncryptedHeader", _nativeFunction987, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("GetCryptoMode", _nativeFunction988, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("GetSupportCryptoModes", _nativeFunction989, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("IsProtectionSupport", _nativeFunction990, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("_GetAdvancedEncryptedData", _nativeFunction991, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("_SetAdvancedEncryptedData", _nativeFunction992, V8_PROPERTY_ATTRIBUTE_NONE);
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 
@@ -3915,6 +3963,35 @@ delete window[\"crypto_images_map\"][_url];\n\
             _frame->ExecuteJavaScript("(function() { window.on_native_download_files(" + sParam + "); delete window.on_native_download_files; })();", _frame->GetURL(), 0);
         }
         return true;
+    }
+    else if (sMessageName == "set_crypto_mode")
+    {
+        int nError = message->GetArgumentList()->GetInt(0);
+        int64 nFrameId = (int64)message->GetArgumentList()->GetInt(1);
+
+        CefRefPtr<CefFrame> _frame = browser->GetFrame(nFrameId);
+        if (_frame)
+            _frame->ExecuteJavaScript("(function() { if (!window.on_set_crypto_mode) return; window.on_set_crypto_mode(" + std::to_string(nError) + "); delete window.on_set_crypto_mode; })();", _frame->GetURL(), 0);
+    }
+    else if (sMessageName == "get_advanced_encrypted_data")
+    {
+        int64 nFrameId = (int64)message->GetArgumentList()->GetInt(0);
+        std::string sRet = message->GetArgumentList()->GetString(1);
+        NSCommon::string_replaceA(sRet, "\\", "\\\\");
+
+        CefRefPtr<CefFrame> _frame = browser->GetFrame(nFrameId);
+        if (_frame)
+              _frame->ExecuteJavaScript("(function() { if (!window.on_get_advanced_encrypted_data) return; window.on_get_advanced_encrypted_data(\"" + sRet + "\"); delete window.on_get_advanced_encrypted_data; })();", _frame->GetURL(), 0);
+    }
+    else if (sMessageName == "set_advanced_encrypted_data")
+    {
+        int64 nFrameId = (int64)message->GetArgumentList()->GetInt(0);
+        std::string sRet = message->GetArgumentList()->GetString(1);
+        NSCommon::string_replaceA(sRet, "\\", "\\\\");
+
+        CefRefPtr<CefFrame> _frame = browser->GetFrame(nFrameId);
+        if (_frame)
+            _frame->ExecuteJavaScript("(function() { if (!window.on_set_advanced_encrypted_data) return; window.on_set_advanced_encrypted_data(\"" + sRet + "\"); delete window.on_set_advanced_encrypted_data; })();", _frame->GetURL(), 0);
     }
 
     if (m_pAdditional.is_init() && m_pAdditional->OnProcessMessageReceived(app, browser, source_process, message))
