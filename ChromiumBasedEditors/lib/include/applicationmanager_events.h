@@ -129,7 +129,7 @@
 #define ASC_MENU_EVENT_TYPE_ENCRYPT_PERSONAL_KEY_IMPORT     8005
 #define ASC_MENU_EVENT_TYPE_ENCRYPT_PERSONAL_KEY_EXPORT     8006
 
-#define ASC_MENU_EVENT_TYPE_SYSTEM_EXERNAL_PLUGINS          8007
+#define ASC_MENU_EVENT_TYPE_SYSTEM_EXTERNAL_PLUGINS          8007
 
 
 #define ASC_MENU_EVENT_TYPE_WINDOWS_MESSAGE_USER_COUNT      10
@@ -840,9 +840,9 @@ namespace NSEditorApi
         class CItem
         {
         public:
-            std::wstring& name;
-            std::wstring& id;
-            std::wstring& url;
+            std::wstring name;
+            std::wstring id;
+            std::wstring url;
         };
 
     private:
