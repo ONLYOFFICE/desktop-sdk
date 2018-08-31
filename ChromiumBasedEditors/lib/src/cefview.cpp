@@ -2671,6 +2671,9 @@ public:
                     }
                 }
 
+                if (!bIsEditorPresent)
+                    m_pParent->GetAppManager()->SetCryptoMode(sPass, nMode);
+
                 CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("set_crypto_mode");
                 message->GetArgumentList()->SetInt(0, bIsEditorPresent ? 1 : 0);
                 message->GetArgumentList()->SetInt(1, nFrameId);
