@@ -840,9 +840,6 @@
 				BE9FC6AE2101CEBD00571BA9 /* keychain.cpp */,
 				BE9FC6AF2101CEBD00571BA9 /* keychain.h */,
 				7C7DC79A1FC6BAD6008DAC1F /* unicode_util.cpp */,
-				7CC7F4A81F7D3ACB00E99DC9 /* include */,
-				7CC7F5A11F7D3ACB00E99DC9 /* libcef_dll */,
-				7CC7F6DE1F7D3ACC00E99DC9 /* tests */,
 				7CD198911D7972AD00F8841C /* create.cpp */,
 				7C2E50001CD0FDD10025806F /* pole.cpp */,
 				7C2E4FFE1CD0FDA70025806F /* OfficeFileFormatChecker2.cpp */,
@@ -850,6 +847,9 @@
 				7C5DDA3B1BA98FFA00C6474A /* client_renderer_wrapper.cpp */,
 				7C5DDA3C1BA98FFA00C6474A /* client_scheme_wrapper.cpp */,
 				7CC7F76C1F7D3ACC00E99DC9 /* process_helper_mac.cc */,
+				7CC7F4A81F7D3ACB00E99DC9 /* include */,
+				7CC7F5A11F7D3ACB00E99DC9 /* libcef_dll */,
+				7CC7F6DE1F7D3ACC00E99DC9 /* tests */,
 				7C5DD7AE1BA98BCF00C6474A /* Supporting Files */,
 			);
 			name = "ONLYOFFICE Helper";
