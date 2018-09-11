@@ -718,7 +718,7 @@ else \n\
                     CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
                     CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("load_js");
                     int64 frameId = CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier();
-                    message->GetArgumentList()->SetString(0, GetFullUrl(strUrl, CefV8Context::GetCurrentContext()->GetFrame()->GetURL().ToWString()));
+                    message->GetArgumentList()->SetString(0, GetFullUrl2(strUrl, CefV8Context::GetCurrentContext()->GetFrame()->GetURL().ToWString()));
                     message->GetArgumentList()->SetString(1, strPath);
                     message->GetArgumentList()->SetInt(2, (int)frameId);
                     browser->SendProcessMessage(PID_BROWSER, message);
@@ -2698,6 +2698,18 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
         }
         NSCommon::url_correct(sUrlSrc);
         return sUrlSrc;
+    }
+
+    std::wstring GetFullUrl2(const std::wstring& sUrl, const std::wstring& sBaseUrlSrc)
+    {
+        std::wstring sBaseUrl = sBaseUrlSrc;
+        std::wstring::size_type sPosQuest = sBaseUrl.find(L"/index.html?");
+        if (sPosQuest != std::wstring::npos)
+        {
+            sBaseUrl = sBaseUrl.substr(0, sPosQuest + 10);
+        }
+
+        return GetFullUrl(sUrl, sBaseUrl);
     }
 
     bool IsChartEditor()

@@ -433,6 +433,8 @@ public:
 
     CDownloadFilesAborted m_oDownloaderAbortChecker;
 
+    bool m_bIsExternalCloud;
+
 public:
     class CSystemMessage
     {
@@ -518,6 +520,8 @@ public:
         m_bIsReceiveOnce_OnDocumentModified = false;
 
         m_bIsCloudCryptFile = false;
+
+        m_bIsExternalCloud = false;
     }
 
     void Destroy()
@@ -1163,7 +1167,13 @@ public:
         if (NULL != m_pParent && NULL != m_pParent->GetAppManager())
             pListener = m_pParent->GetAppManager()->GetEventListener();
 
-        bool bIsEditor      = (sUrl.find(L"files/doceditor.aspx?fileid") == std::wstring::npos) ? false : true;
+        bool bIsEditor = (sUrl.find(L"files/doceditor.aspx?fileid") == std::wstring::npos) ? false : true;
+#if 1
+        if (m_pParent->m_pInternal->m_bIsExternalCloud && !bIsEditor)
+        {
+            bIsEditor = (sUrl.find(L"/apps/onlyoffice/") == std::wstring::npos) ? false : true;
+        }
+#endif
 
         bool bIsDownload    = false;
         if (sUrl.find(L"filehandler.ashx?action=download") != std::wstring::npos)
@@ -1550,6 +1560,8 @@ public:
                 if (0 == m_pParent->GetAppManager()->m_pInternal->m_mapCrypto.size())
                     bIsOnlyPassSupport = false;
             }
+            if (m_pParent->m_pInternal->m_bIsExternalCloud)
+                bIsOnlyPassSupport = false;
 
             int nFlags = 0;
             if (bIsOnlyPassSupport)
@@ -1560,7 +1572,12 @@ public:
 
             m_pParent->m_pInternal->m_bIsOnlyPassSupport = bIsOnlyPassSupport;
             message->GetArgumentList()->SetInt(0, nFlags);
-            message->GetArgumentList()->SetInt(1, m_pParent->GetAppManager()->m_pInternal->m_nCurrentCryptoMode);
+
+            int nCryptoMode = m_pParent->GetAppManager()->m_pInternal->m_nCurrentCryptoMode;
+            if (m_pParent->m_pInternal->m_bIsExternalCloud)
+                nCryptoMode = 0;
+
+            message->GetArgumentList()->SetInt(1, nCryptoMode);
             message->GetArgumentList()->SetString(2, m_pParent->GetAppManager()->m_oSettings.system_plugins_path);
             message->GetArgumentList()->SetString(3, m_pParent->GetAppManager()->m_oSettings.user_plugins_path);
             message->GetArgumentList()->SetString(4, m_pParent->GetAppManager()->m_oSettings.cookie_path);
@@ -2787,6 +2804,24 @@ public:
         m_pParent->m_pInternal->m_bIsWindowsCheckZoom = true;
         m_pParent->m_pInternal->m_nDeviceScale = -1;
         m_pParent->resizeEvent();
+
+        if (frame->IsMain() && m_pParent->m_pInternal->m_bIsExternalCloud && m_pParent->GetType() == cvwtEditor)
+        {
+            std::string sCorrectScript = "\
+window.externalCloudCorrectTimerId = setInterval(function(){\n\
+var _header = null; var _elem = document.getElementById('content-wrapper');\n\
+var _headers = document.getElementsByTagName('header');\n\
+if (_headers && _headers[0])\n\
+{ _header = _headers[0]; };\n\
+if (!_header || !_elem) return;\n\
+clearInterval(window.externalCloudCorrectTimerId);\n\
+delete window.externalCloudCorrectTimerId;\n\
+_header.style.display = 'none';\n\
+_elem.style.paddingTop = 0;\n\
+}, 10);";
+
+            frame->ExecuteJavaScript(sCorrectScript, frame->GetURL(), 0);
+        }
     }
 
 #endif
@@ -2795,7 +2830,7 @@ public:
                            CefRefPtr<CefFrame> frame,
                            int httpStatusCode)
     {
-        if (frame)
+        if (frame && !m_pParent->m_pInternal->m_bIsExternalCloud)
             m_pParent->GetAppManager()->m_pInternal->SendCryptoData(frame);
 
         if (frame->IsMain())
@@ -4008,8 +4043,22 @@ CCefView::~CCefView()
     RELEASEOBJECT(m_pInternal);
 }
 
-void CCefView::load(const std::wstring& urlInput)
+void CCefView::load(const std::wstring& urlInputSrc)
 {
+    std::wstring urlInput = urlInputSrc;
+    if (true)
+    {
+        if (std::wstring::npos != urlInput.find(L"owncloud.onlyoffice.com"))
+            m_pInternal->m_bIsExternalCloud = true;
+        else if (std::wstring::npos != urlInput.find(L"nextcloud.onlyoffice.com"))
+            m_pInternal->m_bIsExternalCloud = true;
+
+        if (m_pInternal->m_bIsExternalCloud && GetType() == cvwtSimple)
+        {
+            NSCommon::string_replace(urlInput, L"/products/files/", L"/");
+        }
+    }
+
     m_pInternal->m_oTxtToDocx.m_pManager = this->GetAppManager();
     m_pInternal->m_oTxtToDocx.m_pCallback = m_pInternal;
 
