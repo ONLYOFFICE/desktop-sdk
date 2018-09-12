@@ -427,6 +427,37 @@ public:
     }
 };
 
+class CExternalCloudRegister
+{
+public:
+    std::wstring url;
+    std::wstring test_editor;
+    std::string correct_code;
+
+public:
+    CExternalCloudRegister()
+    {
+        url = L"";
+        test_editor = L"";
+        correct_code = "";
+    }
+
+    CExternalCloudRegister(const CExternalCloudRegister& src)
+    {
+        url = src.url;
+        test_editor = src.test_editor;
+        correct_code = src.correct_code;
+    }
+
+    CExternalCloudRegister& operator=(const CExternalCloudRegister& src)
+    {
+        url = src.url;
+        test_editor = src.test_editor;
+        correct_code = src.correct_code;
+        return *this;
+    }
+};
+
 class CAscApplicationManager_Private : public CefBase_Class,
         public CCookieFoundCallback,
         public NSThreads::CBaseThread,
@@ -490,6 +521,8 @@ public:
     NSAscCrypto::CAscKeychain* m_pKeyChain;
 
     std::vector<CExternalPluginInfo> m_arExternalPlugins;
+
+    std::vector<CExternalCloudRegister> m_arExternalClouds;
 
 public:
     CAscApplicationManager_Private() : m_oKeyboardTimer(this)
@@ -762,6 +795,20 @@ public:
         }
 
         m_pMain->UnlockCS(LOCK_CS_SCRIPT);
+    }
+
+    bool TestExternal(std::wstring& url, CExternalCloudRegister& ex)
+    {
+        for (std::vector<CExternalCloudRegister>::iterator iter = m_arExternalClouds.begin(); iter != m_arExternalClouds.end(); iter++)
+        {
+            std::wstring::size_type pos = url.find(iter->url);
+            if (pos != std::wstring::npos && pos < 10)
+            {
+                ex = *iter;
+                return true;
+            }
+        }
+        return false;
     }
 
 protected:
