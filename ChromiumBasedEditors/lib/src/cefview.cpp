@@ -434,6 +434,7 @@ public:
     CDownloadFilesAborted m_oDownloaderAbortChecker;
 
     bool m_bIsExternalCloud;
+    CExternalCloudRegister m_oExternalCloud;
 
 public:
     class CSystemMessage
@@ -1171,7 +1172,7 @@ public:
 #if 1
         if (m_pParent->m_pInternal->m_bIsExternalCloud && !bIsEditor)
         {
-            bIsEditor = (sUrl.find(L"/apps/onlyoffice/") == std::wstring::npos) ? false : true;
+            bIsEditor = (sUrl.find(m_pParent->m_pInternal->m_oExternalCloud.test_editor) == std::wstring::npos) ? false : true;
         }
 #endif
 
@@ -2804,24 +2805,6 @@ public:
         m_pParent->m_pInternal->m_bIsWindowsCheckZoom = true;
         m_pParent->m_pInternal->m_nDeviceScale = -1;
         m_pParent->resizeEvent();
-
-        if (frame->IsMain() && m_pParent->m_pInternal->m_bIsExternalCloud && m_pParent->GetType() == cvwtEditor)
-        {
-            std::string sCorrectScript = "\
-window.externalCloudCorrectTimerId = setInterval(function(){\n\
-var _header = null; var _elem = document.getElementById('content-wrapper');\n\
-var _headers = document.getElementsByTagName('header');\n\
-if (_headers && _headers[0])\n\
-{ _header = _headers[0]; };\n\
-if (!_header || !_elem) return;\n\
-clearInterval(window.externalCloudCorrectTimerId);\n\
-delete window.externalCloudCorrectTimerId;\n\
-_header.style.display = 'none';\n\
-_elem.style.paddingTop = 0;\n\
-}, 10);";
-
-            frame->ExecuteJavaScript(sCorrectScript, frame->GetURL(), 0);
-        }
     }
 
 #endif
@@ -4048,10 +4031,7 @@ void CCefView::load(const std::wstring& urlInputSrc)
     std::wstring urlInput = urlInputSrc;
     if (true)
     {
-        if (std::wstring::npos != urlInput.find(L"owncloud.onlyoffice.com"))
-            m_pInternal->m_bIsExternalCloud = true;
-        else if (std::wstring::npos != urlInput.find(L"nextcloud.onlyoffice.com"))
-            m_pInternal->m_bIsExternalCloud = true;
+        m_pInternal->m_bIsExternalCloud = GetAppManager()->m_pInternal->TestExternal(urlInput, m_pInternal->m_oExternalCloud);
 
         if (m_pInternal->m_bIsExternalCloud && GetType() == cvwtSimple)
         {
