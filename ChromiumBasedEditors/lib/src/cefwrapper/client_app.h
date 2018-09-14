@@ -47,6 +47,7 @@
 #endif
 
 #include "../../../../../core/DesktopEditor/common/File.h"
+#include "../../../../../core/Common/FileDownloader/FileDownloader.h"
 
 static int IsForceDpiRound()
 {
@@ -217,6 +218,9 @@ public:
 public:
     CAscClientAppBrowser(std::map<std::string, std::string>& mapSettings) : client::ClientAppBrowser(), CAppSettings(mapSettings)
     {
+#ifdef _MAC
+        CFileDownloader::SetARCEnabled(true);
+#endif
     }
 
     virtual ~CAscClientAppBrowser()
@@ -287,6 +291,9 @@ class CAscClientAppOther : public client::ClientAppOther, public CAppSettings
 public:
     CAscClientAppOther(std::map<std::string, std::string>& mapSettings) : client::ClientAppOther(), CAppSettings(mapSettings)
     {
+#ifdef _MAC
+        CFileDownloader::SetARCEnabled(true);
+#endif
     }
 
     virtual ~CAscClientAppOther()
@@ -346,6 +353,9 @@ class CAscClientAppRenderer : public client::ClientAppRenderer, public CAppSetti
 public:
     CAscClientAppRenderer(std::map<std::string, std::string>& mapSettings) : client::ClientAppRenderer(), CAppSettings(mapSettings)
     {
+#ifdef _MAC
+        CFileDownloader::SetARCEnabled(true);
+#endif
     }
 
     virtual ~CAscClientAppRenderer()
