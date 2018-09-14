@@ -1070,6 +1070,9 @@ public:
 
     virtual DWORD ThreadProc()
     {
+        if (!NSDirectory::Exists(m_pManager->m_oSettings.user_plugins_path))
+            NSDirectory::CreateDirectory(m_pManager->m_oSettings.user_plugins_path);
+
         m_sFileDocx = m_pManager->m_oSettings.user_plugins_path + L"/advanced_crypto_data.docx";
 
         if (m_bIsToDocx)
