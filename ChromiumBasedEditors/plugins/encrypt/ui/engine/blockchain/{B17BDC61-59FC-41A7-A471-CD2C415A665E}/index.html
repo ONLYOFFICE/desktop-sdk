@@ -25,7 +25,7 @@
 					});
 
 					$("#box-connect-to-cloud a.link").click(function() {
-						postMessage(window.JSON.stringify({type:'plugin', data:{command:'panel:select', params:'recent'}}), "*");
+						parent.postMessage(window.JSON.stringify({type:'plugin', data:{command:'panel:select', params:'connect'}}), "*");
 					});
  
 					$("#enc-mode-switch").click(function () {						
