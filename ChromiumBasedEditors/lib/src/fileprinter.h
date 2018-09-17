@@ -103,7 +103,7 @@ public:
     CPrintData();
     ~CPrintData();
 
-    void Print_Start();
+    void Print_Start(NSFonts::IApplicationFonts* pFonts);
     void Print_End();
 
     void Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAscPrintSettings& settings, const int& nPageIndex);

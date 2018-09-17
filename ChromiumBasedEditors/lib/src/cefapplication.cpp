@@ -86,6 +86,43 @@ int XIOErrorHandlerImpl(Display *display)
 
 #include "./plugins.h"
 
+static std::wstring ReadFileByLineCorrent(std::wstring& value)
+{
+    wchar_t* start = (wchar_t*)value.c_str();
+    wchar_t* end = start + value.length() - 1;
+
+    while (start < end && (*start == '\n' || *start == '\r'))
+        ++start;
+
+    while (end > start && (*end == '\n' || *end == '\r'))
+        --end;
+
+    if (end <= start)
+        return std::wstring();
+
+    return std::wstring(start, (end - start) + 1);
+}
+
+static std::vector<std::wstring> ReadFileByLine(std::wstring& sContent)
+{
+    std::vector<std::wstring> arLines;
+    std::wstring::size_type pos = 0;
+    std::wstring delimiter = L"\n";
+    std::wstring sToken = L"";
+    while ((pos = sContent.find(delimiter)) != std::string::npos)
+    {
+        sToken = sContent.substr(0, pos);
+        arLines.push_back(ReadFileByLineCorrent(sToken));
+
+        sContent.erase(0, pos + delimiter.length());
+    }
+
+    sToken = sContent;
+    arLines.push_back(ReadFileByLineCorrent(sToken));
+
+    return arLines;
+}
+
 class CApplicationCEF_Private
 {
 public:
@@ -236,7 +273,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     CefSettings settings;
     
 #ifdef _MAC
-#if 1
+#if 0
     std::wstring sSubprocessPath = NSFile::GetProcessDirectory();
     std::wstring sName = NSCommon::GetFileName(NSFile::GetProcessPath());
     sSubprocessPath += L"/../Frameworks/ONLYOFFICE Helper.app/Contents/MacOS/ONLYOFFICE Helper";
@@ -322,7 +359,42 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
         value.m_sGuid = iterCrypto->second;
         pManager->m_pInternal->m_mapCrypto.insert(std::pair<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue>(value.m_eType, value));
     }
+
+    for (std::vector<CExternalPluginInfo>::iterator iterExt = oPlugins.m_arExternals.begin(); iterExt != oPlugins.m_arExternals.end(); iterExt++)
+    {
+        pManager->m_pInternal->m_arExternalPlugins.push_back(*iterExt);
+    }
+
     pManager->m_pInternal->LoadCryptoData();
+
+    std::wstring sExternalClouds = NSFile::GetProcessDirectory() + L"/externalcloud.config";
+    std::wstring sExternalCloudsData = L"";
+    bool bIsReadExternalClouds = NSFile::CFileBinary::ReadAllTextUtf8(sExternalClouds, sExternalCloudsData);
+
+    if (bIsReadExternalClouds)
+    {
+        std::vector<std::wstring> arLines = ReadFileByLine(sExternalCloudsData);
+        int nCount = (int)arLines.size();
+        nCount = nCount - (nCount % 2);
+        for (int i = 0; i < nCount; i += 2)
+        {
+            CExternalCloudRegister cloudEx;
+            cloudEx.url = arLines[i];
+            cloudEx.test_editor = arLines[i + 1];
+
+            pManager->m_pInternal->m_arExternalClouds.push_back(cloudEx);
+        }
+    }
+
+#ifdef WIN32
+    SetEnvironmentVariableA("APPLICATION_NAME", pManager->m_oSettings.converter_application_name.c_str());
+    SetEnvironmentVariableA("COMPANY_NAME", pManager->m_oSettings.converter_application_company.c_str());
+#else
+    std::string s1 = "APPLICATION_NAME=" + pManager->m_oSettings.converter_application_name;
+    std::string s2 = "COMPANY_NAME=" + pManager->m_oSettings.converter_application_company;
+    putenv((char*)s1.c_str());
+    putenv((char*)s2.c_str());
+#endif
 
     return 0;
 }
