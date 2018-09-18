@@ -255,6 +255,9 @@ return {
         return _web3.toHex(JSON.stringify(wrapper));
     },
     isConnected: function () {
+        if (!_web3)
+            return false;
+
         return _web3.isConnected();
     },
     getProviderUri: function() {

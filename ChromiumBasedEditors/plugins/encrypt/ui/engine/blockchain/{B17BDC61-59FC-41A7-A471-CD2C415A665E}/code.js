@@ -41,7 +41,11 @@
 				case "getPasswordByFile":  
 				{
 					if (!isConnected)
+					{
 						AscDesktopEditor.sendSystemMessage({ type : "getPasswordByFile", password : "" });
+						
+						break;
+					}
 	
 					let _hashAsHex = "0x" + _convertToHex(atob(obj.hash)); 
 
@@ -58,7 +62,11 @@
 				case "setPasswordByFile":
 				{
 					if (!isConnected)
-						break;						
+					{
+						AscDesktopEditor.sendSystemMessage(obj);	
+						
+						break;	
+					}					
 
 				 	if (obj.isNeedMessage)
 					{
