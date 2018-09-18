@@ -1678,7 +1678,7 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
             CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetFrame();
             if (_frame)
             {
-                _frame->ExecuteJavaScript("window.AscDesktopEditor.sendSystemMessage = function(arg) { window.AscDesktopEditor._sendSystemMessage(JSON.stringify(arg)); };", _frame->GetURL(), 0);
+                _frame->ExecuteJavaScript("window.AscDesktopEditor.sendSystemMessage = function(arg) { window.AscDesktopEditor.isSendSystemMessage = true;window.AscDesktopEditor._sendSystemMessage(JSON.stringify(arg)); };", _frame->GetURL(), 0);
                 _frame->ExecuteJavaScript("window.AscDesktopEditor.GetHash = function(arg, callback) { window.AscDesktopEditor.getHashCallback = callback; window.AscDesktopEditor._GetHash(arg); };", _frame->GetURL(), 0);
                 _frame->ExecuteJavaScript("window.AscDesktopEditor.CallInAllWindows = function(arg) { window.AscDesktopEditor._CallInAllWindows(\"(\" + arg.toString() + \")();\"); };", _frame->GetURL(), 0);
                 _frame->ExecuteJavaScript("window.AscDesktopEditor.OpenFileCrypt = function(name, url, callback) { window.AscDesktopEditor.openFileCryptCallback = callback; window.AscDesktopEditor._OpenFileCrypt(name, url); };", _frame->GetURL(), 0);
@@ -3729,11 +3729,17 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     (function(){\n\
     try {\n\
     var _arg = JSON.parse(\"" + sArg + "\");\n\
+    window.AscDesktopEditor.isSendSystemMessage = false;\n\
     if (window.onSystemMessage)\n\
     { window.onSystemMessage(_arg); } else if (window.Asc && window.Asc.plugin && window.Asc.plugin.onSystemMessage)\n\
     { window.Asc.plugin.onSystemMessage(_arg); }\n\
     }\n\
-    catch (err) {}\n\
+    catch (err) {\n\
+        if (!window.AscDesktopEditor.isSendSystemMessage) {\n\
+            window.AscDesktopEditor.sendSystemMessage(_arg);\n\
+        }\n\
+    }\n\
+    delete window.AscDesktopEditor.isSendSystemMessage;\n\
     })();";
 
                     frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
