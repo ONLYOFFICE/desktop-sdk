@@ -1737,7 +1737,7 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
 
             CefRefPtr<CefV8Value> _timerID;
             CefRefPtr<CefV8Exception> _exception;
-            if (CefV8Context::GetCurrentContext()->Eval("(function(){ var intervalID = setInterval(function(){ window.AscDesktopEditor.NativeFunctionTimer(intervalID); }, 100); return intervalID; })();",
+            if (CefV8Context::GetCurrentContext()->Eval("(function(){ var intervalID = setInterval(function(){ if (!window.NativeFileOpen_error) { return; } window.AscDesktopEditor.NativeFunctionTimer(intervalID); }, 100); return intervalID; })();",
                                                         #ifndef CEF_2623
                                                                     "", 0,
                                                         #endif
