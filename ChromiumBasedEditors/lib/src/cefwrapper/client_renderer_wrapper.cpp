@@ -1723,6 +1723,12 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
         {
             std::vector<CefRefPtr<CefV8Value>>::const_iterator iter = arguments.begin();
 
+            if (arguments.size() == 1) // password
+            {
+                m_oNativeViewer.SetPassword((*iter)->GetStringValue().ToWString());
+                return true;
+            }
+
             std::wstring sOpeningFilePath = (*iter)->GetStringValue().ToWString(); iter++;
             std::wstring sFontsDir = (*iter)->GetStringValue().ToWString(); iter++;
             std::wstring sFileDir = (*iter)->GetStringValue().ToWString(); ++iter;
@@ -1758,10 +1764,24 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
             if (nIntervalID == m_nNativeOpenFileTimerID)
             {
                 std::string sBase64File = m_oNativeViewer.GetBase64File();
+
                 if (!sBase64File.empty())
                 {
                     CefRefPtr<CefV8Value> _timerID;
                     CefRefPtr<CefV8Exception> _exception;
+
+                    if (sBase64File == "error" || sBase64File == "password")
+                    {
+                        m_oNativeViewer.Stop();
+                        m_oNativeViewer.ClearBase64();
+                        CefV8Context::GetCurrentContext()->Eval("window.NativeFileOpen_error(\"" + sBase64File + "\");",
+                                                                                        #ifndef CEF_2623
+                                                                                                    "", 0,
+                                                                                        #endif
+                                                                                        _timerID, _exception);
+                        return true;
+                    }
+
                     std::string sCode = "clearTimeout(" + std::to_string(m_nNativeOpenFileTimerID) + ");";
                     if (CefV8Context::GetCurrentContext()->Eval(sCode,
                                                                 #ifndef CEF_2623
@@ -1776,6 +1796,7 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
                     CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
                     CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("native_viewer_onopened");
                     message->GetArgumentList()->SetString(0, (sBase64File == "error") ? "" : sBase64File);
+                    message->GetArgumentList()->SetString(1, m_oNativeViewer.GetPassword());
                     browser->SendProcessMessage(PID_BROWSER, message);
                 }
             }

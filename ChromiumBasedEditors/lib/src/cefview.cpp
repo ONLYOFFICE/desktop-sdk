@@ -201,11 +201,13 @@ class CAscNativePrintDocument : public IAscNativePrintDocument
 {
 protected:
     IOfficeDrawingFile* m_pReader;
+    std::wstring m_sPassword;
 
 public:
-    CAscNativePrintDocument() : IAscNativePrintDocument()
+    CAscNativePrintDocument(const std::wstring& sPassword) : IAscNativePrintDocument()
     {
         m_pReader = NULL;
+        m_sPassword = sPassword;
     }
     virtual ~CAscNativePrintDocument()
     {
@@ -252,7 +254,7 @@ public:
         NSDirectory::CreateDirectory(m_sTempFolder);
 
         m_pReader->SetTempDirectory(m_sTempFolder.c_str());
-        m_pReader->LoadFromFile(m_sFilePath);
+        m_pReader->LoadFromFile(m_sFilePath, L"", m_sPassword, m_sPassword);
     }
 
     virtual void Close()
@@ -435,6 +437,8 @@ public:
 
     bool m_bIsExternalCloud;
     CExternalCloudRegister m_oExternalCloud;
+
+    std::wstring m_sNativeFilePassword;
 
 public:
     class CSystemMessage
@@ -2181,6 +2185,7 @@ public:
             if (m_pParent && m_pParent->m_pInternal)
             {
                 std::string sBase64 = message->GetArgumentList()->GetString(0).ToString();
+                m_pParent->m_pInternal->m_sNativeFilePassword = message->GetArgumentList()->GetString(1).ToWString();
                 m_pParent->m_pInternal->m_oConverterToEditor.NativeViewerOpenEnd(sBase64);
             }
             return true;
@@ -4544,7 +4549,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                 case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_XPS:
                 case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_DJVU:
                 {
-                    m_pInternal->m_oPrintData.m_pNativePrinter = new CAscNativePrintDocument();
+                    m_pInternal->m_oPrintData.m_pNativePrinter = new CAscNativePrintDocument(m_pInternal->m_sNativeFilePassword);
                     break;
                 }
                 default:
