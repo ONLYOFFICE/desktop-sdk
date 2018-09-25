@@ -1033,6 +1033,16 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
     CBgraFrame oFrame;
     int nRasterW = (int)(dWidthPix + 0.5);
     int nRasterH = (int)(dHeightPix + 0.5);
+    
+#ifdef _XCODE
+    // 16 bit align pixPerRow
+    nRasterW += 8;
+    nRasterW = (nRasterW - (nRasterW & 0x0F));
+    
+    nRasterH += 8;
+    nRasterH = (nRasterH - (nRasterH & 0x0F));
+#endif
+    
     oFrame.put_Width(nRasterW);
     oFrame.put_Height(nRasterH);
     oFrame.put_Stride(4 * nRasterW);
@@ -1074,6 +1084,10 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
 
     pContext->BitBlt(oFrame.get_Data(), 0, 0, nRasterW, nRasterH,
                      dLeftPix, dTopPix, dWidthPix, dHeightPix, dAngle);
+    
+#ifdef _XCODE
+    oFrame.put_Data(NULL);
+#endif
 }
 
 void CPrintData::FitToPage(float fSourceWidth, float  fSourceHeight, float  fTargetWidth, float fTargetHeight, float& fResX, float& fResY, float& fResWidth, float& fResHeight)
