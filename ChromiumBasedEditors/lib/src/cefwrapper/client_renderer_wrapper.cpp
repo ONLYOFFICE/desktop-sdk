@@ -45,7 +45,7 @@
 #include "../../src/applicationmanager_p.h"
 
 #include "../../../../../core/DesktopEditor/raster/BgraFrame.h"
-#include "../../../../../core/DesktopEditor/raster/Metafile/MetaFile.h"
+#include "../../../../../core/DesktopEditor/graphics/pro/Image.h"
 
 #include "../../../../../core/HtmlRenderer/include/ASCSVGWriter.h"
 
@@ -53,6 +53,7 @@
 #include "../../src/plugins.h"
 
 #include "../../src/additional/renderer.h"
+#include "../crypto_mode.h"
 
 namespace NSCommon
 {
@@ -289,7 +290,7 @@ public:
     int                 m_nLocalImagesNextIndex;
     std::map<std::wstring, std::wstring> m_mapLocalAddImages;
 
-    CApplicationFonts* m_pLocalApplicationFonts;
+    NSFonts::IApplicationFonts* m_pLocalApplicationFonts;
 
     std::string        m_sScrollStyle;
 
@@ -300,6 +301,8 @@ public:
 
     bool m_bIsSupportSigs;
     bool m_bIsSupportOnlyPass;
+    bool m_bIsSupportProtect;
+    int m_nCryptoMode;
 
     std::list<CSavedPageInfo> m_arCompleteTasks;
 
@@ -308,6 +311,8 @@ public:
     bool m_bIsDebugMode;
 
     std::wstring m_sCryptDocumentFolder; // recover
+
+    std::wstring m_sCookiesPath;
 
     NSCriticalSection::CRITICAL_SECTION m_oCompleteTasksCS;
 
@@ -342,6 +347,9 @@ public:
 
         m_bIsDebugMode = false;
         m_bIsSupportOnlyPass = true;
+        m_bIsSupportProtect = true;
+
+        m_nCryptoMode = 0;
 
         m_oCompleteTasksCS.InitializeCriticalSection();
 
@@ -364,7 +372,7 @@ public:
 
     virtual ~CAscEditorNativeV8Handler()
     {
-        RELEASEOBJECT(m_pLocalApplicationFonts);
+        NSBase::Release(m_pLocalApplicationFonts);
         m_oCompleteTasksCS.DeleteCriticalSection();
     }
 
@@ -558,7 +566,7 @@ else \n\
                 {
                     if (retval2->IsBool())
                     {
-                        //m_bIsDebugMode = retval2->GetBoolValue();
+                        m_bIsDebugMode = retval2->GetBoolValue();
                     }
                 }
             }
@@ -710,7 +718,7 @@ else \n\
                     CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
                     CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("load_js");
                     int64 frameId = CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier();
-                    message->GetArgumentList()->SetString(0, GetFullUrl(strUrl, CefV8Context::GetCurrentContext()->GetFrame()->GetURL().ToWString()));
+                    message->GetArgumentList()->SetString(0, GetFullUrl2(strUrl, CefV8Context::GetCurrentContext()->GetFrame()->GetURL().ToWString()));
                     message->GetArgumentList()->SetString(1, strPath);
                     message->GetArgumentList()->SetInt(2, (int)frameId);
                     browser->SendProcessMessage(PID_BROWSER, message);
@@ -1173,7 +1181,7 @@ else \n\
         }
         else if (name == "GetImageBase64")
         {
-            if (arguments.size() != 1)
+            if (arguments.size() < 1)
             {
                 retval = CefV8Value::CreateString("");
                 return true;
@@ -1212,22 +1220,29 @@ else \n\
             oFileBinary.ReadFile(pData, (DWORD)nDetectSize, dwRead);
             oFileBinary.CloseFile();
 
-            CImageFileFormatChecker _checker;
+            bool bIsNoHeader = false;
+            if (arguments.size() >= 2)
+                bIsNoHeader = arguments[1]->GetBoolValue();
 
-            if (_checker.isBmpFile(pData, nDetectSize))
-                sHeader = "data:image/bmp;base64,";
-            else if (_checker.isJpgFile(pData, nDetectSize))
-                sHeader = "data:image/jpeg;base64,";
-            else if (_checker.isPngFile(pData, nDetectSize))
-                sHeader = "data:image/png;base64,";
-            else if (_checker.isGifFile(pData, nDetectSize))
-                sHeader = "data:image/gif;base64,";
-            else if (_checker.isTiffFile(pData, nDetectSize))
-                sHeader = "data:image/tiff;base64,";
+            if (!bIsNoHeader)
+            {
+                CImageFileFormatChecker _checker;
+
+                if (_checker.isBmpFile(pData, nDetectSize))
+                    sHeader = "data:image/bmp;base64,";
+                else if (_checker.isJpgFile(pData, nDetectSize))
+                    sHeader = "data:image/jpeg;base64,";
+                else if (_checker.isPngFile(pData, nDetectSize))
+                    sHeader = "data:image/png;base64,";
+                else if (_checker.isGifFile(pData, nDetectSize))
+                    sHeader = "data:image/gif;base64,";
+                else if (_checker.isTiffFile(pData, nDetectSize))
+                    sHeader = "data:image/tiff;base64,";
+            }
 
             RELEASEARRAYOBJECTS(pData);
 
-            if (sHeader.empty())
+            if (sHeader.empty() && !bIsNoHeader)
             {
                 retval = CefV8Value::CreateString("");
                 return true;
@@ -1244,7 +1259,7 @@ else \n\
 
             char* pDataDst = NULL;
             int nDataDst = 0;
-            NSFile::CBase64Converter::Encode(pFontData, nSize1, pDataDst, nDataDst);
+            NSFile::CBase64Converter::Encode(pFontData, nSize1, pDataDst, nDataDst, NSBase64::B64_BASE64_FLAG_NOCRLF);
 
             std::string sFontBase64(pDataDst, nDataDst);
             RELEASEARRAYOBJECTS(pDataDst);
@@ -1468,9 +1483,7 @@ else \n\
 
             if (arguments.size() > 1)
             {
-                std::vector<CefRefPtr<CefV8Value> >::const_iterator iter = arguments.begin();
-                ++iter;
-                CefRefPtr<CefV8Value> val_pass = *iter;
+                CefRefPtr<CefV8Value> val_pass = arguments[1];
                 if (val_pass->IsString())
                     message->GetArgumentList()->SetString(1, val_pass->GetStringValue());
                 else
@@ -1478,6 +1491,17 @@ else \n\
             }
             else
                 message->GetArgumentList()->SetString(1, "");
+
+            if (arguments.size() > 2)
+            {
+                CefRefPtr<CefV8Value> val_info = arguments[2];
+                if (val_info->IsString())
+                    message->GetArgumentList()->SetString(2, val_info->GetStringValue());
+                else
+                    message->GetArgumentList()->SetString(2, "");
+            }
+            else
+                message->GetArgumentList()->SetString(2, "");
 
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
@@ -1666,6 +1690,31 @@ xhr.open(\"POST\", \"ascdesktop://binary/\" + window.AscDesktopEditor.GetEditorI
 xhr.send(value);\n\
 };",
                 _frame->GetURL(), 0);
+
+                _frame->ExecuteJavaScript("window.AscDesktopEditor.OpenFilenameDialog = function(filter, ismulti, callback) {\n\
+window.on_native_open_filename_dialog = callback;\n\
+window.AscDesktopEditor._OpenFilenameDialog(filter, ismulti);\n\
+};", _frame->GetURL(), 0);
+
+                _frame->ExecuteJavaScript("window.AscDesktopEditor.DownloadFiles = function(filesSrc, filesDst, callback) {\n\
+window.on_native_download_files = callback;\n\
+window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst);\n\
+};", _frame->GetURL(), 0);
+
+                _frame->ExecuteJavaScript("window.AscDesktopEditor.SetCryptoMode = function(password, mode, callback) {\n\
+window.on_set_crypto_mode = callback;\n\
+window.AscDesktopEditor._SetCryptoMode(password, mode, callback ? true : false);\n\
+                };", _frame->GetURL(), 0);
+
+                _frame->ExecuteJavaScript("window.AscDesktopEditor.GetAdvancedEncryptedData = function(password, callback) {\n\
+window.on_get_advanced_encrypted_data = callback;\n\
+window.AscDesktopEditor._GetAdvancedEncryptedData(password);\n\
+};", _frame->GetURL(), 0);
+
+                _frame->ExecuteJavaScript("window.AscDesktopEditor.SetAdvancedEncryptedData = function(password, data, callback) {\n\
+window.on_set_advanced_encrypted_data = callback;\n\
+window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
+};", _frame->GetURL(), 0);
             }
 
             return true;
@@ -1832,7 +1881,8 @@ xhr.send(value);\n\
             CPluginsManager oPlugins;
             oPlugins.m_strDirectory = m_sSystemPlugins;
             oPlugins.m_strUserDirectory = m_sUserPlugins;
-            std::string sData = oPlugins.GetPluginsJson();
+            oPlugins.m_nCryptoMode = m_nCryptoMode;
+            std::string sData = oPlugins.GetPluginsJson(true);
             retval = CefV8Value::CreateString(sData);
             return true;
         }
@@ -1878,6 +1928,21 @@ xhr.send(value);\n\
         }
         else if (name == "IsLocalFile")
         {
+            bool isUrlCheck = false;
+            if (arguments.size() > 0 && m_sLocalFileFolderWithoutFile.empty())
+            {
+                isUrlCheck = (*arguments.begin())->GetBoolValue();
+                if (isUrlCheck)
+                {
+                    std::string sUrl = CefV8Context::GetCurrentContext()->GetFrame()->GetURL().ToString();
+                    if (0 == sUrl.find("file:/"))
+                    {
+                        retval = CefV8Value::CreateBool(true);
+                        return true;
+                    }
+                }
+            }
+
             if (m_sLocalFileFolderWithoutFile.empty())
                 retval = CefV8Value::CreateBool(false);
             else
@@ -1966,14 +2031,19 @@ xhr.send(value);\n\
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
-        else if (name == "OpenFilenameDialog")
+        else if (name == "_OpenFilenameDialog")
         {
             CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_open_filename_dialog");
             std::vector<CefRefPtr<CefV8Value>>::const_iterator iter = arguments.begin();
-            message->GetArgumentList()->SetString(0, (*iter)->GetStringValue());
+            message->GetArgumentList()->SetString(0, (*iter)->GetStringValue());            
             int64 id = CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier();
             message->GetArgumentList()->SetString(1, std::to_string(id));
+            if (arguments.size() > 1)
+            {
+                iter++;
+                message->GetArgumentList()->SetBool(2, (*iter)->GetBoolValue());
+            }
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
@@ -2024,6 +2094,11 @@ xhr.send(value);\n\
             retval = CefV8Value::CreateBool(m_bIsSupportSigs);
             return true;
         }
+        else if (name == "IsProtectionSupport")
+        {
+            retval = CefV8Value::CreateBool(m_bIsSupportProtect);
+            return true;
+        }
         else if (name == "SetSupportSign")
         {
             m_bIsSupportSigs = arguments[0]->GetBoolValue();
@@ -2033,16 +2108,31 @@ xhr.send(value);\n\
         {
             int nFlags = arguments[0]->GetIntValue();
             m_bIsSupportOnlyPass = ((nFlags & 0x01) == 0x01) ? true : false;
+            m_bIsSupportProtect = ((nFlags & 0x02) == 0x02) ? true : false;
 
-            CPluginsManager oPlugins;
-            oPlugins.m_strDirectory = m_sSystemPlugins;
-            oPlugins.m_strUserDirectory = m_sUserPlugins;
+            if (1 < arguments.size())
+                m_nCryptoMode = arguments[1]->GetIntValue();
+
+            if (2 < arguments.size())
+            {
+                CefRefPtr<CefV8Value> _array = arguments[2];
+                int nLen = _array->GetArrayLength();
+
+                if (nLen > 0)
+                    m_sSystemPlugins = _array->GetValue(0)->GetStringValue().ToWString();
+
+                if (nLen > 1)
+                    m_sUserPlugins = _array->GetValue(1)->GetStringValue().ToWString();
+
+                if (nLen > 2)
+                    m_sCookiesPath = _array->GetValue(2)->GetStringValue().ToWString();
+            }
 
             return true;
         }
         else if (name == "isBlockchainSupport")
         {
-            retval = CefV8Value::CreateBool(m_bIsSupportOnlyPass);
+            retval = CefV8Value::CreateBool(m_bIsSupportOnlyPass && (m_nCryptoMode > 0));
             return true;
         }
         else if (name == "OpenAsLocal")
@@ -2125,6 +2215,7 @@ xhr.send(value);\n\
             CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("build_crypted");
             message->GetArgumentList()->SetString(0, arguments[2]->GetStringValue());
+            message->GetArgumentList()->SetString(1, arguments[3]->GetStringValue());
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
@@ -2151,6 +2242,176 @@ xhr.send(value);\n\
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("preload_crypto_image");
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
             message->GetArgumentList()->SetString(1, arguments[1]->GetStringValue());
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "ResaveFile")
+        {
+            std::wstring sFile = /*m_sCryptDocumentFolder + */arguments[0]->GetStringValue().ToWString();
+            std::string sData = arguments[1]->GetStringValue().ToString();
+
+            std::wstring sFileHeader = L"ascdesktop://fonts/";
+            if (0 == sFile.find(sFileHeader))
+            {
+                sFile = sFile.substr(sFileHeader.length());
+
+#ifdef WIN32
+                NSCommon::string_replace(sFile, L"/", L"\\");
+#endif
+            }
+
+            BYTE* pDataDst = NULL;
+            int nSizeDst = 0;
+            NSFile::CBase64Converter::Decode(sData.c_str(), (int)sData.length(), pDataDst, nSizeDst);
+
+            if (NSFile::CFileBinary::Exists(sFile))
+                NSFile::CFileBinary::Remove(sFile);
+
+            NSFile::CFileBinary oFile;
+            oFile.CreateFileW(sFile);
+            oFile.WriteFile(pDataDst, (DWORD)nSizeDst);
+            oFile.CloseFile();
+
+            RELEASEARRAYOBJECTS(pDataDst);
+
+            return true;
+        }
+        else if (name == "_DownloadFiles")
+        {
+            std::wstring sDirTmp = m_sCryptDocumentFolder;
+            if (sDirTmp.empty())
+                sDirTmp = m_sLocalFileFolderWithoutFile;
+            if (sDirTmp.empty())
+                sDirTmp = NSFile::CFileBinary::GetTempPath();
+
+            CefRefPtr<CefV8Value> val = arguments[0];
+            int nCount = val->GetArrayLength();
+
+            int nCount2 = 0;
+            CefRefPtr<CefV8Value> val2 = NULL;
+            if (arguments.size() > 1)
+            {
+                val2 = arguments[1];
+                nCount2 = val2->GetArrayLength();
+            }
+
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("download_files");
+
+            int nIndex = 0;
+            for (int i = 0; i < nCount; ++i)
+            {
+                message->GetArgumentList()->SetString(nIndex++, val->GetValue(i)->GetStringValue());
+
+                if (i < nCount2)
+                {
+                    message->GetArgumentList()->SetString(nIndex++, val2->GetValue(i)->GetStringValue());
+                }
+                else
+                {
+                    std::wstring sFileTmp = NSFile::CFileBinary::CreateTempFileWithUniqueName(sDirTmp, L"IMG");
+                    if (NSFile::CFileBinary::Exists(sFileTmp))
+                        NSFile::CFileBinary::Remove(sFileTmp);
+                    message->GetArgumentList()->SetString(nIndex++, sFileTmp);
+                }
+            }
+
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            browser->SendProcessMessage(PID_BROWSER, message);
+
+            return true;
+        }
+        else if (name == "RemoveFile")
+        {
+            std::wstring sFile = arguments[0]->GetStringValue();
+            if (NSFile::CFileBinary::Exists(sFile))
+                NSFile::CFileBinary::Remove(sFile);
+            return true;
+        }
+        else if (name == "_SetCryptoMode")
+        {
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("set_crypto_mode");
+            message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
+            message->GetArgumentList()->SetInt(1, arguments[1]->GetIntValue());
+
+            if (arguments.size() > 2)
+                message->GetArgumentList()->SetBool(2, arguments[2]->GetBoolValue());
+            else
+                message->GetArgumentList()->SetBool(2, false);
+
+            int64 frameId = CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier();
+            message->GetArgumentList()->SetInt(3, (int)frameId);
+
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "GetImageFormat")
+        {
+            std::wstring sFile = arguments[0]->GetStringValue();
+            std::string sExt = "jpg";
+
+            CImageFileFormatChecker _checker;
+            if (_checker.isPngFile(sFile))
+                sExt = "png";
+
+            retval = CefV8Value::CreateString(sExt);
+            return true;
+        }
+        else if (name == "GetEncryptedHeader")
+        {
+            retval = CefV8Value::CreateString("ENCRYPTED;");
+            return true;
+        }
+        else if (name == "GetCryptoMode")
+        {
+            retval = CefV8Value::CreateInt(m_nCryptoMode);
+            return true;
+        }
+        else if (name == "GetSupportCryptoModes")
+        {
+            NSAscCrypto::CCryptoMode oCryptoMode;
+            NSAscCrypto::CCryptoKey keyEnc, keyDec;
+            oCryptoMode.Load(keyEnc, keyDec, m_sCookiesPath + L"/user.data");
+
+            CPluginsManager oPlugins;
+            oPlugins.m_strDirectory = m_sSystemPlugins;
+            oPlugins.m_strUserDirectory = m_sUserPlugins;
+            oPlugins.GetInstalledPlugins();
+
+            int nCount = (int)oPlugins.m_arCryptoModes.size();
+            retval = CefV8Value::CreateArray(nCount);
+            int nCurIndex = 0;
+            for (std::map<int, std::string>::iterator iter = oPlugins.m_arCryptoModes.begin(); iter != oPlugins.m_arCryptoModes.end(); iter++)
+            {
+                int nMode = iter->first;
+#ifdef CEF_2623
+                CefRefPtr<CefV8Value> val = CefV8Value::CreateObject(NULL);
+#else
+                CefRefPtr<CefV8Value> val = CefV8Value::CreateObject(NULL, NULL);
+#endif
+                val->SetValue("type", CefV8Value::CreateInt(nMode), V8_PROPERTY_ATTRIBUTE_NONE);
+                val->SetValue("info_presented", CefV8Value::CreateBool(true), V8_PROPERTY_ATTRIBUTE_NONE);
+
+                retval->SetValue(nCurIndex++, val);
+            }
+            return true;
+        }
+        else if (name == "_GetAdvancedEncryptedData")
+        {
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("get_advanced_encrypted_data");
+            message->GetArgumentList()->SetInt(0, (int)CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
+            message->GetArgumentList()->SetString(1, arguments[0]->GetStringValue());
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "_SetAdvancedEncryptedData")
+        {
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("set_advanced_encrypted_data");
+            message->GetArgumentList()->SetInt(0, (int)CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
+            message->GetArgumentList()->SetString(1, arguments[0]->GetStringValue());
+            message->GetArgumentList()->SetString(2, arguments[1]->GetStringValue());
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
@@ -2335,20 +2596,20 @@ xhr.send(value);\n\
 
         if (NULL == m_pLocalApplicationFonts)
         {
-            m_pLocalApplicationFonts = new CApplicationFonts();
+            m_pLocalApplicationFonts = NSFonts::NSApplication::Create();
             m_pLocalApplicationFonts->InitializeFromFolder(m_sFontsData);
         }
 
-        MetaFile::CMetaFile oMetafile(m_pLocalApplicationFonts);
-        oMetafile.LoadFromFile(sUrl.c_str());
+        MetaFile::IMetaFile* pMetafile = MetaFile::Create(m_pLocalApplicationFonts);
+        pMetafile->LoadFromFile(sUrl.c_str());
 
-        if (oMetafile.GetType() == MetaFile::c_lMetaEmf || oMetafile.GetType() == MetaFile::c_lMetaWmf)
+        if (pMetafile->GetType() == MetaFile::c_lMetaEmf || pMetafile->GetType() == MetaFile::c_lMetaWmf)
         {
             std::wstring sRet = L"image" + std::to_wstring(m_nLocalImagesNextIndex) + L".svg";
-            std::wstring sRet1 = L"image" + std::to_wstring(m_nLocalImagesNextIndex++) + ((oMetafile.GetType() == MetaFile::c_lMetaEmf) ? L".emf" : L".wmf");
+            std::wstring sRet1 = L"image" + std::to_wstring(m_nLocalImagesNextIndex++) + ((pMetafile->GetType() == MetaFile::c_lMetaEmf) ? L".emf" : L".wmf");
 
             double x = 0, y = 0, w = 0, h = 0;
-            oMetafile.GetBounds(&x, &y, &w, &h);
+            pMetafile->GetBounds(&x, &y, &w, &h);
 
             double _max = (w >= h) ? w : h;
             double dKoef = 100000.0 / _max;
@@ -2360,19 +2621,19 @@ xhr.send(value);\n\
             oWriterSVG.SetFontManager(m_pLocalApplicationFonts->GenerateFontManager());
             oWriterSVG.put_Width(WW);
             oWriterSVG.put_Height(HH);
-            oMetafile.DrawOnRenderer(&oWriterSVG, 0, 0, WW, HH);
+            pMetafile->DrawOnRenderer(&oWriterSVG, 0, 0, WW, HH);
 
             oWriterSVG.SaveFile(m_sLocalFileFolderWithoutFile + L"/media/" + sRet);
 
             m_mapLocalAddImages.insert(std::pair<std::wstring, std::wstring>(sUrlMap, sRet));
             return sRet;
         }
-        if (oMetafile.GetType() == MetaFile::c_lMetaSvg || oMetafile.GetType() == MetaFile::c_lMetaSvm)
+        if (pMetafile->GetType() == MetaFile::c_lMetaSvg || pMetafile->GetType() == MetaFile::c_lMetaSvm)
         {
             std::wstring sRet = L"image" + std::to_wstring(m_nLocalImagesNextIndex++) + L".png";
 
             double x = 0, y = 0, w = 0, h = 0;
-            oMetafile.GetBounds(&x, &y, &w, &h);
+            pMetafile->GetBounds(&x, &y, &w, &h);
 
             double _max = (w >= h) ? w : h;
             double dKoef = 1000.0 / _max;
@@ -2381,11 +2642,13 @@ xhr.send(value);\n\
             int HH = (int)(dKoef * h + 0.5);
 
             std::wstring sSaveRet = m_sLocalFileFolderWithoutFile + L"/media/" + sRet;
-            oMetafile.ConvertToRaster(sSaveRet.c_str(), _CXIMAGE_FORMAT_PNG, WW, HH);
+            pMetafile->ConvertToRaster(sSaveRet.c_str(), _CXIMAGE_FORMAT_PNG, WW, HH);
 
             m_mapLocalAddImages.insert(std::pair<std::wstring, std::wstring>(sUrlMap, sRet));
             return sRet;
         }
+
+        RELEASEINTERFACE(pMetafile);
 
         return L"error";
     }
@@ -2435,6 +2698,18 @@ xhr.send(value);\n\
         }
         NSCommon::url_correct(sUrlSrc);
         return sUrlSrc;
+    }
+
+    std::wstring GetFullUrl2(const std::wstring& sUrl, const std::wstring& sBaseUrlSrc)
+    {
+        std::wstring sBaseUrl = sBaseUrlSrc;
+        std::wstring::size_type sPosQuest = sBaseUrl.find(L"/index.html?");
+        if (sPosQuest != std::wstring::npos)
+        {
+            sBaseUrl = sBaseUrl.substr(0, sPosQuest + 10);
+        }
+
+        return GetFullUrl(sUrl, sBaseUrl);
     }
 
     bool IsChartEditor()
@@ -2609,7 +2884,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction954 = CefV8Value::CreateFunction("ViewCertificate", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction955 = CefV8Value::CreateFunction("SelectCertificate", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction956 = CefV8Value::CreateFunction("GetDefaultCertificate", _nativeHandler);
-    CefRefPtr<CefV8Value> _nativeFunction957 = CefV8Value::CreateFunction("OpenFilenameDialog", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction957 = CefV8Value::CreateFunction("_OpenFilenameDialog", _nativeHandler);
 
     CefRefPtr<CefV8Value> _nativeFunction958 = CefV8Value::CreateFunction("SaveQuestion", _nativeHandler);
 
@@ -2641,6 +2916,18 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction979 = CefV8Value::CreateFunction("buildCryptedEnd", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction980 = CefV8Value::CreateFunction("SetCryptDocumentFolder", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction981 = CefV8Value::CreateFunction("PreloadCryptoImage", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction982 = CefV8Value::CreateFunction("ResaveFile", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction983 = CefV8Value::CreateFunction("_DownloadFiles", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction984 = CefV8Value::CreateFunction("RemoveFile", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction985 = CefV8Value::CreateFunction("GetImageFormat", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction986 = CefV8Value::CreateFunction("_SetCryptoMode", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction987 = CefV8Value::CreateFunction("GetEncryptedHeader", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction988 = CefV8Value::CreateFunction("GetCryptoMode", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction989 = CefV8Value::CreateFunction("GetSupportCryptoModes", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction990 = CefV8Value::CreateFunction("IsProtectionSupport", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction991 = CefV8Value::CreateFunction("_GetAdvancedEncryptedData", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction992 = CefV8Value::CreateFunction("_SetAdvancedEncryptedData", _nativeHandler);
+
 
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -2750,7 +3037,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("ViewCertificate", _nativeFunction954, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("SelectCertificate", _nativeFunction955, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("GetDefaultCertificate", _nativeFunction956, V8_PROPERTY_ATTRIBUTE_NONE);
-    objNative->SetValue("OpenFilenameDialog", _nativeFunction957, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("_OpenFilenameDialog", _nativeFunction957, V8_PROPERTY_ATTRIBUTE_NONE);
 
     objNative->SetValue("SaveQuestion", _nativeFunction958, V8_PROPERTY_ATTRIBUTE_NONE);
 
@@ -2782,6 +3069,17 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("buildCryptedEnd", _nativeFunction979, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("SetCryptDocumentFolder", _nativeFunction980, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("PreloadCryptoImage", _nativeFunction981, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("ResaveFile", _nativeFunction982, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("_DownloadFiles", _nativeFunction983, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("RemoveFile", _nativeFunction984, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("GetImageFormat", _nativeFunction985, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("_SetCryptoMode", _nativeFunction986, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("GetEncryptedHeader", _nativeFunction987, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("GetCryptoMode", _nativeFunction988, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("GetSupportCryptoModes", _nativeFunction989, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("IsProtectionSupport", _nativeFunction990, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("_GetAdvancedEncryptedData", _nativeFunction991, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("_SetAdvancedEncryptedData", _nativeFunction992, V8_PROPERTY_ATTRIBUTE_NONE);
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 
@@ -2874,7 +3172,26 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         if (_frame)
         {
             int nParams = message->GetArgumentList()->GetInt(0);
-            std::string sCode = ("window[\"AscDesktopEditor\"][\"SetInitFlags\"](" + std::to_string(nParams) + ");");
+            int nCryptoMode = message->GetArgumentList()->GetInt(1);
+
+            std::string sSystemPath = message->GetArgumentList()->GetString(2);
+            std::string sUserPath = message->GetArgumentList()->GetString(3);
+            int nSizeCount = (int)(message->GetArgumentList()->GetSize()) - 2;
+
+            std::string sObject = "[";
+            for (int i = 0; i < nSizeCount; i++)
+            {
+                std::string sValue = message->GetArgumentList()->GetString(i + 2);
+
+                NSCommon::string_replaceA(sValue, "\"", "\\\"");
+
+                sObject += ("\"" + sValue + "\"");
+                if (i != (nSizeCount - 1))
+                    sObject += ",";
+            }
+            sObject += "]";
+
+            std::string sCode = ("window[\"AscDesktopEditor\"][\"SetInitFlags\"](" + std::to_string(nParams) + ", " + std::to_string(nCryptoMode) + ", " + sObject + ");");
 
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
         }
@@ -3207,11 +3524,18 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
             std::string sParam = std::to_string(message->GetArgumentList()->GetInt(0));
             std::string sCode = "window.asc_initAdvancedOptions(" + sParam;
 
-            if (2 == message->GetArgumentList()->GetSize())
+            if (2 <= message->GetArgumentList()->GetSize())
             {
                 std::string sHash = message->GetArgumentList()->GetString(1).ToString();
                 sCode += ",\"";
                 sCode += sHash;
+                sCode += "\"";
+            }
+            if (3 <= message->GetArgumentList()->GetSize())
+            {
+                std::string sDocInfo = message->GetArgumentList()->GetString(2).ToString();
+                sCode += ",\"";
+                sCode += sDocInfo;
                 sCode += "\"";
             }
 
@@ -3267,7 +3591,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     {
         CefRefPtr<CefFrame> _frame;
 
-        std::string sId = message->GetArgumentList()->GetString(1).ToString();
+        std::string sId = message->GetArgumentList()->GetString(0).ToString();
         if (sId.empty())
             _frame = GetEditorFrame(browser);
         else
@@ -3275,13 +3599,39 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
             int64 nId = (int64)std::stoll(sId);
             _frame = browser->GetFrame(nId);
         }
+        bool bIsMulti = message->GetArgumentList()->GetBool(1);
+
+        std::wstring sParamCallback = L"";
+        if (!bIsMulti)
+        {
+            std::wstring sPath = message->GetArgumentList()->GetString(2).ToWString();
+            NSCommon::string_replace(sPath, L"\\", L"\\\\");
+            sParamCallback = L"\"" + sPath + L"\"";
+        }
+        else
+        {
+            sParamCallback = L"[";
+
+            int nCount = message->GetArgumentList()->GetSize();
+            for (int nIndex = 2; nIndex < nCount; nIndex++)
+            {
+                std::wstring sPath = message->GetArgumentList()->GetString(nIndex).ToWString();
+                NSCommon::string_replace(sPath, L"\\", L"\\\\");
+                sParamCallback += (L"\"" + sPath + L"\"");
+
+                if (nIndex < (nCount - 1))
+                    sParamCallback += L",";
+            }
+
+            sParamCallback += L"]";
+        }
 
         if (_frame)
         {
             std::wstring sPath = message->GetArgumentList()->GetString(0).ToWString();
             NSCommon::string_replace(sPath, L"\\", L"\\\\");
 
-            std::wstring sCode = L"window.OnNativeOpenFilenameDialog(\"" + sPath + L"\");";
+            std::wstring sCode = L"(function() { window.on_native_open_filename_dialog(" + sParamCallback + L"); delete window.on_native_open_filename_dialog; })();";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
         }
         return true;
@@ -3559,20 +3909,25 @@ xhr.send(null);";
                 NSFile::CFileBinary oFile;
                 if (oFile.OpenFile(sFileSrc))
                 {
-                    if (oFile.GetFileSize() > 12)
+                    if (oFile.GetFileSize() > 11)
                     {
-                        BYTE data[13];
-                        memset(data, 0, 13);
+                        BYTE data[11];
+                        memset(data, 0, 11);
                         DWORD dwSize = 0;
-                        oFile.ReadFile(data, 12, dwSize);
+                        oFile.ReadFile(data, 10, dwSize);
                         sTest = std::string((char*)data);
                     }
                 }
                 oFile.CloseFile();
 
-                if (sTest == "image_crypto;")
+                if (sTest == "ENCRYPTED;")
                 {
                     NSFile::CFileBinary::ReadAllTextUtf8A(sFileSrc, sData);
+
+                    // read extension
+                    std::string::size_type nPos = sData.find(';', 10);
+                    if (nPos != std::string::npos)
+                        sData = sData.substr(nPos + 1);
                 }
             }
             else
@@ -3581,14 +3936,74 @@ xhr.send(null);";
             }
 
             std::string sCode = "(function(){\n\
-var _image = window[\"crypto_images_map\"][\"" + sUrlNatural + "\"];\n\
-if (!_image) { return; }\n\
-_image.onload_crypto(\"" + sUrl + "\", \"" + sData + "\");\n\
+var _url = \"" + sUrlNatural + "\";\n\
+var _images = window[\"crypto_images_map\"][_url];\n\
+if (!_images) { return; }\n\
+for (var i = 0; i < _images.length; i++) \n\
+{\n\
+_images[i].onload_crypto(\"" + sUrl + "\", \"" + sData + "\");\n\
+}\n\
+delete window[\"crypto_images_map\"][_url];\n\
 })();";
 
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
             return true;
         }
+    }
+    else if (sMessageName == "on_download_files")
+    {
+        CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
+        if (_frame)
+        {
+            std::string sParam = "{";
+            int nCount = message->GetArgumentList()->GetSize();
+            int nIndex = 0;
+            while (nIndex < nCount)
+            {
+                sParam += ("\"" + message->GetArgumentList()->GetString(nIndex++).ToString() + "\" : \"");
+
+                std::string sFile = message->GetArgumentList()->GetString(nIndex++).ToString();
+                NSCommon::string_replaceA(sFile, "\\", "/");
+
+                sParam += (sFile + "\"");
+
+                if (nIndex < nCount)
+                    sParam += ", ";
+            }
+            sParam += "}";
+
+            _frame->ExecuteJavaScript("(function() { window.on_native_download_files(" + sParam + "); delete window.on_native_download_files; })();", _frame->GetURL(), 0);
+        }
+        return true;
+    }
+    else if (sMessageName == "set_crypto_mode")
+    {
+        int nError = message->GetArgumentList()->GetInt(0);
+        int64 nFrameId = (int64)message->GetArgumentList()->GetInt(1);
+
+        CefRefPtr<CefFrame> _frame = browser->GetFrame(nFrameId);
+        if (_frame)
+            _frame->ExecuteJavaScript("(function() { if (!window.on_set_crypto_mode) return; window.on_set_crypto_mode(" + std::to_string(nError) + "); delete window.on_set_crypto_mode; })();", _frame->GetURL(), 0);
+    }
+    else if (sMessageName == "get_advanced_encrypted_data")
+    {
+        int64 nFrameId = (int64)message->GetArgumentList()->GetInt(0);
+        std::string sRet = message->GetArgumentList()->GetString(1);
+        NSCommon::string_replaceA(sRet, "\\", "\\\\");
+
+        CefRefPtr<CefFrame> _frame = browser->GetFrame(nFrameId);
+        if (_frame)
+              _frame->ExecuteJavaScript("(function() { if (!window.on_get_advanced_encrypted_data) return; window.on_get_advanced_encrypted_data(\"" + sRet + "\"); delete window.on_get_advanced_encrypted_data; })();", _frame->GetURL(), 0);
+    }
+    else if (sMessageName == "set_advanced_encrypted_data")
+    {
+        int64 nFrameId = (int64)message->GetArgumentList()->GetInt(0);
+        std::string sRet = message->GetArgumentList()->GetString(1);
+        NSCommon::string_replaceA(sRet, "\\", "\\\\");
+
+        CefRefPtr<CefFrame> _frame = browser->GetFrame(nFrameId);
+        if (_frame)
+            _frame->ExecuteJavaScript("(function() { if (!window.on_set_advanced_encrypted_data) return; window.on_set_advanced_encrypted_data(\"" + sRet + "\"); delete window.on_set_advanced_encrypted_data; })();", _frame->GetURL(), 0);
     }
 
     if (m_pAdditional.is_init() && m_pAdditional->OnProcessMessageReceived(app, browser, source_process, message))

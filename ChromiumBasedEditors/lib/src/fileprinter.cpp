@@ -32,8 +32,14 @@
 
 #include "./fileprinter.h"
 
+namespace agg
+{
+    const double pi = 3.14159265358979323846;
+}
+
 CPrintData::CPrintData()
 {
+    m_pApplicationFonts = NULL;
     m_pFontManager = NULL;
     m_pCache = NULL;
 
@@ -52,14 +58,17 @@ CPrintData::~CPrintData()
     RELEASEINTERFACE(m_pCache);
 }
 
-void CPrintData::Print_Start()
+void CPrintData::Print_Start(NSFonts::IApplicationFonts* pFonts)
 {
+    if (NULL == m_pApplicationFonts)
+        m_pApplicationFonts = pFonts;
+
     m_pFontManager = m_pApplicationFonts->GenerateFontManager();
-    CFontsCache* pFontsCache = new CFontsCache();
+    NSFonts::IFontsCache* pFontsCache = NSFonts::NSFontCache::Create();
     pFontsCache->SetStreams(m_pApplicationFonts->GetStreams());
     m_pFontManager->SetOwnerCache(pFontsCache);
 
-    m_pCache = new CImageFilesCache(m_pApplicationFonts);
+    m_pCache = NSImages::NSFilesCache::Create(m_pApplicationFonts);
 
     m_nCurrentPage = -1;
 
@@ -220,7 +229,7 @@ public:
 };
 
 
-void CPrintData::DrawOnRenderer(CGraphicsRenderer* pRenderer, int nPageIndex)
+void CPrintData::DrawOnRenderer(NSGraphics::IGraphicsRenderer* pRenderer, int nPageIndex)
 {
     CMetafileToRenderterDesktop oCorrector(pRenderer);
     oCorrector.m_pPrintData = this;
@@ -274,7 +283,8 @@ std::wstring CPrintData::GetImagePath(const std::wstring& sPath)
     }
 
     // 4) может это файл файла?
-    if (0 == sPath.find(L"media/image") || 0 == sPath.find(L"image"))
+    if (0 == sPath.find(L"media/image") || 0 == sPath.find(L"image") ||
+        0 == sPath.find(L"image/display") || 0 == sPath.find(L"display"))
     {
         std::wstring sExt = L"";
         int nPos = sPath.find_last_of(wchar_t('.'));
@@ -284,8 +294,11 @@ std::wstring CPrintData::GetImagePath(const std::wstring& sPath)
         }
 
         std::wstring sPath2 = sPath;
-        if (0 == sPath.find(L"image"))
+        if (0 == sPath.find(L"image") || 0 == sPath.find(L"display"))
+        {
+            nPos += 6;
             sPath2 = L"media/" + sPath;
+        }
         
         std::wstring sUrl = m_sDocumentImagesPath + sPath2;
         std::wstring sUrl2 = L"";
@@ -1028,34 +1041,36 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
     memset(pDataRaster, 0xFF, 4 * nRasterW * nRasterH);
     oFrame.put_Data(pDataRaster);
 
-    CGraphicsRenderer oRenderer;
-    oRenderer.SetFontManager(m_pFontManager);
-    oRenderer.SetImageCache(m_pCache);
+    NSGraphics::IGraphicsRenderer* pRenderer = NSGraphics::Create();
+    pRenderer->SetFontManager(m_pFontManager);
+    pRenderer->SetImageCache(m_pCache);
 
-    oRenderer.CreateFromBgraFrame(&oFrame);
+    pRenderer->CreateFromBgraFrame(&oFrame);
 #ifndef _XCODE
-    oRenderer.SetSwapRGB(false);
+    pRenderer->SetSwapRGB(false);
 #else
-    oRenderer.SetSwapRGB(true);
+    pRenderer->SetSwapRGB(true);
 #endif
 
-    oRenderer.SetTileImageDpi(96.0);
+    pRenderer->SetTileImageDpi(96.0);
 
     if (NULL == m_pNativePrinter)
-        this->DrawOnRenderer(&oRenderer, nPageIndex);
+        this->DrawOnRenderer(pRenderer, nPageIndex);
     else
     {
-        oRenderer.put_Width(fPageWidth);
-        oRenderer.put_Height(fPageHeight);
-        m_pNativePrinter->Draw(&oRenderer, nPageIndex);
+        pRenderer->put_Width(fPageWidth);
+        pRenderer->put_Height(fPageHeight);
+        m_pNativePrinter->Draw(pRenderer, nPageIndex);
     }
+
+    RELEASEINTERFACE(pRenderer);
 
 #if 0
     oFrame.SaveFile(L"D:\\ttttt.png", 4);
 #endif
 
     if (m_pAdditional)
-        m_pAdditional->Check_Print(&oRenderer, m_pFontManager, nRasterW, nRasterH, fPageWidth, fPageHeight);
+        m_pAdditional->Check_Print(pRenderer, m_pFontManager, nRasterW, nRasterH, fPageWidth, fPageHeight);
 
     pContext->BitBlt(oFrame.get_Data(), 0, 0, nRasterW, nRasterH,
                      dLeftPix, dTopPix, dWidthPix, dHeightPix, dAngle);
@@ -1093,14 +1108,16 @@ void CPrintData::TestSaveToRasterFile(std::wstring sFile, int nWidth, int nHeigh
     memset(pDataRaster, 0xFF, 4 * nRasterW * nRasterH);
     oFrame.put_Data(pDataRaster);
 
-    CGraphicsRenderer oRenderer;
-    oRenderer.SetFontManager(m_pFontManager);
-    oRenderer.SetImageCache(m_pCache);
+    NSGraphics::IGraphicsRenderer* pRenderer = NSGraphics::Create();
+    pRenderer->SetFontManager(m_pFontManager);
+    pRenderer->SetImageCache(m_pCache);
 
-    oRenderer.CreateFromBgraFrame(&oFrame);
-    oRenderer.SetSwapRGB(false);
+    pRenderer->CreateFromBgraFrame(&oFrame);
+    pRenderer->SetSwapRGB(false);
 
-    this->DrawOnRenderer(&oRenderer, nPageIndex);
+    this->DrawOnRenderer(pRenderer, nPageIndex);
+
+    RELEASEINTERFACE(pRenderer);
 
     oFrame.SaveFile(sFile, 4);
 }

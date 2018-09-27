@@ -64,6 +64,139 @@
 
 #include "./plugins.h"
 
+#include "../../../../core/DesktopEditor/graphics/BaseThread.h"
+
+class CDownloadFilesAborted : public NSTimers::CTimer
+{
+protected:
+    class CefDownloadItemAborted : public CefDownloadItem
+    {
+    private:
+        std::wstring m_sUrl;
+
+    public:
+        CefDownloadItemAborted(const std::wstring& sUrl) : CefDownloadItem()
+        {
+            m_sUrl = sUrl;
+            this->AddRef();
+        }
+
+    public:
+        virtual bool IsValid() { return false; }
+        virtual bool IsInProgress() { return false; }
+        virtual bool IsComplete() { return false; }
+        virtual bool IsCanceled() { return true; }
+        virtual int64 GetCurrentSpeed() { return 0; }
+        virtual int GetPercentComplete() { return 0; }
+        virtual int64 GetTotalBytes() { return 0; }
+        virtual int64 GetReceivedBytes() { return 0; }
+        virtual CefTime GetStartTime() { return CefTime(); }
+        virtual CefTime GetEndTime() { return CefTime(); }
+        virtual CefString GetFullPath() { return ""; }
+        virtual uint32 GetId() { return 0; }
+        virtual CefString GetURL() { return m_sUrl; }
+        virtual CefString GetOriginalUrl() { return m_sUrl; }
+        virtual CefString GetSuggestedFileName() { return ""; }
+        virtual CefString GetContentDisposition() { return ""; }
+        virtual CefString GetMimeType() { return "download_aborted_timer"; }
+
+        IMPLEMENT_REFCOUNTING(CefDownloadItemAborted)
+    };
+
+public:
+    CDownloadFilesAborted() : NSTimers::CTimer()
+    {
+        m_oCS.InitializeCriticalSection();
+        m_bIsFromTimer = false;
+        m_dwIntervalCheck = 2000;
+        m_bIsSkipNextIteration = false;
+        SetInterval(m_dwIntervalCheck);
+    }
+    virtual ~CDownloadFilesAborted()
+    {
+        m_oCS.DeleteCriticalSection();
+    }
+
+public:
+    NSCriticalSection::CRITICAL_SECTION m_oCS;
+    CefDownloadHandler* m_pHandler;
+
+    bool m_bIsFromTimer;
+    DWORD m_dwIntervalCheck;
+    bool m_bIsSkipNextIteration;
+
+    std::map<std::wstring, DWORD> m_mapUrls;
+
+public:
+    void StartDownload(const std::wstring& sUrl)
+    {
+        CTemporaryCS oCS(&m_oCS);
+        m_mapUrls.insert(std::pair<std::wstring, DWORD>(sUrl, NSTimers::GetTickCount()));
+        if (!IsRunned())
+        {
+            Start(0);
+            return;
+        }
+        else
+        {
+            m_bIsSkipNextIteration = true;
+        }
+    }
+    void EndDownload(const std::wstring& sUrl)
+    {
+        if (m_bIsFromTimer)
+            return;
+
+        CTemporaryCS oCS(&m_oCS);
+
+        std::map<std::wstring, DWORD>::iterator find = m_mapUrls.find(sUrl);
+        if (find != m_mapUrls.end())
+            m_mapUrls.erase(find);
+
+        if (m_mapUrls.empty() && IsRunned())
+            Stop();
+    }
+
+    virtual void OnTimer()
+    {
+        if (!IsRunned())
+            return;
+
+        CTemporaryCS oCS(&m_oCS);
+
+        if (m_bIsSkipNextIteration)
+        {
+            m_bIsSkipNextIteration = false;
+            return;
+        }
+
+        std::vector<std::wstring> arRemoved;
+        for (std::map<std::wstring, DWORD>::iterator iter = m_mapUrls.begin(); iter != m_mapUrls.end(); iter++)
+        {
+            if (NSTimers::GetTickCount() > (iter->second + m_dwIntervalCheck))
+                arRemoved.push_back(iter->first);
+        }
+
+        for (std::vector<std::wstring>::iterator iter = arRemoved.begin(); iter != arRemoved.end(); iter++)
+        {
+            m_mapUrls.erase(*iter);
+            if (m_pHandler)
+            {
+                m_bIsFromTimer = true;
+                CefDownloadItemAborted* item = new CefDownloadItemAborted(*iter);
+                m_pHandler->OnDownloadUpdated(NULL, item, NULL);
+                item->Release();
+                m_bIsFromTimer = false;
+            }
+        }
+
+        if (m_mapUrls.empty())
+        {
+            StopNoJoin();
+        }
+    }
+};
+
 class CAscNativePrintDocument : public IAscNativePrintDocument
 {
 protected:
@@ -92,6 +225,7 @@ public:
         switch (nFileType)
         {
         case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF:
+        case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA:
         {
             m_pReader = new PdfReader::CPdfReader(m_pApplicationFonts);
             break;
@@ -212,7 +346,7 @@ public:
 };
 
 class CAscClientHandler;
-class CCefView_Private : public NSEditorApi::IMenuEventDataBase, public IASCFileConverterEvents
+class CCefView_Private : public NSEditorApi::IMenuEventDataBase, public IASCFileConverterEvents, public CTextDocxConverterCallback
 {
 public:
     CefRefPtr<CAscClientHandler>        m_handler;
@@ -237,6 +371,8 @@ public:
     CAscLocalFileInfoCS m_oLocalInfo;
     CASCFileConverterToEditor m_oConverterToEditor;
     CASCFileConverterFromEditor m_oConverterFromEditor;
+
+    CTextDocxConverter m_oTxtToDocx;
 
     int m_nLocalFileOpenError;
 
@@ -284,6 +420,9 @@ public:
     bool m_bIsOnlyPassSupport;
     std::map<std::wstring, std::wstring> m_arCryptoImages;
 
+    std::map<std::wstring, std::wstring> m_arDownloadedFiles;
+    std::map<std::wstring, std::wstring> m_arDownloadedFilesComplete;
+
     bool m_bIsCrashed;
 
     bool m_bIsReceiveOnce_OnDocumentModified;
@@ -291,6 +430,11 @@ public:
 #if defined(_LINUX) && !defined(_MAC)
     WindowHandleId m_lNaturalParent;
 #endif
+
+    CDownloadFilesAborted m_oDownloaderAbortChecker;
+
+    bool m_bIsExternalCloud;
+    CExternalCloudRegister m_oExternalCloud;
 
 public:
     class CSystemMessage
@@ -377,6 +521,8 @@ public:
         m_bIsReceiveOnce_OnDocumentModified = false;
 
         m_bIsCloudCryptFile = false;
+
+        m_bIsExternalCloud = false;
     }
 
     void Destroy()
@@ -386,6 +532,7 @@ public:
 
         m_oConverterToEditor.Stop();
         m_oConverterFromEditor.Stop();
+        m_oTxtToDocx.Stop();
 
         // смотрим, есть ли несохраненные данные
         m_oLocalInfo.m_oCS.Enter();
@@ -505,6 +652,9 @@ public:
         }
         else
         {
+            if (m_arSystemMessages.empty())
+                return; // error!!!
+
             CSystemMessage messageSrc = m_arSystemMessages[0];
             m_arSystemMessages.erase(m_arSystemMessages.begin());
 
@@ -542,6 +692,8 @@ public:
     void LocalFile_SaveStart(std::wstring sPath = L"", int nType = -1)
     {
         m_oLocalInfo.SetupOptions(m_oConverterFromEditor.m_oInfo);
+        m_oLocalInfo.m_oInfo.m_sDocumentInfo = L"";
+
         m_oConverterFromEditor.m_nTypeEditorFormat = m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat;
 
         if (!sPath.empty())
@@ -570,7 +722,7 @@ public:
 
     void LocalFile_GetSupportSaveFormats(std::vector<int>& arFormats)
     {
-        bool bEncryption = !m_pCefView->GetAppManager()->m_pInternal->m_sEncriptionGuid.empty();
+        bool bEncryption = (m_pCefView->GetAppManager()->m_pInternal->m_nCurrentCryptoMode != 0) ? true : false;
 
         if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_DOCUMENT)
         {
@@ -578,11 +730,13 @@ public:
 
             if (!bEncryption)
             {
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOTX);
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_ODT);
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_RTF);
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_TXT);
                 //arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_HTML);
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF);
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA);
             }
         }
         else if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
@@ -591,23 +745,29 @@ public:
 
             if (!bEncryption)
             {
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLTX);
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_ODS);
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_CSV);
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF);
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA);
             }
         }
         else if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_PRESENTATION)
         {
+            arFormats.push_back(AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX);
+
             if (!bEncryption)
             {
-                arFormats.push_back(AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX);
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_PRESENTATION_POTX);
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_PRESENTATION_ODP);
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF);
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA);
             }
         }
         else if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
         {
             arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF);
+            arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA);
         }
     }
 
@@ -634,6 +794,14 @@ public:
             return false;
 
         return true;
+    }
+
+    virtual void CTextDocxConverterCallback_OnConvert(std::wstring sData)
+    {
+        CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create(m_oTxtToDocx.m_bIsToDocx ? "set_advanced_encrypted_data" : "get_advanced_encrypted_data");
+        message->GetArgumentList()->SetInt(0, m_oTxtToDocx.m_nFrameId);
+        message->GetArgumentList()->SetString(1, m_oTxtToDocx.m_sData);
+        GetBrowser()->SendProcessMessage(PID_RENDERER, message);
     }
 
     void SendProcessMessage(CefProcessId target_process, CefRefPtr<CefProcessMessage> message);
@@ -851,7 +1019,7 @@ void CCefFileDownloader::DownloadFile(CAscApplicationManager* pManager, const st
     CefBrowserHost::CreateBrowser(info, m_pInternal, "ascdesktop://emptydownload.html", _settings, NULL);
 }
 
-class CAscClientHandler : public client::ClientHandler, public CCookieFoundCallback, public client::ClientHandler::Delegate
+class CAscClientHandler : public client::ClientHandler, public CCookieFoundCallback, public client::ClientHandler::Delegate, public CefDialogHandler
 {
 public:
     CCefView* m_pParent;
@@ -866,6 +1034,8 @@ public:
     bool m_bIsCrashed;
 
     CefRefPtr<CefJSDialogHandler> m_pCefJSDialogHandler;
+
+    CefRefPtr<CefFileDialogCallback> m_pFileDialogCallback;
 
     enum client_menu_ids
     {
@@ -933,6 +1103,7 @@ public:
         browser_id_ = 0;
 
         m_pCefJSDialogHandler = new CAscCefJSDialogHandler();
+        m_pFileDialogCallback = NULL;
     }
 
     virtual ~CAscClientHandler()
@@ -949,13 +1120,61 @@ public:
         return browser_id_;
     }
 
+    CefRefPtr<CefDialogHandler> GetDialogHandler() OVERRIDE
+    {
+        return this;
+    }
+
+    virtual bool OnFileDialog(CefRefPtr<CefBrowser> browser,
+                              CefDialogHandler::FileDialogMode mode,
+                              const CefString& title,
+                              const CefString& default_file_path,
+                              const std::vector<CefString>& accept_filters,
+                              int selected_accept_filter,
+                              CefRefPtr<CefFileDialogCallback> callback)
+    {
+#ifndef _MAC
+
+        // BUG with crash renderer process after upload files to cloud
+
+        NSEditorApi::CAscCefMenuEventListener* pListener = NULL;
+        if (NULL != m_pParent && NULL != m_pParent->GetAppManager())
+            pListener = m_pParent->GetAppManager()->GetEventListener();
+
+        int nMode = (mode & 0xFF);
+        if ((nMode == 0 || nMode == 1) && accept_filters.empty() && pListener)
+        {
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_OPENFILENAME_DIALOG);
+            NSEditorApi::CAscLocalOpenFileDialog* pData = new NSEditorApi::CAscLocalOpenFileDialog();
+            pData->put_Id(m_pParent->GetId());
+            pData->put_IsMultiselect((nMode == 1) ? true : false);
+            pData->put_Filter(L"any");
+            pEvent->m_pData = pData;
+
+            m_pFileDialogCallback = callback;
+
+            pListener->OnEvent(pEvent);
+            return true;
+        }
+
+#endif
+
+        return false;
+    }
+
     bool CheckPopup(std::wstring sUrl, bool bIsBeforeBrowse = false, bool bIsBackground = false, bool bIsNotOpenLinks = false)
     {
         NSEditorApi::CAscCefMenuEventListener* pListener = NULL;
         if (NULL != m_pParent && NULL != m_pParent->GetAppManager())
             pListener = m_pParent->GetAppManager()->GetEventListener();
 
-        bool bIsEditor      = (sUrl.find(L"files/doceditor.aspx?fileid") == std::wstring::npos) ? false : true;
+        bool bIsEditor = (sUrl.find(L"files/doceditor.aspx?fileid") == std::wstring::npos) ? false : true;
+#if 1
+        if (m_pParent->m_pInternal->m_bIsExternalCloud && !bIsEditor)
+        {
+            bIsEditor = (sUrl.find(m_pParent->m_pInternal->m_oExternalCloud.test_editor) == std::wstring::npos) ? false : true;
+        }
+#endif
 
         bool bIsDownload    = false;
         if (sUrl.find(L"filehandler.ashx?action=download") != std::wstring::npos)
@@ -986,7 +1205,7 @@ public:
         {
             if (NULL != m_pParent && NULL != pListener && NULL == m_pParent->m_pInternal->m_before_callback)
             {
-                GetBrowser()->GetHost()->StartDownload(sUrl);
+                m_pParent->StartDownload(sUrl);
                 
 #if 0
                 NSEditorApi::CAscDownloadFileInfo* pData = new NSEditorApi::CAscDownloadFileInfo();
@@ -1106,6 +1325,26 @@ public:
     {
         std::wstring sUrl = request->GetURL().ToWString();
 
+#if 0
+        std::string sUrlA = "";
+        int nLen = (int)sUrl.length();
+        for (int i = 0; i < nLen; ++i)
+        {
+            char p = (char)sUrl.c_str()[i];
+            if (p == '%')
+                p = '!';
+            if (p >= 32 && p <= 122)
+                sUrlA += p;
+            else
+                sUrlA += ' ';
+        }
+
+        FILE* f = fopen("D:\\111333.txt", "a+");
+        fprintf(f, sUrlA.c_str());
+        fprintf(f, "\n");
+        fclose(f);
+#endif
+
         if (m_pParent->m_pInternal->m_bIsSSO)
         {
             if (m_pParent->m_pInternal->m_bIsFirstLoadSSO)
@@ -1163,6 +1402,35 @@ public:
                 }
 
                 m_pParent->load(sUrlPortal);
+                return true;
+            }
+
+            std::wstring sTestSUP = m_pParent->m_pInternal->m_strSSOFirstDomain + L"/auth.aspx?sup=";
+            if (std::wstring::npos != sUrl.find(sTestSUP) && std::wstring::npos == sUrl.find(L"desktop=true"))
+            {
+                if (sUrl.rfind('&') == (sUrl.length() - 1))
+                    sUrl += L"desktop=true";
+                else
+                    sUrl += L"&desktop=true";
+
+                sUrl = L"sso:" + sUrl;
+
+                m_pParent->load(sUrl);
+                return true;
+            }
+
+            std::wstring sTestSUP_Simple = m_pParent->m_pInternal->m_strSSOFirstDomain + L"/";
+            std::wstring sTestUrl_Simple = sUrl;
+            std::wstring::size_type nFindSS = sTestUrl_Simple.find(L"//");
+            if (std::wstring::npos != nFindSS)
+                sTestUrl_Simple = sTestUrl_Simple.substr(nFindSS + 2);
+
+            if (0 == sTestSUP_Simple.find(sTestUrl_Simple) && std::wstring::npos == sUrl.find(L"desktop=true"))
+            {
+                if (sUrl.rfind(L"/") == (sUrl.length() - 1))
+                    sUrl += L"/";
+
+                m_pParent->load(sUrl + L"products/files/?desktop=true");
                 return true;
             }
         }
@@ -1290,16 +1558,31 @@ public:
             bool bIsOnlyPassSupport = m_pParent->GetAppManager()->m_oSettings.pass_support;
             if (bIsOnlyPassSupport)
             {
-                if (m_pParent->GetAppManager()->m_pInternal->m_sEncriptionGuid.empty())
+                if (0 == m_pParent->GetAppManager()->m_pInternal->m_mapCrypto.size())
                     bIsOnlyPassSupport = false;
             }
+            if (m_pParent->m_pInternal->m_bIsExternalCloud)
+                bIsOnlyPassSupport = false;
 
             int nFlags = 0;
             if (bIsOnlyPassSupport)
                 nFlags |= 0x01;
 
+            if (m_pParent->GetAppManager()->m_oSettings.protect_support)
+                nFlags |= 0x02;
+
             m_pParent->m_pInternal->m_bIsOnlyPassSupport = bIsOnlyPassSupport;
             message->GetArgumentList()->SetInt(0, nFlags);
+
+            int nCryptoMode = m_pParent->GetAppManager()->m_pInternal->m_nCurrentCryptoMode;
+            if (m_pParent->m_pInternal->m_bIsExternalCloud)
+                nCryptoMode = 0;
+
+            message->GetArgumentList()->SetInt(1, nCryptoMode);
+            message->GetArgumentList()->SetString(2, m_pParent->GetAppManager()->m_oSettings.system_plugins_path);
+            message->GetArgumentList()->SetString(3, m_pParent->GetAppManager()->m_oSettings.user_plugins_path);
+            message->GetArgumentList()->SetString(4, m_pParent->GetAppManager()->m_oSettings.cookie_path);
+
             browser->SendProcessMessage(PID_RENDERER, message);
             return true;
         }
@@ -1752,6 +2035,7 @@ public:
                 bool bIsNeedSave = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_bIsSaved ? false : true;
                 std::string sParams = message->GetArgumentList()->GetString(0).ToString();
                 std::wstring sPassword = message->GetArgumentList()->GetString(1).ToWString();
+                std::wstring sDocInfo = message->GetArgumentList()->GetString(2).ToWString();
 
                 bool bIsSaveAs = (sParams.find("saveas=true") != std::string::npos) ? true : false;
                 bool bIsNeedSaveDialog = bIsNeedSave || bIsSaveAs || (!m_pParent->m_pInternal->LocalFile_IsSupportSaveCurrentFormat());
@@ -1765,6 +2049,7 @@ public:
 
                 m_pParent->m_pInternal->m_oLocalInfo.m_bIsRetina = (sParams.find("retina=true") != std::string::npos) ? true : false;
                 m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sPassword = sPassword;
+                m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sDocumentInfo = sDocInfo;
 
                 if (bIsNeedSaveDialog)
                 {
@@ -2066,6 +2351,10 @@ public:
             NSEditorApi::CAscLocalOpenFileDialog* pData = new NSEditorApi::CAscLocalOpenFileDialog();
             pData->put_Id(m_pParent->GetId());
             pData->put_Filter(message->GetArgumentList()->GetString(0).ToWString());
+
+            if (message->GetArgumentList()->GetSize() > 2)
+                pData->put_IsMultiselect(message->GetArgumentList()->GetBool(2));
+
             pEvent->m_pData = pData;
             m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
             m_pParent->m_pInternal->m_sIFrameIDMethod = message->GetArgumentList()->GetString(1);
@@ -2224,7 +2513,7 @@ public:
             if ((0 != sHashFileUrl.find(L"www")) && (0 != sHashFileUrl.find(L"http")) && (0 != sHashFileUrl.find(L"ftp")))
                 sHashFileUrl = sBaseUrl + sHashFileUrl;
 
-            m_pParent->m_pInternal->m_handler->GetBrowser()->GetHost()->StartDownload(sHashFileUrl);
+            m_pParent->StartDownload(sHashFileUrl);
             return true;
         }
         else if (message_name == "send_system_message")
@@ -2279,6 +2568,7 @@ public:
         else if (message_name == "build_crypted")
         {
             std::wstring sPass = message->GetArgumentList()->GetString(0).ToWString();
+            std::wstring sDocInfo = message->GetArgumentList()->GetString(1).ToWString();
 
             int nType = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX;
             if  (2 == m_pParent->m_pInternal->m_nEditorType)
@@ -2291,6 +2581,7 @@ public:
             m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat = nType;
             m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_sFileSrc = m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_sRecoveryDir + L"/EditorCrypted.bin";
             m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_sPassword = sPass;
+            m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_sDocumentInfo = sDocInfo;
             m_pParent->m_pInternal->m_oConverterFromEditor.Start(0);
             return true;
         }
@@ -2328,8 +2619,11 @@ public:
                 }
                 else
                 {
-                    m_pParent->m_pInternal->m_arCryptoImages.insert(std::pair<std::wstring, std::wstring>(sUrl1, sNum));
-                    m_pParent->m_pInternal->GetBrowser()->GetHost()->StartDownload(sUrl1);
+                    if (m_pParent->m_pInternal->m_arCryptoImages.find(sUrl1) == m_pParent->m_pInternal->m_arCryptoImages.end())
+                    {
+                        m_pParent->m_pInternal->m_arCryptoImages.insert(std::pair<std::wstring, std::wstring>(sUrl1, sNum));
+                        m_pParent->StartDownload(sUrl1);
+                    }
                 }
             }
             else
@@ -2339,6 +2633,90 @@ public:
                 message->GetArgumentList()->SetString(1, sUrl1);
                 browser->SendProcessMessage(PID_RENDERER, message);
             }
+
+            return true;
+        }
+        else if (message_name == "download_files")
+        {
+            int nCount = message->GetArgumentList()->GetSize();
+
+            if (nCount == 0 || ((nCount & 0x01) == 0x01))
+                return true;
+
+            int nIndex = 0;
+            while (nIndex < nCount)
+            {
+                std::wstring sUrl  = message->GetArgumentList()->GetString(nIndex++);
+                std::wstring sFile = message->GetArgumentList()->GetString(nIndex++);
+
+#ifdef WIN32
+                NSCommon::string_replace(sFile, L"/", L"\\");
+#endif
+
+                m_pParent->m_pInternal->m_arDownloadedFiles.insert(std::pair<std::wstring, std::wstring>(sUrl, sFile));
+            }
+
+            for (std::map<std::wstring, std::wstring>::iterator iter = m_pParent->m_pInternal->m_arDownloadedFiles.begin();
+                 iter != m_pParent->m_pInternal->m_arDownloadedFiles.end(); iter++)
+            {
+                m_pParent->StartDownload(iter->first);
+            }
+
+            return true;
+        }
+        else if (message_name == "set_crypto_mode")
+        {
+            std::string sPass = message->GetArgumentList()->GetString(0).ToString();
+            int nMode = message->GetArgumentList()->GetInt(1);
+            bool bIsCallback = message->GetArgumentList()->GetBool(2);
+            int nFrameId = message->GetArgumentList()->GetInt(3);
+
+            if (!bIsCallback)
+            {
+                m_pParent->GetAppManager()->SetCryptoMode(sPass, nMode);
+            }
+            else
+            {
+                std::map<int, CCefView*>& mapViews = m_pParent->GetAppManager()->m_pInternal->m_mapViews;
+                bool bIsEditorPresent = false;
+                for (std::map<int, CCefView*>::iterator iter = mapViews.begin(); iter != mapViews.end(); iter++)
+                {
+                    CCefView* tmp = iter->second;
+                    if (tmp->GetType() == cvwtEditor)
+                    {
+                        bIsEditorPresent = true;
+                        break;
+                    }
+                }
+
+                if (!bIsEditorPresent)
+                    m_pParent->GetAppManager()->SetCryptoMode(sPass, nMode);
+
+                CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("set_crypto_mode");
+                message->GetArgumentList()->SetInt(0, bIsEditorPresent ? 1 : 0);
+                message->GetArgumentList()->SetInt(1, nFrameId);
+                browser->SendProcessMessage(PID_RENDERER, message);
+            }
+
+            return true;
+        }
+        else if (message_name == "get_advanced_encrypted_data")
+        {
+            m_pParent->m_pInternal->m_oTxtToDocx.m_nFrameId = message->GetArgumentList()->GetInt(0);
+            m_pParent->m_pInternal->m_oTxtToDocx.m_sPassword = message->GetArgumentList()->GetString(1);
+            m_pParent->m_pInternal->m_oTxtToDocx.ToData();
+
+            return true;
+        }
+        else if (message_name == "set_advanced_encrypted_data")
+        {
+            std::wstring sPassword = message->GetArgumentList()->GetString(0).ToWString();
+            std::wstring sData = message->GetArgumentList()->GetString(1).ToWString();
+
+            m_pParent->m_pInternal->m_oTxtToDocx.m_nFrameId = message->GetArgumentList()->GetInt(0);
+            m_pParent->m_pInternal->m_oTxtToDocx.m_sPassword = message->GetArgumentList()->GetString(1);
+            m_pParent->m_pInternal->m_oTxtToDocx.m_sData = message->GetArgumentList()->GetString(2);
+            m_pParent->m_pInternal->m_oTxtToDocx.ToDocx();
 
             return true;
         }
@@ -2435,39 +2813,69 @@ public:
                            CefRefPtr<CefFrame> frame,
                            int httpStatusCode)
     {
+        if (frame && !m_pParent->m_pInternal->m_bIsExternalCloud)
+            m_pParent->GetAppManager()->m_pInternal->SendCryptoData(frame);
+
         if (frame->IsMain())
         {
             std::wstring sUrl = m_pParent->GetUrl();
             if ((0 != sUrl.find(L"file:///")) || !m_pParent->m_pInternal->m_bIsOnlyPassSupport || m_pParent->GetType() == cvwtEditor)
                 return;
 
-            std::string sEncryptionG = m_pParent->m_pInternal->m_pManager->m_pInternal->m_sEncriptionGuid;
-            if (!sEncryptionG.empty())
-                return;
+            std::vector<CExternalPluginInfo>& arPluginsExternal = m_pParent->m_pInternal->m_pManager->m_pInternal->m_arExternalPlugins;
+            std::wstring sSystemPluginsPath = m_pParent->GetAppManager()->m_oSettings.system_plugins_path;
 
-            std::wstring sGuid = UTF8_TO_U(sEncryptionG);
-            if (0 == sGuid.find(L"asc."))
-                sGuid = sGuid.substr(4);
+            if (arPluginsExternal.size() != 0 && NULL != m_pParent->GetAppManager()->GetEventListener())
+            {
+                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_SYSTEM_EXTERNAL_PLUGINS);
+                NSEditorApi::CAscSystemExternalPlugins* pEventData = new NSEditorApi::CAscSystemExternalPlugins();
+                pEvent->m_pData = pEventData;
 
-            std::wstring sSrc = m_pParent->GetAppManager()->m_oSettings.system_plugins_path + L"/" + sGuid + L"/index.html";
-            NSCommon::url_correct(sSrc);
+                for (std::vector<CExternalPluginInfo>::iterator iterExt = arPluginsExternal.begin(); iterExt != arPluginsExternal.end(); iterExt++)
+                {
+                    std::string sGuidA = iterExt->sGuid;
+                    if (0 == sGuidA.find("asc."))
+                        sGuidA = sGuidA.substr(4);
+                    std::wstring sGuid = UTF8_TO_U(sGuidA);
 
-            std::wstring sCode = L"(function() {\n\
-var ifr = document.createElement(\"iframe\");\n\
-ifr.name = \"system_asc." + sGuid + L"\";\n\
-ifr.id = \"system_asc." + sGuid + L"\";\n\
-ifr.src = \"" + sSrc + L"\";\n\
-ifr.style.position = \"absolute\";\n\
-ifr.style.top      = '-100px';\n\
-ifr.style.left     = '0px';\n\
-ifr.style.width    = '100px';\n\
-ifr.style.height   = '100px';\n\
-ifr.style.overflow = 'hidden';\n\
-ifr.style.zIndex   = -1000;\n\
-document.body.appendChild(ifr);\n\
-})();";
+                    std::wstring sSrc = sSystemPluginsPath + L"/" + sGuid + L"/index.html";
+                    NSCommon::url_correct(sSrc);
 
-            frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
+    #if 0
+                    std::wstring sCode = L"(function() {\n\
+    window.testTimer = setInterval(function(){\n\
+    var abouts = document.getElementsByClassName(\"about\");\n\
+    if (!abouts || !abouts[0])\n\
+        return;\n\
+    var about = abouts[0];\n\
+    clearInterval(window.testTimer);\n\
+    var ifr = document.createElement(\"iframe\");\n\
+    ifr.name = \"system_asc." + sGuid + L"\";\n\
+    ifr.id = \"system_asc." + sGuid + L"\";\n\
+    ifr.src = \"" + sSrc + L"\";\n\
+    ifr.style.position = \"relative\";\n\
+    ifr.style.top      = '0px';\n\
+    ifr.style.left     = '0px';\n\
+    ifr.style.width    = '100%';\n\
+    ifr.style.height   = '100%';\n\
+    ifr.style.overflow = 'hidden';\n\
+    ifr.style.zIndex   = 100;\n\
+    ifr.style.margin   = '0px';\n\
+    ifr.style.padding  = '0px';\n\
+    about.innerHTML = '';\n\
+    about.appendChild(ifr);\n\
+    }, 100);\n\
+    })();";
+
+                    frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
+    #endif
+
+                    std::wstring sNameG = UTF8_TO_U((iterExt->sName));
+                    pEventData->addItem(sNameG, L"system_asc." + sGuid, sSrc);
+                }
+
+                m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+            }
         }
     }
 
@@ -2814,30 +3222,23 @@ require.load = function (context, moduleName, url) {\n\
         }
 
 #if 0
-
         // TEST
-        std::wstring sPathVersion = m_pParent->GetAppManager()->m_oSettings.app_data_path + L"/webdata/cloud/3.0b.1439/word/";
         if (true)
         {
-            int nPos = url.find(L"sdk-all.js");
+            std::wstring::size_type pos = url.find(L"/sdk-all.js");
+            if (std::wstring::npos == pos)
+                pos = url.find(L"/sdk-all-min.js");
 
-            if (nPos != std::wstring::npos)
+            if (std::wstring::npos != pos)
             {
-                std::wstring urlFind = sPathVersion + L"sdk-all.js";
-                return GetLocalFileRequest(urlFind);
+                std::wstring sPathVersion = m_pParent->GetAppManager()->m_oSettings.app_data_path + L"/webdata/cloud/5.1.5";
+                std::wstring::size_type posEnd = url.rfind('/', pos - 1);
+                if (std::wstring::npos != posEnd)
+                {
+                    return GetLocalFileRequest(sPathVersion + url.substr(posEnd));
+                }
             }
         }
-        if (true)
-        {
-            int nPos = url.find(L"app.js");
-
-            if (nPos != std::wstring::npos)
-            {
-                std::wstring urlFind = sPathVersion + L"app.js";
-                return GetLocalFileRequest(urlFind);
-            }
-        }
-
 #endif
 
         if (false)
@@ -2980,13 +3381,15 @@ require.load = function (context, moduleName, url) {\n\
     {
         CEF_REQUIRE_UI_THREAD();
 
+        std::wstring s1 = download_item->GetURL().ToWString();
+        m_pParent->m_pInternal->m_oDownloaderAbortChecker.EndDownload(s1);
+
         if (NULL != m_pParent->m_pInternal->m_pDownloadViewCallback)
         {
             callback->Continue(m_pParent->m_pInternal->m_pDownloadViewCallback->m_pInternal->GetViewDownloadPath(), false);
             return;
-        }
-        
-        std::wstring s1 = download_item->GetURL().ToWString();
+        }               
+
         std::wstring s2 = m_pParent->GetAppManager()->m_pInternal->GetPrivateDownloadUrl();
         
         if (s1 == s2)
@@ -3004,6 +3407,13 @@ require.load = function (context, moduleName, url) {\n\
 #endif
 
             callback->Continue(sRetTemp, false);
+            return;
+        }
+
+        std::map<std::wstring, std::wstring>::iterator findDownloadFile = m_pParent->m_pInternal->m_arDownloadedFiles.find(s1);
+        if (findDownloadFile != m_pParent->m_pInternal->m_arDownloadedFiles.end())
+        {
+            callback->Continue(findDownloadFile->second, false);
             return;
         }
         
@@ -3029,6 +3439,9 @@ require.load = function (context, moduleName, url) {\n\
         if (NULL == m_pParent)
             return;
 
+        std::wstring sUrl = download_item->GetURL().ToWString();
+        m_pParent->m_pInternal->m_oDownloaderAbortChecker.EndDownload(sUrl);
+
         if (NULL != m_pParent->m_pInternal->m_pDownloadViewCallback)
         {
             if (download_item->IsComplete())
@@ -3047,7 +3460,6 @@ require.load = function (context, moduleName, url) {\n\
             return;
         }
         
-        std::wstring sUrl = download_item->GetURL().ToWString();
         std::wstring sPath = download_item->GetFullPath().ToWString();
 
         if (!m_pParent->m_pInternal->m_arCryptoImages.empty())
@@ -3055,15 +3467,54 @@ require.load = function (context, moduleName, url) {\n\
             std::map<std::wstring, std::wstring>::iterator findCryptoImage = m_pParent->m_pInternal->m_arCryptoImages.find(sUrl);
             if (findCryptoImage != m_pParent->m_pInternal->m_arCryptoImages.end())
             {
-                if (download_item->IsComplete())
+                if (download_item->IsComplete() || download_item->IsCanceled())
                 {
                     CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_preload_crypto_image");
                     message->GetArgumentList()->SetInt(0, 0);
                     message->GetArgumentList()->SetString(1, findCryptoImage->second);
                     message->GetArgumentList()->SetString(2, findCryptoImage->first);
+
+                    if (!browser)
+                        browser = m_pParent->m_pInternal->GetBrowser();
                     browser->SendProcessMessage(PID_RENDERER, message);
 
                     m_pParent->m_pInternal->m_arCryptoImages.erase(findCryptoImage);
+                }
+                return;
+            }
+        }
+
+        if (!m_pParent->m_pInternal->m_arDownloadedFiles.empty())
+        {
+            std::map<std::wstring, std::wstring>::iterator findDownloadFile = m_pParent->m_pInternal->m_arDownloadedFiles.find(sUrl);
+            if (findDownloadFile != m_pParent->m_pInternal->m_arDownloadedFiles.end())
+            {
+                if (download_item->IsComplete() || download_item->IsCanceled())
+                {
+                    m_pParent->m_pInternal->m_arDownloadedFilesComplete.insert(
+                                std::pair<std::wstring, std::wstring>(findDownloadFile->first, findDownloadFile->second));
+
+                    m_pParent->m_pInternal->m_arDownloadedFiles.erase(findDownloadFile);
+
+                    if (m_pParent->m_pInternal->m_arDownloadedFiles.empty())
+                    {
+                        CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_download_files");
+
+                        int nIndex = 0;
+                        for (std::map<std::wstring, std::wstring>::iterator iter = m_pParent->m_pInternal->m_arDownloadedFilesComplete.begin();
+                             iter != m_pParent->m_pInternal->m_arDownloadedFilesComplete.end(); iter++)
+                        {
+                            message->GetArgumentList()->SetString(nIndex++, iter->first);
+                            message->GetArgumentList()->SetString(nIndex++, iter->second);
+                        }
+
+                        if (!browser)
+                            browser = m_pParent->m_pInternal->GetBrowser();
+                        browser->SendProcessMessage(PID_RENDERER, message);
+
+                        m_pParent->m_pInternal->m_arDownloadedFilesComplete.clear();
+                        m_pParent->m_pInternal->m_arDownloadedFiles.clear();
+                    }
                 }
                 return;
             }
@@ -3440,6 +3891,12 @@ void CCefView_Private::LocalFile_IncrementCounter()
                     delete pCert;
 
                     message->GetArgumentList()->SetString(1, sHash);
+
+                    std::wstring sDocInfo;
+                    COfficeFileFormatChecker oChecker;
+                    bool bIsStorage = oChecker.isMS_OFFCRYPTOFormatFile(m_oLocalInfo.m_oInfo.m_sFileSrc, sDocInfo);
+                    if (bIsStorage && !sDocInfo.empty())
+                        message->GetArgumentList()->SetString(2, sDocInfo);
                 }
 
                 browser->SendProcessMessage(PID_RENDERER, message);
@@ -3569,8 +4026,22 @@ CCefView::~CCefView()
     RELEASEOBJECT(m_pInternal);
 }
 
-void CCefView::load(const std::wstring& urlInput)
+void CCefView::load(const std::wstring& urlInputSrc)
 {
+    std::wstring urlInput = urlInputSrc;
+    if (true)
+    {
+        m_pInternal->m_bIsExternalCloud = GetAppManager()->m_pInternal->TestExternal(urlInput, m_pInternal->m_oExternalCloud);
+
+        if (m_pInternal->m_bIsExternalCloud && GetType() == cvwtSimple)
+        {
+            NSCommon::string_replace(urlInput, L"/products/files/", L"/");
+        }
+    }
+
+    m_pInternal->m_oTxtToDocx.m_pManager = this->GetAppManager();
+    m_pInternal->m_oTxtToDocx.m_pCallback = m_pInternal;
+
     m_pInternal->m_sOriginalUrl = urlInput;
 
     // check openaslocal
@@ -3678,6 +4149,7 @@ void CCefView::load(const std::wstring& urlInput)
     CAscClientHandler* pClientHandler = new CAscClientHandler();
     pClientHandler->m_pParent = this;
     m_pInternal->m_handler = pClientHandler;
+    m_pInternal->m_oDownloaderAbortChecker.m_pHandler = pClientHandler;
 
     CAscClientHandler::CAscCefJSDialogHandler* pAscCEfJSDialogHandler = static_cast<CAscClientHandler::CAscCefJSDialogHandler*>(pClientHandler->m_pCefJSDialogHandler.get());
     if (pAscCEfJSDialogHandler)
@@ -4058,7 +4530,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                     m_pInternal->m_oPrintData.m_eEditorType = ((CCefViewEditor*)this)->GetEditorType();
                 }
 
-                m_pInternal->m_oPrintData.Print_Start();
+                m_pInternal->m_oPrintData.Print_Start(m_pInternal->m_pManager->m_pInternal->m_pApplicationFonts);
             }
 
             bool bIsNativePrint = false;
@@ -4068,6 +4540,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                 switch (m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat)
                 {
                 case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF:
+                case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA:
                 case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_XPS:
                 case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_DJVU:
                 {
@@ -4081,6 +4554,11 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                 if (NULL != m_pInternal->m_oPrintData.m_pNativePrinter)
                 {                    
                     m_pInternal->m_oPrintData.m_pNativePrinter->m_pApplicationFonts = m_pInternal->m_oPrintData.m_pApplicationFonts;
+
+                    if (NULL == m_pInternal->m_oPrintData.m_pNativePrinter->m_pApplicationFonts)
+                        m_pInternal->m_oPrintData.m_pNativePrinter->m_pApplicationFonts = m_pInternal->m_pManager->m_pInternal->m_pApplicationFonts;
+
+
                     m_pInternal->m_oPrintData.m_pNativePrinter->PreOpen(m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat);
 
                     m_pInternal->m_oPrintData.m_pNativePrinter->Open(m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc,
@@ -4220,8 +4698,16 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
         {
             NSEditorApi::CAscLocalOpenFileDialog* pData = (NSEditorApi::CAscLocalOpenFileDialog*)pEvent->m_pData;
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_onaddimage");
-            message->GetArgumentList()->SetString(0, pData->get_Path());
 
+            std::wstring sPath = pData->get_Path();
+            if (pData->get_IsMultiselect() || sPath.empty())
+            {
+                std::vector<std::wstring>& arPaths = pData->get_Files();
+                if (arPaths.size() > 0)
+                    sPath = arPaths[0];
+            }
+
+            message->GetArgumentList()->SetString(0, sPath);
             browser->SendProcessMessage(PID_RENDERER, message);
             break;
         }
@@ -4255,9 +4741,71 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
         case ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_OPENFILENAME_DIALOG:
         {
             NSEditorApi::CAscLocalOpenFileDialog* pData = (NSEditorApi::CAscLocalOpenFileDialog*)pEvent->m_pData;
+
+            if (m_pInternal->m_handler->m_pFileDialogCallback)
+            {
+                std::vector<CefString> file_paths;
+
+                if (!pData->get_IsMultiselect())
+                {
+                    std::wstring sPathRet = pData->get_Path();
+                    if (!sPathRet.empty())
+                        file_paths.push_back(sPathRet);
+                }
+                else
+                {
+                    std::vector<std::wstring>& arPaths = pData->get_Files();
+                    if (arPaths.size() > 0)
+                    {
+                        for (std::vector<std::wstring>::iterator i = arPaths.begin(); i != arPaths.end(); i++)
+                        {
+                            std::wstring sPathRet = *i;
+                            if (!sPathRet.empty())
+                                file_paths.push_back(sPathRet);
+                        }
+                    }
+                    else
+                    {
+                        std::wstring sPathRet = pData->get_Path();
+                        if (!sPathRet.empty())
+                            file_paths.push_back(sPathRet);
+                    }
+                }
+
+                m_pInternal->m_handler->m_pFileDialogCallback->Continue(0, file_paths);
+                m_pInternal->m_handler->m_pFileDialogCallback = NULL;
+
+                break;
+            }
+
+
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_open_filename_dialog");
-            message->GetArgumentList()->SetString(0, pData->get_Path());
-            message->GetArgumentList()->SetString(1, m_pInternal->m_sIFrameIDMethod);
+            message->GetArgumentList()->SetString(0, m_pInternal->m_sIFrameIDMethod);
+            message->GetArgumentList()->SetBool(1, pData->get_IsMultiselect());
+
+            if (!pData->get_IsMultiselect())
+            {
+                message->GetArgumentList()->SetString(2, pData->get_Path());
+            }
+            else
+            {
+                int nIndex = 2;
+                std::vector<std::wstring>& arPaths = pData->get_Files();
+
+                if (arPaths.size() > 0)
+                {
+                    for (std::vector<std::wstring>::iterator i = arPaths.begin(); i != arPaths.end(); i++)
+                    {
+                        message->GetArgumentList()->SetString(nIndex++, *i);
+                    }
+                }
+                else
+                {
+                    std::wstring sPath1 = pData->get_Path();
+                    if (!sPath1.empty())
+                        message->GetArgumentList()->SetString(nIndex++, sPath1);
+                }
+            }
 
             browser->SendProcessMessage(PID_RENDERER, message);
             break;
@@ -4361,6 +4909,25 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             m_pInternal->SendProcessMessage(PID_RENDERER, message);
             break;
         }
+        case ASC_MENU_EVENT_TYPE_EXECUTE_JS_CODE:
+        {
+            NSEditorApi::CAscJSMessage* pData = (NSEditorApi::CAscJSMessage*)pEvent->m_pData;
+            CefRefPtr<CefBrowser> pBrowser = m_pInternal->GetBrowser();
+            if (pBrowser)
+            {
+                std::wstring sCode = pData->get_Value();
+
+                std::vector<int64> arIds;
+                pBrowser->GetFrameIdentifiers(arIds);
+
+                for (std::vector<int64>::iterator iter = arIds.begin(); iter != arIds.end(); iter++)
+                {
+                    CefRefPtr<CefFrame> frame = pBrowser->GetFrame(*iter);
+                    if (frame)
+                        frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
+                }
+            }
+        }
         default:
         {
             CApplicationManagerAdditionalBase* pAdditional = GetAppManager()->m_pInternal->m_pAdditional;
@@ -4394,7 +4961,8 @@ bool CCefView::StartDownload(const std::wstring& sUrl)
     if (!m_pInternal->m_handler->GetBrowser()->GetHost())
         return false;
     
-    m_pInternal->m_handler->GetBrowser()->GetHost()->StartDownload(sUrl);
+    m_pInternal->m_oDownloaderAbortChecker.StartDownload(sUrl);
+    m_pInternal->m_handler->GetBrowser()->GetHost()->StartDownload(sUrl);    
     return true;
 }
 
@@ -4543,11 +5111,24 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
         {
             m_pInternal->m_bIsCloudCryptFile = m_pInternal->m_sOpenAsLocalDst.empty();
 
+            /*
             CCefView* pMainView = GetAppManager()->GetViewById(1);
             if (!pMainView)
                 return;
+            */
 
-            pMainView->m_pInternal->m_pDownloadViewCallback = this;
+            if (m_pInternal->m_bIsReporter)
+            {
+                CCefViewEditor* pParentView = (CCefViewEditor*)GetAppManager()->GetViewById(m_pInternal->m_nReporterParentId);
+                m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
+                m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir = pParentView->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir;
+                m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc = pParentView->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc;
+                m_pInternal->LocalFile_IncrementCounter();
+                m_pInternal->LocalFile_IncrementCounter();
+                return;
+            }
+
+            m_pInternal->m_pDownloadViewCallback = this;
             m_pInternal->m_sDownloadViewPath = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"OL");
             if (NSFile::CFileBinary::Exists(m_pInternal->m_sDownloadViewPath))
                 NSFile::CFileBinary::Remove(m_pInternal->m_sDownloadViewPath);
@@ -4555,7 +5136,7 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
             m_pInternal->m_sDownloadViewPath += (L"." + NSCommon::GetFileExtention(m_pInternal->m_sOpenAsLocalName));
 
             // load preview...
-            pMainView->m_pInternal->m_handler->GetBrowser()->GetHost()->StartDownload(m_pInternal->m_sOpenAsLocalSrc);
+            StartDownload(m_pInternal->m_sOpenAsLocalSrc);
             return;
         }
     }

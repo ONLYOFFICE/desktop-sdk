@@ -40,13 +40,15 @@
 #include "../../../../core/OfficeUtils/src/OfficeUtils.h"
 
 #include "../../../../core/DesktopEditor/raster/BgraFrame.h"
-#include "../../../../core/DesktopEditor/raster/Metafile/MetaFile.h"
+#include "../../../../core/DesktopEditor/graphics/pro/Image.h"
 
 #ifdef LINUX
 #include <unistd.h>
 #include <sys/wait.h>
 #include <stdio.h>
 #endif
+
+//#define USE_FOR_REGENERATE_PRESENTATION_THEMES
 
 // AFTER FULL REALIZE - DELETE THIS MACRO
 
@@ -67,6 +69,8 @@ public:
     bool m_bIsModified;
 
     std::wstring m_sPassword;
+
+    std::wstring m_sDocumentInfo;
 
 public:
     CAscLocalFileInfo()
@@ -91,6 +95,7 @@ public:
         m_bIsSaved = oSrc.m_bIsSaved;
 
         m_sPassword = oSrc.m_sPassword;
+        m_sDocumentInfo = oSrc.m_sDocumentInfo;
         return *this;
     }
 };
@@ -422,7 +427,7 @@ public:
     bool m_bIsNativeSupport;
 
     COOXMLVerifier* m_pVerifier;
-    CApplicationFonts* m_pFonts;
+    NSFonts::IApplicationFonts* m_pFonts;
 
 public:
     CASCFileConverterToEditor() : NSThreads::CBaseThread()
@@ -442,7 +447,7 @@ public:
     {
         Stop();
         RELEASEOBJECT(m_pVerifier);
-        RELEASEOBJECT(m_pFonts);
+        NSBase::Release(m_pFonts);
     }
 
     virtual void Stop()
@@ -622,7 +627,9 @@ public:
         oBuilder.WriteString(L"/Editor.bin</m_sFileTo><m_nFormatTo>8192</m_nFormatTo>");
         oBuilder.WriteString(L"<m_sThemeDir>./themes</m_sThemeDir><m_bDontSaveAdditional>true</m_bDontSaveAdditional>");
         oBuilder.WriteString(sParams);
-        //oBuilder.WriteString(L"<m_bIsNoBase64>false</m_bIsNoBase64>");
+#ifdef USE_FOR_REGENERATE_PRESENTATION_THEMES
+        oBuilder.WriteString(L"<m_bIsNoBase64>false</m_bIsNoBase64>");
+#endif
         oBuilder.WriteString(L"</TaskQueueDataConvert>");
 
         std::wstring sXmlConvert = oBuilder.GetData();
@@ -640,6 +647,29 @@ public:
             CheckSignatures(sDestinationPath);
 
         m_pEvents->OnFileConvertToEditor(nReturnCode);
+
+#ifdef USE_FOR_REGENERATE_PRESENTATION_THEMES
+        // COMMENT!!! USE FOR REGENERATE PRESENTATION THEMES
+        if (true)
+        {
+            std::wstring sThemeDir = NSFile::GetDirectoryName(sLocalFilePath) + L"/theme.js";
+            std::string sContentSrc;
+            NSFile::CFileBinary::ReadAllTextUtf8A(sThemeDir, sContentSrc);
+            std::string sContentDst;
+            NSFile::CFileBinary::ReadAllTextUtf8A(m_oInfo.m_sRecoveryDir + L"/Editor.bin", sContentDst);
+            std::string::size_type pos = sContentSrc.find("\"");
+            std::string sDst = sContentSrc.substr(0, pos);
+            sDst += "\"";
+            sDst += sContentDst;
+            sDst += "\";";
+            NSFile::CFileBinary::Remove(sThemeDir);
+
+            NSFile::CFileBinary oFileTheme;
+            oFileTheme.CreateFileW(sThemeDir);
+            oFileTheme.WriteFile((BYTE*)sDst.c_str(), (DWORD)sDst.length());
+            oFileTheme.CloseFile();
+        }
+#endif
 
         m_bRunThread = FALSE;
         return 0;
@@ -758,15 +788,15 @@ public:
 
         if (NULL == m_pFonts)
         {
-            m_pFonts = new CApplicationFonts();
+            m_pFonts = NSFonts::NSApplication::Create();
             m_pFonts->InitializeFromFolder(m_pManager->m_oSettings.fonts_cache_info_path);
         }
 
         bool bIsGood = false;
-        MetaFile::CMetaFile oMeta(m_pFonts);
-        if (oMeta.LoadFromFile(sTmp.c_str()))
+        MetaFile::IMetaFile* pMeta = MetaFile::Create(m_pFonts);
+        if (pMeta->LoadFromFile(sTmp.c_str()))
         {
-            oMeta.ConvertToRaster(sTmp2.c_str(), 4, 300);
+            pMeta->ConvertToRaster(sTmp2.c_str(), 4, 300);
             bIsGood = true;
         }
         else
@@ -778,6 +808,7 @@ public:
                 bIsGood = true;
             }
         }
+        RELEASEINTERFACE(pMeta);
 
         NSFile::CFileBinary::Remove(sTmp);
         if (!bIsGood)
@@ -839,6 +870,17 @@ public:
         }
 #endif
 
+        bool bIsUseTmpFileDst = false;
+        std::wstring sUseTmpFileDst = L"";
+        if (0 == sLocalFilePath.find(L"\\\\") || 0 == sLocalFilePath.find(L"//"))
+        {
+            bIsUseTmpFileDst = true;
+
+            sUseTmpFileDst = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"OL");
+            if (NSFile::CFileBinary::Exists(sUseTmpFileDst))
+                NSFile::CFileBinary::Remove(sUseTmpFileDst);
+        }
+
         std::wstring sThemesPath = m_pManager->m_oSettings.local_editors_path;
         std::wstring::size_type nPosThemes = sThemesPath.rfind(L"apps/api/documents/index.html");
         if (nPosThemes != std::wstring::npos)
@@ -879,10 +921,23 @@ public:
             oBuilder.WriteString(L"</m_sFileFrom><m_sFileTo>");
         }
         
-        oBuilder.WriteEncodeXmlString(sLocalFilePath);
+        if (bIsUseTmpFileDst)
+            oBuilder.WriteEncodeXmlString(sUseTmpFileDst);
+        else
+            oBuilder.WriteEncodeXmlString(sLocalFilePath);
         
         oBuilder.WriteString(L"</m_sFileTo><m_nFormatTo>");
-        oBuilder.WriteString(std::to_wstring(m_oInfo.m_nCurrentFileFormat));
+
+        if (AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA == m_oInfo.m_nCurrentFileFormat)
+        {
+            oBuilder.WriteString(std::to_wstring(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF));
+            sParams += L"<m_bIsPDFA>true</m_bIsPDFA>";
+        }
+        else
+        {
+            oBuilder.WriteString(std::to_wstring(m_oInfo.m_nCurrentFileFormat));
+        }
+
         oBuilder.WriteString(L"</m_nFormatTo><m_sThemeDir>");
         oBuilder.WriteEncodeXmlString(sThemesPath);
         oBuilder.WriteString(L"</m_sThemeDir>");
@@ -904,6 +959,14 @@ public:
             oBuilder.WriteEncodeXmlString(m_oInfo.m_sPassword);
             oBuilder.WriteString(L"</m_sSavePassword>");
         }
+
+        if (!m_oInfo.m_sDocumentInfo.empty())
+        {
+            oBuilder.WriteString(L"<m_sDocumentID>");
+            oBuilder.WriteEncodeXmlString(m_oInfo.m_sDocumentInfo);
+            oBuilder.WriteString(L"</m_sDocumentID>");
+        }
+        m_oInfo.m_sDocumentInfo = L"";
 
         int nDoctRendererParam = 0;
         if (m_bIsRetina)
@@ -939,6 +1002,13 @@ public:
 
         int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileForParams, m_pManager);
 
+        if (bIsUseTmpFileDst)
+        {
+            NSFile::CFileBinary::Remove(sLocalFilePath);
+            NSFile::CFileBinary::Copy(sUseTmpFileDst, sLocalFilePath);
+            NSFile::CFileBinary::Remove(sUseTmpFileDst);
+        }
+
         m_sOriginalFileNameCrossPlatform = L"";
         m_bIsRetina = false;
 
@@ -947,6 +1017,172 @@ public:
 
         if (m_pManager->m_pInternal->m_pAdditional)
             m_pManager->m_pInternal->m_pAdditional->CheckSaveEnd();
+
+        m_bRunThread = FALSE;
+        return 0;
+    }
+};
+
+class CTextDocxConverterCallback
+{
+public:
+    virtual void CTextDocxConverterCallback_OnConvert(std::wstring sData) = 0;
+};
+
+class CTextDocxConverter : public NSThreads::CBaseThread
+{
+public:
+    int m_nFrameId;
+
+    std::wstring m_sData;
+    std::wstring m_sPassword;
+
+    std::wstring m_sFileDocx;
+    bool m_bIsToDocx;
+
+    CAscApplicationManager* m_pManager;
+    CTextDocxConverterCallback* m_pCallback;
+
+public:
+    CTextDocxConverter() : NSThreads::CBaseThread()
+    {
+        m_nFrameId = 0;
+        m_pManager = NULL;
+        m_bIsToDocx = false;
+        m_pCallback = NULL;
+    }
+    virtual ~CTextDocxConverter()
+    {
+        Stop();
+    }
+
+    void ToDocx()
+    {
+        m_bIsToDocx = true;
+        Start(0);
+    }
+
+    void ToData()
+    {
+        m_bIsToDocx = false;
+        Start(0);
+    }
+
+    virtual DWORD ThreadProc()
+    {
+        if (!NSDirectory::Exists(m_pManager->m_oSettings.user_plugins_path))
+            NSDirectory::CreateDirectory(m_pManager->m_oSettings.user_plugins_path);
+
+        m_sFileDocx = m_pManager->m_oSettings.user_plugins_path + L"/advanced_crypto_data.docx";
+
+        if (m_bIsToDocx)
+        {
+            std::wstring sTxtFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"OL");
+            if (NSFile::CFileBinary::Exists(sTxtFile))
+                NSFile::CFileBinary::Remove(sTxtFile);
+
+            NSFile::CFileBinary oFile;
+            oFile.CreateFileW(sTxtFile);
+            oFile.WriteStringUTF8(L"[data]" + m_sData + L"[data]", true);
+            oFile.CloseFile();
+
+            std::wstring strDirectoryFonts = m_pManager->m_oSettings.fonts_cache_info_path;
+            while (!NSFile::CFileBinary::Exists(strDirectoryFonts + L"/font_selection.bin"))
+                NSThreads::Sleep(100);
+
+            NSStringUtils::CStringBuilder oBuilder;
+            oBuilder.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><TaskQueueDataConvert><m_sFileFrom>");
+            oBuilder.WriteEncodeXmlString(sTxtFile);
+            oBuilder.WriteString(L"</m_sFileFrom><m_sFileTo>");
+            oBuilder.WriteEncodeXmlString(m_sFileDocx);
+            oBuilder.WriteString(L"</m_sFileTo><m_nFormatTo>65</m_nFormatTo><m_sFontDir>");
+            oBuilder.WriteEncodeXmlString(strDirectoryFonts);
+            oBuilder.WriteString(L"</m_sFontDir>");
+
+            if (!m_sPassword.empty())
+            {
+                oBuilder.WriteString(L"<m_sSavePassword>");
+                oBuilder.WriteEncodeXmlString(m_sPassword);
+                oBuilder.WriteString(L"</m_sSavePassword>");
+            }
+
+            oBuilder.WriteString(L"</TaskQueueDataConvert>");
+
+            std::wstring sTempFileForParams = sTxtFile + L"_params_from.xml";
+            NSFile::CFileBinary::SaveToFile(sTempFileForParams, oBuilder.GetData(), true);
+
+            int nReturnCode = NSX2T::Convert(m_pManager->m_oSettings.file_converter_path + L"/x2t", sTempFileForParams, m_pManager);
+
+            NSFile::CFileBinary::Remove(sTempFileForParams);
+            NSFile::CFileBinary::Remove(sTxtFile);
+
+            if (0 != nReturnCode)
+                m_sData = L"";
+        }
+        else
+        {
+            std::wstring sTxtFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"OL");
+            if (NSFile::CFileBinary::Exists(sTxtFile))
+                NSFile::CFileBinary::Remove(sTxtFile);
+
+            std::wstring strDirectoryFonts = m_pManager->m_oSettings.fonts_cache_info_path;
+            while (!NSFile::CFileBinary::Exists(strDirectoryFonts + L"/font_selection.bin"))
+                NSThreads::Sleep(100);
+
+            NSStringUtils::CStringBuilder oBuilder;
+            oBuilder.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><TaskQueueDataConvert><m_sFileFrom>");
+            oBuilder.WriteEncodeXmlString(m_sFileDocx);
+            oBuilder.WriteString(L"</m_sFileFrom><m_sFileTo>");
+            oBuilder.WriteEncodeXmlString(sTxtFile);
+            oBuilder.WriteString(L"</m_sFileTo><m_nFormatTo>69</m_nFormatTo><m_sFontDir>");
+            oBuilder.WriteEncodeXmlString(strDirectoryFonts);
+            oBuilder.WriteString(L"</m_sFontDir>");
+
+            if (!m_sPassword.empty())
+            {
+                oBuilder.WriteString(L"<m_sPassword>");
+                oBuilder.WriteEncodeXmlString(m_sPassword);
+                oBuilder.WriteString(L"</m_sPassword>");
+            }
+
+            oBuilder.WriteString(L"</TaskQueueDataConvert>");
+
+            std::wstring sTempFileForParams = sTxtFile + L"_params_from.xml";
+            NSFile::CFileBinary::SaveToFile(sTempFileForParams, oBuilder.GetData(), true);
+
+            int nReturnCode = NSX2T::Convert(m_pManager->m_oSettings.file_converter_path + L"/x2t", sTempFileForParams, m_pManager);
+
+            NSFile::CFileBinary::Remove(sTempFileForParams);
+
+            if (nReturnCode == 0)
+            {
+                NSFile::CFileBinary::ReadAllTextUtf8(sTxtFile, m_sData);
+
+                std::wstring::size_type pos1 = m_sData.find(L"[data]");
+                std::wstring::size_type pos2 = m_sData.rfind(L"[data]");
+
+                if (pos1 != std::wstring::npos && pos2 != std::wstring::npos)
+                {
+                    m_sData = m_sData.substr(pos1 + 6, pos2 - pos1 - 6);
+                }
+                else
+                {
+                    m_sData = L"";
+                }
+            }
+            else
+            {
+                m_sData = L"";
+            }
+
+            NSFile::CFileBinary::Remove(sTxtFile);
+        }
+
+        m_pCallback->CTextDocxConverterCallback_OnConvert(m_sData);
+
+        m_nFrameId = 0;
+        m_sData = L"";
+        m_sPassword = L"";
 
         m_bRunThread = FALSE;
         return 0;

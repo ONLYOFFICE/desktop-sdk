@@ -41,6 +41,7 @@
 #include "./spellchecker.h"
 #include "./cefview.h"
 #include "./cefapplication.h"
+#include "./keychain.h"
 
 #ifdef WIN32
 __declspec(dllexport) int __cdecl Core_SetProcessDpiAwareness(void);
@@ -70,6 +71,10 @@ public:
 
     bool                            sign_support;
     bool                            pass_support;
+    bool                            protect_support;
+
+    std::string                     converter_application_name;
+    std::string                     converter_application_company;
 
 public:
     CAscApplicationSettings();
@@ -109,7 +114,7 @@ public:
 
 class CAscReporterData;
 class CAscApplicationManager_Private;
-class CApplicationFonts;
+namespace NSFonts { class IApplicationFonts; }
 class Q_DECL_EXPORT CAscApplicationManager
 {
 public:
@@ -146,6 +151,7 @@ public:
     CCefView* GetViewById(int nId);
     CCefView* GetViewByUrl(const std::wstring& url);
     CCefView* GetViewByRecentId(int nId);
+    std::vector<int> GetViewsId();
 
     void Logout(std::wstring strUrl);
     void CancelDownload(unsigned int nDownloadId);
@@ -166,7 +172,7 @@ public:
     bool GetDebugInfoSupport();
 
     void CloseApplication();
-    CApplicationFonts* GetApplicationFonts();
+    NSFonts::IApplicationFonts* GetApplicationFonts();
 
     virtual void StartSaveDialog(const std::wstring& sName, unsigned int nId);
     virtual void EndSaveDialog(const std::wstring& sPath, unsigned int nId);
@@ -189,6 +195,13 @@ public:
     int GetMonitorScaleByWindow(const WindowHandleId& nHandle, unsigned int& nDpiX, unsigned int& nDpiY);
 
     void SetEventToAllMainWindows(NSEditorApi::CAscMenuEvent* pEvent);
+
+    // 0 - none, 1 - simple, 2 - advanced
+    void SetCryptoMode(const std::string& sPassword, const int& nMode);
+    int GetCryptoMode();
+    std::vector<int> GetSupportCryptoModes();
+
+    virtual NSAscCrypto::CAscKeychain* GetKeychainEngine();
 
 protected:
     int GenerateNextViewId();

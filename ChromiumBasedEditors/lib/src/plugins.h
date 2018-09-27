@@ -38,6 +38,14 @@
 #include "../../../../core/OfficeUtils/src/OfficeUtils.h"
 
 //#include "./plugins_resources.h"
+#include <map>
+
+class CExternalPluginInfo
+{
+public:
+    std::string sGuid;
+    std::string sName;
+};
 
 class CPluginsManager
 {
@@ -45,15 +53,18 @@ public:
     std::wstring m_strDirectory;
     std::wstring m_strUserDirectory;
 
-    std::string m_strGuidEncryption;
+    int m_nCryptoMode;
+    std::map<int, std::string> m_arCryptoModes;
 
+    // плагин не для редактора, а для главной страницы (для системных сообщенией)
+    std::vector<CExternalPluginInfo> m_arExternals;
 public:
     CPluginsManager()
     {
-        
+        m_nCryptoMode = 0;
     }
 
-    std::string GetPluginsJson()
+    std::string GetPluginsJson(const bool& checkCrypto = false)
     {
         if (!NSDirectory::Exists(m_strUserDirectory))
             NSDirectory::CreateDirectory(m_strUserDirectory);
@@ -110,6 +121,12 @@ public:
                 std::string sJson = "";
                 if (NSFile::CFileBinary::ReadAllTextUtf8A(_arPlugins[i] + L"/config.json", sJson))
                 {
+                    if (!CheckEncryption(sJson, checkCrypto))
+                        continue;
+
+                    if (CheckExternal(sJson))
+                        continue;
+
                     std::string::size_type pos1 = sJson.find('{');
                     std::string::size_type pos2 = sJson.find_last_of('}');
 
@@ -157,7 +174,10 @@ public:
             {
                 std::string sJson;
                 if (NSFile::CFileBinary::ReadAllTextUtf8A(_arPlugins[i] + L"/config.json", sJson))
-                {
+                {                    
+                    CheckEncryption(sJson, false);
+                    CheckExternal(sJson);
+
                     std::string::size_type pos1 = sJson.find("asc.{");
                     std::string::size_type pos2 = sJson.find('}', pos1);
 
@@ -166,9 +186,6 @@ public:
                         pos2 > pos1)
                     {
                         arCongigs.push_back(sJson.substr(pos1, pos2 - pos1 + 1));
-
-                        if (m_strGuidEncryption.empty())
-                            m_strGuidEncryption = GetEncryption(sJson);
                     }
                 }
             }
@@ -245,11 +262,54 @@ public:
     }
 
 private:
-    std::string GetEncryption(const std::string& strJson)
+    bool CheckEncryption(const std::string& strJson, const bool& checkCrypto)
     {
         if ("desktop" == GetStringValue(strJson, "initDataType") && "encryption" == GetStringValue(strJson, "initData"))
-            return GetStringValue(strJson, "guid");
-        return "";
+        {
+            int nMode = 1;
+            std::string sMode = GetStringValue(strJson, "cryptoMode");
+            if (!sMode.empty())
+                nMode = std::stoi(sMode);
+
+            if (checkCrypto)
+            {
+                if (m_nCryptoMode != nMode)
+                {
+                    return false;
+                }
+            }
+
+            std::string sGuid = GetStringValue(strJson, "guid");
+
+            if (m_arCryptoModes.find(nMode) == m_arCryptoModes.end())
+                m_arCryptoModes.insert(std::pair<int, std::string>(nMode, sGuid));
+            else if (checkCrypto)
+                return false;
+
+        }
+        return true;
+    }
+
+    bool CheckExternal(const std::string& sJson)
+    {
+        if ("desktop-external" == GetStringValue(sJson, "initDataType"))
+        {
+            std::string::size_type pos1 = sJson.find("asc.{");
+            std::string::size_type pos2 = sJson.find('}', pos1);
+
+            if (pos1 != std::string::npos &&
+                pos2 != std::string::npos &&
+                pos2 > pos1)
+            {
+                CExternalPluginInfo info;
+                info.sGuid = sJson.substr(pos1, pos2 - pos1 + 1);
+                info.sName = GetStringValue(sJson, "name");
+
+                m_arExternals.push_back(info);
+            }
+            return true;
+        }
+        return false;
     }
 
     std::string GetStringValue(const std::string& strJson, const std::string& strName)

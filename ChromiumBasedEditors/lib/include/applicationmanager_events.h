@@ -124,6 +124,13 @@
 #define ASC_MENU_EVENT_TYPE_ENCRYPTED_CLOUD_BUILD_END       8002
 #define ASC_MENU_EVENT_TYPE_ENCRYPTED_CLOUD_BUILD_END_ERROR 8003
 
+#define ASC_MENU_EVENT_TYPE_EXECUTE_JS_CODE                 8004
+
+#define ASC_MENU_EVENT_TYPE_ENCRYPT_PERSONAL_KEY_IMPORT     8005
+#define ASC_MENU_EVENT_TYPE_ENCRYPT_PERSONAL_KEY_EXPORT     8006
+
+#define ASC_MENU_EVENT_TYPE_SYSTEM_EXTERNAL_PLUGINS          8007
+
 
 #define ASC_MENU_EVENT_TYPE_WINDOWS_MESSAGE_USER_COUNT      10
 
@@ -581,10 +588,14 @@ namespace NSEditorApi
         std::wstring m_sPath;
         std::wstring m_sFilter;
 
+        bool m_bIsMultiselect;
+        std::vector<std::wstring> m_arPaths;
+
     public:
         CAscLocalOpenFileDialog()
         {
             m_nId  = -1;
+            m_bIsMultiselect = false;
         }
         virtual ~CAscLocalOpenFileDialog()
         {
@@ -593,6 +604,13 @@ namespace NSEditorApi
         LINK_PROPERTY_INT(Id)
         LINK_PROPERTY_STRING(Path)
         LINK_PROPERTY_STRING(Filter)
+
+        LINK_PROPERTY_BOOL(IsMultiselect)
+
+        std::vector<std::wstring>& get_Files()
+        {
+            return m_arPaths;
+        }
     };
 
     class CAscLocalOpenFiles : public IMenuEventDataBase
@@ -758,6 +776,19 @@ namespace NSEditorApi
         LINK_PROPERTY_STRING(KeyPath)
         LINK_PROPERTY_STRING(KeyPassword)
     };
+
+    class CEncryptData : public IMenuEventDataBase
+    {
+    public:
+        CEncryptData(){}
+        virtual ~CEncryptData(){}
+
+        LINK_PROPERTY_STRING(Path)
+        LINK_PROPERTY_STRING(Value)
+    private:
+        std::wstring m_sPath;
+        std::wstring m_sValue;
+    };
 }
 
 namespace NSEditorApi
@@ -797,6 +828,46 @@ namespace NSEditorApi
         inline void put_DataSize(unsigned int nSize)
         {
             m_nDataSize = nSize;
+        }
+    };
+}
+
+namespace NSEditorApi
+{
+    class CAscSystemExternalPlugins : public IMenuEventDataBase
+    {
+    public:
+        class CItem
+        {
+        public:
+            std::wstring name;
+            std::wstring id;
+            std::wstring url;
+        };
+
+    private:
+        std::vector<CItem> m_items;
+
+    public:
+        CAscSystemExternalPlugins()
+        {
+        }
+        virtual ~CAscSystemExternalPlugins()
+        {
+        }
+
+        std::vector<CItem>& get_Items()
+        {
+            return m_items;
+        }
+
+        void addItem(const std::wstring& name, const std::wstring& id, const std::wstring& url)
+        {
+            CItem item;
+            item.name = name;
+            item.id = id;
+            item.url = url;
+            m_items.push_back(item);
         }
     };
 }

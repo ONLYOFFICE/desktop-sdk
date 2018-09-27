@@ -65,6 +65,9 @@
 
 #define ONLYOFFICE_FONTS_VERSION_ 1
 
+#include "crypto_mode.h"
+#include "plugins.h"
+
 namespace NSFileDownloader
 {
     static bool IsNeedDownload(const std::wstring& FilePath)
@@ -361,6 +364,7 @@ class CEditorFrameId
 public:
     int EditorId;
     int FrameId;
+    std::wstring Url;
 };
 
 class CAscApplicationManager_Private;
@@ -423,7 +427,42 @@ public:
     }
 };
 
-class CAscApplicationManager_Private : public CefBase_Class, public CCookieFoundCallback, public NSThreads::CBaseThread, public CCefScriptLoader::ICefScriptLoaderCallback
+class CExternalCloudRegister
+{
+public:
+    std::wstring url;
+    std::wstring test_editor;
+    std::string correct_code;
+
+public:
+    CExternalCloudRegister()
+    {
+        url = L"";
+        test_editor = L"";
+        correct_code = "";
+    }
+
+    CExternalCloudRegister(const CExternalCloudRegister& src)
+    {
+        url = src.url;
+        test_editor = src.test_editor;
+        correct_code = src.correct_code;
+    }
+
+    CExternalCloudRegister& operator=(const CExternalCloudRegister& src)
+    {
+        url = src.url;
+        test_editor = src.test_editor;
+        correct_code = src.correct_code;
+        return *this;
+    }
+};
+
+class CAscApplicationManager_Private : public CefBase_Class,
+        public CCookieFoundCallback,
+        public NSThreads::CBaseThread,
+        public CCefScriptLoader::ICefScriptLoaderCallback,
+        public NSAscCrypto::IAscKeyChainListener
 {
 public:
     CAscSpellChecker    m_oSpellChecker;
@@ -437,7 +476,7 @@ public:
 
     CAscApplicationManager* m_pMain;
 
-    CApplicationFonts* m_pApplicationFonts;
+    NSFonts::IApplicationFonts* m_pApplicationFonts;
 
     NSCriticalSection::CRITICAL_SECTION m_oCS_Scripts;
     std::map<std::wstring, std::vector<CEditorFrameId>> m_mapLoadedScripts;
@@ -474,7 +513,16 @@ public:
 
     std::map<std::wstring, int> m_mapOnlyPass;
 
-    std::string m_sEncriptionGuid;
+    std::map<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue> m_mapCrypto;
+    NSAscCrypto::AscCryptoType m_nCurrentCryptoMode;
+    NSAscCrypto::CCryptoKey m_cryptoKeyEnc;
+    NSAscCrypto::CCryptoKey m_cryptoKeyDec;
+
+    NSAscCrypto::CAscKeychain* m_pKeyChain;
+
+    std::vector<CExternalPluginInfo> m_arExternalPlugins;
+
+    std::vector<CExternalCloudRegister> m_arExternalClouds;
 
 public:
     CAscApplicationManager_Private() : m_oKeyboardTimer(this)
@@ -503,7 +551,7 @@ public:
         m_nForceDisplayScale = -1;
         m_bIsUpdateFontsAttack = false;
 
-        m_sEncriptionGuid = "";
+        m_nCurrentCryptoMode = NSAscCrypto::None;
     }
     bool GetEditorPermission()
     {
@@ -596,6 +644,10 @@ public:
         std::map<std::string, std::string>::iterator pairForceDisplayScale = m_mapSettings.find("force-scale");
         if (pairForceDisplayScale != m_mapSettings.end())
             m_nForceDisplayScale = std::stoi(pairForceDisplayScale->second);
+
+        std::map<std::string, std::string>::iterator pairCryptoMode = m_mapSettings.find("crypto-mode");
+        if (pairCryptoMode != m_mapSettings.end())
+            m_nCurrentCryptoMode = (NSAscCrypto::AscCryptoType)std::stoi(pairCryptoMode->second);
     }
 
     void CheckSetting(const std::string& sName, const std::string& sValue)
@@ -719,17 +771,52 @@ public:
     }
     void End_PrivateDownloadScript()
     {
-        m_pMain->LockCS(LOCK_CS_SCRIPT);
         private_OnLoad(m_strPrivateDownloadUrl, m_strPrivateDownloadPath);
+
+        m_pMain->LockCS(LOCK_CS_SCRIPT);
+
         m_strPrivateDownloadUrl = L"";
         m_strPrivateDownloadPath = L"";
+
+        if (!m_mapLoadedScripts.empty())
+        {
+            for (std::map<std::wstring, std::vector<CEditorFrameId>>::iterator i = m_mapLoadedScripts.begin(); i != m_mapLoadedScripts.end(); i++)
+            {
+                std::wstring _url = i->second[0].Url;
+                std::wstring _dst = i->first;
+
+                if (std::wstring::npos == _url.find(L"sdk/Common/AllFonts.js") &&
+                    std::wstring::npos == _url.find(L"sdkjs/common/AllFonts.js"))
+                {
+                    Start_PrivateDownloadScript(_url, _dst);
+                    break;
+                }
+            }
+        }
+
         m_pMain->UnlockCS(LOCK_CS_SCRIPT);
+    }
+
+    bool TestExternal(std::wstring& url, CExternalCloudRegister& ex)
+    {
+        for (std::vector<CExternalCloudRegister>::iterator iter = m_arExternalClouds.begin(); iter != m_arExternalClouds.end(); iter++)
+        {
+            std::wstring::size_type pos = url.find(iter->url);
+            if (pos != std::wstring::npos && pos < 10)
+            {
+                ex = *iter;
+                return true;
+            }
+        }
+        return false;
     }
 
 protected:
     
     void private_OnLoad(const std::wstring& sUrl, const std::wstring& sDestination)
     {
+        m_pMain->LockCS(LOCK_CS_SCRIPT);
+
         std::map<std::wstring, std::vector<CEditorFrameId>>::iterator i = m_mapLoadedScripts.find(sDestination);
         
         if (i != m_mapLoadedScripts.end())
@@ -762,6 +849,8 @@ protected:
         }
         
         m_mapLoadedScripts.erase(i);
+
+        m_pMain->UnlockCS(LOCK_CS_SCRIPT);
     }
 
     virtual DWORD ThreadProc()
@@ -825,7 +914,7 @@ protected:
             }
         }
 
-        CApplicationFonts* oApplicationF = new CApplicationFonts();
+        NSFonts::IApplicationFonts* oApplicationF = NSFonts::NSApplication::Create();
         std::vector<std::wstring> strFontsW_Cur;
 
         if (m_pMain->m_oSettings.use_system_fonts)
@@ -908,7 +997,7 @@ protected:
 
             oApplicationF->InitializeFromArrayFiles(strFontsW_Cur, nFlag);
 
-            NSCommon::SaveAllFontsJS(*oApplicationF, strAllFontsJSPath, strThumbnailsFolder, strFontsSelectionBin);
+            NSCommon::SaveAllFontsJS(oApplicationF, strAllFontsJSPath, strThumbnailsFolder, strFontsSelectionBin);
 
             //NSFile::CFileBinary::Copy(strAllFontsJSPath, m_pMain->m_oSettings.file_converter_path + L"/../editors/sdk/Common/AllFonts.js");
 
@@ -1310,6 +1399,105 @@ public:
         }
 
         return pViewRet;
+    }
+
+    void LoadCryptoData()
+    {
+        m_pKeyChain = m_pMain->GetKeychainEngine();
+        m_pKeyChain->Check(m_pMain->m_oSettings.cookie_path + L"/user.data");
+    }
+
+    void SendCryptoData(CefRefPtr<CefFrame> frame = NULL)
+    {
+        std::wstring sPass = L"";
+        if (0 != m_nCurrentCryptoMode)
+        {
+            std::map<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue>::iterator find = m_mapCrypto.find(m_nCurrentCryptoMode);
+            if (find != m_mapCrypto.end())
+                sPass = UTF8_TO_U(find->second.m_sValue);
+        }
+
+        NSCommon::string_replace(sPass, L"\\", L"\\\\");
+        NSCommon::string_replace(sPass, L"\"", L"\\\"");
+
+        std::wstring sCode = L"(function() { \n\
+window.AscDesktopEditor.CryptoMode = " + std::to_wstring(m_nCurrentCryptoMode) + L";\n\
+window.AscDesktopEditor.CryptoPassword = \"" + sPass + L"\";\n\
+})();";
+
+        if (frame)
+        {
+            frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
+            return;
+        }
+
+        NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent(ASC_MENU_EVENT_TYPE_EXECUTE_JS_CODE);
+        NSEditorApi::CAscJSMessage* pData = new NSEditorApi::CAscJSMessage();
+        pData->put_Value(sCode);
+        pEvent->m_pData = pData;
+
+        for (std::map<int, CCefView*>::iterator iterView = m_mapViews.begin(); iterView != m_mapViews.end(); iterView++)
+        {
+            CCefView* pTmp = iterView->second;
+
+            ADDREFINTERFACE(pEvent);
+            pTmp->Apply(pEvent);
+        }
+
+        RELEASEINTERFACE(pEvent);
+    }
+
+    virtual void OnKeyChainComplete(NSAscCrypto::CCryptoKey& keyEnc, NSAscCrypto::CCryptoKey& keyDec)
+    {
+        m_cryptoKeyEnc = keyEnc;
+        m_cryptoKeyDec = keyDec;
+
+        NSAscCrypto::CCryptoMode oCryptoMode;
+        oCryptoMode.Load(m_cryptoKeyEnc, m_cryptoKeyDec, m_pMain->m_oSettings.cookie_path + L"/user.data");
+
+        for (std::vector<NSAscCrypto::CAscCryptoJsonValue>::iterator iter = oCryptoMode.m_modes.begin(); iter != oCryptoMode.m_modes.end(); iter++)
+        {
+            std::map<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue>::iterator find = m_mapCrypto.find(iter->m_eType);
+            if (find == m_mapCrypto.end())
+            {
+                m_mapCrypto.insert(std::pair<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue>(iter->m_eType, *iter));
+            }
+            else
+            {
+                find->second.m_sValue = iter->m_sValue;
+            }
+        }
+
+        // создаем ключи для режимов
+        bool bIsResave = false;
+
+        // 1) simple
+        std::map<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue>::iterator findSimple = m_mapCrypto.find(NSAscCrypto::Simple);
+        if (findSimple != m_mapCrypto.end())
+        {
+            NSAscCrypto::CAscCryptoJsonValue& simple = findSimple->second;
+            if (simple.m_sValue.empty())
+            {
+                std::string alphanum = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+                char data[1025];
+                int alphanumlen = alphanum.length();
+                srand((unsigned int)NSTimers::GetTickCount());
+                for (int i = 0; i < 1024; ++i)
+                {
+                    data[i] = (char)alphanum[rand() % (alphanumlen - 1)];
+                }
+                data[1024] = 0;
+                simple.m_sValue = std::string(data);
+                bIsResave = true;
+            }
+        }
+
+        if (bIsResave)
+        {
+            m_pMain->SetCryptoMode("", m_nCurrentCryptoMode);
+        }
+
+        RELEASEOBJECT(m_pKeyChain);
     }
 };
 

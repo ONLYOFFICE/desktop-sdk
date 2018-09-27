@@ -71,6 +71,10 @@ CAscApplicationSettings::CAscApplicationSettings()
 
     sign_support                    = true;
     pass_support                    = true;
+    protect_support                 = true;
+
+    converter_application_name      = "ONLYOFFICE";
+    converter_application_company   = "Ascensio System SIA Copyright (c) 2018";
 }
 
 void CAscApplicationSettings::SetUserDataPath(std::wstring sPath)
@@ -272,6 +276,7 @@ void CAscApplicationManager::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             {
                 // он качается. нужно записать id в список тех, кто хочет получить скрипт после его загрузки
                 CEditorFrameId _id;
+                _id.Url = pData->get_Url();
                 _id.EditorId = pData->get_Id();
                 _id.FrameId = pData->get_FrameId();
                 _find->second.push_back(_id);
@@ -293,6 +298,7 @@ void CAscApplicationManager::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                     // создаем список ожидания
                     std::vector<CEditorFrameId> _arr;
                     CEditorFrameId _id;
+                    _id.Url = pData->get_Url();
                     _id.EditorId = pData->get_Id();
                     _id.FrameId = pData->get_FrameId();
                     _arr.push_back(_id);
@@ -302,7 +308,8 @@ void CAscApplicationManager::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                     if (std::wstring::npos == pData->get_Url().find(L"sdk/Common/AllFonts.js") &&
                         std::wstring::npos == pData->get_Url().find(L"sdkjs/common/AllFonts.js"))
                     {
-                        m_pInternal->Start_PrivateDownloadScript(pData->get_Url(), pData->get_Destination());
+                        if (m_pInternal->m_strPrivateDownloadUrl.empty())
+                            m_pInternal->Start_PrivateDownloadScript(pData->get_Url(), pData->get_Destination());
                     }
                     else
                     {
@@ -392,6 +399,49 @@ void CAscApplicationManager::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                 pView->Apply(pEvent);
             }
 
+            break;
+        }
+        case ASC_MENU_EVENT_TYPE_ENCRYPT_PERSONAL_KEY_EXPORT:
+        {
+            NSAscCrypto::AscCryptoType eType = m_pInternal->m_nCurrentCryptoMode;
+            if (NSAscCrypto::None == eType)
+                eType = NSAscCrypto::Simple;
+
+            NSEditorApi::CEncryptData* pData = (NSEditorApi::CEncryptData*)pEvent->m_pData;
+            std::map<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue>::iterator find = m_pInternal->m_mapCrypto.find(eType);
+            if (find != m_pInternal->m_mapCrypto.end())
+            {
+                std::string sData = find->second.m_sValue;
+                NSFile::CFileBinary oFile;
+                oFile.CreateFileW(pData->get_Path());
+                oFile.WriteFile((BYTE*)sData.c_str(), (DWORD)sData.length());
+                oFile.CloseFile();
+            }
+            break;
+        }
+        case ASC_MENU_EVENT_TYPE_ENCRYPT_PERSONAL_KEY_IMPORT:
+        {
+            NSAscCrypto::AscCryptoType eType = m_pInternal->m_nCurrentCryptoMode;
+            if (NSAscCrypto::None == eType)
+                eType = NSAscCrypto::Simple;
+
+            NSEditorApi::CEncryptData* pData = (NSEditorApi::CEncryptData*)pEvent->m_pData;
+            std::map<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue>::iterator find = m_pInternal->m_mapCrypto.find(eType);
+            if (find != m_pInternal->m_mapCrypto.end())
+            {
+                std::string sData;
+                if (!pData->get_Path().empty())
+                {
+                    NSFile::CFileBinary::ReadAllTextUtf8A(pData->get_Path(), sData);
+                }
+                else
+                {
+                    std::wstring sValueW = pData->get_Value();
+                    sData = U_TO_UTF8(sValueW);
+                }
+
+                this->SetCryptoMode(sData, (int)eType);
+            }
             break;
         }
         default:
@@ -523,6 +573,16 @@ CCefView* CAscApplicationManager::GetViewByRecentId(int nId)
     return this->GetViewByUrl(oInfo.m_sUrl);
 }
 
+std::vector<int> CAscApplicationManager::GetViewsId()
+{
+    std::vector<int> ret;
+    for (std::map<int, CCefView*>::iterator i = m_pInternal->m_mapViews.begin(); i != m_pInternal->m_mapViews.end(); ++i)
+    {
+        ret.push_back(i->first);
+    }
+    return ret;
+}
+
 void CAscApplicationManager::DestroyCefView(int nId, bool bIsSafe)
 {
     if (-1 == nId)
@@ -623,7 +683,7 @@ void CAscApplicationManager::CloseApplication()
         m_pInternal->m_pApplication->Close();
 }
 
-CApplicationFonts* CAscApplicationManager::GetApplicationFonts()
+NSFonts::IApplicationFonts* CAscApplicationManager::GetApplicationFonts()
 {
     return m_pInternal->m_pApplicationFonts;
 }
@@ -702,6 +762,8 @@ int CAscApplicationManager::GetFileFormatByExtentionForSave(const std::wstring& 
     int nFormat = -1;
     if (sName == L"docx")
         nFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX;
+    if (sName == L"dotx")
+        nFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOTX;
     if (sName == L"odt")
         nFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_ODT;
     if (sName == L"rtf")
@@ -713,6 +775,8 @@ int CAscApplicationManager::GetFileFormatByExtentionForSave(const std::wstring& 
 
     if (sName == L"xlsx")
         nFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX;
+    if (sName == L"xltx")
+        nFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLTX;
     if (sName == L"ods")
         nFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_ODS;
     if (sName == L"csv")
@@ -720,6 +784,8 @@ int CAscApplicationManager::GetFileFormatByExtentionForSave(const std::wstring& 
 
     if (sName == L"pptx")
         nFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
+    if (sName == L"potx")
+        nFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_POTX;
     if (sName == L"odp")
         nFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_ODP;
 
@@ -788,6 +854,61 @@ int CAscApplicationManager::GetMonitorScaleByWindow(const WindowHandleId& nHandl
 void CAscApplicationManager::SetEventToAllMainWindows(NSEditorApi::CAscMenuEvent* pEvent)
 {
     m_pInternal->SetEventToAllMainWindows(pEvent);
+}
+
+void CAscApplicationManager::SetCryptoMode(const std::string& sPassword, const int& nMode)
+{
+    if (0 < nMode && !sPassword.empty())
+    {
+        std::map<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue>::iterator find = m_pInternal->m_mapCrypto.find((NSAscCrypto::AscCryptoType)nMode);
+        if (find != m_pInternal->m_mapCrypto.end())
+        {
+            find->second.m_sValue = sPassword;
+        }
+    }
+
+    m_pInternal->m_nCurrentCryptoMode = (NSAscCrypto::AscCryptoType)nMode;
+
+    NSAscCrypto::CCryptoMode oCryptoMode;
+    oCryptoMode.Save(m_pInternal->m_cryptoKeyEnc, m_pInternal->m_cryptoKeyDec, m_pInternal->m_mapCrypto, m_oSettings.cookie_path + L"/user.data");
+
+    // не меняем режим для уже открылись
+    // m_pInternal->SendCryptoData();
+
+    std::string sCryptoMode = "default";
+    if (!sCryptoMode.empty())
+        sCryptoMode = std::to_string(m_pInternal->m_nCurrentCryptoMode);
+
+    m_pInternal->CheckSetting("--crypto-mode", sCryptoMode);
+    m_pInternal->m_mapSettings.insert(std::pair<std::string, std::string>("crypto-mode", std::to_string(m_pInternal->m_nCurrentCryptoMode)));
+    m_pInternal->SaveSettings();
+}
+
+int CAscApplicationManager::GetCryptoMode()
+{
+    return m_pInternal->m_nCurrentCryptoMode;
+}
+
+std::vector<int> CAscApplicationManager::GetSupportCryptoModes()
+{
+    CPluginsManager oPlugins;
+    oPlugins.m_strDirectory = m_oSettings.system_plugins_path;
+    oPlugins.m_strUserDirectory = m_oSettings.user_plugins_path;
+
+    oPlugins.GetInstalledPlugins();
+    std::vector<int> retValue;
+
+    for (std::map<int, std::string>::iterator iter = oPlugins.m_arCryptoModes.begin(); iter != oPlugins.m_arCryptoModes.end(); iter++)
+    {
+        retValue.push_back(iter->first);
+    }
+
+    return retValue;
+}
+
+NSAscCrypto::CAscKeychain* CAscApplicationManager::GetKeychainEngine()
+{
+    return new NSAscCrypto::CAscKeychain(m_pInternal);
 }
 
 /////////////////////////////////////////////////////////////
