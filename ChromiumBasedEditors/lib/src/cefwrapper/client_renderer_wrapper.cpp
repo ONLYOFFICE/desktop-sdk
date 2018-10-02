@@ -2436,6 +2436,29 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
+        else if (name == "GetExternalClouds")
+        {
+            std::wstring sFile = NSCommon::GetDirectoryName(m_sSystemPlugins) + L"/externalcloud.json";
+            std::string sContent = "";
+            if (NSFile::CFileBinary::ReadAllTextUtf8A(sFile, sContent))
+            {
+                NSCommon::string_replaceA(sContent, "\r", "");
+                NSCommon::string_replaceA(sContent, "\n", "");
+                NSCommon::string_replaceA(sContent, "\\", "\\\\");
+                NSCommon::string_replaceA(sContent, "\"", "\\\"");
+                CefRefPtr<CefV8Exception> exception;
+                CefV8Context::GetCurrentContext()->Eval("(function(){ return JSON.parse(\"" + sContent + "\"); })();",
+                                                                          #ifndef CEF_2623
+                                                                                      "", 0,
+                                                                          #endif
+                                                                          retval, exception);
+            }
+            else
+            {
+                retval = CefV8Value::CreateNull();
+            }
+            return true;
+        }
 
         // Function does not exist.
         return false;
@@ -2948,6 +2971,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction990 = CefV8Value::CreateFunction("IsProtectionSupport", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction991 = CefV8Value::CreateFunction("_GetAdvancedEncryptedData", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction992 = CefV8Value::CreateFunction("_SetAdvancedEncryptedData", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction993 = CefV8Value::CreateFunction("GetExternalClouds", _nativeHandler);
 
 
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -3101,6 +3125,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("IsProtectionSupport", _nativeFunction990, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("_GetAdvancedEncryptedData", _nativeFunction991, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("_SetAdvancedEncryptedData", _nativeFunction992, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("GetExternalClouds", _nativeFunction993, V8_PROPERTY_ATTRIBUTE_NONE);
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 

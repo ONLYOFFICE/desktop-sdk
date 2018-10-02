@@ -882,6 +882,9 @@ void CAscApplicationManager::SetCryptoMode(const std::string& sPassword, const i
     m_pInternal->CheckSetting("--crypto-mode", sCryptoMode);
     m_pInternal->m_mapSettings.insert(std::pair<std::string, std::string>("crypto-mode", std::to_string(m_pInternal->m_nCurrentCryptoMode)));
     m_pInternal->SaveSettings();
+
+    std::string sCodeInAllFrames = "if (window.onChangeCryptoMode) { window.onChangeCryptoMode(" + std::to_string(m_pInternal->m_nCurrentCryptoMode) + "); }";
+    m_pInternal->ExecuteInAllFrames(sCodeInAllFrames);
 }
 
 int CAscApplicationManager::GetCryptoMode()

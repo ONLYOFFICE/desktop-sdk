@@ -430,28 +430,28 @@ public:
 class CExternalCloudRegister
 {
 public:
-    std::wstring url;
+    std::wstring name;
     std::wstring test_editor;
     std::string correct_code;
 
 public:
     CExternalCloudRegister()
     {
-        url = L"";
+        name = L"";
         test_editor = L"";
         correct_code = "";
     }
 
     CExternalCloudRegister(const CExternalCloudRegister& src)
     {
-        url = src.url;
+        name = src.name;
         test_editor = src.test_editor;
         correct_code = src.correct_code;
     }
 
     CExternalCloudRegister& operator=(const CExternalCloudRegister& src)
     {
-        url = src.url;
+        name = src.name;
         test_editor = src.test_editor;
         correct_code = src.correct_code;
         return *this;
@@ -524,6 +524,8 @@ public:
 
     std::vector<CExternalCloudRegister> m_arExternalClouds;
 
+    NSCriticalSection::CRITICAL_SECTION m_oCS_SystemMessages;
+
 public:
     CAscApplicationManager_Private() : m_oKeyboardTimer(this)
     {
@@ -552,11 +554,15 @@ public:
         m_bIsUpdateFontsAttack = false;
 
         m_nCurrentCryptoMode = NSAscCrypto::None;
+
+        m_oCS_SystemMessages.InitializeCriticalSection();
     }
     bool GetEditorPermission()
     {
         return m_pAdditional ? m_pAdditional->GetEditorPermission() : true;
     }
+
+    void ExecuteInAllFrames(const std::string& sCode);
 
     virtual ~CAscApplicationManager_Private()
     {
@@ -564,6 +570,7 @@ public:
         RELEASEOBJECT(m_pAdditional);
         m_oCS_Scripts.DeleteCriticalSection();
         m_oCS_LocalFiles.DeleteCriticalSection();
+        m_oCS_SystemMessages.DeleteCriticalSection();
     }
 
     void CloseApplication()
@@ -797,12 +804,11 @@ public:
         m_pMain->UnlockCS(LOCK_CS_SCRIPT);
     }
 
-    bool TestExternal(std::wstring& url, CExternalCloudRegister& ex)
+    bool TestExternal(const std::wstring& name, CExternalCloudRegister& ex)
     {
         for (std::vector<CExternalCloudRegister>::iterator iter = m_arExternalClouds.begin(); iter != m_arExternalClouds.end(); iter++)
         {
-            std::wstring::size_type pos = url.find(iter->url);
-            if (pos != std::wstring::npos && pos < 10)
+            if (name == iter->name)
             {
                 ex = *iter;
                 return true;

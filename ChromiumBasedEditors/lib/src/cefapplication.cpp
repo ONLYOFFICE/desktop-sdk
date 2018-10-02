@@ -367,22 +367,22 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 
     pManager->m_pInternal->LoadCryptoData();
 
-    std::wstring sExternalClouds = NSFile::GetProcessDirectory() + L"/externalcloud.config";
-    std::wstring sExternalCloudsData = L"";
-    bool bIsReadExternalClouds = NSFile::CFileBinary::ReadAllTextUtf8(sExternalClouds, sExternalCloudsData);
+    std::wstring sExternalClouds = NSCommon::GetDirectoryName(pManager->m_oSettings.system_plugins_path) + L"/externalcloud.json";
+    std::string sExternalCloudsData = "";
+    bool bIsReadExternalClouds = NSFile::CFileBinary::ReadAllTextUtf8A(sExternalClouds, sExternalCloudsData);
 
     if (bIsReadExternalClouds)
     {
-        std::vector<std::wstring> arLines = ReadFileByLine(sExternalCloudsData);
-        int nCount = (int)arLines.size();
-        nCount = nCount - (nCount % 2);
-        for (int i = 0; i < nCount; i += 2)
+        std::string::size_type posExt = sExternalCloudsData.find("{", 0);
+        while (std::string::npos != posExt)
         {
+            std::string sExternalCloudsDataCurrent = sExternalCloudsData.substr(posExt);
             CExternalCloudRegister cloudEx;
-            cloudEx.url = arLines[i];
-            cloudEx.test_editor = arLines[i + 1];
+            cloudEx.name = CPluginsManager::GetStringValueW(sExternalCloudsDataCurrent, "name");
+            cloudEx.test_editor = CPluginsManager::GetStringValueW(sExternalCloudsDataCurrent, "editorPage");
 
             pManager->m_pInternal->m_arExternalClouds.push_back(cloudEx);
+            posExt = sExternalCloudsData.find("{", posExt + 1);
         }
     }
 

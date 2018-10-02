@@ -312,7 +312,8 @@ private:
         return false;
     }
 
-    std::string GetStringValue(const std::string& strJson, const std::string& strName)
+public:
+    static std::string GetStringValue(const std::string& strJson, const std::string& strName)
     {
         std::string::size_type nPosStartName = strJson.find("\"" + strName + "\"");
         if (nPosStartName == std::string::npos)
@@ -328,6 +329,11 @@ private:
             return "";
 
         return strJson.substr(pos1 + 1, pos2 - pos1 - 1);
+    }
+    static std::wstring GetStringValueW(const std::string& strJson, const std::string& strName)
+    {
+        std::string sRet = GetStringValue(strJson, strName);
+        return UTF8_TO_U(sRet);
     }
 };
 

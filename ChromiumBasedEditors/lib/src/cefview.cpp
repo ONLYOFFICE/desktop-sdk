@@ -637,6 +637,8 @@ public:
 
     void SendSystemMessage(CSystemMessage& sysMessage)
     {
+        CTemporaryCS oCS(&m_pCefView->GetAppManager()->m_pInternal->m_oCS_SystemMessages);
+
         CCefView* pMainView = m_pCefView->GetAppManager()->m_pInternal->GetViewForSystemMessages();
 
         if (pMainView != m_pCefView)
@@ -4031,13 +4033,18 @@ CCefView::~CCefView()
     RELEASEOBJECT(m_pInternal);
 }
 
+void CCefView::SetExternalCloud(const std::wstring& sProviderName)
+{
+    if (L"ONLYOFFICE" == sProviderName)
+        return;
+    m_pInternal->m_bIsExternalCloud = GetAppManager()->m_pInternal->TestExternal(sProviderName, m_pInternal->m_oExternalCloud);
+}
+
 void CCefView::load(const std::wstring& urlInputSrc)
 {
     std::wstring urlInput = urlInputSrc;
     if (true)
     {
-        m_pInternal->m_bIsExternalCloud = GetAppManager()->m_pInternal->TestExternal(urlInput, m_pInternal->m_oExternalCloud);
-
         if (m_pInternal->m_bIsExternalCloud && GetType() == cvwtSimple)
         {
             NSCommon::string_replace(urlInput, L"/products/files/", L"/");
@@ -5141,6 +5148,13 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
             m_pInternal->m_sDownloadViewPath += (L"." + NSCommon::GetFileExtention(m_pInternal->m_sOpenAsLocalName));
 
             // load preview...
+            if (m_pInternal->m_oLocalInfo.m_oInfo.m_nCounterConvertion != 0)
+            {
+                // RELOAD!!!
+                m_pInternal->m_oLocalInfo.m_oInfo.m_nCounterConvertion = 0;
+                if (NSDirectory::Exists(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir))
+                    NSDirectory::DeleteDirectory(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir);
+            }
             StartDownload(m_pInternal->m_sOpenAsLocalSrc);
             return;
         }
@@ -5560,4 +5574,16 @@ void CASCFileConverterToEditor::NativeViewerOpenEnd(const std::string& sBase64)
     oFile.CloseFile();
 
     m_bIsNativeOpening = false;
+}
+
+
+void CAscApplicationManager_Private::ExecuteInAllFrames(const std::string& sCode)
+{
+    CCefView* pView = GetViewForSystemMessages();
+    if (!pView || !pView->m_pInternal || !pView->m_pInternal->GetBrowser())
+        return;
+
+    CefRefPtr<CefFrame> pFrame = pView->m_pInternal->GetBrowser()->GetMainFrame();
+    if (pFrame)
+        pFrame->ExecuteJavaScript(sCode, pFrame->GetURL(), 0);
 }
