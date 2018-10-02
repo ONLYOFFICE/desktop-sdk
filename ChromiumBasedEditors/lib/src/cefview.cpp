@@ -3081,6 +3081,15 @@ public:
         CefRefPtr<CefRequest> request) OVERRIDE
     {
         std::wstring url = request->GetURL().ToWString();
+
+#if 0
+        if (std::wstring::npos != url.find(L"AllFonts.js"))
+        {
+            std::wstring sPathFonts = m_pParent->GetAppManager()->m_oSettings.fonts_cache_info_path + L"/AllFonts.js";
+            return GetLocalFileRequest(sPathFonts, "", "");
+        }
+#endif
+
         if (url.find(L"require.js") != std::wstring::npos)
         {
             const std::wstring& sAppDataPath = m_pParent->GetAppManager()->m_oSettings.app_data_path;
