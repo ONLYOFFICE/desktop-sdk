@@ -120,14 +120,7 @@
 
 					for (var i = 0; i < obj.data.length; i++)
 					{
-						if (obj.data[i]["change"])
-						{
-							obj.data[i]["change"] = ONLYONET.decryptData(obj.data[i]["change"], obj.password, obj.docinfo );
-						}
-						else
-						{
-							obj.data[i] = ONLYONET.decryptData(obj.data[i], obj.password, obj.docinfo);
-						}
+						obj.data[i] = ONLYONET.decryptData(obj.data[i], obj.password, obj.docinfo);						
 					}	
 					
 					AscDesktopEditor.sendSystemMessage(obj);
