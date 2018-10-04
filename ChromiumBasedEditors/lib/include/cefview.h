@@ -90,7 +90,7 @@ public:
     
     bool StartDownload(const std::wstring& sUrl);
 
-    void SetExternalCloud(const std::wstring& sProviderName);
+    void SetExternalCloud(const std::wstring& sProviderId);
 
 #if 0
     virtual void dragEnterEvent(QDragEnterEvent *);

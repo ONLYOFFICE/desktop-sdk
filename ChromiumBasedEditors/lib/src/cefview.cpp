@@ -4046,11 +4046,11 @@ CCefView::~CCefView()
     RELEASEOBJECT(m_pInternal);
 }
 
-void CCefView::SetExternalCloud(const std::wstring& sProviderName)
+void CCefView::SetExternalCloud(const std::wstring& sProviderId)
 {
-    if (L"ONLYOFFICE" == sProviderName)
+    if (L"asc" == sProviderId)
         return;
-    m_pInternal->m_bIsExternalCloud = GetAppManager()->m_pInternal->TestExternal(sProviderName, m_pInternal->m_oExternalCloud);
+    m_pInternal->m_bIsExternalCloud = GetAppManager()->m_pInternal->TestExternal(sProviderId, m_pInternal->m_oExternalCloud);
 }
 
 void CCefView::load(const std::wstring& urlInputSrc)

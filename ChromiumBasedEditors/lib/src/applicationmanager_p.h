@@ -808,11 +808,11 @@ public:
         m_pMain->UnlockCS(LOCK_CS_SCRIPT);
     }
 
-    bool TestExternal(const std::wstring& name, CExternalCloudRegister& ex)
+    bool TestExternal(const std::wstring& sId, CExternalCloudRegister& ex)
     {
         for (std::vector<CExternalCloudRegister>::iterator iter = m_arExternalClouds.begin(); iter != m_arExternalClouds.end(); iter++)
         {
-            if (name == iter->name)
+            if (sId == iter->id)
             {
                 ex = *iter;
                 return true;
