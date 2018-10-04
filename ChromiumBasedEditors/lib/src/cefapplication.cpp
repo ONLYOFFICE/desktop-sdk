@@ -378,6 +378,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
         {
             std::string sExternalCloudsDataCurrent = sExternalCloudsData.substr(posExt);
             CExternalCloudRegister cloudEx;
+            cloudEx.id = CPluginsManager::GetStringValueW(sExternalCloudsDataCurrent, "id");
             cloudEx.name = CPluginsManager::GetStringValueW(sExternalCloudsDataCurrent, "name");
             cloudEx.test_editor = CPluginsManager::GetStringValueW(sExternalCloudsDataCurrent, "editorPage");
 

@@ -3082,12 +3082,32 @@ public:
     {
         std::wstring url = request->GetURL().ToWString();
 
-#if 0
+#ifdef DEBUG_CLOUD_5_2
+
+#ifdef DEBUG_LOCAL_SERVER
         if (std::wstring::npos != url.find(L"AllFonts.js"))
         {
             std::wstring sPathFonts = m_pParent->GetAppManager()->m_oSettings.fonts_cache_info_path + L"/AllFonts.js";
             return GetLocalFileRequest(sPathFonts, "", "");
         }
+#endif
+
+        std::wstring sBaseWebCloudPath = L"C:/ProgramData/ONLYOFFICE/webdata/cloud/5.2.0";
+        std::wstring::size_type posSdkAll = url.rfind(L"/sdk-all");
+
+        if (std::wstring::npos != posSdkAll)
+        {
+            std::wstring::size_type posEditorSdk = url.rfind('/', posSdkAll - 1);
+            if (std::wstring::npos != posEditorSdk)
+            {
+                std::wstring sTestPath = sBaseWebCloudPath + url.substr(posEditorSdk);
+                if (NSFile::CFileBinary::Exists(sTestPath))
+                {
+                    return GetLocalFileRequest(sTestPath, "", "");
+                }
+            }
+        }
+
 #endif
 
         if (url.find(L"require.js") != std::wstring::npos)
@@ -3256,22 +3276,6 @@ require.load = function (context, moduleName, url) {\n\
             }
         }
 #endif
-
-        if (false)
-        {
-            int nPos = url.find(L"OfficeWeb/sdk/Fonts/");
-
-            if (nPos != std::wstring::npos)
-            {
-                std::wstring urlFind = url.substr(nPos + 20); // 20 = len(OfficeWeb/sdk/Fonts/)
-                //CefRequest::HeaderMap _map;
-                //request->GetHeaderMap(_map);
-                //_map.insert(std::pair<CefString, CefString>("Access-Control-Allow-Origin", "*"));
-                //_map.insert(std::pair<CefString, CefString>("Access-Control-Allow-Methods", "POST, GET, OPTIONS, HEAD"));
-                //request->SetHeaderMap(_map);
-                return GetLocalFileRequest(urlFind);
-            }
-        }
 
         return NULL;
     }

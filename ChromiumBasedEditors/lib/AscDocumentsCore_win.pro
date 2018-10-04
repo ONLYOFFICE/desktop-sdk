@@ -23,6 +23,10 @@ LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lPdfReader -lPdfWriter -lDjVuFile -lXpsF
 LIBS += -lCrypt32
 # ------------------------------------------------------
 
+# for cloud debug
+#DEFINES += DEBUG_CLOUD_5_2
+#DEFINES += DEBUG_LOCAL_SERVER
+
 ####################  BOOST  ###########################
 
 CONFIG += core_boost_libs

@@ -430,6 +430,7 @@ public:
 class CExternalCloudRegister
 {
 public:
+    std::wstring id;
     std::wstring name;
     std::wstring test_editor;
     std::string correct_code;
@@ -437,6 +438,7 @@ public:
 public:
     CExternalCloudRegister()
     {
+        id = L"";
         name = L"";
         test_editor = L"";
         correct_code = "";
@@ -444,6 +446,7 @@ public:
 
     CExternalCloudRegister(const CExternalCloudRegister& src)
     {
+        id = src.id;
         name = src.name;
         test_editor = src.test_editor;
         correct_code = src.correct_code;
@@ -451,6 +454,7 @@ public:
 
     CExternalCloudRegister& operator=(const CExternalCloudRegister& src)
     {
+        id = src.id;
         name = src.name;
         test_editor = src.test_editor;
         correct_code = src.correct_code;
