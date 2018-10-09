@@ -3092,7 +3092,18 @@ public:
         }
 #endif
 
+#if 1
         std::wstring sBaseWebCloudPath = L"C:/ProgramData/ONLYOFFICE/webdata/cloud/5.2.0";
+#else
+        wchar_t buffer[257];
+        memset(buffer, 0, 257 * sizeof(wchar_t));
+        DWORD size = sizeof(buffer);
+        GetUserNameW(buffer, &size);
+
+        std::wstring sUserName(buffer);
+        std::wstring sBaseWebCloudPath = L"C:/Users/" + sUserName + L"/AppData/Local/ONLYOFFICE/DesktopEditors/webdata/cloud/5.2.0";
+#endif
+
         std::wstring::size_type posSdkAll = url.rfind(L"/sdk-all");
 
         if (std::wstring::npos != posSdkAll)
