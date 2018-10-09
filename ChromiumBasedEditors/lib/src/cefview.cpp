@@ -5609,5 +5609,8 @@ void CAscApplicationManager_Private::ExecuteInAllFrames(const std::string& sCode
 
     CefRefPtr<CefFrame> pFrame = pView->m_pInternal->GetBrowser()->GetMainFrame();
     if (pFrame)
-        pFrame->ExecuteJavaScript(sCode, pFrame->GetURL(), 0);
+    {
+        std::string sCodeAll = "window.AscDesktopEditor.CallInAllWindows(\"function(){" + sCode + "}\");";
+        pFrame->ExecuteJavaScript(sCodeAll, pFrame->GetURL(), 0);
+    }
 }
