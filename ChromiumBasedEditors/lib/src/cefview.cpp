@@ -440,6 +440,9 @@ public:
 
     std::wstring m_sNativeFilePassword;
 
+    int m_lStartControlWidth;
+    int m_lStartControlHeight;
+
 public:
     class CSystemMessage
     {
@@ -527,6 +530,9 @@ public:
         m_bIsCloudCryptFile = false;
 
         m_bIsExternalCloud = false;
+
+        m_lStartControlWidth = -1;
+        m_lStartControlHeight = -1;
     }
 
     void Destroy()
@@ -4213,12 +4219,23 @@ void CCefView::load(const std::wstring& urlInputSrc)
 
     // Initialize window info to the defaults for a child window.
 
+    int nParentW = m_pInternal->m_pWidgetImpl->parent_width();
+    int nParentH = m_pInternal->m_pWidgetImpl->parent_height();
+    if (-1 != m_pInternal->m_lStartControlWidth && -1 != m_pInternal->m_lStartControlHeight)
+    {
+        nParentW = m_pInternal->m_lStartControlWidth;
+        nParentH = m_pInternal->m_lStartControlHeight;
+
+        m_pInternal->m_lStartControlWidth = -1;
+        m_pInternal->m_lStartControlHeight = -1;
+    }
+
 #ifdef WIN32
     RECT rect;
     rect.left = 0;
     rect.top = 0;
-    rect.right = m_pInternal->m_pWidgetImpl->parent_width() - 1;
-    rect.bottom = m_pInternal->m_pWidgetImpl->parent_height() - 1;
+    rect.right = nParentW - 1;
+    rect.bottom = nParentH - 1;
     info.SetAsChild(hWnd, rect);
 #endif
 
@@ -4226,8 +4243,8 @@ void CCefView::load(const std::wstring& urlInputSrc)
     CefRect rect;
     rect.x = 0;
     rect.y = 0;
-    rect.width = m_pInternal->m_pWidgetImpl->parent_width();
-    rect.height = m_pInternal->m_pWidgetImpl->parent_height();
+    rect.width = nParentW;
+    rect.height = nParentH;
 
     Display* display = cef_get_xdisplay();
     Window x11root = XDefaultRootWindow(display);
@@ -4242,8 +4259,8 @@ void CCefView::load(const std::wstring& urlInputSrc)
 
 #ifdef _MAC
     info.SetAsChild(hWnd, 0, 0,
-                    m_pInternal->m_pWidgetImpl->parent_width(),
-                    m_pInternal->m_pWidgetImpl->parent_height());
+                    nParentW,
+                    nParentH);
 #endif
 
 #if 0
@@ -4358,10 +4375,20 @@ bool CCefView::nativeEvent(const char* data, const int& datalen, void *message, 
 void CCefView::resizeEvent(int width, int height)
 {
     if (!m_pInternal->m_handler || !m_pInternal->m_handler->GetBrowser() || !m_pInternal->m_handler->GetBrowser()->GetHost())
+    {
+        m_pInternal->m_lStartControlWidth = width;
+        m_pInternal->m_lStartControlHeight = height;
         return;
+    }
     
     if (!m_pInternal->m_pWidgetImpl || m_pInternal->m_bIsClosing)
         return;
+
+    if (-1 != m_pInternal->m_lStartControlWidth && -1 != m_pInternal->m_lStartControlHeight)
+    {
+        m_pInternal->m_lStartControlWidth = width;
+        m_pInternal->m_lStartControlHeight = height;
+    }
 
     CefWindowHandle hwnd = m_pInternal->m_handler->GetBrowser()->GetHost()->GetWindowHandle();
 

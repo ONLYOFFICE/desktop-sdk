@@ -352,12 +352,23 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     oPlugins.m_strUserDirectory = pManager->m_oSettings.user_plugins_path;
     oPlugins.GetInstalledPlugins();
 
+    bool bIsCurrentCryptoPresent = false;
     for (std::map<int, std::string>::iterator iterCrypto = oPlugins.m_arCryptoModes.begin(); iterCrypto != oPlugins.m_arCryptoModes.end(); iterCrypto++)
     {
         NSAscCrypto::CAscCryptoJsonValue value;
         value.m_eType = (NSAscCrypto::AscCryptoType)iterCrypto->first;
         value.m_sGuid = iterCrypto->second;
         pManager->m_pInternal->m_mapCrypto.insert(std::pair<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue>(value.m_eType, value));
+
+        if (!bIsCurrentCryptoPresent && (pManager->m_pInternal->m_nCurrentCryptoMode == value.m_eType))
+            bIsCurrentCryptoPresent = 0;
+    }
+    // смотрим, есть ли плагин для выставленного режима криптования
+    if (!bIsCurrentCryptoPresent)
+    {
+        pManager->m_pInternal->m_nCurrentCryptoMode = NSAscCrypto::None;
+        pManager->m_pInternal->CheckSetting("--crypto-mode", "default");
+        pManager->m_pInternal->SaveSettings();
     }
 
     for (std::vector<CExternalPluginInfo>::iterator iterExt = oPlugins.m_arExternals.begin(); iterExt != oPlugins.m_arExternals.end(); iterExt++)
