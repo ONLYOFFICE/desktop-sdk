@@ -373,7 +373,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 
     if (bIsReadExternalClouds)
     {
-        std::string::size_type posExt = sExternalCloudsData.find("{", 0);
+        std::string::size_type posExt = sExternalCloudsData.find("\"id\"", 0);
         while (std::string::npos != posExt)
         {
             std::string sExternalCloudsDataCurrent = sExternalCloudsData.substr(posExt);
@@ -383,7 +383,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
             cloudEx.test_editor = CPluginsManager::GetStringValueW(sExternalCloudsDataCurrent, "editorPage");
 
             pManager->m_pInternal->m_arExternalClouds.push_back(cloudEx);
-            posExt = sExternalCloudsData.find("{", posExt + 1);
+            posExt = sExternalCloudsData.find("\"id\"", posExt + 2);
         }
     }
 
