@@ -68,6 +68,50 @@
 #include "crypto_mode.h"
 #include "plugins.h"
 
+namespace NSSystem
+{
+    static void SetEnvValueA(const std::string& sName, const std::string& sValue)
+    {
+#ifdef WIN32
+        SetEnvironmentVariableA(sName.c_str(), sValue.c_str());
+#else
+        std::string sTmp = sName + "=" + sValue;
+        putenv((char*)sValue.c_str());
+#endif
+    }
+    static void SetEnvValue(const std::string& sName, const std::wstring& sValue)
+    {
+        std::string sValueA = U_TO_UTF8(sValue);
+        return SetEnvValueA(sName, sValueA);
+    }
+    static std::string GetEnvValueA(const std::string& sName)
+    {
+#ifdef WIN32
+        const DWORD buffSize = 65535;
+        char buffer[buffSize];
+        if (GetEnvironmentVariableA(sName.c_str(), buffer, buffSize))
+        {
+            return std::string(buffer);
+        }
+        else
+        {
+            return "";
+        }
+#else
+        char* pPath = getenv(sName.c_str());
+        if (NULL != pPath)
+            return std::string(pPath);
+        return "";
+#endif
+    }
+    static std::wstring GetEnvValue(const std::string& sName)
+    {
+        std::string sValueA = GetEnvValueA(sName);
+        std::wstring sValue = UTF8_TO_U(sValueA);
+        return sValue;
+    }
+}
+
 namespace NSFileDownloader
 {
     static bool IsNeedDownload(const std::wstring& FilePath)

@@ -2438,8 +2438,15 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
         }
         else if (name == "GetExternalClouds")
         {
-            std::wstring sFile = NSCommon::GetDirectoryName(m_sSystemPlugins) + L"/externalcloud.json";
+            std::wstring sSP = m_sSystemPlugins;
+            if (sSP.empty())
+            {
+                sSP = NSSystem::GetEnvValue("asc-systems-plugins");
+            }
+
+            std::wstring sFile = NSCommon::GetDirectoryName(sSP) + L"/externalcloud.json";
             std::string sContent = "";
+
             if (NSFile::CFileBinary::ReadAllTextUtf8A(sFile, sContent))
             {
                 NSCommon::string_replaceA(sContent, "\r", "");

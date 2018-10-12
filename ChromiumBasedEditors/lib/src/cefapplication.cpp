@@ -219,6 +219,8 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 
     if (process_type == client::ClientApp::BrowserProcess)
     {
+        NSSystem::SetEnvValue("asc-systems-plugins", pManager->m_oSettings.system_plugins_path);
+
         // ASC command line props
         pManager->m_pInternal->LoadSettings();
         for (int i = 0; i < argc; ++i)
