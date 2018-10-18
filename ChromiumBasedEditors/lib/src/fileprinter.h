@@ -97,6 +97,8 @@ public:
     int m_lRasterWatermarkW;
     int m_lRasterWatermarkH;
 
+    bool m_bIsOpenAsLocal;
+
     CApplicationManagerAdditionalBase* m_pAdditional;
 
 public:

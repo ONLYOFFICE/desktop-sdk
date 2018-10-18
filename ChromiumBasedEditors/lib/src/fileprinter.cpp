@@ -49,6 +49,8 @@ CPrintData::CPrintData()
     m_pNativePrinter = NULL;
 
     m_pAdditional = NULL;
+
+    m_bIsOpenAsLocal = false;
 }
 CPrintData::~CPrintData()
 {
@@ -123,6 +125,7 @@ std::wstring CPrintData::DownloadImage(const std::wstring& strFile)
 
 void CPrintData::CalculateImagePaths(bool bIsOpenAsLocal)
 {
+    m_bIsOpenAsLocal = bIsOpenAsLocal;
     m_sDocumentImagesPath = L"";
     if (!bIsOpenAsLocal && NSFileDownloader::IsNeedDownload(m_sFrameUrl) && !NSFileDownloader::IsNeedDownload(m_sDocumentUrl))
     {
@@ -284,7 +287,8 @@ std::wstring CPrintData::GetImagePath(const std::wstring& sPath)
 
     // 4) может это файл файла?
     if (0 == sPath.find(L"media/image") || 0 == sPath.find(L"image") ||
-        0 == sPath.find(L"image/display") || 0 == sPath.find(L"display"))
+        0 == sPath.find(L"image/display") || 0 == sPath.find(L"display") ||
+        ((0 == sPath.find(L"media/") && m_bIsOpenAsLocal)))
     {
         std::wstring sExt = L"";
         int nPos = sPath.find_last_of(wchar_t('.'));
