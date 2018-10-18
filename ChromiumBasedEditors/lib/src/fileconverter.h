@@ -955,9 +955,20 @@ public:
 
         if (!m_oInfo.m_sPassword.empty())
         {
-            oBuilder.WriteString(L"<m_sSavePassword>");
-            oBuilder.WriteEncodeXmlString(m_oInfo.m_sPassword);
-            oBuilder.WriteString(L"</m_sSavePassword>");
+            switch (m_oInfo.m_nCurrentFileFormat)
+            {
+                case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX:
+                case AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX:
+                case AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX:
+                {
+                    oBuilder.WriteString(L"<m_sSavePassword>");
+                    oBuilder.WriteEncodeXmlString(m_oInfo.m_sPassword);
+                    oBuilder.WriteString(L"</m_sSavePassword>");
+                    break;
+                }
+                default:
+                    break;
+            }
         }
 
         if (!m_oInfo.m_sDocumentInfo.empty())

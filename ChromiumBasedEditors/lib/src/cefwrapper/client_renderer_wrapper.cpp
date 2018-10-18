@@ -2117,7 +2117,13 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
         }
         else if (name == "IsProtectionSupport")
         {
-            retval = CefV8Value::CreateBool(m_bIsSupportProtect);
+            bool bIsProtect = m_bIsSupportProtect;
+            if (bIsProtect)
+            {
+                if (m_bIsSupportOnlyPass && (m_nCryptoMode > 0))
+                    bIsProtect = false;
+            }
+            retval = CefV8Value::CreateBool(bIsProtect);
             return true;
         }
         else if (name == "SetSupportSign")

@@ -113,7 +113,7 @@ public:
     std::wstring GetImagePath(const std::wstring& sPath);
     void FitToPage(float fSourceWidth, float  fSourceHeight, float  fTargetWidth, float fTargetHeight, float& fResX, float& fResY, float& fResWidth, float& fResHeight);
     std::wstring DownloadImage(const std::wstring& strFile);
-    void CalculateImagePaths();
+    void CalculateImagePaths(bool bIsOpenAsLocal = false);
 };
 
 #endif // ASC_CEFCONVERTER_FILEPRINTER_H

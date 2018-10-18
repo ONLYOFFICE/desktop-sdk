@@ -1804,7 +1804,7 @@ public:
                     m_pParent->m_pInternal->m_oPrintData.m_sDocumentUrl = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/";
                 }
 
-                m_pParent->m_pInternal->m_oPrintData.CalculateImagePaths();
+                m_pParent->m_pInternal->m_oPrintData.CalculateImagePaths(!m_pParent->m_pInternal->m_sOpenAsLocalSrc.empty());
 
                 if (m_pParent->GetAppManager()->GetEventListener())
                 {

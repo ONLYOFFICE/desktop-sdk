@@ -121,10 +121,10 @@ std::wstring CPrintData::DownloadImage(const std::wstring& strFile)
     return strFileName;
 }
 
-void CPrintData::CalculateImagePaths()
+void CPrintData::CalculateImagePaths(bool bIsOpenAsLocal)
 {
     m_sDocumentImagesPath = L"";
-    if (NSFileDownloader::IsNeedDownload(m_sFrameUrl) && !NSFileDownloader::IsNeedDownload(m_sDocumentUrl))
+    if (!bIsOpenAsLocal && NSFileDownloader::IsNeedDownload(m_sFrameUrl) && !NSFileDownloader::IsNeedDownload(m_sDocumentUrl))
     {
         if (0 == m_sDocumentUrl.find(wchar_t('/')))
         {
