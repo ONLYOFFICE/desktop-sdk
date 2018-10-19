@@ -1373,6 +1373,20 @@ public:
             {
                 if (!m_pParent->m_pInternal->m_strSSOFirstDomain.empty())
                 {
+                    std::wstring sPositionAuth = m_pParent->m_pInternal->m_strSSOFirstDomain + L"/auth.aspx";
+                    std::wstring::size_type nPosition = sUrl.find(sPositionAuth);
+
+                    if (std::string::npos != nPosition)
+                    {
+                        nPosition += sPositionAuth.length();
+                        if (nPosition >= sUrl.length())
+                        {
+                            // add ?desktop=true
+                            this->m_pParent->load(L"sso:" + sUrl + L"?desktop=true");
+                            return true;
+                        }
+                    }
+
                     std::wstring sCurrentBaseDomain = GetBaseDomain(sUrl);
 
                     if (!sCurrentBaseDomain.empty() && sCurrentBaseDomain != m_pParent->m_pInternal->m_strSSOFirstDomain)
@@ -1431,6 +1445,29 @@ public:
                     sUrl += L"&desktop=true";
 
                 sUrl = L"sso:" + sUrl;
+
+                if (!m_pParent->m_pInternal->m_strSSOFirstDomain.empty())
+                {
+                    for (std::map<std::wstring, bool>::iterator i = m_pParent->m_pInternal->m_arSSOSecondDomain.begin();
+                         i != m_pParent->m_pInternal->m_arSSOSecondDomain.end(); i++)
+                    {
+                        std::wstring sSSO_2 = i->first;
+                        m_pParent->GetAppManager()->Logout(sSSO_2);
+
+                        // check base domain
+                        std::wstring::size_type posSSO_2_1 = sSSO_2.rfind('.');
+                        if (std::wstring::npos != posSSO_2_1)
+                        {
+                            std::wstring::size_type posSSO_2_2 = sSSO_2.rfind('.', posSSO_2_1 - 1);
+                            if (std::wstring::npos != posSSO_2_2)
+                            {
+                                std::wstring sSSO_2_2 = sSSO_2.substr(posSSO_2_2 + 1);
+                                if (std::wstring::npos == m_pParent->m_pInternal->m_strSSOFirstDomain.find(sSSO_2_2))
+                                    m_pParent->GetAppManager()->Logout(sSSO_2_2);
+                            }
+                        }
+                    }
+                }
 
                 m_pParent->load(sUrl);
                 return true;
@@ -4071,7 +4108,10 @@ CCefView::~CCefView()
 void CCefView::SetExternalCloud(const std::wstring& sProviderId)
 {
     if (L"asc" == sProviderId)
+    {
+        m_pInternal->m_bIsSSO = true;
         return;
+    }
     m_pInternal->m_bIsExternalCloud = GetAppManager()->m_pInternal->TestExternal(sProviderId, m_pInternal->m_oExternalCloud);
 }
 
@@ -4158,7 +4198,9 @@ void CCefView::load(const std::wstring& urlInputSrc)
     if (!m_pInternal || !m_pInternal->m_pManager)
         return;
 
-    m_pInternal->m_bIsSSO = false;
+    if (m_pInternal->m_handler)
+        m_pInternal->m_bIsSSO = false;
+
     if (0 == url.find(L"sso:"))
     {
         url = url.substr(4);
