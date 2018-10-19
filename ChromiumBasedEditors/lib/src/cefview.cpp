@@ -1185,6 +1185,11 @@ public:
         if (m_pParent->m_pInternal->m_bIsExternalCloud && !bIsEditor)
         {
             bIsEditor = (sUrl.find(m_pParent->m_pInternal->m_oExternalCloud.test_editor) == std::wstring::npos) ? false : true;
+
+            if (bIsEditor)
+            {
+                sUrl += L"&desktop_editor_cloud_type:external";
+            }
         }
 #endif
 
@@ -4078,6 +4083,14 @@ void CCefView::load(const std::wstring& urlInputSrc)
         if (m_pInternal->m_bIsExternalCloud && GetType() == cvwtSimple)
         {
             NSCommon::string_replace(urlInput, L"/products/files/", L"/");
+        }
+        else if (GetType() == cvwtEditor)
+        {
+            if (std::wstring::npos != urlInput.find(L"&desktop_editor_cloud_type:external"))
+            {
+                m_pInternal->m_bIsExternalCloud = true;
+                NSCommon::string_replace(urlInput, L"&desktop_editor_cloud_type:external", L"");
+            }
         }
     }
 
