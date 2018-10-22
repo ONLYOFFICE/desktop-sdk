@@ -1062,6 +1062,13 @@ else \n\
             message->GetArgumentList()->SetString(0, sName);
             browser->SendProcessMessage(PID_BROWSER, message);
 
+            // HACK!!!
+            if (m_nCryptoMode > 0)
+            {
+                CefRefPtr<CefFrame> _frame =  CefV8Context::GetCurrentContext()->GetFrame();
+                _frame->ExecuteJavaScript("(function() { try { DE.controllers.Main.editorConfig.canUseHistory = false; } catch(err){} })();", _frame->GetURL(), 0);
+            }
+
             return true;
         }
         else if (name == "OnSave")
