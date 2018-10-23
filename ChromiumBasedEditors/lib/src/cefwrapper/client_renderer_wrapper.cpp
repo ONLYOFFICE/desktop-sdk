@@ -298,6 +298,7 @@ public:
 
     CNativeViewer m_oNativeViewer;
     int m_nNativeOpenFileTimerID;
+    int m_bIsNativeViewerMode;
 
     bool m_bIsSupportSigs;
     bool m_bIsSupportOnlyPass;
@@ -340,6 +341,7 @@ public:
         m_pLocalApplicationFonts = NULL;
 
         m_nNativeOpenFileTimerID = -1;
+        m_bIsNativeViewerMode = false;
 
         m_bIsPrinting = false;
 
@@ -1741,6 +1743,7 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
             std::wstring sFileDir = (*iter)->GetStringValue().ToWString(); ++iter;
 
             m_oNativeViewer.Init(sFileDir, sFontsDir, sOpeningFilePath, this);
+            m_bIsNativeViewerMode = true;
 
             CefRefPtr<CefV8Value> _timerID;
             CefRefPtr<CefV8Exception> _exception;
@@ -2479,6 +2482,31 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
             }
             return true;
         }
+        else if (name == "IsNativeViewer")
+        {
+            retval = CefV8Value::CreateBool(m_bIsNativeViewerMode);
+            return true;
+        }
+        else if (name == "CryptoDownloadAs")
+        {
+            std::string fileData = arguments[0]->GetStringValue().ToString();
+
+            NSFile::CFileBinary oFileWithChanges;
+            oFileWithChanges.CreateFileW(m_sCryptDocumentFolder + L"/EditorWithChanges.bin");
+            oFileWithChanges.WriteFile((BYTE*)fileData.c_str(), (DWORD)fileData.length());
+            oFileWithChanges.CloseFile();
+
+            int nFormat = arguments[1]->GetIntValue();
+            std::string sParams = arguments[2]->GetStringValue();
+
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("crypto_download_as");
+            message->GetArgumentList()->SetInt(0, nFormat);
+            message->GetArgumentList()->SetString(1, sParams);
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            browser->SendProcessMessage(PID_BROWSER, message);
+
+            return true;
+        }
 
         // Function does not exist.
         return false;
@@ -2992,6 +3020,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction991 = CefV8Value::CreateFunction("_GetAdvancedEncryptedData", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction992 = CefV8Value::CreateFunction("_SetAdvancedEncryptedData", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction993 = CefV8Value::CreateFunction("GetExternalClouds", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction994 = CefV8Value::CreateFunction("IsNativeViewer", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction995 = CefV8Value::CreateFunction("CryptoDownloadAs", _nativeHandler);
 
 
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -3146,6 +3176,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("_GetAdvancedEncryptedData", _nativeFunction991, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("_SetAdvancedEncryptedData", _nativeFunction992, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("GetExternalClouds", _nativeFunction993, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("IsNativeViewer", _nativeFunction994, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("CryptoDownloadAs", _nativeFunction995, V8_PROPERTY_ATTRIBUTE_NONE);
+
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 
@@ -4076,6 +4109,15 @@ delete window[\"crypto_images_map\"][_url];\n\
         CefRefPtr<CefFrame> _frame = browser->GetFrame(nFrameId);
         if (_frame)
             _frame->ExecuteJavaScript("(function() { if (!window.on_set_advanced_encrypted_data) return; window.on_set_advanced_encrypted_data(\"" + sRet + "\"); delete window.on_set_advanced_encrypted_data; })();", _frame->GetURL(), 0);
+    }
+    else if (sMessageName == "crypto_download_as_end")
+    {
+      CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
+      if (_frame)
+      {
+          _frame->ExecuteJavaScript("(function() { window.CryptoDownloadAsEnd(); })();", _frame->GetURL(), 0);
+      }
+      return true;
     }
 
     if (m_pAdditional.is_init() && m_pAdditional->OnProcessMessageReceived(app, browser, source_process, message))

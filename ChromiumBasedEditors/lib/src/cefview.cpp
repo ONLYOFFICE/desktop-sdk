@@ -2775,6 +2775,15 @@ public:
 
             return true;
         }
+        else if (message_name == "crypto_download_as")
+        {
+            int nFormat = message->GetArgumentList()->GetInt(0);
+            std::string sParams = message->GetArgumentList()->GetString(1);
+
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("crypto_download_as_end");
+            browser->SendProcessMessage(PID_RENDERER, message);
+            return true;
+        }
 
         CAscApplicationManager_Private* pInternalMan = m_pParent->GetAppManager()->m_pInternal;
         if (pInternalMan->m_pAdditional && pInternalMan->m_pAdditional->OnProcessMessageReceived(browser, source_process, message))
@@ -3140,29 +3149,32 @@ public:
         }
 #endif
 
+        if (url.find(L"file:/") != 0)
+        {
 #if 1
-        std::wstring sBaseWebCloudPath = L"C:/ProgramData/ONLYOFFICE/webdata/cloud/5.2.0";
+            std::wstring sBaseWebCloudPath = L"C:/ProgramData/ONLYOFFICE/webdata/cloud/5.2.0";
 #else
-        wchar_t buffer[257];
-        memset(buffer, 0, 257 * sizeof(wchar_t));
-        DWORD size = sizeof(buffer);
-        GetUserNameW(buffer, &size);
+            wchar_t buffer[257];
+            memset(buffer, 0, 257 * sizeof(wchar_t));
+            DWORD size = sizeof(buffer);
+            GetUserNameW(buffer, &size);
 
-        std::wstring sUserName(buffer);
-        std::wstring sBaseWebCloudPath = L"C:/Users/" + sUserName + L"/AppData/Local/ONLYOFFICE/DesktopEditors/webdata/cloud/5.2.0";
+            std::wstring sUserName(buffer);
+            std::wstring sBaseWebCloudPath = L"C:/Users/" + sUserName + L"/AppData/Local/ONLYOFFICE/DesktopEditors/webdata/cloud/5.2.0";
 #endif
 
-        std::wstring::size_type posSdkAll = url.rfind(L"/sdk-all");
+            std::wstring::size_type posSdkAll = url.rfind(L"/sdk-all");
 
-        if (std::wstring::npos != posSdkAll)
-        {
-            std::wstring::size_type posEditorSdk = url.rfind('/', posSdkAll - 1);
-            if (std::wstring::npos != posEditorSdk)
+            if (std::wstring::npos != posSdkAll)
             {
-                std::wstring sTestPath = sBaseWebCloudPath + url.substr(posEditorSdk);
-                if (NSFile::CFileBinary::Exists(sTestPath))
+                std::wstring::size_type posEditorSdk = url.rfind('/', posSdkAll - 1);
+                if (std::wstring::npos != posEditorSdk)
                 {
-                    return GetLocalFileRequest(sTestPath, "", "");
+                    std::wstring sTestPath = sBaseWebCloudPath + url.substr(posEditorSdk);
+                    if (NSFile::CFileBinary::Exists(sTestPath))
+                    {
+                        return GetLocalFileRequest(sTestPath, "", "");
+                    }
                 }
             }
         }
@@ -5676,7 +5688,27 @@ void CASCFileConverterToEditor::NativeViewerOpenEnd(const std::string& sBase64)
     std::wstring sFileDst = m_oInfo.m_sRecoveryDir + L"/Editor.bin";
     NSFile::CFileBinary oFile;
     oFile.CreateFileW(sFileDst);
-    oFile.WriteFile((BYTE*)sBase64.c_str(), (DWORD)sBase64.length());
+
+    if (!m_pView->m_pInternal->m_bIsCloudCryptFile)
+    {
+        oFile.WriteFile((BYTE*)sBase64.c_str(), (DWORD)sBase64.length());
+    }
+    else
+    {
+        int nCount = (int)sBase64.length();
+        int nPos = 0;
+        std::string::size_type stPos = sBase64.find(";");
+        if (stPos != std::string::npos)
+            nPos = (int)stPos + 1;
+        nCount -= nPos;
+
+        BYTE* data = NULL;
+        int data_len = 0;
+        NSFile::CBase64Converter::Decode(sBase64.c_str() + nPos, nCount, data, data_len);
+        oFile.WriteFile(data, (DWORD)data_len);
+        RELEASEARRAYOBJECTS(data);
+    }
+
     oFile.CloseFile();
 
     m_bIsNativeOpening = false;
