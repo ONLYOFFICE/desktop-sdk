@@ -1249,7 +1249,7 @@ public:
             oBuilder.WriteString(L"<m_bIsNoBase64>false</m_bIsNoBase64>");
             oBuilder.WriteString(L"</TaskQueueDataConvert>");
 
-            std::wstring sTempFileForParams = m_sRecoverFolder + L"params_simple_converter.xml";
+            std::wstring sTempFileForParams = m_sRecoverFolder + L"/params_simple_converter.xml";
             NSFile::CFileBinary::SaveToFile(sTempFileForParams, oBuilder.GetData(), true);
 
             nReturnCode = NSX2T::Convert(m_pManager->m_oSettings.file_converter_path + L"/x2t", sTempFileForParams, m_pManager);
