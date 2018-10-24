@@ -62,28 +62,32 @@
 				var nOffset = this.isQuoted ? 1 : 0;
 				
 				var objSend = { type : "decryptData", data : [] };
-				var isValid = true;
+				var isPassword = true;
 				for (var i = 0; i < obj.data.length; i++)
 				{
 					var _data = this.isChange ? obj.data[i]["change"] : obj.data[i];
-					if (_data.length < (encryptHeaderLen + 1))
+					if (_data.length < (encryptHeaderLen + 1) || _data.substr(nOffset, encryptHeaderLen) != encryptHeader)
 					{
-						isValid = false;
+						isPassword = false;
 						break;
 					}
 					
-					if (_data.substr(nOffset, encryptHeaderLen) != encryptHeader)
+					if (isPassword)
 					{
-						isValid = false;
-						break;
+						// изменения зашифрованы
+						objSend.data.push(_data.substr(encryptHeaderLen + nOffset, _data.length - encryptHeaderLen - 2 * nOffset));
 					}
-					
-					objSend.data.push(_data.substr(encryptHeaderLen + nOffset, _data.length - encryptHeaderLen - 2 * nOffset));
+					else
+					{
+						// пришли незашифрованные данные (даже без хедера - т.е. из клиента без включенного crypto mode)
+						// добавим хедер и отправим расшифровку без пароля (на onSystemMessage этот хедер удалится)
+						objSend.data.push(decryptHeader + _data.substr(nOffset, _data.length - 2 * nOffset));
+					}
 				}
 		
 				objSend.hash = this.documentHash;
 				objSend.docinfo = this.documentInfo;
-				objSend.password = this.documentPassword;
+				objSend.password = isPassword ? this.documentPassword : "";
 				this.sendSystemMessage(objSend);
 				break;
 			}
@@ -161,7 +165,18 @@
 			case "encryptData":
 			{
 				for (var i = 0; i < e.data.length; i++)
-					this.encryptData.data[i] = encryptHeader + e.data[i];
+				{
+					if (e.data[i].length >= decryptHeaderLen && e.data[i].substr(0, decryptHeaderLen) == decryptHeader)
+					{
+						// если начало - с decryptHeader - то не зашифровалось ничего (нет пароля).
+						// поэтому убираем все дописки, чтобы поняли все клиенты
+						this.encryptData.data[i] = e.data[i].substr(decryptHeaderLen);
+					}
+					else
+					{
+						this.encryptData.data[i] = encryptHeader + e.data[i];
+					}
+				}
 				
 				this.executeMethodSync("OnEncryption", [{ type : "encryptData", data : this.encryptData.data, check: true }]);
 				this.encryptData = null;
