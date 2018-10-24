@@ -1200,4 +1200,68 @@ public:
     }
 };
 
+class CSimpleConverter : public NSThreads::CBaseThread
+{
+public:
+    std::wstring m_sRecoverFolder;
+    std::wstring m_sOutputPath;
+    int m_nOutputFormat;
+    std::string m_sOutputParams;
+
+    IASCFileConverterEvents* m_pEvents;
+    CAscApplicationManager* m_pManager;
+
+public:
+    CSimpleConverter()
+    {
+        m_nOutputFormat = -1;
+        m_pEvents = NULL;
+        m_pManager = NULL;
+    }
+
+    void Convert()
+    {
+        Start(0);
+    }
+
+    virtual DWORD ThreadProc()
+    {
+        int nReturnCode = 0;
+
+        if (m_nOutputFormat == AVS_OFFICESTUDIO_FILE_OTHER_HTMLZIP)
+        {
+            // html полностью сделали на клиенте
+            NSFile::CFileBinary::Copy(m_sRecoverFolder + L"/EditorWithChanges.bin", m_sOutputPath);
+        }
+        else
+        {
+            NSStringUtils::CStringBuilder oBuilder;
+            oBuilder.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><TaskQueueDataConvert><m_sFileFrom>");
+            oBuilder.WriteEncodeXmlString(m_sRecoverFolder + L"/EditorWithChanges.bin");
+            oBuilder.WriteString(L"</m_sFileFrom><m_sFileTo>");
+            oBuilder.WriteEncodeXmlString(m_sOutputPath);
+            oBuilder.WriteString(L"</m_sFileTo><m_nFormatTo>");
+            oBuilder.WriteString(std::to_wstring(m_nOutputFormat));
+            oBuilder.WriteString(L"</m_nFormatTo><m_sFontDir>");
+            oBuilder.WriteEncodeXmlString(m_pManager->m_oSettings.fonts_cache_info_path);
+            oBuilder.WriteString(L"</m_sFontDir>");
+            oBuilder.WriteString(UTF8_TO_U(m_sOutputParams));
+            oBuilder.WriteString(L"<m_bIsNoBase64>false</m_bIsNoBase64>");
+            oBuilder.WriteString(L"</TaskQueueDataConvert>");
+
+            std::wstring sTempFileForParams = m_sRecoverFolder + L"params_simple_converter.xml";
+            NSFile::CFileBinary::SaveToFile(sTempFileForParams, oBuilder.GetData(), true);
+
+            nReturnCode = NSX2T::Convert(m_pManager->m_oSettings.file_converter_path + L"/x2t", sTempFileForParams, m_pManager);
+            NSFile::CFileBinary::Remove(sTempFileForParams);
+        }
+
+        m_pEvents->OnFileConvertFromEditor(nReturnCode);
+        NSFile::CFileBinary::Remove(m_sRecoverFolder + L"/EditorWithChanges.bin");
+
+        m_bRunThread = FALSE;
+        return 0;
+    }
+};
+
 #endif // ASC_CEFCONVERTER_FILECONVERTER_H

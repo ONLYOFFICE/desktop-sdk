@@ -443,6 +443,10 @@ public:
     int m_lStartControlWidth;
     int m_lStartControlHeight;
 
+    int m_nCryptoDownloadAsFormat;
+    std::string m_sCryptoDownloadAsParams;
+    CSimpleConverter m_oSimpleX2tConverter;
+
 public:
     class CSystemMessage
     {
@@ -533,6 +537,8 @@ public:
 
         m_lStartControlWidth = -1;
         m_lStartControlHeight = -1;
+
+        m_nCryptoDownloadAsFormat = -1;
     }
 
     void Destroy()
@@ -729,6 +735,19 @@ public:
 
     virtual void OnFileConvertFromEditor(const int& nError, const std::wstring& sPass = L"")
     {
+        if (m_nCryptoDownloadAsFormat != -1)
+        {
+            m_nCryptoDownloadAsFormat = -1;
+            m_sCryptoDownloadAsParams = "";
+
+            if (this->GetBrowser())
+            {
+                CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("crypto_download_as_end");
+                this->GetBrowser()->SendProcessMessage(PID_RENDERER, message);
+            }
+            return;
+        }
+
         LocalFile_SaveEnd(nError, sPass);
     }
 
@@ -2780,8 +2799,18 @@ public:
             int nFormat = message->GetArgumentList()->GetInt(0);
             std::string sParams = message->GetArgumentList()->GetString(1);
 
-            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("crypto_download_as_end");
-            browser->SendProcessMessage(PID_RENDERER, message);
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_SAVE);
+            NSEditorApi::CAscLocalSaveFileDialog* pData = new NSEditorApi::CAscLocalSaveFileDialog();
+            pData->put_Id(m_pParent->GetId());
+            pData->put_Path(NSCommon::GetFileName(m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc));
+            pData->put_FileType(m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat);
+            pData->get_SupportFormats().push_back(nFormat);
+            pEvent->m_pData = pData;
+            m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+            m_pParent->m_pInternal->m_bIsSavingDialog = true;
+            m_pParent->m_pInternal->m_nCryptoDownloadAsFormat = nFormat;
+            m_pParent->m_pInternal->m_sCryptoDownloadAsParams = sParams;
+
             return true;
         }
 
@@ -4807,6 +4836,25 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             NSEditorApi::CAscLocalSaveFileDialog* pData = (NSEditorApi::CAscLocalSaveFileDialog*)pEvent->m_pData;
             std::wstring sPath = pData->get_Path();
             m_pInternal->m_bIsSavingDialog = false;
+
+            if (m_pInternal->m_nCryptoDownloadAsFormat > 0)
+            {
+                if (sPath == L"")
+                {
+                    m_pInternal->OnFileConvertFromEditor(0);
+                }
+                else
+                {
+                    m_pInternal->m_oSimpleX2tConverter.m_nOutputFormat = m_pInternal->m_nCryptoDownloadAsFormat;
+                    m_pInternal->m_oSimpleX2tConverter.m_sOutputPath = sPath;
+                    m_pInternal->m_oSimpleX2tConverter.m_sOutputParams = m_pInternal->m_sCryptoDownloadAsParams;
+                    m_pInternal->m_oSimpleX2tConverter.m_sRecoverFolder = m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir;
+                    m_pInternal->m_oSimpleX2tConverter.m_pEvents = m_pInternal;
+                    m_pInternal->m_oSimpleX2tConverter.m_pManager = m_pInternal->m_pManager;
+                    m_pInternal->m_oSimpleX2tConverter.Convert();
+                }
+                break;
+            }
 
             if (sPath == L"")
             {
