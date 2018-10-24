@@ -69,7 +69,6 @@
 					if (_data.length < (encryptHeaderLen + 1) || _data.substr(nOffset, encryptHeaderLen) != encryptHeader)
 					{
 						isPassword = false;
-						break;
 					}
 					
 					if (isPassword)
