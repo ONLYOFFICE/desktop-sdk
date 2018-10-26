@@ -2675,7 +2675,7 @@ public:
             std::wstring sUrl1 = message->GetArgumentList()->GetString(0).ToWString();
             std::wstring sUrl2 = message->GetArgumentList()->GetString(1).ToWString();
 
-            if (sUrl2.empty() && 0 == sUrl1.find(L"image"))
+            if (sUrl2.empty() && ((0 == sUrl1.find(L"image")) || (0 == sUrl1.find(L"display"))))
             {
                 sUrl2 = L"media/" + sUrl1;
             }
@@ -2804,7 +2804,10 @@ public:
             pData->put_Id(m_pParent->GetId());
             pData->put_Path(NSCommon::GetFileName(m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc));
             pData->put_FileType(m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat);
-            pData->get_SupportFormats().push_back(nFormat);
+            if (nFormat == AVS_OFFICESTUDIO_FILE_OTHER_HTMLZIP)
+                pData->get_SupportFormats().push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_HTML);
+            else
+                pData->get_SupportFormats().push_back(nFormat);
             pEvent->m_pData = pData;
             m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
             m_pParent->m_pInternal->m_bIsSavingDialog = true;

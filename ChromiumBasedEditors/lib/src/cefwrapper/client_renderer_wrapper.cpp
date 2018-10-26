@@ -1068,7 +1068,13 @@ else \n\
             if (m_nCryptoMode > 0)
             {
                 CefRefPtr<CefFrame> _frame =  CefV8Context::GetCurrentContext()->GetFrame();
-                _frame->ExecuteJavaScript("(function() { try { DE.controllers.Main.editorConfig.canUseHistory = false; } catch(err){} })();", _frame->GetURL(), 0);
+                _frame->ExecuteJavaScript("(function() { try { \
+DE.controllers.Main.editorConfig.canUseHistory = false; \
+DE.controllers.Main.editorConfig.fileChoiceUrl = \"\"; \
+DE.controllers.Main.editorConfig.mergeFolderUrl = \"\"; \
+DE.controllers.Main.appOptions.fileChoiceUrl = \"\"; \
+DE.controllers.Main.appOptions.mergeFolderUrl = \"\"; \
+} catch(err){} })();", _frame->GetURL(), 0);
             }
 
             return true;
