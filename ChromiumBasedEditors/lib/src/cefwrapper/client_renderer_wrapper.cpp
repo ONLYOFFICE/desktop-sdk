@@ -4038,7 +4038,7 @@ xhr.send(null);";
                     // read extension
                     std::string::size_type nPos = sData.find(';', 10);
                     if (nPos != std::string::npos)
-                        sData = sData.substr(nPos + 1);
+                        sData = "ENCRYPTED;" + sData.substr(nPos + 1);
                 }
             }
             else
