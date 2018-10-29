@@ -360,6 +360,7 @@ public:
     int m_nParentId;
 
     bool m_bIsNativeSave;
+    bool m_bIsOnSaveInCryptoMode;
 
     CPrintData m_oPrintData;
 
@@ -539,6 +540,8 @@ public:
         m_lStartControlHeight = -1;
 
         m_nCryptoDownloadAsFormat = -1;
+
+        m_bIsOnSaveInCryptoMode = false;
     }
 
     void Destroy()
@@ -2664,10 +2667,26 @@ public:
             if (m_pParent && m_pParent->GetAppManager()->GetEventListener())
             {
                 bool bIsClose = message->GetArgumentList()->GetBool(0);
-                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(bIsClose ?
-                    ASC_MENU_EVENT_TYPE_ENCRYPTED_CLOUD_BUILD_END : ASC_MENU_EVENT_TYPE_ENCRYPTED_CLOUD_BUILD_END_ERROR);
-                m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+
+                if (m_pParent->m_pInternal->m_bIsOnSaveInCryptoMode)
+                {
+                    m_pParent->m_pInternal->m_bIsOnSaveInCryptoMode = false;
+                    m_pParent->m_pInternal->m_bIsNativeSave = false;
+
+                    NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONSAVE);
+                    NSEditorApi::CAscDocumentOnSaveData* pData = new NSEditorApi::CAscDocumentOnSaveData();
+                    pData->put_Id(m_pParent->GetId());
+                    pEvent->m_pData = pData;
+                    m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+                }
+                else
+                {
+                    NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(bIsClose ?
+                        ASC_MENU_EVENT_TYPE_ENCRYPTED_CLOUD_BUILD_END : ASC_MENU_EVENT_TYPE_ENCRYPTED_CLOUD_BUILD_END_ERROR);
+                    m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+                }
             }
+
             return true;
         }
         else if (message_name == "preload_crypto_image")
@@ -3933,16 +3952,20 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
 
             if (m_pManager->GetEventListener() && m_pCefView != NULL)
             {
-                m_bIsNativeSave = false;
+                if (m_pManager->m_pInternal->m_nCurrentCryptoMode == 0) // только после конца записи в блокчейн
+                {
+                    m_bIsNativeSave = false;
 
-                NSEditorApi::CAscCefMenuEvent* pEvent = m_pCefView->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONSAVE);
-
-                NSEditorApi::CAscDocumentOnSaveData* pData = new NSEditorApi::CAscDocumentOnSaveData();
-                pData->put_Id(m_pCefView->GetId());
-
-                pEvent->m_pData = pData;
-
-                m_pManager->GetEventListener()->OnEvent(pEvent);
+                    NSEditorApi::CAscCefMenuEvent* pEvent = m_pCefView->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONSAVE);
+                    NSEditorApi::CAscDocumentOnSaveData* pData = new NSEditorApi::CAscDocumentOnSaveData();
+                    pData->put_Id(m_pCefView->GetId());
+                    pEvent->m_pData = pData;
+                    m_pManager->GetEventListener()->OnEvent(pEvent);
+                }
+                else
+                {
+                    m_bIsOnSaveInCryptoMode = true;
+                }
             }
         }
     }
