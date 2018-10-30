@@ -2953,7 +2953,7 @@ public:
                         sGuidA = sGuidA.substr(4);
                     std::wstring sGuid = UTF8_TO_U(sGuidA);
 
-                    std::wstring sSrc = sSystemPluginsPath + L"/" + sGuid + L"/index.html";
+                    std::wstring sSrc = sSystemPluginsPath + L"/" + sGuid + L"/index.html" + m_pParent->m_pInternal->m_pManager->m_pInternal->m_mainPostFix;
                     NSCommon::url_correct(sSrc);
 
     #if 0
@@ -4256,6 +4256,9 @@ void CCefView::load(const std::wstring& urlInputSrc)
     {
         if (std::wstring::npos == url.find(L"desktop=true", posQ))
             url = (url + L"&desktop=true");
+
+        if (1 == this->GetId())
+            m_pInternal->m_pManager->m_pInternal->m_mainPostFix = url.substr(posQ);
     }
     else
     {

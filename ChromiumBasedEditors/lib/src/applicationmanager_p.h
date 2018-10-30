@@ -574,6 +574,8 @@ public:
 
     NSCriticalSection::CRITICAL_SECTION m_oCS_SystemMessages;
 
+    std::wstring m_mainPostFix;
+
 public:
     CAscApplicationManager_Private() : m_oKeyboardTimer(this)
     {
