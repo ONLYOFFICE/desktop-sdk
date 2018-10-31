@@ -2897,7 +2897,7 @@ public:
         return false;
     }
 
-#ifdef WIN32
+#if 1
     virtual void OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
                                              bool isLoading,
                                              bool canGoBack,

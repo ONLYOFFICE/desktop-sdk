@@ -104,9 +104,6 @@ CAscApplicationManager::CAscApplicationManager()
     m_pInternal->m_pMain = this;
     m_pInternal->m_pAdditional = Create_ApplicationManagerAdditional(this);
     m_pInternal->m_pAdditional->m_arApplyEvents = &m_pInternal->m_arApplyEvents;
-
-    if (NULL == m_pInternal->m_pDpiChecker)
-        m_pInternal->m_pDpiChecker = this->InitDpiChecker();
 }
 
 CAscApplicationManager::~CAscApplicationManager()
@@ -202,6 +199,9 @@ void CAscApplicationManager::CheckFonts(bool bAsync)
 void CAscApplicationManager::SetEventListener(NSEditorApi::CAscCefMenuEventListener* pListener)
 {
     m_pInternal->m_pListener = pListener;
+
+    if (NULL == m_pInternal->m_pDpiChecker)
+        m_pInternal->m_pDpiChecker = this->InitDpiChecker();
 }
 
 NSEditorApi::CAscCefMenuEventListener* CAscApplicationManager::GetEventListener()
