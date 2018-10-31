@@ -49,8 +49,13 @@
 #include "../../../../../core/DesktopEditor/common/File.h"
 #include "../../../../../core/Common/FileDownloader/FileDownloader.h"
 
+#include "../../include/applicationmanager.h"
+
 static int IsForceDpiRound()
 {
+    if (NULL != CAscApplicationManager::GetDpiChecker())
+        return 1;
+
 #ifdef WIN32
 #if 1
     return 1;

@@ -576,6 +576,8 @@ public:
 
     std::wstring m_mainPostFix;
 
+    static CAscDpiChecker* m_pDpiChecker;
+
 public:
     CAscApplicationManager_Private() : m_oKeyboardTimer(this)
     {

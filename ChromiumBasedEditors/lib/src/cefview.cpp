@@ -1203,6 +1203,7 @@ public:
             pListener = m_pParent->GetAppManager()->GetEventListener();
 
         bool bIsEditor = (sUrl.find(L"files/doceditor.aspx?fileid") == std::wstring::npos) ? false : true;
+
 #if 1
         if (m_pParent->m_pInternal->m_bIsExternalCloud && !bIsEditor)
         {
@@ -1210,7 +1211,7 @@ public:
 
             if (bIsEditor)
             {
-                sUrl += L"&desktop_editor_cloud_type:external";
+                sUrl += L"desktop_editor_cloud_type=external";
             }
         }
 #endif
@@ -1267,7 +1268,10 @@ public:
 
         if (bIsEditor)
         {
-            sUrl += L"&placement=desktop";
+            if (std::wstring::npos == sUrl.find(L"?"))
+                sUrl += L"?placement=desktop";
+            else
+                sUrl += L"&placement=desktop";
 
             if (NULL != pListener)
             {
@@ -4062,7 +4066,9 @@ void CCefView_Private::OnFileConvertToEditor(const int& nError)
 }
 void CCefView_Private::CheckZoom()
 {
-#ifdef WIN32
+    if (NULL == CAscApplicationManager::GetDpiChecker())
+        return;
+
     if (!m_bIsWindowsCheckZoom)
         return;
 
@@ -4082,7 +4088,15 @@ void CCefView_Private::CheckZoom()
     CefRefPtr<CefBrowserHost> _host = m_handler->GetBrowser()->GetHost();
     CefWindowHandle hwnd = _host->GetWindowHandle();
 
+#ifdef WIN32
     int nDeviceScale = NSMonitor::GetRawMonitorDpi(hwnd);
+#else
+    unsigned int _dx = 0;
+    unsigned int _dy = 0;
+    int nDeviceScaleTmp = CAscApplicationManager::GetDpiChecker()->GetWidgetImplDpi(this->m_pCefView->GetWidgetImpl(), &_dx, &_dy);
+    double dDeviceScaleTmp = CAscApplicationManager::GetDpiChecker()->GetScale(_dx, _dy);
+    int nDeviceScale = (dDeviceScaleTmp > 1.9) ? 2 : 1;
+#endif
 
     if (-1 != m_pManager->m_pInternal->m_nForceDisplayScale && m_pManager->m_pInternal->m_nForceDisplayScale > 0)
         nDeviceScale = m_pManager->m_pInternal->m_nForceDisplayScale;
@@ -4100,7 +4114,6 @@ void CCefView_Private::CheckZoom()
             _host->WasResized();
         }
     }
-#endif
 }
 
 void CCefView_Private::SendProcessMessage(CefProcessId target_process, CefRefPtr<CefProcessMessage> message)
@@ -4193,10 +4206,10 @@ void CCefView::load(const std::wstring& urlInputSrc)
         }
         else if (GetType() == cvwtEditor)
         {
-            if (std::wstring::npos != urlInput.find(L"&desktop_editor_cloud_type:external"))
+            if (std::wstring::npos != urlInput.find(L"desktop_editor_cloud_type=external"))
             {
                 m_pInternal->m_bIsExternalCloud = true;
-                NSCommon::string_replace(urlInput, L"&desktop_editor_cloud_type:external", L"");
+                NSCommon::string_replace(urlInput, L"desktop_editor_cloud_type=external", L"");
             }
         }
     }
@@ -4577,11 +4590,7 @@ void CCefView::moveEvent()
     }
 #endif
 
-#ifdef WIN32
-
     m_pInternal->CheckZoom();
-
-#endif
 }
 
 void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)

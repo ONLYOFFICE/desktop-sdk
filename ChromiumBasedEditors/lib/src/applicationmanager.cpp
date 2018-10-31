@@ -104,11 +104,20 @@ CAscApplicationManager::CAscApplicationManager()
     m_pInternal->m_pMain = this;
     m_pInternal->m_pAdditional = Create_ApplicationManagerAdditional(this);
     m_pInternal->m_pAdditional->m_arApplyEvents = &m_pInternal->m_arApplyEvents;
+
+    if (NULL == m_pInternal->m_pDpiChecker)
+        m_pInternal->m_pDpiChecker = this->InitDpiChecker();
 }
 
 CAscApplicationManager::~CAscApplicationManager()
 {
     m_pInternal->Release();
+
+    if (NULL != m_pInternal->m_pDpiChecker)
+    {
+        delete m_pInternal->m_pDpiChecker;
+        m_pInternal->m_pDpiChecker = NULL;
+    }
 }
 
 void CAscApplicationManager::StartSpellChecker()
@@ -915,3 +924,54 @@ NSAscCrypto::CAscKeychain* CAscApplicationManager::GetKeychainEngine()
 }
 
 /////////////////////////////////////////////////////////////
+
+CAscDpiChecker::CAscDpiChecker()
+{
+}
+CAscDpiChecker::~CAscDpiChecker()
+{
+}
+int CAscDpiChecker::GetWindowDpi(WindowHandleId _handle, unsigned int* _dx, unsigned int* _dy)
+{
+#ifdef WIN32
+    return Core_GetMonitorRawDpi(_handle, _dx, _dy);
+#endif
+    return -1;
+}
+int CAscDpiChecker::GetMonitorDpi(int _screen, unsigned int* _dx, unsigned int* _dy)
+{
+#ifdef WIN32
+    return Core_GetMonitorRawDpiByIndex(_screen, _dx, _dy);
+#endif
+    return -1;
+}
+int CAscDpiChecker::GetWidgetImplDpi(CCefViewWidgetImpl* wid, unsigned int* _dx, unsigned int* _dy)
+{
+    if (NULL == wid)
+        return -1;
+#ifdef WIN32
+    return GetWindowDpi(wid->parent_wid(), _dx, _dy);
+#endif
+    return -1;
+}
+double CAscDpiChecker::GetScale(unsigned int dpiX, unsigned int dpiY)
+{
+    double scale = (dpiX + dpiY) / 96.0;
+    int nScale = (int)(scale + 0.5);
+    return (nScale / 2.0);
+}
+
+CAscDpiChecker* CAscApplicationManager_Private::m_pDpiChecker = NULL;
+
+CAscDpiChecker* CAscApplicationManager::GetDpiChecker()
+{
+    return CAscApplicationManager_Private::m_pDpiChecker;
+}
+CAscDpiChecker* CAscApplicationManager::InitDpiChecker()
+{
+#ifdef WIN32
+    return new CAscDpiChecker();
+#else
+    return NULL;
+#endif
+}
