@@ -70,7 +70,7 @@
 
 				 	if (obj.isNeedMessage)
 					{
-						obj.message = "Save to blockchain...";
+						obj.message = ONLYONET.Resources["system-message-save-to-blockchain"];
 						AscDesktopEditor.sendSystemMessage(obj);					
 					}
 					else
@@ -120,7 +120,14 @@
 
 					for (var i = 0; i < obj.data.length; i++)
 					{
-						obj.data[i] = ONLYONET.decryptData(obj.data[i], obj.password, obj.docinfo);						
+						if (obj.data[i]["change"])
+						{
+							obj.data[i]["change"] = ONLYONET.decryptData(obj.data[i]["change"], obj.password, obj.docinfo );
+						}
+						else
+						{
+							obj.data[i] = ONLYONET.decryptData(obj.data[i], obj.password, obj.docinfo);
+						}
 					}	
 					
 					AscDesktopEditor.sendSystemMessage(obj);
@@ -181,5 +188,4 @@
 					break;
 			}		
     };
-
 })(window, undefined);

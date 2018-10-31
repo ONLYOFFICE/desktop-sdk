@@ -4,19 +4,18 @@ if (typeof ONLYONET === "undefined") {
 
 const ASC_DESKTOP_EDITOR_DEFAULT_MODE = 0;
 const ASC_DESKTOP_EDITOR_CRYPTO_MODE = 3;
+const _lockObject = false;
 
 ONLYONET.UI = (function() {
     function _initVaultDialog() {
         $("#dlg-vault img.img-loader").hide();
-        $("#dlg-vault .error-box:last p").hide();
         $("#dlg-vault textarea").removeClass("error");
         $("#dlg-vault textarea").val("");
         $("#dlg-vault input:password:first").val("");
         $("#dlg-vault input:password:eq(1)").val("");
         $("#dlg-vault input:password:first").removeClass("error");
         $("#dlg-vault input:password:eq(1)").removeClass("error");
-        $("#dlg-vault .error-box:eq(1) p.msg-error").hide();
-        $("#dlg-vault .error-box:eq(2) p.msg-error").hide();
+        $("#dlg-vault .lr-flex .error-box p.msg-error").hide();
         $("#dlg-vault button.primary").removeAttr("disabled");
     }
 
@@ -40,6 +39,12 @@ ONLYONET.UI = (function() {
                     ONLYONET.init(cnf).then(function(isConnected) {	
 
                         _renderBlockChainInfo();
+
+                        let clip = new ClipboardJS($("#tbl-acount-info tbody td:eq(0) a")[0]);
+
+                        clip.on('success', function(e) {							
+                            e.clearSelection();
+                        });
                         
                         $("#enc-mode-switch").prop("checked", true);
                         $("#box-blockchain-connect").hide();
@@ -70,6 +75,10 @@ ONLYONET.UI = (function() {
 
     function _renderBlockChainInfo() {					
 
+        if (_lockObject) return;
+
+        _lockObject = true;
+
         let address = ONLYONET.getAddress();
 
         $("#tbl-acount-info tbody td:eq(0) span").text(address);	
@@ -84,13 +93,11 @@ ONLYONET.UI = (function() {
         $("#box-network-selector span:eq(1)").text(ONLYONET.getProviderUri());
 
         $("#tbl-acount-info tbody td:eq(0) a").attr("data-clipboard-text",address);
-
-        let clip = new ClipboardJS($("#tbl-acount-info tbody td:eq(0) a")[0]);
-
-        clip.on('success', function(e) {							
-            e.clearSelection();
-        });
+        
+        _lockObject = false;
     }
+
+
 
     function _requestEtherFromFaucet(address) {
         let balance = ONLYONET.getBalance("ether");			
@@ -117,17 +124,37 @@ ONLYONET.UI = (function() {
         });
     }
 
+    function _getUrlVars()
+    {
+        var vars = [], hash;
+        var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+        for(var i = 0; i < hashes.length; i++)
+        {
+            hash = hashes[i].split('=');
+            vars.push(hash[0]);
+            vars[hash[0]] = hash[1];
+        }
+        return vars;
+    }
+
     return {
         // Public Fields
         init: function(opts) {
+            var lang = _getUrlVars()["lang"];
+           
+            //if (typeof lang == 'undefined')
+                lang = "en";
+
+            if (typeof ONLYONET.Resources == 'undefined') $.loadScript('./lang/lang_' + lang + '.js', function() {
+                for (var key in ONLYONET.Resources){
+                    $('*[data-t="' + key + '"]').html(ONLYONET.Resources[key]);
+                }               
+            });
+
             $("#box-blockchain-connect a.text-sub").click(function(){
                 _initSwitchOnDialog();
                 $("#dlg-onoffswitch")[0].showModal();
-            });
-
-            $("#box-connect-to-cloud a.link").click(function() {
-                parent.postMessage(window.JSON.stringify({type:'plugin', data:{command:'panel:select', params:'connect'}}), "*");
-            });
+            });          
 
             $("#enc-mode-switch").click(function () {						
                 if($(this).is(":checked")) {
@@ -144,15 +171,24 @@ ONLYONET.UI = (function() {
                             {
                                 $("#box-blockchain-connect").show();
                                 $("#box-blockchain-info").hide();
+                                $("div.info-box.excl").html(ONLYONET.Resources["info-box-off"]);
+
+                                $("div.info-box.excl").hide();  
+
+                                $("#enc-mode-switch").prop("checked", true);
 
                                 break;
                             }
                             case 1: 
-                            {									
-                                alert("[ERROR] FAILED TO SET CRYPTO MODE AS " + ASC_DESKTOP_EDITOR_DEFAULT_MODE);
+                            {
+                                $("div.info-box.excl").html(ONLYONET.Resources["info-box-on"]);
+                                
+                                $("div.info-box.excl").show();   
+                                
+                                $("#enc-mode-switch").prop("checked", false);
 
-                                break;
-                            }
+                                break;                                
+                             }
                             default: 
                             {
 
@@ -161,21 +197,27 @@ ONLYONET.UI = (function() {
 
                         }
                     });
+
+                    return false;
                 }	
             });  
 
             $("#box-blockchain-connect button.primary").click(function () {
                 _initVaultDialog();
 
-                $("#dlg-vault div.title label.caption").text("Create your Account with Seed Phrase");
+                $("#dlg-vault div.title label.caption").text(ONLYONET.Resources["dlg-vault-mnemonic-caption"]);
                 $("#dlg-vault textarea").removeAttr("placeholder");
-                $("#dlg-vault button.btn.primary").text("I've copied my mnemonice to a safe place");
+                $("#dlg-vault button.btn.primary").text( ONLYONET.Resources["dlg-vault-description-btn"]);
                 $("#dlg-vault textarea").attr("readonly","readonly");
 
                 $("#dlg-vault textarea").val(ONLYONET.generateRandomSeed());
                                                 
                 $("#dlg-vault")[0].showModal();						
-            });				
+            });		
+            
+            $("#box-blockchain-info-refresh-btn").click(function() {
+                _renderBlockChainInfo();
+            });
 
             $("#dlg-onoffswitch button.primary").click(function () {
                 $("#dlg-onoffswitch button.primary").attr("disabled","disabled");
@@ -212,9 +254,9 @@ ONLYONET.UI = (function() {
                 _initVaultDialog();
                 
                 $("#dlg-vault textarea").removeAttr("readonly");
-                $("#dlg-vault div.title label.caption").text("Restore your Account with Seed Phrase");
-                $("#dlg-vault textarea").attr("placeholder", "Enter your secret twelve word phrase here to restore your account");
-                $("#dlg-vault button.btn.primary").text("Restore");					
+                $("#dlg-vault div.title label.caption").text(ONLYONET.Resources["dlg-vault-mnemonic-restore-caption"]);
+                $("#dlg-vault textarea").attr("placeholder", ONLYONET.Resources["dlg-vault-mnemonic-restore-placeholder"]);
+                $("#dlg-vault button.btn.primary").text(ONLYONET.Resources["dlg-vault-restore-description-btn"]);					
             
                 $("#dlg-vault")[0].showModal();				
             });
@@ -245,20 +287,20 @@ ONLYONET.UI = (function() {
                 if ((pwd !== pwdRepeat) || (pwd.length < ONLYONET.defaultConfig.passwordLength))
                 {
                     if (pwd !== pwdRepeat) {
-                        $("#dlg-vault .error-box:eq(1) p.msg-error").text("Don't Match");
-                        $("#dlg-vault .error-box:eq(2) p.msg-error").text("Don't Match");
+                        $("#dlg-vault .lr-flex .error-box:eq(1) p.msg-error").text(ONLYONET.Resources["dlg-vault-new-password-msg-error"]);
+                        $("#dlg-vault .lr-flex .error-box:eq(2) p.msg-error").text(ONLYONET.Resources["dlg-vault-new-password-msg-error"]);
                     }
                 
                     if (pwd.length < ONLYONET.defaultConfig.passwordLength) {
-                        $("#dlg-vault .error-box:eq(1) p.msg-error").text("Password not long enough");
-                        $("#dlg-vault .error-box:eq(2) p.msg-error").text("Password not long enough");							
+                        $("#dlg-vault .lr-flex .error-box:eq(1) p.msg-error").text(ONLYONET.Resources["dlg-vault-new-password-msg-error-1"]);
+                        $("#dlg-vault .lr-flex .error-box:eq(2) p.msg-error").text(ONLYONET.Resources["dlg-vault-new-password-msg-error-1"]);							
                     }													
 
                     $("#dlg-vault input:password:first").addClass("error");
                     $("#dlg-vault input:password:eq(1)").addClass("error");
                 
-                    $("#dlg-vault .error-box:eq(1) p.msg-error").show();
-                    $("#dlg-vault .error-box:eq(2) p.msg-error").show();
+                    $("#dlg-vault .lr-flex .error-box:eq(1) p.msg-error").show();
+                    $("#dlg-vault .lr-flex .error-box:eq(2) p.msg-error").show();
 
                     $("#dlg-vault img.img-loader").hide();
                     $("#dlg-vault button.primary").removeAttr("disabled");

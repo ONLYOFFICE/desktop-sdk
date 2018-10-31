@@ -6,8 +6,9 @@ body {
     font-size: 14px; 
     margin:0px;
     color: #444;
-    user-select:none;
 }
+
+textarea, input, button, select { font-family: inherit; font-size: inherit; }
 
 hr {
     border: 0.5px solid #cbcbcb;
@@ -56,7 +57,7 @@ h4 {
 
 .onoffswitch {
     position: relative;
-    width: 60px;
+    width: 40px;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
@@ -72,12 +73,24 @@ h4 {
 }
 
 #enc-box-caption .onoffswitch {
-    margin: 0 30px;
+    margin: 0 15px;
+}
+
+#enc-box-caption span {
+    position: relative;
+    top: -9px;
+    left: 5px;
+    color: #fff;
+    cursor: pointer;
+    font-size: 10px;
+    padding: 2px 5px;  
+    border-radius: 0px;
+    background-color: #ed7309;
 }
 
 .onoffswitch {
     position: relative;
-    width: 60px;  
+    width: 40px;  
 }
 
 .onoffswitch__checkbox {
@@ -88,9 +101,9 @@ h4 {
     display: block;
     overflow: hidden;
     cursor: pointer;
-    height: 20px;
+    height: 15px;
     padding: 0;
-    line-height: 20px;
+    line-height: 15px;
     border: 2px solid #b4b4b4;
     border-radius: 20px;
     background-color: #b4b4b4;
@@ -100,13 +113,13 @@ h4 {
 .onoffswitch__label:before {
     content: "";
     display: block;
-    width: 20px;
+    width: 15px;
     margin: 0;
     background: #FFFFFF;
     position: absolute;
     top: 0;
     bottom: 0;
-    right: 36px;
+    right: 21px;
     border: 2px solid #b4b4b4;
     border-radius: 20px;
     transition: all .25s ease-in 0s;
@@ -212,6 +225,10 @@ dialog .tool.close {
     border-radius: 3px;
 }
 
+/* input[type="password"]  {
+    font-size: 40px;
+} */
+
 .dlg .tbox {
     margin: 0px 0px 12px 0px
 }
@@ -256,6 +273,7 @@ dialog .tool.close {
   margin: 2px 0px;
   color: #888;  
 }
+
 #box-network-info dd { 
   width: 80%;
   padding: 0;
@@ -302,17 +320,17 @@ dialog .tool.close {
     font-weight: bold;
 }
 
-#box-blockchain-connect, #box-connect-to-cloud, #box-blockchain-info {
-    width: 584px;
+#box-blockchain-connect, #box-blockchain-info {
+    width: 600px;
 }
 
 #box-blockchain-connect a.text-sub {
     margin-left: 30px;
 }
 
-#box-blockchain-connect a.link-gray:last-child {
+/* #box-blockchain-connect a.link-gray:last-child {
     margin-left: 30px;
-}
+} */
 
 div.info-box.excl {
     background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAABmElEQVRIx82Vz0rDQBDGm9ZGpUUPNdUietMn0KsPIAo+gHjw6i3mEQL6Ap48CHmH3ItQLL6AFws19tJCMeklJiZdv+Ai+bPb6NqAA18pM5P5ZWeGTYkQUipSXz9F2m8AyC1DlUIAQRAcIXcIjSeTyTFcEUiaCwA5CvRGqE2n07FhGNsUMhfALUmZ4zh3CC3nniIPgPgeFJKsBZ1O5wApVWEAYhL0QDjmed6joih1pJaFABjsWbwgXFtQK+6zLOsCvkVuq3gA+OvQIAVoQStxXxiGQ13XN7kDnwG4SrcE7nVoKe23bfuGO3AWAL4d6P2nAKztR7vd3mcOnAXAAyZrqDxAZK7r3iNWyww8DcBgD3lbo6rqrmmaG7x4r9c7Rwk50ao4AP+r0BMRNLzcQNO0ZmLgcQA24nJWAaRE27I2K2c0Gl1Hbfw+RRyA3vdzAJk1ZZziFTmr0AILYJE/mu/7L9Ep6SySAFzDJ3iDPlpliwhXx3O32z1FqQYTQIdTowlNQTVojQoLINGATO8XEcmJj9G/+iYLA4rUJwWJoln+vf24AAAAAElFTkSuQmCC') no-repeat 9px 9px #f5e1a2;
@@ -321,4 +339,8 @@ div.info-box.excl {
 div.info-box {
     margin: 0 0 20px;
     padding: 9px 12px 12px 40px;
+}
+
+#box-blockchain-info-refresh-btn {
+    cursor: pointer;
 }
