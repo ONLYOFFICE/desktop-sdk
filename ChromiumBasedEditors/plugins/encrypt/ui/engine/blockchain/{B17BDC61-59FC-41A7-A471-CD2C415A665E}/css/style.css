@@ -6,6 +6,7 @@ body {
     font-size: 14px; 
     margin:0px;
     color: #444;
+    user-select:none;
 }
 
 hr {
@@ -302,7 +303,7 @@ dialog .tool.close {
 }
 
 #box-blockchain-connect, #box-connect-to-cloud, #box-blockchain-info {
-    width: 700px;
+    width: 584px;
 }
 
 #box-blockchain-connect a.text-sub {
