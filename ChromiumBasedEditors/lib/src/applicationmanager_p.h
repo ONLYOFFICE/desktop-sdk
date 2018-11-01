@@ -438,6 +438,7 @@ public:
     bool            m_bIsViewer;
     std::wstring    m_sDate;
     std::wstring    m_sUrl;
+    std::wstring    m_sExternalCloudId;
 
 public:
     CAscEditorFileInfo()
@@ -478,6 +479,7 @@ public:
     std::wstring name;
     std::wstring test_editor;
     std::string correct_code;
+    bool crypto_support;
 
 public:
     CExternalCloudRegister()
@@ -486,6 +488,7 @@ public:
         name = L"";
         test_editor = L"";
         correct_code = "";
+        crypto_support = false;
     }
 
     CExternalCloudRegister(const CExternalCloudRegister& src)
@@ -494,6 +497,7 @@ public:
         name = src.name;
         test_editor = src.test_editor;
         correct_code = src.correct_code;
+        crypto_support = src.crypto_support;
     }
 
     CExternalCloudRegister& operator=(const CExternalCloudRegister& src)
@@ -502,6 +506,7 @@ public:
         name = src.name;
         test_editor = src.test_editor;
         correct_code = src.correct_code;
+        crypto_support = src.crypto_support;
         return *this;
     }
 };
@@ -1142,6 +1147,7 @@ public:
                 oInfo.m_nFileType = oFile.ReadAttributeInt(L"type");
                 oInfo.m_sDate = oFile.GetAttribute(L"date");
                 oInfo.m_sUrl = oFile.GetAttribute(L"url");
+                oInfo.m_sExternalCloudId = oFile.GetAttribute(L"externalcloud");
                 m_arRecents.push_back(oInfo);
 
                 map_files.insert(std::pair<std::wstring, bool>(sPath, true));
@@ -1150,7 +1156,7 @@ public:
 
         Recents_Dump(false);
     }
-    void Recents_Add(const std::wstring& sPathSrc, const int& nType, const std::wstring& sUrl = L"")
+    void Recents_Add(const std::wstring& sPathSrc, const int& nType, const std::wstring& sUrl = L"", const std::wstring& sExternalCloudId = L"")
     {
         CTemporaryCS oCS(&m_oCS_LocalFiles);
 
@@ -1177,6 +1183,7 @@ public:
         oInfo.m_nId = 0;
         oInfo.m_sPath = sPath;
         oInfo.m_sUrl = sUrl;
+        oInfo.m_sExternalCloudId = sExternalCloudId;
         oInfo.UpdateDate();
 
         oInfo.m_nFileType = nType;
@@ -1240,6 +1247,13 @@ public:
             oBuilder.WriteEncodeXmlString(i->m_sDate);
             oBuilder.WriteString(L"\" url=\"");
             oBuilder.WriteEncodeXmlString(i->m_sUrl);
+
+            if (!i->m_sExternalCloudId.empty())
+            {
+                oBuilder.WriteString(L"\" externalcloud=\"");
+                oBuilder.WriteEncodeXmlString(i->m_sExternalCloudId);
+            }
+
             oBuilder.WriteString(L"\" />");
         }
         oBuilder.WriteString(L"</recents>");

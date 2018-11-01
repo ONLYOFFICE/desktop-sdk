@@ -412,6 +412,7 @@ public:
     CCefView* m_pDownloadViewCallback;
     std::wstring m_sDownloadViewPath;
     bool m_bIsCloudCryptFile;
+    std::wstring m_sRecentOpenExternalId;
 
     std::wstring m_sOpenAsLocalUrl;
     std::wstring m_sOriginalUrl;
@@ -1211,7 +1212,7 @@ public:
 
             if (bIsEditor)
             {
-                sUrl += L"desktop_editor_cloud_type=external";
+                sUrl += (L"desktop_editor_cloud_type_external=" + m_pParent->m_pInternal->m_oExternalCloud.id + L"_ext_id");
             }
         }
 #endif
@@ -1346,7 +1347,7 @@ public:
         return true;
     }
 
-    std::wstring GetBaseDomain(const std::wstring& url)
+    std::wstring GetBaseDomain(const std::wstring& url, bool bIsHeader = false)
     {
         std::wstring::size_type pos1 = url.find(L"//");
         if (std::wstring::npos == pos1)
@@ -1358,7 +1359,9 @@ public:
         if (std::wstring::npos == pos2)
             return L"";
 
-        return url.substr(pos1, pos2 - pos1);
+        if (!bIsHeader)
+            return url.substr(pos1, pos2 - pos1);
+        return url.substr(0, pos2);
     }
 
     virtual bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
@@ -1641,7 +1644,7 @@ public:
                 if (0 == m_pParent->GetAppManager()->m_pInternal->m_mapCrypto.size())
                     bIsOnlyPassSupport = false;
             }
-            if (m_pParent->m_pInternal->m_bIsExternalCloud)
+            if (m_pParent->m_pInternal->m_bIsExternalCloud && !m_pParent->m_pInternal->m_oExternalCloud.crypto_support)
                 bIsOnlyPassSupport = false;
 
             int nFlags = 0;
@@ -1655,7 +1658,7 @@ public:
             message->GetArgumentList()->SetInt(0, nFlags);
 
             int nCryptoMode = m_pParent->GetAppManager()->m_pInternal->m_nCurrentCryptoMode;
-            if (m_pParent->m_pInternal->m_bIsExternalCloud)
+            if (m_pParent->m_pInternal->m_bIsExternalCloud && !m_pParent->m_pInternal->m_oExternalCloud.crypto_support)
                 nCryptoMode = 0;
 
             message->GetArgumentList()->SetInt(1, nCryptoMode);
@@ -1781,8 +1784,12 @@ public:
                         else if  (1 ==m_pParent->m_pInternal->m_nEditorType)
                             nType = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
 
+                        std::wstring sExtId = L"";
+                        if (m_pParent->m_pInternal->m_bIsExternalCloud)
+                            sExtId = m_pParent->m_pInternal->m_oExternalCloud.id;
+
                         m_pParent->GetAppManager()->m_pInternal->Recents_Add(sPath + L"/" + pData->get_Name(),
-                                                                             nType, sUrl);
+                                                                             nType, sUrl, sExtId);
 
                         pData->put_Path(sPath);
                         pData->put_Url(sUrl);
@@ -2638,8 +2645,32 @@ public:
             if (pos != std::wstring::npos)
                 sBaseUrl = sBaseUrl.substr(0, pos);
 
-            if (0 != sDownloadLink.find(sBaseUrl))
-                sDownloadLink = sBaseUrl + sDownloadLink;
+            if (!m_pParent->m_pInternal->m_bIsExternalCloud)
+            {
+                if (0 != sDownloadLink.find(sBaseUrl) && !NSFileDownloader::IsNeedDownload(sDownloadLink))
+                    sDownloadLink = sBaseUrl + sDownloadLink;
+
+                std::wstring::size_type posCheckEnter = sDownloadLink.find(L"/products/files");
+                if (posCheckEnter != std::wstring::npos)
+                {
+                    std::wstring sBaseDownloadLink = sDownloadLink.substr(0, posCheckEnter);
+                    if (sBaseDownloadLink != sBaseUrl)
+                    {
+                        sDownloadLink = sBaseUrl + sDownloadLink.substr(posCheckEnter);
+                    }
+                }
+            }
+            else
+            {
+                // change base domains
+                sBaseUrl = GetBaseDomain(sBaseUrl, true);
+                std::wstring sBaseDownloadLink = GetBaseDomain(sDownloadLink, true);
+
+                if (sBaseUrl != sBaseDownloadLink)
+                {
+                    sDownloadLink = sBaseUrl + sDownloadLink.substr(sBaseDownloadLink.length());
+                }
+            }
 
             std::wstring sOpenUrl = sDownloadLink + L"<openaslocal></openaslocal><openaslocalname>" + sName + L"</openaslocalname>";
 
@@ -2932,7 +2963,13 @@ public:
                            CefRefPtr<CefFrame> frame,
                            int httpStatusCode)
     {
-        if (frame && !m_pParent->m_pInternal->m_bIsExternalCloud)
+        bool bIsCryptoSupport = true;
+        if (m_pParent->m_pInternal->m_bIsExternalCloud)
+        {
+            bIsCryptoSupport = m_pParent->m_pInternal->m_oExternalCloud.crypto_support;
+        }
+
+        if (frame && bIsCryptoSupport)
             m_pParent->GetAppManager()->m_pInternal->SendCryptoData(frame);
 
         if (frame->IsMain())
@@ -4206,13 +4243,35 @@ void CCefView::load(const std::wstring& urlInputSrc)
         }
         else if (GetType() == cvwtEditor)
         {
-            if (std::wstring::npos != urlInput.find(L"desktop_editor_cloud_type=external"))
+            std::wstring sExternalCloudFind = L"desktop_editor_cloud_type_external=";
+            std::wstring::size_type posExternal = urlInput.find(sExternalCloudFind);
+            if (std::wstring::npos != posExternal)
+            {
+                std::wstring::size_type posExternal2 = urlInput.find(L"_ext_id", posExternal);
+
+                if (std::wstring::npos != posExternal2)
+                {
+                    m_pInternal->m_bIsExternalCloud = true;
+
+                    std::wstring::size_type posExternal1 = posExternal + sExternalCloudFind.length();
+                    std::wstring sExtId = urlInput.substr(posExternal1, posExternal2 - posExternal1);
+
+                    m_pInternal->m_pManager->m_pInternal->TestExternal(sExtId, m_pInternal->m_oExternalCloud);
+
+                    std::wstring sReplaceExt = sExternalCloudFind + sExtId + L"_ext_id";
+
+                    NSCommon::string_replace(urlInput, sReplaceExt, L"");
+                }
+            }
+            else if (!m_pInternal->m_sRecentOpenExternalId.empty())
             {
                 m_pInternal->m_bIsExternalCloud = true;
-                NSCommon::string_replace(urlInput, L"desktop_editor_cloud_type=external", L"");
+                m_pInternal->m_pManager->m_pInternal->TestExternal(m_pInternal->m_sRecentOpenExternalId, m_pInternal->m_oExternalCloud);
             }
         }
     }
+
+    m_pInternal->m_sRecentOpenExternalId = L"";
 
     m_pInternal->m_oTxtToDocx.m_pManager = this->GetAppManager();
     m_pInternal->m_oTxtToDocx.m_pCallback = m_pInternal;
@@ -5454,7 +5513,11 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
 
             sPath += (L"/" + m_pInternal->m_sOpenAsLocalName);
 
-            this->GetAppManager()->m_pInternal->Recents_Add(sPath, nFileFormat, sRecentUrl);
+            std::wstring sExtId = L"";
+            if (m_pInternal->m_bIsExternalCloud)
+                sExtId = m_pInternal->m_oExternalCloud.id;
+
+            this->GetAppManager()->m_pInternal->Recents_Add(sPath, nFileFormat, sRecentUrl, sExtId);
         }
         else
         {
@@ -5706,6 +5769,7 @@ bool CCefViewEditor::OpenRecentFile(const int& nId)
         return true;
     }
 
+    m_pInternal->m_sRecentOpenExternalId = oInfo.m_sExternalCloudId;
     this->load(oInfo.m_sUrl);
     return true;
 }

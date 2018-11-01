@@ -169,6 +169,9 @@ CApplicationCEF::CApplicationCEF()
 
 int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* argv[])
 {
+    if (NULL == pManager->m_pInternal->m_pDpiChecker)
+        pManager->m_pInternal->m_pDpiChecker = pManager->InitDpiChecker();
+
 #if 0
     FILE* f = fopen("D:\\logloglog.txt", "a+");
     fprintf(f, "-----------------------------------------------\n");
@@ -390,10 +393,17 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
         while (std::string::npos != posExt)
         {
             std::string sExternalCloudsDataCurrent = sExternalCloudsData.substr(posExt);
+            std::string::size_type posExtOld = sExternalCloudsDataCurrent.find("\"id\"", 2);
+            if (posExtOld != std::string::npos)
+                sExternalCloudsDataCurrent = sExternalCloudsDataCurrent.substr(0, posExtOld);
+
             CExternalCloudRegister cloudEx;
             cloudEx.id = CPluginsManager::GetStringValueW(sExternalCloudsDataCurrent, "id");
             cloudEx.name = CPluginsManager::GetStringValueW(sExternalCloudsDataCurrent, "name");
             cloudEx.test_editor = CPluginsManager::GetStringValueW(sExternalCloudsDataCurrent, "editorPage");
+            std::wstring sCryptoTest = CPluginsManager::GetStringValueW(sExternalCloudsDataCurrent, "cryptoSupport");
+            if (sCryptoTest == L"true" || sCryptoTest == L"1")
+                cloudEx.crypto_support = true;
 
             pManager->m_pInternal->m_arExternalClouds.push_back(cloudEx);
             posExt = sExternalCloudsData.find("\"id\"", posExt + 2);

@@ -198,10 +198,7 @@ void CAscApplicationManager::CheckFonts(bool bAsync)
 
 void CAscApplicationManager::SetEventListener(NSEditorApi::CAscCefMenuEventListener* pListener)
 {
-    m_pInternal->m_pListener = pListener;
-
-    if (NULL == m_pInternal->m_pDpiChecker)
-        m_pInternal->m_pDpiChecker = this->InitDpiChecker();
+    m_pInternal->m_pListener = pListener;    
 }
 
 NSEditorApi::CAscCefMenuEventListener* CAscApplicationManager::GetEventListener()
@@ -829,15 +826,20 @@ int CAscApplicationManager::GetMonitorScaleByIndex(const int& nIndex, unsigned i
     if (m_pInternal->m_nForceDisplayScale > 0)
         return m_pInternal->m_nForceDisplayScale;
 
-#ifdef WIN32
-    if (0 != Core_GetMonitorRawDpiByIndex(nIndex, &nDpiX, &nDpiY))
-        return -1;
+    CAscDpiChecker* pDpiChecker = CAscApplicationManager::GetDpiChecker();
+    if (pDpiChecker)
+    {
+        unsigned int nDpiX = 0;
+        unsigned int nDpiY = 0;
+        int nRet = pDpiChecker->GetMonitorDpi(nIndex, &nDpiX, &nDpiY);
+        if (nRet >= 0)
+        {
+            double dDpiApp = pDpiChecker->GetScale(nDpiX, nDpiY);
 
-    if (nDpiX > 180 && nDpiY > 180)
-        return 2;
-
-    return 1;
-#endif
+            // пока только 1 или 2
+            return (dDpiApp > 1.9) ? 2 : 1;
+        }
+    }
 
     return -1;
 }
@@ -847,15 +849,20 @@ int CAscApplicationManager::GetMonitorScaleByWindow(const WindowHandleId& nHandl
     if (m_pInternal->m_nForceDisplayScale > 0)
         return m_pInternal->m_nForceDisplayScale;
 
-#ifdef WIN32
-    if (0 != Core_GetMonitorRawDpi(nHandle, &nDpiX, &nDpiY))
-        return -1;
+    CAscDpiChecker* pDpiChecker = CAscApplicationManager::GetDpiChecker();
+    if (pDpiChecker)
+    {
+        unsigned int nDpiX = 0;
+        unsigned int nDpiY = 0;
+        int nRet = pDpiChecker->GetWindowDpi(nHandle, &nDpiX, &nDpiY);
+        if (nRet >= 0)
+        {
+            double dDpiApp = pDpiChecker->GetScale(nDpiX, nDpiY);
 
-    if (nDpiX > 180 && nDpiY > 180)
-        return 2;
-
-    return 1;
-#endif
+            // пока только 1 или 2
+            return (dDpiApp > 1.9) ? 2 : 1;
+        }
+    }
 
     return -1;
 }
