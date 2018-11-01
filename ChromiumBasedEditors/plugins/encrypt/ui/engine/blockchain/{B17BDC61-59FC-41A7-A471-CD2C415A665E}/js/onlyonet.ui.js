@@ -4,7 +4,7 @@ if (typeof ONLYONET === "undefined") {
 
 const ASC_DESKTOP_EDITOR_DEFAULT_MODE = 0;
 const ASC_DESKTOP_EDITOR_CRYPTO_MODE = 3;
-const _lockObject = false;
+var _lockObject = false;
 
 ONLYONET.UI = (function() {
     function _initVaultDialog() {
@@ -23,6 +23,7 @@ ONLYONET.UI = (function() {
         $("#dlg-onoffswitch .error-box p").hide();
         $("#dlg-onoffswitch img.img-loader").hide();
         $("#dlg-onoffswitch input:password").val("");	
+        $("#dlg-onoffswitch input:password").attr("placeholder", ONLYONET.Resources["dlg-onoffswitch-password"]);
         $("#dlg-onoffswitch input:text").removeClass("error");	
         $("#dlg-onoffswitch button.primary").removeAttr("disabled");					
     }
@@ -140,16 +141,18 @@ ONLYONET.UI = (function() {
     return {
         // Public Fields
         init: function(opts) {
-            var lang = _getUrlVars()["lang"];
-           
-            //if (typeof lang == 'undefined')
+            var lang = _getUrlVars()["lang"];         
+            
+            if (typeof lang == 'undefined')
                 lang = "en";
 
-            if (typeof ONLYONET.Resources == 'undefined') $.loadScript('./lang/lang_' + lang + '.js', function() {
-                for (var key in ONLYONET.Resources){
-                    $('*[data-t="' + key + '"]').html(ONLYONET.Resources[key]);
-                }               
-            });
+            const successLoadLangScript = function() {
+                                                for (var key in ONLYONET.Resources){
+                                                    $('*[data-t="' + key + '"]').html(ONLYONET.Resources[key]);
+                                                }};              
+
+            if (typeof ONLYONET.Resources == 'undefined') $.loadScript('./lang/lang_' + lang + '.js',successLoadLangScript);
+            if (typeof ONLYONET.Resources == 'undefined') $.loadScript('./lang/lang_en.js', successLoadLangScript);
 
             $("#box-blockchain-connect a.text-sub").click(function(){
                 _initSwitchOnDialog();
@@ -175,7 +178,7 @@ ONLYONET.UI = (function() {
 
                                 $("div.info-box.excl").hide();  
 
-                                $("#enc-mode-switch").prop("checked", true);
+                                $("#enc-mode-switch").prop("checked", false);
 
                                 break;
                             }
@@ -185,7 +188,7 @@ ONLYONET.UI = (function() {
                                 
                                 $("div.info-box.excl").show();   
                                 
-                                $("#enc-mode-switch").prop("checked", false);
+                                $("#enc-mode-switch").prop("checked", true);
 
                                 break;                                
                              }
@@ -215,7 +218,7 @@ ONLYONET.UI = (function() {
                 $("#dlg-vault")[0].showModal();						
             });		
             
-            $("#box-blockchain-info-refresh-btn").click(function() {
+            $("#box-blockchain-info-btn-refresh").click(function() {
                 _renderBlockChainInfo();
             });
 

@@ -4,7 +4,7 @@ ONLYONET.Resources = {
     "info-box-off":"<strong>The end-to-end encryption mode is OFF.</strong> To switch it on, you must close all active edition sessions.",
     "info-box-on":"<strong>The end-to-end encryption mode is ON.</strong> To switch it off, you must close all active edition sessions.",
     "box-blockchain-connect-description-line1": "Keep your DOCX, XLSX and PPTX files always encrypted and private. Edit and collaborate on your docs securely.",
-    "box-blockchain-connect-description-line2": "ONLYOFFICE uses a 512-bit Advanced Encryption Standard algorithm to protect your files and a blockchain technology with asymmetric encryption for reliable password storing and transferring.",
+    "box-blockchain-connect-description-line2": "ONLYOFFICE uses AES-256 to encrypt your files and a  blockchain technology with asymmetric encryption for reliable password storing and transferring.",
     "box-blockchain-connect-btn-read": "Read how it works",
     "box-blockchain-connect-description-line3": "To start, <strong>create a blockchain account</strong> in our network based on Parity with support for a Proof-of-Authority consensus engine.",
     "box-blockchain-connect-btn-create": "Create an account",
@@ -25,12 +25,14 @@ ONLYONET.Resources = {
     "dlg-onoffswitch-btn-cancel":"Forgot password?",
     "dlg-onoffswitch-btn":"Log in",
     "dlg-onoffswitch-msg-error":"Check the password",
+    "dlg-onoffswitch-password":"Enter password",
     "dlg-vault-mnemonic-phrase":"Mnemonic phrase *",
     "dlg-vault-mnemonic-phrase-msg-error":"Your mnemonic phrase must be at least 12 words long.",
     "dlg-vault-mnemonic-restore-placeholder":"Enter your mnemonic phrase and create new password to restore access.",
     "dlg-vault-mnemonic-caption":"Create your account with mnemonic phrase",
     "dlg-vault-mnemonic-restore-caption":"Forgot password",
     "dlg-vault-new-password":"New Password (min 8 chars) **",
+    "dlg-vault-confirm-password": "Confirm Password",
     "dlg-vault-new-password-msg-error":"Don't Match",
     "dlg-vault-new-password-msg-error-1":"Your password must be at least 8 characters long",    
     "dlg-vault-description-line1":"* WARNING: This combination of 12 words is the only way to unlock your blockchain account. Keep it in the safe location in virtual or written form.",
@@ -40,5 +42,5 @@ ONLYONET.Resources = {
     "dlg-vault-restore-description-btn":"Restore access",
     "dlg-private-key-caption":"Your private key",
     "dlg-private-key-btn":"Copy to clipboard",
-    "system-message-save-to-blockchain": "Save to blockchain..."
+    "system-message-save-to-blockchain": "Saving encryption data to blockchain..."
 };

@@ -321,7 +321,7 @@ dialog .tool.close {
 }
 
 #box-blockchain-connect, #box-blockchain-info {
-    width: 600px;
+    width: 700px;
 }
 
 #box-blockchain-connect a.text-sub {
@@ -341,6 +341,6 @@ div.info-box {
     padding: 9px 12px 12px 40px;
 }
 
-#box-blockchain-info-refresh-btn {
+#box-blockchain-info-btn-refresh {
     cursor: pointer;
 }
