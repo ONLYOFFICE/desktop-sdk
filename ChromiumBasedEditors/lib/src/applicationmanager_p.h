@@ -639,6 +639,8 @@ public:
         m_oSpellChecker.End();
     }
 
+    void ChangeEditorViewsCount();
+
     void Logout(std::wstring strUrl, CefRefPtr<CefCookieManager> manager)
     {
         CCefCookieVisitor* pVisitor = new CCefCookieVisitor();

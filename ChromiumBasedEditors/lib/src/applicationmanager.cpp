@@ -490,6 +490,7 @@ CCefViewEditor* CAscApplicationManager::CreateCefEditor(CCefViewWidgetImpl* pare
     pView->SetAppManager(this);
 
     m_pInternal->m_mapViews[m_pInternal->m_nIdCounter] = pView;
+    m_pInternal->ChangeEditorViewsCount();
     return pView;
 }
 
@@ -500,6 +501,7 @@ CCefViewEditor* CAscApplicationManager::CreateCefPresentationReporter(CCefViewWi
     pView->SetAppManager(this);
 
     m_pInternal->m_mapViews[m_pInternal->m_nIdCounter] = pView;
+    m_pInternal->ChangeEditorViewsCount();
 
     pView->LoadReporter(data->ParentId, data->Url);
     if (!data->LocalRecoverFolder.empty())
@@ -621,6 +623,7 @@ void CAscApplicationManager::DestroyCefView(int nId, bool bIsSafe)
         }
 
         m_pInternal->m_mapViews.erase(i);
+        m_pInternal->ChangeEditorViewsCount();
     }
 }
 

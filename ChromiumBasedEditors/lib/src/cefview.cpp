@@ -5879,3 +5879,36 @@ void CAscApplicationManager_Private::ExecuteInAllFrames(const std::string& sCode
         pFrame->ExecuteJavaScript(sCodeAll, pFrame->GetURL(), 0);
     }
 }
+
+void CAscApplicationManager_Private::ChangeEditorViewsCount()
+{
+    bool bIsEditorPresent = false;
+    for (std::map<int, CCefView*>::iterator iter = m_mapViews.begin(); iter != m_mapViews.end(); iter++)
+    {
+        CCefView* tmp = iter->second;
+        if (tmp->GetType() == cvwtEditor)
+        {
+            bIsEditorPresent = true;
+            break;
+        }
+    }
+
+    CCefView* pView = GetViewForSystemMessages();
+    if (!pView || !pView->m_pInternal || !pView->m_pInternal->GetBrowser())
+        return;
+
+    std::string sCodeValue = bIsEditorPresent ? "true" : "false";
+    std::string sCode = "(function(){if (window.onChangeEditorsCount) window.onChangeEditorsCount(" + sCodeValue + ");})();";
+
+    std::vector<int64> identifiers;
+    pView->m_pInternal->GetBrowser()->GetFrameIdentifiers(identifiers);
+
+    for (std::vector<int64>::iterator iter = identifiers.begin(); iter != identifiers.end(); iter++)
+    {
+        CefRefPtr<CefFrame> pFrame = pView->m_pInternal->GetBrowser()->GetFrame(*iter);
+        if (pFrame)
+        {
+            pFrame->ExecuteJavaScript(sCode, pFrame->GetURL(), 0);
+        }
+    }
+}

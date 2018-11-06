@@ -188,4 +188,10 @@
 					break;
 			}		
     };
+	
+	window.onChangeEditorsCount = function(isEditorsPresent)
+	{
+		console.log(isEditorsPresent);
+	};
+	
 })(window, undefined);
