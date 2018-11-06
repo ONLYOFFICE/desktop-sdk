@@ -3027,7 +3027,8 @@ public:
     #endif
 
                     std::wstring sNameG = UTF8_TO_U((iterExt->sName));
-                    pEventData->addItem(sNameG, L"system_asc." + sGuid, sSrc);
+                    std::wstring sNameLocal = UTF8_TO_U((iterExt->sNameObject));
+                    pEventData->addItem(sNameG, L"system_asc." + sGuid, sSrc, sNameLocal);
                 }
 
                 m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);

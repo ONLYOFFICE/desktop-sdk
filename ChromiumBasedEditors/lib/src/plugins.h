@@ -45,6 +45,7 @@ class CExternalPluginInfo
 public:
     std::string sGuid;
     std::string sName;
+    std::string sNameObject;
 };
 
 class CPluginsManager
@@ -304,6 +305,7 @@ private:
                 CExternalPluginInfo info;
                 info.sGuid = sJson.substr(pos1, pos2 - pos1 + 1);
                 info.sName = GetStringValue(sJson, "name");
+                info.sNameObject = GetObjectValue(sJson, "nameLocale");
 
                 m_arExternals.push_back(info);
             }
@@ -330,9 +332,31 @@ public:
 
         return strJson.substr(pos1 + 1, pos2 - pos1 - 1);
     }
+    static std::string GetObjectValue(const std::string& strJson, const std::string& strName)
+    {
+        std::string::size_type nPosStartName = strJson.find("\"" + strName + "\"");
+        if (nPosStartName == std::string::npos)
+            return "";
+
+        nPosStartName += (strName.length() + 2);
+        std::string::size_type pos1 = strJson.find("{", nPosStartName);
+        if (pos1 == std::string::npos)
+            return "";
+
+        std::string::size_type pos2 = strJson.find("}", pos1 + 1);
+        if (pos2 == std::string::npos)
+            return "";
+
+        return strJson.substr(pos1, pos2 - pos1 + 1);
+    }
     static std::wstring GetStringValueW(const std::string& strJson, const std::string& strName)
     {
         std::string sRet = GetStringValue(strJson, strName);
+        return UTF8_TO_U(sRet);
+    }
+    static std::wstring GetObjectValueW(const std::string& strJson, const std::string& strName)
+    {
+        std::string sRet = GetObjectValue(strJson, strName);
         return UTF8_TO_U(sRet);
     }
 };

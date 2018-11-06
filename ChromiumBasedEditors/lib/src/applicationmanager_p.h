@@ -612,6 +612,8 @@ public:
 
         m_nCurrentCryptoMode = NSAscCrypto::None;
 
+        m_pKeyChain = NULL;
+
         m_oCS_SystemMessages.InitializeCriticalSection();
     }
     bool GetEditorPermission()
