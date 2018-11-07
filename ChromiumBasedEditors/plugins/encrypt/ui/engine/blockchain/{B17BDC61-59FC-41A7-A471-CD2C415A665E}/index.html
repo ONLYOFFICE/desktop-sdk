@@ -167,11 +167,11 @@
 						</div>
 						<input type="password" class="tbox" value=""  />	
 						<div class="error-box">
-							<p class="msg-error" style="display: block;" data-t="dlg-vault-description-line1">
+							<p class="msg-error" style="display: block; margin: 0px 0px 12px 0px" data-t="dlg-vault-description-line1">
 								* WARNING: This combination of 12 words is the only way to unlock your blockchain account. 
 								  Keep it in the safe location in virtual or written form.
 							</p>
-							<p class="msg-error" style="display: block; color:inherit;" data-t="dlg-vault-description-line2">
+							<p class="msg-error" style="display: block; color:inherit; margin: 0px 0px 12px 0px" data-t="dlg-vault-description-line2">
 								** This password encrypts the DOCX file with your mnemonic phrase that is used to generate a key pair. 
 									Use it to enable the Encryption mode.
 							</p>
@@ -189,7 +189,7 @@
 				</section>
 			</div>
 		</dialog>	
-		<dialog id="dlg-private-key" class="dlg scaled" style="width: 550px">
+		<dialog id="dlg-private-key" class="dlg scaled" style="width: 600px">
 			<div class="title">
 				<label class="caption" data-t="dlg-private-key-caption">Your private key</label>
 				<span class="tool close img-el"></span>
@@ -197,10 +197,13 @@
 			<div class="body">
 				<section>
 					<div>	
-						<p>
+						<p style="margin: 0px 0px 12px 0px">
 							<span>-</span>	
 						</p>
-						<button data-t="dlg-private-key-btn" class="btn primary">Copy to clipboard</button>
+						<div style="height:10px;"></div>
+						<div class="lr-flex" style="justify-content:flex-end;">
+							<button class="btn primary" data-t="dlg-private-key-btn">Copy to clipboard</button>
+						</div>
 					</div>
 				</section>
 			</div>

@@ -187,11 +187,13 @@
 				default:
 					break;
 			}		
-    };
+	};
 	
 	window.onChangeEditorsCount = function(isEditorsPresent)
 	{
-		console.log(isEditorsPresent);
+		ONLYONET.UI.isEditorsPresent = isEditorsPresent;
+
+		ONLYONET.UI.showInfoBox();
 	};
-	
+
 })(window, undefined);

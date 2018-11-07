@@ -94,7 +94,8 @@ ONLYONET.UI = (function() {
         $("#box-network-selector span:eq(1)").text(ONLYONET.getProviderUri());
 
         $("#tbl-acount-info tbody td:eq(0) a").attr("data-clipboard-text",address);
-        
+
+
         _lockObject = false;
     }
 
@@ -140,6 +141,24 @@ ONLYONET.UI = (function() {
 
     return {
         // Public Fields
+        isEditorsPresent: false,
+        showInfoBox: function () {
+            if (ONLYONET.UI.isEditorsPresent) {
+
+                if ($("#enc-mode-switch").prop("checked")) {
+                    $("div.info-box.excl").html(ONLYONET.Resources["info-box-off"]);   
+                }
+                else {
+                    $("div.info-box.excl").html(ONLYONET.Resources["info-box-on"]);   
+                }
+                                             
+                $("div.info-box.excl").show();   
+            }
+            else
+            {
+                $("div.info-box.excl").hide();  
+            }
+        }, 
         init: function(opts) {
             var lang = _getUrlVars()["lang"];         
             
@@ -154,13 +173,20 @@ ONLYONET.UI = (function() {
             if (typeof ONLYONET.Resources == 'undefined') $.loadScript('./lang/lang_' + lang + '.js',successLoadLangScript);
             if (typeof ONLYONET.Resources == 'undefined') $.loadScript('./lang/lang_en.js', successLoadLangScript);
 
+            $("#box-blockchain-info-btn-refresh").attr("alt", ONLYONET.Resources["box-blockchain-info-btn-refresh"]);
+            $("#box-blockchain-info-btn-refresh").attr("title", ONLYONET.Resources["box-blockchain-info-btn-refresh"]);
+
             $("#box-blockchain-connect a.text-sub").click(function(){
                 _initSwitchOnDialog();
                 $("#dlg-onoffswitch")[0].showModal();
             });          
 
-            $("#enc-mode-switch").click(function () {						
-                if($(this).is(":checked")) {
+            $("#enc-mode-switch").click(function () {	
+                if (ONLYONET.UI.isEditorsPresent) {
+                    return false;
+                }                
+                
+                if($(this).is(":checked")) {                    
                     _initSwitchOnDialog();
                     $("#dlg-onoffswitch")[0].showModal();
 
@@ -287,33 +313,35 @@ ONLYONET.UI = (function() {
                 let pwd = $("#dlg-vault input:password:first").val();	
                 let pwdRepeat = $("#dlg-vault input:password:eq(1)").val();	
             
+                $("#dlg-vault .error-box:eq(1) p.msg-error").hide();
+                $("#dlg-vault .error-box:eq(2) p.msg-error").hide();
+
+                $("#dlg-vault input:password:first").removeClass("error");
+                $("#dlg-vault input:password:eq(1)").removeClass("error");
+
                 if ((pwd !== pwdRepeat) || (pwd.length < ONLYONET.defaultConfig.passwordLength))
                 {
-                    if (pwd !== pwdRepeat) {
-                        $("#dlg-vault .lr-flex .error-box:eq(1) p.msg-error").text(ONLYONET.Resources["dlg-vault-new-password-msg-error"]);
-                        $("#dlg-vault .lr-flex .error-box:eq(2) p.msg-error").text(ONLYONET.Resources["dlg-vault-new-password-msg-error"]);
-                    }
-                
                     if (pwd.length < ONLYONET.defaultConfig.passwordLength) {
                         $("#dlg-vault .lr-flex .error-box:eq(1) p.msg-error").text(ONLYONET.Resources["dlg-vault-new-password-msg-error-1"]);
-                        $("#dlg-vault .lr-flex .error-box:eq(2) p.msg-error").text(ONLYONET.Resources["dlg-vault-new-password-msg-error-1"]);							
-                    }													
-
-                    $("#dlg-vault input:password:first").addClass("error");
-                    $("#dlg-vault input:password:eq(1)").addClass("error");
+                        $("#dlg-vault input:password:first").addClass("error");
+                        $("#dlg-vault .lr-flex .error-box:eq(1) p.msg-error").show();
+                      // $("#dlg-vault .lr-flex .error-box:eq(2) p.msg-error").text(ONLYONET.Resources["dlg-vault-new-password-msg-error-1"]);							
+                    } 
+                    else if (pwd !== pwdRepeat) {
+                     // $("#dlg-vault .lr-flex .error-box:eq(1) p.msg-error").text(ONLYONET.Resources["dlg-vault-new-password-msg-error"]);
+                   
+                        $("#dlg-vault .lr-flex .error-box:eq(2) p.msg-error").text(ONLYONET.Resources["dlg-vault-new-password-msg-error"]);
+                        $("#dlg-vault input:password:eq(1)").addClass("error");
+                        $("#dlg-vault .lr-flex .error-box:eq(2) p.msg-error").show();    
+                    }												
                 
-                    $("#dlg-vault .lr-flex .error-box:eq(1) p.msg-error").show();
-                    $("#dlg-vault .lr-flex .error-box:eq(2) p.msg-error").show();
-
                     $("#dlg-vault img.img-loader").hide();
                     $("#dlg-vault button.primary").removeAttr("disabled");
                     
                     return false;
                 }
 
-                $("#dlg-vault .error-box:eq(1) p.msg-error").hide();
-                $("#dlg-vault .error-box:eq(2) p.msg-error").hide();
-
+               
                 let seedPhrase = $("#dlg-vault textarea").val();
                 
                 if (!ONLYONET.isSeedPhraseValid(seedPhrase)) {
