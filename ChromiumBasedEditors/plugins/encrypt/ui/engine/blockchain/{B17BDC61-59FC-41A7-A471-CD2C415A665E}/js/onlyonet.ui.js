@@ -178,7 +178,9 @@ ONLYONET.UI = (function() {
 
             $("#box-blockchain-connect a.text-sub").click(function(){
                 _initSwitchOnDialog();
+               
                 $("#dlg-onoffswitch")[0].showModal();
+                window.parent.postMessage(JSON.stringify({type:'plugin', event: 'modal:open'}), '*');
             });          
 
             $("#enc-mode-switch").click(function () {	
@@ -188,7 +190,9 @@ ONLYONET.UI = (function() {
                 
                 if($(this).is(":checked")) {                    
                     _initSwitchOnDialog();
+
                     $("#dlg-onoffswitch")[0].showModal();
+                    window.parent.postMessage(JSON.stringify({type:'plugin', event: 'modal:open'}), '*');
 
                     return false;
                 }
@@ -240,8 +244,10 @@ ONLYONET.UI = (function() {
                 $("#dlg-vault textarea").attr("readonly","readonly");
 
                 $("#dlg-vault textarea").val(ONLYONET.generateRandomSeed());
-                                                
-                $("#dlg-vault")[0].showModal();						
+                           
+                
+                $("#dlg-vault")[0].showModal();	
+                window.parent.postMessage(JSON.stringify({type:'plugin', event: 'modal:open'}), '*');					
             });		
             
             $("#box-blockchain-info-btn-refresh").click(function() {
@@ -287,11 +293,20 @@ ONLYONET.UI = (function() {
                 $("#dlg-vault textarea").attr("placeholder", ONLYONET.Resources["dlg-vault-mnemonic-restore-placeholder"]);
                 $("#dlg-vault button.btn.primary").text(ONLYONET.Resources["dlg-vault-restore-description-btn"]);					
             
-                $("#dlg-vault")[0].showModal();				
+                
+                $("#dlg-vault")[0].showModal();		
+                window.parent.postMessage(JSON.stringify({type:'plugin', event: 'modal:open'}), '*');		
             });
 
             $("#dlg-vault .tool.close").click(function(){						
-                $("#dlg-vault")[0].close();					
+                $("#dlg-vault")[0].close();	
+                window.parent.postMessage(JSON.stringify({type:'plugin', event: 'modal:close'}), '*')				
+            });
+
+            $("#dlg-vault, #dlg-onoffswitch, #dlg-private-key").each(function() {
+                $(this)[0].addEventListener('cancel', function() {
+                    window.parent.postMessage(JSON.stringify({type:'plugin', event: 'modal:close'}), '*')			
+                });
             });
             
             $("#dlg-vault a.text-sub").click(function () {
@@ -378,10 +393,12 @@ ONLYONET.UI = (function() {
 
             $("#dlg-onoffswitch .tool.close").click(function() {
                 $("#dlg-onoffswitch")[0].close();
+                window.parent.postMessage(JSON.stringify({type:'plugin', event: 'modal:close'}), '*')			
             });
 
             $("#dlg-private-key .tool.close").click(function () {
                 $("#dlg-private-key")[0].close();
+                window.parent.postMessage(JSON.stringify({type:'plugin', event: 'modal:close'}), '*')			
             });
 
             $("#dlg-private-key button.primary").click(function () {
@@ -400,7 +417,9 @@ ONLYONET.UI = (function() {
                         e.clearSelection();
                       });
 
-                $("#dlg-private-key")[0].showModal();												
+                
+                $("#dlg-private-key")[0].showModal();	
+                window.parent.postMessage(JSON.stringify({type:'plugin', event: 'modal:open'}), '*');											
             });
         }
     }
