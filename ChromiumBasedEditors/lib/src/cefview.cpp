@@ -66,6 +66,34 @@
 
 #include "../../../../core/DesktopEditor/graphics/BaseThread.h"
 
+#include "./cefwrapper/client_scheme.h"
+
+#ifdef CEF_2623
+typedef CefStreamResourceHandler CefStreamResourceHandlerCORS;
+#else
+#define USE_STREAM_RESOURCE_RECOVER_CORS
+class CefStreamResourceHandlerCORS : public CefStreamResourceHandler
+{
+public:
+    CefStreamResourceHandlerCORS(const CefString& mime_type,
+                             CefRefPtr<CefStreamReader> stream) : CefStreamResourceHandler(mime_type, stream)
+    {
+    }
+
+    virtual void GetResponseHeaders(
+        CefRefPtr<CefResponse> response,
+        int64& response_length,
+        CefString& redirectUrl) OVERRIDE
+    {
+      CefStreamResourceHandler::GetResponseHeaders(response, response_length, redirectUrl);
+
+      CefResponse::HeaderMap headers;
+      headers.insert(std::make_pair("Access-Control-Allow-Origin", "*"));
+      response->SetHeaderMap(headers);
+    }
+};
+#endif
+
 class CDownloadFilesAborted : public NSTimers::CTimer
 {
 protected:
@@ -3232,6 +3260,32 @@ public:
     {
         std::wstring url = request->GetURL().ToWString();
 
+#ifdef USE_STREAM_RESOURCE_RECOVER_CORS
+        if (0 == url.find(L"ascdesktop://fonts"))
+        {
+            std::wstring sUrlFrame = frame->GetURL().ToWString();
+            if (NSFileDownloader::IsNeedDownload(sUrlFrame))
+            {
+                int nFlag = UU_SPACES | UU_REPLACE_PLUS_WITH_SPACE;
+#if defined (_LINUX) && !defined(_MAC)
+                nFlag |= UU_URL_SPECIAL_CHARS_EXCEPT_PATH_SEPARATORS;
+#else
+#ifndef CEF_2623
+                nFlag |= UU_URL_SPECIAL_CHARS_EXCEPT_PATH_SEPARATORS;
+#endif
+#endif
+
+                CefString cefUrl = request->GetURL();
+                CefString cefFile = CefURIDecode(cefUrl, false, static_cast<cef_uri_unescape_rule_t>(nFlag));
+
+                std::wstring sBinaryFile = cefFile.ToWString().substr(19);
+
+                // check on recovery folder!!!
+                return GetLocalFileRequest(sBinaryFile, "", "", true);
+            }
+        }
+#endif
+
 #ifdef DEBUG_CLOUD_5_2
 
 #ifdef DEBUG_LOCAL_SERVER
@@ -3444,7 +3498,7 @@ require.load = function (context, moduleName, url) {\n\
         return NULL;
     }
 
-    CefRefPtr<CefResourceHandler> GetLocalFileRequest(const std::wstring& strFileName, const std::string& sHeaderScript = "", const std::string& sFooter = "")
+    CefRefPtr<CefResourceHandler> GetLocalFileRequest(const std::wstring& strFileName, const std::string& sHeaderScript = "", const std::string& sFooter = "", const bool& isSchemeRequest = false)
     {
         NSFile::CFileBinary oFileBinary;
         if (!oFileBinary.OpenFile(strFileName))
@@ -3481,6 +3535,9 @@ require.load = function (context, moduleName, url) {\n\
         }
 
         std::string mime_type = GetMimeType(strFileName);
+        if (isSchemeRequest)
+            mime_type = asc_scheme::GetMimeTypeFromExt(strFileName);
+
         if (mime_type.empty())
         {
             RELEASEARRAYOBJECTS(pBytes);
@@ -3500,6 +3557,9 @@ require.load = function (context, moduleName, url) {\n\
             fprintf(f, "\n");
             fclose(f);
 #endif
+
+            if (isSchemeRequest)
+                return new CefStreamResourceHandlerCORS(mime_type, stream);
 
             return new CefStreamResourceHandler(mime_type, stream);
         }

@@ -43,6 +43,27 @@
 
 namespace asc_scheme
 {
+
+std::string GetMimeTypeFromExt(const std::wstring& sFile)
+{
+    std::wstring sExt = NSFile::GetFileExtention(sFile);
+
+    if (sExt == L"html")
+        return "text/html";
+    if (sExt == L"js")
+        return "text/javascript";
+    if (sExt == L"css")
+        return "text/css";
+    if (sExt == L"json")
+        return "application/json";
+    if (sExt == L"png")
+        return "image/png";
+    if (sExt == L"jpg" || sExt == L"jpeg")
+        return "image/jpeg";
+
+    return "*/*";
+}
+
 // Implementation of the schema handler for client:// requests.
 class ClientSchemeHandler : public CefResourceHandler
 {
@@ -58,26 +79,6 @@ public:
     {
         if (NULL != data_binary_)
             delete [] data_binary_;
-    }
-
-    std::string GetMimeTypeFromExt(const std::wstring& sFile)
-    {
-        std::wstring sExt = NSFile::GetFileExtention(sFile);
-
-        if (sExt == L"html")
-            return "text/html";
-        if (sExt == L"js")
-            return "text/javascript";
-        if (sExt == L"css")
-            return "text/css";
-        if (sExt == L"json")
-            return "application/json";
-        if (sExt == L"png")
-            return "image/png";
-        if (sExt == L"jpg" || sExt == L"jpeg")
-            return "image/jpeg";
-
-        return "*/*";
     }
 
     virtual bool ProcessRequest(CefRefPtr<CefRequest> request,
