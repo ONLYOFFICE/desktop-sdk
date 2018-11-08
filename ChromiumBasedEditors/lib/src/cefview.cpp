@@ -88,6 +88,7 @@ public:
       CefStreamResourceHandler::GetResponseHeaders(response, response_length, redirectUrl);
 
       CefResponse::HeaderMap headers;
+      response->GetHeaderMap(headers);
       headers.insert(std::make_pair("Access-Control-Allow-Origin", "*"));
       response->SetHeaderMap(headers);
     }
