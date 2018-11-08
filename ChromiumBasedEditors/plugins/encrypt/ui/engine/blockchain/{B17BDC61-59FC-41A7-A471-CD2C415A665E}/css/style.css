@@ -342,9 +342,9 @@ div.info-box {
     margin: 0 0 20px;
     padding: 9px 12px 7px 40px;
     position: absolute;
-    top: 0px;
-    width: 100%;
-    left: 0px;
+    top: 0px;   
+    left: 287px;
+    right: 0px;
 }
 
 #box-blockchain-info-btn-refresh {

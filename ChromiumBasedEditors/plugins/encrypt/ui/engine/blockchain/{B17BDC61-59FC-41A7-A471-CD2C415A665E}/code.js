@@ -192,8 +192,6 @@
 	window.onChangeEditorsCount = function(isEditorsPresent)
 	{
 		ONLYONET.UI.isEditorsPresent = isEditorsPresent;
-
-		ONLYONET.UI.showInfoBox();
 	};
 
 })(window, undefined);

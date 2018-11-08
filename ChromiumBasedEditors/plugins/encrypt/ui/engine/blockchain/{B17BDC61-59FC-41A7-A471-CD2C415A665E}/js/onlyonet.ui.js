@@ -142,23 +142,6 @@ ONLYONET.UI = (function() {
     return {
         // Public Fields
         isEditorsPresent: false,
-        showInfoBox: function () {
-            if (ONLYONET.UI.isEditorsPresent) {
-
-                if ($("#enc-mode-switch").prop("checked")) {
-                    $("div.info-box.excl").html(ONLYONET.Resources["info-box-off"]);   
-                }
-                else {
-                    $("div.info-box.excl").html(ONLYONET.Resources["info-box-on"]);   
-                }
-                                             
-                $("div.info-box.excl").show();   
-            }
-            else
-            {
-                $("div.info-box.excl").hide();  
-            }
-        }, 
         init: function(opts) {
             var lang = _getUrlVars()["lang"];         
             
@@ -184,9 +167,24 @@ ONLYONET.UI = (function() {
             });          
 
             $("#enc-mode-switch").click(function () {	
+
                 if (ONLYONET.UI.isEditorsPresent) {
+
+                    if ($("#enc-mode-switch").prop("checked")) {
+                        $("div.info-box.excl").html(ONLYONET.Resources["info-box-off"]);   
+                    }
+                    else {
+                        $("div.info-box.excl").html(ONLYONET.Resources["info-box-on"]);   
+                    }
+                                                 
+                    $("div.info-box.excl").show();   
+
                     return false;
-                }                
+                }
+                else
+                {
+                    $("div.info-box.excl").hide();  
+                }          
                 
                 if($(this).is(":checked")) {                    
                     _initSwitchOnDialog();
