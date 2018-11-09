@@ -788,6 +788,8 @@ public:
     {
         bool bEncryption = (m_pCefView->GetAppManager()->m_pInternal->m_nCurrentCryptoMode != 0) ? true : false;
 
+        // важен порядок (для красоты) - поэтому такие странные if'ы
+
         if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_DOCUMENT)
         {
             arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX);
@@ -795,11 +797,28 @@ public:
             if (!bEncryption)
             {
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOTX);
-                arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_ODT);
+            }
+
+            arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_ODT);
+
+            if (!bEncryption)
+            {
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_RTF);
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_TXT);
                 //arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_HTML);
+            }
+
+#ifdef NOT_CRYPTO_PDF
+            if (!bEncryption)
+            {
+#endif
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF);
+#ifdef NOT_CRYPTO_PDF
+            }
+#endif
+
+            if (!bEncryption)
+            {
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA);
             }
         }
@@ -810,9 +829,26 @@ public:
             if (!bEncryption)
             {
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLTX);
-                arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_ODS);
+            }
+
+            arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_ODS);
+
+            if (!bEncryption)
+            {
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_CSV);
+            }
+
+#ifdef NOT_CRYPTO_PDF
+            if (!bEncryption)
+            {
+#endif
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF);
+#ifdef NOT_CRYPTO_PDF
+            }
+#endif
+
+            if (!bEncryption)
+            {
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA);
             }
         }
@@ -823,15 +859,32 @@ public:
             if (!bEncryption)
             {
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_PRESENTATION_POTX);
-                arFormats.push_back(AVS_OFFICESTUDIO_FILE_PRESENTATION_ODP);
+            }
+
+            arFormats.push_back(AVS_OFFICESTUDIO_FILE_PRESENTATION_ODP);
+
+#ifdef NOT_CRYPTO_PDF
+            if (!bEncryption)
+            {
+#endif
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF);
+#ifdef NOT_CRYPTO_PDF
+            }
+#endif
+
+            if (!bEncryption)
+            {
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA);
             }
         }
         else if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
         {
             arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF);
-            arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA);
+
+            if (!bEncryption)
+            {
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA);
+            }
         }
     }
 
