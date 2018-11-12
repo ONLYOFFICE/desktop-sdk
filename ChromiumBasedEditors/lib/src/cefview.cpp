@@ -414,6 +414,7 @@ public:
 
     bool m_bIsRemoveRecoveryOnClose;
     bool m_bIsClosing;
+    bool m_bIsDestroying;
     bool m_bIsSavingDialog;
 
     CNativeFileViewerInfo m_oNativeViewer;
@@ -535,6 +536,7 @@ public:
         m_bIsRemoveRecoveryOnClose = false;
 
         m_bIsClosing = false;
+        m_bIsDestroying = false;
         m_bIsSavingDialog = false;
 
 #if defined(_LINUX) && !defined(_MAC)
@@ -4220,6 +4222,8 @@ void CCefView_Private::LocalFile_IncrementCounter()
 }
 void CCefView_Private::OnFileConvertToEditor(const int& nError)
 {
+    if (m_bIsClosing || m_bIsDestroying)
+        return;
     m_nLocalFileOpenError = nError;
     LocalFile_IncrementCounter();
 }
@@ -4792,6 +4796,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
         if (pEvent->m_nType == ASC_MENU_EVENT_TYPE_CEF_DESTROY ||
             pEvent->m_nType == ASC_MENU_EVENT_TYPE_CEF_DESTROY_SAFE)
         {
+            m_pInternal->m_bIsDestroying = true;
             if (m_pInternal->m_pManager)
                 m_pInternal->m_pManager->OnDestroyWindow();
         }
@@ -4876,6 +4881,8 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
         {
             if (m_pInternal && pEvent->m_nType == ASC_MENU_EVENT_TYPE_CEF_DESTROY_SAFE && m_pInternal->m_bIsReceiveOnce_OnDocumentModified)
                 m_pInternal->m_bIsRemoveRecoveryOnClose = true;
+
+            m_pInternal->m_bIsDestroying = true;
             
             m_pInternal->m_oConverterFromEditor.Stop();
             m_pInternal->m_oConverterToEditor.Stop();
