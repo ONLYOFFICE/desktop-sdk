@@ -48,6 +48,8 @@
 #include "../../../../core/XpsFile/XpsFile.h"
 #include "../../../../core/HtmlRenderer/include/HTMLRenderer3.h"
 
+#include "../../../../core/DesktopEditor/xmlsec/src/include/XmlCertificate.h"
+
 #include "Logger.h"
 
 #include <list>
@@ -97,6 +99,8 @@ private:
     std::wstring            m_sFontsDir;
 
     std::wstring            m_sPassword;
+    std::string             m_sHashFile;
+    std::string             m_sDocInfo;
 
     std::list<CNativeViewerPageInfo> m_arTasks;
     CNativeViewerPageInfo m_oCurrentTask;
@@ -177,7 +181,17 @@ public:
     {
         CTemporaryCS oCS(&m_oCS);
         m_sPassword = sPassword;
+
         Start(0);
+    }
+
+    std::string GetHash()
+    {
+        return m_sHashFile;
+    }
+    std::string GetDocInfo()
+    {
+        return m_sDocInfo;
     }
 
     void ClearBase64()
@@ -340,6 +354,15 @@ public:
                 if (PdfReader::errorEncrypted == pPdfReader->GetError())
                 {
                     sBase64Info = "password";
+
+                    COfficeFileFormatChecker oChecker;
+                    oChecker.isOfficeFile(sFilePath);
+
+                    m_sDocInfo = U_TO_UTF8((oChecker.sDocumentID));
+
+                    ICertificate* pCert = ICertificate::CreateInstance();
+                    m_sHashFile = pCert->GetHash(sFilePath, OOXML_HASH_ALG_SHA256);
+                    delete pCert;
                 }
                 else
                 {

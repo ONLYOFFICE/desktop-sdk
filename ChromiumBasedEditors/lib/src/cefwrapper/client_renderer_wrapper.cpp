@@ -1790,11 +1790,16 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
                     {
                         m_oNativeViewer.Stop();
                         m_oNativeViewer.ClearBase64();
-                        CefV8Context::GetCurrentContext()->Eval("window.NativeFileOpen_error(\"" + sBase64File + "\");",
-                                                                                        #ifndef CEF_2623
-                                                                                                    "", 0,
-                                                                                        #endif
-                                                                                        _timerID, _exception);
+
+                        std::string sCode = "window.NativeFileOpen_error(\"" +
+                                sBase64File + "\", \"" + m_oNativeViewer.GetHash() + "\", \"" +
+                                m_oNativeViewer.GetDocInfo() + "\");";
+
+                        CefV8Context::GetCurrentContext()->Eval(sCode,
+                                                                #ifndef CEF_2623
+                                                                            "", 0,
+                                                                #endif
+                                                                _timerID, _exception);
                         return true;
                     }
 

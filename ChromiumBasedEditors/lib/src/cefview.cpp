@@ -808,14 +808,7 @@ public:
                 //arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_HTML);
             }
 
-#ifdef NOT_CRYPTO_PDF
-            if (!bEncryption)
-            {
-#endif
-                arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF);
-#ifdef NOT_CRYPTO_PDF
-            }
-#endif
+            arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF);
 
             if (!bEncryption)
             {
@@ -838,14 +831,7 @@ public:
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_CSV);
             }
 
-#ifdef NOT_CRYPTO_PDF
-            if (!bEncryption)
-            {
-#endif
-                arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF);
-#ifdef NOT_CRYPTO_PDF
-            }
-#endif
+            arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF);
 
             if (!bEncryption)
             {
@@ -863,14 +849,7 @@ public:
 
             arFormats.push_back(AVS_OFFICESTUDIO_FILE_PRESENTATION_ODP);
 
-#ifdef NOT_CRYPTO_PDF
-            if (!bEncryption)
-            {
-#endif
-                arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF);
-#ifdef NOT_CRYPTO_PDF
-            }
-#endif
+            arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF);
 
             if (!bEncryption)
             {
@@ -4025,11 +4004,16 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
     m_oConverterFromEditor.m_nTypeEditorFormat = -1;
     m_oLocalInfo.m_bIsRetina = false;
 
+    std::wstring sNotEditableLocal;
+    int nError_Old = nError;
+
     if (!LocalFile_IsSupportEditFormat(m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat))
     {
         if (0 == nError)
             m_pManager->m_pInternal->Recents_Add(m_oConverterFromEditor.m_oInfo.m_sFileSrc, m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat);
         nError = ASC_CONSTANT_CANCEL_SAVE;
+
+        sNotEditableLocal = m_oConverterFromEditor.m_oInfo.m_sFileSrc;
     }
 
     if (ASC_CONSTANT_CANCEL_SAVE == nError)
@@ -4052,6 +4036,23 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
         CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_onsaveend");
         message->GetArgumentList()->SetString(0, "");
         message->GetArgumentList()->SetInt(1, 1);
+
+        if (0 == nError_Old && !sNotEditableLocal.empty())
+        {
+            bool bIsPassAdd = false;
+            if (!sPass.empty() && (0 == nError_Old))
+            {
+                bIsPassAdd = true;
+                message->GetArgumentList()->SetString(2, sPass);
+
+                ICertificate* pCert = ICertificate::CreateInstance();
+                std::string sHash = pCert->GetHash(sNotEditableLocal, OOXML_HASH_ALG_SHA256);
+                delete pCert;
+
+                message->GetArgumentList()->SetString(3, sHash);
+            }
+        }
+
         m_handler->GetBrowser()->SendProcessMessage(PID_RENDERER, message);
         return;
     }
@@ -4197,8 +4198,14 @@ void CCefView_Private::LocalFile_IncrementCounter()
                     std::wstring sDocInfo;
                     COfficeFileFormatChecker oChecker;
                     bool bIsStorage = oChecker.isMS_OFFCRYPTOFormatFile(m_oLocalInfo.m_oInfo.m_sFileSrc, sDocInfo);
+                    if (!bIsStorage)
+                    {
+                        sDocInfo = L"";
+                        bIsStorage = oChecker.isOpenOfficeFormatFile(m_oLocalInfo.m_oInfo.m_sFileSrc, sDocInfo);
+                    }
+
                     if (bIsStorage && !sDocInfo.empty())
-                        message->GetArgumentList()->SetString(2, sDocInfo);
+                        message->GetArgumentList()->SetString(2, sDocInfo);                    
                 }
 
                 browser->SendProcessMessage(PID_RENDERER, message);

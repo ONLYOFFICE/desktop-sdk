@@ -49,7 +49,6 @@
 #endif
 
 //#define USE_FOR_REGENERATE_PRESENTATION_THEMES
-#define NOT_CRYPTO_PDF
 
 // AFTER FULL REALIZE - DELETE THIS MACRO
 
@@ -964,9 +963,7 @@ public:
                 case AVS_OFFICESTUDIO_FILE_DOCUMENT_ODT:
                 case AVS_OFFICESTUDIO_FILE_SPREADSHEET_ODS:
                 case AVS_OFFICESTUDIO_FILE_PRESENTATION_ODP:
-#ifndef NOT_CRYPTO_PDF
                 case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF:
-#endif
                 {
                     oBuilder.WriteString(L"<m_sSavePassword>");
                     oBuilder.WriteEncodeXmlString(m_oInfo.m_sPassword);
