@@ -4456,7 +4456,14 @@ void CCefView::load(const std::wstring& urlInputSrc)
             url = (url + L"&desktop=true");
 
         if (1 == this->GetId())
+        {
             m_pInternal->m_pManager->m_pInternal->m_mainPostFix = url.substr(posQ);
+            m_pInternal->m_pManager->m_pInternal->m_mainLang = L"default";
+
+            std::wstring sLang = NSUrlParse::GetUrlValue(m_pInternal->m_pManager->m_pInternal->m_mainPostFix, L"lang");
+            if (!sLang.empty())
+                m_pInternal->m_pManager->m_pInternal->m_mainLang = sLang;
+        }
     }
     else
     {
@@ -5689,11 +5696,19 @@ void CCefViewEditor::CreateLocalFile(const int& nFileFormat, const std::wstring&
 
     std::string sCountry = this->GetAppManager()->m_oSettings.country;
     NSCommon::makeUpper(sCountry);
-    std::wstring sPrefix = L"mm_";
-    if ("US" == sCountry ||
-        "CA" == sCountry)
+
+    std::wstring sPrefix = m_pInternal->m_pManager->m_pInternal->m_mainLang;
+    if (NSDirectory::Exists(this->GetAppManager()->m_oSettings.file_converter_path + L"/empty/" + sPrefix))
     {
-        sPrefix = L"in_";
+        sPrefix += L"/";
+    }
+    else
+    {
+        sPrefix = L"mm_";
+        if ("US" == sCountry || "CA" == sCountry)
+        {
+            sPrefix = L"in_";
+        }
     }
 
     std::wstring sFilePath = this->GetAppManager()->m_oSettings.file_converter_path + L"/empty/" + sPrefix + L"new.";

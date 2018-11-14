@@ -112,6 +112,25 @@ namespace NSSystem
     }
 }
 
+namespace NSUrlParse
+{
+    static std::wstring GetUrlValue(const std::wstring& sValue, const std::wstring& sProp)
+    {
+        std::wstring::size_type pos1 = sValue.find(sProp + L"=");
+        if (std::wstring::npos == pos1)
+            return L"";
+
+        pos1 += (sProp.length() + 1);
+
+        std::wstring::size_type pos2 = sValue.find(L"&", pos1);
+        if (std::wstring::npos == pos2)
+        {
+            return sValue.substr(pos1);
+        }
+        return sValue.substr(pos1, pos2  - pos1);
+    }
+}
+
 namespace NSFileDownloader
 {
     static bool IsNeedDownload(const std::wstring& FilePath)
@@ -580,6 +599,7 @@ public:
     NSCriticalSection::CRITICAL_SECTION m_oCS_SystemMessages;
 
     std::wstring m_mainPostFix;
+    std::wstring m_mainLang;
 
     static CAscDpiChecker* m_pDpiChecker;
 
