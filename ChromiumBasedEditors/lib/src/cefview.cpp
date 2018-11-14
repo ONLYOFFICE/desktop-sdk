@@ -4498,6 +4498,7 @@ void CCefView::load(const std::wstring& urlInputSrc)
 
         if (_frame)
         {
+            m_pInternal->m_handler->m_nBeforeBrowserCounter = 0;
             CefString sUrl;
             sUrl.FromWString(url);
             _frame->LoadURL(sUrl);
