@@ -4207,7 +4207,19 @@ void CCefView_Private::LocalFile_IncrementCounter()
                     }
 
                     if (bIsStorage && !sDocInfo.empty())
+                    {
+                        // correct sDocInfo. only < 255 codes
+                        size_t sDocInfoLen = sDocInfo.length();
+                        wchar_t* sDocInfoData = (wchar_t*)sDocInfo.c_str();
+                        for (size_t i = 0; i < sDocInfoLen; ++i)
+                        {
+                            int nSymbol = sDocInfoData[i];
+                            if (nSymbol > 0xFF || nSymbol < 0x20)
+                                sDocInfoData[i] = ' ';
+                        }
+
                         message->GetArgumentList()->SetString(2, sDocInfo);                    
+                    }
                 }
 
                 browser->SendProcessMessage(PID_RENDERER, message);
