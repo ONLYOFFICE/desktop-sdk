@@ -172,7 +172,7 @@
 								AscDesktopEditor.sendSystemMessage(obj);
 							},
 							error => {
-								obj.result = error;
+								obj.result = JSON.stringify(error);
 								AscDesktopEditor.sendSystemMessage(obj);
 							}						 
 						);

@@ -136,13 +136,15 @@ return {
         {
             accounts = [ { "address": _address, "publicKey": _publicKey } ];
         }
- 
+
+        let prevNonce = 0;
+         
         $.each(accounts, function(index, account) {
         
             let sealed = sealedBox.seal(nacl.util.decodeUTF8(filePassword), _hexStringToByte(account.publicKey));
 
             let encryptedPwd = nacl.util.encodeBase64(sealed);
-                    
+
             let txOptions = {
                 gasPrice: _gasPrice,
                 gasLimit: _web3.toHex(_web3.eth.getBlock("latest").gasLimit),
@@ -151,6 +153,11 @@ return {
                 data: _contractCode,
                 to: _contractAddress
             };
+
+            if (prevNonce == txOptions.nonce)
+                txOptions.nonce++;
+
+            prevNonce = txOptions.nonce;
 
             let pwdHex = _web3.toHex(encryptedPwd);
             let registerTx = _txutils.functionTx(_contractABI, 'add', [fileHash, account.address, pwdHex ], txOptions);
