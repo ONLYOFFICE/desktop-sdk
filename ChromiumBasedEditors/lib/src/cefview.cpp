@@ -1255,6 +1255,26 @@ public:
             return true;
         }
 
+#ifdef _LINUX
+        std::string sFilterCheck = "";
+        if (1 == accept_filters.size())
+            sFilterCheck = accept_filters[0].ToString();
+        if ((nMode == 0 || nMode == 1) && ("image/*" == sFilterCheck) && pListener)
+        {
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_OPENFILENAME_DIALOG);
+            NSEditorApi::CAscLocalOpenFileDialog* pData = new NSEditorApi::CAscLocalOpenFileDialog();
+            pData->put_Id(m_pParent->GetId());
+            pData->put_IsMultiselect((nMode == 1) ? true : false);
+            pData->put_Filter(L"images");
+            pEvent->m_pData = pData;
+
+            m_pFileDialogCallback = callback;
+
+            pListener->OnEvent(pEvent);
+            return true;
+        }
+#endif
+
 #endif
 
         return false;
