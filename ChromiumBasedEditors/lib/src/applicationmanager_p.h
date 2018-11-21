@@ -75,8 +75,16 @@ namespace NSSystem
 #ifdef WIN32
         SetEnvironmentVariableA(sName.c_str(), sValue.c_str());
 #else
+        setenv(sName.c_str(), sValue.c_str(), true);
+        /*
+        // made with leak
         std::string sTmp = sName + "=" + sValue;
-        putenv((char*)sValue.c_str());
+        int nTmpLen = (int)sTmp.length();
+        char* sValueStr = (char*)malloc((size_t)nTmpLen + 1);
+        memcpy(sValueStr, sValue.c_str(), nTmpLen);
+        sValueStr[nTmpLen] = '\0';
+        putenv(sValueStr);
+        */
 #endif
     }
     static void SetEnvValue(const std::string& sName, const std::wstring& sValue)
