@@ -135,8 +135,8 @@ class AccessibilityTestHandler : public TestHandler,
           // Get the first update dict and validate event type
           CefRefPtr<CefDictionaryValue> dict = list->GetDictionary(0);
 
-          // ignore other events
-          if (dict->GetString("event_type").ToString() != "layoutComplete")
+          // Ignore other events.
+          if (dict->GetString("event_type") != "layoutComplete")
             break;
 
           SetEditBoxIdAndRect(dict->GetDictionary("update"));
@@ -159,8 +159,8 @@ class AccessibilityTestHandler : public TestHandler,
           // Get the first update dict and validate event type
           CefRefPtr<CefDictionaryValue> dict = list->GetDictionary(0);
 
-          // ignore other events
-          if (dict->GetString("event_type").ToString() != "layoutComplete")
+          // Ignore other events.
+          if (dict->GetString("event_type") != "layoutComplete")
             break;
 
           // Now post a delayed task to trigger focus to edit box
@@ -183,9 +183,9 @@ class AccessibilityTestHandler : public TestHandler,
           // Get the first update dict and validate event type
           CefRefPtr<CefDictionaryValue> dict = list->GetDictionary(0);
 
-          // Validate Event type is Focus change
-          EXPECT_STREQ("focus",
-                       dict->GetString("event_type").ToString().c_str());
+          // Ignore other events.
+          if (dict->GetString("event_type") != "focus")
+            return;
 
           // And Focus is set to expected element edit_box
           EXPECT_TRUE(edit_box_id_ == dict->GetInt("id"));
@@ -295,8 +295,10 @@ class AccessibilityTestHandler : public TestHandler,
 
     // Get the first update dict and validate event type.
     CefRefPtr<CefDictionaryValue> dict = list->GetDictionary(0);
-    EXPECT_STREQ("layoutComplete",
-                 dict->GetString("event_type").ToString().c_str());
+
+    // Ignore other events.
+    if (dict->GetString("event_type") != "layoutComplete")
+      return;
 
     // Get update and validate it has tree data
     CefRefPtr<CefDictionaryValue> update = dict->GetDictionary("update");
@@ -367,10 +369,8 @@ class AccessibilityTestHandler : public TestHandler,
     }
     EXPECT_TRUE(tip.get());
     EXPECT_STREQ("tooltip", tip->GetString("role").ToString().c_str());
-    // Validate tooltip color property is Red.
     CefRefPtr<CefDictionaryValue> tipattr = tip->GetDictionary("attributes");
     EXPECT_TRUE(tipattr.get());
-    EXPECT_STREQ("0xFFFF0000", tipattr->GetString("color").ToString().c_str());
 
     EXPECT_TRUE(editbox.get());
     EXPECT_STREQ("textField", editbox->GetString("role").ToString().c_str());

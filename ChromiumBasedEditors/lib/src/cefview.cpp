@@ -1055,6 +1055,10 @@ public:
     // Set the draggable regions.
     virtual void OnSetDraggableRegions(const std::vector<CefDraggableRegion>& regions) OVERRIDE {}
 
+#ifdef CEF_3202
+    virtual void OnAutoResize(const CefSize& new_size) OVERRIDE {}
+#endif
+
 public:
     IMPLEMENT_REFCOUNTING(CCefFileDownloader_Private);
 };
@@ -3972,6 +3976,10 @@ require.load = function (context, moduleName, url) {\n\
 
     // Set the draggable regions.
     virtual void OnSetDraggableRegions(const std::vector<CefDraggableRegion>& regions) OVERRIDE {}
+
+#ifdef CEF_3202
+    virtual void OnAutoResize(const CefSize& new_size) OVERRIDE {}
+#endif
 
 public:
     IMPLEMENT_REFCOUNTING(CAscClientHandler);
