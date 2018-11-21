@@ -28,6 +28,8 @@ set(CEFCLIENT_BROWSER_BROWSER_SRCS
   browser/dialog_test.h
   browser/drm_test.cc
   browser/drm_test.h
+  browser/image_cache.cc
+  browser/image_cache.h
   browser/main_context.cc
   browser/main_context.h
   browser/main_context_impl.cc
@@ -62,6 +64,10 @@ source_group(cefclient\\\\browser FILES ${CEFCLIENT_BROWSER_BROWSER_SRCS})
 set(CEFCLIENT_BROWSER_SHARED_BROWSER_SRCS
   ../shared/browser/client_app_browser.cc
   ../shared/browser/client_app_browser.h
+  ../shared/browser/extension_util.cc
+  ../shared/browser/extension_util.h
+  ../shared/browser/file_util.cc
+  ../shared/browser/file_util.h
   ../shared/browser/geometry_util.cc
   ../shared/browser/geometry_util.h
   ../shared/browser/main_message_loop.cc
@@ -70,7 +76,6 @@ set(CEFCLIENT_BROWSER_SHARED_BROWSER_SRCS
   ../shared/browser/main_message_loop_external_pump.h
   ../shared/browser/main_message_loop_std.cc
   ../shared/browser/main_message_loop_std.h
-  ../shared/browser/resource_util.cc
   ../shared/browser/resource_util.h
   ../shared/browser/resource_util.h
   )
@@ -316,6 +321,15 @@ set(CEFCLIENT_RESOURCES_RESOURCES_SRCS
   )
 source_group(cefclient\\\\resources FILES ${CEFCLIENT_RESOURCES_RESOURCES_SRCS})
 
+set(CEFCLIENT_RESOURCES_RESOURCES_EXTENSIONS_SET_PAGE_COLOR_SRCS
+  resources/extensions/set_page_color/README.md
+  resources/extensions/set_page_color/icon.png
+  resources/extensions/set_page_color/manifest.json
+  resources/extensions/set_page_color/popup.html
+  resources/extensions/set_page_color/popup.js
+  )
+source_group(cefclient\\\\resources\\\\extensions\\\\set_page_color FILES ${CEFCLIENT_RESOURCES_RESOURCES_EXTENSIONS_SET_PAGE_COLOR_SRCS})
+
 set(CEFCLIENT_RESOURCES_RESOURCES_MAC_SRCS_MACOSX
   resources/mac/Info.plist
   resources/mac/cefclient.icns
@@ -341,6 +355,7 @@ source_group(shared\\\\resources FILES ${CEFCLIENT_RESOURCES_SHARED_RESOURCES_SR
 
 set(CEFCLIENT_RESOURCES_SRCS
   ${CEFCLIENT_RESOURCES_RESOURCES_SRCS}
+  ${CEFCLIENT_RESOURCES_RESOURCES_EXTENSIONS_SET_PAGE_COLOR_SRCS}
   ${CEFCLIENT_RESOURCES_RESOURCES_MAC_SRCS}
   ${CEFCLIENT_RESOURCES_RESOURCES_MAC_ENGLISH_LPROJ_SRCS}
   ${CEFCLIENT_RESOURCES_SHARED_RESOURCES_SRCS}
@@ -452,7 +467,6 @@ if(OS_MACOSX)
   add_dependencies(${CEF_TARGET} libcef_dll_wrapper "${CEF_HELPER_TARGET}")
   target_link_libraries(${CEF_TARGET} libcef_lib libcef_dll_wrapper ${CEF_STANDARD_LIBS} "-framework OpenGL")
   set_target_properties(${CEF_TARGET} PROPERTIES
-    RESOURCE "${CEFCLIENT_RESOURCES_SRCS}"
     MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/resources/mac/Info.plist
     )
 
@@ -474,17 +488,16 @@ if(OS_MACOSX)
   # Fix the framework rpath in the main executable.
   FIX_MACOSX_MAIN_FRAMEWORK_RPATH(${CEF_TARGET})
 
-  if(NOT ${CMAKE_GENERATOR} STREQUAL "Xcode")
-    # Manually process and copy over resource files.
-    # The Xcode generator handles this via the set_target_properties RESOURCE directive.
-    # Remove these prefixes from input file paths.
-    set(PREFIXES
-      "resources/mac/"
-      "resources/"
-      "../shared/resources/"
-      )
-    COPY_MACOSX_RESOURCES("${CEFCLIENT_RESOURCES_SRCS}" "${PREFIXES}" "${CEF_TARGET}" "${CMAKE_CURRENT_SOURCE_DIR}" "${CEF_APP}")
-  endif()
+  # Manually process and copy over resource files.
+  # The Xcode generator can support this via the set_target_properties RESOURCE
+  # directive but that doesn't properly handle nested resource directories.
+  # Remove these prefixes from input file paths.
+  set(PREFIXES
+    "resources/mac/"
+    "resources/"
+    "../shared/resources/"
+    )
+  COPY_MACOSX_RESOURCES("${CEFCLIENT_RESOURCES_SRCS}" "${PREFIXES}" "${CEF_TARGET}" "${CMAKE_CURRENT_SOURCE_DIR}" "${CEF_APP}")
 endif()
 
 
