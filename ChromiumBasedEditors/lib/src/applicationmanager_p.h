@@ -68,29 +68,57 @@
 #include "crypto_mode.h"
 #include "plugins.h"
 
+class CSystemVariablesMemory
+{
+private:
+    std::vector<char*> m_data;
+
+public:
+    CSystemVariablesMemory()
+    {
+    }
+    ~CSystemVariablesMemory()
+    {
+        for (std::vector<char*>::iterator iter = m_data.begin(); iter != m_data.end(); iter++)
+        {
+            char* rem = *iter;
+            if (rem)
+                free(rem);
+        }
+        m_data.clear();
+    }
+
+    char* Push(const std::string& str)
+    {
+        size_t str_len = (size_t)str.length();
+        char* sValueStr = (char*)malloc((size_t)str_len + 1);
+        memcpy(sValueStr, str.c_str(), str_len);
+        sValueStr[str_len] = '\0';
+        m_data.push_back(sValueStr);
+        return sValueStr;
+    }
+};
+
 namespace NSSystem
 {
-    static void SetEnvValueA(const std::string& sName, const std::string& sValue)
+    static void SetEnvValueA(const std::string& sName, const std::string& sValue, CSystemVariablesMemory* pCache = NULL)
     {
 #ifdef WIN32
         SetEnvironmentVariableA(sName.c_str(), sValue.c_str());
 #else
-        setenv(sName.c_str(), sValue.c_str(), true);
-        /*
-        // made with leak
+        //setenv(sName.c_str(), sValue.c_str(), true);
+        if (!pCache)
+            return;
+
         std::string sTmp = sName + "=" + sValue;
-        int nTmpLen = (int)sTmp.length();
-        char* sValueStr = (char*)malloc((size_t)nTmpLen + 1);
-        memcpy(sValueStr, sValue.c_str(), nTmpLen);
-        sValueStr[nTmpLen] = '\0';
-        putenv(sValueStr);
-        */
-#endif
+        char* val = pCache->Push(sTmp);
+        putenv(val);
+#endif        
     }
-    static void SetEnvValue(const std::string& sName, const std::wstring& sValue)
+    static void SetEnvValue(const std::string& sName, const std::wstring& sValue, CSystemVariablesMemory* pCache = NULL)
     {
         std::string sValueA = U_TO_UTF8(sValue);
-        return SetEnvValueA(sName, sValueA);
+        return SetEnvValueA(sName, sValueA, pCache);
     }
     static std::string GetEnvValueA(const std::string& sName)
     {
@@ -610,6 +638,8 @@ public:
     std::wstring m_mainLang;
 
     static CAscDpiChecker* m_pDpiChecker;
+
+    CSystemVariablesMemory m_oEnvCache;
 
 public:
     CAscApplicationManager_Private() : m_oKeyboardTimer(this)

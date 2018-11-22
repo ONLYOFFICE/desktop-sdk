@@ -2468,7 +2468,7 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
             std::wstring sSP = m_sSystemPlugins;
             if (sSP.empty())
             {
-                sSP = NSSystem::GetEnvValue("asc-systems-plugins");
+                sSP = NSSystem::GetEnvValue("ASC_SYSTEM_PLUGINS");
             }
 
             std::wstring sFile = NSCommon::GetDirectoryName(sSP) + L"/externalcloud.json";

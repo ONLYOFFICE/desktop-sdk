@@ -222,8 +222,6 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 
     if (process_type == client::ClientApp::BrowserProcess)
     {
-        NSSystem::SetEnvValue("asc-systems-plugins", pManager->m_oSettings.system_plugins_path);
-
         // ASC command line props
         pManager->m_pInternal->LoadSettings();
         for (int i = 0; i < argc; ++i)
@@ -332,6 +330,11 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 
     settings.persist_session_cookies = true;
 
+    if (process_type == client::ClientApp::BrowserProcess)
+    {
+        NSSystem::SetEnvValue("ASC_SYSTEM_PLUGINS", pManager->m_oSettings.system_plugins_path, &pManager->m_pInternal->m_oEnvCache);
+    }
+
     // Initialize CEF.
     bool bInit = m_pInternal->context->Initialize(main_args, settings, m_pInternal->m_app.get(), NULL);
     bool bIsInitScheme = asc_scheme::InitScheme(pManager);
@@ -414,8 +417,8 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     SetEnvironmentVariableA("APPLICATION_NAME", pManager->m_oSettings.converter_application_name.c_str());
     SetEnvironmentVariableA("COMPANY_NAME", pManager->m_oSettings.converter_application_company.c_str());
 #else
-    NSSystem::SetEnvValueA("APPLICATION_NAME", pManager->m_oSettings.converter_application_name);
-    NSSystem::SetEnvValueA("COMPANY_NAME", pManager->m_oSettings.converter_application_company);
+    NSSystem::SetEnvValueA("APPLICATION_NAME", pManager->m_oSettings.converter_application_name, &pManager->m_pInternal->m_oEnvCache);
+    NSSystem::SetEnvValueA("COMPANY_NAME", pManager->m_oSettings.converter_application_company, &pManager->m_pInternal->m_oEnvCache);
 #endif
 
     return 0;
