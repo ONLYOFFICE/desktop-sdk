@@ -110,9 +110,22 @@ namespace NSSystem
         if (!pCache)
             return;
 
+#if 0
         std::string sTmp = sName + "=" + sValue;
         char* val = pCache->Push(sTmp);
         putenv(val);
+#else
+        static char buffer[100000]; // on all process
+        static int offset = 0;
+
+        std::string tmp = sName + "=" + sValue;
+        size_t len = tmp.length();
+
+        memcpy(buffer + offset, tmp.c_str(), sizeof(char) * len);
+        buffer[offset + len] = '\0';
+        putenv(buffer + offset);
+        offset += (len + 1);
+#endif
 #endif        
     }
     static void SetEnvValue(const std::string& sName, const std::wstring& sValue, CSystemVariablesMemory* pCache = NULL)
