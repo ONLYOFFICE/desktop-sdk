@@ -68,6 +68,10 @@
 
 #include "./cefwrapper/client_scheme.h"
 
+#ifdef _MAC
+#include <math.h>
+#endif
+
 #ifdef CEF_2623
 typedef CefStreamResourceHandler CefStreamResourceHandlerCORS;
 #else

@@ -857,7 +857,11 @@ int CAscApplicationManager::GetMonitorScaleByWindow(const WindowHandleId& nHandl
     {
         unsigned int nDpiX = 0;
         unsigned int nDpiY = 0;
+#ifndef _MAC
         int nRet = pDpiChecker->GetWindowDpi(nHandle, &nDpiX, &nDpiY);
+#else
+        int nRet = pDpiChecker->GetWindowDpi(const_cast<WindowHandleId>(nHandle), &nDpiX, &nDpiY);
+#endif
         if (nRet >= 0)
         {
             double dDpiApp = pDpiChecker->GetScale(nDpiX, nDpiY);
