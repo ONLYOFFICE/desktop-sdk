@@ -91,8 +91,8 @@ public:
     char* Push(const std::string& str)
     {
         size_t str_len = (size_t)str.length();
-        char* sValueStr = (char*)malloc((size_t)str_len + 1);
-        memcpy(sValueStr, str.c_str(), str_len);
+        char* sValueStr = (char*)malloc((str_len + 1) * sizeof(char));
+        memcpy(sValueStr, str.c_str(), str_len * sizeof(char));
         sValueStr[str_len] = '\0';
         m_data.push_back(sValueStr);
         return sValueStr;

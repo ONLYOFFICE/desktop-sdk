@@ -2468,7 +2468,11 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
             std::wstring sSP = m_sSystemPlugins;
             if (sSP.empty())
             {
-                sSP = NSSystem::GetEnvValue("ASC_SYSTEM_PLUGINS");
+#ifdef _MAC
+                sSP = NSFile::GetProcessDirectory() + L"/../../../Resources/editors/sdkjs-plugins";
+#else
+                sSP = NSFile::GetProcessDirectory() + L"/editors/sdkjs-plugins";
+#endif
             }
 
             std::wstring sFile = NSCommon::GetDirectoryName(sSP) + L"/externalcloud.json";
