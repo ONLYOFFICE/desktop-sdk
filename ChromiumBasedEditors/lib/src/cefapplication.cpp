@@ -412,8 +412,8 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     SetEnvironmentVariableA("APPLICATION_NAME", pManager->m_oSettings.converter_application_name.c_str());
     SetEnvironmentVariableA("COMPANY_NAME", pManager->m_oSettings.converter_application_company.c_str());
 #else
-    NSSystem::SetEnvValueA("APPLICATION_NAME", pManager->m_oSettings.converter_application_name, &pManager->m_pInternal->m_oEnvCache);
-    NSSystem::SetEnvValueA("COMPANY_NAME", pManager->m_oSettings.converter_application_company, &pManager->m_pInternal->m_oEnvCache);
+    //NSSystem::SetEnvValueA("APPLICATION_NAME", pManager->m_oSettings.converter_application_name, &pManager->m_pInternal->m_oEnvCache);
+    //NSSystem::SetEnvValueA("COMPANY_NAME", pManager->m_oSettings.converter_application_company, &pManager->m_pInternal->m_oEnvCache);
 #endif
 
     return 0;
