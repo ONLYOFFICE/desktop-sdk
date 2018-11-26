@@ -5,6 +5,10 @@ TARGET   = HtmlFileInternal
 CONFIG   += app_bundle
 TEMPLATE = app
 
+QMAKE_CXXFLAGS_RELEASE += /Zi
+QMAKE_CXXFLAGS_RELEASE += /Od
+QMAKE_LFLAGS_RELEASE += /DEBUG
+
 CORE_ROOT_DIR = $$PWD/../../../core
 PWD_ROOT_DIR = $$PWD
 include($$CORE_ROOT_DIR/Common/base.pri)

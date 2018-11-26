@@ -49,6 +49,8 @@
 #undef CreateDirectory
 #endif
 
+#include <iostream>
+
 CGlobalHtmlFileParams* g_globalParams;
 
 #ifdef _LINUX
@@ -147,15 +149,26 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
     command_line->InitFromString(::GetCommandLineW());
 #endif
 
+    std::cout << "log1" << std::endl;
+
     // Create a ClientApp of the correct type.
     CefRefPtr<CefApp> app;
     client::ClientApp::ProcessType process_type = client::ClientApp::GetProcessType(command_line);
     if (process_type == client::ClientApp::BrowserProcess)
+    {
         app = new CAscClientAppBrowser();
+        std::cout << "browser" << std::endl;
+    }
     else if (process_type == client::ClientApp::RendererProcess || process_type == client::ClientApp::ZygoteProcess)
+    {
         app = new CAscClientAppRenderer();
+        std::cout << "renderer" << std::endl;
+    }
     else if (process_type == client::ClientApp::OtherProcess)
+    {
         app = new CAscClientAppOther();
+        std::cout << "other" << std::endl;
+    }
 
     // Execute the secondary process, if any.
     int exit_code = CefExecuteProcess(main_args, app, NULL);
@@ -187,12 +200,16 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
     // Populate the settings based on command line arguments.
     context->PopulateSettings(&settings);
 
+    std::cout << "cef" << std::endl;
+
     // Initialize CEF.
     context->Initialize(main_args, settings, app, NULL);
 
     CefRefPtr<CefCookieManager> manager = CefCookieManager::GetGlobalManager(NULL);
     manager->SetStoragePath(sCachePath, true, NULL);
     manager = NULL;
+
+    std::cout << "cef2" << std::endl;
 
 #ifdef _LINUX
     // Install a signal handler so we clean up after ourselves.
@@ -211,6 +228,8 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
     browser_settings.plugins = STATE_DISABLED;
     CefBrowserHost::CreateBrowser(window_info, client_handler.get(), client_handler->GetUrl(), browser_settings, request_context);
 
+    std::cout << "cef3" << std::endl;
+
     scoped_ptr<client::MainMessageLoop> message_loop;
     message_loop.reset(new client::MainMessageLoopStd);
     message_loop->Run();
@@ -218,6 +237,8 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
     // Shut down CEF.
     context->Shutdown();
     context.reset();
+
+    std::cout << "cef4" << std::endl;
 
     if (!sCachePath.empty())
         NSDirectory::DeleteDirectory(sCachePath);
