@@ -101,19 +101,10 @@ public:
 
 namespace NSSystem
 {
-    static void SetEnvValueA(const std::string& sName, const std::string& sValue, CSystemVariablesMemory* pCache = NULL)
+    static void SetEnvValueA(const std::string& sName, const std::string& sValue)
     {
 #ifdef WIN32
         SetEnvironmentVariableA(sName.c_str(), sValue.c_str());
-#else
-        //setenv(sName.c_str(), sValue.c_str(), true);
-        if (!pCache)
-            return;
-
-#if 0
-        std::string sTmp = sName + "=" + sValue;
-        char* val = pCache->Push(sTmp);
-        putenv(val);
 #else
         static char buffer[100000]; // on all process
         static int offset = 0;
@@ -125,13 +116,12 @@ namespace NSSystem
         buffer[offset + len] = '\0';
         putenv(buffer + offset);
         offset += (len + 1);
-#endif
 #endif        
     }
-    static void SetEnvValue(const std::string& sName, const std::wstring& sValue, CSystemVariablesMemory* pCache = NULL)
+    static void SetEnvValue(const std::string& sName, const std::wstring& sValue)
     {
         std::string sValueA = U_TO_UTF8(sValue);
-        return SetEnvValueA(sName, sValueA, pCache);
+        return SetEnvValueA(sName, sValueA);
     }
     static std::string GetEnvValueA(const std::string& sName)
     {
@@ -651,8 +641,6 @@ public:
     std::wstring m_mainLang;
 
     static CAscDpiChecker* m_pDpiChecker;
-
-    CSystemVariablesMemory m_oEnvCache;
 
 public:
     CAscApplicationManager_Private() : m_oKeyboardTimer(this)
