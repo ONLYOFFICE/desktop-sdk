@@ -5,9 +5,9 @@
 #include "include/cef_scheme.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "include/wrapper/cef_scoped_temp_dir.h"
-#include "tests/ceftests/file_util.h"
 #include "tests/ceftests/test_handler.h"
 #include "tests/gtest/include/gtest/gtest.h"
+#include "tests/shared/browser/file_util.h"
 
 namespace {
 
@@ -155,7 +155,8 @@ class DownloadTestHandler : public TestHandler {
 
     // Create a new temporary directory.
     EXPECT_TRUE(temp_dir_.CreateUniqueTempDir());
-    test_path_ = file_util::JoinPath(temp_dir_.GetPath(), kTestFileName);
+    test_path_ =
+        client::file_util::JoinPath(temp_dir_.GetPath(), kTestFileName);
 
     if (test_mode_ == NAVIGATED) {
       // Add the resource that we'll navigate to.
@@ -271,8 +272,9 @@ class DownloadTestHandler : public TestHandler {
     EXPECT_TRUE(download_item.get());
     EXPECT_TRUE(callback.get());
 
-    if (got_on_before_download_)
+    if (got_on_before_download_) {
       EXPECT_EQ(download_id_, download_item->GetId());
+    }
 
     EXPECT_LE(0LL, download_item->GetCurrentSpeed());
     EXPECT_LE(0, download_item->GetPercentComplete());
@@ -317,7 +319,7 @@ class DownloadTestHandler : public TestHandler {
     if (test_mode_ != PENDING) {
       // Verify the file contents.
       std::string contents;
-      EXPECT_TRUE(file_util::ReadFileToString(test_path_, &contents));
+      EXPECT_TRUE(client::file_util::ReadFileToString(test_path_, &contents));
       EXPECT_STREQ(kTestContent, contents.c_str());
     }
 

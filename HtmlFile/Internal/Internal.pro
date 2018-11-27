@@ -9,7 +9,6 @@ CORE_ROOT_DIR = $$PWD/../../../core
 PWD_ROOT_DIR = $$PWD
 include($$CORE_ROOT_DIR/Common/base.pri)
 include($$CORE_ROOT_DIR/Common/3dParty/icu/icu.pri)
-include($$CORE_ROOT_DIR/Common/3dParty/curl/curl.pri)
 
 include($$CORE_ROOT_DIR/../desktop-sdk/ChromiumBasedEditors/lib/AscDocumentsCore_base.pri)
 LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lUnicodeConverter -lkernel -lgraphics
@@ -35,7 +34,6 @@ linux-g++ | linux-g++-64 | linux-g++-32 {
 
     CONFIG += link_pkgconfig c++11
     PKGCONFIG += glib-2.0 gdk-2.0 gtkglext-1.0 atk cairo gtk+-unix-print-2.0
-    LIBS += -lz
 
     #CONFIG += build_for_centos6
 

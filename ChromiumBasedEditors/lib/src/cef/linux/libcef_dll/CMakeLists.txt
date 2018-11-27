@@ -78,6 +78,8 @@ set(LIBCEF_CPPTOC_SRCS
   cpptoc/drag_handler_cpptoc.h
   cpptoc/end_tracing_callback_cpptoc.cc
   cpptoc/end_tracing_callback_cpptoc.h
+  cpptoc/extension_handler_cpptoc.cc
+  cpptoc/extension_handler_cpptoc.h
   cpptoc/find_handler_cpptoc.cc
   cpptoc/find_handler_cpptoc.h
   cpptoc/focus_handler_cpptoc.cc
@@ -212,12 +214,16 @@ set(LIBCEF_CTOCPP_SRCS
   ctocpp/download_item_ctocpp.h
   ctocpp/drag_data_ctocpp.cc
   ctocpp/drag_data_ctocpp.h
+  ctocpp/extension_ctocpp.cc
+  ctocpp/extension_ctocpp.h
   ctocpp/file_dialog_callback_ctocpp.cc
   ctocpp/file_dialog_callback_ctocpp.h
   ctocpp/frame_ctocpp.cc
   ctocpp/frame_ctocpp.h
   ctocpp/geolocation_callback_ctocpp.cc
   ctocpp/geolocation_callback_ctocpp.h
+  ctocpp/get_extension_resource_callback_ctocpp.cc
+  ctocpp/get_extension_resource_callback_ctocpp.h
   ctocpp/image_ctocpp.cc
   ctocpp/image_ctocpp.h
   ctocpp/jsdialog_callback_ctocpp.cc
@@ -332,6 +338,8 @@ set(LIBCEF_CTOCPP_VIEWS_SRCS
   ctocpp/views/layout_ctocpp.h
   ctocpp/views/menu_button_ctocpp.cc
   ctocpp/views/menu_button_ctocpp.h
+  ctocpp/views/menu_button_pressed_lock_ctocpp.cc
+  ctocpp/views/menu_button_pressed_lock_ctocpp.h
   ctocpp/views/panel_ctocpp.cc
   ctocpp/views/panel_ctocpp.h
   ctocpp/views/scroll_view_ctocpp.cc
@@ -365,6 +373,8 @@ set(LIBCEF_INCLUDE_SRCS
   ../include/cef_download_item.h
   ../include/cef_drag_data.h
   ../include/cef_drag_handler.h
+  ../include/cef_extension.h
+  ../include/cef_extension_handler.h
   ../include/cef_file_util.h
   ../include/cef_find_handler.h
   ../include/cef_focus_handler.h
@@ -496,6 +506,8 @@ set(LIBCEF_INCLUDE_CAPI_SRCS
   ../include/capi/cef_download_item_capi.h
   ../include/capi/cef_drag_data_capi.h
   ../include/capi/cef_drag_handler_capi.h
+  ../include/capi/cef_extension_capi.h
+  ../include/capi/cef_extension_handler_capi.h
   ../include/capi/cef_file_util_capi.h
   ../include/capi/cef_find_handler_capi.h
   ../include/capi/cef_focus_handler_capi.h

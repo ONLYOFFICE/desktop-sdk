@@ -49,8 +49,15 @@
 #include "../../../../../core/DesktopEditor/common/File.h"
 #include "../../../../../core/Common/FileDownloader/FileDownloader.h"
 
+#include "../../include/applicationmanager.h"
+
+//#define DISABLE_WEB_SEQURITY
+
 static int IsForceDpiRound()
 {
+    if (NULL != CAscApplicationManager::GetDpiChecker())
+        return 1;
+
 #ifdef WIN32
 #if 1
     return 1;
@@ -264,10 +271,9 @@ public:
             if (0 != forceDpi)
                 command_line->AppendSwitchWithValue("--force-device-scale-factor", std::to_string(forceDpi));
 
-            if (true)
-            {
-                command_line->AppendSwitch("--disable-web-security");
-            }
+#ifdef DISABLE_WEB_SEQURITY
+            command_line->AppendSwitch("--disable-web-security");
+#endif
         }
     }
 
@@ -337,10 +343,9 @@ public:
             if (0 != forceDpi)
                 command_line->AppendSwitchWithValue("--force-device-scale-factor", std::to_string(forceDpi));
 
-            if (true)
-            {
-                command_line->AppendSwitch("--disable-web-security");
-            }
+#ifdef DISABLE_WEB_SEQURITY
+            command_line->AppendSwitch("--disable-web-security");
+#endif
         }
     }
 
@@ -399,10 +404,9 @@ public:
             if (0 != forceDpi)
                 command_line->AppendSwitchWithValue("--force-device-scale-factor", std::to_string(forceDpi));
 
-            if (true)
-            {
-                command_line->AppendSwitch("--disable-web-security");
-            }
+#ifdef DISABLE_WEB_SEQURITY
+            command_line->AppendSwitch("--disable-web-security");
+#endif
         }
     }
 };

@@ -1,0 +1,105 @@
+<!doctype html>
+<html>
+<head>
+    <title>Manage Plugins</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">    
+        
+    <style >
+        #viewport {
+            display: flex;
+            flex-direction:column;
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            top: 0;
+            padding: 10px;
+            user-select: none;
+        }
+
+        .separator {
+            border-top: 1px solid #cbcbcb;
+        }
+
+        #plugins-list-box {
+            flex-grow: 1;
+            overflow: auto;
+            user-select: none;
+            overflow: hidden;
+            position: absolute;
+            margin: 0px 16px 0px 16px;
+            padding: 0;
+            left: 0px;
+            right: 0px;
+            bottom: 0px;
+            top: 103px;            
+        }
+
+        ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .item {
+            display: flex;
+            padding: 10px;
+            transition: all 0.2s;
+        }
+
+        .item:hover {
+            background-color: #ededed;
+        }
+
+        .item .icon {
+            width: 20px;
+            height: 20px;
+        }
+
+        .btn {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            opacity: 0.8;
+        }
+
+        .btn:hover {
+            opacity: 1;
+        }
+
+        .btn.del {            
+            background-image: url(./remove.png);
+			background-size:cover;
+        }
+
+        .btn.del2 {
+            background-image: url(./remove@2x.png);
+			background-size:cover;
+        }
+    </style>
+</head>
+<body>
+    <div id="viewport">
+        <label class="defaultlable" style="margin:10px;">Please see the <a href="https://api.onlyoffice.com/plugin/basic" target="_blank">Help</a> to find out what the plugin contents must be and how it is added to the editors.</label>
+        <div style="position:relative;">
+            <button class="btn-text-default" style="margin:0px 10px 10px 10px; width:100px;" id="button_add">Add plugin</button>
+        </div>
+        <label class="defaultlable" style="font-weight: bold; margin:0px 10px 5px 10px;">Installed plugins</label>
+        <div class="separator" id="id_separator"></div>
+        <div id="plugins-list-box">
+            <div id="content" style="margin: 0; padding: 0;"></div>
+        </div>
+    </div>
+    <div id="mask" style="position:absolute; left: 0;right: 0; top: 0; bottom: 0; margin: 0; padding: 0; background-color: #FFFFFF; z-index: 100;">
+    </div>
+
+    <!-- jquery -->
+	<script src="jquery.min.js"></script>
+	
+	<!-- plugin -->
+	<script type='text/javascript' src='../pluginBase.js'></script>
+    <link rel="stylesheet" href="../plugins.css">
+
+	<!-- code -->
+	<script src="code.js"></script>
+</body>
+</html>

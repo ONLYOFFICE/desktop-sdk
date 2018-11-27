@@ -112,6 +112,19 @@ public:
     }
 };
 
+class Q_DECL_EXPORT CAscDpiChecker
+{
+public:
+    CAscDpiChecker();
+    virtual ~CAscDpiChecker();
+
+    virtual int GetWindowDpi(WindowHandleId, unsigned int*, unsigned int*);
+    virtual int GetMonitorDpi(int, unsigned int*, unsigned int*);
+    virtual int GetWidgetImplDpi(CCefViewWidgetImpl*, unsigned int*, unsigned int*);
+
+    virtual double GetScale(unsigned int, unsigned int);
+};
+
 class CAscReporterData;
 class CAscApplicationManager_Private;
 namespace NSFonts { class IApplicationFonts; }
@@ -203,8 +216,12 @@ public:
 
     virtual NSAscCrypto::CAscKeychain* GetKeychainEngine();
 
+public:
+    static CAscDpiChecker* GetDpiChecker();
+
 protected:
     int GenerateNextViewId();
+    virtual CAscDpiChecker* InitDpiChecker();
 
 protected:
     CAscApplicationManager_Private* m_pInternal;

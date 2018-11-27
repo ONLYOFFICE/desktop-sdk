@@ -68,6 +68,108 @@
 #include "crypto_mode.h"
 #include "plugins.h"
 
+class CSystemVariablesMemory
+{
+private:
+    std::vector<char*> m_data;
+
+public:
+    CSystemVariablesMemory()
+    {
+    }
+    ~CSystemVariablesMemory()
+    {
+        for (std::vector<char*>::iterator iter = m_data.begin(); iter != m_data.end(); iter++)
+        {
+            char* rem = *iter;
+            if (rem)
+                free(rem);
+        }
+        m_data.clear();
+    }
+
+    char* Push(const std::string& str)
+    {
+        size_t str_len = (size_t)str.length();
+        char* sValueStr = (char*)malloc((str_len + 1) * sizeof(char));
+        memcpy(sValueStr, str.c_str(), str_len * sizeof(char));
+        sValueStr[str_len] = '\0';
+        m_data.push_back(sValueStr);
+        return sValueStr;
+    }
+};
+
+namespace NSSystem
+{
+    static void SetEnvValueA(const std::string& sName, const std::string& sValue)
+    {
+#ifdef WIN32
+        SetEnvironmentVariableA(sName.c_str(), sValue.c_str());
+#else
+        static char buffer[100000]; // on all process
+        static int offset = 0;
+
+        std::string tmp = sName + "=" + sValue;
+        size_t len = tmp.length();
+
+        memcpy(buffer + offset, tmp.c_str(), sizeof(char) * len);
+        buffer[offset + len] = '\0';
+        putenv(buffer + offset);
+        offset += (len + 1);
+#endif        
+    }
+    static void SetEnvValue(const std::string& sName, const std::wstring& sValue)
+    {
+        std::string sValueA = U_TO_UTF8(sValue);
+        return SetEnvValueA(sName, sValueA);
+    }
+    static std::string GetEnvValueA(const std::string& sName)
+    {
+#ifdef WIN32
+        const DWORD buffSize = 65535;
+        char buffer[buffSize];
+        if (GetEnvironmentVariableA(sName.c_str(), buffer, buffSize))
+        {
+            return std::string(buffer);
+        }
+        else
+        {
+            return "";
+        }
+#else
+        char* pPath = getenv(sName.c_str());
+        if (NULL != pPath)
+            return std::string(pPath);
+        return "";
+#endif
+    }
+    static std::wstring GetEnvValue(const std::string& sName)
+    {
+        std::string sValueA = GetEnvValueA(sName);
+        std::wstring sValue = UTF8_TO_U(sValueA);
+        return sValue;
+    }
+}
+
+namespace NSUrlParse
+{
+    static std::wstring GetUrlValue(const std::wstring& sValue, const std::wstring& sProp)
+    {
+        std::wstring::size_type pos1 = sValue.find(sProp + L"=");
+        if (std::wstring::npos == pos1)
+            return L"";
+
+        pos1 += (sProp.length() + 1);
+
+        std::wstring::size_type pos2 = sValue.find(L"&", pos1);
+        if (std::wstring::npos == pos2)
+        {
+            return sValue.substr(pos1);
+        }
+        return sValue.substr(pos1, pos2  - pos1);
+    }
+}
+
 namespace NSFileDownloader
 {
     static bool IsNeedDownload(const std::wstring& FilePath)
@@ -394,6 +496,7 @@ public:
     bool            m_bIsViewer;
     std::wstring    m_sDate;
     std::wstring    m_sUrl;
+    std::wstring    m_sExternalCloudId;
 
 public:
     CAscEditorFileInfo()
@@ -430,30 +533,38 @@ public:
 class CExternalCloudRegister
 {
 public:
-    std::wstring url;
+    std::wstring id;
+    std::wstring name;
     std::wstring test_editor;
     std::string correct_code;
+    bool crypto_support;
 
 public:
     CExternalCloudRegister()
     {
-        url = L"";
+        id = L"";
+        name = L"";
         test_editor = L"";
         correct_code = "";
+        crypto_support = false;
     }
 
     CExternalCloudRegister(const CExternalCloudRegister& src)
     {
-        url = src.url;
+        id = src.id;
+        name = src.name;
         test_editor = src.test_editor;
         correct_code = src.correct_code;
+        crypto_support = src.crypto_support;
     }
 
     CExternalCloudRegister& operator=(const CExternalCloudRegister& src)
     {
-        url = src.url;
+        id = src.id;
+        name = src.name;
         test_editor = src.test_editor;
         correct_code = src.correct_code;
+        crypto_support = src.crypto_support;
         return *this;
     }
 };
@@ -524,6 +635,13 @@ public:
 
     std::vector<CExternalCloudRegister> m_arExternalClouds;
 
+    NSCriticalSection::CRITICAL_SECTION m_oCS_SystemMessages;
+
+    std::wstring m_mainPostFix;
+    std::wstring m_mainLang;
+
+    static CAscDpiChecker* m_pDpiChecker;
+
 public:
     CAscApplicationManager_Private() : m_oKeyboardTimer(this)
     {
@@ -552,11 +670,17 @@ public:
         m_bIsUpdateFontsAttack = false;
 
         m_nCurrentCryptoMode = NSAscCrypto::None;
+
+        m_pKeyChain = NULL;
+
+        m_oCS_SystemMessages.InitializeCriticalSection();
     }
     bool GetEditorPermission()
     {
         return m_pAdditional ? m_pAdditional->GetEditorPermission() : true;
     }
+
+    void ExecuteInAllFrames(const std::string& sCode);
 
     virtual ~CAscApplicationManager_Private()
     {
@@ -564,6 +688,7 @@ public:
         RELEASEOBJECT(m_pAdditional);
         m_oCS_Scripts.DeleteCriticalSection();
         m_oCS_LocalFiles.DeleteCriticalSection();
+        m_oCS_SystemMessages.DeleteCriticalSection();
     }
 
     void CloseApplication()
@@ -572,6 +697,8 @@ public:
         Stop();
         m_oSpellChecker.End();
     }
+
+    void ChangeEditorViewsCount();
 
     void Logout(std::wstring strUrl, CefRefPtr<CefCookieManager> manager)
     {
@@ -797,12 +924,11 @@ public:
         m_pMain->UnlockCS(LOCK_CS_SCRIPT);
     }
 
-    bool TestExternal(std::wstring& url, CExternalCloudRegister& ex)
+    bool TestExternal(const std::wstring& sId, CExternalCloudRegister& ex)
     {
         for (std::vector<CExternalCloudRegister>::iterator iter = m_arExternalClouds.begin(); iter != m_arExternalClouds.end(); iter++)
         {
-            std::wstring::size_type pos = url.find(iter->url);
-            if (pos != std::wstring::npos && pos < 10)
+            if (sId == iter->id)
             {
                 ex = *iter;
                 return true;
@@ -1084,6 +1210,7 @@ public:
                 oInfo.m_nFileType = oFile.ReadAttributeInt(L"type");
                 oInfo.m_sDate = oFile.GetAttribute(L"date");
                 oInfo.m_sUrl = oFile.GetAttribute(L"url");
+                oInfo.m_sExternalCloudId = oFile.GetAttribute(L"externalcloud");
                 m_arRecents.push_back(oInfo);
 
                 map_files.insert(std::pair<std::wstring, bool>(sPath, true));
@@ -1092,7 +1219,7 @@ public:
 
         Recents_Dump(false);
     }
-    void Recents_Add(const std::wstring& sPathSrc, const int& nType, const std::wstring& sUrl = L"")
+    void Recents_Add(const std::wstring& sPathSrc, const int& nType, const std::wstring& sUrl = L"", const std::wstring& sExternalCloudId = L"")
     {
         CTemporaryCS oCS(&m_oCS_LocalFiles);
 
@@ -1119,6 +1246,7 @@ public:
         oInfo.m_nId = 0;
         oInfo.m_sPath = sPath;
         oInfo.m_sUrl = sUrl;
+        oInfo.m_sExternalCloudId = sExternalCloudId;
         oInfo.UpdateDate();
 
         oInfo.m_nFileType = nType;
@@ -1182,6 +1310,13 @@ public:
             oBuilder.WriteEncodeXmlString(i->m_sDate);
             oBuilder.WriteString(L"\" url=\"");
             oBuilder.WriteEncodeXmlString(i->m_sUrl);
+
+            if (!i->m_sExternalCloudId.empty())
+            {
+                oBuilder.WriteString(L"\" externalcloud=\"");
+                oBuilder.WriteEncodeXmlString(i->m_sExternalCloudId);
+            }
+
             oBuilder.WriteString(L"\" />");
         }
         oBuilder.WriteString(L"</recents>");

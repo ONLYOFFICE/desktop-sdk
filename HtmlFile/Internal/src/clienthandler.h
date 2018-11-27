@@ -385,6 +385,10 @@ window.onload = function ()\
     // Called on the UI thread before a context menu is displayed.
     virtual void OnBeforeContextMenu(CefRefPtr<CefMenuModel> model) {}
 
+#ifdef CEF_3202
+    virtual void OnAutoResize(const CefSize& new_size) OVERRIDE {}
+#endif
+
 public:
     IMPLEMENT_REFCOUNTING(CHtmlClientHandler);
     DISALLOW_COPY_AND_ASSIGN(CHtmlClientHandler);

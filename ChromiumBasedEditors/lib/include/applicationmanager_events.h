@@ -841,6 +841,7 @@ namespace NSEditorApi
         {
         public:
             std::wstring name;
+            std::wstring nameLocale;
             std::wstring id;
             std::wstring url;
         };
@@ -861,12 +862,13 @@ namespace NSEditorApi
             return m_items;
         }
 
-        void addItem(const std::wstring& name, const std::wstring& id, const std::wstring& url)
+        void addItem(const std::wstring& name, const std::wstring& id, const std::wstring& url, const std::wstring& name_local)
         {
             CItem item;
             item.name = name;
             item.id = id;
             item.url = url;
+            item.nameLocale = name_local;
             m_items.push_back(item);
         }
     };

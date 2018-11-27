@@ -49,6 +49,8 @@ CPrintData::CPrintData()
     m_pNativePrinter = NULL;
 
     m_pAdditional = NULL;
+
+    m_bIsOpenAsLocal = false;
 }
 CPrintData::~CPrintData()
 {
@@ -121,10 +123,11 @@ std::wstring CPrintData::DownloadImage(const std::wstring& strFile)
     return strFileName;
 }
 
-void CPrintData::CalculateImagePaths()
+void CPrintData::CalculateImagePaths(bool bIsOpenAsLocal)
 {
+    m_bIsOpenAsLocal = bIsOpenAsLocal;
     m_sDocumentImagesPath = L"";
-    if (NSFileDownloader::IsNeedDownload(m_sFrameUrl) && !NSFileDownloader::IsNeedDownload(m_sDocumentUrl))
+    if (!bIsOpenAsLocal && NSFileDownloader::IsNeedDownload(m_sFrameUrl) && !NSFileDownloader::IsNeedDownload(m_sDocumentUrl))
     {
         if (0 == m_sDocumentUrl.find(wchar_t('/')))
         {
@@ -284,7 +287,8 @@ std::wstring CPrintData::GetImagePath(const std::wstring& sPath)
 
     // 4) может это файл файла?
     if (0 == sPath.find(L"media/image") || 0 == sPath.find(L"image") ||
-        0 == sPath.find(L"image/display") || 0 == sPath.find(L"display"))
+        0 == sPath.find(L"image/display") || 0 == sPath.find(L"display") ||
+        ((0 == sPath.find(L"media/") && m_bIsOpenAsLocal)))
     {
         std::wstring sExt = L"";
         int nPos = sPath.find_last_of(wchar_t('.'));
@@ -1033,6 +1037,16 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
     CBgraFrame oFrame;
     int nRasterW = (int)(dWidthPix + 0.5);
     int nRasterH = (int)(dHeightPix + 0.5);
+    
+#ifdef _XCODE
+    // 16 bit align pixPerRow
+    nRasterW += 8;
+    nRasterW = (nRasterW - (nRasterW & 0x0F));
+    
+    nRasterH += 8;
+    nRasterH = (nRasterH - (nRasterH & 0x0F));
+#endif
+    
     oFrame.put_Width(nRasterW);
     oFrame.put_Height(nRasterH);
     oFrame.put_Stride(4 * nRasterW);
@@ -1074,6 +1088,10 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
 
     pContext->BitBlt(oFrame.get_Data(), 0, 0, nRasterW, nRasterH,
                      dLeftPix, dTopPix, dWidthPix, dHeightPix, dAngle);
+    
+#ifdef _XCODE
+    oFrame.put_Data(NULL);
+#endif
 }
 
 void CPrintData::FitToPage(float fSourceWidth, float  fSourceHeight, float  fTargetWidth, float fTargetHeight, float& fResX, float& fResY, float& fResWidth, float& fResHeight)

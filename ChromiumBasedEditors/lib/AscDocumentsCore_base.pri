@@ -640,8 +640,12 @@ SOURCES += \
     $$CEF_SRC_PATH/tests/shared/browser/geometry_util.cc \
     $$CEF_SRC_PATH/tests/shared/browser/main_message_loop.cc \
     $$CEF_SRC_PATH/tests/shared/browser/main_message_loop_external_pump.cc \
-    $$CEF_SRC_PATH/tests/shared/browser/main_message_loop_std.cc \
+    $$CEF_SRC_PATH/tests/shared/browser/main_message_loop_std.cc
+
+core_windows {
+SOURCES += \
     $$CEF_SRC_PATH/tests/shared/browser/resource_util.cc
+}
 
 # COMMON
 HEADERS += \

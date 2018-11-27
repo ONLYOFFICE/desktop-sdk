@@ -17,8 +17,6 @@ set(CEFTESTS_SRCS
   dom_unittest.cc
   download_unittest.cc
   draggable_regions_unittest.cc
-  file_util.cc
-  file_util.h
   file_util_unittest.cc
   frame_unittest.cc
   geolocation_unittest.cc
@@ -85,6 +83,17 @@ set(CEFTESTS_SRCS_WINDOWS
 APPEND_PLATFORM_SOURCES(CEFTESTS_SRCS)
 source_group(ceftests FILES ${CEFTESTS_SRCS})
 
+set(CEFTESTS_EXTENSIONS_SRCS
+  extensions/background_unittest.cc
+  extensions/chrome_alarms_unittest.cc
+  extensions/chrome_storage_unittest.cc
+  extensions/chrome_tabs_unittest.cc
+  extensions/extension_test_handler.cc
+  extensions/extension_test_handler.h
+  extensions/view_unittest.cc
+  )
+source_group(ceftests\\\\extensions FILES ${CEFTESTS_EXTENSIONS_SRCS})
+
 set(CEFTESTS_RESOURCES_WIN_SRCS_WINDOWS
   resources/win/ceftests.exe.manifest
   resources/win/ceftests.ico
@@ -97,6 +106,10 @@ source_group(ceftests\\\\resources\\\\win FILES ${CEFTESTS_RESOURCES_WIN_SRCS})
 set(CEFTESTS_SHARED_BROWSER_SRCS
   ../shared/browser/client_app_browser.cc
   ../shared/browser/client_app_browser.h
+  ../shared/browser/extension_util.cc
+  ../shared/browser/extension_util.h
+  ../shared/browser/file_util.cc
+  ../shared/browser/file_util.h
   ../shared/browser/geometry_util.cc
   ../shared/browser/geometry_util.h
   ../shared/browser/main_message_loop.cc
@@ -105,7 +118,6 @@ set(CEFTESTS_SHARED_BROWSER_SRCS
   ../shared/browser/main_message_loop_external_pump.h
   ../shared/browser/main_message_loop_std.cc
   ../shared/browser/main_message_loop_std.h
-  ../shared/browser/resource_util.cc
   ../shared/browser/resource_util.h
   ../shared/browser/resource_util.h
   )
@@ -171,6 +183,7 @@ source_group(ceftests\\\\views FILES ${CEFTESTS_VIEWS_SRCS})
 
 set(UNITTESTS_SRCS
   ${CEFTESTS_SRCS}
+  ${CEFTESTS_EXTENSIONS_SRCS}
   ${CEFTESTS_RESOURCES_WIN_SRCS}
   ${CEFTESTS_SHARED_BROWSER_SRCS}
   ${CEFTESTS_SHARED_COMMON_SRCS}
@@ -183,8 +196,6 @@ set(CEFTESTS_HELPER_SRCS_MACOSX
   client_app_delegates.cc
   cookie_unittest.cc
   dom_unittest.cc
-  file_util.cc
-  file_util.h
   frame_unittest.cc
   message_router_unittest.cc
   navigation_unittest.cc
@@ -219,7 +230,8 @@ APPEND_PLATFORM_SOURCES(CEFTESTS_HELPER_SHARED_SRCS)
 source_group(shared FILES ${CEFTESTS_HELPER_SHARED_SRCS})
 
 set(CEFTESTS_HELPER_SHARED_BROWSER_SRCS_MACOSX
-  ../shared/browser/resource_util.cc
+  ../shared/browser/file_util.cc
+  ../shared/browser/file_util.h
   ../shared/browser/resource_util.h
   ../shared/browser/resource_util_mac.mm
   ../shared/browser/resource_util_posix.cc
@@ -360,7 +372,6 @@ if(OS_MACOSX)
   add_dependencies(${CEF_TARGET} libcef_dll_wrapper cef_gtest "${CEF_HELPER_TARGET}")
   target_link_libraries(${CEF_TARGET} libcef_lib libcef_dll_wrapper cef_gtest ${CEF_STANDARD_LIBS})
   set_target_properties(${CEF_TARGET} PROPERTIES
-    RESOURCE "${UNITTESTS_RESOURCES_SRCS}"
     MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/resources/mac/Info.plist
     )
 
@@ -382,16 +393,15 @@ if(OS_MACOSX)
   # Fix the framework rpath in the main executable.
   FIX_MACOSX_MAIN_FRAMEWORK_RPATH(${CEF_TARGET})
 
-  if(NOT ${CMAKE_GENERATOR} STREQUAL "Xcode")
-    # Manually process and copy over resource files.
-    # The Xcode generator handles this via the set_target_properties RESOURCE directive.
-    # Remove these prefixes from input file paths.
-    set(PREFIXES
-      "resources/mac/"
-      "../shared/resources/"
-      )
-    COPY_MACOSX_RESOURCES("${UNITTESTS_RESOURCES_SRCS}" "${PREFIXES}" "${CEF_TARGET}" "${CMAKE_CURRENT_SOURCE_DIR}" "${CEF_APP}")
-  endif()
+  # Manually process and copy over resource files.
+  # The Xcode generator can support this via the set_target_properties RESOURCE
+  # directive but that doesn't properly handle nested resource directories.
+  # Remove these prefixes from input file paths.
+  set(PREFIXES
+    "resources/mac/"
+    "../shared/resources/"
+    )
+  COPY_MACOSX_RESOURCES("${UNITTESTS_RESOURCES_SRCS}" "${PREFIXES}" "${CEF_TARGET}" "${CMAKE_CURRENT_SOURCE_DIR}" "${CEF_APP}")
 endif()
 
 

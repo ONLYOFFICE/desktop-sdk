@@ -58,7 +58,7 @@ namespace asc_scheme
     bool InitScheme(CAscApplicationManager* pManager);
 #endif
 
-
+    std::string GetMimeTypeFromExt(const std::wstring& sFile);
 }
 
 #endif

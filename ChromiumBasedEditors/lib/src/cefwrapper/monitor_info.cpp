@@ -8,13 +8,16 @@ typedef HMONITOR (__stdcall *function_MonitorFromWindow)(HWND hwnd, DWORD dwFlag
 typedef HRESULT (__stdcall *function_GetDpiForMonitor)(HMONITOR hmonitor, MONITOR_DPI_TYPE dpiType, UINT *dpiX, UINT *dpiY);
 
 typedef HRESULT (__stdcall *function_SetProcessDpiAwareness)(PROCESS_DPI_AWARENESS);
+typedef UINT (__stdcall *function_GetDpiForWindow)(HWND hwnd);
 
 class CMonitorPrivate
 {
 public:
     HINSTANCE m_hInstance;
+    HINSTANCE m_hInstanceUser;
 
     function_GetDpiForMonitor m_func_GetDpiForMonitor;
+    function_GetDpiForWindow m_func_GetDpiForWindow;
     function_SetProcessDpiAwareness m_funcSetProcessDpiAwareness;
 
     CMonitorPrivate()
@@ -31,11 +34,19 @@ public:
                 m_funcSetProcessDpiAwareness = (function_SetProcessDpiAwareness)GetProcAddress(m_hInstance, "SetProcessDpiAwareness");
             }
         }
+
+        m_hInstanceUser = LoadLibraryA("User32.dll");
+        if (m_hInstanceUser)
+        {
+            m_func_GetDpiForWindow = (function_GetDpiForWindow)GetProcAddress(m_hInstanceUser, "GetDpiForWindow");
+        }
     }
     ~CMonitorPrivate()
     {
         if (m_hInstance)
             FreeLibrary(m_hInstance);
+        if (m_hInstanceUser)
+            FreeLibrary(m_hInstanceUser);
     }
 };
 
@@ -43,6 +54,15 @@ CMonitorPrivate g_monitor_info;
 
 int NSMonitor::GetRawMonitorDpi(WindowHandleId handle)
 {
+    if (g_monitor_info.m_func_GetDpiForWindow)
+    {
+        UINT resDpi = g_monitor_info.m_func_GetDpiForWindow(handle);
+
+        if (resDpi > 180)
+            return 2;
+        return 1;
+    }
+
     if (!g_monitor_info.m_func_GetDpiForMonitor)
         return 1;
 
@@ -69,6 +89,16 @@ int Core_GetMonitorRawDpi(WindowHandleId handle, unsigned int* uiX, unsigned int
 {
     *uiX = 0;
     *uiY = 0;
+
+    if (g_monitor_info.m_func_GetDpiForWindow)
+    {
+        UINT resDpi = g_monitor_info.m_func_GetDpiForWindow(handle);
+
+        *uiX = resDpi;
+        *uiY = resDpi;
+
+        return 0;
+    }
 
     if (!g_monitor_info.m_func_GetDpiForMonitor)
         return -1;

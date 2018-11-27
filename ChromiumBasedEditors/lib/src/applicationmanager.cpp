@@ -109,6 +109,12 @@ CAscApplicationManager::CAscApplicationManager()
 CAscApplicationManager::~CAscApplicationManager()
 {
     m_pInternal->Release();
+
+    if (NULL != m_pInternal->m_pDpiChecker)
+    {
+        delete m_pInternal->m_pDpiChecker;
+        m_pInternal->m_pDpiChecker = NULL;
+    }
 }
 
 void CAscApplicationManager::StartSpellChecker()
@@ -192,7 +198,7 @@ void CAscApplicationManager::CheckFonts(bool bAsync)
 
 void CAscApplicationManager::SetEventListener(NSEditorApi::CAscCefMenuEventListener* pListener)
 {
-    m_pInternal->m_pListener = pListener;
+    m_pInternal->m_pListener = pListener;    
 }
 
 NSEditorApi::CAscCefMenuEventListener* CAscApplicationManager::GetEventListener()
@@ -484,6 +490,7 @@ CCefViewEditor* CAscApplicationManager::CreateCefEditor(CCefViewWidgetImpl* pare
     pView->SetAppManager(this);
 
     m_pInternal->m_mapViews[m_pInternal->m_nIdCounter] = pView;
+    m_pInternal->ChangeEditorViewsCount();
     return pView;
 }
 
@@ -494,6 +501,7 @@ CCefViewEditor* CAscApplicationManager::CreateCefPresentationReporter(CCefViewWi
     pView->SetAppManager(this);
 
     m_pInternal->m_mapViews[m_pInternal->m_nIdCounter] = pView;
+    m_pInternal->ChangeEditorViewsCount();
 
     pView->LoadReporter(data->ParentId, data->Url);
     if (!data->LocalRecoverFolder.empty())
@@ -615,6 +623,7 @@ void CAscApplicationManager::DestroyCefView(int nId, bool bIsSafe)
         }
 
         m_pInternal->m_mapViews.erase(i);
+        m_pInternal->ChangeEditorViewsCount();
     }
 }
 
@@ -820,15 +829,20 @@ int CAscApplicationManager::GetMonitorScaleByIndex(const int& nIndex, unsigned i
     if (m_pInternal->m_nForceDisplayScale > 0)
         return m_pInternal->m_nForceDisplayScale;
 
-#ifdef WIN32
-    if (0 != Core_GetMonitorRawDpiByIndex(nIndex, &nDpiX, &nDpiY))
-        return -1;
+    CAscDpiChecker* pDpiChecker = CAscApplicationManager::GetDpiChecker();
+    if (pDpiChecker)
+    {
+        unsigned int nDpiX = 0;
+        unsigned int nDpiY = 0;
+        int nRet = pDpiChecker->GetMonitorDpi(nIndex, &nDpiX, &nDpiY);
+        if (nRet >= 0)
+        {
+            double dDpiApp = pDpiChecker->GetScale(nDpiX, nDpiY);
 
-    if (nDpiX > 180 && nDpiY > 180)
-        return 2;
-
-    return 1;
-#endif
+            // пока только 1 или 2
+            return (dDpiApp > 1.9) ? 2 : 1;
+        }
+    }
 
     return -1;
 }
@@ -838,15 +852,24 @@ int CAscApplicationManager::GetMonitorScaleByWindow(const WindowHandleId& nHandl
     if (m_pInternal->m_nForceDisplayScale > 0)
         return m_pInternal->m_nForceDisplayScale;
 
-#ifdef WIN32
-    if (0 != Core_GetMonitorRawDpi(nHandle, &nDpiX, &nDpiY))
-        return -1;
-
-    if (nDpiX > 180 && nDpiY > 180)
-        return 2;
-
-    return 1;
+    CAscDpiChecker* pDpiChecker = CAscApplicationManager::GetDpiChecker();
+    if (pDpiChecker)
+    {
+        unsigned int nDpiX = 0;
+        unsigned int nDpiY = 0;
+#ifndef _MAC
+        int nRet = pDpiChecker->GetWindowDpi(nHandle, &nDpiX, &nDpiY);
+#else
+        int nRet = pDpiChecker->GetWindowDpi(const_cast<WindowHandleId>(nHandle), &nDpiX, &nDpiY);
 #endif
+        if (nRet >= 0)
+        {
+            double dDpiApp = pDpiChecker->GetScale(nDpiX, nDpiY);
+
+            // пока только 1 или 2
+            return (dDpiApp > 1.9) ? 2 : 1;
+        }
+    }
 
     return -1;
 }
@@ -882,6 +905,9 @@ void CAscApplicationManager::SetCryptoMode(const std::string& sPassword, const i
     m_pInternal->CheckSetting("--crypto-mode", sCryptoMode);
     m_pInternal->m_mapSettings.insert(std::pair<std::string, std::string>("crypto-mode", std::to_string(m_pInternal->m_nCurrentCryptoMode)));
     m_pInternal->SaveSettings();
+
+    std::string sCodeInAllFrames = "if (window.onChangeCryptoMode) { window.onChangeCryptoMode(" + std::to_string(m_pInternal->m_nCurrentCryptoMode) + "); }";
+    m_pInternal->ExecuteInAllFrames(sCodeInAllFrames);
 }
 
 int CAscApplicationManager::GetCryptoMode()
@@ -912,3 +938,54 @@ NSAscCrypto::CAscKeychain* CAscApplicationManager::GetKeychainEngine()
 }
 
 /////////////////////////////////////////////////////////////
+
+CAscDpiChecker::CAscDpiChecker()
+{
+}
+CAscDpiChecker::~CAscDpiChecker()
+{
+}
+int CAscDpiChecker::GetWindowDpi(WindowHandleId _handle, unsigned int* _dx, unsigned int* _dy)
+{
+#ifdef WIN32
+    return Core_GetMonitorRawDpi(_handle, _dx, _dy);
+#endif
+    return -1;
+}
+int CAscDpiChecker::GetMonitorDpi(int _screen, unsigned int* _dx, unsigned int* _dy)
+{
+#ifdef WIN32
+    return Core_GetMonitorRawDpiByIndex(_screen, _dx, _dy);
+#endif
+    return -1;
+}
+int CAscDpiChecker::GetWidgetImplDpi(CCefViewWidgetImpl* wid, unsigned int* _dx, unsigned int* _dy)
+{
+    if (NULL == wid)
+        return -1;
+#ifdef WIN32
+    return GetWindowDpi(wid->parent_wid(), _dx, _dy);
+#endif
+    return -1;
+}
+double CAscDpiChecker::GetScale(unsigned int dpiX, unsigned int dpiY)
+{
+    double scale = (dpiX + dpiY) / 96.0;
+    int nScale = (int)(scale + 0.5);
+    return (nScale / 2.0);
+}
+
+CAscDpiChecker* CAscApplicationManager_Private::m_pDpiChecker = NULL;
+
+CAscDpiChecker* CAscApplicationManager::GetDpiChecker()
+{
+    return CAscApplicationManager_Private::m_pDpiChecker;
+}
+CAscDpiChecker* CAscApplicationManager::InitDpiChecker()
+{
+#ifdef WIN32
+    return new CAscDpiChecker();
+#else
+    return NULL;
+#endif
+}

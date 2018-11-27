@@ -169,6 +169,9 @@ CApplicationCEF::CApplicationCEF()
 
 int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* argv[])
 {
+    if (NULL == pManager->m_pInternal->m_pDpiChecker)
+        pManager->m_pInternal->m_pDpiChecker = pManager->InitDpiChecker();
+
 #if 0
     FILE* f = fopen("D:\\logloglog.txt", "a+");
     fprintf(f, "-----------------------------------------------\n");
@@ -352,12 +355,23 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     oPlugins.m_strUserDirectory = pManager->m_oSettings.user_plugins_path;
     oPlugins.GetInstalledPlugins();
 
+    bool bIsCurrentCryptoPresent = false;
     for (std::map<int, std::string>::iterator iterCrypto = oPlugins.m_arCryptoModes.begin(); iterCrypto != oPlugins.m_arCryptoModes.end(); iterCrypto++)
     {
         NSAscCrypto::CAscCryptoJsonValue value;
         value.m_eType = (NSAscCrypto::AscCryptoType)iterCrypto->first;
         value.m_sGuid = iterCrypto->second;
         pManager->m_pInternal->m_mapCrypto.insert(std::pair<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue>(value.m_eType, value));
+
+        if (!bIsCurrentCryptoPresent && (pManager->m_pInternal->m_nCurrentCryptoMode == value.m_eType))
+            bIsCurrentCryptoPresent = 0;
+    }
+    // смотрим, есть ли плагин для выставленного режима криптования
+    if (!bIsCurrentCryptoPresent)
+    {
+        pManager->m_pInternal->m_nCurrentCryptoMode = NSAscCrypto::None;
+        pManager->m_pInternal->CheckSetting("--crypto-mode", "default");
+        pManager->m_pInternal->SaveSettings();
     }
 
     for (std::vector<CExternalPluginInfo>::iterator iterExt = oPlugins.m_arExternals.begin(); iterExt != oPlugins.m_arExternals.end(); iterExt++)
@@ -367,34 +381,35 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 
     pManager->m_pInternal->LoadCryptoData();
 
-    std::wstring sExternalClouds = NSFile::GetProcessDirectory() + L"/externalcloud.config";
-    std::wstring sExternalCloudsData = L"";
-    bool bIsReadExternalClouds = NSFile::CFileBinary::ReadAllTextUtf8(sExternalClouds, sExternalCloudsData);
+    std::wstring sExternalClouds = NSCommon::GetDirectoryName(pManager->m_oSettings.system_plugins_path) + L"/externalcloud.json";
+    std::string sExternalCloudsData = "";
+    bool bIsReadExternalClouds = NSFile::CFileBinary::ReadAllTextUtf8A(sExternalClouds, sExternalCloudsData);
 
     if (bIsReadExternalClouds)
     {
-        std::vector<std::wstring> arLines = ReadFileByLine(sExternalCloudsData);
-        int nCount = (int)arLines.size();
-        nCount = nCount - (nCount % 2);
-        for (int i = 0; i < nCount; i += 2)
+        std::string::size_type posExt = sExternalCloudsData.find("\"id\"", 0);
+        while (std::string::npos != posExt)
         {
+            std::string sExternalCloudsDataCurrent = sExternalCloudsData.substr(posExt);
+            std::string::size_type posExtOld = sExternalCloudsDataCurrent.find("\"id\"", 2);
+            if (posExtOld != std::string::npos)
+                sExternalCloudsDataCurrent = sExternalCloudsDataCurrent.substr(0, posExtOld);
+
             CExternalCloudRegister cloudEx;
-            cloudEx.url = arLines[i];
-            cloudEx.test_editor = arLines[i + 1];
+            cloudEx.id = CPluginsManager::GetStringValueW(sExternalCloudsDataCurrent, "id");
+            cloudEx.name = CPluginsManager::GetStringValueW(sExternalCloudsDataCurrent, "name");
+            cloudEx.test_editor = CPluginsManager::GetStringValueW(sExternalCloudsDataCurrent, "editorPage");
+            std::wstring sCryptoTest = CPluginsManager::GetStringValueW(sExternalCloudsDataCurrent, "cryptoSupport");
+            if (sCryptoTest == L"true" || sCryptoTest == L"1")
+                cloudEx.crypto_support = true;
 
             pManager->m_pInternal->m_arExternalClouds.push_back(cloudEx);
+            posExt = sExternalCloudsData.find("\"id\"", posExt + 2);
         }
     }
 
-#ifdef WIN32
-    SetEnvironmentVariableA("APPLICATION_NAME", pManager->m_oSettings.converter_application_name.c_str());
-    SetEnvironmentVariableA("COMPANY_NAME", pManager->m_oSettings.converter_application_company.c_str());
-#else
-    std::string s1 = "APPLICATION_NAME=" + pManager->m_oSettings.converter_application_name;
-    std::string s2 = "COMPANY_NAME=" + pManager->m_oSettings.converter_application_company;
-    putenv((char*)s1.c_str());
-    putenv((char*)s2.c_str());
-#endif
+    NSSystem::SetEnvValueA("APPLICATION_NAME", pManager->m_oSettings.converter_application_name);
+    NSSystem::SetEnvValueA("COMPANY_NAME", pManager->m_oSettings.converter_application_company);
 
     return 0;
 }

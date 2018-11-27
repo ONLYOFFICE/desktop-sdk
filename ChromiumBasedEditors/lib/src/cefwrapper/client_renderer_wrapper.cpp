@@ -298,6 +298,7 @@ public:
 
     CNativeViewer m_oNativeViewer;
     int m_nNativeOpenFileTimerID;
+    int m_bIsNativeViewerMode;
 
     bool m_bIsSupportSigs;
     bool m_bIsSupportOnlyPass;
@@ -340,6 +341,7 @@ public:
         m_pLocalApplicationFonts = NULL;
 
         m_nNativeOpenFileTimerID = -1;
+        m_bIsNativeViewerMode = false;
 
         m_bIsPrinting = false;
 
@@ -1062,6 +1064,19 @@ else \n\
             message->GetArgumentList()->SetString(0, sName);
             browser->SendProcessMessage(PID_BROWSER, message);
 
+            // HACK!!!
+            if (m_nCryptoMode > 0)
+            {
+                CefRefPtr<CefFrame> _frame =  CefV8Context::GetCurrentContext()->GetFrame();
+                _frame->ExecuteJavaScript("(function() { try { \
+DE.controllers.Main.editorConfig.canUseHistory = false; \
+DE.controllers.Main.editorConfig.fileChoiceUrl = \"\"; \
+DE.controllers.Main.editorConfig.mergeFolderUrl = \"\"; \
+DE.controllers.Main.appOptions.fileChoiceUrl = \"\"; \
+DE.controllers.Main.appOptions.mergeFolderUrl = \"\"; \
+} catch(err){} })();", _frame->GetURL(), 0);
+            }
+
             return true;
         }
         else if (name == "OnSave")
@@ -1678,7 +1693,7 @@ _style.innerHTML = '" + m_sScrollStyle + "'; document.getElementsByTagName('head
             CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetFrame();
             if (_frame)
             {
-                _frame->ExecuteJavaScript("window.AscDesktopEditor.sendSystemMessage = function(arg) { window.AscDesktopEditor._sendSystemMessage(JSON.stringify(arg)); };", _frame->GetURL(), 0);
+                _frame->ExecuteJavaScript("window.AscDesktopEditor.sendSystemMessage = function(arg) { window.AscDesktopEditor.isSendSystemMessage = true;window.AscDesktopEditor._sendSystemMessage(JSON.stringify(arg)); };", _frame->GetURL(), 0);
                 _frame->ExecuteJavaScript("window.AscDesktopEditor.GetHash = function(arg, callback) { window.AscDesktopEditor.getHashCallback = callback; window.AscDesktopEditor._GetHash(arg); };", _frame->GetURL(), 0);
                 _frame->ExecuteJavaScript("window.AscDesktopEditor.CallInAllWindows = function(arg) { window.AscDesktopEditor._CallInAllWindows(\"(\" + arg.toString() + \")();\"); };", _frame->GetURL(), 0);
                 _frame->ExecuteJavaScript("window.AscDesktopEditor.OpenFileCrypt = function(name, url, callback) { window.AscDesktopEditor.openFileCryptCallback = callback; window.AscDesktopEditor._OpenFileCrypt(name, url); };", _frame->GetURL(), 0);
@@ -1723,15 +1738,22 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
         {
             std::vector<CefRefPtr<CefV8Value>>::const_iterator iter = arguments.begin();
 
+            if (arguments.size() == 1) // password
+            {
+                m_oNativeViewer.SetPassword((*iter)->GetStringValue().ToWString());
+                return true;
+            }
+
             std::wstring sOpeningFilePath = (*iter)->GetStringValue().ToWString(); iter++;
             std::wstring sFontsDir = (*iter)->GetStringValue().ToWString(); iter++;
             std::wstring sFileDir = (*iter)->GetStringValue().ToWString(); ++iter;
 
             m_oNativeViewer.Init(sFileDir, sFontsDir, sOpeningFilePath, this);
+            m_bIsNativeViewerMode = true;
 
             CefRefPtr<CefV8Value> _timerID;
             CefRefPtr<CefV8Exception> _exception;
-            if (CefV8Context::GetCurrentContext()->Eval("(function(){ var intervalID = setInterval(function(){ window.AscDesktopEditor.NativeFunctionTimer(intervalID); }, 100); return intervalID; })();",
+            if (CefV8Context::GetCurrentContext()->Eval("(function(){ var intervalID = setInterval(function(){ if (!window.NativeFileOpen_error) { return; } window.AscDesktopEditor.NativeFunctionTimer(intervalID); }, 100); return intervalID; })();",
                                                         #ifndef CEF_2623
                                                                     "", 0,
                                                         #endif
@@ -1758,10 +1780,29 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
             if (nIntervalID == m_nNativeOpenFileTimerID)
             {
                 std::string sBase64File = m_oNativeViewer.GetBase64File();
+
                 if (!sBase64File.empty())
                 {
                     CefRefPtr<CefV8Value> _timerID;
                     CefRefPtr<CefV8Exception> _exception;
+
+                    if (sBase64File == "error" || sBase64File == "password")
+                    {
+                        m_oNativeViewer.Stop();
+                        m_oNativeViewer.ClearBase64();
+
+                        std::string sCode = "window.NativeFileOpen_error(\"" +
+                                sBase64File + "\", \"" + m_oNativeViewer.GetHash() + "\", \"" +
+                                m_oNativeViewer.GetDocInfo() + "\");";
+
+                        CefV8Context::GetCurrentContext()->Eval(sCode,
+                                                                #ifndef CEF_2623
+                                                                            "", 0,
+                                                                #endif
+                                                                _timerID, _exception);
+                        return true;
+                    }
+
                     std::string sCode = "clearTimeout(" + std::to_string(m_nNativeOpenFileTimerID) + ");";
                     if (CefV8Context::GetCurrentContext()->Eval(sCode,
                                                                 #ifndef CEF_2623
@@ -1776,6 +1817,7 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
                     CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
                     CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("native_viewer_onopened");
                     message->GetArgumentList()->SetString(0, (sBase64File == "error") ? "" : sBase64File);
+                    message->GetArgumentList()->SetString(1, m_oNativeViewer.GetPassword());
                     browser->SendProcessMessage(PID_BROWSER, message);
                 }
             }
@@ -2096,7 +2138,13 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
         }
         else if (name == "IsProtectionSupport")
         {
-            retval = CefV8Value::CreateBool(m_bIsSupportProtect);
+            bool bIsProtect = m_bIsSupportProtect;
+            if (bIsProtect)
+            {
+                if (m_bIsSupportOnlyPass && (m_nCryptoMode > 0))
+                    bIsProtect = false;
+            }
+            retval = CefV8Value::CreateBool(bIsProtect);
             return true;
         }
         else if (name == "SetSupportSign")
@@ -2413,6 +2461,65 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
             message->GetArgumentList()->SetString(2, arguments[1]->GetStringValue());
             CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "GetExternalClouds")
+        {
+            std::wstring sSP = m_sSystemPlugins;
+            if (sSP.empty())
+            {
+#ifdef _MAC
+                sSP = NSFile::GetProcessDirectory() + L"/../../../Resources/editors/sdkjs-plugins";
+#else
+                sSP = NSFile::GetProcessDirectory() + L"/editors/sdkjs-plugins";
+#endif
+            }
+
+            std::wstring sFile = NSCommon::GetDirectoryName(sSP) + L"/externalcloud.json";
+            std::string sContent = "";
+
+            if (NSFile::CFileBinary::ReadAllTextUtf8A(sFile, sContent))
+            {
+                NSCommon::string_replaceA(sContent, "\r", "");
+                NSCommon::string_replaceA(sContent, "\n", "");
+                NSCommon::string_replaceA(sContent, "\\", "\\\\");
+                NSCommon::string_replaceA(sContent, "\"", "\\\"");
+                CefRefPtr<CefV8Exception> exception;
+                CefV8Context::GetCurrentContext()->Eval("(function(){ return JSON.parse(\"" + sContent + "\"); })();",
+                                                                          #ifndef CEF_2623
+                                                                                      "", 0,
+                                                                          #endif
+                                                                          retval, exception);
+            }
+            else
+            {
+                retval = CefV8Value::CreateNull();
+            }
+            return true;
+        }
+        else if (name == "IsNativeViewer")
+        {
+            retval = CefV8Value::CreateBool(m_bIsNativeViewerMode);
+            return true;
+        }
+        else if (name == "CryptoDownloadAs")
+        {
+            std::string fileData = arguments[0]->GetStringValue().ToString();
+
+            NSFile::CFileBinary oFileWithChanges;
+            oFileWithChanges.CreateFileW(m_sCryptDocumentFolder + L"/EditorWithChanges.bin");
+            oFileWithChanges.WriteFile((BYTE*)fileData.c_str(), (DWORD)fileData.length());
+            oFileWithChanges.CloseFile();
+
+            int nFormat = arguments[1]->GetIntValue();
+            std::string sParams = arguments[2]->GetStringValue();
+
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("crypto_download_as");
+            message->GetArgumentList()->SetInt(0, nFormat);
+            message->GetArgumentList()->SetString(1, sParams);
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            browser->SendProcessMessage(PID_BROWSER, message);
+
             return true;
         }
 
@@ -2927,6 +3034,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction990 = CefV8Value::CreateFunction("IsProtectionSupport", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction991 = CefV8Value::CreateFunction("_GetAdvancedEncryptedData", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction992 = CefV8Value::CreateFunction("_SetAdvancedEncryptedData", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction993 = CefV8Value::CreateFunction("GetExternalClouds", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction994 = CefV8Value::CreateFunction("IsNativeViewer", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction995 = CefV8Value::CreateFunction("CryptoDownloadAs", _nativeHandler);
 
 
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -3080,6 +3190,10 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("IsProtectionSupport", _nativeFunction990, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("_GetAdvancedEncryptedData", _nativeFunction991, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("_SetAdvancedEncryptedData", _nativeFunction992, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("GetExternalClouds", _nativeFunction993, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("IsNativeViewer", _nativeFunction994, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("CryptoDownloadAs", _nativeFunction995, V8_PROPERTY_ATTRIBUTE_NONE);
+
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 
@@ -3729,11 +3843,17 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     (function(){\n\
     try {\n\
     var _arg = JSON.parse(\"" + sArg + "\");\n\
+    window.AscDesktopEditor.isSendSystemMessage = false;\n\
     if (window.onSystemMessage)\n\
     { window.onSystemMessage(_arg); } else if (window.Asc && window.Asc.plugin && window.Asc.plugin.onSystemMessage)\n\
     { window.Asc.plugin.onSystemMessage(_arg); }\n\
     }\n\
-    catch (err) {}\n\
+    catch (err) {\n\
+        if (!window.AscDesktopEditor.isSendSystemMessage) {\n\
+            window.AscDesktopEditor.sendSystemMessage(_arg);\n\
+        }\n\
+    }\n\
+    delete window.AscDesktopEditor.isSendSystemMessage;\n\
     })();";
 
                     frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
@@ -3927,7 +4047,7 @@ xhr.send(null);";
                     // read extension
                     std::string::size_type nPos = sData.find(';', 10);
                     if (nPos != std::string::npos)
-                        sData = sData.substr(nPos + 1);
+                        sData = "ENCRYPTED;" + sData.substr(nPos + 1);
                 }
             }
             else
@@ -4004,6 +4124,15 @@ delete window[\"crypto_images_map\"][_url];\n\
         CefRefPtr<CefFrame> _frame = browser->GetFrame(nFrameId);
         if (_frame)
             _frame->ExecuteJavaScript("(function() { if (!window.on_set_advanced_encrypted_data) return; window.on_set_advanced_encrypted_data(\"" + sRet + "\"); delete window.on_set_advanced_encrypted_data; })();", _frame->GetURL(), 0);
+    }
+    else if (sMessageName == "crypto_download_as_end")
+    {
+      CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
+      if (_frame)
+      {
+          _frame->ExecuteJavaScript("(function() { window.CryptoDownloadAsEnd(); })();", _frame->GetURL(), 0);
+      }
+      return true;
     }
 
     if (m_pAdditional.is_init() && m_pAdditional->OnProcessMessageReceived(app, browser, source_process, message))
