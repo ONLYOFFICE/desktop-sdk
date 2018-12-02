@@ -2512,7 +2512,10 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
             oFileWithChanges.CloseFile();
 
             int nFormat = arguments[1]->GetIntValue();
-            std::string sParams = arguments[2]->GetStringValue();
+
+            std::string sParams = "";
+            if (arguments.size() > 2)
+                sParams = arguments[2]->GetStringValue();
 
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("crypto_download_as");
             message->GetArgumentList()->SetInt(0, nFormat);
