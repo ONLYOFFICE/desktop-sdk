@@ -13,6 +13,13 @@
 
     	switch (obj.type)
 		{
+			case "setPassword":
+			{			
+				this.documentHash = obj.hash;
+				this.documentInfo = obj.docinfo;
+				this.documentPassword = obj.password;				
+				break;
+			}
 			case "generatePassword":
 			{
 				this.sendSystemMessage(obj);
@@ -140,7 +147,7 @@
 			case "getPasswordByFile":
 			{
 				this.documentPassword = e.password;
-				this.executeMethodSync("OnEncryption", [{ type : "getPasswordByFile", password : e.password }]);
+				this.executeMethodSync("OnEncryption", [{ type : "getPasswordByFile", password : e.password, docinfo : this.documentInfo, hash : this.documentHash }]);
 				break;
 			}
 			case "setPasswordByFile":
