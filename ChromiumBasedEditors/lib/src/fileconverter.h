@@ -232,14 +232,22 @@ namespace NSX2T
             nargs[2] = NULL;
 
 #ifndef _MAC
-            const char* nenv[2];
+            const char* nenv[4];
+            std::string s1 = "APPLICATION_NAME=" + pManager->m_oSettings.converter_application_name;
+            std::string s2 = "COMPANY_NAME=" + pManager->m_oSettings.converter_application_company;
             nenv[0] = sLibraryDir.c_str();
-            nenv[1] = NULL;
+            nenv[1] = s1.c_str();
+            nenv[2] = s2.c_str();
+            nenv[3] = NULL;
 #else
-            const char* nenv[3];
+            const char* nenv[5];
+            std::string s1 = "APPLICATION_NAME=" + pManager->m_oSettings.converter_application_name;
+            std::string s2 = "COMPANY_NAME=" + pManager->m_oSettings.converter_application_company;
             nenv[0] = sLibraryDir.c_str();
             nenv[1] = sPATH.c_str();
-            nenv[2] = NULL;
+            nenv[2] = s1.c_str();
+            nenv[3] = s2.c_str();
+            nenv[4] = NULL;
 #endif
 
             execve(sProgramm.c_str(),
