@@ -22,6 +22,8 @@
 			}
 			case "generatePassword":
 			{
+				obj.hash = this.documentHash;
+				obj.docinfo = this.documentInfo;
 				this.sendSystemMessage(obj);
 				break;
 			}
@@ -35,6 +37,7 @@
 			case "setPasswordByFile":
 			{
 				this.documentHash = obj.hash;
+				obj.docinfo = this.documentInfo;
 				obj.isNeedMessage = true;
 				this.sendSystemMessage(obj);
 				break;
