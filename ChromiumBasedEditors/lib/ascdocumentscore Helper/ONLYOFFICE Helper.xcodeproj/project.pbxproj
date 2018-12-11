@@ -197,6 +197,7 @@
 		BE9FC6B22101CEBD00571BA9 /* keychain.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BE9FC6AE2101CEBD00571BA9 /* keychain.cpp */; };
 		BE9FC6B32101CEBD00571BA9 /* crypto_mode.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BE9FC6B12101CEBD00571BA9 /* crypto_mode.cpp */; };
 		BE9FC6B52101CECF00571BA9 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BE9FC6B42101CECE00571BA9 /* Security.framework */; };
+		BEFFCCE221A8192F009E7A3E /* libooxmlsignature.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = BEFFCCE121A8192F009E7A3E /* libooxmlsignature.dylib */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -788,6 +789,7 @@
 		BE9FC6B02101CEBD00571BA9 /* crypto_mode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = crypto_mode.h; path = ../../src/crypto_mode.h; sourceTree = "<group>"; };
 		BE9FC6B12101CEBD00571BA9 /* crypto_mode.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = crypto_mode.cpp; path = ../../src/crypto_mode.cpp; sourceTree = "<group>"; };
 		BE9FC6B42101CECE00571BA9 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		BEFFCCE121A8192F009E7A3E /* libooxmlsignature.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libooxmlsignature.dylib; path = ../../../../core/build/lib/mac_64/libooxmlsignature.dylib; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -795,6 +797,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BEFFCCE221A8192F009E7A3E /* libooxmlsignature.dylib in Frameworks */,
 				BE9FC6B52101CECF00571BA9 /* Security.framework in Frameworks */,
 				BE9FC6A72101CDF300571BA9 /* libDjVuFile.dylib in Frameworks */,
 				BE9FC6A82101CDF300571BA9 /* libUnicodeConverter.dylib in Frameworks */,
@@ -1637,6 +1640,7 @@
 		7CC7FBA61F7D3E1900E99DC9 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				BEFFCCE121A8192F009E7A3E /* libooxmlsignature.dylib */,
 				BE9FC6B42101CECE00571BA9 /* Security.framework */,
 				BE9FC6A02101CDF200571BA9 /* libDjVuFile.dylib */,
 				BE9FC6A32101CDF200571BA9 /* libgraphics.dylib */,
