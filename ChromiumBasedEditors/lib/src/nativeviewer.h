@@ -48,6 +48,8 @@
 #include "../../../../core/XpsFile/XpsFile.h"
 #include "../../../../core/HtmlRenderer/include/HTMLRenderer3.h"
 
+#include "../../../../core/DesktopEditor/xmlsec/src/include/XmlCertificate.h"
+
 #include "Logger.h"
 
 #include <list>
@@ -96,6 +98,10 @@ private:
     std::wstring            m_sFileDir;
     std::wstring            m_sFontsDir;
 
+    std::wstring            m_sPassword;
+    std::string             m_sHashFile;
+    std::string             m_sDocInfo;
+
     std::list<CNativeViewerPageInfo> m_arTasks;
     CNativeViewerPageInfo m_oCurrentTask;
     NSCriticalSection::CRITICAL_SECTION m_oCS;
@@ -110,6 +116,7 @@ private:
     NSImages::IImageFilesCache* m_pImageCache;
 
     std::wstring            m_sOpeningFilePath;
+    std::wstring            m_sOpeningFilePathSrc;
     std::string             m_sBase64File;
 
     double*                 m_pPageWidths;
@@ -165,6 +172,35 @@ public:
 
 public:
 
+    std::wstring GetPassword()
+    {
+        return m_sPassword;
+    }
+
+    void SetPassword(std::wstring sPassword)
+    {
+        CTemporaryCS oCS(&m_oCS);
+        m_sPassword = sPassword;
+
+        Start(0);
+    }
+
+    std::string GetHash()
+    {
+        return m_sHashFile;
+    }
+    std::string GetDocInfo()
+    {
+        return m_sDocInfo;
+    }
+
+    void ClearBase64()
+    {
+        CTemporaryCS oCS(&m_oCS);
+        m_sBase64File = "";
+        m_sOpeningFilePath = m_sOpeningFilePathSrc;
+    }
+
     std::string GetBase64File()
     {
         CTemporaryCS oCS(&m_oCS);
@@ -184,6 +220,7 @@ public:
         m_sFileDir = sFileDir;
         m_sFontsDir = sFontsDir;
         m_sOpeningFilePath = sOpeningFilePath;
+        m_sOpeningFilePathSrc = m_sOpeningFilePath;
         m_pEvents = pEvents;
 
         this->Start(0);
@@ -201,7 +238,7 @@ public:
                 nFileType = oChecker.nFileType;
         }
 
-        if (0 != nFileType)
+        if (0 != nFileType && m_sPassword.empty())
             m_pFonts->InitializeFromFolder(m_sFontsDir);
 
         int nFileTypeOpen = 0;
@@ -234,7 +271,7 @@ public:
         NSDirectory::CreateDirectory(m_sFileDir + L"/tmp");
         m_pReader->SetTempDirectory(m_sFileDir + L"/tmp");
 
-        if (m_pReader->LoadFromFile(sFilePath))
+        if (m_pReader->LoadFromFile(sFilePath, L"", m_sPassword, m_sPassword))
         {
             m_nFileType = nFileTypeOpen;
             m_pHtmlRenderer = new NSHtmlRenderer::CASCHTMLRenderer3();
@@ -311,7 +348,31 @@ public:
         }
         else
         {
-            sBase64Info = "error";
+            if (nFileTypeOpen == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF)
+            {
+                PdfReader::CPdfReader* pPdfReader = static_cast<PdfReader::CPdfReader*>(m_pReader);
+                if (PdfReader::errorEncrypted == pPdfReader->GetError())
+                {
+                    sBase64Info = "password";
+
+                    COfficeFileFormatChecker oChecker;
+                    oChecker.isOfficeFile(sFilePath);
+
+                    m_sDocInfo = U_TO_UTF8((oChecker.sDocumentID));
+
+                    ICertificate* pCert = ICertificate::CreateInstance();
+                    m_sHashFile = pCert->GetHash(sFilePath, OOXML_HASH_ALG_SHA256);
+                    delete pCert;
+                }
+                else
+                {
+                    sBase64Info = "error";
+                }
+            }
+            else
+            {
+                sBase64Info = "error";
+            }
         }
 
         m_oCS.Enter();

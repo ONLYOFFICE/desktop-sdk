@@ -32,4 +32,43 @@ SOURCES += \
     $$CEF_SRC_PATH/tests/shared/browser/resource_util_posix.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/browser_window_std_gtk.cc
 
+CONFIG += linux_3202
+linux_3202 {
+
+DEFINES += CEF_3202
+
+HEADERS += \
+    $$CEF_SRC_PATH/include/cef_extension.h \
+    $$CEF_SRC_PATH/include/cef_extension_handler.h \
+    $$CEF_SRC_PATH/include/capi/cef_extension_capi.h \
+    $$CEF_SRC_PATH/include/capi/cef_extension_handler_capi.h
+
+HEADERS += \
+    $$CEF_SRC_PATH/libcef_dll/cpptoc/extension_handler_cpptoc.h \
+    $$CEF_SRC_PATH/libcef_dll/ctocpp/extension_ctocpp.h \
+    $$CEF_SRC_PATH/libcef_dll/ctocpp/get_extension_resource_callback_ctocpp.h \
+    $$CEF_SRC_PATH/libcef_dll/ctocpp/views/menu_button_pressed_lock_ctocpp.h
+
+SOURCES += \
+    $$CEF_SRC_PATH/libcef_dll/cpptoc/extension_handler_cpptoc.cc \
+    $$CEF_SRC_PATH/libcef_dll/ctocpp/extension_ctocpp.cc \
+    $$CEF_SRC_PATH/libcef_dll/ctocpp/get_extension_resource_callback_ctocpp.cc \
+    $$CEF_SRC_PATH/libcef_dll/ctocpp/views/menu_button_pressed_lock_ctocpp.cc
+
+HEADERS += \
+    $$CEF_SRC_PATH/tests/cefclient/browser/image_cache.h
+
+SOURCES += \
+    $$CEF_SRC_PATH/tests/cefclient/browser/image_cache.cc
+
+HEADERS += \
+    $$CEF_SRC_PATH/tests/shared/browser/file_util.h \
+    $$CEF_SRC_PATH/tests/shared/browser/extension_util.h
+
+SOURCES += \
+    $$CEF_SRC_PATH/tests/shared/browser/file_util.cc \
+    $$CEF_SRC_PATH/tests/shared/browser/extension_util.cc
+
+}
+
 

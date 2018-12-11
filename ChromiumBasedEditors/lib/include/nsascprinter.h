@@ -336,6 +336,11 @@ public:
         nW = m_oInfo.m_nPaperWidth - m_oInfo.m_nMarginLeft - m_oInfo.m_nMarginRight;
         nH = m_oInfo.m_nPaperHeight - m_oInfo.m_nMarginTop - m_oInfo.m_nMarginBottom;
     }
+    
+    static void releasePixels(void *info, const void *data, size_t size)
+    {
+        delete ((unsigned char*)data);
+    }
 
     virtual void BitBlt(unsigned char* pBGRA, const int& nRasterX, const int& nRasterY, const int& nRasterW, const int& nRasterH,
                         const double& x, const double& y, const double& w, const double& h, const double& dAngle)
@@ -343,14 +348,11 @@ public:
         
         
         CGColorSpaceRef cs = CGColorSpaceCreateDeviceRGB();
-        CGDataProviderRef pDataProvider = CGDataProviderCreateWithData(NULL, pBGRA, 4 * nRasterW * nRasterH, NULL);
+        CGDataProviderRef pDataProvider = CGDataProviderCreateWithData(NULL, pBGRA, 4 * nRasterW * nRasterH, releasePixels);
         
         CGImageRef pCgImage = CGImageCreate(nRasterW, nRasterH, 8, 32, 4 * nRasterW, cs,
                                             kCGImageAlphaPremultipliedLast, pDataProvider,
                                             NULL, false, kCGRenderingIntentAbsoluteColorimetric);
-        
-        CGColorSpaceRelease(cs);
-        CGDataProviderRelease(pDataProvider);
         
         // здесь никаких поворотов - разруливаем все раньше
         CGFloat fX = (CGFloat)((x + m_oInfo.m_nMarginLeft) * m_oInfo.m_nPaperWidthOrigin / m_oInfo.m_nPaperWidth);
@@ -376,10 +378,12 @@ public:
         
         CGRect _rect = NSMakeRect(fX, fY, fW, fH);
         CGContextDrawImage(_context, _rect, pCgImage);
-            
+        CGImageRelease(pCgImage);
+        
         CGContextRestoreGState(_context);
         
-        CGImageRelease(pCgImage);
+        CGColorSpaceRelease(cs);
+        CGDataProviderRelease(pDataProvider);
     }
 };
 
