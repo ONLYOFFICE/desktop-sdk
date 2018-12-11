@@ -55,8 +55,10 @@
 
 static int IsForceDpiRound()
 {
+#ifndef MAC_NO_MAIN_PROCESS
     if (NULL != CAscApplicationManager::GetDpiChecker())
         return 1;
+#endif
 
 #ifdef WIN32
 #if 1

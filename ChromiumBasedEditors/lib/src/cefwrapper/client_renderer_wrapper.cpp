@@ -2469,7 +2469,7 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
             if (sSP.empty())
             {
 #ifdef _MAC
-                sSP = NSFile::GetProcessDirectory() + L"/../../../Resources/editors/sdkjs-plugins";
+                sSP = NSFile::GetProcessDirectory() + L"/../../../../Resources/editors/sdkjs-plugins";
 #else
                 sSP = NSFile::GetProcessDirectory() + L"/editors/sdkjs-plugins";
 #endif
