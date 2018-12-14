@@ -103,12 +103,9 @@ void CPrintData::Print_End()
 
 std::wstring CPrintData::DownloadImage(const std::wstring& strFile)
 {
-    CFileDownloader oDownloader(strFile, false);
-    oDownloader.Start( 0 );
-    while ( oDownloader.IsRunned() )
-    {
-        NSThreads::Sleep( 10 );
-    }
+    CFileDownloaderWrapper oDownloader(strFile, L"");
+    oDownloader.DownloadSync();
+
     std::wstring strFileName;
     if ( oDownloader.IsFileDownloaded() )
     {

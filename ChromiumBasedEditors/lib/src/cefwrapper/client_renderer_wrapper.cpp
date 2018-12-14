@@ -2615,13 +2615,8 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
             if (NSFile::CFileBinary::Exists(sTmpFile))
                 NSFile::CFileBinary::Remove(sTmpFile);
 
-            CFileDownloader oDownloader(sUrl, false);
-            oDownloader.SetFilePath(sTmpFile);
-            oDownloader.Start( 0 );
-            while ( oDownloader.IsRunned() )
-            {
-                NSThreads::Sleep( 10 );
-            }
+            CFileDownloaderWrapper oDownloader(sUrl, sTmpFile);
+            oDownloader.DownloadSync();
 
             std::wstring sRet = GetLocalImageUrlLocal(sTmpFile, sUrl);
 
