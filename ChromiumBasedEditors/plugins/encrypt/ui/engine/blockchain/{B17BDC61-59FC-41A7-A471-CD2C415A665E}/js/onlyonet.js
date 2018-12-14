@@ -154,7 +154,7 @@ return {
                 to: _contractAddress
             };
 
-            if (prevNonce == txOptions.nonce)
+            if (index > 0 && prevNonce == txOptions.nonce)
                 txOptions.nonce++;
 
             prevNonce = txOptions.nonce;
