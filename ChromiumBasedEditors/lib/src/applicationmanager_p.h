@@ -68,6 +68,157 @@
 #include "crypto_mode.h"
 #include "plugins.h"
 
+#if defined(_LINUX) && !defined(_MAC)
+#include <unistd.h>
+#include <sys/wait.h>
+#endif
+
+class CFileDownloaderWrapper
+{
+private:
+    std::wstring m_sUrl;
+    std::wstring m_sOutput;
+    bool m_bIsDownloaded;
+
+#if defined(_LINUX) && !defined(_MAC)
+    int DownloadExternal(const std::wstring& sUrl, const std::wstring& sOutput)
+    {
+        int nReturnCode = -1;
+
+        std::string sUrlA = U_TO_UTF8(sUrl);
+        //sUrlA =("\"" + sUrlA + "\"");
+        std::string sOutputA = U_TO_UTF8(sOutput);
+        //sOutputA =("\"" + sOutputA + "\"");
+
+        if (0 != nReturnCode)
+        {
+            pid_t pid = fork(); // create child process
+            int status;
+
+            switch (pid)
+            {
+            case -1: // error
+                break;
+
+            case 0: // child process
+            {
+                const char* nargs[6];
+                nargs[0] = "/usr/bin/curl";
+                nargs[1] = sUrlA.c_str();
+                nargs[2] = "--output";
+                nargs[3] = sOutputA.c_str();
+                nargs[4] = "--silent";
+                nargs[5] = NULL;
+
+                const char* nenv[3];
+                nenv[0] = "LD_PRELOAD=";
+                nenv[1] = "LD_LIBRARY_PATH=";
+                nenv[2] = NULL;
+
+                execve("/usr/bin/curl", (char * const *)nargs, (char * const *)nenv);
+                exit(EXIT_SUCCESS);
+                break;
+            }
+            default: // parent process, pid now contains the child pid
+                while (-1 == waitpid(pid, &status, 0)); // wait for child to complete
+                if (WIFEXITED(status))
+                {
+                    nReturnCode =  WEXITSTATUS(status);
+                }
+                break;
+            }
+        }
+
+        if (0 != nReturnCode)
+        {
+            pid_t pid = fork(); // create child process
+            int status;
+
+            switch (pid)
+            {
+            case -1: // error
+                break;
+
+            case 0: // child process
+            {
+                const char* nargs[6];
+                nargs[0] = "/usr/bin/wget";
+                nargs[1] = sUrlA.c_str();
+                nargs[2] = "-O";
+                nargs[3] = sOutputA.c_str();
+                nargs[4] = "-q";
+                nargs[5] = NULL;
+
+                const char* nenv[2];
+                nenv[0] = "LD_PRELOAD=";
+                nenv[1] = NULL;
+
+                execve("/usr/bin/wget", (char * const *)nargs, (char * const *)nenv);
+                exit(EXIT_SUCCESS);
+                break;
+            }
+            default: // parent process, pid now contains the child pid
+                while (-1 == waitpid(pid, &status, 0)); // wait for child to complete
+                if (WIFEXITED(status))
+                {
+                    nReturnCode =  WEXITSTATUS(status);
+                }
+                break;
+            }
+        }
+
+        return nReturnCode;
+    }
+#endif
+
+public:
+    CFileDownloaderWrapper(const std::wstring& sUrl, const std::wstring& sOutput)
+    {
+        m_sUrl = sUrl;
+        m_sOutput = sOutput;
+
+        if (m_sOutput.empty())
+        {
+            m_sOutput = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"DW");
+            if (NSFile::CFileBinary::Exists(m_sOutput))
+                NSFile::CFileBinary::Remove(m_sOutput);
+        }
+
+        m_bIsDownloaded = false;
+    }
+
+    int DownloadSync()
+    {
+#if defined(_LINUX) && !defined(_MAC)
+        int nRet = DownloadExternal(m_sUrl, m_sOutput);
+        if (0 == nRet)
+        {
+            m_bIsDownloaded = true;
+            return 0;
+        }
+#endif
+
+        CFileDownloader oDownloader(m_sUrl, false);
+        oDownloader.SetFilePath(m_sOutput);
+        oDownloader.Start( 0 );
+        while ( oDownloader.IsRunned() )
+        {
+            NSThreads::Sleep( 10 );
+        }
+        m_bIsDownloaded = oDownloader.IsFileDownloaded();
+        return 0;
+    }
+
+    bool IsFileDownloaded()
+    {
+        return m_bIsDownloaded;
+    }
+    std::wstring GetFilePath()
+    {
+        return m_sOutput;
+    }
+};
+
 class CSystemVariablesMemory
 {
 private:
