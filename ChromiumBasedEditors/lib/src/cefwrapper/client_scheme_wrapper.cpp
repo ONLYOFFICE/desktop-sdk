@@ -190,12 +190,16 @@ public:
 
             std::wstring sFile = cefFile.ToWString().substr(28);
 
+            std::wstring::size_type posSearch = sFile.find(L"?lang=");
+            if (std::wstring::npos != posSearch)
+                sFile = sFile.substr(0, posSearch);
+
             if (0 == sFile.find(L"file:///"))
             {
                 sFile = sFile.substr(7);
                 if (!NSFile::CFileBinary::Exists(sFile))
                     sFile = sFile.substr(1);
-            }
+            }                        
 
             DWORD dwSize = 0;
             NSFile::CFileBinary::ReadAllBytes(sFile, &data_binary_, dwSize);
