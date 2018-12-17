@@ -1,12 +1,22 @@
 {
-    "name" : "Manage Plugins",
+    "name" : "Settings",
+	"nameLocale": {
+        "ru": "Настройки",
+        "fr": "Paramètres",
+        "es": "Ajustes"
+    },
     "guid" : "asc.{8D67F3C5-7736-4BAE-A0F2-8C7127DC4BB8}",
 	
 	"group" : { "name": "Manager", "rank": 1 },
 
     "variations" : [
         {
-            "description" : "Manage Plugins",
+            "description" : "Settings",
+			"descriptionLocale": {
+				"ru": "Настройки",
+				"fr": "Paramètres",
+				"es": "Ajustes"
+			},
             "url"         : "index.html",
 
             "icons"           : ["icon.png", "icon@2x.png", "icon2.png", "icon2@2x.png"],
