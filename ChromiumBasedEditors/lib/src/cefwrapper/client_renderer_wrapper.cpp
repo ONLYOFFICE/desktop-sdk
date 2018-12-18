@@ -493,6 +493,10 @@ else \n\
                 if (m_sVersion.empty())
                     m_sVersion = "undefined";
 
+                CefRefPtr<CefProcessMessage> messageVersion = CefProcessMessage::Create("set_editors_version");
+                messageVersion->GetArgumentList()->SetString(0, m_sVersion);
+                browser->SendProcessMessage(PID_BROWSER, messageVersion);
+
                 CefRefPtr<CefV8Value> retval2;
                 CefRefPtr<CefV8Exception> exception2;
 
@@ -4129,6 +4133,15 @@ delete window[\"crypto_images_map\"][_url];\n\
       if (_frame)
       {
           _frame->ExecuteJavaScript("(function() { window.CryptoDownloadAsEnd(); })();", _frame->GetURL(), 0);
+      }
+      return true;
+    }
+    else if (sMessageName == "set_editors_version_no_crypto")
+    {
+      CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
+      if (_frame)
+      {
+          _frame->ExecuteJavaScript("(function() { window.AscDesktopEditor.CryptoMode = 0; })();", _frame->GetURL(), 0);
       }
       return true;
     }
