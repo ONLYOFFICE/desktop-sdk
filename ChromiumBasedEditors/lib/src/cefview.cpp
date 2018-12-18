@@ -68,6 +68,8 @@
 
 #include "./cefwrapper/client_scheme.h"
 
+#define CRYPTO_CLOUD_SUPPORT 5020400
+
 #ifdef _MAC
 #include <math.h>
 #endif
@@ -483,6 +485,10 @@ public:
     std::string m_sCryptoDownloadAsParams;
     CSimpleConverter m_oSimpleX2tConverter;
 
+    std::string m_sCloudVersion;
+    int m_nCloudVersion;
+    bool m_bCloudVersionSendSupportCrypto;
+
 public:
     class CSystemMessage
     {
@@ -578,6 +584,9 @@ public:
         m_nCryptoDownloadAsFormat = -1;
 
         m_bIsOnSaveInCryptoMode = false;
+
+        m_nCloudVersion = CRYPTO_CLOUD_SUPPORT;
+        m_bCloudVersionSendSupportCrypto = false;
     }
 
     void Destroy()
@@ -2961,6 +2970,64 @@ public:
 
             return true;
         }
+        else if (message_name == "set_editors_version")
+        {
+            std::string sCloudVersion = message->GetArgumentList()->GetString(0);
+            m_pParent->m_pInternal->m_sCloudVersion = sCloudVersion;
+            if ("undefined" == sCloudVersion)
+                return true;
+
+            int nCount = 3;
+            int nValue = 0;
+            std::string::size_type pos = sCloudVersion.find(".");
+            while (nCount > 0 && pos != std::string::npos)
+            {
+                std::string sTmp = sCloudVersion.substr(0, pos);
+                int nTmp = 0;
+
+                try
+                {
+                    nTmp = std::stoi(sTmp);
+                }
+                catch (...)
+                {
+                    nTmp = 0;
+                }
+
+                for (int i = 0; i < nCount; i++)
+                    nTmp *= 100;
+
+                nValue += nTmp;
+
+                --nCount;
+
+                if (sCloudVersion.length() == pos)
+                    break;
+
+                sCloudVersion = sCloudVersion.substr(pos + 1);
+                pos = sCloudVersion.find(".");
+                if (pos == std::string::npos && sCloudVersion.length() != 0)
+                    pos = sCloudVersion.length();
+            }
+
+            m_pParent->m_pInternal->m_nCloudVersion = nValue;
+
+            std::wstring sMainFrameUrl = L"file://";
+            if (browser->GetMainFrame())
+                sMainFrameUrl = browser->GetMainFrame()->GetURL();
+
+            bool bIsCryptoSupport = true;
+            if (m_pParent->m_pInternal->m_bIsExternalCloud)
+            {
+                bIsCryptoSupport = m_pParent->m_pInternal->m_oExternalCloud.crypto_support;
+            }
+            if (bIsCryptoSupport && NSFileDownloader::IsNeedDownload(sMainFrameUrl) && m_pParent->m_pInternal->m_nCloudVersion < CRYPTO_CLOUD_SUPPORT)
+            {
+                CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("set_editors_version_no_crypto");
+                browser->SendProcessMessage(PID_RENDERER, message);
+            }
+            return true;
+        }
 
         CAscApplicationManager_Private* pInternalMan = m_pParent->GetAppManager()->m_pInternal;
         if (pInternalMan->m_pAdditional && pInternalMan->m_pAdditional->OnProcessMessageReceived(browser, source_process, message))
@@ -3060,8 +3127,20 @@ public:
             bIsCryptoSupport = m_pParent->m_pInternal->m_oExternalCloud.crypto_support;
         }
 
+        std::wstring sMainFrameUrl = L"file://";
+        if (browser && browser->GetMainFrame())
+            sMainFrameUrl = browser->GetMainFrame()->GetURL();
+
         if (frame && bIsCryptoSupport)
-            m_pParent->GetAppManager()->m_pInternal->SendCryptoData(frame);
+        {
+            if (!NSFileDownloader::IsNeedDownload(sMainFrameUrl))
+                m_pParent->GetAppManager()->m_pInternal->SendCryptoData(frame);
+            else if (m_pParent->m_pInternal->m_nCloudVersion >= CRYPTO_CLOUD_SUPPORT)
+            {
+                m_pParent->m_pInternal->m_bCloudVersionSendSupportCrypto = true;
+                m_pParent->GetAppManager()->m_pInternal->SendCryptoData(frame);
+            }
+        }
 
         if (frame->IsMain())
         {
