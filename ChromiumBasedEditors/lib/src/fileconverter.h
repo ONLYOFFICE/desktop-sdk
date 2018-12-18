@@ -994,8 +994,8 @@ public:
         int nDoctRendererParam = 0;
         if (m_bIsRetina)
             nDoctRendererParam |= 0x01;
-        //if (true) // печать пдф (лист = страница)
-        //    nDoctRendererParam |= 0x02;
+        if (true) // печать пдф (лист = страница)
+            nDoctRendererParam |= 0x02;
 
         nDoctRendererParam |= 0x04; // disable fast doctrenderer (no rights to dump common information)
 
