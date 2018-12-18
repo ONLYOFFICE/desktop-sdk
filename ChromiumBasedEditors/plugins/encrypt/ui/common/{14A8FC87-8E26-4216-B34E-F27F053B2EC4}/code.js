@@ -167,7 +167,7 @@
 				}
 				else
 				{
-					this.executeMethodSync("EndAction", ["Block", this.message]);
+					this.executeMethodSync("EndAction", ["Block", this.message, e.error]);
 				}				
 				break;
 			}
