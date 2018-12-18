@@ -20,6 +20,28 @@ function addPlugin()
 	});
 };
 
+(function() {
+	if (window.location && window.location.search)
+	{
+		var _langSearch = window.location.search;
+		var _pos1 = _langSearch.indexOf("lang=");
+		var _pos2 = (-1 != _pos1) ? _langSearch.indexOf("&", _pos1) : -1;
+		if (_pos1 >= 0)
+		{
+			_pos1 += 5;
+
+			if (_pos2 < 0)
+				_pos2 = _langSearch.length;
+
+			var _lang = _langSearch.substr(_pos1, _pos2 - _pos1);
+			if (_lang.length >= 2)
+			{
+				window.language = _lang.substr(0, 2);
+			}
+		}
+	}
+})();
+
 document.getElementById("button_add").onclick = function() {
     addPlugin();
 };
@@ -148,10 +170,19 @@ function updateList()
             iconSrc = url + iconSrc;
         if (!iconSrc)
             iconSrc = (window.devicePixelRatio >= 2) ? "defaulticon2@2x.png" : "defaulticon2.png";
+		
+		 
 
         let item = "<li><a class=\"item\">";
         item += ("<img class=\"icon\" src=\"" + iconSrc + "\"></img>");
-        item += ("<span class=\"defaultlable\" style=\"flex-grow: 1;margin-left: 10px; line-height: 20px;\">" + EditorPlugins.pluginsData[i].name + "</span>");
+		
+		var _namePlugin = EditorPlugins.pluginsData[i].name;
+		if (window.language && EditorPlugins.pluginsData[i].nameLocale && EditorPlugins.pluginsData[i].nameLocale[window.language])
+		{
+			_namePlugin = EditorPlugins.pluginsData[i].nameLocale[window.language];
+		}
+		
+        item += ("<span class=\"defaultlable\" style=\"flex-grow: 1;margin-left: 10px; line-height: 20px;\">" + _namePlugin + "</span>");
 
         let classRemove = (window.devicePixelRatio >= 2) ? "del2" : "del";
         if (!EditorPlugins.pluginsData[i].isSystemInstall)
@@ -257,5 +288,22 @@ function updateList()
 			document.dispatchEvent(mouseUpEvent);
 		}
     };
+	
+	window.Asc.plugin.onTranslate = function(){
+		window.language = window.Asc.plugin.info.lang;
+		if (window.language && window.language.length >= 2)
+		{
+			window.language = window.language.substr(0, 2);
+			updateList();
+		}
+		else
+		{
+			window.language = undefined;
+		}
+		
+		document.getElementById("l1").innerHTML = window.Asc.plugin.tr("Please see the <a href=\"https://api.onlyoffice.com/plugin/basic\" target=\"_blank\">Help</a> to find out what the plugin contents must be and how it is added to the editors.");
+		document.getElementById("button_add").innerHTML = window.Asc.plugin.tr("Add plugin");
+		document.getElementById("l2").innerHTML = window.Asc.plugin.tr("Installed plugins");
+	};
 
 })(window, undefined);
