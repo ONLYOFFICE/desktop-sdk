@@ -7,6 +7,7 @@ ONLYONET.Resources = {
     "box-blockchain-connect-description-line2": "ONLYOFFICE использует алгоритм шифрования AES-256 для защиты файлов и блокчейн-технологии с асимметричным шифрованием для надежного хранения и передачи паролей.", 
     "box-blockchain-connect-btn-read": "Подробнее о принципах работы", 
     "box-blockchain-connect-description-line3": "Чтобы начать, <strong>создайте блокчейн-аккаунт</strong> в нашей сети, основанной на Parity с алгоритмом консенсуса Proof-of-Authority.", 
+    "box-blockchain-connect-description-line4": "Внимание! Эта сеть создана только в демонстрационных целях. Пожалуйста, НЕ используйте ее для шифрования конфиденциальных документов.",
     "box-blockchain-connect-btn-create": "Создать аккаунт", 
     "box-blockchain-connect-btn-cancel": "У меня уже есть аккаунт", 
     "box-blockchain-connect-description":"Сквозное шифрование включено. Ваши DOCX, XLSX, PPTX, ODT, ODS, ODP и PDF будут зашифрованы. Теперь вы можете абсолютно безопасно открывать, создавать, редактировать файлы и работать над ними совместно.",

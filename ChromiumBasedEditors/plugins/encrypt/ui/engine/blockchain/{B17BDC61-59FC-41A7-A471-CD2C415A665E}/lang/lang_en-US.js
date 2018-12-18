@@ -7,6 +7,7 @@ ONLYONET.Resources = {
     "box-blockchain-connect-description-line2": "ONLYOFFICE uses AES-256 to encrypt your files and a  blockchain technology with asymmetric encryption for reliable password storing and transferring.",
     "box-blockchain-connect-btn-read": "Read how it works",
     "box-blockchain-connect-description-line3": "To start, <strong>create a blockchain account</strong> in our network based on Parity with support for a Proof-of-Authority consensus engine.",
+    "box-blockchain-connect-description-line4": "Warning! This network was created for demonstration purposes only. Please, do NOT use it to encrypt your sensitive documents.",
     "box-blockchain-connect-btn-create": "Create an account",
     "box-blockchain-connect-btn-cancel": "I already have an account",
     "box-blockchain-connect-description":"The end-to-end encryption mode is enabled. All your DOCX, XLSX, PPTX, ODT, ODS, ODP and PDF files will be encrypted. Open, create, edit and co-edit documents privately and securely.",
