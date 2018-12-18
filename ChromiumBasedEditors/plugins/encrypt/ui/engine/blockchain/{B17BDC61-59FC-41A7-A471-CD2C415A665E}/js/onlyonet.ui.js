@@ -146,7 +146,7 @@ ONLYONET.UI = (function() {
             var lang = _getUrlVars()["lang"];         
             
             if (typeof lang == 'undefined')
-                lang = "en";
+                lang = "en-US";
 
             const successLoadLangScript = function() {
                                                 for (var key in ONLYONET.Resources){
@@ -154,7 +154,7 @@ ONLYONET.UI = (function() {
                                                 }};              
 
             if (typeof ONLYONET.Resources == 'undefined') $.loadScript('./lang/lang_' + lang + '.js',successLoadLangScript);
-            if (typeof ONLYONET.Resources == 'undefined') $.loadScript('./lang/lang_en.js', successLoadLangScript);
+            if (typeof ONLYONET.Resources == 'undefined') $.loadScript('./lang/lang_en-US.js', successLoadLangScript);
 
             $("#box-blockchain-info-btn-refresh").attr("alt", ONLYONET.Resources["box-blockchain-info-btn-refresh"]);
             $("#box-blockchain-info-btn-refresh").attr("title", ONLYONET.Resources["box-blockchain-info-btn-refresh"]);

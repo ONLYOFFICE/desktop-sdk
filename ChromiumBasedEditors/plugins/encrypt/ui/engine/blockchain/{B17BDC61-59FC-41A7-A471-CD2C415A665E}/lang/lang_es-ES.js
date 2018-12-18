@@ -5,6 +5,7 @@ ONLYONET.Resources = {
   "info-box-on": "<strong>El modo de encriptación punto a punto está ACTIVADO.</strong> Para desactivarlo, usted debe cerrar todas las sesiones de edición activas.",
   "box-blockchain-connect-description-line1": "Mantenga sus archivos DOCX, XLSX, PPTX, ODT, ODS, ODP y PDF siempre encriptados y privados. Edite y colabore en sus documentos de forma segura.",
   "box-blockchain-connect-description-line2": "ONLYOFFICE utiliza AES-256 para encriptar sus archivos y tecnología blockchain con encriptación asimétrica para el almacenamiento y transferencia confiable de contraseñas.",
+  "box-blockchain-connect-description-line4": "¡Advertencia! Esta red fue creada sólo para fines de demostración. Por favor, NO la utilice para cifrar los documentos confidenciales.",
   "box-blockchain-connect-btn-read": "Lea cómo funciona",
   "box-blockchain-connect-description-line3": "Para empezar, <strong>cree una cuenta blockchain</strong> en nuestra red basada en Paridad con motor de Prueba de Autoridad.",
   "box-blockchain-connect-btn-create": "Crear una cuenta",
