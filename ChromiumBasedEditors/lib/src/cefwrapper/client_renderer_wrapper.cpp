@@ -2251,6 +2251,14 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
         }
         else if (name == "buildCryptedStart")
         {
+            if (arguments.size() == 0)
+            {
+                CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+                CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("build_crypted");
+                browser->SendProcessMessage(PID_BROWSER, message);
+                return true;
+            }
+
             std::string sContent = arguments[0]->GetStringValue().ToString();
             BYTE* pDataDst = NULL;
             int nLenDst = 0;
