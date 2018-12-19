@@ -8,6 +8,7 @@ body {
     color: #444;
     padding: 40px;
     user-select: none;
+    cursor: default;
 }
 
 textarea, input, button, select { font-family: inherit; font-size: inherit; }
