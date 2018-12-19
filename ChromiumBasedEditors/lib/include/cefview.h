@@ -150,6 +150,7 @@ public:
     bool OpenReporter(const std::wstring& sFolder);
 
     bool CheckCloudCryptoNeedBuild();
+    bool IsBuilding();
 
     std::wstring GetLocalFilePath();
 };

@@ -489,6 +489,8 @@ public:
     int m_nCloudVersion;
     bool m_bCloudVersionSendSupportCrypto;
 
+    bool m_bIsBuilding;
+
 public:
     class CSystemMessage
     {
@@ -587,6 +589,8 @@ public:
 
         m_nCloudVersion = CRYPTO_CLOUD_SUPPORT;
         m_bCloudVersionSendSupportCrypto = false;
+
+        m_bIsBuilding = false;
     }
 
     void Destroy()
@@ -1816,11 +1820,9 @@ public:
         {
             if (m_pParent && m_pParent->GetAppManager()->GetEventListener())
             {
-                NSEditorApi::CAscCefMenuEvent* pEvent = new NSEditorApi::CAscCefMenuEvent();
-                pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_MODIFY_CHANGED;
-                pEvent->put_SenderId(m_pParent->GetId());
-
                 bool bValue = message->GetArgumentList()->GetBool(0);
+                m_pParent->m_pInternal->m_bIsReceiveOnce_OnDocumentModified = true;
+                m_pParent->SetModified(bValue);
                 /*
                 if (!m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir.empty())
                 {
@@ -1833,13 +1835,15 @@ public:
                 }
                 */
 
+                NSEditorApi::CAscCefMenuEvent* pEvent = new NSEditorApi::CAscCefMenuEvent();
+                pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_MODIFY_CHANGED;
+                pEvent->put_SenderId(m_pParent->GetId());
+
                 NSEditorApi::CAscDocumentModifyChanged* pData = new NSEditorApi::CAscDocumentModifyChanged();
                 pData->put_Id(m_pParent->GetId());
                 pData->put_Changed(bValue);
                 pEvent->m_pData = pData;
 
-                m_pParent->m_pInternal->m_bIsReceiveOnce_OnDocumentModified = true;
-                m_pParent->SetModified(bValue);
                 m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
             }
             return true;
@@ -2779,6 +2783,10 @@ public:
         }
         else if (message_name == "build_crypted")
         {
+            m_pParent->m_pInternal->m_bIsBuilding = true;
+            if (0 == message->GetArgumentList()->GetSize())
+                return true;
+
             std::wstring sPass = message->GetArgumentList()->GetString(0).ToWString();
             std::wstring sDocInfo = message->GetArgumentList()->GetString(1).ToWString();
 
@@ -2799,6 +2807,8 @@ public:
         }
         else if (message_name == "build_crypted_end")
         {
+            m_pParent->m_pInternal->m_bIsBuilding = false;
+
             if (m_pParent && m_pParent->GetAppManager()->GetEventListener())
             {
                 bool bIsClose = message->GetArgumentList()->GetBool(0);
@@ -6050,6 +6060,11 @@ bool CCefViewEditor::CheckCloudCryptoNeedBuild()
     CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("is_need_build_crypted_file");
     m_pInternal->SendProcessMessage(PID_RENDERER, message);
     return true;
+}
+
+bool CCefViewEditor::IsBuilding()
+{
+    return m_pInternal->m_bIsBuilding;
 }
 
 std::wstring CCefViewEditor::GetLocalFilePath()
