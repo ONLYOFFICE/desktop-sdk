@@ -68,7 +68,7 @@
 
 #include "./cefwrapper/client_scheme.h"
 
-#define CRYPTO_CLOUD_SUPPORT 5020400
+#define CRYPTO_CLOUD_SUPPORT 5020300
 
 #ifdef _MAC
 #include <math.h>
