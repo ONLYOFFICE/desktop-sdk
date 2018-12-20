@@ -6064,7 +6064,14 @@ bool CCefViewEditor::CheckCloudCryptoNeedBuild()
 
 bool CCefViewEditor::IsBuilding()
 {
-    return m_pInternal->m_bIsBuilding;
+    if (m_pInternal->m_bIsBuilding)
+        return true;
+
+    // вставляем сюда и сохранение
+    if (m_pInternal->m_oConverterFromEditor.IsRunned())
+        return true;
+
+    return false;
 }
 
 std::wstring CCefViewEditor::GetLocalFilePath()
