@@ -90,7 +90,7 @@ private:
         std::string sOutputA = U_TO_UTF8(sOutput);
         //sOutputA =("\"" + sOutputA + "\"");
 
-        if (0 != nReturnCode)
+        if (0 != nReturnCode && NSFile::CFileBinary::Exists(L"/usr/bin/curl"))
         {
             pid_t pid = fork(); // create child process
             int status;
@@ -129,7 +129,7 @@ private:
             }
         }
 
-        if (0 != nReturnCode)
+        if (0 != nReturnCode && NSFile::CFileBinary::Exists(L"/usr/bin/wget"))
         {
             pid_t pid = fork(); // create child process
             int status;
@@ -165,6 +165,12 @@ private:
                 }
                 break;
             }
+        }
+
+        if (0 == nReturnCode)
+        {
+            if (!NSFile::CFileBinary::Exists(sOutput))
+                nReturnCode = -1;
         }
 
         return nReturnCode;
