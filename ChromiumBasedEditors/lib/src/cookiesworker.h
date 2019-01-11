@@ -118,10 +118,13 @@ public:
     virtual bool Visit(const CefCookie& cookie, int count, int total, bool& deleteCookie)
     {
         std::string sDomain = CefString(&cookie.domain).ToString();
+        std::string sDomainPath = CefString(&cookie.path).ToString();
+        std::string sDomainWithPath = sDomain + sDomainPath;
 
         if (m_arDomains.size() == 0)
         {
-            if (sDomain.find(m_sDomain) != std::string::npos)
+            if (sDomain.find(m_sDomain) != std::string::npos ||
+                sDomainWithPath.find(m_sDomain) != std::string::npos)
             {
                 std::string sName = CefString(&cookie.name).ToString();
                 std::string sValue = CefString(&cookie.value).ToString();
@@ -146,7 +149,8 @@ public:
                 for (std::vector<std::string>::iterator i = m_arDomains.begin(); i != m_arDomains.end(); i++)
                 {
                     std::string sDomainFind = *i;
-                    if (sDomain.find(sDomainFind) != std::string::npos)
+                    if (sDomain.find(sDomainFind) != std::string::npos ||
+                        sDomainWithPath.find(sDomainFind) != std::string::npos)
                     {
                         m_mapFinds.insert(std::pair<std::string, std::string>(sDomainFind, sValue));
 
