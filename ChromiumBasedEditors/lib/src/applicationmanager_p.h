@@ -872,6 +872,9 @@ public:
         std::string::size_type pos = pVisitor->m_sDomain.find("?");
         if (pos != std::string::npos)
             pVisitor->m_sDomain = pVisitor->m_sDomain.substr(0, pos);
+        pos = pVisitor->m_sDomain.rfind("/");
+        if ((pos != std::string::npos) && ((pos + 1) == pVisitor->m_sDomain.length()))
+            pVisitor->m_sDomain = pVisitor->m_sDomain.substr(0, pos);
 
         pVisitor->CheckCookiePresent(CefCookieManager::GetGlobalManager(NULL));
     }
