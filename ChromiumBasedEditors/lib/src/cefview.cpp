@@ -1811,6 +1811,8 @@ public:
             pVisitor->m_sPath           = message->GetArgumentList()->GetString(2).ToString();
             pVisitor->m_sCookieKey      = message->GetArgumentList()->GetString(3).ToString();
             pVisitor->m_sCookieValue    = message->GetArgumentList()->GetString(4).ToString();
+            
+            pVisitor->Correct();
 
             pVisitor->SetCookie(CefCookieManager::GetGlobalManager(NULL));
 

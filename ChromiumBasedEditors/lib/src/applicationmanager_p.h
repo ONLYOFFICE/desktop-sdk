@@ -868,6 +868,10 @@ public:
             pVisitor->m_sDomain = pVisitor->m_sDomain.substr(8);
         else if (0 == pVisitor->m_sDomain.find("http://"))
             pVisitor->m_sDomain = pVisitor->m_sDomain.substr(7);
+        
+        std::string::size_type pos = pVisitor->m_sDomain.find("?");
+        if (pos != std::string::npos)
+            pVisitor->m_sDomain = pVisitor->m_sDomain.substr(0, pos);
 
         pVisitor->CheckCookiePresent(CefCookieManager::GetGlobalManager(NULL));
     }

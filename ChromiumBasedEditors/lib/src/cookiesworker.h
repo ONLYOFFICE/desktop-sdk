@@ -207,6 +207,21 @@ public:
     {
         CefCookieManager::GetGlobalManager(NULL)->FlushStore(NULL);
     }
+    
+    void Correct()
+    {
+        std::string::size_type pos = m_sUrl.find("?");
+        if (pos != std::string::npos)
+            m_sUrl = m_sUrl.substr(0, pos);
+        
+        pos = m_sDomain.find("?");
+        if (pos != std::string::npos)
+            m_sDomain = m_sDomain.substr(0, pos);
+        
+        pos = m_sPath.find("?");
+        if (pos != std::string::npos)
+            m_sPath = m_sPath.substr(0, pos);
+    }
 
     void SetCookie(CefRefPtr<CefCookieManager> manager)
     {
