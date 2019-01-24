@@ -54,6 +54,7 @@
 
 #include "../../src/additional/renderer.h"
 #include "../crypto_mode.h"
+#include "../../../../../core/DesktopEditor/common/CalculatorCRC32.h"
 
 namespace NSCommon
 {
@@ -289,6 +290,9 @@ public:
 
     int                 m_nLocalImagesNextIndex;
     std::map<std::wstring, std::wstring> m_mapLocalAddImages;
+
+    CCalculatorCRC32 m_oCRC32;
+    std::map<unsigned int, std::wstring> m_mapLocalAddImagesCRC;
 
     NSFonts::IApplicationFonts* m_pLocalApplicationFonts;
 
@@ -2579,10 +2583,10 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
 
     bool IsNeedDownload(const std::wstring& FilePath)
     {
-        int n1 = FilePath.find(L"www.");
-        int n2 = FilePath.find(L"http://");
-        int n3 = FilePath.find(L"ftp://");
-        int n4 = FilePath.find(L"https://");
+        std::wstring::size_type n1 = FilePath.find(L"www.");
+        std::wstring::size_type n2 = FilePath.find(L"http://");
+        std::wstring::size_type n3 = FilePath.find(L"ftp://");
+        std::wstring::size_type n4 = FilePath.find(L"https://");
 
         if (n1 != std::wstring::npos && n1 < 10)
             return true;
@@ -2598,10 +2602,6 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
 
     std::wstring GetLocalImageUrl(const std::wstring& sUrl)
     {
-        std::map<std::wstring, std::wstring>::iterator _find = m_mapLocalAddImages.find(sUrl);
-        if (_find != m_mapLocalAddImages.end())
-            return _find->second;
-
         std::wstring sUrlFile = sUrl;
         if (sUrlFile.find(L"file://") == 0)
         {
@@ -2619,8 +2619,27 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
 
         if (NSFile::CFileBinary::Exists(sUrlFile))
         {
-            return GetLocalImageUrlLocal(sUrlFile, sUrl);
+            BYTE* pLocalFileData = NULL;
+            DWORD dwLocalFileSize = 0;
+            unsigned int nCRC32 = 0;
+            if (NSFile::CFileBinary::ReadAllBytes(sUrlFile, &pLocalFileData, dwLocalFileSize))
+            {
+                nCRC32 = m_oCRC32.Calc(pLocalFileData, (unsigned int)dwLocalFileSize);
+                RELEASEARRAYOBJECTS(pLocalFileData);
+
+                std::map<unsigned int, std::wstring>::iterator _findCRC32 = m_mapLocalAddImagesCRC.find(nCRC32);
+
+                if (_findCRC32 != m_mapLocalAddImagesCRC.end())
+                    return _findCRC32->second;
+            }
+
+            return GetLocalImageUrlLocal(sUrlFile, sUrl, nCRC32);
         }
+
+        std::map<std::wstring, std::wstring>::iterator _find = m_mapLocalAddImages.find(sUrl);
+        if (_find != m_mapLocalAddImages.end())
+            return _find->second;
+
         if (IsNeedDownload(sUrl))
         {
             std::wstring sTmpFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"IMG");
@@ -2680,7 +2699,7 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
             return sUrl;
         return L"error";
     }
-    std::wstring GetLocalImageUrlLocal(const std::wstring& sUrl, const std::wstring& sUrlMap)
+    std::wstring GetLocalImageUrlLocal(const std::wstring& sUrl, const std::wstring& sUrlMap, unsigned int nCRC32 = 0)
     {
         std::wstring sUrlTmp = sUrl;
         CImageFileFormatChecker oChecker;
@@ -2692,6 +2711,8 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
             std::wstring sRet = L"image" + std::to_wstring(m_nLocalImagesNextIndex++) + L".png";
             NSFile::CFileBinary::Copy(sUrl, m_sLocalFileFolderWithoutFile + L"/media/" + sRet);
             m_mapLocalAddImages.insert(std::pair<std::wstring, std::wstring>(sUrlMap, sRet));
+            if (0 != nCRC32)
+                m_mapLocalAddImagesCRC.insert(std::pair<unsigned int, std::wstring>(nCRC32, sRet));
             return sRet;
         }
         if (oChecker.eFileType == _CXIMAGE_FORMAT_JPG)
@@ -2699,6 +2720,8 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
             std::wstring sRet = L"image" + std::to_wstring(m_nLocalImagesNextIndex++) + L".jpg";
             NSFile::CFileBinary::Copy(sUrl, m_sLocalFileFolderWithoutFile + L"/media/" + sRet);
             m_mapLocalAddImages.insert(std::pair<std::wstring, std::wstring>(sUrlMap, sRet));
+            if (0 != nCRC32)
+                m_mapLocalAddImagesCRC.insert(std::pair<unsigned int, std::wstring>(nCRC32, sRet));
             return sRet;
         }
 
@@ -2708,6 +2731,8 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
             std::wstring sRet = L"image" + std::to_wstring(m_nLocalImagesNextIndex++) + L".png";
             oFrame.SaveFile(m_sLocalFileFolderWithoutFile + L"/media/" + sRet, _CXIMAGE_FORMAT_PNG);
             m_mapLocalAddImages.insert(std::pair<std::wstring, std::wstring>(sUrlMap, sRet));
+            if (0 != nCRC32)
+                m_mapLocalAddImagesCRC.insert(std::pair<unsigned int, std::wstring>(nCRC32, sRet));
             return sRet;
         }
 
@@ -2743,6 +2768,8 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
             oWriterSVG.SaveFile(m_sLocalFileFolderWithoutFile + L"/media/" + sRet);
 
             m_mapLocalAddImages.insert(std::pair<std::wstring, std::wstring>(sUrlMap, sRet));
+            if (0 != nCRC32)
+                m_mapLocalAddImagesCRC.insert(std::pair<unsigned int, std::wstring>(nCRC32, sRet));
             return sRet;
         }
         if (pMetafile->GetType() == MetaFile::c_lMetaSvg || pMetafile->GetType() == MetaFile::c_lMetaSvm)
@@ -2762,6 +2789,8 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
             pMetafile->ConvertToRaster(sSaveRet.c_str(), _CXIMAGE_FORMAT_PNG, WW, HH);
 
             m_mapLocalAddImages.insert(std::pair<std::wstring, std::wstring>(sUrlMap, sRet));
+            if (0 != nCRC32)
+                m_mapLocalAddImagesCRC.insert(std::pair<unsigned int, std::wstring>(nCRC32, sRet));
             return sRet;
         }
 
