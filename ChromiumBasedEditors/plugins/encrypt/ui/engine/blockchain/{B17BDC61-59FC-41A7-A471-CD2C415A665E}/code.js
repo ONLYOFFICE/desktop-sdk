@@ -81,11 +81,6 @@
 					let _hashAsHex = "0x" + obj.docinfo.split("|")[0];
 					let _pass = ONLYONET.getFilePassword(_hashAsHex);
 
-					if (null == _pass) {
-						_hashAsHex = "0x" + _convertToHex(atob(obj.hash)); 	
-					 	_pass = ONLYONET.getFilePassword(_hashAsHex);
-					}
-
 					if (null == _pass) _pass = "";
 
 					AscDesktopEditor.sendSystemMessage({ type : "getPasswordByFile", password : _pass });
