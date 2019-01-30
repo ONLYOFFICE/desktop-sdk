@@ -216,6 +216,8 @@ public:
 
     virtual NSAscCrypto::CAscKeychain* GetKeychainEngine();
 
+    std::vector<std::string> GetRendererStartupProperties();
+
 public:
     static CAscDpiChecker* GetDpiChecker();
 

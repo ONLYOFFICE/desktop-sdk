@@ -51,6 +51,8 @@
 
 #include "../../include/applicationmanager.h"
 
+#include "client_renderer_params.h"
+
 //#define DISABLE_WEB_SEQURITY
 
 static int IsForceDpiRound()
@@ -223,13 +225,15 @@ class CAscClientAppBrowser : public client::ClientAppBrowser, public CAppSetting
 public:
     bool m_GPU;
     bool m_Canvas;
+    CAscApplicationManager* m_manager;
 
 public:
-    CAscClientAppBrowser(std::map<std::string, std::string>& mapSettings) : client::ClientAppBrowser(), CAppSettings(mapSettings)
+    CAscClientAppBrowser(std::map<std::string, std::string>& mapSettings, CAscApplicationManager* pManager = NULL) : client::ClientAppBrowser(), CAppSettings(mapSettings)
     {
 #ifdef _MAC
         CFileDownloader::SetARCEnabled(true);
 #endif
+        m_manager = pManager;
     }
 
     virtual ~CAscClientAppBrowser()
@@ -278,6 +282,23 @@ public:
 #endif
         }
     }
+
+    virtual void OnRenderProcessThreadCreated(CefRefPtr<CefListValue> extra_info) OVERRIDE
+    {
+        size_t nCount = extra_info->GetSize();
+
+        if (m_manager)
+        {
+            std::vector<std::string> props = m_manager->GetRendererStartupProperties();
+            for (std::vector<std::string>::iterator iter = props.begin(); iter != props.end(); iter++)
+            {
+                extra_info->SetString(nCount++, *iter);
+            }
+        }
+
+        client::ClientAppBrowser::OnRenderProcessThreadCreated(extra_info);
+    }
+
 
 public:
     IMPLEMENT_REFCOUNTING(CAscClientAppBrowser);
@@ -410,6 +431,17 @@ public:
             command_line->AppendSwitch("--disable-web-security");
 #endif
         }
+    }
+
+    virtual void OnRenderThreadCreated(CefRefPtr<CefListValue> extra_info) OVERRIDE
+    {
+        size_t nCount = extra_info->GetSize();
+
+        std::vector<std::string> params;
+        for (size_t i = 0; i < nCount; ++i)
+            params.push_back(extra_info->GetString(i));
+
+        CAscRendererProcessParams::getInstance().Check(params);
     }
 };
 #endif

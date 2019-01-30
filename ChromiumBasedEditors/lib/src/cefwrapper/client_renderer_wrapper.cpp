@@ -55,6 +55,7 @@
 #include "../../src/additional/renderer.h"
 #include "../crypto_mode.h"
 #include "../../../../../core/DesktopEditor/common/CalculatorCRC32.h"
+#include "./client_renderer_params.h"
 
 namespace NSCommon
 {
@@ -373,6 +374,28 @@ public:
 ::-webkit-scrollbar-thumb { background:#BFBFBF; border: 4px solid transparent; border-radius:7px; background-clip: content-box; } \
 ::-webkit-scrollbar-thumb:hover { background:#A7A7A7; border: 4px solid transparent; border-radius:7px; background-clip: content-box; } \
 ::-webkit-scrollbar-corner { background:inherit; }";
+#endif
+
+        CheckDefaults();
+    }
+
+    void CheckDefaults()
+    {
+        CAscRendererProcessParams& default_params = CAscRendererProcessParams::getInstance();
+
+        int nFlags = default_params.GetValueInt("onlypass", 3);
+
+        m_bIsSupportOnlyPass = ((nFlags & 0x01) == 0x01) ? true : false;
+        m_bIsSupportProtect = ((nFlags & 0x02) == 0x02) ? true : false;
+
+        m_nCryptoMode = default_params.GetValueInt("cryptomode", m_nCryptoMode);
+
+        m_sSystemPlugins = default_params.GetValueW("system_plugins_path");
+        m_sUserPlugins = default_params.GetValueW("user_plugins_path");
+        m_sCookiesPath = default_params.GetValueW("cookie_path");
+
+#if 0
+        default_params.Print();
 #endif
     }
 
@@ -2902,6 +2925,11 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
                                 CefRefPtr<CefBrowser> browser,
                                 CefRefPtr<CefFrame> frame,
                                 CefRefPtr<CefV8Context> context) OVERRIDE {
+
+      FILE* f = fopen("D:\\r.txt", "a+");
+      fprintf(f, "OnContextCreated\n");
+      fclose(f);
+
     message_router_->OnContextCreated(browser,  frame, context);
 
     // add AscEditorNative

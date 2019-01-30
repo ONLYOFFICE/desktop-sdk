@@ -989,3 +989,30 @@ CAscDpiChecker* CAscApplicationManager::InitDpiChecker()
     return NULL;
 #endif
 }
+
+std::vector<std::string> CAscApplicationManager::GetRendererStartupProperties()
+{
+    std::vector<std::string> props;
+
+    bool bIsOnlyPassSupport = m_oSettings.pass_support;
+    if (bIsOnlyPassSupport)
+    {
+        if (0 == m_pInternal->m_mapCrypto.size())
+            bIsOnlyPassSupport = false;
+    }
+
+    int nFlags = 0;
+    if (bIsOnlyPassSupport)
+        nFlags |= 0x01;
+
+    if (m_oSettings.protect_support)
+        nFlags |= 0x02;
+
+    props.push_back("onlypass=" + std::to_string(nFlags));
+    props.push_back("cryptomode=" + std::to_string(m_pInternal->m_nCurrentCryptoMode));
+    props.push_back("system_plugins_path=" + U_TO_UTF8(m_oSettings.system_plugins_path));
+    props.push_back("user_plugins_path=" + U_TO_UTF8(m_oSettings.user_plugins_path));
+    props.push_back("cookie_path=" + U_TO_UTF8(m_oSettings.cookie_path));
+
+    return props;
+}

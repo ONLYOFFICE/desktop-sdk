@@ -241,7 +241,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 #ifdef WIN32
     // Create a ClientApp of the correct type.
     if (process_type == client::ClientApp::BrowserProcess)
-        m_pInternal->m_app = new CAscClientAppBrowser(pManager->m_pInternal->m_mapSettings);
+        m_pInternal->m_app = new CAscClientAppBrowser(pManager->m_pInternal->m_mapSettings, pManager);
     else if (process_type == client::ClientApp::RendererProcess ||
              process_type == client::ClientApp::ZygoteProcess)
         m_pInternal->m_app = new CAscClientAppRenderer(pManager->m_pInternal->m_mapSettings);
