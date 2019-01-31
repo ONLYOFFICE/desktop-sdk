@@ -1614,7 +1614,7 @@ public:
 
             if (0 == sTestSUP_Simple.find(sTestUrl_Simple) && std::wstring::npos == sUrl.find(L"desktop=true"))
             {
-                if (sUrl.rfind(L"/") == (sUrl.length() - 1))
+                if (sUrl.rfind(L"/") != (sUrl.length() - 1))
                     sUrl += L"/";
 
                 m_pParent->load(sUrl + L"products/files/?desktop=true");
