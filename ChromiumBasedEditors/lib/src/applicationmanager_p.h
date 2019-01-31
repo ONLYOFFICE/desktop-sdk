@@ -876,6 +876,13 @@ public:
         if ((pos != std::string::npos) && ((pos + 1) == pVisitor->m_sDomain.length()))
             pVisitor->m_sDomain = pVisitor->m_sDomain.substr(0, pos);
 
+        if (true)
+        {
+            pos = pVisitor->m_sDomain.rfind("/products/files");
+            if ((pos != std::string::npos) && ((pos + 15) == pVisitor->m_sDomain.length()))
+                pVisitor->m_sDomain = pVisitor->m_sDomain.substr(0, pos);
+        }
+        
         pVisitor->CheckCookiePresent(CefCookieManager::GetGlobalManager(NULL));
     }
 
