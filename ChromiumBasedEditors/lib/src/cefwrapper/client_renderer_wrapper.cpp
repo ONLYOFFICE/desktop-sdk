@@ -374,6 +374,15 @@ public:
 ::-webkit-scrollbar-thumb { background:#BFBFBF; border: 4px solid transparent; border-radius:7px; background-clip: content-box; } \
 ::-webkit-scrollbar-thumb:hover { background:#A7A7A7; border: 4px solid transparent; border-radius:7px; background-clip: content-box; } \
 ::-webkit-scrollbar-corner { background:inherit; }";
+
+        // skin for onlyoffice custom scrollbar
+        m_sScrollStyle += "\
+.webkit-scrollbar::-webkit-scrollbar { background: transparent; width: 16px; height: 16px; } \
+.webkit-scrollbar::-webkit-scrollbar-button { width: 5px; height:5px; } \
+.webkit-scrollbar::-webkit-scrollbar-track {	background:#F5F5F5; border: 4px solid transparent; border-radius:7px; background-clip: content-box; } \
+.webkit-scrollbar::-webkit-scrollbar-thumb { background:#BFBFBF; border: 4px solid transparent; border-radius:7px; background-clip: content-box; } \
+.webkit-scrollbar::-webkit-scrollbar-thumb:hover { background:#A7A7A7; border: 4px solid transparent; border-radius:7px; background-clip: content-box; } \
+.webkit-scrollbar::-webkit-scrollbar-corner { background:inherit; }";
 #endif
 
         CheckDefaults();
