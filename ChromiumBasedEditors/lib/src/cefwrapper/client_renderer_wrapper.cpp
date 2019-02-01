@@ -2925,11 +2925,6 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
                                 CefRefPtr<CefBrowser> browser,
                                 CefRefPtr<CefFrame> frame,
                                 CefRefPtr<CefV8Context> context) OVERRIDE {
-
-      FILE* f = fopen("D:\\r.txt", "a+");
-      fprintf(f, "OnContextCreated\n");
-      fclose(f);
-
     message_router_->OnContextCreated(browser,  frame, context);
 
     // add AscEditorNative
