@@ -130,6 +130,7 @@
 #define ASC_MENU_EVENT_TYPE_ENCRYPT_PERSONAL_KEY_EXPORT     8006
 
 #define ASC_MENU_EVENT_TYPE_SYSTEM_EXTERNAL_PLUGINS          8007
+#define ASC_MENU_EVENT_TYPE_SYSTEM_EXTERNAL_PROCESS          8008
 
 
 #define ASC_MENU_EVENT_TYPE_WINDOWS_MESSAGE_USER_COUNT      10
@@ -871,6 +872,27 @@ namespace NSEditorApi
             item.nameLocale = name_local;
             m_items.push_back(item);
         }
+    };
+}
+
+namespace NSEditorApi
+{
+    class CAscExternalProcess : public IMenuEventDataBase
+    {
+    private:
+        std::wstring m_sProgram;
+        std::wstring m_sArguments;
+
+    public:
+        CAscExternalProcess()
+        {
+        }
+        virtual ~CAscExternalProcess()
+        {
+        }
+
+        LINK_PROPERTY_STRING(Program)
+        LINK_PROPERTY_STRING(Arguments)
     };
 }
 
