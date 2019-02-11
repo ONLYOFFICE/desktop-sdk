@@ -60,7 +60,8 @@ public:
 
     virtual bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
                                           CefProcessId source_process,
-                                          CefRefPtr<CefProcessMessage> message)
+                                          CefRefPtr<CefProcessMessage> message,
+                                          CCefView* view)
     {
         return false;
     }

@@ -2573,6 +2573,14 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
 
             return true;
         }
+        else if (name == "OpenMedia")
+        {
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("open_media_external");
+            message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
 
         // Function does not exist.
         return false;
@@ -3108,7 +3116,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction993 = CefV8Value::CreateFunction("GetExternalClouds", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction994 = CefV8Value::CreateFunction("IsNativeViewer", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction995 = CefV8Value::CreateFunction("CryptoDownloadAs", _nativeHandler);
-
+    CefRefPtr<CefV8Value> _nativeFunction996 = CefV8Value::CreateFunction("OpenMedia", _nativeHandler);
 
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -3264,6 +3272,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("GetExternalClouds", _nativeFunction993, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("IsNativeViewer", _nativeFunction994, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("CryptoDownloadAs", _nativeFunction995, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("OpenMedia", _nativeFunction996, V8_PROPERTY_ATTRIBUTE_NONE);
 
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);

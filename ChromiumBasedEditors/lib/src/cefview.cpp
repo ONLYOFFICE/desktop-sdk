@@ -3042,7 +3042,7 @@ public:
         }
 
         CAscApplicationManager_Private* pInternalMan = m_pParent->GetAppManager()->m_pInternal;
-        if (pInternalMan->m_pAdditional && pInternalMan->m_pAdditional->OnProcessMessageReceived(browser, source_process, message))
+        if (pInternalMan->m_pAdditional && pInternalMan->m_pAdditional->OnProcessMessageReceived(browser, source_process, message, m_pParent))
             return true;
 
         if (message_router_->OnProcessMessageReceived(browser, source_process, message))
@@ -6081,6 +6081,11 @@ std::wstring CCefViewEditor::GetLocalFilePath()
     if (!m_pInternal->m_oLocalInfo.m_oInfo.m_bIsSaved)
         return L"";
     return m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc;
+}
+
+std::wstring CCefViewEditor::GetRecoveryDir()
+{
+    return m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir;
 }
 
 // NATIVE file converter

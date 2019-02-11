@@ -153,6 +153,7 @@ public:
     bool IsBuilding();
 
     std::wstring GetLocalFilePath();
+    std::wstring GetRecoveryDir();
 };
 
 class IFileDownloaderEvents
