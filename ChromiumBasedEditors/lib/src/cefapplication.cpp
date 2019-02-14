@@ -328,6 +328,19 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     cef_string_from_wide(sCachePath.c_str(), sCachePath.length(), &_cache);
     settings.cache_path = _cache;
 
+    std::wstring sCachePathUser = sCachePath;
+    cef_string_t _cache_user;
+    memset(&_cache_user, 0, sizeof(_cache_user));
+    cef_string_from_wide(sCachePathUser.c_str(), sCachePathUser.length(), &_cache_user);
+    settings.user_data_path = _cache_user;
+
+    std::wstring sCachePathLog = sCachePath + L"/log.log";
+    cef_string_t _cache_log;
+    memset(&_cache_log, 0, sizeof(_cache_log));
+    cef_string_from_wide(sCachePathLog.c_str(), sCachePathLog.length(), &_cache_log);
+    settings.log_file = _cache_log;
+    settings.log_severity = LOGSEVERITY_DISABLE;
+
     settings.persist_session_cookies = true;
 
     // Initialize CEF.

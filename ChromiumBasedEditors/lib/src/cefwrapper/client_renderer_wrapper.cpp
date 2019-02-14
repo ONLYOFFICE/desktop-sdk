@@ -2582,6 +2582,121 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
             return true;
         }
 
+
+        if (name == "GetImageOriginalSize")
+        {
+#ifdef CEF_2623
+            retval = CefV8Value::CreateObject(NULL);
+#else
+            retval = CefV8Value::CreateObject(NULL, NULL);
+#endif
+            int nW = 0;
+            int nH = 0;
+
+            std::wstring sUrl = arguments[0]->GetStringValue().ToWString();
+
+            std::wstring sUrlFile = sUrl;
+            if (sUrlFile.find(L"file://") == 0)
+            {
+                sUrlFile = sUrlFile.substr(7);
+
+                // MS Word copy image with url "file://localhost/..." on mac
+                if (0 == sUrlFile.find(L"localhost"))
+                    sUrlFile = sUrlFile.substr(9);
+
+                NSCommon::string_replace(sUrlFile, L"%20", L" ");
+
+                if (!NSFile::CFileBinary::Exists(sUrlFile))
+                    sUrlFile = sUrlFile.substr(1);
+            }
+
+            if (NSFile::CFileBinary::Exists(sUrlFile))
+            {
+                CBgraFrame oFrame;
+                if (oFrame.OpenFile(sUrlFile))
+                {
+                    nW = oFrame.get_Width();
+                    nH = oFrame.get_Height();
+                }
+            }
+            else if (IsNeedDownload(sUrl))
+            {
+                std::wstring sTmpFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"IMG");
+                if (NSFile::CFileBinary::Exists(sTmpFile))
+                    NSFile::CFileBinary::Remove(sTmpFile);
+
+                CFileDownloaderWrapper oDownloader(sUrl, sTmpFile);
+                oDownloader.DownloadSync();
+
+                CBgraFrame oFrame;
+                if (oFrame.OpenFile(sTmpFile))
+                {
+                    nW = oFrame.get_Width();
+                    nH = oFrame.get_Height();
+                }
+
+                if (NSFile::CFileBinary::Exists(sTmpFile))
+                    NSFile::CFileBinary::Remove(sTmpFile);
+            }
+            else if (0 == sUrl.find(L"data:"))
+            {
+                std::wstring::size_type nBase64Start = sUrl.find(L"base64,");
+                if (nBase64Start != std::wstring::npos)
+                {
+                    int nStartIndex = (int)nBase64Start + 7;
+                    int nCount = (int)sUrl.length() - nStartIndex;
+                    char* pData = new char[nCount];
+                    const wchar_t* pDataSrc = sUrl.c_str();
+                    for (int i = 0; i < nCount; ++i)
+                        pData[i] = (char)pDataSrc[i + nStartIndex];
+
+                    BYTE* pDataDecode = NULL;
+                    int nLenDecode = 0;
+                    NSFile::CBase64Converter::Decode(pData, nCount, pDataDecode, nLenDecode);
+
+                    RELEASEARRAYOBJECTS(pData);
+
+                    std::wstring sTmpFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"IMG");
+                    if (NSFile::CFileBinary::Exists(sTmpFile))
+                        NSFile::CFileBinary::Remove(sTmpFile);
+
+                    NSFile::CFileBinary oFile;
+                    if (oFile.CreateFileW(sTmpFile))
+                    {
+                        oFile.WriteFile(pDataDecode, (DWORD)nLenDecode);
+                        oFile.CloseFile();
+                    }
+
+                    RELEASEARRAYOBJECTS(pDataDecode);
+
+                    CBgraFrame oFrame;
+                    if (oFrame.OpenFile(sTmpFile))
+                    {
+                        nW = oFrame.get_Width();
+                        nH = oFrame.get_Height();
+                    }
+
+                    if (NSFile::CFileBinary::Exists(sTmpFile))
+                        NSFile::CFileBinary::Remove(sTmpFile);
+                }
+            }
+            else if (sUrl.find(L"image") == 0)
+            {
+                sUrl = m_sLocalFileFolderWithoutFile + L"/media/" + sUrl;
+
+                CBgraFrame oFrame;
+                if (oFrame.OpenFile(sUrl))
+                {
+                    nW = oFrame.get_Width();
+                    nH = oFrame.get_Height();
+                }
+            }
+
+            retval->SetValue("W", CefV8Value::CreateInt(nW), V8_PROPERTY_ATTRIBUTE_NONE);
+            retval->SetValue("H", CefV8Value::CreateInt(nH), V8_PROPERTY_ATTRIBUTE_NONE);
+            return true;
+        }
+
         // Function does not exist.
         return false;
     }
@@ -3117,6 +3232,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction994 = CefV8Value::CreateFunction("IsNativeViewer", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction995 = CefV8Value::CreateFunction("CryptoDownloadAs", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction996 = CefV8Value::CreateFunction("OpenMedia", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction997 = CefV8Value::CreateFunction("GetImageOriginalSize", _nativeHandler);
 
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -3273,6 +3389,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("IsNativeViewer", _nativeFunction994, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("CryptoDownloadAs", _nativeFunction995, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("OpenMedia", _nativeFunction996, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("GetImageOriginalSize", _nativeFunction997, V8_PROPERTY_ATTRIBUTE_NONE);
 
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
