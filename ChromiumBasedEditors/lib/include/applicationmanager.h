@@ -35,6 +35,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 #include "./applicationmanager_events.h"
 
 #include "./keyboardchecker.h"
@@ -75,6 +76,8 @@ public:
 
     std::string                     converter_application_name;
     std::string                     converter_application_company;
+
+    std::map<std::string, std::string> converter_environments;
 
 public:
     CAscApplicationSettings();

@@ -424,6 +424,13 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     NSSystem::SetEnvValueA("APPLICATION_NAME", pManager->m_oSettings.converter_application_name);
     NSSystem::SetEnvValueA("COMPANY_NAME", pManager->m_oSettings.converter_application_company);
 
+    for (std::map<std::string, std::string>::iterator iterMap = pManager->m_oSettings.converter_environments.begin();
+         iterMap != pManager->m_oSettings.converter_environments.end(); iterMap++)
+    {
+        // TODO: on linux undate environments in converter
+        NSSystem::SetEnvValueA(iterMap->first, iterMap->second);
+    }
+
     return 0;
 }
 
