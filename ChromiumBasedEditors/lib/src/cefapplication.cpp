@@ -35,7 +35,6 @@
 #include <gdk/gdk.h>
 #include <gdk/gdkx.h>
 #include <gtk/gtk.h>
-#include <gtk/gtkgl.h>
 
 #include <X11/Xlib.h>
 
@@ -351,9 +350,6 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     // The Chromium sandbox requires that there only be a single thread during
     // initialization. Therefore initialize GTK after CEF.
     gtk_init(&argc, &argv);
-
-    // Perform gtkglext initialization required by the OSR example.
-    gtk_gl_init(&argc, &argv);
 
     // Install xlib error handlers so that the application won't be terminated
     // on non-fatal errors. Must be done after initializing GTK.
