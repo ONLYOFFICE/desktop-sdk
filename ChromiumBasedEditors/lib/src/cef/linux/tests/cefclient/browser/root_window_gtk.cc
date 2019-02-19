@@ -13,7 +13,9 @@
 
 #include "include/base/cef_bind.h"
 #include "include/cef_app.h"
+#ifndef NO_CSR
 #include "tests/cefclient/browser/browser_window_osr_gtk.h"
+#endif
 #include "tests/cefclient/browser/browser_window_std_gtk.h"
 #include "tests/cefclient/browser/main_context.h"
 #include "tests/cefclient/browser/resource.h"
@@ -235,9 +237,11 @@ bool RootWindowGtk::WithExtension() const {
 
 void RootWindowGtk::CreateBrowserWindow(const std::string& startup_url) {
   if (with_osr_) {
+#ifndef NO_CSR
     OsrRenderer::Settings settings = {};
     MainContext::Get()->PopulateOsrSettings(&settings);
     browser_window_.reset(new BrowserWindowOsrGtk(this, startup_url, settings));
+#endif
   } else {
     browser_window_.reset(new BrowserWindowStdGtk(this, startup_url));
   }
