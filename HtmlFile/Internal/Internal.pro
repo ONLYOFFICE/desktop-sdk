@@ -16,8 +16,6 @@ LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lUnicodeConverter -lkernel -lgraphics
 
 DESTDIR=$$CORE_BUILDS_LIBRARIES_PATH
 
-DEFINES += NO_CSR
-
 HEADERS += \
     $$PWD/src/clienthandler.h \
     $$PWD/src/client_app.h

@@ -1,3 +1,5 @@
+DEFINES += NO_CSR
+
 # LINUX
 HEADERS += \
     #$$CEF_SRC_PATH/tests/cefclient/browser/browser_window_osr_gtk.h \
