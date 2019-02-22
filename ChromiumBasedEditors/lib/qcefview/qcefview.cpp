@@ -36,6 +36,7 @@
 
 QCefView::QCefView(QWidget* parent) : QWidget(parent)
 {
+    m_pMediaView = NULL;
     m_pCefView = NULL;
 
     m_pLoader = new QWidget(this);
@@ -165,6 +166,26 @@ void QCefView::Create(CAscApplicationManager* pManager, CefViewWrapperType eType
 void QCefView::CreateReporter(CAscApplicationManager* pManager, CAscReporterData* data)
 {
     m_pCefView = pManager->CreateCefPresentationReporter(this, data);
+}
+
+void QCefView::OnMediaStart(NSEditorApi::CAscExternalMedia* data)
+{
+    if (m_pMediaView)
+        return;
+
+    m_pMediaView = new QAscVideoView(this, 49, 52, 55);
+    m_pMediaView->setPlayListUsed(false);
+    m_pMediaView->setGeometry(data->get_BoundsX(), data->get_BoundsY(), data->get_BoundsW(), data->get_BoundsH());
+    m_pMediaView->setMedia(QString::fromStdWString(data->get_Url()));
+    m_pMediaView->show();
+}
+void QCefView::OnMediaEnd()
+{
+    if (!m_pMediaView)
+        return;
+
+    m_pMediaView->deleteLater();
+    m_pMediaView = NULL;
 }
 
 // CCefViewWidgetImpl
