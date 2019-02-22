@@ -7,7 +7,9 @@
 #include "include/base/cef_bind.h"
 #include "include/base/cef_build.h"
 #include "include/cef_app.h"
+#ifndef NO_CSR
 #include "tests/cefclient/browser/browser_window_osr_win.h"
+#endif
 #include "tests/cefclient/browser/browser_window_std_win.h"
 #include "tests/cefclient/browser/main_context.h"
 #include "tests/cefclient/browser/resource.h"
@@ -260,9 +262,11 @@ ClientWindowHandle RootWindowWin::GetWindowHandle() const {
 
 void RootWindowWin::CreateBrowserWindow(const std::string& startup_url) {
   if (with_osr_) {
+#ifndef NO_CSR
     OsrRenderer::Settings settings = {};
     MainContext::Get()->PopulateOsrSettings(&settings);
     browser_window_.reset(new BrowserWindowOsrWin(this, startup_url, settings));
+#endif
   } else {
     browser_window_.reset(new BrowserWindowStdWin(this, startup_url));
   }

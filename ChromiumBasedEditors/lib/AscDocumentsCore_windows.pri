@@ -11,7 +11,9 @@ DEFINES += \
     "NTDDI_VERSION=0x06020000" \
     "_USING_V110_SDK71_" \
     "__STDC_CONSTANT_MACROS" \
-    "__STDC_FORMAT_MACROS" \
+    "__STDC_FORMAT_MACROS"
+
+DEFINES += NO_CSR
 
 LIBS += -lwininet \
         -ldnsapi \
@@ -47,14 +49,14 @@ LIBS += -lwininet \
 
 # WINDOWS
 HEADERS += \
-    $$CEF_SRC_PATH/tests/cefclient/browser/browser_window_osr_win.h \
+    #$$CEF_SRC_PATH/tests/cefclient/browser/browser_window_osr_win.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/browser_window_std_win.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/main_message_loop_multithreaded_win.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/osr_accessibility_helper.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/osr_accessibility_node.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/osr_dragdrop_win.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/osr_ime_handler_win.h \
-    $$CEF_SRC_PATH/tests/cefclient/browser/osr_window_win.h \
+    #$$CEF_SRC_PATH/tests/cefclient/browser/osr_window_win.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/root_window_views.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/root_window_win.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/temp_window_win.h \
@@ -67,7 +69,7 @@ HEADERS += \
     $$CEF_SRC_PATH/tests/shared/browser/util_win.h
 
 SOURCES += \
-    $$CEF_SRC_PATH/tests/cefclient/browser/browser_window_osr_win.cc \
+    #$$CEF_SRC_PATH/tests/cefclient/browser/browser_window_osr_win.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/main_context_impl_win.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/main_message_loop_multithreaded_win.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/osr_accessibility_helper.cc \
@@ -75,7 +77,7 @@ SOURCES += \
     $$CEF_SRC_PATH/tests/cefclient/browser/osr_accessibility_node_win.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/osr_dragdrop_win.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/osr_ime_handler_win.cc \
-    $$CEF_SRC_PATH/tests/cefclient/browser/osr_window_win.cc \
+    #$$CEF_SRC_PATH/tests/cefclient/browser/osr_window_win.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/resource_util_win_idmap.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/root_window_views.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/root_window_win.cc \
