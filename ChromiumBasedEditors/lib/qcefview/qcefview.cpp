@@ -34,6 +34,22 @@
 
 #include <QPainter>
 
+void QCefView_SetProperty(QObject* w, const QVariant& p)
+{
+    w->setProperty("native_dpi", p);
+    QObjectList childs = w->children();
+    for (int i = childs.count() - 1; i >= 0; --i)
+    {
+        QCefView_SetProperty(childs.at(i), p);
+    }
+}
+
+void QCefView_SetDPI(QWidget* w, const double& v)
+{
+    QVariant p(v);
+    QCefView_SetProperty(w, p);
+}
+
 QCefView::QCefView(QWidget* parent) : QWidget(parent)
 {
     m_pMediaView = NULL;
@@ -175,6 +191,7 @@ void QCefView::OnMediaStart(NSEditorApi::CAscExternalMedia* data)
 
     m_pMediaView = new QAscVideoView(this, 49, 52, 55);
     m_pMediaView->setPlayListUsed(false);
+    QCefView_SetDPI(this, m_pCefView->GetDeviceScale());
     m_pMediaView->setGeometry(data->get_BoundsX(), data->get_BoundsY(), data->get_BoundsW(), data->get_BoundsH());
     m_pMediaView->setMedia(QString::fromStdWString(data->get_Url()));
     m_pMediaView->show();

@@ -5695,6 +5695,11 @@ void CCefView::LoadReporter(int nParentId, std::wstring url)
     this->load(urlReporter);
 }
 
+double CCefView::GetDeviceScale()
+{
+    return (double)m_pInternal->m_nDeviceScale;
+}
+
 /////////////////////////////////////////////////////////////
 CCefViewEditor::CCefViewEditor(CCefViewWidgetImpl* parent, int nId) : CCefView(parent, nId)
 {
