@@ -2573,10 +2573,33 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
 
             return true;
         }
-        else if (name == "OpenMedia")
+        else if (name == "MediaStart")
         {
-            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("open_media_external");
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("media_start");
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
+            message->GetArgumentList()->SetInt(1, arguments[1]->GetIntValue());
+            message->GetArgumentList()->SetInt(2, arguments[2]->GetIntValue());
+            message->GetArgumentList()->SetDouble(3, arguments[3]->GetDoubleValue());
+            message->GetArgumentList()->SetDouble(4, arguments[4]->GetDoubleValue());
+            message->GetArgumentList()->SetDouble(5, arguments[5]->GetDoubleValue());
+
+            if (arguments.size() > 6)
+            {
+                message->GetArgumentList()->SetDouble(6, arguments[6]->GetDoubleValue());
+                message->GetArgumentList()->SetDouble(7, arguments[7]->GetDoubleValue());
+                message->GetArgumentList()->SetDouble(8, arguments[8]->GetDoubleValue());
+                message->GetArgumentList()->SetDouble(9, arguments[9]->GetDoubleValue());
+                message->GetArgumentList()->SetDouble(10, arguments[10]->GetDoubleValue());
+                message->GetArgumentList()->SetDouble(11, arguments[11]->GetDoubleValue());
+            }
+
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "MediaEnd")
+        {
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("media_end");
             CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
@@ -3231,8 +3254,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction993 = CefV8Value::CreateFunction("GetExternalClouds", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction994 = CefV8Value::CreateFunction("IsNativeViewer", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction995 = CefV8Value::CreateFunction("CryptoDownloadAs", _nativeHandler);
-    CefRefPtr<CefV8Value> _nativeFunction996 = CefV8Value::CreateFunction("OpenMedia", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction996 = CefV8Value::CreateFunction("MediaStart", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction997 = CefV8Value::CreateFunction("GetImageOriginalSize", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction998 = CefV8Value::CreateFunction("MediaEnd", _nativeHandler);
 
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -3388,8 +3412,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("GetExternalClouds", _nativeFunction993, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("IsNativeViewer", _nativeFunction994, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("CryptoDownloadAs", _nativeFunction995, V8_PROPERTY_ATTRIBUTE_NONE);
-    objNative->SetValue("OpenMedia", _nativeFunction996, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("MediaStart", _nativeFunction996, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("GetImageOriginalSize", _nativeFunction997, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("MediaEnd", _nativeFunction998, V8_PROPERTY_ATTRIBUTE_NONE);
 
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);

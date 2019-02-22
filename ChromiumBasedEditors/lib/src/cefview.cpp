@@ -65,6 +65,7 @@
 #include "./plugins.h"
 
 #include "../../../../core/DesktopEditor/graphics/BaseThread.h"
+#include "../../../../core/DesktopEditor/graphics/Matrix.h"
 
 #include "./cefwrapper/client_scheme.h"
 
@@ -3038,6 +3039,92 @@ public:
                 CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("set_editors_version_no_crypto");
                 browser->SendProcessMessage(PID_RENDERER, message);
             }
+            return true;
+        }
+        else if ("media_start" == message_name)
+        {
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_SYSTEM_EXTERNAL_MEDIA_START);
+            NSEditorApi::CAscExternalMedia* pData = new NSEditorApi::CAscExternalMedia();
+            pEvent->m_pData = pData;
+
+            Aggplus::CMatrix oTransform;
+
+            std::wstring sPath = (message->GetArgumentList()->GetString(0).ToWString());
+            if (!NSFile::CFileBinary::Exists(sPath))
+                sPath = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/media/" + sPath;
+
+            pData->put_Url(sPath);
+
+            int nX = message->GetArgumentList()->GetInt(1);
+            int nY = message->GetArgumentList()->GetInt(2);
+            double dExtW = message->GetArgumentList()->GetDouble(3);
+            double dExtH = message->GetArgumentList()->GetDouble(4);
+
+            double dScale = message->GetArgumentList()->GetDouble(5);
+
+            if (message->GetArgumentList()->GetSize() > 6)
+            {
+                oTransform.SetElements(
+                            message->GetArgumentList()->GetDouble(6),
+                            message->GetArgumentList()->GetDouble(7),
+                            message->GetArgumentList()->GetDouble(8),
+                            message->GetArgumentList()->GetDouble(9),
+                            message->GetArgumentList()->GetDouble(10),
+                            message->GetArgumentList()->GetDouble(11));
+            }
+
+            double x1 = 0; double y1 = 0;
+            double x2 = dExtW; double y2 = 0;
+            double x3 = dExtW; double y3 = dExtH;
+            double x4 = 0; double y4 = dExtH;
+
+            oTransform.TransformPoint(x1, y1);
+            oTransform.TransformPoint(x2, y2);
+            oTransform.TransformPoint(x3, y3);
+            oTransform.TransformPoint(x4, y4);
+
+            double boundsX = x1;
+            double boundsY = y1;
+            double boundsR = x1;
+            double boundsB = y1;
+
+            if (x2 < boundsX) boundsX = x2;
+            if (x3 < boundsX) boundsX = x3;
+            if (x4 < boundsX) boundsX = x4;
+
+            if (x2 > boundsR) boundsR = x2;
+            if (x3 > boundsR) boundsR = x3;
+            if (x4 > boundsR) boundsR = x4;
+
+            if (y2 < boundsY) boundsY = y2;
+            if (y3 < boundsY) boundsY = y3;
+            if (y4 < boundsY) boundsY = y4;
+
+            if (y2 > boundsB) boundsB = y2;
+            if (y3 > boundsB) boundsB = y3;
+            if (y4 > boundsB) boundsB = y4;
+
+            pData->put_X(nX);
+            pData->put_Y(nY);
+            pData->put_W(dExtW);
+            pData->put_H(dExtH);
+
+            double dKoef = (double)m_pParent->m_pInternal->m_nDeviceScale;
+            double dKoefToPix = 96 / 25.4;
+            dKoefToPix *= dScale;
+
+            pData->put_BoundsX((int)(dKoef * (nX + boundsX * dKoefToPix)));
+            pData->put_BoundsY((int)(dKoef * (nY + boundsY * dKoefToPix)));
+            pData->put_BoundsW((int)(dKoef * (boundsR - boundsX) * dKoefToPix));
+            pData->put_BoundsH((int)(dKoef * (boundsB - boundsY) * dKoefToPix));
+
+            m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+            return true;
+        }
+        else if ("media_end" == message_name)
+        {
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_SYSTEM_EXTERNAL_MEDIA_END);
+            m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
             return true;
         }
 
