@@ -167,6 +167,13 @@ void QCefView::CreateReporter(CAscApplicationManager* pManager, CAscReporterData
     m_pCefView = pManager->CreateCefPresentationReporter(this, data);
 }
 
+void QCefView::OnMediaStart(NSEditorApi::CAscExternalMedia* data)
+{
+}
+void QCefView::OnMediaEnd()
+{
+}
+
 // CCefViewWidgetImpl
 int QCefView::parent_x() { return this->pos().x(); }
 int QCefView::parent_y() { return this->pos().y(); }
