@@ -41,8 +41,6 @@
 #include "./../include/cefview.h"
 #include "./../include/applicationmanager.h"
 
-#include "./../../../../core-ext/multimedia/videoplayer/lib/qascvideoview.h"
-
 class QCefView : public QWidget, public CCefViewWidgetImpl
 {
     Q_OBJECT
@@ -81,8 +79,6 @@ public:
 protected:
     CCefView* m_pCefView;
     QWidget* m_pLoader;
-
-    QAscVideoView* m_pMediaView;
 
 public:
     // CCefViewWidgetImpl
