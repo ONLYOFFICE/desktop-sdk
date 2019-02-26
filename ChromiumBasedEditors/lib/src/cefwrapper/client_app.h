@@ -169,17 +169,17 @@ public:
         std::map<std::string, std::string>::iterator pairGPU = mapSettings.find("disable-gpu");
         if (pairGPU != mapSettings.end())
         {
-            if ("1" == pairGPU->second)
+            if ("0" == pairGPU->second)
                 m_GPU = true;
-            else if ("0" == pairGPU->second)
+            else if ("1" == pairGPU->second)
                 m_GPU = false;
         }
         std::map<std::string, std::string>::iterator pairCanvas = mapSettings.find("disable-gpu-canvas2d");
         if (pairCanvas != mapSettings.end())
         {
-            if ("1" == pairCanvas->second)
+            if ("0" == pairCanvas->second)
                 m_Canvas = true;
-            else if ("0" == pairCanvas->second)
+            else if ("1" == pairCanvas->second)
                 m_Canvas = false;
         }
         std::map<std::string, std::string>::iterator pairColorProfile = mapSettings.find("force-color-profile");
