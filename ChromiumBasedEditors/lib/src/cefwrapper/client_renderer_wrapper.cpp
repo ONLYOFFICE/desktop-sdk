@@ -2719,6 +2719,93 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
             retval->SetValue("H", CefV8Value::CreateInt(nH), V8_PROPERTY_ATTRIBUTE_NONE);
             return true;
         }
+        else if (name == "AddAudio")
+        {
+            CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetBrowser()->GetFrame("frameEditor");
+            if (!_frame || arguments.size() != 2)
+                return true;
+
+            if (CefV8Context::GetCurrentContext()->GetFrame()->GetName() != "frameEditor")
+            {
+                std::string sCode = "window.AscDesktopEditor.AddAudio(\"" +
+                        arguments[0]->GetStringValue().ToString() + "\", \"" + arguments[1]->GetStringValue().ToString() + "\");";
+                _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+                return true;
+            }
+
+            std::wstring sFile = arguments[0]->GetStringValue().ToWString();
+            std::wstring sExt = NSCommon::GetFileExtention(sFile);
+            std::wstring sImage = L"image" + std::to_wstring(m_nLocalImagesNextIndex++);
+            std::wstring sDstMain = m_sLocalFileFolderWithoutFile + L"/media/" + sImage + L".";
+            std::wstring sDst = sDstMain + sExt;
+
+            NSFile::CFileBinary::Copy(sFile, sDst);
+
+            std::wstring sSrc = m_sSystemPlugins + L"/" + arguments[1]->GetStringValue().ToWString() + L"/image";
+
+            NSFile::CFileBinary::Copy(sSrc + L".svg", sDstMain + L"svg");
+            NSFile::CFileBinary::Copy(sSrc + L".emf", sDstMain + L"emf");
+
+            std::wstring sCode = L"(function(){ \n\
+var _e = undefined;\n\
+if (window[\"Asc\"] && window[\"Asc\"][\"editor\"]) \n\
+{\n\
+_e = window[\"Asc\"][\"editor\"];\n\
+}\n\
+else if (window[\"editor\"])\n\
+{\n\
+_e = window[\"editor\"];\n\
+}\n\
+if (!_e) return;\n\
+_e.asc_AddAudio(\"" + sImage + L".svg\", \"" + sImage + L"." + sExt + L"\");\n\
+})();";
+
+            _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+            return true;
+        }
+        else if (name == "AddVideo")
+        {
+            CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetBrowser()->GetFrame("frameEditor");
+            if (!_frame || arguments.size() != 2)
+                return true;
+
+            if (CefV8Context::GetCurrentContext()->GetFrame()->GetName() != "frameEditor")
+            {
+                std::string sCode = "window.AscDesktopEditor.AddVideo(\"" +
+                        arguments[0]->GetStringValue().ToString() + "\", \"" + arguments[1]->GetStringValue().ToString() + "\");";
+                _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+                return true;
+            }
+
+            std::wstring sFile = arguments[0]->GetStringValue().ToWString();
+            std::wstring sExt = NSCommon::GetFileExtention(sFile);
+            std::wstring sImage = L"image" + std::to_wstring(m_nLocalImagesNextIndex++);
+            std::wstring sDstMain = m_sLocalFileFolderWithoutFile + L"/media/" + sImage + L".";
+            std::wstring sDst = sDstMain + sExt;
+
+            NSFile::CFileBinary::Copy(sFile, sDst);
+
+            std::wstring sSrc = m_sSystemPlugins + L"/" + arguments[1]->GetStringValue().ToWString() + L"/image";
+
+            NSFile::CFileBinary::Copy(sSrc + L".png", sDstMain + L"png");
+
+            std::wstring sCode = L"(function(){ \n\
+var _e = undefined;\n\
+if (window[\"Asc\"] && window[\"Asc\"][\"editor\"]) \n\
+{\n\
+_e = window[\"Asc\"][\"editor\"];\n\
+}\n\
+else if (window[\"editor\"])\n\
+{\n\
+_e = window[\"editor\"];\n\
+}\n\
+if (!_e) return;\n\
+_e.asc_AddVideo(\"" + sImage + L".png\", \"" + sImage + L"." + sExt + L"\");\n\
+})();";
+
+            _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+            return true;
+        }
 
         // Function does not exist.
         return false;
@@ -3257,6 +3344,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction996 = CefV8Value::CreateFunction("MediaStart", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction997 = CefV8Value::CreateFunction("GetImageOriginalSize", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction998 = CefV8Value::CreateFunction("MediaEnd", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction999 = CefV8Value::CreateFunction("AddAudio", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction1000 = CefV8Value::CreateFunction("AddVideo", _nativeHandler);
 
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -3415,7 +3504,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("MediaStart", _nativeFunction996, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("GetImageOriginalSize", _nativeFunction997, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("MediaEnd", _nativeFunction998, V8_PROPERTY_ATTRIBUTE_NONE);
-
+    objNative->SetValue("AddAudio", _nativeFunction999, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("AddVideo", _nativeFunction1000, V8_PROPERTY_ATTRIBUTE_NONE);
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 
