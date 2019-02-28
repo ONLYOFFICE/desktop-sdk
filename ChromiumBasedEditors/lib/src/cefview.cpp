@@ -5888,6 +5888,8 @@ void CCefView::SetAppManager(CAscApplicationManager* pManager)
 
 CCefViewWidgetImpl* CCefView::GetWidgetImpl()
 {
+    if (m_pInternal->m_bIsClosing)
+        return NULL;
     return m_pInternal->m_pWidgetImpl;
 }
 void CCefView::OnDestroyWidgetImpl()
