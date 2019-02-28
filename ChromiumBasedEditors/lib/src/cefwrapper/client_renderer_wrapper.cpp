@@ -2806,6 +2806,24 @@ _e.asc_AddVideo(\"" + sImage + L".png\", \"" + sImage + L"." + sExt + L"\");\n\
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
             return true;
         }
+        else if (name == "SendByMail")
+        {
+            CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetBrowser()->GetFrame("frameEditor");
+            if (!_frame)
+                return true;
+
+            if (CefV8Context::GetCurrentContext()->GetFrame()->GetName() != "frameEditor")
+            {
+                std::string sCode = "window.AscDesktopEditor.SendByMail();";
+                _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+                return true;
+            }
+
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("send_by_mail");
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
 
         // Function does not exist.
         return false;
@@ -3346,6 +3364,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction998 = CefV8Value::CreateFunction("MediaEnd", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction999 = CefV8Value::CreateFunction("AddAudio", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction1000 = CefV8Value::CreateFunction("AddVideo", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction1001 = CefV8Value::CreateFunction("SendByMail", _nativeHandler);
+
 
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("Paste", _nativeFunctionPaste, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -3506,6 +3526,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("MediaEnd", _nativeFunction998, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("AddAudio", _nativeFunction999, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("AddVideo", _nativeFunction1000, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("SendByMail", _nativeFunction1001, V8_PROPERTY_ATTRIBUTE_NONE);
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 

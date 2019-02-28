@@ -233,6 +233,210 @@ public:
     }
 };
 
+class CMailTo
+{
+public:
+    std::wstring m_sReceiver;
+    std::wstring m_sSubject;
+    std::wstring m_sText;
+    std::wstring m_sFilePath;
+    std::wstring m_sFileTmp;
+    bool m_bIsFile;
+
+    std::vector<std::wstring> m_arTmps;
+
+public:
+    CMailTo()
+    {
+    }
+    ~CMailTo()
+    {
+        for (std::vector<std::wstring>::iterator iter = m_arTmps.begin(); iter != m_arTmps.end(); iter++)
+        {
+            NSFile::CFileBinary::Remove(*iter);
+        }
+    }
+
+    void CreateDefault(std::wstring sFilePath)
+    {
+        m_sFilePath = sFilePath;
+        m_sReceiver = L"";
+        m_sText = L"";
+        m_sSubject = NSFile::GetFileName(m_sFilePath);
+
+        CreateTmp();
+        m_arTmps.push_back(m_sFileTmp);
+
+        m_bIsFile = true;
+    }
+
+    void CreateDefaultUrl(std::wstring sFileUrl)
+    {
+        m_sFilePath = L"";
+        m_sReceiver = L"";
+        m_sText = sFileUrl;
+        m_sSubject = L"File";
+        m_bIsFile = false;
+
+        CreateTmp();
+        m_arTmps.push_back(m_sFileTmp);
+    }
+
+    std::string GetMimeType(std::string sExt)
+    {
+        if ("docx" == sExt)
+            return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        if ("doc" == sExt)
+            return "application/msword";
+        if ("odt" == sExt)
+            return "application/vnd.oasis.opendocument.text";
+        if ("rtf" == sExt)
+            return "application/rtf";
+        if ("txt" == sExt)
+            return "text/plain";
+        if ("html" == sExt)
+            return "text/html";
+        if ("epub" == sExt)
+            return "application/epub+zip";
+        if ("docm" == sExt)
+            return "application/vnd.ms-word.document.macroenabled.12";
+        if ("dotx" == sExt)
+            return "application/vnd.openxmlformats-officedocument.wordprocessingml.template";
+        if ("ott" == sExt)
+            return "application/vnd.oasis.opendocument.text-template";
+
+        if ("pptx" == sExt)
+            return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+        if ("ppt" == sExt)
+            return "application/vnd.ms-powerpoint";
+        if ("ppsx" == sExt)
+            return "application/vnd.openxmlformats-officedocument.presentationml.slideshow";
+        if ("pps" == sExt)
+            return "application/vnd.ms-powerpoint";
+        if ("pptm" == sExt)
+            return "application/vnd.ms-powerpoint.presentation.macroenabled.12";
+        if ("ppsm" == sExt)
+            return "application/vnd.ms-powerpoint.slideshow.macroenabled.12";
+        if ("potx" == sExt)
+            return "application/vnd.openxmlformats-officedocument.presentationml.template";
+        if ("odp" == sExt)
+            return "application/vnd.oasis.opendocument.presentation";
+        if ("otp" == sExt)
+            return "application/vnd.oasis.opendocument.presentation-template";
+
+        if ("xlsx" == sExt)
+            return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        if ("xls" == sExt)
+            return "application/vnd.ms-excel";
+        if ("csv" == sExt)
+            return "text/csv";
+        if ("xlsm" == sExt)
+            return "application/vnd.ms-excel.sheet.macroenabled.12";
+        if ("xltx" == sExt)
+            return "application/vnd.openxmlformats-officedocument.spreadsheetml.template";
+        if ("xltm" == sExt)
+            return "application/vnd.ms-excel.template.macroenabled.12";
+        if ("ods" == sExt)
+            return "application/vnd.oasis.opendocument.spreadsheet";
+        if ("ots" == sExt)
+            return "application/vnd.oasis.opendocument.spreadsheet-template";
+
+        if ("pdf" == sExt)
+            return "application/pdf";
+        if ("djvu" == sExt)
+            return "image/vnd.djvu";
+        if ("xps" == sExt)
+            return "application/vnd.ms-xpsdocument";
+
+        return "text/plain";
+    }
+
+    std::wstring GetMimeType(std::wstring sFilePath)
+    {
+        std::wstring sExt = NSFile::GetFileExtention(sFilePath);
+        std::string sExtA = U_TO_UTF8(sExt);
+        std::string sMime = GetMimeType(sExtA);
+        return UTF8_TO_U(sMime);
+    }
+
+    void CreateTmp()
+    {
+        if (!m_sFileTmp.empty())
+            return;
+
+        m_sFileTmp = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"EML");
+        if (NSFile::CFileBinary::Exists(m_sFileTmp))
+            NSFile::CFileBinary::Remove(m_sFileTmp);
+
+        m_sFileTmp += L".eml";
+    }
+
+    void Send()
+    {
+        CreateTmp();
+
+        std::wstring sContent = L"Content-Type: multipart/alternative; boundary=\"BitshiftDynamicsMailerBoundary\"\r\n";
+        sContent += L"To: ";
+        sContent += m_sReceiver;
+        sContent += L"\r\n";
+
+        sContent += L"Subject: ";
+        sContent += m_sSubject;
+        sContent += L"\r\n";
+
+        sContent += L"Mime-Version: 1.0 BitshiftDynamics Mailer\r\n\r\n";
+
+        sContent += L"--BitshiftDynamicsMailerBoundary\r\n";
+        sContent += L"Content-Transfer-Encoding: quoted-printable\r\n";
+        sContent += L"Content-Type: text/plain;\r\n";
+        sContent += L"        charset=utf-8\r\n\r\n";
+        sContent += m_sText;
+        sContent += L"\r\n\r\n";
+
+        int nDataDst = 0;
+        char* pDataDst = NULL;
+
+        if (!m_sFilePath.empty())
+        {
+            std::wstring sFileName = NSCommon::GetFileName(m_sFilePath);
+            std::wstring sMimeType = GetMimeType(m_sFilePath);
+
+            sContent += L"\r\n--BitshiftDynamicsMailerBoundary\r\n";
+            sContent += L"Content-Type: multipart/mixed;\r\n";
+            sContent += L"        boundary=\"BitshiftDynamicsMailerBoundary\"\r\n\r\n";
+
+            sContent += L"--BitshiftDynamicsMailerBoundary\r\n";
+            sContent += L"Content-Disposition: inline;\r\n        filename=\"";
+            sContent += sFileName;
+            sContent += L"\"\r\nContent-Type: ";
+            sContent += sMimeType;
+            sContent += L";\r\n        name=\"";
+            sContent += sFileName;
+            sContent += L"\"\r\nContent-Transfer-Encoding: base64\r\n\r\n";
+
+            BYTE* pDataFile = NULL;
+            DWORD dwDataLen = 0;
+            NSFile::CFileBinary::ReadAllBytes(m_sFilePath, &pDataFile, dwDataLen);
+            NSFile::CBase64Converter::Encode(pDataFile, (int)dwDataLen, pDataDst, nDataDst);
+
+            RELEASEARRAYOBJECTS(pDataFile);
+        }
+
+        std::string sHeader = U_TO_UTF8(sContent);
+
+        NSFile::CFileBinary oFile;
+        oFile.CreateFileW(m_sFileTmp);
+        oFile.WriteFile((BYTE*)sHeader.c_str(), (DWORD)sHeader.length());
+
+        if (nDataDst != 0)
+            oFile.WriteFile((BYTE*)pDataDst, (DWORD)nDataDst);
+
+        oFile.CloseFile();
+
+        RELEASEARRAYOBJECTS(pDataDst);
+    }
+};
+
 class CAscNativePrintDocument : public IAscNativePrintDocument
 {
 protected:
@@ -491,6 +695,8 @@ public:
     bool m_bCloudVersionSendSupportCrypto;
 
     bool m_bIsBuilding;
+
+    CMailTo m_oMailToClient;
 
 public:
     class CSystemMessage
@@ -3125,6 +3331,51 @@ public:
         {
             NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_SYSTEM_EXTERNAL_MEDIA_END);
             m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+            return true;
+        }
+        else if ("send_by_mail" == message_name)
+        {
+            CefRefPtr<CefFrame> frameMain = browser->GetMainFrame();
+            if (!frameMain)
+                return true;
+
+            std::wstring sUrl = m_pParent->GetUrl();
+            if (NSFileDownloader::IsNeedDownload(sUrl))
+            {
+                std::string sCode = "window.open(\"mailto:?subject=";
+                sCode += "File";
+                sCode += "&body=";
+
+                std::wstring::size_type posQ = sUrl.find(L"?");
+                if (std::wstring::npos != posQ)
+                    sUrl = sUrl.substr(0, posQ);
+
+                sCode += U_TO_UTF8(sUrl);
+                sCode += "\");";
+
+                frameMain->ExecuteJavaScript(sCode, frameMain->GetURL(), 0);
+                return true;
+            }
+            else
+            {
+                std::wstring sUrlFile = L"";
+                if (m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_bIsSaved)
+                    sUrlFile = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc;
+
+                m_pParent->m_pInternal->m_oMailToClient.CreateDefault(sUrlFile);
+            }
+
+            m_pParent->m_pInternal->m_oMailToClient.Send();
+
+            std::wstring sTmpFile = m_pParent->m_pInternal->m_oMailToClient.m_sFileTmp;
+            NSCommon::string_replace(sTmpFile, L"\\", L"/");
+            if (0 == sTmpFile.find(L"/"))
+                sTmpFile = L"file://" + sTmpFile;
+            else
+                sTmpFile = L"file:///" + sTmpFile;
+
+            std::string sCode = U_TO_UTF8(sTmpFile);//CefURIEncode(sTmpFile, false).ToString();
+            frameMain->ExecuteJavaScript("window.open(\"" + sCode + "\");", frameMain->GetURL(), 0);
             return true;
         }
 
