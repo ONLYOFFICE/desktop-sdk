@@ -3319,10 +3319,15 @@ public:
             double dKoefToPix = 96 / 25.4;
             dKoefToPix *= dScale;
 
-            pData->put_BoundsX((int)(dKoef * (nX + boundsX * dKoefToPix)));
-            pData->put_BoundsY((int)(dKoef * (nY + boundsY * dKoefToPix)));
-            pData->put_BoundsW((int)(dKoef * (boundsR - boundsX) * dKoefToPix));
-            pData->put_BoundsH((int)(dKoef * (boundsB - boundsY) * dKoefToPix));
+            int nBoundsX = (int)(boundsX * dKoefToPix);
+            int nBoundsY = (int)(boundsY * dKoefToPix);
+            int nBoundsR = (int)(boundsR * dKoefToPix + 0.9);
+            int nBoundsB = (int)(boundsB * dKoefToPix + 0.9);
+
+            pData->put_BoundsX((int)(dKoef * (nX + nBoundsX)));
+            pData->put_BoundsY((int)(dKoef * (nY + nBoundsY)));
+            pData->put_BoundsW((int)(dKoef * (nBoundsR - nBoundsX + 1)));
+            pData->put_BoundsH((int)(dKoef * (nBoundsB - nBoundsY + 1)));
 
             m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
             return true;
