@@ -4384,6 +4384,7 @@ require.load = function (context, moduleName, url) {\n\
     {
         m_pParent->m_pInternal->Destroy();
         m_pParent->m_pInternal->m_pManager->OnDestroyWindow();
+        //delete m_pParent;
     }
 
     // Set the window URL address.
@@ -5368,6 +5369,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             m_pInternal->m_oConverterFromEditor.Stop();
             m_pInternal->m_oConverterToEditor.Stop();
 
+            m_pInternal->m_pWidgetImpl->releaseFromChild();
             m_pInternal->m_pWidgetImpl = NULL;
             if (m_pInternal && m_pInternal->m_handler && m_pInternal->m_handler->GetBrowser())
             {

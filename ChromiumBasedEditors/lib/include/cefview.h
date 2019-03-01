@@ -63,6 +63,7 @@ public:
     virtual int parent_height() { return 0; }
     virtual WindowHandleId parent_wid() { return 0; }
     virtual void child_loaded() { }
+    virtual void releaseFromChild() { }
 };
 
 class Q_DECL_EXPORT CCefView
