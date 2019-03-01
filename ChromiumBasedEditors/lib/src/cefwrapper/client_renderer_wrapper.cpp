@@ -2779,7 +2779,7 @@ _e.asc_AddAudio(\"" + sImage + L".svg\", \"" + sImage + L"." + sExt + L"\");\n\
 
             std::wstring sFile = arguments[0]->GetStringValue().ToWString();
             std::wstring sExt = NSCommon::GetFileExtention(sFile);
-            std::wstring sImage = L"image" + std::to_wstring(m_nLocalImagesNextIndex++);
+            std::wstring sImage = L"display8image" + std::to_wstring(m_nLocalImagesNextIndex++);
             std::wstring sDstMain = m_sLocalFileFolderWithoutFile + L"/media/" + sImage + L".";
             std::wstring sDst = sDstMain + sExt;
 
