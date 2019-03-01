@@ -2735,7 +2735,7 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
 
             std::wstring sFile = arguments[0]->GetStringValue().ToWString();
             std::wstring sExt = NSCommon::GetFileExtention(sFile);
-            std::wstring sImage = L"image" + std::to_wstring(m_nLocalImagesNextIndex++);
+            std::wstring sImage = L"display8image" + std::to_wstring(m_nLocalImagesNextIndex++);
             std::wstring sDstMain = m_sLocalFileFolderWithoutFile + L"/media/" + sImage + L".";
             std::wstring sDst = sDstMain + sExt;
 
@@ -2743,8 +2743,9 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
 
             std::wstring sSrc = m_sSystemPlugins + L"/" + arguments[1]->GetStringValue().ToWString() + L"/image";
 
-            NSFile::CFileBinary::Copy(sSrc + L".svg", sDstMain + L"svg");
-            NSFile::CFileBinary::Copy(sSrc + L".emf", sDstMain + L"emf");
+            //NSFile::CFileBinary::Copy(sSrc + L".svg", sDstMain + L"svg");
+            //NSFile::CFileBinary::Copy(sSrc + L".emf", sDstMain + L"emf");
+            NSFile::CFileBinary::Copy(sSrc + L".png", sDstMain + L"png");
 
             std::wstring sCode = L"(function(){ \n\
 var _e = undefined;\n\
@@ -2757,8 +2758,8 @@ else if (window[\"editor\"])\n\
 _e = window[\"editor\"];\n\
 }\n\
 if (!_e) return;\n\
-_e.asc_AddAudio(\"" + sImage + L".svg\", \"" + sImage + L"." + sExt + L"\");\n\
-})();";
+_e.asc_AddAudio(\"" + sImage + L".png\", \"" + sImage + L"." + sExt + L"\");\n\
+})();"; // .svg
 
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
             return true;
