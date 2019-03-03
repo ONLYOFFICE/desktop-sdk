@@ -885,6 +885,7 @@ namespace NSEditorApi
     private:
         std::wstring m_sProgram;
         std::wstring m_sArguments;
+        bool m_bDetached;
 
     public:
         CAscExternalProcess()
@@ -896,6 +897,7 @@ namespace NSEditorApi
 
         LINK_PROPERTY_STRING(Program)
         LINK_PROPERTY_STRING(Arguments)
+        LINK_PROPERTY_BOOL(Detached)
     };
 
     class CAscExternalMedia : public IMenuEventDataBase
