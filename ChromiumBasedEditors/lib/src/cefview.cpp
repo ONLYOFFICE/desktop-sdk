@@ -233,6 +233,141 @@ public:
     }
 };
 
+class CMailToCommandLine
+{
+public:
+    static std::wstring GetMailApp(std::wstring& sMailAppType)
+    {
+        std::vector<std::wstring> arApps;
+        arApps.push_back(L"outlook");
+        arApps.push_back(L"r7");
+        arApps.push_back(L"thunderbird");
+
+    #ifdef _WIN32
+        WCHAR windir[MAX_PATH];
+        GetWindowsDirectory(windir, MAX_PATH);
+        GetWindowsDirectoryW(windir, MAX_PATH);
+
+        std::wstring sWindowsApp(windir);
+        std::wstring sPr1 = sWindowsApp + L"\\..\\Program Files";
+        std::wstring sPr2 = sWindowsApp + L"\\..\\Program Files (x86)";
+        std::wstring sTest;
+
+        for (std::vector<std::wstring>::iterator iterPr = arApps.begin(); iterPr != arApps.end(); iterPr++)
+        {
+            std::wstring sProgram = *iterPr;
+            sMailAppType = sProgram;
+
+            if (sProgram == L"outlook")
+            {
+                int nVersionMax = 19;
+                int nVersionMin = 10;
+
+                for (int nVersion = nVersionMax; nVersion >= nVersionMin; --nVersion)
+                {
+                    sTest = sPr1 + L"\\Microsoft Office\\Office" + std::to_wstring(nVersion) + L"\\outlook.exe";
+                    if (NSFile::CFileBinary::Exists(sTest))
+                        return sTest;
+
+                    sTest = sPr1 + L"\\Microsoft Office\\root\\Office" + std::to_wstring(nVersion) + L"\\outlook.exe";
+                    if (NSFile::CFileBinary::Exists(sTest))
+                        return sTest;
+
+                    sTest = sPr2 + L"\\Microsoft Office\\Office" + std::to_wstring(nVersion) + L"\\outlook.exe";
+                    if (NSFile::CFileBinary::Exists(sTest))
+                        return sTest;
+
+                    sTest = sPr2 + L"\\Microsoft Office\\root\\Office" + std::to_wstring(nVersion) + L"\\outlook.exe";
+                    if (NSFile::CFileBinary::Exists(sTest))
+                        return sTest;
+                }
+            }
+            else if (sProgram == L"r7")
+            {
+                sTest = sPr1 + L"\\R7-Office\\Organizer\\organizer.exe";
+                if (NSFile::CFileBinary::Exists(sTest))
+                    return sTest;
+
+                sTest = sPr2 + L"\\R7-Office\\Organizer\\organizer.exe";
+                if (NSFile::CFileBinary::Exists(sTest))
+                    return sTest;
+            }
+            else if (sProgram == L"thunderbird")
+            {
+                sTest = sPr1 + L"\\Mozilla Thunderbird\\thunderbird.exe";
+                if (NSFile::CFileBinary::Exists(sTest))
+                    return sTest;
+
+                sTest = sPr2 + L"\\Mozilla Thunderbird\\thunderbird.exe";
+                if (NSFile::CFileBinary::Exists(sTest))
+                    return sTest;
+            }
+        }
+    #endif
+
+    #if defined(_LINUX) && !defined(_MAC)
+
+        for (std::vector<std::wstring>::iterator iterPr = arApps.begin(); iterPr != arApps.end(); iterPr++)
+        {
+            std::wstring sProgram = *iterPr;
+            sMailAppType = sProgram;
+
+            if (sProgram == L"r7")
+            {
+                sTest = L"/opt/r7-office/organizer/organizer";
+                if (NSFile::CFileBinary::Exists(sTest))
+                    return sTest;
+            }
+            else if (sProgram == L"thunderbird")
+            {
+                sTest = L"/usr/bin/thunderbird";
+                if (NSFile::CFileBinary::Exists(sTest))
+                    return sTest;
+            }
+        }
+
+    #endif
+
+        sMailAppType = L"";
+        return L"";
+    }
+
+    static void GetArguments(std::vector<std::wstring>& args, const std::wstring& sAppType, const std::wstring& sFilePath)
+    {
+        std::wstring sSubject = NSFile::GetFileName(sFilePath);
+
+        if (L"outlook" == sAppType)
+        {
+            args.push_back(L"/c");
+            args.push_back(L"ipm.note");
+            args.push_back(L"/m");
+
+            std::wstring sParam = L"?subject=" + CefURIEncode(sSubject, false).ToWString();
+            args.push_back(sParam);
+
+            if (!sFilePath.empty())
+            {
+                args.push_back(L"/a");
+                args.push_back(sFilePath);
+            }
+        }
+        else if (L"r7" == sAppType)
+        {
+            args.push_back(L"-compose");
+
+            std::wstring sParam = L"to='',subject='" + sSubject + L"',attachment='file://" + sFilePath + L"'";
+            args.push_back(sParam);
+        }
+        else if (L"thunderbird" == sAppType)
+        {
+            args.push_back(L"-compose");
+
+            std::wstring sParam = L"to='',subject='" + sSubject + L"',attachment='file://" + sFilePath + L"'";
+            args.push_back(sParam);
+        }
+    }
+};
+
 class CMailTo
 {
 public:
@@ -695,8 +830,6 @@ public:
     bool m_bCloudVersionSendSupportCrypto;
 
     bool m_bIsBuilding;
-
-    CMailTo m_oMailToClient;
 
 public:
     class CSystemMessage
@@ -3345,6 +3478,8 @@ public:
                 return true;
 
             std::wstring sUrl = m_pParent->GetUrl();
+            std::wstring sMailApp = L"";
+            std::wstring sMailAppType = L"";
             if (NSFileDownloader::IsNeedDownload(sUrl))
             {
                 std::string sCode = "window.open(\"mailto:?subject=";
@@ -3367,20 +3502,45 @@ public:
                 if (m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_bIsSaved)
                     sUrlFile = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc;
 
-                m_pParent->m_pInternal->m_oMailToClient.CreateDefault(sUrlFile);
+                sMailApp = CMailToCommandLine::GetMailApp(sMailAppType);
+
+                if (!sMailApp.empty())
+                {
+                    NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_SYSTEM_EXTERNAL_PROCESS);
+                    NSEditorApi::CAscExternalProcess* pData = new NSEditorApi::CAscExternalProcess();
+                    pEvent->m_pData = pData;
+
+                    pData->put_Program(sMailApp);
+                    pData->put_Detached(true);
+
+                    CMailToCommandLine::GetArguments(pData->get_Arguments(), sMailAppType, sUrlFile);
+
+                    m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+                }
+                else
+                {
+                    CefRefPtr<CefFrame> _frame = browser->GetFrame("frameEditor");
+                    if (_frame)
+                    {
+                        std::wstring sCode = L"(function(){ \n\
+var _e = undefined;\n\
+if (window[\"Asc\"] && window[\"Asc\"][\"editor\"]) \n\
+{\n\
+_e = window[\"Asc\"][\"editor\"];\n\
+}\n\
+else if (window[\"editor\"])\n\
+{\n\
+_e = window[\"editor\"];\n\
+}\n\
+if (!_e) return;\n\
+_e.sendEvent(\"asc_onError\", c_oAscError.ID.MailToClientMissing, c_oAscError.Level.NoCritical);\n\
+})();";
+
+                        _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+                    }
+                }
             }
 
-            m_pParent->m_pInternal->m_oMailToClient.Send();
-
-            std::wstring sTmpFile = m_pParent->m_pInternal->m_oMailToClient.m_sFileTmp;
-            NSCommon::string_replace(sTmpFile, L"\\", L"/");
-            if (0 == sTmpFile.find(L"/"))
-                sTmpFile = L"file://" + sTmpFile;
-            else
-                sTmpFile = L"file:///" + sTmpFile;
-
-            std::string sCode = U_TO_UTF8(sTmpFile);//CefURIEncode(sTmpFile, false).ToString();
-            frameMain->ExecuteJavaScript("window.open(\"" + sCode + "\");", frameMain->GetURL(), 0);
             return true;
         }
 
