@@ -307,6 +307,7 @@ public:
 
     #if defined(_LINUX) && !defined(_MAC)
 
+        std::wstring sTest;
         for (std::vector<std::wstring>::iterator iterPr = arApps.begin(); iterPr != arApps.end(); iterPr++)
         {
             std::wstring sProgram = *iterPr;
@@ -3533,7 +3534,7 @@ else if (window[\"editor\"])\n\
 _e = window[\"editor\"];\n\
 }\n\
 if (!_e) return;\n\
-_e.sendEvent(\"asc_onError\", c_oAscError.ID.MailToClientMissing, c_oAscError.Level.NoCritical);\n\
+_e.sendEvent(\"asc_onError\", -452, 0);\n\
 })();";
 
                         _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
