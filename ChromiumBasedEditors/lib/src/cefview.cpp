@@ -349,21 +349,48 @@ public:
             if (!sFilePath.empty())
             {
                 args.push_back(L"/a");
-                args.push_back(sFilePath);
+
+                std::wstring sFilePathSrc = sFilePath;
+                NSCommon::string_replace(sFilePathSrc, L"/", L"\\");
+                args.push_back(sFilePathSrc);
             }
         }
         else if (L"r7" == sAppType)
         {
             args.push_back(L"-compose");
 
-            std::wstring sParam = L"to='',subject='" + sSubject + L"',attachment='file://" + sFilePath + L"'";
+            bool bIsAddFile = true;
+            std::wstring sFilePathSrc = sFilePath;
+#ifdef _WIN32
+            if (0 == sFilePath.find(L"\\\\") || 0 == sFilePath.find(L"//"))
+            {
+                NSCommon::string_replace(sFilePathSrc, L"/", L"\\");
+                bIsAddFile = false;
+            }
+#endif
+            if (bIsAddFile)
+                sFilePathSrc = L"file://" + sFilePathSrc;
+
+            std::wstring sParam = L"to='',subject='" + sSubject + L"',attachment='" + sFilePathSrc + L"'";
             args.push_back(sParam);
         }
         else if (L"thunderbird" == sAppType)
         {
             args.push_back(L"-compose");
 
-            std::wstring sParam = L"to='',subject='" + sSubject + L"',attachment='file://" + sFilePath + L"'";
+            bool bIsAddFile = true;
+            std::wstring sFilePathSrc = sFilePath;
+#ifdef _WIN32
+            if (0 == sFilePath.find(L"\\\\") || 0 == sFilePath.find(L"//"))
+            {
+                NSCommon::string_replace(sFilePathSrc, L"/", L"\\");
+                bIsAddFile = false;
+            }
+#endif
+            if (bIsAddFile)
+                sFilePathSrc = L"file://" + sFilePathSrc;
+
+            std::wstring sParam = L"to='',subject='" + sSubject + L"',attachment='" + sFilePath + L"'";
             args.push_back(sParam);
         }
     }
