@@ -6140,6 +6140,24 @@ void CCefView::LoadReporter(int nParentId, std::wstring url)
         urlReporter += L"/index.reporter.html";
     }
 
+    std::wstring sUrlParams = L"";
+    std::wstring::size_type posParams = url.find(L"index.html?");
+    if (posParams != std::wstring::npos)
+    {
+        std::wstring::size_type posLang = url.find(L"lang=", posParams);
+        if (posLang != std::wstring::npos)
+        {
+            std::wstring::size_type posLang2 = url.find(L"&", posLang);
+            if (posLang2 == std::wstring::npos)
+                posLang2 = url.length();
+            sUrlParams += url.substr(posLang, posLang2 - posLang);
+        }
+    }
+
+    if (!sUrlParams.empty())
+    {
+        urlReporter += (L"?" + sUrlParams);
+    }
     this->load(urlReporter);
 }
 
