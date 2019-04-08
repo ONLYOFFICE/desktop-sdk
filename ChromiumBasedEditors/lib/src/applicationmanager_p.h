@@ -654,6 +654,7 @@ public:
     std::wstring    m_sDate;
     std::wstring    m_sUrl;
     std::wstring    m_sExternalCloudId;
+    std::wstring    m_sParentUrl;
 
 public:
     CAscEditorFileInfo()
@@ -726,6 +727,13 @@ public:
     }
 };
 
+class CRecentParent
+{
+public:
+    std::wstring Url;
+    std::wstring Parent;
+};
+
 class CAscApplicationManager_Private : public CefBase_Class,
         public CCookieFoundCallback,
         public NSThreads::CBaseThread,
@@ -796,6 +804,8 @@ public:
 
     std::wstring m_mainPostFix;
     std::wstring m_mainLang;
+
+    std::vector<CRecentParent> m_arRecentParents;
 
     static CAscDpiChecker* m_pDpiChecker;
 
@@ -1382,6 +1392,7 @@ public:
                 oInfo.m_sDate = oFile.GetAttribute(L"date");
                 oInfo.m_sUrl = oFile.GetAttribute(L"url");
                 oInfo.m_sExternalCloudId = oFile.GetAttribute(L"externalcloud");
+                oInfo.m_sParentUrl = oFile.GetAttribute(L"parent");
                 m_arRecents.push_back(oInfo);
 
                 map_files.insert(std::pair<std::wstring, bool>(sPath, true));
@@ -1390,7 +1401,7 @@ public:
 
         Recents_Dump(false);
     }
-    void Recents_Add(const std::wstring& sPathSrc, const int& nType, const std::wstring& sUrl = L"", const std::wstring& sExternalCloudId = L"")
+    void Recents_Add(const std::wstring& sPathSrc, const int& nType, const std::wstring& sUrl = L"", const std::wstring& sExternalCloudId = L"", const std::wstring& sParentUrl = L"")
     {
         CTemporaryCS oCS(&m_oCS_LocalFiles);
 
@@ -1418,6 +1429,7 @@ public:
         oInfo.m_sPath = sPath;
         oInfo.m_sUrl = sUrl;
         oInfo.m_sExternalCloudId = sExternalCloudId;
+        oInfo.m_sParentUrl = sParentUrl;
         oInfo.UpdateDate();
 
         oInfo.m_nFileType = nType;
@@ -1488,6 +1500,24 @@ public:
                 oBuilder.WriteEncodeXmlString(i->m_sExternalCloudId);
             }
 
+            if (i->m_sParentUrl.empty())
+            {
+                if (NSFile::CFileBinary::Exists(i->m_sPath))
+                {
+                    oBuilder.WriteString(L"\" parent=\"");
+                    oBuilder.WriteEncodeXmlString(NSFile::GetDirectoryName(i->m_sPath));
+                }
+                else
+                {
+                    oBuilder.WriteString(L"\" parent=\"");
+                }
+            }
+            else
+            {
+                oBuilder.WriteString(L"\" parent=\"");
+                oBuilder.WriteEncodeXmlString(i->m_sParentUrl);
+            }
+
             oBuilder.WriteString(L"\" />");
         }
         oBuilder.WriteString(L"</recents>");
@@ -1523,6 +1553,22 @@ public:
             oBuilder.WriteEncodeXmlString(i->m_sPath);
             oBuilder.WriteString(L"\",modifyed:\"");
             oBuilder.WriteEncodeXmlString(i->m_sDate);
+            oBuilder.WriteString(L"\",parent:\"");
+            if (i->m_sParentUrl.empty())
+            {
+                if (NSFile::CFileBinary::Exists(i->m_sPath))
+                {
+                    oBuilder.WriteEncodeXmlString(NSFile::GetDirectoryName(i->m_sPath));
+                }
+                else
+                {
+                    oBuilder.WriteEncodeXmlString(L"");
+                }
+            }
+            else
+            {
+                oBuilder.WriteEncodeXmlString(i->m_sParentUrl);
+            }
             oBuilder.WriteString(L"\"}");
         }
         oBuilder.WriteString(L"]");
