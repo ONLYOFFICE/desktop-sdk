@@ -835,6 +835,8 @@ public:
 
     bool m_bIsReceiveOnce_OnDocumentModified;
 
+    std::wstring m_sParentUrl;
+
 #if defined(_LINUX) && !defined(_MAC)
     WindowHandleId m_lNaturalParent;
 #endif
@@ -1751,6 +1753,11 @@ public:
                 NSEditorApi::CAscCreateTab* pData = new NSEditorApi::CAscCreateTab();
                 pData->put_Url(sUrl);
 
+                CRecentParent oRecentParent;
+                oRecentParent.Url = sUrl;
+                oRecentParent.Parent = m_pParent->GetUrl();
+                m_pParent->GetAppManager()->m_pInternal->m_arRecentParents.push_back(oRecentParent);
+
 #if 1
                 if (bIsBackground)
                 {
@@ -2263,7 +2270,7 @@ public:
                             sExtId = m_pParent->m_pInternal->m_oExternalCloud.id;
 
                         m_pParent->GetAppManager()->m_pInternal->Recents_Add(sPath + L"/" + pData->get_Name(),
-                                                                             nType, sUrl, sExtId);
+                                                                             nType, sUrl, sExtId, m_pParent->m_pInternal->m_sParentUrl);
 
                         pData->put_Path(sPath);
                         pData->put_Url(sUrl);
@@ -4667,7 +4674,7 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
     if (!LocalFile_IsSupportEditFormat(m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat))
     {
         if (0 == nError)
-            m_pManager->m_pInternal->Recents_Add(m_oConverterFromEditor.m_oInfo.m_sFileSrc, m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat);
+            m_pManager->m_pInternal->Recents_Add(m_oConverterFromEditor.m_oInfo.m_sFileSrc, m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat, L"", L"", m_sParentUrl);
         nError = ASC_CONSTANT_CANCEL_SAVE;
 
         sNotEditableLocal = m_oConverterFromEditor.m_oInfo.m_sFileSrc;
@@ -4741,7 +4748,7 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
 
         if (bIsSaved && m_pManager && m_pManager->m_pInternal)
         {
-            m_pManager->m_pInternal->Recents_Add(m_oLocalInfo.m_oInfo.m_sFileSrc, m_oLocalInfo.m_oInfo.m_nCurrentFileFormat);
+            m_pManager->m_pInternal->Recents_Add(m_oLocalInfo.m_oInfo.m_sFileSrc, m_oLocalInfo.m_oInfo.m_nCurrentFileFormat, L"", L"", m_sParentUrl);
 
             if (m_pManager->GetEventListener() && m_pCefView != NULL)
             {
@@ -5028,6 +5035,36 @@ void CCefView::SetExternalCloud(const std::wstring& sProviderId)
 void CCefView::load(const std::wstring& urlInputSrc)
 {
     std::wstring urlInput = urlInputSrc;
+
+    if (NSFileDownloader::IsNeedDownload(urlInput))
+    {
+        // проверяем на recent parent
+        std::wstring sRecentParent = L"";
+
+        std::wstring sUrlRecent = urlInput;
+        std::wstring::size_type posQ = sUrlRecent.find(L"?");
+        if (std::wstring::npos != posQ)
+            sUrlRecent = sUrlRecent.substr(0, posQ);
+
+        std::vector<CRecentParent>* parent = &m_pInternal->m_pManager->m_pInternal->m_arRecentParents;
+        for (std::vector<CRecentParent>::iterator iter = parent->begin(); iter != parent->end(); iter++)
+        {
+            std::wstring sIterUrl = iter->Url;
+            posQ = sIterUrl.find(L"?");
+            if (std::wstring::npos != posQ)
+                sIterUrl = sIterUrl.substr(0, posQ);
+
+            if (sUrlRecent == sIterUrl)
+            {
+                sRecentParent = iter->Parent;
+                parent->erase(iter);
+                break;
+            }
+        }
+
+        m_pInternal->m_sParentUrl = sRecentParent;
+    }
+
     if (true)
     {
         if (m_pInternal->m_bIsExternalCloud && GetType() == cvwtSimple)
@@ -6347,7 +6384,7 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
             if (m_pInternal->m_bIsExternalCloud)
                 sExtId = m_pInternal->m_oExternalCloud.id;
 
-            this->GetAppManager()->m_pInternal->Recents_Add(sPath, nFileFormat, sRecentUrl, sExtId);
+            this->GetAppManager()->m_pInternal->Recents_Add(sPath, nFileFormat, sRecentUrl, sExtId, m_pInternal->m_sParentUrl);
         }
         else
         {
@@ -6359,7 +6396,7 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
         m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc = sFilePath;
         NSCommon::string_replace(m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc, L"\\", L"/");
 
-        this->GetAppManager()->m_pInternal->Recents_Add(sFilePath, nFileFormat);
+        this->GetAppManager()->m_pInternal->Recents_Add(sFilePath, nFileFormat, L"", L"", m_pInternal->m_sParentUrl);
     }
 
     m_pInternal->m_oConverterToEditor.m_pManager = this->GetAppManager();
