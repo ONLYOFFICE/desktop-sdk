@@ -1755,7 +1755,9 @@ public:
 
                 CRecentParent oRecentParent;
                 oRecentParent.Url = sUrl;
-                oRecentParent.Parent = m_pParent->GetUrl();
+                //oRecentParent.Parent = m_pParent->GetUrl();
+                oRecentParent.Parent = m_pParent->m_pInternal->GetBrowser()->GetMainFrame()->GetURL().ToWString();
+
                 m_pParent->GetAppManager()->m_pInternal->m_arRecentParents.push_back(oRecentParent);
 
 #if 1
