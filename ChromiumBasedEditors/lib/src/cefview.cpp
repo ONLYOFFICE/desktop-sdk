@@ -6647,6 +6647,12 @@ bool CCefViewEditor::OpenRecentFile(const int& nId)
     }
 
     m_pInternal->m_sRecentOpenExternalId = oInfo.m_sExternalCloudId;
+
+    CRecentParent oRecentParent;
+    oRecentParent.Url = oInfo.m_sUrl;
+    oRecentParent.Parent = oInfo.m_sParentUrl;
+    m_pInternal->m_pManager->m_pInternal->m_arRecentParents.push_back(oRecentParent);
+
     this->load(oInfo.m_sUrl);
     return true;
 }
