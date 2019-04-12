@@ -775,6 +775,8 @@ int CAscApplicationManager::GetFileFormatByExtentionForSave(const std::wstring& 
         nFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOTX;
     if (sName == L"odt")
         nFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_ODT;
+    if (sName == L"ott")
+        nFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_OTT;
     if (sName == L"rtf")
         nFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_RTF;
     if (sName == L"txt")
@@ -788,6 +790,8 @@ int CAscApplicationManager::GetFileFormatByExtentionForSave(const std::wstring& 
         nFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLTX;
     if (sName == L"ods")
         nFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_ODS;
+    if (sName == L"ots")
+        nFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_OTS;
     if (sName == L"csv")
         nFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_CSV;
 
@@ -797,6 +801,8 @@ int CAscApplicationManager::GetFileFormatByExtentionForSave(const std::wstring& 
         nFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_POTX;
     if (sName == L"odp")
         nFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_ODP;
+    if (sName == L"otp")
+        nFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_OTP;
 
     if (sName == L"pdf")
         nFormat = AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF;

@@ -1192,6 +1192,7 @@ public:
 
             if (!bEncryption)
             {
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_OTT);
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_RTF);
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_TXT);
                 //arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_HTML);
@@ -1217,6 +1218,7 @@ public:
 
             if (!bEncryption)
             {
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_OTS);
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_CSV);
             }
 
@@ -1237,6 +1239,11 @@ public:
             }
 
             arFormats.push_back(AVS_OFFICESTUDIO_FILE_PRESENTATION_ODP);
+
+            if (!bEncryption)
+            {
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_PRESENTATION_OTP);
+            }
 
             arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF);
 
