@@ -1,11 +1,3 @@
-QT       += core gui printsupport widgets multimedia multimediawidgets
-
-TARGET = videoplayer
-TEMPLATE = lib
-
-CONFIG += shared
-CONFIG += plugin
-
 DEFINES += QT_DEPRECATED_WARNINGS
 DEFINES += BUILD_VIDEO_LIBRARY
 
@@ -20,27 +12,27 @@ core_linux {
 LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lkernel
 
 HEADERS += \
-    ./src/lib_base.h \
-    ./src/qpushbutton_icons.h \
-    ./src/qfooterpanel.h \    
-    ./src/qvideoslider.h \
-    ./src/qvideoplaylist.h \
-    ./src/qascvideowidget.h
+    $$PWD/src/lib_base.h \
+    $$PWD/src/qpushbutton_icons.h \
+    $$PWD/src/qfooterpanel.h \
+    $$PWD/src/qvideoslider.h \
+    $$PWD/src/qvideoplaylist.h \
+    $$PWD/src/qascvideowidget.h
 
 SOURCES += \
-    ./src/lib_base.cpp \
-    ./src/qpushbutton_icons.cpp \
-    ./src/qfooterpanel.cpp \
-    ./src/qascvideoview.cpp \
-    ./src/qvideoslider.cpp \
-    ./src/qvideoplaylist.cpp \
-    ./src/qascvideowidget.cpp
+    $$PWD/src/lib_base.cpp \
+    $$PWD/src/qpushbutton_icons.cpp \
+    $$PWD/src/qfooterpanel.cpp \
+    $$PWD/src/qascvideoview.cpp \
+    $$PWD/src/qvideoslider.cpp \
+    $$PWD/src/qvideoplaylist.cpp \
+    $$PWD/src/qascvideowidget.cpp
 
 HEADERS += \
-    ./qascvideoview.h \
+    $$PWD/qascvideoview.h \
 
 RESOURCES += \
-    $$PWD_ROOT_DIR/IconsVideoPlayerLib.qrc
+    $$PWD/IconsVideoPlayerLib.qrc
 
 libvlc {
 
