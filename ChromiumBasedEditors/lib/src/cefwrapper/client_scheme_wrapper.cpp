@@ -164,6 +164,15 @@ public:
 
             std::wstring sFontFile = cefFile.ToWString().substr(19);
             DWORD dwSize = 0;
+
+#ifndef WIN32
+            if (!sFontFile.empty())
+            {
+                if ('/' != sFontFile.c_str()[0])
+                    sFontFile = L"/" + sFontFile;
+            }
+#endif
+
             NSFile::CFileBinary::ReadAllBytes(sFontFile, &data_binary_, dwSize);
             data_binary_len_ = (size_t)dwSize;
 
