@@ -2825,6 +2825,26 @@ _e.asc_AddVideo(\"" + sImage + L".png\", \"" + sImage + L"." + sExt + L"\");\n\
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
+        else if (name == "IsLocalFileExist")
+        {
+            if (arguments.size() != 1)
+            {
+                retval = CefV8Value::CreateBool(false);
+                return true;
+            }
+
+            std::wstring sFile = arguments[0]->GetStringValue().ToWString();
+            if (sFile.find(L"file://") == 0)
+            {
+                if (NSFile::CFileBinary::Exists(sFile.substr(7)))
+                    sFile = sFile.substr(7);
+                else if (NSFile::CFileBinary::Exists(sFile.substr(8)))
+                    sFile = sFile.substr(8);
+            }
+
+            retval = CefV8Value::CreateBool(NSFile::CFileBinary::Exists(sFile));
+            return true;
+        }
 
         // Function does not exist.
         return false;
@@ -3366,6 +3386,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction999 = CefV8Value::CreateFunction("AddAudio", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction1000 = CefV8Value::CreateFunction("AddVideo", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction1001 = CefV8Value::CreateFunction("SendByMail", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction1002 = CefV8Value::CreateFunction("IsLocalFileExist", _nativeHandler);
 
 
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -3528,6 +3549,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("AddAudio", _nativeFunction999, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("AddVideo", _nativeFunction1000, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("SendByMail", _nativeFunction1001, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("IsLocalFileExist", _nativeFunction1002, V8_PROPERTY_ATTRIBUTE_NONE);
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 
