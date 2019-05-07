@@ -81,6 +81,18 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
                       int       nCmdShow)
 {
     std::wstring sXml(lpCmdLine);
+
+#ifdef DEBUG_WINDOW_SHOW
+    // fix for qt debugger
+    if (sXml.length() > 2)
+    {
+        if ('\"' == sXml.c_str()[0])
+            sXml = sXml.substr(1);
+        if ('\"' == sXml.c_str()[sXml.length() - 1])
+            sXml = sXml.substr(0, sXml.length() - 1);
+    }
+#endif
+
 #endif
 
     bool bIsChromiumSubprocess = true;
@@ -204,7 +216,11 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
     client_handler->Init();
 
     CefWindowInfo window_info;
+#ifdef DEBUG_WINDOW_SHOW
+    window_info.SetAsPopup(NULL, "HTML");
+#else
     window_info.SetAsWindowless(NULL);
+#endif
 
     CefRefPtr<CefRequestContext> request_context;
     CefBrowserSettings browser_settings;

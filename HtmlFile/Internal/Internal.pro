@@ -13,7 +13,6 @@ include($$CORE_ROOT_DIR/Common/3dParty/icu/icu.pri)
 include($$CORE_ROOT_DIR/../desktop-sdk/ChromiumBasedEditors/lib/AscDocumentsCore_base.pri)
 LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lUnicodeConverter -lkernel -lgraphics
 
-
 DESTDIR=$$CORE_BUILDS_LIBRARIES_PATH
 
 HEADERS += \
@@ -40,3 +39,6 @@ linux-g++ | linux-g++-64 | linux-g++-32 {
     QMAKE_LFLAGS += "-Wl,-rpath,\'\$$ORIGIN/converter\'"
     QMAKE_LFLAGS += -static-libstdc++ -static-libgcc
 }
+
+#DEFINES += DEBUG_WINDOW_SHOW
+#DESTDIR=$$CORE_ROOT_DIR/HtmlFile/test/Debug/HtmlFileInternal
