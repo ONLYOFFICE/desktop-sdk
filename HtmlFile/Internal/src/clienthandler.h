@@ -100,6 +100,7 @@ class CHtmlClientHandler : public client::ClientHandler, public client::ClientHa
 private:
     std::wstring m_sTempFile;
     std::wstring m_sCachePath;
+    bool m_bIsLoadedFirst;
 
 public:
     CGlobalHtmlFileParams* m_global;
@@ -108,10 +109,17 @@ public:
     CefRefPtr<CefBrowser> m_browser;
 
 public:
-    CHtmlClientHandler(CGlobalHtmlFileParams* params) : client::ClientHandler(this, true, "html_file")
+    CHtmlClientHandler(CGlobalHtmlFileParams* params) : client::ClientHandler(this,
+                                                                          #ifdef DEBUG_WINDOW_SHOW
+                                                                              false,
+                                                                          #else
+                                                                              true,
+                                                                          #endif
+                                                                              "html_file")
     {
         m_global = params;
         m_render = new CHtmlRenderHandler();
+        m_bIsLoadedFirst = false;
     }
 
     virtual CefRefPtr<CefRenderHandler> GetRenderHandler()
@@ -283,6 +291,39 @@ window.onload = function ()\
         return true;
     }
 
+    virtual bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
+                                CefRefPtr<CefFrame> frame,
+                                CefRefPtr<CefRequest> request,
+                                bool is_redirect)
+    {
+        //std::wstring sUrl = request->GetURL().ToWString();
+        bool bIsMain = frame->IsMain();
+        if (bIsMain)
+        {
+            if (m_bIsLoadedFirst)
+                return true;
+            m_bIsLoadedFirst = true;
+        }
+        return false;
+    }
+
+    virtual void OnBeforeDownload(CefRefPtr<CefBrowser> browser,
+        CefRefPtr<CefDownloadItem> download_item,
+        const CefString& suggested_name,
+        CefRefPtr<CefBeforeDownloadCallback> callback)
+    {
+        CEF_REQUIRE_UI_THREAD();
+        callback->Continue("", false);
+    }
+
+    virtual void OnDownloadUpdated(CefRefPtr<CefBrowser> browser,
+                                          CefRefPtr<CefDownloadItem> download_item,
+                                          CefRefPtr<CefDownloadItemCallback> callback) OVERRIDE
+    {
+        CEF_REQUIRE_UI_THREAD();
+        callback->Cancel();
+    }
+
     virtual bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
                                           CefProcessId source_process,
                                           CefRefPtr<CefProcessMessage> message)
@@ -293,7 +334,9 @@ window.onload = function ()\
         std::string message_name = message->GetName();
         if (message_name == "Exit")
         {
+#ifndef DEBUG_WINDOW_SHOW
             this->Exit();
+#endif
             return true;
         }
 
