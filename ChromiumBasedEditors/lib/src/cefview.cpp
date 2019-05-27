@@ -2304,7 +2304,8 @@ public:
             if (m_pParent &&
                     m_pParent->GetAppManager()->GetEventListener() &&
                     m_pParent->m_pInternal->m_bIsNativeSave &&
-                    m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir.empty())
+                    (m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir.empty() ||
+                     !m_pParent->m_pInternal->m_sOpenAsLocalSrc.empty()))
             {
                 m_pParent->m_pInternal->m_bIsNativeSave = false;
 

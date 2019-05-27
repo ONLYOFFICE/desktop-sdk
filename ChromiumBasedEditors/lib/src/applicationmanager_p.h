@@ -51,6 +51,27 @@
 
 #include "../../../../core/DesktopEditor/fontengine/application_generate_fonts.h"
 
+#if 0
+static void __log_messagea__(const std::string& message)
+{
+    FILE* f = fopen("/tmp/ascdocumentscore.log", "a+");
+    if (!f) return;
+    fprintf(f, message.c_str());
+    fprintf(f, "\n");
+    fclose(f);
+}
+static void __log_message__(const std::wstring& message)
+{
+    std::string messagea = U_TO_UTF8(message);
+    __log_messagea__(messagea);
+}
+#define CORE_LOGGINGA(_message_) __log_messagea__(#_message_)
+#define CORE_LOGGING(_message_) __log_message__(#_message_)
+#else
+#define CORE_LOGGINGA(_message_)
+#define CORE_LOGGING(_message_)
+#endif
+
 #include <stdio.h>
 #include <time.h>
 
@@ -1162,6 +1183,7 @@ protected:
 
     virtual DWORD ThreadProc()
     {
+        CORE_LOGGINGA("CApplicationManager::Fonts::start");
         //DWORD dwTime1 = NSTimers::GetTickCount();
 
         std::vector<std::string> strFonts;
@@ -1273,6 +1295,8 @@ protected:
 
         if (!bIsEqual)
         {
+            CORE_LOGGINGA("CApplicationManager::Fonts::change");
+
             if (NSFile::CFileBinary::Exists(strAllFontsJSPath))
                 NSFile::CFileBinary::Remove(strAllFontsJSPath);
             if (NSFile::CFileBinary::Exists(strFontsSelectionBin))
@@ -1328,6 +1352,7 @@ protected:
         // TODO:
         m_pApplicationFonts->InitializeFromFolder(strDirectory);
 
+        CORE_LOGGINGA("CApplicationManager::Fonts::end");
         return 0;
     }
 
