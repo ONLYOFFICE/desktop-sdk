@@ -51,6 +51,27 @@
 
 #include "../../../../core/DesktopEditor/fontengine/application_generate_fonts.h"
 
+#if 0
+static void __log_messagea__(const std::string& message)
+{
+    FILE* f = fopen("/tmp/ascdocumentscore.log", "a+");
+    if (!f) return;
+    fprintf(f, message.c_str());
+    fprintf(f, "\n");
+    fclose(f);
+}
+static void __log_message__(const std::wstring& message)
+{
+    std::string messagea = U_TO_UTF8(message);
+    __log_messagea__(messagea);
+}
+#define CORE_LOGGINGA(_message_) __log_messagea__(#_message_)
+#define CORE_LOGGING(_message_) __log_message__(#_message_)
+#else
+#define CORE_LOGGINGA(_message_)
+#define CORE_LOGGING(_message_)
+#endif
+
 #include <stdio.h>
 #include <time.h>
 
@@ -654,6 +675,7 @@ public:
     std::wstring    m_sDate;
     std::wstring    m_sUrl;
     std::wstring    m_sExternalCloudId;
+    std::wstring    m_sParentUrl;
 
 public:
     CAscEditorFileInfo()
@@ -724,6 +746,13 @@ public:
         crypto_support = src.crypto_support;
         return *this;
     }
+};
+
+class CRecentParent
+{
+public:
+    std::wstring Url;
+    std::wstring Parent;
 };
 
 class CAscApplicationManager_Private : public CefBase_Class,
@@ -797,6 +826,8 @@ public:
     std::wstring m_mainPostFix;
     std::wstring m_mainLang;
 
+    std::vector<CRecentParent> m_arRecentParents;
+
     static CAscDpiChecker* m_pDpiChecker;
 
 public:
@@ -868,7 +899,21 @@ public:
             pVisitor->m_sDomain = pVisitor->m_sDomain.substr(8);
         else if (0 == pVisitor->m_sDomain.find("http://"))
             pVisitor->m_sDomain = pVisitor->m_sDomain.substr(7);
+        
+        std::string::size_type pos = pVisitor->m_sDomain.find("?");
+        if (pos != std::string::npos)
+            pVisitor->m_sDomain = pVisitor->m_sDomain.substr(0, pos);
+        pos = pVisitor->m_sDomain.rfind("/");
+        if ((pos != std::string::npos) && ((pos + 1) == pVisitor->m_sDomain.length()))
+            pVisitor->m_sDomain = pVisitor->m_sDomain.substr(0, pos);
 
+        if (true)
+        {
+            pos = pVisitor->m_sDomain.rfind("/products/files");
+            if ((pos != std::string::npos) && ((pos + 15) == pVisitor->m_sDomain.length()))
+                pVisitor->m_sDomain = pVisitor->m_sDomain.substr(0, pos);
+        }
+        
         pVisitor->CheckCookiePresent(CefCookieManager::GetGlobalManager(NULL));
     }
 
@@ -1138,6 +1183,7 @@ protected:
 
     virtual DWORD ThreadProc()
     {
+        CORE_LOGGINGA("CApplicationManager::Fonts::start");
         //DWORD dwTime1 = NSTimers::GetTickCount();
 
         std::vector<std::string> strFonts;
@@ -1249,6 +1295,8 @@ protected:
 
         if (!bIsEqual)
         {
+            CORE_LOGGINGA("CApplicationManager::Fonts::change");
+
             if (NSFile::CFileBinary::Exists(strAllFontsJSPath))
                 NSFile::CFileBinary::Remove(strAllFontsJSPath);
             if (NSFile::CFileBinary::Exists(strFontsSelectionBin))
@@ -1304,6 +1352,7 @@ protected:
         // TODO:
         m_pApplicationFonts->InitializeFromFolder(strDirectory);
 
+        CORE_LOGGINGA("CApplicationManager::Fonts::end");
         return 0;
     }
 
@@ -1368,6 +1417,7 @@ public:
                 oInfo.m_sDate = oFile.GetAttribute(L"date");
                 oInfo.m_sUrl = oFile.GetAttribute(L"url");
                 oInfo.m_sExternalCloudId = oFile.GetAttribute(L"externalcloud");
+                oInfo.m_sParentUrl = oFile.GetAttribute(L"parent");
                 m_arRecents.push_back(oInfo);
 
                 map_files.insert(std::pair<std::wstring, bool>(sPath, true));
@@ -1376,7 +1426,7 @@ public:
 
         Recents_Dump(false);
     }
-    void Recents_Add(const std::wstring& sPathSrc, const int& nType, const std::wstring& sUrl = L"", const std::wstring& sExternalCloudId = L"")
+    void Recents_Add(const std::wstring& sPathSrc, const int& nType, const std::wstring& sUrl = L"", const std::wstring& sExternalCloudId = L"", const std::wstring& sParentUrl = L"")
     {
         CTemporaryCS oCS(&m_oCS_LocalFiles);
 
@@ -1404,6 +1454,7 @@ public:
         oInfo.m_sPath = sPath;
         oInfo.m_sUrl = sUrl;
         oInfo.m_sExternalCloudId = sExternalCloudId;
+        oInfo.m_sParentUrl = sParentUrl;
         oInfo.UpdateDate();
 
         oInfo.m_nFileType = nType;
@@ -1474,6 +1525,24 @@ public:
                 oBuilder.WriteEncodeXmlString(i->m_sExternalCloudId);
             }
 
+            if (i->m_sParentUrl.empty())
+            {
+                if (NSFile::CFileBinary::Exists(i->m_sPath))
+                {
+                    oBuilder.WriteString(L"\" parent=\"");
+                    oBuilder.WriteEncodeXmlString(NSFile::GetDirectoryName(i->m_sPath));
+                }
+                else
+                {
+                    oBuilder.WriteString(L"\" parent=\"");
+                }
+            }
+            else
+            {
+                oBuilder.WriteString(L"\" parent=\"");
+                oBuilder.WriteEncodeXmlString(i->m_sParentUrl);
+            }
+
             oBuilder.WriteString(L"\" />");
         }
         oBuilder.WriteString(L"</recents>");
@@ -1509,6 +1578,22 @@ public:
             oBuilder.WriteEncodeXmlString(i->m_sPath);
             oBuilder.WriteString(L"\",modifyed:\"");
             oBuilder.WriteEncodeXmlString(i->m_sDate);
+            oBuilder.WriteString(L"\",parent:\"");
+            if (i->m_sParentUrl.empty())
+            {
+                if (NSFile::CFileBinary::Exists(i->m_sPath))
+                {
+                    oBuilder.WriteEncodeXmlString(NSFile::GetDirectoryName(i->m_sPath));
+                }
+                else
+                {
+                    oBuilder.WriteEncodeXmlString(L"");
+                }
+            }
+            else
+            {
+                oBuilder.WriteEncodeXmlString(i->m_sParentUrl);
+            }
             oBuilder.WriteString(L"\"}");
         }
         oBuilder.WriteString(L"]");

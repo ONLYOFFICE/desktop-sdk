@@ -48,6 +48,7 @@ HEADERS += \
     ./src/cookiesworker.h \
     ./src/cefwrapper/client_app.h \
     ./src/cefwrapper/client_renderer.h \
+    ./src/cefwrapper/client_renderer_params.h \
     ./src/cefwrapper/client_scheme.h \
     ./src/fileconverter.h \
     ./src/fileprinter.h

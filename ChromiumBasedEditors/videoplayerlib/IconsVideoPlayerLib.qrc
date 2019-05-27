@@ -1,0 +1,46 @@
+<RCC>
+    <qresource prefix="/">
+        <file>icons/add-files.png</file>
+        <file>icons/add-files.svg</file>
+        <file>icons/add-files-2x.png</file>
+        <file>icons/add-files-active.png</file>
+        <file>icons/add-files-active.svg</file>
+        <file>icons/add-files-active-2x.png</file>
+        <file>icons/drop-playlist.png</file>
+        <file>icons/drop-playlist.svg</file>
+        <file>icons/drop-playlist-2x.png</file>
+        <file>icons/drop-playlist-active.png</file>
+        <file>icons/drop-playlist-active.svg</file>
+        <file>icons/drop-playlist-active-2x.png</file>
+        <file>icons/fullscreen-on.png</file>
+        <file>icons/fullscreen-on.svg</file>
+        <file>icons/fullscreen-on-2x.png</file>
+        <file>icons/fullscreen-on-active.png</file>
+        <file>icons/fullscreen-on-active.svg</file>
+        <file>icons/pause.png</file>
+        <file>icons/pause.svg</file>
+        <file>icons/pause-2x.png</file>
+        <file>icons/pause-active.png</file>
+        <file>icons/pause-active.svg</file>
+        <file>icons/pause-active-2x.png</file>
+        <file>icons/play.png</file>
+        <file>icons/play.svg</file>
+        <file>icons/play-2x.png</file>
+        <file>icons/play-active.png</file>
+        <file>icons/play-active.svg</file>
+        <file>icons/play-active-2x.png</file>
+        <file>icons/playlist.png</file>
+        <file>icons/playlist.svg</file>
+        <file>icons/playlist-2x.png</file>
+        <file>icons/playlist-active.png</file>
+        <file>icons/playlist-active.svg</file>
+        <file>icons/playlist-active-2x.png</file>
+        <file>icons/volume.png</file>
+        <file>icons/volume.svg</file>
+        <file>icons/volume-2x.png</file>
+        <file>icons/volume-active.png</file>
+        <file>icons/volume-active.svg</file>
+        <file>icons/volume-active-2x.png</file>
+        <file>icons/fullscreen-on-active-2x.png</file>
+    </qresource>
+</RCC>

@@ -35,7 +35,6 @@
 #include <gdk/gdk.h>
 #include <gdk/gdkx.h>
 #include <gtk/gtk.h>
-#include <gtk/gtkgl.h>
 
 #include <X11/Xlib.h>
 
@@ -169,6 +168,8 @@ CApplicationCEF::CApplicationCEF()
 
 int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* argv[])
 {
+    CORE_LOGGINGA("CApplicationCEF::Init_CEF::start");
+
     if (NULL == pManager->m_pInternal->m_pDpiChecker)
         pManager->m_pInternal->m_pDpiChecker = pManager->InitDpiChecker();
 
@@ -241,7 +242,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 #ifdef WIN32
     // Create a ClientApp of the correct type.
     if (process_type == client::ClientApp::BrowserProcess)
-        m_pInternal->m_app = new CAscClientAppBrowser(pManager->m_pInternal->m_mapSettings);
+        m_pInternal->m_app = new CAscClientAppBrowser(pManager->m_pInternal->m_mapSettings, pManager);
     else if (process_type == client::ClientApp::RendererProcess ||
              process_type == client::ClientApp::ZygoteProcess)
         m_pInternal->m_app = new CAscClientAppRenderer(pManager->m_pInternal->m_mapSettings);
@@ -272,6 +273,8 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
         return m_pInternal->m_nReturnCodeInitCef;
     }
 #endif
+
+    CORE_LOGGINGA("CApplicationCEF::Init_CEF::main");
 
     CefSettings settings;
     
@@ -328,19 +331,31 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     cef_string_from_wide(sCachePath.c_str(), sCachePath.length(), &_cache);
     settings.cache_path = _cache;
 
+    std::wstring sCachePathUser = sCachePath;
+    cef_string_t _cache_user;
+    memset(&_cache_user, 0, sizeof(_cache_user));
+    cef_string_from_wide(sCachePathUser.c_str(), sCachePathUser.length(), &_cache_user);
+    settings.user_data_path = _cache_user;
+
+    std::wstring sCachePathLog = sCachePath + L"/log.log";
+    cef_string_t _cache_log;
+    memset(&_cache_log, 0, sizeof(_cache_log));
+    cef_string_from_wide(sCachePathLog.c_str(), sCachePathLog.length(), &_cache_log);
+    settings.log_file = _cache_log;
+    settings.log_severity = LOGSEVERITY_DISABLE;
+
     settings.persist_session_cookies = true;
 
     // Initialize CEF.
     bool bInit = m_pInternal->context->Initialize(main_args, settings, m_pInternal->m_app.get(), NULL);
     bool bIsInitScheme = asc_scheme::InitScheme(pManager);
 
+    CORE_LOGGINGA("CApplicationCEF::Init_CEF::initialize");
+
 #if defined(_LINUX) && !defined(_MAC)
     // The Chromium sandbox requires that there only be a single thread during
     // initialization. Therefore initialize GTK after CEF.
     gtk_init(&argc, &argv);
-
-    // Perform gtkglext initialization required by the OSR example.
-    gtk_gl_init(&argc, &argv);
 
     // Install xlib error handlers so that the application won't be terminated
     // on non-fatal errors. Must be done after initializing GTK.
@@ -410,6 +425,15 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 
     NSSystem::SetEnvValueA("APPLICATION_NAME", pManager->m_oSettings.converter_application_name);
     NSSystem::SetEnvValueA("COMPANY_NAME", pManager->m_oSettings.converter_application_company);
+
+    for (std::map<std::string, std::string>::iterator iterMap = pManager->m_oSettings.converter_environments.begin();
+         iterMap != pManager->m_oSettings.converter_environments.end(); iterMap++)
+    {
+        // TODO: on linux undate environments in converter
+        NSSystem::SetEnvValueA(iterMap->first, iterMap->second);
+    }
+
+    CORE_LOGGINGA("CApplicationCEF::Init_CEF::end");
 
     return 0;
 }

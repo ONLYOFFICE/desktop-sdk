@@ -1,6 +1,8 @@
+DEFINES += NO_CSR
+
 # LINUX
 HEADERS += \
-    $$CEF_SRC_PATH/tests/cefclient/browser/browser_window_osr_gtk.h \
+    #$$CEF_SRC_PATH/tests/cefclient/browser/browser_window_osr_gtk.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/browser_window_std_gtk.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/dialog_handler_gtk.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/print_handler_gtk.h \
@@ -14,7 +16,7 @@ HEADERS += \
     $$CEF_SRC_PATH/tests/cefclient/browser/window_test_runner_views.h
 
 SOURCES += \
-    $$CEF_SRC_PATH/tests/cefclient/browser/browser_window_osr_gtk.cc \
+    #$$CEF_SRC_PATH/tests/cefclient/browser/browser_window_osr_gtk.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/dialog_handler_gtk.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/main_context_impl_posix.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/print_handler_gtk.cc \

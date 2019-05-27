@@ -47,6 +47,7 @@ class QCefView : public QWidget, public CCefViewWidgetImpl
 
 signals:
     void _loaded();
+    void _closed();
 
 public:
     QCefView(QWidget* parent);
@@ -73,6 +74,11 @@ public:
     void Create(CAscApplicationManager* pManager, CefViewWrapperType eType);
     void CreateReporter(CAscApplicationManager* pManager, CAscReporterData* data);
 
+    virtual void OnMediaStart(NSEditorApi::CAscExternalMedia* data);
+    virtual void OnMediaEnd();
+
+    virtual void releaseFromChild();
+
 protected:
     CCefView* m_pCefView;
     QWidget* m_pLoader;
@@ -93,6 +99,7 @@ signals:
 protected slots:
 
     void _loadedSlot();
+    void _closedSlot();
 };
 
 #endif  // CEFCLIENT_QCEFWEBVIEW_H

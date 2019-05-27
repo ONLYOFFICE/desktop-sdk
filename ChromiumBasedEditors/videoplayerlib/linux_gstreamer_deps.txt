@@ -1,0 +1,16 @@
+# debian
+sudo apt-get install libgstreamer1.0
+sudo apt-get install gstreamer1.0-libav
+sudo apt-get install gstreamer1.0-plugins-bad
+sudo apt-get install gstreamer1.0-plugins-good
+sudo apt-get install gstreamer1.0-plugins-ugly
+
+# centos
+yum install gstreamer1
+yum install gstreamer1-plugins-base
+yum install gstreamer1-plugins-good
+yum install gstreamer1-plugins-ugly-free
+
+yum -y install epel-release
+yum -y install http://li.nux.ro/download/nux/dextop/el7/x86_64/nux-dextop-release-0-5.el7.nux.noarch.rpm
+yum -y install gstreamer1-libav

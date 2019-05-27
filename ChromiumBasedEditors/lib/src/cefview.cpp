@@ -65,6 +65,7 @@
 #include "./plugins.h"
 
 #include "../../../../core/DesktopEditor/graphics/BaseThread.h"
+#include "../../../../core/DesktopEditor/graphics/Matrix.h"
 
 #include "./cefwrapper/client_scheme.h"
 
@@ -229,6 +230,373 @@ public:
         {
             StopNoJoin();
         }
+    }
+};
+
+class CMailToCommandLine
+{
+public:
+    static std::wstring GetMailApp(std::wstring& sMailAppType)
+    {
+        std::vector<std::wstring> arApps;
+        arApps.push_back(L"outlook");
+        arApps.push_back(L"r7");
+        arApps.push_back(L"thunderbird");
+
+    #ifdef _WIN32
+        WCHAR windir[MAX_PATH];
+        GetWindowsDirectory(windir, MAX_PATH);
+        GetWindowsDirectoryW(windir, MAX_PATH);
+
+        std::wstring sWindowsApp(windir);
+        std::wstring sPr1 = sWindowsApp + L"\\..\\Program Files";
+        std::wstring sPr2 = sWindowsApp + L"\\..\\Program Files (x86)";
+        std::wstring sTest;
+
+        for (std::vector<std::wstring>::iterator iterPr = arApps.begin(); iterPr != arApps.end(); iterPr++)
+        {
+            std::wstring sProgram = *iterPr;
+            sMailAppType = sProgram;
+
+            if (sProgram == L"outlook")
+            {
+                int nVersionMax = 19;
+                int nVersionMin = 10;
+
+                for (int nVersion = nVersionMax; nVersion >= nVersionMin; --nVersion)
+                {
+                    sTest = sPr1 + L"\\Microsoft Office\\Office" + std::to_wstring(nVersion) + L"\\outlook.exe";
+                    if (NSFile::CFileBinary::Exists(sTest))
+                        return sTest;
+
+                    sTest = sPr1 + L"\\Microsoft Office\\root\\Office" + std::to_wstring(nVersion) + L"\\outlook.exe";
+                    if (NSFile::CFileBinary::Exists(sTest))
+                        return sTest;
+
+                    sTest = sPr2 + L"\\Microsoft Office\\Office" + std::to_wstring(nVersion) + L"\\outlook.exe";
+                    if (NSFile::CFileBinary::Exists(sTest))
+                        return sTest;
+
+                    sTest = sPr2 + L"\\Microsoft Office\\root\\Office" + std::to_wstring(nVersion) + L"\\outlook.exe";
+                    if (NSFile::CFileBinary::Exists(sTest))
+                        return sTest;
+                }
+            }
+            else if (sProgram == L"r7")
+            {
+                sTest = sPr1 + L"\\R7-Office\\Organizer\\organizer.exe";
+                if (NSFile::CFileBinary::Exists(sTest))
+                    return sTest;
+
+                sTest = sPr2 + L"\\R7-Office\\Organizer\\organizer.exe";
+                if (NSFile::CFileBinary::Exists(sTest))
+                    return sTest;
+            }
+            else if (sProgram == L"thunderbird")
+            {
+                sTest = sPr1 + L"\\Mozilla Thunderbird\\thunderbird.exe";
+                if (NSFile::CFileBinary::Exists(sTest))
+                    return sTest;
+
+                sTest = sPr2 + L"\\Mozilla Thunderbird\\thunderbird.exe";
+                if (NSFile::CFileBinary::Exists(sTest))
+                    return sTest;
+            }
+        }
+    #endif
+
+    #if defined(_LINUX) && !defined(_MAC)
+
+        std::wstring sTest;
+        for (std::vector<std::wstring>::iterator iterPr = arApps.begin(); iterPr != arApps.end(); iterPr++)
+        {
+            std::wstring sProgram = *iterPr;
+            sMailAppType = sProgram;
+
+            if (sProgram == L"r7")
+            {
+                sTest = L"/opt/r7-office/organizer/organizer";
+                if (NSFile::CFileBinary::Exists(sTest))
+                    return sTest;
+            }
+            else if (sProgram == L"thunderbird")
+            {
+                sTest = L"/usr/bin/thunderbird";
+                if (NSFile::CFileBinary::Exists(sTest))
+                    return sTest;
+            }
+        }
+
+    #endif
+
+        sMailAppType = L"";
+        return L"";
+    }
+
+    static void GetArguments(std::vector<std::wstring>& args, const std::wstring& sAppType, const std::wstring& sFilePath)
+    {
+        std::wstring sSubject = NSFile::GetFileName(sFilePath);
+
+        if (L"outlook" == sAppType)
+        {
+            args.push_back(L"/c");
+            args.push_back(L"ipm.note");
+            args.push_back(L"/m");
+
+            std::wstring sParam = L"?subject=" + CefURIEncode(sSubject, false).ToWString();
+            args.push_back(sParam);
+
+            if (!sFilePath.empty())
+            {
+                args.push_back(L"/a");
+
+                std::wstring sFilePathSrc = sFilePath;
+                NSCommon::string_replace(sFilePathSrc, L"/", L"\\");
+                args.push_back(sFilePathSrc);
+            }
+        }
+        else if (L"r7" == sAppType)
+        {
+            args.push_back(L"-compose");
+
+            bool bIsAddFile = true;
+            std::wstring sFilePathSrc = sFilePath;
+#ifdef _WIN32
+            if (0 == sFilePath.find(L"\\\\") || 0 == sFilePath.find(L"//"))
+            {
+                NSCommon::string_replace(sFilePathSrc, L"/", L"\\");
+                bIsAddFile = false;
+            }
+#endif
+            if (bIsAddFile)
+                sFilePathSrc = L"file://" + sFilePathSrc;
+
+            std::wstring sParam = L"to='',subject='" + sSubject + L"',attachment='" + sFilePathSrc + L"'";
+            args.push_back(sParam);
+        }
+        else if (L"thunderbird" == sAppType)
+        {
+            args.push_back(L"-compose");
+
+            bool bIsAddFile = true;
+            std::wstring sFilePathSrc = sFilePath;
+#ifdef _WIN32
+            if (0 == sFilePath.find(L"\\\\") || 0 == sFilePath.find(L"//"))
+            {
+                NSCommon::string_replace(sFilePathSrc, L"/", L"\\");
+                bIsAddFile = false;
+            }
+#endif
+            if (bIsAddFile)
+                sFilePathSrc = L"file://" + sFilePathSrc;
+
+            std::wstring sParam = L"to='',subject='" + sSubject + L"',attachment='" + sFilePath + L"'";
+            args.push_back(sParam);
+        }
+    }
+};
+
+class CMailTo
+{
+public:
+    std::wstring m_sReceiver;
+    std::wstring m_sSubject;
+    std::wstring m_sText;
+    std::wstring m_sFilePath;
+    std::wstring m_sFileTmp;
+    bool m_bIsFile;
+
+    std::vector<std::wstring> m_arTmps;
+
+public:
+    CMailTo()
+    {
+    }
+    ~CMailTo()
+    {
+        for (std::vector<std::wstring>::iterator iter = m_arTmps.begin(); iter != m_arTmps.end(); iter++)
+        {
+            NSFile::CFileBinary::Remove(*iter);
+        }
+    }
+
+    void CreateDefault(std::wstring sFilePath)
+    {
+        m_sFilePath = sFilePath;
+        m_sReceiver = L"";
+        m_sText = L"";
+        m_sSubject = NSFile::GetFileName(m_sFilePath);
+
+        CreateTmp();
+        m_arTmps.push_back(m_sFileTmp);
+
+        m_bIsFile = true;
+    }
+
+    void CreateDefaultUrl(std::wstring sFileUrl)
+    {
+        m_sFilePath = L"";
+        m_sReceiver = L"";
+        m_sText = sFileUrl;
+        m_sSubject = L"File";
+        m_bIsFile = false;
+
+        CreateTmp();
+        m_arTmps.push_back(m_sFileTmp);
+    }
+
+    std::string GetMimeType(std::string sExt)
+    {
+        if ("docx" == sExt)
+            return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        if ("doc" == sExt)
+            return "application/msword";
+        if ("odt" == sExt)
+            return "application/vnd.oasis.opendocument.text";
+        if ("rtf" == sExt)
+            return "application/rtf";
+        if ("txt" == sExt)
+            return "text/plain";
+        if ("html" == sExt)
+            return "text/html";
+        if ("epub" == sExt)
+            return "application/epub+zip";
+        if ("docm" == sExt)
+            return "application/vnd.ms-word.document.macroenabled.12";
+        if ("dotx" == sExt)
+            return "application/vnd.openxmlformats-officedocument.wordprocessingml.template";
+        if ("ott" == sExt)
+            return "application/vnd.oasis.opendocument.text-template";
+
+        if ("pptx" == sExt)
+            return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+        if ("ppt" == sExt)
+            return "application/vnd.ms-powerpoint";
+        if ("ppsx" == sExt)
+            return "application/vnd.openxmlformats-officedocument.presentationml.slideshow";
+        if ("pps" == sExt)
+            return "application/vnd.ms-powerpoint";
+        if ("pptm" == sExt)
+            return "application/vnd.ms-powerpoint.presentation.macroenabled.12";
+        if ("ppsm" == sExt)
+            return "application/vnd.ms-powerpoint.slideshow.macroenabled.12";
+        if ("potx" == sExt)
+            return "application/vnd.openxmlformats-officedocument.presentationml.template";
+        if ("odp" == sExt)
+            return "application/vnd.oasis.opendocument.presentation";
+        if ("otp" == sExt)
+            return "application/vnd.oasis.opendocument.presentation-template";
+
+        if ("xlsx" == sExt)
+            return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        if ("xls" == sExt)
+            return "application/vnd.ms-excel";
+        if ("csv" == sExt)
+            return "text/csv";
+        if ("xlsm" == sExt)
+            return "application/vnd.ms-excel.sheet.macroenabled.12";
+        if ("xltx" == sExt)
+            return "application/vnd.openxmlformats-officedocument.spreadsheetml.template";
+        if ("xltm" == sExt)
+            return "application/vnd.ms-excel.template.macroenabled.12";
+        if ("ods" == sExt)
+            return "application/vnd.oasis.opendocument.spreadsheet";
+        if ("ots" == sExt)
+            return "application/vnd.oasis.opendocument.spreadsheet-template";
+
+        if ("pdf" == sExt)
+            return "application/pdf";
+        if ("djvu" == sExt)
+            return "image/vnd.djvu";
+        if ("xps" == sExt)
+            return "application/vnd.ms-xpsdocument";
+
+        return "text/plain";
+    }
+
+    std::wstring GetMimeType(std::wstring sFilePath)
+    {
+        std::wstring sExt = NSFile::GetFileExtention(sFilePath);
+        std::string sExtA = U_TO_UTF8(sExt);
+        std::string sMime = GetMimeType(sExtA);
+        return UTF8_TO_U(sMime);
+    }
+
+    void CreateTmp()
+    {
+        if (!m_sFileTmp.empty())
+            return;
+
+        m_sFileTmp = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"EML");
+        if (NSFile::CFileBinary::Exists(m_sFileTmp))
+            NSFile::CFileBinary::Remove(m_sFileTmp);
+
+        m_sFileTmp += L".eml";
+    }
+
+    void Send()
+    {
+        CreateTmp();
+
+        std::wstring sContent = L"Content-Type: multipart/alternative; boundary=\"BitshiftDynamicsMailerBoundary\"\r\n";
+        sContent += L"To: ";
+        sContent += m_sReceiver;
+        sContent += L"\r\n";
+
+        sContent += L"Subject: ";
+        sContent += m_sSubject;
+        sContent += L"\r\n";
+
+        sContent += L"Mime-Version: 1.0 BitshiftDynamics Mailer\r\n\r\n";
+
+        sContent += L"--BitshiftDynamicsMailerBoundary\r\n";
+        sContent += L"Content-Transfer-Encoding: quoted-printable\r\n";
+        sContent += L"Content-Type: text/plain;\r\n";
+        sContent += L"        charset=utf-8\r\n\r\n";
+        sContent += m_sText;
+        sContent += L"\r\n\r\n";
+
+        int nDataDst = 0;
+        char* pDataDst = NULL;
+
+        if (!m_sFilePath.empty())
+        {
+            std::wstring sFileName = NSCommon::GetFileName(m_sFilePath);
+            std::wstring sMimeType = GetMimeType(m_sFilePath);
+
+            sContent += L"\r\n--BitshiftDynamicsMailerBoundary\r\n";
+            sContent += L"Content-Type: multipart/mixed;\r\n";
+            sContent += L"        boundary=\"BitshiftDynamicsMailerBoundary\"\r\n\r\n";
+
+            sContent += L"--BitshiftDynamicsMailerBoundary\r\n";
+            sContent += L"Content-Disposition: inline;\r\n        filename=\"";
+            sContent += sFileName;
+            sContent += L"\"\r\nContent-Type: ";
+            sContent += sMimeType;
+            sContent += L";\r\n        name=\"";
+            sContent += sFileName;
+            sContent += L"\"\r\nContent-Transfer-Encoding: base64\r\n\r\n";
+
+            BYTE* pDataFile = NULL;
+            DWORD dwDataLen = 0;
+            NSFile::CFileBinary::ReadAllBytes(m_sFilePath, &pDataFile, dwDataLen);
+            NSFile::CBase64Converter::Encode(pDataFile, (int)dwDataLen, pDataDst, nDataDst);
+
+            RELEASEARRAYOBJECTS(pDataFile);
+        }
+
+        std::string sHeader = U_TO_UTF8(sContent);
+
+        NSFile::CFileBinary oFile;
+        oFile.CreateFileW(m_sFileTmp);
+        oFile.WriteFile((BYTE*)sHeader.c_str(), (DWORD)sHeader.length());
+
+        if (nDataDst != 0)
+            oFile.WriteFile((BYTE*)pDataDst, (DWORD)nDataDst);
+
+        oFile.CloseFile();
+
+        RELEASEARRAYOBJECTS(pDataDst);
     }
 };
 
@@ -466,6 +834,8 @@ public:
     bool m_bIsCrashed;
 
     bool m_bIsReceiveOnce_OnDocumentModified;
+
+    std::wstring m_sParentUrl;
 
 #if defined(_LINUX) && !defined(_MAC)
     WindowHandleId m_lNaturalParent;
@@ -822,6 +1192,7 @@ public:
 
             if (!bEncryption)
             {
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_OTT);
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_RTF);
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_TXT);
                 //arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_HTML);
@@ -847,6 +1218,7 @@ public:
 
             if (!bEncryption)
             {
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_OTS);
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_CSV);
             }
 
@@ -867,6 +1239,11 @@ public:
             }
 
             arFormats.push_back(AVS_OFFICESTUDIO_FILE_PRESENTATION_ODP);
+
+            if (!bEncryption)
+            {
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_PRESENTATION_OTP);
+            }
 
             arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF);
 
@@ -1383,6 +1760,13 @@ public:
                 NSEditorApi::CAscCreateTab* pData = new NSEditorApi::CAscCreateTab();
                 pData->put_Url(sUrl);
 
+                CRecentParent oRecentParent;
+                oRecentParent.Url = sUrl;
+                //oRecentParent.Parent = m_pParent->GetUrl();
+                oRecentParent.Parent = m_pParent->m_pInternal->GetBrowser()->GetMainFrame()->GetURL().ToWString();
+
+                m_pParent->GetAppManager()->m_pInternal->m_arRecentParents.push_back(oRecentParent);
+
 #if 1
                 if (bIsBackground)
                 {
@@ -1614,7 +1998,7 @@ public:
 
             if (0 == sTestSUP_Simple.find(sTestUrl_Simple) && std::wstring::npos == sUrl.find(L"desktop=true"))
             {
-                if (sUrl.rfind(L"/") == (sUrl.length() - 1))
+                if (sUrl.rfind(L"/") != (sUrl.length() - 1))
                     sUrl += L"/";
 
                 m_pParent->load(sUrl + L"products/files/?desktop=true");
@@ -1811,6 +2195,8 @@ public:
             pVisitor->m_sPath           = message->GetArgumentList()->GetString(2).ToString();
             pVisitor->m_sCookieKey      = message->GetArgumentList()->GetString(3).ToString();
             pVisitor->m_sCookieValue    = message->GetArgumentList()->GetString(4).ToString();
+            
+            pVisitor->Correct();
 
             pVisitor->SetCookie(CefCookieManager::GetGlobalManager(NULL));
 
@@ -1893,7 +2279,7 @@ public:
                             sExtId = m_pParent->m_pInternal->m_oExternalCloud.id;
 
                         m_pParent->GetAppManager()->m_pInternal->Recents_Add(sPath + L"/" + pData->get_Name(),
-                                                                             nType, sUrl, sExtId);
+                                                                             nType, sUrl, sExtId, m_pParent->m_pInternal->m_sParentUrl);
 
                         pData->put_Path(sPath);
                         pData->put_Url(sUrl);
@@ -1918,7 +2304,8 @@ public:
             if (m_pParent &&
                     m_pParent->GetAppManager()->GetEventListener() &&
                     m_pParent->m_pInternal->m_bIsNativeSave &&
-                    m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir.empty())
+                    (m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir.empty() ||
+                     !m_pParent->m_pInternal->m_sOpenAsLocalSrc.empty()))
             {
                 m_pParent->m_pInternal->m_bIsNativeSave = false;
 
@@ -3038,9 +3425,172 @@ public:
             }
             return true;
         }
+        else if ("media_start" == message_name)
+        {
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_SYSTEM_EXTERNAL_MEDIA_START);
+            NSEditorApi::CAscExternalMedia* pData = new NSEditorApi::CAscExternalMedia();
+            pEvent->m_pData = pData;
+
+            Aggplus::CMatrix oTransform;
+
+            std::wstring sPath = (message->GetArgumentList()->GetString(0).ToWString());
+            if (!NSFile::CFileBinary::Exists(sPath))
+                sPath = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/media/" + sPath;
+
+            pData->put_Url(sPath);
+
+            int nX = message->GetArgumentList()->GetInt(1);
+            int nY = message->GetArgumentList()->GetInt(2);
+            double dExtW = message->GetArgumentList()->GetDouble(3);
+            double dExtH = message->GetArgumentList()->GetDouble(4);
+
+            double dScale = message->GetArgumentList()->GetDouble(5);
+
+            if (message->GetArgumentList()->GetSize() > 6)
+            {
+                oTransform.SetElements(
+                            message->GetArgumentList()->GetDouble(6),
+                            message->GetArgumentList()->GetDouble(7),
+                            message->GetArgumentList()->GetDouble(8),
+                            message->GetArgumentList()->GetDouble(9),
+                            message->GetArgumentList()->GetDouble(10),
+                            message->GetArgumentList()->GetDouble(11));
+            }
+
+            double x1 = 0; double y1 = 0;
+            double x2 = dExtW; double y2 = 0;
+            double x3 = dExtW; double y3 = dExtH;
+            double x4 = 0; double y4 = dExtH;
+
+            oTransform.TransformPoint(x1, y1);
+            oTransform.TransformPoint(x2, y2);
+            oTransform.TransformPoint(x3, y3);
+            oTransform.TransformPoint(x4, y4);
+
+            double boundsX = x1;
+            double boundsY = y1;
+            double boundsR = x1;
+            double boundsB = y1;
+
+            if (x2 < boundsX) boundsX = x2;
+            if (x3 < boundsX) boundsX = x3;
+            if (x4 < boundsX) boundsX = x4;
+
+            if (x2 > boundsR) boundsR = x2;
+            if (x3 > boundsR) boundsR = x3;
+            if (x4 > boundsR) boundsR = x4;
+
+            if (y2 < boundsY) boundsY = y2;
+            if (y3 < boundsY) boundsY = y3;
+            if (y4 < boundsY) boundsY = y4;
+
+            if (y2 > boundsB) boundsB = y2;
+            if (y3 > boundsB) boundsB = y3;
+            if (y4 > boundsB) boundsB = y4;
+
+            pData->put_X(nX);
+            pData->put_Y(nY);
+            pData->put_W(dExtW);
+            pData->put_H(dExtH);
+
+            double dKoef = (double)m_pParent->m_pInternal->m_nDeviceScale;
+            double dKoefToPix = 96 / 25.4;
+            dKoefToPix *= dScale;
+
+            int nBoundsX = (int)(boundsX * dKoefToPix);
+            int nBoundsY = (int)(boundsY * dKoefToPix);
+            int nBoundsR = (int)(boundsR * dKoefToPix + 0.9);
+            int nBoundsB = (int)(boundsB * dKoefToPix + 0.9);
+
+            pData->put_BoundsX((int)(dKoef * (nX + nBoundsX)));
+            pData->put_BoundsY((int)(dKoef * (nY + nBoundsY)));
+            pData->put_BoundsW((int)(dKoef * (nBoundsR - nBoundsX + 1)));
+            pData->put_BoundsH((int)(dKoef * (nBoundsB - nBoundsY + 1)));
+
+            m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+            return true;
+        }
+        else if ("media_end" == message_name)
+        {
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_SYSTEM_EXTERNAL_MEDIA_END);
+            m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+            return true;
+        }
+        else if ("send_by_mail" == message_name)
+        {
+            CefRefPtr<CefFrame> frameMain = browser->GetMainFrame();
+            if (!frameMain)
+                return true;
+
+            std::wstring sUrl = m_pParent->GetUrl();
+            std::wstring sMailApp = L"";
+            std::wstring sMailAppType = L"";
+            if (NSFileDownloader::IsNeedDownload(sUrl))
+            {
+                std::string sCode = "window.open(\"mailto:?subject=";
+                sCode += "File";
+                sCode += "&body=";
+
+                std::wstring::size_type posQ = sUrl.find(L"?");
+                if (std::wstring::npos != posQ)
+                    sUrl = sUrl.substr(0, posQ);
+
+                sCode += U_TO_UTF8(sUrl);
+                sCode += "\");";
+
+                frameMain->ExecuteJavaScript(sCode, frameMain->GetURL(), 0);
+                return true;
+            }
+            else
+            {
+                std::wstring sUrlFile = L"";
+                if (m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_bIsSaved)
+                    sUrlFile = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc;
+
+                sMailApp = CMailToCommandLine::GetMailApp(sMailAppType);
+
+                if (!sMailApp.empty())
+                {
+                    NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_SYSTEM_EXTERNAL_PROCESS);
+                    NSEditorApi::CAscExternalProcess* pData = new NSEditorApi::CAscExternalProcess();
+                    pEvent->m_pData = pData;
+
+                    pData->put_Program(sMailApp);
+                    pData->put_Detached(true);
+
+                    CMailToCommandLine::GetArguments(pData->get_Arguments(), sMailAppType, sUrlFile);
+
+                    m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+                }
+                else
+                {
+                    CefRefPtr<CefFrame> _frame = browser->GetFrame("frameEditor");
+                    if (_frame)
+                    {
+                        std::wstring sCode = L"(function(){ \n\
+var _e = undefined;\n\
+if (window[\"Asc\"] && window[\"Asc\"][\"editor\"]) \n\
+{\n\
+_e = window[\"Asc\"][\"editor\"];\n\
+}\n\
+else if (window[\"editor\"])\n\
+{\n\
+_e = window[\"editor\"];\n\
+}\n\
+if (!_e) return;\n\
+_e.sendEvent(\"asc_onError\", -452, 0);\n\
+})();";
+
+                        _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+                    }
+                }
+            }
+
+            return true;
+        }
 
         CAscApplicationManager_Private* pInternalMan = m_pParent->GetAppManager()->m_pInternal;
-        if (pInternalMan->m_pAdditional && pInternalMan->m_pAdditional->OnProcessMessageReceived(browser, source_process, message))
+        if (pInternalMan->m_pAdditional && pInternalMan->m_pAdditional->OnProcessMessageReceived(browser, source_process, message, m_pParent))
             return true;
 
         if (message_router_->OnProcessMessageReceived(browser, source_process, message))
@@ -4044,6 +4594,7 @@ require.load = function (context, moduleName, url) {\n\
     {
         m_pParent->m_pInternal->Destroy();
         m_pParent->m_pInternal->m_pManager->OnDestroyWindow();
+        //delete m_pParent;
     }
 
     // Set the window URL address.
@@ -4133,7 +4684,7 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
     if (!LocalFile_IsSupportEditFormat(m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat))
     {
         if (0 == nError)
-            m_pManager->m_pInternal->Recents_Add(m_oConverterFromEditor.m_oInfo.m_sFileSrc, m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat);
+            m_pManager->m_pInternal->Recents_Add(m_oConverterFromEditor.m_oInfo.m_sFileSrc, m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat, L"", L"", m_sParentUrl);
         nError = ASC_CONSTANT_CANCEL_SAVE;
 
         sNotEditableLocal = m_oConverterFromEditor.m_oInfo.m_sFileSrc;
@@ -4207,7 +4758,7 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
 
         if (bIsSaved && m_pManager && m_pManager->m_pInternal)
         {
-            m_pManager->m_pInternal->Recents_Add(m_oLocalInfo.m_oInfo.m_sFileSrc, m_oLocalInfo.m_oInfo.m_nCurrentFileFormat);
+            m_pManager->m_pInternal->Recents_Add(m_oLocalInfo.m_oInfo.m_sFileSrc, m_oLocalInfo.m_oInfo.m_nCurrentFileFormat, L"", L"", m_sParentUrl);
 
             if (m_pManager->GetEventListener() && m_pCefView != NULL)
             {
@@ -4494,6 +5045,36 @@ void CCefView::SetExternalCloud(const std::wstring& sProviderId)
 void CCefView::load(const std::wstring& urlInputSrc)
 {
     std::wstring urlInput = urlInputSrc;
+
+    if (NSFileDownloader::IsNeedDownload(urlInput))
+    {
+        // проверяем на recent parent
+        std::wstring sRecentParent = L"";
+
+        std::wstring sUrlRecent = urlInput;
+        std::wstring::size_type posQ = sUrlRecent.find(L"?");
+        if (std::wstring::npos != posQ)
+            sUrlRecent = sUrlRecent.substr(0, posQ);
+
+        std::vector<CRecentParent>* parent = &m_pInternal->m_pManager->m_pInternal->m_arRecentParents;
+        for (std::vector<CRecentParent>::iterator iter = parent->begin(); iter != parent->end(); iter++)
+        {
+            std::wstring sIterUrl = iter->Url;
+            posQ = sIterUrl.find(L"?");
+            if (std::wstring::npos != posQ)
+                sIterUrl = sIterUrl.substr(0, posQ);
+
+            if (sUrlRecent == sIterUrl)
+            {
+                sRecentParent = iter->Parent;
+                parent->erase(iter);
+                break;
+            }
+        }
+
+        m_pInternal->m_sParentUrl = sRecentParent;
+    }
+
     if (true)
     {
         if (m_pInternal->m_bIsExternalCloud && GetType() == cvwtSimple)
@@ -5028,6 +5609,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             m_pInternal->m_oConverterFromEditor.Stop();
             m_pInternal->m_oConverterToEditor.Stop();
 
+            m_pInternal->m_pWidgetImpl->releaseFromChild();
             m_pInternal->m_pWidgetImpl = NULL;
             if (m_pInternal && m_pInternal->m_handler && m_pInternal->m_handler->GetBrowser())
             {
@@ -5548,6 +6130,8 @@ void CCefView::SetAppManager(CAscApplicationManager* pManager)
 
 CCefViewWidgetImpl* CCefView::GetWidgetImpl()
 {
+    if (m_pInternal->m_bIsClosing)
+        return NULL;
     return m_pInternal->m_pWidgetImpl;
 }
 void CCefView::OnDestroyWidgetImpl()
@@ -5603,7 +6187,30 @@ void CCefView::LoadReporter(int nParentId, std::wstring url)
         urlReporter += L"/index.reporter.html";
     }
 
+    std::wstring sUrlParams = L"";
+    std::wstring::size_type posParams = url.find(L"index.html?");
+    if (posParams != std::wstring::npos)
+    {
+        std::wstring::size_type posLang = url.find(L"lang=", posParams);
+        if (posLang != std::wstring::npos)
+        {
+            std::wstring::size_type posLang2 = url.find(L"&", posLang);
+            if (posLang2 == std::wstring::npos)
+                posLang2 = url.length();
+            sUrlParams += url.substr(posLang, posLang2 - posLang);
+        }
+    }
+
+    if (!sUrlParams.empty())
+    {
+        urlReporter += (L"?" + sUrlParams);
+    }
     this->load(urlReporter);
+}
+
+double CCefView::GetDeviceScale()
+{
+    return (double)m_pInternal->m_nDeviceScale;
 }
 
 /////////////////////////////////////////////////////////////
@@ -5787,7 +6394,7 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
             if (m_pInternal->m_bIsExternalCloud)
                 sExtId = m_pInternal->m_oExternalCloud.id;
 
-            this->GetAppManager()->m_pInternal->Recents_Add(sPath, nFileFormat, sRecentUrl, sExtId);
+            this->GetAppManager()->m_pInternal->Recents_Add(sPath, nFileFormat, sRecentUrl, sExtId, m_pInternal->m_sParentUrl);
         }
         else
         {
@@ -5799,7 +6406,7 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
         m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc = sFilePath;
         NSCommon::string_replace(m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc, L"\\", L"/");
 
-        this->GetAppManager()->m_pInternal->Recents_Add(sFilePath, nFileFormat);
+        this->GetAppManager()->m_pInternal->Recents_Add(sFilePath, nFileFormat, L"", L"", m_pInternal->m_sParentUrl);
     }
 
     m_pInternal->m_oConverterToEditor.m_pManager = this->GetAppManager();
@@ -6048,6 +6655,12 @@ bool CCefViewEditor::OpenRecentFile(const int& nId)
     }
 
     m_pInternal->m_sRecentOpenExternalId = oInfo.m_sExternalCloudId;
+
+    CRecentParent oRecentParent;
+    oRecentParent.Url = oInfo.m_sUrl;
+    oRecentParent.Parent = oInfo.m_sParentUrl;
+    m_pInternal->m_pManager->m_pInternal->m_arRecentParents.push_back(oRecentParent);
+
     this->load(oInfo.m_sUrl);
     return true;
 }
@@ -6079,6 +6692,11 @@ std::wstring CCefViewEditor::GetLocalFilePath()
     if (!m_pInternal->m_oLocalInfo.m_oInfo.m_bIsSaved)
         return L"";
     return m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc;
+}
+
+std::wstring CCefViewEditor::GetRecoveryDir()
+{
+    return m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir;
 }
 
 // NATIVE file converter

@@ -54,6 +54,8 @@
 
 #include "../../src/additional/renderer.h"
 #include "../crypto_mode.h"
+#include "../../../../../core/DesktopEditor/common/CalculatorCRC32.h"
+#include "./client_renderer_params.h"
 
 namespace NSCommon
 {
@@ -290,6 +292,9 @@ public:
     int                 m_nLocalImagesNextIndex;
     std::map<std::wstring, std::wstring> m_mapLocalAddImages;
 
+    CCalculatorCRC32 m_oCRC32;
+    std::map<unsigned int, std::wstring> m_mapLocalAddImagesCRC;
+
     NSFonts::IApplicationFonts* m_pLocalApplicationFonts;
 
     std::string        m_sScrollStyle;
@@ -369,6 +374,37 @@ public:
 ::-webkit-scrollbar-thumb { background:#BFBFBF; border: 4px solid transparent; border-radius:7px; background-clip: content-box; } \
 ::-webkit-scrollbar-thumb:hover { background:#A7A7A7; border: 4px solid transparent; border-radius:7px; background-clip: content-box; } \
 ::-webkit-scrollbar-corner { background:inherit; }";
+
+        // skin for onlyoffice custom scrollbar
+        m_sScrollStyle += "\
+.webkit-scrollbar::-webkit-scrollbar { background: transparent; width: 16px; height: 16px; } \
+.webkit-scrollbar::-webkit-scrollbar-button { width: 5px; height:5px; } \
+.webkit-scrollbar::-webkit-scrollbar-track {	background:#F5F5F5; border: 4px solid transparent; border-radius:7px; background-clip: content-box; } \
+.webkit-scrollbar::-webkit-scrollbar-thumb { background:#BFBFBF; border: 4px solid transparent; border-radius:7px; background-clip: content-box; } \
+.webkit-scrollbar::-webkit-scrollbar-thumb:hover { background:#A7A7A7; border: 4px solid transparent; border-radius:7px; background-clip: content-box; } \
+.webkit-scrollbar::-webkit-scrollbar-corner { background:inherit; }";
+#endif
+
+        CheckDefaults();
+    }
+
+    void CheckDefaults()
+    {
+        CAscRendererProcessParams& default_params = CAscRendererProcessParams::getInstance();
+
+        int nFlags = default_params.GetValueInt("onlypass", 3);
+
+        m_bIsSupportOnlyPass = ((nFlags & 0x01) == 0x01) ? true : false;
+        m_bIsSupportProtect = ((nFlags & 0x02) == 0x02) ? true : false;
+
+        m_nCryptoMode = default_params.GetValueInt("cryptomode", m_nCryptoMode);
+
+        m_sSystemPlugins = default_params.GetValueW("system_plugins_path");
+        m_sUserPlugins = default_params.GetValueW("user_plugins_path");
+        m_sCookiesPath = default_params.GetValueW("cookie_path");
+
+#if 0
+        default_params.Print();
 #endif
     }
 
@@ -2537,6 +2573,278 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
 
             return true;
         }
+        else if (name == "MediaStart")
+        {
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("media_start");
+            message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
+            message->GetArgumentList()->SetInt(1, arguments[1]->GetIntValue());
+            message->GetArgumentList()->SetInt(2, arguments[2]->GetIntValue());
+            message->GetArgumentList()->SetDouble(3, arguments[3]->GetDoubleValue());
+            message->GetArgumentList()->SetDouble(4, arguments[4]->GetDoubleValue());
+            message->GetArgumentList()->SetDouble(5, arguments[5]->GetDoubleValue());
+
+            if (arguments.size() > 6)
+            {
+                message->GetArgumentList()->SetDouble(6, arguments[6]->GetDoubleValue());
+                message->GetArgumentList()->SetDouble(7, arguments[7]->GetDoubleValue());
+                message->GetArgumentList()->SetDouble(8, arguments[8]->GetDoubleValue());
+                message->GetArgumentList()->SetDouble(9, arguments[9]->GetDoubleValue());
+                message->GetArgumentList()->SetDouble(10, arguments[10]->GetDoubleValue());
+                message->GetArgumentList()->SetDouble(11, arguments[11]->GetDoubleValue());
+            }
+
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "MediaEnd")
+        {
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("media_end");
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+
+
+        if (name == "GetImageOriginalSize")
+        {
+#ifdef CEF_2623
+            retval = CefV8Value::CreateObject(NULL);
+#else
+            retval = CefV8Value::CreateObject(NULL, NULL);
+#endif
+            int nW = 0;
+            int nH = 0;
+
+            std::wstring sUrl = arguments[0]->GetStringValue().ToWString();
+
+            std::wstring sUrlFile = sUrl;
+            if (sUrlFile.find(L"file://") == 0)
+            {
+                sUrlFile = sUrlFile.substr(7);
+
+                // MS Word copy image with url "file://localhost/..." on mac
+                if (0 == sUrlFile.find(L"localhost"))
+                    sUrlFile = sUrlFile.substr(9);
+
+                NSCommon::string_replace(sUrlFile, L"%20", L" ");
+
+                if (!NSFile::CFileBinary::Exists(sUrlFile))
+                    sUrlFile = sUrlFile.substr(1);
+            }
+
+            if (NSFile::CFileBinary::Exists(sUrlFile))
+            {
+                CBgraFrame oFrame;
+                if (oFrame.OpenFile(sUrlFile))
+                {
+                    nW = oFrame.get_Width();
+                    nH = oFrame.get_Height();
+                }
+            }
+            else if (IsNeedDownload(sUrl))
+            {
+                std::wstring sTmpFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"IMG");
+                if (NSFile::CFileBinary::Exists(sTmpFile))
+                    NSFile::CFileBinary::Remove(sTmpFile);
+
+                CFileDownloaderWrapper oDownloader(sUrl, sTmpFile);
+                oDownloader.DownloadSync();
+
+                CBgraFrame oFrame;
+                if (oFrame.OpenFile(sTmpFile))
+                {
+                    nW = oFrame.get_Width();
+                    nH = oFrame.get_Height();
+                }
+
+                if (NSFile::CFileBinary::Exists(sTmpFile))
+                    NSFile::CFileBinary::Remove(sTmpFile);
+            }
+            else if (0 == sUrl.find(L"data:"))
+            {
+                std::wstring::size_type nBase64Start = sUrl.find(L"base64,");
+                if (nBase64Start != std::wstring::npos)
+                {
+                    int nStartIndex = (int)nBase64Start + 7;
+                    int nCount = (int)sUrl.length() - nStartIndex;
+                    char* pData = new char[nCount];
+                    const wchar_t* pDataSrc = sUrl.c_str();
+                    for (int i = 0; i < nCount; ++i)
+                        pData[i] = (char)pDataSrc[i + nStartIndex];
+
+                    BYTE* pDataDecode = NULL;
+                    int nLenDecode = 0;
+                    NSFile::CBase64Converter::Decode(pData, nCount, pDataDecode, nLenDecode);
+
+                    RELEASEARRAYOBJECTS(pData);
+
+                    std::wstring sTmpFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"IMG");
+                    if (NSFile::CFileBinary::Exists(sTmpFile))
+                        NSFile::CFileBinary::Remove(sTmpFile);
+
+                    NSFile::CFileBinary oFile;
+                    if (oFile.CreateFileW(sTmpFile))
+                    {
+                        oFile.WriteFile(pDataDecode, (DWORD)nLenDecode);
+                        oFile.CloseFile();
+                    }
+
+                    RELEASEARRAYOBJECTS(pDataDecode);
+
+                    CBgraFrame oFrame;
+                    if (oFrame.OpenFile(sTmpFile))
+                    {
+                        nW = oFrame.get_Width();
+                        nH = oFrame.get_Height();
+                    }
+
+                    if (NSFile::CFileBinary::Exists(sTmpFile))
+                        NSFile::CFileBinary::Remove(sTmpFile);
+                }
+            }
+            else if (sUrl.find(L"image") == 0)
+            {
+                sUrl = m_sLocalFileFolderWithoutFile + L"/media/" + sUrl;
+
+                CBgraFrame oFrame;
+                if (oFrame.OpenFile(sUrl))
+                {
+                    nW = oFrame.get_Width();
+                    nH = oFrame.get_Height();
+                }
+            }
+
+            retval->SetValue("W", CefV8Value::CreateInt(nW), V8_PROPERTY_ATTRIBUTE_NONE);
+            retval->SetValue("H", CefV8Value::CreateInt(nH), V8_PROPERTY_ATTRIBUTE_NONE);
+            return true;
+        }
+        else if (name == "AddAudio")
+        {
+            CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetBrowser()->GetFrame("frameEditor");
+            if (!_frame || arguments.size() != 2)
+                return true;
+
+            if (CefV8Context::GetCurrentContext()->GetFrame()->GetName() != "frameEditor")
+            {
+                std::string sCode = "window.AscDesktopEditor.AddAudio(\"" +
+                        arguments[0]->GetStringValue().ToString() + "\", \"" + arguments[1]->GetStringValue().ToString() + "\");";
+                _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+                return true;
+            }
+
+            std::wstring sFile = arguments[0]->GetStringValue().ToWString();
+            std::wstring sExt = NSCommon::GetFileExtention(sFile);
+            std::wstring sImage = L"display8image" + std::to_wstring(m_nLocalImagesNextIndex++);
+            std::wstring sDstMain = m_sLocalFileFolderWithoutFile + L"/media/" + sImage + L".";
+            std::wstring sDst = sDstMain + sExt;
+
+            NSFile::CFileBinary::Copy(sFile, sDst);
+
+            std::wstring sSrc = m_sSystemPlugins + L"/" + arguments[1]->GetStringValue().ToWString() + L"/image";
+
+            //NSFile::CFileBinary::Copy(sSrc + L".svg", sDstMain + L"svg");
+            //NSFile::CFileBinary::Copy(sSrc + L".emf", sDstMain + L"emf");
+            NSFile::CFileBinary::Copy(sSrc + L".png", sDstMain + L"png");
+
+            std::wstring sCode = L"(function(){ \n\
+var _e = undefined;\n\
+if (window[\"Asc\"] && window[\"Asc\"][\"editor\"]) \n\
+{\n\
+_e = window[\"Asc\"][\"editor\"];\n\
+}\n\
+else if (window[\"editor\"])\n\
+{\n\
+_e = window[\"editor\"];\n\
+}\n\
+if (!_e) return;\n\
+_e.asc_AddAudio(\"" + sImage + L".png\", \"" + sImage + L"." + sExt + L"\");\n\
+})();"; // .svg
+
+            _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+            return true;
+        }
+        else if (name == "AddVideo")
+        {
+            CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetBrowser()->GetFrame("frameEditor");
+            if (!_frame || arguments.size() != 2)
+                return true;
+
+            if (CefV8Context::GetCurrentContext()->GetFrame()->GetName() != "frameEditor")
+            {
+                std::string sCode = "window.AscDesktopEditor.AddVideo(\"" +
+                        arguments[0]->GetStringValue().ToString() + "\", \"" + arguments[1]->GetStringValue().ToString() + "\");";
+                _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+                return true;
+            }
+
+            std::wstring sFile = arguments[0]->GetStringValue().ToWString();
+            std::wstring sExt = NSCommon::GetFileExtention(sFile);
+            std::wstring sImage = L"display8image" + std::to_wstring(m_nLocalImagesNextIndex++);
+            std::wstring sDstMain = m_sLocalFileFolderWithoutFile + L"/media/" + sImage + L".";
+            std::wstring sDst = sDstMain + sExt;
+
+            NSFile::CFileBinary::Copy(sFile, sDst);
+
+            std::wstring sSrc = m_sSystemPlugins + L"/" + arguments[1]->GetStringValue().ToWString() + L"/image";
+
+            NSFile::CFileBinary::Copy(sSrc + L".png", sDstMain + L"png");
+
+            std::wstring sCode = L"(function(){ \n\
+var _e = undefined;\n\
+if (window[\"Asc\"] && window[\"Asc\"][\"editor\"]) \n\
+{\n\
+_e = window[\"Asc\"][\"editor\"];\n\
+}\n\
+else if (window[\"editor\"])\n\
+{\n\
+_e = window[\"editor\"];\n\
+}\n\
+if (!_e) return;\n\
+_e.asc_AddVideo(\"" + sImage + L".png\", \"" + sImage + L"." + sExt + L"\");\n\
+})();";
+
+            _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+            return true;
+        }
+        else if (name == "SendByMail")
+        {
+            CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetBrowser()->GetFrame("frameEditor");
+            if (!_frame)
+                return true;
+
+            if (CefV8Context::GetCurrentContext()->GetFrame()->GetName() != "frameEditor")
+            {
+                std::string sCode = "window.AscDesktopEditor.SendByMail();";
+                _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+                return true;
+            }
+
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("send_by_mail");
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "IsLocalFileExist")
+        {
+            if (arguments.size() != 1)
+            {
+                retval = CefV8Value::CreateBool(false);
+                return true;
+            }
+
+            std::wstring sFile = arguments[0]->GetStringValue().ToWString();
+            if (sFile.find(L"file://") == 0)
+            {
+                if (NSFile::CFileBinary::Exists(sFile.substr(7)))
+                    sFile = sFile.substr(7);
+                else if (NSFile::CFileBinary::Exists(sFile.substr(8)))
+                    sFile = sFile.substr(8);
+            }
+
+            retval = CefV8Value::CreateBool(NSFile::CFileBinary::Exists(sFile));
+            return true;
+        }
 
         // Function does not exist.
         return false;
@@ -2579,10 +2887,10 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
 
     bool IsNeedDownload(const std::wstring& FilePath)
     {
-        int n1 = FilePath.find(L"www.");
-        int n2 = FilePath.find(L"http://");
-        int n3 = FilePath.find(L"ftp://");
-        int n4 = FilePath.find(L"https://");
+        std::wstring::size_type n1 = FilePath.find(L"www.");
+        std::wstring::size_type n2 = FilePath.find(L"http://");
+        std::wstring::size_type n3 = FilePath.find(L"ftp://");
+        std::wstring::size_type n4 = FilePath.find(L"https://");
 
         if (n1 != std::wstring::npos && n1 < 10)
             return true;
@@ -2598,10 +2906,6 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
 
     std::wstring GetLocalImageUrl(const std::wstring& sUrl)
     {
-        std::map<std::wstring, std::wstring>::iterator _find = m_mapLocalAddImages.find(sUrl);
-        if (_find != m_mapLocalAddImages.end())
-            return _find->second;
-
         std::wstring sUrlFile = sUrl;
         if (sUrlFile.find(L"file://") == 0)
         {
@@ -2619,8 +2923,27 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
 
         if (NSFile::CFileBinary::Exists(sUrlFile))
         {
-            return GetLocalImageUrlLocal(sUrlFile, sUrl);
+            BYTE* pLocalFileData = NULL;
+            DWORD dwLocalFileSize = 0;
+            unsigned int nCRC32 = 0;
+            if (NSFile::CFileBinary::ReadAllBytes(sUrlFile, &pLocalFileData, dwLocalFileSize))
+            {
+                nCRC32 = m_oCRC32.Calc(pLocalFileData, (unsigned int)dwLocalFileSize);
+                RELEASEARRAYOBJECTS(pLocalFileData);
+
+                std::map<unsigned int, std::wstring>::iterator _findCRC32 = m_mapLocalAddImagesCRC.find(nCRC32);
+
+                if (_findCRC32 != m_mapLocalAddImagesCRC.end())
+                    return _findCRC32->second;
+            }
+
+            return GetLocalImageUrlLocal(sUrlFile, sUrl, nCRC32);
         }
+
+        std::map<std::wstring, std::wstring>::iterator _find = m_mapLocalAddImages.find(sUrl);
+        if (_find != m_mapLocalAddImages.end())
+            return _find->second;
+
         if (IsNeedDownload(sUrl))
         {
             std::wstring sTmpFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"IMG");
@@ -2680,7 +3003,7 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
             return sUrl;
         return L"error";
     }
-    std::wstring GetLocalImageUrlLocal(const std::wstring& sUrl, const std::wstring& sUrlMap)
+    std::wstring GetLocalImageUrlLocal(const std::wstring& sUrl, const std::wstring& sUrlMap, unsigned int nCRC32 = 0)
     {
         std::wstring sUrlTmp = sUrl;
         CImageFileFormatChecker oChecker;
@@ -2692,6 +3015,8 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
             std::wstring sRet = L"image" + std::to_wstring(m_nLocalImagesNextIndex++) + L".png";
             NSFile::CFileBinary::Copy(sUrl, m_sLocalFileFolderWithoutFile + L"/media/" + sRet);
             m_mapLocalAddImages.insert(std::pair<std::wstring, std::wstring>(sUrlMap, sRet));
+            if (0 != nCRC32)
+                m_mapLocalAddImagesCRC.insert(std::pair<unsigned int, std::wstring>(nCRC32, sRet));
             return sRet;
         }
         if (oChecker.eFileType == _CXIMAGE_FORMAT_JPG)
@@ -2699,6 +3024,8 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
             std::wstring sRet = L"image" + std::to_wstring(m_nLocalImagesNextIndex++) + L".jpg";
             NSFile::CFileBinary::Copy(sUrl, m_sLocalFileFolderWithoutFile + L"/media/" + sRet);
             m_mapLocalAddImages.insert(std::pair<std::wstring, std::wstring>(sUrlMap, sRet));
+            if (0 != nCRC32)
+                m_mapLocalAddImagesCRC.insert(std::pair<unsigned int, std::wstring>(nCRC32, sRet));
             return sRet;
         }
 
@@ -2708,6 +3035,8 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
             std::wstring sRet = L"image" + std::to_wstring(m_nLocalImagesNextIndex++) + L".png";
             oFrame.SaveFile(m_sLocalFileFolderWithoutFile + L"/media/" + sRet, _CXIMAGE_FORMAT_PNG);
             m_mapLocalAddImages.insert(std::pair<std::wstring, std::wstring>(sUrlMap, sRet));
+            if (0 != nCRC32)
+                m_mapLocalAddImagesCRC.insert(std::pair<unsigned int, std::wstring>(nCRC32, sRet));
             return sRet;
         }
 
@@ -2743,6 +3072,8 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
             oWriterSVG.SaveFile(m_sLocalFileFolderWithoutFile + L"/media/" + sRet);
 
             m_mapLocalAddImages.insert(std::pair<std::wstring, std::wstring>(sUrlMap, sRet));
+            if (0 != nCRC32)
+                m_mapLocalAddImagesCRC.insert(std::pair<unsigned int, std::wstring>(nCRC32, sRet));
             return sRet;
         }
         if (pMetafile->GetType() == MetaFile::c_lMetaSvg || pMetafile->GetType() == MetaFile::c_lMetaSvm)
@@ -2762,6 +3093,8 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
             pMetafile->ConvertToRaster(sSaveRet.c_str(), _CXIMAGE_FORMAT_PNG, WW, HH);
 
             m_mapLocalAddImages.insert(std::pair<std::wstring, std::wstring>(sUrlMap, sRet));
+            if (0 != nCRC32)
+                m_mapLocalAddImagesCRC.insert(std::pair<unsigned int, std::wstring>(nCRC32, sRet));
             return sRet;
         }
 
@@ -3047,6 +3380,13 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction993 = CefV8Value::CreateFunction("GetExternalClouds", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction994 = CefV8Value::CreateFunction("IsNativeViewer", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction995 = CefV8Value::CreateFunction("CryptoDownloadAs", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction996 = CefV8Value::CreateFunction("MediaStart", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction997 = CefV8Value::CreateFunction("GetImageOriginalSize", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction998 = CefV8Value::CreateFunction("MediaEnd", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction999 = CefV8Value::CreateFunction("AddAudio", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction1000 = CefV8Value::CreateFunction("AddVideo", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction1001 = CefV8Value::CreateFunction("SendByMail", _nativeHandler);
+    CefRefPtr<CefV8Value> _nativeFunction1002 = CefV8Value::CreateFunction("IsLocalFileExist", _nativeHandler);
 
 
     objNative->SetValue("Copy", _nativeFunctionCopy, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -3203,7 +3543,13 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("GetExternalClouds", _nativeFunction993, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("IsNativeViewer", _nativeFunction994, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("CryptoDownloadAs", _nativeFunction995, V8_PROPERTY_ATTRIBUTE_NONE);
-
+    objNative->SetValue("MediaStart", _nativeFunction996, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("GetImageOriginalSize", _nativeFunction997, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("MediaEnd", _nativeFunction998, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("AddAudio", _nativeFunction999, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("AddVideo", _nativeFunction1000, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("SendByMail", _nativeFunction1001, V8_PROPERTY_ATTRIBUTE_NONE);
+    objNative->SetValue("IsLocalFileExist", _nativeFunction1002, V8_PROPERTY_ATTRIBUTE_NONE);
 
     object->SetValue("AscDesktopEditor", objNative, V8_PROPERTY_ATTRIBUTE_NONE);
 

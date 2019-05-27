@@ -129,7 +129,11 @@
 #define ASC_MENU_EVENT_TYPE_ENCRYPT_PERSONAL_KEY_IMPORT     8005
 #define ASC_MENU_EVENT_TYPE_ENCRYPT_PERSONAL_KEY_EXPORT     8006
 
-#define ASC_MENU_EVENT_TYPE_SYSTEM_EXTERNAL_PLUGINS          8007
+#define ASC_MENU_EVENT_TYPE_SYSTEM_EXTERNAL_PLUGINS         8007
+#define ASC_MENU_EVENT_TYPE_SYSTEM_EXTERNAL_PROCESS         8008
+
+#define ASC_MENU_EVENT_TYPE_SYSTEM_EXTERNAL_MEDIA_START     8009
+#define ASC_MENU_EVENT_TYPE_SYSTEM_EXTERNAL_MEDIA_END       8010
 
 
 #define ASC_MENU_EVENT_TYPE_WINDOWS_MESSAGE_USER_COUNT      10
@@ -871,6 +875,97 @@ namespace NSEditorApi
             item.nameLocale = name_local;
             m_items.push_back(item);
         }
+    };
+}
+
+namespace NSEditorApi
+{
+    class CAscExternalProcess : public IMenuEventDataBase
+    {
+    private:
+        std::wstring                m_sProgram;
+        std::vector<std::wstring>   m_arArguments;
+        std::wstring                m_sWorkingDirectory;
+        bool m_bDetached;
+
+    public:
+        CAscExternalProcess()
+        {
+        }
+        virtual ~CAscExternalProcess()
+        {
+        }
+
+        LINK_PROPERTY_STRING(Program)
+        LINK_PROPERTY_STRING(WorkingDirectory)
+        LINK_PROPERTY_BOOL(Detached)
+        std::vector<std::wstring>& get_Arguments() { return m_arArguments; }
+    };
+
+    class CAscExternalMedia : public IMenuEventDataBase
+    {
+    private:
+        int m_nX;
+        int m_nY;
+        double m_dW;
+        double m_dH;
+
+        int m_nBoundsX;
+        int m_nBoundsY;
+        int m_nBoundsW;
+        int m_nBoundsH;
+
+        double m_dsx;
+        double m_dshy;
+        double m_dshx;
+        double m_dsy;
+        double m_dtx;
+        double m_dty;
+
+        std::wstring m_sUrl;
+
+    public:
+        CAscExternalMedia()
+        {
+            m_nX = 0;
+            m_nY = 0;
+            m_dW = 0;
+            m_dH = 0;
+
+            m_nBoundsX = 0;
+            m_nBoundsY = 0;
+            m_nBoundsW = 0;
+            m_nBoundsH = 0;
+
+            m_dsx    = 1;
+            m_dshy   = 0;
+            m_dshx   = 0;
+            m_dsy    = 1;
+            m_dtx    = 0;
+            m_dty    = 0;
+        }
+        virtual ~CAscExternalMedia()
+        {
+        }
+
+        LINK_PROPERTY_STRING(Url)
+
+        LINK_PROPERTY_INT(X)
+        LINK_PROPERTY_INT(Y)
+        LINK_PROPERTY_DOUBLE(W)
+        LINK_PROPERTY_DOUBLE(H)
+
+        LINK_PROPERTY_INT(BoundsX)
+        LINK_PROPERTY_INT(BoundsY)
+        LINK_PROPERTY_INT(BoundsW)
+        LINK_PROPERTY_INT(BoundsH)
+
+        LINK_PROPERTY_DOUBLE(sx)
+        LINK_PROPERTY_DOUBLE(shy)
+        LINK_PROPERTY_DOUBLE(shx)
+        LINK_PROPERTY_DOUBLE(sy)
+        LINK_PROPERTY_DOUBLE(tx)
+        LINK_PROPERTY_DOUBLE(ty)
     };
 }
 

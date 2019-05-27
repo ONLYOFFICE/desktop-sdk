@@ -588,7 +588,7 @@ HEADERS += \
     $$CEF_SRC_PATH/tests/cefclient/browser/main_context.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/main_context_impl.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/osr_dragdrop_events.h \
-    $$CEF_SRC_PATH/tests/cefclient/browser/osr_renderer.h \
+    #$$CEF_SRC_PATH/tests/cefclient/browser/osr_renderer.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/preferences_test.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/resource.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/response_filter_test.h \
@@ -614,7 +614,7 @@ SOURCES += \
     $$CEF_SRC_PATH/tests/cefclient/browser/drm_test.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/main_context.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/main_context_impl.cc \
-    $$CEF_SRC_PATH/tests/cefclient/browser/osr_renderer.cc \
+    #$$CEF_SRC_PATH/tests/cefclient/browser/osr_renderer.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/preferences_test.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/response_filter_test.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/root_window.cc \

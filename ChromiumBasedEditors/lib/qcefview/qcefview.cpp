@@ -46,6 +46,7 @@ QCefView::QCefView(QWidget* parent) : QWidget(parent)
     m_pLoader->setHidden(false);
 
     QObject::connect(this, SIGNAL( _loaded() ) , this, SLOT( _loadedSlot() ), Qt::QueuedConnection );
+    QObject::connect(this, SIGNAL( _closed() ) , this, SLOT( _closedSlot() ), Qt::QueuedConnection );
 }
 
 QCefView::~QCefView()
@@ -167,6 +168,19 @@ void QCefView::CreateReporter(CAscApplicationManager* pManager, CAscReporterData
     m_pCefView = pManager->CreateCefPresentationReporter(this, data);
 }
 
+void QCefView::OnMediaStart(NSEditorApi::CAscExternalMedia* data)
+{
+}
+void QCefView::OnMediaEnd()
+{
+}
+
+void QCefView::releaseFromChild()
+{
+    emit _closed();
+    //this->deleteLater();
+}
+
 // CCefViewWidgetImpl
 int QCefView::parent_x() { return this->pos().x(); }
 int QCefView::parent_y() { return this->pos().y(); }
@@ -190,4 +204,9 @@ void QCefView::_loadedSlot()
 {
     if (!m_pLoader->isHidden())
         m_pLoader->setHidden(true);
+}
+
+void QCefView::_closedSlot()
+{
+    this->OnMediaEnd();
 }

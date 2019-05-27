@@ -63,6 +63,7 @@ public:
     virtual int parent_height() { return 0; }
     virtual WindowHandleId parent_wid() { return 0; }
     virtual void child_loaded() { }
+    virtual void releaseFromChild() { }
 };
 
 class Q_DECL_EXPORT CCefView
@@ -117,6 +118,8 @@ public:
     bool IsPresentationReporter();
     void LoadReporter(int nParentId, std::wstring url);
 
+    double GetDeviceScale();
+
 protected:
     int m_nId;
     CefViewWrapperType m_eWrapperType;
@@ -153,6 +156,7 @@ public:
     bool IsBuilding();
 
     std::wstring GetLocalFilePath();
+    std::wstring GetRecoveryDir();
 };
 
 class IFileDownloaderEvents
