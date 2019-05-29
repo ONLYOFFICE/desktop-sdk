@@ -41,6 +41,10 @@ include(../../../core/Common/3dParty/boost/boost.pri)
 } else {
     DEFINES += CEF_2623
     DESTDIR=$$DESTDIR/xp
+    OBJECTS_DIR = $$OBJECTS_DIR/xp
+    MOC_DIR     = $$MOC_DIR/xp
+    RCC_DIR     = $$RCC_DIR/xp
+    UI_DIR      = $$UI_DIR/xp
     include($$PWD/AscDocumentsCore_base_xp.pri)
 }
 

@@ -573,10 +573,10 @@ SOURCES += \
     $$CEF_SRC_PATH/cefclient/browser/window_test_win.cc
 
 core_win_64 {
-    LIBS += -L$$PWD/../../../core/build/cef/winxp_64 -llibcef
+    LIBS += -L$$PWD/../../../core/Common/3dParty/cef/winxp_64/build -llibcef
 }
 
 core_win_32 {
-    LIBS += -L$$PWD/../../../core/build/cef/winxp_32 -llibcef
+    LIBS += -L$$PWD/../../../core/Common/3dParty/cef/winxp_32/build -llibcef
 }
 
