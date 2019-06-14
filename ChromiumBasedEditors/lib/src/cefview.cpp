@@ -4048,12 +4048,14 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
                                                                                      (LONG)sUserPlugunsPath.length());
 
 
-            sAppData = "window[\"AscDesktopEditor_AppData\"] = function(){return \"" + sAppData + "\";}\n";
-            sAppData += ("window[\"AscDesktopEditor_FontsData\"] = function(){return \"" + sFontsData + "\";}\n");
+            sAppData = "window[\"AscDesktopEditor_AppData\"] = function(){return \"" + sAppData + "\";};\n";
+            sAppData += ("window[\"AscDesktopEditor_FontsData\"] = function(){return \"" + sFontsData + "\";};\n");
 
-            sAppData += ("window[\"AscDesktopEditor_SP\"] = function(){return \"" + sSystemPluguns + "\";}\n");
-            sAppData += ("window[\"AscDesktopEditor_UP\"] = function(){return \"" + sUserPluguns + "\";}\n");
-            sAppData += ("window[\"AscDesktopEditor_SupportOP\"] = function(){return \"" + std::to_string(m_pParent->GetAppManager()->m_oSettings.pass_support ? 1 : 0) + "\";}\n");
+            sAppData += ("window[\"AscDesktopEditor_SP\"] = function(){return \"" + sSystemPluguns + "\";};\n");
+            sAppData += ("window[\"AscDesktopEditor_UP\"] = function(){return \"" + sUserPluguns + "\";};\n");
+            sAppData += ("window[\"AscDesktopEditor_SupportOP\"] = function(){return \"" + std::to_string(m_pParent->GetAppManager()->m_oSettings.pass_support ? 1 : 0) + "\";};\n");
+
+            sAppData += ("(function() { \"file:\"==window.location.protocol&&(window.fetch=function(r){return new Promise(function(e,t){var o=new XMLHttpRequest;o.open(\"GET\",r,!0),o.overrideMimeType?o.overrideMimeType(\"text/plain; charset=utf-8\"):o.setRequestHeader(\"Accept-Charset\",\"utf-8\"),o.onload=function(){4!=o.readyState||200!=o.status&&0!=location.href.indexOf(\"file:\")||e({status:200,statusText:o.statusText,value:o.response,ok:!0,json:function(){return Promise.resolve(JSON.parse(this.value))},text:function(){return Promise.resolve(this.value)}})},o.onerror=function(){t(new TypeError(\"Network request failed\"))},o.send(null)})}); })();\n");
 
             if (m_pParent->GetAppManager()->GetDebugInfoSupport())
                 sAppData += ("window[\"desktop_debug_mode\"] = true;\n");

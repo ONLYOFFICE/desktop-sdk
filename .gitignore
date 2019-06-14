@@ -10,3 +10,5 @@ Thumbs.db
 *.xcuserdatad
 **/DerivedData
 .idea/
+*Makefile*
+*qmake.stash
