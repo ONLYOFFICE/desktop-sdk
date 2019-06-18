@@ -2875,7 +2875,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cp -R \"${TARGET_BUILD_DIR}\"/lib\"${TARGET_NAME}\".dylib \"${TARGET_BUILD_DIR}\"/../../../../../../../../../core/build/lib/mac_64\n\n#cp -R \"${TARGET_BUILD_DIR}\"/lib\"${TARGET_NAME}\".dylib \"${TARGET_BUILD_DIR}\"/../../../../../../../../../desktop-apps/macos/Vendor/ONLYOFFICE/libs/corebuilds";
+			shellScript = "cp -R \"${TARGET_BUILD_DIR}\"/lib\"${TARGET_NAME}\".dylib \"${PROJECT_DIR}\"/../../../../core/build/lib/mac_64\n\n#cp -R \"${TARGET_BUILD_DIR}\"/lib\"${TARGET_NAME}\".dylib \"${TARGET_BUILD_DIR}\"/../../../../../../../../../desktop-apps/macos/Vendor/ONLYOFFICE/libs/corebuilds\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
