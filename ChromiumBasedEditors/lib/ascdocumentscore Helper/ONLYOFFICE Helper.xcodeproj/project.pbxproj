@@ -186,7 +186,6 @@
 		7CC7FAB01F7D3ACF00E99DC9 /* client_switches.cc in Sources */ = {isa = PBXBuildFile; fileRef = 7CC7F7681F7D3ACC00E99DC9 /* client_switches.cc */; };
 		7CC7FAB31F7D3ACF00E99DC9 /* process_helper_mac.cc in Sources */ = {isa = PBXBuildFile; fileRef = 7CC7F76C1F7D3ACC00E99DC9 /* process_helper_mac.cc */; };
 		7CD198921D7972AD00F8841C /* create.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7CD198911D7972AD00F8841C /* create.cpp */; };
-		BE9FC69F2101CDA500571BA9 /* Chromium Embedded Framework.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BE9FC69E2101CDA500571BA9 /* Chromium Embedded Framework.framework */; };
 		BE9FC6A72101CDF300571BA9 /* libDjVuFile.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = BE9FC6A02101CDF200571BA9 /* libDjVuFile.dylib */; };
 		BE9FC6A82101CDF300571BA9 /* libUnicodeConverter.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = BE9FC6A12101CDF200571BA9 /* libUnicodeConverter.dylib */; };
 		BE9FC6A92101CDF300571BA9 /* libXpsFile.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = BE9FC6A22101CDF200571BA9 /* libXpsFile.dylib */; };
@@ -197,6 +196,7 @@
 		BE9FC6B22101CEBD00571BA9 /* keychain.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BE9FC6AE2101CEBD00571BA9 /* keychain.cpp */; };
 		BE9FC6B32101CEBD00571BA9 /* crypto_mode.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BE9FC6B12101CEBD00571BA9 /* crypto_mode.cpp */; };
 		BE9FC6B52101CECF00571BA9 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BE9FC6B42101CECE00571BA9 /* Security.framework */; };
+		BEE3FCE522BBD939008F3003 /* Chromium Embedded Framework.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BEE3FCE422BBD939008F3003 /* Chromium Embedded Framework.framework */; };
 		BEFFCCE221A8192F009E7A3E /* libooxmlsignature.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = BEFFCCE121A8192F009E7A3E /* libooxmlsignature.dylib */; };
 /* End PBXBuildFile section */
 
@@ -776,7 +776,6 @@
 		7CC7F76B1F7D3ACC00E99DC9 /* client_app.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = client_app.h; sourceTree = "<group>"; };
 		7CC7F76C1F7D3ACC00E99DC9 /* process_helper_mac.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = process_helper_mac.cc; path = ../../src/cef/mac/tests/shared/process_helper_mac.cc; sourceTree = "<group>"; };
 		7CD198911D7972AD00F8841C /* create.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = create.cpp; path = ../../src/additional/create.cpp; sourceTree = "<group>"; };
-		BE9FC69E2101CDA500571BA9 /* Chromium Embedded Framework.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = "Chromium Embedded Framework.framework"; path = "../../../../core/build/cef/mac/Chromium Embedded Framework.framework"; sourceTree = "<group>"; };
 		BE9FC6A02101CDF200571BA9 /* libDjVuFile.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libDjVuFile.dylib; path = ../../../../core/build/lib/mac_64/libDjVuFile.dylib; sourceTree = "<group>"; };
 		BE9FC6A12101CDF200571BA9 /* libUnicodeConverter.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libUnicodeConverter.dylib; path = ../../../../core/build/lib/mac_64/libUnicodeConverter.dylib; sourceTree = "<group>"; };
 		BE9FC6A22101CDF200571BA9 /* libXpsFile.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libXpsFile.dylib; path = ../../../../core/build/lib/mac_64/libXpsFile.dylib; sourceTree = "<group>"; };
@@ -789,6 +788,7 @@
 		BE9FC6B02101CEBD00571BA9 /* crypto_mode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = crypto_mode.h; path = ../../src/crypto_mode.h; sourceTree = "<group>"; };
 		BE9FC6B12101CEBD00571BA9 /* crypto_mode.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = crypto_mode.cpp; path = ../../src/crypto_mode.cpp; sourceTree = "<group>"; };
 		BE9FC6B42101CECE00571BA9 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		BEE3FCE422BBD939008F3003 /* Chromium Embedded Framework.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = "Chromium Embedded Framework.framework"; path = "../../../../core/Common/3dParty/cef/mac_64/build/Chromium Embedded Framework.framework"; sourceTree = "<group>"; };
 		BEFFCCE121A8192F009E7A3E /* libooxmlsignature.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libooxmlsignature.dylib; path = ../../../../core/build/lib/mac_64/libooxmlsignature.dylib; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -797,6 +797,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BEE3FCE522BBD939008F3003 /* Chromium Embedded Framework.framework in Frameworks */,
 				BEFFCCE221A8192F009E7A3E /* libooxmlsignature.dylib in Frameworks */,
 				BE9FC6B52101CECF00571BA9 /* Security.framework in Frameworks */,
 				BE9FC6A72101CDF300571BA9 /* libDjVuFile.dylib in Frameworks */,
@@ -806,7 +807,6 @@
 				BE9FC6AB2101CDF300571BA9 /* libPdfReader.dylib in Frameworks */,
 				BE9FC6AC2101CDF300571BA9 /* libHtmlRenderer.dylib in Frameworks */,
 				BE9FC6AD2101CDF300571BA9 /* libkernel.dylib in Frameworks */,
-				BE9FC69F2101CDA500571BA9 /* Chromium Embedded Framework.framework in Frameworks */,
 				7C5DDA461BA9925E00C6474A /* OpenGL.framework in Frameworks */,
 				7C5DDA441BA9925400C6474A /* AppKit.framework in Frameworks */,
 			);
@@ -1640,6 +1640,7 @@
 		7CC7FBA61F7D3E1900E99DC9 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				BEE3FCE422BBD939008F3003 /* Chromium Embedded Framework.framework */,
 				BEFFCCE121A8192F009E7A3E /* libooxmlsignature.dylib */,
 				BE9FC6B42101CECE00571BA9 /* Security.framework */,
 				BE9FC6A02101CDF200571BA9 /* libDjVuFile.dylib */,
@@ -1649,7 +1650,6 @@
 				BE9FC6A42101CDF200571BA9 /* libPdfReader.dylib */,
 				BE9FC6A12101CDF200571BA9 /* libUnicodeConverter.dylib */,
 				BE9FC6A22101CDF200571BA9 /* libXpsFile.dylib */,
-				BE9FC69E2101CDA500571BA9 /* Chromium Embedded Framework.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -1736,7 +1736,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "contents=${CONFIGURATION_BUILD_DIR}/${CONTENTS_FOLDER_PATH}\n\ninstall_name_tool -change @executable_path/Chromium\\ Embedded\\ Framework \\\n@executable_path/../../../../Frameworks/Chromium\\ Embedded\\ Framework.framework/Chromium\\ Embedded\\ Framework \\\n\"${contents}\"/MacOS/\"${TARGET_NAME}\"\n\ndst=\"${TARGET_BUILD_DIR}\"/../../../../../../../../../core/build/cef/mac\nrm -rf \"${dst}\"/\"${TARGET_NAME}\".app\ncp -R \"${TARGET_BUILD_DIR}\"/\"${TARGET_NAME}\".app \"${dst}\"\n\n#cp -R \"${TARGET_BUILD_DIR}\"/\"${TARGET_NAME}\".app \"${TARGET_BUILD_DIR}\"/../../../../../../../../../desktop-apps/macos/Vendor/ONLYOFFICE/libs/cefbuilds";
+			shellScript = "contents=${CONFIGURATION_BUILD_DIR}/${CONTENTS_FOLDER_PATH}\n\ninstall_name_tool -change @executable_path/Chromium\\ Embedded\\ Framework \\\n@executable_path/../../../../Frameworks/Chromium\\ Embedded\\ Framework.framework/Chromium\\ Embedded\\ Framework \\\n\"${contents}\"/MacOS/\"${TARGET_NAME}\"\n\ndst=\"${PROJECT_DIR}\"/../../../../core/build/lib/mac_64\nrm -rf \"${dst}\"/\"${TARGET_NAME}\".app\ncp -R \"${TARGET_BUILD_DIR}\"/\"${TARGET_NAME}\".app \"${dst}\"\n\n#cp -R \"${TARGET_BUILD_DIR}\"/\"${TARGET_NAME}\".app \"${TARGET_BUILD_DIR}\"/../../../../../../../../../desktop-apps/macos/Vendor/ONLYOFFICE/libs/cefbuilds\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -1951,7 +1951,7 @@
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				FRAMEWORK_SEARCH_PATHS = "${PROJECT_DIR}/../../../../core/build/cef/mac";
+				FRAMEWORK_SEARCH_PATHS = "${PROJECT_DIR}/../../../../core/Common/3dParty/cef/mac_64/build";
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -1998,7 +1998,7 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				FRAMEWORK_SEARCH_PATHS = "${PROJECT_DIR}/../../../../core/build/cef/mac";
+				FRAMEWORK_SEARCH_PATHS = "${PROJECT_DIR}/../../../../core/Common/3dParty/cef/mac_64/build";
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;

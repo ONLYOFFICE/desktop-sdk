@@ -46,27 +46,10 @@ document.getElementById("button_add").onclick = function() {
     addPlugin();
 };
 
-Ps.initialize(document.getElementById("plugins-list-box"), { theme : 'custom-theme' });
+Ps = new PerfectScrollbar(document.getElementById("plugins-list-box"), { minScrollbarLength: 20 });
 function updateScroll()
 {
-    Ps.update(document.getElementById("plugins-list-box"));
-    if($('.ps__scrollbar-y').height() === 0)
-    {
-        $('.ps__scrollbar-y').css('border-width', '0px');
-    }
-    else
-    {
-        $('.ps__scrollbar-y').css('border-width', '1px');
-    }
-	
-	if($('.ps__scrollbar-x').width() === 0)
-	{
-		$('.ps__scrollbar-x').css('border-width', '0px');
-	}
-	else
-	{
-		$('.ps__scrollbar-x').css('border-width', '1px');
-	}
+    Ps.update();
 }
 
 window.onresize = function()
@@ -146,6 +129,9 @@ function loadPlugins()
 
 function updateList()
 {
+	if (!EditorPlugins.pluginsData)
+		return;
+	
     let _content = "<ul>";
 
     for (let i = 0; i < EditorPlugins.pluginsData.length; i++)
