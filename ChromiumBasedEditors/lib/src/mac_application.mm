@@ -1,4 +1,4 @@
-﻿/*
+/*
  * (c) Copyright Ascensio System SIA 2010-2019
  *
  * This program is a free software product. You can redistribute it and/or
@@ -215,7 +215,7 @@ namespace
     return self;
 }
 
-- (void) Start:(int)argc: (const char* [])argv;
+- (void) Start:(int)argc argv:(const char* [])argv
 {
     CApplicationCEF* application_cef = new CApplicationCEF();
     
