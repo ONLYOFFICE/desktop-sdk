@@ -1,0 +1,34 @@
+{
+    "name" : "Audio",
+    "nameLocale": {
+        "ru": "Аудио"
+    },
+    "guid" : "asc.{060E6A7D-2766-44E8-A0EE-9A8CB9DB00D1}",
+	
+	"group" : { "name": "Media", "rank": 3 },
+
+    "variations" : [
+        {
+            "description" : "Audio",
+            "descriptionLocale": {
+                "ru": "Аудио"
+            },
+            "url"         : "index.html",
+
+            "icons"           : ["icon.png", "icon@2x.png", "icon2.png", "icon2@2x.png"],
+            "isViewer"        : false,
+            "EditorsSupport"  : ["slide"],
+
+            "isVisual"        : false,
+            "isModal"         : false,
+            "isInsideMode"    : false,
+
+            "initDataType"    : "none",
+            "initData"        : "",
+
+            "isUpdateOleOnResize" : false,
+
+            "buttons"        : []
+        }
+    ]
+}
