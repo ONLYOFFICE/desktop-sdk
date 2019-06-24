@@ -282,7 +282,9 @@ namespace NSSystem
     static void SetEnvValueA(const std::string& sName, const std::string& sValue)
     {
 #ifdef WIN32
-        SetEnvironmentVariableA(sName.c_str(), sValue.c_str());
+        std::wstring sNameW = UTF8_TO_U(sName);
+        std::wstring sValueW = UTF8_TO_U(sValue);
+        SetEnvironmentVariable(sNameW.c_str(), sValueW.c_str());
 #else
         static char buffer[100000]; // on all process
         static int offset = 0;
@@ -304,11 +306,14 @@ namespace NSSystem
     static std::string GetEnvValueA(const std::string& sName)
     {
 #ifdef WIN32
+        std::wstring sNameW = UTF8_TO_U(sName);
         const DWORD buffSize = 65535;
-        char buffer[buffSize];
-        if (GetEnvironmentVariableA(sName.c_str(), buffer, buffSize))
+        wchar_t buffer[buffSize];
+        if (GetEnvironmentVariable(sNameW.c_str(), buffer, buffSize))
         {
-            return std::string(buffer);
+            std::wstring sValueW(buffer);
+            std::string sValue = U_TO_UTF8(sValueW);
+            return sValue;
         }
         else
         {
