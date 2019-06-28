@@ -5810,6 +5810,8 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             if (sPath == L"")
             {
                 m_pInternal->LocalFile_SaveEnd(ASC_CONSTANT_CANCEL_SAVE);
+                // cancel build file
+                m_pInternal->m_bIsBuilding = false;
             }
             else
             {
