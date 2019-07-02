@@ -2004,6 +2004,19 @@ public:
                 m_pParent->load(sUrl + L"products/files/?desktop=true");
                 return true;
             }
+
+            if (!m_pParent->m_pInternal->m_bIsExternalCloud)
+            {
+                std::wstring::size_type nPosWithoutD = sUrl.rfind(L"/products/files/");
+                if (nPosWithoutD != std::wstring::npos)
+                {
+                    if ((nPosWithoutD + 16) == sUrl.length())
+                    {
+                        m_pParent->load(sUrl + L"?desktop=true");
+                        return true;
+                    }
+                }
+            }
         }
 
         std::wstring sTest1 = sUrl;
