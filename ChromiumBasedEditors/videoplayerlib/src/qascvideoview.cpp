@@ -351,6 +351,7 @@ void QAscVideoView::AddFilesToPlaylist(QStringList& files, const bool isStart)
 
 void QAscVideoView::LoadPlaylist()
 {
+    m_pInternal->m_pPlaylist->m_pDialogParent = this->getMainWindow();
     m_pInternal->m_pPlaylist->Load();
 }
 
@@ -494,6 +495,10 @@ bool QAscVideoView::getMainWindowFullScreen()
 void QAscVideoView::setMainWindowFullScreen(bool bIsFullScreen)
 {
     return;
+}
+QWidget* QAscVideoView::getMainWindow()
+{
+    return NULL;
 }
 
 void QAscVideoView::slotVideoAvailableChanged(bool videoAvailable)
