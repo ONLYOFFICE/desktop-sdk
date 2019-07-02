@@ -286,8 +286,14 @@ function updateList()
 		{
 			window.language = undefined;
 		}
+
+        var _l1_text = document.getElementById("l1").innerHTML;
+        var startLink = _l1_text.indexOf("<a href=");
+        var endLink = _l1_text.indexOf("target=\"_blank\">", startLink);
+        var strLink = _l1_text.substr(startLink, endLink - startLink + 16);
 		
-		document.getElementById("l1").innerHTML = window.Asc.plugin.tr("Please see the <a href=\"https://api.onlyoffice.com/plugin/basic\" target=\"_blank\">Help</a> to find out what the plugin contents must be and how it is added to the editors.");
+		document.getElementById("l1").innerHTML = window.Asc.plugin.tr("Please see the ") + strLink + window.Asc.plugin.tr("Help") + "</a>" + 
+                window.Asc.plugin.tr(" to find out what the plugin contents must be and how it is added to the editors.");
 		document.getElementById("button_add").innerHTML = window.Asc.plugin.tr("Add plugin");
 		document.getElementById("l2").innerHTML = window.Asc.plugin.tr("Installed plugins");
 	};
