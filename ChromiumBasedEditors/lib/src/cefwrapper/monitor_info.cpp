@@ -99,8 +99,12 @@ int Core_SetProcessDpiAwareness(void)
 #ifdef _DPI_AWARENESS_CONTEXTS_
     if (g_monitor_info.m_funcSetProcessDpiAwarenessContext)
     {
+#ifndef DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2
+        #define DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 ((DPI_AWARENESS_CONTEXT)-4)
+#endif
         if (g_monitor_info.m_funcSetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2))
             return 0;
+
     }
 #endif
 
