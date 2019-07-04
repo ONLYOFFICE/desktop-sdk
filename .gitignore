@@ -9,6 +9,8 @@ Thumbs.db
 *.xcuserstate
 *.xcuserdatad
 **/DerivedData
+**/ascdocumentscore/build
+**/ascdocumentscore\ Helper/build
 .idea/
 *Makefile*
 *qmake.stash
