@@ -3,6 +3,28 @@
 
 #ifdef USE_VLC_LIBRARY
 
+#ifdef _WIN32
+#include <QSysInfo>
+#include <windows.h>
+
+static void CheckWindowsOld()
+{
+    switch (QSysInfo::windowsVersion())
+    {
+    case QSysInfo::WV_2000:
+    case QSysInfo::WV_XP:
+    case QSysInfo::WV_VISTA:
+    {
+        SetErrorMode(SEM_FAILCRITICALERRORS);
+        break;
+    }
+    default:
+        break;
+    }
+}
+
+#endif
+
 #include <QCoreApplication>
 
 #include "../../../../core/DesktopEditor/common/File.h"
@@ -17,6 +39,10 @@ void NSBaseVideoLibrary::Init(QObject* parent)
 
     if (!parent)
         return;
+
+#ifdef _WIN32
+    CheckWindowsOld();
+#endif
 
     QCoreApplication::setAttribute(Qt::AA_X11InitThreads);
 
