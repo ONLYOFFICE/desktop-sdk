@@ -7,6 +7,12 @@
 #include <QSysInfo>
 #include <windows.h>
 
+LONG WINAPI vlc_exception_filter(struct _EXCEPTION_POINTERS *lpExceptionInfo)
+{
+    exit(0);
+    return EXCEPTION_CONTINUE_EXECUTION;
+}
+
 static void CheckWindowsOld()
 {
     switch (QSysInfo::windowsVersion())
@@ -17,20 +23,7 @@ static void CheckWindowsOld()
     case QSysInfo::WV_VISTA:
     {
         SetErrorMode(SEM_FAILCRITICALERRORS);
-
-        if (true)
-        {
-            HINSTANCE hKernal32 = LoadLibraryA("Kernel32.dll");
-            if (hKernal32)
-            {
-                typedef BOOL (__stdcall *function_SetDefaultDllDirectories)(DWORD);
-                function_SetDefaultDllDirectories func = (function_SetDefaultDllDirectories)GetProcAddress(hKernal32, "SetDefaultDllDirectories");
-                if (func)
-                {
-                    func(LOAD_LIBRARY_SEARCH_SYSTEM32);
-                }
-            }
-        }
+        SetUnhandledExceptionFilter(vlc_exception_filter);
         break;
     }
     default:
