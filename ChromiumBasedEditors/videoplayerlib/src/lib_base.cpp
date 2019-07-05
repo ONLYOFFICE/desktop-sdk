@@ -13,9 +13,24 @@ static void CheckWindowsOld()
     {
     case QSysInfo::WV_2000:
     case QSysInfo::WV_XP:
+    case QSysInfo::WV_2003:
     case QSysInfo::WV_VISTA:
     {
         SetErrorMode(SEM_FAILCRITICALERRORS);
+
+        if (true)
+        {
+            HINSTANCE hKernal32 = LoadLibraryA("Kernel32.dll");
+            if (hKernal32)
+            {
+                typedef BOOL (__stdcall *function_SetDefaultDllDirectories)(DWORD);
+                function_SetDefaultDllDirectories func = (function_SetDefaultDllDirectories)GetProcAddress(hKernal32, "SetDefaultDllDirectories");
+                if (func)
+                {
+                    func(LOAD_LIBRARY_SEARCH_SYSTEM32);
+                }
+            }
+        }
         break;
     }
     default:
