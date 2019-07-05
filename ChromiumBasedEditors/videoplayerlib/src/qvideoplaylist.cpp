@@ -236,6 +236,10 @@ void QVideoPlaylist::slotActivated(const QModelIndex &index)
 
     QFont fontAll("Open Sans", 10, QFont::Normal, false);
     QFont fontSelected("Open Sans", 10, QFont::Bold, false);
+    fontAll.setUnderline(false);
+    fontAll.setStrikeOut(false);
+    fontSelected.setUnderline(false);
+    fontSelected.setStrikeOut(false);
     fontAll.setPixelSize(QWidget_ScaleDPI(12, m_dDpi));
     fontSelected.setPixelSize(QWidget_ScaleDPI(12, m_dDpi));
 
@@ -289,6 +293,10 @@ void QVideoPlaylist::CheckStyles()
 
     QFont fontAll("Open Sans", 10, QFont::Normal, false);
     QFont fontSelected("Open Sans", 10, QFont::Bold, false);
+    fontAll.setUnderline(false);
+    fontAll.setStrikeOut(false);
+    fontSelected.setUnderline(false);
+    fontSelected.setStrikeOut(false);
     fontAll.setPixelSize(QWidget_ScaleDPI(12, m_dDpi));
     fontSelected.setPixelSize(QWidget_ScaleDPI(12, m_dDpi));
 
