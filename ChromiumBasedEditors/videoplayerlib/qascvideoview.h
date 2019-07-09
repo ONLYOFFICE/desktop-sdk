@@ -56,6 +56,7 @@ public:
 
     virtual bool getMainWindowFullScreen();
     virtual void setMainWindowFullScreen(bool bIsFullScreen);
+    virtual QWidget* getMainWindow();
 
 public:
     void PlayPause();

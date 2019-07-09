@@ -62,7 +62,7 @@ Q_DECL_EXPORT @interface NSAscApplicationWorker : NSObject
 
 - (id)init;
 - (id)initWithCreator:(ASC_CreateAppManagerFunc)creator;
-- (void) Start:(int)argc: (const char* [])argv;
+- (void) Start:(int)argc argv:(const char* [])argv;
 - (void) End;
 + (CAscApplicationManager*) getAppManager;
 

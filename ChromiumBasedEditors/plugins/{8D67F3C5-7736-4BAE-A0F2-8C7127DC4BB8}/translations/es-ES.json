@@ -1,5 +1,7 @@
 {
-    "Please see the <a href=\"https://api.onlyoffice.com/plugin/basic\" target=\"_blank\">Help</a> to find out what the plugin contents must be and how it is added to the editors.": "Por favor, consulte la <a href=\"https://api.onlyoffice.com/plugin/basic\" target=\"_blank\">Ayuda</a> para averiguar qué componentes deben ser incluidos en el plugin y cómo agregarlo en los editores.",
-    "Add plugin": "Agregar plugin",
+	"Please see the " : "Por favor, consulte la ",
+	"Help" : "Ayuda",
+	" to find out what the plugin contents must be and how it is added to the editors." : " para averiguar qué componentes deben ser incluidos en el plugin y cómo agregarlo en los editores.",
+	"Add plugin": "Agregar plugin",
     "Installed plugins": "Plugins instalados"
 }

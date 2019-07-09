@@ -40,6 +40,8 @@ QVideoPlaylist::QVideoPlaylist(QWidget *parent) : QWidget(parent)
 {
     m_oCS.InitializeCriticalSection();
 
+    m_pDialogParent = NULL;
+
     m_sSavePlayListAddon = "/ONLYOFFICE/VideoPlayer";
     QWidget_setBackground(this, 0x22, 0x22, 0x22);
 
@@ -234,6 +236,10 @@ void QVideoPlaylist::slotActivated(const QModelIndex &index)
 
     QFont fontAll("Open Sans", 10, QFont::Normal, false);
     QFont fontSelected("Open Sans", 10, QFont::Bold, false);
+    fontAll.setUnderline(false);
+    fontAll.setStrikeOut(false);
+    fontSelected.setUnderline(false);
+    fontSelected.setStrikeOut(false);
     fontAll.setPixelSize(QWidget_ScaleDPI(12, m_dDpi));
     fontSelected.setPixelSize(QWidget_ScaleDPI(12, m_dDpi));
 
@@ -287,6 +293,10 @@ void QVideoPlaylist::CheckStyles()
 
     QFont fontAll("Open Sans", 10, QFont::Normal, false);
     QFont fontSelected("Open Sans", 10, QFont::Bold, false);
+    fontAll.setUnderline(false);
+    fontAll.setStrikeOut(false);
+    fontSelected.setUnderline(false);
+    fontSelected.setStrikeOut(false);
     fontAll.setPixelSize(QWidget_ScaleDPI(12, m_dDpi));
     fontSelected.setPixelSize(QWidget_ScaleDPI(12, m_dDpi));
 
@@ -346,7 +356,7 @@ void QVideoPlaylist::slotButtonAdd()
     QString sTitle = QString::fromUtf8("Добавить файлы в список воспроизведения");
     //sTitle = "Add files to playlist";
     CVideoExt ext;
-    QStringList filenames = QFileDialog::getOpenFileNames(this,
+    QStringList filenames = QFileDialog::getOpenFileNames(m_pDialogParent ? m_pDialogParent : this,
 sTitle, sDir,
 ext.getFilter(), NULL,
         #ifdef QFILEDIALOG_DONTUSENATIVEDIALOG

@@ -3,6 +3,36 @@
 
 #ifdef USE_VLC_LIBRARY
 
+#ifdef _WIN32
+#include <QSysInfo>
+#include <windows.h>
+
+LONG WINAPI vlc_exception_filter(struct _EXCEPTION_POINTERS *lpExceptionInfo)
+{
+    exit(0);
+    return EXCEPTION_CONTINUE_EXECUTION;
+}
+
+static void CheckWindowsOld()
+{
+    switch (QSysInfo::windowsVersion())
+    {
+    case QSysInfo::WV_2000:
+    case QSysInfo::WV_XP:
+    case QSysInfo::WV_2003:
+    case QSysInfo::WV_VISTA:
+    {
+        SetErrorMode(SEM_FAILCRITICALERRORS);
+        SetUnhandledExceptionFilter(vlc_exception_filter);
+        break;
+    }
+    default:
+        break;
+    }
+}
+
+#endif
+
 #include <QCoreApplication>
 
 #include "../../../../core/DesktopEditor/common/File.h"
@@ -17,6 +47,10 @@ void NSBaseVideoLibrary::Init(QObject* parent)
 
     if (!parent)
         return;
+
+#ifdef _WIN32
+    CheckWindowsOld();
+#endif
 
     QCoreApplication::setAttribute(Qt::AA_X11InitThreads);
 
