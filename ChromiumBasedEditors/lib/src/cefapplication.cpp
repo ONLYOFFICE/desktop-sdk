@@ -253,7 +253,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 #if defined(_LINUX) && !defined(_MAC)
     // Create a ClientApp of the correct type.    
     if (process_type == client::ClientApp::BrowserProcess)
-        m_pInternal->m_app = new CAscClientAppBrowser(pManager->m_pInternal->m_mapSettings);
+        m_pInternal->m_app = new CAscClientAppBrowser(pManager->m_pInternal->m_mapSettings, pManager);
     else if (process_type == client::ClientApp::RendererProcess ||
              process_type == client::ClientApp::ZygoteProcess)
         m_pInternal->m_app = new CAscClientAppRenderer(pManager->m_pInternal->m_mapSettings);
@@ -262,7 +262,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 #endif
 
 #ifdef _MAC
-    m_pInternal->m_app = new CAscClientAppBrowser(pManager->m_pInternal->m_mapSettings);
+    m_pInternal->m_app = new CAscClientAppBrowser(pManager->m_pInternal->m_mapSettings, pManager);
 #endif
 
 #if 1

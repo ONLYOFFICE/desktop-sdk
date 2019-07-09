@@ -135,6 +135,8 @@ public:
 
     QString m_sSavePlayListAddon;
 
+    QWidget* m_pDialogParent;
+
 private:
     NSCriticalSection::CRITICAL_SECTION m_oCS;
 

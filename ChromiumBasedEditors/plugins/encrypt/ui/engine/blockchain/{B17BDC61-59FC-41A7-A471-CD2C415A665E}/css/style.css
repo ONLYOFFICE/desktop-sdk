@@ -318,7 +318,8 @@ dialog .tool.close {
 }
 
 #box-blockchain-connect, #box-blockchain-info {
-    width: 700px;
+    /*width: 700px;*/
+    min-width:585px;
 }
 
 #box-blockchain-connect a.text-sub {

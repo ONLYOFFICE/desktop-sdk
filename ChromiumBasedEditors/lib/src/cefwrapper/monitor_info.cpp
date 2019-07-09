@@ -7,6 +7,10 @@
 typedef HMONITOR (__stdcall *function_MonitorFromWindow)(HWND hwnd, DWORD dwFlags);
 typedef HRESULT (__stdcall *function_GetDpiForMonitor)(HMONITOR hmonitor, MONITOR_DPI_TYPE dpiType, UINT *dpiX, UINT *dpiY);
 
+#ifdef _DPI_AWARENESS_CONTEXTS_
+typedef BOOL (__stdcall *function_SetProcessDpiAwarenessContext)(DPI_AWARENESS_CONTEXT);
+#endif
+
 typedef HRESULT (__stdcall *function_SetProcessDpiAwareness)(PROCESS_DPI_AWARENESS);
 typedef UINT (__stdcall *function_GetDpiForWindow)(HWND hwnd);
 
@@ -20,10 +24,20 @@ public:
     function_GetDpiForWindow m_func_GetDpiForWindow;
     function_SetProcessDpiAwareness m_funcSetProcessDpiAwareness;
 
+#ifdef _DPI_AWARENESS_CONTEXTS_
+    function_SetProcessDpiAwarenessContext m_funcSetProcessDpiAwarenessContext;
+#endif
+
+
     CMonitorPrivate()
     {
         m_func_GetDpiForMonitor = NULL;
         m_funcSetProcessDpiAwareness = NULL;
+
+#ifdef _DPI_AWARENESS_CONTEXTS_
+        m_funcSetProcessDpiAwarenessContext = NULL;
+#endif
+
         m_hInstance = LoadLibraryA("SHCore.dll");
 
         if (m_hInstance)
@@ -39,6 +53,10 @@ public:
         if (m_hInstanceUser)
         {
             m_func_GetDpiForWindow = (function_GetDpiForWindow)GetProcAddress(m_hInstanceUser, "GetDpiForWindow");
+
+#ifdef _DPI_AWARENESS_CONTEXTS_
+            m_funcSetProcessDpiAwarenessContext = (function_SetProcessDpiAwarenessContext)GetProcAddress(m_hInstanceUser, "SetProcessDpiAwarenessContext");
+#endif
         }
     }
     ~CMonitorPrivate()
@@ -78,6 +96,18 @@ int NSMonitor::GetRawMonitorDpi(WindowHandleId handle)
 
 int Core_SetProcessDpiAwareness(void)
 {
+#ifdef _DPI_AWARENESS_CONTEXTS_
+    if (g_monitor_info.m_funcSetProcessDpiAwarenessContext)
+    {
+#ifndef DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2
+        #define DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 ((DPI_AWARENESS_CONTEXT)-4)
+#endif
+        if (g_monitor_info.m_funcSetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2))
+            return 0;
+
+    }
+#endif
+
     if (!g_monitor_info.m_funcSetProcessDpiAwareness)
         return 1;
 

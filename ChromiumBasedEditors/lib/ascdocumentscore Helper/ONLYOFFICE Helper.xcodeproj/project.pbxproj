@@ -1736,7 +1736,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "contents=${CONFIGURATION_BUILD_DIR}/${CONTENTS_FOLDER_PATH}\n\ninstall_name_tool -change @executable_path/Chromium\\ Embedded\\ Framework \\\n@executable_path/../../../../Frameworks/Chromium\\ Embedded\\ Framework.framework/Chromium\\ Embedded\\ Framework \\\n\"${contents}\"/MacOS/\"${TARGET_NAME}\"\n\ndst=\"${PROJECT_DIR}\"/../../../../core/build/lib/mac_64\nrm -rf \"${dst}\"/\"${TARGET_NAME}\".app\ncp -R \"${TARGET_BUILD_DIR}\"/\"${TARGET_NAME}\".app \"${dst}\"\n\n#cp -R \"${TARGET_BUILD_DIR}\"/\"${TARGET_NAME}\".app \"${TARGET_BUILD_DIR}\"/../../../../../../../../../desktop-apps/macos/Vendor/ONLYOFFICE/libs/cefbuilds\n";
+			shellScript = "contents=${CONFIGURATION_BUILD_DIR}/${CONTENTS_FOLDER_PATH}\n\ninstall_name_tool -change @executable_path/Chromium\\ Embedded\\ Framework \\\n@executable_path/../../../../Frameworks/Chromium\\ Embedded\\ Framework.framework/Chromium\\ Embedded\\ Framework \\\n\"${contents}\"/MacOS/\"${TARGET_NAME}\"\n\ndst=\"${PROJECT_DIR}\"/../../../../core/build/lib/mac_64\nrm -rf \"${dst}\"/\"${TARGET_NAME}\".app\ncp -R \"${TARGET_BUILD_DIR}\"/\"${TARGET_NAME}\".app \"${dst}\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
