@@ -972,6 +972,12 @@ public:
                 case AVS_OFFICESTUDIO_FILE_SPREADSHEET_ODS:
                 case AVS_OFFICESTUDIO_FILE_PRESENTATION_ODP:
                 case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF:
+                case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOTX:
+                case AVS_OFFICESTUDIO_FILE_PRESENTATION_POTX:
+                case AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLTX:
+                case AVS_OFFICESTUDIO_FILE_DOCUMENT_OTT:
+                case AVS_OFFICESTUDIO_FILE_PRESENTATION_OTP:
+                case AVS_OFFICESTUDIO_FILE_SPREADSHEET_OTS:
                 {
                     oBuilder.WriteString(L"<m_sSavePassword>");
                     oBuilder.WriteEncodeXmlString(m_oInfo.m_sPassword);
