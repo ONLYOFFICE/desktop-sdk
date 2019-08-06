@@ -332,6 +332,23 @@ public:
 
         return strJson.substr(pos1 + 1, pos2 - pos1 - 1);
     }
+    static std::string GetArrayValue(const std::string& strJson, const std::string& strName)
+    {
+        std::string::size_type nPosStartName = strJson.find("\"" + strName + "\"");
+        if (nPosStartName == std::string::npos)
+            return "";
+
+        nPosStartName += (strName.length() + 2);
+        std::string::size_type pos1 = strJson.find("[", nPosStartName);
+        if (pos1 == std::string::npos)
+            return "";
+
+        std::string::size_type pos2 = strJson.find("]", pos1 + 1);
+        if (pos2 == std::string::npos)
+            return "";
+
+        return strJson.substr(pos1, pos2 - pos1 + 1);
+    }
     static std::string GetObjectValue(const std::string& strJson, const std::string& strName)
     {
         std::string::size_type nPosStartName = strJson.find("\"" + strName + "\"");
