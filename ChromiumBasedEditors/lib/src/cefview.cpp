@@ -1687,12 +1687,14 @@ public:
         if (NULL != m_pParent && NULL != m_pParent->GetAppManager())
             pListener = m_pParent->GetAppManager()->GetEventListener();
 
-        bool bIsEditor = (sUrl.find(L"files/doceditor.aspx?fileid") == std::wstring::npos) ? false : true;
+        std::wstring sUrlLower = sUrl;
+        NSCommon::makeLowerW(sUrlLower);
+        bool bIsEditor = (sUrlLower.find(L"files/doceditor.aspx?fileid") == std::wstring::npos) ? false : true;
 
 #if 1
         if (m_pParent->m_pInternal->m_bIsExternalCloud && !bIsEditor)
         {
-            bIsEditor = (sUrl.find(m_pParent->m_pInternal->m_oExternalCloud.test_editor) == std::wstring::npos) ? false : true;
+            bIsEditor = (sUrlLower.find(m_pParent->m_pInternal->m_oExternalCloud.test_editor) == std::wstring::npos) ? false : true;
 
             if (bIsEditor)
             {
@@ -1702,9 +1704,9 @@ public:
 #endif
 
         bool bIsDownload    = false;
-        if (sUrl.find(L"filehandler.ashx?action=download") != std::wstring::npos)
+        if (sUrlLower.find(L"filehandler.ashx?action=download") != std::wstring::npos)
             bIsDownload     = true;
-        else if (sUrl.find(L"filehandler.ashx?action=view") != std::wstring::npos)
+        else if (sUrlLower.find(L"filehandler.ashx?action=view") != std::wstring::npos)
             bIsDownload     = true;
 
         if (!bIsBeforeBrowse && !bIsEditor && !bIsDownload && !bIsNotOpenLinks)
