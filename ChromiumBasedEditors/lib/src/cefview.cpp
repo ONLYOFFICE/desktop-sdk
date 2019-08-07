@@ -861,6 +861,8 @@ public:
 
     bool m_bIsBuilding;
 
+    int m_nPrintParameters;
+
 public:
     class CSystemMessage
     {
@@ -961,6 +963,7 @@ public:
         m_bCloudVersionSendSupportCrypto = false;
 
         m_bIsBuilding = false;
+        m_nPrintParameters = 0;
     }
 
     void Destroy()
@@ -2462,6 +2465,9 @@ public:
             {
                 NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
                 pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_PRINT_START;
+                m_pParent->m_pInternal->m_nPrintParameters = 0;
+                if (message->GetArgumentList()->GetSize() == 1)
+                    m_pParent->m_pInternal->m_nPrintParameters = message->GetArgumentList()->GetInt(0);
                 m_pParent->Apply(pEvent);
             }
             return true;
@@ -5646,6 +5652,8 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
         }
         case ASC_MENU_EVENT_TYPE_CEF_PRINT_START:
         {
+            int nPrintParameters = m_pInternal->m_nPrintParameters;
+            m_pInternal->m_nPrintParameters = 0;
             if (m_pInternal)
             {
                 if (this->GetType() == cvwtEditor)
@@ -5694,6 +5702,8 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             if (!bIsNativePrint)
             {
                 CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("print");
+                if (0 != nPrintParameters)
+                    message->GetArgumentList()->SetInt(0, nPrintParameters);
                 browser->SendProcessMessage(PID_RENDERER, message);
             }
             else
