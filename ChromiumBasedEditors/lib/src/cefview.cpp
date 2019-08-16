@@ -1039,6 +1039,33 @@ public:
     {
         return m_sDownloadViewPath;
     }
+
+    std::wstring GetFileDocInfo(const std::wstring& sFile)
+    {
+        std::wstring sDocInfo = L"";
+        COfficeFileFormatChecker oChecker;
+        bool bIsStorage = oChecker.isMS_OFFCRYPTOFormatFile(m_sDownloadViewPath, sDocInfo);
+        if (!bIsStorage)
+        {
+            sDocInfo = L"";
+            bIsStorage = oChecker.isOpenOfficeFormatFile(m_sDownloadViewPath, sDocInfo);
+        }
+
+        if (bIsStorage && !sDocInfo.empty())
+        {
+            // correct sDocInfo. only < 255 codes
+            size_t sDocInfoLen = sDocInfo.length();
+            wchar_t* sDocInfoData = (wchar_t*)sDocInfo.c_str();
+            for (size_t i = 0; i < sDocInfoLen; ++i)
+            {
+                int nSymbol = sDocInfoData[i];
+                if (nSymbol > 0xFF || nSymbol < 0x20)
+                    sDocInfoData[i] = ' ';
+            }
+        }
+        return sDocInfo;
+    }
+
     void OnViewDownloadFile()
     {
         std::wstring::size_type posHash = m_sDownloadViewPath.rfind(L".asc_file_get_hash");
@@ -1051,11 +1078,18 @@ public:
                 std::string sHash = pCert->GetHash(m_sDownloadViewPath, OOXML_HASH_ALG_SHA256);
                 delete pCert;
 
+                std::wstring sDocInfo = GetFileDocInfo(m_sDownloadViewPath);
+                std::string sDocInfoA = U_TO_UTF8(sDocInfo);
+
                 NSFile::CFileBinary::Remove(m_sDownloadViewPath);
 
                 CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("file_get_hash_callback");
                 message->GetArgumentList()->SetString(0, sHash);
                 message->GetArgumentList()->SetString(1, m_sGetHashFrame);
+
+                std::string sJSON = "{hash:\"" + sHash + "\",docinfo:\"" + sDocInfoA + "\"}";
+                message->GetArgumentList()->SetString(2, sJSON);
+
                 GetBrowser()->SendProcessMessage(PID_RENDERER, message);
 
                 return;
@@ -4886,29 +4920,9 @@ void CCefView_Private::LocalFile_IncrementCounter()
 
                     message->GetArgumentList()->SetString(1, sHash);
 
-                    std::wstring sDocInfo;
-                    COfficeFileFormatChecker oChecker;
-                    bool bIsStorage = oChecker.isMS_OFFCRYPTOFormatFile(m_oLocalInfo.m_oInfo.m_sFileSrc, sDocInfo);
-                    if (!bIsStorage)
-                    {
-                        sDocInfo = L"";
-                        bIsStorage = oChecker.isOpenOfficeFormatFile(m_oLocalInfo.m_oInfo.m_sFileSrc, sDocInfo);
-                    }
-
-                    if (bIsStorage && !sDocInfo.empty())
-                    {
-                        // correct sDocInfo. only < 255 codes
-                        size_t sDocInfoLen = sDocInfo.length();
-                        wchar_t* sDocInfoData = (wchar_t*)sDocInfo.c_str();
-                        for (size_t i = 0; i < sDocInfoLen; ++i)
-                        {
-                            int nSymbol = sDocInfoData[i];
-                            if (nSymbol > 0xFF || nSymbol < 0x20)
-                                sDocInfoData[i] = ' ';
-                        }
-
-                        message->GetArgumentList()->SetString(2, sDocInfo);                    
-                    }
+                    std::wstring sDocInfo = GetFileDocInfo(m_oLocalInfo.m_oInfo.m_sFileSrc);
+                    if (!sDocInfo.empty())
+                        message->GetArgumentList()->SetString(2, sDocInfo);
                 }
 
                 browser->SendProcessMessage(PID_RENDERER, message);
