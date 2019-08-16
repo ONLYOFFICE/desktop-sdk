@@ -18,7 +18,9 @@
             "url"         	: "index.html",
 			
 			"initDataType"	: "desktop-external",
-            "initData"		: "encryption"
+            "initData"		: "encryption",
+			
+			"cryptoDisabledOnStart" : "true"
         }
     ]
 }
