@@ -4171,7 +4171,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         {
             std::string sCode = "if (window.AscDesktopEditor.getHashCallback) { window.AscDesktopEditor.getHashCallback(\"";
             sCode += message->GetArgumentList()->GetString(0).ToString();
-            sCode += "\"); window.AscDesktopEditor.getHashCallback = null; }";
+            sCode += "\",";
+            sCode += message->GetArgumentList()->GetString(2).ToString();
+            sCode += "); window.AscDesktopEditor.getHashCallback = null; }";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
         }
         return true;
