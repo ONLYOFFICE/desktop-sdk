@@ -1194,6 +1194,8 @@ DE.controllers.Main.appOptions.mergeFolderUrl = \"\"; \
         {
             CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("print");
+            if (arguments.size() == 1)
+                message->GetArgumentList()->SetInt(0, (*arguments.begin())->GetIntValue());
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
@@ -3750,7 +3752,12 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         if (_frame)
         {
             std::string sCode = "if (window[\"Asc\"] && window[\"Asc\"][\"editor\"]) { window[\"Asc\"][\"editor\"][\"asc_nativePrint\"](undefined, undefined); }";
-            sCode += "else if (window[\"editor\"]) { window[\"editor\"][\"asc_nativePrint\"](undefined, undefined); }";
+            sCode += "else if (window[\"editor\"]) { window[\"editor\"][\"asc_nativePrint\"](undefined, undefined";
+
+            if (message->GetArgumentList()->GetSize() == 1)
+                sCode += (", " + std::to_string(message->GetArgumentList()->GetInt(0)));
+
+            sCode += "); }";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
         }
         return true;
@@ -4171,7 +4178,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         {
             std::string sCode = "if (window.AscDesktopEditor.getHashCallback) { window.AscDesktopEditor.getHashCallback(\"";
             sCode += message->GetArgumentList()->GetString(0).ToString();
-            sCode += "\"); window.AscDesktopEditor.getHashCallback = null; }";
+            sCode += "\",";
+            sCode += message->GetArgumentList()->GetString(2).ToString();
+            sCode += "); window.AscDesktopEditor.getHashCallback = null; }";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
         }
         return true;

@@ -57,12 +57,15 @@ public:
     int m_nCryptoMode;
     std::map<int, std::string> m_arCryptoModes;
 
+    bool m_bCryptoDisabledOnStart;
+
     // плагин не для редактора, а для главной страницы (для системных сообщенией)
     std::vector<CExternalPluginInfo> m_arExternals;
 public:
     CPluginsManager()
     {
         m_nCryptoMode = 0;
+        m_bCryptoDisabledOnStart = false;
     }
 
     std::string GetPluginsJson(const bool& checkCrypto = false)
@@ -295,6 +298,10 @@ private:
     {
         if ("desktop-external" == GetStringValue(sJson, "initDataType"))
         {
+            std::string sStartMode = GetStringValue(sJson, "cryptoDisabledOnStart");
+            if (sStartMode == "true" || sStartMode == "1")
+                m_bCryptoDisabledOnStart = true;
+
             std::string::size_type pos1 = sJson.find("asc.{");
             std::string::size_type pos2 = sJson.find('}', pos1);
 
