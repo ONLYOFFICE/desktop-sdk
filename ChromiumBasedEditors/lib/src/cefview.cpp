@@ -2043,7 +2043,7 @@ public:
 
             if (!m_pParent->m_pInternal->m_bIsExternalCloud)
             {
-                std::wstring::size_type nPosWithoutD = sUrl.rfind(L"/products/files/");
+                std::wstring::size_type nPosWithoutD = NSCommon::FindLowerCaseR(sUrl, L"/products/files/");
                 if (nPosWithoutD != std::wstring::npos)
                 {
                     if ((nPosWithoutD + 16) == sUrl.length())
@@ -3071,7 +3071,7 @@ public:
             std::wstring sName = message->GetArgumentList()->GetString(2).ToWString();
 
             std::wstring sBaseUrl = m_pParent->GetUrl();
-            std::wstring::size_type pos = sBaseUrl.find(L"/products/files");
+            std::wstring::size_type pos = NSCommon::FindLowerCase(sBaseUrl, L"/products/files");
             if (pos != std::wstring::npos)
                 sBaseUrl = sBaseUrl.substr(0, pos);
 
@@ -3133,7 +3133,7 @@ public:
             m_pParent->m_pInternal->m_sGetHashFrame = message->GetArgumentList()->GetString(2).ToString();
 
             std::wstring sBaseUrl = m_pParent->GetUrl();
-            std::wstring::size_type pos = sBaseUrl.find(L"/products/files");
+            std::wstring::size_type pos = NSCommon::FindLowerCase(sBaseUrl, L"/products/files");
             if (pos != std::wstring::npos)
                 sBaseUrl = sBaseUrl.substr(0, pos);
 
@@ -3181,7 +3181,7 @@ public:
             std::wstring sDownloadLink = message->GetArgumentList()->GetString(1).ToWString();
 
             std::wstring sBaseUrl = m_pParent->GetUrl();
-            std::wstring::size_type pos = sBaseUrl.find(L"/products/files");
+            std::wstring::size_type pos = NSCommon::FindLowerCase(sBaseUrl, L"/products/files");
             if (pos != std::wstring::npos)
                 sBaseUrl = sBaseUrl.substr(0, pos);
 
@@ -3190,7 +3190,7 @@ public:
                 if (0 != sDownloadLink.find(sBaseUrl) && !NSFileDownloader::IsNeedDownload(sDownloadLink))
                     sDownloadLink = sBaseUrl + sDownloadLink;
 
-                std::wstring::size_type posCheckEnter = sDownloadLink.find(L"/products/files");
+                std::wstring::size_type posCheckEnter = NSCommon::FindLowerCase(sDownloadLink, L"/products/files");
                 if (posCheckEnter != std::wstring::npos)
                 {
                     std::wstring sBaseDownloadLink = sDownloadLink.substr(0, posCheckEnter);
