@@ -51,6 +51,34 @@
 
 #include "../../../../core/DesktopEditor/fontengine/application_generate_fonts.h"
 
+namespace NSCommon
+{
+    static std::wstring::size_type FindLowerCase(const std::wstring& string, const std::wstring& find)
+    {
+        std::wstring sTmp = string;
+        NSCommon::makeLowerW(sTmp);
+        return sTmp.find(find);
+    }
+    static std::wstring::size_type FindLowerCaseR(const std::wstring& string, const std::wstring& find)
+    {
+        std::wstring sTmp = string;
+        NSCommon::makeLowerW(sTmp);
+        return sTmp.rfind(find);
+    }
+    static std::string::size_type FindLowerCase(const std::string& string, const std::string& find)
+    {
+        std::string sTmp = string;
+        NSCommon::makeLower(sTmp);
+        return sTmp.find(find);
+    }
+    static std::string::size_type FindLowerCaseR(const std::string& string, const std::string& find)
+    {
+        std::string sTmp = string;
+        NSCommon::makeLower(sTmp);
+        return sTmp.rfind(find);
+    }
+}
+
 #if 0
 static void __log_messagea__(const std::string& message)
 {
@@ -914,7 +942,7 @@ public:
 
         if (true)
         {
-            pos = pVisitor->m_sDomain.rfind("/products/files");
+            pos = NSCommon::FindLowerCaseR(pVisitor->m_sDomain, "/products/files");
             if ((pos != std::string::npos) && ((pos + 15) == pVisitor->m_sDomain.length()))
                 pVisitor->m_sDomain = pVisitor->m_sDomain.substr(0, pos);
         }
