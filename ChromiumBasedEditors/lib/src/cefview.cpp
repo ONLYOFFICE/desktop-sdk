@@ -1044,11 +1044,11 @@ public:
     {
         std::wstring sDocInfo = L"";
         COfficeFileFormatChecker oChecker;
-        bool bIsStorage = oChecker.isMS_OFFCRYPTOFormatFile(m_sDownloadViewPath, sDocInfo);
+        bool bIsStorage = oChecker.isMS_OFFCRYPTOFormatFile(sFile, sDocInfo);
         if (!bIsStorage)
         {
             sDocInfo = L"";
-            bIsStorage = oChecker.isOpenOfficeFormatFile(m_sDownloadViewPath, sDocInfo);
+            bIsStorage = oChecker.isOpenOfficeFormatFile(sFile, sDocInfo);
         }
 
         if (bIsStorage && !sDocInfo.empty())
