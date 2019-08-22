@@ -1109,11 +1109,8 @@ else \n\
             {
                 CefRefPtr<CefFrame> _frame =  CefV8Context::GetCurrentContext()->GetFrame();
                 _frame->ExecuteJavaScript("(function() { try { \
-DE.controllers.Main.editorConfig.canUseHistory = false; \
-DE.controllers.Main.editorConfig.fileChoiceUrl = \"\"; \
-DE.controllers.Main.editorConfig.mergeFolderUrl = \"\"; \
-DE.controllers.Main.appOptions.fileChoiceUrl = \"\"; \
-DE.controllers.Main.appOptions.mergeFolderUrl = \"\"; \
+DE.controllers.Main.DisableMailMerge(); \
+DE.controllers.Main.DisableVersionHistory(); \
 } catch(err){} })();", _frame->GetURL(), 0);
             }
 
