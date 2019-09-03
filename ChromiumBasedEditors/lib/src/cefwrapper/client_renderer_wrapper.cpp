@@ -1109,11 +1109,8 @@ else \n\
             {
                 CefRefPtr<CefFrame> _frame =  CefV8Context::GetCurrentContext()->GetFrame();
                 _frame->ExecuteJavaScript("(function() { try { \
-DE.controllers.Main.editorConfig.canUseHistory = false; \
-DE.controllers.Main.editorConfig.fileChoiceUrl = \"\"; \
-DE.controllers.Main.editorConfig.mergeFolderUrl = \"\"; \
-DE.controllers.Main.appOptions.fileChoiceUrl = \"\"; \
-DE.controllers.Main.appOptions.mergeFolderUrl = \"\"; \
+DE.controllers.Main.DisableMailMerge(); \
+DE.controllers.Main.DisableVersionHistory(); \
 } catch(err){} })();", _frame->GetURL(), 0);
             }
 
@@ -1194,6 +1191,8 @@ DE.controllers.Main.appOptions.mergeFolderUrl = \"\"; \
         {
             CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("print");
+            if (arguments.size() == 1)
+                message->GetArgumentList()->SetInt(0, (*arguments.begin())->GetIntValue());
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
@@ -3750,7 +3749,12 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         if (_frame)
         {
             std::string sCode = "if (window[\"Asc\"] && window[\"Asc\"][\"editor\"]) { window[\"Asc\"][\"editor\"][\"asc_nativePrint\"](undefined, undefined); }";
-            sCode += "else if (window[\"editor\"]) { window[\"editor\"][\"asc_nativePrint\"](undefined, undefined); }";
+            sCode += "else if (window[\"editor\"]) { window[\"editor\"][\"asc_nativePrint\"](undefined, undefined";
+
+            if (message->GetArgumentList()->GetSize() == 1)
+                sCode += (", " + std::to_string(message->GetArgumentList()->GetInt(0)));
+
+            sCode += "); }";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
         }
         return true;

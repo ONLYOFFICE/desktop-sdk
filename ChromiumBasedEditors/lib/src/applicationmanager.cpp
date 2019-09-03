@@ -46,6 +46,10 @@ void posix_death_signal(int signum)
 }
 #endif
 
+#ifdef FILE_SAVE_ADDONS
+#include "file_addons.h"
+#endif
+
 CAscApplicationSettings::CAscApplicationSettings()
 {
     std::wstring sApplicationPath   = NSFile::GetProcessDirectory();
@@ -88,6 +92,7 @@ void CAscApplicationSettings::SetUserDataPath(std::wstring sPath)
     use_system_fonts                = true;
     fonts_cache_info_path           = app_data_path + L"/data/fonts";
     recover_path                    = app_data_path + L"/data/recover";
+    user_dictionaries_path          = app_data_path + L"/data/dictionaries";
 
     user_plugins_path               = app_data_path + L"/data/sdkjs-plugins";
 }
@@ -120,7 +125,7 @@ CAscApplicationManager::~CAscApplicationManager()
 void CAscApplicationManager::StartSpellChecker()
 {
     m_pInternal->m_oSpellChecker.SetApplicationManager(this);
-    m_pInternal->m_oSpellChecker.Init(m_oSettings.spell_dictionaries_path);
+    m_pInternal->m_oSpellChecker.Init(m_oSettings.spell_dictionaries_path, m_oSettings.user_dictionaries_path);
     m_pInternal->m_oSpellChecker.Start();
 }
 
@@ -771,41 +776,41 @@ int CAscApplicationManager::GetFileFormatByExtentionForSave(const std::wstring& 
     int nFormat = -1;
     if (sName == L"docx")
         nFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX;
-    if (sName == L"dotx")
+    else if (sName == L"dotx")
         nFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOTX;
-    if (sName == L"odt")
+    else if (sName == L"odt")
         nFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_ODT;
-    if (sName == L"ott")
+    else if (sName == L"ott")
         nFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_OTT;
-    if (sName == L"rtf")
+    else if (sName == L"rtf")
         nFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_RTF;
-    if (sName == L"txt")
+    else if (sName == L"txt")
         nFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_TXT;
-    if (sName == L"html")
+    else if (sName == L"html")
         nFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_HTML;
-
-    if (sName == L"xlsx")
+    else if (sName == L"xlsx")
         nFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX;
-    if (sName == L"xltx")
+    else if (sName == L"xltx")
         nFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLTX;
-    if (sName == L"ods")
+    else if (sName == L"ods")
         nFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_ODS;
-    if (sName == L"ots")
+    else if (sName == L"ots")
         nFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_OTS;
-    if (sName == L"csv")
+    else if (sName == L"csv")
         nFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_CSV;
-
-    if (sName == L"pptx")
+    else if (sName == L"pptx")
         nFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
-    if (sName == L"potx")
+    else if (sName == L"potx")
         nFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_POTX;
-    if (sName == L"odp")
+    else if (sName == L"odp")
         nFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_ODP;
-    if (sName == L"otp")
+    else if (sName == L"otp")
         nFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_OTP;
-
-    if (sName == L"pdf")
+    else if (sName == L"pdf")
         nFormat = AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF;
+#ifdef FILE_SAVE_ADDONS
+    FILE_SAVE_ADDONS
+#endif
 
     return nFormat;
 }

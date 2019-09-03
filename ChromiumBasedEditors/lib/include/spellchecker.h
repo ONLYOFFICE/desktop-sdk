@@ -51,7 +51,7 @@ public:
     void SetApplicationManager(CAscApplicationManager* );
     void AddTask(const int& nEditorId, const std::string& sTask, int nId); // utf8
 
-    void Init(std::wstring sDirectory);
+    void Init(const std::wstring& sDirectory, const std::wstring& sUserDirectory = L"");
 
     void Start();
     void End();
