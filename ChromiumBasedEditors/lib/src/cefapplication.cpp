@@ -433,6 +433,8 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
         NSSystem::SetEnvValueA(iterMap->first, iterMap->second);
     }
 
+    pManager->m_pInternal->LocalFiles_Init();
+
     CORE_LOGGINGA("CApplicationCEF::Init_CEF::end");
 
     return 0;
