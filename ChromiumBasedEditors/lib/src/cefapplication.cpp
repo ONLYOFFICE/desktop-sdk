@@ -168,7 +168,7 @@ CApplicationCEF::CApplicationCEF()
 
 int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* argv[])
 {
-    CORE_LOGGINGA("CApplicationCEF::Init_CEF::start");
+    LOGGER_STRING("CApplicationCEF::Init_CEF::start");
 
     if (NULL == pManager->m_pInternal->m_pDpiChecker)
         pManager->m_pInternal->m_pDpiChecker = pManager->InitDpiChecker();
@@ -274,7 +274,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     }
 #endif
 
-    CORE_LOGGINGA("CApplicationCEF::Init_CEF::main");
+    LOGGER_STRING("CApplicationCEF::Init_CEF::main");
 
     CefSettings settings;
     
@@ -350,7 +350,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     bool bInit = m_pInternal->context->Initialize(main_args, settings, m_pInternal->m_app.get(), NULL);
     bool bIsInitScheme = asc_scheme::InitScheme(pManager);
 
-    CORE_LOGGINGA("CApplicationCEF::Init_CEF::initialize");
+    LOGGER_STRING("CApplicationCEF::Init_CEF::initialize");
 
 #if defined(_LINUX) && !defined(_MAC)
     // The Chromium sandbox requires that there only be a single thread during
@@ -433,7 +433,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
         NSSystem::SetEnvValueA(iterMap->first, iterMap->second);
     }
 
-    CORE_LOGGINGA("CApplicationCEF::Init_CEF::end");
+    LOGGER_STRING("CApplicationCEF::Init_CEF::end");
 
     return 0;
 }

@@ -37,7 +37,7 @@
 
 class CApplicationCEF_Private;
 class CAscApplicationManager;
-class Q_DECL_EXPORT CApplicationCEF
+class DESKTOP_DECL CApplicationCEF
 {
 protected:
     CApplicationCEF_Private* m_pInternal;

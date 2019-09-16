@@ -36,7 +36,7 @@
 #include "base.h"
 
 class CAscApplicationManager;
-class Q_DECL_EXPORT CAscKeyboardChecker
+class DESKTOP_DECL CAscKeyboardChecker
 {
 public:
     CAscKeyboardChecker();

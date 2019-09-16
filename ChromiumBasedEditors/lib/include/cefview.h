@@ -66,7 +66,7 @@ public:
     virtual void releaseFromChild() { }
 };
 
-class Q_DECL_EXPORT CCefView
+class DESKTOP_DECL CCefView
 {
 public:
 
@@ -125,6 +125,9 @@ protected:
     CefViewWrapperType m_eWrapperType;
     CCefView_Private* m_pInternal;
 
+public:
+
+
     friend class CCefView_Private;
     friend class CAscClientHandler;
     friend class CAscApplicationManager;
@@ -133,7 +136,7 @@ protected:
     friend class CCefViewEditor;
 };
 
-class Q_DECL_EXPORT CCefViewEditor : public CCefView
+class DESKTOP_DECL CCefViewEditor : public CCefView
 {
 protected:
     AscEditorType m_eType;
@@ -145,9 +148,8 @@ public:
     void SetEditorType(AscEditorType eType);
     AscEditorType GetEditorType();
 
-    static int GetFileFormat(const std::wstring& sFilePath);
     void OpenLocalFile(const std::wstring& sFilePath, const int& nFileFormat);
-    void CreateLocalFile(const int& nFileFormat, const std::wstring& sName = L""); // AscEditorType
+    void CreateLocalFile(const AscEditorType& nFileFormat, const std::wstring& sName = L"");
     bool OpenRecoverFile(const int& nId);
     bool OpenRecentFile(const int& nId);
     bool OpenReporter(const std::wstring& sFolder);
@@ -157,6 +159,8 @@ public:
 
     std::wstring GetLocalFilePath();
     std::wstring GetRecoveryDir();
+
+    static int GetFileFormat(const std::wstring& sFilePath);
 };
 
 class IFileDownloaderEvents
@@ -167,7 +171,7 @@ public:
 };
 
 class CCefFileDownloader_Private;
-class Q_DECL_EXPORT CCefFileDownloader
+class DESKTOP_DECL CCefFileDownloader
 {
 protected:
     CCefFileDownloader_Private* m_pInternal;
