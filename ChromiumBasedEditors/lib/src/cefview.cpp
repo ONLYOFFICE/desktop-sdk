@@ -2482,6 +2482,12 @@ public:
 
                     m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
 
+                    int nParam = 0;
+                    if (message->GetArgumentList()->GetSize() > 0)
+                        nParam = message->GetArgumentList()->GetInt(0);
+
+                    m_pParent->GetAppManager()->m_oPrintSettings.Mode = (nParam == 1) ? CAscPrintSettings::pmFit : CAscPrintSettings::pm100;
+
 #if 0
                     // TEST
                     m_pParent->m_pInternal->m_oPrintData.Print_Start();
