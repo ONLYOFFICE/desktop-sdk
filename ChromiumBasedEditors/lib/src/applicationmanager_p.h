@@ -296,52 +296,68 @@ class CAscApplicationManager_Private : public CefBase_Class,
         public NSAscCrypto::IAscKeyChainListener
 {
 public:
-    CAscSpellChecker    m_oSpellChecker;
+    CAscSpellChecker m_oSpellChecker;
+
     CAscKeyboardChecker m_oKeyboardChecker;
+    CTimerKeyboardChecker m_oKeyboardTimer;
 
-    int                 m_nIdCounter;
+    // счетчик всех view
+    int m_nIdCounter;
 
+    // счетчик всех view
+    int m_nWindowCounter;
+
+    // id <=> view
+    std::map<int, CCefView*> m_mapViews;
+
+    // показывать ли консоль для дебага
+    bool m_bDebugInfoSupport;
+
+    // event listener
     NSEditorApi::CAscCefMenuEventListener* m_pListener;
 
-    std::map<int, CCefView*> m_mapViews;    
-
-    CAscApplicationManager* m_pMain;
-
+    // application fonts for all editors
     NSFonts::IApplicationFonts* m_pApplicationFonts;
 
+    // используется для загрузки скриптов
+    // url <-> все те, кто ждет загрузку этого скрипта. по окончании загрузки - всем отсылается евент
     NSCriticalSection::CRITICAL_SECTION m_oCS_Scripts;
     std::map<std::wstring, std::vector<CEditorFrameId>> m_mapLoadedScripts;
 
-    CApplicationCEF* m_pApplication;
-    bool m_bDebugInfoSupport;
-
+    // id для вью, который вызвал FileDialog
     int m_nIsCefSaveDialogWait;
-
-    CTimerKeyboardChecker m_oKeyboardTimer;
     
-    int m_nWindowCounter;
-    
+    // внутренние скачки (неюзерские)
     std::wstring m_strPrivateDownloadUrl;
     std::wstring m_strPrivateDownloadPath;
     
+    // мап отмененных загрузок
     std::map<unsigned int, bool> m_mapCancelDownloads;
 
+    // Recents & recovers
     NSCriticalSection::CRITICAL_SECTION m_oCS_LocalFiles;
     std::vector<CAscEditorFileInfo> m_arRecents;
     std::vector<CAscEditorFileInfo> m_arRecovers;
     
+    // дополнения к ссылкам
     std::wstring m_sAdditionalUrlParams;    
 
+    // сообщения, которые отправятся в view после инициализации js контекста
     std::vector<NSEditorApi::CAscMenuEvent*> m_arApplyEvents;
 
-    CApplicationManagerAdditionalBase* m_pAdditional;
-
+    // настройки приложения
     std::map<std::string, std::string> m_mapSettings;
+
+    // если ！= -1, то используется для scale всех view
     int m_nForceDisplayScale;
+
+    // флаг для принудительной перегенерации шрифтов (используется при изменении настроек, какие шрифты использовать)
     bool m_bIsUpdateFontsAttack;
 
+    // используется только для Linux snap.
     std::string m_sLD_LIBRARY_PATH;
 
+    // crypto
     std::map<std::wstring, int> m_mapOnlyPass;
 
     std::map<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue> m_mapCrypto;
@@ -351,18 +367,31 @@ public:
 
     NSAscCrypto::CAscKeychain* m_pKeyChain;
 
+    // плагины не для редактора, а для десктопа (на стартовой странице)
     std::vector<CExternalPluginInfo> m_arExternalPlugins;
 
+    // те, кто подключает onlyoffice
     std::vector<CExternalCloudRegister> m_arExternalClouds;
 
+    // критическая секция для всех системных сообщений всех view
     NSCriticalSection::CRITICAL_SECTION m_oCS_SystemMessages;
 
+    // настройки для ссылок на редакторы
     std::wstring m_mainPostFix;
     std::wstring m_mainLang;
 
+    // ?
     std::vector<CRecentParent> m_arRecentParents;
 
+    // dpi checker
     static CAscDpiChecker* m_pDpiChecker;
+
+    // ссылки на нужные классы
+    CAscApplicationManager* m_pMain;
+    CApplicationCEF* m_pApplication;
+
+    // дополнения к редактору (для внешних подключений)
+    CApplicationManagerAdditionalBase* m_pAdditional;
 
 public:
     CAscApplicationManager_Private() : m_oKeyboardTimer(this)
