@@ -435,7 +435,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 
     pManager->m_pInternal->LocalFiles_Init();
 
-    CORE_LOGGINGA("CApplicationCEF::Init_CEF::end");
+    LOGGER_STRING("CApplicationCEF::Init_CEF::end");
 
     return 0;
 }

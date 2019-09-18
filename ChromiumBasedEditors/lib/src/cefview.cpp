@@ -6479,7 +6479,7 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
     // start convert file
     this->load(sUrl + sParams);
 }
-void CCefViewEditor::CreateLocalFile(const AscEditorType& nFileFormat, const std::wstring& sName)
+void CCefViewEditor::CreateLocalFile(const int& nFileFormat, const std::wstring& sName)
 {
     m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX;
     m_pInternal->m_oLocalInfo.m_oInfo.m_bIsSaved = false;

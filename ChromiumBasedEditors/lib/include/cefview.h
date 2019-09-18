@@ -149,7 +149,7 @@ public:
     AscEditorType GetEditorType();
 
     void OpenLocalFile(const std::wstring& sFilePath, const int& nFileFormat);
-    void CreateLocalFile(const AscEditorType& nFileFormat, const std::wstring& sName = L"");
+    void CreateLocalFile(const int& nFileFormat, const std::wstring& sName = L"");
     bool OpenRecoverFile(const int& nId);
     bool OpenRecentFile(const int& nId);
     bool OpenReporter(const std::wstring& sFolder);
