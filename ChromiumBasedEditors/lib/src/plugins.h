@@ -85,21 +85,6 @@ public:
         {
             NSFile::CFileBinary::Copy(m_strDirectory + L"/pluginBase.js", m_strUserDirectory + L"/pluginBase.js");
             NSFile::CFileBinary::Copy(m_strDirectory + L"/plugins.css", m_strUserDirectory + L"/plugins.css");
-            /*
-            NSFile::CFileBinary oFile;
-            if (oFile.CreateFileW(strBase))
-            {
-                oFile.WriteFile(c_res_pluginJS, (DWORD)c_res_pluginJS_len);
-                oFile.CloseFile();
-            }
-
-            NSFile::CFileBinary oFileCSS;
-            if (oFile.CreateFileW(strBaseCSS))
-            {
-                oFile.WriteFile(c_res_pluginCSS, (DWORD)c_res_pluginCSS_len);
-                oFile.CloseFile();
-            }
-            */
         }
 
         std::string sPluginsJSON = "[";

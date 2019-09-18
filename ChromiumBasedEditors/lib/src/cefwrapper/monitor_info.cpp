@@ -363,7 +363,7 @@ int Core_SetProcessDpiAwareness(void)
     if (!g_monitor_info.m_funcSetProcessDpiAwareness)
         return 1;
 
-    HRESULT hr = g_monitor_info.m_funcSetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
+    g_monitor_info.m_funcSetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
     return 0;
 }
 

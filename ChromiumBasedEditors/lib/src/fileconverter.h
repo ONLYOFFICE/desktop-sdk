@@ -48,10 +48,6 @@
 #include <stdio.h>
 #endif
 
-//#define USE_FOR_REGENERATE_PRESENTATION_THEMES
-
-// AFTER FULL REALIZE - DELETE THIS MACRO
-
 class CAscLocalFileInfo
 {
 public:
@@ -635,9 +631,6 @@ public:
         oBuilder.WriteString(L"/Editor.bin</m_sFileTo><m_nFormatTo>8192</m_nFormatTo>");
         oBuilder.WriteString(L"<m_sThemeDir>./themes</m_sThemeDir><m_bDontSaveAdditional>true</m_bDontSaveAdditional>");
         oBuilder.WriteString(sParams);
-#ifdef USE_FOR_REGENERATE_PRESENTATION_THEMES
-        oBuilder.WriteString(L"<m_bIsNoBase64>false</m_bIsNoBase64>");
-#endif
         oBuilder.WriteString(L"</TaskQueueDataConvert>");
 
         std::wstring sXmlConvert = oBuilder.GetData();
@@ -655,29 +648,6 @@ public:
             CheckSignatures(sDestinationPath);
 
         m_pEvents->OnFileConvertToEditor(nReturnCode);
-
-#ifdef USE_FOR_REGENERATE_PRESENTATION_THEMES
-        // COMMENT!!! USE FOR REGENERATE PRESENTATION THEMES
-        if (true)
-        {
-            std::wstring sThemeDir = NSFile::GetDirectoryName(sLocalFilePath) + L"/theme.js";
-            std::string sContentSrc;
-            NSFile::CFileBinary::ReadAllTextUtf8A(sThemeDir, sContentSrc);
-            std::string sContentDst;
-            NSFile::CFileBinary::ReadAllTextUtf8A(m_oInfo.m_sRecoveryDir + L"/Editor.bin", sContentDst);
-            std::string::size_type pos = sContentSrc.find("\"");
-            std::string sDst = sContentSrc.substr(0, pos);
-            sDst += "\"";
-            sDst += sContentDst;
-            sDst += "\";";
-            NSFile::CFileBinary::Remove(sThemeDir);
-
-            NSFile::CFileBinary oFileTheme;
-            oFileTheme.CreateFileW(sThemeDir);
-            oFileTheme.WriteFile((BYTE*)sDst.c_str(), (DWORD)sDst.length());
-            oFileTheme.CloseFile();
-        }
-#endif
 
         m_bRunThread = FALSE;
         return 0;
