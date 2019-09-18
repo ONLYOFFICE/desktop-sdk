@@ -380,7 +380,7 @@ public:
     std::wstring m_mainPostFix;
     std::wstring m_mainLang;
 
-    // ?
+    // ссылки, откуда файл открыт. (для кнопок 'домой' в редакторах)
     std::vector<CRecentParent> m_arRecentParents;
 
     // dpi checker
