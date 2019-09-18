@@ -160,8 +160,6 @@ void CAscApplicationManager::SendKeyboardAttack()
 
 void CAscApplicationManager::CheckFonts(bool bAsync)
 {
-    m_pInternal->LocalFiles_Init();
-
     if (!NSDirectory::Exists(m_oSettings.fonts_cache_info_path))
     {
 #ifdef WIN32
