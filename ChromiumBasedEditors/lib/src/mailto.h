@@ -202,6 +202,7 @@ public:
     }
 };
 
+#if 0
 class CMailTo
 {
 public:
@@ -405,5 +406,6 @@ public:
         RELEASEARRAYOBJECTS(pDataDst);
     }
 };
+#endif
 
 #endif

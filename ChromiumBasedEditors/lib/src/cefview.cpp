@@ -321,7 +321,7 @@ public:
     }
 };
 
-#ifdef WIN32
+#if 0
 LRESULT CALLBACK MyMouseHook(int nCode, WPARAM wp, LPARAM lp)
 {
     MOUSEHOOKSTRUCT *pmh = (MOUSEHOOKSTRUCT *) lp;
@@ -4821,11 +4821,9 @@ void CCefView::focus(bool value)
         {
             if (this->GetType() == cvwtSimple)
             {
-#ifdef WIN32
 #if 0
                 DWORD threadId = GetWindowThreadProcessId(browser->GetHost()->GetWindowHandle(), NULL);
                 HHOOK hook = SetWindowsHookEx(WH_MOUSE, MyMouseHook, NULL, threadId);
-#endif
 #endif
             }
 
