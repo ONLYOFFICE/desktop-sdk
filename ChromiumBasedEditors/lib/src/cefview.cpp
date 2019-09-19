@@ -391,11 +391,40 @@ class CAscClientHandler;
 class CCefView_Private : public NSEditorApi::IMenuEventDataBase, public IASCFileConverterEvents, public CTextDocxConverterCallback
 {
 public:
+    class CSystemMessage
+    {
+    public:
+        int ViewID;
+        std::string FrameID;
+        std::string Message;
+
+        CSystemMessage()
+        {
+            ViewID = -1;
+            FrameID = "";
+            Message = "";
+        }
+
+        CSystemMessage(const CSystemMessage& oSrc)
+        {
+            ViewID = oSrc.ViewID;
+            FrameID = oSrc.FrameID;
+            Message = oSrc.Message;
+        }
+
+        CSystemMessage& operator=(const CSystemMessage& oSrc)
+        {
+            ViewID = oSrc.ViewID;
+            FrameID = oSrc.FrameID;
+            Message = oSrc.Message;
+            return *this;
+        }
+    };
+
+public:
     CefRefPtr<CAscClientHandler>        m_handler;
     CAscApplicationManager*             m_pManager;
     CCefViewWidgetImpl*                 m_pWidgetImpl;
-
-    std::map<std::string, std::string>  m_cookies;
 
     int m_nParentId;
 
@@ -404,7 +433,6 @@ public:
 
     CPrintData m_oPrintData;
 
-    bool m_bIsMouseHook;
     DWORD m_dwTimeMouseWheelUp;
 
     std::wstring m_strUrl;
@@ -500,37 +528,6 @@ public:
 
     int m_nPrintParameters;
 
-public:
-    class CSystemMessage
-    {
-    public:
-        int ViewID;
-        std::string FrameID;
-        std::string Message;
-
-        CSystemMessage()
-        {
-            ViewID = -1;
-            FrameID = "";
-            Message = "";
-        }
-
-        CSystemMessage(const CSystemMessage& oSrc)
-        {
-            ViewID = oSrc.ViewID;
-            FrameID = oSrc.FrameID;
-            Message = oSrc.Message;
-        }
-
-        CSystemMessage& operator=(const CSystemMessage& oSrc)
-        {
-            ViewID = oSrc.ViewID;
-            FrameID = oSrc.FrameID;
-            Message = oSrc.Message;
-            return *this;
-        }
-    };
-
     std::vector<CSystemMessage> m_arSystemMessages;
 
 public:
@@ -542,7 +539,6 @@ public:
         m_bIsNativeSave = false;
         m_dwTimeMouseWheelUp = (DWORD)-1;
 
-        m_bIsMouseHook = false;
         m_strUrl = L"";
 
         m_before_callback = NULL;
@@ -976,29 +972,6 @@ public:
 class CAscClientHandler : public client::ClientHandler, public CCookieFoundCallback, public client::ClientHandler::Delegate, public CefDialogHandler
 {
 public:
-    CCefView* m_pParent;
-    bool m_bIsLoaded;
-
-    bool m_bIsEditorTypeSet;
-    int m_nBeforeBrowserCounter;
-
-    CefRefPtr<CefBrowser> browser_;
-    int browser_id_;
-
-    bool m_bIsCrashed;
-
-    CefRefPtr<CefJSDialogHandler> m_pCefJSDialogHandler;
-
-    CefRefPtr<CefFileDialogCallback> m_pFileDialogCallback;
-
-    enum client_menu_ids
-    {
-        CLIENT_ID_SHOW_DEVTOOLS   = MENU_ID_USER_FIRST,
-        CLIENT_ID_CLOSE_DEVTOOLS,
-        CLIENT_ID_INSPECT_ELEMENT
-    };
-
-public:
     class CAscCefJSDialogHandler : public CefJSDialogHandler
     {
     private:
@@ -1042,7 +1015,30 @@ public:
         }
 
     public:
-        IMPLEMENT_REFCOUNTING(CAscCefJSDialogHandler);
+        IMPLEMENT_REFCOUNTING(CAscCefJSDialogHandler)
+    };
+
+public:
+    CCefView* m_pParent;
+    bool m_bIsLoaded;
+
+    bool m_bIsEditorTypeSet;
+    int m_nBeforeBrowserCounter;
+
+    CefRefPtr<CefBrowser> browser_;
+    int browser_id_;
+
+    bool m_bIsCrashed;
+
+    CefRefPtr<CefJSDialogHandler> m_pCefJSDialogHandler;
+
+    CefRefPtr<CefFileDialogCallback> m_pFileDialogCallback;
+
+    enum client_menu_ids
+    {
+        CLIENT_ID_SHOW_DEVTOOLS   = MENU_ID_USER_FIRST,
+        CLIENT_ID_CLOSE_DEVTOOLS,
+        CLIENT_ID_INSPECT_ELEMENT
     };
 
 public:
@@ -4100,7 +4096,7 @@ require.load = function (context, moduleName, url) {\n\
 #endif
 
 public:
-    IMPLEMENT_REFCOUNTING(CAscClientHandler);
+    IMPLEMENT_REFCOUNTING(CAscClientHandler)
 };
 
 void CCefView_Private::CloseBrowser(bool _force_close)
@@ -4816,19 +4812,6 @@ void CCefView::focus(bool value)
     {
         // Give focus to the browser.
         browser->GetHost()->SetFocus(value);
-
-        if (!m_pInternal->m_bIsMouseHook)
-        {
-            if (this->GetType() == cvwtSimple)
-            {
-#if 0
-                DWORD threadId = GetWindowThreadProcessId(browser->GetHost()->GetWindowHandle(), NULL);
-                HHOOK hook = SetWindowsHookEx(WH_MOUSE, MyMouseHook, NULL, threadId);
-#endif
-            }
-
-            m_pInternal->m_bIsMouseHook = true;
-        }
     }
 }
 
