@@ -394,63 +394,70 @@ public:
     CApplicationManagerAdditionalBase* m_pAdditional;
 
 public:
+    IMPLEMENT_REFCOUNTING(CAscApplicationManager_Private)
+
+public:
     CAscApplicationManager_Private() : m_oKeyboardTimer(this)
     {
+        this->AddRef();
+
         m_pListener = NULL;
         m_nIdCounter = 0;
-        this->AddRef();
+        m_nWindowCounter = 0;
+
         m_pMain = NULL;
-
         m_pApplicationFonts = NULL;
-
         m_pApplication = NULL;
 
         m_bDebugInfoSupport = false;
 
-        m_nIsCefSaveDialogWait = -1;
-        m_nWindowCounter = 0;
+        m_nIsCefSaveDialogWait = -1;        
 
-        m_oCS_Scripts.InitializeCriticalSection();
-        m_oCS_LocalFiles.InitializeCriticalSection();
-        
         m_sAdditionalUrlParams = L"";
-
         m_pAdditional = NULL;
 
         m_nForceDisplayScale = -1;
+
         m_bIsUpdateFontsAttack = false;
 
         m_nCurrentCryptoMode = NSAscCrypto::None;
 
         m_pKeyChain = NULL;
 
+        m_oCS_Scripts.InitializeCriticalSection();
+        m_oCS_LocalFiles.InitializeCriticalSection();
         m_oCS_SystemMessages.InitializeCriticalSection();
     }
-    bool GetEditorPermission()
-    {
-        return m_pAdditional ? m_pAdditional->GetEditorPermission() : true;
-    }
-
-    void ExecuteInAllFrames(const std::string& sCode);
-
     virtual ~CAscApplicationManager_Private()
     {
         CloseApplication();
         RELEASEOBJECT(m_pAdditional);
+
         m_oCS_Scripts.DeleteCriticalSection();
         m_oCS_LocalFiles.DeleteCriticalSection();
         m_oCS_SystemMessages.DeleteCriticalSection();
     }
 
-    void CloseApplication()
+    bool GetEditorPermission()
     {
-        m_oKeyboardTimer.Stop();
-        Stop();
-        m_oSpellChecker.End();
+        // разрешение на редактирование
+        return m_pAdditional ? m_pAdditional->GetEditorPermission() : true;
     }
 
+    // исполнить код во всех view
+    void ExecuteInAllFrames(const std::string& sCode);
+
+    // вызывается, если меняется количество открытых редакторов
     void ChangeEditorViewsCount();
 
+    void CloseApplication()
+    {
+        Stop();
+        m_oKeyboardTimer.Stop();        
+        m_oSpellChecker.End();
+    }    
+
+    // logout из портала -----------------------------------------------------------------------
     void Logout(std::wstring strUrl, CefRefPtr<CefCookieManager> manager)
     {
         CCefCookieVisitor* pVisitor = new CCefCookieVisitor();
@@ -479,7 +486,28 @@ public:
         
         pVisitor->CheckCookiePresent(CefCookieManager::GetGlobalManager(NULL));
     }
+    virtual void OnFoundCookie(bool bIsPresent, std::string sValue)
+    {
+        // not used
+    }
+    virtual void OnSetCookie()
+    {
+        // not used
+    }
+    virtual void OnFoundCookies(std::map<std::string, std::string>& mapValues)
+    {
+        // not used
+    }
+    virtual void OnDeleteCookie(bool bIsPresent)
+    {
+        if (NULL != m_pMain && NULL != m_pMain->GetEventListener())
+        {
+            NSEditorApi::CAscCefMenuEvent* pEvent = new NSEditorApi::CAscCefMenuEvent(ASC_MENU_EVENT_TYPE_CEF_ONLOGOUT);
+            m_pMain->GetEventListener()->OnEvent(pEvent);
+        }
+    }
 
+    // работа с настройками редактора ----------------------------------------------------------
     void LoadSettings()
     {
         std::wstring sFile = m_pMain->m_oSettings.fonts_cache_info_path + L"/settings.xml";
@@ -541,7 +569,6 @@ public:
         if (pairCryptoMode != m_mapSettings.end())
             m_nCurrentCryptoMode = (NSAscCrypto::AscCryptoType)std::stoi(pairCryptoMode->second);
     }
-
     void CheckSetting(const std::string& sName, const std::string& sValue)
     {
         if ("--ascdesktop-support-debug-info" == sName)
@@ -595,44 +622,65 @@ public:
         }
     }
 
-    virtual void OnFoundCookie(bool bIsPresent, std::string sValue)
+    // вспомогательные функции
+    CCefView* GetViewWithMinId()
     {
-        // not used
-    }
-
-    virtual void OnSetCookie()
-    {
-        // not used
-    }
-
-    virtual void OnFoundCookies(std::map<std::string, std::string>& mapValues)
-    {
-        // not used
-    }
-
-    virtual void OnDeleteCookie(bool bIsPresent)
-    {
-        if (NULL != m_pMain && NULL != m_pMain->GetEventListener())
+        CCefView* pMinView = NULL;
+        int nMin = 0xFFFF;
+        for (std::map<int, CCefView*>::iterator i = m_mapViews.begin(); i != m_mapViews.end(); i++)
         {
-            NSEditorApi::CAscCefMenuEvent* pEvent = new NSEditorApi::CAscCefMenuEvent(ASC_MENU_EVENT_TYPE_CEF_ONLOGOUT);
-            m_pMain->GetEventListener()->OnEvent(pEvent);
+            CCefView* pView = i->second;
+            if (pView->GetType() == cvwtSimple && pView->GetId() < nMin)
+            {
+                nMin = pView->GetId();
+                pMinView = pView;
+            }
         }
+        return pMinView;
+    }
+    CCefView* GetViewForSystemMessages()
+    {
+        return GetViewWithMinId();
+    }
+    bool TestExternal(const std::wstring& sId, CExternalCloudRegister& ex)
+    {
+        for (std::vector<CExternalCloudRegister>::iterator iter = m_arExternalClouds.begin(); iter != m_arExternalClouds.end(); iter++)
+        {
+            if (sId == iter->id)
+            {
+                ex = *iter;
+                return true;
+            }
+        }
+        return false;
+    }
+    void SetEventToAllMainWindows(NSEditorApi::CAscMenuEvent* pEvent)
+    {
+        for (std::map<int, CCefView*>::iterator i = m_mapViews.begin(); i != m_mapViews.end(); i++)
+        {
+           CCefView* pView = i->second;
+           if (pView->GetType() == cvwtSimple)
+           {
+               pEvent->AddRef();
+               pView->Apply(pEvent);
+           }
+        }
+
+        pEvent->Release();
     }
 
-public:
-    IMPLEMENT_REFCOUNTING(CAscApplicationManager_Private);
-
-public:
+    // загрузка скриптов ----------------------------------------------------------------------
     virtual void OnLoad(CCefScriptLoader* pLoader, bool error) OVERRIDE
     {
+        // коллбэк на загрузку скрипта
+
         m_pMain->LockCS(LOCK_CS_SCRIPT);
         
         private_OnLoad(pLoader->m_sUrl, pLoader->m_sDestination);
-
         RELEASEOBJECT(pLoader);
+
         m_pMain->UnlockCS(LOCK_CS_SCRIPT);
-    }
-    
+    }    
     void Start_PrivateDownloadScript(const std::wstring& sUrl, const std::wstring& sDestination)
     {
         m_strPrivateDownloadUrl = sUrl;
@@ -640,26 +688,9 @@ public:
         
         NSCommon::url_correct(m_strPrivateDownloadUrl);
         
-        CCefView* pMainView = NULL;
-        int nMinId = 10000;
-        for (std::map<int, CCefView*>::iterator i = m_mapViews.begin(); i != m_mapViews.end(); i++)
-        {
-            CCefView* pView = i->second;
-            if (pView->GetType() == cvwtSimple)
-            {
-                if (nMinId > pView->GetId())
-                {
-                    pMainView = pView;
-                    nMinId = pView->GetId();
-                }
-            }
-        }
-
-        // нуллом быть не может
+        CCefView* pMainView = GetViewWithMinId();
         if (NULL != pMainView)
-        {
             pMainView->StartDownload(m_strPrivateDownloadUrl);
-        }
     }
     void End_PrivateDownloadScript()
     {
@@ -688,62 +719,46 @@ public:
 
         m_pMain->UnlockCS(LOCK_CS_SCRIPT);
     }
-
-    bool TestExternal(const std::wstring& sId, CExternalCloudRegister& ex)
-    {
-        for (std::vector<CExternalCloudRegister>::iterator iter = m_arExternalClouds.begin(); iter != m_arExternalClouds.end(); iter++)
-        {
-            if (sId == iter->id)
-            {
-                ex = *iter;
-                return true;
-            }
-        }
-        return false;
-    }
-
-protected:
-    
     void private_OnLoad(const std::wstring& sUrl, const std::wstring& sDestination)
     {
         m_pMain->LockCS(LOCK_CS_SCRIPT);
 
         std::map<std::wstring, std::vector<CEditorFrameId>>::iterator i = m_mapLoadedScripts.find(sDestination);
-        
+
         if (i != m_mapLoadedScripts.end())
         {
             // другого и быть не может
-            
             NSEditorApi::CAscEditorScript* pData = new NSEditorApi::CAscEditorScript();
             pData->put_Url(sUrl);
             pData->put_Destination(sDestination);
-            
+
             NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
             pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_SCRIPT_EDITOR_VERSION;
             pEvent->m_pData = pData;
-            
+
             std::vector<CEditorFrameId>& _arr = i->second;
             for (std::vector<CEditorFrameId>::iterator it = _arr.begin(); it != _arr.end(); it++)
             {
                 CCefView* pView = m_pMain->GetViewById((*it).EditorId);
-                
+
                 if (NULL != pView)
                 {
                     pEvent->AddRef();
-                    
+
                     pData->put_FrameId((*it).FrameId);
                     pView->Apply(pEvent);
                 }
             }
-            
+
             RELEASEINTERFACE(pEvent);
         }
-        
+
         m_mapLoadedScripts.erase(i);
 
         m_pMain->UnlockCS(LOCK_CS_SCRIPT);
     }
 
+    // отслеживаем шрифты ---------------------------------------------------------------------
     virtual DWORD ThreadProc()
     {
         LOGGER_STRING("CApplicationManager::Fonts::start");
@@ -919,9 +934,7 @@ protected:
         return 0;
     }
 
-public:
-
-    // DOWNLOADS
+    // работа со скачиванием файлов -----------------------------------------------------------
     std::wstring GetPrivateDownloadUrl()
     {
         return m_strPrivateDownloadUrl;
@@ -934,7 +947,6 @@ public:
 #endif
         return sRet;
     }
-
     bool IsCanceled(const unsigned int& nId)
     {
         std::map<unsigned int, bool>::iterator iter = m_mapCancelDownloads.find(nId);
@@ -943,12 +955,12 @@ public:
         return true;
     }
 
+    // работа с Recents & Recovers ------------------------------------------------------------
     void LocalFiles_Init()
     {
         Recents_Load();
         Recovers_Load();
     }
-
     void Recents_Load()
     {
         CTemporaryCS oCS(&m_oCS_LocalFiles);
@@ -1060,7 +1072,6 @@ public:
 
         Recents_Dump();
     }
-
     void Recents_Dump(bool bIsSend = true)
     {
         CTemporaryCS oCS(&m_oCS_LocalFiles);
@@ -1272,7 +1283,6 @@ public:
         m_arRecovers.clear();
         Recovers_Dump();
     }
-
     void Recovers_Dump()
     {
         CTemporaryCS oCS(&m_oCS_LocalFiles);
@@ -1309,44 +1319,12 @@ public:
         SetEventToAllMainWindows(pEvent);
     }
 
-    void SetEventToAllMainWindows(NSEditorApi::CAscMenuEvent* pEvent)
-    {
-        for (std::map<int, CCefView*>::iterator i = m_mapViews.begin(); i != m_mapViews.end(); i++)
-        {
-           CCefView* pView = i->second;
-           if (pView->GetType() == cvwtSimple)
-           {
-               pEvent->AddRef();
-               pView->Apply(pEvent);
-           }
-        }
-
-        pEvent->Release();
-    }
-
-    CCefView* GetViewForSystemMessages()
-    {
-        int nMin = 0xFFFF;
-        CCefView* pViewRet = NULL;
-        for (std::map<int, CCefView*>::iterator i = m_mapViews.begin(); i != m_mapViews.end(); i++)
-        {
-           CCefView* pView = i->second;
-           if (pView->GetType() == cvwtSimple && pView->GetId() < nMin)
-           {
-               nMin = pView->GetId();
-               pViewRet = pView;
-           }
-        }
-
-        return pViewRet;
-    }
-
+    // crypto ---------------------------------------------------------------------------------
     void LoadCryptoData()
     {
         m_pKeyChain = m_pMain->GetKeychainEngine();
         m_pKeyChain->Check(m_pMain->m_oSettings.cookie_path + L"/user.data");
     }
-
     void SendCryptoData(CefRefPtr<CefFrame> frame = NULL)
     {
         std::wstring sPass = L"";
@@ -1386,7 +1364,6 @@ window.AscDesktopEditor.CryptoPassword = \"" + sPass + L"\";\n\
 
         RELEASEINTERFACE(pEvent);
     }
-
     virtual void OnKeyChainComplete(NSAscCrypto::CCryptoKey& keyEnc, NSAscCrypto::CCryptoKey& keyDec)
     {
         m_cryptoKeyEnc = keyEnc;
