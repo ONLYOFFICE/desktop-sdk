@@ -313,16 +313,7 @@ std::map<std::string, CDetecterOldSystems::CMonitorInfo> CDetecterOldSystems::g_
 
 int NSMonitor::GetRawMonitorDpi(WindowHandleId handle)
 {
-    if (g_monitor_info.m_func_GetDpiForWindow)
-    {
-        UINT resDpi = g_monitor_info.m_func_GetDpiForWindow(handle);
-
-        if (resDpi > 180)
-            return 2;
-        return 1;
-    }
-
-    if (!g_monitor_info.m_func_GetDpiForMonitor)
+    if (true)
     {
         UINT iuW = 0;
         UINT iuH = 0;
@@ -332,7 +323,14 @@ int NSMonitor::GetRawMonitorDpi(WindowHandleId handle)
                 return 2;
             return 1;
         }
+    }
 
+    if (g_monitor_info.m_func_GetDpiForWindow)
+    {
+        UINT resDpi = g_monitor_info.m_func_GetDpiForWindow(handle);
+
+        if (resDpi > 180)
+            return 2;
         return 1;
     }
 
@@ -372,17 +370,7 @@ int Core_GetMonitorRawDpi(WindowHandleId handle, unsigned int* uiX, unsigned int
     *uiX = 0;
     *uiY = 0;
 
-    if (g_monitor_info.m_func_GetDpiForWindow)
-    {
-        UINT resDpi = g_monitor_info.m_func_GetDpiForWindow(handle);
-
-        *uiX = resDpi;
-        *uiY = resDpi;
-
-        return 0;
-    }
-
-    if (!g_monitor_info.m_func_GetDpiForMonitor)
+    if (true)
     {
         UINT iuW = 0;
         UINT iuH = 0;
@@ -394,6 +382,16 @@ int Core_GetMonitorRawDpi(WindowHandleId handle, unsigned int* uiX, unsigned int
         }
 
         return -1;
+    }
+
+    if (g_monitor_info.m_func_GetDpiForWindow)
+    {
+        UINT resDpi = g_monitor_info.m_func_GetDpiForWindow(handle);
+
+        *uiX = resDpi;
+        *uiY = resDpi;
+
+        return 0;
     }
 
     HMONITOR hMonitor = MonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST);
@@ -430,7 +428,7 @@ int Core_GetMonitorRawDpiByIndex(int index, unsigned int* uiX, unsigned int* uiY
     EnumDisplayMonitors(NULL, NULL, GetMonitorByIndex, (LPARAM)&info);
     if (info.hMonitor != NULL)
     {
-        if (!g_monitor_info.m_func_GetDpiForMonitor)
+        if (true)
         {
             UINT iuW = 0;
             UINT iuH = 0;
@@ -440,11 +438,11 @@ int Core_GetMonitorRawDpiByIndex(int index, unsigned int* uiX, unsigned int* uiY
                 *uiY = iuH;
                 return 0;
             }
-
-            return -1;
         }
 
-        g_monitor_info.m_func_GetDpiForMonitor(info.hMonitor, MDT_RAW_DPI, uiX, uiY);
+        if (g_monitor_info.m_func_GetDpiForMonitor)
+            g_monitor_info.m_func_GetDpiForMonitor(info.hMonitor, MDT_RAW_DPI, uiX, uiY);
+
         return 0;
     }
 
