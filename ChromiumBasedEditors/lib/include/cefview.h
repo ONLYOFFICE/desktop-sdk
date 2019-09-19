@@ -69,7 +69,6 @@ public:
 class DESKTOP_DECL CCefView
 {
 public:
-
     CCefView(CCefViewWidgetImpl* parent, int nId);
     virtual ~CCefView();
 
@@ -92,13 +91,6 @@ public:
     bool StartDownload(const std::wstring& sUrl);
 
     void SetExternalCloud(const std::wstring& sProviderId);
-
-#if 0
-    virtual void dragEnterEvent(QDragEnterEvent *);
-    virtual void dragMoveEvent(QDragMoveEvent *);
-    virtual void dragLeaveEvent(QDragLeaveEvent *);
-    virtual void dropEvent(QDropEvent *);
-#endif
 
     CAscApplicationManager* GetAppManager();
     void SetAppManager(CAscApplicationManager* );
@@ -126,7 +118,6 @@ protected:
     CCefView_Private* m_pInternal;
 
 public:
-
 
     friend class CCefView_Private;
     friend class CAscClientHandler;
