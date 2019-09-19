@@ -163,25 +163,4 @@ public:
     static int GetFileFormat(const std::wstring& sFilePath);
 };
 
-class IFileDownloaderEvents
-{
-public:
-    virtual void OnProgress(int nProgress) = 0;
-    virtual void OnDownload(bool bIsSuccess) = 0;
-};
-
-class CCefFileDownloader_Private;
-class DESKTOP_DECL CCefFileDownloader
-{
-protected:
-    CCefFileDownloader_Private* m_pInternal;
-
-public:
-    CCefFileDownloader(IFileDownloaderEvents* pEvents);
-    ~CCefFileDownloader();
-
-    void DownloadFile(CAscApplicationManager* pManager, const std::wstring& sUrl, const std::wstring& sDstFile);
-};
-
-
 #endif  // CEFCLIENT_CEFWEBVIEW_H

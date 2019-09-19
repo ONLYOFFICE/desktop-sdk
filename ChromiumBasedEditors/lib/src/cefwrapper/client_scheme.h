@@ -52,12 +52,7 @@ namespace asc_scheme
                            std::vector<CefString>& cookiable_schemes);
 
     // Create the scheme handler.
-#ifdef ASC_AUTO_TEST
-    bool InitScheme(const std::wstring& sTestPath);
-#else
     bool InitScheme(CAscApplicationManager* pManager);
-#endif
-
     std::string GetMimeTypeFromExt(const std::wstring& sFile);
 }
 
