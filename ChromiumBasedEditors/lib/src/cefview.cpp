@@ -321,23 +321,6 @@ public:
     }
 };
 
-#if 0
-LRESULT CALLBACK MyMouseHook(int nCode, WPARAM wp, LPARAM lp)
-{
-    MOUSEHOOKSTRUCT *pmh = (MOUSEHOOKSTRUCT *) lp;
-
-    HWND h1 = GetParent(pmh->hwnd); // cefbrowser
-    HWND h2 = GetParent(h1);        // cefview
-
-    if (nCode == HC_ACTION && wp == WM_MBUTTONUP)
-    {
-        SendMessageA(h2, WM_USER + 1, 0, 0);
-    }
-
-    return CallNextHookEx(NULL, nCode, wp, lp);
-}
-#endif
-
 #if defined(_LINUX) && !defined(_MAC)
 #include <X11/Xlib.h>
 #endif
@@ -4463,33 +4446,18 @@ void CAscClientHandler::OnDeleteCookie(bool bIsPresent)
     // not used
 }
 
+// CefView --------------------------------------------------------------------------------
 CCefView::CCefView(CCefViewWidgetImpl* parent, int nId)
 {
-    //setAttribute(Qt::WA_NativeWindow);
-    //setAttribute(Qt::WA_DontCreateNativeAncestors);
-    //RegisterDragDrop((HWND)this->winId(), this);
-
-    //setAcceptDrops(true);
     m_pInternal = new CCefView_Private();
     m_pInternal->m_pWidgetImpl = parent;
     m_nId = nId;
     m_eWrapperType = cvwtSimple;
     m_pInternal->m_pCefView = this;
 }
-
 CCefView::~CCefView()
 {
     RELEASEOBJECT(m_pInternal);
-}
-
-void CCefView::SetExternalCloud(const std::wstring& sProviderId)
-{
-    if (L"asc" == sProviderId)
-    {
-        m_pInternal->m_bIsSSO = true;
-        return;
-    }
-    m_pInternal->m_bIsExternalCloud = GetAppManager()->m_pInternal->TestExternal(sProviderId, m_pInternal->m_oExternalCloud);
 }
 
 void CCefView::load(const std::wstring& urlInputSrc)
@@ -4673,15 +4641,6 @@ void CCefView::load(const std::wstring& urlInputSrc)
     CefRefPtr<CefCookieManager> manager = CefCookieManager::GetGlobalManager(NULL);
     manager->SetStoragePath(m_pInternal->m_pManager->m_oSettings.cookie_path, true, NULL);
 
-    //m_pInternal->SetCookie(manager);
-
-#if 0
-    CCefCookieVisitor* pVisitor = new CCefCookieVisitor();
-    pVisitor->m_sDomain         = "";
-    pVisitor->m_sCookieSearch   = "";
-    pVisitor->CheckCookiePresent(CefCookieManager::GetGlobalManager());
-#endif
-
     // Create the single static handler class instance
     CAscClientHandler* pClientHandler = new CAscClientHandler();
     pClientHandler->m_pParent = this;
@@ -4700,20 +4659,10 @@ void CCefView::load(const std::wstring& urlInputSrc)
     _settings.file_access_from_file_urls = STATE_ENABLED;
     _settings.universal_access_from_file_urls = STATE_ENABLED;
     _settings.javascript_access_clipboard = STATE_ENABLED;
-
     _settings.plugins = STATE_DISABLED;
-
-    if (m_eWrapperType == cvwtEditor)
-    {
-        _settings.background_color = 0xFFF4F4F4;
-    }
-    else
-    {
-        _settings.background_color = 0xFFFFFFFF;
-    }
+    _settings.background_color = (m_eWrapperType == cvwtEditor) ? 0xFFF4F4F4 : 0xFFFFFFFF;
 
     // Initialize window info to the defaults for a child window.
-
     int nParentW = m_pInternal->m_pWidgetImpl->parent_width();
     int nParentH = m_pInternal->m_pWidgetImpl->parent_height();
     if (-1 != m_pInternal->m_lStartControlWidth && -1 != m_pInternal->m_lStartControlHeight)
@@ -4753,17 +4702,7 @@ void CCefView::load(const std::wstring& urlInputSrc)
 #endif
 
 #ifdef _MAC
-    info.SetAsChild(hWnd, 0, 0,
-                    nParentW,
-                    nParentH);
-#endif
-
-#if 0
-    std::string sLog = "load: " + std::to_string(m_pInternal->m_pWidgetImpl->parent_width()) +
-            ", " + std::to_string(m_pInternal->m_pWidgetImpl->parent_height()) + "\n";
-    FILE* fLog = fopen("D:\\resize.log", "a+");
-    fprintf(fLog, sLog.c_str());
-    fclose(fLog);
+    info.SetAsChild(hWnd, 0, 0, nParentW, nParentH);
 #endif
 
     CefString sUrl = url;
@@ -4777,29 +4716,17 @@ void CCefView::load(const std::wstring& urlInputSrc)
 
     focus();
 }
-
 std::wstring CCefView::GetUrl()
 {
-    if (!m_pInternal)
-        return L"";
-
-    return m_pInternal->m_strUrl;
+    return m_pInternal ? m_pInternal->m_strUrl : L"";
 }
-
 std::wstring CCefView::GetOriginalUrl()
 {
-    if (!m_pInternal)
-        return L"";
-
-    return m_pInternal->m_sOriginalUrl;
+    return m_pInternal ? m_pInternal->m_sOriginalUrl : L"";
 }
-
 std::wstring CCefView::GetUrlAsLocal()
 {
-    if (!m_pInternal)
-        return L"";
-
-    return m_pInternal->m_sOpenAsLocalUrl;
+    return m_pInternal ? m_pInternal->m_sOpenAsLocalUrl : L"";
 }
 
 void CCefView::focus(bool value)
@@ -4809,12 +4736,75 @@ void CCefView::focus(bool value)
 
     CefRefPtr<CefBrowser> browser = m_pInternal->m_handler->GetBrowser();
     if (browser)
-    {
-        // Give focus to the browser.
         browser->GetHost()->SetFocus(value);
-    }
 }
 
+void CCefView::resizeEvent(int width, int height)
+{
+    if (!m_pInternal->m_handler || !m_pInternal->m_handler->GetBrowser() || !m_pInternal->m_handler->GetBrowser()->GetHost())
+    {
+        // запоминаем размеры. чтобы максимально быстро сресайзиться
+        m_pInternal->m_lStartControlWidth = width;
+        m_pInternal->m_lStartControlHeight = height;
+        return;
+    }
+
+    if (!m_pInternal->m_pWidgetImpl || m_pInternal->m_bIsClosing)
+        return;
+
+    if (-1 != m_pInternal->m_lStartControlWidth && -1 != m_pInternal->m_lStartControlHeight)
+    {
+        m_pInternal->m_lStartControlWidth = width;
+        m_pInternal->m_lStartControlHeight = height;
+    }
+
+    CefWindowHandle hwnd = m_pInternal->m_handler->GetBrowser()->GetHost()->GetWindowHandle();
+
+#ifdef WIN32
+    RECT rect;
+    rect.left = 0;
+    rect.top = 0;
+    rect.right = (0 >= width) ? (m_pInternal->m_pWidgetImpl->parent_width() - 1) : width;
+    rect.bottom = (0 >= height) ? (m_pInternal->m_pWidgetImpl->parent_height() - 1) : height;
+
+    HDWP hdwp = BeginDeferWindowPos(1);
+    hdwp = DeferWindowPos(hdwp, hwnd, NULL, rect.left, rect.top, rect.right - rect.left + 1, rect.bottom - rect.top + 1, SWP_NOZORDER);
+    EndDeferWindowPos(hdwp);
+#endif
+
+#if defined(_LINUX) && !defined(_MAC)
+    ::Display* xdisplay = cef_get_xdisplay();
+
+    XWindowChanges changes = {0};
+    changes.width = (0 == width) ? (m_pInternal->m_pWidgetImpl->parent_width()) : width;
+    changes.height = (0 == height) ? (m_pInternal->m_pWidgetImpl->parent_height()) : height;
+    changes.y = 0;
+    changes.y = 0;
+
+    XConfigureWindow(xdisplay, m_pInternal->m_lNaturalParent, CWHeight | CWWidth | CWY, &changes);
+    XConfigureWindow(xdisplay, hwnd, CWHeight | CWWidth | CWY, &changes);
+#endif
+
+#ifdef _MAC
+    MAC_COMMON_set_window_handle_sizes(hwnd, 0, 0,
+        (0 == width) ? (m_pInternal->m_pWidgetImpl->parent_width()) : width,
+        (0 == height) ? (m_pInternal->m_pWidgetImpl->parent_height()) : height);
+#endif
+
+    focus();
+    m_pInternal->CheckZoom();
+}
+void CCefView::moveEvent()
+{
+#if defined(_LINUX) && !defined(_MAC)
+    if (m_pInternal && m_pInternal->m_handler && m_pInternal->m_handler->GetBrowser() && m_pInternal->m_handler->GetBrowser()->GetHost())
+    {
+        m_pInternal->m_handler->GetBrowser()->GetHost()->NotifyMoveOrResizeStarted();
+    }
+#endif
+
+    m_pInternal->CheckZoom();
+}
 bool CCefView::nativeEvent(const char* data, const int& datalen, void *message, long *result)
 {
 #ifdef WIN32
@@ -4839,12 +4829,6 @@ bool CCefView::nativeEvent(const char* data, const int& datalen, void *message, 
     }
     else if (msg->message == (WM_USER + 1))
     {
-#if 0
-        if (this->GetType() == cvwtSimple)
-        {
-            m_pInternal->m_dwTimeMouseWheelUp = NSTimers::GetTickCount();
-        }
-#endif
         return true;
     }
 #endif
@@ -4852,102 +4836,15 @@ bool CCefView::nativeEvent(const char* data, const int& datalen, void *message, 
     return false;
 }
 
-void CCefView::resizeEvent(int width, int height)
-{
-    if (!m_pInternal->m_handler || !m_pInternal->m_handler->GetBrowser() || !m_pInternal->m_handler->GetBrowser()->GetHost())
-    {
-        m_pInternal->m_lStartControlWidth = width;
-        m_pInternal->m_lStartControlHeight = height;
-        return;
-    }
-    
-    if (!m_pInternal->m_pWidgetImpl || m_pInternal->m_bIsClosing)
-        return;
-
-    if (-1 != m_pInternal->m_lStartControlWidth && -1 != m_pInternal->m_lStartControlHeight)
-    {
-        m_pInternal->m_lStartControlWidth = width;
-        m_pInternal->m_lStartControlHeight = height;
-    }
-
-    CefWindowHandle hwnd = m_pInternal->m_handler->GetBrowser()->GetHost()->GetWindowHandle();
-
-#ifdef WIN32
-
-    RECT rect;
-    rect.left = 0;
-    rect.top = 0;
-    rect.right = (0 >= width) ? (m_pInternal->m_pWidgetImpl->parent_width() - 1) : width;
-    rect.bottom = (0 >= height) ? (m_pInternal->m_pWidgetImpl->parent_height() - 1) : height;
-
-#if 0
-    SetWindowPos(hwnd, NULL, rect.left, rect.top, rect.right - rect.left + 1,
-                 rect.bottom - rect.top + 1, SWP_NOZORDER);
-#else
-    HDWP hdwp = BeginDeferWindowPos(1);
-    hdwp = DeferWindowPos(hdwp, hwnd, NULL,
-        rect.left, rect.top, rect.right - rect.left + 1,
-        rect.bottom - rect.top + 1, SWP_NOZORDER);
-    EndDeferWindowPos(hdwp);
-#endif
-#endif
-
-#if defined(_LINUX) && !defined(_MAC)
-    ::Display* xdisplay = cef_get_xdisplay();
-
-    XWindowChanges changes = {0};
-    changes.width = (0 == width) ? (m_pInternal->m_pWidgetImpl->parent_width()) : width;
-    changes.height = (0 == height) ? (m_pInternal->m_pWidgetImpl->parent_height()) : height;
-    changes.y = 0;
-    changes.y = 0;
-
-    XConfigureWindow(xdisplay, m_pInternal->m_lNaturalParent, CWHeight | CWWidth | CWY, &changes);
-    XConfigureWindow(xdisplay, hwnd, CWHeight | CWWidth | CWY, &changes);
-#endif
-
-#ifdef _MAC
-    MAC_COMMON_set_window_handle_sizes(hwnd, 0, 0,
-        (0 == width) ? (m_pInternal->m_pWidgetImpl->parent_width()) : width,
-        (0 == height) ? (m_pInternal->m_pWidgetImpl->parent_height()) : height);
-#endif
-
-#if 0
-    std::string sLog = "resize: " + std::to_string(m_pInternal->m_pWidgetImpl->parent_width()) +
-            ", " + std::to_string(m_pInternal->m_pWidgetImpl->parent_height()) + "\n";
-    FILE* fLog = fopen("D:\\resize.log", "a+");
-    fprintf(fLog, sLog.c_str());
-    fclose(fLog);
-#endif
-    focus();
-
-    m_pInternal->CheckZoom();
-}
-
-void CCefView::moveEvent()
-{
-#if defined(_LINUX) && !defined(_MAC)
-    if (m_pInternal && m_pInternal->m_handler && m_pInternal->m_handler->GetBrowser() && m_pInternal->m_handler->GetBrowser()->GetHost())
-    {
-        m_pInternal->m_handler->GetBrowser()->GetHost()->NotifyMoveOrResizeStarted();
-    }
-#endif
-
-    m_pInternal->CheckZoom();
-}
-
 void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 {
-    if (NULL == pEvent)
-        return;
-
-    if (!m_pInternal)
+    if (!m_pInternal || NULL == pEvent)
         return;
 
     CefRefPtr<CefBrowser> browser;
     if (m_pInternal->m_handler.get())
-    {
         browser = m_pInternal->m_handler->GetBrowser();
-    }
+
     if (!browser)
     {
         if (pEvent->m_nType == ASC_MENU_EVENT_TYPE_CEF_DESTROY ||
@@ -5508,7 +5405,6 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 
     RELEASEINTERFACE(pEvent);
 }
-
 NSEditorApi::CAscMenuEvent* CCefView::ApplySync(NSEditorApi::CAscMenuEvent* pEvent)
 {
     return NULL;
@@ -5523,10 +5419,7 @@ NSEditorApi::CAscCefMenuEvent* CCefView::CreateCefEvent(int nType)
 
 bool CCefView::StartDownload(const std::wstring& sUrl)
 {
-    if (!m_pInternal || !m_pInternal->m_handler || !m_pInternal->m_handler->GetBrowser())
-        return false;
-    
-    if (!m_pInternal->m_handler->GetBrowser()->GetHost())
+    if (!m_pInternal || !m_pInternal->m_handler || !m_pInternal->m_handler->GetBrowser() || !m_pInternal->m_handler->GetBrowser()->GetHost())
         return false;
     
     m_pInternal->m_oDownloaderAbortChecker.StartDownload(sUrl);
@@ -5534,11 +5427,20 @@ bool CCefView::StartDownload(const std::wstring& sUrl)
     return true;
 }
 
+void CCefView::SetExternalCloud(const std::wstring& sProviderId)
+{
+    if (L"asc" == sProviderId)
+    {
+        m_pInternal->m_bIsSSO = true;
+        return;
+    }
+    m_pInternal->m_bIsExternalCloud = GetAppManager()->m_pInternal->TestExternal(sProviderId, m_pInternal->m_oExternalCloud);
+}
+
 CAscApplicationManager* CCefView::GetAppManager()
 {
     return m_pInternal->m_pManager;
 }
-
 void CCefView::SetAppManager(CAscApplicationManager* pManager)
 {
     if (!m_pInternal)
@@ -5562,7 +5464,6 @@ int CCefView::GetId()
 {
     return m_nId;
 }
-
 CefViewWrapperType CCefView::GetType()
 {
     return m_eWrapperType;
@@ -5581,7 +5482,6 @@ void CCefView::SetModified(bool bIsModified)
 {
     m_pInternal->m_oLocalInfo.m_oInfo.m_bIsModified = bIsModified;
 }
-
 bool CCefView::GetModified()
 {
     return m_pInternal->m_oLocalInfo.m_oInfo.m_bIsModified;
@@ -5591,7 +5491,6 @@ bool CCefView::IsPresentationReporter()
 {
     return m_pInternal->m_bIsReporter;
 }
-
 void CCefView::LoadReporter(int nParentId, std::wstring url)
 {
     m_pInternal->m_bIsReporter = true;
@@ -5632,13 +5531,12 @@ double CCefView::GetDeviceScale()
     return (double)m_pInternal->m_nDeviceScale;
 }
 
-/////////////////////////////////////////////////////////////
+// CefViewEditor --------------------------------------------------------------------------
 CCefViewEditor::CCefViewEditor(CCefViewWidgetImpl* parent, int nId) : CCefView(parent, nId)
 {
     m_eType = etUndefined;
     m_eWrapperType = cvwtEditor;
 }
-
 CCefViewEditor::~CCefViewEditor()
 {
 }
@@ -5647,31 +5545,9 @@ void CCefViewEditor::SetEditorType(AscEditorType eType)
 {
     m_eType = eType;
 }
-
 AscEditorType CCefViewEditor::GetEditorType()
 {
     return m_eType;
-}
-
-int CCefViewEditor::GetFileFormat(const std::wstring& sFilePath)
-{
-    COfficeFileFormatChecker oChecker;
-    oChecker.isOfficeFile(sFilePath);
-
-    if (AVS_OFFICESTUDIO_FILE_DOCUMENT_TXT == oChecker.nFileType)
-    {
-        std::wstring sExt = NSCommon::GetFileExtention(sFilePath);
-        NSCommon::makeUpperW(sExt);
-        if (sExt != L"TXT" && sExt != L"XML")
-            return 0;
-    }
-    else if (AVS_OFFICESTUDIO_FILE_OTHER_MS_OFFCRYPTO == oChecker.nFileType)
-    {
-        std::wstring sExt = NSCommon::GetFileExtention(sFilePath);
-        return COfficeFileFormatChecker::GetFormatByExtension(L"." + sExt);
-    }
-
-    return oChecker.nFileType;
 }
 
 void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFileFormat_)
@@ -5681,12 +5557,6 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
         if (!m_pInternal->m_sOpenAsLocalSrc.empty())
         {
             m_pInternal->m_bIsCloudCryptFile = m_pInternal->m_sOpenAsLocalDst.empty();
-
-            /*
-            CCefView* pMainView = GetAppManager()->GetViewById(1);
-            if (!pMainView)
-                return;
-            */
 
             if (m_pInternal->m_bIsReporter)
             {
@@ -5950,7 +5820,6 @@ void CCefViewEditor::CreateLocalFile(const int& nFileFormat, const std::wstring&
     // start convert file
     this->load(sUrl + sParams);
 }
-
 bool CCefViewEditor::OpenRecoverFile(const int& nId)
 {
     if (!GetAppManager()->m_pInternal->GetEditorPermission())
@@ -6022,7 +5891,6 @@ bool CCefViewEditor::OpenRecoverFile(const int& nId)
     this->GetAppManager()->m_pInternal->Recovers_Remove(nId);
     return true;
 }
-
 bool CCefViewEditor::OpenReporter(const std::wstring& sFolderInput)
 {
     std::wstring sFolder = sFolderInput;
@@ -6046,7 +5914,6 @@ bool CCefViewEditor::OpenReporter(const std::wstring& sFolderInput)
     m_pInternal->LocalFile_Start();
     return true;
 }
-
 bool CCefViewEditor::OpenRecentFile(const int& nId)
 {
     CAscEditorFileInfo oInfo;
@@ -6093,7 +5960,6 @@ bool CCefViewEditor::CheckCloudCryptoNeedBuild()
     m_pInternal->SendProcessMessage(PID_RENDERER, message);
     return true;
 }
-
 bool CCefViewEditor::IsBuilding()
 {
     if (m_pInternal->m_bIsBuilding)
@@ -6112,10 +5978,30 @@ std::wstring CCefViewEditor::GetLocalFilePath()
         return L"";
     return m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc;
 }
-
 std::wstring CCefViewEditor::GetRecoveryDir()
 {
     return m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir;
+}
+
+int CCefViewEditor::GetFileFormat(const std::wstring& sFilePath)
+{
+    COfficeFileFormatChecker oChecker;
+    oChecker.isOfficeFile(sFilePath);
+
+    if (AVS_OFFICESTUDIO_FILE_DOCUMENT_TXT == oChecker.nFileType)
+    {
+        std::wstring sExt = NSCommon::GetFileExtention(sFilePath);
+        NSCommon::makeUpperW(sExt);
+        if (sExt != L"TXT" && sExt != L"XML")
+            return 0;
+    }
+    else if (AVS_OFFICESTUDIO_FILE_OTHER_MS_OFFCRYPTO == oChecker.nFileType)
+    {
+        std::wstring sExt = NSCommon::GetFileExtention(sFilePath);
+        return COfficeFileFormatChecker::GetFormatByExtension(L"." + sExt);
+    }
+
+    return oChecker.nFileType;
 }
 
 // NATIVE file converter
@@ -6159,7 +6045,6 @@ void CASCFileConverterToEditor::NativeViewerOpen(bool bIsEnabled)
         this->m_pView->m_pInternal->SendProcessMessage(PID_RENDERER, message);
     }
 }
-
 void CASCFileConverterToEditor::NativeViewerOpenEnd(const std::string& sBase64)
 {
     std::wstring sFileDst = m_oInfo.m_sRecoveryDir + L"/Editor.bin";
