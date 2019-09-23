@@ -2226,17 +2226,6 @@ window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
             retval = CefV8Value::CreateBool(m_bIsSupportOnlyPass && (m_nCryptoMode > 0));
             return true;
         }
-        else if (name == "OpenAsLocal")
-        {
-            CefRefPtr<CefV8Value> obj = arguments[0];
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
-            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("open_as_local");
-            message->GetArgumentList()->SetString(0, obj->GetValue("downloadLink")->GetStringValue());
-            message->GetArgumentList()->SetString(1, obj->GetValue("saveLink")->GetStringValue());
-            message->GetArgumentList()->SetString(2, obj->GetValue("title")->GetStringValue());
-            browser->SendProcessMessage(PID_BROWSER, message);
-            return true;
-        }
         else if (name == "SaveAsCloud")
         {
             // TODO:
@@ -3359,7 +3348,6 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefV8Value> _nativeFunction970 = CefV8Value::CreateFunction("SetInitFlags", _nativeHandler);
 
     CefRefPtr<CefV8Value> _nativeFunction971 = CefV8Value::CreateFunction("isBlockchainSupport", _nativeHandler);
-    CefRefPtr<CefV8Value> _nativeFunction972 = CefV8Value::CreateFunction("OpenAsLocal", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction973 = CefV8Value::CreateFunction("SaveAsCloud", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction974 = CefV8Value::CreateFunction("_sendSystemMessage", _nativeHandler);
     CefRefPtr<CefV8Value> _nativeFunction975 = CefV8Value::CreateFunction("_GetHash", _nativeHandler);
@@ -3522,7 +3510,6 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     objNative->SetValue("SetInitFlags", _nativeFunction970, V8_PROPERTY_ATTRIBUTE_NONE);
 
     objNative->SetValue("isBlockchainSupport", _nativeFunction971, V8_PROPERTY_ATTRIBUTE_NONE);
-    objNative->SetValue("OpenAsLocal", _nativeFunction972, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("SaveAsCloud", _nativeFunction973, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("_sendSystemMessage", _nativeFunction974, V8_PROPERTY_ATTRIBUTE_NONE);
     objNative->SetValue("_GetHash", _nativeFunction975, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -3562,6 +3549,25 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     if (_frame)
         _frame->ExecuteJavaScript("window.AscDesktopEditor.InitJSContext();", _frame->GetURL(), 0);
+
+    if (_frame)
+    {
+        _frame->ExecuteJavaScript("window.loadLocalFile = function(url, callback) {\n\
+var xhr = new XMLHttpRequest();\n\
+xhr.open(\"GET\", \"ascdesktop://fonts/\" + url + \", true);\n\
+xhr.responseType = \"arraybuffer\";\n\
+if (xhr.overrideMimeType)\n\
+  xhr.overrideMimeType('text/plain; charset=x-user-defined');\n\
+else\n\
+  xhr.setRequestHeader('Accept-Charset', 'x-user-defined');\n\
+\n\
+xhr.onload = function()\n\
+{\n\
+  callback(new Uint8Array(xhr.response));\n\
+};\n\
+xhr.send(null);\n\
+};\n", _frame->GetURL(), 0);
+    }
 
     CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_js_context_created");
     browser->SendProcessMessage(PID_BROWSER, message);
@@ -3906,14 +3912,6 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
             sCode += ");";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
-
-            if (5 <= message->GetArgumentList()->GetSize())
-            {
-                std::string sUrlDst = message->GetArgumentList()->GetString(4).ToString();
-
-                sCode = "window.DesktopUploadFileToUrl(\"" + sFileSrc + "\", \"" + sUrlDst + "\", \"" + sHash + "\", \"" + sPass + "\");";
-                _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
-            }
         }
         return true;
     }
@@ -4288,28 +4286,14 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         {
             std::wstring sDirectoryRecover = NSFile::GetDirectoryName(sFilePathW);
             std::string sDirectoryRecoverA = U_TO_UTF8(sDirectoryRecover);
-            std::string sCode1 = "window.AscDesktopEditor.SetCryptDocumentFolder(\"" + sDirectoryRecoverA + "\");\n";
 
-            std::string sCode = "\
-var xhr = new XMLHttpRequest();\n\
-xhr.open(\"GET\", \"ascdesktop://fonts/" + sFilePath + "\", true);\n\
-xhr.responseType = \"arraybuffer\";\n\
-if (xhr.overrideMimeType)\n\
-    xhr.overrideMimeType('text/plain; charset=x-user-defined');\n\
-else\n\
-    xhr.setRequestHeader('Accept-Charset', 'x-user-defined');\n\
-\n\
-xhr.onload = function()\n\
-{\n\
-    var fileData = new Uint8Array(xhr.response);\n\
-\n\
-    window.AscDesktopEditor.openFileCryptCallback(fileData);\n\
-    window.AscDesktopEditor.openFileCryptCallback = null;\n\
-};\n\
-\n\
-xhr.send(null);";
+            std::string sCode = ("window.AscDesktopEditor.SetCryptDocumentFolder(\"" + sDirectoryRecoverA + "\");\n\
+window.loadLocalFile(\"" + sFilePath + "\", function(data) {\n\
+window.AscDesktopEditor.openFileCryptCallback(data);\n\
+window.AscDesktopEditor.openFileCryptCallback = null;\n\
+});");
 
-            _frame->ExecuteJavaScript(sCode1 + sCode, _frame->GetURL(), 0);
+            _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
         }
 
         return true;

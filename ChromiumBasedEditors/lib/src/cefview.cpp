@@ -405,112 +405,141 @@ public:
     };
 
 public:
-    CefRefPtr<CAscClientHandler>        m_handler;
-    CAscApplicationManager*             m_pManager;
-    CCefViewWidgetImpl*                 m_pWidgetImpl;
+    CefRefPtr<CAscClientHandler> m_handler;
+    CAscApplicationManager* m_pManager;
+    CCefView* m_pCefView;
 
-    int m_nParentId;
+    // окно
+    CCefViewWidgetImpl* m_pWidgetImpl;
 
-    bool m_bIsNativeSave;
-    bool m_bIsOnSaveInCryptoMode;
-
+    // данные для печати
     CPrintData m_oPrintData;
+    int m_nPrintParameters;
 
-    DWORD m_dwTimeMouseWheelUp;
-
+    // ссылка для view
     std::wstring m_strUrl;
+    std::wstring m_sOriginalUrl;
+    std::wstring m_sOpenAsLocalUrl;
 
+    // вызывается для скачки файлов, после того, как покажем диалог для выбора куда качать
     CefRefPtr<CefBeforeDownloadCallback> m_before_callback;
 
+    // информация для локальных файлов
     CAscLocalFileInfoCS m_oLocalInfo;
+
+    // конвертеры
     CASCFileConverterToEditor m_oConverterToEditor;
     CASCFileConverterFromEditor m_oConverterFromEditor;
 
+    // криптованные данные храним в docx
     CTextDocxConverter m_oTxtToDocx;
 
-    int m_nLocalFileOpenError;
+    // идет сохранение с помощью x2t
+    bool m_bIsSaving;
+    // идет сохранение и криптование с помощью x2t
+    bool m_bIsSavingCrypto;
+    // нужно ли удалить папку recover
+    bool m_bIsRemoveRecoveryOnClose;
+    // идет закрытие веб-страницы
+    bool m_bIsClosing;
+    // идет удаление веб-страницы
+    bool m_bIsDestroying;
+    // показывается диалог для сохранения
+    bool m_bIsSavingDialog;
+    // идет сборка криптованного облачного файла
+    bool m_bIsBuilding;
+    // удален ли view
+    bool m_bIsDestroy;
+    // упал ли процесс рендерера
+    bool m_bIsCrashed;
 
+    // поддерживается ли криптование
+    bool m_bIsOnlyPassSupport;
+
+    // типо редактора (0 - word, 1 - slide, 2 - cell)
     int m_nEditorType;
 
-    CCefView* m_pCefView;
+    // ошибка при открытии файла (0 - все хорошо)
+    int m_nLocalFileOpenError;
 
-    bool m_bIsRemoveRecoveryOnClose;
-    bool m_bIsClosing;
-    bool m_bIsDestroying;
-    bool m_bIsSavingDialog;
-
+    // настройки для открытия pdf, djvu, xps
     CNativeFileViewerInfo m_oNativeViewer;
+    std::wstring m_sNativeFilePassword;
 
+    // текущий devicePixelRatio
     int m_nDeviceScale;
-    bool m_bIsWindowsCheckZoom = false;
+    // нужно ли при move/resize проверять deviceScale
+    bool m_bIsWindowsCheckZoom;
 
-    bool m_bIsReporter;
-    int m_nReporterParentId;
-    int m_nReporterChildId;
+    // настройки для репортера
+    bool m_bIsReporter; // репортер
+    int m_nReporterParentId; // репортер
+    int m_nReporterChildId; // id репортера у parent
 
+    // sso
     bool m_bIsSSO;
-
     bool m_bIsFirstLoadSSO;
     std::wstring m_strSSOFirstDomain;
     std::map<std::wstring, bool> m_arSSOSecondDomain;
 
-    bool m_bIsDestroy;
-
+    // id фрейма, из которого пришел евент (для коллбэка)
     std::string m_sIFrameIDMethod;
 
-    std::wstring m_sOpenAsLocalSrc;
-    std::wstring m_sOpenAsLocalDst;
-    std::wstring m_sOpenAsLocalName;
+    // криптование облачных файлов
+    bool m_bIsCloudCryptFile;
+    std::wstring m_sCloudCryptSrc;
+    std::wstring m_sCloudCryptName;
+
+    // скачка криптованного файла (в принципе можно просто качать что угодно)
     CCefView* m_pDownloadViewCallback;
     std::wstring m_sDownloadViewPath;
-    bool m_bIsCloudCryptFile;
-    std::wstring m_sRecentOpenExternalId;
 
-    std::wstring m_sOpenAsLocalUrl;
-    std::wstring m_sOriginalUrl;
+    // external id у recent
+    std::wstring m_sRecentOpenExternalId;
 
     // hash info (GetHash js function)
     std::string m_sGetHashAlg;
     std::string m_sGetHashFrame;
 
-    bool m_bIsOnlyPassSupport;
+    // картинки для скачки, в криптованном режиме
     std::map<std::wstring, std::wstring> m_arCryptoImages;
 
+    // файлы с ссылками для метода AscDesktopEditor.DownloadFiles
     std::map<std::wstring, std::wstring> m_arDownloadedFiles;
     std::map<std::wstring, std::wstring> m_arDownloadedFilesComplete;
 
-    bool m_bIsCrashed;
-
+    // приходил ли хоть раз евент onDocumentModifiedChanged
     bool m_bIsReceiveOnce_OnDocumentModified;
 
+    // url страницы, откуда был открыт текущий редактор (нужно для recents)
     std::wstring m_sParentUrl;
 
 #if defined(_LINUX) && !defined(_MAC)
     WindowHandleId m_lNaturalParent;
 #endif
 
+    // прерывание скачивания у проблемных ссылок
     CDownloadFilesAborted m_oDownloaderAbortChecker;
 
+    // настройки внешних (не onlyoffice) облаков
     bool m_bIsExternalCloud;
     CExternalCloudRegister m_oExternalCloud;
 
-    std::wstring m_sNativeFilePassword;
-
+    // запоминаем размеры окна, пока не готов webview
     int m_lStartControlWidth;
     int m_lStartControlHeight;
 
+    // облачный криптованный файл => downloadAs
     int m_nCryptoDownloadAsFormat;
     std::string m_sCryptoDownloadAsParams;
     CSimpleConverter m_oSimpleX2tConverter;
 
+    // версия облака и поддерживаемый им функционал
     std::string m_sCloudVersion;
     int m_nCloudVersion;
     bool m_bCloudVersionSendSupportCrypto;
 
-    bool m_bIsBuilding;
-
-    int m_nPrintParameters;
-
+    // системные сообщения
     std::vector<CSystemMessage> m_arSystemMessages;
 
 public:
@@ -518,9 +547,19 @@ public:
     {
         m_pManager = NULL;
         m_pWidgetImpl = NULL;
-        m_nParentId = -1;
-        m_bIsNativeSave = false;
-        m_dwTimeMouseWheelUp = (DWORD)-1;
+        m_pCefView = NULL;
+
+        m_nPrintParameters = 0;
+
+        m_bIsSaving = false;
+        m_bIsSavingCrypto = false;
+        m_bIsRemoveRecoveryOnClose = false;
+        m_bIsClosing = false;
+        m_bIsDestroying = false;
+        m_bIsSavingDialog = false;
+        m_bIsBuilding = false;
+        m_bIsDestroy = false;
+        m_bIsCrashed = false;
 
         m_strUrl = L"";
 
@@ -530,14 +569,7 @@ public:
         m_oConverterFromEditor.m_pEvents = this;
 
         m_nEditorType = 0;
-        m_pCefView = NULL;
         m_nLocalFileOpenError = 0;
-
-        m_bIsRemoveRecoveryOnClose = false;
-
-        m_bIsClosing = false;
-        m_bIsDestroying = false;
-        m_bIsSavingDialog = false;
 
 #if defined(_LINUX) && !defined(_MAC)
         m_lNaturalParent = 0;
@@ -554,18 +586,13 @@ public:
         m_bIsFirstLoadSSO = true;
         m_strSSOFirstDomain = L"";
 
-        m_bIsDestroy = false;
-
         m_pDownloadViewCallback = NULL;
 
         m_bIsOnlyPassSupport = false;
 
-        m_bIsCrashed = false;
-
         m_bIsReceiveOnce_OnDocumentModified = false;
 
         m_bIsCloudCryptFile = false;
-
         m_bIsExternalCloud = false;
 
         m_lStartControlWidth = -1;
@@ -573,13 +600,8 @@ public:
 
         m_nCryptoDownloadAsFormat = -1;
 
-        m_bIsOnSaveInCryptoMode = false;
-
         m_nCloudVersion = CRYPTO_CLOUD_SUPPORT;
         m_bCloudVersionSendSupportCrypto = false;
-
-        m_bIsBuilding = false;
-        m_nPrintParameters = 0;
     }
 
     void Destroy()
@@ -715,7 +737,7 @@ public:
             }
         }
 
-        if (!m_sOpenAsLocalSrc.empty())
+        if (!m_sCloudCryptSrc.empty())
         {
             CCefViewEditor* pEditorThis = (CCefViewEditor*)m_pCefView;
             pEditorThis->OpenLocalFile(m_sDownloadViewPath, CCefViewEditor::GetFileFormat(m_sDownloadViewPath));
@@ -1755,11 +1777,11 @@ public:
             // для локального файла посылаем когда прошла конвертация
             if (m_pParent &&
                     m_pParent->GetAppManager()->GetEventListener() &&
-                    m_pParent->m_pInternal->m_bIsNativeSave &&
+                    m_pParent->m_pInternal->m_bIsSaving &&
                     (m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir.empty() ||
-                     !m_pParent->m_pInternal->m_sOpenAsLocalSrc.empty()))
+                     !m_pParent->m_pInternal->m_sCloudCryptSrc.empty()))
             {
-                m_pParent->m_pInternal->m_bIsNativeSave = false;
+                m_pParent->m_pInternal->m_bIsSaving = false;
 
                 NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONSAVE);
 
@@ -1822,7 +1844,7 @@ public:
                     m_pParent->m_pInternal->m_oPrintData.m_sDocumentUrl = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/";
                 }
 
-                m_pParent->m_pInternal->m_oPrintData.CalculateImagePaths(!m_pParent->m_pInternal->m_sOpenAsLocalSrc.empty());
+                m_pParent->m_pInternal->m_oPrintData.CalculateImagePaths(!m_pParent->m_pInternal->m_sCloudCryptSrc.empty());
 
                 if (m_pParent->GetAppManager()->GetEventListener())
                 {
@@ -2468,71 +2490,7 @@ public:
 
             pViewSend->Apply(pEvent);
             return true;
-        }
-        else if (message_name == "open_as_local")
-        {
-            NSEditorApi::CAscCefMenuEventListener* pListener = NULL;
-            if (NULL != m_pParent && NULL != m_pParent->GetAppManager())
-                pListener = m_pParent->GetAppManager()->GetEventListener();
-
-            if (!pListener)
-                return true;
-
-            std::wstring sDownloadLink = message->GetArgumentList()->GetString(0).ToWString();
-            std::wstring sSaveLink = message->GetArgumentList()->GetString(1).ToWString();
-            std::wstring sName = message->GetArgumentList()->GetString(2).ToWString();
-
-            std::wstring sBaseUrl = m_pParent->GetUrl();
-            std::wstring::size_type pos = NSCommon::FindLowerCase(sBaseUrl, L"/products/files");
-            if (pos != std::wstring::npos)
-                sBaseUrl = sBaseUrl.substr(0, pos);
-
-            sDownloadLink = sBaseUrl + sDownloadLink;
-            sSaveLink = sBaseUrl + sSaveLink;
-            sDownloadLink = sDownloadLink + L"<openaslocal>" + sSaveLink + L"</openaslocal><openaslocalname>" + sName + L"</openaslocalname>";
-
-            NSEditorApi::CAscCreateTab* pData = new NSEditorApi::CAscCreateTab();
-            pData->put_Url(sDownloadLink);
-
-            if (true)
-            {
-                std::map<std::wstring, int>& mapOP = m_pParent->GetAppManager()->m_pInternal->m_mapOnlyPass;
-                std::map<std::wstring, int>::iterator findOP = mapOP.find(sDownloadLink);
-
-                if (mapOP.end() != findOP)
-                {
-                    if (-1 == findOP->second)
-                    {
-                        // загрузка только идет, а вью еще не добавилась
-                        return true;
-                    }
-
-                    CCefView* pView = m_pParent->GetAppManager()->GetViewById(findOP->second);
-                    if (pView)
-                    {
-                        pView->focus(true);
-                        return true;
-                    }
-
-                    mapOP.erase(findOP);
-                }
-
-                mapOP.insert(std::pair<std::wstring, int>(sDownloadLink, -1));
-            }
-
-            if (true)
-            {
-                CCefView* pEqual = m_pParent->GetAppManager()->GetViewByUrl(sDownloadLink);
-                if (NULL != pEqual)
-                    pData->put_IdEqual(pEqual->GetId());
-            }
-
-            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_CREATETAB);
-            pEvent->m_pData = pData;
-
-            pListener->OnEvent(pEvent);
-            return true;
-        }
+        }        
         else if (message_name == "file_get_hash")
         {
             m_pParent->m_pInternal->m_pDownloadViewCallback = m_pParent;
@@ -2661,10 +2619,10 @@ public:
             {
                 bool bIsClose = message->GetArgumentList()->GetBool(0);
 
-                if (m_pParent->m_pInternal->m_bIsOnSaveInCryptoMode)
+                if (m_pParent->m_pInternal->m_bIsSavingCrypto)
                 {
-                    m_pParent->m_pInternal->m_bIsOnSaveInCryptoMode = false;
-                    m_pParent->m_pInternal->m_bIsNativeSave = false;
+                    m_pParent->m_pInternal->m_bIsSavingCrypto = false;
+                    m_pParent->m_pInternal->m_bIsSaving = false;
 
                     NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONSAVE);
                     NSEditorApi::CAscDocumentOnSaveData* pData = new NSEditorApi::CAscDocumentOnSaveData();
@@ -4147,7 +4105,7 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
     {
         if (m_pManager->GetEventListener() && m_pCefView != NULL)
         {
-            m_bIsNativeSave = false;
+            m_bIsSaving = false;
 
             NSEditorApi::CAscCefMenuEvent* pEvent = m_pCefView->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONSAVE);
 
@@ -4184,7 +4142,7 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
         return;
     }
 
-    if (m_sOpenAsLocalSrc.empty())
+    if (m_sCloudCryptSrc.empty())
     {
         bool bIsSaved = ((0 == nError) && NSFile::CFileBinary::Exists(m_oConverterFromEditor.m_oInfo.m_sFileSrc)) ? true : false;
 
@@ -4238,7 +4196,7 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
             {
                 if (m_pManager->m_pInternal->m_nCurrentCryptoMode == 0) // только после конца записи в блокчейн
                 {
-                    m_bIsNativeSave = false;
+                    m_bIsSaving = false;
 
                     NSEditorApi::CAscCefMenuEvent* pEvent = m_pCefView->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONSAVE);
                     NSEditorApi::CAscDocumentOnSaveData* pData = new NSEditorApi::CAscDocumentOnSaveData();
@@ -4248,7 +4206,7 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
                 }
                 else
                 {
-                    m_bIsOnSaveInCryptoMode = true;
+                    m_bIsSavingCrypto = true;
                 }
             }
         }
@@ -4256,7 +4214,7 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
 
     std::string sMessageName = "onlocaldocument_onsaveend";
     std::wstring sFileSrc = m_oLocalInfo.m_oInfo.m_sFileSrc;
-    if (!m_sOpenAsLocalSrc.empty() && m_sOpenAsLocalDst.empty())
+    if (!m_sCloudCryptSrc.empty())
     {
         sMessageName = "build_crypted_file_end";
         sFileSrc = m_oConverterFromEditor.m_oInfo.m_sFileSrc;
@@ -4277,15 +4235,6 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
         delete pCert;
 
         message->GetArgumentList()->SetString(3, sHash);
-    }
-    if (!m_sOpenAsLocalDst.empty())
-    {
-        if (!bIsPassAdd)
-        {
-            message->GetArgumentList()->SetString(2, "");
-            message->GetArgumentList()->SetString(3, "");
-        }
-        message->GetArgumentList()->SetString(4, m_sOpenAsLocalDst);
     }
 
     m_handler->GetBrowser()->SendProcessMessage(PID_RENDERER, message);
@@ -4558,22 +4507,18 @@ void CCefView::load(const std::wstring& urlInputSrc)
             }
         }
 
-        std::wstring sFileUrl1 = urlInput.substr(0, pos1);
-        std::wstring sFileUrl2 = urlInput.substr(pos1 + 13, pos2 - pos1 - 13);
-
-        m_pInternal->m_sOpenAsLocalSrc = sFileUrl1;
-        m_pInternal->m_sOpenAsLocalDst = sFileUrl2;
+        m_pInternal->m_sCloudCryptSrc = urlInput.substr(0, pos1);
 
         pos1 = urlInput.find(L"<openaslocalname>");
         pos2 = urlInput.find(L"</openaslocalname>");
 
         if (pos1 != std::wstring::npos && pos2 != std::wstring::npos)
         {
-            m_pInternal->m_sOpenAsLocalName = urlInput.substr(pos1 + 17, pos2 - pos1 - 17);
+            m_pInternal->m_sCloudCryptName = urlInput.substr(pos1 + 17, pos2 - pos1 - 17);
         }
 
-        if (m_pInternal->m_sOpenAsLocalName.empty())
-            m_pInternal->m_sOpenAsLocalName = L"Document";
+        if (m_pInternal->m_sCloudCryptName.empty())
+            m_pInternal->m_sCloudCryptName = L"Document";
 
         CCefViewEditor* pEditor = ((CCefViewEditor*)this);
         pEditor->OpenLocalFile(L"", 0);
@@ -4952,7 +4897,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
         }
         case ASC_MENU_EVENT_TYPE_CEF_SAVE:
         {
-            m_pInternal->m_bIsNativeSave = true;
+            m_pInternal->m_bIsSaving = true;
 
             if (NULL != m_pInternal->m_pManager->m_pInternal->m_pAdditional)
                 m_pInternal->m_pManager->m_pInternal->m_pAdditional->Local_Save_Start();
@@ -5469,15 +5414,6 @@ CefViewWrapperType CCefView::GetType()
     return m_eWrapperType;
 }
 
-void CCefView::SetParentCef(int nId)
-{
-    m_pInternal->m_nParentId = nId;
-}
-int CCefView::GetParentCef()
-{
-    return m_pInternal->m_nParentId;
-}
-
 void CCefView::SetModified(bool bIsModified)
 {
     m_pInternal->m_oLocalInfo.m_oInfo.m_bIsModified = bIsModified;
@@ -5554,9 +5490,9 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
 {
     if (sFilePath.empty())
     {
-        if (!m_pInternal->m_sOpenAsLocalSrc.empty())
+        if (!m_pInternal->m_sCloudCryptSrc.empty())
         {
-            m_pInternal->m_bIsCloudCryptFile = m_pInternal->m_sOpenAsLocalDst.empty();
+            m_pInternal->m_bIsCloudCryptFile = true;
 
             if (m_pInternal->m_bIsReporter)
             {
@@ -5574,7 +5510,7 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
             if (NSFile::CFileBinary::Exists(m_pInternal->m_sDownloadViewPath))
                 NSFile::CFileBinary::Remove(m_pInternal->m_sDownloadViewPath);
 
-            m_pInternal->m_sDownloadViewPath += (L"." + NSCommon::GetFileExtention(m_pInternal->m_sOpenAsLocalName));
+            m_pInternal->m_sDownloadViewPath += (L"." + NSCommon::GetFileExtention(m_pInternal->m_sCloudCryptName));
 
             // load preview...
             if (m_pInternal->m_oLocalInfo.m_oInfo.m_nCounterConvertion != 0)
@@ -5584,7 +5520,7 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
                 if (NSDirectory::Exists(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir))
                     NSDirectory::DeleteDirectory(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir);
             }
-            StartDownload(m_pInternal->m_sOpenAsLocalSrc);
+            StartDownload(m_pInternal->m_sCloudCryptSrc);
             return;
         }
     }
@@ -5650,11 +5586,11 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
 
     NSDirectory::CreateDirectory(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir);
 
-    if (!m_pInternal->m_sOpenAsLocalSrc.empty())
+    if (!m_pInternal->m_sCloudCryptSrc.empty())
     {
         NSDirectory::CreateDirectory(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/openaslocal");
 
-        std::wstring sFilePathSrc = m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/openaslocal/" + m_pInternal->m_sOpenAsLocalName;
+        std::wstring sFilePathSrc = m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/openaslocal/" + m_pInternal->m_sCloudCryptName;
         NSCommon::string_replace(sFilePathSrc, L"\\", L"/");
 
         NSFile::CFileBinary::Copy(sFilePath, sFilePathSrc);
@@ -5662,33 +5598,7 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
 
         NSFile::CFileBinary::Remove(sFilePath);
 
-        if (!m_pInternal->m_bIsCloudCryptFile)
-        {
-            std::wstring sRecentUrl = m_pInternal->m_sOpenAsLocalSrc + L"<openaslocal>" + m_pInternal->m_sOpenAsLocalDst + L"</openaslocal><openaslocalname>" + m_pInternal->m_sOpenAsLocalName + L"</openaslocalname>";
-
-            std::wstring sPath = m_pInternal->m_sOpenAsLocalSrc;
-
-            std::wstring::size_type pos = 0;
-            std::wstring::size_type pos1 = sPath.find(L"//");
-            if (pos1 != std::wstring::npos)
-                pos = pos1 + 3;
-
-            pos1 = sPath.find(L"/", pos);
-            if (0 < pos1)
-                sPath = sPath.substr(0, pos1);
-
-            sPath += (L"/" + m_pInternal->m_sOpenAsLocalName);
-
-            std::wstring sExtId = L"";
-            if (m_pInternal->m_bIsExternalCloud)
-                sExtId = m_pInternal->m_oExternalCloud.id;
-
-            this->GetAppManager()->m_pInternal->Recents_Add(sPath, nFileFormat, sRecentUrl, sExtId, m_pInternal->m_sParentUrl);
-        }
-        else
-        {
-            m_pInternal->LocalFile_IncrementCounter();
-        }
+        m_pInternal->LocalFile_IncrementCounter();
     }
     else
     {

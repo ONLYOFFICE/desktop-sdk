@@ -101,9 +101,6 @@ public:
     int GetId();
     CefViewWrapperType GetType();
 
-    void SetParentCef(int nId);
-    int GetParentCef();
-
     void SetModified(bool bIsModified);
     bool GetModified();
 

@@ -242,15 +242,6 @@ void CAscApplicationManager::Apply(NSEditorApi::CAscMenuEvent* pEvent)
         {
             NSEditorApi::CAscDownloadFileInfo* pData = (NSEditorApi::CAscDownloadFileInfo*)pEvent->m_pData;
 
-            if (pData->get_IsComplete())
-            {
-                int nId = pData->get_Id();
-                CCefView* pCefView = this->GetViewById(nId);
-
-                if (-1 != pCefView->GetParentCef())
-                    this->DestroyCefView(pData->get_Id());
-            }
-            
             bool bIsPrivate = false;
             std::wstring s1 = pData->get_Url();
             NSCommon::string_replace(s1, L"/./", L"/");
