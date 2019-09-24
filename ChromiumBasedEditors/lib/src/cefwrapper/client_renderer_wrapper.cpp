@@ -3003,8 +3003,7 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
             int nControlId = message->GetArgumentList()->GetInt(0);
             bool isSupportSign = message->GetArgumentList()->GetBool(1);
             int nParams = message->GetArgumentList()->GetInt(2);
-            std::string sControlId = std::to_string(nControlId);
-            std::string sCode = "window[\"AscDesktopEditor\"][\"SetEditorId\"](" + sControlId + ");";
+            std::string sCode = "window[\"AscDesktopEditor\"][\"SetEditorId\"](" + std::to_string(nControlId) + ");";
 
             if (isSupportSign)
                 sCode += "window[\"AscDesktopEditor\"][\"SetSupportSign\"](true);";
@@ -3053,11 +3052,9 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
         CefRefPtr<CefFrame> _frame = browser->GetMainFrame();
         bool bIsPresent = message->GetArgumentList()->GetBool(0);
         std::string sValue = message->GetArgumentList()->GetString(1).ToString();
-
-        std::string sCode = bIsPresent ? ("if (window[\"on_is_cookie_present\"]) { window[\"on_is_cookie_present\"](true, \"" + sValue + "\"); }") :
-                                 "if (window[\"on_is_cookie_present\"]) { window[\"on_is_cookie_present\"](false, undefined); }";
+        std::string sParam = bIsPresent ? "true" : "false";
+        std::string sCode = "if (window[\"on_is_cookie_present\"]) { window[\"on_is_cookie_present\"](" + sParam + ", \"" + sValue + "\"); }";
         _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
-
         return true;
     }
     else if (sMessageName == "on_check_auth")
@@ -3083,33 +3080,24 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
         std::string sCode = "if (window[\"on_check_auth\"]) { window[\"on_check_auth\"](" + sObject + "); }";
 
         _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
-
         return true;
     }
     else if (sMessageName == "on_set_cookie")
     {
         CefRefPtr<CefFrame> _frame = browser->GetMainFrame();
-
-        std::string sCode = "if (window[\"on_set_cookie\"]) { window[\"on_set_cookie\"](); }";
-        _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
-
+        _frame->ExecuteJavaScript("if (window[\"on_set_cookie\"]) { window[\"on_set_cookie\"](); }", _frame->GetURL(), 0);
         return true;
     }
     else if (sMessageName == "document_save")
     {
         CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
-
         if (_frame)
-        {
-            std::string sCode = "if (window[\"AscDesktopEditor_Save\"]) { window[\"AscDesktopEditor_Save\"](); }";
-            _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
-        }
+            _frame->ExecuteJavaScript("if (window[\"AscDesktopEditor_Save\"]) { window[\"AscDesktopEditor_Save\"](); }", _frame->GetURL(), 0);
         return true;
     }
     else if (sMessageName == "print")
     {
         CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
-
         if (_frame)
         {
             std::string sCode = "if (window[\"Asc\"] && window[\"Asc\"][\"editor\"]) { window[\"Asc\"][\"editor\"][\"asc_nativePrint\"](undefined, undefined); }";
@@ -3127,33 +3115,18 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
     {
         int64 frameId = (int64)message->GetArgumentList()->GetInt(2);
         CefRefPtr<CefFrame> _frame = browser->GetFrame(frameId);
-
         if (_frame)
         {
             std::wstring sFilePath = message->GetArgumentList()->GetString(0).ToWString();
             std::wstring sUrl = message->GetArgumentList()->GetString(1).ToWString();
-            NSFile::CFileBinary oFile;
-            if (oFile.OpenFile(sFilePath))
+
+            std::string sScriptContent;
+            if (NSFile::CFileBinary::ReadAllTextUtf8A(sFilePath, sScriptContent))
             {
-                int nSize = (int)oFile.GetFileSize();
-                BYTE* scriptData = new BYTE[nSize];
-                DWORD dwReadSize = 0;
-                oFile.ReadFile(scriptData, (DWORD)nSize, dwReadSize);
-
-                std::string strUTF8((char*)scriptData, nSize);
-
-                delete [] scriptData;
-                scriptData = NULL;
-
-                _frame->ExecuteJavaScript(strUTF8, _frame->GetURL(), 0);
-
-                _frame->ExecuteJavaScript("window[\"asc_desktop_on_load_js\"](\"" + U_TO_UTF8(sUrl) + "\");", _frame->GetURL(), 0);
+                _frame->ExecuteJavaScript(sScriptContent, _frame->GetURL(), 0);
             }
-            else
-            {
-                // все равно посылаем - пусть лучше ошибка в консоль, чем подвисание в requirejs
-                _frame->ExecuteJavaScript("window[\"asc_desktop_on_load_js\"](\"" + U_TO_UTF8(sUrl) + "\");", _frame->GetURL(), 0);
-            }
+
+            _frame->ExecuteJavaScript("window[\"asc_desktop_on_load_js\"](\"" + U_TO_UTF8(sUrl) + "\");", _frame->GetURL(), 0);
         }
         return true;
     }
@@ -3272,7 +3245,6 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
     else if (sMessageName == "onlocaldocument_sendrecents")
     {
         CefRefPtr<CefFrame> _frame = browser->GetMainFrame();
-
         if (_frame)
         {
             std::wstring sJSON = message->GetArgumentList()->GetString(0).ToWString();
@@ -3286,7 +3258,6 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
     else if (sMessageName == "onlocaldocument_sendrecovers")
     {
         CefRefPtr<CefFrame> _frame = browser->GetMainFrame();
-
         if (_frame)
         {
             std::wstring sJSON = message->GetArgumentList()->GetString(0).ToWString();
@@ -3300,7 +3271,6 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
     else if (sMessageName == "onlocaldocument_onaddimage")
     {
         CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
-
         if (_frame)
         {
             std::wstring sPath = message->GetArgumentList()->GetString(0).ToWString();
@@ -3558,21 +3528,21 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
                 if (frame && (frame->GetName().ToString().find("system_asc") == 0))
                 {
                     std::string sCode = "\
-    (function(){\n\
-    try {\n\
-    var _arg = JSON.parse(\"" + sArg + "\");\n\
-    window.AscDesktopEditor.isSendSystemMessage = false;\n\
-    if (window.onSystemMessage)\n\
-    { window.onSystemMessage(_arg); } else if (window.Asc && window.Asc.plugin && window.Asc.plugin.onSystemMessage)\n\
-    { window.Asc.plugin.onSystemMessage(_arg); }\n\
+(function(){\n\
+try {\n\
+var _arg = JSON.parse(\"" + sArg + "\");\n\
+window.AscDesktopEditor.isSendSystemMessage = false;\n\
+if (window.onSystemMessage)\n\
+{ window.onSystemMessage(_arg); } else if (window.Asc && window.Asc.plugin && window.Asc.plugin.onSystemMessage)\n\
+{ window.Asc.plugin.onSystemMessage(_arg); }\n\
+}\n\
+catch (err) {\n\
+    if (!window.AscDesktopEditor.isSendSystemMessage) {\n\
+        window.AscDesktopEditor.sendSystemMessage(_arg);\n\
     }\n\
-    catch (err) {\n\
-        if (!window.AscDesktopEditor.isSendSystemMessage) {\n\
-            window.AscDesktopEditor.sendSystemMessage(_arg);\n\
-        }\n\
-    }\n\
-    delete window.AscDesktopEditor.isSendSystemMessage;\n\
-    })();";
+}\n\
+delete window.AscDesktopEditor.isSendSystemMessage;\n\
+})();";
 
                     frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
                     break;
@@ -3587,15 +3557,15 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
             if (_frame)
             {
                 std::string sCode = "\
-    (function(){\n\
-    try {\n\
-    var _arg = JSON.parse(\"" + sArg + "\");\n\
-    if (window.onSystemMessage)\n\
-    { window.onSystemMessage(_arg); } else if (window.Asc && window.Asc.plugin && window.Asc.plugin.onSystemMessage)\n\
-    { window.Asc.plugin.onSystemMessage(_arg); }\n\
-    }\n\
-    catch (err) {}\n\
-    })();";
+(function(){\n\
+try {\n\
+var _arg = JSON.parse(\"" + sArg + "\");\n\
+if (window.onSystemMessage)\n\
+{ window.onSystemMessage(_arg); } else if (window.Asc && window.Asc.plugin && window.Asc.plugin.onSystemMessage)\n\
+{ window.Asc.plugin.onSystemMessage(_arg); }\n\
+}\n\
+catch (err) {}\n\
+})();";
                 _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
             }
 
@@ -3612,14 +3582,14 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
                     if (_frameOP && (k != frameID) && (_frameOP->GetName().ToString().find("iframe_asc.{") == 0))
                     {
                         std::string sCode = "\
-        (function(){\n\
-        try {\n\
-        var _arg = JSON.parse(\"" + sArg + "\");\n\
-        if (window.Asc && window.Asc.plugin && window.Asc.plugin.onSystemMessage)\n\
-        { window.Asc.plugin.onSystemMessage(_arg); } \n\
-        }\n\
-        catch (err) {}\n\
-        })();";
+(function(){\n\
+try {\n\
+var _arg = JSON.parse(\"" + sArg + "\");\n\
+if (window.Asc && window.Asc.plugin && window.Asc.plugin.onSystemMessage)\n\
+{ window.Asc.plugin.onSystemMessage(_arg); } \n\
+}\n\
+catch (err) {}\n\
+})();";
 
                         _frameOP->ExecuteJavaScript(sCode, _frameOP->GetURL(), 0);
                         break;
