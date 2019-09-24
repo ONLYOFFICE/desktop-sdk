@@ -1145,20 +1145,22 @@ public:
 
         std::wstring sUrlLower = sUrl;
         NSCommon::makeLowerW(sUrlLower);
+
+        // определяем, редактор ли это
         bool bIsEditor = (sUrlLower.find(L"files/doceditor.aspx?fileid") == std::wstring::npos) ? false : true;
 
-#if 1
-        if (m_pParent->m_pInternal->m_bIsExternalCloud && !bIsEditor)
+        if (!bIsEditor && m_pParent->m_pInternal->m_bIsExternalCloud)
         {
             bIsEditor = (sUrlLower.find(m_pParent->m_pInternal->m_oExternalCloud.test_editor) == std::wstring::npos) ? false : true;
 
             if (bIsEditor)
             {
+                // прокидываем во view информацию
                 sUrl += (L"desktop_editor_cloud_type_external=" + m_pParent->m_pInternal->m_oExternalCloud.id + L"_ext_id");
             }
         }
-#endif
 
+        // определяем
         bool bIsDownload    = false;
         if (sUrlLower.find(L"filehandler.ashx?action=download") != std::wstring::npos)
             bIsDownload     = true;
@@ -1188,22 +1190,8 @@ public:
         {
             if (NULL != m_pParent && NULL != pListener && NULL == m_pParent->m_pInternal->m_before_callback)
             {
+                // есть parent и ничего не качается в данный момент
                 m_pParent->StartDownload(sUrl);
-                
-#if 0
-                NSEditorApi::CAscDownloadFileInfo* pData = new NSEditorApi::CAscDownloadFileInfo();
-                pData->put_Url(sUrl);
-                pData->put_FilePath(L"");
-                pData->put_Percent(0);
-                pData->put_IsComplete(false);
-                pData->put_Id(m_pParent->GetId());
-
-                NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
-                pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_DOWNLOAD_START;
-                pEvent->m_pData = pData;
-
-                pListener->OnEvent(pEvent);
-#endif
             }
 
             return true;
@@ -1223,17 +1211,12 @@ public:
 
                 CRecentParent oRecentParent;
                 oRecentParent.Url = sUrl;
-                //oRecentParent.Parent = m_pParent->GetUrl();
                 oRecentParent.Parent = m_pParent->m_pInternal->GetBrowser()->GetMainFrame()->GetURL().ToWString();
 
                 m_pParent->GetAppManager()->m_pInternal->m_arRecentParents.push_back(oRecentParent);
 
-#if 1
                 if (bIsBackground)
-                {
                     pData->put_Active(false);
-                }
-#endif
 
                 if (true)
                 {
@@ -1273,11 +1256,7 @@ public:
         bool* no_javascript_access) OVERRIDE
     {
         CEF_REQUIRE_IO_THREAD();
-
-        std::wstring sUrl = target_url.ToWString();
-
-        CheckPopup(sUrl, false, (WOD_NEW_BACKGROUND_TAB == target_disposition) ? true : false);
-
+        CheckPopup(target_url.ToWString(), false, (WOD_NEW_BACKGROUND_TAB == target_disposition) ? true : false);
         return true;
     }
 
@@ -1286,13 +1265,10 @@ public:
         CefRefPtr<CefFrame> frame,
         const CefString& target_url,
         CefRequestHandler::WindowOpenDisposition target_disposition,
-        bool user_gesture) OVERRIDE {
+        bool user_gesture) OVERRIDE
+    {
         CEF_REQUIRE_IO_THREAD();
-
-        std::wstring sUrl = target_url.ToWString();
-
-        CheckPopup(sUrl, false, (WOD_NEW_BACKGROUND_TAB == target_disposition) ? true : false, true);
-
+        CheckPopup(target_url.ToWString(), false, (WOD_NEW_BACKGROUND_TAB == target_disposition) ? true : false, true);
         return true;
     }
 
@@ -1301,7 +1277,6 @@ public:
         std::wstring::size_type pos1 = url.find(L"//");
         if (std::wstring::npos == pos1)
             pos1 = 0;
-
         pos1 += 2;
 
         std::wstring::size_type pos2 = url.find(L"/", pos1);
@@ -1309,7 +1284,7 @@ public:
             return L"";
 
         if (!bIsHeader)
-            return url.substr(pos1, pos2 - pos1);
+            return url.substr(pos1, pos2 - pos1);        
         return url.substr(0, pos2);
     }
 
@@ -1319,26 +1294,6 @@ public:
                                 bool is_redirect)
     {
         std::wstring sUrl = request->GetURL().ToWString();
-
-#if 0
-        std::string sUrlA = "";
-        int nLen = (int)sUrl.length();
-        for (int i = 0; i < nLen; ++i)
-        {
-            char p = (char)sUrl.c_str()[i];
-            if (p == '%')
-                p = '!';
-            if (p >= 32 && p <= 122)
-                sUrlA += p;
-            else
-                sUrlA += ' ';
-        }
-
-        FILE* f = fopen("D:\\111333.txt", "a+");
-        fprintf(f, sUrlA.c_str());
-        fprintf(f, "\n");
-        fclose(f);
-#endif
 
         if (m_pParent->m_pInternal->m_bIsSSO)
         {
@@ -1495,24 +1450,11 @@ public:
 
         m_nBeforeBrowserCounter++;
 
-        CefViewWrapperType eType = this->m_pParent->GetType();
-
         if (m_pParent && m_pParent->GetType() == cvwtSimple)
         {
             bool bHandled = CheckPopup(sUrl, true);
             if (bHandled)
                 return true;
-
-#if 0
-            // блокируем, если не первый раз
-            if (m_nBeforeBrowserCounter > 1)
-                return true;
-#else
-            // если делать, как выше, то множественные логины отрубятся.
-            // и дебаггер тоже
-            if (false && sUrl.find(L"files/#") != std::wstring::npos)
-                return true;
-#endif
         }
 
         bool ret = client::ClientHandler::OnBeforeBrowse(browser, frame, request, is_redirect);
@@ -1536,70 +1478,60 @@ public:
     {
         CEF_REQUIRE_UI_THREAD();
 
+        CAscApplicationManager* pManager = m_pParent->GetAppManager();
         NSEditorApi::CAscCefMenuEventListener* pListener = NULL;
-        if (NULL != m_pParent && NULL != m_pParent->GetAppManager())
-            pListener = m_pParent->GetAppManager()->GetEventListener();
+        if (NULL != m_pParent && NULL != pManager)
+            pListener = pManager->GetEventListener();
+
+        if (!pListener)
+            return false;
+
+        CefRefPtr<CefListValue> args = message->GetArgumentList();
 
         // Check for messages from the client renderer.
         std::string message_name = message->GetName();
         if (message_name == "EditorType" && !m_bIsEditorTypeSet)
         {
             m_bIsEditorTypeSet = true;
+            m_pParent->m_pInternal->m_nEditorType = args->GetInt(0);
 
-            int nType = message->GetArgumentList()->GetInt(0);
-            m_pParent->m_pInternal->m_nEditorType = nType;
+            NSEditorApi::CAscTabEditorType* pData = new NSEditorApi::CAscTabEditorType();
+            pData->put_Id(m_pParent->GetId());
+            pData->put_Type(m_pParent->m_pInternal->m_nEditorType);
 
-            if (NULL != pListener)
-            {
-                NSEditorApi::CAscTabEditorType* pData = new NSEditorApi::CAscTabEditorType();
-                pData->put_Id(m_pParent->GetId());
-                pData->put_Type(nType);
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_TABEDITORTYPE);
+            pEvent->m_pData = pData;
 
-                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_TABEDITORTYPE);
-                pEvent->m_pData = pData;
-
-                pListener->OnEvent(pEvent);
-            }
-
+            pListener->OnEvent(pEvent);
             return true;
         }
         else if (message_name == "spell_check_task")
         {
-            if (m_pParent && m_pParent->GetAppManager())
-            {
-                m_pParent->GetAppManager()->SpellCheck(message->GetArgumentList()->GetInt(0),
-                                                       message->GetArgumentList()->GetString(1).ToString(),
-                                                       message->GetArgumentList()->GetInt(2));
-            }
-
+            m_pParent->GetAppManager()->SpellCheck(args->GetInt(0),
+                                                   args->GetString(1).ToString(),
+                                                   args->GetInt(2));
             return true;
         }
         else if (message_name == "create_editor_api")
         {
-            if (m_pParent)
-            {
-                NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
-                pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_CONTROL_ID;
-                m_pParent->Apply(pEvent);
+            NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
+            pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_CONTROL_ID;
+            m_pParent->Apply(pEvent);
 
-                CAscApplicationManager* pManager = m_pParent->GetAppManager();
-                if (pManager)
-                    pManager->SendKeyboardAttack();
+            CAscApplicationManager* pManager = m_pParent->GetAppManager();
+            if (pManager)
+                pManager->SendKeyboardAttack();
 
-                NSEditorApi::CAscMenuEvent* pEvent2 = new NSEditorApi::CAscMenuEvent();
-                pEvent2->m_nType = ASC_MENU_EVENT_TYPE_CEF_SYNC_COMMAND;
-                m_pParent->Apply(pEvent2);
+            NSEditorApi::CAscMenuEvent* pEvent2 = new NSEditorApi::CAscMenuEvent();
+            pEvent2->m_nType = ASC_MENU_EVENT_TYPE_CEF_SYNC_COMMAND;
+            m_pParent->Apply(pEvent2);
 
-                // в обычных случаях - просто увеличится счетчик и все
-                m_pParent->m_pInternal->m_oConverterToEditor.NativeViewerOpen();
-            }
-
+            // в обычных случаях - просто увеличится счетчик и все
+            m_pParent->m_pInternal->m_oConverterToEditor.NativeViewerOpen();
             return true;
         }
         else if (message_name == "on_js_context_created")
         {
-            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_js_context_created_callback");
-
             bool bIsOnlyPassSupport = m_pParent->GetAppManager()->m_oSettings.pass_support;
             if (bIsOnlyPassSupport)
             {
@@ -1617,43 +1549,38 @@ public:
                 nFlags |= 0x02;
 
             m_pParent->m_pInternal->m_bIsOnlyPassSupport = bIsOnlyPassSupport;
-            message->GetArgumentList()->SetInt(0, nFlags);
 
             int nCryptoMode = m_pParent->GetAppManager()->m_pInternal->m_nCurrentCryptoMode;
             if (m_pParent->m_pInternal->m_bIsExternalCloud && !m_pParent->m_pInternal->m_oExternalCloud.crypto_support)
                 nCryptoMode = 0;
 
-            message->GetArgumentList()->SetInt(1, nCryptoMode);
-
-            browser->SendProcessMessage(PID_RENDERER, message);
+            CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("on_js_context_created_callback");
+            messageOut->GetArgumentList()->SetInt(0, nFlags);
+            messageOut->GetArgumentList()->SetInt(1, nCryptoMode);
+            browser->SendProcessMessage(PID_RENDERER, messageOut);
             return true;
         }
         else if (message_name == "is_cookie_present")
         {
             CCefCookieVisitor* pVisitor = new CCefCookieVisitor();
             pVisitor->m_pCallback       = this;
-            pVisitor->m_sDomain         = message->GetArgumentList()->GetString(0).ToString();
-            pVisitor->m_sCookieSearch   = message->GetArgumentList()->GetString(1).ToString();
+            pVisitor->m_sDomain         = args->GetString(0).ToString();
+            pVisitor->m_sCookieSearch   = args->GetString(1).ToString();
 
             pVisitor->CheckCookiePresent(CefCookieManager::GetGlobalManager(NULL));
-
             return true;
         }
         else if (message_name == "on_check_auth")
         {
             CCefCookieVisitor* pVisitor = new CCefCookieVisitor();
             pVisitor->m_pCallback       = this;
-
             pVisitor->m_sCookieSearch   = "asc_auth_key";
 
-            int nCount = message->GetArgumentList()->GetInt(0);
+            int nCount = args->GetInt(0);
             for (int i = 0; i < nCount; i++)
-            {
-                pVisitor->m_arDomains.push_back(message->GetArgumentList()->GetString(i + 1));
-            }
+                pVisitor->m_arDomains.push_back(args->GetString(i + 1));
 
             pVisitor->CheckCookiePresent(CefCookieManager::GetGlobalManager(NULL));
-
             return true;
         }
         else if (message_name == "set_cookie")
@@ -1661,122 +1588,101 @@ public:
             CCefCookieSetter* pVisitor = new CCefCookieSetter();
             pVisitor->m_pCallback       = this;
 
-            pVisitor->m_sUrl            = message->GetArgumentList()->GetString(0).ToString();
-            pVisitor->m_sDomain         = message->GetArgumentList()->GetString(1).ToString();
-            pVisitor->m_sPath           = message->GetArgumentList()->GetString(2).ToString();
-            pVisitor->m_sCookieKey      = message->GetArgumentList()->GetString(3).ToString();
-            pVisitor->m_sCookieValue    = message->GetArgumentList()->GetString(4).ToString();
+            pVisitor->m_sUrl            = args->GetString(0).ToString();
+            pVisitor->m_sDomain         = args->GetString(1).ToString();
+            pVisitor->m_sPath           = args->GetString(2).ToString();
+            pVisitor->m_sCookieKey      = args->GetString(3).ToString();
+            pVisitor->m_sCookieValue    = args->GetString(4).ToString();
             
             pVisitor->Correct();
-
             pVisitor->SetCookie(CefCookieManager::GetGlobalManager(NULL));
-
             return true;
         }
         else if (message_name == "onDocumentModifiedChanged")
         {
-            if (m_pParent && m_pParent->GetAppManager()->GetEventListener())
-            {
-                bool bValue = message->GetArgumentList()->GetBool(0);
-                m_pParent->m_pInternal->m_bIsReceiveOnce_OnDocumentModified = true;
-                m_pParent->SetModified(bValue);
-                /*
-                if (!m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir.empty())
-                {
-                    // в будущем переделать!!!
-                    std::wstring sChangesFile = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/changes/changes0.json";
-                    if (!NSFile::CFileBinary::Exists(sChangesFile))
-                    {
-                        bValue = false;
-                    }
-                }
-                */
+            bool bValue = args->GetBool(0);
+            m_pParent->m_pInternal->m_bIsReceiveOnce_OnDocumentModified = true;
+            m_pParent->SetModified(bValue);
 
-                NSEditorApi::CAscCefMenuEvent* pEvent = new NSEditorApi::CAscCefMenuEvent();
-                pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_MODIFY_CHANGED;
-                pEvent->put_SenderId(m_pParent->GetId());
+            NSEditorApi::CAscCefMenuEvent* pEvent = new NSEditorApi::CAscCefMenuEvent();
+            pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_MODIFY_CHANGED;
+            pEvent->put_SenderId(m_pParent->GetId());
 
-                NSEditorApi::CAscDocumentModifyChanged* pData = new NSEditorApi::CAscDocumentModifyChanged();
-                pData->put_Id(m_pParent->GetId());
-                pData->put_Changed(bValue);
-                pEvent->m_pData = pData;
+            NSEditorApi::CAscDocumentModifyChanged* pData = new NSEditorApi::CAscDocumentModifyChanged();
+            pData->put_Id(m_pParent->GetId());
+            pData->put_Changed(bValue);
+            pEvent->m_pData = pData;
 
-                m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
-            }
+            pListener->OnEvent(pEvent);
             return true;
         }
         else if (message_name == "set_document_name")
         {
-            if (m_pParent && m_pParent->GetAppManager()->GetEventListener())
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_DOCUMENT_NAME);
+
+            NSEditorApi::CAscDocumentName* pData = new NSEditorApi::CAscDocumentName();
+            pData->put_Id(m_pParent->GetId());
+            pData->put_Name(args->GetString(0).ToWString());
+
+            pEvent->m_pData = pData;
+
+            if (m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir.empty())
             {
-                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_DOCUMENT_NAME);
-
-                NSEditorApi::CAscDocumentName* pData = new NSEditorApi::CAscDocumentName();
-                pData->put_Id(m_pParent->GetId());
-                pData->put_Name(message->GetArgumentList()->GetString(0).ToWString());
-
-                pEvent->m_pData = pData;
-
-                if (m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir.empty())
+                CefRefPtr<CefFrame> _frame = browser->GetMainFrame();
+                if (_frame)
                 {
-                    CefRefPtr<CefFrame> _frame = browser->GetMainFrame();
-                    if (_frame)
-                    {
-                        std::wstring sUrl = _frame->GetURL().ToWString();
-                        NSCommon::url_correct(sUrl);
+                    std::wstring sUrl = _frame->GetURL().ToWString();
+                    NSCommon::url_correct(sUrl);
 
-                        if (sUrl.find(L"/index.reporter.html") != std::wstring::npos)
-                            return true;
+                    if (sUrl.find(L"/index.reporter.html") != std::wstring::npos)
+                        return true;
 
-                        std::wstring sPath = L"";
+                    std::wstring sPath = L"";
 
-                        std::wstring::size_type pos = 0;
-                        std::wstring::size_type pos1 = sUrl.find(L"//");
-                        if (pos1 != std::wstring::npos)
-                            pos = pos1 + 3;
+                    std::wstring::size_type pos = 0;
+                    std::wstring::size_type pos1 = sUrl.find(L"//");
+                    if (pos1 != std::wstring::npos)
+                        pos = pos1 + 3;
 
-                        pos1 = sUrl.find(L"/", pos);
-                        if (0 < pos1)
-                            sPath = sUrl.substr(0, pos1);
+                    pos1 = sUrl.find(L"/", pos);
+                    if (0 < pos1)
+                        sPath = sUrl.substr(0, pos1);
 
-                        int nType = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX;
-                        if  (2 == m_pParent->m_pInternal->m_nEditorType)
-                            nType = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX;
-                        else if  (1 ==m_pParent->m_pInternal->m_nEditorType)
-                            nType = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
+                    int nType = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX;
+                    if  (2 == m_pParent->m_pInternal->m_nEditorType)
+                        nType = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX;
+                    else if  (1 ==m_pParent->m_pInternal->m_nEditorType)
+                        nType = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
 
-                        std::wstring sExtId = L"";
-                        if (m_pParent->m_pInternal->m_bIsExternalCloud)
-                            sExtId = m_pParent->m_pInternal->m_oExternalCloud.id;
+                    std::wstring sExtId = L"";
+                    if (m_pParent->m_pInternal->m_bIsExternalCloud)
+                        sExtId = m_pParent->m_pInternal->m_oExternalCloud.id;
 
-                        m_pParent->GetAppManager()->m_pInternal->Recents_Add(sPath + L"/" + pData->get_Name(),
-                                                                             nType, sUrl, sExtId, m_pParent->m_pInternal->m_sParentUrl);
+                    pManager->m_pInternal->Recents_Add(sPath + L"/" + pData->get_Name(),
+                                                                         nType, sUrl, sExtId, m_pParent->m_pInternal->m_sParentUrl);
 
-                        pData->put_Path(sPath);
-                        pData->put_Url(sUrl);
-                    }
-                }
-                else if (m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_bIsSaved)
-                {
-                    std::wstring sPath = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc;
-#ifdef WIN32
-                    NSCommon::string_replace(sPath, L"/", L"\\");
-#endif
                     pData->put_Path(sPath);
+                    pData->put_Url(sUrl);
                 }
-
-                m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
             }
+            else if (m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_bIsSaved)
+            {
+                std::wstring sPath = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc;
+#ifdef WIN32
+                NSCommon::string_replace(sPath, L"/", L"\\");
+#endif
+                pData->put_Path(sPath);
+            }
+
+            pListener->OnEvent(pEvent);
             return true;
         }
         else if (message_name == "on_document_save")
         {
             // для локального файла посылаем когда прошла конвертация
-            if (m_pParent &&
-                    m_pParent->GetAppManager()->GetEventListener() &&
-                    m_pParent->m_pInternal->m_bIsSaving &&
-                    (m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir.empty() ||
-                     !m_pParent->m_pInternal->m_sCloudCryptSrc.empty()))
+            if (m_pParent->m_pInternal->m_bIsSaving &&
+                (m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir.empty() ||
+                !m_pParent->m_pInternal->m_sCloudCryptSrc.empty()))
             {
                 m_pParent->m_pInternal->m_bIsSaving = false;
 
@@ -1787,569 +1693,492 @@ public:
 
                 pEvent->m_pData = pData;
 
-                m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+                pListener->OnEvent(pEvent);
             }
             return true;
         }
         else if (message_name == "js_message")
         {
-            if (m_pParent && m_pParent->GetAppManager()->GetEventListener())
-            {
-                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_JS_MESSAGE);
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_JS_MESSAGE);
 
-                NSEditorApi::CAscJSMessage* pData = new NSEditorApi::CAscJSMessage();
-                pData->put_Id(m_pParent->GetId());
-                pData->put_Name(message->GetArgumentList()->GetString(0).ToWString());
-                pData->put_Value(message->GetArgumentList()->GetString(1).ToWString());
+            NSEditorApi::CAscJSMessage* pData = new NSEditorApi::CAscJSMessage();
+            pData->put_Id(m_pParent->GetId());
+            pData->put_Name(args->GetString(0).ToWString());
+            pData->put_Value(args->GetString(1).ToWString());
 
-                pEvent->m_pData = pData;
+            pEvent->m_pData = pData;
 
-                m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
-            }
+            pListener->OnEvent(pEvent);
             return true;
         }
         else if (message_name == "on_exec_command")
         {
-            if (m_pParent && m_pParent->GetAppManager()->GetEventListener())
-            {
-                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_EXECUTE_COMMAND);
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_EXECUTE_COMMAND);
 
-                NSEditorApi::CAscExecCommand* pData = new NSEditorApi::CAscExecCommand();
-                pData->put_Command(message->GetArgumentList()->GetString(0).ToWString());
+            NSEditorApi::CAscExecCommand* pData = new NSEditorApi::CAscExecCommand();
+            pData->put_Command(args->GetString(0).ToWString());
 
-                if (message->GetArgumentList()->GetSize() == 2)
-                    pData->put_Param(message->GetArgumentList()->GetString(1).ToWString());
+            if (args->GetSize() == 2)
+                pData->put_Param(args->GetString(1).ToWString());
 
-                pEvent->m_pData = pData;
+            pEvent->m_pData = pData;
 
-                m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
-            }
+            pListener->OnEvent(pEvent);
             return true;
         }
         else if (message_name == "print_start")
         {
-            if (m_pParent)
+            m_pParent->m_pInternal->m_oPrintData.m_sDocumentUrl = args->GetString(0).ToWString();
+            m_pParent->m_pInternal->m_oPrintData.m_sFrameUrl = args->GetString(2).ToWString();
+            m_pParent->m_pInternal->m_oPrintData.m_arPages.SetCount(args->GetInt(1));
+            m_pParent->m_pInternal->m_oPrintData.m_sThemesUrl = args->GetString(3).ToWString();
+            m_pParent->m_pInternal->m_oPrintData.m_nCurrentPage = args->GetInt(4);
+
+            if (!m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir.empty())
             {
-                m_pParent->m_pInternal->m_oPrintData.m_sDocumentUrl = message->GetArgumentList()->GetString(0).ToWString();
-                m_pParent->m_pInternal->m_oPrintData.m_sFrameUrl = message->GetArgumentList()->GetString(2).ToWString();
-                m_pParent->m_pInternal->m_oPrintData.m_arPages.SetCount(message->GetArgumentList()->GetInt(1));
-                m_pParent->m_pInternal->m_oPrintData.m_sThemesUrl = message->GetArgumentList()->GetString(3).ToWString();
-                m_pParent->m_pInternal->m_oPrintData.m_nCurrentPage = message->GetArgumentList()->GetInt(4);
-                
-                if (!m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir.empty())
-                {
-                    m_pParent->m_pInternal->m_oPrintData.m_sDocumentUrl = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/";
-                }
-
-                m_pParent->m_pInternal->m_oPrintData.CalculateImagePaths(!m_pParent->m_pInternal->m_sCloudCryptSrc.empty());
-
-                if (m_pParent->GetAppManager()->GetEventListener())
-                {
-                    NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONBEFORE_PRINT_START);
-
-                    NSEditorApi::CAscTypeId* pData = new NSEditorApi::CAscTypeId();
-                    pData->put_Id(m_pParent->GetId());
-                    pEvent->m_pData = pData;
-
-                    m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
-                }
+                m_pParent->m_pInternal->m_oPrintData.m_sDocumentUrl = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/";
             }
+
+            m_pParent->m_pInternal->m_oPrintData.CalculateImagePaths(!m_pParent->m_pInternal->m_sCloudCryptSrc.empty());
+
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONBEFORE_PRINT_START);
+            NSEditorApi::CAscTypeId* pData = new NSEditorApi::CAscTypeId();
+            pData->put_Id(m_pParent->GetId());
+            pEvent->m_pData = pData;
+
+            pListener->OnEvent(pEvent);
             return true;
         }
         else if (message_name == "print_page")
         {
-            if (m_pParent)
+            int nIndex = args->GetInt(1);
+            int nProgress = 100 * (nIndex + 1) / m_pParent->m_pInternal->m_oPrintData.m_arPages.GetCount();
+
+            if (nProgress >= 0 && nProgress <= 100)
             {
-                int nIndex = message->GetArgumentList()->GetInt(1);
-                int nProgress = 100 * (nIndex + 1) / m_pParent->m_pInternal->m_oPrintData.m_arPages.GetCount();
-
-                if (nProgress >= 0 && nProgress <= 100)
-                {
-                    m_pParent->m_pInternal->m_oPrintData.m_arPages[nIndex].Base64 = message->GetArgumentList()->GetString(0).ToString();
-                    m_pParent->m_pInternal->m_oPrintData.m_arPages[nIndex].Width  = message->GetArgumentList()->GetDouble(2);
-                    m_pParent->m_pInternal->m_oPrintData.m_arPages[nIndex].Height = message->GetArgumentList()->GetDouble(3);
-                }
-
-                if (m_pParent->GetAppManager()->GetEventListener())
-                {
-                    NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONBEFORE_PRINT_PROGRESS);
-
-                    NSEditorApi::CAscPrintProgress* pData = new NSEditorApi::CAscPrintProgress();
-                    pData->put_Id(m_pParent->GetId());
-                    pData->put_Progress(nProgress);
-
-                    pEvent->m_pData = pData;
-
-                    m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
-                }
+                m_pParent->m_pInternal->m_oPrintData.m_arPages[nIndex].Base64 = args->GetString(0).ToString();
+                m_pParent->m_pInternal->m_oPrintData.m_arPages[nIndex].Width  = args->GetDouble(2);
+                m_pParent->m_pInternal->m_oPrintData.m_arPages[nIndex].Height = args->GetDouble(3);
             }
+
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONBEFORE_PRINT_PROGRESS);
+
+            NSEditorApi::CAscPrintProgress* pData = new NSEditorApi::CAscPrintProgress();
+            pData->put_Id(m_pParent->GetId());
+            pData->put_Progress(nProgress);
+
+            pEvent->m_pData = pData;
+
+            pListener->OnEvent(pEvent);
             return true;
         }
         else if (message_name == "print_end")
         {
-            if (m_pParent)
-            {
-                if (m_pParent->GetAppManager()->GetEventListener())
-                {
-                    NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONBEFORE_PRINT_END);
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONBEFORE_PRINT_END);
 
-                    NSEditorApi::CAscPrintEnd* pData = new NSEditorApi::CAscPrintEnd();
-                    pData->put_Id(m_pParent->GetId());
-                    pData->put_PagesCount(m_pParent->m_pInternal->m_oPrintData.m_arPages.GetCount());
-                    pData->put_CurrentPage(m_pParent->m_pInternal->m_oPrintData.m_nCurrentPage);
-                    pEvent->m_pData = pData;
+            NSEditorApi::CAscPrintEnd* pData = new NSEditorApi::CAscPrintEnd();
+            pData->put_Id(m_pParent->GetId());
+            pData->put_PagesCount(m_pParent->m_pInternal->m_oPrintData.m_arPages.GetCount());
+            pData->put_CurrentPage(m_pParent->m_pInternal->m_oPrintData.m_nCurrentPage);
+            pEvent->m_pData = pData;
 
-                    m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+            pListener->OnEvent(pEvent);
 
-                    int nParam = 0;
-                    if (message->GetArgumentList()->GetSize() > 0)
-                        nParam = message->GetArgumentList()->GetInt(0);
+            int nParam = 0;
+            if (args->GetSize() > 0)
+                nParam = args->GetInt(0);
 
-                    m_pParent->GetAppManager()->m_oPrintSettings.Mode = (nParam == 1) ? CAscPrintSettings::pmFit : CAscPrintSettings::pm100;
+            pManager->m_oPrintSettings.Mode = (nParam == 1) ? CAscPrintSettings::pmFit : CAscPrintSettings::pm100;
 
 #if 0
-                    // TEST
-                    m_pParent->m_pInternal->m_oPrintData.Print_Start();
+            m_pParent->m_pInternal->m_oPrintData.Print_Start();
 
-                    for (int i = 0; i < m_pParent->m_pInternal->m_oPrintData.m_arPages.GetCount(); ++i)
-                        m_pParent->m_pInternal->m_oPrintData.TestSaveToRasterFile(L"D:\\test_page" + std::to_wstring(i) + L".png", 793, 1122, i);
+            for (int i = 0; i < m_pParent->m_pInternal->m_oPrintData.m_arPages.GetCount(); ++i)
+                m_pParent->m_pInternal->m_oPrintData.TestSaveToRasterFile(L"D:\\test_page" + std::to_wstring(i) + L".png", 793, 1122, i);
 
-                    m_pParent->m_pInternal->m_oPrintData.Print_End();
+            m_pParent->m_pInternal->m_oPrintData.Print_End();
 #endif
-                }
-            }
             return true;
         }
         else if (message_name == "print")
         {
-            if (m_pParent)
-            {
-                NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
-                pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_PRINT_START;
-                m_pParent->m_pInternal->m_nPrintParameters = 0;
-                if (message->GetArgumentList()->GetSize() == 1)
-                    m_pParent->m_pInternal->m_nPrintParameters = message->GetArgumentList()->GetInt(0);
-                m_pParent->Apply(pEvent);
-            }
+            NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
+            pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_PRINT_START;
+            m_pParent->m_pInternal->m_nPrintParameters = 0;
+            if (args->GetSize() == 1)
+                m_pParent->m_pInternal->m_nPrintParameters = args->GetInt(0);
+            m_pParent->Apply(pEvent);
             return true;
         }
         else if (message_name == "load_js")
         {
-            if (m_pParent)
-            {
-                NSEditorApi::CAscEditorScript* pData = new NSEditorApi::CAscEditorScript();
-                pData->put_Url(message->GetArgumentList()->GetString(0).ToWString());
-                pData->put_Destination(message->GetArgumentList()->GetString(1).ToWString());
-                pData->put_Id(m_pParent->GetId());
-                pData->put_FrameId(message->GetArgumentList()->GetInt(2));
+            NSEditorApi::CAscEditorScript* pData = new NSEditorApi::CAscEditorScript();
+            pData->put_Url(args->GetString(0).ToWString());
+            pData->put_Destination(args->GetString(1).ToWString());
+            pData->put_Id(m_pParent->GetId());
+            pData->put_FrameId(args->GetInt(2));
 
-                NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
-                pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_SCRIPT_EDITOR_VERSION;
-                pEvent->m_pData = pData;
+            NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
+            pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_SCRIPT_EDITOR_VERSION;
+            pEvent->m_pData = pData;
 
-                m_pParent->GetAppManager()->Apply(pEvent);
-            }
+            pManager->Apply(pEvent);
             return true;
         }
         else if (message_name == "onfullscreenenter")
         {
-            if (m_pParent && m_pParent->GetAppManager() && m_pParent->GetAppManager()->GetEventListener())
-            {
-                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONFULLSCREENENTER);
-                m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
-            }
-
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONFULLSCREENENTER);
+            pListener->OnEvent(pEvent);
             return true;
         }
         else if (message_name == "onfullscreenleave")
         {
-            if (m_pParent && m_pParent->GetAppManager() && m_pParent->GetAppManager()->GetEventListener())
-            {
-                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONFULLSCREENLEAVE);
-                m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
-            }
-
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONFULLSCREENLEAVE);
+            pListener->OnEvent(pEvent);
             return true;
         }
         else if (message_name == "onlocaldocument_loadstart")
         {
-            if (m_pParent)
-            {
-                m_pParent->m_pInternal->LocalFile_IncrementCounter();
-            }
-
+            m_pParent->m_pInternal->LocalFile_IncrementCounter();
             return true;
         }
         else if (message_name == "onlocaldocument_open")
         {
-            if (m_pParent && m_pParent->GetAppManager() && m_pParent->GetAppManager()->GetEventListener())
-            {
-                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_OPEN);
-                NSEditorApi::CAscLocalFileOpen* pData = new NSEditorApi::CAscLocalFileOpen();
-                if (message->GetArgumentList()->GetSize() == 1)
-                    pData->put_Directory(message->GetArgumentList()->GetString(0).ToWString());
-                pEvent->m_pData = pData;
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_OPEN);
+            NSEditorApi::CAscLocalFileOpen* pData = new NSEditorApi::CAscLocalFileOpen();
+            if (args->GetSize() == 1)
+                pData->put_Directory(args->GetString(0).ToWString());
+            pEvent->m_pData = pData;
 
-                m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
-            }
-
+            pListener->OnEvent(pEvent);
             return true;
         }
         else if (message_name == "onlocaldocument_create")
         {
-            if (m_pParent && m_pParent->GetAppManager() && m_pParent->GetAppManager()->GetEventListener())
-            {
-                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_CREATE);
-                NSEditorApi::CAscLocalFileCreate* pData = new NSEditorApi::CAscLocalFileCreate();
-                pData->put_Type(message->GetArgumentList()->GetInt(0));
-                pEvent->m_pData = pData;
-                m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
-            }
-
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_CREATE);
+            NSEditorApi::CAscLocalFileCreate* pData = new NSEditorApi::CAscLocalFileCreate();
+            pData->put_Type(args->GetInt(0));
+            pEvent->m_pData = pData;
+            pListener->OnEvent(pEvent);
             return true;
         }
         else if (message_name == "onlocaldocument_sendrecents")
         {
-            if (m_pParent && m_pParent->GetAppManager())
-            {
-                m_pParent->GetAppManager()->m_pInternal->Recents_Dump();
-            }
+            pManager->m_pInternal->Recents_Dump();
             return true;
         }
         else if (message_name == "onlocaldocument_openrecents")
         {
-            if (m_pParent && m_pParent->GetAppManager() && m_pParent->GetAppManager()->GetEventListener())
-            {
-                NSEditorApi::CAscLocalOpenFileRecent_Recover* pData = new NSEditorApi::CAscLocalOpenFileRecent_Recover();
-                pData->put_Id(message->GetArgumentList()->GetInt(0));
-                pData->put_IsRecover(false);
-                pData->put_Path(m_pParent->GetAppManager()->m_pInternal->m_arRecents[pData->get_Id()].m_sPath);
+            NSEditorApi::CAscLocalOpenFileRecent_Recover* pData = new NSEditorApi::CAscLocalOpenFileRecent_Recover();
+            pData->put_Id(args->GetInt(0));
+            pData->put_IsRecover(false);
+            pData->put_Path(pManager->m_pInternal->m_arRecents[pData->get_Id()].m_sPath);
 
-                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_RECENTOPEN);
-                pEvent->m_pData = pData;
-                m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
-            }
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_RECENTOPEN);
+            pEvent->m_pData = pData;
+            pListener->OnEvent(pEvent);
             return true;
         }
         else if (message_name == "onlocaldocument_removerecents")
         {
-            if (m_pParent && m_pParent->GetAppManager())
-            {
-                m_pParent->GetAppManager()->m_pInternal->Recents_Remove(message->GetArgumentList()->GetInt(0));
-            }
+            pManager->m_pInternal->Recents_Remove(args->GetInt(0));
             return true;
         }
         else if (message_name == "onlocaldocument_removeallrecents")
         {
-            if (m_pParent && m_pParent->GetAppManager())
-            {
-                m_pParent->GetAppManager()->m_pInternal->Recents_RemoveAll();
-            }
+            pManager->m_pInternal->Recents_RemoveAll();
             return true;
         }
         else if (message_name == "onlocaldocument_sendrecovers")
         {
-            if (m_pParent && m_pParent->GetAppManager())
-            {
-                m_pParent->GetAppManager()->m_pInternal->Recovers_Dump();
-            }
+            pManager->m_pInternal->Recovers_Dump();
             return true;
         }
         else if (message_name == "onlocaldocument_openrecovers")
         {
-            if (m_pParent && m_pParent->GetAppManager() && m_pParent->GetAppManager()->GetEventListener())
-            {
-                NSEditorApi::CAscLocalOpenFileRecent_Recover* pData = new NSEditorApi::CAscLocalOpenFileRecent_Recover();
-                pData->put_Id(message->GetArgumentList()->GetInt(0));
-                pData->put_IsRecover(true);
-                pData->put_Path(m_pParent->GetAppManager()->m_pInternal->m_arRecovers[pData->get_Id()].m_sPath);
+            NSEditorApi::CAscLocalOpenFileRecent_Recover* pData = new NSEditorApi::CAscLocalOpenFileRecent_Recover();
+            pData->put_Id(args->GetInt(0));
+            pData->put_IsRecover(true);
+            pData->put_Path(pManager->m_pInternal->m_arRecovers[pData->get_Id()].m_sPath);
 
-                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_RECOVEROPEN);
-                pEvent->m_pData = pData;
-                m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
-            }
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_RECOVEROPEN);
+            pEvent->m_pData = pData;
+            pListener->OnEvent(pEvent);
             return true;
         }
         else if (message_name == "onlocaldocument_removerecovers")
         {
-            if (m_pParent && m_pParent->GetAppManager())
-            {
-                m_pParent->GetAppManager()->m_pInternal->Recovers_Remove(message->GetArgumentList()->GetInt(0), true);
-            }
+            pManager->m_pInternal->Recovers_Remove(args->GetInt(0), true);
             return true;
         }
         else if (message_name == "onlocaldocument_removeallrecovers")
         {
-            if (m_pParent && m_pParent->GetAppManager())
-            {
-                m_pParent->GetAppManager()->m_pInternal->Recovers_RemoveAll();
-            }
+            pManager->m_pInternal->Recovers_RemoveAll();
             return true;
         }
         else if (message_name == "onlocaldocument_onsavestart")
         {
-            if (m_pParent && m_pParent->GetAppManager() && m_pParent->GetAppManager()->GetEventListener())
+            bool bIsNeedSave = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_bIsSaved ? false : true;
+            std::string sParams     = args->GetString(0).ToString();
+            std::wstring sPassword  = args->GetString(1).ToWString();
+            std::wstring sDocInfo   = args->GetString(2).ToWString();
+
+            bool bIsSaveAs = (sParams.find("saveas=true") != std::string::npos) ? true : false;
+            bool bIsNeedSaveDialog = bIsNeedSave || bIsSaveAs || (!m_pParent->m_pInternal->LocalFile_IsSupportSaveCurrentFormat());
+
+            CApplicationManagerAdditionalBase* pAdditional = pManager->m_pInternal->m_pAdditional;
+            if (pAdditional)
             {
-                bool bIsNeedSave = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_bIsSaved ? false : true;
-                std::string sParams = message->GetArgumentList()->GetString(0).ToString();
-                std::wstring sPassword = message->GetArgumentList()->GetString(1).ToWString();
-                std::wstring sDocInfo = message->GetArgumentList()->GetString(2).ToWString();
+                if (pAdditional->Local_Save_End(bIsNeedSaveDialog, m_pParent->GetId(), m_pParent->m_pInternal->m_handler->GetBrowser()))
+                    return true;
+            }
 
-                bool bIsSaveAs = (sParams.find("saveas=true") != std::string::npos) ? true : false;
-                bool bIsNeedSaveDialog = bIsNeedSave || bIsSaveAs || (!m_pParent->m_pInternal->LocalFile_IsSupportSaveCurrentFormat());
+            m_pParent->m_pInternal->m_oLocalInfo.m_bIsRetina = (sParams.find("retina=true") != std::string::npos) ? true : false;
+            m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sPassword = sPassword;
+            m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sDocumentInfo = sDocInfo;
 
-                CApplicationManagerAdditionalBase* pAdditional = m_pParent->GetAppManager()->m_pInternal->m_pAdditional;
-                if (pAdditional)
-                {
-                    if (pAdditional->Local_Save_End(bIsNeedSaveDialog, m_pParent->GetId(), m_pParent->m_pInternal->m_handler->GetBrowser()))
-                        return true;
-                }
+            if (bIsNeedSaveDialog)
+            {
+                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_SAVE);
+                NSEditorApi::CAscLocalSaveFileDialog* pData = new NSEditorApi::CAscLocalSaveFileDialog();
+                pData->put_Id(m_pParent->GetId());
 
-                m_pParent->m_pInternal->m_oLocalInfo.m_bIsRetina = (sParams.find("retina=true") != std::string::npos) ? true : false;
-                m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sPassword = sPassword;
-                m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sDocumentInfo = sDocInfo;
-
-                if (bIsNeedSaveDialog)
-                {
-                    NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_SAVE);
-                    NSEditorApi::CAscLocalSaveFileDialog* pData = new NSEditorApi::CAscLocalSaveFileDialog();
-                    pData->put_Id(m_pParent->GetId());
-
-                    if (!bIsNeedSave)
-                        pData->put_Path(m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc);
-                    else
-                        pData->put_Path(NSCommon::GetFileName(m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc));
-
-                    pData->put_FileType(m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat);
-                    m_pParent->m_pInternal->LocalFile_GetSupportSaveFormats(pData->get_SupportFormats());
-                    pEvent->m_pData = pData;
-
-                    m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
-                    m_pParent->m_pInternal->m_bIsSavingDialog = true;
-                }
+                if (!bIsNeedSave)
+                    pData->put_Path(m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc);
                 else
-                {
-                    m_pParent->m_pInternal->LocalFile_SaveStart();
-                }
+                    pData->put_Path(NSCommon::GetFileName(m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc));
+
+                pData->put_FileType(m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat);
+                m_pParent->m_pInternal->LocalFile_GetSupportSaveFormats(pData->get_SupportFormats());
+                pEvent->m_pData = pData;
+
+                pListener->OnEvent(pEvent);
+                m_pParent->m_pInternal->m_bIsSavingDialog = true;
+            }
+            else
+            {
+                m_pParent->m_pInternal->LocalFile_SaveStart();
             }
             return true;
         }
         else if (message_name == "onlocaldocument_onaddimage")
         {
-            if (m_pParent && m_pParent->GetAppManager() && m_pParent->GetAppManager()->GetEventListener())
-            {
-                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_ADDIMAGE);
-                NSEditorApi::CAscLocalOpenFileDialog* pData = new NSEditorApi::CAscLocalOpenFileDialog();
-                pData->put_Id(m_pParent->GetId());
-                pEvent->m_pData = pData;
-                m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
-            }
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_ADDIMAGE);
+            NSEditorApi::CAscLocalOpenFileDialog* pData = new NSEditorApi::CAscLocalOpenFileDialog();
+            pData->put_Id(m_pParent->GetId());
+            pEvent->m_pData = pData;
+            pListener->OnEvent(pEvent);
             return true;
         }
         else if (message_name == "on_logout")
         {
-            if (m_pParent && m_pParent->GetAppManager())
-            {
-                std::wstring sPortal = message->GetArgumentList()->GetString(0).ToWString();
-                m_pParent->GetAppManager()->Logout(sPortal);
-            }
+            m_pParent->GetAppManager()->Logout(args->GetString(0).ToWString());
             return true;
         }
         else if (message_name == "on_setadvancedoptions")
         {
-            if (m_pParent)
+            m_pParent->m_pInternal->m_oConverterToEditor.m_sAdditionalConvertation = args->GetString(0).ToWString();
+
+            // detect password
+            std::wstring sWrap = L"<info>" + m_pParent->m_pInternal->m_oConverterToEditor.m_sAdditionalConvertation + L"</info>";
+            XmlUtils::CXmlNode node;
+            if (node.FromXmlString(sWrap))
             {
-                int nCount = (int)message->GetArgumentList()->GetSize();
-                m_pParent->m_pInternal->m_oConverterToEditor.m_sAdditionalConvertation = message->GetArgumentList()->GetString(0).ToWString();
+                XmlUtils::CXmlNode nodePass = node.ReadNode(L"m_sPassword");
 
-                // detect password
-                std::wstring sWrap = L"<info>" + m_pParent->m_pInternal->m_oConverterToEditor.m_sAdditionalConvertation + L"</info>";
-                XmlUtils::CXmlNode node;
-                if (node.FromXmlString(sWrap))
-                {
-                    XmlUtils::CXmlNode nodePass = node.ReadNode(L"m_sPassword");
-
-                    if (nodePass.IsValid())
-                        m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sPassword = nodePass.GetTextExt();
-                }
-
-                m_pParent->m_pInternal->LocalFile_Start();
+                if (nodePass.IsValid())
+                    m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sPassword = nodePass.GetTextExt();
             }
+
+            m_pParent->m_pInternal->LocalFile_Start();
             return true;
         }
         else if (message_name == "DropOfficeFiles")
         {
-            if (m_pParent && m_pParent->GetAppManager() && m_pParent->GetAppManager()->GetEventListener())
+            NSEditorApi::CAscLocalOpenFiles* pData = new NSEditorApi::CAscLocalOpenFiles();
+
+            int nCount = (int)args->GetSize();
+            std::vector<std::wstring>& arFolder = pData->get_Files();
+
+            for (int i = 0; i < nCount; i++)
             {
-                NSEditorApi::CAscLocalOpenFiles* pData = new NSEditorApi::CAscLocalOpenFiles();
+                std::wstring sValue = args->GetString(i).ToWString();
 
-                int nCount = (int)message->GetArgumentList()->GetSize();
-
-                std::vector<std::wstring>& arFolder = pData->get_Files();
-
-                for (int i = 0; i < nCount; i++)
+                COfficeFileFormatChecker oChecker;
+                if (oChecker.isOfficeFile(sValue))
                 {
-                    std::wstring sValue = message->GetArgumentList()->GetString(i).ToWString();
-
-                    COfficeFileFormatChecker oChecker;
-                    if (oChecker.isOfficeFile(sValue))
+                    if (AVS_OFFICESTUDIO_FILE_DOCUMENT_TXT == oChecker.nFileType)
                     {
-                        if (AVS_OFFICESTUDIO_FILE_DOCUMENT_TXT == oChecker.nFileType)
-                        {
-                            std::wstring sExt = NSCommon::GetFileExtention(sValue);
-                            NSCommon::makeUpperW(sExt);
-                            if (sExt == L"TXT" || sExt == L"XML")
-                                arFolder.push_back(sValue);
-                        }
-                        else
+                        std::wstring sExt = NSCommon::GetFileExtention(sValue);
+                        NSCommon::makeUpperW(sExt);
+                        if (sExt == L"TXT" || sExt == L"XML")
                             arFolder.push_back(sValue);
                     }
+                    else
+                        arFolder.push_back(sValue);
                 }
-
-                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILES_OPEN);
-                pEvent->m_pData = pData;
-
-                m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
             }
+
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILES_OPEN);
+            pEvent->m_pData = pData;
+
+            pListener->OnEvent(pEvent);
             return true;
         }        
         else if (message_name == "on_init_js_context")
         {
-            if (m_pParent && m_pParent->m_pInternal)
+            std::vector<NSEditorApi::CAscMenuEvent*>* pArr = NULL;
+            CApplicationManagerAdditionalBase* pAdditional = pManager->m_pInternal->m_pAdditional;
+
+            if (pAdditional && pAdditional->m_arApplyEvents)
             {
-                std::vector<NSEditorApi::CAscMenuEvent*>* pArr = NULL;
-                CApplicationManagerAdditionalBase* pAdditional = m_pParent->GetAppManager()->m_pInternal->m_pAdditional;
-
-                if (pAdditional && pAdditional->m_arApplyEvents)
+                for (std::vector<NSEditorApi::CAscMenuEvent*>::iterator i = pAdditional->m_arApplyEvents->begin();
+                     i != pAdditional->m_arApplyEvents->end(); i++)
                 {
-                    for (std::vector<NSEditorApi::CAscMenuEvent*>::iterator i = pAdditional->m_arApplyEvents->begin();
-                         i != pAdditional->m_arApplyEvents->end(); i++)
-                    {
-                        m_pParent->Apply(*i);
-                    }
+                    m_pParent->Apply(*i);
+                }
 
-                    pAdditional->m_arApplyEvents->clear();
-                    pAdditional->m_arApplyEvents = NULL;
-                }                
+                pAdditional->m_arApplyEvents->clear();
+                pAdditional->m_arApplyEvents = NULL;
             }
             return true;
         }
         else if (message_name == "native_viewer_onopened")
         {
-            if (m_pParent && m_pParent->m_pInternal)
-            {
-                std::string sBase64 = message->GetArgumentList()->GetString(0).ToString();
-                m_pParent->m_pInternal->m_sNativeFilePassword = message->GetArgumentList()->GetString(1).ToWString();
-                m_pParent->m_pInternal->m_oConverterToEditor.NativeViewerOpenEnd(sBase64);
-            }
+            std::string sBase64 = args->GetString(0).ToString();
+            m_pParent->m_pInternal->m_sNativeFilePassword = args->GetString(1).ToWString();
+            m_pParent->m_pInternal->m_oConverterToEditor.NativeViewerOpenEnd(sBase64);
             return true;
         }
         else if (message_name == "on_signature_sign")
         {
-            if (m_pParent && m_pParent->m_pInternal)
+            std::string sId     = args->GetString(0).ToString();
+            std::wstring sGuid  = args->GetString(1).ToWString();
+            std::wstring sUrl   = args->GetString(2).ToWString();
+            std::wstring sUrl2  = args->GetString(3).ToWString();
+
+            std::wstring sFile = m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_sFileSrc;
+            std::wstring sPassword = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sPassword;
+            if (sFile.empty())
             {
-                std::string sId = message->GetArgumentList()->GetString(0).ToString();
-                std::wstring sGuid = message->GetArgumentList()->GetString(1).ToWString();
-                std::wstring sUrl = message->GetArgumentList()->GetString(2).ToWString();
-                std::wstring sUrl2 = message->GetArgumentList()->GetString(3).ToWString();
-
-                std::wstring sFile = m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_sFileSrc;
-                std::wstring sPassword = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sPassword;
-                if (sFile.empty())
-                {
-                    sFile = m_pParent->m_pInternal->m_oConverterToEditor.m_oInfo.m_sFileSrc;
-                }
-
-                NSOOXMLPassword::COOXMLZipDirectory oZIP(m_pParent->GetAppManager());
-                oZIP.Open(sFile, sPassword);
-
-                std::wstring sUnzipDir = oZIP.GetDirectory();
-
-                ICertificate* pCertificate = ICertificate::GetById(sId);
-                if (pCertificate)
-                {
-                    COOXMLSigner oOOXMLSigner(sUnzipDir, pCertificate);
-
-                    oOOXMLSigner.SetGuid(sGuid);
-                    oOOXMLSigner.SetImageValid(sUrl);
-                    oOOXMLSigner.SetImageInvalid(sUrl2);
-
-                    oOOXMLSigner.Sign();
-
-                    CASCFileConverterToEditor* pConverter = &m_pParent->m_pInternal->m_oConverterToEditor;
-                    pConverter->CheckSignaturesByDir(sUnzipDir);
-
-                    std::wstring sSignatures = pConverter->GetSignaturesJSON();
-
-                    CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_update_signatures");
-                    message->GetArgumentList()->SetString(0, sSignatures);
-                    browser->SendProcessMessage(PID_RENDERER, message);
-                }
-
-                RELEASEOBJECT(pCertificate);
-
-                oZIP.Close();
+                sFile = m_pParent->m_pInternal->m_oConverterToEditor.m_oInfo.m_sFileSrc;
             }
+
+            NSOOXMLPassword::COOXMLZipDirectory oZIP(m_pParent->GetAppManager());
+            oZIP.Open(sFile, sPassword);
+
+            std::wstring sUnzipDir = oZIP.GetDirectory();
+
+            ICertificate* pCertificate = ICertificate::GetById(sId);
+            if (pCertificate)
+            {
+                COOXMLSigner oOOXMLSigner(sUnzipDir, pCertificate);
+
+                oOOXMLSigner.SetGuid(sGuid);
+                oOOXMLSigner.SetImageValid(sUrl);
+                oOOXMLSigner.SetImageInvalid(sUrl2);
+
+                oOOXMLSigner.Sign();
+
+                CASCFileConverterToEditor* pConverter = &m_pParent->m_pInternal->m_oConverterToEditor;
+                pConverter->CheckSignaturesByDir(sUnzipDir);
+
+                std::wstring sSignatures = pConverter->GetSignaturesJSON();
+
+                CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("on_signature_update_signatures");
+                message->GetArgumentList()->SetString(0, sSignatures);
+                browser->SendProcessMessage(PID_RENDERER, messageOut);
+            }
+
+            RELEASEOBJECT(pCertificate);
+
+            oZIP.Close();
             return true;
         }
         else if (message_name == "on_signature_remove")
         {
-            if (m_pParent && m_pParent->m_pInternal)
+            std::string sGuid;
+            if (args->GetSize() > 0)
+                sGuid = args->GetString(0).ToString();
+
+            std::wstring sFile = m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_sFileSrc;
+            std::wstring sPassword = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sPassword;
+            if (sFile.empty())
             {
-                std::string sGuid;
-                if (message->GetArgumentList()->GetSize() > 0)
-                    sGuid = message->GetArgumentList()->GetString(0).ToString();
-
-                std::wstring sFile = m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_sFileSrc;
-                std::wstring sPassword = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sPassword;
-                if (sFile.empty())
-                {
-                    sFile = m_pParent->m_pInternal->m_oConverterToEditor.m_oInfo.m_sFileSrc;
-                }
-
-                NSOOXMLPassword::COOXMLZipDirectory oZIP(m_pParent->GetAppManager());
-                oZIP.Open(sFile, sPassword);
-
-                std::wstring sUnzipDir = oZIP.GetDirectory();
-
-                CASCFileConverterToEditor* pConverter = &m_pParent->m_pInternal->m_oConverterToEditor;
-                pConverter->CheckSignaturesByDir(sUnzipDir);
-                pConverter->m_pVerifier->RemoveSignature(sGuid);
-
-                std::wstring sSignatures = pConverter->GetSignaturesJSON();
-
-                CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_update_signatures");
-                message->GetArgumentList()->SetString(0, sSignatures);
-                browser->SendProcessMessage(PID_RENDERER, message);
-
-                oZIP.Close();
+                sFile = m_pParent->m_pInternal->m_oConverterToEditor.m_oInfo.m_sFileSrc;
             }
+
+            NSOOXMLPassword::COOXMLZipDirectory oZIP(m_pParent->GetAppManager());
+            oZIP.Open(sFile, sPassword);
+
+            std::wstring sUnzipDir = oZIP.GetDirectory();
+
+            CASCFileConverterToEditor* pConverter = &m_pParent->m_pInternal->m_oConverterToEditor;
+            pConverter->CheckSignaturesByDir(sUnzipDir);
+            pConverter->m_pVerifier->RemoveSignature(sGuid);
+
+            std::wstring sSignatures = pConverter->GetSignaturesJSON();
+
+            CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("on_signature_update_signatures");
+            messageOut->GetArgumentList()->SetString(0, sSignatures);
+            browser->SendProcessMessage(PID_RENDERER, messageOut);
+
+            oZIP.Close();
             return true;
         }
         else if (message_name == "on_signature_viewcertificate")
         {
-            if (m_pParent && m_pParent->m_pInternal)
+            int nIndex = args->GetInt(0);
+            COOXMLVerifier* pVerifier = m_pParent->m_pInternal->m_oConverterToEditor.m_pVerifier;
+            if (NULL != pVerifier)
             {
-                int nIndex = message->GetArgumentList()->GetInt(0);
-                COOXMLVerifier* pVerifier = m_pParent->m_pInternal->m_oConverterToEditor.m_pVerifier;
-                if (NULL != pVerifier)
-                {
-                    COOXMLSignature* pSign = pVerifier->GetSignature(nIndex);
-                    WindowHandleId _handle = m_pParent->GetWidgetImpl()->parent_wid();
-                    int nRet = pSign ? pSign->GetCertificate()->ShowCertificate(&_handle) : 0;
+                COOXMLSignature* pSign = pVerifier->GetSignature(nIndex);
+                WindowHandleId _handle = m_pParent->GetWidgetImpl()->parent_wid();
+                int nRet = pSign ? pSign->GetCertificate()->ShowCertificate(&_handle) : 0;
 
-                    CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_viewcertificate_ret");
-                    message->GetArgumentList()->SetString(0, std::to_string(nRet));
-                    browser->SendProcessMessage(PID_RENDERER, message);
-                }
+                CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("on_signature_viewcertificate_ret");
+                messageOut->GetArgumentList()->SetString(0, std::to_string(nRet));
+                browser->SendProcessMessage(PID_RENDERER, messageOut);
             }
             return true;
         }
         else if (message_name == "on_signature_defaultcertificate")
         {
-            if (m_pParent && m_pParent->m_pInternal)
+            CCertificateInfo info = ICertificate::GetDefault();
+
+            CJSONSimple serializer;
+            serializer.Start();
+            serializer.Write(L"name", info.GetName());
+            serializer.Next();
+            serializer.Write(L"id", info.GetId());
+            serializer.Next();
+            serializer.Write(L"date", info.GetDate());
+            serializer.End();
+
+            CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("on_signature_defaultcertificate_ret");
+            messageOut->GetArgumentList()->SetString(0, serializer.GetData());
+            browser->SendProcessMessage(PID_RENDERER, messageOut);
+            return true;
+        }
+        else if (message_name == "on_signature_selectsertificate")
+        {
+            ICertificate* pCert = ICertificate::CreateInstance();
+
+            WindowHandleId _handle = m_pParent->GetWidgetImpl()->parent_wid();
+            int nShowDialogResult = pCert->ShowSelectDialog(&_handle);
+
+            if (-1 == nShowDialogResult)
             {
-                CCertificateInfo info = ICertificate::GetDefault();
+                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_PAGE_SELECT_OPENSSL_CERTIFICATE);
+                pListener->OnEvent(pEvent);
+                RELEASEOBJECT(pCert);
+                return true;
+            }
+
+            CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("on_signature_selectsertificate_ret");
+            if (1 == nShowDialogResult)
+            {
+                CCertificateInfo info = pCert->GetInfo();
 
                 CJSONSimple serializer;
                 serializer.Start();
@@ -2360,48 +2189,10 @@ public:
                 serializer.Write(L"date", info.GetDate());
                 serializer.End();
 
-                CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_defaultcertificate_ret");
-                message->GetArgumentList()->SetString(0, serializer.GetData());
-                browser->SendProcessMessage(PID_RENDERER, message);
+                messageOut->GetArgumentList()->SetString(0, serializer.GetData());
             }
-            return true;
-        }
-        else if (message_name == "on_signature_selectsertificate")
-        {
-            if (m_pParent && m_pParent->m_pInternal)
-            {
-                ICertificate* pCert = ICertificate::CreateInstance();
-
-                WindowHandleId _handle = m_pParent->GetWidgetImpl()->parent_wid();
-                int nShowDialogResult = pCert->ShowSelectDialog(&_handle);
-
-                if (-1 == nShowDialogResult)
-                {
-                    NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_PAGE_SELECT_OPENSSL_CERTIFICATE);
-                    m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
-                    RELEASEOBJECT(pCert);
-                    return true;
-                }
-
-                CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_selectsertificate_ret");
-                if (1 == nShowDialogResult)
-                {
-                    CCertificateInfo info = pCert->GetInfo();
-
-                    CJSONSimple serializer;
-                    serializer.Start();
-                    serializer.Write(L"name", info.GetName());
-                    serializer.Next();
-                    serializer.Write(L"id", info.GetId());
-                    serializer.Next();
-                    serializer.Write(L"date", info.GetDate());
-                    serializer.End();
-
-                    message->GetArgumentList()->SetString(0, serializer.GetData());
-                }
-                RELEASEOBJECT(pCert);
-                browser->SendProcessMessage(PID_RENDERER, message);
-            }
+            RELEASEOBJECT(pCert);
+            browser->SendProcessMessage(PID_RENDERER, messageOut);
             return true;
         }
         else if (message_name == "on_open_filename_dialog")
@@ -2409,14 +2200,14 @@ public:
             NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_OPENFILENAME_DIALOG);
             NSEditorApi::CAscLocalOpenFileDialog* pData = new NSEditorApi::CAscLocalOpenFileDialog();
             pData->put_Id(m_pParent->GetId());
-            pData->put_Filter(message->GetArgumentList()->GetString(0).ToWString());
+            pData->put_Filter(args->GetString(0).ToWString());
+            m_pParent->m_pInternal->m_sIFrameIDMethod = args->GetString(1);
 
             if (message->GetArgumentList()->GetSize() > 2)
-                pData->put_IsMultiselect(message->GetArgumentList()->GetBool(2));
+                pData->put_IsMultiselect(args->GetBool(2));
 
             pEvent->m_pData = pData;
-            m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
-            m_pParent->m_pInternal->m_sIFrameIDMethod = message->GetArgumentList()->GetString(1);
+            pListener->OnEvent(pEvent);
             return true;
         }
         else if (message_name == "on_file_save_question")
@@ -2425,7 +2216,7 @@ public:
             NSEditorApi::CAscEditorSaveQuestion* pData = new NSEditorApi::CAscEditorSaveQuestion();
             pData->put_Id(m_pParent->GetId());
             pEvent->m_pData = pData;
-            m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+            pListener->OnEvent(pEvent);
             return true;
         }
         else if (message_name == "on_start_reporter")
@@ -2437,12 +2228,12 @@ public:
             CAscReporterData* pCreate = new CAscReporterData();
             pCreate->Id = m_pParent->m_pInternal->m_nReporterChildId;
             pCreate->ParentId = m_pParent->GetId();
-            pCreate->Url = message->GetArgumentList()->GetString(0).ToWString();
-            pCreate->LocalRecoverFolder = message->GetArgumentList()->GetString(1).ToWString();
+            pCreate->Url = args->GetString(0).ToWString();
+            pCreate->LocalRecoverFolder = args->GetString(1).ToWString();
             pData->put_Data(pCreate);
 
             pEvent->m_pData = pData;
-            m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+            pListener->OnEvent(pEvent);
             return true;
         }
         else if (message_name == "on_end_reporter")
@@ -2451,7 +2242,7 @@ public:
             NSEditorApi::CAscTypeId* pData = new NSEditorApi::CAscTypeId();
             pData->put_Id(m_pParent->m_pInternal->m_nReporterChildId);
             pEvent->m_pData = pData;
-            m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+            pListener->OnEvent(pEvent);
             return true;
         }
         else if (message_name == "send_to_reporter")
@@ -2460,7 +2251,7 @@ public:
             if (!pViewSend)
                 return true;
 
-            std::wstring sMessage = message->GetArgumentList()->GetString(0).ToWString();
+            std::wstring sMessage = args->GetString(0).ToWString();
 
             NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent(ASC_MENU_EVENT_TYPE_REPORTER_MESSAGE_TO);
             NSEditorApi::CAscReporterMessage* pData = new NSEditorApi::CAscReporterMessage();
@@ -2477,7 +2268,7 @@ public:
             if (!pViewSend)
                 return true;
 
-            std::wstring sMessage = message->GetArgumentList()->GetString(0).ToWString();
+            std::wstring sMessage = args->GetString(0).ToWString();
 
             NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent(ASC_MENU_EVENT_TYPE_REPORTER_MESSAGE_FROM);
             NSEditorApi::CAscReporterMessage* pData = new NSEditorApi::CAscReporterMessage();
@@ -2504,7 +2295,7 @@ public:
             if (pos != std::wstring::npos)
                 sBaseUrl = sBaseUrl.substr(0, pos);
 
-            std::wstring sHashFileUrl = message->GetArgumentList()->GetString(0);
+            std::wstring sHashFileUrl = args->GetString(0);
             if ((0 != sHashFileUrl.find(L"www")) && (0 != sHashFileUrl.find(L"http")) && (0 != sHashFileUrl.find(L"ftp")))
                 sHashFileUrl = sBaseUrl + sHashFileUrl;
 
@@ -2515,8 +2306,8 @@ public:
         {
             CCefView_Private::CSystemMessage sysMessage;
             sysMessage.ViewID = m_pParent->GetId();
-            sysMessage.FrameID = message->GetArgumentList()->GetString(1).ToString();
-            sysMessage.Message = message->GetArgumentList()->GetString(0).ToString();
+            sysMessage.FrameID = args->GetString(1).ToString();
+            sysMessage.Message = args->GetString(0).ToString();
 
             m_pParent->m_pInternal->SendSystemMessage(sysMessage);
             return true;
@@ -2535,7 +2326,7 @@ public:
                     CefRefPtr<CefFrame> pFrame = pBrowser->GetMainFrame();
                     if (pFrame)
                     {
-                        pFrame->ExecuteJavaScript(message->GetArgumentList()->GetString(0), pFrame->GetURL(), 0);
+                        pFrame->ExecuteJavaScript(args->GetString(0), pFrame->GetURL(), 0);
                     }
                 }
             }
@@ -2587,11 +2378,11 @@ public:
         else if (message_name == "build_crypted")
         {
             m_pParent->m_pInternal->m_bIsBuilding = true;
-            if (0 == message->GetArgumentList()->GetSize())
+            if (0 == args->GetSize())
                 return true;
 
-            std::wstring sPass = message->GetArgumentList()->GetString(0).ToWString();
-            std::wstring sDocInfo = message->GetArgumentList()->GetString(1).ToWString();
+            std::wstring sPass = args->GetString(0).ToWString();
+            std::wstring sDocInfo = args->GetString(1).ToWString();
 
             int nType = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX;
             if  (2 == m_pParent->m_pInternal->m_nEditorType)
@@ -2612,35 +2403,32 @@ public:
         {
             m_pParent->m_pInternal->m_bIsBuilding = false;
 
-            if (m_pParent && m_pParent->GetAppManager()->GetEventListener())
+            bool bIsClose = args->GetBool(0);
+
+            if (m_pParent->m_pInternal->m_bIsSavingCrypto)
             {
-                bool bIsClose = message->GetArgumentList()->GetBool(0);
+                m_pParent->m_pInternal->m_bIsSavingCrypto = false;
+                m_pParent->m_pInternal->m_bIsSaving = false;
 
-                if (m_pParent->m_pInternal->m_bIsSavingCrypto)
-                {
-                    m_pParent->m_pInternal->m_bIsSavingCrypto = false;
-                    m_pParent->m_pInternal->m_bIsSaving = false;
-
-                    NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONSAVE);
-                    NSEditorApi::CAscDocumentOnSaveData* pData = new NSEditorApi::CAscDocumentOnSaveData();
-                    pData->put_Id(m_pParent->GetId());
-                    pEvent->m_pData = pData;
-                    m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
-                }
-                else
-                {
-                    NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(bIsClose ?
-                        ASC_MENU_EVENT_TYPE_ENCRYPTED_CLOUD_BUILD_END : ASC_MENU_EVENT_TYPE_ENCRYPTED_CLOUD_BUILD_END_ERROR);
-                    m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
-                }
+                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONSAVE);
+                NSEditorApi::CAscDocumentOnSaveData* pData = new NSEditorApi::CAscDocumentOnSaveData();
+                pData->put_Id(m_pParent->GetId());
+                pEvent->m_pData = pData;
+                pListener->OnEvent(pEvent);
+            }
+            else
+            {
+                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(bIsClose ?
+                    ASC_MENU_EVENT_TYPE_ENCRYPTED_CLOUD_BUILD_END : ASC_MENU_EVENT_TYPE_ENCRYPTED_CLOUD_BUILD_END_ERROR);
+                pListener->OnEvent(pEvent);
             }
 
             return true;
         }
         else if (message_name == "preload_crypto_image")
         {
-            std::wstring sUrl1 = message->GetArgumentList()->GetString(0).ToWString();
-            std::wstring sUrl2 = message->GetArgumentList()->GetString(1).ToWString();
+            std::wstring sUrl1 = args->GetString(0).ToWString();
+            std::wstring sUrl2 = args->GetString(1).ToWString();
 
             if (sUrl2.empty() && ((0 == sUrl1.find(L"image")) || (0 == sUrl1.find(L"display"))))
             {
@@ -2652,11 +2440,11 @@ public:
                 std::wstring sNum = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/" + sUrl2;
                 if (NSFile::CFileBinary::Exists(sNum))
                 {
-                    CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_preload_crypto_image");
-                    message->GetArgumentList()->SetInt(0, 0);
-                    message->GetArgumentList()->SetString(1, sNum);
-                    message->GetArgumentList()->SetString(2, sUrl1);
-                    browser->SendProcessMessage(PID_RENDERER, message);
+                    CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("on_preload_crypto_image");
+                    messageOut->GetArgumentList()->SetInt(0, 0);
+                    messageOut->GetArgumentList()->SetString(1, sNum);
+                    messageOut->GetArgumentList()->SetString(2, sUrl1);
+                    browser->SendProcessMessage(PID_RENDERER, messageOut);
                 }
                 else
                 {
@@ -2669,17 +2457,17 @@ public:
             }
             else
             {
-                CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_preload_crypto_image");
-                message->GetArgumentList()->SetInt(0, 1);
-                message->GetArgumentList()->SetString(1, sUrl1);
-                browser->SendProcessMessage(PID_RENDERER, message);
+                CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("on_preload_crypto_image");
+                messageOut->GetArgumentList()->SetInt(0, 1);
+                messageOut->GetArgumentList()->SetString(1, sUrl1);
+                browser->SendProcessMessage(PID_RENDERER, messageOut);
             }
 
             return true;
         }
         else if (message_name == "download_files")
         {
-            int nCount = message->GetArgumentList()->GetSize();
+            int nCount = args->GetSize();
 
             if (nCount == 0 || ((nCount & 0x01) == 0x01))
                 return true;
@@ -2687,8 +2475,8 @@ public:
             int nIndex = 0;
             while (nIndex < nCount)
             {
-                std::wstring sUrl  = message->GetArgumentList()->GetString(nIndex++);
-                std::wstring sFile = message->GetArgumentList()->GetString(nIndex++);
+                std::wstring sUrl  = args->GetString(nIndex++);
+                std::wstring sFile = args->GetString(nIndex++);
 
 #ifdef WIN32
                 NSCommon::string_replace(sFile, L"/", L"\\");
@@ -2707,10 +2495,10 @@ public:
         }
         else if (message_name == "set_crypto_mode")
         {
-            std::string sPass = message->GetArgumentList()->GetString(0).ToString();
-            int nMode = message->GetArgumentList()->GetInt(1);
-            bool bIsCallback = message->GetArgumentList()->GetBool(2);
-            int nFrameId = message->GetArgumentList()->GetInt(3);
+            std::string sPass = args->GetString(0).ToString();
+            int nMode = args->GetInt(1);
+            bool bIsCallback = args->GetBool(2);
+            int nFrameId = args->GetInt(3);
 
             if (!bIsCallback)
             {
@@ -2733,38 +2521,35 @@ public:
                 if (!bIsEditorPresent)
                     m_pParent->GetAppManager()->SetCryptoMode(sPass, nMode);
 
-                CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("set_crypto_mode");
-                message->GetArgumentList()->SetInt(0, bIsEditorPresent ? 1 : 0);
-                message->GetArgumentList()->SetInt(1, nFrameId);
-                browser->SendProcessMessage(PID_RENDERER, message);
+                CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("set_crypto_mode");
+                messageOut->GetArgumentList()->SetInt(0, bIsEditorPresent ? 1 : 0);
+                messageOut->GetArgumentList()->SetInt(1, nFrameId);
+                browser->SendProcessMessage(PID_RENDERER, messageOut);
             }
 
             return true;
         }
         else if (message_name == "get_advanced_encrypted_data")
         {
-            m_pParent->m_pInternal->m_oTxtToDocx.m_nFrameId = message->GetArgumentList()->GetInt(0);
-            m_pParent->m_pInternal->m_oTxtToDocx.m_sPassword = message->GetArgumentList()->GetString(1);
+            m_pParent->m_pInternal->m_oTxtToDocx.m_nFrameId = args->GetInt(0);
+            m_pParent->m_pInternal->m_oTxtToDocx.m_sPassword = args->GetString(1);
             m_pParent->m_pInternal->m_oTxtToDocx.ToData();
 
             return true;
         }
         else if (message_name == "set_advanced_encrypted_data")
         {
-            std::wstring sPassword = message->GetArgumentList()->GetString(0).ToWString();
-            std::wstring sData = message->GetArgumentList()->GetString(1).ToWString();
-
-            m_pParent->m_pInternal->m_oTxtToDocx.m_nFrameId = message->GetArgumentList()->GetInt(0);
-            m_pParent->m_pInternal->m_oTxtToDocx.m_sPassword = message->GetArgumentList()->GetString(1);
-            m_pParent->m_pInternal->m_oTxtToDocx.m_sData = message->GetArgumentList()->GetString(2);
+            m_pParent->m_pInternal->m_oTxtToDocx.m_nFrameId = args->GetInt(0);
+            m_pParent->m_pInternal->m_oTxtToDocx.m_sPassword = args->GetString(1);
+            m_pParent->m_pInternal->m_oTxtToDocx.m_sData = args->GetString(2);
             m_pParent->m_pInternal->m_oTxtToDocx.ToDocx();
 
             return true;
         }
         else if (message_name == "crypto_download_as")
         {
-            int nFormat = message->GetArgumentList()->GetInt(0);
-            std::string sParams = message->GetArgumentList()->GetString(1);
+            int nFormat = args->GetInt(0);
+            std::string sParams = args->GetString(1);
 
             NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_SAVE);
             NSEditorApi::CAscLocalSaveFileDialog* pData = new NSEditorApi::CAscLocalSaveFileDialog();
@@ -2776,7 +2561,7 @@ public:
             else
                 pData->get_SupportFormats().push_back(nFormat);
             pEvent->m_pData = pData;
-            m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+            pListener->OnEvent(pEvent);
             m_pParent->m_pInternal->m_bIsSavingDialog = true;
             m_pParent->m_pInternal->m_nCryptoDownloadAsFormat = nFormat;
             m_pParent->m_pInternal->m_sCryptoDownloadAsParams = sParams;
@@ -2785,7 +2570,7 @@ public:
         }
         else if (message_name == "set_editors_version")
         {
-            std::string sCloudVersion = message->GetArgumentList()->GetString(0);
+            std::string sCloudVersion = args->GetString(0);
             m_pParent->m_pInternal->m_sCloudVersion = sCloudVersion;
             if ("undefined" == sCloudVersion)
                 return true;
@@ -2836,8 +2621,8 @@ public:
             }
             if (bIsCryptoSupport && NSFileDownloader::IsNeedDownload(sMainFrameUrl) && m_pParent->m_pInternal->m_nCloudVersion < CRYPTO_CLOUD_SUPPORT)
             {
-                CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("set_editors_version_no_crypto");
-                browser->SendProcessMessage(PID_RENDERER, message);
+                CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("set_editors_version_no_crypto");
+                browser->SendProcessMessage(PID_RENDERER, messageOut);
             }
             return true;
         }
@@ -2855,22 +2640,22 @@ public:
 
             pData->put_Url(sPath);
 
-            int nX = message->GetArgumentList()->GetInt(1);
-            int nY = message->GetArgumentList()->GetInt(2);
-            double dExtW = message->GetArgumentList()->GetDouble(3);
-            double dExtH = message->GetArgumentList()->GetDouble(4);
+            int nX = args->GetInt(1);
+            int nY = args->GetInt(2);
+            double dExtW = args->GetDouble(3);
+            double dExtH = args->GetDouble(4);
 
-            double dScale = message->GetArgumentList()->GetDouble(5);
+            double dScale = args->GetDouble(5);
 
-            if (message->GetArgumentList()->GetSize() > 6)
+            if (args->GetSize() > 6)
             {
                 oTransform.SetElements(
-                            message->GetArgumentList()->GetDouble(6),
-                            message->GetArgumentList()->GetDouble(7),
-                            message->GetArgumentList()->GetDouble(8),
-                            message->GetArgumentList()->GetDouble(9),
-                            message->GetArgumentList()->GetDouble(10),
-                            message->GetArgumentList()->GetDouble(11));
+                            args->GetDouble(6),
+                            args->GetDouble(7),
+                            args->GetDouble(8),
+                            args->GetDouble(9),
+                            args->GetDouble(10),
+                            args->GetDouble(11));
             }
 
             double x1 = 0; double y1 = 0;
@@ -2923,13 +2708,13 @@ public:
             pData->put_BoundsW((int)(dKoef * (nBoundsR - nBoundsX + 1)));
             pData->put_BoundsH((int)(dKoef * (nBoundsB - nBoundsY + 1)));
 
-            m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+            pListener->OnEvent(pEvent);
             return true;
         }
         else if ("media_end" == message_name)
         {
             NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_SYSTEM_EXTERNAL_MEDIA_END);
-            m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+            pListener->OnEvent(pEvent);
             return true;
         }
         else if ("send_by_mail" == message_name)
@@ -2976,7 +2761,7 @@ public:
 
                     CMailToCommandLine::GetArguments(pData->get_Arguments(), sMailAppType, sUrlFile);
 
-                    m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+                    pListener->OnEvent(pEvent);
                 }
                 else
                 {
@@ -3062,20 +2847,21 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
         return false;
     }
 
-#if 1
+
     virtual void OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
                                              bool isLoading,
                                              bool canGoBack,
-                                             bool canGoForward) {
-      client::ClientHandler::OnLoadingStateChange(browser, isLoading, canGoBack, canGoForward);
+                                             bool canGoForward)
+    {
+        client::ClientHandler::OnLoadingStateChange(browser, isLoading, canGoBack, canGoForward);
 
-      if (!isLoading)
-      {
-          // вот тут уже можно делать зум!!!
-          m_pParent->m_pInternal->m_bIsWindowsCheckZoom = true;
-          m_pParent->m_pInternal->m_nDeviceScale = -1;
-          m_pParent->resizeEvent();
-      }
+        if (!isLoading)
+        {
+            // вот тут уже можно делать зум!!!
+            m_pParent->m_pInternal->m_bIsWindowsCheckZoom = true;
+            m_pParent->m_pInternal->m_nDeviceScale = -1;
+            m_pParent->resizeEvent();
+        }
     }
 
     virtual void OnLoadStart(CefRefPtr<CefBrowser> browser,
@@ -3091,7 +2877,6 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
         m_pParent->resizeEvent();
     }
 
-#endif
 
     virtual void OnLoadEnd(CefRefPtr<CefBrowser> browser,
                            CefRefPtr<CefFrame> frame,
@@ -3143,35 +2928,6 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
                     std::wstring sSrc = sSystemPluginsPath + L"/" + sGuid + L"/index.html" + m_pParent->m_pInternal->m_pManager->m_pInternal->m_mainPostFix;
                     NSCommon::url_correct(sSrc);
 
-    #if 0
-                    std::wstring sCode = L"(function() {\n\
-    window.testTimer = setInterval(function(){\n\
-    var abouts = document.getElementsByClassName(\"about\");\n\
-    if (!abouts || !abouts[0])\n\
-        return;\n\
-    var about = abouts[0];\n\
-    clearInterval(window.testTimer);\n\
-    var ifr = document.createElement(\"iframe\");\n\
-    ifr.name = \"system_asc." + sGuid + L"\";\n\
-    ifr.id = \"system_asc." + sGuid + L"\";\n\
-    ifr.src = \"" + sSrc + L"\";\n\
-    ifr.style.position = \"relative\";\n\
-    ifr.style.top      = '0px';\n\
-    ifr.style.left     = '0px';\n\
-    ifr.style.width    = '100%';\n\
-    ifr.style.height   = '100%';\n\
-    ifr.style.overflow = 'hidden';\n\
-    ifr.style.zIndex   = 100;\n\
-    ifr.style.margin   = '0px';\n\
-    ifr.style.padding  = '0px';\n\
-    about.innerHTML = '';\n\
-    about.appendChild(ifr);\n\
-    }, 100);\n\
-    })();";
-
-                    frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
-    #endif
-
                     std::wstring sNameG = UTF8_TO_U((iterExt->sName));
                     std::wstring sNameLocal = UTF8_TO_U((iterExt->sNameObject));
                     pEventData->addItem(sNameG, L"system_asc." + sGuid, sSrc, sNameLocal);
@@ -3201,14 +2957,6 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
     {
         CEF_REQUIRE_UI_THREAD();
         
-#if 0
-        if (m_pParent && !m_pParent->GetAppManager()->GetDebugInfoSupport())
-        {
-            model->Clear();
-            return;
-        }
-#endif
-
         int _remove_commands[] = {MENU_ID_BACK,
                                   MENU_ID_FORWARD,
                                   MENU_ID_RELOAD,
@@ -3507,25 +3255,6 @@ require.load = function (context, moduleName, url) {\n\
             return GetLocalFileRequest(sPathToEditors, sAppData, sFooter);
         }
 
-        if (url.find(L"{8D67F3C5-7736-4BAE-A0F2-8C7127DC4BB8}/code.js") != std::wstring::npos ||
-            url.find(L"%7B8D67F3C5-7736-4BAE-A0F2-8C7127DC4BB8%7D/code.js") != std::wstring::npos)
-        {
-            std::string sHeader = "";
-            const std::wstring& sSystemPlugunsPath = m_pParent->GetAppManager()->m_oSettings.system_plugins_path;
-            std::string sSystemPluguns = NSFile::CUtf8Converter::GetUtf8StringFromUnicode2(sSystemPlugunsPath.c_str(),
-                                                                                     (LONG)sSystemPlugunsPath.length());
-            const std::wstring& sUserPlugunsPath = m_pParent->GetAppManager()->m_oSettings.user_plugins_path;
-            std::string sUserPluguns = NSFile::CUtf8Converter::GetUtf8StringFromUnicode2(sUserPlugunsPath.c_str(),
-                                                                                     (LONG)sUserPlugunsPath.length());
-
-            sHeader += ("window[\"AscDesktopEditor_SP\"] = function(){return \"" + sSystemPluguns + "\";}\n");
-            sHeader += ("window[\"AscDesktopEditor_UP\"] = function(){return \"" + sUserPluguns + "\";}\n");
-
-            std::wstring sPath = m_pParent->GetAppManager()->m_oSettings.system_plugins_path +
-                    L"/{8D67F3C5-7736-4BAE-A0F2-8C7127DC4BB8}/code.js";
-            return GetLocalFileRequest(sPath, sHeader, "");
-        }
-
         if (true)
         {
             int nPos = url.find(L"apps/documenteditor/main/");
@@ -3568,26 +3297,6 @@ require.load = function (context, moduleName, url) {\n\
                 return GetLocalFileRequest(urlFind);
             }
         }
-
-#if 0
-        // TEST
-        if (true)
-        {
-            std::wstring::size_type pos = url.find(L"/sdk-all.js");
-            if (std::wstring::npos == pos)
-                pos = url.find(L"/sdk-all-min.js");
-
-            if (std::wstring::npos != pos)
-            {
-                std::wstring sPathVersion = m_pParent->GetAppManager()->m_oSettings.app_data_path + L"/webdata/cloud/5.1.5";
-                std::wstring::size_type posEnd = url.rfind('/', pos - 1);
-                if (std::wstring::npos != posEnd)
-                {
-                    return GetLocalFileRequest(sPathVersion + url.substr(posEnd));
-                }
-            }
-        }
-#endif
 
         return NULL;
     }
