@@ -1624,9 +1624,6 @@ public:
                 nCryptoMode = 0;
 
             message->GetArgumentList()->SetInt(1, nCryptoMode);
-            message->GetArgumentList()->SetString(2, m_pParent->GetAppManager()->m_oSettings.system_plugins_path);
-            message->GetArgumentList()->SetString(3, m_pParent->GetAppManager()->m_oSettings.user_plugins_path);
-            message->GetArgumentList()->SetString(4, m_pParent->GetAppManager()->m_oSettings.cookie_path);
 
             browser->SendProcessMessage(PID_RENDERER, message);
             return true;
@@ -3451,33 +3448,7 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
 
         if (url.find(L"require.js") != std::wstring::npos)
         {
-            const std::wstring& sAppDataPath = m_pParent->GetAppManager()->m_oSettings.app_data_path;
-            std::string sAppData = NSFile::CUtf8Converter::GetUtf8StringFromUnicode2(sAppDataPath.c_str(),
-                                                                                     (LONG)sAppDataPath.length());
-
-            const std::wstring& sFontsDataPath = m_pParent->GetAppManager()->m_oSettings.fonts_cache_info_path;
-            std::string sFontsData = NSFile::CUtf8Converter::GetUtf8StringFromUnicode2(sFontsDataPath.c_str(),
-                                                                                     (LONG)sFontsDataPath.length());
-
-            const std::wstring& sSystemPlugunsPath = m_pParent->GetAppManager()->m_oSettings.system_plugins_path;
-            std::string sSystemPluguns = NSFile::CUtf8Converter::GetUtf8StringFromUnicode2(sSystemPlugunsPath.c_str(),
-                                                                                     (LONG)sSystemPlugunsPath.length());
-            const std::wstring& sUserPlugunsPath = m_pParent->GetAppManager()->m_oSettings.user_plugins_path;
-            std::string sUserPluguns = NSFile::CUtf8Converter::GetUtf8StringFromUnicode2(sUserPlugunsPath.c_str(),
-                                                                                     (LONG)sUserPlugunsPath.length());
-
-
-            sAppData = "window[\"AscDesktopEditor_AppData\"] = function(){return \"" + sAppData + "\";};\n";
-            sAppData += ("window[\"AscDesktopEditor_FontsData\"] = function(){return \"" + sFontsData + "\";};\n");
-
-            sAppData += ("window[\"AscDesktopEditor_SP\"] = function(){return \"" + sSystemPluguns + "\";};\n");
-            sAppData += ("window[\"AscDesktopEditor_UP\"] = function(){return \"" + sUserPluguns + "\";};\n");
-            sAppData += ("window[\"AscDesktopEditor_SupportOP\"] = function(){return \"" + std::to_string(m_pParent->GetAppManager()->m_oSettings.pass_support ? 1 : 0) + "\";};\n");
-
-            sAppData += ("(function() { \"file:\"==window.location.protocol&&(window.fetch=function(r){return new Promise(function(e,t){var o=new XMLHttpRequest;o.open(\"GET\",r,!0),o.overrideMimeType?o.overrideMimeType(\"text/plain; charset=utf-8\"):o.setRequestHeader(\"Accept-Charset\",\"utf-8\"),o.onload=function(){4!=o.readyState||200!=o.status&&0!=location.href.indexOf(\"file:\")||e({status:200,statusText:o.statusText,value:o.response,ok:!0,json:function(){return Promise.resolve(JSON.parse(this.value))},text:function(){return Promise.resolve(this.value)}})},o.onerror=function(){t(new TypeError(\"Network request failed\"))},o.send(null)})}); })();\n");
-
-            if (m_pParent->GetAppManager()->GetDebugInfoSupport())
-                sAppData += ("window[\"desktop_debug_mode\"] = true;\n");
+            std::string sAppData = ("(function() { \"file:\"==window.location.protocol&&(window.fetch=function(r){return new Promise(function(e,t){var o=new XMLHttpRequest;o.open(\"GET\",r,!0),o.overrideMimeType?o.overrideMimeType(\"text/plain; charset=utf-8\"):o.setRequestHeader(\"Accept-Charset\",\"utf-8\"),o.onload=function(){4!=o.readyState||200!=o.status&&0!=location.href.indexOf(\"file:\")||e({status:200,statusText:o.statusText,value:o.response,ok:!0,json:function(){return Promise.resolve(JSON.parse(this.value))},text:function(){return Promise.resolve(this.value)}})},o.onerror=function(){t(new TypeError(\"Network request failed\"))},o.send(null)})}); })();\n");
 
             sAppData += "window.local_load = {};\n\
 window.local_correct_url = function(url)\n\
