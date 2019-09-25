@@ -1077,6 +1077,7 @@ DE.controllers.Main.DisableVersionHistory(); \
         }
         else if (name == "LocalStartOpen")
         {
+            // редактор загрузился и готов к файлу
             CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_loadstart");
             browser->SendProcessMessage(PID_BROWSER, message);
@@ -1698,7 +1699,7 @@ window.AscDesktopEditor.SetAdvancedEncryptedData = function(password, data, call
             return true;
         }
         else if (name == "SaveQuestion")
-        {
+        {            
             CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_file_save_question");
             browser->SendProcessMessage(PID_BROWSER, message);
@@ -1722,6 +1723,7 @@ window.AscDesktopEditor.SetAdvancedEncryptedData = function(password, data, call
         }
         else if (name == "sendToReporter")
         {
+            // сообщение докладчику
             CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("send_to_reporter");
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
@@ -1730,6 +1732,7 @@ window.AscDesktopEditor.SetAdvancedEncryptedData = function(password, data, call
         }
         else if (name == "sendFromReporter")
         {
+            // сообщение от докладчика
             CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("send_from_reporter");
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());

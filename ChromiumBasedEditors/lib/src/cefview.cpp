@@ -537,7 +537,6 @@ public:
     // версия облака и поддерживаемый им функционал
     std::string m_sCloudVersion;
     int m_nCloudVersion;
-    bool m_bCloudVersionSendSupportCrypto;
 
     // системные сообщения
     std::vector<CSystemMessage> m_arSystemMessages;
@@ -601,7 +600,6 @@ public:
         m_nCryptoDownloadAsFormat = -1;
 
         m_nCloudVersion = CRYPTO_CLOUD_SUPPORT;
-        m_bCloudVersionSendSupportCrypto = false;
     }
 
     void Destroy()
@@ -676,13 +674,10 @@ public:
 
     CefRefPtr<CefBrowser> GetBrowser() const;
 
-    std::wstring GetViewDownloadPath()
-    {
-        return m_sDownloadViewPath;
-    }
-
     std::wstring GetFileDocInfo(const std::wstring& sFile)
     {
+        // используется для криптования.
+        // незашифрованная информация в зашифрованном файле
         std::wstring sDocInfo = L"";
         COfficeFileFormatChecker oChecker;
         bool bIsStorage = oChecker.isMS_OFFCRYPTOFormatFile(sFile, sDocInfo);
@@ -707,6 +702,10 @@ public:
         return sDocInfo;
     }
 
+    std::wstring GetViewDownloadPath()
+    {
+        return m_sDownloadViewPath;
+    }
     void OnViewDownloadFile()
     {
         std::wstring::size_type posHash = m_sDownloadViewPath.rfind(L".asc_file_get_hash");
@@ -850,6 +849,7 @@ public:
 
     void LocalFile_GetSupportSaveFormats(std::vector<int>& arFormats)
     {
+        // в какие форматы можно сохранить текущий документ
         bool bEncryption = (m_pCefView->GetAppManager()->m_pInternal->m_nCurrentCryptoMode != 0) ? true : false;
 
         // важен порядок (для красоты) - поэтому такие странные if'ы
@@ -940,6 +940,7 @@ public:
 
     bool LocalFile_IsSupportSaveCurrentFormat()
     {
+        // открыли файл. А можно ли его сохранить? (без изменения формата)
         std::vector<int> arFormats;
         LocalFile_GetSupportSaveFormats(arFormats);
 
@@ -1492,6 +1493,7 @@ public:
         std::string message_name = message->GetName();
         if (message_name == "EditorType" && !m_bIsEditorTypeSet)
         {
+            // прокидываем наверх тип редактора
             m_bIsEditorTypeSet = true;
             m_pParent->m_pInternal->m_nEditorType = args->GetInt(0);
 
@@ -1507,6 +1509,7 @@ public:
         }
         else if (message_name == "spell_check_task")
         {
+            // задача для проверки орфографии
             m_pParent->GetAppManager()->SpellCheck(args->GetInt(0),
                                                    args->GetString(1).ToString(),
                                                    args->GetInt(2));
@@ -1514,6 +1517,7 @@ public:
         }
         else if (message_name == "create_editor_api")
         {
+            // евент после создания api (sdkjs)
             NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
             pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_CONTROL_ID;
             m_pParent->Apply(pEvent);
@@ -1532,6 +1536,7 @@ public:
         }
         else if (message_name == "on_js_context_created")
         {
+            // вызывается, после создания js контекста
             bool bIsOnlyPassSupport = m_pParent->GetAppManager()->m_oSettings.pass_support;
             if (bIsOnlyPassSupport)
             {
@@ -1558,6 +1563,25 @@ public:
             messageOut->GetArgumentList()->SetInt(0, nFlags);
             messageOut->GetArgumentList()->SetInt(1, nCryptoMode);
             browser->SendProcessMessage(PID_RENDERER, messageOut);
+            return true;
+        }
+        else if (message_name == "on_init_js_context")
+        {
+            // вызывается, после создания js контекста
+            std::vector<NSEditorApi::CAscMenuEvent*>* pArr = NULL;
+            CApplicationManagerAdditionalBase* pAdditional = pManager->m_pInternal->m_pAdditional;
+
+            if (pAdditional && pAdditional->m_arApplyEvents)
+            {
+                for (std::vector<NSEditorApi::CAscMenuEvent*>::iterator i = pAdditional->m_arApplyEvents->begin();
+                     i != pAdditional->m_arApplyEvents->end(); i++)
+                {
+                    m_pParent->Apply(*i);
+                }
+
+                pAdditional->m_arApplyEvents->clear();
+                pAdditional->m_arApplyEvents = NULL;
+            }
             return true;
         }
         else if (message_name == "is_cookie_present")
@@ -1728,6 +1752,7 @@ public:
         }
         else if (message_name == "print_start")
         {
+            // начало печати
             m_pParent->m_pInternal->m_oPrintData.m_sDocumentUrl = args->GetString(0).ToWString();
             m_pParent->m_pInternal->m_oPrintData.m_sFrameUrl = args->GetString(2).ToWString();
             m_pParent->m_pInternal->m_oPrintData.m_arPages.SetCount(args->GetInt(1));
@@ -1751,6 +1776,7 @@ public:
         }
         else if (message_name == "print_page")
         {
+            // запоминаем пдф-команды для каждой страницы
             int nIndex = args->GetInt(1);
             int nProgress = 100 * (nIndex + 1) / m_pParent->m_pInternal->m_oPrintData.m_arPages.GetCount();
 
@@ -1774,6 +1800,7 @@ public:
         }
         else if (message_name == "print_end")
         {
+            // окончание печати на js - стороне. отправляем евент наверх, что готовы к печати
             NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONBEFORE_PRINT_END);
 
             NSEditorApi::CAscPrintEnd* pData = new NSEditorApi::CAscPrintEnd();
@@ -1802,6 +1829,8 @@ public:
         }
         else if (message_name == "print")
         {
+            // метод для печати (AscDesktopEditor.Print)
+            // для редакторов - вызывает asc_nativePrint
             NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
             pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_PRINT_START;
             m_pParent->m_pInternal->m_nPrintParameters = 0;
@@ -1812,6 +1841,7 @@ public:
         }
         else if (message_name == "load_js")
         {
+            // загрузка скриптов
             NSEditorApi::CAscEditorScript* pData = new NSEditorApi::CAscEditorScript();
             pData->put_Url(args->GetString(0).ToWString());
             pData->put_Destination(args->GetString(1).ToWString());
@@ -1844,6 +1874,7 @@ public:
         }
         else if (message_name == "onlocaldocument_open")
         {
+            // этот метод не используется. для старой стартовой страницы
             NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_OPEN);
             NSEditorApi::CAscLocalFileOpen* pData = new NSEditorApi::CAscLocalFileOpen();
             if (args->GetSize() == 1)
@@ -1855,6 +1886,7 @@ public:
         }
         else if (message_name == "onlocaldocument_create")
         {
+            // этот метод не используется. для старой стартовой страницы
             NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_CREATE);
             NSEditorApi::CAscLocalFileCreate* pData = new NSEditorApi::CAscLocalFileCreate();
             pData->put_Type(args->GetInt(0));
@@ -1924,6 +1956,11 @@ public:
             std::wstring sDocInfo   = args->GetString(2).ToWString();
 
             bool bIsSaveAs = (sParams.find("saveas=true") != std::string::npos) ? true : false;
+
+            // нужно ли показывать диалог?
+            // 1) файл новый/восстановленный, т.е. некуда пока сохранять
+            // 2) saveAs
+            // 3) текущий формат не поддерживает сохранение
             bool bIsNeedSaveDialog = bIsNeedSave || bIsSaveAs || (!m_pParent->m_pInternal->LocalFile_IsSupportSaveCurrentFormat());
 
             CApplicationManagerAdditionalBase* pAdditional = pManager->m_pInternal->m_pAdditional;
@@ -1963,6 +2000,7 @@ public:
         }
         else if (message_name == "onlocaldocument_onaddimage")
         {
+            // добавление картинки (с показом диалога)
             NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_ADDIMAGE);
             NSEditorApi::CAscLocalOpenFileDialog* pData = new NSEditorApi::CAscLocalOpenFileDialog();
             pData->put_Id(m_pParent->GetId());
@@ -1972,11 +2010,13 @@ public:
         }
         else if (message_name == "on_logout")
         {
+            // AscDesktopEditor.Logout
             m_pParent->GetAppManager()->Logout(args->GetString(0).ToWString());
             return true;
         }
         else if (message_name == "on_setadvancedoptions")
         {
+            // открытие с настройками
             m_pParent->m_pInternal->m_oConverterToEditor.m_sAdditionalConvertation = args->GetString(0).ToWString();
 
             // detect password
@@ -1995,6 +2035,7 @@ public:
         }
         else if (message_name == "DropOfficeFiles")
         {
+            // js (ondrop) => AscDesktopEditor.DropOfficeFiles
             NSEditorApi::CAscLocalOpenFiles* pData = new NSEditorApi::CAscLocalOpenFiles();
 
             int nCount = (int)args->GetSize();
@@ -2024,27 +2065,10 @@ public:
 
             pListener->OnEvent(pEvent);
             return true;
-        }        
-        else if (message_name == "on_init_js_context")
-        {
-            std::vector<NSEditorApi::CAscMenuEvent*>* pArr = NULL;
-            CApplicationManagerAdditionalBase* pAdditional = pManager->m_pInternal->m_pAdditional;
-
-            if (pAdditional && pAdditional->m_arApplyEvents)
-            {
-                for (std::vector<NSEditorApi::CAscMenuEvent*>::iterator i = pAdditional->m_arApplyEvents->begin();
-                     i != pAdditional->m_arApplyEvents->end(); i++)
-                {
-                    m_pParent->Apply(*i);
-                }
-
-                pAdditional->m_arApplyEvents->clear();
-                pAdditional->m_arApplyEvents = NULL;
-            }
-            return true;
         }
         else if (message_name == "native_viewer_onopened")
         {
+            // открыт вьюер
             std::string sBase64 = args->GetString(0).ToString();
             m_pParent->m_pInternal->m_sNativeFilePassword = args->GetString(1).ToWString();
             m_pParent->m_pInternal->m_oConverterToEditor.NativeViewerOpenEnd(sBase64);
@@ -2052,6 +2076,7 @@ public:
         }
         else if (message_name == "on_signature_sign")
         {
+            // подписать
             std::string sId     = args->GetString(0).ToString();
             std::wstring sGuid  = args->GetString(1).ToWString();
             std::wstring sUrl   = args->GetString(2).ToWString();
@@ -2097,6 +2122,7 @@ public:
         }
         else if (message_name == "on_signature_remove")
         {
+            // удалить подпись
             std::string sGuid;
             if (args->GetSize() > 0)
                 sGuid = args->GetString(0).ToString();
@@ -2128,6 +2154,7 @@ public:
         }
         else if (message_name == "on_signature_viewcertificate")
         {
+            // посмотреть сертификат
             int nIndex = args->GetInt(0);
             COOXMLVerifier* pVerifier = m_pParent->m_pInternal->m_oConverterToEditor.m_pVerifier;
             if (NULL != pVerifier)
@@ -2144,6 +2171,7 @@ public:
         }
         else if (message_name == "on_signature_defaultcertificate")
         {
+            // данные сертификата по умолчанию
             CCertificateInfo info = ICertificate::GetDefault();
 
             CJSONSimple serializer;
@@ -2162,6 +2190,7 @@ public:
         }
         else if (message_name == "on_signature_selectsertificate")
         {
+            // диалог выбора сертификата
             ICertificate* pCert = ICertificate::CreateInstance();
 
             WindowHandleId _handle = m_pParent->GetWidgetImpl()->parent_wid();
@@ -2197,6 +2226,7 @@ public:
         }
         else if (message_name == "on_open_filename_dialog")
         {
+            // показать окно выбора файлов. по окончании вызовется коллбек js
             NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_OPENFILENAME_DIALOG);
             NSEditorApi::CAscLocalOpenFileDialog* pData = new NSEditorApi::CAscLocalOpenFileDialog();
             pData->put_Id(m_pParent->GetId());
@@ -2212,6 +2242,7 @@ public:
         }
         else if (message_name == "on_file_save_question")
         {
+            // при некоторых действиях необходимо сохранение (например подпись)
             NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_SAVE_YES_NO);
             NSEditorApi::CAscEditorSaveQuestion* pData = new NSEditorApi::CAscEditorSaveQuestion();
             pData->put_Id(m_pParent->GetId());
@@ -2247,6 +2278,7 @@ public:
         }
         else if (message_name == "send_to_reporter")
         {
+            // сообщение докладчику
             CCefView* pViewSend = m_pParent->GetAppManager()->GetViewById(m_pParent->m_pInternal->m_nReporterChildId);
             if (!pViewSend)
                 return true;
@@ -2264,6 +2296,7 @@ public:
         }
         else if (message_name == "send_from_reporter")
         {
+            // сообщение от докладчика
             CCefView* pViewSend = m_pParent->GetAppManager()->GetViewById(m_pParent->m_pInternal->m_nReporterParentId);
             if (!pViewSend)
                 return true;
@@ -2281,6 +2314,8 @@ public:
         }        
         else if (message_name == "file_get_hash")
         {
+            // нужно посчитать хэш облачного файла.
+            // качаем, считаем, отдаем
             m_pParent->m_pInternal->m_pDownloadViewCallback = m_pParent;
             m_pParent->m_pInternal->m_sDownloadViewPath = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"OL");
             if (NSFile::CFileBinary::Exists(m_pParent->m_pInternal->m_sDownloadViewPath))
@@ -2304,6 +2339,7 @@ public:
         }
         else if (message_name == "send_system_message")
         {
+            // системное сообщение (для external plugins)
             CCefView_Private::CSystemMessage sysMessage;
             sysMessage.ViewID = m_pParent->GetId();
             sysMessage.FrameID = args->GetString(1).ToString();
@@ -2335,8 +2371,11 @@ public:
         }
         else if (message_name == "open_file_crypt")
         {
-            std::wstring sName = message->GetArgumentList()->GetString(0).ToWString();
-            std::wstring sDownloadLink = message->GetArgumentList()->GetString(1).ToWString();
+            // открытие облачного зашифрованного файла
+            // 1) корректируем ссылку
+            // 2) помечаем ссылку параметрами, чтобы созданный view понял, о чем идет речь (имя)
+            std::wstring sName = args->GetString(0).ToWString();
+            std::wstring sDownloadLink = args->GetString(1).ToWString();
 
             std::wstring sBaseUrl = m_pParent->GetUrl();
             std::wstring::size_type pos = NSCommon::FindLowerCase(sBaseUrl, L"/products/files");
@@ -2370,13 +2409,14 @@ public:
                 }
             }
 
-            std::wstring sOpenUrl = sDownloadLink + L"<openaslocal></openaslocal><openaslocalname>" + sName + L"</openaslocalname>";
+            std::wstring sOpenUrl = sDownloadLink + L"<openaslocal>" + sName + L"</openaslocal>";
 
             ((CCefViewEditor*)m_pParent)->load(sOpenUrl);
             return true;
         }
         else if (message_name == "build_crypted")
         {
+            // собрать зашифтованный файл
             m_pParent->m_pInternal->m_bIsBuilding = true;
             if (0 == args->GetSize())
                 return true;
@@ -2401,10 +2441,11 @@ public:
         }
         else if (message_name == "build_crypted_end")
         {
+            // окончание сборки. файл уже отправлен.
+            // просто отправляем наверх
             m_pParent->m_pInternal->m_bIsBuilding = false;
 
-            bool bIsClose = args->GetBool(0);
-
+            bool bIsNoError = args->GetBool(0);
             if (m_pParent->m_pInternal->m_bIsSavingCrypto)
             {
                 m_pParent->m_pInternal->m_bIsSavingCrypto = false;
@@ -2418,7 +2459,7 @@ public:
             }
             else
             {
-                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(bIsClose ?
+                NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(bIsNoError ?
                     ASC_MENU_EVENT_TYPE_ENCRYPTED_CLOUD_BUILD_END : ASC_MENU_EVENT_TYPE_ENCRYPTED_CLOUD_BUILD_END_ERROR);
                 pListener->OnEvent(pEvent);
             }
@@ -2467,6 +2508,7 @@ public:
         }
         else if (message_name == "download_files")
         {
+            // скачать файлы.
             int nCount = args->GetSize();
 
             if (nCount == 0 || ((nCount & 0x01) == 0x01))
@@ -2495,6 +2537,8 @@ public:
         }
         else if (message_name == "set_crypto_mode")
         {
+            // выставить режим криптования.
+            // если открыт хоть один редактор - не выставлять
             std::string sPass = args->GetString(0).ToString();
             int nMode = args->GetInt(1);
             bool bIsCallback = args->GetBool(2);
@@ -2894,13 +2938,8 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
 
         if (frame && bIsCryptoSupport)
         {
-            if (!NSFileDownloader::IsNeedDownload(sMainFrameUrl))
+            if (!NSFileDownloader::IsNeedDownload(sMainFrameUrl) || (m_pParent->m_pInternal->m_nCloudVersion >= CRYPTO_CLOUD_SUPPORT))
                 m_pParent->GetAppManager()->m_pInternal->SendCryptoData(frame);
-            else if (m_pParent->m_pInternal->m_nCloudVersion >= CRYPTO_CLOUD_SUPPORT)
-            {
-                m_pParent->m_pInternal->m_bCloudVersionSendSupportCrypto = true;
-                m_pParent->GetAppManager()->m_pInternal->SendCryptoData(frame);
-            }
         }
 
         if (frame->IsMain())
@@ -2909,6 +2948,7 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
             if ((0 != sUrl.find(L"file:///")) || !m_pParent->m_pInternal->m_bIsOnlyPassSupport || m_pParent->GetType() == cvwtEditor)
                 return;
 
+            // это стартовая страница. отправляем external плагины
             std::vector<CExternalPluginInfo>& arPluginsExternal = m_pParent->m_pInternal->m_pManager->m_pInternal->m_arExternalPlugins;
             std::wstring sSystemPluginsPath = m_pParent->GetAppManager()->m_oSettings.system_plugins_path;
 
@@ -3102,16 +3142,6 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
             pEvent->m_pData = pData;
             m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
             
-#if 0
-            if (!pData->get_IsAlt() &&
-                !pData->get_IsCtrl() &&
-                !pData->get_IsShift() &&
-                pData->get_IsCommandMac() &&
-                event.focus_on_editable_field)
-            {
-            }
-#endif
-
             if (((nMods & EVENTFLAG_CONTROL_DOWN) != 0) && event.windows_key_code == 9)
                 return true; // tab!!!
         }
@@ -3418,42 +3448,45 @@ require.load = function (context, moduleName, url) {\n\
     {
         CEF_REQUIRE_UI_THREAD();
 
-        std::wstring s1 = download_item->GetURL().ToWString();
-        m_pParent->m_pInternal->m_oDownloaderAbortChecker.EndDownload(s1);
+        std::wstring sUrl = download_item->GetURL().ToWString();
+        m_pParent->m_pInternal->m_oDownloaderAbortChecker.EndDownload(sUrl);
 
+        // если указан m_pDownloadViewCallback - то уже все готово. просто продолжаем
         if (NULL != m_pParent->m_pInternal->m_pDownloadViewCallback)
         {
             callback->Continue(m_pParent->m_pInternal->m_pDownloadViewCallback->m_pInternal->GetViewDownloadPath(), false);
             return;
         }               
 
-        std::wstring s2 = m_pParent->GetAppManager()->m_pInternal->GetPrivateDownloadUrl();
-        
-        if (s1 == s2)
+        // если ссылка приватная (внутренняя) - то уже все готово. просто продолжаем
+        std::wstring sPrivateDownloadUrl = m_pParent->GetAppManager()->m_pInternal->GetPrivateDownloadUrl();
+        if (sUrl == sPrivateDownloadUrl)
         {
             callback->Continue(m_pParent->GetAppManager()->m_pInternal->GetPrivateDownloadPath(), false);
             return;
         }
 
-        std::map<std::wstring, std::wstring>::iterator findCryptoImage = m_pParent->m_pInternal->m_arCryptoImages.find(s1);
+        // проверяем на зашифрованные картинки
+        std::map<std::wstring, std::wstring>::iterator findCryptoImage = m_pParent->m_pInternal->m_arCryptoImages.find(sUrl);
         if (findCryptoImage != m_pParent->m_pInternal->m_arCryptoImages.end())
         {
             std::wstring sRetTemp = findCryptoImage->second;
 #ifdef WIN32
             NSCommon::string_replace(sRetTemp, L"/", L"\\");
 #endif
-
             callback->Continue(sRetTemp, false);
             return;
         }
 
-        std::map<std::wstring, std::wstring>::iterator findDownloadFile = m_pParent->m_pInternal->m_arDownloadedFiles.find(s1);
+        // проверяем на файлы метода AscDesktopEditor.DownloadFiles
+        std::map<std::wstring, std::wstring>::iterator findDownloadFile = m_pParent->m_pInternal->m_arDownloadedFiles.find(sUrl);
         if (findDownloadFile != m_pParent->m_pInternal->m_arDownloadedFiles.end())
         {
             callback->Continue(findDownloadFile->second, false);
             return;
         }
         
+        // скачивание, которое надо отправлять наверх
         m_pParent->m_pInternal->m_before_callback = callback;
         callback->AddRef();
 
@@ -3477,8 +3510,11 @@ require.load = function (context, moduleName, url) {\n\
             return;
 
         std::wstring sUrl = download_item->GetURL().ToWString();
+        std::wstring sPath = download_item->GetFullPath().ToWString();
+
         m_pParent->m_pInternal->m_oDownloaderAbortChecker.EndDownload(sUrl);
 
+        // проверяем на m_pDownloadViewCallback
         if (NULL != m_pParent->m_pInternal->m_pDownloadViewCallback)
         {
             if (download_item->IsComplete())
@@ -3496,9 +3532,8 @@ require.load = function (context, moduleName, url) {\n\
             }
             return;
         }
-        
-        std::wstring sPath = download_item->GetFullPath().ToWString();
 
+        // проверяем на зашифрованные картинки
         if (!m_pParent->m_pInternal->m_arCryptoImages.empty())
         {
             std::map<std::wstring, std::wstring>::iterator findCryptoImage = m_pParent->m_pInternal->m_arCryptoImages.find(sUrl);
@@ -3521,6 +3556,7 @@ require.load = function (context, moduleName, url) {\n\
             }
         }
 
+        // проверяем на файлы метода AscDesktopEditor.DownloadFiles
         if (!m_pParent->m_pInternal->m_arDownloadedFiles.empty())
         {
             std::map<std::wstring, std::wstring>::iterator findDownloadFile = m_pParent->m_pInternal->m_arDownloadedFiles.find(sUrl);
@@ -3556,7 +3592,8 @@ require.load = function (context, moduleName, url) {\n\
                 return;
             }
         }
-        
+
+        // интерфейсные скачивания
         unsigned int uId = (unsigned int)download_item->GetId();
 
         NSEditorApi::CAscDownloadFileInfo* pData = new NSEditorApi::CAscDownloadFileInfo();
@@ -3567,9 +3604,6 @@ require.load = function (context, moduleName, url) {\n\
         pData->put_Id(m_pParent->GetId());
         pData->put_Speed(download_item->GetCurrentSpeed() / 1024.0);
         pData->put_IdDownload(uId);
-
-        long long l1 = download_item->GetReceivedBytes();
-        long long l2 = download_item->GetTotalBytes();
 
         NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
         pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_DOWNLOAD;
@@ -3585,15 +3619,7 @@ require.load = function (context, moduleName, url) {\n\
         }
 
         if (download_item->IsComplete())
-        {
-            //SetLastDownloadFile(download_item->GetFullPath());
-            //SendNotification(NOTIFY_DOWNLOAD_COMPLETE);
-
-            if (NULL != m_pParent)
-            {
-                pData->put_IsComplete(true);
-            }
-        }
+            pData->put_IsComplete(true);
 
         m_pParent->GetAppManager()->Apply(pEvent);
     }
@@ -3612,30 +3638,8 @@ require.load = function (context, moduleName, url) {\n\
     {
         CEF_REQUIRE_UI_THREAD();
 
-#if 0
-        bool bIsFile = dragData->IsFile();
-        std::wstring strFileName = dragData->GetFileName();
-        std::wstring strFile2 = dragData->GetLinkURL();
-#endif
         std::vector<CefString> arFiles;
         dragData->GetFileNames(arFiles);
-
-        /*
-        if (1 == arFiles.size() && m_pParent)
-        {
-            std::wstring sFile = arFiles.begin()->ToWString();
-            if (NSCommon::GetFileExtention(sFile) == L"plugin")
-            {
-                NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
-                pEvent->m_nType = ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_ADD_PLUGIN;
-                NSEditorApi::CAscAddPlugin* pData = new NSEditorApi::CAscAddPlugin();
-                pData->put_Path(sFile);
-                pEvent->m_pData = pData;
-                m_pParent->GetAppManager()->Apply(pEvent);
-                return true;
-            }
-        }
-        */
 
         if (0 != arFiles.size())
         {
@@ -3685,7 +3689,6 @@ require.load = function (context, moduleName, url) {\n\
     {
         m_pParent->m_pInternal->Destroy();
         m_pParent->m_pInternal->m_pManager->OnDestroyWindow();
-        //delete m_pParent;
     }
 
     // Set the window URL address.
@@ -3833,9 +3836,11 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
 
         if (bIsSaved)
         {
+            // обновим информацию о файле
             m_oLocalInfo.m_oInfo.m_sFileSrc = m_oConverterFromEditor.m_oInfo.m_sFileSrc;
             m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat;
 
+            // информация для recover
             std::wstring sNameInfo = m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/asc_name.info";
             if (NSFile::CFileBinary::Exists(sNameInfo))
                 NSFile::CFileBinary::Remove(sNameInfo);
@@ -3845,14 +3850,13 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
             oBuilderInfo.WriteEncodeXmlString(NSCommon::GetFileName(m_oLocalInfo.m_oInfo.m_sFileSrc));
             oBuilderInfo.WriteString(L"\" />");
             NSFile::CFileBinary::SaveToFile(sNameInfo, oBuilderInfo.GetData(), true);
-        }
 
-        if (bIsSaved && m_pManager && m_pManager->m_pInternal)
-        {
+            // добавляем в recent
             m_pManager->m_pInternal->Recents_Add(m_oLocalInfo.m_oInfo.m_sFileSrc, m_oLocalInfo.m_oInfo.m_nCurrentFileFormat, L"", L"", m_sParentUrl);
 
-            if (m_pManager->GetEventListener() && m_pCefView != NULL)
+            if (m_pManager->GetEventListener())
             {
+                // событие наверх
                 NSEditorApi::CAscCefMenuEvent* pEvent = m_pCefView->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_DOCUMENT_NAME);
 
                 NSEditorApi::CAscDocumentName* pData = new NSEditorApi::CAscDocumentName();
@@ -3861,19 +3865,20 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
                 if (m_oLocalInfo.m_oInfo.m_bIsSaved)
                 {
                     std::wstring sPath = m_oLocalInfo.m_oInfo.m_sFileSrc;
-#ifdef WIN32
+    #ifdef WIN32
                     NSCommon::string_replace(sPath, L"/", L"\\");
-#endif
+    #endif
                     pData->put_Path(sPath);
                 }
 
                 pEvent->m_pData = pData;
-
                 m_pManager->GetEventListener()->OnEvent(pEvent);
             }
 
-            if (m_pManager->GetEventListener() && m_pCefView != NULL)
+            if (m_pManager->GetEventListener())
             {
+                // событие onsave
+                // в случае криптования - после записи паролей
                 if (m_pManager->m_pInternal->m_nCurrentCryptoMode == 0) // только после конца записи в блокчейн
                 {
                     m_bIsSaving = false;
@@ -3935,9 +3940,8 @@ void CCefView_Private::LocalFile_IncrementCounter()
 
             CefRefPtr<CefBrowser> browser;
             if (m_handler.get())
-            {
                 browser = m_handler->GetBrowser();
-            }
+
             if (browser)
             {
                 CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_additionalparams");
@@ -4189,12 +4193,9 @@ void CCefView::load(const std::wstring& urlInputSrc)
 
         m_pInternal->m_sCloudCryptSrc = urlInput.substr(0, pos1);
 
-        pos1 = urlInput.find(L"<openaslocalname>");
-        pos2 = urlInput.find(L"</openaslocalname>");
-
         if (pos1 != std::wstring::npos && pos2 != std::wstring::npos)
         {
-            m_pInternal->m_sCloudCryptName = urlInput.substr(pos1 + 17, pos2 - pos1 - 17);
+            m_pInternal->m_sCloudCryptName = urlInput.substr(pos1 + 13, pos2 - pos1 - 13);
         }
 
         if (m_pInternal->m_sCloudCryptName.empty())
@@ -5575,6 +5576,8 @@ std::wstring CCefViewEditor::GetRecoveryDir()
 
 int CCefViewEditor::GetFileFormat(const std::wstring& sFilePath)
 {
+    // формат файла по файлу
+    // если файл зашифрован (MS_OFFCRYPTO) - то определяем по расширению
     COfficeFileFormatChecker oChecker;
     oChecker.isOfficeFile(sFilePath);
 
@@ -5597,6 +5600,8 @@ int CCefViewEditor::GetFileFormat(const std::wstring& sFilePath)
 // NATIVE file converter
 void CASCFileConverterToEditor::NativeViewerOpen(bool bIsEnabled)
 {
+    // вызывается из конвертера и из создания апи.
+    // такой же счетчик, как и в файлах для редактора
     if (bIsEnabled)
     {
         m_pView->m_pInternal->m_oNativeViewer.m_bEnabled = true;
@@ -5669,6 +5674,7 @@ void CASCFileConverterToEditor::NativeViewerOpenEnd(const std::string& sBase64)
 // CAscApplicationManager_Private
 void CAscApplicationManager_Private::ExecuteInAllFrames(const std::string& sCode)
 {
+    // вызвать код во всех view и во всех фреймах
     CCefView* pView = GetViewForSystemMessages();
     if (!pView || !pView->m_pInternal || !pView->m_pInternal->GetBrowser())
         return;
@@ -5683,6 +5689,8 @@ void CAscApplicationManager_Private::ExecuteInAllFrames(const std::string& sCode
 
 void CAscApplicationManager_Private::ChangeEditorViewsCount()
 {
+    // событие, которое посылается во все view - когда есть подозрение на смену количества редакторов
+    // чтобы порталы узнавали о режиме криптования
     bool bIsEditorPresent = false;
     for (std::map<int, CCefView*>::iterator iter = m_mapViews.begin(); iter != m_mapViews.end(); iter++)
     {
