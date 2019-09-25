@@ -47,449 +47,19 @@
 
 #include "../../../../core/DesktopEditor/xml/include/xmlutils.h"
 #include "../../../../core/Common/OfficeFileFormatChecker.h"
-#include "../../../../core/Common/FileDownloader/FileDownloader.h"
-
-#include "../../../../core/DesktopEditor/fontengine/application_generate_fonts.h"
-
-namespace NSCommon
-{
-    static std::wstring::size_type FindLowerCase(const std::wstring& string, const std::wstring& find)
-    {
-        std::wstring sTmp = string;
-        NSCommon::makeLowerW(sTmp);
-        return sTmp.find(find);
-    }
-    static std::wstring::size_type FindLowerCaseR(const std::wstring& string, const std::wstring& find)
-    {
-        std::wstring sTmp = string;
-        NSCommon::makeLowerW(sTmp);
-        return sTmp.rfind(find);
-    }
-    static std::string::size_type FindLowerCase(const std::string& string, const std::string& find)
-    {
-        std::string sTmp = string;
-        NSCommon::makeLower(sTmp);
-        return sTmp.find(find);
-    }
-    static std::string::size_type FindLowerCaseR(const std::string& string, const std::string& find)
-    {
-        std::string sTmp = string;
-        NSCommon::makeLower(sTmp);
-        return sTmp.rfind(find);
-    }
-}
-
-#if 0
-static void __log_messagea__(const std::string& message)
-{
-    FILE* f = fopen("/tmp/ascdocumentscore.log", "a+");
-    if (!f) return;
-    fprintf(f, message.c_str());
-    fprintf(f, "\n");
-    fclose(f);
-}
-static void __log_message__(const std::wstring& message)
-{
-    std::string messagea = U_TO_UTF8(message);
-    __log_messagea__(messagea);
-}
-#define CORE_LOGGINGA(_message_) __log_messagea__(#_message_)
-#define CORE_LOGGING(_message_) __log_message__(#_message_)
-#else
-#define CORE_LOGGINGA(_message_)
-#define CORE_LOGGING(_message_)
-#endif
-
-#include <stdio.h>
-#include <time.h>
 
 #define ASC_CONSTANT_CANCEL_SAVE 0x00005678
-
 #define LOCK_CS_SCRIPT 0
-
-#include "Logger.h"
 
 #include "./additional/manager.h"
 #include "./additional/renderer.h"
 
-#define ONLYOFFICE_FONTS_VERSION_ 1
+#define ONLYOFFICE_FONTS_VERSION_ 2
 
 #include "crypto_mode.h"
 #include "plugins.h"
 
-#if defined(_LINUX) && !defined(_MAC)
-#include <unistd.h>
-#include <sys/wait.h>
-#endif
-
-class CFileDownloaderWrapper
-{
-private:
-    std::wstring m_sUrl;
-    std::wstring m_sOutput;
-    bool m_bIsDownloaded;
-
-#if defined(_LINUX) && !defined(_MAC)
-    int DownloadExternal(const std::wstring& sUrl, const std::wstring& sOutput)
-    {
-        int nReturnCode = -1;
-
-        std::string sUrlA = U_TO_UTF8(sUrl);
-        //sUrlA =("\"" + sUrlA + "\"");
-        std::string sOutputA = U_TO_UTF8(sOutput);
-        //sOutputA =("\"" + sOutputA + "\"");
-
-        if (0 != nReturnCode && NSFile::CFileBinary::Exists(L"/usr/bin/curl"))
-        {
-            pid_t pid = fork(); // create child process
-            int status;
-
-            switch (pid)
-            {
-            case -1: // error
-                break;
-
-            case 0: // child process
-            {
-                const char* nargs[6];
-                nargs[0] = "/usr/bin/curl";
-                nargs[1] = sUrlA.c_str();
-                nargs[2] = "--output";
-                nargs[3] = sOutputA.c_str();
-                nargs[4] = "--silent";
-                nargs[5] = NULL;
-
-                const char* nenv[3];
-                nenv[0] = "LD_PRELOAD=";
-                nenv[1] = "LD_LIBRARY_PATH=";
-                nenv[2] = NULL;
-
-                execve("/usr/bin/curl", (char * const *)nargs, (char * const *)nenv);
-                exit(EXIT_SUCCESS);
-                break;
-            }
-            default: // parent process, pid now contains the child pid
-                while (-1 == waitpid(pid, &status, 0)); // wait for child to complete
-                if (WIFEXITED(status))
-                {
-                    nReturnCode =  WEXITSTATUS(status);
-                }
-                break;
-            }
-        }
-
-        if (0 != nReturnCode && NSFile::CFileBinary::Exists(L"/usr/bin/wget"))
-        {
-            pid_t pid = fork(); // create child process
-            int status;
-
-            switch (pid)
-            {
-            case -1: // error
-                break;
-
-            case 0: // child process
-            {
-                const char* nargs[6];
-                nargs[0] = "/usr/bin/wget";
-                nargs[1] = sUrlA.c_str();
-                nargs[2] = "-O";
-                nargs[3] = sOutputA.c_str();
-                nargs[4] = "-q";
-                nargs[5] = NULL;
-
-                const char* nenv[2];
-                nenv[0] = "LD_PRELOAD=";
-                nenv[1] = NULL;
-
-                execve("/usr/bin/wget", (char * const *)nargs, (char * const *)nenv);
-                exit(EXIT_SUCCESS);
-                break;
-            }
-            default: // parent process, pid now contains the child pid
-                while (-1 == waitpid(pid, &status, 0)); // wait for child to complete
-                if (WIFEXITED(status))
-                {
-                    nReturnCode =  WEXITSTATUS(status);
-                }
-                break;
-            }
-        }
-
-        if (0 == nReturnCode)
-        {
-            if (!NSFile::CFileBinary::Exists(sOutput))
-                nReturnCode = -1;
-        }
-
-        return nReturnCode;
-    }
-#endif
-
-public:
-    CFileDownloaderWrapper(const std::wstring& sUrl, const std::wstring& sOutput)
-    {
-        m_sUrl = sUrl;
-        m_sOutput = sOutput;
-
-        if (m_sOutput.empty())
-        {
-            m_sOutput = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"DW");
-            if (NSFile::CFileBinary::Exists(m_sOutput))
-                NSFile::CFileBinary::Remove(m_sOutput);
-        }
-
-        m_bIsDownloaded = false;
-    }
-
-    int DownloadSync()
-    {
-#if defined(_LINUX) && !defined(_MAC)
-        int nRet = DownloadExternal(m_sUrl, m_sOutput);
-        if (0 == nRet)
-        {
-            m_bIsDownloaded = true;
-            return 0;
-        }
-#endif
-
-        CFileDownloader oDownloader(m_sUrl, false);
-        oDownloader.SetFilePath(m_sOutput);
-        oDownloader.Start( 0 );
-        while ( oDownloader.IsRunned() )
-        {
-            NSThreads::Sleep( 10 );
-        }
-        m_bIsDownloaded = oDownloader.IsFileDownloaded();
-        return 0;
-    }
-
-    bool IsFileDownloaded()
-    {
-        return m_bIsDownloaded;
-    }
-    std::wstring GetFilePath()
-    {
-        return m_sOutput;
-    }
-};
-
-class CSystemVariablesMemory
-{
-private:
-    std::vector<char*> m_data;
-
-public:
-    CSystemVariablesMemory()
-    {
-    }
-    ~CSystemVariablesMemory()
-    {
-        for (std::vector<char*>::iterator iter = m_data.begin(); iter != m_data.end(); iter++)
-        {
-            char* rem = *iter;
-            if (rem)
-                free(rem);
-        }
-        m_data.clear();
-    }
-
-    char* Push(const std::string& str)
-    {
-        size_t str_len = (size_t)str.length();
-        char* sValueStr = (char*)malloc((str_len + 1) * sizeof(char));
-        memcpy(sValueStr, str.c_str(), str_len * sizeof(char));
-        sValueStr[str_len] = '\0';
-        m_data.push_back(sValueStr);
-        return sValueStr;
-    }
-};
-
-namespace NSSystem
-{
-    static void SetEnvValueA(const std::string& sName, const std::string& sValue)
-    {
-#ifdef WIN32
-        std::wstring sNameW = UTF8_TO_U(sName);
-        std::wstring sValueW = UTF8_TO_U(sValue);
-        SetEnvironmentVariable(sNameW.c_str(), sValueW.c_str());
-#else
-        static char buffer[100000]; // on all process
-        static int offset = 0;
-
-        std::string tmp = sName + "=" + sValue;
-        size_t len = tmp.length();
-
-        memcpy(buffer + offset, tmp.c_str(), sizeof(char) * len);
-        buffer[offset + len] = '\0';
-        putenv(buffer + offset);
-        offset += (len + 1);
-#endif        
-    }
-    static void SetEnvValue(const std::string& sName, const std::wstring& sValue)
-    {
-        std::string sValueA = U_TO_UTF8(sValue);
-        return SetEnvValueA(sName, sValueA);
-    }
-    static std::string GetEnvValueA(const std::string& sName)
-    {
-#ifdef WIN32
-        std::wstring sNameW = UTF8_TO_U(sName);
-        const DWORD buffSize = 65535;
-        wchar_t buffer[buffSize];
-        if (GetEnvironmentVariable(sNameW.c_str(), buffer, buffSize))
-        {
-            std::wstring sValueW(buffer);
-            std::string sValue = U_TO_UTF8(sValueW);
-            return sValue;
-        }
-        else
-        {
-            return "";
-        }
-#else
-        char* pPath = getenv(sName.c_str());
-        if (NULL != pPath)
-            return std::string(pPath);
-        return "";
-#endif
-    }
-    static std::wstring GetEnvValue(const std::string& sName)
-    {
-        std::string sValueA = GetEnvValueA(sName);
-        std::wstring sValue = UTF8_TO_U(sValueA);
-        return sValue;
-    }
-}
-
-namespace NSUrlParse
-{
-    static std::wstring GetUrlValue(const std::wstring& sValue, const std::wstring& sProp)
-    {
-        std::wstring::size_type pos1 = sValue.find(sProp + L"=");
-        if (std::wstring::npos == pos1)
-            return L"";
-
-        pos1 += (sProp.length() + 1);
-
-        std::wstring::size_type pos2 = sValue.find(L"&", pos1);
-        if (std::wstring::npos == pos2)
-        {
-            return sValue.substr(pos1);
-        }
-        return sValue.substr(pos1, pos2  - pos1);
-    }
-}
-
-namespace NSFileDownloader
-{
-    static bool IsNeedDownload(const std::wstring& FilePath)
-    {
-        std::wstring::size_type n1 = FilePath.find(L"www.");
-        std::wstring::size_type n2 = FilePath.find(L"http://");
-        std::wstring::size_type n3 = FilePath.find(L"ftp://");
-        std::wstring::size_type n4 = FilePath.find(L"https://");
-
-        if (n1 != std::wstring::npos && n1 < 10)
-            return true;
-        if (n2 != std::wstring::npos && n2 < 10)
-            return true;
-        if (n3 != std::wstring::npos && n3 < 10)
-            return true;
-        if (n4 != std::wstring::npos && n4 < 10)
-            return true;
-
-        return false;
-    }
-}
-
-class CAscReporterData
-{
-public:
-    int Id;
-    int ParentId;
-    std::wstring Url;
-    std::wstring LocalRecoverFolder;
-
-public:
-
-    CAscReporterData()
-    {
-        Id = -1;
-        ParentId = -1;
-    }
-};
-
-class CJSONSimple
-{
-private:
-    NSStringUtils::CStringBuilder builder;
-    bool m_isSlash;
-
-public:
-    CJSONSimple(bool isSlash = false)
-    {
-        m_isSlash = isSlash;
-    }
-
-public:
-    std::wstring GetData()
-    {
-        return builder.GetData();
-    }
-
-    void Start()
-    {
-        builder.WriteString(L"{");
-    }
-
-    void End()
-    {
-        builder.WriteString(L"}");
-    }
-
-    void Next()
-    {
-        builder.WriteString(L",");
-    }
-
-    void Write(const std::wstring& name, const std::wstring& value)
-    {
-        m_isSlash ? builder.WriteString(L"\\\"") : builder.WriteString(L"\"");
-        builder.WriteString(name);
-        m_isSlash ? builder.WriteString(L"\\\":") : builder.WriteString(L"\":");
-
-        std::wstring s = value;
-        if (m_isSlash)
-            NSCommon::string_replace(s, L"\"", L"\\\"");
-
-        m_isSlash ? builder.WriteString(L"\\\"") : builder.WriteString(L"\"");
-        builder.WriteString(s);
-        m_isSlash ? builder.WriteString(L"\\\"") : builder.WriteString(L"\"");
-    }
-    void Write(const std::wstring& name, const std::string& value)
-    {
-        m_isSlash ? builder.WriteString(L"\\\"") : builder.WriteString(L"\"");
-        builder.WriteString(name);
-        m_isSlash ? builder.WriteString(L"\\\":") : builder.WriteString(L"\":");
-
-        std::wstring s = UTF8_TO_U(value);
-        if (m_isSlash)
-            NSCommon::string_replace(s, L"\"", L"\\\"");
-
-        m_isSlash ? builder.WriteString(L"\\\"") : builder.WriteString(L"\"");
-        builder.WriteString(s);
-        m_isSlash ? builder.WriteString(L"\\\"") : builder.WriteString(L"\"");
-    }
-    void Write(const std::wstring& name, const int& value)
-    {
-        m_isSlash ? builder.WriteString(L"\\\"") : builder.WriteString(L"\"");
-        builder.WriteString(name);
-        m_isSlash ? builder.WriteString(L"\\\":") : builder.WriteString(L"\":");
-
-        builder.AddInt(value);
-    }
-};
+#include "utils.h"
 
 #ifdef LINUX
 #include "signal.h"
@@ -522,87 +92,21 @@ public:
 
 #endif
 
-#if defined(_LINUX)
-
-#include <pwd.h>
-static std::wstring GetHomeDirectory()
+class CAscReporterData
 {
-    const char* sHome = std::getenv("home");
+public:
+    int Id;
+    int ParentId;
+    std::wstring Url;
+    std::wstring LocalRecoverFolder;
 
-    if (sHome == NULL)
+public:
+
+    CAscReporterData()
     {
-        sHome = getpwuid(getuid())->pw_dir;
+        Id = -1;
+        ParentId = -1;
     }
-
-    if (NULL == sHome)
-        return L"";
-
-    std::string temp = sHome;
-    return NSFile::CUtf8Converter::GetUnicodeStringFromUTF8((BYTE*)temp.c_str(), (LONG)temp.length());
-}
-
-#endif
-
-class CCefFileDownloaderThread : public NSThreads::CBaseThread, public IFileDownloaderEvents
-{
-public :
-    CCefFileDownloaderThread(CAscApplicationManager* pManager, std::wstring sFileUrl, std::wstring sFileDst) : NSThreads::CBaseThread()
-    {
-        m_sFilePath = sFileDst;
-        m_sFileUrl  = sFileUrl;
-        m_bComplete = false;
-        m_bWork = false;
-        m_pManager = pManager;
-        m_pDownloader = NULL;
-    }
-    ~CCefFileDownloaderThread()
-    {
-        RELEASEOBJECT(m_pDownloader);
-    }
-
-    bool IsFileDownloaded()
-    {
-        return m_bComplete;
-    }
-
-    void OnProgress(int nProgress)
-    {
-    }
-
-    void OnDownload(bool bIsSuccess)
-    {
-        m_bComplete = bIsSuccess;
-        m_bWork = false;
-    }
-
-protected :
-
-    virtual DWORD ThreadProc ()
-    {
-        m_bComplete = false;
-        m_bWork = true;
-
-        m_pDownloader = new CCefFileDownloader(this);
-        m_pDownloader->DownloadFile(m_pManager, m_sFileUrl, m_sFilePath);
-
-        while (m_bWork)
-        {
-            NSThreads::Sleep(100);
-        }
-
-        m_bRunThread = FALSE;
-        return 0;
-    }
-
-protected :
-    std::wstring    m_sFilePath;       // Путь к сохраненному файлу на диске
-    std::wstring    m_sFileUrl;        // Ссылка на скачивание файла
-
-    bool            m_bComplete;       // Закачался файл или нет
-    bool            m_bWork;
-
-    CCefFileDownloader* m_pDownloader;
-    CAscApplicationManager* m_pManager;
 };
 
 class CCefScriptLoader : public NSThreads::CBaseThread
@@ -649,12 +153,9 @@ protected:
         else
         {
             // старый код. теперь используется вью портала
-#ifdef WIN32
             CFileDownloader oDownloader(m_sUrl, false);
             oDownloader.SetFilePath(m_sDestination);
-#else
-            CCefFileDownloaderThread oDownloader(m_pManager, m_sUrl, m_sDestination);
-#endif
+
             oDownloader.Start( 0 );
             while ( oDownloader.IsRunned() )
             {
@@ -795,52 +296,68 @@ class CAscApplicationManager_Private : public CefBase_Class,
         public NSAscCrypto::IAscKeyChainListener
 {
 public:
-    CAscSpellChecker    m_oSpellChecker;
+    CAscSpellChecker m_oSpellChecker;
+
     CAscKeyboardChecker m_oKeyboardChecker;
+    CTimerKeyboardChecker m_oKeyboardTimer;
 
-    int                 m_nIdCounter;
+    // счетчик всех view
+    int m_nIdCounter;
 
+    // счетчик всех view
+    int m_nWindowCounter;
+
+    // id <=> view
+    std::map<int, CCefView*> m_mapViews;
+
+    // показывать ли консоль для дебага
+    bool m_bDebugInfoSupport;
+
+    // event listener
     NSEditorApi::CAscCefMenuEventListener* m_pListener;
 
-    std::map<int, CCefView*> m_mapViews;    
-
-    CAscApplicationManager* m_pMain;
-
+    // application fonts for all editors
     NSFonts::IApplicationFonts* m_pApplicationFonts;
 
+    // используется для загрузки скриптов
+    // url <-> все те, кто ждет загрузку этого скрипта. по окончании загрузки - всем отсылается евент
     NSCriticalSection::CRITICAL_SECTION m_oCS_Scripts;
     std::map<std::wstring, std::vector<CEditorFrameId>> m_mapLoadedScripts;
 
-    CApplicationCEF* m_pApplication;
-    bool m_bDebugInfoSupport;
-
+    // id для вью, который вызвал FileDialog
     int m_nIsCefSaveDialogWait;
-
-    CTimerKeyboardChecker m_oKeyboardTimer;
     
-    int m_nWindowCounter;
-    
+    // внутренние скачки (неюзерские)
     std::wstring m_strPrivateDownloadUrl;
     std::wstring m_strPrivateDownloadPath;
     
+    // мап отмененных загрузок
     std::map<unsigned int, bool> m_mapCancelDownloads;
 
+    // Recents & recovers
     NSCriticalSection::CRITICAL_SECTION m_oCS_LocalFiles;
     std::vector<CAscEditorFileInfo> m_arRecents;
     std::vector<CAscEditorFileInfo> m_arRecovers;
     
+    // дополнения к ссылкам
     std::wstring m_sAdditionalUrlParams;    
 
+    // сообщения, которые отправятся в view после инициализации js контекста
     std::vector<NSEditorApi::CAscMenuEvent*> m_arApplyEvents;
 
-    CApplicationManagerAdditionalBase* m_pAdditional;
-
+    // настройки приложения
     std::map<std::string, std::string> m_mapSettings;
+
+    // если ！= -1, то используется для scale всех view
     int m_nForceDisplayScale;
+
+    // флаг для принудительной перегенерации шрифтов (используется при изменении настроек, какие шрифты использовать)
     bool m_bIsUpdateFontsAttack;
 
+    // используется только для Linux snap.
     std::string m_sLD_LIBRARY_PATH;
 
+    // crypto
     std::map<std::wstring, int> m_mapOnlyPass;
 
     std::map<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue> m_mapCrypto;
@@ -850,77 +367,97 @@ public:
 
     NSAscCrypto::CAscKeychain* m_pKeyChain;
 
+    // плагины не для редактора, а для десктопа (на стартовой странице)
     std::vector<CExternalPluginInfo> m_arExternalPlugins;
 
+    // те, кто подключает onlyoffice
     std::vector<CExternalCloudRegister> m_arExternalClouds;
 
+    // критическая секция для всех системных сообщений всех view
     NSCriticalSection::CRITICAL_SECTION m_oCS_SystemMessages;
 
+    // настройки для ссылок на редакторы
     std::wstring m_mainPostFix;
     std::wstring m_mainLang;
 
+    // ссылки, откуда файл открыт. (для кнопок 'домой' в редакторах)
     std::vector<CRecentParent> m_arRecentParents;
 
+    // dpi checker
     static CAscDpiChecker* m_pDpiChecker;
+
+    // ссылки на нужные классы
+    CAscApplicationManager* m_pMain;
+    CApplicationCEF* m_pApplication;
+
+    // дополнения к редактору (для внешних подключений)
+    CApplicationManagerAdditionalBase* m_pAdditional;
+
+public:
+    IMPLEMENT_REFCOUNTING(CAscApplicationManager_Private)
 
 public:
     CAscApplicationManager_Private() : m_oKeyboardTimer(this)
     {
+        this->AddRef();
+
         m_pListener = NULL;
         m_nIdCounter = 0;
-        this->AddRef();
+        m_nWindowCounter = 0;
+
         m_pMain = NULL;
-
         m_pApplicationFonts = NULL;
-
         m_pApplication = NULL;
 
         m_bDebugInfoSupport = false;
 
-        m_nIsCefSaveDialogWait = -1;
-        m_nWindowCounter = 0;
+        m_nIsCefSaveDialogWait = -1;        
 
-        m_oCS_Scripts.InitializeCriticalSection();
-        m_oCS_LocalFiles.InitializeCriticalSection();
-        
         m_sAdditionalUrlParams = L"";
-
         m_pAdditional = NULL;
 
         m_nForceDisplayScale = -1;
+
         m_bIsUpdateFontsAttack = false;
 
         m_nCurrentCryptoMode = NSAscCrypto::None;
 
         m_pKeyChain = NULL;
 
+        m_oCS_Scripts.InitializeCriticalSection();
+        m_oCS_LocalFiles.InitializeCriticalSection();
         m_oCS_SystemMessages.InitializeCriticalSection();
     }
-    bool GetEditorPermission()
-    {
-        return m_pAdditional ? m_pAdditional->GetEditorPermission() : true;
-    }
-
-    void ExecuteInAllFrames(const std::string& sCode);
-
     virtual ~CAscApplicationManager_Private()
     {
         CloseApplication();
         RELEASEOBJECT(m_pAdditional);
+
         m_oCS_Scripts.DeleteCriticalSection();
         m_oCS_LocalFiles.DeleteCriticalSection();
         m_oCS_SystemMessages.DeleteCriticalSection();
     }
 
-    void CloseApplication()
+    bool GetEditorPermission()
     {
-        m_oKeyboardTimer.Stop();
-        Stop();
-        m_oSpellChecker.End();
+        // разрешение на редактирование
+        return m_pAdditional ? m_pAdditional->GetEditorPermission() : true;
     }
 
+    // исполнить код во всех view
+    void ExecuteInAllFrames(const std::string& sCode);
+
+    // вызывается, если меняется количество открытых редакторов
     void ChangeEditorViewsCount();
 
+    void CloseApplication()
+    {
+        Stop();
+        m_oKeyboardTimer.Stop();        
+        m_oSpellChecker.End();
+    }    
+
+    // logout из портала -----------------------------------------------------------------------
     void Logout(std::wstring strUrl, CefRefPtr<CefCookieManager> manager)
     {
         CCefCookieVisitor* pVisitor = new CCefCookieVisitor();
@@ -949,7 +486,28 @@ public:
         
         pVisitor->CheckCookiePresent(CefCookieManager::GetGlobalManager(NULL));
     }
+    virtual void OnFoundCookie(bool bIsPresent, std::string sValue)
+    {
+        // not used
+    }
+    virtual void OnSetCookie()
+    {
+        // not used
+    }
+    virtual void OnFoundCookies(std::map<std::string, std::string>& mapValues)
+    {
+        // not used
+    }
+    virtual void OnDeleteCookie(bool bIsPresent)
+    {
+        if (NULL != m_pMain && NULL != m_pMain->GetEventListener())
+        {
+            NSEditorApi::CAscCefMenuEvent* pEvent = new NSEditorApi::CAscCefMenuEvent(ASC_MENU_EVENT_TYPE_CEF_ONLOGOUT);
+            m_pMain->GetEventListener()->OnEvent(pEvent);
+        }
+    }
 
+    // работа с настройками редактора ----------------------------------------------------------
     void LoadSettings()
     {
         std::wstring sFile = m_pMain->m_oSettings.fonts_cache_info_path + L"/settings.xml";
@@ -1011,7 +569,6 @@ public:
         if (pairCryptoMode != m_mapSettings.end())
             m_nCurrentCryptoMode = (NSAscCrypto::AscCryptoType)std::stoi(pairCryptoMode->second);
     }
-
     void CheckSetting(const std::string& sName, const std::string& sValue)
     {
         if ("--ascdesktop-support-debug-info" == sName)
@@ -1065,44 +622,65 @@ public:
         }
     }
 
-    virtual void OnFoundCookie(bool bIsPresent, std::string sValue)
+    // вспомогательные функции
+    CCefView* GetViewWithMinId()
     {
-        // not used
-    }
-
-    virtual void OnSetCookie()
-    {
-        // not used
-    }
-
-    virtual void OnFoundCookies(std::map<std::string, std::string>& mapValues)
-    {
-        // not used
-    }
-
-    virtual void OnDeleteCookie(bool bIsPresent)
-    {
-        if (NULL != m_pMain && NULL != m_pMain->GetEventListener())
+        CCefView* pMinView = NULL;
+        int nMin = 0xFFFF;
+        for (std::map<int, CCefView*>::iterator i = m_mapViews.begin(); i != m_mapViews.end(); i++)
         {
-            NSEditorApi::CAscCefMenuEvent* pEvent = new NSEditorApi::CAscCefMenuEvent(ASC_MENU_EVENT_TYPE_CEF_ONLOGOUT);
-            m_pMain->GetEventListener()->OnEvent(pEvent);
+            CCefView* pView = i->second;
+            if (pView->GetType() == cvwtSimple && pView->GetId() < nMin)
+            {
+                nMin = pView->GetId();
+                pMinView = pView;
+            }
         }
+        return pMinView;
+    }
+    CCefView* GetViewForSystemMessages()
+    {
+        return GetViewWithMinId();
+    }
+    bool TestExternal(const std::wstring& sId, CExternalCloudRegister& ex)
+    {
+        for (std::vector<CExternalCloudRegister>::iterator iter = m_arExternalClouds.begin(); iter != m_arExternalClouds.end(); iter++)
+        {
+            if (sId == iter->id)
+            {
+                ex = *iter;
+                return true;
+            }
+        }
+        return false;
+    }
+    void SetEventToAllMainWindows(NSEditorApi::CAscMenuEvent* pEvent)
+    {
+        for (std::map<int, CCefView*>::iterator i = m_mapViews.begin(); i != m_mapViews.end(); i++)
+        {
+           CCefView* pView = i->second;
+           if (pView->GetType() == cvwtSimple)
+           {
+               pEvent->AddRef();
+               pView->Apply(pEvent);
+           }
+        }
+
+        pEvent->Release();
     }
 
-public:
-    IMPLEMENT_REFCOUNTING(CAscApplicationManager_Private);
-
-public:
+    // загрузка скриптов ----------------------------------------------------------------------
     virtual void OnLoad(CCefScriptLoader* pLoader, bool error) OVERRIDE
     {
+        // коллбэк на загрузку скрипта
+
         m_pMain->LockCS(LOCK_CS_SCRIPT);
         
         private_OnLoad(pLoader->m_sUrl, pLoader->m_sDestination);
-
         RELEASEOBJECT(pLoader);
+
         m_pMain->UnlockCS(LOCK_CS_SCRIPT);
-    }
-    
+    }    
     void Start_PrivateDownloadScript(const std::wstring& sUrl, const std::wstring& sDestination)
     {
         m_strPrivateDownloadUrl = sUrl;
@@ -1110,26 +688,9 @@ public:
         
         NSCommon::url_correct(m_strPrivateDownloadUrl);
         
-        CCefView* pMainView = NULL;
-        int nMinId = 10000;
-        for (std::map<int, CCefView*>::iterator i = m_mapViews.begin(); i != m_mapViews.end(); i++)
-        {
-            CCefView* pView = i->second;
-            if (pView->GetType() == cvwtSimple)
-            {
-                if (nMinId > pView->GetId())
-                {
-                    pMainView = pView;
-                    nMinId = pView->GetId();
-                }
-            }
-        }
-
-        // нуллом быть не может
+        CCefView* pMainView = GetViewWithMinId();
         if (NULL != pMainView)
-        {
             pMainView->StartDownload(m_strPrivateDownloadUrl);
-        }
     }
     void End_PrivateDownloadScript()
     {
@@ -1158,65 +719,49 @@ public:
 
         m_pMain->UnlockCS(LOCK_CS_SCRIPT);
     }
-
-    bool TestExternal(const std::wstring& sId, CExternalCloudRegister& ex)
-    {
-        for (std::vector<CExternalCloudRegister>::iterator iter = m_arExternalClouds.begin(); iter != m_arExternalClouds.end(); iter++)
-        {
-            if (sId == iter->id)
-            {
-                ex = *iter;
-                return true;
-            }
-        }
-        return false;
-    }
-
-protected:
-    
     void private_OnLoad(const std::wstring& sUrl, const std::wstring& sDestination)
     {
         m_pMain->LockCS(LOCK_CS_SCRIPT);
 
         std::map<std::wstring, std::vector<CEditorFrameId>>::iterator i = m_mapLoadedScripts.find(sDestination);
-        
+
         if (i != m_mapLoadedScripts.end())
         {
             // другого и быть не может
-            
             NSEditorApi::CAscEditorScript* pData = new NSEditorApi::CAscEditorScript();
             pData->put_Url(sUrl);
             pData->put_Destination(sDestination);
-            
+
             NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
             pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_SCRIPT_EDITOR_VERSION;
             pEvent->m_pData = pData;
-            
+
             std::vector<CEditorFrameId>& _arr = i->second;
             for (std::vector<CEditorFrameId>::iterator it = _arr.begin(); it != _arr.end(); it++)
             {
                 CCefView* pView = m_pMain->GetViewById((*it).EditorId);
-                
+
                 if (NULL != pView)
                 {
                     pEvent->AddRef();
-                    
+
                     pData->put_FrameId((*it).FrameId);
                     pView->Apply(pEvent);
                 }
             }
-            
+
             RELEASEINTERFACE(pEvent);
         }
-        
+
         m_mapLoadedScripts.erase(i);
 
         m_pMain->UnlockCS(LOCK_CS_SCRIPT);
     }
 
+    // отслеживаем шрифты ---------------------------------------------------------------------
     virtual DWORD ThreadProc()
     {
-        CORE_LOGGINGA("CApplicationManager::Fonts::start");
+        LOGGER_STRING("CApplicationManager::Fonts::start");
         //DWORD dwTime1 = NSTimers::GetTickCount();
 
         std::vector<std::string> strFonts;
@@ -1328,7 +873,7 @@ protected:
 
         if (!bIsEqual)
         {
-            CORE_LOGGINGA("CApplicationManager::Fonts::change");
+            LOGGER_STRING("CApplicationManager::Fonts::change");
 
             if (NSFile::CFileBinary::Exists(strAllFontsJSPath))
                 NSFile::CFileBinary::Remove(strAllFontsJSPath);
@@ -1385,13 +930,11 @@ protected:
         // TODO:
         m_pApplicationFonts->InitializeFromFolder(strDirectory);
 
-        CORE_LOGGINGA("CApplicationManager::Fonts::end");
+        LOGGER_STRING("CApplicationManager::Fonts::end");
         return 0;
     }
 
-public:
-
-    // DOWNLOADS
+    // работа со скачиванием файлов -----------------------------------------------------------
     std::wstring GetPrivateDownloadUrl()
     {
         return m_strPrivateDownloadUrl;
@@ -1404,7 +947,6 @@ public:
 #endif
         return sRet;
     }
-
     bool IsCanceled(const unsigned int& nId)
     {
         std::map<unsigned int, bool>::iterator iter = m_mapCancelDownloads.find(nId);
@@ -1413,12 +955,12 @@ public:
         return true;
     }
 
+    // работа с Recents & Recovers ------------------------------------------------------------
     void LocalFiles_Init()
     {
         Recents_Load();
         Recovers_Load();
     }
-
     void Recents_Load()
     {
         CTemporaryCS oCS(&m_oCS_LocalFiles);
@@ -1530,7 +1072,6 @@ public:
 
         Recents_Dump();
     }
-
     void Recents_Dump(bool bIsSend = true)
     {
         CTemporaryCS oCS(&m_oCS_LocalFiles);
@@ -1742,7 +1283,6 @@ public:
         m_arRecovers.clear();
         Recovers_Dump();
     }
-
     void Recovers_Dump()
     {
         CTemporaryCS oCS(&m_oCS_LocalFiles);
@@ -1779,44 +1319,12 @@ public:
         SetEventToAllMainWindows(pEvent);
     }
 
-    void SetEventToAllMainWindows(NSEditorApi::CAscMenuEvent* pEvent)
-    {
-        for (std::map<int, CCefView*>::iterator i = m_mapViews.begin(); i != m_mapViews.end(); i++)
-        {
-           CCefView* pView = i->second;
-           if (pView->GetType() == cvwtSimple)
-           {
-               pEvent->AddRef();
-               pView->Apply(pEvent);
-           }
-        }
-
-        pEvent->Release();
-    }
-
-    CCefView* GetViewForSystemMessages()
-    {
-        int nMin = 0xFFFF;
-        CCefView* pViewRet = NULL;
-        for (std::map<int, CCefView*>::iterator i = m_mapViews.begin(); i != m_mapViews.end(); i++)
-        {
-           CCefView* pView = i->second;
-           if (pView->GetType() == cvwtSimple && pView->GetId() < nMin)
-           {
-               nMin = pView->GetId();
-               pViewRet = pView;
-           }
-        }
-
-        return pViewRet;
-    }
-
+    // crypto ---------------------------------------------------------------------------------
     void LoadCryptoData()
     {
         m_pKeyChain = m_pMain->GetKeychainEngine();
         m_pKeyChain->Check(m_pMain->m_oSettings.cookie_path + L"/user.data");
     }
-
     void SendCryptoData(CefRefPtr<CefFrame> frame = NULL)
     {
         std::wstring sPass = L"";
@@ -1856,7 +1364,6 @@ window.AscDesktopEditor.CryptoPassword = \"" + sPass + L"\";\n\
 
         RELEASEINTERFACE(pEvent);
     }
-
     virtual void OnKeyChainComplete(NSAscCrypto::CCryptoKey& keyEnc, NSAscCrypto::CCryptoKey& keyDec)
     {
         m_cryptoKeyEnc = keyEnc;

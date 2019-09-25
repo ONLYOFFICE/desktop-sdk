@@ -160,8 +160,6 @@ void CAscApplicationManager::SendKeyboardAttack()
 
 void CAscApplicationManager::CheckFonts(bool bAsync)
 {
-    m_pInternal->LocalFiles_Init();
-
     if (!NSDirectory::Exists(m_oSettings.fonts_cache_info_path))
     {
 #ifdef WIN32
@@ -244,15 +242,6 @@ void CAscApplicationManager::Apply(NSEditorApi::CAscMenuEvent* pEvent)
         {
             NSEditorApi::CAscDownloadFileInfo* pData = (NSEditorApi::CAscDownloadFileInfo*)pEvent->m_pData;
 
-            if (pData->get_IsComplete())
-            {
-                int nId = pData->get_Id();
-                CCefView* pCefView = this->GetViewById(nId);
-
-                if (-1 != pCefView->GetParentCef())
-                    this->DestroyCefView(pData->get_Id());
-            }
-            
             bool bIsPrivate = false;
             std::wstring s1 = pData->get_Url();
             NSCommon::string_replace(s1, L"/./", L"/");
@@ -1024,6 +1013,9 @@ std::vector<std::string> CAscApplicationManager::GetRendererStartupProperties()
     props.push_back("system_plugins_path=" + U_TO_UTF8(m_oSettings.system_plugins_path));
     props.push_back("user_plugins_path=" + U_TO_UTF8(m_oSettings.user_plugins_path));
     props.push_back("cookie_path=" + U_TO_UTF8(m_oSettings.cookie_path));
+    props.push_back("app_data_path=" + U_TO_UTF8(m_oSettings.app_data_path));
+    props.push_back("debug_mode=" + m_pInternal->m_bDebugInfoSupport ? "true" : "false");
+    props.push_back("fonts_cache_path=" + U_TO_UTF8(m_oSettings.fonts_cache_info_path));
 
     return props;
 }

@@ -66,10 +66,9 @@ public:
     virtual void releaseFromChild() { }
 };
 
-class Q_DECL_EXPORT CCefView
+class DESKTOP_DECL CCefView
 {
 public:
-
     CCefView(CCefViewWidgetImpl* parent, int nId);
     virtual ~CCefView();
 
@@ -93,13 +92,6 @@ public:
 
     void SetExternalCloud(const std::wstring& sProviderId);
 
-#if 0
-    virtual void dragEnterEvent(QDragEnterEvent *);
-    virtual void dragMoveEvent(QDragMoveEvent *);
-    virtual void dragLeaveEvent(QDragLeaveEvent *);
-    virtual void dropEvent(QDropEvent *);
-#endif
-
     CAscApplicationManager* GetAppManager();
     void SetAppManager(CAscApplicationManager* );
 
@@ -108,9 +100,6 @@ public:
 
     int GetId();
     CefViewWrapperType GetType();
-
-    void SetParentCef(int nId);
-    int GetParentCef();
 
     void SetModified(bool bIsModified);
     bool GetModified();
@@ -125,6 +114,8 @@ protected:
     CefViewWrapperType m_eWrapperType;
     CCefView_Private* m_pInternal;
 
+public:
+
     friend class CCefView_Private;
     friend class CAscClientHandler;
     friend class CAscApplicationManager;
@@ -133,7 +124,7 @@ protected:
     friend class CCefViewEditor;
 };
 
-class Q_DECL_EXPORT CCefViewEditor : public CCefView
+class DESKTOP_DECL CCefViewEditor : public CCefView
 {
 protected:
     AscEditorType m_eType;
@@ -145,9 +136,8 @@ public:
     void SetEditorType(AscEditorType eType);
     AscEditorType GetEditorType();
 
-    static int GetFileFormat(const std::wstring& sFilePath);
     void OpenLocalFile(const std::wstring& sFilePath, const int& nFileFormat);
-    void CreateLocalFile(const int& nFileFormat, const std::wstring& sName = L""); // AscEditorType
+    void CreateLocalFile(const int& nFileFormat, const std::wstring& sName = L"");
     bool OpenRecoverFile(const int& nId);
     bool OpenRecentFile(const int& nId);
     bool OpenReporter(const std::wstring& sFolder);
@@ -157,27 +147,8 @@ public:
 
     std::wstring GetLocalFilePath();
     std::wstring GetRecoveryDir();
+
+    static int GetFileFormat(const std::wstring& sFilePath);
 };
-
-class IFileDownloaderEvents
-{
-public:
-    virtual void OnProgress(int nProgress) = 0;
-    virtual void OnDownload(bool bIsSuccess) = 0;
-};
-
-class CCefFileDownloader_Private;
-class Q_DECL_EXPORT CCefFileDownloader
-{
-protected:
-    CCefFileDownloader_Private* m_pInternal;
-
-public:
-    CCefFileDownloader(IFileDownloaderEvents* pEvents);
-    ~CCefFileDownloader();
-
-    void DownloadFile(CAscApplicationManager* pManager, const std::wstring& sUrl, const std::wstring& sDstFile);
-};
-
 
 #endif  // CEFCLIENT_CEFWEBVIEW_H

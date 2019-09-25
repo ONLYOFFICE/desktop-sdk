@@ -85,43 +85,6 @@ int XIOErrorHandlerImpl(Display *display)
 
 #include "./plugins.h"
 
-static std::wstring ReadFileByLineCorrent(std::wstring& value)
-{
-    wchar_t* start = (wchar_t*)value.c_str();
-    wchar_t* end = start + value.length() - 1;
-
-    while (start < end && (*start == '\n' || *start == '\r'))
-        ++start;
-
-    while (end > start && (*end == '\n' || *end == '\r'))
-        --end;
-
-    if (end <= start)
-        return std::wstring();
-
-    return std::wstring(start, (end - start) + 1);
-}
-
-static std::vector<std::wstring> ReadFileByLine(std::wstring& sContent)
-{
-    std::vector<std::wstring> arLines;
-    std::wstring::size_type pos = 0;
-    std::wstring delimiter = L"\n";
-    std::wstring sToken = L"";
-    while ((pos = sContent.find(delimiter)) != std::string::npos)
-    {
-        sToken = sContent.substr(0, pos);
-        arLines.push_back(ReadFileByLineCorrent(sToken));
-
-        sContent.erase(0, pos + delimiter.length());
-    }
-
-    sToken = sContent;
-    arLines.push_back(ReadFileByLineCorrent(sToken));
-
-    return arLines;
-}
-
 class CApplicationCEF_Private
 {
 public:
@@ -168,22 +131,18 @@ CApplicationCEF::CApplicationCEF()
 
 int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* argv[])
 {
-    CORE_LOGGINGA("CApplicationCEF::Init_CEF::start");
+    LOGGER_STRING("CApplicationCEF::Init_CEF::start");
 
     if (NULL == pManager->m_pInternal->m_pDpiChecker)
         pManager->m_pInternal->m_pDpiChecker = pManager->InitDpiChecker();
 
 #if 0
-    FILE* f = fopen("D:\\logloglog.txt", "a+");
-    fprintf(f, "-----------------------------------------------\n");
     for (int i = 0; i < argc; ++i)
     {
-        fprintf(f, argv[i]);
-        fprintf(f, "\n");
+        LOGGER_STRING2(argv[i]);
     }
-    fprintf(f, "-----------------------------------------------\n");
-    fclose(f);
 #endif
+
     m_pInternal->m_pManager = pManager;
 
     // Enable High-DPI support on Windows 7 or newer.
@@ -274,7 +233,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     }
 #endif
 
-    CORE_LOGGINGA("CApplicationCEF::Init_CEF::main");
+    LOGGER_STRING("CApplicationCEF::Init_CEF::main");
 
     CefSettings settings;
     
@@ -347,10 +306,10 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     settings.persist_session_cookies = true;
 
     // Initialize CEF.
-    bool bInit = m_pInternal->context->Initialize(main_args, settings, m_pInternal->m_app.get(), NULL);
-    bool bIsInitScheme = asc_scheme::InitScheme(pManager);
+    m_pInternal->context->Initialize(main_args, settings, m_pInternal->m_app.get(), NULL);
+    asc_scheme::InitScheme(pManager);
 
-    CORE_LOGGINGA("CApplicationCEF::Init_CEF::initialize");
+    LOGGER_STRING("CApplicationCEF::Init_CEF::initialize");
 
 #if defined(_LINUX) && !defined(_MAC)
     // The Chromium sandbox requires that there only be a single thread during
@@ -433,7 +392,9 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
         NSSystem::SetEnvValueA(iterMap->first, iterMap->second);
     }
 
-    CORE_LOGGINGA("CApplicationCEF::Init_CEF::end");
+    pManager->m_pInternal->LocalFiles_Init();
+
+    LOGGER_STRING("CApplicationCEF::Init_CEF::end");
 
     return 0;
 }

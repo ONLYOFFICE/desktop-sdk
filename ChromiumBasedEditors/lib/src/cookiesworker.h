@@ -180,7 +180,7 @@ public:
     }
 
 public:
-    IMPLEMENT_REFCOUNTING(CCefCookieVisitor);
+    IMPLEMENT_REFCOUNTING(CCefCookieVisitor)
 };
 
 #ifdef CEF_2623
@@ -234,19 +234,11 @@ public:
 
         CefCookie authorization;
 
-    #if 0
-        CefString(&authorization.name).FromString("asc_auth_key");
-        CefString(&authorization.value).FromString("mNRRcfOz5/kpQs8+H+ImHZrXrz+ByxHpUdf44jektpNgBCuUCcEHB8CEB6TRJTYCqsN5Ag0UlmS+cyj7G838uRoffSe44N/PW4PYIItmSl7HI8lh3nEmmtYjwRWKFDYi");
-
-        CefString(&authorization.domain).FromString("ascdesktop.teamlab.info");
-        CefString(&authorization.path).FromString("/");
-    #else
         CefString(&authorization.name).FromString(m_sCookieKey);
         CefString(&authorization.value).FromString(m_sCookieValue);
 
         CefString(&authorization.domain).FromString(m_sDomain);
         CefString(&authorization.path).FromString(m_sPath);
-    #endif
 
         authorization.httponly = 0;
         authorization.secure = 0;
@@ -257,7 +249,7 @@ public:
         authorization.expires.day_of_week = 5;
         authorization.expires.day_of_month = 11;
 
-        bool bIsAddedCookie = manager->SetCookie(m_sUrl, authorization, NULL);
+        manager->SetCookie(m_sUrl, authorization, NULL);
 
         m_pCallback->OnSetCookie();
 
@@ -265,7 +257,7 @@ public:
     }
 
 public:
-    IMPLEMENT_REFCOUNTING(CCefCookieSetter);
+    IMPLEMENT_REFCOUNTING(CCefCookieSetter)
 };
 
 #endif // CEF_COOKIES_WORKER_H

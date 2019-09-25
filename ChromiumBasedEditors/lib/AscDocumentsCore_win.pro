@@ -69,11 +69,12 @@ HEADERS += \
     ./include/cefapplication.h \
     ./include/cefview.h \
     ./include/applicationmanager_events.h \
-    ./src/applicationmanager_p.h \    
+    ./src/applicationmanager_p.h \
     ./src/nativeviewer.h \
     ./src/plugins.h \
     ./src/crypto_mode.h \
-    ./include/keychain.h
+    ./include/keychain.h \
+    ./src/utils.h
 
 SOURCES += \
     ./src/applicationmanager.cpp \
