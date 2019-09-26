@@ -1323,7 +1323,8 @@ DE.controllers.Main.DisableVersionHistory(); \
         else if (name == "IsImageFile")
         {
             CImageFileFormatChecker oChecker;
-            bool bIsImageFile = oChecker.isImageFile(arguments[0]->GetStringValue().ToWString());
+            std::wstring sImageFile = arguments[0]->GetStringValue().ToWString();
+            bool bIsImageFile = oChecker.isImageFile(sImageFile);
             retval = CefV8Value::CreateBool(bIsImageFile);
             return true;
         }
