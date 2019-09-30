@@ -2517,7 +2517,7 @@ _e.asc_AddVideo(\"" + sImage + L".png\", \"" + sImage + L"." + sExt + L"\");\n\
                 return sRet;
             }
         }
-        if (sUrl.find(L"image") == 0)
+        if (sUrl.find(L"image") == 0 || sUrl.find(L"display") == 0)
             return sUrl;
         return L"error";
     }

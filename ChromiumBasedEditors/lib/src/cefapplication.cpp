@@ -81,6 +81,9 @@ int XIOErrorHandlerImpl(Display *display)
 #include "tests/cefclient/browser/main_message_loop_multithreaded_win.h"
 #endif
 #include "tests/shared/browser/main_message_loop_std.h"
+#ifndef _MAC
+#include "tests/shared/browser/main_message_loop_external_pump.h"
+#endif
 #endif
 
 #include "./plugins.h"
@@ -268,10 +271,9 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 #ifdef WIN32
     if (!m_pInternal->m_pManager->IsExternalEventLoop())
         settings.multi_threaded_message_loop = 1;
-    //settings.windowless_rendering_enabled = 1;
 #endif
 
-    if (/*!m_pInternal->m_pManager->IsExternalEventLoop()*/true)
+    if (!m_pInternal->m_pManager->IsExternalEventLoop())
     {
 #ifdef WIN32
         if (settings.multi_threaded_message_loop)
@@ -281,6 +283,11 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 #else
         m_pInternal->message_loop.reset(new client::MainMessageLoopStd);
 #endif
+    }
+    else
+    {
+        settings.external_message_pump = 1;
+        m_pInternal->message_loop = client::MainMessageLoopExternalPump::Create();
     }
 
     std::wstring sCachePath = pManager->m_oSettings.cache_path;
