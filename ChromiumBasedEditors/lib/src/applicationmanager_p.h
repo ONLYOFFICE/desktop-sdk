@@ -112,7 +112,7 @@ static void __log_message__(const std::wstring& message)
 #include "./additional/manager.h"
 #include "./additional/renderer.h"
 
-#define ONLYOFFICE_FONTS_VERSION_ 1
+#define ONLYOFFICE_FONTS_VERSION_ 3
 
 #include "crypto_mode.h"
 #include "plugins.h"

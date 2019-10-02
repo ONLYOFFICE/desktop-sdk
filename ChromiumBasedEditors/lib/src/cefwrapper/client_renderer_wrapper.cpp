@@ -1181,6 +1181,10 @@ DE.controllers.Main.DisableVersionHistory(); \
         {
             CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("print_end");
+
+            if (arguments.size() > 0)
+                message->GetArgumentList()->SetInt(0, arguments[0]->GetIntValue());
+
             browser->SendProcessMessage(PID_BROWSER, message);
 
             m_nCurrentPrintIndex = 0;
