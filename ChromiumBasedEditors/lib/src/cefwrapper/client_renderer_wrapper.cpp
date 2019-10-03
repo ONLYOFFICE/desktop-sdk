@@ -362,6 +362,8 @@ public:
 
     bool m_bIsDebugMode;
 
+    bool m_bIsEnableUploadCrypto;
+
     NSCriticalSection::CRITICAL_SECTION m_oCompleteTasksCS;
 
     CAscEditorNativeV8Handler()
@@ -391,6 +393,8 @@ public:
         m_bIsSupportProtect = true;
 
         m_nCryptoMode = 0;
+
+        m_bIsEnableUploadCrypto = false;
         m_oCompleteTasksCS.InitializeCriticalSection();
 
         CheckDefaults();
@@ -1411,6 +1415,24 @@ window.AscDesktopEditor.GetAdvancedEncryptedData = function(password, callback) 
 window.AscDesktopEditor.SetAdvancedEncryptedData = function(password, data, callback) {\n\
   window.on_set_advanced_encrypted_data = callback;\n\
   window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
+};\n\
+window.AscDesktopEditor.CloudCryptoNewFile = function(url, callback) {\n\
+  window.AscDesktopEditor.DownloadFiles([url], [], function(files) {\n\
+    if (files && 1 == files.length)\n\
+    {\n\
+      window.on_cloud_crypto_upload = callback;\n\
+      window.AscDesktopEditor._CloudCryptoUpload([files[0]], true);\n\
+    }\n\
+  };\n\
+};\n\
+window.AscDesktopEditor.CloudCryptoUpload = function(callback) {\n\
+  window.AscDesktopEditor.OpenFilenameDialog(\"any\", true, function(files) {\n\
+    if (files && 0 < files.length)\n\
+    {\n\
+      window.on_cloud_crypto_upload = callback;\n\
+      window.AscDesktopEditor._CloudCryptoUpload(files);\n\
+    }\n\
+  };\n\
 };", _frame->GetURL(), 0);
             }
 
@@ -2366,6 +2388,59 @@ _e.asc_AddVideo(\"" + sImage + L".png\", \"" + sImage + L"." + sExt + L"\");\n\
             retval = CefV8Value::CreateBool(NSFile::CFileBinary::Exists(sFile));
             return true;
         }
+        else if (name == "_CloudCryptoUpload")
+        {
+            if (!m_bIsEnableUploadCrypto)
+            {
+                // расширяем функцию работой с генерацией паролей и сохранением их
+                CefRefPtr<CefFrame> curFrame = CefV8Context::GetCurrentContext()->GetFrame();
+                if (curFrame)
+                {
+                    curFrame->ExecuteJavaScript("\
+window.onSystemMessage2 = windows.onSystemMessage;\n\
+window.onSystemMessage = function(e) {\n\
+switch (e.type)\n\
+{\n\
+  case \"generatePassword\":\n\
+  {\n\
+    window.AscDesktopEditor._CloudCryptoUploadPass(e.password, e.docinfo);\n\
+    break;\n\
+  }\n\
+  case \"setPasswordByFile\":\n\
+  {\n\
+    window.AscDesktopEditor._CloudCryptoUploadSave(e.password, e.docinfo);\n\
+    break;\n\
+  }\n\
+  default:\n\
+    break;\n\
+}\n\
+if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
+};", curFrame->GetURL(), 0);
+                }
+            }
+
+            int nCount = arguments[0]->GetArrayLength();
+            bool bIsNeedRemoveAfterUse = false;
+            if (arguments.size() > 1)
+                bIsNeedRemoveAfterUse = arguments[1]->GetBoolValue();
+
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("cloud_crypto_upload");
+            message->GetArgumentList()->SetBool(0, bIsNeedRemoveAfterUse);
+            message->GetArgumentList()->SetInt(1, nCount);
+            for (int i = 0; i < nCount; ++i)
+                message->GetArgumentList()->SetString(2 + i, arguments[0]->GetValue(i)->GetStringValue());
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "_CloudCryptoUploadPass")
+        {
+            return true;
+        }
+        else if (name == "_CloudCryptoUploadSave")
+        {
+            return true;
+        }
 
         // Function does not exist.
         return false;
@@ -2739,7 +2814,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
 
-    #define EXTEND_METHODS_COUNT 117
+    #define EXTEND_METHODS_COUNT 121
     const char* methods[EXTEND_METHODS_COUNT] = {
         "Copy",
         "Paste",
@@ -2895,6 +2970,13 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         "AddVideo",
         "SendByMail",
         "IsLocalFileExist",
+
+        "CloudCryptoCreateFile",
+        "CloudCryptoUploadFile",
+
+        "_CloudCryptoUploadPass",
+        "_CloudCryptoUploadSave",
+
         NULL
     };
 

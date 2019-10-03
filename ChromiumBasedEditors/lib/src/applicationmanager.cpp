@@ -824,6 +824,11 @@ void CAscApplicationManager::ExitExternalEventLoop()
     // none
 }
 
+bool CAscApplicationManager::OnScheduleMessagePumpWork()
+{
+    return false;
+}
+
 int CAscApplicationManager::GetMonitorScaleByIndex(const int& nIndex, unsigned int& nDpiX, unsigned int& nDpiY)
 {
     if (m_pInternal->m_nForceDisplayScale > 0)
