@@ -2450,6 +2450,13 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
+        else if (name == "CloudCryptoUploadEnd")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("cloud_crypto_upload_end");
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
 
         // Function does not exist.
         return false;
@@ -2823,7 +2830,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
 
-    #define EXTEND_METHODS_COUNT 120
+    #define EXTEND_METHODS_COUNT 121
     const char* methods[EXTEND_METHODS_COUNT] = {
         "Copy",
         "Paste",
@@ -2981,9 +2988,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         "IsLocalFileExist",
 
         "_CloudCryptoUpload",
-
         "_CloudCryptoUploadPass",
         "_CloudCryptoUploadSave",
+        "CloudCryptoUploadEnd",
 
         NULL
     };

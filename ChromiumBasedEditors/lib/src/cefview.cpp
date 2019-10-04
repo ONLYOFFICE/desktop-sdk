@@ -403,10 +403,10 @@ public:
             return *this;
         }
     };
-    class CCloudCryptoUpload : public NSThreads::CBaseThread
+    class CCloudCryptoUpload
     {
     public:
-        CefRefPtr<CAscClientHandler> Handler;
+        CCefView_Private* View;
         CAscApplicationManager* Manager;
 
         std::list<std::wstring> Files;
@@ -424,12 +424,12 @@ public:
         {
             if (IsRemove)
             {
-                for (std::vector<std::wstring>::const_iterator i = Files.begin(); i != Files.end(); i++)
+                for (std::list<std::wstring>::iterator i = Files.begin(); i != Files.end(); i++)
                 {
                     NSFile::CFileBinary::Remove(*i);
                 }
             }
-            for (std::vector<std::wstring>::const_iterator i = FilesDst.begin(); i != FilesDst.end(); i++)
+            for (std::list<std::wstring>::iterator i = FilesDst.begin(); i != FilesDst.end(); i++)
             {
                 NSFile::CFileBinary::Remove(*i);
             }
@@ -469,12 +469,7 @@ public:
 
             NextFile();
         }
-        CefRefPtr<CefFrame> GetFrame()
-        {
-            if (!Handler || !Handler->GetBrowser())
-                return NULL;
-            return Handler->GetBrowser()->GetFrame((int64)FrameID);
-        }
+        CefRefPtr<CefFrame> GetFrame();
         void NextFile()
         {
             if (0 >= Files.size())
@@ -482,8 +477,8 @@ public:
                 OnComplete();
                 return;
             }
-            std::wstring sFileSrc = Files.begin();
-            std::wstring sFileDst = FilesDst.begin();
+            std::wstring sFileSrc = *Files.begin();
+            std::wstring sFileDst = *FilesDst.begin();
 
             if (sFileDst.empty())
             {
@@ -509,8 +504,8 @@ public:
                 OnComplete();
                 return;
             }
-            std::wstring sFileSrc = Files.begin();
-            std::wstring sFileDst = FilesDst.begin();
+            std::wstring sFileSrc = *Files.begin();
+            std::wstring sFileDst = *FilesDst.begin();
 
             // конвертируем
             NSStringUtils::CStringBuilder oBuilder;
@@ -577,8 +572,8 @@ public:
                 OnComplete();
                 return;
             }
-            std::wstring sFileSrc = Files.begin();
-            std::wstring sFileDst = FilesDst.begin();
+            std::wstring sFileSrc = *Files.begin();
+            std::wstring sFileDst = *FilesDst.begin();
             OnCompleteFile(sFileDst);
         }
         void OnSend()
@@ -610,11 +605,16 @@ public:
             CefRefPtr<CefFrame> pFrame = GetFrame();
             if (!pFrame)
                 return;
-             pFrame->ExecuteJavaScript("window.onSystemMessage({  : \"" + sPassA + "\" });", pFrame->GetURL(), 0);
+             pFrame->ExecuteJavaScript("window.onSystemMessage({ type : \"upload\", file : \"" + U_TO_UTF8(sFile) + "\" });", pFrame->GetURL(), 0);
         }
         void OnComplete()
         {
             // вся работа закончена
+            CefRefPtr<CefFrame> pFrame = GetFrame();
+            if (pFrame)
+                pFrame->ExecuteJavaScript("window.onSystemMessage({ type : \"upload_end\" });", pFrame->GetURL(), 0);
+            View->m_pUploadFiles = NULL;
+            delete this;
         }
     };
 
@@ -3055,17 +3055,17 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
         else if ("cloud_crypto_upload" == message_name)
         {
             if (m_pParent->m_pInternal->m_pUploadFiles)
-                return;
+                return true;
 
             m_pParent->m_pInternal->m_pUploadFiles = new CCefView_Private::CCloudCryptoUpload();
             m_pParent->m_pInternal->m_pUploadFiles->IsRemove = args->GetBool(0);
             m_pParent->m_pInternal->m_pUploadFiles->FrameID = args->GetInt(1);
-            m_pParent->m_pInternal->m_pUploadFiles->Handler = m_pParent->m_pInternal->m_handler;
+            m_pParent->m_pInternal->m_pUploadFiles->View = m_pParent->m_pInternal;
             int nCount = args->GetInt(2);
             for (int i = 0; i < nCount; ++i)
-                m_pParent->m_pInternal->m_pUploadFiles.push_back(args->GetString(3 + i));
+                m_pParent->m_pInternal->m_pUploadFiles->Files.push_back(args->GetString(3 + i));
 
-            m_pParent->m_pInternal->m_pUploadFiles->Start(0);
+            m_pParent->m_pInternal->m_pUploadFiles->Init();
             return true;
         }
         else if ("cloud_crypto_upload_pass" == message_name)
@@ -3076,8 +3076,14 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
         }
         else if ("cloud_crypto_upload_save" == message_name)
         {
-        if (m_pParent->m_pInternal->m_pUploadFiles)
-            m_pParent->m_pInternal->m_pUploadFiles->OnPassword();
+            if (m_pParent->m_pInternal->m_pUploadFiles)
+                m_pParent->m_pInternal->m_pUploadFiles->OnSavePassword();
+            return true;
+        }
+        else if ("cloud_crypto_upload_end" == message_name)
+        {
+            if (m_pParent->m_pInternal->m_pUploadFiles)
+                m_pParent->m_pInternal->m_pUploadFiles->OnSend();
             return true;
         }
 
@@ -5422,6 +5428,13 @@ void CCefView::LoadReporter(int nParentId, std::wstring url)
 double CCefView::GetDeviceScale()
 {
     return (double)m_pInternal->m_nDeviceScale;
+}
+
+CefRefPtr<CefFrame> CCefView_Private::CCloudCryptoUpload::GetFrame()
+{
+    if (!View->m_handler || !View->m_handler->GetBrowser())
+        return NULL;
+    return View->m_handler->GetBrowser()->GetFrame((int64)FrameID);
 }
 
 // CefViewEditor --------------------------------------------------------------------------
