@@ -2392,6 +2392,7 @@ _e.asc_AddVideo(\"" + sImage + L".png\", \"" + sImage + L"." + sExt + L"\");\n\
         {
             if (!m_bIsEnableUploadCrypto)
             {
+                m_bIsEnableUploadCrypto = true;
                 // расширяем функцию работой с генерацией паролей и сохранением их
                 CefRefPtr<CefFrame> curFrame = CefV8Context::GetCurrentContext()->GetFrame();
                 if (curFrame)

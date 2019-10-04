@@ -605,7 +605,7 @@ public:
             CefRefPtr<CefFrame> pFrame = GetFrame();
             if (!pFrame)
                 return;
-             pFrame->ExecuteJavaScript("window.onSystemMessage({ type : \"upload\", file : \"" + U_TO_UTF8(sFile) + "\" });", pFrame->GetURL(), 0);
+             pFrame->ExecuteJavaScript("window.on_cloud_crypto_upload && window.on_cloud_crypto_upload(\"" + U_TO_UTF8(sFile) + "\");", pFrame->GetURL(), 0);
         }
         void OnComplete()
         {
