@@ -403,16 +403,21 @@ public:
             return *this;
         }
     };
-    class CCloudCryptoUpload
+    class CCloudCryptoUpload : public NSThreads::CBaseThread
     {
     public:
-        std::vector<std::wstring> Files;
-        std::vector<std::wstring> FilesDst;
+        CefRefPtr<CAscClientHandler> Handler;
+        CAscApplicationManager* Manager;
+
+        std::list<std::wstring> Files;
+        std::list<std::wstring> FilesDst;
+        int FrameID;
         bool IsRemove;
 
         CCloudCryptoUpload()
         {
             IsRemove = false;
+            FrameID = -1;
         }
 
         ~CCloudCryptoUpload()
@@ -428,6 +433,188 @@ public:
             {
                 NSFile::CFileBinary::Remove(*i);
             }
+        }
+
+    public:
+        void Init()
+        {
+            for (std::list<std::wstring>::iterator iter = Files.begin(); iter != Files.end(); iter++)
+            {
+                std::wstring sFile = *iter;
+
+                COfficeFileFormatChecker oChecker;
+                bool bIsOfficeFile = oChecker.isOfficeFile(sFile);
+
+                if (bIsOfficeFile)
+                {
+                    // зашифрованные - итак зашифрованы
+                    if (oChecker.nFileType == AVS_OFFICESTUDIO_FILE_OTHER_MS_OFFCRYPTO)
+                        bIsOfficeFile = false;
+                }
+
+                if (!bIsOfficeFile)
+                {
+                    // не нужна конвертация
+                    FilesDst.push_back(L"");
+                }
+                else
+                {
+                    std::wstring sFileDst = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"DT_");
+                    if (NSFile::CFileBinary::Exists(sFileDst))
+                        NSFile::CFileBinary::Remove(sFileDst);
+                    sFileDst += NSFile::GetFileName(sFile);
+                    FilesDst.push_back(sFileDst);
+                }
+            }
+
+            NextFile();
+        }
+        CefRefPtr<CefFrame> GetFrame()
+        {
+            if (!Handler || !Handler->GetBrowser())
+                return NULL;
+            return Handler->GetBrowser()->GetFrame((int64)FrameID);
+        }
+        void NextFile()
+        {
+            if (0 >= Files.size())
+            {
+                OnComplete();
+                return;
+            }
+            std::wstring sFileSrc = Files.begin();
+            std::wstring sFileDst = FilesDst.begin();
+
+            if (sFileDst.empty())
+            {
+                OnCompleteFile(sFileSrc);
+                return;
+            }
+
+            // запрос пароля
+            CefRefPtr<CefFrame> pFrame = GetFrame();
+            if (!pFrame)
+            {
+                OnCompleteFile(sFileSrc);
+                return;
+            }
+            // нужно криптовать... запрашиваем пароль
+            pFrame->ExecuteJavaScript("window.AscDesktopEditor.sendSystemMessage({ type : generatePassword });", pFrame->GetURL(), 0);
+        }
+        void OnPassword(const std::wstring& sPass, const std::wstring& sInfo)
+        {
+            // пришел пароль из плагина. делаем конвертацию и отсылаем файл
+            if (0 >= Files.size())
+            {
+                OnComplete();
+                return;
+            }
+            std::wstring sFileSrc = Files.begin();
+            std::wstring sFileDst = FilesDst.begin();
+
+            // конвертируем
+            NSStringUtils::CStringBuilder oBuilder;
+            oBuilder.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><TaskQueueDataConvert><m_sFileFrom>");
+            oBuilder.WriteEncodeXmlString(sFileSrc);
+            oBuilder.WriteEncodeXmlString(L"</m_sFileFrom><m_sFileTo>");
+            oBuilder.WriteEncodeXmlString(sFileDst);
+            oBuilder.WriteEncodeXmlString(L"</m_sFileTo>");
+
+            COfficeFileFormatChecker oChecker;
+            oChecker.isOfficeFile(sFileSrc);
+
+            oBuilder.WriteString(L"<m_nFormatTo>");
+            oBuilder.WriteString(std::to_wstring(oChecker.nFileType));
+            oBuilder.WriteString(L"</m_nFormatTo>");
+            oBuilder.WriteString(L"<m_sSavePassword>");
+            oBuilder.WriteEncodeXmlString(sPass);
+            oBuilder.WriteString(L"</m_sSavePassword>");
+            oBuilder.WriteString(L"<m_sDocumentID>");
+            oBuilder.WriteEncodeXmlString(sInfo);
+            oBuilder.WriteString(L"</m_sDocumentID>");
+
+            oBuilder.WriteString(L"<m_sFontDir>");
+            oBuilder.WriteEncodeXmlString(Manager->m_oSettings.fonts_cache_info_path);
+            oBuilder.WriteString(L"</m_sFontDir>");
+
+            oBuilder.WriteString(L"</TaskQueueDataConvert>");
+
+            std::wstring sXmlConvert = oBuilder.GetData();
+            std::wstring sTempFileForParams = NSDirectory::GetTempPath() + L"/params_to_crypto.xml";
+            NSFile::CFileBinary::SaveToFile(sTempFileForParams, sXmlConvert, true);
+
+            int nReturnCode = NSX2T::Convert(Manager->m_oSettings.file_converter_path + L"/x2t", sTempFileForParams, Manager);
+            NSFile::CFileBinary::Remove(sTempFileForParams);
+
+            if (nReturnCode)
+            {
+                OnCompleteFile(sFileSrc);
+                return;
+            }
+
+            // запрос сохранения пароля
+            CefRefPtr<CefFrame> pFrame = GetFrame();
+            if (!pFrame)
+            {
+                OnCompleteFile(sFileSrc);
+                return;
+            }
+
+            // нужно криптовать... запрашиваем пароль
+            std::string sHashA = "";
+            ICertificate* pCert = ICertificate::CreateInstance();
+            std::string sHash = pCert->GetHash(sFileDst, OOXML_HASH_ALG_SHA256);
+            delete pCert;
+
+            std::string sPassA = U_TO_UTF8(sPass);
+            pFrame->ExecuteJavaScript("window.AscDesktopEditor.sendSystemMessage({ type : setPasswordByFile, hash : \"" + sHashA + "\", password : \"" + sPassA + "\" });", pFrame->GetURL(), 0);
+        }
+        void OnSavePassword()
+        {
+            // пароли сохранены
+            if (0 >= Files.size())
+            {
+                OnComplete();
+                return;
+            }
+            std::wstring sFileSrc = Files.begin();
+            std::wstring sFileDst = FilesDst.begin();
+            OnCompleteFile(sFileDst);
+        }
+        void OnSend()
+        {
+            // файл отослался
+            if (0 >= Files.size())
+                return; // error
+
+            std::wstring sFile = *Files.begin();
+            std::wstring sFileDst = *FilesDst.begin();
+            Files.erase(Files.begin());
+            FilesDst.erase(FilesDst.begin());
+
+            if (IsRemove)
+                NSFile::CFileBinary::Remove(sFile);
+            if (!sFileDst.empty())
+                NSFile::CFileBinary::Remove(sFileDst);
+
+            if (0 >= Files.size())
+                OnComplete();
+
+            NextFile();
+        }
+
+    private:
+        void OnCompleteFile(const std::wstring& sFile)
+        {
+            // файл готов. отправляем его в облако. удалим все ненужное на деструкторе
+            CefRefPtr<CefFrame> pFrame = GetFrame();
+            if (!pFrame)
+                return;
+             pFrame->ExecuteJavaScript("window.onSystemMessage({  : \"" + sPassA + "\" });", pFrame->GetURL(), 0);
+        }
+        void OnComplete()
+        {
+            // вся работа закончена
         }
     };
 
@@ -2867,14 +3054,30 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
         }
         else if ("cloud_crypto_upload" == message_name)
         {
+            if (m_pParent->m_pInternal->m_pUploadFiles)
+                return;
+
             m_pParent->m_pInternal->m_pUploadFiles = new CCefView_Private::CCloudCryptoUpload();
             m_pParent->m_pInternal->m_pUploadFiles->IsRemove = args->GetBool(0);
-            int nCount = args->GetInt(1);
+            m_pParent->m_pInternal->m_pUploadFiles->FrameID = args->GetInt(1);
+            m_pParent->m_pInternal->m_pUploadFiles->Handler = m_pParent->m_pInternal->m_handler;
+            int nCount = args->GetInt(2);
             for (int i = 0; i < nCount; ++i)
-                m_pParent->m_pInternal->m_pUploadFiles.push_back(args->GetString(2 + i));
+                m_pParent->m_pInternal->m_pUploadFiles.push_back(args->GetString(3 + i));
 
-
-
+            m_pParent->m_pInternal->m_pUploadFiles->Start(0);
+            return true;
+        }
+        else if ("cloud_crypto_upload_pass" == message_name)
+        {
+            if (m_pParent->m_pInternal->m_pUploadFiles)
+                m_pParent->m_pInternal->m_pUploadFiles->OnPassword(args->GetString(0).ToWString(), args->GetString(1).ToWString());
+            return true;
+        }
+        else if ("cloud_crypto_upload_save" == message_name)
+        {
+        if (m_pParent->m_pInternal->m_pUploadFiles)
+            m_pParent->m_pInternal->m_pUploadFiles->OnPassword();
             return true;
         }
 

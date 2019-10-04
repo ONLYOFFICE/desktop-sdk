@@ -1416,7 +1416,7 @@ window.AscDesktopEditor.SetAdvancedEncryptedData = function(password, data, call
   window.on_set_advanced_encrypted_data = callback;\n\
   window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
 };\n\
-window.AscDesktopEditor.CloudCryptoNewFile = function(url, callback) {\n\
+window.AscDesktopEditor.CloudCryptFile = function(url, callback) {\n\
   window.AscDesktopEditor.DownloadFiles([url], [], function(files) {\n\
     if (files && 1 == files.length)\n\
     {\n\
@@ -1425,7 +1425,7 @@ window.AscDesktopEditor.CloudCryptoNewFile = function(url, callback) {\n\
     }\n\
   };\n\
 };\n\
-window.AscDesktopEditor.CloudCryptoUpload = function(callback) {\n\
+window.AscDesktopEditor.CloudCryptUpload = function(callback) {\n\
   window.AscDesktopEditor.OpenFilenameDialog(\"any\", true, function(files) {\n\
     if (files && 0 < files.length)\n\
     {\n\
@@ -2408,7 +2408,7 @@ switch (e.type)\n\
   }\n\
   case \"setPasswordByFile\":\n\
   {\n\
-    window.AscDesktopEditor._CloudCryptoUploadSave(e.password, e.docinfo);\n\
+    window.AscDesktopEditor._CloudCryptoUploadSave();\n\
     break;\n\
   }\n\
   default:\n\
@@ -2427,18 +2427,27 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
             CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("cloud_crypto_upload");
             message->GetArgumentList()->SetBool(0, bIsNeedRemoveAfterUse);
-            message->GetArgumentList()->SetInt(1, nCount);
+            message->GetArgumentList()->SetInt(1, CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
+            message->GetArgumentList()->SetInt(2, nCount);
             for (int i = 0; i < nCount; ++i)
-                message->GetArgumentList()->SetString(2 + i, arguments[0]->GetValue(i)->GetStringValue());
+                message->GetArgumentList()->SetString(3 + i, arguments[0]->GetValue(i)->GetStringValue());
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
         else if (name == "_CloudCryptoUploadPass")
         {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("cloud_crypto_upload_pass");
+            message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
+            message->GetArgumentList()->SetString(1, arguments[1]->GetStringValue());
+            browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
         else if (name == "_CloudCryptoUploadSave")
         {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("cloud_crypto_upload_save");
+            browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
 
@@ -2814,7 +2823,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
 
-    #define EXTEND_METHODS_COUNT 121
+    #define EXTEND_METHODS_COUNT 120
     const char* methods[EXTEND_METHODS_COUNT] = {
         "Copy",
         "Paste",
@@ -2971,8 +2980,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         "SendByMail",
         "IsLocalFileExist",
 
-        "CloudCryptoCreateFile",
-        "CloudCryptoUploadFile",
+        "_CloudCryptoUpload",
 
         "_CloudCryptoUploadPass",
         "_CloudCryptoUploadSave",
