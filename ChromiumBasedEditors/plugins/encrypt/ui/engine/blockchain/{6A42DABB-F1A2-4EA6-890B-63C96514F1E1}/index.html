@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+		<meta charset="UTF-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"> 
+		<title>Encrypt files</title>       
+		<link rel="stylesheet" type="text/css" href="./css/style.css" />
+		<script type="text/javascript" src="./js/third-party/jquery-3.4.1.min.js"></script>
+		<script type="text/javascript" src="./js/third-party/jquery.blockUI.js"></script>
+		<script type="text/javascript" src="./js/third-party/nacl.min.js"></script>
+		<script type="text/javascript" src="./js/third-party/nacl-util.min.js"></script>
+		<script type="text/javascript" src="./js/third-party/sealedbox.web.js"></script> 				
+		<script type="text/javascript" src="./js/third-party/clipboard.min.js"></script> 
+		<script type="text/javascript" src="./js/third-party/base64.js"></script> 		
+		<script type="text/javascript" src="./js/onlyonet.js"></script>
+		<script type="text/javascript" src="./js/onlyonet.config.js"></script>
+		<script type="text/javascript" src="./js/onlyonet.ui.js"></script>	
+
+		<script type="text/javascript" src="code.js"></script>
+		
+		<script type="text/javascript">
+			jQuery.loadScript = function (url, callback) {
+									jQuery.ajax({
+										url: url,
+										dataType: 'script',
+										success: callback,
+										async: false
+									});
+								}
+
+				$(function() {	
+					AscDesktopEditor.SetCryptoMode("", ASC_DESKTOP_EDITOR_DEFAULT_MODE, function(retCode) {
+						switch(retCode) {
+							case 0:
+								ONLYONET.UI.init();
+								break;
+							case 1:
+								alert("[ERROR] FAILED TO SET CRYPTO MODE AS " + ASC_DESKTOP_EDITOR_DEFAULT_MODE);
+								break;
+							default:
+								break;
+						}
+					});
+				});			
+		</script>
+	  </head>
+      <body>	
+		   <div class="info-box excl" style="display: none;" data-t="info-box-off">
+			  <strong>The end-to-end encryption mode is OFF.</strong> To switch it on, you must close all active edition sessions.
+		   </div>
+			<section id="enc-box-caption">
+						<h3 class="table-caption" data-t="title">End-to-end encryption</h3>
+						<span data-t="title-pop">Developer Preview</span>
+						<div class="onoffswitch">
+							<input type="checkbox" name="onoffswitch" class="onoffswitch__checkbox" id="enc-mode-switch"/>
+							<label class="onoffswitch__label" for="enc-mode-switch"></label>
+						</div>					
+			</section>	
+			<section id="box-blockchain-connect">	
+				<p data-t="box-blockchain-connect-description-line1">
+					Keep your DOCX, XLSX and PPTX files always encrypted and private. Edit and collaborate on your docs securely.
+				</p>
+				<p>	
+					<span data-t="box-blockchain-connect-description-line2">ONLYOFFICE uses a 512-bit Advanced Encryption Standard algorithm to protect your files and 
+					a blockchain technology with asymmetric encryption for reliable password storing and transferring.</span>
+					<a data-t="box-blockchain-connect-btn-read" class="link-gray" target="popup" href="https://www.onlyoffice.com/onlyoffice-blockchain.aspx">Read how it works </a>
+				</p>
+				<p data-t="box-blockchain-connect-description-line3">					
+					To start, <strong>create your account in the blockchain</strong> network based on <a href="https://www.ibm.com/uk-en/cloud/blockchain-platform">IBM Blockchain Platform</a>, or log in to the existing account.
+				</p>		
+				<p style="margin-top: 50px">
+					<button data-t="box-blockchain-connect-btn-create" class="btn primary">Create an account</button> <a data-t="box-blockchain-connect-btn-cancel" class="text-sub link" href="javascript:void(0)">I already have an account</a>
+				</p>
+				<p data-t="box-blockchain-connect-description-line4">					
+					Warning! This network was created for demonstration purposes only. Please, do NOT use it to encrypt your sensitive documents.
+				</p>				
+			</section>
+		<section id="box-blockchain-info" style="display: none">
+			<p data-t="box-blockchain-connect-description">
+				The end-to-end encryption mode is enabled. All your DOCX, XSLX and PPTX files will be encrypted. Open, create, edit and co-edit documents privately and securely.  
+			</p>
+			<div class="lr-flex">
+				<h4 data-t="box-blockchain-connect-header">Your blockchain account info</h4>
+				<img id="box-blockchain-info-btn-refresh" src="img/refresh.png" />
+			</div>		
+			<!--<div id="box-network-selector">
+				<span data-t="box-network-selector">Test Network</span><br/>
+				<span>-</span>
+			</div>
+			 <hr />
+			<table id="tbl-acount-info">
+				<thead>
+					<tr>
+						<th data-t="tbl-acount-info-address">Address</th>
+						<th data-t="tbl-acount-info-balance">Balance</th>
+						<th data-t="tbl-acount-info-tx-count">TX Count</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td><span>-</span> <a data-t="tbl-acount-info-btn-copy-address" href="javascript:void(0)" class="link-gray">Copy Address</a></td>
+						<td>-</td>
+						<td>-</td>
+					</tr>
+				</tbody>
+				<tfoot>
+					<tr>
+						<td colspan="3"><a data-t="tbl-acount-info-btn-export-private-key" href="javascript:void(0)" class="link-gray">Export private key</a></td>
+					</tr>
+				</tfoot>
+			</table>
+			<hr /> -->
+			<dl id="box-network-info">
+				<dt data-t="box-network-info-channel-id">Channel ID</dt>
+				<dd>-</dd>
+				<dt data-t="box-network-info-current-block">Current Block</dt>
+				<dd>-</dd>
+				<dt data-t="box-network-info-msp-id">MSP ID</dt>
+				<dd>-</dd>
+				<dt data-t="box-network-info-client-id">Client ID</dt>
+				<dd>-</dd>
+				<dt data-t="box-network-info-enrollment-id">Enrollment ID</dt>
+				<dd>-</dd>
+				<dt data-t="box-network-info-organizations-list">Organizations</dt>
+				<dd>-</dd>
+			</dl>			 
+		</section>	
+		<dialog id="dlg-onoffswitch" class="dlg scaled" style="width: 500px;">
+				<div class="title">
+				  <label data-t="dlg-onoffswitch-caption" class="caption">Secure Login</label>
+				  <span class="tool close img-el"></span>
+				</div>
+				<div class="body">
+					<section>
+						<div>
+							<div class="error-box"><p class="msg-error" data-t="dlg-onoffswitch-msg-error" style="display: none;">Check the password</p></div>															
+							<input type="password" name="" class="tbox" value="" placeholder="enter password" />							
+							<div style="height:10px;"></div>
+							<div class="lr-flex">
+								<a class="text-sub link" style="display:none" data-t="dlg-onoffswitch-btn-cancel" href="javascript:void(0)">Forgot password?</a>
+								<span></span>
+								<div>
+									<img class="img-loader">
+									<button data-t="dlg-onoffswitch-btn" class="btn primary">Log in</button>
+								</div>
+							</div>
+						</div>
+					</section>
+				</div>
+		</dialog>	
+		<dialog id="dlg-vault" class="dlg scaled" style="width: 600px;">
+			<div class="title">
+			  <label data-t="dlg-vault-mnemonic-caption" class="caption">Create your account</label>
+			  <span class="tool close img-el"></span>
+			</div>
+			<div class="body">
+				<section>
+					<div>							
+						<div class="lr-flex">					
+								<label data-t="dlg-vault-new-password">New Password (min 8 chars) *</label> 
+								<div class="error-box"><p class="msg-error" data-t="dlg-vault-new-password-msg-error" style="display: none;">Don't Match</p></div>	
+						</div>
+						<input type="password" class="tbox" value="" />	
+						<div class="lr-flex">					
+								<label data-t="dlg-vault-confirm-password">Confirm Password</label> 
+								<div class="error-box"><p class="msg-error" data-t="dlg-vault-new-password-msg-error" style="display: none;">Don't Match</p></div>	
+						</div>
+						<input type="password" class="tbox" value=""  />	
+						<div class="error-box">
+							<p class="msg-error" style="display: block; color:inherit; margin: 0px 0px 12px 0px" data-t="dlg-vault-description-line2">
+								* Password must consist of minimum 8 characters. For additional security, we recommend using a combination of lowercase and uppercase letters, numbers and symbols. Do not use personal information (name, birth date, etc.) in your password to protect it from hacking.
+							</p>
+						</div>
+						<div style="height:10px;"></div>
+						<div class="lr-flex">
+							<a class="text-sub link" href="javascript:void(0)" data-t="dlg-vault-description-btn-cancel">Cancel</a>
+							<span></span>
+							<div>
+								<img class="img-loader" />
+								<button class="btn primary" data-t="dlg-vault-description-btn">Create account</button>
+							</div>
+						</div>
+					</div>
+				</section>
+			</div>
+		</dialog>	
+		<dialog id="dlg-private-key" class="dlg scaled" style="width: 600px">
+			<div class="title">
+				<label class="caption" data-t="dlg-private-key-caption">Your private key</label>
+				<span class="tool close img-el"></span>
+			</div>
+			<div class="body">
+				<section>
+					<div>	
+						<p style="margin: 0px 0px 12px 0px">
+							<span>-</span>	
+						</p>
+						<div style="height:10px;"></div>
+						<div class="lr-flex" style="justify-content:flex-end;">
+							<button class="btn primary" data-t="dlg-private-key-btn">Copy to clipboard</button>
+						</div>
+					</div>
+				</section>
+			</div>
+		</dialog>
+	</body>
+</html>
