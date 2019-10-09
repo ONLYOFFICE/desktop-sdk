@@ -63,7 +63,60 @@ std::string GetMimeTypeFromExt(const std::wstring& sFile)
 
     return "*/*";
 }
+std::vector<std::wstring> get_url_params(std::wstring& sUrl)
+{
+    std::vector<std::wstring> ret;
+    std::wstring::size_type pos = sUrl.find(L"__ascdesktopeditor__param__");
+    std::wstring::size_type posF = pos;
+    while (pos != std::wstring::npos)
+    {
+        std::wstring::size_type posParam = pos + 27; // len(__ascdesktopeditor__param__) = 27
+        pos = sUrl.find(L"__ascdesktopeditor__param__", posParam);
 
+        std::wstring::size_type posEnd = (pos == std::wstring::npos) ? sUrl.length() : pos;
+        if (posEnd > posParam)
+            ret.push_back(sUrl.substr(posParam, posEnd - posParam));
+    }
+    if (posF != std::wstring::npos)
+        sUrl = sUrl.substr(0, posF);
+    return ret;
+}
+unsigned long read_file_with_urls(std::wstring& sUrl, BYTE*& data)
+{
+    data = NULL;
+
+    std::vector<std::wstring> arParams = get_url_params(sUrl);
+
+    unsigned long start = 0;
+    unsigned long count = 0;
+    if (arParams.size() > 0)
+        start = std::stoul(arParams[0]);
+    if (arParams.size() > 1)
+        count = std::stoul(arParams[1]);
+
+    DWORD dwSize = 0;
+    NSFile::CFileBinary oFile;
+    if (oFile.OpenFile(sUrl))
+    {
+        unsigned long fileSize = (unsigned long)oFile.GetFileSize();
+        if (fileSize)
+        {
+            if (start > fileSize)
+                start = fileSize - 1;
+            if (count == 0)
+                count = fileSize;
+            if ((start + count) > fileSize)
+                count = fileSize - start;
+
+            if (start > 0)
+                oFile.SeekFile((int)start);
+
+            data = new BYTE[count];
+            oFile.ReadFile(data, (DWORD)count, dwSize);
+        }
+    }
+    return (unsigned long)dwSize;
+}
 
 // Implementation of the schema handler for client:// requests.
 class ClientSchemeHandler : public CefResourceHandler
@@ -126,7 +179,6 @@ public:
         if (posFind != std::string::npos)
         {
             std::wstring sFile = read_file_path(request).substr(19);
-
 #ifndef WIN32
             if (!sFile.empty())
             {
@@ -134,7 +186,6 @@ public:
                     sFile = L"/" + sFile;
             }
 #endif
-
             read_binary_file(sFile, false);
 
             callback->Continue();
@@ -239,18 +290,16 @@ private:
         return cefFile.ToWString();
     }
 
-    void read_binary_file(const std::wstring& sFile, const bool& isCheckExt = false)
+    void read_binary_file(std::wstring& sFile, const bool& isCheckExt = false)
     {
-        DWORD dwSize = 0;
-        NSFile::CFileBinary::ReadAllBytes(sFile, &data_binary_, dwSize);
-        data_binary_len_ = (size_t)dwSize;
+        data_binary_len_ = (size_t)read_file_with_urls(sFile, data_binary_);
 
         if (isCheckExt)
             mime_type_ = GetMimeTypeFromExt(sFile);
 
         if (mime_type_.empty())
             mime_type_ = "*/*";
-    }
+    }    
 
 private:
     std::string data_;

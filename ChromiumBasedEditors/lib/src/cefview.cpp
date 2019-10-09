@@ -3430,7 +3430,7 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
                 std::wstring sBinaryFile = cefFile.ToWString().substr(19);
 
                 // check on recovery folder!!!
-                return GetLocalFileRequest(sBinaryFile, "", "", true);
+                return GetLocalFileRequest2(sBinaryFile);
             }
         }
 #endif
@@ -3584,6 +3584,26 @@ require.load = function (context, moduleName, url) {\n\
         return NULL;
     }
 
+    CefRefPtr<CefResourceHandler> GetLocalFileRequest2(std::wstring& strFileName)
+    {
+        BYTE* fileData = NULL;
+        DWORD fileSize = (DWORD)asc_scheme::read_file_with_urls(strFileName, fileData);
+
+        if (!fileData)
+            return NULL;
+
+        std::string  mime_type = asc_scheme::GetMimeTypeFromExt(strFileName);
+
+        CCefBinaryFileReaderCounter* pCounter = new CCefBinaryFileReaderCounter(fileData);
+        CefRefPtr<CefStreamReader> stream = CefStreamReader::CreateForHandler(new CefByteReadHandler(fileData, fileSize, pCounter));
+        if (stream.get())
+            return new CefStreamResourceHandlerCORS(mime_type, stream);
+
+        pCounter->data = NULL;
+        RELEASEARRAYOBJECTS(fileData);
+        return NULL;
+
+    }
     CefRefPtr<CefResourceHandler> GetLocalFileRequest(const std::wstring& strFileName, const std::string& sHeaderScript = "", const std::string& sFooter = "", const bool& isSchemeRequest = false)
     {
         NSFile::CFileBinary oFileBinary;

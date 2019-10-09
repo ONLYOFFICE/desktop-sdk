@@ -1423,7 +1423,7 @@ window.AscDesktopEditor.CloudCryptFile = function(url, callback) {\n\
       window.on_cloud_crypto_upload = callback;\n\
       window.AscDesktopEditor._CloudCryptoUpload([files[0]], true);\n\
     }\n\
-  };\n\
+  });\n\
 };\n\
 window.AscDesktopEditor.CloudCryptUpload = function(callback) {\n\
   window.AscDesktopEditor.OpenFilenameDialog(\"any\", true, function(files) {\n\
@@ -1432,7 +1432,28 @@ window.AscDesktopEditor.CloudCryptUpload = function(callback) {\n\
       window.on_cloud_crypto_upload = callback;\n\
       window.AscDesktopEditor._CloudCryptoUpload(files);\n\
     }\n\
+  });\n\
+};\n\
+window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
+  var xhr = new XMLHttpRequest();\n\
+  var loadUrl = url;\n\
+  if (start !== undefined) loadUrl += (\"__ascdesktopeditor__param__\" + start);\n\
+  if (len !== undefined)\n\
+  {\n\
+    if (undefined === start) loadUrl += \"__ascdesktopeditor__param__0\";\n\
+    loadUrl += (\"__ascdesktopeditor__param__\" + len);\n\
+  }\n\
+  xhr.open(\"GET\", \"ascdesktop://fonts/\" + loadUrl, true);\n\
+  xhr.responseType = \"arraybuffer\";\n\
+  if (xhr.overrideMimeType)\n\
+    xhr.overrideMimeType('text/plain; charset=x-user-defined');\n\
+  else\n\
+    xhr.setRequestHeader('Accept-Charset', 'x-user-defined');\n\
+  xhr.onload = function()\n\
+  {\n\
+    callback(new Uint8Array(xhr.response));\n\
   };\n\
+  xhr.send(null);\n\
 };", _frame->GetURL(), 0);
             }
 
@@ -2458,6 +2479,18 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
+        else if (name == "getLocalFileSize")
+        {
+            std::wstring sFile = arguments[0]->GetStringValue().ToWString();
+            long lSize = 0;
+
+            NSFile::CFileBinary oFile;
+            if (oFile.OpenFile(sFile))
+                lSize = oFile.GetFileSize();
+
+            retval = CefV8Value::CreateInt((int)lSize);
+            return true;
+        }
 
         // Function does not exist.
         return false;
@@ -2831,7 +2864,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
 
-    #define EXTEND_METHODS_COUNT 121
+    #define EXTEND_METHODS_COUNT 122
     const char* methods[EXTEND_METHODS_COUNT] = {
         "Copy",
         "Paste",
@@ -2993,6 +3026,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         "_CloudCryptoUploadSave",
         "CloudCryptoUploadEnd",
 
+        "getLocalFileSize",
+
         NULL
     };
 
@@ -3022,23 +3057,6 @@ _style.innerHTML = \"\
 .webkit-scrollbar::-webkit-scrollbar-corner { background:inherit; }\";\n\
 document.getElementsByTagName(\"head\")[0].appendChild(_style);\n\
 }, false);\n\
-\n\
-window.loadLocalFile = function(url, callback) {\n\
-var xhr = new XMLHttpRequest();\n\
-xhr.open(\"GET\", \"ascdesktop://fonts/\" + url, true);\n\
-xhr.responseType = \"arraybuffer\";\n\
-if (xhr.overrideMimeType)\n\
-    xhr.overrideMimeType('text/plain; charset=x-user-defined');\n\
-else\n\
-    xhr.setRequestHeader('Accept-Charset', 'x-user-defined');\n\
-\n\
-xhr.onload = function()\n\
-{\n\
-callback(new Uint8Array(xhr.response));\n\
-};\n\
-xhr.send(null);\n\
-};\n\
-\n\
 window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
     }
 
@@ -3714,7 +3732,7 @@ catch (err) {}\n\
             std::string sDirectoryRecoverA = U_TO_UTF8(sDirectoryRecover);
 
             std::string sCode = ("window.AscDesktopEditor.SetCryptDocumentFolder(\"" + sDirectoryRecoverA + "\");\n\
-window.loadLocalFile(\"" + sFilePath + "\", function(data) {\n\
+window.AscDesktopEditor.loadLocalFile(\"" + sFilePath + "\", function(data) {\n\
 window.AscDesktopEditor.openFileCryptCallback(data);\n\
 window.AscDesktopEditor.openFileCryptCallback = null;\n\
 });");
