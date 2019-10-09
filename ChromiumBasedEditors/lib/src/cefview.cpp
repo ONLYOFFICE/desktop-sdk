@@ -555,7 +555,6 @@ public:
                 return;
             }
 
-            // нужно криптовать... запрашиваем пароль
             std::string sHashA = "";
             ICertificate* pCert = ICertificate::CreateInstance();
             std::string sHash = pCert->GetHash(sFileDst, OOXML_HASH_ALG_SHA256);

@@ -1425,8 +1425,9 @@ window.AscDesktopEditor.CloudCryptFile = function(url, callback) {\n\
     }\n\
   });\n\
 };\n\
-window.AscDesktopEditor.CloudCryptUpload = function(callback) {\n\
-  window.AscDesktopEditor.OpenFilenameDialog(\"any\", true, function(files) {\n\
+window.AscDesktopEditor.CloudCryptUpload = function(filter, callback) {\n\
+  var filterOut = filter || \"\"; if (filterOut == \"\") filterOut = \"any\";\n\
+  window.AscDesktopEditor.OpenFilenameDialog(filterOut, true, function(files) {\n\
     if (files && 0 < files.length)\n\
     {\n\
       window.on_cloud_crypto_upload = callback;\n\
