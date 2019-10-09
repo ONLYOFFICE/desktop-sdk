@@ -48,6 +48,32 @@
 #include <stdio.h>
 #endif
 
+static bool IsFormatSupportCrypto(const int& nFormat)
+{
+    switch (nFormat)
+    {
+        case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX:
+        case AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX:
+        case AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX:
+        case AVS_OFFICESTUDIO_FILE_DOCUMENT_ODT:
+        case AVS_OFFICESTUDIO_FILE_SPREADSHEET_ODS:
+        case AVS_OFFICESTUDIO_FILE_PRESENTATION_ODP:
+        case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF:
+        case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOTX:
+        case AVS_OFFICESTUDIO_FILE_PRESENTATION_POTX:
+        case AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLTX:
+        case AVS_OFFICESTUDIO_FILE_DOCUMENT_OTT:
+        case AVS_OFFICESTUDIO_FILE_PRESENTATION_OTP:
+        case AVS_OFFICESTUDIO_FILE_SPREADSHEET_OTS:
+        {
+            return true;
+        }
+        default:
+            break;
+    }
+    return false;
+}
+
 class CAscLocalFileInfo
 {
 public:
@@ -931,32 +957,11 @@ public:
         oBuilder.WriteString(L"/AllFonts.js</m_sAllFontsPath><m_nCsvTxtEncoding>46</m_nCsvTxtEncoding><m_nCsvDelimiter>4</m_nCsvDelimiter>");
         oBuilder.WriteString(sParams);
 
-        if (!m_oInfo.m_sPassword.empty())
+        if (!m_oInfo.m_sPassword.empty() && IsFormatSupportCrypto(m_oInfo.m_nCurrentFileFormat))
         {
-            switch (m_oInfo.m_nCurrentFileFormat)
-            {
-                case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX:
-                case AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX:
-                case AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX:
-                case AVS_OFFICESTUDIO_FILE_DOCUMENT_ODT:
-                case AVS_OFFICESTUDIO_FILE_SPREADSHEET_ODS:
-                case AVS_OFFICESTUDIO_FILE_PRESENTATION_ODP:
-                case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF:
-                case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOTX:
-                case AVS_OFFICESTUDIO_FILE_PRESENTATION_POTX:
-                case AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLTX:
-                case AVS_OFFICESTUDIO_FILE_DOCUMENT_OTT:
-                case AVS_OFFICESTUDIO_FILE_PRESENTATION_OTP:
-                case AVS_OFFICESTUDIO_FILE_SPREADSHEET_OTS:
-                {
-                    oBuilder.WriteString(L"<m_sSavePassword>");
-                    oBuilder.WriteEncodeXmlString(m_oInfo.m_sPassword);
-                    oBuilder.WriteString(L"</m_sSavePassword>");
-                    break;
-                }
-                default:
-                    break;
-            }
+            oBuilder.WriteString(L"<m_sSavePassword>");
+            oBuilder.WriteEncodeXmlString(m_oInfo.m_sPassword);
+            oBuilder.WriteString(L"</m_sSavePassword>");
         }
 
         if (!m_oInfo.m_sDocumentInfo.empty())

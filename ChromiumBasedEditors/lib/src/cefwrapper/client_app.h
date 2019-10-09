@@ -296,6 +296,12 @@ public:
         client::ClientAppBrowser::OnRenderProcessThreadCreated(extra_info);
     }
 
+    virtual void OnScheduleMessagePumpWork(int64 delay) OVERRIDE
+    {
+        if (m_manager->OnScheduleMessagePumpWork())
+            return;
+        client::ClientAppBrowser::OnScheduleMessagePumpWork(delay);
+    }
 
 public:
     IMPLEMENT_REFCOUNTING(CAscClientAppBrowser)

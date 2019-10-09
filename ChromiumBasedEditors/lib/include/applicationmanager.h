@@ -203,6 +203,7 @@ public:
     // external message loop
     static void DoMessageLoopWork();
     virtual bool IsExternalEventLoop();
+    virtual bool OnScheduleMessagePumpWork();
     virtual void ExitExternalEventLoop();
 
     // parameters to local file url

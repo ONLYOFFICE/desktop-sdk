@@ -423,9 +423,6 @@ void CApplicationCEF::Close()
 
 int CApplicationCEF::RunMessageLoop(bool& is_runned)
 {
-    if (m_pInternal->m_pManager->IsExternalEventLoop())
-        return 0;
-
     is_runned = true;
 #ifdef LINUX
     CLinuxData::Check(m_pInternal->m_pManager);
@@ -440,10 +437,7 @@ void CApplicationCEF::DoMessageLoopEvent()
 
 bool CApplicationCEF::ExitMessageLoop()
 {
-    if (!this->m_pInternal->m_pManager->IsExternalEventLoop())
-        m_pInternal->message_loop->Quit();
-    else
-        m_pInternal->m_pManager->ExitExternalEventLoop();
+    m_pInternal->message_loop->Quit();
     return true;
 }
 

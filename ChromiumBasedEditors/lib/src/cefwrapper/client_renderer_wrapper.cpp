@@ -362,6 +362,8 @@ public:
 
     bool m_bIsDebugMode;
 
+    bool m_bIsEnableUploadCrypto;
+
     NSCriticalSection::CRITICAL_SECTION m_oCompleteTasksCS;
 
     CAscEditorNativeV8Handler()
@@ -391,6 +393,8 @@ public:
         m_bIsSupportProtect = true;
 
         m_nCryptoMode = 0;
+
+        m_bIsEnableUploadCrypto = false;
         m_oCompleteTasksCS.InitializeCriticalSection();
 
         CheckDefaults();
@@ -1411,6 +1415,46 @@ window.AscDesktopEditor.GetAdvancedEncryptedData = function(password, callback) 
 window.AscDesktopEditor.SetAdvancedEncryptedData = function(password, data, callback) {\n\
   window.on_set_advanced_encrypted_data = callback;\n\
   window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
+};\n\
+window.AscDesktopEditor.CloudCryptFile = function(url, callback) {\n\
+  window.AscDesktopEditor.DownloadFiles([url], [], function(files) {\n\
+    if (files && 1 == files.length)\n\
+    {\n\
+      window.on_cloud_crypto_upload = callback;\n\
+      window.AscDesktopEditor._CloudCryptoUpload([files[0]], true);\n\
+    }\n\
+  });\n\
+};\n\
+window.AscDesktopEditor.CloudCryptUpload = function(filter, callback) {\n\
+  var filterOut = filter || \"\"; if (filterOut == \"\") filterOut = \"any\";\n\
+  window.AscDesktopEditor.OpenFilenameDialog(filterOut, true, function(files) {\n\
+    if (files && 0 < files.length)\n\
+    {\n\
+      window.on_cloud_crypto_upload = callback;\n\
+      window.AscDesktopEditor._CloudCryptoUpload(files);\n\
+    }\n\
+  });\n\
+};\n\
+window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
+  var xhr = new XMLHttpRequest();\n\
+  var loadUrl = url;\n\
+  if (start !== undefined) loadUrl += (\"__ascdesktopeditor__param__\" + start);\n\
+  if (len !== undefined)\n\
+  {\n\
+    if (undefined === start) loadUrl += \"__ascdesktopeditor__param__0\";\n\
+    loadUrl += (\"__ascdesktopeditor__param__\" + len);\n\
+  }\n\
+  xhr.open(\"GET\", \"ascdesktop://fonts/\" + loadUrl, true);\n\
+  xhr.responseType = \"arraybuffer\";\n\
+  if (xhr.overrideMimeType)\n\
+    xhr.overrideMimeType('text/plain; charset=x-user-defined');\n\
+  else\n\
+    xhr.setRequestHeader('Accept-Charset', 'x-user-defined');\n\
+  xhr.onload = function()\n\
+  {\n\
+    callback(new Uint8Array(xhr.response));\n\
+  };\n\
+  xhr.send(null);\n\
 };", _frame->GetURL(), 0);
             }
 
@@ -2366,6 +2410,88 @@ _e.asc_AddVideo(\"" + sImage + L".png\", \"" + sImage + L"." + sExt + L"\");\n\
             retval = CefV8Value::CreateBool(NSFile::CFileBinary::Exists(sFile));
             return true;
         }
+        else if (name == "_CloudCryptoUpload")
+        {
+            if (!m_bIsEnableUploadCrypto)
+            {
+                m_bIsEnableUploadCrypto = true;
+                // расширяем функцию работой с генерацией паролей и сохранением их
+                CefRefPtr<CefFrame> curFrame = CefV8Context::GetCurrentContext()->GetFrame();
+                if (curFrame)
+                {
+                    curFrame->ExecuteJavaScript("\
+window.onSystemMessage2 = windows.onSystemMessage;\n\
+window.onSystemMessage = function(e) {\n\
+switch (e.type)\n\
+{\n\
+  case \"generatePassword\":\n\
+  {\n\
+    window.AscDesktopEditor._CloudCryptoUploadPass(e.password, e.docinfo);\n\
+    break;\n\
+  }\n\
+  case \"setPasswordByFile\":\n\
+  {\n\
+    window.AscDesktopEditor._CloudCryptoUploadSave();\n\
+    break;\n\
+  }\n\
+  default:\n\
+    break;\n\
+}\n\
+if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
+};", curFrame->GetURL(), 0);
+                }
+            }
+
+            int nCount = arguments[0]->GetArrayLength();
+            bool bIsNeedRemoveAfterUse = false;
+            if (arguments.size() > 1)
+                bIsNeedRemoveAfterUse = arguments[1]->GetBoolValue();
+
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("cloud_crypto_upload");
+            message->GetArgumentList()->SetBool(0, bIsNeedRemoveAfterUse);
+            message->GetArgumentList()->SetInt(1, CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
+            message->GetArgumentList()->SetInt(2, nCount);
+            for (int i = 0; i < nCount; ++i)
+                message->GetArgumentList()->SetString(3 + i, arguments[0]->GetValue(i)->GetStringValue());
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "_CloudCryptoUploadPass")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("cloud_crypto_upload_pass");
+            message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
+            message->GetArgumentList()->SetString(1, arguments[1]->GetStringValue());
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "_CloudCryptoUploadSave")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("cloud_crypto_upload_save");
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "CloudCryptoUploadEnd")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("cloud_crypto_upload_end");
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "getLocalFileSize")
+        {
+            std::wstring sFile = arguments[0]->GetStringValue().ToWString();
+            long lSize = 0;
+
+            NSFile::CFileBinary oFile;
+            if (oFile.OpenFile(sFile))
+                lSize = oFile.GetFileSize();
+
+            retval = CefV8Value::CreateInt((int)lSize);
+            return true;
+        }
 
         // Function does not exist.
         return false;
@@ -2739,7 +2865,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
 
-    #define EXTEND_METHODS_COUNT 117
+    #define EXTEND_METHODS_COUNT 122
     const char* methods[EXTEND_METHODS_COUNT] = {
         "Copy",
         "Paste",
@@ -2895,6 +3021,14 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         "AddVideo",
         "SendByMail",
         "IsLocalFileExist",
+
+        "_CloudCryptoUpload",
+        "_CloudCryptoUploadPass",
+        "_CloudCryptoUploadSave",
+        "CloudCryptoUploadEnd",
+
+        "getLocalFileSize",
+
         NULL
     };
 
@@ -2924,23 +3058,6 @@ _style.innerHTML = \"\
 .webkit-scrollbar::-webkit-scrollbar-corner { background:inherit; }\";\n\
 document.getElementsByTagName(\"head\")[0].appendChild(_style);\n\
 }, false);\n\
-\n\
-window.loadLocalFile = function(url, callback) {\n\
-var xhr = new XMLHttpRequest();\n\
-xhr.open(\"GET\", \"ascdesktop://fonts/\" + url, true);\n\
-xhr.responseType = \"arraybuffer\";\n\
-if (xhr.overrideMimeType)\n\
-    xhr.overrideMimeType('text/plain; charset=x-user-defined');\n\
-else\n\
-    xhr.setRequestHeader('Accept-Charset', 'x-user-defined');\n\
-\n\
-xhr.onload = function()\n\
-{\n\
-callback(new Uint8Array(xhr.response));\n\
-};\n\
-xhr.send(null);\n\
-};\n\
-\n\
 window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
     }
 
@@ -3616,7 +3733,7 @@ catch (err) {}\n\
             std::string sDirectoryRecoverA = U_TO_UTF8(sDirectoryRecover);
 
             std::string sCode = ("window.AscDesktopEditor.SetCryptDocumentFolder(\"" + sDirectoryRecoverA + "\");\n\
-window.loadLocalFile(\"" + sFilePath + "\", function(data) {\n\
+window.AscDesktopEditor.loadLocalFile(\"" + sFilePath + "\", function(data) {\n\
 window.AscDesktopEditor.openFileCryptCallback(data);\n\
 window.AscDesktopEditor.openFileCryptCallback = null;\n\
 });");

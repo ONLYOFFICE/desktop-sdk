@@ -403,6 +403,219 @@ public:
             return *this;
         }
     };
+    class CCloudCryptoUpload
+    {
+    public:
+        CCefView_Private* View;
+        CAscApplicationManager* Manager;
+
+        std::list<std::wstring> Files;
+        std::list<std::wstring> FilesDst;
+        int FrameID;
+        bool IsRemove;
+
+        CCloudCryptoUpload()
+        {
+            IsRemove = false;
+            FrameID = -1;
+        }
+
+        ~CCloudCryptoUpload()
+        {
+            if (IsRemove)
+            {
+                for (std::list<std::wstring>::iterator i = Files.begin(); i != Files.end(); i++)
+                {
+                    NSFile::CFileBinary::Remove(*i);
+                }
+            }
+            for (std::list<std::wstring>::iterator i = FilesDst.begin(); i != FilesDst.end(); i++)
+            {
+                NSFile::CFileBinary::Remove(*i);
+            }
+        }
+
+    public:
+        void Init()
+        {
+            for (std::list<std::wstring>::iterator iter = Files.begin(); iter != Files.end(); iter++)
+            {
+                std::wstring sFile = *iter;
+
+                COfficeFileFormatChecker oChecker;
+                bool bIsOfficeFile = oChecker.isOfficeFile(sFile);
+
+                if (bIsOfficeFile)
+                {
+                    // зашифрованные - итак зашифрованы
+                    if (oChecker.nFileType == AVS_OFFICESTUDIO_FILE_OTHER_MS_OFFCRYPTO)
+                        bIsOfficeFile = false;
+                }
+
+                if (!bIsOfficeFile)
+                {
+                    // не нужна конвертация
+                    FilesDst.push_back(L"");
+                }
+                else
+                {
+                    std::wstring sFileDst = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"DT_");
+                    if (NSFile::CFileBinary::Exists(sFileDst))
+                        NSFile::CFileBinary::Remove(sFileDst);
+                    sFileDst += NSFile::GetFileName(sFile);
+                    FilesDst.push_back(sFileDst);
+                }
+            }
+
+            NextFile();
+        }
+        CefRefPtr<CefFrame> GetFrame();
+        void NextFile()
+        {
+            if (0 >= Files.size())
+            {
+                OnComplete();
+                return;
+            }
+            std::wstring sFileSrc = *Files.begin();
+            std::wstring sFileDst = *FilesDst.begin();
+
+            if (sFileDst.empty())
+            {
+                OnCompleteFile(sFileSrc);
+                return;
+            }
+
+            // запрос пароля
+            CefRefPtr<CefFrame> pFrame = GetFrame();
+            if (!pFrame)
+            {
+                OnCompleteFile(sFileSrc);
+                return;
+            }
+            // нужно криптовать... запрашиваем пароль
+            pFrame->ExecuteJavaScript("window.AscDesktopEditor.sendSystemMessage({ type : generatePassword });", pFrame->GetURL(), 0);
+        }
+        void OnPassword(const std::wstring& sPass, const std::wstring& sInfo)
+        {
+            // пришел пароль из плагина. делаем конвертацию и отсылаем файл
+            if (0 >= Files.size())
+            {
+                OnComplete();
+                return;
+            }
+            std::wstring sFileSrc = *Files.begin();
+            std::wstring sFileDst = *FilesDst.begin();
+
+            // конвертируем
+            NSStringUtils::CStringBuilder oBuilder;
+            oBuilder.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><TaskQueueDataConvert><m_sFileFrom>");
+            oBuilder.WriteEncodeXmlString(sFileSrc);
+            oBuilder.WriteEncodeXmlString(L"</m_sFileFrom><m_sFileTo>");
+            oBuilder.WriteEncodeXmlString(sFileDst);
+            oBuilder.WriteEncodeXmlString(L"</m_sFileTo>");
+
+            COfficeFileFormatChecker oChecker;
+            oChecker.isOfficeFile(sFileSrc);
+
+            oBuilder.WriteString(L"<m_nFormatTo>");
+            oBuilder.WriteString(std::to_wstring(oChecker.nFileType));
+            oBuilder.WriteString(L"</m_nFormatTo>");
+            oBuilder.WriteString(L"<m_sSavePassword>");
+            oBuilder.WriteEncodeXmlString(sPass);
+            oBuilder.WriteString(L"</m_sSavePassword>");
+            oBuilder.WriteString(L"<m_sDocumentID>");
+            oBuilder.WriteEncodeXmlString(sInfo);
+            oBuilder.WriteString(L"</m_sDocumentID>");
+
+            oBuilder.WriteString(L"<m_sFontDir>");
+            oBuilder.WriteEncodeXmlString(Manager->m_oSettings.fonts_cache_info_path);
+            oBuilder.WriteString(L"</m_sFontDir>");
+
+            oBuilder.WriteString(L"</TaskQueueDataConvert>");
+
+            std::wstring sXmlConvert = oBuilder.GetData();
+            std::wstring sTempFileForParams = NSDirectory::GetTempPath() + L"/params_to_crypto.xml";
+            NSFile::CFileBinary::SaveToFile(sTempFileForParams, sXmlConvert, true);
+
+            int nReturnCode = NSX2T::Convert(Manager->m_oSettings.file_converter_path + L"/x2t", sTempFileForParams, Manager);
+            NSFile::CFileBinary::Remove(sTempFileForParams);
+
+            if (nReturnCode)
+            {
+                OnCompleteFile(sFileSrc);
+                return;
+            }
+
+            // запрос сохранения пароля
+            CefRefPtr<CefFrame> pFrame = GetFrame();
+            if (!pFrame)
+            {
+                OnCompleteFile(sFileSrc);
+                return;
+            }
+
+            std::string sHashA = "";
+            ICertificate* pCert = ICertificate::CreateInstance();
+            std::string sHash = pCert->GetHash(sFileDst, OOXML_HASH_ALG_SHA256);
+            delete pCert;
+
+            std::string sPassA = U_TO_UTF8(sPass);
+            pFrame->ExecuteJavaScript("window.AscDesktopEditor.sendSystemMessage({ type : setPasswordByFile, hash : \"" + sHashA + "\", password : \"" + sPassA + "\" });", pFrame->GetURL(), 0);
+        }
+        void OnSavePassword()
+        {
+            // пароли сохранены
+            if (0 >= Files.size())
+            {
+                OnComplete();
+                return;
+            }
+            std::wstring sFileSrc = *Files.begin();
+            std::wstring sFileDst = *FilesDst.begin();
+            OnCompleteFile(sFileDst);
+        }
+        void OnSend()
+        {
+            // файл отослался
+            if (0 >= Files.size())
+                return; // error
+
+            std::wstring sFile = *Files.begin();
+            std::wstring sFileDst = *FilesDst.begin();
+            Files.erase(Files.begin());
+            FilesDst.erase(FilesDst.begin());
+
+            if (IsRemove)
+                NSFile::CFileBinary::Remove(sFile);
+            if (!sFileDst.empty())
+                NSFile::CFileBinary::Remove(sFileDst);
+
+            if (0 >= Files.size())
+                OnComplete();
+
+            NextFile();
+        }
+
+    private:
+        void OnCompleteFile(const std::wstring& sFile)
+        {
+            // файл готов. отправляем его в облако. удалим все ненужное на деструкторе
+            CefRefPtr<CefFrame> pFrame = GetFrame();
+            if (!pFrame)
+                return;
+             pFrame->ExecuteJavaScript("window.on_cloud_crypto_upload && window.on_cloud_crypto_upload(\"" + U_TO_UTF8(sFile) + "\");", pFrame->GetURL(), 0);
+        }
+        void OnComplete()
+        {
+            // вся работа закончена
+            CefRefPtr<CefFrame> pFrame = GetFrame();
+            if (pFrame)
+                pFrame->ExecuteJavaScript("window.onSystemMessage({ type : \"upload_end\" });", pFrame->GetURL(), 0);
+            View->m_pUploadFiles = NULL;
+            delete this;
+        }
+    };
 
 public:
     CefRefPtr<CAscClientHandler> m_handler;
@@ -541,6 +754,9 @@ public:
     // системные сообщения
     std::vector<CSystemMessage> m_arSystemMessages;
 
+    // создание/аплоад криптованных файлов в облаке
+    CCloudCryptoUpload* m_pUploadFiles;
+
 public:
     CCefView_Private()
     {
@@ -600,6 +816,8 @@ public:
         m_nCryptoDownloadAsFormat = -1;
 
         m_nCloudVersion = CRYPTO_CLOUD_SUPPORT;
+
+        m_pUploadFiles = NULL;
     }
 
     void Destroy()
@@ -2833,6 +3051,40 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
 
             return true;
         }
+        else if ("cloud_crypto_upload" == message_name)
+        {
+            if (m_pParent->m_pInternal->m_pUploadFiles)
+                return true;
+
+            m_pParent->m_pInternal->m_pUploadFiles = new CCefView_Private::CCloudCryptoUpload();
+            m_pParent->m_pInternal->m_pUploadFiles->IsRemove = args->GetBool(0);
+            m_pParent->m_pInternal->m_pUploadFiles->FrameID = args->GetInt(1);
+            m_pParent->m_pInternal->m_pUploadFiles->View = m_pParent->m_pInternal;
+            int nCount = args->GetInt(2);
+            for (int i = 0; i < nCount; ++i)
+                m_pParent->m_pInternal->m_pUploadFiles->Files.push_back(args->GetString(3 + i));
+
+            m_pParent->m_pInternal->m_pUploadFiles->Init();
+            return true;
+        }
+        else if ("cloud_crypto_upload_pass" == message_name)
+        {
+            if (m_pParent->m_pInternal->m_pUploadFiles)
+                m_pParent->m_pInternal->m_pUploadFiles->OnPassword(args->GetString(0).ToWString(), args->GetString(1).ToWString());
+            return true;
+        }
+        else if ("cloud_crypto_upload_save" == message_name)
+        {
+            if (m_pParent->m_pInternal->m_pUploadFiles)
+                m_pParent->m_pInternal->m_pUploadFiles->OnSavePassword();
+            return true;
+        }
+        else if ("cloud_crypto_upload_end" == message_name)
+        {
+            if (m_pParent->m_pInternal->m_pUploadFiles)
+                m_pParent->m_pInternal->m_pUploadFiles->OnSend();
+            return true;
+        }
 
         CAscApplicationManager_Private* pInternalMan = m_pParent->GetAppManager()->m_pInternal;
         if (pInternalMan->m_pAdditional && pInternalMan->m_pAdditional->OnProcessMessageReceived(browser, source_process, message, m_pParent))
@@ -3177,7 +3429,7 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
                 std::wstring sBinaryFile = cefFile.ToWString().substr(19);
 
                 // check on recovery folder!!!
-                return GetLocalFileRequest(sBinaryFile, "", "", true);
+                return GetLocalFileRequest2(sBinaryFile);
             }
         }
 #endif
@@ -3331,6 +3583,26 @@ require.load = function (context, moduleName, url) {\n\
         return NULL;
     }
 
+    CefRefPtr<CefResourceHandler> GetLocalFileRequest2(std::wstring& strFileName)
+    {
+        BYTE* fileData = NULL;
+        DWORD fileSize = (DWORD)asc_scheme::read_file_with_urls(strFileName, fileData);
+
+        if (!fileData)
+            return NULL;
+
+        std::string  mime_type = asc_scheme::GetMimeTypeFromExt(strFileName);
+
+        CCefBinaryFileReaderCounter* pCounter = new CCefBinaryFileReaderCounter(fileData);
+        CefRefPtr<CefStreamReader> stream = CefStreamReader::CreateForHandler(new CefByteReadHandler(fileData, fileSize, pCounter));
+        if (stream.get())
+            return new CefStreamResourceHandlerCORS(mime_type, stream);
+
+        pCounter->data = NULL;
+        RELEASEARRAYOBJECTS(fileData);
+        return NULL;
+
+    }
     CefRefPtr<CefResourceHandler> GetLocalFileRequest(const std::wstring& strFileName, const std::string& sHeaderScript = "", const std::string& sFooter = "", const bool& isSchemeRequest = false)
     {
         NSFile::CFileBinary oFileBinary;
@@ -4313,9 +4585,10 @@ void CCefView::load(const std::wstring& urlInputSrc)
     CefRect rect;
     rect.x = 0;
     rect.y = 0;
-    rect.width = nParentW;
-    rect.height = nParentH;
+    rect.width = 1000;//nParentW;
+    rect.height = 1000;//nParentH;
 
+    /*
     Display* display = cef_get_xdisplay();
     Window x11root = XDefaultRootWindow(display);
     Window x11w = XCreateSimpleWindow(display, x11root, 0, 0, rect.width, rect.height, 0, 0, _settings.background_color);
@@ -4325,6 +4598,24 @@ void CCefView::load(const std::wstring& urlInputSrc)
     m_pInternal->m_lNaturalParent = x11w;
 
     info.SetAsChild(m_pInternal->m_lNaturalParent, rect);
+    */
+
+    GtkWidget* gtkWin = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    GtkWidget* parentView = gtk_vbox_new(FALSE, 0);
+    GtkContainer* container = (GTK_CONTAINER(gtkWin));
+    gtk_container_add(container, parentView);
+    gtk_window_set_position(GTK_WINDOW(gtkWin), GTK_WIN_POS_CENTER);
+    gtk_widget_show_all(GTK_WIDGET(gtkWin));
+
+    GdkWindow* w = gtk_widget_get_window(parentView);
+    XID t = gdk_x11_drawable_get_xid(w);
+
+    m_pInternal->m_pWidgetImpl->addToLayout(t);
+
+    info.SetAsChild(t, rect);
+
+    //WindowHandleId wwwiiiddd = m_pInternal->m_pWidgetImpl->addToLayout(0);
+    //info.SetAsChild(wwwiiiddd, rect);
 #endif
 
 #ifdef _MAC
@@ -4399,6 +4690,7 @@ void CCefView::resizeEvent(int width, int height)
 #endif
 
 #if defined(_LINUX) && !defined(_MAC)
+    /*
     ::Display* xdisplay = cef_get_xdisplay();
 
     XWindowChanges changes = {0};
@@ -4407,7 +4699,16 @@ void CCefView::resizeEvent(int width, int height)
     changes.y = 0;
     changes.y = 0;
 
-    XConfigureWindow(xdisplay, m_pInternal->m_lNaturalParent, CWHeight | CWWidth | CWY, &changes);
+    //XConfigureWindow(xdisplay, m_pInternal->m_lNaturalParent, CWHeight | CWWidth | CWY, &changes);
+    XConfigureWindow(xdisplay, hwnd, CWHeight | CWWidth | CWY, &changes);
+    */
+
+    ::Display* xdisplay = cef_get_xdisplay();
+    XWindowChanges changes = {0};
+    changes.width = (0 == width) ? (m_pInternal->m_pWidgetImpl->parent_width()) : width;
+    changes.height = (0 == height) ? (m_pInternal->m_pWidgetImpl->parent_height()) : height;
+    changes.y = 0;
+    changes.y = 0;
     XConfigureWindow(xdisplay, hwnd, CWHeight | CWWidth | CWY, &changes);
 #endif
 
@@ -5146,6 +5447,13 @@ void CCefView::LoadReporter(int nParentId, std::wstring url)
 double CCefView::GetDeviceScale()
 {
     return (double)m_pInternal->m_nDeviceScale;
+}
+
+CefRefPtr<CefFrame> CCefView_Private::CCloudCryptoUpload::GetFrame()
+{
+    if (!View->m_handler || !View->m_handler->GetBrowser())
+        return NULL;
+    return View->m_handler->GetBrowser()->GetFrame((int64)FrameID);
 }
 
 // CefViewEditor --------------------------------------------------------------------------
