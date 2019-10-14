@@ -464,10 +464,18 @@ public:
                 }
                 else
                 {
-                    std::wstring sFileDst = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"DT_");
+                    std::wstring sTmpFolder = NSDirectory::GetTempPath();
+                    std::wstring sFileDst = NSFile::CFileBinary::CreateTempFileWithUniqueName(sTmpFolder, L"CC_");
                     if (NSFile::CFileBinary::Exists(sFileDst))
                         NSFile::CFileBinary::Remove(sFileDst);
-                    sFileDst += NSFile::GetFileName(sFile);
+
+                    std::wstring::size_type nPosPoint = sFileDst.rfind('.');
+                    if (nPosPoint != std::wstring::npos && nPosPoint > sTmpFolder.length())
+                        sFileDst = sFileDst.substr(0, nPosPoint);
+
+                    NSDirectory::CreateDirectory(sFileDst);
+
+                    sFileDst += (L"/" + NSFile::GetFileName(sFile));
                     FilesDst.push_back(sFileDst);
                 }
             }
@@ -594,7 +602,11 @@ public:
             if (IsRemove)
                 NSFile::CFileBinary::Remove(sFile);
             if (!sFileDst.empty())
+            {
                 NSFile::CFileBinary::Remove(sFileDst);
+                std::wstring sTmpDir = NSFile::GetDirectoryName(sFileDst);
+                NSDirectory::DeleteDirectory(sTmpDir);
+            }
 
             if (0 >= Files.size())
             {
