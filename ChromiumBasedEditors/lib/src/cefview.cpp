@@ -568,13 +568,13 @@ public:
                 return;
             }
 
-            std::string sHashA = "";
             ICertificate* pCert = ICertificate::CreateInstance();
             std::string sHash = pCert->GetHash(sFileDst, OOXML_HASH_ALG_SHA256);
             delete pCert;
 
             std::string sPassA = U_TO_UTF8(sPass);
-            pFrame->ExecuteJavaScript("window.AscDesktopEditor.sendSystemMessage({ type : \"setPasswordByFile\", hash : \"" + sHashA + "\", password : \"" + sPassA + "\" });", pFrame->GetURL(), 0);
+            std::string sInfoA = U_TO_UTF8(sInfo);
+            pFrame->ExecuteJavaScript("window.AscDesktopEditor.sendSystemMessage({ type : \"setPasswordByFile\", hash : \"" + sHash + "\", password : \"" + sPassA + "\", docinfo : \"" + sInfoA + "\" });", pFrame->GetURL(), 0);
         }
         void OnSavePassword()
         {
