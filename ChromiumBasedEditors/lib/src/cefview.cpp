@@ -578,7 +578,7 @@ public:
             }
             std::wstring sFileSrc = *Files.begin();
             std::wstring sFileDst = *FilesDst.begin();
-            OnCompleteFile(sFileDst);
+            OnCompleteFile(sFileDst, true);
         }
         void OnSend()
         {
@@ -612,7 +612,12 @@ public:
             CefRefPtr<CefFrame> pFrame = GetFrame();
             if (!pFrame)
                 return;
-             pFrame->ExecuteJavaScript("window.on_cloud_crypto_upload && window.on_cloud_crypto_upload(\"" + U_TO_UTF8(sFile) + (isCrypto ? "\", true);" : "\", false);"), pFrame->GetURL(), 0);
+
+            std::wstring sFileCorrect = sFile;
+#ifdef _WIN32
+            NSCommon::string_replace(sFileCorrect, L"\\", L"/");
+#endif
+            pFrame->ExecuteJavaScript("window.on_cloud_crypto_upload && window.on_cloud_crypto_upload(\"" + U_TO_UTF8(sFileCorrect) + (isCrypto ? "\", true);" : "\", false);"), pFrame->GetURL(), 0);
         }
         void OnComplete()
         {

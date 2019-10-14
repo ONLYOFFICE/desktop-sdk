@@ -1456,7 +1456,7 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
   xhr.onload = function() {\n\
     callback(new Uint8Array(xhr.response));\n\
   };\n\
-  img.onerror = function() {\n\
+  xhr.onerror = function() {\n\
     callback(null);\n\
   };\n\
   xhr.send(null);\n\
