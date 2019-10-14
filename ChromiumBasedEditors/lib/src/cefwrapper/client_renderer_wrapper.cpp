@@ -1418,10 +1418,13 @@ window.AscDesktopEditor.SetAdvancedEncryptedData = function(password, data, call
 };\n\
 window.AscDesktopEditor.CloudCryptFile = function(url, callback) {\n\
   window.AscDesktopEditor.DownloadFiles([url], [], function(files) {\n\
-    if (files && 1 == files.length)\n\
+    var _files = [];\n\
+    for (var elem in files)\n\
+      _files.push(files[elem]);\n\
+    if (_files && 1 == _files.length)\n\
     {\n\
       window.on_cloud_crypto_upload = callback;\n\
-      window.AscDesktopEditor._CloudCryptoUpload([files[0]], true);\n\
+      window.AscDesktopEditor._CloudCryptoUpload([_files[0]], true);\n\
     }\n\
   });\n\
 };\n\
@@ -1450,9 +1453,11 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
     xhr.overrideMimeType('text/plain; charset=x-user-defined');\n\
   else\n\
     xhr.setRequestHeader('Accept-Charset', 'x-user-defined');\n\
-  xhr.onload = function()\n\
-  {\n\
+  xhr.onload = function() {\n\
     callback(new Uint8Array(xhr.response));\n\
+  };\n\
+  img.onerror = function() {\n\
+    callback(null);\n\
   };\n\
   xhr.send(null);\n\
 };", _frame->GetURL(), 0);
@@ -2420,7 +2425,7 @@ _e.asc_AddVideo(\"" + sImage + L".png\", \"" + sImage + L"." + sExt + L"\");\n\
                 if (curFrame)
                 {
                     curFrame->ExecuteJavaScript("\
-window.onSystemMessage2 = windows.onSystemMessage;\n\
+window.onSystemMessage2 = window.onSystemMessage;\n\
 window.onSystemMessage = function(e) {\n\
 switch (e.type)\n\
 {\n\
@@ -2473,7 +2478,7 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
-        else if (name == "CloudCryptoUploadEnd")
+        else if (name == "CloudCryptUploadEnd")
         {
             CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("cloud_crypto_upload_end");
@@ -3025,7 +3030,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         "_CloudCryptoUpload",
         "_CloudCryptoUploadPass",
         "_CloudCryptoUploadSave",
-        "CloudCryptoUploadEnd",
+        "CloudCryptUploadEnd",
 
         "getLocalFileSize",
 

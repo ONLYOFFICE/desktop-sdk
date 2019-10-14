@@ -451,6 +451,11 @@ public:
                     if (oChecker.nFileType == AVS_OFFICESTUDIO_FILE_OTHER_MS_OFFCRYPTO)
                         bIsOfficeFile = false;
                 }
+                if (bIsOfficeFile)
+                {
+                    if (!IsFormatSupportCrypto(oChecker.nFileType))
+                        bIsOfficeFile = false;
+                }
 
                 if (!bIsOfficeFile)
                 {
@@ -494,7 +499,7 @@ public:
                 return;
             }
             // нужно криптовать... запрашиваем пароль
-            pFrame->ExecuteJavaScript("window.AscDesktopEditor.sendSystemMessage({ type : generatePassword });", pFrame->GetURL(), 0);
+            pFrame->ExecuteJavaScript("window.AscDesktopEditor.sendSystemMessage({ type : \"generatePassword\" });", pFrame->GetURL(), 0);
         }
         void OnPassword(const std::wstring& sPass, const std::wstring& sInfo)
         {
@@ -561,7 +566,7 @@ public:
             delete pCert;
 
             std::string sPassA = U_TO_UTF8(sPass);
-            pFrame->ExecuteJavaScript("window.AscDesktopEditor.sendSystemMessage({ type : setPasswordByFile, hash : \"" + sHashA + "\", password : \"" + sPassA + "\" });", pFrame->GetURL(), 0);
+            pFrame->ExecuteJavaScript("window.AscDesktopEditor.sendSystemMessage({ type : \"setPasswordByFile\", hash : \"" + sHashA + "\", password : \"" + sPassA + "\" });", pFrame->GetURL(), 0);
         }
         void OnSavePassword()
         {
@@ -592,19 +597,22 @@ public:
                 NSFile::CFileBinary::Remove(sFileDst);
 
             if (0 >= Files.size())
+            {
                 OnComplete();
+                return;
+            }
 
             NextFile();
         }
 
     private:
-        void OnCompleteFile(const std::wstring& sFile)
+        void OnCompleteFile(const std::wstring& sFile, const bool& isCrypto = false)
         {
             // файл готов. отправляем его в облако. удалим все ненужное на деструкторе
             CefRefPtr<CefFrame> pFrame = GetFrame();
             if (!pFrame)
                 return;
-             pFrame->ExecuteJavaScript("window.on_cloud_crypto_upload && window.on_cloud_crypto_upload(\"" + U_TO_UTF8(sFile) + "\");", pFrame->GetURL(), 0);
+             pFrame->ExecuteJavaScript("window.on_cloud_crypto_upload && window.on_cloud_crypto_upload(\"" + U_TO_UTF8(sFile) + (isCrypto ? "\", true);" : "\", false);"), pFrame->GetURL(), 0);
         }
         void OnComplete()
         {
