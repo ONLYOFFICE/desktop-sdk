@@ -516,9 +516,9 @@ public:
             NSStringUtils::CStringBuilder oBuilder;
             oBuilder.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><TaskQueueDataConvert><m_sFileFrom>");
             oBuilder.WriteEncodeXmlString(sFileSrc);
-            oBuilder.WriteEncodeXmlString(L"</m_sFileFrom><m_sFileTo>");
+            oBuilder.WriteString(L"</m_sFileFrom><m_sFileTo>");
             oBuilder.WriteEncodeXmlString(sFileDst);
-            oBuilder.WriteEncodeXmlString(L"</m_sFileTo>");
+            oBuilder.WriteString(L"</m_sFileTo>");
 
             COfficeFileFormatChecker oChecker;
             oChecker.isOfficeFile(sFileSrc);
@@ -3068,6 +3068,7 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
             m_pParent->m_pInternal->m_pUploadFiles->IsRemove = args->GetBool(0);
             m_pParent->m_pInternal->m_pUploadFiles->FrameID = args->GetInt(1);
             m_pParent->m_pInternal->m_pUploadFiles->View = m_pParent->m_pInternal;
+            m_pParent->m_pInternal->m_pUploadFiles->Manager = m_pParent->GetAppManager();
             int nCount = args->GetInt(2);
             for (int i = 0; i < nCount; ++i)
                 m_pParent->m_pInternal->m_pUploadFiles->Files.push_back(args->GetString(3 + i));

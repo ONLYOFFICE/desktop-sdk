@@ -1743,8 +1743,8 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_open_filename_dialog");
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
             message->GetArgumentList()->SetString(1, std::to_string(CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier()));
-            if (arguments.size() > 2)
-                message->GetArgumentList()->SetBool(2, arguments[2]->GetBoolValue());
+            if (arguments.size() > 1)
+                message->GetArgumentList()->SetBool(2, arguments[1]->GetBoolValue());
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
