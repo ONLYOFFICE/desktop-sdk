@@ -273,6 +273,9 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
         settings.multi_threaded_message_loop = 1;
 #endif
 
+#ifdef _MAC
+    m_pInternal->message_loop.reset(new client::MainMessageLoopStd);
+#else
     if (!m_pInternal->m_pManager->IsExternalEventLoop())
     {
 #ifdef WIN32
@@ -289,6 +292,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
         settings.external_message_pump = 1;
         m_pInternal->message_loop = client::MainMessageLoopExternalPump::Create();
     }
+#endif
 
     std::wstring sCachePath = pManager->m_oSettings.cache_path;
 

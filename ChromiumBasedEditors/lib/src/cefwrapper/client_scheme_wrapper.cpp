@@ -81,7 +81,7 @@ std::vector<std::wstring> get_url_params(std::wstring& sUrl)
         sUrl = sUrl.substr(0, posF);
     return ret;
 }
-unsigned long read_file_with_urls(std::wstring& sUrl, BYTE*& data)
+unsigned long read_file_with_urls(std::wstring& sUrl, unsigned char*& data)
 {
     data = NULL;
 
@@ -111,7 +111,7 @@ unsigned long read_file_with_urls(std::wstring& sUrl, BYTE*& data)
             if (start > 0)
                 oFile.SeekFile((int)start);
 
-            data = new BYTE[count];
+            data = new unsigned char[count];
             oFile.ReadFile(data, (DWORD)count, dwSize);
         }
     }

@@ -56,7 +56,7 @@ namespace asc_scheme
     std::string GetMimeTypeFromExt(const std::wstring& sFile);
 
     std::vector<std::wstring> get_url_params(std::wstring& sUrl);
-    unsigned long read_file_with_urls(std::wstring& sUrl, BYTE*& data);
+    unsigned long read_file_with_urls(std::wstring& sUrl, unsigned char*& data);
 }
 
 #endif
