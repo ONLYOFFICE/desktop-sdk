@@ -740,6 +740,9 @@ retval, exception);
                         (m_sFontsData + L"/fonts_thumbnail.png") :
                         (m_sFontsData + L"/fonts_thumbnail@2x.png");
 
+            while (!NSFile::CFileBinary::Exists(m_sFontsData + L"/fonts.log"))
+                NSThreads::Sleep(100);
+
             std::string sData = "data:image/jpeg;base64," + GetFileBase64(strUrl);
             retval = CefV8Value::CreateString(sData.c_str());
             return true;

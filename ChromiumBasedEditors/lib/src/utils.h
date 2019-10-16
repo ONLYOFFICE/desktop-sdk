@@ -44,6 +44,7 @@
 #include "Logger.h"
 #include "../../../../core/Common/FileDownloader/FileDownloader.h"
 #include "../../../../core/DesktopEditor/fontengine/application_generate_fonts.h"
+#include "../../../../core/DesktopEditor/fontengine/ApplicationFontsWorker.h"
 #include "../../../../core/DesktopEditor/common/StringBuilder.h"
 
 namespace NSCommon
