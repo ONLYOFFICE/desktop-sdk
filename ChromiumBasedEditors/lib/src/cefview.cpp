@@ -511,6 +511,10 @@ public:
         }
         void OnPassword(const std::wstring& sPass, const std::wstring& sInfo)
         {
+            CefRefPtr<CefFrame> pFrame = GetFrame();
+            if (pFrame)
+                pFrame->ExecuteJavaScript("window.onSystemMessage && window.onSystemMessage({ type : \"operation\", block : true, opType : 1 });", pFrame->GetURL(), 0);
+
             // пришел пароль из плагина. делаем конвертацию и отсылаем файл
             if (0 >= Files.size())
             {
@@ -561,7 +565,6 @@ public:
             }
 
             // запрос сохранения пароля
-            CefRefPtr<CefFrame> pFrame = GetFrame();
             if (!pFrame)
             {
                 OnCompleteFile(sFileSrc);
@@ -574,7 +577,11 @@ public:
 
             std::string sPassA = U_TO_UTF8(sPass);
             std::string sInfoA = U_TO_UTF8(sInfo);
-            pFrame->ExecuteJavaScript("window.AscDesktopEditor.sendSystemMessage({ type : \"setPasswordByFile\", hash : \"" + sHash + "\", password : \"" + sPassA + "\", docinfo : \"" + sInfoA + "\" });", pFrame->GetURL(), 0);
+
+            if (pFrame)
+            {
+                pFrame->ExecuteJavaScript("window.AscDesktopEditor.sendSystemMessage({ type : \"setPasswordByFile\", isNeedMessage : true, hash : \"" + sHash + "\", password : \"" + sPassA + "\", docinfo : \"" + sInfoA + "\" });", pFrame->GetURL(), 0);
+            }
         }
         void OnSavePassword()
         {
@@ -2758,6 +2765,9 @@ public:
                 return true;
 
             int nIndex = 0;
+            int nParams = args->GetInt(nIndex++);
+            int nFrameID = args->GetInt(nIndex++);
+
             while (nIndex < nCount)
             {
                 std::wstring sUrl  = args->GetString(nIndex++);
@@ -2774,6 +2784,13 @@ public:
                  iter != m_pParent->m_pInternal->m_arDownloadedFiles.end(); iter++)
             {
                 m_pParent->StartDownload(iter->first);
+            }
+
+            if (nParams == 1)
+            {
+                CefRefPtr<CefFrame> frame = browser->GetFrame((int64)nFrameID);
+                if (frame)
+                    frame->ExecuteJavaScript("window.onSystemMessage && window.onSystemMessage({ type : \"operation\", block : true, opType : 0 });", frame->GetURL(), 0);
             }
 
             return true;

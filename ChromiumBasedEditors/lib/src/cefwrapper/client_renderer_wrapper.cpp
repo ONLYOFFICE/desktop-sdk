@@ -1386,6 +1386,8 @@ DE.controllers.Main.DisableVersionHistory(); \
                 _frame->ExecuteJavaScript("\
 window.AscDesktopEditor.sendSystemMessage = function(arg) {\n\
   window.AscDesktopEditor.isSendSystemMessage = true;\n\
+  // expand system message\n\
+  arg.url = window.AscDesktopEditor._getMainUrl();\n\
   window.AscDesktopEditor._sendSystemMessage(JSON.stringify(arg));\n\
 };\n\
 window.AscDesktopEditor.GetHash = function(arg, callback) {\n\
@@ -1403,9 +1405,9 @@ window.AscDesktopEditor.OpenFilenameDialog = function(filter, ismulti, callback)
   window.on_native_open_filename_dialog = callback;\n\
   window.AscDesktopEditor._OpenFilenameDialog(filter, ismulti);\n\
 };\n\
-window.AscDesktopEditor.DownloadFiles = function(filesSrc, filesDst, callback) {\n\
+window.AscDesktopEditor.DownloadFiles = function(filesSrc, filesDst, callback, params) {\n\
   window.on_native_download_files = callback;\n\
-  window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst);\n\
+  window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst, params);\n\
 };\n\
 window.AscDesktopEditor.SetCryptoMode = function(password, mode, callback) {\n\
   window.on_set_crypto_mode = callback;\n\
@@ -1429,7 +1431,7 @@ window.AscDesktopEditor.CloudCryptFile = function(url, callback) {\n\
       window.on_cloud_crypto_upload = callback;\n\
       window.AscDesktopEditor._CloudCryptoUpload([_files[0]], true);\n\
     }\n\
-  });\n\
+  }, 1);\n\
 };\n\
 window.AscDesktopEditor.CloudCryptUpload = function(filter, callback) {\n\
   var filterOut = filter || \"\"; if (filterOut == \"\") filterOut = \"any\";\n\
@@ -1973,7 +1975,15 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
 
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("download_files");
 
+            int nParams = 0;
+            if (arguments.size() > 2 && arguments[2]->IsInt())
+                nParams = arguments[2]->GetIntValue();
+
             int nIndex = 0;
+
+            message->GetArgumentList()->SetInt(nIndex++, nParams);
+            message->GetArgumentList()->SetInt(nIndex++, (int)CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
+
             for (int i = 0; i < nCount; ++i)
             {
                 message->GetArgumentList()->SetString(nIndex++, val->GetValue(i)->GetStringValue());
@@ -2439,7 +2449,18 @@ switch (e.type)\n\
   }\n\
   case \"setPasswordByFile\":\n\
   {\n\
-    window.AscDesktopEditor._CloudCryptoUploadSave();\n\
+    if (e.isNeedMessage)\n\
+    {\n\
+      var messageText = e.message;\n\
+      delete e.isNeedMessage;\n\
+      delete e.message;\n\
+      window.onSystemMessage({ type : \"operation\", block : true, opType : 2, opMessage : messageText });\n\
+      window.AscDesktopEditor.sendSystemMessage(e);\n\
+    }\n\
+    else\n\
+    {\n\
+      window.AscDesktopEditor._CloudCryptoUploadSave();\n\
+    }\n\
     break;\n\
   }\n\
   default:\n\
@@ -2498,6 +2519,19 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
                 lSize = oFile.GetFileSize();
 
             retval = CefV8Value::CreateInt((int)lSize);
+            return true;
+        }
+        else if (name == "_getMainUrl")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefFrame> frame = browser ? browser->GetMainFrame() : NULL;
+            retval = CefV8Value::CreateString(frame ? frame->GetURL() : "");
+            return true;
+        }
+        else if (name == "_getCurrentUrl")
+        {
+            CefRefPtr<CefFrame> frame = CefV8Context::GetCurrentContext()->GetFrame();
+            retval = CefV8Value::CreateString(frame ? frame->GetURL() : "");
             return true;
         }
 
@@ -2873,7 +2907,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
 
-    #define EXTEND_METHODS_COUNT 122
+    #define EXTEND_METHODS_COUNT 124
     const char* methods[EXTEND_METHODS_COUNT] = {
         "Copy",
         "Paste",
@@ -3036,6 +3070,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         "CloudCryptUploadEnd",
 
         "getLocalFileSize",
+
+        "_getMainUrl",
+        "_getCurrentUrl",
 
         NULL
     };
