@@ -359,6 +359,10 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
         pManager->m_pInternal->SaveSettings();
     }
 
+    pManager->m_pInternal->m_bCryptoDisableForLocal = oPlugins.m_bCryptoDisableForLocal;
+    pManager->m_pInternal->m_bCryptoDisableForInternalCloud = oPlugins.m_bCryptoDisableForInternalCloud;
+    pManager->m_pInternal->m_bCryptoDisableForExternalCloud = oPlugins.m_bCryptoDisableForExternalCloud;
+
     for (std::vector<CExternalPluginInfo>::iterator iterExt = oPlugins.m_arExternals.begin(); iterExt != oPlugins.m_arExternals.end(); iterExt++)
     {
         pManager->m_pInternal->m_arExternalPlugins.push_back(*iterExt);

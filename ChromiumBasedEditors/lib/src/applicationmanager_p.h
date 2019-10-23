@@ -357,6 +357,9 @@ public:
 
     // crypto
     std::map<std::wstring, int> m_mapOnlyPass;
+    bool m_bCryptoDisableForLocal; // поддерживает ли плагин криптования шифрование локальных файлов
+    bool m_bCryptoDisableForInternalCloud; // поддерживает ли плагин криптования шифрование файлов из нашего облака
+    bool m_bCryptoDisableForExternalCloud; // поддерживает ли плагин криптования шифрование файлов из чужого облака
 
     std::map<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue> m_mapCrypto;
     NSAscCrypto::AscCryptoType m_nCurrentCryptoMode;
@@ -421,6 +424,10 @@ public:
         m_nCurrentCryptoMode = NSAscCrypto::None;
 
         m_pKeyChain = NULL;
+
+        m_bCryptoDisableForLocal = true;
+        m_bCryptoDisableForInternalCloud = true;
+        m_bCryptoDisableForExternalCloud = true;
 
         m_oCS_Scripts.InitializeCriticalSection();
         m_oCS_LocalFiles.InitializeCriticalSection();

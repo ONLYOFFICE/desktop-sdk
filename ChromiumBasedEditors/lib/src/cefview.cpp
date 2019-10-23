@@ -70,10 +70,6 @@
 #include "./cefwrapper/client_scheme.h"
 #include "./mailto.h"
 
-// in new version cloud crypt support only for local & own cloud files
-// in plugin check???
-#define USE_CRYPTO_ONLY_FOR_INTERNAL_CLOUD
-
 #define CRYPTO_CLOUD_SUPPORT 5020300
 
 #ifdef _MAC
@@ -1813,13 +1809,18 @@ public:
             if (m_pParent->m_pInternal->m_bIsExternalCloud && !m_pParent->m_pInternal->m_oExternalCloud.crypto_support)
                 nCryptoMode = 0;
 
-#ifdef USE_CRYPTO_ONLY_FOR_INTERNAL_CLOUD
-            if (m_pParent->m_pInternal->m_bIsExternalCloud)
+            if (m_pParent->GetAppManager()->m_pInternal->m_bCryptoDisableForExternalCloud &&
+                m_pParent->m_pInternal->m_bIsExternalCloud)
+            {
                 nCryptoMode = 0;
+            }
 
-            if (!m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir.empty() && m_pParent->m_pInternal->m_sCloudCryptSrc.empty())
+            if (m_pParent->GetAppManager()->m_pInternal->m_bCryptoDisableForLocal &&
+                !m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir.empty() &&
+                m_pParent->m_pInternal->m_sCloudCryptSrc.empty())
+            {
                 nCryptoMode = 0;
-#endif
+            }
 
             CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("on_js_context_created_callback");
             messageOut->GetArgumentList()->SetInt(0, nFlags);
