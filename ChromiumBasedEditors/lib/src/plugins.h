@@ -70,9 +70,9 @@ public:
         m_nCryptoMode = 0;
 
         m_bCryptoDisabledOnStart = false;
-        m_bCryptoDisableForLocal = true;
-        m_bCryptoDisableForInternalCloud = true;
-        m_bCryptoDisableForExternalCloud = true;
+        m_bCryptoDisableForLocal = false;
+        m_bCryptoDisableForInternalCloud = false;
+        m_bCryptoDisableForExternalCloud = false;
     }
 
     std::string GetPluginsJson(const bool& checkCrypto = false)
@@ -295,13 +295,13 @@ private:
                 m_bCryptoDisabledOnStart = true;
 
             std::string sCryptoDisableForLocal = GetStringValue(sJson, "cryptoDisabledForLocal");
-            if (sCryptoDisableForLocal == "false" || sCryptoDisableForLocal == "0") m_bCryptoDisableForLocal = false;
+            if (sCryptoDisableForLocal == "true" || sCryptoDisableForLocal == "1") m_bCryptoDisableForLocal = true;
 
             std::string sCryptoDisableForInternalCloud = GetStringValue(sJson, "cryptoDisabledForInternalCloud");
-            if (sCryptoDisableForInternalCloud == "false" || sCryptoDisableForInternalCloud == "0") m_bCryptoDisableForInternalCloud = false;
+            if (sCryptoDisableForInternalCloud == "true" || sCryptoDisableForInternalCloud == "1") m_bCryptoDisableForInternalCloud = true;
 
             std::string sCryptoDisableForExternalCloud = GetStringValue(sJson, "cryptoDisabledForExternalCloud");
-            if (sCryptoDisableForExternalCloud == "false" || sCryptoDisableForExternalCloud == "0") m_bCryptoDisableForExternalCloud = false;
+            if (sCryptoDisableForExternalCloud == "true" || sCryptoDisableForExternalCloud == "1") m_bCryptoDisableForExternalCloud = true;
 
             std::string::size_type pos1 = sJson.find("asc.{");
             std::string::size_type pos2 = sJson.find('}', pos1);

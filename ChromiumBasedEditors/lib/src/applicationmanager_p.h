@@ -425,9 +425,9 @@ public:
 
         m_pKeyChain = NULL;
 
-        m_bCryptoDisableForLocal = true;
-        m_bCryptoDisableForInternalCloud = true;
-        m_bCryptoDisableForExternalCloud = true;
+        m_bCryptoDisableForLocal = false;
+        m_bCryptoDisableForInternalCloud = false;
+        m_bCryptoDisableForExternalCloud = false;
 
         m_oCS_Scripts.InitializeCriticalSection();
         m_oCS_LocalFiles.InitializeCriticalSection();
