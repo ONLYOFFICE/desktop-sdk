@@ -45,7 +45,7 @@ namespace NSAscCrypto
         None        = 0,
         Simple      = 1,
         Standart    = 2,
-        Advanvced   = 3
+        Advanced    = 3
     };
 
     class CAscCryptoJsonValue

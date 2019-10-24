@@ -35,6 +35,16 @@
 
 #include "../../../../core/DesktopEditor/common/base_export.h"
 
+#ifdef DESKTOP_NO_USE_DYNAMIC_LIBRARY
+#define DESKTOP_DECL
+#else
+#ifdef DESKTOP_USE_DYNAMIC_LIBRARY_BUILDING
+#define DESKTOP_DECL Q_DECL_EXPORT
+#else
+#define DESKTOP_DECL Q_DECL_IMPORT
+#endif
+#endif
+
 #ifdef WIN32
 
 #include "windows.h"

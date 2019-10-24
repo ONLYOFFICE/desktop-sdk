@@ -69,11 +69,12 @@ HEADERS += \
     ./include/cefapplication.h \
     ./include/cefview.h \
     ./include/applicationmanager_events.h \
-    ./src/applicationmanager_p.h \    
+    ./src/applicationmanager_p.h \
     ./src/nativeviewer.h \
     ./src/plugins.h \
     ./src/crypto_mode.h \
-    ./include/keychain.h
+    ./include/keychain.h \
+    ./src/utils.h
 
 SOURCES += \
     ./src/applicationmanager.cpp \
@@ -89,7 +90,8 @@ SOURCES += \
     ./../../../core/Common/OfficeFileFormatChecker2.cpp \
     ./../../../core/Common/3dParty/pole/pole.cpp \
     ./../../../core/Common/DocxFormat/Source/Base/unicode_util.cpp \
-    ./../../../core/HtmlRenderer/src/ASCSVGWriter.cpp
+    ./../../../core/HtmlRenderer/src/ASCSVGWriter.cpp \
+    ./../../../core/DesktopEditor/fontengine/ApplicationFontsWorker.cpp
 
 SOURCES += \
     ./src/cefwrapper/monitor_info.cpp

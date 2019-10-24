@@ -81,46 +81,12 @@ int XIOErrorHandlerImpl(Display *display)
 #include "tests/cefclient/browser/main_message_loop_multithreaded_win.h"
 #endif
 #include "tests/shared/browser/main_message_loop_std.h"
+#ifndef _MAC
+#include "tests/shared/browser/main_message_loop_external_pump.h"
+#endif
 #endif
 
 #include "./plugins.h"
-
-static std::wstring ReadFileByLineCorrent(std::wstring& value)
-{
-    wchar_t* start = (wchar_t*)value.c_str();
-    wchar_t* end = start + value.length() - 1;
-
-    while (start < end && (*start == '\n' || *start == '\r'))
-        ++start;
-
-    while (end > start && (*end == '\n' || *end == '\r'))
-        --end;
-
-    if (end <= start)
-        return std::wstring();
-
-    return std::wstring(start, (end - start) + 1);
-}
-
-static std::vector<std::wstring> ReadFileByLine(std::wstring& sContent)
-{
-    std::vector<std::wstring> arLines;
-    std::wstring::size_type pos = 0;
-    std::wstring delimiter = L"\n";
-    std::wstring sToken = L"";
-    while ((pos = sContent.find(delimiter)) != std::string::npos)
-    {
-        sToken = sContent.substr(0, pos);
-        arLines.push_back(ReadFileByLineCorrent(sToken));
-
-        sContent.erase(0, pos + delimiter.length());
-    }
-
-    sToken = sContent;
-    arLines.push_back(ReadFileByLineCorrent(sToken));
-
-    return arLines;
-}
 
 class CApplicationCEF_Private
 {
@@ -168,22 +134,18 @@ CApplicationCEF::CApplicationCEF()
 
 int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* argv[])
 {
-    CORE_LOGGINGA("CApplicationCEF::Init_CEF::start");
+    LOGGER_STRING("CApplicationCEF::Init_CEF::start");
 
     if (NULL == pManager->m_pInternal->m_pDpiChecker)
         pManager->m_pInternal->m_pDpiChecker = pManager->InitDpiChecker();
 
 #if 0
-    FILE* f = fopen("D:\\logloglog.txt", "a+");
-    fprintf(f, "-----------------------------------------------\n");
     for (int i = 0; i < argc; ++i)
     {
-        fprintf(f, argv[i]);
-        fprintf(f, "\n");
+        LOGGER_STRING2(argv[i]);
     }
-    fprintf(f, "-----------------------------------------------\n");
-    fclose(f);
 #endif
+
     m_pInternal->m_pManager = pManager;
 
     // Enable High-DPI support on Windows 7 or newer.
@@ -274,7 +236,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     }
 #endif
 
-    CORE_LOGGINGA("CApplicationCEF::Init_CEF::main");
+    LOGGER_STRING("CApplicationCEF::Init_CEF::main");
 
     CefSettings settings;
     
@@ -309,10 +271,12 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 #ifdef WIN32
     if (!m_pInternal->m_pManager->IsExternalEventLoop())
         settings.multi_threaded_message_loop = 1;
-    //settings.windowless_rendering_enabled = 1;
 #endif
 
-    if (/*!m_pInternal->m_pManager->IsExternalEventLoop()*/true)
+#ifdef _MAC
+    m_pInternal->message_loop.reset(new client::MainMessageLoopStd);
+#else
+    if (!m_pInternal->m_pManager->IsExternalEventLoop())
     {
 #ifdef WIN32
         if (settings.multi_threaded_message_loop)
@@ -323,6 +287,12 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
         m_pInternal->message_loop.reset(new client::MainMessageLoopStd);
 #endif
     }
+    else
+    {
+        settings.external_message_pump = 1;
+        m_pInternal->message_loop = client::MainMessageLoopExternalPump::Create();
+    }
+#endif
 
     std::wstring sCachePath = pManager->m_oSettings.cache_path;
 
@@ -347,10 +317,10 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     settings.persist_session_cookies = true;
 
     // Initialize CEF.
-    bool bInit = m_pInternal->context->Initialize(main_args, settings, m_pInternal->m_app.get(), NULL);
-    bool bIsInitScheme = asc_scheme::InitScheme(pManager);
+    m_pInternal->context->Initialize(main_args, settings, m_pInternal->m_app.get(), NULL);
+    asc_scheme::InitScheme(pManager);
 
-    CORE_LOGGINGA("CApplicationCEF::Init_CEF::initialize");
+    LOGGER_STRING("CApplicationCEF::Init_CEF::initialize");
 
 #if defined(_LINUX) && !defined(_MAC)
     // The Chromium sandbox requires that there only be a single thread during
@@ -388,6 +358,10 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
         pManager->m_pInternal->CheckSetting("--crypto-mode", "default");
         pManager->m_pInternal->SaveSettings();
     }
+
+    pManager->m_pInternal->m_bCryptoDisableForLocal = oPlugins.m_bCryptoDisableForLocal;
+    pManager->m_pInternal->m_bCryptoDisableForInternalCloud = oPlugins.m_bCryptoDisableForInternalCloud;
+    pManager->m_pInternal->m_bCryptoDisableForExternalCloud = oPlugins.m_bCryptoDisableForExternalCloud;
 
     for (std::vector<CExternalPluginInfo>::iterator iterExt = oPlugins.m_arExternals.begin(); iterExt != oPlugins.m_arExternals.end(); iterExt++)
     {
@@ -435,7 +409,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 
     pManager->m_pInternal->LocalFiles_Init();
 
-    CORE_LOGGINGA("CApplicationCEF::Init_CEF::end");
+    LOGGER_STRING("CApplicationCEF::Init_CEF::end");
 
     return 0;
 }
@@ -457,9 +431,6 @@ void CApplicationCEF::Close()
 
 int CApplicationCEF::RunMessageLoop(bool& is_runned)
 {
-    if (m_pInternal->m_pManager->IsExternalEventLoop())
-        return 0;
-
     is_runned = true;
 #ifdef LINUX
     CLinuxData::Check(m_pInternal->m_pManager);
@@ -474,10 +445,7 @@ void CApplicationCEF::DoMessageLoopEvent()
 
 bool CApplicationCEF::ExitMessageLoop()
 {
-    if (!this->m_pInternal->m_pManager->IsExternalEventLoop())
-        m_pInternal->message_loop->Quit();
-    else
-        m_pInternal->m_pManager->ExitExternalEventLoop();
+    m_pInternal->message_loop->Quit();
     return true;
 }
 

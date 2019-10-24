@@ -45,12 +45,12 @@
 #include "./keychain.h"
 
 #ifdef WIN32
-__declspec(dllexport) int __cdecl Core_SetProcessDpiAwareness(void);
-__declspec(dllexport) int __cdecl Core_GetMonitorRawDpi(WindowHandleId, unsigned int*, unsigned int*);
-__declspec(dllexport) int __cdecl Core_GetMonitorRawDpiByIndex(int, unsigned int*, unsigned int*);
+DESKTOP_DECL int Core_SetProcessDpiAwareness(void);
+DESKTOP_DECL int Core_GetMonitorRawDpi(WindowHandleId, unsigned int*, unsigned int*);
+DESKTOP_DECL int Core_GetMonitorRawDpiByIndex(int, unsigned int*, unsigned int*);
 #endif
 
-class Q_DECL_EXPORT CAscApplicationSettings
+class DESKTOP_DECL CAscApplicationSettings
 {
 public:
     std::wstring                    spell_dictionaries_path;
@@ -116,7 +116,7 @@ public:
     }
 };
 
-class Q_DECL_EXPORT CAscDpiChecker
+class DESKTOP_DECL CAscDpiChecker
 {
 public:
     CAscDpiChecker();
@@ -132,7 +132,7 @@ public:
 class CAscReporterData;
 class CAscApplicationManager_Private;
 namespace NSFonts { class IApplicationFonts; }
-class Q_DECL_EXPORT CAscApplicationManager
+class DESKTOP_DECL CAscApplicationManager
 {
 public:
     CAscApplicationManager();
@@ -144,86 +144,101 @@ public:
 
 public:
 
+    // spell check
     void StartSpellChecker();
     void StopSpellChecker();
     void SpellCheck(const int& nEditorId, const std::string& sTask, int nId);
 
+    // keyboard layout check
     void StartKeyboardChecker();
-    virtual void OnNeedCheckKeyboard();
     void CheckKeyboard();
     void SendKeyboardAttack();
+    virtual void OnNeedCheckKeyboard();
+    virtual bool IsPlatformKeyboardSupport();
+    virtual int GetPlatformKeyboardLayout();
 
+    // fonts
+    bool IsInitFonts();
     void CheckFonts(bool bAsync = true);
+    NSFonts::IApplicationFonts* GetApplicationFonts();
 
+    // listener
     void SetEventListener(NSEditorApi::CAscCefMenuEventListener* );
     NSEditorApi::CAscCefMenuEventListener* GetEventListener();
 
+    // events
     void Apply(NSEditorApi::CAscMenuEvent* );
     NSEditorApi::CAscMenuEvent* ApplySync(NSEditorApi::CAscMenuEvent* );
 
+    // creators
     CCefView* CreateCefView(CCefViewWidgetImpl* parent);
     CCefViewEditor* CreateCefEditor(CCefViewWidgetImpl* parent);
     CCefViewEditor* CreateCefPresentationReporter(CCefViewWidgetImpl* parent, CAscReporterData* data);
 
+    // <view> <-> <id>
     CCefView* GetViewById(int nId);
     CCefView* GetViewByUrl(const std::wstring& url);
     CCefView* GetViewByRecentId(int nId);
     std::vector<int> GetViewsId();
 
-    void Logout(std::wstring strUrl);
-    void CancelDownload(unsigned int nDownloadId);
-
-    void DestroyCefView(int nId, bool bIsSafe = true);
-
-    void LockCS(int nId);
-    void UnlockCS(int nId);
-
-    bool IsInitFonts();
-
-    std::string GetLibraryPathVariable();
-
+    // application
     CApplicationCEF* GetApplication();
     void SetApplication(CApplicationCEF* );
-
-    void SetDebugInfoSupport(bool bIsSupport);
-    bool GetDebugInfoSupport();
-
     void CloseApplication();
-    NSFonts::IApplicationFonts* GetApplicationFonts();
 
+    // dialog events
     virtual void StartSaveDialog(const std::wstring& sName, unsigned int nId);
     virtual void EndSaveDialog(const std::wstring& sPath, unsigned int nId);
 
-    virtual bool IsPlatformKeyboardSupport();
-    virtual int GetPlatformKeyboardLayout();
-    
-    void OnDestroyWindow();
+    // logout from portal
+    void Logout(std::wstring strUrl);
 
-    static int GetFileFormatByExtentionForSave(const std::wstring& sFileName);
+    // cancel download item
+    void CancelDownload(unsigned int nDownloadId);
 
-    void InitAdditionalEditorParams(std::wstring& sParams);
+    // lock/unlock CS by id
+    void LockCS(int nId);
+    void UnlockCS(int nId);
 
+    // external message loop
     static void DoMessageLoopWork();
-
     virtual bool IsExternalEventLoop();
+    virtual bool OnScheduleMessagePumpWork();
     virtual void ExitExternalEventLoop();
 
+    // parameters to local file url
+    void InitAdditionalEditorParams(std::wstring& sParams);
+
+    // dpi checker
+    static CAscDpiChecker* GetDpiChecker();
     int GetMonitorScaleByIndex(const int& nIndex, unsigned int& nDpiX, unsigned int& nDpiY);
     int GetMonitorScaleByWindow(const WindowHandleId& nHandle, unsigned int& nDpiX, unsigned int& nDpiY);
 
+    // send to all main pages
     void SetEventToAllMainWindows(NSEditorApi::CAscMenuEvent* pEvent);
 
-    // 0 - none, 1 - simple, 2 - advanced
+    // crypto modes <0 - none, 1 - simple, 2 - advanced>
     void SetCryptoMode(const std::string& sPassword, const int& nMode);
     int GetCryptoMode();
     std::vector<int> GetSupportCryptoModes();
-
     virtual NSAscCrypto::CAscKeychain* GetKeychainEngine();
 
+    // destroy methods
+    void OnDestroyWindow();
+    void DestroyCefView(int nId, bool bIsSafe = true);
+
+    // debug info
+    void SetDebugInfoSupport(bool bIsSupport);
+    bool GetDebugInfoSupport();
+
+    // get params sended to renderer context (before all js context)
     std::vector<std::string> GetRendererStartupProperties();
 
-public:
-    static CAscDpiChecker* GetDpiChecker();
+    // get LD_LIBRARY_PATH (for linux only)
+    std::string GetLibraryPathVariable();
+
+    // get file format by extention
+    static int GetFileFormatByExtentionForSave(const std::wstring& sFileName);
 
 protected:
     int GenerateNextViewId();

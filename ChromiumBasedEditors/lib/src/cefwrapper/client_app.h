@@ -59,13 +59,13 @@ static int IsForceDpiRound()
 {
 #ifndef MAC_NO_MAIN_PROCESS
     if (NULL != CAscApplicationManager::GetDpiChecker())
+    {
+        // управляем зумом
         return 1;
+    }
 #endif
 
 #ifdef WIN32
-#if 1
-    return 1;
-#else
     HWND hwnd = GetDesktopWindow();
     HDC hdc = GetDC(hwnd);
     int nX = GetDeviceCaps(hdc, LOGPIXELSX);
@@ -99,7 +99,6 @@ static int IsForceDpiRound()
 
         return nScale;
     }
-#endif
 #endif
 
 #if defined(_LINUX) && !defined(_MAC)
@@ -271,8 +270,6 @@ public:
 
             //command_line->AppendSwitch("--allow-running-insecure-content");
 
-            //command_line->AppendSwitch("--disable-web-security");
-
             int forceDpi = IsForceDpiRound();
             if (0 != forceDpi)
                 command_line->AppendSwitchWithValue("--force-device-scale-factor", std::to_string(forceDpi));
@@ -299,9 +296,15 @@ public:
         client::ClientAppBrowser::OnRenderProcessThreadCreated(extra_info);
     }
 
+    virtual void OnScheduleMessagePumpWork(int64 delay) OVERRIDE
+    {
+        if (m_manager->OnScheduleMessagePumpWork())
+            return;
+        client::ClientAppBrowser::OnScheduleMessagePumpWork(delay);
+    }
 
 public:
-    IMPLEMENT_REFCOUNTING(CAscClientAppBrowser);
+    IMPLEMENT_REFCOUNTING(CAscClientAppBrowser)
 };
 #endif
 
@@ -360,8 +363,6 @@ public:
 
             //command_line->AppendSwitch("--allow-running-insecure-content");
 
-            //command_line->AppendSwitch("--disable-web-security");
-
             int forceDpi = IsForceDpiRound();
             if (0 != forceDpi)
                 command_line->AppendSwitchWithValue("--force-device-scale-factor", std::to_string(forceDpi));
@@ -373,7 +374,7 @@ public:
     }
 
 public:
-    IMPLEMENT_REFCOUNTING(CAscClientAppOther);
+    IMPLEMENT_REFCOUNTING(CAscClientAppOther)
 };
 
 class CAscClientAppRenderer : public client::ClientAppRenderer, public CAppSettings
@@ -420,8 +421,6 @@ public:
             //command_line->AppendSwitch("--allow-file-access");
 
             //command_line->AppendSwitch("--allow-running-insecure-content");
-
-            //command_line->AppendSwitch("--disable-web-security");
 
             int forceDpi = IsForceDpiRound();
             if (0 != forceDpi)
