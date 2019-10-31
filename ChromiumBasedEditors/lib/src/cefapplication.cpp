@@ -289,8 +289,15 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     }
     else
     {
+#ifndef CEF_2623
         settings.external_message_pump = 1;
         m_pInternal->message_loop = client::MainMessageLoopExternalPump::Create();
+#else
+        if (settings.multi_threaded_message_loop)
+            m_pInternal->message_loop.reset(new client::MainMessageLoopMultithreadedWin);
+        else
+            m_pInternal->message_loop.reset(new client::MainMessageLoopStd);
+#endif
     }
 #endif
 

@@ -82,6 +82,7 @@ public:
 
 public:
     CAscApplicationSettings();
+    ~CAscApplicationSettings();
     void SetUserDataPath(std::wstring sPath);
 };
 

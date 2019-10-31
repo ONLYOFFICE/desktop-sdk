@@ -80,6 +80,9 @@ CAscApplicationSettings::CAscApplicationSettings()
     converter_application_name      = "ONLYOFFICE";
     converter_application_company   = "Ascensio System SIA Copyright (c) 2018";
 }
+CAscApplicationSettings::~CAscApplicationSettings()
+{
+}
 
 void CAscApplicationSettings::SetUserDataPath(std::wstring sPath)
 {

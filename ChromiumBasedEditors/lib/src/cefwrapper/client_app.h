@@ -296,12 +296,14 @@ public:
         client::ClientAppBrowser::OnRenderProcessThreadCreated(extra_info);
     }
 
+#ifndef CEF_2623
     virtual void OnScheduleMessagePumpWork(int64 delay) OVERRIDE
     {
         if (m_manager->OnScheduleMessagePumpWork())
             return;
         client::ClientAppBrowser::OnScheduleMessagePumpWork(delay);
     }
+#endif
 
 public:
     IMPLEMENT_REFCOUNTING(CAscClientAppBrowser)

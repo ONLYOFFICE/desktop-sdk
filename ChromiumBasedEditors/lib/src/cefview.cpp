@@ -4641,10 +4641,9 @@ void CCefView::load(const std::wstring& urlInputSrc)
     CefRect rect;
     rect.x = 0;
     rect.y = 0;
-    rect.width = 1000;//nParentW;
-    rect.height = 1000;//nParentH;
+    rect.width = nParentW;
+    rect.height = nParentH;
 
-    /*
     Display* display = cef_get_xdisplay();
     Window x11root = XDefaultRootWindow(display);
     Window x11w = XCreateSimpleWindow(display, x11root, 0, 0, rect.width, rect.height, 0, 0, _settings.background_color);
@@ -4654,24 +4653,6 @@ void CCefView::load(const std::wstring& urlInputSrc)
     m_pInternal->m_lNaturalParent = x11w;
 
     info.SetAsChild(m_pInternal->m_lNaturalParent, rect);
-    */
-
-    GtkWidget* gtkWin = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    GtkWidget* parentView = gtk_vbox_new(FALSE, 0);
-    GtkContainer* container = (GTK_CONTAINER(gtkWin));
-    gtk_container_add(container, parentView);
-    gtk_window_set_position(GTK_WINDOW(gtkWin), GTK_WIN_POS_CENTER);
-    gtk_widget_show_all(GTK_WIDGET(gtkWin));
-
-    GdkWindow* w = gtk_widget_get_window(parentView);
-    XID t = gdk_x11_drawable_get_xid(w);
-
-    m_pInternal->m_pWidgetImpl->addToLayout(t);
-
-    info.SetAsChild(t, rect);
-
-    //WindowHandleId wwwiiiddd = m_pInternal->m_pWidgetImpl->addToLayout(0);
-    //info.SetAsChild(wwwiiiddd, rect);
 #endif
 
 #ifdef _MAC
@@ -4746,7 +4727,6 @@ void CCefView::resizeEvent(int width, int height)
 #endif
 
 #if defined(_LINUX) && !defined(_MAC)
-    /*
     ::Display* xdisplay = cef_get_xdisplay();
 
     XWindowChanges changes = {0};
@@ -4755,16 +4735,7 @@ void CCefView::resizeEvent(int width, int height)
     changes.y = 0;
     changes.y = 0;
 
-    //XConfigureWindow(xdisplay, m_pInternal->m_lNaturalParent, CWHeight | CWWidth | CWY, &changes);
-    XConfigureWindow(xdisplay, hwnd, CWHeight | CWWidth | CWY, &changes);
-    */
-
-    ::Display* xdisplay = cef_get_xdisplay();
-    XWindowChanges changes = {0};
-    changes.width = (0 == width) ? (m_pInternal->m_pWidgetImpl->parent_width()) : width;
-    changes.height = (0 == height) ? (m_pInternal->m_pWidgetImpl->parent_height()) : height;
-    changes.y = 0;
-    changes.y = 0;
+    XConfigureWindow(xdisplay, m_pInternal->m_lNaturalParent, CWHeight | CWWidth | CWY, &changes);
     XConfigureWindow(xdisplay, hwnd, CWHeight | CWWidth | CWY, &changes);
 #endif
 
