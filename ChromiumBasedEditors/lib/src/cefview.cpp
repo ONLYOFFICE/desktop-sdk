@@ -5620,7 +5620,24 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
     {
         NSDirectory::CreateDirectory(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/openaslocal");
 
-        std::wstring sFilePathSrc = m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/openaslocal/" + m_pInternal->m_sCloudCryptName;
+        std::wstring sNameBase = m_pInternal->m_sCloudCryptName;
+        if (true)
+        {
+            // в истории версий вид ссылки такой: document.docx (data)
+            std::wstring::size_type pos1 = sNameBase.rfind(L"(");
+            std::wstring::size_type pos2 = sNameBase.rfind(L")");
+            std::wstring::size_type posDot = sNameBase.rfind(L".");
+
+            if (std::wstring::npos != pos1 && std::wstring::npos != pos2 && std::wstring::npos != posDot)
+            {
+                if (pos2 > posDot)
+                    sNameBase = sNameBase.substr(0, pos1);
+            }
+
+            NSCommon::string_replace(sNameBase, L" ", L"");
+        }
+
+        std::wstring sFilePathSrc = m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/openaslocal/" + sNameBase;
         NSCommon::string_replace(sFilePathSrc, L"\\", L"/");
 
         NSFile::CFileBinary::Copy(sFilePath, sFilePathSrc);
