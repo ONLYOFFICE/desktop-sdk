@@ -5526,7 +5526,21 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
             if (NSFile::CFileBinary::Exists(m_pInternal->m_sDownloadViewPath))
                 NSFile::CFileBinary::Remove(m_pInternal->m_sDownloadViewPath);
 
-            m_pInternal->m_sDownloadViewPath += (L"." + NSCommon::GetFileExtention(m_pInternal->m_sCloudCryptName));
+            std::wstring sExtBase = m_pInternal->m_sCloudCryptName;
+
+            // в истории версий вид ссылки такой: document.docx (data)
+            std::wstring::size_type pos1 = sExtBase.rfind(L"(");
+            std::wstring::size_type pos2 = sExtBase.rfind(L")");
+            std::wstring::size_type posDot = sExtBase.rfind(L".");
+
+            if (std::wstring::npos != pos1 && std::wstring::npos != pos2 && std::wstring::npos != posDot)
+            {
+                if (pos2 > posDot)
+                    sExtBase = sExtBase.substr(0, pos1);
+            }
+
+            NSCommon::string_replace(sExtBase, L" ", L"");
+            m_pInternal->m_sDownloadViewPath += (L"." + NSCommon::GetFileExtention(sExtBase));
 
             // load preview...
             if (m_pInternal->m_oLocalInfo.m_oInfo.m_nCounterConvertion != 0)
