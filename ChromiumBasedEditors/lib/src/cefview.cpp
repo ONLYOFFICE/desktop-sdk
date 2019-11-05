@@ -2503,6 +2503,18 @@ public:
             pListener->OnEvent(pEvent);
             return true;
         }
+        else if (message_name == "on_save_filename_dialog")
+        {
+            // показать окно выбора файлов. по окончании вызовется коллбек js
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_SAVEFILENAME_DIALOG);
+            NSEditorApi::CAscLocalSaveFileNameDialog* pData = new NSEditorApi::CAscLocalSaveFileNameDialog();
+            pData->put_Id(m_pParent->GetId());
+            pData->put_Filter(args->GetString(0).ToWString());
+            m_pParent->m_pInternal->m_sIFrameIDMethod = args->GetString(1);
+            pEvent->m_pData = pData;
+            pListener->OnEvent(pEvent);
+            return true;
+        }
         else if (message_name == "on_file_save_question")
         {
             // при некоторых действиях необходимо сохранение (например подпись)
@@ -5226,6 +5238,15 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                 }
             }
 
+            browser->SendProcessMessage(PID_RENDERER, message);
+            break;
+        }
+        case ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_SAVEFILENAME_DIALOG:
+        {
+            NSEditorApi::CAscLocalSaveFileNameDialog* pData = (NSEditorApi::CAscLocalSaveFileNameDialog*)pEvent->m_pData;
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_save_filename_dialog");
+            message->GetArgumentList()->SetString(0, m_pInternal->m_sIFrameIDMethod);
+            message->GetArgumentList()->SetString(1, pData->get_Path());
             browser->SendProcessMessage(PID_RENDERER, message);
             break;
         }

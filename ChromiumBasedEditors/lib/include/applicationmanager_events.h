@@ -136,6 +136,8 @@
 #define ASC_MENU_EVENT_TYPE_SYSTEM_EXTERNAL_MEDIA_START     8009
 #define ASC_MENU_EVENT_TYPE_SYSTEM_EXTERNAL_MEDIA_END       8010
 
+#define ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_SAVEFILENAME_DIALOG 8011
+
 
 #define ASC_MENU_EVENT_TYPE_WINDOWS_MESSAGE_USER_COUNT      10
 
@@ -616,6 +618,27 @@ namespace NSEditorApi
         {
             return m_arPaths;
         }
+    };
+
+    class CAscLocalSaveFileNameDialog : public IMenuEventDataBase
+    {
+    private:
+        int m_nId;
+        std::wstring m_sPath;
+        std::wstring m_sFilter;
+
+    public:
+        CAscLocalSaveFileNameDialog()
+        {
+            m_nId  = -1;
+        }
+        virtual ~CAscLocalSaveFileNameDialog()
+        {
+        }
+
+        LINK_PROPERTY_INT(Id)
+        LINK_PROPERTY_STRING(Path)
+        LINK_PROPERTY_STRING(Filter)
     };
 
     class CAscLocalOpenFiles : public IMenuEventDataBase
