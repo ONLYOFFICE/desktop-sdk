@@ -2505,14 +2505,14 @@ public:
         }
         else if (message_name == "on_save_filename_dialog")
         {
-            // показать окно выбора файлов. по окончании вызовется коллбек js
-            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_SAVEFILENAME_DIALOG);
-            NSEditorApi::CAscLocalSaveFileNameDialog* pData = new NSEditorApi::CAscLocalSaveFileNameDialog();
+            NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent(ASC_MENU_EVENT_TYPE_CEF_SAVEFILEDIALOG);
+            NSEditorApi::CAscSaveDialog* pData = new NSEditorApi::CAscSaveDialog();
             pData->put_Id(m_pParent->GetId());
-            pData->put_Filter(args->GetString(0).ToWString());
-            m_pParent->m_pInternal->m_sIFrameIDMethod = args->GetString(1);
+            pData->put_FilePath(args->GetString(0).ToWString());
+            pData->put_IdDownload(0);
             pEvent->m_pData = pData;
-            pListener->OnEvent(pEvent);
+            m_pParent->m_pInternal->m_sIFrameIDMethod = args->GetString(1);
+            m_pParent->GetAppManager()->Apply(pEvent);
             return true;
         }
         else if (message_name == "on_file_save_question")
@@ -2938,6 +2938,10 @@ public:
             }
 
             m_pParent->m_pInternal->m_nCloudVersion = nValue;
+
+            // debug version
+            if ("{{PRODUCT_VERSION}}" == sCloudVersion)
+                m_pParent->m_pInternal->m_nCloudVersion = CRYPTO_CLOUD_SUPPORT;
 
             std::wstring sMainFrameUrl = L"file://";
             if (browser->GetMainFrame())
@@ -3499,6 +3503,18 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
                 // check on recovery folder!!!
                 return GetLocalFileRequest2(sBinaryFile);
             }
+        }
+#endif
+
+#ifdef NO_CACHE_WEB_CLOUD_SCRIPTS
+        if (std::wstring::npos != url.find(L"sdk/Common/AllFonts.js") ||
+            std::wstring::npos != url.find(L"sdkjs/common/AllFonts.js"))
+        {
+            while (!m_pParent->GetAppManager()->IsInitFonts())
+                NSThreads::Sleep( 10 );
+
+            std::wstring sPathFonts = m_pParent->GetAppManager()->m_oSettings.fonts_cache_info_path + L"/AllFonts.js";
+            return GetLocalFileRequest(sPathFonts, "", "");
         }
 #endif
 
@@ -5045,20 +5061,32 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
         {
             NSEditorApi::CAscSaveDialog* pData = (NSEditorApi::CAscSaveDialog*)pEvent->m_pData;
 
-            std::wstring strPath = pData->get_FilePath();
-            if (strPath.empty())
+            if (m_pInternal->m_sIFrameIDMethod.empty())
             {
-                GetAppManager()->CancelDownload(pData->get_IdDownload());
+                // download
+                std::wstring strPath = pData->get_FilePath();
+                if (strPath.empty())
+                {
+                    GetAppManager()->CancelDownload(pData->get_IdDownload());
+                }
+                else
+                {
+                    CefString sPath;
+                    sPath.FromWString(pData->get_FilePath());
+                    m_pInternal->m_before_callback->Continue(sPath, false);
+                }
+
+                m_pInternal->m_before_callback->Release();
+                m_pInternal->m_before_callback = NULL;
             }
             else
             {
-                CefString sPath;
-                sPath.FromWString(pData->get_FilePath());
-                m_pInternal->m_before_callback->Continue(sPath, false);
+                CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_save_filename_dialog");
+                message->GetArgumentList()->SetString(0, m_pInternal->m_sIFrameIDMethod);
+                message->GetArgumentList()->SetString(1, pData->get_FilePath());
+                browser->SendProcessMessage(PID_RENDERER, message);
+                m_pInternal->m_sIFrameIDMethod = "";
             }
-
-            m_pInternal->m_before_callback->Release();
-            m_pInternal->m_before_callback = NULL;
 
             break;
         }
@@ -5213,6 +5241,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_open_filename_dialog");
             message->GetArgumentList()->SetString(0, m_pInternal->m_sIFrameIDMethod);
             message->GetArgumentList()->SetBool(1, pData->get_IsMultiselect());
+            m_pInternal->m_sIFrameIDMethod = "";
 
             if (!pData->get_IsMultiselect())
             {
@@ -5238,15 +5267,6 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                 }
             }
 
-            browser->SendProcessMessage(PID_RENDERER, message);
-            break;
-        }
-        case ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_SAVEFILENAME_DIALOG:
-        {
-            NSEditorApi::CAscLocalSaveFileNameDialog* pData = (NSEditorApi::CAscLocalSaveFileNameDialog*)pEvent->m_pData;
-            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_save_filename_dialog");
-            message->GetArgumentList()->SetString(0, m_pInternal->m_sIFrameIDMethod);
-            message->GetArgumentList()->SetString(1, pData->get_Path());
             browser->SendProcessMessage(PID_RENDERER, message);
             break;
         }

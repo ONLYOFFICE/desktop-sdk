@@ -543,6 +543,41 @@ retval, exception);
             CefString scriptUrl = val->GetStringValue();
             std::wstring strUrl = scriptUrl.ToWString();
 
+#ifdef NO_CACHE_WEB_CLOUD_SCRIPTS
+            if (m_sVersion == "undefined" || m_sVersion == "reporter_cloud" || m_bIsDebugMode || bIsLocal)
+            {
+                std::string sUrl = CefV8Context::GetCurrentContext()->GetFrame()->GetURL().ToString();
+                if ((m_sVersion == "undefined") && (sUrl.find("index.reporter.html") != std::string::npos))
+                {
+                    m_sVersion = "reporter_cloud";
+                    if (m_etType != Presentation)
+                    {
+                        m_etType = Presentation;
+                        CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+                        CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("EditorType");
+                        message->GetArgumentList()->SetInt(0, (int)m_etType);
+                        browser->SendProcessMessage(PID_BROWSER, message);
+                    }
+                }
+                else if (strUrl.find(L"app.js") != std::wstring::npos)
+                {
+                    // сначала определим тип редактора
+                    if (sUrl.find("documenteditor") != std::wstring::npos)
+                        m_etType = Document;
+                    else if (sUrl.find("presentationeditor") != std::wstring::npos)
+                        m_etType = Presentation;
+                    else if (sUrl.find("spreadsheeteditor") != std::wstring::npos)
+                        m_etType = Spreadsheet;
+
+                    CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+                    CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("EditorType");
+                    message->GetArgumentList()->SetInt(0, (int)m_etType);
+                    browser->SendProcessMessage(PID_BROWSER, message);
+                }
+            }
+            retval = CefV8Value::CreateInt(0);
+            return true;
+#else
             // 0 - грузить из облака
             // 1 - загружен и исполнен
             // 2 - ждать ответа
@@ -692,6 +727,7 @@ retval, exception);
             {
                 retval = CefV8Value::CreateInt(0);
             }
+#endif
             return true;
         }
         else if (name == "LoadFontBase64")
@@ -1407,7 +1443,7 @@ window.AscDesktopEditor.OpenFilenameDialog = function(filter, ismulti, callback)
 };\n\
 window.AscDesktopEditor.SaveFilenameDialog = function(filter, callback) {\n\
   window.on_native_save_filename_dialog = callback;\n\
-  window.AscDesktopEditor._SaveFilenameDialog(filter, ismulti);\n\
+  window.AscDesktopEditor._SaveFilenameDialog(filter);\n\
 };\n\
 window.AscDesktopEditor.DownloadFiles = function(filesSrc, filesDst, callback, params) {\n\
   window.on_native_download_files = callback;\n\
@@ -1435,7 +1471,7 @@ window.AscDesktopEditor.ImportAdvancedEncryptedData = function() {\n\
   });\n\
 };\n\
 window.AscDesktopEditor.ExportAdvancedEncryptedData = function() {\n\
-  window.AscDesktopEditor.SaveFilenameDialog('key', function(file) {\n\
+  window.AscDesktopEditor.SaveFilenameDialog('encrypted.asc', function(file) {\n\
     if (file)\n\
     {\n\
       window.AscDesktopEditor._ExportAdvancedEncryptedData(file);\n\
