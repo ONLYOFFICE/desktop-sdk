@@ -1,0 +1,27 @@
+{
+    "name" : "End-to-end encryption",
+    "nameLocale" : { "ru" : "Сквозное шифрование",
+                    "it" : "Crittografia end-to-end",
+                    "fr" : "Chiffrement de bout en bout",
+                    "es" : "Encriptación de punto a punto",
+                    "de" : "End-zu-End-Verschlüsselung",
+                    "pt" : "Criptografia de ponta a ponta",
+                    "pl" : "Szyfrowanie typu end-to-end",
+                    "cs" : "End-to-end šifrování",
+                    "sk" : "End-to-end šifrovanie"
+                    },
+    "guid" : "asc.{9AB4BBA8-A7E5-48D5-B683-ECE76A020BB1}",
+    "variations" : [
+        {
+            "description" 	: "onlychain",
+            "url"         	: "index.html",
+			
+			"initDataType"	: "desktop-external",
+            "initData"		: "encryption",
+			
+            "cryptoDisabledOnStart" : "true",
+            "cryptoDisabledForLocal" : "true",
+            "cryptoDisabledForExternalCloud" : "true"            
+        }
+    ]
+}
