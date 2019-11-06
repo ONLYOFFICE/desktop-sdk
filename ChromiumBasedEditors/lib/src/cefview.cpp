@@ -2503,6 +2503,18 @@ public:
             pListener->OnEvent(pEvent);
             return true;
         }
+        else if (message_name == "on_save_filename_dialog")
+        {
+            NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent(ASC_MENU_EVENT_TYPE_CEF_SAVEFILEDIALOG);
+            NSEditorApi::CAscSaveDialog* pData = new NSEditorApi::CAscSaveDialog();
+            pData->put_Id(m_pParent->GetId());
+            pData->put_FilePath(args->GetString(0).ToWString());
+            pData->put_IdDownload(0);
+            pEvent->m_pData = pData;
+            m_pParent->m_pInternal->m_sIFrameIDMethod = args->GetString(1);
+            m_pParent->GetAppManager()->Apply(pEvent);
+            return true;
+        }
         else if (message_name == "on_file_save_question")
         {
             // при некоторых действиях необходимо сохранение (например подпись)
@@ -2926,6 +2938,10 @@ public:
             }
 
             m_pParent->m_pInternal->m_nCloudVersion = nValue;
+
+            // debug version
+            if ("{{PRODUCT_VERSION}}" == sCloudVersion)
+                m_pParent->m_pInternal->m_nCloudVersion = CRYPTO_CLOUD_SUPPORT;
 
             std::wstring sMainFrameUrl = L"file://";
             if (browser->GetMainFrame())
@@ -3487,6 +3503,18 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
                 // check on recovery folder!!!
                 return GetLocalFileRequest2(sBinaryFile);
             }
+        }
+#endif
+
+#ifdef NO_CACHE_WEB_CLOUD_SCRIPTS
+        if (std::wstring::npos != url.find(L"sdk/Common/AllFonts.js") ||
+            std::wstring::npos != url.find(L"sdkjs/common/AllFonts.js"))
+        {
+            while (!m_pParent->GetAppManager()->IsInitFonts())
+                NSThreads::Sleep( 10 );
+
+            std::wstring sPathFonts = m_pParent->GetAppManager()->m_oSettings.fonts_cache_info_path + L"/AllFonts.js";
+            return GetLocalFileRequest(sPathFonts, "", "");
         }
 #endif
 
@@ -5033,20 +5061,32 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
         {
             NSEditorApi::CAscSaveDialog* pData = (NSEditorApi::CAscSaveDialog*)pEvent->m_pData;
 
-            std::wstring strPath = pData->get_FilePath();
-            if (strPath.empty())
+            if (m_pInternal->m_sIFrameIDMethod.empty())
             {
-                GetAppManager()->CancelDownload(pData->get_IdDownload());
+                // download
+                std::wstring strPath = pData->get_FilePath();
+                if (strPath.empty())
+                {
+                    GetAppManager()->CancelDownload(pData->get_IdDownload());
+                }
+                else
+                {
+                    CefString sPath;
+                    sPath.FromWString(pData->get_FilePath());
+                    m_pInternal->m_before_callback->Continue(sPath, false);
+                }
+
+                m_pInternal->m_before_callback->Release();
+                m_pInternal->m_before_callback = NULL;
             }
             else
             {
-                CefString sPath;
-                sPath.FromWString(pData->get_FilePath());
-                m_pInternal->m_before_callback->Continue(sPath, false);
+                CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_save_filename_dialog");
+                message->GetArgumentList()->SetString(0, m_pInternal->m_sIFrameIDMethod);
+                message->GetArgumentList()->SetString(1, pData->get_FilePath());
+                browser->SendProcessMessage(PID_RENDERER, message);
+                m_pInternal->m_sIFrameIDMethod = "";
             }
-
-            m_pInternal->m_before_callback->Release();
-            m_pInternal->m_before_callback = NULL;
 
             break;
         }
@@ -5201,6 +5241,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_open_filename_dialog");
             message->GetArgumentList()->SetString(0, m_pInternal->m_sIFrameIDMethod);
             message->GetArgumentList()->SetBool(1, pData->get_IsMultiselect());
+            m_pInternal->m_sIFrameIDMethod = "";
 
             if (!pData->get_IsMultiselect())
             {
@@ -5526,7 +5567,21 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
             if (NSFile::CFileBinary::Exists(m_pInternal->m_sDownloadViewPath))
                 NSFile::CFileBinary::Remove(m_pInternal->m_sDownloadViewPath);
 
-            m_pInternal->m_sDownloadViewPath += (L"." + NSCommon::GetFileExtention(m_pInternal->m_sCloudCryptName));
+            std::wstring sExtBase = m_pInternal->m_sCloudCryptName;
+
+            // в истории версий вид ссылки такой: document.docx (data)
+            std::wstring::size_type pos1 = sExtBase.rfind(L"(");
+            std::wstring::size_type pos2 = sExtBase.rfind(L")");
+            std::wstring::size_type posDot = sExtBase.rfind(L".");
+
+            if (std::wstring::npos != pos1 && std::wstring::npos != pos2 && std::wstring::npos != posDot)
+            {
+                if (pos2 > posDot)
+                    sExtBase = sExtBase.substr(0, pos1);
+            }
+
+            NSCommon::string_replace(sExtBase, L" ", L"");
+            m_pInternal->m_sDownloadViewPath += (L"." + NSCommon::GetFileExtention(sExtBase));
 
             // load preview...
             if (m_pInternal->m_oLocalInfo.m_oInfo.m_nCounterConvertion != 0)
@@ -5606,7 +5661,24 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
     {
         NSDirectory::CreateDirectory(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/openaslocal");
 
-        std::wstring sFilePathSrc = m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/openaslocal/" + m_pInternal->m_sCloudCryptName;
+        std::wstring sNameBase = m_pInternal->m_sCloudCryptName;
+        if (true)
+        {
+            // в истории версий вид ссылки такой: document.docx (data)
+            std::wstring::size_type pos1 = sNameBase.rfind(L"(");
+            std::wstring::size_type pos2 = sNameBase.rfind(L")");
+            std::wstring::size_type posDot = sNameBase.rfind(L".");
+
+            if (std::wstring::npos != pos1 && std::wstring::npos != pos2 && std::wstring::npos != posDot)
+            {
+                if (pos2 > posDot)
+                    sNameBase = sNameBase.substr(0, pos1);
+            }
+
+            NSCommon::string_replace(sNameBase, L" ", L"");
+        }
+
+        std::wstring sFilePathSrc = m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/openaslocal/" + sNameBase;
         NSCommon::string_replace(sFilePathSrc, L"\\", L"/");
 
         NSFile::CFileBinary::Copy(sFilePath, sFilePathSrc);

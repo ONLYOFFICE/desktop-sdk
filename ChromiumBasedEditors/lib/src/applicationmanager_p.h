@@ -59,6 +59,8 @@
 
 #include "utils.h"
 
+#define NO_CACHE_WEB_CLOUD_SCRIPTS
+
 #ifdef LINUX
 #include "signal.h"
 void posix_death_signal(int signum);

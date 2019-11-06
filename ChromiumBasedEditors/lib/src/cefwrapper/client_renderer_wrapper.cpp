@@ -543,6 +543,41 @@ retval, exception);
             CefString scriptUrl = val->GetStringValue();
             std::wstring strUrl = scriptUrl.ToWString();
 
+#ifdef NO_CACHE_WEB_CLOUD_SCRIPTS
+            if (m_sVersion == "undefined" || m_sVersion == "reporter_cloud" || m_bIsDebugMode || bIsLocal)
+            {
+                std::string sUrl = CefV8Context::GetCurrentContext()->GetFrame()->GetURL().ToString();
+                if ((m_sVersion == "undefined") && (sUrl.find("index.reporter.html") != std::string::npos))
+                {
+                    m_sVersion = "reporter_cloud";
+                    if (m_etType != Presentation)
+                    {
+                        m_etType = Presentation;
+                        CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+                        CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("EditorType");
+                        message->GetArgumentList()->SetInt(0, (int)m_etType);
+                        browser->SendProcessMessage(PID_BROWSER, message);
+                    }
+                }
+                else if (strUrl.find(L"app.js") != std::wstring::npos)
+                {
+                    // сначала определим тип редактора
+                    if (sUrl.find("documenteditor") != std::wstring::npos)
+                        m_etType = Document;
+                    else if (sUrl.find("presentationeditor") != std::wstring::npos)
+                        m_etType = Presentation;
+                    else if (sUrl.find("spreadsheeteditor") != std::wstring::npos)
+                        m_etType = Spreadsheet;
+
+                    CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+                    CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("EditorType");
+                    message->GetArgumentList()->SetInt(0, (int)m_etType);
+                    browser->SendProcessMessage(PID_BROWSER, message);
+                }
+            }
+            retval = CefV8Value::CreateInt(0);
+            return true;
+#else
             // 0 - грузить из облака
             // 1 - загружен и исполнен
             // 2 - ждать ответа
@@ -692,6 +727,7 @@ retval, exception);
             {
                 retval = CefV8Value::CreateInt(0);
             }
+#endif
             return true;
         }
         else if (name == "LoadFontBase64")
@@ -1405,6 +1441,10 @@ window.AscDesktopEditor.OpenFilenameDialog = function(filter, ismulti, callback)
   window.on_native_open_filename_dialog = callback;\n\
   window.AscDesktopEditor._OpenFilenameDialog(filter, ismulti);\n\
 };\n\
+window.AscDesktopEditor.SaveFilenameDialog = function(filter, callback) {\n\
+  window.on_native_save_filename_dialog = callback;\n\
+  window.AscDesktopEditor._SaveFilenameDialog(filter);\n\
+};\n\
 window.AscDesktopEditor.DownloadFiles = function(filesSrc, filesDst, callback, params) {\n\
   window.on_native_download_files = callback;\n\
   window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst, params);\n\
@@ -1420,6 +1460,23 @@ window.AscDesktopEditor.GetAdvancedEncryptedData = function(password, callback) 
 window.AscDesktopEditor.SetAdvancedEncryptedData = function(password, data, callback) {\n\
   window.on_set_advanced_encrypted_data = callback;\n\
   window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
+};\n\
+window.AscDesktopEditor.ImportAdvancedEncryptedData = function() {\n\
+  window.AscDesktopEditor.OpenFilenameDialog('key', false, function(files) {\n\
+    var file = Array.isArray(files) ? files[0] : files;\n\
+    if (file)\n\
+    {\n\
+      window.AscDesktopEditor._ImportAdvancedEncryptedData(file);\n\
+    }\n\
+  });\n\
+};\n\
+window.AscDesktopEditor.ExportAdvancedEncryptedData = function() {\n\
+  window.AscDesktopEditor.SaveFilenameDialog('encrypted.asc', function(file) {\n\
+    if (file)\n\
+    {\n\
+      window.AscDesktopEditor._ExportAdvancedEncryptedData(file);\n\
+    }\n\
+  });\n\
 };\n\
 window.AscDesktopEditor.CloudCryptFile = function(url, callback) {\n\
   window.AscDesktopEditor.DownloadFiles([url], [], function(files) {\n\
@@ -2534,6 +2591,27 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
             retval = CefV8Value::CreateString(frame ? frame->GetURL() : "");
             return true;
         }
+        else if (name == "_SaveFilenameDialog")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_save_filename_dialog");
+            message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
+            message->GetArgumentList()->SetString(1, std::to_string(CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier()));
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "_ImportAdvancedEncryptedData")
+        {
+            std::wstring sFile = arguments[0]->GetStringValue().ToWString();
+            NSFile::CFileBinary::Copy(sFile, m_sUserPlugins + L"/advanced_crypto_data.docx");
+            return true;
+        }
+        else if (name == "_ExportAdvancedEncryptedData")
+        {
+            std::wstring sFile = arguments[0]->GetStringValue().ToWString();
+            NSFile::CFileBinary::Copy(m_sUserPlugins + L"/advanced_crypto_data.docx", sFile);
+            return true;
+        }
 
         // Function does not exist.
         return false;
@@ -2907,7 +2985,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
 
-    #define EXTEND_METHODS_COUNT 124
+    #define EXTEND_METHODS_COUNT 127
     const char* methods[EXTEND_METHODS_COUNT] = {
         "Copy",
         "Paste",
@@ -3073,6 +3151,11 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
         "_getMainUrl",
         "_getCurrentUrl",
+
+        "_SaveFilenameDialog",
+
+        "_ImportAdvancedEncryptedData",
+        "_ExportAdvancedEncryptedData",
 
         NULL
     };
@@ -3594,12 +3677,33 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
 
         if (_frame)
         {
-            std::wstring sPath = message->GetArgumentList()->GetString(0).ToWString();
-            NSCommon::string_replace(sPath, L"\\", L"\\\\");
-
             std::wstring sCode = L"(function() { window.on_native_open_filename_dialog(" + sParamCallback + L"); delete window.on_native_open_filename_dialog; })();";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
         }
+        return true;
+    }
+    else if (sMessageName == "on_save_filename_dialog")
+    {
+        CefRefPtr<CefFrame> _frame;
+
+        std::string sId = message->GetArgumentList()->GetString(0).ToString();
+        std::wstring sPath = message->GetArgumentList()->GetString(1).ToWString();
+        if (sId.empty())
+            _frame = GetEditorFrame(browser);
+        else
+        {
+            int64 nId = (int64)std::stoll(sId);
+            _frame = browser->GetFrame(nId);
+        }
+
+        if (_frame)
+        {
+            NSCommon::string_replace(sPath, L"\\", L"\\\\");
+
+            std::wstring sCode = L"(function() { window.on_native_save_filename_dialog(\"" + sPath + L"\"); delete window.on_native_save_filename_dialog; })();";
+            _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+        }
+
         return true;
     }
     else if (sMessageName == "on_signature_update_signatures")

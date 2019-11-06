@@ -1022,7 +1022,7 @@ std::vector<std::string> CAscApplicationManager::GetRendererStartupProperties()
     props.push_back("user_plugins_path=" + U_TO_UTF8(m_oSettings.user_plugins_path));
     props.push_back("cookie_path=" + U_TO_UTF8(m_oSettings.cookie_path));
     props.push_back("app_data_path=" + U_TO_UTF8(m_oSettings.app_data_path));
-    props.push_back("debug_mode=" + m_pInternal->m_bDebugInfoSupport ? "true" : "false");
+    props.push_back(m_pInternal->m_bDebugInfoSupport ? "debug_mode=true" : "debug_mode=false");
     props.push_back("fonts_cache_path=" + U_TO_UTF8(m_oSettings.fonts_cache_info_path));
 
     return props;
