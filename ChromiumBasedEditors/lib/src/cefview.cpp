@@ -924,6 +924,26 @@ public:
 
     CefRefPtr<CefBrowser> GetBrowser() const;
 
+    int GetViewCryptoMode()
+    {
+        // общий режим
+        int nCryptoMode = m_pManager->m_pInternal->m_nCurrentCryptoMode;
+
+        // чужое облако, не поддерживающее шифрование
+        if (m_bIsExternalCloud && !m_oExternalCloud.crypto_support)
+            nCryptoMode = 0;
+
+        // шифровальщик сам не поддерживает чужие облака
+        if (m_bIsExternalCloud && m_pManager->m_pInternal->m_bCryptoDisableForExternalCloud)
+            nCryptoMode = 0;
+
+        // локальный файл и шифровальщик не поддерживает их
+        if (m_pManager->m_pInternal->m_bCryptoDisableForLocal && !m_oLocalInfo.m_oInfo.m_sRecoveryDir.empty() && m_sCloudCryptSrc.empty())
+            nCryptoMode = 0;
+
+        return nCryptoMode;
+    }
+
     std::wstring GetFileDocInfo(const std::wstring& sFile)
     {
         // используется для криптования.
@@ -1100,7 +1120,7 @@ public:
     void LocalFile_GetSupportSaveFormats(std::vector<int>& arFormats)
     {
         // в какие форматы можно сохранить текущий документ
-        bool bEncryption = (m_pCefView->GetAppManager()->m_pInternal->m_nCurrentCryptoMode != 0) ? true : false;
+        bool bEncryption = (GetViewCryptoMode() != 0) ? true : false;
 
         // важен порядок (для красоты) - поэтому такие странные if'ы
 
@@ -1805,22 +1825,7 @@ public:
 
             m_pParent->m_pInternal->m_bIsOnlyPassSupport = bIsOnlyPassSupport;
 
-            int nCryptoMode = m_pParent->GetAppManager()->m_pInternal->m_nCurrentCryptoMode;
-            if (m_pParent->m_pInternal->m_bIsExternalCloud && !m_pParent->m_pInternal->m_oExternalCloud.crypto_support)
-                nCryptoMode = 0;
-
-            if (m_pParent->GetAppManager()->m_pInternal->m_bCryptoDisableForExternalCloud &&
-                m_pParent->m_pInternal->m_bIsExternalCloud)
-            {
-                nCryptoMode = 0;
-            }
-
-            if (m_pParent->GetAppManager()->m_pInternal->m_bCryptoDisableForLocal &&
-                !m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir.empty() &&
-                m_pParent->m_pInternal->m_sCloudCryptSrc.empty())
-            {
-                nCryptoMode = 0;
-            }
+            int nCryptoMode = m_pParent->m_pInternal->GetViewCryptoMode();
 
             CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("on_js_context_created_callback");
             messageOut->GetArgumentList()->SetInt(0, nFlags);
@@ -4235,7 +4240,7 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
             {
                 // событие onsave
                 // в случае криптования - после записи паролей
-                if (m_pManager->m_pInternal->m_nCurrentCryptoMode == 0) // только после конца записи в блокчейн
+                if (GetViewCryptoMode() == 0) // только после конца записи в блокчейн
                 {
                     m_bIsSaving = false;
 
