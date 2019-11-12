@@ -1471,7 +1471,7 @@ window.AscDesktopEditor.ImportAdvancedEncryptedData = function() {\n\
   });\n\
 };\n\
 window.AscDesktopEditor.ExportAdvancedEncryptedData = function() {\n\
-  window.AscDesktopEditor.SaveFilenameDialog('encrypted.asc', function(file) {\n\
+  window.AscDesktopEditor.SaveFilenameDialog('encrypted.key', function(file) {\n\
     if (file)\n\
     {\n\
       window.AscDesktopEditor._ExportAdvancedEncryptedData(file);\n\
