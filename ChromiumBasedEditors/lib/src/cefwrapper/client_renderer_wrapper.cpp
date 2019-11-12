@@ -544,9 +544,9 @@ retval, exception);
             std::wstring strUrl = scriptUrl.ToWString();
 
 #ifdef NO_CACHE_WEB_CLOUD_SCRIPTS
-            if (m_sVersion == "undefined" || m_sVersion == "reporter_cloud" || m_bIsDebugMode || bIsLocal)
-            {
-                std::string sUrl = CefV8Context::GetCurrentContext()->GetFrame()->GetURL().ToString();
+            std::string sUrl = CefV8Context::GetCurrentContext()->GetFrame()->GetURL().ToString();
+            if (m_sVersion == "undefined" || m_sVersion == "reporter_cloud" || bIsLocal)
+            {                
                 if ((m_sVersion == "undefined") && (sUrl.find("index.reporter.html") != std::string::npos))
                 {
                     m_sVersion = "reporter_cloud";
@@ -559,21 +559,21 @@ retval, exception);
                         browser->SendProcessMessage(PID_BROWSER, message);
                     }
                 }
-                else if (strUrl.find(L"app.js") != std::wstring::npos)
-                {
-                    // сначала определим тип редактора
-                    if (sUrl.find("documenteditor") != std::wstring::npos)
-                        m_etType = Document;
-                    else if (sUrl.find("presentationeditor") != std::wstring::npos)
-                        m_etType = Presentation;
-                    else if (sUrl.find("spreadsheeteditor") != std::wstring::npos)
-                        m_etType = Spreadsheet;
+            }
+            if (strUrl.find(L"app.js") != std::wstring::npos)
+            {
+                // сначала определим тип редактора
+                if (sUrl.find("documenteditor") != std::wstring::npos)
+                    m_etType = Document;
+                else if (sUrl.find("presentationeditor") != std::wstring::npos)
+                    m_etType = Presentation;
+                else if (sUrl.find("spreadsheeteditor") != std::wstring::npos)
+                    m_etType = Spreadsheet;
 
-                    CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
-                    CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("EditorType");
-                    message->GetArgumentList()->SetInt(0, (int)m_etType);
-                    browser->SendProcessMessage(PID_BROWSER, message);
-                }
+                CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+                CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("EditorType");
+                message->GetArgumentList()->SetInt(0, (int)m_etType);
+                browser->SendProcessMessage(PID_BROWSER, message);
             }
             retval = CefV8Value::CreateInt(0);
             return true;
@@ -1471,7 +1471,7 @@ window.AscDesktopEditor.ImportAdvancedEncryptedData = function() {\n\
   });\n\
 };\n\
 window.AscDesktopEditor.ExportAdvancedEncryptedData = function() {\n\
-  window.AscDesktopEditor.SaveFilenameDialog('encrypted.asc', function(file) {\n\
+  window.AscDesktopEditor.SaveFilenameDialog('encrypted.key', function(file) {\n\
     if (file)\n\
     {\n\
       window.AscDesktopEditor._ExportAdvancedEncryptedData(file);\n\
