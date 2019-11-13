@@ -396,6 +396,9 @@ public:
     // дополнения к редактору (для внешних подключений)
     CApplicationManagerAdditionalBase* m_pAdditional;
 
+    // логи конвертера
+    bool m_bIsEnableConvertLogs;
+
 public:
     IMPLEMENT_REFCOUNTING(CAscApplicationManager_Private)
 
@@ -426,6 +429,8 @@ public:
         m_nCurrentCryptoMode = NSAscCrypto::None;
 
         m_pKeyChain = NULL;
+
+        m_bIsEnableConvertLogs = false;
 
         m_bCryptoDisableForLocal = false;
         m_bCryptoDisableForInternalCloud = false;
@@ -575,6 +580,10 @@ public:
         std::map<std::string, std::string>::iterator pairCryptoMode = m_mapSettings.find("crypto-mode");
         if (pairCryptoMode != m_mapSettings.end())
             m_nCurrentCryptoMode = (NSAscCrypto::AscCryptoType)std::stoi(pairCryptoMode->second);
+
+        std::map<std::string, std::string>::iterator pairConvertLogs = m_mapSettings.find("converter-logging");
+        if (pairConvertLogs != m_mapSettings.end())
+            m_bIsEnableConvertLogs = ("1" == pairConvertLogs->second) ? true : false;
     }
     void CheckSetting(const std::string& sName, const std::string& sValue)
     {

@@ -5135,7 +5135,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                     m_pInternal->m_oSimpleX2tConverter.m_sRecoverFolder = m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir;
                     m_pInternal->m_oSimpleX2tConverter.m_pEvents = m_pInternal;
                     m_pInternal->m_oSimpleX2tConverter.m_pManager = m_pInternal->m_pManager;
-                    m_pInternal->m_oSimpleX2tConverter.Convert();
+                    m_pInternal->m_oSimpleX2tConverter.Convert(m_pInternal->m_pManager->m_pInternal->m_bIsEnableConvertLogs);
                 }
                 break;
             }
