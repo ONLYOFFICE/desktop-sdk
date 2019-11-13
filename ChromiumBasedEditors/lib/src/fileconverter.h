@@ -149,7 +149,7 @@ public:
 
 namespace NSX2T
 {
-    int Convert(const std::wstring& sConverterPath, const std::wstring sXmlPath, CAscApplicationManager* pManager)
+    int Convert(const std::wstring& sConverterPath, const std::wstring sXmlPath, CAscApplicationManager* pManager, bool bIsLoggingErrors = false)
     {
         int nReturnCode = 0;
         std::wstring sConverterExe = sConverterPath;
@@ -287,6 +287,21 @@ namespace NSX2T
             break;
         }
 #endif
+
+        if (bIsLoggingErrors && nReturnCode != 0)
+        {
+            std::string sXmlContent;
+            NSFile::CFileBinary::ReadAllTextUtf8A(sXmlPath, sXmlContent);
+
+            std::wstring sLogFile = NSFile::GetDirectoryName(sXmlPath) + L"/errors.log";
+            std::string sLogFileA = U_TO_UTF8(sLogFile);
+            FILE* f = fopen(sLogFileA.c_str(), "a+");
+            fprintf(f, "--------------------------------------------------------\n");
+            fprintf(f, "error: %d\nxml:\n", nReturnCode);
+            fprintf(f, sXmlContent.c_str());
+            fprintf(f, "\n\n");
+            fclose(f);
+        }
 
         return nReturnCode;
     }
@@ -666,7 +681,7 @@ public:
         std::wstring sTempFileForParams = m_oInfo.m_sRecoveryDir + L"/params_from.xml";
         NSFile::CFileBinary::SaveToFile(sTempFileForParams, sXmlConvert, true);
 
-        int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileForParams, m_pManager);
+        int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileForParams, m_pManager, true);
 
         NSFile::CFileBinary::Remove(sTempFileForParams);
 
@@ -1004,7 +1019,7 @@ public:
         if (m_pManager->m_pInternal->m_pAdditional)
             m_pManager->m_pInternal->m_pAdditional->CheckSaveStart(m_oInfo.m_sRecoveryDir, m_nTypeEditorFormat);
 
-        int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileForParams, m_pManager);
+        int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileForParams, m_pManager, true);
 
         if (bIsUseTmpFileDst)
         {
@@ -1245,7 +1260,7 @@ public:
             std::wstring sTempFileForParams = m_sRecoverFolder + L"/params_simple_converter.xml";
             NSFile::CFileBinary::SaveToFile(sTempFileForParams, oBuilder.GetData(), true);
 
-            nReturnCode = NSX2T::Convert(m_pManager->m_oSettings.file_converter_path + L"/x2t", sTempFileForParams, m_pManager);
+            nReturnCode = NSX2T::Convert(m_pManager->m_oSettings.file_converter_path + L"/x2t", sTempFileForParams, m_pManager, true);
             NSFile::CFileBinary::Remove(sTempFileForParams);
         }
 
