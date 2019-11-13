@@ -106,7 +106,7 @@ ONLYONET.UI = (function() {
                                                 }};              
 
             if (typeof ONLYONET.Resources == 'undefined') $.loadScript('./lang/lang_' + lang + '.js',successLoadLangScript);
-            if (typeof ONLYONET.Resources == 'undefined') $.loadScript('./lang/lang_en-US.js', successLoadLangScript);
+            if (typeof ONLYONET.Resources == 'undefined') $.loadScript('./lang/lang_en-EN.js', successLoadLangScript);
 
             $("#box-blockchain-info-btn-refresh").attr("alt", ONLYONET.Resources["box-blockchain-info-btn-refresh"]);
             $("#box-blockchain-info-btn-refresh").attr("title", ONLYONET.Resources["box-blockchain-info-btn-refresh"]);
@@ -204,19 +204,18 @@ ONLYONET.UI = (function() {
                 
                 let pwd = $("#dlg-onoffswitch input:password").val();									
                 
-                AscDesktopEditor.GetAdvancedEncryptedData(pwd, function(data) {
+                AscDesktopEditor.GetAdvancedEncryptedData(pwd, function(privateKey) {
                     try {
-                        if (data == "") throw "Error read data";
+                        if (privateKey == "") throw "Error read data";
                     
-                        let encryptedData = JSON.parse(atob(data));
-                
-                        ONLYONET.setPublicKey(encryptedData.publicKey);
-                        ONLYONET.setPrivateKey(encryptedData.privateKey);
+                        let publicKey = ONLYONET.getPublicKeyFromPrivateKey(privateKey);
+
+                        ONLYONET.setPublicKey(publicKey);
+                        ONLYONET.setPrivateKey(privateKey);
         
                         _switchOn("#dlg-onoffswitch .tool.close");
                     }
                     catch(error) {
-                      console.error(error);
                       
                       $("#dlg-onoffswitch .error-box p").show();
                       $("#dlg-onoffswitch input:text").addClass("error");
@@ -230,17 +229,17 @@ ONLYONET.UI = (function() {
                 });
             });	
     
-            $("#dlg-onoffswitch a.text-sub").click(function () {
-                $("#dlg-onoffswitch .tool.close").trigger("click");	
+            // $("#dlg-onoffswitch a.text-sub").click(function () {
+            //     $("#dlg-onoffswitch .tool.close").trigger("click");	
 
-                _initVaultDialog();
+            //     _initVaultDialog();
                 
-                $("#dlg-vault div.title label.caption").text(ONLYONET.Resources["dlg-vault-mnemonic-restore-caption"]);
-                $("#dlg-vault button.btn.primary").text(ONLYONET.Resources["dlg-vault-restore-description-btn"]);	
+            //     $("#dlg-vault div.title label.caption").text(ONLYONET.Resources["dlg-vault-mnemonic-restore-caption"]);
+            //     $("#dlg-vault button.btn.primary").text(ONLYONET.Resources["dlg-vault-restore-description-btn"]);	
                 
-                $("#dlg-vault")[0].showModal();		
-                window.parent.postMessage(JSON.stringify({type:'plugin', event: 'modal:open'}), '*');		
-            });
+            //     $("#dlg-vault")[0].showModal();		
+            //     window.parent.postMessage(JSON.stringify({type:'plugin', event: 'modal:open'}), '*');		
+            // });
 
             $("#dlg-vault .tool.close").click(function(){						
                 $("#dlg-vault")[0].close();	
@@ -303,7 +302,9 @@ ONLYONET.UI = (function() {
                
                 $("#dlg-vault .error-box:first p").hide();
                  
-                let data = btoa(JSON.stringify(ONLYONET.generateKeyPair()));
+                let keyPair = ONLYONET.generateKeyPair();
+                                
+                let data = keyPair.privateKey;
 
                 AscDesktopEditor.SetAdvancedEncryptedData(pwd, data, function(written_data) {
                     if (data != written_data)

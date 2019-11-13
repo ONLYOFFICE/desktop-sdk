@@ -115,6 +115,9 @@ return {
     getPrivateKey: function() {
         return _privateKey;
     },
+    getPublicKeyFromPrivateKey: function(privateKey) {
+        return nacl.box.keyPair.fromSecretKey(_hexStringToByte(privateKey));
+    },
     generateKeyPair: function() {
         let result = nacl.box.keyPair();        
 

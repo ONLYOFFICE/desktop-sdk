@@ -59,5 +59,6 @@ ONLYONET.Resources = {
     "dlg-vault-mnemonic-caption1":"Generate new credentials",
     "dlg-vault-new-password1":"New Password (min 8 chars) *",
     "dlg-vault-description-line22":"* This password encrypts the DOCX file with your generate a key pair. Use it to enable the Encryption mode.",
-    "dlg-vault-description-btn1":"Generate"
+    "dlg-vault-description-btn1": "Generate",
+    "dlg-onoffswitch-btn-import": "Import private key"
 };
