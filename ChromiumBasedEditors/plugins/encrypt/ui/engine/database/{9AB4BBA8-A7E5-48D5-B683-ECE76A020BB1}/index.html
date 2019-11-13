@@ -85,7 +85,8 @@
 				<span data-t="box-blockchain-info-description-line2">ONLYOFFICE uses AES-256 to encrypt your files, and asymmetric encryption algorithm to securely store the encryption data in the private database on your portal.</span>
 				<a data-t="box-blockchain-connect-btn-read" class="link-gray" target="popup" href="https://www.onlyoffice.com/e2e-encryption.aspx">Read how it works </a>
 			</p>
-			<table id="tbl-acount-info">
+			<a href="javascript:window.AscDesktopEditor.ExportAdvancedEncryptedData();" data-t="tbl-acount-info-btn-export-private-key" class="link-gray">Export private key</a>
+			<table id="tbl-acount-info" style="display: none;">
 				<tbody>
 					<tr>
 						<td>
@@ -102,7 +103,7 @@
 						</td>
 					</tr>
 				</tfoot>
-			</table>			
+			</table>					
 			<p data-t="box-database-info-description-line3" style="color: #888">
 				This is your individual private key. It is also stored on this machine. For the correct work of the application, do not remove this file. You may keep a copy in some other location as a backup.
 			</p>
@@ -118,8 +119,8 @@
 							<div class="error-box"><p class="msg-error" data-t="dlg-onoffswitch-msg-error" style="display: none;">Check the password</p></div>															
 							<input type="password" name="" class="tbox" value="" placeholder="enter password" />							
 							<div style="height:10px;"></div>
-							<div  class="lr-flex">
-								<a style="display:none;" class="text-sub link" data-t="dlg-onoffswitch-btn-cancel" href="javascript:void(0)">Forgot password?</a>
+							<div class="lr-flex">
+								<a class="text-sub link" data-t="dlg-onoffswitch-btn-import" href="javascript: window.AscDesktopEditor.ImportAdvancedEncryptedData();">Import private key</a>
 								<span></span>
 								<div>
 									<img class="img-loader">
