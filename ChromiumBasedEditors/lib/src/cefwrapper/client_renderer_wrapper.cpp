@@ -1462,7 +1462,7 @@ window.AscDesktopEditor.SetAdvancedEncryptedData = function(password, data, call
   window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
 };\n\
 window.AscDesktopEditor.ImportAdvancedEncryptedData = function() {\n\
-  window.AscDesktopEditor.OpenFilenameDialog('key', false, function(files) {\n\
+  window.AscDesktopEditor.OpenFilenameDialog('Key File (*key);;All files (*.*)', false, function(files) {\n\
     var file = Array.isArray(files) ? files[0] : files;\n\
     if (file)\n\
     {\n\
