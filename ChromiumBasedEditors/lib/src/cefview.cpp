@@ -643,7 +643,7 @@ public:
             // вся работа закончена
             CefRefPtr<CefFrame> pFrame = GetFrame();
             if (pFrame)
-                pFrame->ExecuteJavaScript("window.onSystemMessage({ type : \"upload_end\" });", pFrame->GetURL(), 0);
+                pFrame->ExecuteJavaScript("window.on_cloud_crypto_upload = undefined;window.onSystemMessage({ type : \"upload_end\" });", pFrame->GetURL(), 0);
             View->m_pUploadFiles = NULL;
             delete this;
         }
