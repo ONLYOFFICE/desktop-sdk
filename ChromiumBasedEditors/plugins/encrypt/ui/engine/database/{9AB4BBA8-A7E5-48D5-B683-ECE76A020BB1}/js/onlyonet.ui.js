@@ -208,11 +208,10 @@ ONLYONET.UI = (function() {
                     try {
                         if (privateKey == "") throw "Error read data";
                     
-                        let publicKey = ONLYONET.getPublicKeyFromPrivateKey(privateKey);
-
-                        ONLYONET.setPublicKey(publicKey);
                         ONLYONET.setPrivateKey(privateKey);
-        
+                        ONLYONET.setPublicKeyFromPrivateKey(privateKey);
+
+                        
                         _switchOn("#dlg-onoffswitch .tool.close");
                     }
                     catch(error) {
