@@ -1462,7 +1462,7 @@ window.AscDesktopEditor.SetAdvancedEncryptedData = function(password, data, call
   window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
 };\n\
 window.AscDesktopEditor.ImportAdvancedEncryptedData = function() {\n\
-  window.AscDesktopEditor.OpenFilenameDialog('key', false, function(files) {\n\
+  window.AscDesktopEditor.OpenFilenameDialog('Key File (*key);;All files (*.*)', false, function(files) {\n\
     var file = Array.isArray(files) ? files[0] : files;\n\
     if (file)\n\
     {\n\
@@ -1479,10 +1479,12 @@ window.AscDesktopEditor.ExportAdvancedEncryptedData = function() {\n\
   });\n\
 };\n\
 window.AscDesktopEditor.CloudCryptFile = function(url, callback) {\n\
+  if (window.on_cloud_crypto_upload) { console.log('CloudCryptFile: waiting...'); return; }\n\
   window.AscDesktopEditor.DownloadFiles([url], [], function(files) {\n\
     var _files = [];\n\
     for (var elem in files)\n\
       _files.push(files[elem]);\n\
+    window.on_cloud_crypto_upload = undefined;\n\
     if (_files && 1 == _files.length)\n\
     {\n\
       window.on_cloud_crypto_upload = callback;\n\
@@ -1491,8 +1493,10 @@ window.AscDesktopEditor.CloudCryptFile = function(url, callback) {\n\
   }, 1);\n\
 };\n\
 window.AscDesktopEditor.CloudCryptUpload = function(filter, callback) {\n\
+  if (window.on_cloud_crypto_upload) { console.log('CloudCryptUpload: waiting...'); return; }\n\
   var filterOut = filter || \"\"; if (filterOut == \"\") filterOut = \"any\";\n\
   window.AscDesktopEditor.OpenFilenameDialog(filterOut, true, function(files) {\n\
+    window.on_cloud_crypto_upload = undefined;\n\
     if (files && 0 < files.length)\n\
     {\n\
       window.on_cloud_crypto_upload = callback;\n\
