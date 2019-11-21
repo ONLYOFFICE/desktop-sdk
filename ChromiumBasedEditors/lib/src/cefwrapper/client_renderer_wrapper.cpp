@@ -1461,12 +1461,13 @@ window.AscDesktopEditor.SetAdvancedEncryptedData = function(password, data, call
   window.on_set_advanced_encrypted_data = callback;\n\
   window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
 };\n\
-window.AscDesktopEditor.ImportAdvancedEncryptedData = function() {\n\
+window.AscDesktopEditor.ImportAdvancedEncryptedData = function(callback) {\n\
   window.AscDesktopEditor.OpenFilenameDialog('Key File (*key);;All files (*.*)', false, function(files) {\n\
     var file = Array.isArray(files) ? files[0] : files;\n\
     if (file)\n\
     {\n\
-      window.AscDesktopEditor._ImportAdvancedEncryptedData(file);\n\
+      var ret = window.AscDesktopEditor._ImportAdvancedEncryptedData(file);\n\
+      if (callback) callback(ret);\n\
     }\n\
   });\n\
 };\n\
@@ -2607,7 +2608,18 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
         else if (name == "_ImportAdvancedEncryptedData")
         {
             std::wstring sFile = arguments[0]->GetStringValue().ToWString();
-            NSFile::CFileBinary::Copy(sFile, m_sUserPlugins + L"/advanced_crypto_data.docx");
+
+            COfficeFileFormatChecker oChecker;
+            bool bIsOfficeFile = oChecker.isOfficeFile(sFile);
+            if (bIsOfficeFile && oChecker.nFileType == AVS_OFFICESTUDIO_FILE_OTHER_MS_OFFCRYPTO)
+            {
+                NSFile::CFileBinary::Copy(sFile, m_sUserPlugins + L"/advanced_crypto_data.docx");
+                retval = CefV8Value::CreateBool(true);
+            }
+            else
+            {
+                retval = CefV8Value::CreateBool(false);
+            }
             return true;
         }
         else if (name == "_ExportAdvancedEncryptedData")

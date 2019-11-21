@@ -2850,6 +2850,14 @@ public:
                         bIsEditorPresent = true;
                         break;
                     }
+                    else
+                    {
+                        if (tmp->m_pInternal->m_pUploadFiles)
+                        {
+                            bIsEditorPresent = true;
+                            break;
+                        }
+                    }
                 }
 
                 if (!bIsEditorPresent)
