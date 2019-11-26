@@ -105,7 +105,7 @@
 				<tfoot>
 					<tr>
 						<td colspan="3">
-								<a data-t="tbl-acount-info-btn-export-private-key" href="javascript:void(0)" class="link-gray">Export private key</a>
+								<a data-t="tbl-acount-info-btn-export-private-key" href="javascript:void(0);" class="link-gray">Export private key</a>
 						</td>
 					</tr>
 				</tfoot>
@@ -126,7 +126,10 @@
 							<input type="password" name="" class="tbox" value="" placeholder="enter password" />							
 							<div style="height:10px;"></div>
 							<div class="lr-flex">
-								<a class="text-sub link" data-t="dlg-onoffswitch-btn-import" href="javascript: window.AscDesktopEditor.ImportAdvancedEncryptedData();">Import private key</a>
+								<div>
+									<span data-t="dlg-onoffswitch-btn-import-completed">Key is imported.</span>
+									<a class="text-sub link" data-t="dlg-onoffswitch-btn-import" href="javascript:void(0);">Import private key</a>
+								</div>
 								<span></span>
 								<div>
 									<img class="img-loader">
