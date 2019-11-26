@@ -1076,8 +1076,10 @@ DE.controllers.Main.DisableVersionHistory(); \
             if (!bIsNoHeader)
             {
                 BYTE pData[IMAGE_CHECKER_SIZE];
+                memset(pData, 0, IMAGE_CHECKER_SIZE);
                 DWORD dwSize = 0;
                 NSFile::CFileBinary oFile;
+                oFile.OpenFile(sFileUrl);
                 oFile.ReadFile(pData, IMAGE_CHECKER_SIZE, dwSize);
                 oFile.CloseFile();
 
@@ -1438,6 +1440,7 @@ window.AscDesktopEditor.OpenFileCrypt = function(name, url, callback) {\n\
   window.AscDesktopEditor._OpenFileCrypt(name, url);\n\
 };\n\
 window.AscDesktopEditor.OpenFilenameDialog = function(filter, ismulti, callback) {\n\
+  if (window.on_native_open_filename_dialog) return;\n\
   window.on_native_open_filename_dialog = callback;\n\
   window.AscDesktopEditor._OpenFilenameDialog(filter, ismulti);\n\
 };\n\
