@@ -46,9 +46,9 @@
 		   <div class="info-box excl" style="display: none;" data-t="info-box-off">
 	  		 	<strong>The end-to-end encryption mode is OFF.</strong> To switch it on, you must close all active edition sessions.
 		   </div>
-			<section id="enc-box-caption">
+		   <span data-t="title-pop" id="enc-box-infobox">Developer Preview</span>
+		   <section id="enc-box-caption">
 				<h3 class="table-caption" data-t="title">End-to-end encryption</h3>
-				<span data-t="title-pop">Developer Preview</span>
 				<div class="onoffswitch">
 					<input type="checkbox" name="onoffswitch" class="onoffswitch__checkbox" id="enc-mode-switch"/>
 					<label class="onoffswitch__label" for="enc-mode-switch"></label>
@@ -73,6 +73,9 @@
 					<button data-t="box-database-connect-btn-create" class="btn primary">Generate new credentials</button> 
 					<a data-t="box-database-connect-btn-cancel" class="text-sub link" href="javascript:void(0)">Use the existing credentials</a>
 				</p>
+				<p data-t="box-database-connect-description-warning">
+					Warning! This network was created for demonstration purposes only. Please, do NOT use it to encrypt your sensitive documents.
+				</p>		
 				<p data-t="box-database-connect-description-line4" style="color: #888">
 					ONLYOFFICE will generate your individual pair of the encryption keys: public and private. Your private key (used for decrypting the documents) will be stored on this machine. For the correct work of the application, do not remove this file. You may keep a copy in some other location as a backup.					
 				</p>

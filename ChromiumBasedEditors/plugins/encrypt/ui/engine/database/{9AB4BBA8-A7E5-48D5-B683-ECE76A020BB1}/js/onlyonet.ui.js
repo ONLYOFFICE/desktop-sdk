@@ -23,7 +23,9 @@ ONLYONET.UI = (function() {
         $("#dlg-onoffswitch input:password").val("");	
         $("#dlg-onoffswitch input:password").attr("placeholder", ONLYONET.Resources["dlg-onoffswitch-password"]);
         $("#dlg-onoffswitch input:text").removeClass("error");	
-        $("#dlg-onoffswitch button.primary").removeAttr("disabled");					
+        $("#dlg-onoffswitch button.primary").removeAttr("disabled");
+        $("#dlg-onoffswitch a.link").text(ONLYONET.Resources["dlg-onoffswitch-btn-import"]);                    
+        $("#dlg-onoffswitch a.link").prev().hide();
     }
 
     function _renderBlockChainInfo() {		
@@ -198,6 +200,19 @@ ONLYONET.UI = (function() {
                 _renderBlockChainInfo();
             });
 
+            $("#dlg-onoffswitch a.link").click(function() {
+                window.AscDesktopEditor.ImportAdvancedEncryptedData(function(isSuccess) {
+                    if (isSuccess) {
+                        $("#dlg-onoffswitch a.link").text(ONLYONET.Resources["dlg-onoffswitch-btn-import-change"]);                    
+                        $("#dlg-onoffswitch a.link").prev().show();
+                    }
+                    else {
+                        $("#dlg-onoffswitch .error-box p").show();
+                        $("#dlg-onoffswitch input:text").addClass("error");
+                    }                    
+                });                
+            });
+
             $("#dlg-onoffswitch button.primary").click(function () {
                 $("#dlg-onoffswitch button.primary").attr("disabled","disabled");
                 $("#dlg-onoffswitch img.img-loader").show();
@@ -227,6 +242,8 @@ ONLYONET.UI = (function() {
                     
                 });
             });	
+
+         
     
             // $("#dlg-onoffswitch a.text-sub").click(function () {
             //     $("#dlg-onoffswitch .tool.close").trigger("click");	

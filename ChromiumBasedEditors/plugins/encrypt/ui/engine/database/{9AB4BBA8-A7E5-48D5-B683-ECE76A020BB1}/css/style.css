@@ -1,8 +1,60 @@
 * {
     box-sizing: border-box;
 }
+
+@font-face {
+    font-family: 'Open Sans';
+    src: url(../../../../fonts/OpenSans-Bold.ttf);
+    font-weight: 700
+}
+
+@font-face {
+    font-family: 'Open Sans';
+    src: url(../../../../fonts/OpenSans-BoldItalic.ttf);
+    font-weight: 400;
+    font-style: italic
+}
+
+@font-face {
+    font-family: 'Open Sans';
+    src: url(../../../../fonts/OpenSans-ExtraBold.ttf);
+    font-weight: bolder
+}
+
+@font-face {
+    font-family: 'Open Sans';
+    src: url(../../../../fonts/OpenSans-ExtraBoldItalic.ttf);
+    font-weight: bolder;
+    font-style: italic
+}
+
+@font-face {
+    font-family: 'Open Sans';
+    src: url(../../../../fonts/OpenSans-Italic.ttf);
+    font-style: italic
+}
+
+@font-face {
+    font-family: 'Open Sans';
+    src: url(../../../../fonts/OpenSans-Light.ttf);
+    font-weight: 100
+}
+
+@font-face {
+    font-family: 'Open Sans';
+    src: url(../../../../fonts/OpenSans-LightItalic.ttf);
+    font-weight: lighter;
+    font-style: italic
+}
+
+@font-face {
+    font-family: 'Open Sans';
+    src: url(../../../../fonts/OpenSans-Regular.ttf);
+    font-weight: 400
+}
+
 body {
-    font-family:'Open Sans',sans-serif;   
+    font-family: 'Open Sans',sans-serif;
     font-size: 14px; 
     margin:0px;
     color: #444;
@@ -78,12 +130,8 @@ h4 {
     margin: 0 15px;
 }
 
-#enc-box-caption span {
-    position: relative;
-    top: -9px;
-    left: 5px;
+#enc-box-infobox {
     color: #fff;   
-    font-size: 10px;
     padding: 2px 5px;  
     border-radius: 0px;
     background-color: #ed7309;
