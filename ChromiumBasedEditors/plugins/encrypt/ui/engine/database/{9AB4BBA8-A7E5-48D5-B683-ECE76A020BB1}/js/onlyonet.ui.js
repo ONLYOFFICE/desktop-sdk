@@ -25,7 +25,7 @@ ONLYONET.UI = (function() {
         $("#dlg-onoffswitch input:text").removeClass("error");	
         $("#dlg-onoffswitch button.primary").removeAttr("disabled");
         $("#dlg-onoffswitch a.link").text(ONLYONET.Resources["dlg-onoffswitch-btn-import"]);                    
-        $("#dlg-onoffswitch a.link").prev().hide();
+        $("#dlg-onoffswitch-btn-import-label").hide();
     }
 
     function _renderBlockChainInfo() {		
@@ -203,12 +203,20 @@ ONLYONET.UI = (function() {
             $("#dlg-onoffswitch a.link").click(function() {
                 window.AscDesktopEditor.ImportAdvancedEncryptedData(function(isSuccess) {
                     if (isSuccess) {
-                        $("#dlg-onoffswitch a.link").text(ONLYONET.Resources["dlg-onoffswitch-btn-import-change"]);                    
-                        $("#dlg-onoffswitch a.link").prev().show();
+                        $("#dlg-onoffswitch .error-box p").hide();
+                        $("#dlg-onoffswitch input:text").removeClass("error");
+                       // $("#dlg-onoffswitch-btn-import-label").removeClass("msg-error");   
+                        
+                        $("#dlg-onoffswitch a.link").text(ONLYONET.Resources["dlg-onoffswitch-btn-import-change"]);    
+                        
+                        $("#dlg-onoffswitch-btn-import-label").text(ONLYONET.Resources["dlg-onoffswitch-btn-import-complete"]);
+                        $("#dlg-onoffswitch-btn-import-label").show();
                     }
-                    else {
-                        $("#dlg-onoffswitch .error-box p").show();
-                        $("#dlg-onoffswitch input:text").addClass("error");
+                    else {              
+                        $("#dlg-onoffswitch a.link").text(ONLYONET.Resources["dlg-onoffswitch-btn-import"]);
+                        $("#dlg-onoffswitch-btn-import-label").text(ONLYONET.Resources["dlg-onoffswitch-btn-import-error"]);
+                    //  $("#dlg-onoffswitch-btn-import-label").addClass("msg-error");   
+                        $("#dlg-onoffswitch-btn-import-label").show();
                     }                    
                 });                
             });

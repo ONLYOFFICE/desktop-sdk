@@ -64,5 +64,6 @@ ONLYONET.Resources = {
     "dlg-vault-description-btn1": "Generate",
     "dlg-onoffswitch-btn-import": "Import private key",
     "dlg-onoffswitch-btn-import-complete": "Key is imported.",
+    "dlg-onoffswitch-btn-import-error": "Key import failed.",
     "dlg-onoffswitch-btn-import-change": "Change"
 };
