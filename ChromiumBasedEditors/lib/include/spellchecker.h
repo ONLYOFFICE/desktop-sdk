@@ -38,7 +38,7 @@
 
 class CAscApplicationManager;
 class CAscSpellChecker_Private;
-class Q_DECL_EXPORT CAscSpellChecker
+class DESKTOP_DECL CAscSpellChecker
 {
 protected:
     CAscSpellChecker_Private* m_pInternal;

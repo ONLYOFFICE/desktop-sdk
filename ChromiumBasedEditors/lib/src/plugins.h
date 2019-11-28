@@ -58,6 +58,9 @@ public:
     std::map<int, std::string> m_arCryptoModes;
 
     bool m_bCryptoDisabledOnStart;
+    bool m_bCryptoDisableForLocal;
+    bool m_bCryptoDisableForInternalCloud;
+    bool m_bCryptoDisableForExternalCloud;
 
     // плагин не для редактора, а для главной страницы (для системных сообщенией)
     std::vector<CExternalPluginInfo> m_arExternals;
@@ -65,7 +68,11 @@ public:
     CPluginsManager()
     {
         m_nCryptoMode = 0;
+
         m_bCryptoDisabledOnStart = false;
+        m_bCryptoDisableForLocal = false;
+        m_bCryptoDisableForInternalCloud = false;
+        m_bCryptoDisableForExternalCloud = false;
     }
 
     std::string GetPluginsJson(const bool& checkCrypto = false)
@@ -85,21 +92,6 @@ public:
         {
             NSFile::CFileBinary::Copy(m_strDirectory + L"/pluginBase.js", m_strUserDirectory + L"/pluginBase.js");
             NSFile::CFileBinary::Copy(m_strDirectory + L"/plugins.css", m_strUserDirectory + L"/plugins.css");
-            /*
-            NSFile::CFileBinary oFile;
-            if (oFile.CreateFileW(strBase))
-            {
-                oFile.WriteFile(c_res_pluginJS, (DWORD)c_res_pluginJS_len);
-                oFile.CloseFile();
-            }
-
-            NSFile::CFileBinary oFileCSS;
-            if (oFile.CreateFileW(strBaseCSS))
-            {
-                oFile.WriteFile(c_res_pluginCSS, (DWORD)c_res_pluginCSS_len);
-                oFile.CloseFile();
-            }
-            */
         }
 
         std::string sPluginsJSON = "[";
@@ -301,6 +293,15 @@ private:
             std::string sStartMode = GetStringValue(sJson, "cryptoDisabledOnStart");
             if (sStartMode == "true" || sStartMode == "1")
                 m_bCryptoDisabledOnStart = true;
+
+            std::string sCryptoDisableForLocal = GetStringValue(sJson, "cryptoDisabledForLocal");
+            if (sCryptoDisableForLocal == "true" || sCryptoDisableForLocal == "1") m_bCryptoDisableForLocal = true;
+
+            std::string sCryptoDisableForInternalCloud = GetStringValue(sJson, "cryptoDisabledForInternalCloud");
+            if (sCryptoDisableForInternalCloud == "true" || sCryptoDisableForInternalCloud == "1") m_bCryptoDisableForInternalCloud = true;
+
+            std::string sCryptoDisableForExternalCloud = GetStringValue(sJson, "cryptoDisabledForExternalCloud");
+            if (sCryptoDisableForExternalCloud == "true" || sCryptoDisableForExternalCloud == "1") m_bCryptoDisableForExternalCloud = true;
 
             std::string::size_type pos1 = sJson.find("asc.{");
             std::string::size_type pos2 = sJson.find('}', pos1);

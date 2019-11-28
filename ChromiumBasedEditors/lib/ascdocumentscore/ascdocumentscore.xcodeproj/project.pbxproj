@@ -43,6 +43,7 @@
 		7CBEA1CC1BF9CF55001B02EB /* fileprinter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7CBEA1C81BF9CF55001B02EB /* fileprinter.cpp */; };
 		7CBEA1CD1BF9CF55001B02EB /* fileprinter.h in Headers */ = {isa = PBXBuildFile; fileRef = 7CBEA1C91BF9CF55001B02EB /* fileprinter.h */; };
 		7CC7F4A71F7D365600E99DC9 /* libooxmlsignature.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 7CC7F4A61F7D365600E99DC9 /* libooxmlsignature.dylib */; };
+		BE097D5F23570FC6003BE764 /* ApplicationFontsWorker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BE097D5E23570FC6003BE764 /* ApplicationFontsWorker.cpp */; };
 		BE9FC67F2100EC0300571BA9 /* libkernel.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = BE9FC67C2100EC0200571BA9 /* libkernel.dylib */; };
 		BE9FC6802100EC0300571BA9 /* libhunspell.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = BE9FC67D2100EC0200571BA9 /* libhunspell.dylib */; };
 		BE9FC6812100EC0300571BA9 /* libgraphics.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = BE9FC67E2100EC0300571BA9 /* libgraphics.dylib */; };
@@ -732,6 +733,7 @@
 		7CBEA1C81BF9CF55001B02EB /* fileprinter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = fileprinter.cpp; path = ../src/fileprinter.cpp; sourceTree = SOURCE_ROOT; };
 		7CBEA1C91BF9CF55001B02EB /* fileprinter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = fileprinter.h; path = ../src/fileprinter.h; sourceTree = SOURCE_ROOT; };
 		7CC7F4A61F7D365600E99DC9 /* libooxmlsignature.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libooxmlsignature.dylib; path = ../../../../core/build/lib/mac_64/libooxmlsignature.dylib; sourceTree = "<group>"; };
+		BE097D5E23570FC6003BE764 /* ApplicationFontsWorker.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ApplicationFontsWorker.cpp; path = ../../../../core/DesktopEditor/fontengine/ApplicationFontsWorker.cpp; sourceTree = "<group>"; };
 		BE9FC67C2100EC0200571BA9 /* libkernel.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libkernel.dylib; path = ../../../../core/build/lib/mac_64/libkernel.dylib; sourceTree = "<group>"; };
 		BE9FC67D2100EC0200571BA9 /* libhunspell.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libhunspell.dylib; path = ../../../../core/build/lib/mac_64/libhunspell.dylib; sourceTree = "<group>"; };
 		BE9FC67E2100EC0300571BA9 /* libgraphics.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libgraphics.dylib; path = ../../../../core/build/lib/mac_64/libgraphics.dylib; sourceTree = "<group>"; };
@@ -1492,6 +1494,7 @@
 		7CBEA1BF1BF9CEBD001B02EB /* common */ = {
 			isa = PBXGroup;
 			children = (
+				BE097D5E23570FC6003BE764 /* ApplicationFontsWorker.cpp */,
 				7C7DC7981FC6BA21008DAC1F /* unicode_util.cpp */,
 				7CBEA1C41BF9CF1D001B02EB /* ASCSVGWriter.cpp */,
 				7CBEA1C21BF9CF0A001B02EB /* pole.cpp */,
@@ -3097,6 +3100,7 @@
 				BEDFB466214699E900734850 /* scheme_handler_factory_cpptoc.cc in Sources */,
 				BEDFB4D9214699EA00734850 /* zip_reader_ctocpp.cc in Sources */,
 				BEDFB4D7214699EA00734850 /* download_item_ctocpp.cc in Sources */,
+				BE097D5F23570FC6003BE764 /* ApplicationFontsWorker.cpp in Sources */,
 				BEDFB3B9214699E900734850 /* scheme_test_common.cc in Sources */,
 				BEDFB48F214699E900734850 /* menu_button_delegate_cpptoc.cc in Sources */,
 				BEDFB4AA214699EA00734850 /* cef_byte_read_handler.cc in Sources */,
@@ -3224,7 +3228,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Resources/converter";
 				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				OTHER_CFLAGS = "-I${PROJECT_DIR}/../../../../desktop-sdk/ChromiumBasedEditors/lib/src/cef/mac";
-				OTHER_LDFLAGS = "";
+				OTHER_LDFLAGS = "-headerpad_max_install_names";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -3258,7 +3262,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Resources/converter";
 				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				OTHER_CFLAGS = "-I${PROJECT_DIR}/../../../../desktop-sdk/ChromiumBasedEditors/lib/src/cef/mac";
-				OTHER_LDFLAGS = "";
+				OTHER_LDFLAGS = "-headerpad_max_install_names";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;

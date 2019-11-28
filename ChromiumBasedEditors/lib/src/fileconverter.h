@@ -48,9 +48,31 @@
 #include <stdio.h>
 #endif
 
-//#define USE_FOR_REGENERATE_PRESENTATION_THEMES
-
-// AFTER FULL REALIZE - DELETE THIS MACRO
+static bool IsFormatSupportCrypto(const int& nFormat)
+{
+    switch (nFormat)
+    {
+        case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX:
+        case AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX:
+        case AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX:
+        case AVS_OFFICESTUDIO_FILE_DOCUMENT_ODT:
+        case AVS_OFFICESTUDIO_FILE_SPREADSHEET_ODS:
+        case AVS_OFFICESTUDIO_FILE_PRESENTATION_ODP:
+        case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF:
+        case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOTX:
+        case AVS_OFFICESTUDIO_FILE_PRESENTATION_POTX:
+        case AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLTX:
+        case AVS_OFFICESTUDIO_FILE_DOCUMENT_OTT:
+        case AVS_OFFICESTUDIO_FILE_PRESENTATION_OTP:
+        case AVS_OFFICESTUDIO_FILE_SPREADSHEET_OTS:
+        {
+            return true;
+        }
+        default:
+            break;
+    }
+    return false;
+}
 
 class CAscLocalFileInfo
 {
@@ -127,7 +149,7 @@ public:
 
 namespace NSX2T
 {
-    int Convert(const std::wstring& sConverterPath, const std::wstring sXmlPath, CAscApplicationManager* pManager)
+    int Convert(const std::wstring& sConverterPath, const std::wstring sXmlPath, CAscApplicationManager* pManager, bool bIsLoggingErrors = false)
     {
         int nReturnCode = 0;
         std::wstring sConverterExe = sConverterPath;
@@ -265,6 +287,22 @@ namespace NSX2T
             break;
         }
 #endif
+
+        if (bIsLoggingErrors && nReturnCode != 0)
+        {
+            std::string sXmlContent;
+            NSFile::CFileBinary::ReadAllTextUtf8A(sXmlPath, sXmlContent);
+            NSCommon::string_replaceA(sXmlContent, "%", "%%");
+
+            std::wstring sLogFile = NSFile::GetDirectoryName(sXmlPath) + L"/errors.log";
+            std::string sLogFileA = U_TO_UTF8(sLogFile);
+            FILE* f = fopen(sLogFileA.c_str(), "a+");
+            fprintf(f, "--------------------------------------------------------\n");
+            fprintf(f, "error: %d\nxml:\n", nReturnCode);
+            fprintf(f, sXmlContent.c_str());
+            fprintf(f, "\n\n");
+            fclose(f);
+        }
 
         return nReturnCode;
     }
@@ -635,9 +673,6 @@ public:
         oBuilder.WriteString(L"/Editor.bin</m_sFileTo><m_nFormatTo>8192</m_nFormatTo>");
         oBuilder.WriteString(L"<m_sThemeDir>./themes</m_sThemeDir><m_bDontSaveAdditional>true</m_bDontSaveAdditional>");
         oBuilder.WriteString(sParams);
-#ifdef USE_FOR_REGENERATE_PRESENTATION_THEMES
-        oBuilder.WriteString(L"<m_bIsNoBase64>false</m_bIsNoBase64>");
-#endif
         oBuilder.WriteString(L"</TaskQueueDataConvert>");
 
         std::wstring sXmlConvert = oBuilder.GetData();
@@ -647,7 +682,7 @@ public:
         std::wstring sTempFileForParams = m_oInfo.m_sRecoveryDir + L"/params_from.xml";
         NSFile::CFileBinary::SaveToFile(sTempFileForParams, sXmlConvert, true);
 
-        int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileForParams, m_pManager);
+        int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileForParams, m_pManager, m_pManager->m_pInternal->m_bIsEnableConvertLogs);
 
         NSFile::CFileBinary::Remove(sTempFileForParams);
 
@@ -655,29 +690,6 @@ public:
             CheckSignatures(sDestinationPath);
 
         m_pEvents->OnFileConvertToEditor(nReturnCode);
-
-#ifdef USE_FOR_REGENERATE_PRESENTATION_THEMES
-        // COMMENT!!! USE FOR REGENERATE PRESENTATION THEMES
-        if (true)
-        {
-            std::wstring sThemeDir = NSFile::GetDirectoryName(sLocalFilePath) + L"/theme.js";
-            std::string sContentSrc;
-            NSFile::CFileBinary::ReadAllTextUtf8A(sThemeDir, sContentSrc);
-            std::string sContentDst;
-            NSFile::CFileBinary::ReadAllTextUtf8A(m_oInfo.m_sRecoveryDir + L"/Editor.bin", sContentDst);
-            std::string::size_type pos = sContentSrc.find("\"");
-            std::string sDst = sContentSrc.substr(0, pos);
-            sDst += "\"";
-            sDst += sContentDst;
-            sDst += "\";";
-            NSFile::CFileBinary::Remove(sThemeDir);
-
-            NSFile::CFileBinary oFileTheme;
-            oFileTheme.CreateFileW(sThemeDir);
-            oFileTheme.WriteFile((BYTE*)sDst.c_str(), (DWORD)sDst.length());
-            oFileTheme.CloseFile();
-        }
-#endif
 
         m_bRunThread = FALSE;
         return 0;
@@ -961,32 +973,11 @@ public:
         oBuilder.WriteString(L"/AllFonts.js</m_sAllFontsPath><m_nCsvTxtEncoding>46</m_nCsvTxtEncoding><m_nCsvDelimiter>4</m_nCsvDelimiter>");
         oBuilder.WriteString(sParams);
 
-        if (!m_oInfo.m_sPassword.empty())
+        if (!m_oInfo.m_sPassword.empty() && IsFormatSupportCrypto(m_oInfo.m_nCurrentFileFormat))
         {
-            switch (m_oInfo.m_nCurrentFileFormat)
-            {
-                case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX:
-                case AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX:
-                case AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX:
-                case AVS_OFFICESTUDIO_FILE_DOCUMENT_ODT:
-                case AVS_OFFICESTUDIO_FILE_SPREADSHEET_ODS:
-                case AVS_OFFICESTUDIO_FILE_PRESENTATION_ODP:
-                case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF:
-                case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOTX:
-                case AVS_OFFICESTUDIO_FILE_PRESENTATION_POTX:
-                case AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLTX:
-                case AVS_OFFICESTUDIO_FILE_DOCUMENT_OTT:
-                case AVS_OFFICESTUDIO_FILE_PRESENTATION_OTP:
-                case AVS_OFFICESTUDIO_FILE_SPREADSHEET_OTS:
-                {
-                    oBuilder.WriteString(L"<m_sSavePassword>");
-                    oBuilder.WriteEncodeXmlString(m_oInfo.m_sPassword);
-                    oBuilder.WriteString(L"</m_sSavePassword>");
-                    break;
-                }
-                default:
-                    break;
-            }
+            oBuilder.WriteString(L"<m_sSavePassword>");
+            oBuilder.WriteEncodeXmlString(m_oInfo.m_sPassword);
+            oBuilder.WriteString(L"</m_sSavePassword>");
         }
 
         if (!m_oInfo.m_sDocumentInfo.empty())
@@ -1029,7 +1020,7 @@ public:
         if (m_pManager->m_pInternal->m_pAdditional)
             m_pManager->m_pInternal->m_pAdditional->CheckSaveStart(m_oInfo.m_sRecoveryDir, m_nTypeEditorFormat);
 
-        int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileForParams, m_pManager);
+        int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileForParams, m_pManager, m_pManager->m_pInternal->m_bIsEnableConvertLogs);
 
         if (bIsUseTmpFileDst)
         {
@@ -1229,16 +1220,20 @@ public:
     IASCFileConverterEvents* m_pEvents;
     CAscApplicationManager* m_pManager;
 
+    bool m_bIsLogs;
+
 public:
     CSimpleConverter()
     {
         m_nOutputFormat = -1;
         m_pEvents = NULL;
         m_pManager = NULL;
+        m_bIsLogs = false;
     }
 
-    void Convert()
+    void Convert(bool bIsLogs = false)
     {
+        m_bIsLogs = bIsLogs;
         Start(0);
     }
 
@@ -1270,7 +1265,7 @@ public:
             std::wstring sTempFileForParams = m_sRecoverFolder + L"/params_simple_converter.xml";
             NSFile::CFileBinary::SaveToFile(sTempFileForParams, oBuilder.GetData(), true);
 
-            nReturnCode = NSX2T::Convert(m_pManager->m_oSettings.file_converter_path + L"/x2t", sTempFileForParams, m_pManager);
+            nReturnCode = NSX2T::Convert(m_pManager->m_oSettings.file_converter_path + L"/x2t", sTempFileForParams, m_pManager, m_bIsLogs);
             NSFile::CFileBinary::Remove(sTempFileForParams);
         }
 

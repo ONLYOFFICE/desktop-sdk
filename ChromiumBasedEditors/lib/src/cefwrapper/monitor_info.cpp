@@ -313,16 +313,7 @@ std::map<std::string, CDetecterOldSystems::CMonitorInfo> CDetecterOldSystems::g_
 
 int NSMonitor::GetRawMonitorDpi(WindowHandleId handle)
 {
-    if (g_monitor_info.m_func_GetDpiForWindow)
-    {
-        UINT resDpi = g_monitor_info.m_func_GetDpiForWindow(handle);
-
-        if (resDpi > 180)
-            return 2;
-        return 1;
-    }
-
-    if (!g_monitor_info.m_func_GetDpiForMonitor)
+    if (true)
     {
         UINT iuW = 0;
         UINT iuH = 0;
@@ -332,17 +323,29 @@ int NSMonitor::GetRawMonitorDpi(WindowHandleId handle)
                 return 2;
             return 1;
         }
+    }
 
+    if (g_monitor_info.m_func_GetDpiForWindow)
+    {
+        UINT resDpi = g_monitor_info.m_func_GetDpiForWindow(handle);
+
+        if (resDpi > 180)
+            return 2;
         return 1;
     }
 
-    HMONITOR hMonitor = MonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST);
-    UINT iuW = 0;
-    UINT iuH = 0;
-    g_monitor_info.m_func_GetDpiForMonitor(hMonitor, MDT_RAW_DPI, &iuW, &iuH);
+    if (g_monitor_info.m_func_GetDpiForMonitor)
+    {
+        HMONITOR hMonitor = MonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST);
+        UINT iuW = 0;
+        UINT iuH = 0;
+        g_monitor_info.m_func_GetDpiForMonitor(hMonitor, MDT_RAW_DPI, &iuW, &iuH);
 
-    if (iuW > 180 && iuH > 180)
-        return 2;
+        if (iuW > 180 && iuH > 180)
+            return 2;
+        return 1;
+    }
+
     return 1;
 }
 
@@ -363,7 +366,7 @@ int Core_SetProcessDpiAwareness(void)
     if (!g_monitor_info.m_funcSetProcessDpiAwareness)
         return 1;
 
-    HRESULT hr = g_monitor_info.m_funcSetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
+    g_monitor_info.m_funcSetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
     return 0;
 }
 
@@ -371,6 +374,18 @@ int Core_GetMonitorRawDpi(WindowHandleId handle, unsigned int* uiX, unsigned int
 {
     *uiX = 0;
     *uiY = 0;
+
+    if (true)
+    {
+        UINT iuW = 0;
+        UINT iuH = 0;
+        if (CDetecterOldSystems::GetDpi(handle, iuW, iuH))
+        {
+            *uiX = iuW;
+            *uiY = iuH;
+            return 0;
+        }
+    }
 
     if (g_monitor_info.m_func_GetDpiForWindow)
     {
@@ -382,23 +397,13 @@ int Core_GetMonitorRawDpi(WindowHandleId handle, unsigned int* uiX, unsigned int
         return 0;
     }
 
-    if (!g_monitor_info.m_func_GetDpiForMonitor)
+    if (g_monitor_info.m_func_GetDpiForMonitor)
     {
-        UINT iuW = 0;
-        UINT iuH = 0;
-        if (CDetecterOldSystems::GetDpi(handle, iuW, iuH))
-        {
-            *uiX = iuW;
-            *uiY = iuH;
-            return 0;
-        }
-
-        return -1;
+        HMONITOR hMonitor = MonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST);
+        g_monitor_info.m_func_GetDpiForMonitor(hMonitor, MDT_RAW_DPI, uiX, uiY);
+        return 0;
     }
-
-    HMONITOR hMonitor = MonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST);
-    g_monitor_info.m_func_GetDpiForMonitor(hMonitor, MDT_RAW_DPI, uiX, uiY);
-    return 0;
+    return -1;
 }
 
 struct sEnumInfo
@@ -430,7 +435,7 @@ int Core_GetMonitorRawDpiByIndex(int index, unsigned int* uiX, unsigned int* uiY
     EnumDisplayMonitors(NULL, NULL, GetMonitorByIndex, (LPARAM)&info);
     if (info.hMonitor != NULL)
     {
-        if (!g_monitor_info.m_func_GetDpiForMonitor)
+        if (true)
         {
             UINT iuW = 0;
             UINT iuH = 0;
@@ -440,11 +445,11 @@ int Core_GetMonitorRawDpiByIndex(int index, unsigned int* uiX, unsigned int* uiY
                 *uiY = iuH;
                 return 0;
             }
-
-            return -1;
         }
 
-        g_monitor_info.m_func_GetDpiForMonitor(info.hMonitor, MDT_RAW_DPI, uiX, uiY);
+        if (g_monitor_info.m_func_GetDpiForMonitor)
+            g_monitor_info.m_func_GetDpiForMonitor(info.hMonitor, MDT_RAW_DPI, uiX, uiY);
+
         return 0;
     }
 
