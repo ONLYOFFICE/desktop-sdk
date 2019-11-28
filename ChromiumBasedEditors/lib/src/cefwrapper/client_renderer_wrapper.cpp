@@ -1323,13 +1323,6 @@ DE.controllers.Main.DisableVersionHistory(); \
             retval = CefV8Value::CreateString(sUrl);
             return true;
         }
-        else if (name == "LocalFileGetImageUrlFromOpenFileDialog")
-        {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
-            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_onaddimage");
-            browser->SendProcessMessage(PID_BROWSER, message);
-            return true;
-        }
         else if (name == "execCommand")
         {
             CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
@@ -3004,7 +2997,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
 
-    #define EXTEND_METHODS_COUNT 127
+    #define EXTEND_METHODS_COUNT 126
     const char* methods[EXTEND_METHODS_COUNT] = {
         "Copy",
         "Paste",
@@ -3072,7 +3065,6 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         "LocalFileSetSaved",
 
         "LocalFileGetImageUrl",
-        "LocalFileGetImageUrlFromOpenFileDialog",
 
         "checkAuth",
 
@@ -3532,19 +3524,6 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
             NSCommon::string_replace(sJSON, L"\\", L"\\\\");
 
             std::wstring sCode = L"if (window.onupdaterecovers) {window.onupdaterecovers(" + sJSON + L");}";
-            _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
-        }
-        return true;
-    }
-    else if (sMessageName == "onlocaldocument_onaddimage")
-    {
-        CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
-        if (_frame)
-        {
-            std::wstring sPath = message->GetArgumentList()->GetString(0).ToWString();
-            NSCommon::string_replace(sPath, L"\\", L"\\\\");
-
-            std::wstring sCode = L"window.DesktopOfflineAppDocumentAddImageEnd(\"" + sPath + L"\");";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
         }
         return true;

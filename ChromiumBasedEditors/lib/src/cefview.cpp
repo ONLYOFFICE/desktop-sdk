@@ -2266,16 +2266,6 @@ public:
             }
             return true;
         }
-        else if (message_name == "onlocaldocument_onaddimage")
-        {
-            // добавление картинки (с показом диалога)
-            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_ADDIMAGE);
-            NSEditorApi::CAscLocalOpenFileDialog* pData = new NSEditorApi::CAscLocalOpenFileDialog();
-            pData->put_Id(m_pParent->GetId());
-            pEvent->m_pData = pData;
-            pListener->OnEvent(pEvent);
-            return true;
-        }
         else if (message_name == "on_logout")
         {
             // AscDesktopEditor.Logout
@@ -5164,23 +5154,6 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 
                 m_pInternal->LocalFile_SaveStart(sPath, nFileType);
             }
-            break;
-        }
-        case ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_ADDIMAGE:
-        {
-            NSEditorApi::CAscLocalOpenFileDialog* pData = (NSEditorApi::CAscLocalOpenFileDialog*)pEvent->m_pData;
-            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_onaddimage");
-
-            std::wstring sPath = pData->get_Path();
-            if (pData->get_IsMultiselect() || sPath.empty())
-            {
-                std::vector<std::wstring>& arPaths = pData->get_Files();
-                if (arPaths.size() > 0)
-                    sPath = arPaths[0];
-            }
-
-            message->GetArgumentList()->SetString(0, sPath);
-            browser->SendProcessMessage(PID_RENDERER, message);
             break;
         }
         case ASC_MENU_EVENT_TYPE_CEF_EXECUTE_COMMAND_JS:
