@@ -23,7 +23,9 @@ ONLYONET.UI = (function() {
         $("#dlg-onoffswitch input:password").val("");	
         $("#dlg-onoffswitch input:password").attr("placeholder", ONLYONET.Resources["dlg-onoffswitch-password"]);
         $("#dlg-onoffswitch input:text").removeClass("error");	
-        $("#dlg-onoffswitch button.primary").removeAttr("disabled");					
+        $("#dlg-onoffswitch button.primary").removeAttr("disabled");
+        $("#dlg-onoffswitch a.link").text(ONLYONET.Resources["dlg-onoffswitch-btn-import"]);                    
+        $("#dlg-onoffswitch-btn-import-label").hide();
     }
 
     function _renderBlockChainInfo() {		
@@ -198,6 +200,27 @@ ONLYONET.UI = (function() {
                 _renderBlockChainInfo();
             });
 
+            $("#dlg-onoffswitch a.link").click(function() {
+                window.AscDesktopEditor.ImportAdvancedEncryptedData(function(isSuccess) {
+                    if (isSuccess) {
+                        $("#dlg-onoffswitch .error-box p").hide();
+                        $("#dlg-onoffswitch input:text").removeClass("error");
+                       // $("#dlg-onoffswitch-btn-import-label").removeClass("msg-error");   
+                        
+                        $("#dlg-onoffswitch a.link").text(ONLYONET.Resources["dlg-onoffswitch-btn-import-change"]);    
+                        
+                        $("#dlg-onoffswitch-btn-import-label").text(ONLYONET.Resources["dlg-onoffswitch-btn-import-complete"]);
+                        $("#dlg-onoffswitch-btn-import-label").show();
+                    }
+                    else {              
+                        $("#dlg-onoffswitch a.link").text(ONLYONET.Resources["dlg-onoffswitch-btn-import"]);
+                        $("#dlg-onoffswitch-btn-import-label").text(ONLYONET.Resources["dlg-onoffswitch-btn-import-error"]);
+                    //  $("#dlg-onoffswitch-btn-import-label").addClass("msg-error");   
+                        $("#dlg-onoffswitch-btn-import-label").show();
+                    }                    
+                });                
+            });
+
             $("#dlg-onoffswitch button.primary").click(function () {
                 $("#dlg-onoffswitch button.primary").attr("disabled","disabled");
                 $("#dlg-onoffswitch img.img-loader").show();
@@ -208,11 +231,10 @@ ONLYONET.UI = (function() {
                     try {
                         if (privateKey == "") throw "Error read data";
                     
-                        let publicKey = ONLYONET.getPublicKeyFromPrivateKey(privateKey);
-
-                        ONLYONET.setPublicKey(publicKey);
                         ONLYONET.setPrivateKey(privateKey);
-        
+                        ONLYONET.setPublicKeyFromPrivateKey(privateKey);
+
+                        
                         _switchOn("#dlg-onoffswitch .tool.close");
                     }
                     catch(error) {
@@ -228,6 +250,8 @@ ONLYONET.UI = (function() {
                     
                 });
             });	
+
+         
     
             // $("#dlg-onoffswitch a.text-sub").click(function () {
             //     $("#dlg-onoffswitch .tool.close").trigger("click");	

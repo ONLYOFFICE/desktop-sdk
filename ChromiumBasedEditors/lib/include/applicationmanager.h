@@ -253,6 +253,7 @@ protected:
     friend class CCefViewEditor;
     friend class CAscClientHandler;
     friend class CASCFileConverterFromEditor;
+    friend class CASCFileConverterToEditor;
     friend class CApplicationCEF;
 };
 

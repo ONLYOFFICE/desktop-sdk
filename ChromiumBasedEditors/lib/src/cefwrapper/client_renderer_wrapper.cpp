@@ -1076,8 +1076,10 @@ DE.controllers.Main.DisableVersionHistory(); \
             if (!bIsNoHeader)
             {
                 BYTE pData[IMAGE_CHECKER_SIZE];
+                memset(pData, 0, IMAGE_CHECKER_SIZE);
                 DWORD dwSize = 0;
                 NSFile::CFileBinary oFile;
+                oFile.OpenFile(sFileUrl);
                 oFile.ReadFile(pData, IMAGE_CHECKER_SIZE, dwSize);
                 oFile.CloseFile();
 
@@ -1438,6 +1440,7 @@ window.AscDesktopEditor.OpenFileCrypt = function(name, url, callback) {\n\
   window.AscDesktopEditor._OpenFileCrypt(name, url);\n\
 };\n\
 window.AscDesktopEditor.OpenFilenameDialog = function(filter, ismulti, callback) {\n\
+  if (window.on_native_open_filename_dialog) return;\n\
   window.on_native_open_filename_dialog = callback;\n\
   window.AscDesktopEditor._OpenFilenameDialog(filter, ismulti);\n\
 };\n\
@@ -1461,17 +1464,18 @@ window.AscDesktopEditor.SetAdvancedEncryptedData = function(password, data, call
   window.on_set_advanced_encrypted_data = callback;\n\
   window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
 };\n\
-window.AscDesktopEditor.ImportAdvancedEncryptedData = function() {\n\
-  window.AscDesktopEditor.OpenFilenameDialog('key', false, function(files) {\n\
+window.AscDesktopEditor.ImportAdvancedEncryptedData = function(callback) {\n\
+  window.AscDesktopEditor.OpenFilenameDialog('Key File (*docx);;All files (*.*)', false, function(files) {\n\
     var file = Array.isArray(files) ? files[0] : files;\n\
     if (file)\n\
     {\n\
-      window.AscDesktopEditor._ImportAdvancedEncryptedData(file);\n\
+      var ret = window.AscDesktopEditor._ImportAdvancedEncryptedData(file);\n\
+      if (callback) callback(ret);\n\
     }\n\
   });\n\
 };\n\
 window.AscDesktopEditor.ExportAdvancedEncryptedData = function() {\n\
-  window.AscDesktopEditor.SaveFilenameDialog('encrypted.key', function(file) {\n\
+  window.AscDesktopEditor.SaveFilenameDialog('privateKey.docx', function(file) {\n\
     if (file)\n\
     {\n\
       window.AscDesktopEditor._ExportAdvancedEncryptedData(file);\n\
@@ -1479,10 +1483,12 @@ window.AscDesktopEditor.ExportAdvancedEncryptedData = function() {\n\
   });\n\
 };\n\
 window.AscDesktopEditor.CloudCryptFile = function(url, callback) {\n\
+  if (window.on_cloud_crypto_upload) { console.log('CloudCryptFile: waiting...'); return; }\n\
   window.AscDesktopEditor.DownloadFiles([url], [], function(files) {\n\
     var _files = [];\n\
     for (var elem in files)\n\
       _files.push(files[elem]);\n\
+    window.on_cloud_crypto_upload = undefined;\n\
     if (_files && 1 == _files.length)\n\
     {\n\
       window.on_cloud_crypto_upload = callback;\n\
@@ -1491,8 +1497,10 @@ window.AscDesktopEditor.CloudCryptFile = function(url, callback) {\n\
   }, 1);\n\
 };\n\
 window.AscDesktopEditor.CloudCryptUpload = function(filter, callback) {\n\
+  if (window.on_cloud_crypto_upload) { console.log('CloudCryptUpload: waiting...'); return; }\n\
   var filterOut = filter || \"\"; if (filterOut == \"\") filterOut = \"any\";\n\
   window.AscDesktopEditor.OpenFilenameDialog(filterOut, true, function(files) {\n\
+    window.on_cloud_crypto_upload = undefined;\n\
     if (files && 0 < files.length)\n\
     {\n\
       window.on_cloud_crypto_upload = callback;\n\
@@ -2603,7 +2611,18 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
         else if (name == "_ImportAdvancedEncryptedData")
         {
             std::wstring sFile = arguments[0]->GetStringValue().ToWString();
-            NSFile::CFileBinary::Copy(sFile, m_sUserPlugins + L"/advanced_crypto_data.docx");
+
+            COfficeFileFormatChecker oChecker;
+            bool bIsOfficeFile = oChecker.isOfficeFile(sFile);
+            if (bIsOfficeFile && oChecker.nFileType == AVS_OFFICESTUDIO_FILE_OTHER_MS_OFFCRYPTO)
+            {
+                NSFile::CFileBinary::Copy(sFile, m_sUserPlugins + L"/advanced_crypto_data.docx");
+                retval = CefV8Value::CreateBool(true);
+            }
+            else
+            {
+                retval = CefV8Value::CreateBool(false);
+            }
             return true;
         }
         else if (name == "_ExportAdvancedEncryptedData")

@@ -334,13 +334,18 @@ int NSMonitor::GetRawMonitorDpi(WindowHandleId handle)
         return 1;
     }
 
-    HMONITOR hMonitor = MonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST);
-    UINT iuW = 0;
-    UINT iuH = 0;
-    g_monitor_info.m_func_GetDpiForMonitor(hMonitor, MDT_RAW_DPI, &iuW, &iuH);
+    if (g_monitor_info.m_func_GetDpiForMonitor)
+    {
+        HMONITOR hMonitor = MonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST);
+        UINT iuW = 0;
+        UINT iuH = 0;
+        g_monitor_info.m_func_GetDpiForMonitor(hMonitor, MDT_RAW_DPI, &iuW, &iuH);
 
-    if (iuW > 180 && iuH > 180)
-        return 2;
+        if (iuW > 180 && iuH > 180)
+            return 2;
+        return 1;
+    }
+
     return 1;
 }
 
@@ -380,8 +385,6 @@ int Core_GetMonitorRawDpi(WindowHandleId handle, unsigned int* uiX, unsigned int
             *uiY = iuH;
             return 0;
         }
-
-        return -1;
     }
 
     if (g_monitor_info.m_func_GetDpiForWindow)
@@ -394,9 +397,13 @@ int Core_GetMonitorRawDpi(WindowHandleId handle, unsigned int* uiX, unsigned int
         return 0;
     }
 
-    HMONITOR hMonitor = MonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST);
-    g_monitor_info.m_func_GetDpiForMonitor(hMonitor, MDT_RAW_DPI, uiX, uiY);
-    return 0;
+    if (g_monitor_info.m_func_GetDpiForMonitor)
+    {
+        HMONITOR hMonitor = MonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST);
+        g_monitor_info.m_func_GetDpiForMonitor(hMonitor, MDT_RAW_DPI, uiX, uiY);
+        return 0;
+    }
+    return -1;
 }
 
 struct sEnumInfo

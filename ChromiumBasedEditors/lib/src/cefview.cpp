@@ -643,7 +643,7 @@ public:
             // вся работа закончена
             CefRefPtr<CefFrame> pFrame = GetFrame();
             if (pFrame)
-                pFrame->ExecuteJavaScript("window.onSystemMessage({ type : \"upload_end\" });", pFrame->GetURL(), 0);
+                pFrame->ExecuteJavaScript("window.on_cloud_crypto_upload = undefined;window.onSystemMessage({ type : \"upload_end\" });", pFrame->GetURL(), 0);
             View->m_pUploadFiles = NULL;
             delete this;
         }
@@ -2849,6 +2849,14 @@ public:
                     {
                         bIsEditorPresent = true;
                         break;
+                    }
+                    else
+                    {
+                        if (tmp->m_pInternal->m_pUploadFiles)
+                        {
+                            bIsEditorPresent = true;
+                            break;
+                        }
                     }
                 }
 
@@ -5135,7 +5143,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                     m_pInternal->m_oSimpleX2tConverter.m_sRecoverFolder = m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir;
                     m_pInternal->m_oSimpleX2tConverter.m_pEvents = m_pInternal;
                     m_pInternal->m_oSimpleX2tConverter.m_pManager = m_pInternal->m_pManager;
-                    m_pInternal->m_oSimpleX2tConverter.Convert();
+                    m_pInternal->m_oSimpleX2tConverter.Convert(m_pInternal->m_pManager->m_pInternal->m_bIsEnableConvertLogs);
                 }
                 break;
             }
