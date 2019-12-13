@@ -659,7 +659,7 @@ public:
 
     // данные для печати
     CPrintData m_oPrintData;
-    int m_nPrintParameters;
+    std::string m_sPrintParameters;
 
     // ссылка для view
     std::wstring m_strUrl;
@@ -796,7 +796,7 @@ public:
         m_pWidgetImpl = NULL;
         m_pCefView = NULL;
 
-        m_nPrintParameters = 0;
+        m_sPrintParameters = "";
 
         m_bIsSaving = false;
         m_bIsSavingCrypto = false;
@@ -2101,9 +2101,9 @@ public:
             // для редакторов - вызывает asc_nativePrint
             NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
             pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_PRINT_START;
-            m_pParent->m_pInternal->m_nPrintParameters = 0;
+            m_pParent->m_pInternal->m_sPrintParameters = "";
             if (args->GetSize() == 1)
-                m_pParent->m_pInternal->m_nPrintParameters = args->GetInt(0);
+                m_pParent->m_pInternal->m_sPrintParameters = args->GetString(0);
             m_pParent->Apply(pEvent);
             return true;
         }
@@ -4958,8 +4958,8 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
         }
         case ASC_MENU_EVENT_TYPE_CEF_PRINT_START:
         {
-            int nPrintParameters = m_pInternal->m_nPrintParameters;
-            m_pInternal->m_nPrintParameters = 0;
+            std::string sPrintParameters = m_pInternal->m_sPrintParameters;
+            m_pInternal->m_sPrintParameters = "";
             if (m_pInternal)
             {
                 if (this->GetType() == cvwtEditor)
@@ -5008,8 +5008,8 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             if (!bIsNativePrint)
             {
                 CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("print");
-                if (0 != nPrintParameters)
-                    message->GetArgumentList()->SetInt(0, nPrintParameters);
+                if ("" != sPrintParameters)
+                    message->GetArgumentList()->SetString(0, sPrintParameters);
                 browser->SendProcessMessage(PID_RENDERER, message);
             }
             else

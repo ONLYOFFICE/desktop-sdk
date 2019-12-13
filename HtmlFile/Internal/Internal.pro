@@ -11,7 +11,7 @@ include($$CORE_ROOT_DIR/Common/base.pri)
 include($$CORE_ROOT_DIR/Common/3dParty/icu/icu.pri)
 
 include($$CORE_ROOT_DIR/../desktop-sdk/ChromiumBasedEditors/lib/AscDocumentsCore_base.pri)
-LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lUnicodeConverter -lkernel -lgraphics
+ADD_DEPENDENCY(graphics, kernel, UnicodeConverter)
 
 DESTDIR=$$CORE_BUILDS_LIBRARIES_PATH
 

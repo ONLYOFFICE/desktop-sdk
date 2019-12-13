@@ -22,8 +22,7 @@ DEFINES += \
     XPS_USE_DYNAMIC_LIBRARY \
     HTMLRENDERER_USE_DYNAMIC_LIBRARY
 
-LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lkernel -lgraphics -lhunspell
-LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lPdfReader -lPdfWriter -lDjVuFile -lXpsFile -lHtmlRenderer -lUnicodeConverter -looxmlsignature
+ADD_DEPENDENCY(graphics, kernel, UnicodeConverter, PdfWriter, PdfReader, XpsFile, DjVuFile, HtmlRenderer, hunspell, ooxmlsignature)
 # ------------------------------------------------------
 
 DEFINES += DOCUMENTSCORE_OPENSSL_SUPPORT

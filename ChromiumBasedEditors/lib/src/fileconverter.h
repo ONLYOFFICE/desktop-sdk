@@ -988,17 +988,14 @@ public:
         }
         m_oInfo.m_sDocumentInfo = L"";
 
-        int nDoctRendererParam = 0;
+        oBuilder.WriteString(L"<m_sJsonParams>{");
+        oBuilder.WriteEncodeXmlString(L"\"spreadsheetLayout\":{\"fitToWidth\":1,\"fitToHeight\":1}");
         if (m_bIsRetina)
-            nDoctRendererParam |= 0x01;
-        if (true) // печать пдф (лист = страница)
-            nDoctRendererParam |= 0x02;
+            oBuilder.WriteEncodeXmlString(L",\"printOptions\":{\"retina\":1}");
+        oBuilder.WriteString(L"}</m_sJsonParams>");
 
-        nDoctRendererParam |= 0x04; // disable fast doctrenderer (no rights to dump common information)
-
-        oBuilder.WriteString(L"<m_nDoctParams>");
-        oBuilder.WriteString(std::to_wstring(nDoctRendererParam));
-        oBuilder.WriteString(L"</m_nDoctParams>");
+        // disable cache
+        oBuilder.WriteString(L"<m_nDoctParams>1</m_nDoctParams>");
 
         oBuilder.WriteString(L"</TaskQueueDataConvert>");
 

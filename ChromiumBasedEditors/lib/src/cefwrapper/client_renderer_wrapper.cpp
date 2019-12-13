@@ -1020,7 +1020,7 @@ DE.controllers.Main.DisableVersionHistory(); \
             CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("print");
             if (arguments.size() == 1)
-                message->GetArgumentList()->SetInt(0, (*arguments.begin())->GetIntValue());
+                message->GetArgumentList()->SetString(0, (*arguments.begin())->GetStringValue());
             browser->SendProcessMessage(PID_BROWSER, message);
             return true;
         }
@@ -3372,7 +3372,7 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
             sCode += "else if (window[\"editor\"]) { window[\"editor\"][\"asc_nativePrint\"](undefined, undefined";
 
             if (message->GetArgumentList()->GetSize() == 1)
-                sCode += (", " + std::to_string(message->GetArgumentList()->GetInt(0)));
+                sCode += (", " + (message->GetArgumentList()->GetString(0).ToString()));
 
             sCode += "); }";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
