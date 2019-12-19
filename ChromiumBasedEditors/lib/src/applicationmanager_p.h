@@ -781,6 +781,20 @@ public:
         oWorker.m_sDirectory = m_pMain->m_oSettings.fonts_cache_info_path;
         oWorker.m_bIsUseSystemFonts = m_pMain->m_oSettings.use_system_fonts;
         oWorker.m_arAdditionalFolders = m_pMain->m_oSettings.additional_fonts_folder;
+
+#if defined(_LINUX)
+        std::wstring sHome = GetHomeDirectory();
+        if (!sHome.empty())
+        {
+#ifdef _MAC
+            oWorker.m_arAdditionalFolders.push_back(sHome + L"/Library/Fonts");
+#else
+            oWorker.m_arAdditionalFolders.push_back(sHome + L"/.fonts");
+            oWorker.m_arAdditionalFolders.push_back(sHome + L"/.local/share/fonts");
+#endif
+        }
+#endif
+
         oWorker.m_bIsUseOpenType = true;
         oWorker.m_bIsNeedThumbnails = true;
 
