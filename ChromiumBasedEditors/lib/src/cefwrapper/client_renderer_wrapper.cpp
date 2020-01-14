@@ -2631,6 +2631,31 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
             NSFile::CFileBinary::Copy(m_sUserPlugins + L"/advanced_crypto_data.docx", sFile);
             return true;
         }
+        else if (name == "CompareDocumentUrl")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_compare_document");
+            message->GetArgumentList()->SetString(0, "url");
+            message->GetArgumentList()->SetString(1, arguments[0]->GetStringValue());
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "CompareDocumentFile")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_compare_document");
+            message->GetArgumentList()->SetString(0, "file");
+            message->GetArgumentList()->SetString(1, arguments[0]->GetStringValue());
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
+        else if (name == "onDocumentContentReady")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_document_content_ready");
+            browser->SendProcessMessage(PID_BROWSER, message);
+            return true;
+        }
 
         // Function does not exist.
         return false;
@@ -3004,7 +3029,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
 
-    #define EXTEND_METHODS_COUNT 127
+    #define EXTEND_METHODS_COUNT 130
     const char* methods[EXTEND_METHODS_COUNT] = {
         "Copy",
         "Paste",
@@ -3025,6 +3050,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         "Logout",
 
         "onDocumentModifiedChanged",
+        "onDocumentContentReady",
 
         "GetImageBase64",
 
@@ -3175,6 +3201,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
         "_ImportAdvancedEncryptedData",
         "_ExportAdvancedEncryptedData",
+
+        "CompareDocumentUrl",
+        "CompareDocumentFile",
 
         NULL
     };
@@ -3457,6 +3486,22 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
             sCode = "window.DesktopOfflineAppDocumentSignatures(\"" + U_TO_UTF8(sSignatures) + "\");";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
         }
+        return true;
+    }
+    else if (sMessageName == "oncompare_loadend")
+    {
+        CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
+        if (!_frame)
+            _frame = browser->GetMainFrame();
+
+        int nError = message->GetArgumentList()->GetInt(0);
+        std::wstring sFolder = message->GetArgumentList()->GetString(1).ToWString();
+
+        int nFileDataLen = 0;
+        std::string sFileData = GetFileData(sFolder + L"/Editor.bin", nFileDataLen);
+
+        std::string sCode = "window.onDocumentCompare && window.onDocumentCompare(\"" + U_TO_UTF8(sFolder) + "\", \"" + sFileData + "\", " + std::to_string(nFileDataLen) + ");";
+        _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
         return true;
     }
     else if (sMessageName == "onlocaldocument_onsaveend")
