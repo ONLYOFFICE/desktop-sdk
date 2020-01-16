@@ -138,6 +138,7 @@ public:
 
     void OpenLocalFile(const std::wstring& sFilePath, const int& nFileFormat);
     void CreateLocalFile(const int& nFileFormat, const std::wstring& sName = L"");
+    bool OpenCopyAsRecoverFile(const int& nIdSrc);
     bool OpenRecoverFile(const int& nId);
     bool OpenRecentFile(const int& nId);
     bool OpenReporter(const std::wstring& sFolder);

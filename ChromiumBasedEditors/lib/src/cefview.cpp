@@ -789,6 +789,11 @@ public:
     // создание/аплоад криптованных файлов в облаке
     CCloudCryptoUpload* m_pUploadFiles;
 
+    // путь к файлу для сравнения (только для локальных файлов)
+    // после открытия нужно прокинуть в редактор и удалить файл (если он временный (по урлу))
+    std::wstring m_sComparingFile;
+    int m_nComparingFileType; // 0 - file, 1 - url
+
 public:
     CCefView_Private()
     {
@@ -850,6 +855,8 @@ public:
         m_nCloudVersion = CRYPTO_CLOUD_SUPPORT;
 
         m_pUploadFiles = NULL;
+
+        m_nComparingFileType = -1;
     }
 
     void Destroy()
@@ -1062,6 +1069,16 @@ public:
 
     void LocalFile_Start()
     {
+        if (!m_sComparingFile.empty())
+        {
+            if (m_oConverterToEditor.m_oInfo.m_sRecoveryDir.empty())
+                m_oLocalInfo.SetupOptions(m_oConverterToEditor.m_oInfo);
+
+            m_oConverterToEditor.Stop();
+            m_oConverterToEditor.Start(0);
+            return;
+        }
+
         m_oLocalInfo.SetupOptions(m_oConverterToEditor.m_oInfo);
 
         // и теперь убираем, если новый
@@ -3170,6 +3187,37 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
                 m_pParent->m_pInternal->m_pUploadFiles->OnSend();
             return true;
         }
+        else if ("on_compare_document" == message_name)
+        {
+            std::wstring sType = args->GetString(0).ToWString();
+            std::wstring sFile_Url = args->GetString(1).ToWString();
+            std::wstring sUrl = L"ascdesktop://compare/" + std::to_wstring(m_pParent->GetId()) + L"/" + sType + L"/" + sFile_Url;
+
+            NSEditorApi::CAscCreateTab* pData = new NSEditorApi::CAscCreateTab();
+            pData->put_Url(sUrl);
+
+            CRecentParent oRecentParent;
+            oRecentParent.Url = sUrl;
+            oRecentParent.Parent = m_pParent->m_pInternal->GetBrowser()->GetMainFrame()->GetURL().ToWString();
+
+            m_pParent->GetAppManager()->m_pInternal->m_arRecentParents.push_back(oRecentParent);
+
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_CREATETAB);
+            pEvent->m_pData = pData;
+
+            pListener->OnEvent(pEvent);
+            return true;
+        }
+        else if ("on_document_content_ready" == message_name)
+        {
+            if (!m_pParent->m_pInternal->m_sComparingFile.empty())
+            {
+                m_pParent->m_pInternal->m_oConverterToEditor.m_sComparingFile = m_pParent->m_pInternal->m_sComparingFile;
+                m_pParent->m_pInternal->LocalFile_Start();
+            }
+
+            return true;
+        }
 
         CAscApplicationManager_Private* pInternalMan = m_pParent->GetAppManager()->m_pInternal;
         if (pInternalMan->m_pAdditional && pInternalMan->m_pAdditional->OnProcessMessageReceived(browser, source_process, message, m_pParent))
@@ -4343,6 +4391,56 @@ void CCefView_Private::OnFileConvertToEditor(const int& nError)
 {
     if (m_bIsClosing || m_bIsDestroying)
         return;
+
+    if (!m_oConverterToEditor.m_sComparingFile.empty())
+    {
+        if (89 == nError || 90 == nError || 91 == nError)
+        {
+            CefRefPtr<CefBrowser> browser;
+            if (m_handler.get())
+                browser = m_handler->GetBrowser();
+
+            if (browser)
+            {
+                CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_additionalparams");
+                message->GetArgumentList()->SetInt(0, nError);
+
+                if (90 == nError || 91 == nError)
+                {
+                    ICertificate* pCert = ICertificate::CreateInstance();
+                    std::string sHash = pCert->GetHash(m_oConverterToEditor.m_sComparingFile, OOXML_HASH_ALG_SHA256);
+                    delete pCert;
+
+                    message->GetArgumentList()->SetString(1, sHash);
+
+                    std::wstring sDocInfo = GetFileDocInfo(m_oConverterToEditor.m_sComparingFile);
+                    if (!sDocInfo.empty())
+                        message->GetArgumentList()->SetString(2, sDocInfo);
+                }
+
+                browser->SendProcessMessage(PID_RENDERER, message);
+            }
+            return;
+        }
+        else
+        {
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("oncompare_loadend");
+            message->GetArgumentList()->SetInt(0, nError);
+            message->GetArgumentList()->SetString(1, m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/compare");
+            m_handler->GetBrowser()->SendProcessMessage(PID_RENDERER, message);
+
+            m_oConverterToEditor.m_sComparingFile = L"";
+
+            // если по урлу - то файл временный
+            if (m_nComparingFileType == 1)
+                NSFile::CFileBinary::Remove(m_sComparingFile);
+
+            m_sComparingFile = L"";
+            m_nComparingFileType = -1;
+        }
+        return;
+    }
+
     m_nLocalFileOpenError = nError;
     LocalFile_IncrementCounter();
 }
@@ -4537,6 +4635,22 @@ void CCefView::load(const std::wstring& urlInputSrc)
     m_pInternal->m_oTxtToDocx.m_pCallback = m_pInternal;
 
     m_pInternal->m_sOriginalUrl = urlInput;
+
+    // check compare
+    if (0 == urlInput.find(L"ascdesktop://compare/"))
+    {
+        std::wstring::size_type pos1 = urlInput.find('/', 21);
+        std::wstring::size_type pos2 = urlInput.find('/', pos1 + 1);
+
+        std::wstring strId = urlInput.substr(21, pos1 - 21);
+        std::wstring strType = urlInput.substr(pos1 + 1, pos2 - pos1 - 1);
+        std::wstring strFile = urlInput.substr(pos2 + 1);
+
+        m_pInternal->m_sComparingFile = strFile;
+        m_pInternal->m_nComparingFileType = (strType == L"file") ? 0 : 1;
+        ((CCefViewEditor*)this)->OpenCopyAsRecoverFile(std::stoi(strId));
+        return;
+    }
 
     // check openaslocal
     std::wstring::size_type pos1 = urlInput.find(L"<openaslocal>");
@@ -5830,6 +5944,60 @@ void CCefViewEditor::CreateLocalFile(const int& nFileFormat, const std::wstring&
 
     // start convert file
     this->load(sUrl + sParams);
+}
+bool CCefViewEditor::OpenCopyAsRecoverFile(const int& nIdSrc)
+{
+    std::wstring sNewRecoveryDir = NSFile::CFileBinary::CreateTempFileWithUniqueName(GetAppManager()->m_oSettings.recover_path, L"DE_");
+    if (NSFile::CFileBinary::Exists(sNewRecoveryDir))
+        NSFile::CFileBinary::Remove(sNewRecoveryDir);
+    NSCommon::string_replace(sNewRecoveryDir, L"\\", L"/");
+    std::wstring::size_type nPosPoint = sNewRecoveryDir.rfind('.');
+    if (nPosPoint != std::wstring::npos && nPosPoint > GetAppManager()->m_oSettings.recover_path.length())
+        sNewRecoveryDir = sNewRecoveryDir.substr(0, nPosPoint);
+
+    CCefView* pViewSrc = m_pInternal->m_pManager->GetViewById(nIdSrc);
+    if (!pViewSrc)
+        return false;
+
+    NSDirectory::CopyDirectory(pViewSrc->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir, sNewRecoveryDir);
+
+    m_pInternal->m_oLocalInfo.m_oInfo.m_bIsSaved = false;
+
+    std::wstring sUrl = GetAppManager()->m_oSettings.local_editors_path;
+    if (0 == sUrl.find('/'))
+        sUrl = L"file://" + sUrl;
+    else
+        sUrl = L"file:///" + sUrl;
+
+    sUrl += L"?";
+
+    int nFileType = pViewSrc->m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat;
+    m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = nFileType;
+
+    std::wstring sParams = L"";
+    if (nFileType & AVS_OFFICESTUDIO_FILE_PRESENTATION)
+        sParams = L"placement=desktop&doctype=presentation";
+    else if (nFileType & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
+        sParams = L"placement=desktop&doctype=spreadsheet";
+    else if (nFileType & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
+        sParams = L"placement=desktop&mode=view";
+    else
+        sParams = L"placement=desktop";
+
+    std::wstring sAdditionalParams = GetAppManager()->m_pInternal->m_sAdditionalUrlParams;
+    if (!sAdditionalParams.empty())
+        sParams += (L"&" + sAdditionalParams);
+
+    m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc = NSFile::GetFileName(pViewSrc->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc);
+    NSCommon::string_replace(m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc, L"\\", L"/");
+
+    m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir = sNewRecoveryDir;
+
+    m_pInternal->LocalFile_Start();
+
+    // start convert file
+    this->load(sUrl + sParams);
+    return true;
 }
 bool CCefViewEditor::OpenRecoverFile(const int& nId)
 {
