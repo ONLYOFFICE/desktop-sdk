@@ -3500,7 +3500,25 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
         int nFileDataLen = 0;
         std::string sFileData = GetFileData(sFolder + L"/Editor.bin", nFileDataLen);
 
-        std::string sCode = "window.onDocumentCompare && window.onDocumentCompare(\"" + U_TO_UTF8(sFolder) + "\", \"" + sFileData + "\", " + std::to_string(nFileDataLen) + ");";
+        // image_map
+        std::vector<std::wstring> files = NSDirectory::GetFiles(sFolder + L"/media");
+        std::string sImageMap = "{";
+        for (std::vector<std::wstring>::iterator i = files.begin(); i != files.end(); i++)
+        {
+            std::wstring sFile = *i; NSCommon::string_replace(sFile, L"\\", L"/");
+            NSCommon::string_replace(sFile, L"\"", L"'");
+            std::wstring sName = L"media/" + NSFile::GetFileName(sFile);
+
+            sImageMap += "\"";
+            sImageMap += U_TO_UTF8(sName);
+            sImageMap += "\":\"";
+            sImageMap += U_TO_UTF8(sFile);
+            sImageMap += "\",";
+        }
+
+        sImageMap[sImageMap.length() - 1] = '}';
+
+        std::string sCode = "window.onDocumentCompare && window.onDocumentCompare(\"" + U_TO_UTF8(sFolder) + "\", \"" + sFileData + "\", " + std::to_string(nFileDataLen) + ", " + sImageMap + ");";
         _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
         return true;
     }
