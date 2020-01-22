@@ -39,6 +39,10 @@ include(../../../core/Common/3dParty/boost/boost.pri)
 
 ########################################################
 
+INCLUDEPATH += \
+    $$CORE_ROOT_DIR/core/DesktopEditor/agg-2.4/include \
+    $$CORE_ROOT_DIR/core/DesktopEditor/freetype-2.5.2/include
+
 HEADERS += \
     ./src/cookiesworker.h \
     ./src/cefwrapper/client_app.h \
