@@ -23,17 +23,30 @@ void RunTest(CefRefPtr<CefBrowser> browser, int id);
 // Returns the contents of the CefRequest as a string.
 std::string DumpRequestContents(CefRefPtr<CefRequest> request);
 
+// Returns the dump response as a stream. |request| is the request.
+// |response_headers| will be populated with extra response headers, if any.
+CefRefPtr<CefStreamReader> GetDumpResponse(
+    CefRefPtr<CefRequest> request,
+    CefResponse::HeaderMap& response_headers);
+
 // Returns a data: URI with the specified contents.
 std::string GetDataURI(const std::string& data, const std::string& mime_type);
 
 // Returns the string representation of the specified error code.
 std::string GetErrorString(cef_errorcode_t code);
 
+typedef std::map<std::string, std::string> StringResourceMap;
+
 // Set up the resource manager for tests.
-void SetupResourceManager(CefRefPtr<CefResourceManager> resource_manager);
+void SetupResourceManager(CefRefPtr<CefResourceManager> resource_manager,
+                          StringResourceMap* string_resource_map);
 
 // Show a JS alert message.
 void Alert(CefRefPtr<CefBrowser> browser, const std::string& message);
+
+// Returns true if |url| is a test URL with the specified |path|. This matches
+// both http://tests/<path> and http://localhost:xxxx/<path>.
+bool IsTestURL(const std::string& url, const std::string& path);
 
 // Create all CefMessageRouterBrowserSide::Handler objects. They will be
 // deleted when the ClientHandler is destroyed.

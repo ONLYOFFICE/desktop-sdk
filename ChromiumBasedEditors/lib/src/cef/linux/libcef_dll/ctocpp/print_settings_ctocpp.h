@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=a1320a64f63df47ffc59cdc4cf5859f1b877a0a7$
+// $hash=b9e902ff99086dca1a15f17daaeda2f9e32f6d89$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_PRINT_SETTINGS_CTOCPP_H_
@@ -32,11 +32,11 @@ class CefPrintSettingsCToCpp
                                  cef_print_settings_t> {
  public:
   CefPrintSettingsCToCpp();
+  virtual ~CefPrintSettingsCToCpp();
 
   // CefPrintSettings methods.
   bool IsValid() OVERRIDE;
   bool IsReadOnly() OVERRIDE;
-  CefRefPtr<CefPrintSettings> Copy() OVERRIDE;
   void SetOrientation(bool landscape) OVERRIDE;
   bool IsLandscape() OVERRIDE;
   void SetPrinterPrintableArea(const CefSize& physical_size_device_units,

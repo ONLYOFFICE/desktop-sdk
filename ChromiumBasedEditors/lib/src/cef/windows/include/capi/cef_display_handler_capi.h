@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2019 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,7 +33,7 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=f0f3fd4cab00c0eb11956e674a111cb30d3af100$
+// $hash=f6998cb056849c4d73f47142988bd4900784e0c6$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_DISPLAY_HANDLER_CAPI_H_
@@ -118,9 +118,29 @@ typedef struct _cef_display_handler_t {
   ///
   int(CEF_CALLBACK* on_console_message)(struct _cef_display_handler_t* self,
                                         struct _cef_browser_t* browser,
+                                        cef_log_severity_t level,
                                         const cef_string_t* message,
                                         const cef_string_t* source,
                                         int line);
+
+  ///
+  // Called when auto-resize is enabled via
+  // cef_browser_host_t::SetAutoResizeEnabled and the contents have auto-
+  // resized. |new_size| will be the desired size in view coordinates. Return
+  // true (1) if the resize was handled or false (0) for default handling.
+  ///
+  int(CEF_CALLBACK* on_auto_resize)(struct _cef_display_handler_t* self,
+                                    struct _cef_browser_t* browser,
+                                    const cef_size_t* new_size);
+
+  ///
+  // Called when the overall page loading progress has changed. |progress|
+  // ranges from 0.0 to 1.0.
+  ///
+  void(CEF_CALLBACK* on_loading_progress_change)(
+      struct _cef_display_handler_t* self,
+      struct _cef_browser_t* browser,
+      double progress);
 } cef_display_handler_t;
 
 #ifdef __cplusplus

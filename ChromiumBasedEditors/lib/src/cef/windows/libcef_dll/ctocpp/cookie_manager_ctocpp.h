@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=7dcafc3a29b97d8c330e4590e9970bc3949739a4$
+// $hash=c08c701ad13790067983a7b5eb964975bc1f186b$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_COOKIE_MANAGER_CTOCPP_H_
@@ -33,9 +33,11 @@ class CefCookieManagerCToCpp
                                  cef_cookie_manager_t> {
  public:
   CefCookieManagerCToCpp();
+  virtual ~CefCookieManagerCToCpp();
 
   // CefCookieManager methods.
   void SetSupportedSchemes(const std::vector<CefString>& schemes,
+                           bool include_defaults,
                            CefRefPtr<CefCompletionCallback> callback) OVERRIDE;
   bool VisitAllCookies(CefRefPtr<CefCookieVisitor> visitor) OVERRIDE;
   bool VisitUrlCookies(const CefString& url,
@@ -47,9 +49,6 @@ class CefCookieManagerCToCpp
   bool DeleteCookies(const CefString& url,
                      const CefString& cookie_name,
                      CefRefPtr<CefDeleteCookiesCallback> callback) OVERRIDE;
-  bool SetStoragePath(const CefString& path,
-                      bool persist_session_cookies,
-                      CefRefPtr<CefCompletionCallback> callback) OVERRIDE;
   bool FlushStore(CefRefPtr<CefCompletionCallback> callback) OVERRIDE;
 };
 

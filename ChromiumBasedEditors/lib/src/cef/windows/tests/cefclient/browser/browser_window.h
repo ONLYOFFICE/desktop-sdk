@@ -25,6 +25,9 @@ class BrowserWindow : public ClientHandler::Delegate {
     // Called when the browser has been created.
     virtual void OnBrowserCreated(CefRefPtr<CefBrowser> browser) = 0;
 
+    // Called when the BrowserWindow is closing.
+    virtual void OnBrowserWindowClosing() {}
+
     // Called when the BrowserWindow has been destroyed.
     virtual void OnBrowserWindowDestroyed() = 0;
 
@@ -36,6 +39,9 @@ class BrowserWindow : public ClientHandler::Delegate {
 
     // Set fullscreen mode.
     virtual void OnSetFullscreen(bool fullscreen) = 0;
+
+    // Auto-resize contents.
+    virtual void OnAutoResize(const CefSize& new_size) = 0;
 
     // Set the loading state.
     virtual void OnSetLoadingState(bool isLoading,
@@ -54,6 +60,7 @@ class BrowserWindow : public ClientHandler::Delegate {
   virtual void CreateBrowser(ClientWindowHandle parent_handle,
                              const CefRect& rect,
                              const CefBrowserSettings& settings,
+                             CefRefPtr<CefDictionaryValue> extra_info,
                              CefRefPtr<CefRequestContext> request_context) = 0;
 
   // Retrieve the configuration that will be used when creating a popup window.
@@ -117,6 +124,7 @@ class BrowserWindow : public ClientHandler::Delegate {
   void OnSetAddress(const std::string& url) OVERRIDE;
   void OnSetTitle(const std::string& title) OVERRIDE;
   void OnSetFullscreen(bool fullscreen) OVERRIDE;
+  void OnAutoResize(const CefSize& new_size) OVERRIDE;
   void OnSetLoadingState(bool isLoading,
                          bool canGoBack,
                          bool canGoForward) OVERRIDE;

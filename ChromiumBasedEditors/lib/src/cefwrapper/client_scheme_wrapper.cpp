@@ -311,7 +311,7 @@ private:
 
     CAscApplicationManager* m_pManager;
 
-    IMPLEMENT_REFCOUNTING(ClientSchemeHandler)
+    IMPLEMENT_REFCOUNTING(ClientSchemeHandler);
 };
 
 // Implementation of the factory for for creating schema handlers.
@@ -338,7 +338,7 @@ public:
         return new ClientSchemeHandler(m_pManager);
     }
 
-    IMPLEMENT_REFCOUNTING(ClientSchemeHandlerFactory)
+    IMPLEMENT_REFCOUNTING(ClientSchemeHandlerFactory);
 };
 
 #ifdef CEF_2623
@@ -351,7 +351,7 @@ void RegisterCustomSchemes(CefRefPtr<CefSchemeRegistrar> registrar,
 void RegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar,
                            std::vector<CefString>& cookiable_schemes)
 {
-    registrar->AddCustomScheme("ascdesktop", true, false, false, true, true, false);
+    registrar->AddCustomScheme("ascdesktop", CEF_SCHEME_OPTION_STANDARD | CEF_SCHEME_OPTION_SECURE | CEF_SCHEME_OPTION_CORS_ENABLED/* | CEF_SCHEME_OPTION_FETCH_ENABLED*/);
 }
 #endif
 

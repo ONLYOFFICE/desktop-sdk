@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=dc92a1083681b1f0b2c2bf42470f5421d256391c$
+// $hash=978ea00f17d5dc1053ce83f9077b04d5e37bc1f8$
 //
 
 #include "libcef_dll/cpptoc/browser_process_handler_cpptoc.h"
@@ -116,6 +116,10 @@ CefBrowserProcessHandlerCppToC::CefBrowserProcessHandlerCppToC() {
       browser_process_handler_on_schedule_message_pump_work;
 }
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefBrowserProcessHandlerCppToC::~CefBrowserProcessHandlerCppToC() {}
+
 template <>
 CefRefPtr<CefBrowserProcessHandler> CefCppToCRefCounted<
     CefBrowserProcessHandlerCppToC,
@@ -126,14 +130,6 @@ CefRefPtr<CefBrowserProcessHandler> CefCppToCRefCounted<
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCppToCRefCounted<
-    CefBrowserProcessHandlerCppToC,
-    CefBrowserProcessHandler,
-    cef_browser_process_handler_t>::DebugObjCt ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType

@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=88ac661252337963a1857c77a4f103a377874b01$
+// $hash=1e04ddcff8f7d50d52e1d21c0d20c9b246ff8b67$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_VIEWS_WINDOW_CTOCPP_H_
@@ -31,6 +31,7 @@ class CefWindowCToCpp
     : public CefCToCppRefCounted<CefWindowCToCpp, CefWindow, cef_window_t> {
  public:
   CefWindowCToCpp();
+  virtual ~CefWindowCToCpp();
 
   // CefWindow methods.
   void Show() OVERRIDE;

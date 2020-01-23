@@ -47,9 +47,8 @@ class AccessibilityTestHandler : public TestHandler,
   CefRefPtr<CefRenderHandler> GetRenderHandler() override { return this; }
 
   // Cef Renderer Handler Methods
-  bool GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override {
+  void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override {
     rect = CefRect(0, 0, kOsrWidth, kOsrHeight);
-    return true;
   }
 
   bool GetScreenInfo(CefRefPtr<CefBrowser> browser,
@@ -127,20 +126,18 @@ class AccessibilityTestHandler : public TestHandler,
       case TEST_LOCATION_CHANGE: {
         // find accessibility id of the edit box, before setting focus
         if (edit_box_id_ == -1) {
-          EXPECT_TRUE(value.get());
-          CefRefPtr<CefListValue> list = value->GetList();
-          EXPECT_TRUE(list.get());
-          EXPECT_GT(list->GetSize(), (size_t)0);
+          CefRefPtr<CefDictionaryValue> update, event;
+          GetFirstUpdateAndEvent(value, update, event);
+          EXPECT_TRUE(update.get());
 
-          // Get the first update dict and validate event type
-          CefRefPtr<CefDictionaryValue> dict = list->GetDictionary(0);
-
-          // ignore other events
-          if (dict->GetString("event_type").ToString() != "layoutComplete")
+          // Ignore other events.
+          if (!event.get() ||
+              event->GetString("event_type") != "layoutComplete") {
             break;
+          }
 
-          SetEditBoxIdAndRect(dict->GetDictionary("update"));
-          EXPECT_TRUE(edit_box_id_ != -1);
+          SetEditBoxIdAndRect(update);
+          EXPECT_NE(edit_box_id_, -1);
           // Post a delayed task to hide the span and trigger location change
           CefPostDelayedTask(TID_UI,
                              base::Bind(&AccessibilityTestHandler::HideEditBox,
@@ -151,21 +148,19 @@ class AccessibilityTestHandler : public TestHandler,
       case TEST_FOCUS_CHANGE: {
         // find accessibility id of the edit box, before setting focus
         if (edit_box_id_ == -1) {
-          EXPECT_TRUE(value.get());
-          CefRefPtr<CefListValue> list = value->GetList();
-          EXPECT_TRUE(list.get());
-          EXPECT_GT(list->GetSize(), (size_t)0);
+          CefRefPtr<CefDictionaryValue> update, event;
+          GetFirstUpdateAndEvent(value, update, event);
+          EXPECT_TRUE(update.get());
 
-          // Get the first update dict and validate event type
-          CefRefPtr<CefDictionaryValue> dict = list->GetDictionary(0);
-
-          // ignore other events
-          if (dict->GetString("event_type").ToString() != "layoutComplete")
+          // Ignore other events.
+          if (!event.get() ||
+              event->GetString("event_type") != "layoutComplete") {
             break;
+          }
 
           // Now post a delayed task to trigger focus to edit box
-          SetEditBoxIdAndRect(dict->GetDictionary("update"));
-          EXPECT_TRUE(edit_box_id_ != -1);
+          SetEditBoxIdAndRect(update);
+          EXPECT_NE(edit_box_id_, -1);
 
           CefPostDelayedTask(
               TID_UI,
@@ -173,22 +168,17 @@ class AccessibilityTestHandler : public TestHandler,
                          GetBrowser()),
               200);
         } else {
-          EXPECT_TRUE(value.get());
-          // Change has a valid non empty list
-          EXPECT_TRUE(value->GetType() == VTYPE_LIST);
-          CefRefPtr<CefListValue> list = value->GetList();
-          EXPECT_TRUE(list.get());
-          EXPECT_GT(list->GetSize(), (size_t)0);
+          CefRefPtr<CefDictionaryValue> update, event;
+          GetFirstUpdateAndEvent(value, update, event);
+          EXPECT_TRUE(update.get());
 
-          // Get the first update dict and validate event type
-          CefRefPtr<CefDictionaryValue> dict = list->GetDictionary(0);
-
-          // Validate Event type is Focus change
-          EXPECT_STREQ("focus",
-                       dict->GetString("event_type").ToString().c_str());
+          // Ignore other events.
+          if (!event.get() || event->GetString("event_type") != "focus") {
+            return;
+          }
 
           // And Focus is set to expected element edit_box
-          EXPECT_TRUE(edit_box_id_ == dict->GetInt("id"));
+          EXPECT_EQ(edit_box_id_, event->GetInt("id"));
 
           // Now Post a delayed task to destroy the test giving
           // sufficient time for any accessibility updates to come through
@@ -202,42 +192,21 @@ class AccessibilityTestHandler : public TestHandler,
 
   void OnAccessibilityLocationChange(CefRefPtr<CefValue> value) override {
     if (test_type_ == TEST_LOCATION_CHANGE) {
-      EXPECT_TRUE(edit_box_id_ != -1);
+      EXPECT_NE(edit_box_id_, -1);
       EXPECT_TRUE(value.get());
 
       // Change has a valid list
-      EXPECT_TRUE(value->GetType() == VTYPE_LIST);
+      EXPECT_EQ(VTYPE_LIST, value->GetType());
       CefRefPtr<CefListValue> list = value->GetList();
       EXPECT_TRUE(list.get());
-      // Ignore empty events
-      if (!list->GetSize())
-        return;
 
-      // Hiding edit box should only change position of subsequent button
-      EXPECT_EQ(list->GetSize(), (size_t)1);
+      got_accessibility_location_change_.yes();
+    }
 
-      CefRefPtr<CefDictionaryValue> dict = list->GetDictionary(0);
-      EXPECT_TRUE(dict.get());
-
-      // New location of button should be same as older location of edit box
-      // as that is hidden now
-      CefRefPtr<CefDictionaryValue> location =
-          dict->GetDictionary("new_location");
-      EXPECT_TRUE(location.get());
-
-      CefRefPtr<CefDictionaryValue> bounds = location->GetDictionary("bounds");
-      EXPECT_TRUE(bounds.get());
-
-      EXPECT_EQ(bounds->GetInt("x"), edit_box_rect_.x);
-      EXPECT_EQ(bounds->GetInt("y"), edit_box_rect_.y);
-      EXPECT_EQ(bounds->GetInt("width"), edit_box_rect_.width);
-      EXPECT_EQ(bounds->GetInt("height"), edit_box_rect_.height);
-
-      // Now Post a delayed task to destroy the test
-      // giving sufficient time for any accessibility updates to come through
-      CefPostDelayedTask(
-          TID_UI, base::Bind(&AccessibilityTestHandler::DestroyTest, this),
-          500);
+    if (got_hide_edit_box_) {
+      // Now destroy the test.
+      CefPostTask(TID_UI,
+                  base::Bind(&AccessibilityTestHandler::DestroyTest, this));
     }
   }
 
@@ -255,15 +224,17 @@ class AccessibilityTestHandler : public TestHandler,
 #else
 #error "Unsupported platform"
 #endif
-    CefBrowserHost::CreateBrowser(windowInfo, this, url, settings, NULL);
+    CefBrowserHost::CreateBrowser(windowInfo, this, url, settings, NULL, NULL);
   }
 
   void HideEditBox(CefRefPtr<CefBrowser> browser) {
-    // Set focus on edit box
+    // Hide the edit box.
     // This should trigger Location update if enabled
     browser->GetMainFrame()->ExecuteJavaScript(
         "document.getElementById('editbox').style.display = 'none';", kTestUrl,
         0);
+
+    got_hide_edit_box_.yes();
   }
 
   void SetFocusOnEditBox(CefRefPtr<CefBrowser> browser) {
@@ -285,22 +256,42 @@ class AccessibilityTestHandler : public TestHandler,
         TID_UI, base::Bind(&AccessibilityTestHandler::DestroyTest, this), 500);
   }
 
-  void TestEnableAccessibilityUpdate(CefRefPtr<CefValue> value) {
-    // Validate enabling accessibility change returns valid accessibility tree.
-    // Change has a valid non empty list.
-    EXPECT_TRUE(value->GetType() == VTYPE_LIST);
-    CefRefPtr<CefListValue> list = value->GetList();
-    EXPECT_TRUE(list.get());
-    EXPECT_GT(list->GetSize(), (size_t)0);
+  void GetFirstUpdateAndEvent(CefRefPtr<CefValue> value,
+                              CefRefPtr<CefDictionaryValue>& update,
+                              CefRefPtr<CefDictionaryValue>& event) {
+    EXPECT_TRUE(value.get());
+    EXPECT_EQ(value->GetType(), VTYPE_DICTIONARY);
+    CefRefPtr<CefDictionaryValue> topLevel = value->GetDictionary();
+    EXPECT_TRUE(topLevel.get());
 
-    // Get the first update dict and validate event type.
-    CefRefPtr<CefDictionaryValue> dict = list->GetDictionary(0);
-    EXPECT_STREQ("layoutComplete",
-                 dict->GetString("event_type").ToString().c_str());
+    // Get the first update dict.
+    CefRefPtr<CefListValue> updates = topLevel->GetList("updates");
+    if (updates.get()) {
+      EXPECT_GT(updates->GetSize(), 0U);
+      update = updates->GetDictionary(0);
+      EXPECT_TRUE(update.get());
+    }
+
+    // Get the first event dict.
+    CefRefPtr<CefListValue> events = topLevel->GetList("events");
+    if (events.get()) {
+      EXPECT_GT(events->GetSize(), 0U);
+      event = events->GetDictionary(0);
+      EXPECT_TRUE(event.get());
+    }
+  }
+
+  void TestEnableAccessibilityUpdate(CefRefPtr<CefValue> value) {
+    CefRefPtr<CefDictionaryValue> update, event;
+    GetFirstUpdateAndEvent(value, update, event);
+    EXPECT_TRUE(update.get());
+
+    // Ignore other events.
+    if (!event.get() || event->GetString("event_type") != "layoutComplete") {
+      return;
+    }
 
     // Get update and validate it has tree data
-    CefRefPtr<CefDictionaryValue> update = dict->GetDictionary("update");
-    EXPECT_TRUE(update.get());
     EXPECT_TRUE(update->GetBool("has_tree_data"));
     CefRefPtr<CefDictionaryValue> treeData = update->GetDictionary("tree_data");
 
@@ -312,7 +303,7 @@ class AccessibilityTestHandler : public TestHandler,
     // Validate node data
     CefRefPtr<CefListValue> nodes = update->GetList("nodes");
     EXPECT_TRUE(nodes.get());
-    EXPECT_GT(nodes->GetSize(), (size_t)0);
+    EXPECT_GT(nodes->GetSize(), 0U);
 
     // Update has a valid root
     CefRefPtr<CefDictionaryValue> root;
@@ -328,7 +319,7 @@ class AccessibilityTestHandler : public TestHandler,
     // One div containing the tree elements.
     CefRefPtr<CefListValue> childIDs = root->GetList("child_ids");
     EXPECT_TRUE(childIDs.get());
-    EXPECT_EQ(childIDs->GetSize(), (size_t)1);
+    EXPECT_EQ(1U, childIDs->GetSize());
 
     // A parent Group div containing the child.
     CefRefPtr<CefDictionaryValue> group;
@@ -345,7 +336,7 @@ class AccessibilityTestHandler : public TestHandler,
 
     CefRefPtr<CefListValue> parentdiv = group->GetList("child_ids");
     EXPECT_TRUE(parentdiv.get());
-    EXPECT_EQ(parentdiv->GetSize(), (size_t)3);
+    EXPECT_EQ(3U, parentdiv->GetSize());
 
     int tipId = parentdiv->GetInt(0);
     int editBoxId = parentdiv->GetInt(1);
@@ -367,10 +358,8 @@ class AccessibilityTestHandler : public TestHandler,
     }
     EXPECT_TRUE(tip.get());
     EXPECT_STREQ("tooltip", tip->GetString("role").ToString().c_str());
-    // Validate tooltip color property is Red.
     CefRefPtr<CefDictionaryValue> tipattr = tip->GetDictionary("attributes");
     EXPECT_TRUE(tipattr.get());
-    EXPECT_STREQ("0xFFFF0000", tipattr->GetString("color").ToString().c_str());
 
     EXPECT_TRUE(editbox.get());
     EXPECT_STREQ("textField", editbox->GetString("role").ToString().c_str());
@@ -397,7 +386,7 @@ class AccessibilityTestHandler : public TestHandler,
     // Validate node data.
     CefRefPtr<CefListValue> nodes = value->GetList("nodes");
     EXPECT_TRUE(nodes.get());
-    EXPECT_GT(nodes->GetSize(), (size_t)0);
+    EXPECT_GT(nodes->GetSize(), 0U);
 
     // Find accessibility id for the text field.
     for (size_t index = 0; index < nodes->GetSize(); index++) {
@@ -406,19 +395,29 @@ class AccessibilityTestHandler : public TestHandler,
         edit_box_id_ = node->GetInt("id");
         CefRefPtr<CefDictionaryValue> loc = node->GetDictionary("location");
         EXPECT_TRUE(loc.get());
-        edit_box_rect_.x = loc->GetInt("x");
-        edit_box_rect_.y = loc->GetInt("y");
-        edit_box_rect_.width = loc->GetInt("width");
-        edit_box_rect_.height = loc->GetInt("height");
+        EXPECT_GT(loc->GetDouble("x"), 0);
+        EXPECT_GT(loc->GetDouble("y"), 0);
+        EXPECT_GT(loc->GetDouble("width"), 0);
+        EXPECT_GT(loc->GetDouble("height"), 0);
         break;
       }
     }
   }
 
+  void DestroyTest() override {
+    if (test_type_ == TEST_LOCATION_CHANGE) {
+      EXPECT_GT(edit_box_id_, 0);
+      EXPECT_TRUE(got_hide_edit_box_);
+      EXPECT_TRUE(got_accessibility_location_change_);
+    }
+    TestHandler::DestroyTest();
+  }
+
   AccessibilityTestType test_type_;
   int edit_box_id_;
-  CefRect edit_box_rect_;
   bool accessibility_disabled_;
+  TrackCallback got_hide_edit_box_;
+  TrackCallback got_accessibility_location_change_;
 
   IMPLEMENT_REFCOUNTING(AccessibilityTestHandler);
 };

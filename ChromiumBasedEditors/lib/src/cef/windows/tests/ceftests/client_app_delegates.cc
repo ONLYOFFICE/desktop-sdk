@@ -9,11 +9,6 @@ using client::ClientAppBrowser;
 using client::ClientAppRenderer;
 
 void CreateBrowserDelegates(ClientAppBrowser::DelegateSet& delegates) {
-  // Bring in the Frame tests.
-  extern void CreateFrameBrowserTests(ClientAppBrowser::DelegateSet &
-                                      delegates);
-  CreateFrameBrowserTests(delegates);
-
   // Bring in the Navigation tests.
   extern void CreateNavigationBrowserTests(ClientAppBrowser::DelegateSet &
                                            delegates);
@@ -28,15 +23,6 @@ void CreateBrowserDelegates(ClientAppBrowser::DelegateSet& delegates) {
   extern void CreatePreferenceBrowserTests(ClientAppBrowser::DelegateSet &
                                            delegates);
   CreatePreferenceBrowserTests(delegates);
-
-  // Bring in the RequestHandler tests.
-  extern void CreateRequestHandlerBrowserTests(ClientAppBrowser::DelegateSet &
-                                               delegates);
-  CreateRequestHandlerBrowserTests(delegates);
-
-  // Bring in the V8 tests.
-  extern void CreateV8BrowserTests(ClientAppBrowser::DelegateSet & delegates);
-  CreateV8BrowserTests(delegates);
 }
 
 void CreateRenderDelegates(ClientAppRenderer::DelegateSet& delegates) {
@@ -69,11 +55,6 @@ void CreateRenderDelegates(ClientAppRenderer::DelegateSet& delegates) {
   extern void CreateRequestHandlerRendererTests(ClientAppRenderer::DelegateSet &
                                                 delegates);
   CreateRequestHandlerRendererTests(delegates);
-
-  // Bring in the Request tests.
-  extern void CreateRequestRendererTests(ClientAppRenderer::DelegateSet &
-                                         delegates);
-  CreateRequestRendererTests(delegates);
 
   // Bring in the routing test handler delegate.
   extern void CreateRoutingTestHandlerDelegate(ClientAppRenderer::DelegateSet &
@@ -114,6 +95,12 @@ void RegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar,
       CefRawPtr<CefSchemeRegistrar> registrar,
       std::vector<CefString> & cookiable_schemes);
   RegisterURLRequestCustomSchemes(registrar, cookiable_schemes);
+
+  // Bring in the resource request handler tests.
+  extern void RegisterResourceRequestHandlerCustomSchemes(
+      CefRawPtr<CefSchemeRegistrar> registrar,
+      std::vector<CefString> & cookiable_schemes);
+  RegisterResourceRequestHandlerCustomSchemes(registrar, cookiable_schemes);
 }
 
 namespace client {

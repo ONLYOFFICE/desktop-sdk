@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,10 +9,11 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=14757f24d9cb1ca95739bfb942e1c011d1bc92a9$
+// $hash=4b6738ea60e68ceb47f47f3a1a67f74b3d8d4439$
 //
 
 #include "libcef_dll/cpptoc/resource_bundle_handler_cpptoc.h"
+#include "libcef_dll/shutdown_checker.h"
 
 namespace {
 
@@ -22,6 +23,8 @@ int CEF_CALLBACK resource_bundle_handler_get_localized_string(
     struct _cef_resource_bundle_handler_t* self,
     int string_id,
     cef_string_t* string) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -48,6 +51,8 @@ int CEF_CALLBACK resource_bundle_handler_get_data_resource(
     int resource_id,
     void** data,
     size_t* data_size) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -88,6 +93,8 @@ int CEF_CALLBACK resource_bundle_handler_get_data_resource_for_scale(
     cef_scale_factor_t scale_factor,
     void** data,
     size_t* data_size) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -135,6 +142,12 @@ CefResourceBundleHandlerCppToC::CefResourceBundleHandlerCppToC() {
       resource_bundle_handler_get_data_resource_for_scale;
 }
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefResourceBundleHandlerCppToC::~CefResourceBundleHandlerCppToC() {
+  shutdown_checker::AssertNotShutdown();
+}
+
 template <>
 CefRefPtr<CefResourceBundleHandler> CefCppToCRefCounted<
     CefResourceBundleHandlerCppToC,
@@ -145,14 +158,6 @@ CefRefPtr<CefResourceBundleHandler> CefCppToCRefCounted<
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCppToCRefCounted<
-    CefResourceBundleHandlerCppToC,
-    CefResourceBundleHandler,
-    cef_resource_bundle_handler_t>::DebugObjCt ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType

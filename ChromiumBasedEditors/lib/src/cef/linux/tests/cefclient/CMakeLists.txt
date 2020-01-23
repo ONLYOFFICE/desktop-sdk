@@ -37,6 +37,7 @@ set(CEFCLIENT_BROWSER_BROWSER_SRCS
   browser/osr_dragdrop_events.h
   browser/osr_renderer.cc
   browser/osr_renderer.h
+  browser/osr_renderer_settings.h
   browser/preferences_test.cc
   browser/preferences_test.h
   browser/resource.h
@@ -49,6 +50,8 @@ set(CEFCLIENT_BROWSER_BROWSER_SRCS
   browser/root_window_manager.h
   browser/scheme_test.cc
   browser/scheme_test.h
+  browser/server_test.cc
+  browser/server_test.h
   browser/temp_window.h
   browser/test_runner.cc
   browser/test_runner.h
@@ -76,7 +79,6 @@ set(CEFCLIENT_BROWSER_SHARED_BROWSER_SRCS
   ../shared/browser/main_message_loop_external_pump.h
   ../shared/browser/main_message_loop_std.cc
   ../shared/browser/main_message_loop_std.h
-  ../shared/browser/resource_util.h
   ../shared/browser/resource_util.h
   )
 source_group(shared\\\\browser FILES ${CEFCLIENT_BROWSER_SHARED_BROWSER_SRCS})
@@ -146,6 +148,8 @@ set(CEFCLIENT_LINUX_BROWSER_SRCS
   browser/dialog_handler_gtk.cc
   browser/dialog_handler_gtk.h
   browser/main_context_impl_posix.cc
+  browser/main_message_loop_multithreaded_gtk.cc
+  browser/main_message_loop_multithreaded_gtk.h
   browser/print_handler_gtk.cc
   browser/print_handler_gtk.h
   browser/resource_util_linux.cc
@@ -155,6 +159,8 @@ set(CEFCLIENT_LINUX_BROWSER_SRCS
   browser/root_window_views.h
   browser/temp_window_x11.cc
   browser/temp_window_x11.h
+  browser/util_gtk.cc
+  browser/util_gtk.h
   browser/views_menu_bar.cc
   browser/views_menu_bar.h
   browser/views_style.cc
@@ -250,10 +256,18 @@ set(CEFCLIENT_WINDOWS_BROWSER_SRCS
   browser/osr_accessibility_node.cc
   browser/osr_accessibility_node.h
   browser/osr_accessibility_node_win.cc
+  browser/osr_d3d11_win.cc
+  browser/osr_d3d11_win.h
   browser/osr_dragdrop_win.cc
   browser/osr_dragdrop_win.h
   browser/osr_ime_handler_win.cc
   browser/osr_ime_handler_win.h
+  browser/osr_render_handler_win.cc
+  browser/osr_render_handler_win.h
+  browser/osr_render_handler_win_d3d11.cc
+  browser/osr_render_handler_win_d3d11.h
+  browser/osr_render_handler_win_gl.cc
+  browser/osr_render_handler_win_gl.h
   browser/osr_window_win.cc
   browser/osr_window_win.h
   browser/resource_util_win_idmap.cc
@@ -277,10 +291,7 @@ set(CEFCLIENT_WINDOWS_BROWSER_SRCS
 source_group(cefclient\\\\browser FILES ${CEFCLIENT_WINDOWS_BROWSER_SRCS})
 
 set(CEFCLIENT_WINDOWS_RESOURCES_WIN_SRCS
-  resources/win/cefclient.exe.manifest
-  resources/win/cefclient.ico
   resources/win/cefclient.rc
-  resources/win/small.ico
   )
 source_group(cefclient\\\\resources\\\\win FILES ${CEFCLIENT_WINDOWS_RESOURCES_WIN_SRCS})
 
@@ -314,8 +325,10 @@ set(CEFCLIENT_RESOURCES_RESOURCES_SRCS
   resources/performance2.html
   resources/preferences.html
   resources/response_filter.html
+  resources/server.html
   resources/transparency.html
   resources/urlrequest.html
+  resources/websocket.html
   resources/window.html
   resources/xmlhttprequest.html
   )
@@ -369,11 +382,12 @@ set(CEFCLIENT_RESOURCES_SRCS
 # Target executable names.
 set(CEF_TARGET "cefclient")
 if(OS_MACOSX)
-  set(CEF_HELPER_TARGET "cefclient Helper")
+  set(CEF_HELPER_TARGET "cefclient_Helper")
+  set(CEF_HELPER_OUTPUT_NAME "cefclient Helper")
+else()
+  # Logical target used to link the libcef library.
+  ADD_LOGICAL_TARGET("libcef_lib" "${CEF_LIB_DEBUG}" "${CEF_LIB_RELEASE}")
 endif()
-
-# Logical target used to link the libcef library.
-ADD_LOGICAL_TARGET("libcef_lib" "${CEF_LIB_DEBUG}" "${CEF_LIB_RELEASE}")
 
 # Determine the target output directory.
 SET_CEF_TARGET_OUT_DIR()
@@ -395,7 +409,7 @@ if(OS_LINUX)
     )
 
   # Find required libraries and update compiler/linker variables.
-  FIND_LINUX_LIBRARIES("gmodule-2.0 gtk+-2.0 gthread-2.0 gtk+-unix-print-2.0 gtkglext-1.0")
+  FIND_LINUX_LIBRARIES("gmodule-2.0 gtk+-2.0 gthread-2.0 gtk+-unix-print-2.0 gtkglext-1.0 xi")
 
   # Executable target.
   add_executable(${CEF_TARGET} ${CEFCLIENT_SRCS})
@@ -425,6 +439,16 @@ endif()
 #
 
 if(OS_MACOSX)
+  option(OPTION_USE_ARC "Build with ARC (automatic Reference Counting) on macOS." ON)
+  if(OPTION_USE_ARC)
+    list(APPEND CEF_COMPILER_FLAGS
+      -fobjc-arc
+      )
+    set_target_properties(${target} PROPERTIES
+      CLANG_ENABLE_OBJC_ARC "YES"
+      )
+  endif()
+
   # All sources required by the "cefclient" target. Generates an app bundle that
   # is used only for the browser process.
   set(CEFCLIENT_SRCS
@@ -442,51 +466,87 @@ if(OS_MACOSX)
     ${CEFCLIENT_MACOSX_HELPER_SRCS}
     )
 
-  # Output paths for the app bundles.
+  # Output path for the main app bundle.
   set(CEF_APP "${CEF_TARGET_OUT_DIR}/${CEF_TARGET}.app")
-  set(CEF_HELPER_APP "${CEF_TARGET_OUT_DIR}/${CEF_HELPER_TARGET}.app")
 
-  # Variable referenced from Info.plist files.
+  # Variables referenced from the main Info.plist file.
+  set(EXECUTABLE_NAME "${CEF_TARGET}")
   set(PRODUCT_NAME "${CEF_TARGET}")
 
-  # Helper executable target.
-  add_executable(${CEF_HELPER_TARGET} MACOSX_BUNDLE ${CEFCLIENT_HELPER_SRCS})
-  SET_EXECUTABLE_TARGET_PROPERTIES(${CEF_HELPER_TARGET})
-  add_dependencies(${CEF_HELPER_TARGET} libcef_dll_wrapper)
-  target_link_libraries(${CEF_HELPER_TARGET} libcef_lib libcef_dll_wrapper ${CEF_STANDARD_LIBS})
-  set_target_properties(${CEF_HELPER_TARGET} PROPERTIES
-    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/resources/mac/helper-Info.plist
-    )
+  if(USE_SANDBOX)
+    # Logical target used to link the cef_sandbox library.
+    ADD_LOGICAL_TARGET("cef_sandbox_lib" "${CEF_SANDBOX_LIB_DEBUG}" "${CEF_SANDBOX_LIB_RELEASE}")
+  endif()
 
-  # Fix the framework rpath in the helper executable.
-  FIX_MACOSX_HELPER_FRAMEWORK_RPATH(${CEF_HELPER_TARGET})
-
-  # Main executable target.
+  # Main app bundle target.
   add_executable(${CEF_TARGET} MACOSX_BUNDLE ${CEFCLIENT_RESOURCES_SRCS} ${CEFCLIENT_SRCS})
   SET_EXECUTABLE_TARGET_PROPERTIES(${CEF_TARGET})
-  add_dependencies(${CEF_TARGET} libcef_dll_wrapper "${CEF_HELPER_TARGET}")
-  target_link_libraries(${CEF_TARGET} libcef_lib libcef_dll_wrapper ${CEF_STANDARD_LIBS} "-framework OpenGL")
+  add_dependencies(${CEF_TARGET} libcef_dll_wrapper)
+  target_link_libraries(${CEF_TARGET} libcef_dll_wrapper ${CEF_STANDARD_LIBS} "-framework OpenGL")
   set_target_properties(${CEF_TARGET} PROPERTIES
     MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/resources/mac/Info.plist
     )
 
-  # Copy files into the main app bundle.
+  # Copy the CEF framework into the Frameworks directory.
   add_custom_command(
     TARGET ${CEF_TARGET}
     POST_BUILD
-    # Copy the helper app bundle into the Frameworks directory.
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${CEF_HELPER_APP}"
-            "${CEF_APP}/Contents/Frameworks/${CEF_HELPER_TARGET}.app"
-    # Copy the CEF framework into the Frameworks directory.
     COMMAND ${CMAKE_COMMAND} -E copy_directory
             "${CEF_BINARY_DIR}/Chromium Embedded Framework.framework"
             "${CEF_APP}/Contents/Frameworks/Chromium Embedded Framework.framework"
     VERBATIM
     )
 
-  # Fix the framework rpath in the main executable.
-  FIX_MACOSX_MAIN_FRAMEWORK_RPATH(${CEF_TARGET})
+  # Create the multiple Helper app bundle targets.
+  foreach(_suffix_list ${CEF_HELPER_APP_SUFFIXES})
+    # Convert to a list and extract the suffix values.
+    string(REPLACE ":" ";" _suffix_list ${_suffix_list})
+    list(GET _suffix_list 0 _name_suffix)
+    list(GET _suffix_list 1 _target_suffix)
+    list(GET _suffix_list 2 _plist_suffix)
+
+    # Define Helper target and output names.
+    set(_helper_target "${CEF_HELPER_TARGET}${_target_suffix}")
+    set(_helper_output_name "${CEF_HELPER_OUTPUT_NAME}${_name_suffix}")
+
+    # Create Helper-specific variants of the helper-Info.plist file. Do this
+    # manually because the configure_file command (which is executed as part of
+    # MACOSX_BUNDLE_INFO_PLIST) uses global env variables and would insert the
+    # wrong values with multiple targets.
+    set(_helper_info_plist "${CMAKE_CURRENT_BINARY_DIR}/helper-Info${_target_suffix}.plist")
+    file(READ "${CMAKE_CURRENT_SOURCE_DIR}/resources/mac/helper-Info.plist" _plist_contents)
+    string(REPLACE "\${EXECUTABLE_NAME}" "${_helper_output_name}" _plist_contents ${_plist_contents})
+    string(REPLACE "\${PRODUCT_NAME}" "${_helper_output_name}" _plist_contents ${_plist_contents})
+    string(REPLACE "\${BUNDLE_ID_SUFFIX}" "${_plist_suffix}" _plist_contents ${_plist_contents})
+    file(WRITE ${_helper_info_plist} ${_plist_contents})
+
+    # Create Helper executable target.
+    add_executable(${_helper_target} MACOSX_BUNDLE ${CEFCLIENT_HELPER_SRCS})
+    SET_EXECUTABLE_TARGET_PROPERTIES(${_helper_target})
+    add_dependencies(${_helper_target} libcef_dll_wrapper)
+    target_link_libraries(${_helper_target} libcef_dll_wrapper ${CEF_STANDARD_LIBS})
+    set_target_properties(${_helper_target} PROPERTIES
+      MACOSX_BUNDLE_INFO_PLIST ${_helper_info_plist}
+      OUTPUT_NAME ${_helper_output_name}
+      )
+
+    if(USE_SANDBOX)
+      target_link_libraries(${_helper_target} cef_sandbox_lib)
+    endif()
+
+    # Add the Helper as a dependency of the main executable target.
+    add_dependencies(${CEF_TARGET} "${_helper_target}")
+
+    # Copy the Helper app bundle into the Frameworks directory.
+    add_custom_command(
+      TARGET ${CEF_TARGET}
+      POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_directory
+              "${CEF_TARGET_OUT_DIR}/${_helper_output_name}.app"
+              "${CEF_APP}/Contents/Frameworks/${_helper_output_name}.app"
+      VERBATIM
+      )
+  endforeach()
 
   # Manually process and copy over resource files.
   # The Xcode generator can support this via the set_target_properties RESOURCE
@@ -520,7 +580,7 @@ if(OS_WINDOWS)
   add_executable(${CEF_TARGET} WIN32 ${CEFCLIENT_SRCS})
   SET_EXECUTABLE_TARGET_PROPERTIES(${CEF_TARGET})
   add_dependencies(${CEF_TARGET} libcef_dll_wrapper)
-  target_link_libraries(${CEF_TARGET} libcef_lib libcef_dll_wrapper ${CEF_STANDARD_LIBS} glu32.lib imm32.lib opengl32.lib)
+  target_link_libraries(${CEF_TARGET} libcef_lib libcef_dll_wrapper ${CEF_STANDARD_LIBS} d3d11.lib glu32.lib imm32.lib opengl32.lib)
 
   if(USE_ATL)
     # Required by VS2013 to link accessibility API functions.

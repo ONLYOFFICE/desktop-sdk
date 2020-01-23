@@ -4,6 +4,8 @@
 
 #include "tests/cefclient/browser/test_runner.h"
 
+#include <map>
+#include <set>
 #include <sstream>
 
 #include "include/base/cef_bind.h"
@@ -14,6 +16,7 @@
 #include "include/wrapper/cef_closure_task.h"
 #include "include/wrapper/cef_stream_resource_handler.h"
 #include "tests/cefclient/browser/binding_test.h"
+#include "tests/cefclient/browser/client_handler.h"
 #include "tests/cefclient/browser/dialog_test.h"
 #include "tests/cefclient/browser/drm_test.h"
 #include "tests/cefclient/browser/main_context.h"
@@ -22,6 +25,7 @@
 #include "tests/cefclient/browser/response_filter_test.h"
 #include "tests/cefclient/browser/root_window_manager.h"
 #include "tests/cefclient/browser/scheme_test.h"
+#include "tests/cefclient/browser/server_test.h"
 #include "tests/cefclient/browser/urlrequest_test.h"
 #include "tests/cefclient/browser/window_test.h"
 #include "tests/shared/browser/resource_util.h"
@@ -31,7 +35,25 @@ namespace test_runner {
 
 namespace {
 
+const char kTestHost[] = "tests";
+const char kLocalHost[] = "localhost";
 const char kTestOrigin[] = "http://tests/";
+
+// Pages handled via StringResourceProvider.
+const char kTestGetSourcePage[] = "get_source.html";
+const char kTestGetTextPage[] = "get_text.html";
+const char kTestPluginInfoPage[] = "plugin_info.html";
+
+// Set page data and navigate the browser. Used in combination with
+// StringResourceProvider.
+void LoadStringResourcePage(CefRefPtr<CefBrowser> browser,
+                            const std::string& page,
+                            const std::string& data) {
+  CefRefPtr<CefClient> client = browser->GetHost()->GetClient();
+  ClientHandler* client_handler = static_cast<ClientHandler*>(client.get());
+  client_handler->SetStringResource(page, data);
+  browser->GetMainFrame()->LoadURL(kTestOrigin + page);
+}
 
 // Replace all instances of |from| with |to| in |str|.
 std::string StringReplace(const std::string& str,
@@ -61,7 +83,7 @@ void RunGetSourceTest(CefRefPtr<CefBrowser> browser) {
       std::stringstream ss;
       ss << "<html><body bgcolor=\"white\">Source:<pre>" << source
          << "</pre></body></html>";
-      browser_->GetMainFrame()->LoadString(ss.str(), "http://tests/getsource");
+      LoadStringResourcePage(browser_, kTestGetSourcePage, ss.str());
     }
 
    private:
@@ -82,7 +104,7 @@ void RunGetTextTest(CefRefPtr<CefBrowser> browser) {
       std::stringstream ss;
       ss << "<html><body bgcolor=\"white\">Text:<pre>" << text
          << "</pre></body></html>";
-      browser_->GetMainFrame()->LoadString(ss.str(), "http://tests/gettext");
+      LoadStringResourcePage(browser_, kTestGetTextPage, ss.str());
     }
 
    private:
@@ -96,6 +118,16 @@ void RunGetTextTest(CefRefPtr<CefBrowser> browser) {
 void RunRequestTest(CefRefPtr<CefBrowser> browser) {
   // Create a new request
   CefRefPtr<CefRequest> request(CefRequest::Create());
+
+  if (browser->GetMainFrame()->GetURL().ToString().find("http://tests/") != 0) {
+    // The LoadRequest method will fail with "bad IPC message" reason
+    // INVALID_INITIATOR_ORIGIN (213) unless you first navigate to the
+    // request origin using some other mechanism (LoadURL, link click, etc).
+    Alert(browser,
+          "Please first navigate to a http://tests/ URL. "
+          "For example, first load Tests > Other Tests.");
+    return;
+  }
 
   // Set the request URL
   request->SetURL("http://tests/request");
@@ -119,11 +151,10 @@ void RunRequestTest(CefRefPtr<CefBrowser> browser) {
 }
 
 void RunNewWindowTest(CefRefPtr<CefBrowser> browser) {
-  MainContext::Get()->GetRootWindowManager()->CreateRootWindow(
-      true,  // Show controls.
-      browser->GetHost()->IsWindowRenderingDisabled(),
-      CefRect(),       // Use default system size.
-      std::string());  // Use default URL.
+  RootWindowConfig config;
+  config.with_controls = true;
+  config.with_osr = browser->GetHost()->IsWindowRenderingDisabled();
+  MainContext::Get()->GetRootWindowManager()->CreateRootWindow(config);
 }
 
 void RunPopupWindowTest(CefRefPtr<CefBrowser> browser) {
@@ -144,7 +175,7 @@ void RunPluginInfoTest(CefRefPtr<CefBrowser> browser) {
       html_ += "\n</body></html>";
 
       // Load the html in the browser.
-      browser_->GetMainFrame()->LoadString(html_, "http://tests/plugin_info");
+      LoadStringResourcePage(browser_, kTestPluginInfoPage, html_);
     }
 
     virtual bool Visit(CefRefPtr<CefWebPluginInfo> info,
@@ -413,6 +444,11 @@ void PrintToPDF(CefRefPtr<CefBrowser> browser) {
   new Client(browser);
 }
 
+void MuteAudio(CefRefPtr<CefBrowser> browser, bool mute) {
+  CefRefPtr<CefBrowserHost> host = browser->GetHost();
+  host->SetAudioMuted(mute);
+}
+
 void RunOtherTests(CefRefPtr<CefBrowser> browser) {
   browser->GetMainFrame()->LoadURL("http://tests/other_tests");
 }
@@ -433,13 +469,12 @@ class RequestDumpResourceProvider : public CefResourceManager::Provider {
       return false;
     }
 
-    const std::string& dump = DumpRequestContents(request->request());
-    std::string str =
-        "<html><body bgcolor=\"white\"><pre>" + dump + "</pre></body></html>";
-    CefRefPtr<CefStreamReader> stream = CefStreamReader::CreateForData(
-        static_cast<void*>(const_cast<char*>(str.c_str())), str.size());
-    DCHECK(stream.get());
-    request->Continue(new CefStreamResourceHandler("text/html", stream));
+    CefResponse::HeaderMap response_headers;
+    CefRefPtr<CefStreamReader> response =
+        GetDumpResponse(request->request(), response_headers);
+
+    request->Continue(new CefStreamResourceHandler(200, "OK", "text/html",
+                                                   response_headers, response));
     return true;
   }
 
@@ -447,6 +482,56 @@ class RequestDumpResourceProvider : public CefResourceManager::Provider {
   std::string url_;
 
   DISALLOW_COPY_AND_ASSIGN(RequestDumpResourceProvider);
+};
+
+// Provider that returns string data for specific pages. Used in combination
+// with LoadStringResourcePage().
+class StringResourceProvider : public CefResourceManager::Provider {
+ public:
+  StringResourceProvider(const std::set<std::string>& pages,
+                         StringResourceMap* string_resource_map)
+      : pages_(pages), string_resource_map_(string_resource_map) {
+    DCHECK(!pages.empty());
+  }
+
+  bool OnRequest(scoped_refptr<CefResourceManager::Request> request) OVERRIDE {
+    CEF_REQUIRE_IO_THREAD();
+
+    const std::string& url = request->url();
+    if (url.find(kTestOrigin) != 0U) {
+      // Not handled by this provider.
+      return false;
+    }
+
+    const std::string& page = url.substr(strlen(kTestOrigin));
+    if (pages_.find(page) == pages_.end()) {
+      // Not handled by this provider.
+      return false;
+    }
+
+    std::string value;
+    StringResourceMap::const_iterator it = string_resource_map_->find(page);
+    if (it != string_resource_map_->end()) {
+      value = it->second;
+    } else {
+      value = "<html><body>No data available</body></html>";
+    }
+
+    CefRefPtr<CefStreamReader> response = CefStreamReader::CreateForData(
+        static_cast<void*>(const_cast<char*>(value.c_str())), value.size());
+
+    request->Continue(new CefStreamResourceHandler(
+        200, "OK", "text/html", CefResponse::HeaderMap(), response));
+    return true;
+  }
+
+ private:
+  const std::set<std::string> pages_;
+
+  // Only accessed on the IO thread.
+  StringResourceMap* string_resource_map_;
+
+  DISALLOW_COPY_AND_ASSIGN(StringResourceProvider);
 };
 
 // Add a file extension to |url| if none is currently specified.
@@ -537,6 +622,12 @@ void RunTest(CefRefPtr<CefBrowser> browser, int id) {
     case ID_TESTS_PRINT_TO_PDF:
       PrintToPDF(browser);
       break;
+    case ID_TESTS_MUTE_AUDIO:
+      MuteAudio(browser, true);
+      break;
+    case ID_TESTS_UNMUTE_AUDIO:
+      MuteAudio(browser, false);
+      break;
     case ID_TESTS_OTHER_TESTS:
       RunOtherTests(browser);
       break;
@@ -591,6 +682,49 @@ std::string DumpRequestContents(CefRefPtr<CefRequest> request) {
   }
 
   return ss.str();
+}
+
+CefRefPtr<CefStreamReader> GetDumpResponse(
+    CefRefPtr<CefRequest> request,
+    CefResponse::HeaderMap& response_headers) {
+  std::string origin;
+
+  // Extract the origin request header, if any. It will be specified for
+  // cross-origin requests.
+  {
+    CefRequest::HeaderMap requestMap;
+    request->GetHeaderMap(requestMap);
+
+    CefRequest::HeaderMap::const_iterator it = requestMap.begin();
+    for (; it != requestMap.end(); ++it) {
+      std::string key = it->first;
+      std::transform(key.begin(), key.end(), key.begin(), ::tolower);
+      if (key == "origin") {
+        origin = it->second;
+        break;
+      }
+    }
+  }
+
+  if (!origin.empty() &&
+      (origin.find("http://" + std::string(kTestHost)) == 0 ||
+       origin.find("http://" + std::string(kLocalHost)) == 0)) {
+    // Allow cross-origin XMLHttpRequests from test origins.
+    response_headers.insert(
+        std::make_pair("Access-Control-Allow-Origin", origin));
+
+    // Allow the custom header from the xmlhttprequest.html example.
+    response_headers.insert(
+        std::make_pair("Access-Control-Allow-Headers", "My-Custom-Header"));
+  }
+
+  const std::string& dump = DumpRequestContents(request);
+  std::string str =
+      "<html><body bgcolor=\"white\"><pre>" + dump + "</pre></body></html>";
+  CefRefPtr<CefStreamReader> stream = CefStreamReader::CreateForData(
+      static_cast<void*>(const_cast<char*>(str.c_str())), str.size());
+  DCHECK(stream);
+  return stream;
 }
 
 std::string GetDataURI(const std::string& data, const std::string& mime_type) {
@@ -660,10 +794,12 @@ std::string GetErrorString(cef_errorcode_t code) {
   }
 }
 
-void SetupResourceManager(CefRefPtr<CefResourceManager> resource_manager) {
+void SetupResourceManager(CefRefPtr<CefResourceManager> resource_manager,
+                          StringResourceMap* string_resource_map) {
   if (!CefCurrentlyOn(TID_IO)) {
     // Execute on the browser IO thread.
-    CefPostTask(TID_IO, base::Bind(SetupResourceManager, resource_manager));
+    CefPostTask(TID_IO, base::Bind(SetupResourceManager, resource_manager,
+                                   string_resource_map));
     return;
   }
 
@@ -677,11 +813,23 @@ void SetupResourceManager(CefRefPtr<CefResourceManager> resource_manager) {
       new RequestDumpResourceProvider(test_origin + "request.html"), 0,
       std::string());
 
+  // Set of supported string pages.
+  std::set<std::string> string_pages;
+  string_pages.insert(kTestGetSourcePage);
+  string_pages.insert(kTestGetTextPage);
+  string_pages.insert(kTestPluginInfoPage);
+
+  // Add provider for string resources.
+  resource_manager->AddProvider(
+      new StringResourceProvider(string_pages, string_resource_map), 0,
+      std::string());
+
 // Add provider for bundled resource files.
 #if defined(OS_WIN)
   // Read resources from the binary.
-  resource_manager->AddProvider(CreateBinaryResourceProvider(test_origin), 100,
-                                std::string());
+  resource_manager->AddProvider(
+      CreateBinaryResourceProvider(test_origin, std::string()), 100,
+      std::string());
 #elif defined(OS_POSIX)
   // Read resources from a directory on disk.
   std::string resource_dir;
@@ -693,6 +841,14 @@ void SetupResourceManager(CefRefPtr<CefResourceManager> resource_manager) {
 }
 
 void Alert(CefRefPtr<CefBrowser> browser, const std::string& message) {
+  if (browser->GetHost()->GetExtension()) {
+    // Alerts originating from extension hosts should instead be displayed in
+    // the active browser.
+    browser = MainContext::Get()->GetRootWindowManager()->GetActiveBrowser();
+    if (!browser)
+      return;
+  }
+
   // Escape special characters in the message.
   std::string msg = StringReplace(message, "\\", "\\\\");
   msg = StringReplace(msg, "'", "\\'");
@@ -700,6 +856,18 @@ void Alert(CefRefPtr<CefBrowser> browser, const std::string& message) {
   // Execute a JavaScript alert().
   CefRefPtr<CefFrame> frame = browser->GetMainFrame();
   frame->ExecuteJavaScript("alert('" + msg + "');", frame->GetURL(), 0);
+}
+
+bool IsTestURL(const std::string& url, const std::string& path) {
+  CefURLParts parts;
+  CefParseURL(url, parts);
+
+  const std::string& url_host = CefString(&parts.host);
+  if (url_host != kTestHost && url_host != kLocalHost)
+    return false;
+
+  const std::string& url_path = CefString(&parts.path);
+  return url_path.find(path) == 0;
 }
 
 void CreateMessageHandlers(MessageHandlerSet& handlers) {
@@ -716,6 +884,9 @@ void CreateMessageHandlers(MessageHandlerSet& handlers) {
 
   // Create the preferences test handlers.
   preferences_test::CreateMessageHandlers(handlers);
+
+  // Create the server test handlers.
+  server_test::CreateMessageHandlers(handlers);
 
   // Create the urlrequest test handlers.
   urlrequest_test::CreateMessageHandlers(handlers);

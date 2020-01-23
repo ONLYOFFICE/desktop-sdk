@@ -4,10 +4,13 @@
 
 #include "tests/cefsimple/simple_app.h"
 
+#if defined(CEF_X11)
 #include <X11/Xlib.h>
+#endif
 
 #include "include/base/cef_logging.h"
 
+#if defined(CEF_X11)
 namespace {
 
 int XErrorHandlerImpl(Display* display, XErrorEvent* event) {
@@ -26,6 +29,7 @@ int XIOErrorHandlerImpl(Display* display) {
 }
 
 }  // namespace
+#endif  // defined(CEF_X11)
 
 // Entry point function for all processes.
 int main(int argc, char* argv[]) {
@@ -41,13 +45,22 @@ int main(int argc, char* argv[]) {
     return exit_code;
   }
 
+#if defined(CEF_X11)
   // Install xlib error handlers so that the application won't be terminated
   // on non-fatal errors.
   XSetErrorHandler(XErrorHandlerImpl);
   XSetIOErrorHandler(XIOErrorHandlerImpl);
+#endif
 
   // Specify CEF global settings here.
   CefSettings settings;
+
+// When generating projects with CMake the CEF_USE_SANDBOX value will be defined
+// automatically. Pass -DUSE_SANDBOX=OFF to the CMake command-line to disable
+// use of the sandbox.
+#if !defined(CEF_USE_SANDBOX)
+  settings.no_sandbox = true;
+#endif
 
   // SimpleApp implements application-level callbacks for the browser process.
   // It will create the first browser instance in OnContextInitialized() after

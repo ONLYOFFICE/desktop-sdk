@@ -76,7 +76,7 @@ CefRefPtr<CefMenuModel> ViewsMenuBar::CreateMenuModel(const CefString& label,
 
   // Create the new MenuButton.
   CefRefPtr<CefMenuButton> button =
-      CefMenuButton::CreateMenuButton(this, label, false, false);
+      CefMenuButton::CreateMenuButton(this, label);
   button->SetID(new_menu_id);
   views_style::ApplyTo(button.get());
   button->SetInkDropEnabled(true);
@@ -147,8 +147,10 @@ void ViewsMenuBar::Reset() {
   id_next_ = id_start_;
 }
 
-void ViewsMenuBar::OnMenuButtonPressed(CefRefPtr<CefMenuButton> menu_button,
-                                       const CefPoint& screen_point) {
+void ViewsMenuBar::OnMenuButtonPressed(
+    CefRefPtr<CefMenuButton> menu_button,
+    const CefPoint& screen_point,
+    CefRefPtr<CefMenuButtonPressedLock> button_pressed_lock) {
   CefRefPtr<CefMenuModel> menu_model = GetMenuModel(menu_button->GetID());
 
   // Adjust menu position left by button width.

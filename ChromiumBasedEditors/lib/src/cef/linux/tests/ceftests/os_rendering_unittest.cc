@@ -4,6 +4,7 @@
 
 #include "include/base/cef_bind.h"
 #include "include/base/cef_logging.h"
+#include "include/cef_parser.h"
 #include "include/cef_v8.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "include/wrapper/cef_stream_resource_handler.h"
@@ -33,65 +34,13 @@ const char kTestUrl[] = "http://tests/osrtest";
 const int kOsrWidth = 600;
 const int kOsrHeight = 400;
 
-// precomputed bounding client rects for html elements (h1 and li).
-#if defined(OS_WIN) || defined(OS_LINUX)
-const CefRect kExpectedRectLI[] = {
-    CefRect(8, 8, 567, 74),     // LI00
-    CefRect(27, 103, 548, 20),  // LI01
-    CefRect(27, 123, 548, 20),  // LI02
-    CefRect(27, 143, 548, 20),  // LI03
-    CefRect(27, 163, 548, 20),  // LI04
-    CefRect(27, 183, 548, 20),  // LI05
-    CefRect(27, 203, 548, 20),  // LI06
-    CefRect(27, 223, 548, 20),  // LI07
-    CefRect(27, 243, 548, 26),  // LI08
-    CefRect(27, 269, 548, 26),  // LI09
-    CefRect(27, 295, 548, 20),  // LI10
-};
-#elif defined(OS_MACOSX)
-const CefRect kExpectedRectLI[] = {
-    CefRect(8, 8, 584, 74),     // LI00
-    CefRect(28, 103, 564, 18),  // LI01
-    CefRect(28, 121, 564, 18),  // LI02
-    CefRect(28, 139, 564, 18),  // LI03
-    CefRect(28, 157, 564, 18),  // LI04
-    CefRect(28, 175, 564, 18),  // LI05
-    CefRect(28, 193, 564, 18),  // LI06
-    CefRect(28, 211, 564, 18),  // LI07
-    CefRect(28, 229, 564, 23),  // LI08
-    CefRect(28, 252, 564, 26),  // LI09
-    CefRect(18, 291, 360, 21),  // LI10
-};
-#else
-#error "Unsupported platform"
-#endif  // defined(OS_WIN)
-
 // bounding client rects for edit box and navigate button
 #if defined(OS_WIN)
-const CefRect kEditBoxRect(412, 245, 60, 22);
-const CefRect kNavigateButtonRect(360, 271, 140, 22);
-const CefRect kSelectRect(467, 22, 75, 20);
-const CefRect kExpandedSelectRect(463, 42, 81, 334);
-const CefRect kDropDivRect(8, 332, 52, 52);
-const CefRect kDragDivRect(71, 342, 30, 30);
-const int kDefaultVerticalScrollbarWidth = 17;
-const int kVerticalScrollbarWidth = GetSystemMetrics(SM_CXVSCROLL);
+const CefRect kExpandedSelectRect(462, 42, 81, 334);
 #elif defined(OS_MACOSX)
-const CefRect kEditBoxRect(442, 251, 46, 16);
-const CefRect kNavigateButtonRect(375, 275, 130, 20);
-const CefRect kSelectRect(461, 21, 87, 26);
-const CefRect kExpandedSelectRect(463, 42, 75, 286);
-const CefRect kDropDivRect(9, 330, 52, 52);
-const CefRect kDragDivRect(60, 330, 52, 52);
+const CefRect kExpandedSelectRect(462, 42, 75, 286);
 #elif defined(OS_LINUX)
-const CefRect kEditBoxRect(434, 246, 60, 20);
-const CefRect kNavigateButtonRect(380, 271, 140, 22);
-const CefRect kSelectRect(467, 22, 75, 20);
-const CefRect kExpandedSelectRect(463, 42, 79, 334);
-const CefRect kDropDivRect(8, 332, 52, 52);
-const CefRect kDragDivRect(71, 342, 30, 30);
-const int kDefaultVerticalScrollbarWidth = 14;
-const int kVerticalScrollbarWidth = 14;
+const CefRect kExpandedSelectRect(462, 42, 79, 334);
 #else
 #error "Unsupported platform"
 #endif  // defined(OS_WIN)
@@ -207,7 +156,20 @@ enum OSRTestType {
   OSR_TEST_IME_FINISH_COMPOSITION,
   // IMECancelComposition will update the composition range
   OSR_TEST_IME_CANCEL_COMPOSITION,
-
+  // text selection range changed
+  OSR_TEST_TEXT_SELECTION_CHANGE,
+  // clicking on text input will call OnVirtualKeyboardRequested
+  OSR_TEST_VIRTUAL_KEYBOARD,
+  // touchStart event is triggered and contains the touch point count
+  OSR_TEST_TOUCH_START,
+  // touchMove event is triggered and contains the changed touch points
+  OSR_TEST_TOUCH_MOVE,
+  // touchEnd is triggered on completion
+  OSR_TEST_TOUCH_END,
+  // touchCancel is triggered on dismissing
+  OSR_TEST_TOUCH_CANCEL,
+  // CEF_POINTER_TYPE_PEN is mapped to pen pointer event
+  OSR_TEST_PEN,
   // Define the range for popup tests.
   OSR_TEST_POPUP_FIRST = OSR_TEST_POPUP_PAINT,
   OSR_TEST_POPUP_LAST = OSR_TEST_POPUP_SCROLL_INSIDE,
@@ -224,7 +186,8 @@ class OSRTestHandler : public RoutingTestHandler,
         scale_factor_(scale_factor),
         event_count_(0),
         event_total_(1),
-        started_(false) {}
+        started_(false),
+        touch_state_(CEF_TET_CANCELLED) {}
 
   // TestHandler methods
   void RunTest() override {
@@ -286,8 +249,10 @@ class OSRTestHandler : public RoutingTestHandler,
                CefRefPtr<Callback> callback) override {
     EXPECT_TRUE(browser.get());
 
-    if (!started())
-      return false;
+    if (!started()) {
+      return handleBoundsQuery(browser, frame, query_id, request, persistent,
+                               callback);
+    }
 
     const std::string& messageStr = request;
     switch (test_type_) {
@@ -307,13 +272,109 @@ class OSRTestHandler : public RoutingTestHandler,
         EXPECT_STREQ(messageStr.c_str(), "osrdrop");
         DestroySucceededTestSoon();
         break;
+      case OSR_TEST_TOUCH_START:
+      case OSR_TEST_TOUCH_MOVE:
+      case OSR_TEST_TOUCH_END:
+      case OSR_TEST_TOUCH_CANCEL: {
+        switch (touch_state_) {
+          case CEF_TET_CANCELLED: {
+            // The first message expected is touchstart.
+            // We expect multitouch, so touches length should be 2.
+            // Ignore intermediate touch start events.
+            if (messageStr == "osrtouchstart1")
+              break;
+            EXPECT_STREQ(messageStr.c_str(), "osrtouchstart2");
+            // Close Touch Start Tests.
+            if (test_type_ == OSR_TEST_TOUCH_START) {
+              DestroySucceededTestSoon();
+              touch_state_ = CEF_TET_RELEASED;
+            } else {
+              touch_state_ = CEF_TET_PRESSED;
+            }
+          } break;
+          case CEF_TET_PRESSED: {
+            // Touch Move include the touches that changed, should be 2.
+            EXPECT_STREQ(messageStr.c_str(), "osrtouchmove2");
+            if (test_type_ == OSR_TEST_TOUCH_MOVE) {
+              DestroySucceededTestSoon();
+              touch_state_ = CEF_TET_RELEASED;
+            } else {
+              touch_state_ = CEF_TET_MOVED;
+            }
+          } break;
+          case CEF_TET_MOVED: {
+            // There might be multiple touchmove events, ignore.
+            if (messageStr != "osrtouchmove2") {
+              if (test_type_ == OSR_TEST_TOUCH_END) {
+                EXPECT_STREQ(messageStr.c_str(), "osrtouchend");
+                DestroySucceededTestSoon();
+                touch_state_ = CEF_TET_RELEASED;
+              } else if (test_type_ == OSR_TEST_TOUCH_CANCEL) {
+                EXPECT_STREQ(messageStr.c_str(), "osrtouchcancel");
+                DestroySucceededTestSoon();
+                touch_state_ = CEF_TET_RELEASED;
+              }
+            }
+          } break;
+          default:
+            break;
+        }
+      } break;
+      case OSR_TEST_PEN: {
+        switch (touch_state_) {
+          case CEF_TET_CANCELLED:
+            // The first message expected is pointerdown.
+            EXPECT_STREQ(messageStr.c_str(), "osrpointerdown pen");
+            touch_state_ = CEF_TET_PRESSED;
+            break;
+          case CEF_TET_PRESSED:
+            EXPECT_STREQ(messageStr.c_str(), "osrpointermove pen");
+            touch_state_ = CEF_TET_MOVED;
+            break;
+          case CEF_TET_MOVED:
+            // There might be multiple pointermove events, ignore.
+            if (messageStr != "osrpointermove pen") {
+              EXPECT_STREQ(messageStr.c_str(), "osrpointerup pen");
+              DestroySucceededTestSoon();
+            }
+            break;
+          default:
+            break;
+        }
+      } break;
       default:
         // Intentionally left blank
         break;
     }
-
     callback->Success("");
     return true;
+  }
+
+  bool handleBoundsQuery(CefRefPtr<CefBrowser> browser,
+                         CefRefPtr<CefFrame> frame,
+                         int64 query_id,
+                         const CefString& request,
+                         bool persistent,
+                         CefRefPtr<Callback> callback) {
+    CefRefPtr<CefValue> jsonObj = CefParseJSON(request, JSON_PARSER_RFC);
+    if (jsonObj.get()) {
+      CefRefPtr<CefDictionaryValue> dict = jsonObj->GetDictionary();
+      const std::string& type = dict->GetString("type");
+      if (type == "ElementBounds") {
+        CefRefPtr<CefListValue> elems = dict->GetList("elems");
+
+        for (size_t i = 0; i < elems->GetSize(); i++) {
+          CefRefPtr<CefDictionaryValue> elem = elems->GetDictionary(i);
+          std::string elementId = elem->GetString("id");
+          CefRect bounds(elem->GetInt("x"), elem->GetInt("y"),
+                         elem->GetInt("width"), elem->GetInt("height"));
+          element_bounds_.insert(std::make_pair(elementId, bounds));
+        }
+        return true;
+      }
+    }
+
+    return false;
   }
 
   // CefClient methods, providing handlers
@@ -325,8 +386,7 @@ class OSRTestHandler : public RoutingTestHandler,
     return this;
   }
 
-  CefRefPtr<CefRequestHandler> GetRequestHandler() override { return this; }
-
+  // CefResourceRequestHandler methods
   CefRefPtr<CefResourceHandler> GetResourceHandler(
       CefRefPtr<CefBrowser> browser,
       CefRefPtr<CefFrame> frame,
@@ -344,13 +404,12 @@ class OSRTestHandler : public RoutingTestHandler,
   }
 
   // CefRenderHandler methods
-  bool GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override {
+  void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override {
     if (test_type_ == OSR_TEST_RESIZE && started()) {
       rect = CefRect(0, 0, kOsrWidth * 2, kOsrHeight * 2);
-      return true;
+      return;
     }
     rect = CefRect(0, 0, kOsrWidth, kOsrHeight);
-    return true;
   }
 
   bool GetScreenPoint(CefRefPtr<CefBrowser> browser,
@@ -359,7 +418,7 @@ class OSRTestHandler : public RoutingTestHandler,
                       int& screenX,
                       int& screenY) override {
     if (test_type_ == OSR_TEST_SCREEN_POINT && started()) {
-      const CefRect& expected_rect = GetExpectedRect(4);
+      const CefRect& expected_rect = GetElementBounds("LI04");
       EXPECT_EQ(viewX, MiddleX(expected_rect));
       EXPECT_EQ(viewY, MiddleY(expected_rect));
       DestroySucceededTestSoon();
@@ -472,11 +531,7 @@ class OSRTestHandler : public RoutingTestHandler,
           EXPECT_EQ(dirtyRects.size(), 1U);
           EXPECT_TRUE(IsFullRepaint(dirtyRects[0], GetScaledInt(kOsrWidth),
                                     GetScaledInt(kOsrHeight)));
-#if defined(OS_MACOSX)
-          EXPECT_EQ(0xfffd8081U, *(reinterpret_cast<const uint32*>(buffer)));
-#else
           EXPECT_EQ(0xffff7f7fU, *(reinterpret_cast<const uint32*>(buffer)));
-#endif
           DestroySucceededTestSoon();
         }
         break;
@@ -486,11 +541,7 @@ class OSRTestHandler : public RoutingTestHandler,
           EXPECT_EQ(dirtyRects.size(), 1U);
           EXPECT_TRUE(IsFullRepaint(dirtyRects[0], GetScaledInt(kOsrWidth),
                                     GetScaledInt(kOsrHeight)));
-#if defined(OS_MACOSX)
-          EXPECT_EQ(0x807e0308U, *(reinterpret_cast<const uint32*>(buffer)));
-#else
           EXPECT_EQ(0x80800000U, *(reinterpret_cast<const uint32*>(buffer)));
-#endif
           DestroySucceededTestSoon();
         }
         break;
@@ -502,7 +553,7 @@ class OSRTestHandler : public RoutingTestHandler,
         break;
       case OSR_TEST_TAKE_FOCUS:
         if (StartTest() || started()) {
-// Tab traversal across HTML element
+          // Tab traversal across HTML element
 
 #if defined(OS_WIN)
           SendKeyEvent(browser, VK_TAB);
@@ -527,7 +578,7 @@ class OSRTestHandler : public RoutingTestHandler,
           mouse_event.modifiers = 0;
           browser->GetHost()->SendMouseMoveEvent(mouse_event, true);
           // enter mouse in the LI2 element having hand cursor
-          const CefRect& expected_rect = GetExpectedRect(2);
+          const CefRect& expected_rect = GetElementBounds("LI02");
           mouse_event.x = MiddleX(expected_rect);
           mouse_event.y = MiddleY(expected_rect);
           browser->GetHost()->SendMouseMoveEvent(mouse_event, false);
@@ -536,7 +587,7 @@ class OSRTestHandler : public RoutingTestHandler,
       case OSR_TEST_MOUSE_MOVE:
         if (StartTest()) {
           CefMouseEvent mouse_event;
-          const CefRect& expected_rect = GetExpectedRect(3);
+          const CefRect& expected_rect = GetElementBounds("LI03");
           mouse_event.x = MiddleX(expected_rect);
           mouse_event.y = MiddleY(expected_rect);
           mouse_event.modifiers = 0;
@@ -548,7 +599,7 @@ class OSRTestHandler : public RoutingTestHandler,
       case OSR_TEST_CONTEXT_MENU:
         if (StartTest()) {
           CefMouseEvent mouse_event;
-          const CefRect& expected_rect = GetExpectedRect(4);
+          const CefRect& expected_rect = GetElementBounds("LI04");
           mouse_event.x = MiddleX(expected_rect);
           mouse_event.y = MiddleY(expected_rect);
           mouse_event.modifiers = 0;
@@ -561,7 +612,7 @@ class OSRTestHandler : public RoutingTestHandler,
       case OSR_TEST_CLICK_LEFT:
         if (StartTest()) {
           CefMouseEvent mouse_event;
-          const CefRect& expected_rect = GetExpectedRect(0);
+          const CefRect& expected_rect = GetElementBounds("LI00");
           mouse_event.x = MiddleX(expected_rect);
           mouse_event.y = MiddleY(expected_rect);
 
@@ -588,9 +639,11 @@ class OSRTestHandler : public RoutingTestHandler,
           browser->GetHost()->Invalidate(PET_VIEW);
         } else {
           EXPECT_EQ(dirtyRects.size(), 1U);
-          EXPECT_EQ(dirtyRects[0],
-                    GetScaledRect(CefRect(0, 0, kOsrWidth, kOsrHeight)));
-          DestroySucceededTestSoon();
+          const CefRect& expected_rect =
+              GetScaledRect(CefRect(0, 0, kOsrWidth, kOsrHeight));
+          // There may be some partial repaints before the full repaint.
+          if (dirtyRects[0] == expected_rect)
+            DestroySucceededTestSoon();
         }
         break;
       }
@@ -598,8 +651,9 @@ class OSRTestHandler : public RoutingTestHandler,
         if (StartTest()) {
           // click inside edit box
           CefMouseEvent mouse_event;
-          mouse_event.x = MiddleX(kEditBoxRect);
-          mouse_event.y = MiddleY(kEditBoxRect);
+          const CefRect& editbox = GetElementBounds("editbox");
+          mouse_event.x = MiddleX(editbox);
+          mouse_event.y = MiddleY(editbox);
           mouse_event.modifiers = 0;
           browser->GetHost()->SendMouseClickEvent(mouse_event, MBT_LEFT, false,
                                                   1);
@@ -621,9 +675,11 @@ class OSRTestHandler : public RoutingTestHandler,
 #error "Unsupported platform"
 #endif
           }
+
           // click button to navigate
-          mouse_event.x = MiddleX(kNavigateButtonRect);
-          mouse_event.y = MiddleY(kNavigateButtonRect);
+          const CefRect& btnnavigate = GetElementBounds("btnnavigate");
+          mouse_event.x = MiddleX(btnnavigate);
+          mouse_event.y = MiddleY(btnnavigate);
           browser->GetHost()->SendMouseClickEvent(mouse_event, MBT_LEFT, false,
                                                   1);
           browser->GetHost()->SendMouseClickEvent(mouse_event, MBT_LEFT, true,
@@ -633,7 +689,7 @@ class OSRTestHandler : public RoutingTestHandler,
       case OSR_TEST_TOOLTIP:
         if (StartTest()) {
           CefMouseEvent mouse_event;
-          const CefRect& expected_rect = GetExpectedRect(10);
+          const CefRect& expected_rect = GetElementBounds("LI10");
           mouse_event.x = MiddleX(expected_rect);
           mouse_event.y = MiddleY(expected_rect);
           mouse_event.modifiers = 0;
@@ -645,7 +701,7 @@ class OSRTestHandler : public RoutingTestHandler,
         if (StartTest()) {
           // scroll down once
           CefMouseEvent mouse_event;
-          const CefRect& expected_rect = GetExpectedRect(0);
+          const CefRect& expected_rect = GetElementBounds("LI00");
           mouse_event.x = MiddleX(expected_rect);
           mouse_event.y = MiddleY(expected_rect);
           mouse_event.modifiers = 0;
@@ -729,10 +785,10 @@ class OSRTestHandler : public RoutingTestHandler,
             EXPECT_GT(dirtyRects[0].height, kExpandedSelectRect.height);
           }
 
-// first pixel of border
+          // first pixel of border
 
 #if defined(OS_MACOSX)
-          EXPECT_EQ(0xff609ad4U, *(reinterpret_cast<const uint32*>(buffer)));
+          EXPECT_EQ(0xff3979d1U, *(reinterpret_cast<const uint32*>(buffer)));
 #else
           EXPECT_EQ(0xff6497eaU, *(reinterpret_cast<const uint32*>(buffer)));
 #endif
@@ -767,11 +823,18 @@ class OSRTestHandler : public RoutingTestHandler,
             const CefRect& expanded_select_rect =
                 GetScaledRect(kExpandedSelectRect);
             EXPECT_EQ(dirtyRects.size(), 1U);
-            EXPECT_EQ(0, dirtyRects[0].x);
-            EXPECT_EQ(0, dirtyRects[0].y);
+#if defined(OS_MACOSX)
+            EXPECT_EQ(GetScaledInt(1), dirtyRects[0].x);
+            EXPECT_EQ(GetScaledInt(1), dirtyRects[0].y);
+#else
+            EXPECT_EQ(1, dirtyRects[0].x);
+            EXPECT_EQ(1, dirtyRects[0].y);
+#endif
             if (ExpectComputedPopupSize()) {
-              EXPECT_EQ(expanded_select_rect.width, dirtyRects[0].width);
-              EXPECT_EQ(expanded_select_rect.height, dirtyRects[0].height);
+              EXPECT_EQ(expanded_select_rect.width,
+                        dirtyRects[0].width + GetScaledInt(2));
+              EXPECT_EQ(expanded_select_rect.height,
+                        dirtyRects[0].height + GetScaledInt(2));
             } else {
               EXPECT_GT(dirtyRects[0].width, kExpandedSelectRect.width);
               EXPECT_GT(dirtyRects[0].height, kExpandedSelectRect.height);
@@ -787,8 +850,9 @@ class OSRTestHandler : public RoutingTestHandler,
         if (StartTest()) {
           // move the mouse over the element to drag
           CefMouseEvent mouse_event;
-          mouse_event.x = MiddleX(kDragDivRect);
-          mouse_event.y = MiddleY(kDragDivRect);
+          const CefRect& dragdiv = GetElementBounds("dragdiv");
+          mouse_event.x = MiddleX(dragdiv);
+          mouse_event.y = MiddleY(dragdiv);
           mouse_event.modifiers = 0;
           browser->GetHost()->SendMouseMoveEvent(mouse_event, false);
           // click on the element to drag
@@ -806,8 +870,9 @@ class OSRTestHandler : public RoutingTestHandler,
         if (StartTest()) {
           // click inside edit box so that text could be entered
           CefMouseEvent mouse_event;
-          mouse_event.x = MiddleX(kEditBoxRect);
-          mouse_event.y = MiddleY(kEditBoxRect);
+          const CefRect& editbox = GetElementBounds("editbox");
+          mouse_event.x = MiddleX(editbox);
+          mouse_event.y = MiddleY(editbox);
           mouse_event.modifiers = 0;
           browser->GetHost()->SendMouseClickEvent(mouse_event, MBT_LEFT, false,
                                                   1);
@@ -832,8 +897,9 @@ class OSRTestHandler : public RoutingTestHandler,
           browser->GetHost()->ImeCommitText(markedText, range, 0);
 
           // click button to navigate
-          mouse_event.x = MiddleX(kNavigateButtonRect);
-          mouse_event.y = MiddleY(kNavigateButtonRect);
+          const CefRect& btnnavigate = GetElementBounds("btnnavigate");
+          mouse_event.x = MiddleX(btnnavigate);
+          mouse_event.y = MiddleY(btnnavigate);
           browser->GetHost()->SendMouseClickEvent(mouse_event, MBT_LEFT, false,
                                                   1);
           browser->GetHost()->SendMouseClickEvent(mouse_event, MBT_LEFT, true,
@@ -845,8 +911,9 @@ class OSRTestHandler : public RoutingTestHandler,
         if (StartTest()) {
           // click inside edit box so that text could be entered
           CefMouseEvent mouse_event;
-          mouse_event.x = MiddleX(kEditBoxRect);
-          mouse_event.y = MiddleY(kEditBoxRect);
+          const CefRect& editbox = GetElementBounds("editbox");
+          mouse_event.x = MiddleX(editbox);
+          mouse_event.y = MiddleY(editbox);
           mouse_event.modifiers = 0;
           browser->GetHost()->SendMouseClickEvent(mouse_event, MBT_LEFT, false,
                                                   1);
@@ -869,8 +936,9 @@ class OSRTestHandler : public RoutingTestHandler,
           browser->GetHost()->ImeFinishComposingText(true);
 
           // click button to navigate
-          mouse_event.x = MiddleX(kNavigateButtonRect);
-          mouse_event.y = MiddleY(kNavigateButtonRect);
+          const CefRect& btnnavigate = GetElementBounds("btnnavigate");
+          mouse_event.x = MiddleX(btnnavigate);
+          mouse_event.y = MiddleY(btnnavigate);
           browser->GetHost()->SendMouseClickEvent(mouse_event, MBT_LEFT, false,
                                                   1);
           browser->GetHost()->SendMouseClickEvent(mouse_event, MBT_LEFT, true,
@@ -882,8 +950,9 @@ class OSRTestHandler : public RoutingTestHandler,
         if (StartTest()) {
           // click inside edit box so that text could be entered
           CefMouseEvent mouse_event;
-          mouse_event.x = MiddleX(kEditBoxRect);
-          mouse_event.y = MiddleY(kEditBoxRect);
+          const CefRect& editbox = GetElementBounds("editbox");
+          mouse_event.x = MiddleX(editbox);
+          mouse_event.y = MiddleY(editbox);
           mouse_event.modifiers = 0;
           browser->GetHost()->SendMouseClickEvent(mouse_event, MBT_LEFT, false,
                                                   1);
@@ -909,8 +978,9 @@ class OSRTestHandler : public RoutingTestHandler,
           browser->GetHost()->ImeCancelComposition();
 
           // click button to navigate and verify
-          mouse_event.x = MiddleX(kNavigateButtonRect);
-          mouse_event.y = MiddleY(kNavigateButtonRect);
+          const CefRect& btnnavigate = GetElementBounds("btnnavigate");
+          mouse_event.x = MiddleX(btnnavigate);
+          mouse_event.y = MiddleY(btnnavigate);
           browser->GetHost()->SendMouseClickEvent(mouse_event, MBT_LEFT, false,
                                                   1);
           browser->GetHost()->SendMouseClickEvent(mouse_event, MBT_LEFT, true,
@@ -922,8 +992,9 @@ class OSRTestHandler : public RoutingTestHandler,
         if (StartTest()) {
           // click inside edit box so that text could be entered
           CefMouseEvent mouse_event;
-          mouse_event.x = MiddleX(kEditBoxRect);
-          mouse_event.y = MiddleY(kEditBoxRect);
+          const CefRect& editbox = GetElementBounds("editbox");
+          mouse_event.x = MiddleX(editbox);
+          mouse_event.y = MiddleY(editbox);
           mouse_event.modifiers = 0;
           browser->GetHost()->SendMouseClickEvent(mouse_event, MBT_LEFT, false,
                                                   1);
@@ -946,6 +1017,99 @@ class OSRTestHandler : public RoutingTestHandler,
           // trigger the compositionRangeChanged callback
           browser->GetHost()->ImeSetComposition(
               markedText, underlines, replacement_range, selection_range);
+        }
+      } break;
+      case OSR_TEST_TEXT_SELECTION_CHANGE: {
+        // trigger the text selection changed event
+        if (StartTest()) {
+          // click inside list element so text range will be selected.
+          CefMouseEvent mouse_event;
+          const CefRect& expected_rect = GetElementBounds("LI11");
+          mouse_event.x = MiddleX(expected_rect);
+          mouse_event.y = MiddleY(expected_rect);
+          mouse_event.modifiers = 0;
+          browser->GetHost()->SendMouseClickEvent(mouse_event, MBT_LEFT, false,
+                                                  1);
+          browser->GetHost()->SendMouseClickEvent(mouse_event, MBT_LEFT, true,
+                                                  1);
+        }
+      } break;
+      case OSR_TEST_VIRTUAL_KEYBOARD: {
+        if (StartTest()) {
+          CefMouseEvent mouse_event;
+          const CefRect& input = GetElementBounds("email");
+          mouse_event.x = MiddleX(input);
+          mouse_event.y = MiddleY(input);
+          mouse_event.modifiers = 0;
+          browser->GetHost()->SendMouseClickEvent(mouse_event, MBT_LEFT, false,
+                                                  1);
+          browser->GetHost()->SendMouseClickEvent(mouse_event, MBT_LEFT, true,
+                                                  1);
+        }
+      } break;
+      case OSR_TEST_TOUCH_START:
+      case OSR_TEST_TOUCH_MOVE:
+      case OSR_TEST_TOUCH_END:
+      case OSR_TEST_TOUCH_CANCEL: {
+        // We trigger a valid Touch workflow sequence and close the tests
+        // at seperate points for the 4 cases
+        if (StartTest()) {
+          const CefRect& touchdiv = GetElementBounds("touchdiv");
+          // click inside edit box so that text could be entered
+          CefTouchEvent touch_event1;
+          touch_event1.id = 0;
+          touch_event1.x = MiddleX(touchdiv) - 45;
+          touch_event1.y = MiddleY(touchdiv);
+          touch_event1.modifiers = 0;
+          touch_event1.type = CEF_TET_PRESSED;
+
+          CefTouchEvent touch_event2;
+          touch_event2.id = 1;
+          touch_event2.x = MiddleX(touchdiv) + 45;
+          touch_event2.y = MiddleY(touchdiv);
+          touch_event2.modifiers = 0;
+          touch_event2.type = CEF_TET_PRESSED;
+
+          browser->GetHost()->SendTouchEvent(touch_event1);
+          browser->GetHost()->SendTouchEvent(touch_event2);
+
+          // Move the Touch fingers closer
+          touch_event1.type = touch_event2.type = CEF_TET_MOVED;
+          for (size_t i = 0; i < 40; i++) {
+            touch_event1.x++;
+            touch_event2.x--;
+            browser->GetHost()->SendTouchEvent(touch_event1);
+            browser->GetHost()->SendTouchEvent(touch_event2);
+          }
+
+          // Now release the Touch fingers or cancel them
+          if (test_type_ == OSR_TEST_TOUCH_CANCEL)
+            touch_event1.type = touch_event2.type = CEF_TET_CANCELLED;
+          else
+            touch_event1.type = touch_event2.type = CEF_TET_RELEASED;
+          browser->GetHost()->SendTouchEvent(touch_event1);
+          browser->GetHost()->SendTouchEvent(touch_event2);
+        }
+      } break;
+      case OSR_TEST_PEN: {
+        if (StartTest()) {
+          const CefRect& pointerdiv = GetElementBounds("pointerdiv");
+          CefTouchEvent touch_event;
+          touch_event.x = MiddleX(pointerdiv) - 45;
+          touch_event.y = MiddleY(pointerdiv);
+          touch_event.type = CEF_TET_PRESSED;
+          touch_event.pointer_type = CEF_POINTER_TYPE_PEN;
+
+          browser->GetHost()->SendTouchEvent(touch_event);
+
+          touch_event.type = CEF_TET_MOVED;
+          for (size_t i = 0; i < 40; i++) {
+            touch_event.x++;
+            browser->GetHost()->SendTouchEvent(touch_event);
+          }
+
+          touch_event.type = CEF_TET_RELEASED;
+          browser->GetHost()->SendTouchEvent(touch_event);
         }
       } break;
       default:
@@ -1013,30 +1177,24 @@ class OSRTestHandler : public RoutingTestHandler,
                      int y) override {
     if (test_type_ == OSR_TEST_DRAG_DROP_START_DRAGGING && started()) {
       // Verify the drag image representation.
+      const CefRect& dragdiv = GetElementBounds("dragdiv");
       EXPECT_TRUE(drag_data->HasImage());
       CefRefPtr<CefImage> image = drag_data->GetImage();
       EXPECT_TRUE(image.get() != NULL);
       if (image.get()) {
         // Drag image height seems to always be + 1px greater than the drag rect
         // on Linux. Therefore allow it to be +/- 1px.
-#if defined(OS_MACOSX)
-        EXPECT_NEAR(static_cast<int>(image->GetWidth()), GetScaledInt(15), 1);
-        EXPECT_NEAR(static_cast<int>(image->GetHeight()), GetScaledInt(15), 1);
-#else
-        EXPECT_NEAR(static_cast<int>(image->GetWidth()),
-                    GetScaledInt(kDragDivRect.width), 1);
-        EXPECT_NEAR(static_cast<int>(image->GetHeight()),
-                    GetScaledInt(kDragDivRect.height), 1);
-#endif
+        EXPECT_NEAR(static_cast<int>(image->GetWidth()), dragdiv.width, 1);
+        EXPECT_NEAR(static_cast<int>(image->GetHeight()), dragdiv.height, 1);
       }
       // During testing hotspot (x, y) was (15, 23) at 1x scale and (15, 18) at
       // 2x scale. Since the mechanism for determining this position is unclear
       // test only that it falls within the rect boundaries.
       CefPoint hotspot = drag_data->GetImageHotspot();
       EXPECT_GT(hotspot.x, 0);
-      EXPECT_LT(hotspot.x, GetScaledInt(kDragDivRect.width));
+      EXPECT_LT(hotspot.x, GetScaledInt(dragdiv.width));
       EXPECT_GT(hotspot.y, 0);
-      EXPECT_LT(hotspot.y, GetScaledInt(kDragDivRect.height));
+      EXPECT_LT(hotspot.y, GetScaledInt(dragdiv.height));
 
       DestroySucceededTestSoon();
       return false;
@@ -1047,13 +1205,15 @@ class OSRTestHandler : public RoutingTestHandler,
       CefRefPtr<CefDragData> data = drag_data->Clone();
       data->ResetFileContents();
       CefMouseEvent ev;
-      ev.x = MiddleX(kDragDivRect) - 5;
-      ev.y = MiddleY(kDragDivRect) - 5;
+      const CefRect& dragdiv = GetElementBounds("dragdiv");
+      ev.x = MiddleX(dragdiv) - 5;
+      ev.y = MiddleY(dragdiv) - 5;
       ev.modifiers = EVENTFLAG_LEFT_MOUSE_BUTTON;
       browser->GetHost()->DragTargetDragEnter(data, ev, allowed_ops);
 
-      ev.x = MiddleX(kDropDivRect);
-      ev.y = MiddleY(kDropDivRect);
+      const CefRect& dropdiv = GetElementBounds("dropdiv");
+      ev.x = MiddleX(dropdiv);
+      ev.y = MiddleY(dropdiv);
       browser->GetHost()->SendMouseMoveEvent(ev, false);
       browser->GetHost()->DragTargetDragOver(ev, allowed_ops);
 
@@ -1070,8 +1230,9 @@ class OSRTestHandler : public RoutingTestHandler,
                         DragOperation operation) override {
     if (test_type_ == OSR_TEST_DRAG_DROP_UPDATE_CURSOR && started()) {
       if (operation != DRAG_OPERATION_NONE) {
+        const CefRect& dropdiv = GetElementBounds("dropdiv");
         browser->GetHost()->DragSourceEndedAt(
-            MiddleX(kDropDivRect), MiddleY(kDropDivRect), DRAG_OPERATION_NONE);
+            MiddleX(dropdiv), MiddleY(dropdiv), DRAG_OPERATION_NONE);
         browser->GetHost()->DragSourceSystemDragEnded();
         DestroySucceededTestSoon();
       }
@@ -1082,13 +1243,49 @@ class OSRTestHandler : public RoutingTestHandler,
       got_update_cursor_.yes();
 
       CefMouseEvent ev;
-      ev.x = MiddleX(kDropDivRect);
-      ev.y = MiddleY(kDropDivRect);
+      const CefRect& dropdiv = GetElementBounds("dropdiv");
+      ev.x = MiddleX(dropdiv);
+      ev.y = MiddleY(dropdiv);
       ev.modifiers = 0;
       browser->GetHost()->SendMouseClickEvent(ev, MBT_LEFT, true, 1);
       browser->GetHost()->DragTargetDrop(ev);
       browser->GetHost()->DragSourceEndedAt(ev.x, ev.y, operation);
       browser->GetHost()->DragSourceSystemDragEnded();
+    }
+  }
+
+  void OnTextSelectionChanged(CefRefPtr<CefBrowser> browser,
+                              const CefString& selected_text,
+                              const CefRange& selected_range) override {
+    if (test_type_ == OSR_TEST_TEXT_SELECTION_CHANGE && started()) {
+      if (!got_initial_text_selection_event_) {
+        got_initial_text_selection_event_.yes();
+      } else {
+        EXPECT_STREQ("SELECTED_TEXT_RANGE", selected_text.ToString().c_str());
+        DestroySucceededTestSoon();
+      }
+    }
+  }
+
+  void OnVirtualKeyboardRequested(CefRefPtr<CefBrowser> browser,
+                                  TextInputMode input_mode) override {
+    if (test_type_ == OSR_TEST_VIRTUAL_KEYBOARD && started()) {
+      if (!got_virtual_keyboard_event_.isSet()) {
+        got_virtual_keyboard_event_.yes();
+        EXPECT_EQ(CEF_TEXT_INPUT_MODE_EMAIL, input_mode);
+
+        CefMouseEvent mouse_event;
+        const CefRect& input = GetElementBounds("LI01");
+        mouse_event.x = MiddleX(input);
+        mouse_event.y = MiddleY(input);
+        mouse_event.modifiers = 0;
+        browser->GetHost()->SendMouseClickEvent(mouse_event, MBT_LEFT, false,
+                                                1);
+        browser->GetHost()->SendMouseClickEvent(mouse_event, MBT_LEFT, true, 1);
+      } else {
+        EXPECT_EQ(CEF_TEXT_INPUT_MODE_NONE, input_mode);
+        DestroySucceededTestSoon();
+      }
     }
   }
 
@@ -1107,7 +1304,7 @@ class OSRTestHandler : public RoutingTestHandler,
     if (!started())
       return;
     if (test_type_ == OSR_TEST_CLICK_RIGHT) {
-      const CefRect& expected_rect = GetExpectedRect(4);
+      const CefRect& expected_rect = GetElementBounds("LI04");
       EXPECT_EQ(params->GetXCoord(), MiddleX(expected_rect));
       EXPECT_EQ(params->GetYCoord(), MiddleY(expected_rect));
       DestroySucceededTestSoon();
@@ -1141,7 +1338,7 @@ class OSRTestHandler : public RoutingTestHandler,
 #else
 #error "Unsupported platform"
 #endif
-    CefBrowserHost::CreateBrowser(windowInfo, this, url, settings, NULL);
+    CefBrowserHost::CreateBrowser(windowInfo, this, url, settings, NULL, NULL);
   }
 
   CefRect GetScaledRect(const CefRect& rect) const {
@@ -1152,16 +1349,12 @@ class OSRTestHandler : public RoutingTestHandler,
     return client::LogicalToDevice(value, scale_factor_);
   }
 
-  CefRect GetExpectedRect(int index) {
-    CefRect rect = kExpectedRectLI[index];
-#if defined(OS_WIN) || defined(OS_LINUX)
-    // Adjust the rect to include system vertical scrollbar width.
-    rect.width += kDefaultVerticalScrollbarWidth - kVerticalScrollbarWidth;
-#elif !defined(OS_MACOSX)
-#error "Unsupported platform"
-#endif
-
-    return rect;
+  CefRect GetElementBounds(const std::string& id) {
+    ElementBoundsMap::const_iterator it = element_bounds_.find(id);
+    if (it != element_bounds_.end()) {
+      return it->second;
+    }
+    return CefRect();
   }
 
   static bool IsFullRepaint(const CefRect& rc, int width, int height) {
@@ -1218,6 +1411,8 @@ class OSRTestHandler : public RoutingTestHandler,
       // SetFocus is called by the system when we explicitly set the focus and
       // when popups are dismissed.
       EXPECT_TRUE(got_system_focus_event_);
+    } else if (test_type_ == OSR_TEST_TEXT_SELECTION_CHANGE) {
+      EXPECT_TRUE(got_initial_text_selection_event_);
     } else {
       EXPECT_FALSE(got_system_focus_event_);
     }
@@ -1228,8 +1423,10 @@ class OSRTestHandler : public RoutingTestHandler,
   void ExpandDropDown() {
     GetBrowser()->GetHost()->SendFocusEvent(true);
     CefMouseEvent mouse_event;
-    mouse_event.x = MiddleX(kSelectRect);
-    mouse_event.y = MiddleY(kSelectRect);
+
+    const CefRect& LI11select = GetElementBounds("LI11select");
+    mouse_event.x = MiddleX(LI11select);
+    mouse_event.y = MiddleY(LI11select);
     mouse_event.modifiers = 0;
     GetBrowser()->GetHost()->SendMouseClickEvent(mouse_event, MBT_LEFT, false,
                                                  1);
@@ -1304,9 +1501,15 @@ class OSRTestHandler : public RoutingTestHandler,
   int event_count_;
   int event_total_;
   bool started_;
+  cef_touch_event_type_t touch_state_;
   TrackCallback got_update_cursor_;
   TrackCallback got_navigation_focus_event_;
   TrackCallback got_system_focus_event_;
+  TrackCallback got_initial_text_selection_event_;
+  TrackCallback got_virtual_keyboard_event_;
+
+  typedef std::map<std::string, CefRect> ElementBoundsMap;
+  ElementBoundsMap element_bounds_;
 
   IMPLEMENT_REFCOUNTING(OSRTestHandler);
 };
@@ -1324,67 +1527,79 @@ class OSRTestHandler : public RoutingTestHandler,
   }
 
 // tests
-OSR_TEST(Windowless, OSR_TEST_IS_WINDOWLESS, 1.0f);
-OSR_TEST(Windowless2x, OSR_TEST_IS_WINDOWLESS, 2.0f);
-OSR_TEST(Focus, OSR_TEST_FOCUS, 1.0f);
-OSR_TEST(Focus2x, OSR_TEST_FOCUS, 2.0f);
-OSR_TEST(TakeFocus, OSR_TEST_TAKE_FOCUS, 1.0f);
-OSR_TEST(TakeFocus2x, OSR_TEST_TAKE_FOCUS, 2.0f);
-OSR_TEST(GotFocus, OSR_TEST_GOT_FOCUS, 1.0f);
-OSR_TEST(GotFocus2x, OSR_TEST_GOT_FOCUS, 2.0f);
-OSR_TEST(Paint, OSR_TEST_PAINT, 1.0f);
-OSR_TEST(Paint2x, OSR_TEST_PAINT, 2.0f);
-OSR_TEST(TransparentPaint, OSR_TEST_TRANSPARENCY, 1.0f);
-OSR_TEST(TransparentPaint2x, OSR_TEST_TRANSPARENCY, 2.0f);
-OSR_TEST(Cursor, OSR_TEST_CURSOR, 1.0f);
-OSR_TEST(Cursor2x, OSR_TEST_CURSOR, 2.0f);
-OSR_TEST(MouseMove, OSR_TEST_MOUSE_MOVE, 1.0f);
-OSR_TEST(MouseMove2x, OSR_TEST_MOUSE_MOVE, 2.0f);
-OSR_TEST(MouseRightClick, OSR_TEST_CLICK_RIGHT, 1.0f);
-OSR_TEST(MouseRightClick2x, OSR_TEST_CLICK_RIGHT, 2.0f);
-OSR_TEST(MouseLeftClick, OSR_TEST_CLICK_LEFT, 1.0f);
-OSR_TEST(MouseLeftClick2x, OSR_TEST_CLICK_LEFT, 2.0f);
-OSR_TEST(ScreenPoint, OSR_TEST_SCREEN_POINT, 1.0f);
-OSR_TEST(ScreenPoint2x, OSR_TEST_SCREEN_POINT, 2.0f);
-OSR_TEST(Resize, OSR_TEST_RESIZE, 1.0f);
-OSR_TEST(Resize2x, OSR_TEST_RESIZE, 2.0f);
-OSR_TEST(Invalidate, OSR_TEST_INVALIDATE, 1.0f);
-OSR_TEST(Invalidate2x, OSR_TEST_INVALIDATE, 2.0f);
-OSR_TEST(KeyEvents, OSR_TEST_KEY_EVENTS, 1.0f);
-OSR_TEST(KeyEvents2x, OSR_TEST_KEY_EVENTS, 2.0f);
-OSR_TEST(Tooltip, OSR_TEST_TOOLTIP, 1.0f);
-OSR_TEST(Tooltip2x, OSR_TEST_TOOLTIP, 2.0f);
-OSR_TEST(Scrolling, OSR_TEST_SCROLLING, 1.0f);
-OSR_TEST(Scrolling2x, OSR_TEST_SCROLLING, 2.0f);
-OSR_TEST(ContextMenu, OSR_TEST_CONTEXT_MENU, 1.0f);
-OSR_TEST(ContextMenu2x, OSR_TEST_CONTEXT_MENU, 2.0f);
-OSR_TEST(PopupPaint, OSR_TEST_POPUP_PAINT, 1.0f);
-OSR_TEST(PopupPaint2x, OSR_TEST_POPUP_PAINT, 2.0f);
-OSR_TEST(PopupShow, OSR_TEST_POPUP_SHOW, 1.0f);
-OSR_TEST(PopupShow2x, OSR_TEST_POPUP_SHOW, 2.0f);
-OSR_TEST(PopupSize, OSR_TEST_POPUP_SIZE, 1.0f);
-OSR_TEST(PopupSize2x, OSR_TEST_POPUP_SIZE, 2.0f);
-OSR_TEST(PopupHideOnBlur, OSR_TEST_POPUP_HIDE_ON_BLUR, 1.0f);
-OSR_TEST(PopupHideOnBlur2x, OSR_TEST_POPUP_HIDE_ON_BLUR, 2.0f);
-OSR_TEST(PopupHideOnClick, OSR_TEST_POPUP_HIDE_ON_CLICK, 1.0f);
-OSR_TEST(PopupHideOnClick2x, OSR_TEST_POPUP_HIDE_ON_CLICK, 2.0f);
-OSR_TEST(PopupHideOnScroll, OSR_TEST_POPUP_HIDE_ON_SCROLL, 1.0f);
-OSR_TEST(PopupHideOnScroll2x, OSR_TEST_POPUP_HIDE_ON_SCROLL, 2.0f);
-OSR_TEST(PopupHideOnEsc, OSR_TEST_POPUP_HIDE_ON_ESC, 1.0f);
-OSR_TEST(PopupHideOnEsc2x, OSR_TEST_POPUP_HIDE_ON_ESC, 2.0f);
-OSR_TEST(PopupScrollInside, OSR_TEST_POPUP_SCROLL_INSIDE, 1.0f);
-OSR_TEST(PopupScrollInside2x, OSR_TEST_POPUP_SCROLL_INSIDE, 2.0f);
-OSR_TEST(DragDropStartDragging, OSR_TEST_DRAG_DROP_START_DRAGGING, 1.0f);
-OSR_TEST(DragDropStartDragging2x, OSR_TEST_DRAG_DROP_START_DRAGGING, 2.0f);
-OSR_TEST(DragDropUpdateCursor, OSR_TEST_DRAG_DROP_UPDATE_CURSOR, 1.0f);
-OSR_TEST(DragDropUpdateCursor2x, OSR_TEST_DRAG_DROP_UPDATE_CURSOR, 2.0f);
-OSR_TEST(DragDropDropElement, OSR_TEST_DRAG_DROP_DROP, 1.0f);
-OSR_TEST(DragDropDropElement2x, OSR_TEST_DRAG_DROP_DROP, 2.0f);
-OSR_TEST(IMESetComposition, OSR_TEST_IME_SET_COMPOSITION, 1.0f);
-OSR_TEST(IMESetComposition2x, OSR_TEST_IME_SET_COMPOSITION, 2.0f);
-OSR_TEST(IMECommitText, OSR_TEST_IME_COMMIT_TEXT, 1.0f);
-OSR_TEST(IMECommitText2x, OSR_TEST_IME_COMMIT_TEXT, 2.0f);
-OSR_TEST(IMEFinishComposition, OSR_TEST_IME_FINISH_COMPOSITION, 1.0f);
-OSR_TEST(IMEFinishComposition2x, OSR_TEST_IME_FINISH_COMPOSITION, 2.0f);
-OSR_TEST(IMECancelComposition, OSR_TEST_IME_CANCEL_COMPOSITION, 1.0f);
-OSR_TEST(IMECancelComposition2x, OSR_TEST_IME_CANCEL_COMPOSITION, 2.0f);
+OSR_TEST(Windowless, OSR_TEST_IS_WINDOWLESS, 1.0f)
+OSR_TEST(Windowless2x, OSR_TEST_IS_WINDOWLESS, 2.0f)
+OSR_TEST(Focus, OSR_TEST_FOCUS, 1.0f)
+OSR_TEST(Focus2x, OSR_TEST_FOCUS, 2.0f)
+OSR_TEST(TakeFocus, OSR_TEST_TAKE_FOCUS, 1.0f)
+OSR_TEST(TakeFocus2x, OSR_TEST_TAKE_FOCUS, 2.0f)
+OSR_TEST(GotFocus, OSR_TEST_GOT_FOCUS, 1.0f)
+OSR_TEST(GotFocus2x, OSR_TEST_GOT_FOCUS, 2.0f)
+OSR_TEST(Paint, OSR_TEST_PAINT, 1.0f)
+OSR_TEST(Paint2x, OSR_TEST_PAINT, 2.0f)
+OSR_TEST(TransparentPaint, OSR_TEST_TRANSPARENCY, 1.0f)
+OSR_TEST(TransparentPaint2x, OSR_TEST_TRANSPARENCY, 2.0f)
+OSR_TEST(Cursor, OSR_TEST_CURSOR, 1.0f)
+OSR_TEST(Cursor2x, OSR_TEST_CURSOR, 2.0f)
+OSR_TEST(MouseMove, OSR_TEST_MOUSE_MOVE, 1.0f)
+OSR_TEST(MouseMove2x, OSR_TEST_MOUSE_MOVE, 2.0f)
+OSR_TEST(MouseRightClick, OSR_TEST_CLICK_RIGHT, 1.0f)
+OSR_TEST(MouseRightClick2x, OSR_TEST_CLICK_RIGHT, 2.0f)
+OSR_TEST(MouseLeftClick, OSR_TEST_CLICK_LEFT, 1.0f)
+OSR_TEST(MouseLeftClick2x, OSR_TEST_CLICK_LEFT, 2.0f)
+OSR_TEST(ScreenPoint, OSR_TEST_SCREEN_POINT, 1.0f)
+OSR_TEST(ScreenPoint2x, OSR_TEST_SCREEN_POINT, 2.0f)
+OSR_TEST(Resize, OSR_TEST_RESIZE, 1.0f)
+OSR_TEST(Resize2x, OSR_TEST_RESIZE, 2.0f)
+OSR_TEST(Invalidate, OSR_TEST_INVALIDATE, 1.0f)
+OSR_TEST(Invalidate2x, OSR_TEST_INVALIDATE, 2.0f)
+OSR_TEST(KeyEvents, OSR_TEST_KEY_EVENTS, 1.0f)
+OSR_TEST(KeyEvents2x, OSR_TEST_KEY_EVENTS, 2.0f)
+OSR_TEST(Tooltip, OSR_TEST_TOOLTIP, 1.0f)
+OSR_TEST(Tooltip2x, OSR_TEST_TOOLTIP, 2.0f)
+OSR_TEST(Scrolling, OSR_TEST_SCROLLING, 1.0f)
+OSR_TEST(Scrolling2x, OSR_TEST_SCROLLING, 2.0f)
+OSR_TEST(ContextMenu, OSR_TEST_CONTEXT_MENU, 1.0f)
+OSR_TEST(ContextMenu2x, OSR_TEST_CONTEXT_MENU, 2.0f)
+OSR_TEST(PopupPaint, OSR_TEST_POPUP_PAINT, 1.0f)
+OSR_TEST(PopupPaint2x, OSR_TEST_POPUP_PAINT, 2.0f)
+OSR_TEST(PopupShow, OSR_TEST_POPUP_SHOW, 1.0f)
+OSR_TEST(PopupShow2x, OSR_TEST_POPUP_SHOW, 2.0f)
+OSR_TEST(PopupSize, OSR_TEST_POPUP_SIZE, 1.0f)
+OSR_TEST(PopupSize2x, OSR_TEST_POPUP_SIZE, 2.0f)
+OSR_TEST(PopupHideOnBlur, OSR_TEST_POPUP_HIDE_ON_BLUR, 1.0f)
+OSR_TEST(PopupHideOnBlur2x, OSR_TEST_POPUP_HIDE_ON_BLUR, 2.0f)
+OSR_TEST(PopupHideOnClick, OSR_TEST_POPUP_HIDE_ON_CLICK, 1.0f)
+OSR_TEST(PopupHideOnClick2x, OSR_TEST_POPUP_HIDE_ON_CLICK, 2.0f)
+OSR_TEST(PopupHideOnScroll, OSR_TEST_POPUP_HIDE_ON_SCROLL, 1.0f)
+OSR_TEST(PopupHideOnScroll2x, OSR_TEST_POPUP_HIDE_ON_SCROLL, 2.0f)
+OSR_TEST(PopupHideOnEsc, OSR_TEST_POPUP_HIDE_ON_ESC, 1.0f)
+OSR_TEST(PopupHideOnEsc2x, OSR_TEST_POPUP_HIDE_ON_ESC, 2.0f)
+OSR_TEST(PopupScrollInside, OSR_TEST_POPUP_SCROLL_INSIDE, 1.0f)
+OSR_TEST(PopupScrollInside2x, OSR_TEST_POPUP_SCROLL_INSIDE, 2.0f)
+OSR_TEST(DragDropStartDragging, OSR_TEST_DRAG_DROP_START_DRAGGING, 1.0f)
+OSR_TEST(DragDropStartDragging2x, OSR_TEST_DRAG_DROP_START_DRAGGING, 2.0f)
+OSR_TEST(DragDropUpdateCursor, OSR_TEST_DRAG_DROP_UPDATE_CURSOR, 1.0f)
+OSR_TEST(DragDropUpdateCursor2x, OSR_TEST_DRAG_DROP_UPDATE_CURSOR, 2.0f)
+OSR_TEST(DragDropDropElement, OSR_TEST_DRAG_DROP_DROP, 1.0f)
+OSR_TEST(DragDropDropElement2x, OSR_TEST_DRAG_DROP_DROP, 2.0f)
+OSR_TEST(IMESetComposition, OSR_TEST_IME_SET_COMPOSITION, 1.0f)
+OSR_TEST(IMESetComposition2x, OSR_TEST_IME_SET_COMPOSITION, 2.0f)
+OSR_TEST(IMECommitText, OSR_TEST_IME_COMMIT_TEXT, 1.0f)
+OSR_TEST(IMECommitText2x, OSR_TEST_IME_COMMIT_TEXT, 2.0f)
+OSR_TEST(IMEFinishComposition, OSR_TEST_IME_FINISH_COMPOSITION, 1.0f)
+OSR_TEST(IMEFinishComposition2x, OSR_TEST_IME_FINISH_COMPOSITION, 2.0f)
+OSR_TEST(IMECancelComposition, OSR_TEST_IME_CANCEL_COMPOSITION, 1.0f)
+OSR_TEST(IMECancelComposition2x, OSR_TEST_IME_CANCEL_COMPOSITION, 2.0f)
+OSR_TEST(TextSelectionChanged, OSR_TEST_TEXT_SELECTION_CHANGE, 1.0f)
+OSR_TEST(TextSelectionChanged2x, OSR_TEST_TEXT_SELECTION_CHANGE, 2.0f)
+OSR_TEST(VirtualKeyboard, OSR_TEST_VIRTUAL_KEYBOARD, 1.0f)
+OSR_TEST(TouchStart, OSR_TEST_TOUCH_START, 1.0f)
+OSR_TEST(TouchStart2X, OSR_TEST_TOUCH_START, 2.0f)
+OSR_TEST(TouchMove, OSR_TEST_TOUCH_MOVE, 1.0f)
+OSR_TEST(TouchMove2X, OSR_TEST_TOUCH_MOVE, 2.0f)
+OSR_TEST(TouchEnd, OSR_TEST_TOUCH_END, 1.0f)
+OSR_TEST(TouchEnd2X, OSR_TEST_TOUCH_END, 2.0f)
+OSR_TEST(TouchCancel, OSR_TEST_TOUCH_CANCEL, 1.0f)
+OSR_TEST(TouchCancel2X, OSR_TEST_TOUCH_CANCEL, 2.0f)
+OSR_TEST(PenEvent, OSR_TEST_PEN, 1.0f)

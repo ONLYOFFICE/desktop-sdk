@@ -21,15 +21,8 @@ void ClientAppBrowser::OnBeforeCommandLineProcessing(
   // Pass additional command-line flags to the browser process.
   if (process_type.empty()) {
     // Pass additional command-line flags when off-screen rendering is enabled.
-    if (command_line->HasSwitch(switches::kOffScreenRenderingEnabled)) {
-      // If the PDF extension is enabled then cc Surfaces must be disabled for
-      // PDFs to render correctly.
-      // See https://bitbucket.org/chromiumembedded/cef/issues/1689 for details.
-      if (!command_line->HasSwitch("disable-extensions") &&
-          !command_line->HasSwitch("disable-pdf-extension")) {
-        command_line->AppendSwitch("disable-surfaces");
-      }
-
+    if (command_line->HasSwitch(switches::kOffScreenRenderingEnabled) &&
+        !command_line->HasSwitch(switches::kSharedTextureEnabled)) {
       // Use software rendering and compositing (disable GPU) for increased FPS
       // and decreased CPU usage. This will also disable WebGL so remove these
       // switches if you need that capability.
@@ -48,6 +41,12 @@ void ClientAppBrowser::OnBeforeCommandLineProcessing(
       command_line->AppendSwitchWithValue("top-chrome-md", "non-material");
     }
 
+    if (!command_line->HasSwitch(switches::kCachePath) &&
+        !command_line->HasSwitch("disable-gpu-shader-disk-cache")) {
+      // Don't create a "GPUCache" directory when cache-path is unspecified.
+      command_line->AppendSwitch("disable-gpu-shader-disk-cache");
+    }
+
     DelegateSet::iterator it = delegates_.begin();
     for (; it != delegates_.end(); ++it)
       (*it)->OnBeforeCommandLineProcessing(this, command_line);
@@ -55,11 +54,13 @@ void ClientAppBrowser::OnBeforeCommandLineProcessing(
 }
 
 void ClientAppBrowser::OnContextInitialized() {
-  // Register cookieable schemes with the global cookie manager.
-  CefRefPtr<CefCookieManager> manager =
-      CefCookieManager::GetGlobalManager(NULL);
-  DCHECK(manager.get());
-  manager->SetSupportedSchemes(cookieable_schemes_, NULL);
+  if (!cookieable_schemes_.empty()) {
+    // Register cookieable schemes with the global cookie manager.
+    CefRefPtr<CefCookieManager> manager =
+        CefCookieManager::GetGlobalManager(NULL);
+    DCHECK(manager.get());
+    manager->SetSupportedSchemes(cookieable_schemes_, true, NULL);
+  }
 
   print_handler_ = CreatePrintHandler();
 

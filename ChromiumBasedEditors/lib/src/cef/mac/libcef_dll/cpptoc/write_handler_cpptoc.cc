@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,10 +9,11 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=8e55451fcdabc0cf875fc530982e7abeec82ca17$
+// $hash=5c1a7b509e204d31dca4e1ca145464797935a32f$
 //
 
 #include "libcef_dll/cpptoc/write_handler_cpptoc.h"
+#include "libcef_dll/shutdown_checker.h"
 
 namespace {
 
@@ -22,6 +23,8 @@ size_t CEF_CALLBACK write_handler_write(struct _cef_write_handler_t* self,
                                         const void* ptr,
                                         size_t size,
                                         size_t n) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -42,6 +45,8 @@ size_t CEF_CALLBACK write_handler_write(struct _cef_write_handler_t* self,
 int CEF_CALLBACK write_handler_seek(struct _cef_write_handler_t* self,
                                     int64 offset,
                                     int whence) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -56,6 +61,8 @@ int CEF_CALLBACK write_handler_seek(struct _cef_write_handler_t* self,
 }
 
 int64 CEF_CALLBACK write_handler_tell(struct _cef_write_handler_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -70,6 +77,8 @@ int64 CEF_CALLBACK write_handler_tell(struct _cef_write_handler_t* self) {
 }
 
 int CEF_CALLBACK write_handler_flush(struct _cef_write_handler_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -84,6 +93,8 @@ int CEF_CALLBACK write_handler_flush(struct _cef_write_handler_t* self) {
 }
 
 int CEF_CALLBACK write_handler_may_block(struct _cef_write_handler_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -109,6 +120,12 @@ CefWriteHandlerCppToC::CefWriteHandlerCppToC() {
   GetStruct()->may_block = write_handler_may_block;
 }
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefWriteHandlerCppToC::~CefWriteHandlerCppToC() {
+  shutdown_checker::AssertNotShutdown();
+}
+
 template <>
 CefRefPtr<CefWriteHandler> CefCppToCRefCounted<
     CefWriteHandlerCppToC,
@@ -118,14 +135,6 @@ CefRefPtr<CefWriteHandler> CefCppToCRefCounted<
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCppToCRefCounted<CefWriteHandlerCppToC,
-                                         CefWriteHandler,
-                                         cef_write_handler_t>::DebugObjCt
-    ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType CefCppToCRefCounted<CefWriteHandlerCppToC,

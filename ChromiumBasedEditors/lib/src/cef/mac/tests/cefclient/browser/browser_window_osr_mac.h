@@ -13,6 +13,8 @@
 
 namespace client {
 
+class BrowserWindowOsrMacImpl;
+
 // Represents a native child window hosting a single off-screen browser
 // instance. The methods of this class must be called on the main thread unless
 // otherwise indicated.
@@ -23,13 +25,14 @@ class BrowserWindowOsrMac : public BrowserWindow,
   // |delegate| must outlive this object.
   BrowserWindowOsrMac(BrowserWindow::Delegate* delegate,
                       const std::string& startup_url,
-                      const OsrRenderer::Settings& settings);
+                      const OsrRendererSettings& settings);
   ~BrowserWindowOsrMac();
 
   // BrowserWindow methods.
   void CreateBrowser(ClientWindowHandle parent_handle,
                      const CefRect& rect,
                      const CefBrowserSettings& settings,
+                     CefRefPtr<CefDictionaryValue> extra_info,
                      CefRefPtr<CefRequestContext> request_context) OVERRIDE;
   void GetPopupConfig(CefWindowHandle temp_handle,
                       CefWindowInfo& windowInfo,
@@ -52,7 +55,7 @@ class BrowserWindowOsrMac : public BrowserWindow,
   void OnAfterCreated(CefRefPtr<CefBrowser> browser) OVERRIDE;
   void OnBeforeClose(CefRefPtr<CefBrowser> browser) OVERRIDE;
   bool GetRootScreenRect(CefRefPtr<CefBrowser> browser, CefRect& rect) OVERRIDE;
-  bool GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) OVERRIDE;
+  void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) OVERRIDE;
   bool GetScreenPoint(CefRefPtr<CefBrowser> browser,
                       int viewX,
                       int viewY,
@@ -85,19 +88,14 @@ class BrowserWindowOsrMac : public BrowserWindow,
       const CefRenderHandler::RectList& character_bounds) OVERRIDE;
 
   void UpdateAccessibilityTree(CefRefPtr<CefValue> value) OVERRIDE;
+  void UpdateAccessibilityLocation(CefRefPtr<CefValue> value) OVERRIDE;
 
  private:
-  // Create the NSView.
-  void Create(ClientWindowHandle parent_handle, const CefRect& rect);
-
-  // The below members will only be accessed on the main thread which should be
-  // the same as the CEF UI thread.
-  OsrRenderer renderer_;
-  ClientWindowHandle nsview_;
-  bool hidden_;
-  bool painting_popup_;
+  scoped_ptr<BrowserWindowOsrMacImpl> impl_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserWindowOsrMac);
+
+  friend class BrowserWindowOsrMacImpl;
 };
 
 }  // namespace client

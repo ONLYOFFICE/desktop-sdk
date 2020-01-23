@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2019 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,7 +33,7 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=cf3b867dfc26e13b96f2e20fe8b974a38d28119e$
+// $hash=889104f0418508aaa66ed8808b627fdd6652102c$
 //
 
 #ifndef CEF_INCLUDE_CAPI_VIEWS_CEF_MENU_BUTTON_CAPI_H_
@@ -85,14 +85,11 @@ typedef struct _cef_menu_button_t {
 // have a visible frame at all times, center alignment, additional padding and a
 // default minimum size of 70x33 DIP. If |with_frame| is false (0) the button
 // will only have a visible frame on hover/press, left alignment, less padding
-// and no default minimum size. If |with_menu_marker| is true (1) a menu marker
-// will be added to the button.
+// and no default minimum size.
 ///
 CEF_EXPORT cef_menu_button_t* cef_menu_button_create(
     struct _cef_menu_button_delegate_t* delegate,
-    const cef_string_t* text,
-    int with_frame,
-    int with_menu_marker);
+    const cef_string_t* text);
 
 #ifdef __cplusplus
 }

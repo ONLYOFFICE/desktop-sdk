@@ -306,7 +306,7 @@ public:
 #endif
 
 public:
-    IMPLEMENT_REFCOUNTING(CAscClientAppBrowser)
+    IMPLEMENT_REFCOUNTING(CAscClientAppBrowser);
 };
 #endif
 
@@ -376,7 +376,7 @@ public:
     }
 
 public:
-    IMPLEMENT_REFCOUNTING(CAscClientAppOther)
+    IMPLEMENT_REFCOUNTING(CAscClientAppOther);
 };
 
 class CAscClientAppRenderer : public client::ClientAppRenderer, public CAppSettings

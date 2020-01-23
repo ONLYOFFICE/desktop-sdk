@@ -89,8 +89,9 @@ class RootWindowViews : public RootWindow,
  private:
   void CreateClientHandler(const std::string& url);
 
-  void InitOnMainThread(const CefBrowserSettings& settings,
-                        const std::string& startup_url);
+  void InitOnUIThread(const CefBrowserSettings& settings,
+                      const std::string& startup_url,
+                      CefRefPtr<CefRequestContext> request_context);
   void CreateViewsWindow(const CefBrowserSettings& settings,
                          const std::string& startup_url,
                          CefRefPtr<CefRequestContext> request_context,
@@ -104,6 +105,7 @@ class RootWindowViews : public RootWindow,
   // unless otherwise indicated.
   // Members set during initialization.
   bool with_controls_;
+  bool always_on_top_;
   bool with_extension_;
   bool initially_hidden_;
   CefRefPtr<CefWindow> parent_window_;

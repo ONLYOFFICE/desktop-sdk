@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,15 +9,18 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=36fb36578579c66789bc788c599636a94db5856f$
+// $hash=c1602f75b4d86db8428931e60b0622a95d159106$
 //
 
 #include "libcef_dll/ctocpp/image_ctocpp.h"
 #include "libcef_dll/ctocpp/binary_value_ctocpp.h"
+#include "libcef_dll/shutdown_checker.h"
 
 // STATIC METHODS - Body may be edited by hand.
 
-CefRefPtr<CefImage> CefImage::CreateImage() {
+NO_SANITIZE("cfi-icall") CefRefPtr<CefImage> CefImage::CreateImage() {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
@@ -29,7 +32,9 @@ CefRefPtr<CefImage> CefImage::CreateImage() {
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
-bool CefImageCToCpp::IsEmpty() {
+NO_SANITIZE("cfi-icall") bool CefImageCToCpp::IsEmpty() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_image_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, is_empty))
     return false;
@@ -43,7 +48,9 @@ bool CefImageCToCpp::IsEmpty() {
   return _retval ? true : false;
 }
 
-bool CefImageCToCpp::IsSame(CefRefPtr<CefImage> that) {
+NO_SANITIZE("cfi-icall") bool CefImageCToCpp::IsSame(CefRefPtr<CefImage> that) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_image_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, is_same))
     return false;
@@ -62,6 +69,7 @@ bool CefImageCToCpp::IsSame(CefRefPtr<CefImage> that) {
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefImageCToCpp::AddBitmap(float scale_factor,
                                int pixel_width,
                                int pixel_height,
@@ -69,6 +77,8 @@ bool CefImageCToCpp::AddBitmap(float scale_factor,
                                cef_alpha_type_t alpha_type,
                                const void* pixel_data,
                                size_t pixel_data_size) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_image_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, add_bitmap))
     return false;
@@ -89,9 +99,12 @@ bool CefImageCToCpp::AddBitmap(float scale_factor,
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefImageCToCpp::AddPNG(float scale_factor,
                             const void* png_data,
                             size_t png_data_size) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_image_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, add_png))
     return false;
@@ -111,9 +124,12 @@ bool CefImageCToCpp::AddPNG(float scale_factor,
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefImageCToCpp::AddJPEG(float scale_factor,
                              const void* jpeg_data,
                              size_t jpeg_data_size) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_image_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, add_jpeg))
     return false;
@@ -133,7 +149,9 @@ bool CefImageCToCpp::AddJPEG(float scale_factor,
   return _retval ? true : false;
 }
 
-size_t CefImageCToCpp::GetWidth() {
+NO_SANITIZE("cfi-icall") size_t CefImageCToCpp::GetWidth() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_image_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_width))
     return 0;
@@ -147,7 +165,9 @@ size_t CefImageCToCpp::GetWidth() {
   return _retval;
 }
 
-size_t CefImageCToCpp::GetHeight() {
+NO_SANITIZE("cfi-icall") size_t CefImageCToCpp::GetHeight() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_image_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_height))
     return 0;
@@ -161,7 +181,10 @@ size_t CefImageCToCpp::GetHeight() {
   return _retval;
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefImageCToCpp::HasRepresentation(float scale_factor) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_image_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, has_representation))
     return false;
@@ -175,7 +198,10 @@ bool CefImageCToCpp::HasRepresentation(float scale_factor) {
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefImageCToCpp::RemoveRepresentation(float scale_factor) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_image_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, remove_representation))
     return false;
@@ -189,10 +215,13 @@ bool CefImageCToCpp::RemoveRepresentation(float scale_factor) {
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefImageCToCpp::GetRepresentationInfo(float scale_factor,
                                            float& actual_scale_factor,
                                            int& pixel_width,
                                            int& pixel_height) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_image_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_representation_info))
     return false;
@@ -207,12 +236,15 @@ bool CefImageCToCpp::GetRepresentationInfo(float scale_factor,
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefBinaryValue> CefImageCToCpp::GetAsBitmap(
     float scale_factor,
     cef_color_type_t color_type,
     cef_alpha_type_t alpha_type,
     int& pixel_width,
     int& pixel_height) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_image_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_as_bitmap))
     return NULL;
@@ -228,10 +260,13 @@ CefRefPtr<CefBinaryValue> CefImageCToCpp::GetAsBitmap(
   return CefBinaryValueCToCpp::Wrap(_retval);
 }
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefBinaryValue> CefImageCToCpp::GetAsPNG(float scale_factor,
                                                    bool with_transparency,
                                                    int& pixel_width,
                                                    int& pixel_height) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_image_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_as_png))
     return NULL;
@@ -246,10 +281,13 @@ CefRefPtr<CefBinaryValue> CefImageCToCpp::GetAsPNG(float scale_factor,
   return CefBinaryValueCToCpp::Wrap(_retval);
 }
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefBinaryValue> CefImageCToCpp::GetAsJPEG(float scale_factor,
                                                     int quality,
                                                     int& pixel_width,
                                                     int& pixel_height) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_image_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_as_jpeg))
     return NULL;
@@ -268,6 +306,12 @@ CefRefPtr<CefBinaryValue> CefImageCToCpp::GetAsJPEG(float scale_factor,
 
 CefImageCToCpp::CefImageCToCpp() {}
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefImageCToCpp::~CefImageCToCpp() {
+  shutdown_checker::AssertNotShutdown();
+}
+
 template <>
 cef_image_t*
 CefCToCppRefCounted<CefImageCToCpp, CefImage, cef_image_t>::UnwrapDerived(
@@ -276,13 +320,6 @@ CefCToCppRefCounted<CefImageCToCpp, CefImage, cef_image_t>::UnwrapDerived(
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount
-    CefCToCppRefCounted<CefImageCToCpp, CefImage, cef_image_t>::DebugObjCt
-        ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType

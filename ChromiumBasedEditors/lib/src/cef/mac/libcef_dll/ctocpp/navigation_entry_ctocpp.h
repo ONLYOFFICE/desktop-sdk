@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=132e1a6331558565dfde27b14bdda39bbc4a4b30$
+// $hash=54f78bfc6bf2274b47730a80b2f54e49ba5d5b49$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_NAVIGATION_ENTRY_CTOCPP_H_
@@ -32,6 +32,7 @@ class CefNavigationEntryCToCpp
                                  cef_navigation_entry_t> {
  public:
   CefNavigationEntryCToCpp();
+  virtual ~CefNavigationEntryCToCpp();
 
   // CefNavigationEntry methods.
   bool IsValid() OVERRIDE;

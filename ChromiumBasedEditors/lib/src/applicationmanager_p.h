@@ -400,7 +400,7 @@ public:
     bool m_bIsEnableConvertLogs;
 
 public:
-    IMPLEMENT_REFCOUNTING(CAscApplicationManager_Private)
+    IMPLEMENT_REFCOUNTING(CAscApplicationManager_Private);
 
 public:
     CAscApplicationManager_Private() : m_oKeyboardTimer(this)

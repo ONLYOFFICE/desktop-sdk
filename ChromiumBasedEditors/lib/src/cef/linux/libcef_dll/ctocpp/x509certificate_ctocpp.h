@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=7f9dc4c67e92b5f5aeb4409aa103b2d4d097e9b3$
+// $hash=76b8765bc1a94b95fdac5bbdf27f3f93dc9b1b37$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_X509CERTIFICATE_CTOCPP_H_
@@ -32,6 +32,7 @@ class CefX509CertificateCToCpp
                                  cef_x509certificate_t> {
  public:
   CefX509CertificateCToCpp();
+  virtual ~CefX509CertificateCToCpp();
 
   // CefX509Certificate methods.
   CefRefPtr<CefX509CertPrincipal> GetSubject() OVERRIDE;

@@ -42,6 +42,8 @@ void BrowserWindow::OnBrowserClosing(CefRefPtr<CefBrowser> browser) {
   REQUIRE_MAIN_THREAD();
   DCHECK_EQ(browser->GetIdentifier(), browser_->GetIdentifier());
   is_closing_ = true;
+
+  delegate_->OnBrowserWindowClosing();
 }
 
 void BrowserWindow::OnBrowserClosed(CefRefPtr<CefBrowser> browser) {
@@ -71,6 +73,11 @@ void BrowserWindow::OnSetTitle(const std::string& title) {
 void BrowserWindow::OnSetFullscreen(bool fullscreen) {
   REQUIRE_MAIN_THREAD();
   delegate_->OnSetFullscreen(fullscreen);
+}
+
+void BrowserWindow::OnAutoResize(const CefSize& new_size) {
+  REQUIRE_MAIN_THREAD();
+  delegate_->OnAutoResize(new_size);
 }
 
 void BrowserWindow::OnSetLoadingState(bool isLoading,

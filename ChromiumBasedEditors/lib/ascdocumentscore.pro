@@ -19,13 +19,20 @@ DEFINES += \
     XPS_USE_DYNAMIC_LIBRARY \
     HTMLRENDERER_USE_DYNAMIC_LIBRARY
 
+DEFINES += DESKTOP_USE_DYNAMIC_LIBRARY_BUILDING
+
 ADD_DEPENDENCY(graphics, kernel, UnicodeConverter, PdfWriter, PdfReader, XpsFile, DjVuFile, HtmlRenderer, hunspell, ooxmlsignature)
 !core_windows:DEFINES += DOCUMENTSCORE_OPENSSL_SUPPORT
 
 CEF_PROJECT_PRI=$$PWD/cef_pri
-build_xp:CEF_PROJECT_PRI=$$PWD/xp
-include($$CEF_PROJECT_PRI/cef_base.pri)
-include($$CEF_PROJECT_PRI/cef_client.pri)
+build_xp {
+    include($$CEF_PROJECT_PRI/cef_base_xp.pri)
+    include($$CEF_PROJECT_PRI/cef_client_xp.pri)
+} else {
+    include($$CEF_PROJECT_PRI/cef_base.pri)
+    include($$CEF_PROJECT_PRI/cef_client.pri)
+}
+
 # ------------------------------------------------------
 
 # for cloud debug

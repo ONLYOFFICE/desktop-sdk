@@ -29,9 +29,10 @@ class MainContextImpl : public MainContext {
   cef_color_t GetBackgroundColor() OVERRIDE;
   bool UseViews() OVERRIDE;
   bool UseWindowlessRendering() OVERRIDE;
+  bool TouchEventsEnabled() OVERRIDE;
   void PopulateSettings(CefSettings* settings) OVERRIDE;
   void PopulateBrowserSettings(CefBrowserSettings* settings) OVERRIDE;
-  void PopulateOsrSettings(OsrRenderer::Settings* settings) OVERRIDE;
+  void PopulateOsrSettings(OsrRendererSettings* settings) OVERRIDE;
   RootWindowManager* GetRootWindowManager() OVERRIDE;
 
   // Initialize CEF and associated main context state. This method must be
@@ -68,9 +69,17 @@ class MainContextImpl : public MainContext {
   cef_color_t background_color_;
   cef_color_t browser_background_color_;
   bool use_windowless_rendering_;
+  int windowless_frame_rate_;
   bool use_views_;
+  bool touch_events_enabled_;
 
   scoped_ptr<RootWindowManager> root_window_manager_;
+
+#if defined(OS_WIN)
+  bool shared_texture_enabled_;
+#endif
+
+  bool external_begin_frame_enabled_;
 
   // Used to verify that methods are called on the correct thread.
   base::ThreadChecker thread_checker_;

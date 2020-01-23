@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,16 +9,20 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=cdb630c6778da3e9e270cc6885a4e40f9f2e73f9$
+// $hash=29ed31b8d18e1bad8d1419b8b147ee958be056f6$
 //
 
 #include "libcef_dll/ctocpp/print_dialog_callback_ctocpp.h"
 #include "libcef_dll/ctocpp/print_settings_ctocpp.h"
+#include "libcef_dll/shutdown_checker.h"
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
+NO_SANITIZE("cfi-icall")
 void CefPrintDialogCallbackCToCpp::Continue(
     CefRefPtr<CefPrintSettings> settings) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_print_dialog_callback_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, cont))
     return;
@@ -34,7 +38,9 @@ void CefPrintDialogCallbackCToCpp::Continue(
   _struct->cont(_struct, CefPrintSettingsCToCpp::Unwrap(settings));
 }
 
-void CefPrintDialogCallbackCToCpp::Cancel() {
+NO_SANITIZE("cfi-icall") void CefPrintDialogCallbackCToCpp::Cancel() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_print_dialog_callback_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, cancel))
     return;
@@ -49,6 +55,12 @@ void CefPrintDialogCallbackCToCpp::Cancel() {
 
 CefPrintDialogCallbackCToCpp::CefPrintDialogCallbackCToCpp() {}
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefPrintDialogCallbackCToCpp::~CefPrintDialogCallbackCToCpp() {
+  shutdown_checker::AssertNotShutdown();
+}
+
 template <>
 cef_print_dialog_callback_t* CefCToCppRefCounted<
     CefPrintDialogCallbackCToCpp,
@@ -58,14 +70,6 @@ cef_print_dialog_callback_t* CefCToCppRefCounted<
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCToCppRefCounted<
-    CefPrintDialogCallbackCToCpp,
-    CefPrintDialogCallback,
-    cef_print_dialog_callback_t>::DebugObjCt ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType CefCToCppRefCounted<CefPrintDialogCallbackCToCpp,

@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,11 +9,12 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=bf190095504ec7f8b414e1f05eb391a6c69419bb$
+// $hash=1cbefd112adac6073c46d42116bd3bbc2ebe98c5$
 //
 
 #include "libcef_dll/cpptoc/web_plugin_info_visitor_cpptoc.h"
 #include "libcef_dll/ctocpp/web_plugin_info_ctocpp.h"
+#include "libcef_dll/shutdown_checker.h"
 
 namespace {
 
@@ -24,6 +25,8 @@ web_plugin_info_visitor_visit(struct _cef_web_plugin_info_visitor_t* self,
                               cef_web_plugin_info_t* info,
                               int count,
                               int total) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -50,6 +53,12 @@ CefWebPluginInfoVisitorCppToC::CefWebPluginInfoVisitorCppToC() {
   GetStruct()->visit = web_plugin_info_visitor_visit;
 }
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefWebPluginInfoVisitorCppToC::~CefWebPluginInfoVisitorCppToC() {
+  shutdown_checker::AssertNotShutdown();
+}
+
 template <>
 CefRefPtr<CefWebPluginInfoVisitor> CefCppToCRefCounted<
     CefWebPluginInfoVisitorCppToC,
@@ -60,14 +69,6 @@ CefRefPtr<CefWebPluginInfoVisitor> CefCppToCRefCounted<
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCppToCRefCounted<
-    CefWebPluginInfoVisitorCppToC,
-    CefWebPluginInfoVisitor,
-    cef_web_plugin_info_visitor_t>::DebugObjCt ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType

@@ -19,7 +19,6 @@ set(CEFTESTS_SRCS
   draggable_regions_unittest.cc
   file_util_unittest.cc
   frame_unittest.cc
-  geolocation_unittest.cc
   image_unittest.cc
   image_util.cc
   image_util.h
@@ -40,11 +39,14 @@ set(CEFTESTS_SRCS
   request_unittest.cc
   resource.h
   resource_manager_unittest.cc
+  resource_request_handler_unittest.cc
+  response_unittest.cc
   routing_test_handler.cc
   routing_test_handler.h
   run_all_unittests.cc
   scheme_handler_unittest.cc
   scoped_temp_dir_unittest.cc
+  server_unittest.cc
   stream_resource_handler_unittest.cc
   stream_unittest.cc
   string_unittest.cc
@@ -95,10 +97,7 @@ set(CEFTESTS_EXTENSIONS_SRCS
 source_group(ceftests\\\\extensions FILES ${CEFTESTS_EXTENSIONS_SRCS})
 
 set(CEFTESTS_RESOURCES_WIN_SRCS_WINDOWS
-  resources/win/ceftests.exe.manifest
-  resources/win/ceftests.ico
   resources/win/ceftests.rc
-  resources/win/small.ico
   )
 APPEND_PLATFORM_SOURCES(CEFTESTS_RESOURCES_WIN_SRCS)
 source_group(ceftests\\\\resources\\\\win FILES ${CEFTESTS_RESOURCES_WIN_SRCS})
@@ -118,7 +117,6 @@ set(CEFTESTS_SHARED_BROWSER_SRCS
   ../shared/browser/main_message_loop_external_pump.h
   ../shared/browser/main_message_loop_std.cc
   ../shared/browser/main_message_loop_std.h
-  ../shared/browser/resource_util.h
   ../shared/browser/resource_util.h
   )
 set(CEFTESTS_SHARED_BROWSER_SRCS_LINUX
@@ -204,6 +202,8 @@ set(CEFTESTS_HELPER_SRCS_MACOSX
   process_message_unittest.cc
   request_handler_unittest.cc
   request_unittest.cc
+  resource_request_handler_unittest.cc
+  response_unittest.cc
   routing_test_handler.cc
   routing_test_handler.h
   scheme_handler_unittest.cc
@@ -301,11 +301,12 @@ set(UNITTESTS_RESOURCES_SRCS
 # Target executable names.
 set(CEF_TARGET "ceftests")
 if(OS_MACOSX)
-  set(CEF_HELPER_TARGET "ceftests Helper")
+  set(CEF_HELPER_TARGET "ceftests_Helper")
+  set(CEF_HELPER_OUTPUT_NAME "ceftests Helper")
+else()
+  # Logical target used to link the libcef library.
+  ADD_LOGICAL_TARGET("libcef_lib" "${CEF_LIB_DEBUG}" "${CEF_LIB_RELEASE}")
 endif()
-
-# Logical target used to link the libcef library.
-ADD_LOGICAL_TARGET("libcef_lib" "${CEF_LIB_DEBUG}" "${CEF_LIB_RELEASE}")
 
 # Determine the target output directory.
 SET_CEF_TARGET_OUT_DIR()
@@ -347,51 +348,87 @@ endif()
 #
 
 if(OS_MACOSX)
-  # Output paths for the app bundles.
+  # Output path for the main app bundle.
   set(CEF_APP "${CEF_TARGET_OUT_DIR}/${CEF_TARGET}.app")
-  set(CEF_HELPER_APP "${CEF_TARGET_OUT_DIR}/${CEF_HELPER_TARGET}.app")
 
-  # Variable referenced from Info.plist files.
+  # Variables referenced from the main Info.plist file.
+  set(EXECUTABLE_NAME "${CEF_TARGET}")
   set(PRODUCT_NAME "${CEF_TARGET}")
 
-  # Helper executable target.
-  add_executable(${CEF_HELPER_TARGET} MACOSX_BUNDLE ${UNITTESTS_HELPER_SRCS})
-  SET_EXECUTABLE_TARGET_PROPERTIES(${CEF_HELPER_TARGET})
-  add_dependencies(${CEF_HELPER_TARGET} libcef_dll_wrapper cef_gtest)
-  target_link_libraries(${CEF_HELPER_TARGET} libcef_lib libcef_dll_wrapper cef_gtest ${CEF_STANDARD_LIBS})
-  set_target_properties(${CEF_HELPER_TARGET} PROPERTIES
-    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/resources/mac/helper-Info.plist
-    )
+  if(USE_SANDBOX)
+    # Logical target used to link the cef_sandbox library.
+    ADD_LOGICAL_TARGET("cef_sandbox_lib" "${CEF_SANDBOX_LIB_DEBUG}" "${CEF_SANDBOX_LIB_RELEASE}")
+  endif()
 
-  # Fix the framework rpath in the helper executable.
-  FIX_MACOSX_HELPER_FRAMEWORK_RPATH(${CEF_HELPER_TARGET})
-
-  # Main executable target.
+  # Main app bundle target.
   add_executable(${CEF_TARGET} MACOSX_BUNDLE ${UNITTESTS_RESOURCES_SRCS} ${UNITTESTS_SRCS})
   SET_EXECUTABLE_TARGET_PROPERTIES(${CEF_TARGET})
-  add_dependencies(${CEF_TARGET} libcef_dll_wrapper cef_gtest "${CEF_HELPER_TARGET}")
-  target_link_libraries(${CEF_TARGET} libcef_lib libcef_dll_wrapper cef_gtest ${CEF_STANDARD_LIBS})
+  add_dependencies(${CEF_TARGET} libcef_dll_wrapper cef_gtest)
+  target_link_libraries(${CEF_TARGET} libcef_dll_wrapper cef_gtest ${CEF_STANDARD_LIBS})
   set_target_properties(${CEF_TARGET} PROPERTIES
     MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/resources/mac/Info.plist
     )
 
-  # Copy files into the main app bundle.
+  # Copy the CEF framework into the Frameworks directory.
   add_custom_command(
     TARGET ${CEF_TARGET}
     POST_BUILD
-    # Copy the helper app bundle into the Frameworks directory.
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${CEF_HELPER_APP}"
-            "${CEF_APP}/Contents/Frameworks/${CEF_HELPER_TARGET}.app"
-    # Copy the CEF framework into the Frameworks directory.
     COMMAND ${CMAKE_COMMAND} -E copy_directory
             "${CEF_BINARY_DIR}/Chromium Embedded Framework.framework"
             "${CEF_APP}/Contents/Frameworks/Chromium Embedded Framework.framework"
     VERBATIM
     )
 
-  # Fix the framework rpath in the main executable.
-  FIX_MACOSX_MAIN_FRAMEWORK_RPATH(${CEF_TARGET})
+  # Create the multiple Helper app bundle targets.
+  foreach(_suffix_list ${CEF_HELPER_APP_SUFFIXES})
+    # Convert to a list and extract the suffix values.
+    string(REPLACE ":" ";" _suffix_list ${_suffix_list})
+    list(GET _suffix_list 0 _name_suffix)
+    list(GET _suffix_list 1 _target_suffix)
+    list(GET _suffix_list 2 _plist_suffix)
+
+    # Define Helper target and output names.
+    set(_helper_target "${CEF_HELPER_TARGET}${_target_suffix}")
+    set(_helper_output_name "${CEF_HELPER_OUTPUT_NAME}${_name_suffix}")
+
+    # Create Helper-specific variants of the helper-Info.plist file. Do this
+    # manually because the configure_file command (which is executed as part of
+    # MACOSX_BUNDLE_INFO_PLIST) uses global env variables and would insert the
+    # wrong values with multiple targets.
+    set(_helper_info_plist "${CMAKE_CURRENT_BINARY_DIR}/helper-Info${_target_suffix}.plist")
+    file(READ "${CMAKE_CURRENT_SOURCE_DIR}/resources/mac/helper-Info.plist" _plist_contents)
+    string(REPLACE "\${EXECUTABLE_NAME}" "${_helper_output_name}" _plist_contents ${_plist_contents})
+    string(REPLACE "\${PRODUCT_NAME}" "${_helper_output_name}" _plist_contents ${_plist_contents})
+    string(REPLACE "\${BUNDLE_ID_SUFFIX}" "${_plist_suffix}" _plist_contents ${_plist_contents})
+    file(WRITE ${_helper_info_plist} ${_plist_contents})
+
+    # Create Helper executable target.
+    add_executable(${_helper_target} MACOSX_BUNDLE ${UNITTESTS_HELPER_SRCS})
+    SET_EXECUTABLE_TARGET_PROPERTIES(${_helper_target})
+    add_dependencies(${_helper_target} libcef_dll_wrapper cef_gtest)
+    target_link_libraries(${_helper_target} libcef_dll_wrapper cef_gtest ${CEF_STANDARD_LIBS})
+    set_target_properties(${_helper_target} PROPERTIES
+      MACOSX_BUNDLE_INFO_PLIST ${_helper_info_plist}
+      OUTPUT_NAME ${_helper_output_name}
+      )
+
+    if(USE_SANDBOX)
+      target_link_libraries(${_helper_target} cef_sandbox_lib)
+    endif()
+
+    # Add the Helper as a dependency of the main executable target.
+    add_dependencies(${CEF_TARGET} "${_helper_target}")
+
+    # Copy the Helper app bundle into the Frameworks directory.
+    add_custom_command(
+      TARGET ${CEF_TARGET}
+      POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_directory
+              "${CEF_TARGET_OUT_DIR}/${_helper_output_name}.app"
+              "${CEF_APP}/Contents/Frameworks/${_helper_output_name}.app"
+      VERBATIM
+      )
+  endforeach()
 
   # Manually process and copy over resource files.
   # The Xcode generator can support this via the set_target_properties RESOURCE

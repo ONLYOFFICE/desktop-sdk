@@ -86,6 +86,8 @@ void AddTestMenuItems(CefRefPtr<CefMenuModel> test_menu) {
   test_menu->AddItem(ID_TESTS_TRACING_END, "End Tracing");
   test_menu->AddItem(ID_TESTS_PRINT, "Print");
   test_menu->AddItem(ID_TESTS_PRINT_TO_PDF, "Print to PDF");
+  test_menu->AddItem(ID_TESTS_MUTE_AUDIO, "Mute Audio");
+  test_menu->AddItem(ID_TESTS_UNMUTE_AUDIO, "Unmute Audio");
   test_menu->AddItem(ID_TESTS_OTHER_TESTS, "Other Tests");
 }
 
@@ -114,7 +116,7 @@ CefRefPtr<ViewsWindow> ViewsWindow::Create(
 
   // Create a new BrowserView.
   CefRefPtr<CefBrowserView> browser_view = CefBrowserView::CreateBrowserView(
-      client, url, settings, request_context, views_window);
+      client, url, settings, NULL, request_context, views_window);
 
   // Associate the BrowserView with the ViewsWindow.
   views_window->SetBrowserView(browser_view);
@@ -219,6 +221,13 @@ void ViewsWindow::SetFullscreen(bool fullscreen) {
       ShowTopControls(!fullscreen);
 
     window_->SetFullscreen(fullscreen);
+  }
+}
+
+void ViewsWindow::SetAlwaysOnTop(bool on_top) {
+  CEF_REQUIRE_UI_THREAD();
+  if (window_) {
+    window_->SetAlwaysOnTop(on_top);
   }
 }
 
@@ -710,22 +719,11 @@ void ViewsWindow::CreateMenuModel() {
 CefRefPtr<CefLabelButton> ViewsWindow::CreateBrowseButton(
     const std::string& label,
     int id) {
-  // The default framed button image resources (IDR_BUTTON_*) look pretty bad
-  // with non-default background colors, so we'll use frameless buttons with
-  // ink drop when a background color is specified.
-  const bool with_frame = !views_style::IsSet();
-
   CefRefPtr<CefLabelButton> button =
-      CefLabelButton::CreateLabelButton(this, label, with_frame);
+      CefLabelButton::CreateLabelButton(this, label);
   button->SetID(id);
   button->SetEnabled(false);    // Disabled by default.
   button->SetFocusable(false);  // Don't give focus to the button.
-
-  if (!with_frame) {
-    views_style::ApplyTo(button);
-    button->SetInkDropEnabled(true);
-    button->SetHorizontalAlignment(CEF_HORIZONTAL_ALIGNMENT_CENTER);
-  }
 
   return button;
 }
@@ -753,7 +751,7 @@ void ViewsWindow::AddControls() {
 
   // Create the menu button.
   CefRefPtr<CefMenuButton> menu_button =
-      CefMenuButton::CreateMenuButton(this, CefString(), false, false);
+      CefMenuButton::CreateMenuButton(this, CefString());
   menu_button->SetID(ID_MENU_BUTTON);
   menu_button->SetImage(
       CEF_BUTTON_STATE_NORMAL,
@@ -898,7 +896,7 @@ void ViewsWindow::UpdateExtensionControls() {
   for (int id = ID_EXTENSION_BUTTON_FIRST;
        it != extensions_.end() && id <= ID_EXTENSION_BUTTON_LAST; ++id, ++it) {
     CefRefPtr<CefMenuButton> button =
-        CefMenuButton::CreateMenuButton(this, CefString(), false, false);
+        CefMenuButton::CreateMenuButton(this, CefString());
     button->SetID(id);
     button->SetImage(CEF_BUTTON_STATE_NORMAL, (*it).image_);
     views_style::ApplyTo(button.get());

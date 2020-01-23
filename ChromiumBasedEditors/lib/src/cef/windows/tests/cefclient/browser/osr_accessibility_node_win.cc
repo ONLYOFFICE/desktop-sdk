@@ -123,9 +123,9 @@ static inline int MiddleY(const CefRect& rect) {
 struct CefIAccessible : public IAccessible {
  public:
   // Implement IUnknown
-  STDMETHODIMP QueryInterface(REFIID riid, void** ppvObject);
-  STDMETHODIMP_(ULONG) AddRef();
-  STDMETHODIMP_(ULONG) Release();
+  STDMETHODIMP QueryInterface(REFIID riid, void** ppvObject) override;
+  STDMETHODIMP_(ULONG) AddRef() override;
+  STDMETHODIMP_(ULONG) Release() override;
 
   //
   // IAccessible methods.
@@ -196,15 +196,15 @@ struct CefIAccessible : public IAccessible {
   STDMETHODIMP put_accName(VARIANT var_id, BSTR put_name) override;
 
   // Implement IDispatch
-  STDMETHODIMP GetTypeInfoCount(unsigned int FAR* pctinfo);
+  STDMETHODIMP GetTypeInfoCount(unsigned int FAR* pctinfo) override;
   STDMETHODIMP GetTypeInfo(unsigned int iTInfo,
                            LCID lcid,
-                           ITypeInfo FAR* FAR* ppTInfo);
+                           ITypeInfo FAR* FAR* ppTInfo) override;
   STDMETHODIMP GetIDsOfNames(REFIID riid,
                              OLECHAR FAR* FAR* rgszNames,
                              unsigned int cNames,
                              LCID lcid,
-                             DISPID FAR* rgDispId);
+                             DISPID FAR* rgDispId) override;
   STDMETHODIMP Invoke(DISPID dispIdMember,
                       REFIID riid,
                       LCID lcid,
@@ -212,15 +212,17 @@ struct CefIAccessible : public IAccessible {
                       DISPPARAMS FAR* pDispParams,
                       VARIANT FAR* pVarResult,
                       EXCEPINFO FAR* pExcepInfo,
-                      unsigned int FAR* puArgErr);
+                      unsigned int FAR* puArgErr) override;
 
-  CefIAccessible(OsrAXNode* node) : node_(node), ref_count_(0) {}
+  CefIAccessible(OsrAXNode* node) : ref_count_(0), node_(node) {}
 
   // Remove the node reference when OsrAXNode is destroyed, so that
   // MSAA clients get  CO_E_OBJNOTCONNECTED
   void MarkDestroyed() { node_ = NULL; }
 
  protected:
+  virtual ~CefIAccessible() {}
+
   // Ref Count
   ULONG ref_count_;
   // OsrAXNode* proxy object
@@ -345,7 +347,7 @@ STDMETHODIMP CefIAccessible::get_accName(VARIANT varChild, BSTR* pszName) {
   HRESULT retCode = DATACHECK(node_);
   if (SUCCEEDED(retCode)) {
     if (pszName && VALID_CHILDID(varChild)) {
-      std::string name = node_->AxName();
+      std::wstring name = node_->AxName();
       CComBSTR bstrResult(name.c_str());
       *pszName = bstrResult.Detach();
     }
@@ -360,7 +362,7 @@ STDMETHODIMP CefIAccessible::get_accValue(VARIANT varChild, BSTR* pszValue) {
   HRESULT retCode = DATACHECK(node_);
   if (SUCCEEDED(retCode)) {
     if (pszValue && VALID_CHILDID(varChild)) {
-      std::string name = node_->AxValue();
+      std::wstring name = node_->AxValue();
       CComBSTR bstrResult(name.c_str());
       *pszValue = bstrResult.Detach();
     }
@@ -376,7 +378,7 @@ STDMETHODIMP CefIAccessible::get_accDescription(VARIANT varChild,
   HRESULT retCode = DATACHECK(node_);
   if (SUCCEEDED(retCode)) {
     if (pszDescription && VALID_CHILDID(varChild)) {
-      std::string name = node_->AxDescription();
+      std::wstring name = node_->AxDescription();
       CComBSTR bstrResult(name.c_str());
       *pszDescription = bstrResult.Detach();
     }
@@ -680,8 +682,7 @@ CefNativeAccessible* OsrAXNode::GetNativeAccessibleObject(OsrAXNode* parent) {
 
 namespace client {
 
-void OsrAXNode::NotifyAccessibilityEvent(std::string event_type) const {
-}
+void OsrAXNode::NotifyAccessibilityEvent(std::string event_type) const {}
 
 void OsrAXNode::Destroy() {}
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=aa269f6a4dd9e01cb41f345ed926f8ea48f4e3a2$
+// $hash=66db828db84ce2b0eecba5dabca17001f6bda98e$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_VIEWS_DISPLAY_CTOCPP_H_
@@ -30,6 +30,7 @@ class CefDisplayCToCpp
     : public CefCToCppRefCounted<CefDisplayCToCpp, CefDisplay, cef_display_t> {
  public:
   CefDisplayCToCpp();
+  virtual ~CefDisplayCToCpp();
 
   // CefDisplay methods.
   int64 GetID() OVERRIDE;

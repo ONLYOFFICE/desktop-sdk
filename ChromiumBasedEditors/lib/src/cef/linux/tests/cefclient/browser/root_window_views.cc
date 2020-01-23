@@ -21,6 +21,7 @@ static const char* kDefaultImageCache[] = {"menu_icon", "window_icon"};
 
 RootWindowViews::RootWindowViews()
     : with_controls_(false),
+      always_on_top_(false),
       with_extension_(false),
       initially_hidden_(false),
       is_popup_(false),
@@ -42,6 +43,7 @@ void RootWindowViews::Init(RootWindow::Delegate* delegate,
 
   delegate_ = delegate;
   with_controls_ = config.with_controls;
+  always_on_top_ = config.always_on_top;
   with_extension_ = config.with_extension;
   initially_hidden_ = config.initially_hidden;
   if (initially_hidden_ && !config.source_bounds.IsEmpty()) {
@@ -57,8 +59,8 @@ void RootWindowViews::Init(RootWindow::Delegate* delegate,
   CreateClientHandler(config.url);
   initialized_ = true;
 
-  // Continue initialization on the main thread.
-  InitOnMainThread(settings, config.url);
+  // Continue initialization on the UI thread.
+  InitOnUIThread(settings, config.url, delegate_->GetRequestContext(this));
 }
 
 void RootWindowViews::InitAsPopup(RootWindow::Delegate* delegate,
@@ -185,17 +187,17 @@ ClientWindowHandle RootWindowViews::GetWindowHandle() const {
 }
 
 bool RootWindowViews::WithExtension() const {
-  REQUIRE_MAIN_THREAD();
+  DCHECK(initialized_);
   return with_extension_;
 }
 
 bool RootWindowViews::WithControls() {
-  CEF_REQUIRE_UI_THREAD();
+  DCHECK(initialized_);
   return with_controls_;
 }
 
 bool RootWindowViews::WithExtension() {
-  REQUIRE_MAIN_THREAD();
+  DCHECK(initialized_);
   return with_extension_;
 }
 
@@ -239,6 +241,7 @@ void RootWindowViews::OnViewsWindowCreated(CefRefPtr<ViewsWindow> window) {
   CEF_REQUIRE_UI_THREAD();
   DCHECK(!window_);
   window_ = window;
+  window_->SetAlwaysOnTop(always_on_top_);
 
   if (!pending_extensions_.empty()) {
     window_->OnExtensionsChanged(pending_extensions_);
@@ -472,12 +475,14 @@ void RootWindowViews::CreateClientHandler(const std::string& url) {
   client_handler_->set_download_favicon_images(true);
 }
 
-void RootWindowViews::InitOnMainThread(const CefBrowserSettings& settings,
-                                       const std::string& startup_url) {
-  if (!CURRENTLY_ON_MAIN_THREAD()) {
-    // Execute this method on the main thread.
-    MAIN_POST_CLOSURE(base::Bind(&RootWindowViews::InitOnMainThread, this,
-                                 settings, startup_url));
+void RootWindowViews::InitOnUIThread(
+    const CefBrowserSettings& settings,
+    const std::string& startup_url,
+    CefRefPtr<CefRequestContext> request_context) {
+  if (!CefCurrentlyOn(TID_UI)) {
+    // Execute this method on the UI thread.
+    CefPostTask(TID_UI, base::Bind(&RootWindowViews::InitOnUIThread, this,
+                                   settings, startup_url, request_context));
     return;
   }
 
@@ -490,7 +495,7 @@ void RootWindowViews::InitOnMainThread(const CefBrowserSettings& settings,
 
   image_cache_->LoadImages(
       image_set, base::Bind(&RootWindowViews::CreateViewsWindow, this, settings,
-                            startup_url, delegate_->GetRequestContext(this)));
+                            startup_url, request_context));
 }
 
 void RootWindowViews::CreateViewsWindow(

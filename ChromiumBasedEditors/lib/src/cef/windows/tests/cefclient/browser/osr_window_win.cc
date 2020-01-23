@@ -14,6 +14,8 @@
 #include "tests/cefclient/browser/osr_accessibility_helper.h"
 #include "tests/cefclient/browser/osr_accessibility_node.h"
 #include "tests/cefclient/browser/osr_ime_handler_win.h"
+#include "tests/cefclient/browser/osr_render_handler_win_d3d11.h"
+#include "tests/cefclient/browser/osr_render_handler_win_gl.h"
 #include "tests/cefclient/browser/resource.h"
 #include "tests/shared/browser/geometry_util.h"
 #include "tests/shared/browser/main_message_loop.h"
@@ -25,44 +27,66 @@ namespace {
 
 const wchar_t kWndClass[] = L"Client_OsrWindow";
 
-// Render at 30fps during rotation.
-const int kRenderDelay = 1000 / 30;
+// Helper funtion to check if it is Windows8 or greater.
+// https://msdn.microsoft.com/en-us/library/ms724833(v=vs.85).aspx
+inline BOOL IsWindows_8_Or_Newer() {
+  OSVERSIONINFOEX osvi = {0};
+  osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
+  osvi.dwMajorVersion = 6;
+  osvi.dwMinorVersion = 2;
+  DWORDLONG dwlConditionMask = 0;
+  VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
+  VER_SET_CONDITION(dwlConditionMask, VER_MINORVERSION, VER_GREATER_EQUAL);
+  return ::VerifyVersionInfo(&osvi, VER_MAJORVERSION | VER_MINORVERSION,
+                             dwlConditionMask);
+}
 
-// Helper that calls wglMakeCurrent.
-class ScopedGLContext {
+// Helper function to detect mouse messages coming from emulation of touch
+// events. These should be ignored.
+bool IsMouseEventFromTouch(UINT message) {
+#define MOUSEEVENTF_FROMTOUCH 0xFF515700
+  return (message >= WM_MOUSEFIRST) && (message <= WM_MOUSELAST) &&
+         (GetMessageExtraInfo() & MOUSEEVENTF_FROMTOUCH) ==
+             MOUSEEVENTF_FROMTOUCH;
+}
+
+class CreateBrowserHelper {
  public:
-  ScopedGLContext(HDC hdc, HGLRC hglrc, bool swap_buffers)
-      : hdc_(hdc), swap_buffers_(swap_buffers) {
-    BOOL result = wglMakeCurrent(hdc, hglrc);
-    ALLOW_UNUSED_LOCAL(result);
-    DCHECK(result);
-  }
-  ~ScopedGLContext() {
-    BOOL result = wglMakeCurrent(NULL, NULL);
-    DCHECK(result);
-    if (swap_buffers_) {
-      result = SwapBuffers(hdc_);
-      DCHECK(result);
-    }
-  }
+  CreateBrowserHelper(HWND hwnd,
+                      const RECT& rect,
+                      CefRefPtr<CefClient> handler,
+                      const std::string& url,
+                      const CefBrowserSettings& settings,
+                      CefRefPtr<CefDictionaryValue> extra_info,
+                      CefRefPtr<CefRequestContext> request_context,
+                      OsrWindowWin* osr_window_win)
+      : hwnd_(hwnd),
+        rect_(rect),
+        handler_(handler),
+        url_(url),
+        settings_(settings),
+        extra_info_(extra_info),
+        request_context_(request_context),
+        osr_window_win_(osr_window_win) {}
 
- private:
-  const HDC hdc_;
-  const bool swap_buffers_;
+  HWND hwnd_;
+  RECT rect_;
+  CefRefPtr<CefClient> handler_;
+  std::string url_;
+  CefBrowserSettings settings_;
+  CefRefPtr<CefDictionaryValue> extra_info_;
+  CefRefPtr<CefRequestContext> request_context_;
+  OsrWindowWin* osr_window_win_;
 };
 
 }  // namespace
 
 OsrWindowWin::OsrWindowWin(Delegate* delegate,
-                           const OsrRenderer::Settings& settings)
+                           const OsrRendererSettings& settings)
     : delegate_(delegate),
-      renderer_(settings),
+      settings_(settings),
       hwnd_(NULL),
-      hdc_(NULL),
-      hrc_(NULL),
-      device_scale_factor_(client::GetDeviceScaleFactor()),
-      painting_popup_(false),
-      render_task_pending_(false),
+      device_scale_factor_(0),
       hidden_(false),
       last_mouse_pos_(),
       current_mouse_pos_(),
@@ -75,25 +99,35 @@ OsrWindowWin::OsrWindowWin(Delegate* delegate,
       last_click_time_(0),
       last_mouse_down_on_view_(false) {
   DCHECK(delegate_);
+  client_rect_ = {0};
 }
 
 OsrWindowWin::~OsrWindowWin() {
   CEF_REQUIRE_UI_THREAD();
   // The native window should have already been destroyed.
-  DCHECK(!hwnd_);
+  DCHECK(!hwnd_ && !render_handler_.get());
+}
+
+void CreateBrowserWithHelper(CreateBrowserHelper* helper) {
+  helper->osr_window_win_->CreateBrowser(
+      helper->hwnd_, helper->rect_, helper->handler_, helper->settings_,
+      helper->extra_info_, helper->request_context_, helper->url_);
+  delete helper;
 }
 
 void OsrWindowWin::CreateBrowser(HWND parent_hwnd,
                                  const RECT& rect,
                                  CefRefPtr<CefClient> handler,
                                  const CefBrowserSettings& settings,
+                                 CefRefPtr<CefDictionaryValue> extra_info,
                                  CefRefPtr<CefRequestContext> request_context,
                                  const std::string& startup_url) {
   if (!CefCurrentlyOn(TID_UI)) {
     // Execute this method on the UI thread.
-    CefPostTask(TID_UI, base::Bind(&OsrWindowWin::CreateBrowser, this,
-                                   parent_hwnd, rect, handler, settings,
-                                   request_context, startup_url));
+    CreateBrowserHelper* helper =
+        new CreateBrowserHelper(parent_hwnd, rect, handler, startup_url,
+                                settings, extra_info, request_context, this);
+    CefPostTask(TID_UI, base::Bind(CreateBrowserWithHelper, helper));
     return;
   }
 
@@ -103,9 +137,18 @@ void OsrWindowWin::CreateBrowser(HWND parent_hwnd,
   CefWindowInfo window_info;
   window_info.SetAsWindowless(hwnd_);
 
+  if (GetWindowLongPtr(parent_hwnd, GWL_EXSTYLE) & WS_EX_NOACTIVATE) {
+    // Don't activate the browser window on creation.
+    window_info.ex_style |= WS_EX_NOACTIVATE;
+  }
+
+  window_info.shared_texture_enabled = settings_.shared_texture_enabled;
+  window_info.external_begin_frame_enabled =
+      settings_.external_begin_frame_enabled;
+
   // Create the browser asynchronously.
   CefBrowserHost::CreateBrowser(window_info, handler, startup_url, settings,
-                                request_context);
+                                extra_info, request_context);
 }
 
 void OsrWindowWin::ShowPopup(HWND parent_hwnd,
@@ -126,6 +169,10 @@ void OsrWindowWin::ShowPopup(HWND parent_hwnd,
   const RECT rect = {x, y, x + static_cast<int>(width),
                      y + static_cast<int>(height)};
   Create(parent_hwnd, rect);
+
+  // Create the render handler.
+  EnsureRenderHandler();
+  render_handler_->SetBrowser(browser_);
 
   // Send resize notification so the compositor is assigned the correct
   // viewport size and begins rendering.
@@ -226,7 +273,7 @@ void OsrWindowWin::SetDeviceScaleFactor(float device_scale_factor) {
 
 void OsrWindowWin::Create(HWND parent_hwnd, const RECT& rect) {
   CEF_REQUIRE_UI_THREAD();
-  DCHECK(!hwnd_ && !hdc_ && !hrc_);
+  DCHECK(!hwnd_ && !render_handler_.get());
   DCHECK(parent_hwnd);
   DCHECK(!::IsRectEmpty(&rect));
 
@@ -239,10 +286,16 @@ void OsrWindowWin::Create(HWND parent_hwnd, const RECT& rect) {
 
   RegisterOsrClass(hInst, background_brush);
 
+  DWORD ex_style = 0;
+  if (GetWindowLongPtr(parent_hwnd, GWL_EXSTYLE) & WS_EX_NOACTIVATE) {
+    // Don't activate the browser window on creation.
+    ex_style |= WS_EX_NOACTIVATE;
+  }
+
   // Create the native window with a border so it's easier to visually identify
   // OSR windows.
-  hwnd_ = ::CreateWindow(
-      kWndClass, 0,
+  hwnd_ = ::CreateWindowEx(
+      ex_style, kWndClass, 0,
       WS_BORDER | WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS | WS_VISIBLE,
       rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,
       parent_hwnd, 0, hInst, 0);
@@ -264,6 +317,10 @@ void OsrWindowWin::Create(HWND parent_hwnd, const RECT& rect) {
 
   ime_handler_.reset(new OsrImeHandlerWin(hwnd_));
 
+  // Enable Touch Events if requested
+  if (client::MainContext::Get()->TouchEventsEnabled())
+    RegisterTouchWindow(hwnd_, 0);
+
   // Notify the window owner.
   NotifyNativeWindowCreated(hwnd_);
 }
@@ -278,88 +335,12 @@ void OsrWindowWin::Destroy() {
   drop_target_ = NULL;
 #endif
 
-  DisableGL();
+  render_handler_.reset();
 
   // Destroy the native window.
   ::DestroyWindow(hwnd_);
   ime_handler_.reset();
   hwnd_ = NULL;
-}
-
-void OsrWindowWin::EnableGL() {
-  CEF_REQUIRE_UI_THREAD();
-
-  PIXELFORMATDESCRIPTOR pfd;
-  int format;
-
-  // Get the device context.
-  hdc_ = GetDC(hwnd_);
-
-  // Set the pixel format for the DC.
-  ZeroMemory(&pfd, sizeof(pfd));
-  pfd.nSize = sizeof(pfd);
-  pfd.nVersion = 1;
-  pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-  pfd.iPixelType = PFD_TYPE_RGBA;
-  pfd.cColorBits = 24;
-  pfd.cDepthBits = 16;
-  pfd.iLayerType = PFD_MAIN_PLANE;
-  format = ChoosePixelFormat(hdc_, &pfd);
-  SetPixelFormat(hdc_, format, &pfd);
-
-  // Create and enable the render context.
-  hrc_ = wglCreateContext(hdc_);
-
-  ScopedGLContext scoped_gl_context(hdc_, hrc_, false);
-  renderer_.Initialize();
-}
-
-void OsrWindowWin::DisableGL() {
-  CEF_REQUIRE_UI_THREAD();
-
-  if (!hdc_)
-    return;
-
-  {
-    ScopedGLContext scoped_gl_context(hdc_, hrc_, false);
-    renderer_.Cleanup();
-  }
-
-  if (IsWindow(hwnd_)) {
-    // wglDeleteContext will make the context not current before deleting it.
-    BOOL result = wglDeleteContext(hrc_);
-    ALLOW_UNUSED_LOCAL(result);
-    DCHECK(result);
-    ReleaseDC(hwnd_, hdc_);
-  }
-
-  hdc_ = NULL;
-  hrc_ = NULL;
-}
-
-void OsrWindowWin::Invalidate() {
-  CEF_REQUIRE_UI_THREAD();
-
-  // Don't post another task if the previous task is still pending.
-  if (render_task_pending_)
-    return;
-  render_task_pending_ = true;
-
-  CefPostDelayedTask(TID_UI, base::Bind(&OsrWindowWin::Render, this),
-                     kRenderDelay);
-}
-
-void OsrWindowWin::Render() {
-  CEF_REQUIRE_UI_THREAD();
-
-  if (render_task_pending_)
-    render_task_pending_ = false;
-
-  if (!hdc_)
-    EnableGL();
-
-  ScopedGLContext scoped_gl_context(hdc_, hrc_, true);
-  renderer_.Render();
 }
 
 void OsrWindowWin::NotifyNativeWindowCreated(HWND hwnd) {
@@ -560,6 +541,15 @@ LRESULT CALLBACK OsrWindowWin::OsrWndProc(HWND hWnd,
       // Don't erase the background.
       return 0;
 
+    // If your application does not require Win7 support, please do consider
+    // using WM_POINTER* messages instead of WM_TOUCH. WM_POINTER are more
+    // intutive, complete and simpler to code.
+    // https://msdn.microsoft.com/en-us/library/hh454903(v=vs.85).aspx
+    case WM_TOUCH:
+      if (self->OnTouchEvent(message, wParam, lParam))
+        return 0;
+      break;
+
     case WM_NCDESTROY:
       // Clear the reference to |self|.
       SetUserDataPtr(hWnd, NULL);
@@ -571,6 +561,9 @@ LRESULT CALLBACK OsrWindowWin::OsrWndProc(HWND hWnd,
 }
 
 void OsrWindowWin::OnMouseEvent(UINT message, WPARAM wParam, LPARAM lParam) {
+  if (IsMouseEventFromTouch(message))
+    return;
+
   CefRefPtr<CefBrowserHost> browser_host;
   if (browser_)
     browser_host = browser_->GetHost();
@@ -647,8 +640,7 @@ void OsrWindowWin::OnMouseEvent(UINT message, WPARAM wParam, LPARAM lParam) {
       if (mouse_rotation_) {
         // End rotation effect.
         mouse_rotation_ = false;
-        renderer_.SetSpin(0, 0);
-        Invalidate();
+        render_handler_->SetSpin(0, 0);
       } else {
         int x = GET_X_LPARAM(lParam);
         int y = GET_Y_LPARAM(lParam);
@@ -680,11 +672,11 @@ void OsrWindowWin::OnMouseEvent(UINT message, WPARAM wParam, LPARAM lParam) {
         // Apply rotation effect.
         current_mouse_pos_.x = x;
         current_mouse_pos_.y = y;
-        renderer_.IncrementSpin(current_mouse_pos_.x - last_mouse_pos_.x,
-                                current_mouse_pos_.y - last_mouse_pos_.y);
+        render_handler_->IncrementSpin(
+            current_mouse_pos_.x - last_mouse_pos_.x,
+            current_mouse_pos_.y - last_mouse_pos_.y);
         last_mouse_pos_.x = current_mouse_pos_.x;
         last_mouse_pos_.y = current_mouse_pos_.y;
-        Invalidate();
       } else {
         if (!mouse_tracking_) {
           // Start tracking mouse leave. Required for the WM_MOUSELEAVE event to
@@ -818,22 +810,75 @@ bool OsrWindowWin::OnEraseBkgnd() {
   return (browser_ == NULL);
 }
 
+bool OsrWindowWin::OnTouchEvent(UINT message, WPARAM wParam, LPARAM lParam) {
+  // Handle touch events on Windows.
+  int num_points = LOWORD(wParam);
+  // Chromium only supports upto 16 touch points.
+  if (num_points < 0 || num_points > 16)
+    return false;
+  std::unique_ptr<TOUCHINPUT[]> input(new TOUCHINPUT[num_points]);
+  if (GetTouchInputInfo(reinterpret_cast<HTOUCHINPUT>(lParam), num_points,
+                        input.get(), sizeof(TOUCHINPUT))) {
+    CefTouchEvent touch_event;
+    for (int i = 0; i < num_points; ++i) {
+      POINT point;
+      point.x = TOUCH_COORD_TO_PIXEL(input[i].x);
+      point.y = TOUCH_COORD_TO_PIXEL(input[i].y);
+
+      if (!IsWindows_8_Or_Newer()) {
+        // Windows 7 sends touch events for touches in the non-client area,
+        // whereas Windows 8 does not. In order to unify the behaviour, always
+        // ignore touch events in the non-client area.
+        LPARAM l_param_ht = MAKELPARAM(point.x, point.y);
+        LRESULT hittest = SendMessage(hwnd_, WM_NCHITTEST, 0, l_param_ht);
+        if (hittest != HTCLIENT)
+          return false;
+      }
+
+      ScreenToClient(hwnd_, &point);
+      touch_event.x = DeviceToLogical(point.x, device_scale_factor_);
+      touch_event.y = DeviceToLogical(point.y, device_scale_factor_);
+
+      // Touch point identifier stays consistent in a touch contact sequence
+      touch_event.id = input[i].dwID;
+
+      if (input[i].dwFlags & TOUCHEVENTF_DOWN) {
+        touch_event.type = CEF_TET_PRESSED;
+      } else if (input[i].dwFlags & TOUCHEVENTF_MOVE) {
+        touch_event.type = CEF_TET_MOVED;
+      } else if (input[i].dwFlags & TOUCHEVENTF_UP) {
+        touch_event.type = CEF_TET_RELEASED;
+      }
+
+      touch_event.radius_x = 0;
+      touch_event.radius_y = 0;
+      touch_event.rotation_angle = 0;
+      touch_event.pressure = 0;
+      touch_event.modifiers = 0;
+
+      // Notify the browser of touch event
+      if (browser_)
+        browser_->GetHost()->SendTouchEvent(touch_event);
+    }
+    CloseTouchInputHandle(reinterpret_cast<HTOUCHINPUT>(lParam));
+    return true;
+  }
+
+  return false;
+}
+
 bool OsrWindowWin::IsOverPopupWidget(int x, int y) const {
-  CEF_REQUIRE_UI_THREAD();
-  const CefRect& rc = renderer_.popup_rect();
-  int popup_right = rc.x + rc.width;
-  int popup_bottom = rc.y + rc.height;
-  return (x >= rc.x) && (x < popup_right) && (y >= rc.y) && (y < popup_bottom);
+  if (!render_handler_)
+    return false;
+  return render_handler_->IsOverPopupWidget(x, y);
 }
 
 int OsrWindowWin::GetPopupXOffset() const {
-  CEF_REQUIRE_UI_THREAD();
-  return renderer_.original_popup_rect().x - renderer_.popup_rect().x;
+  return render_handler_->GetPopupXOffset();
 }
 
 int OsrWindowWin::GetPopupYOffset() const {
-  CEF_REQUIRE_UI_THREAD();
-  return renderer_.original_popup_rect().y - renderer_.popup_rect().y;
+  return render_handler_->GetPopupYOffset();
 }
 
 void OsrWindowWin::ApplyPopupOffset(int& x, int& y) const {
@@ -849,6 +894,12 @@ void OsrWindowWin::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
   browser_ = browser;
 
   if (hwnd_) {
+    // The native window will already exist for non-popup browsers.
+    EnsureRenderHandler();
+    render_handler_->SetBrowser(browser);
+  }
+
+  if (hwnd_) {
     // Show the browser window. Called asynchronously so that the browser has
     // time to create associated internal objects.
     CefPostTask(TID_UI, base::Bind(&OsrWindowWin::Show, this));
@@ -861,6 +912,7 @@ void OsrWindowWin::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
   static_cast<ClientHandlerOsr*>(browser_->GetHost()->GetClient().get())
       ->DetachOsrDelegate();
   browser_ = NULL;
+  render_handler_->SetBrowser(NULL);
   Destroy();
 }
 
@@ -870,15 +922,19 @@ bool OsrWindowWin::GetRootScreenRect(CefRefPtr<CefBrowser> browser,
   return false;
 }
 
-bool OsrWindowWin::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) {
+void OsrWindowWin::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) {
   CEF_REQUIRE_UI_THREAD();
+  DCHECK_GT(device_scale_factor_, 0);
 
   rect.x = rect.y = 0;
   rect.width = DeviceToLogical(client_rect_.right - client_rect_.left,
                                device_scale_factor_);
+  if (rect.width == 0)
+    rect.width = 1;
   rect.height = DeviceToLogical(client_rect_.bottom - client_rect_.top,
                                 device_scale_factor_);
-  return true;
+  if (rect.height == 0)
+    rect.height = 1;
 }
 
 bool OsrWindowWin::GetScreenPoint(CefRefPtr<CefBrowser> browser,
@@ -887,6 +943,7 @@ bool OsrWindowWin::GetScreenPoint(CefRefPtr<CefBrowser> browser,
                                   int& screenX,
                                   int& screenY) {
   CEF_REQUIRE_UI_THREAD();
+  DCHECK_GT(device_scale_factor_, 0);
 
   if (!::IsWindow(hwnd_))
     return false;
@@ -903,6 +960,7 @@ bool OsrWindowWin::GetScreenPoint(CefRefPtr<CefBrowser> browser,
 bool OsrWindowWin::GetScreenInfo(CefRefPtr<CefBrowser> browser,
                                  CefScreenInfo& screen_info) {
   CEF_REQUIRE_UI_THREAD();
+  DCHECK_GT(device_scale_factor_, 0);
 
   if (!::IsWindow(hwnd_))
     return false;
@@ -920,20 +978,13 @@ bool OsrWindowWin::GetScreenInfo(CefRefPtr<CefBrowser> browser,
 }
 
 void OsrWindowWin::OnPopupShow(CefRefPtr<CefBrowser> browser, bool show) {
-  CEF_REQUIRE_UI_THREAD();
-
-  if (!show) {
-    renderer_.ClearPopupRects();
-    browser->GetHost()->Invalidate(PET_VIEW);
-  }
-  renderer_.OnPopupShow(browser, show);
+  render_handler_->OnPopupShow(browser, show);
 }
 
 void OsrWindowWin::OnPopupSize(CefRefPtr<CefBrowser> browser,
                                const CefRect& rect) {
-  CEF_REQUIRE_UI_THREAD();
-
-  renderer_.OnPopupSize(browser, LogicalToDevice(rect, device_scale_factor_));
+  render_handler_->OnPopupSize(browser,
+                               LogicalToDevice(rect, device_scale_factor_));
 }
 
 void OsrWindowWin::OnPaint(CefRefPtr<CefBrowser> browser,
@@ -942,23 +993,17 @@ void OsrWindowWin::OnPaint(CefRefPtr<CefBrowser> browser,
                            const void* buffer,
                            int width,
                            int height) {
-  CEF_REQUIRE_UI_THREAD();
+  EnsureRenderHandler();
+  render_handler_->OnPaint(browser, type, dirtyRects, buffer, width, height);
+}
 
-  if (painting_popup_) {
-    renderer_.OnPaint(browser, type, dirtyRects, buffer, width, height);
-    return;
-  }
-  if (!hdc_)
-    EnableGL();
-
-  ScopedGLContext scoped_gl_context(hdc_, hrc_, true);
-  renderer_.OnPaint(browser, type, dirtyRects, buffer, width, height);
-  if (type == PET_VIEW && !renderer_.popup_rect().IsEmpty()) {
-    painting_popup_ = true;
-    browser->GetHost()->Invalidate(PET_POPUP);
-    painting_popup_ = false;
-  }
-  renderer_.Render();
+void OsrWindowWin::OnAcceleratedPaint(
+    CefRefPtr<CefBrowser> browser,
+    CefRenderHandler::PaintElementType type,
+    const CefRenderHandler::RectList& dirtyRects,
+    void* share_handle) {
+  EnsureRenderHandler();
+  render_handler_->OnAcceleratedPaint(browser, type, dirtyRects, share_handle);
 }
 
 void OsrWindowWin::OnCursorChange(CefRefPtr<CefBrowser> browser,
@@ -1051,6 +1096,16 @@ void OsrWindowWin::UpdateAccessibilityTree(CefRefPtr<CefValue> value) {
 #endif  // defined(CEF_USE_ATL)
 }
 
+void OsrWindowWin::UpdateAccessibilityLocation(CefRefPtr<CefValue> value) {
+  CEF_REQUIRE_UI_THREAD();
+
+#if defined(CEF_USE_ATL)
+  if (accessibility_handler_) {
+    accessibility_handler_->UpdateAccessibilityLocation(value);
+  }
+#endif  // defined(CEF_USE_ATL)
+}
+
 #if defined(CEF_USE_ATL)
 
 CefBrowserHost::DragOperationsMask OsrWindowWin::OnDragEnter(
@@ -1092,5 +1147,30 @@ CefBrowserHost::DragOperationsMask OsrWindowWin::OnDrop(
 }
 
 #endif  // defined(CEF_USE_ATL)
+
+void OsrWindowWin::EnsureRenderHandler() {
+  CEF_REQUIRE_UI_THREAD();
+  if (!render_handler_) {
+    if (settings_.shared_texture_enabled) {
+      // Try to initialize D3D11 rendering.
+      auto render_handler = new OsrRenderHandlerWinD3D11(settings_, hwnd_);
+      if (render_handler->Initialize(browser_,
+                                     client_rect_.right - client_rect_.left,
+                                     client_rect_.bottom - client_rect_.top)) {
+        render_handler_.reset(render_handler);
+      } else {
+        LOG(ERROR) << "Failed to initialize D3D11 rendering.";
+        delete render_handler;
+      }
+    }
+
+    // Fall back to GL rendering.
+    if (!render_handler_) {
+      auto render_handler = new OsrRenderHandlerWinGL(settings_, hwnd_);
+      render_handler->Initialize(browser_);
+      render_handler_.reset(render_handler);
+    }
+  }
+}
 
 }  // namespace client

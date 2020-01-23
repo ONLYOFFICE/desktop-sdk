@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2019 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,7 +33,7 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=60f904f2f77ce6d89f9fceeeda0050273a3c9e6d$
+// $hash=80cf165be85863b46b49d32772253a0763b59d67$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_IMAGE_CAPI_H_
@@ -53,7 +53,7 @@ extern "C" {
 // (DIP) units. For example, if the image at scale factor 1.0 is 100x100 pixels
 // then the image at scale factor 2.0 should be 200x200 pixels -- both images
 // will display with a DIP size of 100x100 units. The functions of this
-// structure must be called on the browser process UI thread.
+// structure can be called on any browser process thread.
 ///
 typedef struct _cef_image_t {
   ///

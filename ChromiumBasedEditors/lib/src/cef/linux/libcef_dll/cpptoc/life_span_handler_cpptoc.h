@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=7e5510914468cb8a93de0e297bf897ff8459340b$
+// $hash=f9df484aca7313808ce702bcf13691498934a47e$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_LIFE_SPAN_HANDLER_CPPTOC_H_
@@ -34,6 +34,7 @@ class CefLifeSpanHandlerCppToC
                                  cef_life_span_handler_t> {
  public:
   CefLifeSpanHandlerCppToC();
+  virtual ~CefLifeSpanHandlerCppToC();
 };
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_LIFE_SPAN_HANDLER_CPPTOC_H_

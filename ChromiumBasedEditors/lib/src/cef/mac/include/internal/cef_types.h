@@ -95,6 +95,11 @@ typedef enum {
   LOGSEVERITY_VERBOSE,
 
   ///
+  // DEBUG logging.
+  ///
+  LOGSEVERITY_DEBUG = LOGSEVERITY_VERBOSE,
+
+  ///
   // INFO logging.
   ///
   LOGSEVERITY_INFO,
@@ -110,7 +115,13 @@ typedef enum {
   LOGSEVERITY_ERROR,
 
   ///
-  // Completely disable logging.
+  // FATAL logging.
+  ///
+  LOGSEVERITY_FATAL,
+
+  ///
+  // Disable logging to file for all messages, and to stderr for messages with
+  // severity less than FATAL.
   ///
   LOGSEVERITY_DISABLE = 99
 } cef_log_severity_t;
@@ -147,14 +158,6 @@ typedef struct _cef_settings_t {
   size_t size;
 
   ///
-  // Set to true (1) to use a single process for the browser and renderer. This
-  // run mode is not officially supported by Chromium and is less stable than
-  // the multi-process default. Also configurable using the "single-process"
-  // command-line switch.
-  ///
-  int single_process;
-
-  ///
   // Set to true (1) to disable the sandbox for sub-processes. See
   // cef_sandbox_win.h for requirements to enable the sandbox on Windows. Also
   // configurable using the "no-sandbox" command-line switch.
@@ -181,10 +184,17 @@ typedef struct _cef_settings_t {
   cef_string_t framework_dir_path;
 
   ///
+  // The path to the main bundle on macOS. If this value is empty then it
+  // defaults to the top-level app bundle. Also configurable using
+  // the "main-bundle-path" command-line switch.
+  ///
+  cef_string_t main_bundle_path;
+
+  ///
   // Set to true (1) to have the browser process message loop run in a separate
   // thread. If false (0) than the CefDoMessageLoopWork() function must be
   // called from your application message loop. This option is only supported on
-  // Windows.
+  // Windows and Linux.
   ///
   int multi_threaded_message_loop;
 
@@ -216,14 +226,26 @@ typedef struct _cef_settings_t {
   int command_line_args_disabled;
 
   ///
-  // The location where cache data will be stored on disk. If empty then
-  // browsers will be created in "incognito mode" where in-memory caches are
-  // used for storage and no data is persisted to disk. HTML5 databases such as
-  // localStorage will only persist across sessions if a cache path is
-  // specified. Can be overridden for individual CefRequestContext instances via
-  // the CefRequestContextSettings.cache_path value.
+  // The location where data for the global browser cache will be stored on
+  // disk. If non-empty this must be either equal to or a child directory of
+  // CefSettings.root_cache_path. If empty then browsers will be created in
+  // "incognito mode" where in-memory caches are used for storage and no data is
+  // persisted to disk. HTML5 databases such as localStorage will only persist
+  // across sessions if a cache path is specified. Can be overridden for
+  // individual CefRequestContext instances via the
+  // CefRequestContextSettings.cache_path value.
   ///
   cef_string_t cache_path;
+
+  ///
+  // The root directory that all CefSettings.cache_path and
+  // CefRequestContextSettings.cache_path values must have in common. If this
+  // value is empty and CefSettings.cache_path is non-empty then this value will
+  // default to the CefSettings.cache_path value. Failure to set this value
+  // correctly may result in the sandbox blocking read/write access to the
+  // cache_path directory.
+  ///
+  cef_string_t root_cache_path;
 
   ///
   // The location where user data such as spell checking dictionary files will
@@ -293,9 +315,10 @@ typedef struct _cef_settings_t {
 
   ///
   // The log severity. Only messages of this severity level or higher will be
-  // logged. Also configurable using the "log-severity" command-line switch with
-  // a value of "verbose", "info", "warning", "error", "error-report" or
-  // "disable".
+  // logged. When set to DISABLE no messages will be written to the log file,
+  // but FATAL messages will still be output to stderr. Also configurable using
+  // the "log-severity" command-line switch with a value of "verbose", "info",
+  // "warning", "error", "fatal" or "disable".
   ///
   cef_log_severity_t log_severity;
 
@@ -363,19 +386,6 @@ typedef struct _cef_settings_t {
   int ignore_certificate_errors;
 
   ///
-  // Set to true (1) to enable date-based expiration of built in network
-  // security information (i.e. certificate transparency logs, HSTS preloading
-  // and pinning information). Enabling this option improves network security
-  // but may cause HTTPS load failures when using CEF binaries built more than
-  // 10 weeks in the past. See https://www.certificate-transparency.org/ and
-  // https://www.chromium.org/hsts for details. Also configurable using the
-  // "enable-net-security-expiration" command-line switch. Can be overridden for
-  // individual CefRequestContext instances via the
-  // CefRequestContextSettings.enable_net_security_expiration value.
-  ///
-  int enable_net_security_expiration;
-
-  ///
   // Background color used for the browser before a document is loaded and when
   // no document color is specified. The alpha component must be either fully
   // opaque (0xFF) or fully transparent (0x00). If the alpha component is fully
@@ -396,6 +406,14 @@ typedef struct _cef_settings_t {
   // CefRequestContextSettings.accept_language_list value.
   ///
   cef_string_t accept_language_list;
+
+  ///
+  // GUID string used for identifying the application. This is passed to the
+  // system AV function for scanning downloaded files. By default, the GUID
+  // will be an empty string and the file will be treated as an untrusted
+  // file when the GUID is empty.
+  ///
+  cef_string_t application_client_id_for_file_scanning;
 } cef_settings_t;
 
 ///
@@ -409,12 +427,14 @@ typedef struct _cef_request_context_settings_t {
   size_t size;
 
   ///
-  // The location where cache data will be stored on disk. If empty then
-  // browsers will be created in "incognito mode" where in-memory caches are
-  // used for storage and no data is persisted to disk. HTML5 databases such as
-  // localStorage will only persist across sessions if a cache path is
-  // specified. To share the global browser cache and related configuration set
-  // this value to match the CefSettings.cache_path value.
+  // The location where cache data for this request context will be stored on
+  // disk. If non-empty this must be either equal to or a child directory of
+  // CefSettings.root_cache_path. If empty then browsers will be created in
+  // "incognito mode" where in-memory caches are used for storage and no data is
+  // persisted to disk. HTML5 databases such as localStorage will only persist
+  // across sessions if a cache path is specified. To share the global browser
+  // cache and related configuration set this value to match the
+  // CefSettings.cache_path value.
   ///
   cef_string_t cache_path;
 
@@ -445,17 +465,6 @@ typedef struct _cef_request_context_settings_t {
   // |cache_path| matches the CefSettings.cache_path value.
   ///
   int ignore_certificate_errors;
-
-  ///
-  // Set to true (1) to enable date-based expiration of built in network
-  // security information (i.e. certificate transparency logs, HSTS preloading
-  // and pinning information). Enabling this option improves network security
-  // but may cause HTTPS load failures when using CEF binaries built more than
-  // 10 weeks in the past. See https://www.certificate-transparency.org/ and
-  // https://www.chromium.org/hsts for details. Can be set globally using the
-  // CefSettings.enable_net_security_expiration value.
-  ///
-  int enable_net_security_expiration;
 
   ///
   // Comma delimited ordered list of language codes without any whitespace that
@@ -792,6 +801,11 @@ typedef enum {
   // Segmentation fault.
   ///
   TS_PROCESS_CRASHED,
+
+  ///
+  // Out of memory. Some platforms may use TS_PROCESS_CRASHED instead.
+  ///
+  TS_PROCESS_OOM,
 } cef_termination_status_t;
 
 ///
@@ -840,6 +854,12 @@ typedef enum {
   // and "~/Library/Application Support" directory on Mac OS X.
   ///
   PK_USER_DATA,
+
+  ///
+  // Directory containing application resources. Can be configured via
+  // CefSettings.resources_dir_path.
+  ///
+  PK_DIR_RESOURCES,
 } cef_path_key_t;
 
 ///
@@ -851,66 +871,16 @@ typedef enum {
 } cef_storage_type_t;
 
 ///
-// Supported error code values. See net\base\net_error_list.h for complete
-// descriptions of the error codes.
+// Supported error code values.
 ///
 typedef enum {
+  // No error.
   ERR_NONE = 0,
-  ERR_FAILED = -2,
-  ERR_ABORTED = -3,
-  ERR_INVALID_ARGUMENT = -4,
-  ERR_INVALID_HANDLE = -5,
-  ERR_FILE_NOT_FOUND = -6,
-  ERR_TIMED_OUT = -7,
-  ERR_FILE_TOO_BIG = -8,
-  ERR_UNEXPECTED = -9,
-  ERR_ACCESS_DENIED = -10,
-  ERR_NOT_IMPLEMENTED = -11,
-  ERR_CONNECTION_CLOSED = -100,
-  ERR_CONNECTION_RESET = -101,
-  ERR_CONNECTION_REFUSED = -102,
-  ERR_CONNECTION_ABORTED = -103,
-  ERR_CONNECTION_FAILED = -104,
-  ERR_NAME_NOT_RESOLVED = -105,
-  ERR_INTERNET_DISCONNECTED = -106,
-  ERR_SSL_PROTOCOL_ERROR = -107,
-  ERR_ADDRESS_INVALID = -108,
-  ERR_ADDRESS_UNREACHABLE = -109,
-  ERR_SSL_CLIENT_AUTH_CERT_NEEDED = -110,
-  ERR_TUNNEL_CONNECTION_FAILED = -111,
-  ERR_NO_SSL_VERSIONS_ENABLED = -112,
-  ERR_SSL_VERSION_OR_CIPHER_MISMATCH = -113,
-  ERR_SSL_RENEGOTIATION_REQUESTED = -114,
-  ERR_CERT_COMMON_NAME_INVALID = -200,
-  ERR_CERT_BEGIN = ERR_CERT_COMMON_NAME_INVALID,
-  ERR_CERT_DATE_INVALID = -201,
-  ERR_CERT_AUTHORITY_INVALID = -202,
-  ERR_CERT_CONTAINS_ERRORS = -203,
-  ERR_CERT_NO_REVOCATION_MECHANISM = -204,
-  ERR_CERT_UNABLE_TO_CHECK_REVOCATION = -205,
-  ERR_CERT_REVOKED = -206,
-  ERR_CERT_INVALID = -207,
-  ERR_CERT_WEAK_SIGNATURE_ALGORITHM = -208,
-  // -209 is available: was ERR_CERT_NOT_IN_DNS.
-  ERR_CERT_NON_UNIQUE_NAME = -210,
-  ERR_CERT_WEAK_KEY = -211,
-  ERR_CERT_NAME_CONSTRAINT_VIOLATION = -212,
-  ERR_CERT_VALIDITY_TOO_LONG = -213,
-  ERR_CERT_END = ERR_CERT_VALIDITY_TOO_LONG,
-  ERR_INVALID_URL = -300,
-  ERR_DISALLOWED_URL_SCHEME = -301,
-  ERR_UNKNOWN_URL_SCHEME = -302,
-  ERR_TOO_MANY_REDIRECTS = -310,
-  ERR_UNSAFE_REDIRECT = -311,
-  ERR_UNSAFE_PORT = -312,
-  ERR_INVALID_RESPONSE = -320,
-  ERR_INVALID_CHUNKED_ENCODING = -321,
-  ERR_METHOD_NOT_SUPPORTED = -322,
-  ERR_UNEXPECTED_PROXY_AUTH = -323,
-  ERR_EMPTY_RESPONSE = -324,
-  ERR_RESPONSE_HEADERS_TOO_BIG = -325,
-  ERR_CACHE_MISS = -400,
-  ERR_INSECURE_RESPONSE = -501,
+
+#define NET_ERROR(label, value) ERR_##label = value,
+#include "include/base/internal/cef_net_error_list.h"
+#undef NET_ERROR
+
 } cef_errorcode_t;
 
 ///
@@ -978,6 +948,25 @@ typedef enum {
   DRAG_OPERATION_DELETE = 32,
   DRAG_OPERATION_EVERY = UINT_MAX
 } cef_drag_operations_mask_t;
+
+///
+// Input mode of a virtual keyboard. These constants match their equivalents
+// in Chromium's text_input_mode.h and should not be renumbered.
+// See https://html.spec.whatwg.org/#input-modalities:-the-inputmode-attribute
+///
+typedef enum {
+  CEF_TEXT_INPUT_MODE_DEFAULT,
+  CEF_TEXT_INPUT_MODE_NONE,
+  CEF_TEXT_INPUT_MODE_TEXT,
+  CEF_TEXT_INPUT_MODE_TEL,
+  CEF_TEXT_INPUT_MODE_URL,
+  CEF_TEXT_INPUT_MODE_EMAIL,
+  CEF_TEXT_INPUT_MODE_NUMERIC,
+  CEF_TEXT_INPUT_MODE_DECIMAL,
+  CEF_TEXT_INPUT_MODE_SEARCH,
+
+  CEF_TEXT_INPUT_MODE_MAX = CEF_TEXT_INPUT_MODE_SEARCH,
+} cef_text_input_mode_t;
 
 ///
 // V8 access control values.
@@ -1216,32 +1205,58 @@ typedef enum {
   UR_FLAG_NONE = 0,
 
   ///
-  // If set the cache will be skipped when handling the request.
+  // If set the cache will be skipped when handling the request. Setting this
+  // value is equivalent to specifying the "Cache-Control: no-cache" request
+  // header. Setting this value in combination with UR_FLAG_ONLY_FROM_CACHE will
+  // cause the request to fail.
   ///
   UR_FLAG_SKIP_CACHE = 1 << 0,
+
+  ///
+  // If set the request will fail if it cannot be served from the cache (or some
+  // equivalent local store). Setting this value is equivalent to specifying the
+  // "Cache-Control: only-if-cached" request header. Setting this value in
+  // combination with UR_FLAG_SKIP_CACHE or UR_FLAG_DISABLE_CACHE will cause the
+  // request to fail.
+  ///
+  UR_FLAG_ONLY_FROM_CACHE = 1 << 1,
+
+  ///
+  // If set the cache will not be used at all. Setting this value is equivalent
+  // to specifying the "Cache-Control: no-store" request header. Setting this
+  // value in combination with UR_FLAG_ONLY_FROM_CACHE will cause the request to
+  // fail.
+  ///
+  UR_FLAG_DISABLE_CACHE = 1 << 2,
 
   ///
   // If set user name, password, and cookies may be sent with the request, and
   // cookies may be saved from the response.
   ///
-  UR_FLAG_ALLOW_CACHED_CREDENTIALS = 1 << 1,
+  UR_FLAG_ALLOW_STORED_CREDENTIALS = 1 << 3,
 
   ///
   // If set upload progress events will be generated when a request has a body.
   ///
-  UR_FLAG_REPORT_UPLOAD_PROGRESS = 1 << 3,
+  UR_FLAG_REPORT_UPLOAD_PROGRESS = 1 << 4,
 
   ///
   // If set the CefURLRequestClient::OnDownloadData method will not be called.
   ///
-  UR_FLAG_NO_DOWNLOAD_DATA = 1 << 6,
+  UR_FLAG_NO_DOWNLOAD_DATA = 1 << 5,
 
   ///
   // If set 5XX redirect errors will be propagated to the observer instead of
   // automatically re-tried. This currently only applies for requests
   // originated in the browser process.
   ///
-  UR_FLAG_NO_RETRY_ON_5XX = 1 << 7,
+  UR_FLAG_NO_RETRY_ON_5XX = 1 << 6,
+
+  ///
+  // If set 3XX responses will cause the fetch to halt immediately rather than
+  // continue through the redirect.
+  ///
+  UR_FLAG_STOP_ON_REDIRECT = 1 << 7,
 } cef_urlrequest_flags_t;
 
 ///
@@ -1357,23 +1372,41 @@ typedef enum {
   ///
   // The main thread in the browser. This will be the same as the main
   // application thread if CefInitialize() is called with a
-  // CefSettings.multi_threaded_message_loop value of false.
+  // CefSettings.multi_threaded_message_loop value of false. Do not perform
+  // blocking tasks on this thread. All tasks posted after
+  // CefBrowserProcessHandler::OnContextInitialized() and before CefShutdown()
+  // are guaranteed to run. This thread will outlive all other CEF threads.
   ///
   TID_UI,
 
   ///
-  // Used to interact with the database.
+  // Used for blocking tasks (e.g. file system access) where the user won't
+  // notice if the task takes an arbitrarily long time to complete. All tasks
+  // posted after CefBrowserProcessHandler::OnContextInitialized() and before
+  // CefShutdown() are guaranteed to run.
   ///
-  TID_DB,
+  TID_FILE_BACKGROUND,
+  TID_FILE = TID_FILE_BACKGROUND,
 
   ///
-  // Used to interact with the file system.
+  // Used for blocking tasks (e.g. file system access) that affect UI or
+  // responsiveness of future user interactions. Do not use if an immediate
+  // response to a user interaction is expected. All tasks posted after
+  // CefBrowserProcessHandler::OnContextInitialized() and before CefShutdown()
+  // are guaranteed to run.
+  // Examples:
+  // - Updating the UI to reflect progress on a long task.
+  // - Loading data that might be shown in the UI after a future user
+  //   interaction.
   ///
-  TID_FILE,
+  TID_FILE_USER_VISIBLE,
 
   ///
-  // Used for file system operations that block user interactions.
-  // Responsiveness of this thread affects users.
+  // Used for blocking tasks (e.g. file system access) that affect UI
+  // immediately after a user interaction. All tasks posted after
+  // CefBrowserProcessHandler::OnContextInitialized() and before CefShutdown()
+  // are guaranteed to run.
+  // Example: Generating data shown in the UI immediately after a click.
   ///
   TID_FILE_USER_BLOCKING,
 
@@ -1383,12 +1416,10 @@ typedef enum {
   TID_PROCESS_LAUNCHER,
 
   ///
-  // Used to handle slow HTTP cache operations.
-  ///
-  TID_CACHE,
-
-  ///
-  // Used to process IPC and network messages.
+  // Used to process IPC and network messages. Do not perform blocking tasks on
+  // this thread. All tasks posted after
+  // CefBrowserProcessHandler::OnContextInitialized() and before CefShutdown()
+  // are guaranteed to run.
   ///
   TID_IO,
 
@@ -1396,6 +1427,10 @@ typedef enum {
 
   ///
   // The main thread in the renderer. Used for all WebKit and V8 interaction.
+  // Tasks may be posted to this thread after
+  // CefRenderProcessHandler::OnRenderThreadCreated but are not guaranteed to
+  // run before sub-process termination (sub-processes may be killed at any time
+  // without warning).
   ///
   TID_RENDERER,
 } cef_thread_id_t;
@@ -1624,6 +1659,90 @@ typedef struct _cef_mouse_event_t {
   ///
   uint32 modifiers;
 } cef_mouse_event_t;
+
+///
+// Touch points states types.
+///
+typedef enum {
+  CEF_TET_RELEASED = 0,
+  CEF_TET_PRESSED,
+  CEF_TET_MOVED,
+  CEF_TET_CANCELLED
+} cef_touch_event_type_t;
+
+///
+// The device type that caused the event.
+///
+typedef enum {
+  CEF_POINTER_TYPE_TOUCH = 0,
+  CEF_POINTER_TYPE_MOUSE,
+  CEF_POINTER_TYPE_PEN,
+  CEF_POINTER_TYPE_ERASER,
+  CEF_POINTER_TYPE_UNKNOWN
+} cef_pointer_type_t;
+
+///
+// Structure representing touch event information.
+///
+typedef struct _cef_touch_event_t {
+  ///
+  // Id of a touch point. Must be unique per touch, can be any number except -1.
+  // Note that a maximum of 16 concurrent touches will be tracked; touches
+  // beyond that will be ignored.
+  ///
+  int id;
+
+  ///
+  // X coordinate relative to the left side of the view.
+  ///
+  float x;
+
+  ///
+  // Y coordinate relative to the top side of the view.
+  ///
+  float y;
+
+  ///
+  // X radius in pixels. Set to 0 if not applicable.
+  ///
+  float radius_x;
+
+  ///
+  // Y radius in pixels. Set to 0 if not applicable.
+  ///
+  float radius_y;
+
+  ///
+  // Rotation angle in radians. Set to 0 if not applicable.
+  ///
+  float rotation_angle;
+
+  ///
+  // The normalized pressure of the pointer input in the range of [0,1].
+  // Set to 0 if not applicable.
+  ///
+  float pressure;
+
+  ///
+  // The state of the touch point. Touches begin with one CEF_TET_PRESSED event
+  // followed by zero or more CEF_TET_MOVED events and finally one
+  // CEF_TET_RELEASED or CEF_TET_CANCELLED event. Events not respecting this
+  // order will be ignored.
+  ///
+  cef_touch_event_type_t type;
+
+  ///
+  // Bit flags describing any pressed modifier keys. See
+  // cef_event_flags_t for values.
+  ///
+  uint32 modifiers;
+
+  ///
+  // The device type that caused the event.
+  ///
+  cef_pointer_type_t pointer_type;
+
+} cef_touch_event_t;
 
 ///
 // Paint element types.
@@ -2023,74 +2142,6 @@ typedef enum {
   ///
   FILE_DIALOG_HIDEREADONLY_FLAG = 0x02000000,
 } cef_file_dialog_mode_t;
-
-///
-// Geoposition error codes.
-///
-typedef enum {
-  GEOPOSITON_ERROR_NONE = 0,
-  GEOPOSITON_ERROR_PERMISSION_DENIED,
-  GEOPOSITON_ERROR_POSITION_UNAVAILABLE,
-  GEOPOSITON_ERROR_TIMEOUT,
-} cef_geoposition_error_code_t;
-
-///
-// Structure representing geoposition information. The properties of this
-// structure correspond to those of the JavaScript Position object although
-// their types may differ.
-///
-typedef struct _cef_geoposition_t {
-  ///
-  // Latitude in decimal degrees north (WGS84 coordinate frame).
-  ///
-  double latitude;
-
-  ///
-  // Longitude in decimal degrees west (WGS84 coordinate frame).
-  ///
-  double longitude;
-
-  ///
-  // Altitude in meters (above WGS84 datum).
-  ///
-  double altitude;
-
-  ///
-  // Accuracy of horizontal position in meters.
-  ///
-  double accuracy;
-
-  ///
-  // Accuracy of altitude in meters.
-  ///
-  double altitude_accuracy;
-
-  ///
-  // Heading in decimal degrees clockwise from true north.
-  ///
-  double heading;
-
-  ///
-  // Horizontal component of device velocity in meters per second.
-  ///
-  double speed;
-
-  ///
-  // Time of position measurement in milliseconds since Epoch in UTC time. This
-  // is taken from the host computer's system clock.
-  ///
-  cef_time_t timestamp;
-
-  ///
-  // Error code, see enum above.
-  ///
-  cef_geoposition_error_code_t error_code;
-
-  ///
-  // Human-readable error message.
-  ///
-  cef_string_t error_message;
-} cef_geoposition_t;
 
 ///
 // Print job color mode values.
@@ -2512,7 +2563,7 @@ typedef enum {
   REFERRER_POLICY_NO_REFERRER,
 
   // Always the last value in this enumeration.
-  REFERRER_POLICY_LAST_VALUE,
+  REFERRER_POLICY_LAST_VALUE = REFERRER_POLICY_NO_REFERRER,
 } cef_referrer_policy_t;
 
 ///
@@ -2749,7 +2800,7 @@ typedef enum {
   SSL_CONNECTION_VERSION_TLS1 = 3,
   SSL_CONNECTION_VERSION_TLS1_1 = 4,
   SSL_CONNECTION_VERSION_TLS1_2 = 5,
-  // Reserve 6 for TLS 1.3.
+  SSL_CONNECTION_VERSION_TLS1_3 = 6,
   SSL_CONNECTION_VERSION_QUIC = 7,
 } cef_ssl_version_t;
 
@@ -2760,6 +2811,90 @@ typedef enum {
   SSL_CONTENT_DISPLAYED_INSECURE_CONTENT = 1 << 0,
   SSL_CONTENT_RAN_INSECURE_CONTENT = 1 << 1,
 } cef_ssl_content_status_t;
+
+//
+// Configuration options for registering a custom scheme.
+// These values are used when calling AddCustomScheme.
+//
+typedef enum {
+  CEF_SCHEME_OPTION_NONE = 0,
+
+  ///
+  // If CEF_SCHEME_OPTION_STANDARD is set the scheme will be treated as a
+  // standard scheme. Standard schemes are subject to URL canonicalization and
+  // parsing rules as defined in the Common Internet Scheme Syntax RFC 1738
+  // Section 3.1 available at http://www.ietf.org/rfc/rfc1738.txt
+  //
+  // In particular, the syntax for standard scheme URLs must be of the form:
+  // <pre>
+  //  [scheme]://[username]:[password]@[host]:[port]/[url-path]
+  // </pre> Standard scheme URLs must have a host component that is a fully
+  // qualified domain name as defined in Section 3.5 of RFC 1034 [13] and
+  // Section 2.1 of RFC 1123. These URLs will be canonicalized to
+  // "scheme://host/path" in the simplest case and
+  // "scheme://username:password@host:port/path" in the most explicit case. For
+  // example, "scheme:host/path" and "scheme:///host/path" will both be
+  // canonicalized to "scheme://host/path". The origin of a standard scheme URL
+  // is the combination of scheme, host and port (i.e., "scheme://host:port" in
+  // the most explicit case).
+  //
+  // For non-standard scheme URLs only the "scheme:" component is parsed and
+  // canonicalized. The remainder of the URL will be passed to the handler as-
+  // is. For example, "scheme:///some%20text" will remain the same. Non-standard
+  // scheme URLs cannot be used as a target for form submission.
+  ///
+  CEF_SCHEME_OPTION_STANDARD = 1 << 0,
+
+  ///
+  // If CEF_SCHEME_OPTION_LOCAL is set the scheme will be treated with the same
+  // security rules as those applied to "file" URLs. Normal pages cannot link to
+  // or access local URLs. Also, by default, local URLs can only perform
+  // XMLHttpRequest calls to the same URL (origin + path) that originated the
+  // request. To allow XMLHttpRequest calls from a local URL to other URLs with
+  // the same origin set the CefSettings.file_access_from_file_urls_allowed
+  // value to true (1). To allow XMLHttpRequest calls from a local URL to all
+  // origins set the CefSettings.universal_access_from_file_urls_allowed value
+  // to true (1).
+  ///
+  CEF_SCHEME_OPTION_LOCAL = 1 << 1,
+
+  ///
+  // If CEF_SCHEME_OPTION_DISPLAY_ISOLATED is set the scheme can only be
+  // displayed from other content hosted with the same scheme. For example,
+  // pages in other origins cannot create iframes or hyperlinks to URLs with the
+  // scheme. For schemes that must be accessible from other schemes don't set
+  // this, set CEF_SCHEME_OPTION_CORS_ENABLED, and use CORS
+  // "Access-Control-Allow-Origin" headers to further restrict access.
+  ///
+  CEF_SCHEME_OPTION_DISPLAY_ISOLATED = 1 << 2,
+
+  ///
+  // If CEF_SCHEME_OPTION_SECURE is set the scheme will be treated with the same
+  // security rules as those applied to "https" URLs. For example, loading this
+  // scheme from other secure schemes will not trigger mixed content warnings.
+  ///
+  CEF_SCHEME_OPTION_SECURE = 1 << 3,
+
+  ///
+  // If CEF_SCHEME_OPTION_CORS_ENABLED is set the scheme can be sent CORS
+  // requests. This value should be set in most cases where
+  // CEF_SCHEME_OPTION_STANDARD is set.
+  ///
+  CEF_SCHEME_OPTION_CORS_ENABLED = 1 << 4,
+
+  ///
+  // If CEF_SCHEME_OPTION_CSP_BYPASSING is set the scheme can bypass Content-
+  // Security-Policy (CSP) checks. This value should not be set in most cases
+  // where CEF_SCHEME_OPTION_STANDARD is set.
+  ///
+  CEF_SCHEME_OPTION_CSP_BYPASSING = 1 << 5,
+
+  ///
+  // If CEF_SCHEME_OPTION_FETCH_ENABLED is set the scheme can perform Fetch API
+  // requests.
+  ///
+  CEF_SCHEME_OPTION_FETCH_ENABLED = 1 << 6,
+} cef_scheme_options_t;
 
 ///
 // Error codes for CDM registration. See cef_web_plugin.h for details.

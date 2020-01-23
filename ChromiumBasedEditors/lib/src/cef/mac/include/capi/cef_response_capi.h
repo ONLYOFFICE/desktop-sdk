@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2019 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,7 +33,7 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=3f0ed89d2320677780c2fd526be7fe6312580cd8$
+// $hash=67776173c2e8c45b7261af692af96084cdd618ec$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_RESPONSE_CAPI_H_
@@ -110,11 +110,35 @@ typedef struct _cef_response_t {
                                     const cef_string_t* mimeType);
 
   ///
+  // Get the response charset.
+  ///
+  // The resulting string must be freed by calling cef_string_userfree_free().
+  cef_string_userfree_t(CEF_CALLBACK* get_charset)(
+      struct _cef_response_t* self);
+
+  ///
+  // Set the response charset.
+  ///
+  void(CEF_CALLBACK* set_charset)(struct _cef_response_t* self,
+                                  const cef_string_t* charset);
+
+  ///
   // Get the value for the specified response header field.
   ///
   // The resulting string must be freed by calling cef_string_userfree_free().
-  cef_string_userfree_t(CEF_CALLBACK* get_header)(struct _cef_response_t* self,
-                                                  const cef_string_t* name);
+  cef_string_userfree_t(CEF_CALLBACK* get_header_by_name)(
+      struct _cef_response_t* self,
+      const cef_string_t* name);
+
+  ///
+  // Set the header |name| to |value|. If |overwrite| is true (1) any existing
+  // values will be replaced with the new value. If |overwrite| is false (0) any
+  // existing values will not be overwritten.
+  ///
+  void(CEF_CALLBACK* set_header_by_name)(struct _cef_response_t* self,
+                                         const cef_string_t* name,
+                                         const cef_string_t* value,
+                                         int overwrite);
 
   ///
   // Get all response header fields.
@@ -127,6 +151,18 @@ typedef struct _cef_response_t {
   ///
   void(CEF_CALLBACK* set_header_map)(struct _cef_response_t* self,
                                      cef_string_multimap_t headerMap);
+
+  ///
+  // Get the resolved URL after redirects or changed as a result of HSTS.
+  ///
+  // The resulting string must be freed by calling cef_string_userfree_free().
+  cef_string_userfree_t(CEF_CALLBACK* get_url)(struct _cef_response_t* self);
+
+  ///
+  // Set the resolved URL after redirects or changed as a result of HSTS.
+  ///
+  void(CEF_CALLBACK* set_url)(struct _cef_response_t* self,
+                              const cef_string_t* url);
 } cef_response_t;
 
 ///

@@ -96,7 +96,7 @@ class CefResponse : public virtual CefBaseRefCounted {
   ///
   // Set the response status text.
   ///
-  /*--cef()--*/
+  /*--cef(optional_param=statusText)--*/
   virtual void SetStatusText(const CefString& statusText) = 0;
 
   ///
@@ -108,14 +108,36 @@ class CefResponse : public virtual CefBaseRefCounted {
   ///
   // Set the response mime type.
   ///
-  /*--cef()--*/
+  /*--cef(optional_param=mimeType)--*/
   virtual void SetMimeType(const CefString& mimeType) = 0;
+
+  ///
+  // Get the response charset.
+  ///
+  /*--cef()--*/
+  virtual CefString GetCharset() = 0;
+
+  ///
+  // Set the response charset.
+  ///
+  /*--cef(optional_param=charset)--*/
+  virtual void SetCharset(const CefString& charset) = 0;
 
   ///
   // Get the value for the specified response header field.
   ///
   /*--cef()--*/
-  virtual CefString GetHeader(const CefString& name) = 0;
+  virtual CefString GetHeaderByName(const CefString& name) = 0;
+
+  ///
+  // Set the header |name| to |value|. If |overwrite| is true any existing
+  // values will be replaced with the new value. If |overwrite| is false any
+  // existing values will not be overwritten.
+  ///
+  /*--cef(optional_param=value)--*/
+  virtual void SetHeaderByName(const CefString& name,
+                               const CefString& value,
+                               bool overwrite) = 0;
 
   ///
   // Get all response header fields.
@@ -128,6 +150,18 @@ class CefResponse : public virtual CefBaseRefCounted {
   ///
   /*--cef()--*/
   virtual void SetHeaderMap(const HeaderMap& headerMap) = 0;
+
+  ///
+  // Get the resolved URL after redirects or changed as a result of HSTS.
+  ///
+  /*--cef()--*/
+  virtual CefString GetURL() = 0;
+
+  ///
+  // Set the resolved URL after redirects or changed as a result of HSTS.
+  ///
+  /*--cef(optional_param=url)--*/
+  virtual void SetURL(const CefString& url) = 0;
 };
 
 #endif  // CEF_INCLUDE_CEF_RESPONSE_H_

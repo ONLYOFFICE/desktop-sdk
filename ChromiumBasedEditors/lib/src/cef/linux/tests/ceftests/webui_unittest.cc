@@ -60,14 +60,8 @@ class WebUITestHandler : public TestHandler {
                             bool canGoBack,
                             bool canGoForward) override {
     if (!isLoading) {
-      // Verify that we navigated to the expected URL.
-      std::string expected_url = expected_url_;
-      if (expected_url.empty())
-        expected_url = url_list_[url_index_];
-      EXPECT_STREQ(expected_url.c_str(),
-                   browser->GetMainFrame()->GetURL().ToString().c_str());
-
-      NextNav();
+      got_loading_state_done_.yes();
+      NextNavIfDone(browser->GetMainFrame()->GetURL());
     }
   }
 
@@ -79,9 +73,11 @@ class WebUITestHandler : public TestHandler {
     got_load_error_.yes();
     EXPECT_EQ(expected_error_code_, errorCode)
         << "failedUrl = " << failedUrl.ToString();
+    NextNavIfDone(failedUrl);
   }
 
   void DestroyTest() override {
+    EXPECT_TRUE(got_loading_state_done_);
     if (expected_error_code_ == ERR_NONE)
       EXPECT_FALSE(got_load_error_);
     else
@@ -90,12 +86,34 @@ class WebUITestHandler : public TestHandler {
     TestHandler::DestroyTest();
   }
 
+ private:
+  void NextNavIfDone(const std::string& url) {
+    bool done = false;
+    if (expected_error_code_ == ERR_NONE) {
+      if (got_loading_state_done_)
+        done = true;
+    } else if (got_load_error_ && got_loading_state_done_) {
+      done = true;
+    }
+
+    if (done) {
+      // Verify that we navigated to the expected URL.
+      std::string expected_url = expected_url_;
+      if (expected_url.empty())
+        expected_url = url_list_[url_index_];
+      EXPECT_STREQ(expected_url.c_str(), url.c_str());
+
+      NextNav();
+    }
+  }
+
   UrlList url_list_;
   size_t url_index_;
 
   std::string expected_url_;
   int expected_error_code_;
 
+  TrackCallback got_loading_state_done_;
   TrackCallback got_load_error_;
 
   IMPLEMENT_REFCOUNTING(WebUITestHandler);
@@ -104,16 +122,6 @@ class WebUITestHandler : public TestHandler {
 }  // namespace
 
 // Test hosts with special behaviors.
-
-// Non-existing URLs should redirect to chrome://version/.
-TEST(WebUITest, doesnotexist) {
-  UrlList url_list;
-  url_list.push_back("chrome://doesnotexist/");
-  CefRefPtr<WebUITestHandler> handler = new WebUITestHandler(url_list);
-  handler->set_expected_url("chrome://version/");
-  handler->ExecuteTest();
-  ReleaseAndWaitForDestructor(handler);
-}
 
 // about:* URIs should redirect to chrome://*.
 TEST(WebUITest, about) {
@@ -131,7 +139,6 @@ TEST(WebUITest, network_error) {
   // -310 is ERR_TOO_MANY_REDIRECTS
   url_list.push_back("chrome://network-error/-310");
   CefRefPtr<WebUITestHandler> handler = new WebUITestHandler(url_list);
-  handler->set_expected_url("chrome-error://chromewebdata/");
   handler->set_expected_error_code(ERR_TOO_MANY_REDIRECTS);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
@@ -162,46 +169,33 @@ void RunWebUITest(const std::string& url) {
     RunWebUITest("chrome://" + name_str + "/");               \
   }
 
-WEBUI_TEST(appcache_internals);
-WEBUI_TEST(accessibility);
-WEBUI_TEST(blob_internals);
-WEBUI_TEST(credits);
-WEBUI_TEST(extensions_support);
-WEBUI_TEST(gpu);
-WEBUI_TEST(histograms);
-WEBUI_TEST(indexeddb_internals);
-WEBUI_TEST(license);
-WEBUI_TEST(media_internals);
-WEBUI_TEST(net_export);
-WEBUI_TEST(network_errors);
-WEBUI_TEST(serviceworker_internals);
-WEBUI_TEST(system);
-WEBUI_TEST(tracing);
-WEBUI_TEST(version);
-WEBUI_TEST(view_http_cache);
-WEBUI_TEST(webrtc_internals);
-WEBUI_TEST(webui_hosts);
+WEBUI_TEST(appcache_internals)
+WEBUI_TEST(accessibility)
+WEBUI_TEST(blob_internals)
+WEBUI_TEST(extensions_support)
+WEBUI_TEST(gpu)
+WEBUI_TEST(histograms)
+WEBUI_TEST(indexeddb_internals)
+WEBUI_TEST(license)
+WEBUI_TEST(media_internals)
+WEBUI_TEST(net_export)
+WEBUI_TEST(network_errors)
+WEBUI_TEST(serviceworker_internals)
+WEBUI_TEST(system)
+WEBUI_TEST(tracing)
+WEBUI_TEST(version)
+WEBUI_TEST(webrtc_internals)
+WEBUI_TEST(webui_hosts)
 
 // Test hosts with multiple URLs.
 
 TEST(WebUITest, net_internals) {
   UrlList url_list;
-  url_list.push_back("chrome://net-internals/#capture");
-  url_list.push_back("chrome://net-internals/#import");
-  url_list.push_back("chrome://net-internals/#proxy");
   url_list.push_back("chrome://net-internals/#events");
-  url_list.push_back("chrome://net-internals/#timeline");
+  url_list.push_back("chrome://net-internals/#proxy");
   url_list.push_back("chrome://net-internals/#dns");
   url_list.push_back("chrome://net-internals/#sockets");
-  url_list.push_back("chrome://net-internals/#alt-svc");
-  url_list.push_back("chrome://net-internals/#http2");
-  url_list.push_back("chrome://net-internals/#quic");
-  url_list.push_back("chrome://net-internals/#sdch");
-  url_list.push_back("chrome://net-internals/#httpCache");
-  url_list.push_back("chrome://net-internals/#modules");
   url_list.push_back("chrome://net-internals/#hsts");
-  url_list.push_back("chrome://net-internals/#bandwidth");
-  url_list.push_back("chrome://net-internals/#prerender");
 
   RunWebUITest(url_list);
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=c17008976e7d41af34c2b4aebb9f0fe15b37cbf7$
+// $hash=a162d40e96f2b48bfa7f7700735ae822116c7dc8$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_NAVIGATION_ENTRY_VISITOR_CPPTOC_H_
@@ -34,6 +34,7 @@ class CefNavigationEntryVisitorCppToC
                                  cef_navigation_entry_visitor_t> {
  public:
   CefNavigationEntryVisitorCppToC();
+  virtual ~CefNavigationEntryVisitorCppToC();
 };
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_NAVIGATION_ENTRY_VISITOR_CPPTOC_H_
