@@ -76,13 +76,25 @@ int XIOErrorHandlerImpl(Display *display)
 #include "cefclient/browser/main_message_loop_std.h"
 #else
 #include "tests/cefclient/browser/main_context_impl.h"
+#include "tests/shared/browser/main_message_loop_std.h"
+#include "tests/shared/browser/main_message_loop_external_pump.h"
 
 #ifdef WIN32
 #include "tests/cefclient/browser/main_message_loop_multithreaded_win.h"
+namespace client {
+    typedef MainMessageLoopMultithreadedWin MainMessageLoopMultithreaded;
+}
 #endif
-#include "tests/shared/browser/main_message_loop_std.h"
-#ifndef _MAC
-#include "tests/shared/browser/main_message_loop_external_pump.h"
+#if defined(_LINUX) && !defined(_MAC)
+#include "tests/cefclient/browser/main_message_loop_multithreaded_gtk.h"
+namespace client {
+    typedef MainMessageLoopMultithreadedGtk MainMessageLoopMultithreaded;
+}
+#endif
+#if defined(_MAC)
+namespace client {
+    typedef MainMessageLoopStd MainMessageLoopMultithreaded;
+}
 #endif
 #endif
 
@@ -279,38 +291,35 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     m_pInternal->context.reset(new client::MainContextImpl(command_line, false));
     m_pInternal->context->PopulateSettings(&settings);
 
+    bool isMultithreaded = false;
 #ifdef WIN32
-    if (!m_pInternal->m_pManager->IsExternalEventLoop())
-        settings.multi_threaded_message_loop = 1;
+    isMultithreaded = true;
+#endif
+#if defined(_LINUX) && !defined(_MAC)
+    //isMultithreaded = true;
 #endif
 
-#ifdef _MAC
-    m_pInternal->message_loop.reset(new client::MainMessageLoopStd);
-#else
-    if (!m_pInternal->m_pManager->IsExternalEventLoop())
-    {
-#ifdef WIN32
-        if (settings.multi_threaded_message_loop)
-            m_pInternal->message_loop.reset(new client::MainMessageLoopMultithreadedWin);
-        else
-            m_pInternal->message_loop.reset(new client::MainMessageLoopStd);
-#else
-        m_pInternal->message_loop.reset(new client::MainMessageLoopStd);
-#endif
-    }
-    else
-    {
+    bool is_external = false;
 #ifndef CEF_2623
+    if (m_pInternal->m_pManager->IsExternalEventLoop())
+    {
         settings.external_message_pump = 1;
         m_pInternal->message_loop = client::MainMessageLoopExternalPump::Create();
-#else
-        if (settings.multi_threaded_message_loop)
-            m_pInternal->message_loop.reset(new client::MainMessageLoopMultithreadedWin);
-        else
-            m_pInternal->message_loop.reset(new client::MainMessageLoopStd);
-#endif
+        is_external = true;
     }
 #endif
+    if (!is_external)
+    {
+        if (isMultithreaded)
+        {
+            settings.multi_threaded_message_loop = 1;
+            m_pInternal->message_loop.reset(new client::MainMessageLoopMultithreaded);
+        }
+        else
+        {
+            m_pInternal->message_loop.reset(new client::MainMessageLoopStd);
+        }
+    }
 
     std::wstring sCachePath = pManager->m_oSettings.cache_path;
 
