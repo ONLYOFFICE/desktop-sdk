@@ -13,7 +13,7 @@
 
 #include "include/base/cef_bind.h"
 #include "include/cef_app.h"
-#include "tests/cefclient/browser/browser_window_osr_gtk.h"
+//#include "tests/cefclient/browser/browser_window_osr_gtk.h"
 #include "tests/cefclient/browser/browser_window_std_gtk.h"
 #include "tests/cefclient/browser/main_context.h"
 #include "tests/cefclient/browser/resource.h"
@@ -148,6 +148,9 @@ void RootWindowGtk::Show(ShowMode mode) {
 
   // Show the GTK window.
   gtk_widget_show_all(window_);
+#ifdef ASC_HIDE_WINDOW
+  gtk_widget_hide(window_);
+#endif
 
   if (mode == ShowMinimized)
     MinimizeWindow(GTK_WINDOW(window_));
@@ -247,7 +250,7 @@ void RootWindowGtk::CreateBrowserWindow(const std::string& startup_url) {
   if (with_osr_) {
     OsrRendererSettings settings = {};
     MainContext::Get()->PopulateOsrSettings(&settings);
-    browser_window_.reset(new BrowserWindowOsrGtk(this, startup_url, settings));
+    //browser_window_.reset(new BrowserWindowOsrGtk(this, startup_url, settings));
   } else {
     browser_window_.reset(new BrowserWindowStdGtk(this, startup_url));
   }
@@ -371,8 +374,7 @@ void RootWindowGtk::CreateRootWindow(const CefBrowserSettings& settings,
   ::Display* xdisplay = GDK_WINDOW_XDISPLAY(gtk_widget_get_window(window_));
   CHECK(xdisplay);
   if (with_osr_) {
-    static_cast<BrowserWindowOsrGtk*>(browser_window_.get())
-        ->set_xdisplay(xdisplay);
+    //static_cast<BrowserWindowOsrGtk*>(browser_window_.get())->set_xdisplay(xdisplay);
   } else {
     static_cast<BrowserWindowStdGtk*>(browser_window_.get())
         ->set_xdisplay(xdisplay);
