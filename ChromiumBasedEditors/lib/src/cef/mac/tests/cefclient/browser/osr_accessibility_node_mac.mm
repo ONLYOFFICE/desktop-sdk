@@ -320,9 +320,7 @@ inline int MiddleY(const CefRect& rect) {
     NSMutableArray* kids = [NSMutableArray arrayWithCapacity:numChilds];
     for (int index = 0; index < numChilds; index++) {
       client::OsrAXNode* child = node_->ChildAtIndex(index);
-      [kids addObject:child ? CAST_CEF_NATIVE_ACCESSIBLE_TO_NSOBJECT(
-                                  child->GetNativeAccessibleObject(node_))
-                            : nil];
+      [kids addObject:child ? child->GetNativeAccessibleObject(node_) : nil];
     }
     return kids;
   }
@@ -334,7 +332,7 @@ inline int MiddleY(const CefRect& rect) {
   NSPoint origin = NSMakePoint(cef_rect.x, cef_rect.y);
   NSSize size = NSMakeSize(cef_rect.width, cef_rect.height);
 
-  NSView* view = CAST_CEF_WINDOW_HANDLE_TO_NSVIEW(node_->GetWindowHandle());
+  NSView* view = node_->GetWindowHandle();
   origin.y = NSHeight([view bounds]) - origin.y;
   NSPoint originInWindow = [view convertPoint:origin toView:nil];
 
@@ -350,7 +348,7 @@ inline int MiddleY(const CefRect& rect) {
   CefRect cef_rect = node_->AxLocation();
   NSRect rect =
       NSMakeRect(cef_rect.x, cef_rect.y, cef_rect.width, cef_rect.height);
-  NSView* view = CAST_CEF_WINDOW_HANDLE_TO_NSVIEW(node_->GetWindowHandle());
+  NSView* view = node_->GetWindowHandle();
   rect = [[view window] convertRectToScreen:rect];
   return rect.size;
 }
@@ -386,7 +384,6 @@ inline int MiddleY(const CefRect& rect) {
 }
 
 - (id)accessibilityAttributeValue:(NSString*)attribute {
-  NSObject* typed_parent = CAST_CEF_NATIVE_ACCESSIBLE_TO_NSOBJECT(parent_);
   if (!node_)
     return nil;
   if ([attribute isEqualToString:NSAccessibilityRoleAttribute]) {
@@ -400,17 +397,16 @@ inline int MiddleY(const CefRect& rect) {
         accessibilityAttributeValue:NSAccessibilityFocusedUIElementAttribute];
     return [NSNumber numberWithBool:[focusedElement isEqual:self]];
   } else if ([attribute isEqualToString:NSAccessibilityParentAttribute]) {
-    return NSAccessibilityUnignoredAncestor(typed_parent);
+    return NSAccessibilityUnignoredAncestor(parent_);
   } else if ([attribute isEqualToString:NSAccessibilityChildrenAttribute]) {
     return NSAccessibilityUnignoredChildren([self getKids]);
   } else if ([attribute isEqualToString:NSAccessibilityWindowAttribute]) {
     // We're in the same window as our parent.
-    return [typed_parent
-        accessibilityAttributeValue:NSAccessibilityWindowAttribute];
+    return [parent_ accessibilityAttributeValue:NSAccessibilityWindowAttribute];
   } else if ([attribute
                  isEqualToString:NSAccessibilityTopLevelUIElementAttribute]) {
     // We're in the same top level element as our parent.
-    return [typed_parent
+    return [parent_
         accessibilityAttributeValue:NSAccessibilityTopLevelUIElementAttribute];
   } else if ([attribute isEqualToString:NSAccessibilityPositionAttribute]) {
     return [NSValue valueWithPoint:[self position]];
@@ -464,18 +460,17 @@ inline int MiddleY(const CefRect& rect) {
 namespace client {
 
 void OsrAXNode::NotifyAccessibilityEvent(std::string event_type) const {
-  NSView* view = CAST_CEF_WINDOW_HANDLE_TO_NSVIEW(GetWindowHandle());
   if (event_type == "focus") {
     NSAccessibilityPostNotification(
-        view, NSAccessibilityFocusedUIElementChangedNotification);
+        GetWindowHandle(), NSAccessibilityFocusedUIElementChangedNotification);
   } else if (event_type == "textChanged") {
-    NSAccessibilityPostNotification(view,
+    NSAccessibilityPostNotification(GetWindowHandle(),
                                     NSAccessibilityTitleChangedNotification);
   } else if (event_type == "valueChanged") {
-    NSAccessibilityPostNotification(view,
+    NSAccessibilityPostNotification(GetWindowHandle(),
                                     NSAccessibilityValueChangedNotification);
   } else if (event_type == "textSelectionChanged") {
-    NSAccessibilityPostNotification(view,
+    NSAccessibilityPostNotification(GetWindowHandle(),
                                     NSAccessibilityValueChangedNotification);
   }
 }
@@ -483,8 +478,7 @@ void OsrAXNode::NotifyAccessibilityEvent(std::string event_type) const {
 void OsrAXNode::Destroy() {
   if (platform_accessibility_) {
     NSAccessibilityPostNotification(
-        CAST_CEF_NATIVE_ACCESSIBLE_TO_NSOBJECT(platform_accessibility_),
-        NSAccessibilityUIElementDestroyedNotification);
+        platform_accessibility_, NSAccessibilityUIElementDestroyedNotification);
   }
 
   delete this;
@@ -494,8 +488,7 @@ void OsrAXNode::Destroy() {
 CefNativeAccessible* OsrAXNode::GetNativeAccessibleObject(
     client::OsrAXNode* parent) {
   if (!platform_accessibility_) {
-    platform_accessibility_ = CAST_NSOBJECT_TO_CEF_NATIVE_ACCESSIBLE(
-        [OsrAXNodeObject elementWithNode:this]);
+    platform_accessibility_ = [OsrAXNodeObject elementWithNode:this];
     SetParent(parent);
   }
   return platform_accessibility_;

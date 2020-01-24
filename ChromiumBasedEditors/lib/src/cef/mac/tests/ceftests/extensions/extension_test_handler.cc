@@ -4,7 +4,6 @@
 
 #include "tests/ceftests/extensions/extension_test_handler.h"
 
-#include "include/cef_request_context_handler.h"
 #include "tests/ceftests/test_suite.h"
 #include "tests/ceftests/test_util.h"
 
@@ -181,7 +180,11 @@ void ExtensionTestHandler::VerifyExtensionInContext(
   EXPECT_FALSE(extension_id.empty());
 
   if (has_access) {
-    EXPECT_TRUE(context->DidLoadExtension(extension_id));
+    if (is_loader) {
+      EXPECT_TRUE(context->DidLoadExtension(extension_id));
+    } else {
+      EXPECT_FALSE(context->DidLoadExtension(extension_id));
+    }
     EXPECT_TRUE(context->HasExtension(extension_id));
   } else {
     EXPECT_FALSE(context->DidLoadExtension(extension_id));

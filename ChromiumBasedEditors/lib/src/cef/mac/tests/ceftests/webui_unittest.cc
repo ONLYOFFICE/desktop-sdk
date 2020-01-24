@@ -123,6 +123,16 @@ class WebUITestHandler : public TestHandler {
 
 // Test hosts with special behaviors.
 
+// Non-existing URLs should redirect to chrome://version/.
+TEST(WebUITest, doesnotexist) {
+  UrlList url_list;
+  url_list.push_back("chrome://doesnotexist/");
+  CefRefPtr<WebUITestHandler> handler = new WebUITestHandler(url_list);
+  handler->set_expected_url("chrome://version/");
+  handler->ExecuteTest();
+  ReleaseAndWaitForDestructor(handler);
+}
+
 // about:* URIs should redirect to chrome://*.
 TEST(WebUITest, about) {
   UrlList url_list;
@@ -172,6 +182,7 @@ void RunWebUITest(const std::string& url) {
 WEBUI_TEST(appcache_internals)
 WEBUI_TEST(accessibility)
 WEBUI_TEST(blob_internals)
+WEBUI_TEST(credits)
 WEBUI_TEST(extensions_support)
 WEBUI_TEST(gpu)
 WEBUI_TEST(histograms)

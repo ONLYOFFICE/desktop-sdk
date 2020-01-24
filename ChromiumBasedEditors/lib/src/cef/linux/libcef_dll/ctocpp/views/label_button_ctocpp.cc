@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=41970661c30de858da045839a76401593ae4f11a$
+// $hash=06d1a2ceda1286960241c582b7ac4abba2319835$
 //
 
 #include "libcef_dll/ctocpp/views/label_button_ctocpp.h"
@@ -31,7 +31,8 @@
 NO_SANITIZE("cfi-icall")
 CefRefPtr<CefLabelButton> CefLabelButton::CreateLabelButton(
     CefRefPtr<CefButtonDelegate> delegate,
-    const CefString& text) {
+    const CefString& text,
+    bool with_frame) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
@@ -44,7 +45,7 @@ CefRefPtr<CefLabelButton> CefLabelButton::CreateLabelButton(
 
   // Execute
   cef_label_button_t* _retval = cef_label_button_create(
-      CefButtonDelegateCppToC::Wrap(delegate), text.GetStruct());
+      CefButtonDelegateCppToC::Wrap(delegate), text.GetStruct(), with_frame);
 
   // Return type: refptr_same
   return CefLabelButtonCToCpp::Wrap(_retval);

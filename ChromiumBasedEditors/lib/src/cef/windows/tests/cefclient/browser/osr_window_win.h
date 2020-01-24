@@ -52,7 +52,6 @@ class OsrWindowWin
                      const RECT& rect,
                      CefRefPtr<CefClient> handler,
                      const CefBrowserSettings& settings,
-                     CefRefPtr<CefDictionaryValue> extra_info,
                      CefRefPtr<CefRequestContext> request_context,
                      const std::string& startup_url);
 
@@ -147,9 +146,7 @@ class OsrWindowWin
       const CefRange& selection_range,
       const CefRenderHandler::RectList& character_bounds) OVERRIDE;
 
-  void UpdateAccessibilityTree(CefRefPtr<CefValue> value) OVERRIDE;
-
-  void UpdateAccessibilityLocation(CefRefPtr<CefValue> value) OVERRIDE;
+  void UpdateAccessibilityTree(CefRefPtr<CefValue> value);
 
 #if defined(CEF_USE_ATL)
   // OsrDragEvents methods.

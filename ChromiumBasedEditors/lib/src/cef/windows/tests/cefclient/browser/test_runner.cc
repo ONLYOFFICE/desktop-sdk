@@ -4,8 +4,6 @@
 
 #include "tests/cefclient/browser/test_runner.h"
 
-#include <map>
-#include <set>
 #include <sstream>
 
 #include "include/base/cef_bind.h"
@@ -16,7 +14,6 @@
 #include "include/wrapper/cef_closure_task.h"
 #include "include/wrapper/cef_stream_resource_handler.h"
 #include "tests/cefclient/browser/binding_test.h"
-#include "tests/cefclient/browser/client_handler.h"
 #include "tests/cefclient/browser/dialog_test.h"
 #include "tests/cefclient/browser/drm_test.h"
 #include "tests/cefclient/browser/main_context.h"
@@ -38,22 +35,6 @@ namespace {
 const char kTestHost[] = "tests";
 const char kLocalHost[] = "localhost";
 const char kTestOrigin[] = "http://tests/";
-
-// Pages handled via StringResourceProvider.
-const char kTestGetSourcePage[] = "get_source.html";
-const char kTestGetTextPage[] = "get_text.html";
-const char kTestPluginInfoPage[] = "plugin_info.html";
-
-// Set page data and navigate the browser. Used in combination with
-// StringResourceProvider.
-void LoadStringResourcePage(CefRefPtr<CefBrowser> browser,
-                            const std::string& page,
-                            const std::string& data) {
-  CefRefPtr<CefClient> client = browser->GetHost()->GetClient();
-  ClientHandler* client_handler = static_cast<ClientHandler*>(client.get());
-  client_handler->SetStringResource(page, data);
-  browser->GetMainFrame()->LoadURL(kTestOrigin + page);
-}
 
 // Replace all instances of |from| with |to| in |str|.
 std::string StringReplace(const std::string& str,
@@ -83,7 +64,7 @@ void RunGetSourceTest(CefRefPtr<CefBrowser> browser) {
       std::stringstream ss;
       ss << "<html><body bgcolor=\"white\">Source:<pre>" << source
          << "</pre></body></html>";
-      LoadStringResourcePage(browser_, kTestGetSourcePage, ss.str());
+      browser_->GetMainFrame()->LoadString(ss.str(), "http://tests/getsource");
     }
 
    private:
@@ -104,7 +85,7 @@ void RunGetTextTest(CefRefPtr<CefBrowser> browser) {
       std::stringstream ss;
       ss << "<html><body bgcolor=\"white\">Text:<pre>" << text
          << "</pre></body></html>";
-      LoadStringResourcePage(browser_, kTestGetTextPage, ss.str());
+      browser_->GetMainFrame()->LoadString(ss.str(), "http://tests/gettext");
     }
 
    private:
@@ -118,16 +99,6 @@ void RunGetTextTest(CefRefPtr<CefBrowser> browser) {
 void RunRequestTest(CefRefPtr<CefBrowser> browser) {
   // Create a new request
   CefRefPtr<CefRequest> request(CefRequest::Create());
-
-  if (browser->GetMainFrame()->GetURL().ToString().find("http://tests/") != 0) {
-    // The LoadRequest method will fail with "bad IPC message" reason
-    // INVALID_INITIATOR_ORIGIN (213) unless you first navigate to the
-    // request origin using some other mechanism (LoadURL, link click, etc).
-    Alert(browser,
-          "Please first navigate to a http://tests/ URL. "
-          "For example, first load Tests > Other Tests.");
-    return;
-  }
 
   // Set the request URL
   request->SetURL("http://tests/request");
@@ -175,7 +146,7 @@ void RunPluginInfoTest(CefRefPtr<CefBrowser> browser) {
       html_ += "\n</body></html>";
 
       // Load the html in the browser.
-      LoadStringResourcePage(browser_, kTestPluginInfoPage, html_);
+      browser_->GetMainFrame()->LoadString(html_, "http://tests/plugin_info");
     }
 
     virtual bool Visit(CefRefPtr<CefWebPluginInfo> info,
@@ -484,56 +455,6 @@ class RequestDumpResourceProvider : public CefResourceManager::Provider {
   DISALLOW_COPY_AND_ASSIGN(RequestDumpResourceProvider);
 };
 
-// Provider that returns string data for specific pages. Used in combination
-// with LoadStringResourcePage().
-class StringResourceProvider : public CefResourceManager::Provider {
- public:
-  StringResourceProvider(const std::set<std::string>& pages,
-                         StringResourceMap* string_resource_map)
-      : pages_(pages), string_resource_map_(string_resource_map) {
-    DCHECK(!pages.empty());
-  }
-
-  bool OnRequest(scoped_refptr<CefResourceManager::Request> request) OVERRIDE {
-    CEF_REQUIRE_IO_THREAD();
-
-    const std::string& url = request->url();
-    if (url.find(kTestOrigin) != 0U) {
-      // Not handled by this provider.
-      return false;
-    }
-
-    const std::string& page = url.substr(strlen(kTestOrigin));
-    if (pages_.find(page) == pages_.end()) {
-      // Not handled by this provider.
-      return false;
-    }
-
-    std::string value;
-    StringResourceMap::const_iterator it = string_resource_map_->find(page);
-    if (it != string_resource_map_->end()) {
-      value = it->second;
-    } else {
-      value = "<html><body>No data available</body></html>";
-    }
-
-    CefRefPtr<CefStreamReader> response = CefStreamReader::CreateForData(
-        static_cast<void*>(const_cast<char*>(value.c_str())), value.size());
-
-    request->Continue(new CefStreamResourceHandler(
-        200, "OK", "text/html", CefResponse::HeaderMap(), response));
-    return true;
-  }
-
- private:
-  const std::set<std::string> pages_;
-
-  // Only accessed on the IO thread.
-  StringResourceMap* string_resource_map_;
-
-  DISALLOW_COPY_AND_ASSIGN(StringResourceProvider);
-};
-
 // Add a file extension to |url| if none is currently specified.
 std::string RequestUrlFilter(const std::string& url) {
   if (url.find(kTestOrigin) != 0U) {
@@ -794,12 +715,10 @@ std::string GetErrorString(cef_errorcode_t code) {
   }
 }
 
-void SetupResourceManager(CefRefPtr<CefResourceManager> resource_manager,
-                          StringResourceMap* string_resource_map) {
+void SetupResourceManager(CefRefPtr<CefResourceManager> resource_manager) {
   if (!CefCurrentlyOn(TID_IO)) {
     // Execute on the browser IO thread.
-    CefPostTask(TID_IO, base::Bind(SetupResourceManager, resource_manager,
-                                   string_resource_map));
+    CefPostTask(TID_IO, base::Bind(SetupResourceManager, resource_manager));
     return;
   }
 
@@ -811,17 +730,6 @@ void SetupResourceManager(CefRefPtr<CefResourceManager> resource_manager,
   // Add provider for resource dumps.
   resource_manager->AddProvider(
       new RequestDumpResourceProvider(test_origin + "request.html"), 0,
-      std::string());
-
-  // Set of supported string pages.
-  std::set<std::string> string_pages;
-  string_pages.insert(kTestGetSourcePage);
-  string_pages.insert(kTestGetTextPage);
-  string_pages.insert(kTestPluginInfoPage);
-
-  // Add provider for string resources.
-  resource_manager->AddProvider(
-      new StringResourceProvider(string_pages, string_resource_map), 0,
       std::string());
 
 // Add provider for bundled resource files.

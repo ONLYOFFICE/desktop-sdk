@@ -13,8 +13,6 @@
 
 namespace client {
 
-class BrowserWindowOsrMacImpl;
-
 // Represents a native child window hosting a single off-screen browser
 // instance. The methods of this class must be called on the main thread unless
 // otherwise indicated.
@@ -32,7 +30,6 @@ class BrowserWindowOsrMac : public BrowserWindow,
   void CreateBrowser(ClientWindowHandle parent_handle,
                      const CefRect& rect,
                      const CefBrowserSettings& settings,
-                     CefRefPtr<CefDictionaryValue> extra_info,
                      CefRefPtr<CefRequestContext> request_context) OVERRIDE;
   void GetPopupConfig(CefWindowHandle temp_handle,
                       CefWindowInfo& windowInfo,
@@ -88,14 +85,19 @@ class BrowserWindowOsrMac : public BrowserWindow,
       const CefRenderHandler::RectList& character_bounds) OVERRIDE;
 
   void UpdateAccessibilityTree(CefRefPtr<CefValue> value) OVERRIDE;
-  void UpdateAccessibilityLocation(CefRefPtr<CefValue> value) OVERRIDE;
 
  private:
-  scoped_ptr<BrowserWindowOsrMacImpl> impl_;
+  // Create the NSView.
+  void Create(ClientWindowHandle parent_handle, const CefRect& rect);
+
+  // The below members will only be accessed on the main thread which should be
+  // the same as the CEF UI thread.
+  OsrRenderer renderer_;
+  ClientWindowHandle nsview_;
+  bool hidden_;
+  bool painting_popup_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserWindowOsrMac);
-
-  friend class BrowserWindowOsrMacImpl;
 };
 
 }  // namespace client

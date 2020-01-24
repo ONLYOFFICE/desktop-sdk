@@ -357,15 +357,14 @@ void TestHandler::OnTestTimeout(int timeout_ms, bool treat_as_error) {
 }
 
 void TestHandler::CreateBrowser(const CefString& url,
-                                CefRefPtr<CefRequestContext> request_context,
-                                CefRefPtr<CefDictionaryValue> extra_info) {
+                                CefRefPtr<CefRequestContext> request_context) {
 #if defined(USE_AURA)
   const bool use_views = CefCommandLine::GetGlobalCommandLine()->HasSwitch(
       client::switches::kUseViews);
   if (use_views && !CefCurrentlyOn(TID_UI)) {
     // Views classes must be accessed on the UI thread.
     CefPostTask(TID_UI, base::Bind(&TestHandler::CreateBrowser, this, url,
-                                   request_context, extra_info));
+                                   request_context));
     return;
   }
 #endif  // defined(USE_AURA)
@@ -378,8 +377,7 @@ void TestHandler::CreateBrowser(const CefString& url,
   if (use_views) {
     // Create the BrowserView.
     CefRefPtr<CefBrowserView> browser_view = CefBrowserView::CreateBrowserView(
-        this, url, settings, extra_info, request_context,
-        new TestBrowserViewDelegate());
+        this, url, settings, request_context, new TestBrowserViewDelegate());
 
     // Create the Window. It will show itself after creation.
     TestWindowDelegate::CreateBrowserWindow(browser_view, std::string());
@@ -390,7 +388,7 @@ void TestHandler::CreateBrowser(const CefString& url,
     windowInfo.SetAsPopup(NULL, "CefUnitTest");
     windowInfo.style |= WS_VISIBLE;
 #endif
-    CefBrowserHost::CreateBrowser(windowInfo, this, url, settings, extra_info,
+    CefBrowserHost::CreateBrowser(windowInfo, this, url, settings,
                                   request_context);
   }
 }
@@ -450,11 +448,6 @@ void TestHandler::SetTestTimeout(int timeout_ms, bool treat_as_error) {
     return;
   }
 
-  if (destroy_test_called_) {
-    // No need to set the timeout if the test has already completed.
-    return;
-  }
-
   if (treat_as_error && CefCommandLine::GetGlobalCommandLine()->HasSwitch(
                             "disable-test-timeout")) {
     return;
@@ -480,7 +473,7 @@ void TestHandler::TestComplete() {
 
 TestHandler::UIThreadHelper* TestHandler::GetUIThreadHelper() {
   EXPECT_UI_THREAD();
-  CHECK(!destroy_test_called_);
+  EXPECT_FALSE(destroy_test_called_);
 
   if (!ui_thread_helper_.get())
     ui_thread_helper_.reset(new UIThreadHelper());

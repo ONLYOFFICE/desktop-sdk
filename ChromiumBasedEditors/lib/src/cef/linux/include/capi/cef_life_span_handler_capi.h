@@ -33,7 +33,7 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=85d9f30e93e1c3759213074cc5876f848cf4b012$
+// $hash=a1648c803a6d72e004e523cd4c02530702635d1e$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_LIFE_SPAN_HANDLER_CAPI_H_
@@ -80,10 +80,7 @@ typedef struct _cef_life_span_handler_t {
   // modifications to |windowInfo| will be ignored if the parent browser is
   // wrapped in a cef_browser_view_t. Popup browser creation will be canceled if
   // the parent browser is destroyed before the popup browser creation completes
-  // (indicated by a call to OnAfterCreated for the popup browser). The
-  // |extra_info| parameter provides an opportunity to specify extra information
-  // specific to the created popup browser that will be passed to
-  // cef_render_process_handler_t::on_browser_created() in the render process.
+  // (indicated by a call to OnAfterCreated for the popup browser).
   ///
   int(CEF_CALLBACK* on_before_popup)(
       struct _cef_life_span_handler_t* self,
@@ -97,7 +94,6 @@ typedef struct _cef_life_span_handler_t {
       struct _cef_window_info_t* windowInfo,
       struct _cef_client_t** client,
       struct _cef_browser_settings_t* settings,
-      struct _cef_dictionary_value_t** extra_info,
       int* no_javascript_access);
 
   ///
@@ -202,13 +198,9 @@ typedef struct _cef_life_span_handler_t {
   ///
   // Called just before a browser is destroyed. Release all references to the
   // browser object and do not attempt to execute any functions on the browser
-  // object (other than GetIdentifier or IsSame) after this callback returns.
-  // This callback will be the last notification that references |browser| on
-  // the UI thread. Any in-progress network requests associated with |browser|
-  // will be aborted when the browser is destroyed, and
-  // cef_resource_request_handler_t callbacks related to those requests may
-  // still arrive on the IO thread after this function is called. See do_close()
-  // documentation for additional usage information.
+  // object after this callback returns. This callback will be the last
+  // notification that references |browser|. See do_close() documentation for
+  // additional usage information.
   ///
   void(CEF_CALLBACK* on_before_close)(struct _cef_life_span_handler_t* self,
                                       struct _cef_browser_t* browser);

@@ -9,17 +9,14 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=99d10924d2ed2a233bd9d33314a627aa574cf89e$
+// $hash=e1e8b50b87dbf2cb7fa8b4d53fa5ff635c51bde3$
 //
 
 #include "libcef_dll/ctocpp/frame_ctocpp.h"
 #include "libcef_dll/cpptoc/domvisitor_cpptoc.h"
 #include "libcef_dll/cpptoc/string_visitor_cpptoc.h"
-#include "libcef_dll/cpptoc/urlrequest_client_cpptoc.h"
 #include "libcef_dll/ctocpp/browser_ctocpp.h"
-#include "libcef_dll/ctocpp/process_message_ctocpp.h"
 #include "libcef_dll/ctocpp/request_ctocpp.h"
-#include "libcef_dll/ctocpp/urlrequest_ctocpp.h"
 #include "libcef_dll/ctocpp/v8context_ctocpp.h"
 #include "libcef_dll/shutdown_checker.h"
 
@@ -221,6 +218,30 @@ NO_SANITIZE("cfi-icall") void CefFrameCToCpp::LoadURL(const CefString& url) {
 }
 
 NO_SANITIZE("cfi-icall")
+void CefFrameCToCpp::LoadString(const CefString& string_val,
+                                const CefString& url) {
+  shutdown_checker::AssertNotShutdown();
+
+  cef_frame_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, load_string))
+    return;
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Verify param: string_val; type: string_byref_const
+  DCHECK(!string_val.empty());
+  if (string_val.empty())
+    return;
+  // Verify param: url; type: string_byref_const
+  DCHECK(!url.empty());
+  if (url.empty())
+    return;
+
+  // Execute
+  _struct->load_string(_struct, string_val.GetStruct(), url.GetStruct());
+}
+
+NO_SANITIZE("cfi-icall")
 void CefFrameCToCpp::ExecuteJavaScript(const CefString& code,
                                        const CefString& script_url,
                                        int start_line) {
@@ -393,57 +414,6 @@ void CefFrameCToCpp::VisitDOM(CefRefPtr<CefDOMVisitor> visitor) {
 
   // Execute
   _struct->visit_dom(_struct, CefDOMVisitorCppToC::Wrap(visitor));
-}
-
-NO_SANITIZE("cfi-icall")
-CefRefPtr<CefURLRequest> CefFrameCToCpp::CreateURLRequest(
-    CefRefPtr<CefRequest> request,
-    CefRefPtr<CefURLRequestClient> client) {
-  shutdown_checker::AssertNotShutdown();
-
-  cef_frame_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, create_urlrequest))
-    return NULL;
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Verify param: request; type: refptr_same
-  DCHECK(request.get());
-  if (!request.get())
-    return NULL;
-  // Verify param: client; type: refptr_diff
-  DCHECK(client.get());
-  if (!client.get())
-    return NULL;
-
-  // Execute
-  cef_urlrequest_t* _retval =
-      _struct->create_urlrequest(_struct, CefRequestCToCpp::Unwrap(request),
-                                 CefURLRequestClientCppToC::Wrap(client));
-
-  // Return type: refptr_same
-  return CefURLRequestCToCpp::Wrap(_retval);
-}
-
-NO_SANITIZE("cfi-icall")
-void CefFrameCToCpp::SendProcessMessage(CefProcessId target_process,
-                                        CefRefPtr<CefProcessMessage> message) {
-  shutdown_checker::AssertNotShutdown();
-
-  cef_frame_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, send_process_message))
-    return;
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Verify param: message; type: refptr_same
-  DCHECK(message.get());
-  if (!message.get())
-    return;
-
-  // Execute
-  _struct->send_process_message(_struct, target_process,
-                                CefProcessMessageCToCpp::Unwrap(message));
 }
 
 // CONSTRUCTOR - Do not edit by hand.

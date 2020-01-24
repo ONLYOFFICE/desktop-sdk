@@ -36,11 +36,11 @@ const int kOsrHeight = 400;
 
 // bounding client rects for edit box and navigate button
 #if defined(OS_WIN)
-const CefRect kExpandedSelectRect(462, 42, 81, 334);
+const CefRect kExpandedSelectRect(463, 42, 81, 334);
 #elif defined(OS_MACOSX)
-const CefRect kExpandedSelectRect(462, 42, 75, 286);
+const CefRect kExpandedSelectRect(463, 42, 75, 286);
 #elif defined(OS_LINUX)
-const CefRect kExpandedSelectRect(462, 42, 79, 334);
+const CefRect kExpandedSelectRect(463, 42, 79, 334);
 #else
 #error "Unsupported platform"
 #endif  // defined(OS_WIN)
@@ -386,7 +386,8 @@ class OSRTestHandler : public RoutingTestHandler,
     return this;
   }
 
-  // CefResourceRequestHandler methods
+  CefRefPtr<CefRequestHandler> GetRequestHandler() override { return this; }
+
   CefRefPtr<CefResourceHandler> GetResourceHandler(
       CefRefPtr<CefBrowser> browser,
       CefRefPtr<CefFrame> frame,
@@ -823,18 +824,19 @@ class OSRTestHandler : public RoutingTestHandler,
             const CefRect& expanded_select_rect =
                 GetScaledRect(kExpandedSelectRect);
             EXPECT_EQ(dirtyRects.size(), 1U);
+            // dirtyRects[0] has a 1px inset.
 #if defined(OS_MACOSX)
-            EXPECT_EQ(GetScaledInt(1), dirtyRects[0].x);
-            EXPECT_EQ(GetScaledInt(1), dirtyRects[0].y);
+            const int inset = GetScaledInt(1);
 #else
-            EXPECT_EQ(1, dirtyRects[0].x);
-            EXPECT_EQ(1, dirtyRects[0].y);
+            const int inset = 1;
 #endif
+            EXPECT_EQ(inset, dirtyRects[0].x);
+            EXPECT_EQ(inset, dirtyRects[0].y);
             if (ExpectComputedPopupSize()) {
-              EXPECT_EQ(expanded_select_rect.width,
-                        dirtyRects[0].width + GetScaledInt(2));
-              EXPECT_EQ(expanded_select_rect.height,
-                        dirtyRects[0].height + GetScaledInt(2));
+              EXPECT_EQ(expanded_select_rect.width - inset * 2,
+                        dirtyRects[0].width);
+              EXPECT_EQ(expanded_select_rect.height - inset * 2,
+                        dirtyRects[0].height);
             } else {
               EXPECT_GT(dirtyRects[0].width, kExpandedSelectRect.width);
               EXPECT_GT(dirtyRects[0].height, kExpandedSelectRect.height);
@@ -1338,7 +1340,7 @@ class OSRTestHandler : public RoutingTestHandler,
 #else
 #error "Unsupported platform"
 #endif
-    CefBrowserHost::CreateBrowser(windowInfo, this, url, settings, NULL, NULL);
+    CefBrowserHost::CreateBrowser(windowInfo, this, url, settings, NULL);
   }
 
   CefRect GetScaledRect(const CefRect& rect) const {

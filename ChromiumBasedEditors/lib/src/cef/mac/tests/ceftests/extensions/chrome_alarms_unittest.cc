@@ -79,7 +79,7 @@ class AlarmsTestHandler : public ExtensionTestHandler {
     }
   }
 
-  // CefResourceRequestHandler methods:
+  // CefRequestHandler methods:
   CefRefPtr<CefResourceHandler> GetResourceHandler(
       CefRefPtr<CefBrowser> browser,
       CefRefPtr<CefFrame> frame,

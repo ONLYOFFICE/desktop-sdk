@@ -12,9 +12,17 @@
 #include "tests/cefclient/browser/browser_window.h"
 #include "tests/cefclient/browser/root_window.h"
 
-namespace client {
+#ifdef __OBJC__
+@class NSWindow;
+@class NSButton;
+@class NSTextField;
+#else
+class NSWindow;
+class NSButton;
+class NSTextField;
+#endif
 
-class RootWindowMacImpl;
+namespace client {
 
 // OS X implementation of a top-level native window in the browser process.
 // The methods of this class must be called on the main thread unless otherwise
@@ -24,9 +32,6 @@ class RootWindowMac : public RootWindow, public BrowserWindow::Delegate {
   // Constructor may be called on any thread.
   RootWindowMac();
   ~RootWindowMac();
-
-  BrowserWindow* browser_window() const;
-  RootWindow::Delegate* delegate() const;
 
   // RootWindow methods.
   void Init(RootWindow::Delegate* delegate,
@@ -50,6 +55,18 @@ class RootWindowMac : public RootWindow, public BrowserWindow::Delegate {
   bool WithWindowlessRendering() const OVERRIDE;
   bool WithExtension() const OVERRIDE;
 
+  // Called by RootWindowDelegate after the associated NSWindow has been
+  // destroyed.
+  void WindowDestroyed();
+
+  BrowserWindow* browser_window() const { return browser_window_.get(); }
+  RootWindow::Delegate* delegate() const { return delegate_; }
+
+ private:
+  void CreateBrowserWindow(const std::string& startup_url);
+  void CreateRootWindow(const CefBrowserSettings& settings,
+                        bool initially_hidden);
+
   // BrowserWindow::Delegate methods.
   void OnBrowserCreated(CefRefPtr<CefBrowser> browser) OVERRIDE;
   void OnBrowserWindowDestroyed() OVERRIDE;
@@ -63,14 +80,34 @@ class RootWindowMac : public RootWindow, public BrowserWindow::Delegate {
   void OnSetDraggableRegions(
       const std::vector<CefDraggableRegion>& regions) OVERRIDE;
 
-  void OnNativeWindowClosed();
+  void NotifyDestroyedIfDone();
 
- private:
-  CefRefPtr<RootWindowMacImpl> impl_;
+  // After initialization all members are only accessed on the main thread.
+  // Members set during initialization.
+  bool with_controls_;
+  bool with_osr_;
+  bool with_extension_;
+  bool is_popup_;
+  CefRect start_rect_;
+  scoped_ptr<BrowserWindow> browser_window_;
+  bool initialized_;
+
+  // Main window.
+  NSWindow* window_;
+
+  // Buttons.
+  NSButton* back_button_;
+  NSButton* forward_button_;
+  NSButton* reload_button_;
+  NSButton* stop_button_;
+
+  // URL text field.
+  NSTextField* url_textfield_;
+
+  bool window_destroyed_;
+  bool browser_destroyed_;
 
   DISALLOW_COPY_AND_ASSIGN(RootWindowMac);
-
-  friend class RootWindowMacImpl;
 };
 
 }  // namespace client

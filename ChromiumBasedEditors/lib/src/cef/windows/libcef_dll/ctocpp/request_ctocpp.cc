@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=30da50026aa5654b04de874040b194dcc87a7e30$
+// $hash=d03733ad63f8893ab03663ea46aec6ae92354efd$
 //
 
 #include "libcef_dll/ctocpp/request_ctocpp.h"
@@ -118,7 +118,10 @@ void CefRequestCToCpp::SetReferrer(const CefString& referrer_url,
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
-  // Unverified params: referrer_url
+  // Verify param: referrer_url; type: string_byref_const
+  DCHECK(!referrer_url.empty());
+  if (referrer_url.empty())
+    return;
 
   // Execute
   _struct->set_referrer(_struct, referrer_url.GetStruct(), policy);
@@ -235,50 +238,6 @@ void CefRequestCToCpp::SetHeaderMap(const HeaderMap& headerMap) {
 }
 
 NO_SANITIZE("cfi-icall")
-CefString CefRequestCToCpp::GetHeaderByName(const CefString& name) {
-  cef_request_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, get_header_by_name))
-    return CefString();
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Verify param: name; type: string_byref_const
-  DCHECK(!name.empty());
-  if (name.empty())
-    return CefString();
-
-  // Execute
-  cef_string_userfree_t _retval =
-      _struct->get_header_by_name(_struct, name.GetStruct());
-
-  // Return type: string
-  CefString _retvalStr;
-  _retvalStr.AttachToUserFree(_retval);
-  return _retvalStr;
-}
-
-NO_SANITIZE("cfi-icall")
-void CefRequestCToCpp::SetHeaderByName(const CefString& name,
-                                       const CefString& value,
-                                       bool overwrite) {
-  cef_request_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, set_header_by_name))
-    return;
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Verify param: name; type: string_byref_const
-  DCHECK(!name.empty());
-  if (name.empty())
-    return;
-  // Unverified params: value
-
-  // Execute
-  _struct->set_header_by_name(_struct, name.GetStruct(), value.GetStruct(),
-                              overwrite);
-}
-
-NO_SANITIZE("cfi-icall")
 void CefRequestCToCpp::Set(const CefString& url,
                            const CefString& method,
                            CefRefPtr<CefPostData> postData,
@@ -363,7 +322,10 @@ void CefRequestCToCpp::SetFirstPartyForCookies(const CefString& url) {
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
-  // Unverified params: url
+  // Verify param: url; type: string_byref_const
+  DCHECK(!url.empty());
+  if (url.empty())
+    return;
 
   // Execute
   _struct->set_first_party_for_cookies(_struct, url.GetStruct());

@@ -57,12 +57,6 @@
 #include "../../../../../core/DesktopEditor/common/CalculatorCRC32.h"
 #include "./client_renderer_params.h"
 
-#ifdef CEF_2623
-#define SEND_MESSAGE_TO_BROWSER_PROCESS(message) CefV8Context::GetCurrentContext()->GetBrowser()->SendProcessMessage(PID_BROWSER, message)
-#else
-#define SEND_MESSAGE_TO_BROWSER_PROCESS(message) CefV8Context::GetCurrentContext()->GetFrame()->SendProcessMessage(PID_BROWSER, message)
-#endif
-
 namespace NSCommon
 {
     template <typename Type>
@@ -3163,7 +3157,7 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
     }
 
     CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_js_context_created");
-#ifndef CEF_2623
+#ifndef MESSAGE_IN_BROWSER
     curFrame->SendProcessMessage(PID_BROWSER, message);
 #else
     browser->SendProcessMessage(PID_BROWSER, message);
@@ -3198,7 +3192,7 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
   virtual bool OnProcessMessageReceived(
       CefRefPtr<client::ClientAppRenderer> app,
       CefRefPtr<CefBrowser> browser,
-#ifndef CEF_2623
+#ifndef MESSAGE_IN_BROWSER
       CefRefPtr<CefFrame> messageFrame,
 #endif
       CefProcessId source_process,
@@ -4107,7 +4101,7 @@ delete window[\"crypto_images_map\"][_url];\n\
 
     return message_router_->OnProcessMessageReceived(
         browser,
-        #ifndef CEF_2623
+        #ifndef MESSAGE_IN_BROWSER
         messageFrame,
         #endif
         source_process, message);

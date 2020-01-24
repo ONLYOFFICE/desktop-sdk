@@ -184,13 +184,6 @@ typedef struct _cef_settings_t {
   cef_string_t framework_dir_path;
 
   ///
-  // The path to the main bundle on macOS. If this value is empty then it
-  // defaults to the top-level app bundle. Also configurable using
-  // the "main-bundle-path" command-line switch.
-  ///
-  cef_string_t main_bundle_path;
-
-  ///
   // Set to true (1) to have the browser process message loop run in a separate
   // thread. If false (0) than the CefDoMessageLoopWork() function must be
   // called from your application message loop. This option is only supported on
@@ -226,26 +219,14 @@ typedef struct _cef_settings_t {
   int command_line_args_disabled;
 
   ///
-  // The location where data for the global browser cache will be stored on
-  // disk. If non-empty this must be either equal to or a child directory of
-  // CefSettings.root_cache_path. If empty then browsers will be created in
-  // "incognito mode" where in-memory caches are used for storage and no data is
-  // persisted to disk. HTML5 databases such as localStorage will only persist
-  // across sessions if a cache path is specified. Can be overridden for
-  // individual CefRequestContext instances via the
-  // CefRequestContextSettings.cache_path value.
+  // The location where cache data will be stored on disk. If empty then
+  // browsers will be created in "incognito mode" where in-memory caches are
+  // used for storage and no data is persisted to disk. HTML5 databases such as
+  // localStorage will only persist across sessions if a cache path is
+  // specified. Can be overridden for individual CefRequestContext instances via
+  // the CefRequestContextSettings.cache_path value.
   ///
   cef_string_t cache_path;
-
-  ///
-  // The root directory that all CefSettings.cache_path and
-  // CefRequestContextSettings.cache_path values must have in common. If this
-  // value is empty and CefSettings.cache_path is non-empty then this value will
-  // default to the CefSettings.cache_path value. Failure to set this value
-  // correctly may result in the sandbox blocking read/write access to the
-  // cache_path directory.
-  ///
-  cef_string_t root_cache_path;
 
   ///
   // The location where user data such as spell checking dictionary files will
@@ -386,6 +367,19 @@ typedef struct _cef_settings_t {
   int ignore_certificate_errors;
 
   ///
+  // Set to true (1) to enable date-based expiration of built in network
+  // security information (i.e. certificate transparency logs, HSTS preloading
+  // and pinning information). Enabling this option improves network security
+  // but may cause HTTPS load failures when using CEF binaries built more than
+  // 10 weeks in the past. See https://www.certificate-transparency.org/ and
+  // https://www.chromium.org/hsts for details. Also configurable using the
+  // "enable-net-security-expiration" command-line switch. Can be overridden for
+  // individual CefRequestContext instances via the
+  // CefRequestContextSettings.enable_net_security_expiration value.
+  ///
+  int enable_net_security_expiration;
+
+  ///
   // Background color used for the browser before a document is loaded and when
   // no document color is specified. The alpha component must be either fully
   // opaque (0xFF) or fully transparent (0x00). If the alpha component is fully
@@ -406,14 +400,6 @@ typedef struct _cef_settings_t {
   // CefRequestContextSettings.accept_language_list value.
   ///
   cef_string_t accept_language_list;
-
-  ///
-  // GUID string used for identifying the application. This is passed to the
-  // system AV function for scanning downloaded files. By default, the GUID
-  // will be an empty string and the file will be treated as an untrusted
-  // file when the GUID is empty.
-  ///
-  cef_string_t application_client_id_for_file_scanning;
 } cef_settings_t;
 
 ///
@@ -427,14 +413,12 @@ typedef struct _cef_request_context_settings_t {
   size_t size;
 
   ///
-  // The location where cache data for this request context will be stored on
-  // disk. If non-empty this must be either equal to or a child directory of
-  // CefSettings.root_cache_path. If empty then browsers will be created in
-  // "incognito mode" where in-memory caches are used for storage and no data is
-  // persisted to disk. HTML5 databases such as localStorage will only persist
-  // across sessions if a cache path is specified. To share the global browser
-  // cache and related configuration set this value to match the
-  // CefSettings.cache_path value.
+  // The location where cache data will be stored on disk. If empty then
+  // browsers will be created in "incognito mode" where in-memory caches are
+  // used for storage and no data is persisted to disk. HTML5 databases such as
+  // localStorage will only persist across sessions if a cache path is
+  // specified. To share the global browser cache and related configuration set
+  // this value to match the CefSettings.cache_path value.
   ///
   cef_string_t cache_path;
 
@@ -465,6 +449,17 @@ typedef struct _cef_request_context_settings_t {
   // |cache_path| matches the CefSettings.cache_path value.
   ///
   int ignore_certificate_errors;
+
+  ///
+  // Set to true (1) to enable date-based expiration of built in network
+  // security information (i.e. certificate transparency logs, HSTS preloading
+  // and pinning information). Enabling this option improves network security
+  // but may cause HTTPS load failures when using CEF binaries built more than
+  // 10 weeks in the past. See https://www.certificate-transparency.org/ and
+  // https://www.chromium.org/hsts for details. Can be set globally using the
+  // CefSettings.enable_net_security_expiration value.
+  ///
+  int enable_net_security_expiration;
 
   ///
   // Comma delimited ordered list of language codes without any whitespace that
@@ -871,16 +866,66 @@ typedef enum {
 } cef_storage_type_t;
 
 ///
-// Supported error code values.
+// Supported error code values. See net\base\net_error_list.h for complete
+// descriptions of the error codes.
 ///
 typedef enum {
-  // No error.
   ERR_NONE = 0,
-
-#define NET_ERROR(label, value) ERR_##label = value,
-#include "include/base/internal/cef_net_error_list.h"
-#undef NET_ERROR
-
+  ERR_FAILED = -2,
+  ERR_ABORTED = -3,
+  ERR_INVALID_ARGUMENT = -4,
+  ERR_INVALID_HANDLE = -5,
+  ERR_FILE_NOT_FOUND = -6,
+  ERR_TIMED_OUT = -7,
+  ERR_FILE_TOO_BIG = -8,
+  ERR_UNEXPECTED = -9,
+  ERR_ACCESS_DENIED = -10,
+  ERR_NOT_IMPLEMENTED = -11,
+  ERR_CONNECTION_CLOSED = -100,
+  ERR_CONNECTION_RESET = -101,
+  ERR_CONNECTION_REFUSED = -102,
+  ERR_CONNECTION_ABORTED = -103,
+  ERR_CONNECTION_FAILED = -104,
+  ERR_NAME_NOT_RESOLVED = -105,
+  ERR_INTERNET_DISCONNECTED = -106,
+  ERR_SSL_PROTOCOL_ERROR = -107,
+  ERR_ADDRESS_INVALID = -108,
+  ERR_ADDRESS_UNREACHABLE = -109,
+  ERR_SSL_CLIENT_AUTH_CERT_NEEDED = -110,
+  ERR_TUNNEL_CONNECTION_FAILED = -111,
+  ERR_NO_SSL_VERSIONS_ENABLED = -112,
+  ERR_SSL_VERSION_OR_CIPHER_MISMATCH = -113,
+  ERR_SSL_RENEGOTIATION_REQUESTED = -114,
+  ERR_CERT_COMMON_NAME_INVALID = -200,
+  ERR_CERT_BEGIN = ERR_CERT_COMMON_NAME_INVALID,
+  ERR_CERT_DATE_INVALID = -201,
+  ERR_CERT_AUTHORITY_INVALID = -202,
+  ERR_CERT_CONTAINS_ERRORS = -203,
+  ERR_CERT_NO_REVOCATION_MECHANISM = -204,
+  ERR_CERT_UNABLE_TO_CHECK_REVOCATION = -205,
+  ERR_CERT_REVOKED = -206,
+  ERR_CERT_INVALID = -207,
+  ERR_CERT_WEAK_SIGNATURE_ALGORITHM = -208,
+  // -209 is available: was ERR_CERT_NOT_IN_DNS.
+  ERR_CERT_NON_UNIQUE_NAME = -210,
+  ERR_CERT_WEAK_KEY = -211,
+  ERR_CERT_NAME_CONSTRAINT_VIOLATION = -212,
+  ERR_CERT_VALIDITY_TOO_LONG = -213,
+  ERR_CERT_END = ERR_CERT_VALIDITY_TOO_LONG,
+  ERR_INVALID_URL = -300,
+  ERR_DISALLOWED_URL_SCHEME = -301,
+  ERR_UNKNOWN_URL_SCHEME = -302,
+  ERR_TOO_MANY_REDIRECTS = -310,
+  ERR_UNSAFE_REDIRECT = -311,
+  ERR_UNSAFE_PORT = -312,
+  ERR_INVALID_RESPONSE = -320,
+  ERR_INVALID_CHUNKED_ENCODING = -321,
+  ERR_METHOD_NOT_SUPPORTED = -322,
+  ERR_UNEXPECTED_PROXY_AUTH = -323,
+  ERR_EMPTY_RESPONSE = -324,
+  ERR_RESPONSE_HEADERS_TOO_BIG = -325,
+  ERR_CACHE_MISS = -400,
+  ERR_INSECURE_RESPONSE = -501,
 } cef_errorcode_t;
 
 ///
@@ -2800,7 +2845,7 @@ typedef enum {
   SSL_CONNECTION_VERSION_TLS1 = 3,
   SSL_CONNECTION_VERSION_TLS1_1 = 4,
   SSL_CONNECTION_VERSION_TLS1_2 = 5,
-  SSL_CONNECTION_VERSION_TLS1_3 = 6,
+  // Reserve 6 for TLS 1.3.
   SSL_CONNECTION_VERSION_QUIC = 7,
 } cef_ssl_version_t;
 
@@ -2947,6 +2992,117 @@ typedef struct _cef_composition_underline_t {
   ///
   int thick;
 } cef_composition_underline_t;
+
+///
+// Enumerates the various representations of the ordering of audio channels.
+// Logged to UMA, so never reuse a value, always add new/greater ones!
+// See media\base\channel_layout.h
+///
+typedef enum {
+  CEF_CHANNEL_LAYOUT_NONE = 0,
+  CEF_CHANNEL_LAYOUT_UNSUPPORTED = 1,
+
+  // Front C
+  CEF_CHANNEL_LAYOUT_MONO = 2,
+
+  // Front L, Front R
+  CEF_CHANNEL_LAYOUT_STEREO = 3,
+
+  // Front L, Front R, Back C
+  CEF_CHANNEL_LAYOUT_2_1 = 4,
+
+  // Front L, Front R, Front C
+  CEF_CHANNEL_LAYOUT_SURROUND = 5,
+
+  // Front L, Front R, Front C, Back C
+  CEF_CHANNEL_LAYOUT_4_0 = 6,
+
+  // Front L, Front R, Side L, Side R
+  CEF_CHANNEL_LAYOUT_2_2 = 7,
+
+  // Front L, Front R, Back L, Back R
+  CEF_CHANNEL_LAYOUT_QUAD = 8,
+
+  // Front L, Front R, Front C, Side L, Side R
+  CEF_CHANNEL_LAYOUT_5_0 = 9,
+
+  // Front L, Front R, Front C, LFE, Side L, Side R
+  CEF_CHANNEL_LAYOUT_5_1 = 10,
+
+  // Front L, Front R, Front C, Back L, Back R
+  CEF_CHANNEL_LAYOUT_5_0_BACK = 11,
+
+  // Front L, Front R, Front C, LFE, Back L, Back R
+  CEF_CHANNEL_LAYOUT_5_1_BACK = 12,
+
+  // Front L, Front R, Front C, Side L, Side R, Back L, Back R
+  CEF_CHANNEL_LAYOUT_7_0 = 13,
+
+  // Front L, Front R, Front C, LFE, Side L, Side R, Back L, Back R
+  CEF_CHANNEL_LAYOUT_7_1 = 14,
+
+  // Front L, Front R, Front C, LFE, Side L, Side R, Front LofC, Front RofC
+  CEF_CHANNEL_LAYOUT_7_1_WIDE = 15,
+
+  // Stereo L, Stereo R
+  CEF_CHANNEL_LAYOUT_STEREO_DOWNMIX = 16,
+
+  // Stereo L, Stereo R, LFE
+  CEF_CHANNEL_LAYOUT_2POINT1 = 17,
+
+  // Stereo L, Stereo R, Front C, LFE
+  CEF_CHANNEL_LAYOUT_3_1 = 18,
+
+  // Stereo L, Stereo R, Front C, Rear C, LFE
+  CEF_CHANNEL_LAYOUT_4_1 = 19,
+
+  // Stereo L, Stereo R, Front C, Side L, Side R, Back C
+  CEF_CHANNEL_LAYOUT_6_0 = 20,
+
+  // Stereo L, Stereo R, Side L, Side R, Front LofC, Front RofC
+  CEF_CHANNEL_LAYOUT_6_0_FRONT = 21,
+
+  // Stereo L, Stereo R, Front C, Rear L, Rear R, Rear C
+  CEF_CHANNEL_LAYOUT_HEXAGONAL = 22,
+
+  // Stereo L, Stereo R, Front C, LFE, Side L, Side R, Rear Center
+  CEF_CHANNEL_LAYOUT_6_1 = 23,
+
+  // Stereo L, Stereo R, Front C, LFE, Back L, Back R, Rear Center
+  CEF_CHANNEL_LAYOUT_6_1_BACK = 24,
+
+  // Stereo L, Stereo R, Side L, Side R, Front LofC, Front RofC, LFE
+  CEF_CHANNEL_LAYOUT_6_1_FRONT = 25,
+
+  // Front L, Front R, Front C, Side L, Side R, Front LofC, Front RofC
+  CEF_CHANNEL_LAYOUT_7_0_FRONT = 26,
+
+  // Front L, Front R, Front C, LFE, Back L, Back R, Front LofC, Front RofC
+  CEF_CHANNEL_LAYOUT_7_1_WIDE_BACK = 27,
+
+  // Front L, Front R, Front C, Side L, Side R, Rear L, Back R, Back C.
+  CEF_CHANNEL_LAYOUT_OCTAGONAL = 28,
+
+  // Channels are not explicitly mapped to speakers.
+  CEF_CHANNEL_LAYOUT_DISCRETE = 29,
+
+  // Front L, Front R, Front C. Front C contains the keyboard mic audio. This
+  // layout is only intended for input for WebRTC. The Front C channel
+  // is stripped away in the WebRTC audio input pipeline and never seen outside
+  // of that.
+  CEF_CHANNEL_LAYOUT_STEREO_AND_KEYBOARD_MIC = 30,
+
+  // Front L, Front R, Side L, Side R, LFE
+  CEF_CHANNEL_LAYOUT_4_1_QUAD_SIDE = 31,
+
+  // Actual channel layout is specified in the bitstream and the actual channel
+  // count is unknown at Chromium media pipeline level (useful for audio
+  // pass-through mode).
+  CEF_CHANNEL_LAYOUT_BITSTREAM = 32,
+
+  // Max value, must always equal the largest entry ever logged.
+  CEF_CHANNEL_LAYOUT_MAX = CEF_CHANNEL_LAYOUT_BITSTREAM
+} cef_channel_layout_t;
 
 #ifdef __cplusplus
 }

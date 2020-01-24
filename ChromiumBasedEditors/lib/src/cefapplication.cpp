@@ -239,6 +239,17 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     LOGGER_STRING("CApplicationCEF::Init_CEF::main");
 
     CefSettings settings;
+
+#ifndef _MAC
+    std::wstring sHelperPath = NSFile::GetProcessDirectory() + L"/ascdocumentscore_helper";
+#ifdef _WIN32
+    sHelperPath += L".exe";
+#endif
+    cef_string_t _subprocess;
+    memset(&_subprocess, 0, sizeof(_subprocess));
+    cef_string_from_wide(sHelperPath.c_str(), sHelperPath.length(), &_subprocess);
+    settings.browser_subprocess_path = _subprocess;
+#endif
     
 #ifdef _MAC
 #if 0

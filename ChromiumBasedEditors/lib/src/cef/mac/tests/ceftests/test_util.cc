@@ -3,7 +3,6 @@
 // can be found in the LICENSE file.
 
 #include "tests/ceftests/test_util.h"
-#include "include/cef_request_context_handler.h"
 #include "tests/gtest/include/gtest/gtest.h"
 
 void TestMapEqual(const CefRequest::HeaderMap& map1,
@@ -19,15 +18,12 @@ void TestMapEqual(const CefRequest::HeaderMap& map1,
   CefRequest::HeaderMap::const_iterator it1, it2;
 
   for (it1 = map1.begin(); it1 != map1.end(); ++it1) {
-    bool found = false;
-    for (it2 = map2.begin(); it2 != map2.end(); ++it2) {
-      if (it1->first == it2->first && it1->second == it2->second) {
-        found = true;
-        break;
-      }
+    it2 = map2.find(it1->first);
+    EXPECT_TRUE(it2 != map2.end());
+    if (it2 != map2.end()) {
+      EXPECT_STREQ(it1->second.ToString().c_str(),
+                   it2->second.ToString().c_str());
     }
-    EXPECT_TRUE(found) << "No entry for " << it1->first.ToString() << ": "
-                       << it1->second.ToString();
   }
 }
 

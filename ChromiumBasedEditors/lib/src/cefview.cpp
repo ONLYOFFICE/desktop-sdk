@@ -77,12 +77,6 @@
 #endif
 
 #ifdef CEF_2623
-#define SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message) browser->SendProcessMessage(PID_RENDERER, message)
-#else
-#define SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message) browser->GetMainFrame()->SendProcessMessage(PID_RENDERER, message)
-#endif
-
-#ifdef CEF_2623
 typedef CefStreamResourceHandler CefStreamResourceHandlerCORS;
 #else
 #define USE_STREAM_RESOURCE_RECOVER_CORS
@@ -1547,7 +1541,7 @@ public:
         CefWindowInfo& windowInfo,
         CefRefPtr<CefClient>& client,
         CefBrowserSettings& settings,
-        #ifndef CEF_2623
+        #ifndef MESSAGE_IN_BROWSER
         CefRefPtr<CefDictionaryValue>& extra_info,
         #endif
         bool* no_javascript_access) OVERRIDE
@@ -1777,7 +1771,7 @@ public:
     }
 
     virtual bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
-                                      #ifndef CEF_2623
+                                      #ifndef MESSAGE_IN_BROWSER
                                           CefRefPtr<CefFrame> frame,
                                       #endif
                                           CefProcessId source_process,
@@ -3243,7 +3237,7 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
             return true;
 
         if (message_router_->OnProcessMessageReceived(browser,
-                                              #ifndef CEF_2623
+                                              #ifndef MESSAGE_IN_BROWSER
                                                       frame,
                                               #endif
                                                       source_process, message))
@@ -4773,7 +4767,7 @@ void CCefView::load(const std::wstring& urlInputSrc)
         return;
     }
 
-#ifdef CEF_2623
+#ifndef MESSAGE_IN_BROWSER
     CefRefPtr<CefCookieManager> manager = CefCookieManager::GetGlobalManager(NULL);
     manager->SetStoragePath(m_pInternal->m_pManager->m_oSettings.cookie_path, true, NULL);
 #endif
@@ -4850,7 +4844,7 @@ void CCefView::load(const std::wstring& urlInputSrc)
 
     // Creat the new child browser window
     CefBrowserHost::CreateBrowser(info, m_pInternal->m_handler.get(), sUrl, _settings, NULL
-                              #ifndef CEF_2623
+                              #ifndef MESSAGE_IN_BROWSER
                                   , NULL
                               #endif
                                   );

@@ -69,17 +69,16 @@ class ClientRenderDelegate : public ClientAppRenderer::Delegate {
       CefRefPtr<CefProcessMessage> message =
           CefProcessMessage::Create(kFocusedNodeChangedMessage);
       message->GetArgumentList()->SetBool(0, is_editable);
-      frame->SendProcessMessage(PID_BROWSER, message);
+      browser->SendProcessMessage(PID_BROWSER, message);
     }
   }
 
   bool OnProcessMessageReceived(CefRefPtr<ClientAppRenderer> app,
                                 CefRefPtr<CefBrowser> browser,
-                                CefRefPtr<CefFrame> frame,
                                 CefProcessId source_process,
                                 CefRefPtr<CefProcessMessage> message) OVERRIDE {
-    return message_router_->OnProcessMessageReceived(browser, frame,
-                                                     source_process, message);
+    return message_router_->OnProcessMessageReceived(browser, source_process,
+                                                     message);
   }
 
  private:

@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=016b054a1d376b7e66fa5bfc377be2d1da080631$
+// $hash=756629986a078c1403693255503cc6307215126b$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_FRAME_CTOCPP_H_
@@ -22,11 +22,9 @@
 
 #include "include/capi/cef_browser_capi.h"
 #include "include/capi/cef_frame_capi.h"
-#include "include/capi/cef_urlrequest_capi.h"
 #include "include/capi/cef_v8_capi.h"
 #include "include/cef_browser.h"
 #include "include/cef_frame.h"
-#include "include/cef_urlrequest.h"
 #include "include/cef_v8.h"
 #include "libcef_dll/ctocpp/ctocpp_ref_counted.h"
 
@@ -52,6 +50,7 @@ class CefFrameCToCpp
   void GetText(CefRefPtr<CefStringVisitor> visitor) OVERRIDE;
   void LoadRequest(CefRefPtr<CefRequest> request) OVERRIDE;
   void LoadURL(const CefString& url) OVERRIDE;
+  void LoadString(const CefString& string_val, const CefString& url) OVERRIDE;
   void ExecuteJavaScript(const CefString& code,
                          const CefString& script_url,
                          int start_line) OVERRIDE;
@@ -64,11 +63,6 @@ class CefFrameCToCpp
   CefRefPtr<CefBrowser> GetBrowser() OVERRIDE;
   CefRefPtr<CefV8Context> GetV8Context() OVERRIDE;
   void VisitDOM(CefRefPtr<CefDOMVisitor> visitor) OVERRIDE;
-  CefRefPtr<CefURLRequest> CreateURLRequest(
-      CefRefPtr<CefRequest> request,
-      CefRefPtr<CefURLRequestClient> client) OVERRIDE;
-  void SendProcessMessage(CefProcessId target_process,
-                          CefRefPtr<CefProcessMessage> message) OVERRIDE;
 };
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_FRAME_CTOCPP_H_

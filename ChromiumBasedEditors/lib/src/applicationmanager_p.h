@@ -59,6 +59,21 @@
 
 #include "utils.h"
 
+// с версии выше 74 - убрать определение
+#ifdef CEF_2623
+#define MESSAGE_IN_BROWSER
+#else
+#define MESSAGE_IN_BROWSER
+#endif
+
+#ifdef MESSAGE_IN_BROWSER
+#define SEND_MESSAGE_TO_BROWSER_PROCESS(message) CefV8Context::GetCurrentContext()->GetBrowser()->SendProcessMessage(PID_BROWSER, message)
+#define SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message) browser->SendProcessMessage(PID_RENDERER, message)
+#else
+#define SEND_MESSAGE_TO_BROWSER_PROCESS(message) CefV8Context::GetCurrentContext()->GetFrame()->SendProcessMessage(PID_BROWSER, message)
+#define SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message) browser->GetMainFrame()->SendProcessMessage(PID_RENDERER, message)
+#endif
+
 #define NO_CACHE_WEB_CLOUD_SCRIPTS
 
 #ifdef LINUX

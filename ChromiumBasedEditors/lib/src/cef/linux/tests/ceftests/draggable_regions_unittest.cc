@@ -47,7 +47,7 @@ const char kTestHTMLWithChangingRegions[] =
     "  </body>"
     "</html>";
 
-class DraggableRegionsTestHandler : public TestHandler, public CefDragHandler {
+class DraggableRegionsTestHandler : public TestHandler {
  public:
   DraggableRegionsTestHandler() : step_(kStepWithRegions) {}
 
@@ -65,15 +65,11 @@ class DraggableRegionsTestHandler : public TestHandler, public CefDragHandler {
     SetTestTimeout();
   }
 
-  CefRefPtr<CefDragHandler> GetDragHandler() override { return this; }
-
   void OnDraggableRegionsChanged(
       CefRefPtr<CefBrowser> browser,
-      CefRefPtr<CefFrame> frame,
       const std::vector<CefDraggableRegion>& regions) override {
     EXPECT_TRUE(CefCurrentlyOn(TID_UI));
     EXPECT_TRUE(browser->IsSame(GetBrowser()));
-    EXPECT_TRUE(frame->IsMain());
 
     did_call_on_draggable_regions_changed_.yes();
 

@@ -60,7 +60,6 @@ class BrowserWindow : public ClientHandler::Delegate {
   virtual void CreateBrowser(ClientWindowHandle parent_handle,
                              const CefRect& rect,
                              const CefBrowserSettings& settings,
-                             CefRefPtr<CefDictionaryValue> extra_info,
                              CefRefPtr<CefRequestContext> request_context) = 0;
 
   // Retrieve the configuration that will be used when creating a popup window.

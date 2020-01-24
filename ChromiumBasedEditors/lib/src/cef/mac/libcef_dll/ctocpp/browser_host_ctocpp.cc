@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=0516b8b72819ab4b5a9d6f4c68d774ebde06c94c$
+// $hash=1357aad2c8a79a3917ca38d93f3ed84712c2d9cd$
 //
 
 #include "libcef_dll/ctocpp/browser_host_ctocpp.h"
@@ -19,7 +19,6 @@
 #include "libcef_dll/cpptoc/pdf_print_callback_cpptoc.h"
 #include "libcef_dll/cpptoc/run_file_dialog_callback_cpptoc.h"
 #include "libcef_dll/ctocpp/browser_ctocpp.h"
-#include "libcef_dll/ctocpp/dictionary_value_ctocpp.h"
 #include "libcef_dll/ctocpp/drag_data_ctocpp.h"
 #include "libcef_dll/ctocpp/extension_ctocpp.h"
 #include "libcef_dll/ctocpp/navigation_entry_ctocpp.h"
@@ -35,18 +34,16 @@ bool CefBrowserHost::CreateBrowser(
     CefRefPtr<CefClient> client,
     const CefString& url,
     const CefBrowserSettings& settings,
-    CefRefPtr<CefDictionaryValue> extra_info,
     CefRefPtr<CefRequestContext> request_context) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
-  // Unverified params: client, url, extra_info, request_context
+  // Unverified params: client, url, request_context
 
   // Execute
   int _retval = cef_browser_host_create_browser(
       &windowInfo, CefClientCppToC::Wrap(client), url.GetStruct(), &settings,
-      CefDictionaryValueCToCpp::Unwrap(extra_info),
       CefRequestContextCToCpp::Unwrap(request_context));
 
   // Return type: bool
@@ -59,18 +56,16 @@ CefRefPtr<CefBrowser> CefBrowserHost::CreateBrowserSync(
     CefRefPtr<CefClient> client,
     const CefString& url,
     const CefBrowserSettings& settings,
-    CefRefPtr<CefDictionaryValue> extra_info,
     CefRefPtr<CefRequestContext> request_context) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
-  // Unverified params: client, url, extra_info, request_context
+  // Unverified params: client, url, request_context
 
   // Execute
   cef_browser_t* _retval = cef_browser_host_create_browser_sync(
       &windowInfo, CefClientCppToC::Wrap(client), url.GetStruct(), &settings,
-      CefDictionaryValueCToCpp::Unwrap(extra_info),
       CefRequestContextCToCpp::Unwrap(request_context));
 
   // Return type: refptr_same
@@ -969,8 +964,8 @@ void CefBrowserHostCToCpp::DragSourceSystemDragEnded() {
 }
 
 NO_SANITIZE("cfi-icall")
-CefRefPtr<CefNavigationEntry>
-CefBrowserHostCToCpp::GetVisibleNavigationEntry() {
+CefRefPtr<
+    CefNavigationEntry> CefBrowserHostCToCpp::GetVisibleNavigationEntry() {
   shutdown_checker::AssertNotShutdown();
 
   cef_browser_host_t* _struct = GetStruct();

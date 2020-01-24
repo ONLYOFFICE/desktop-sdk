@@ -19,7 +19,6 @@ void BrowserWindowStdWin::CreateBrowser(
     ClientWindowHandle parent_handle,
     const CefRect& rect,
     const CefBrowserSettings& settings,
-    CefRefPtr<CefDictionaryValue> extra_info,
     CefRefPtr<CefRequestContext> request_context) {
   REQUIRE_MAIN_THREAD();
 
@@ -34,7 +33,7 @@ void BrowserWindowStdWin::CreateBrowser(
 
   CefBrowserHost::CreateBrowser(window_info, client_handler_,
                                 client_handler_->startup_url(), settings,
-                                extra_info, request_context);
+                                request_context);
 }
 
 void BrowserWindowStdWin::GetPopupConfig(CefWindowHandle temp_handle,

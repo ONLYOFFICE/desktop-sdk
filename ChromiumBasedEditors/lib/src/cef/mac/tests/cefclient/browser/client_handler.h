@@ -14,7 +14,6 @@
 #include "include/wrapper/cef_message_router.h"
 #include "include/wrapper/cef_resource_manager.h"
 #include "tests/cefclient/browser/client_types.h"
-#include "tests/cefclient/browser/test_runner.h"
 
 #if defined(OS_LINUX)
 #include "tests/cefclient/browser/dialog_handler_gtk.h"
@@ -35,8 +34,7 @@ class ClientHandler : public CefClient,
                       public CefKeyboardHandler,
                       public CefLifeSpanHandler,
                       public CefLoadHandler,
-                      public CefRequestHandler,
-                      public CefResourceRequestHandler {
+                      public CefRequestHandler {
  public:
   // Implement this interface to receive notification of ClientHandler
   // events. The methods of this class will be called on the main thread unless
@@ -111,7 +109,6 @@ class ClientHandler : public CefClient,
   CefRefPtr<CefLoadHandler> GetLoadHandler() OVERRIDE { return this; }
   CefRefPtr<CefRequestHandler> GetRequestHandler() OVERRIDE { return this; }
   bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
-                                CefRefPtr<CefFrame> frame,
                                 CefProcessId source_process,
                                 CefRefPtr<CefProcessMessage> message) OVERRIDE;
 
@@ -168,7 +165,6 @@ class ClientHandler : public CefClient,
                    CefDragHandler::DragOperationsMask mask) OVERRIDE;
   void OnDraggableRegionsChanged(
       CefRefPtr<CefBrowser> browser,
-      CefRefPtr<CefFrame> frame,
       const std::vector<CefDraggableRegion>& regions) OVERRIDE;
 
   // CefFocusHandler methods
@@ -193,7 +189,6 @@ class ClientHandler : public CefClient,
       CefWindowInfo& windowInfo,
       CefRefPtr<CefClient>& client,
       CefBrowserSettings& settings,
-      CefRefPtr<CefDictionaryValue>& extra_info,
       bool* no_javascript_access) OVERRIDE;
   void OnAfterCreated(CefRefPtr<CefBrowser> browser) OVERRIDE;
   bool DoClose(CefRefPtr<CefBrowser> browser) OVERRIDE;
@@ -222,42 +217,6 @@ class ClientHandler : public CefClient,
       const CefString& target_url,
       CefRequestHandler::WindowOpenDisposition target_disposition,
       bool user_gesture) OVERRIDE;
-  CefRefPtr<CefResourceRequestHandler> GetResourceRequestHandler(
-      CefRefPtr<CefBrowser> browser,
-      CefRefPtr<CefFrame> frame,
-      CefRefPtr<CefRequest> request,
-      bool is_navigation,
-      bool is_download,
-      const CefString& request_initiator,
-      bool& disable_default_handling) OVERRIDE;
-  bool GetAuthCredentials(CefRefPtr<CefBrowser> browser,
-                          const CefString& origin_url,
-                          bool isProxy,
-                          const CefString& host,
-                          int port,
-                          const CefString& realm,
-                          const CefString& scheme,
-                          CefRefPtr<CefAuthCallback> callback) OVERRIDE;
-  bool OnQuotaRequest(CefRefPtr<CefBrowser> browser,
-                      const CefString& origin_url,
-                      int64 new_size,
-                      CefRefPtr<CefRequestCallback> callback) OVERRIDE;
-  bool OnCertificateError(CefRefPtr<CefBrowser> browser,
-                          ErrorCode cert_error,
-                          const CefString& request_url,
-                          CefRefPtr<CefSSLInfo> ssl_info,
-                          CefRefPtr<CefRequestCallback> callback) OVERRIDE;
-  bool OnSelectClientCertificate(
-      CefRefPtr<CefBrowser> browser,
-      bool isProxy,
-      const CefString& host,
-      int port,
-      const X509CertificateList& certificates,
-      CefRefPtr<CefSelectClientCertificateCallback> callback) OVERRIDE;
-  void OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser,
-                                 TerminationStatus status) OVERRIDE;
-
-  // CefResourceRequestHandler methods
   cef_return_value_t OnBeforeResourceLoad(
       CefRefPtr<CefBrowser> browser,
       CefRefPtr<CefFrame> frame,
@@ -272,10 +231,27 @@ class ClientHandler : public CefClient,
       CefRefPtr<CefFrame> frame,
       CefRefPtr<CefRequest> request,
       CefRefPtr<CefResponse> response) OVERRIDE;
+  bool OnQuotaRequest(CefRefPtr<CefBrowser> browser,
+                      const CefString& origin_url,
+                      int64 new_size,
+                      CefRefPtr<CefRequestCallback> callback) OVERRIDE;
   void OnProtocolExecution(CefRefPtr<CefBrowser> browser,
-                           CefRefPtr<CefFrame> frame,
-                           CefRefPtr<CefRequest> request,
+                           const CefString& url,
                            bool& allow_os_execution) OVERRIDE;
+  bool OnCertificateError(CefRefPtr<CefBrowser> browser,
+                          ErrorCode cert_error,
+                          const CefString& request_url,
+                          CefRefPtr<CefSSLInfo> ssl_info,
+                          CefRefPtr<CefRequestCallback> callback) OVERRIDE;
+  bool OnSelectClientCertificate(
+      CefRefPtr<CefBrowser> browser,
+      bool isProxy,
+      const CefString& host,
+      int port,
+      const X509CertificateList& certificates,
+      CefRefPtr<CefSelectClientCertificateCallback> callback) OVERRIDE;
+  void OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser,
+                                 TerminationStatus status) OVERRIDE;
 
   // Returns the number of browsers currently using this handler. Can only be
   // called on the CEF UI thread.
@@ -293,9 +269,6 @@ class ClientHandler : public CefClient,
 
   // Show SSL information for the current site.
   void ShowSSLInformation(CefRefPtr<CefBrowser> browser);
-
-  // Set a string resource for loading via StringResourceProvider.
-  void SetStringResource(const std::string& page, const std::string& data);
 
   // Returns the Delegate.
   Delegate* delegate() const { return delegate_; }
@@ -370,10 +343,6 @@ class ClientHandler : public CefClient,
 
   // Manages the registration and delivery of resources.
   CefRefPtr<CefResourceManager> resource_manager_;
-
-  // Used to manage string resources in combination with StringResourceProvider.
-  // Only accessed on the IO thread.
-  test_runner::StringResourceMap string_resource_map_;
 
   // MAIN THREAD MEMBERS
   // The following members will only be accessed on the main thread. This will

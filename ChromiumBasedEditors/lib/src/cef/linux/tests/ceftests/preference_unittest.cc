@@ -3,7 +3,6 @@
 // can be found in the LICENSE file.
 
 #include "include/base/cef_bind.h"
-#include "include/cef_request_context_handler.h"
 #include "include/cef_waitable_event.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "tests/ceftests/test_handler.h"

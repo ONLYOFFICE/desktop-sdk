@@ -259,6 +259,7 @@ public:
 #endif
 
             command_line->AppendSwitch("--disable-extensions");
+            command_line->AppendSwitch("--disable-plugins");
             command_line->AppendSwitch("--enable-file-cookies");
             command_line->AppendSwitch("--disable-pinch");
             command_line->AppendSwitch("--enable-aggressive-domstorage-flushing");
@@ -354,6 +355,7 @@ public:
 #endif
 
             command_line->AppendSwitch("--disable-extensions");
+            command_line->AppendSwitch("--disable-plugins");
             command_line->AppendSwitch("--enable-file-cookies");
             command_line->AppendSwitch("--disable-pinch");
             command_line->AppendSwitch("--enable-aggressive-domstorage-flushing");
@@ -413,6 +415,7 @@ public:
 #endif
 
             command_line->AppendSwitch("--disable-extensions");
+            command_line->AppendSwitch("--disable-plugins");
             command_line->AppendSwitch("--enable-file-cookies");
             command_line->AppendSwitch("--disable-pinch");
             command_line->AppendSwitch("--enable-aggressive-domstorage-flushing");

@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=33f5c103833cb9b4e6555f6a82fcaec06f3ff449$
+// $hash=4a4744491587c5f5b1ce8726d8dd08ad04646b92$
 //
 
 #include <dlfcn.h>
@@ -153,6 +153,7 @@ typedef int (*cef_register_scheme_handler_factory_ptr)(
     struct _cef_scheme_handler_factory_t*);
 typedef int (*cef_clear_scheme_handler_factories_ptr)();
 typedef int (*cef_is_cert_status_error_ptr)(cef_cert_status_t);
+typedef int (*cef_is_cert_status_minor_error_ptr)(cef_cert_status_t);
 typedef int (*cef_currently_on_ptr)(cef_thread_id_t);
 typedef int (*cef_post_task_ptr)(cef_thread_id_t, struct _cef_task_t*);
 typedef int (*cef_post_delayed_task_ptr)(cef_thread_id_t,
@@ -185,19 +186,23 @@ typedef int (*cef_browser_host_create_browser_ptr)(
     struct _cef_client_t*,
     const cef_string_t*,
     const struct _cef_browser_settings_t*,
-    struct _cef_dictionary_value_t*,
     struct _cef_request_context_t*);
 typedef struct _cef_browser_t* (*cef_browser_host_create_browser_sync_ptr)(
     const struct _cef_window_info_t*,
     struct _cef_client_t*,
     const cef_string_t*,
     const struct _cef_browser_settings_t*,
-    struct _cef_dictionary_value_t*,
     struct _cef_request_context_t*);
 typedef struct _cef_command_line_t* (*cef_command_line_create_ptr)();
 typedef struct _cef_command_line_t* (*cef_command_line_get_global_ptr)();
 typedef struct _cef_cookie_manager_t* (
     *cef_cookie_manager_get_global_manager_ptr)(
+    struct _cef_completion_callback_t*);
+typedef struct _cef_cookie_manager_t* (
+    *cef_cookie_manager_get_blocking_manager_ptr)();
+typedef struct _cef_cookie_manager_t* (*cef_cookie_manager_create_manager_ptr)(
+    const cef_string_t*,
+    int,
     struct _cef_completion_callback_t*);
 typedef struct _cef_drag_data_t* (*cef_drag_data_create_ptr)();
 typedef struct _cef_image_t* (*cef_image_create_ptr)();
@@ -302,7 +307,6 @@ typedef struct _cef_browser_view_t* (*cef_browser_view_create_ptr)(
     struct _cef_client_t*,
     const cef_string_t*,
     const struct _cef_browser_settings_t*,
-    struct _cef_dictionary_value_t*,
     struct _cef_request_context_t*,
     struct _cef_browser_view_delegate_t*);
 typedef struct _cef_browser_view_t* (*cef_browser_view_get_for_browser_ptr)(
@@ -316,10 +320,12 @@ typedef size_t (*cef_display_get_count_ptr)();
 typedef void (*cef_display_get_alls_ptr)(size_t*, struct _cef_display_t**);
 typedef struct _cef_label_button_t* (*cef_label_button_create_ptr)(
     struct _cef_button_delegate_t*,
-    const cef_string_t*);
+    const cef_string_t*,
+    int);
 typedef struct _cef_menu_button_t* (*cef_menu_button_create_ptr)(
     struct _cef_menu_button_delegate_t*,
-    const cef_string_t*);
+    const cef_string_t*,
+    int);
 typedef struct _cef_panel_t* (*cef_panel_create_ptr)(
     struct _cef_panel_delegate_t*);
 typedef struct _cef_scroll_view_t* (*cef_scroll_view_create_ptr)(
@@ -552,6 +558,7 @@ struct libcef_pointers {
   cef_register_scheme_handler_factory_ptr cef_register_scheme_handler_factory;
   cef_clear_scheme_handler_factories_ptr cef_clear_scheme_handler_factories;
   cef_is_cert_status_error_ptr cef_is_cert_status_error;
+  cef_is_cert_status_minor_error_ptr cef_is_cert_status_minor_error;
   cef_currently_on_ptr cef_currently_on;
   cef_post_task_ptr cef_post_task;
   cef_post_delayed_task_ptr cef_post_delayed_task;
@@ -573,6 +580,9 @@ struct libcef_pointers {
   cef_command_line_get_global_ptr cef_command_line_get_global;
   cef_cookie_manager_get_global_manager_ptr
       cef_cookie_manager_get_global_manager;
+  cef_cookie_manager_get_blocking_manager_ptr
+      cef_cookie_manager_get_blocking_manager;
+  cef_cookie_manager_create_manager_ptr cef_cookie_manager_create_manager;
   cef_drag_data_create_ptr cef_drag_data_create;
   cef_image_create_ptr cef_image_create;
   cef_menu_model_create_ptr cef_menu_model_create;
@@ -767,6 +777,7 @@ int libcef_init_pointers(const char* path) {
   INIT_ENTRY(cef_register_scheme_handler_factory);
   INIT_ENTRY(cef_clear_scheme_handler_factories);
   INIT_ENTRY(cef_is_cert_status_error);
+  INIT_ENTRY(cef_is_cert_status_minor_error);
   INIT_ENTRY(cef_currently_on);
   INIT_ENTRY(cef_post_task);
   INIT_ENTRY(cef_post_delayed_task);
@@ -786,6 +797,8 @@ int libcef_init_pointers(const char* path) {
   INIT_ENTRY(cef_command_line_create);
   INIT_ENTRY(cef_command_line_get_global);
   INIT_ENTRY(cef_cookie_manager_get_global_manager);
+  INIT_ENTRY(cef_cookie_manager_get_blocking_manager);
+  INIT_ENTRY(cef_cookie_manager_create_manager);
   INIT_ENTRY(cef_drag_data_create);
   INIT_ENTRY(cef_image_create);
   INIT_ENTRY(cef_menu_model_create);
@@ -1174,6 +1187,11 @@ int cef_is_cert_status_error(cef_cert_status_t status) {
   return g_libcef_pointers.cef_is_cert_status_error(status);
 }
 
+NO_SANITIZE("cfi-icall")
+int cef_is_cert_status_minor_error(cef_cert_status_t status) {
+  return g_libcef_pointers.cef_is_cert_status_minor_error(status);
+}
+
 NO_SANITIZE("cfi-icall") int cef_currently_on(cef_thread_id_t threadId) {
   return g_libcef_pointers.cef_currently_on(threadId);
 }
@@ -1260,10 +1278,9 @@ int cef_browser_host_create_browser(
     struct _cef_client_t* client,
     const cef_string_t* url,
     const struct _cef_browser_settings_t* settings,
-    struct _cef_dictionary_value_t* extra_info,
     struct _cef_request_context_t* request_context) {
   return g_libcef_pointers.cef_browser_host_create_browser(
-      windowInfo, client, url, settings, extra_info, request_context);
+      windowInfo, client, url, settings, request_context);
 }
 
 NO_SANITIZE("cfi-icall")
@@ -1272,10 +1289,9 @@ struct _cef_browser_t* cef_browser_host_create_browser_sync(
     struct _cef_client_t* client,
     const cef_string_t* url,
     const struct _cef_browser_settings_t* settings,
-    struct _cef_dictionary_value_t* extra_info,
     struct _cef_request_context_t* request_context) {
   return g_libcef_pointers.cef_browser_host_create_browser_sync(
-      windowInfo, client, url, settings, extra_info, request_context);
+      windowInfo, client, url, settings, request_context);
 }
 
 NO_SANITIZE("cfi-icall") struct _cef_command_line_t* cef_command_line_create() {
@@ -1291,6 +1307,20 @@ NO_SANITIZE("cfi-icall")
 struct _cef_cookie_manager_t* cef_cookie_manager_get_global_manager(
     struct _cef_completion_callback_t* callback) {
   return g_libcef_pointers.cef_cookie_manager_get_global_manager(callback);
+}
+
+NO_SANITIZE("cfi-icall")
+struct _cef_cookie_manager_t* cef_cookie_manager_get_blocking_manager() {
+  return g_libcef_pointers.cef_cookie_manager_get_blocking_manager();
+}
+
+NO_SANITIZE("cfi-icall")
+struct _cef_cookie_manager_t* cef_cookie_manager_create_manager(
+    const cef_string_t* path,
+    int persist_session_cookies,
+    struct _cef_completion_callback_t* callback) {
+  return g_libcef_pointers.cef_cookie_manager_create_manager(
+      path, persist_session_cookies, callback);
 }
 
 NO_SANITIZE("cfi-icall") struct _cef_drag_data_t* cef_drag_data_create() {
@@ -1611,11 +1641,10 @@ struct _cef_browser_view_t* cef_browser_view_create(
     struct _cef_client_t* client,
     const cef_string_t* url,
     const struct _cef_browser_settings_t* settings,
-    struct _cef_dictionary_value_t* extra_info,
     struct _cef_request_context_t* request_context,
     struct _cef_browser_view_delegate_t* delegate) {
-  return g_libcef_pointers.cef_browser_view_create(
-      client, url, settings, extra_info, request_context, delegate);
+  return g_libcef_pointers.cef_browser_view_create(client, url, settings,
+                                                   request_context, delegate);
 }
 
 NO_SANITIZE("cfi-icall")
@@ -1655,15 +1684,17 @@ void cef_display_get_alls(size_t* displaysCount,
 NO_SANITIZE("cfi-icall")
 struct _cef_label_button_t* cef_label_button_create(
     struct _cef_button_delegate_t* delegate,
-    const cef_string_t* text) {
-  return g_libcef_pointers.cef_label_button_create(delegate, text);
+    const cef_string_t* text,
+    int with_frame) {
+  return g_libcef_pointers.cef_label_button_create(delegate, text, with_frame);
 }
 
 NO_SANITIZE("cfi-icall")
 struct _cef_menu_button_t* cef_menu_button_create(
     struct _cef_menu_button_delegate_t* delegate,
-    const cef_string_t* text) {
-  return g_libcef_pointers.cef_menu_button_create(delegate, text);
+    const cef_string_t* text,
+    int with_frame) {
+  return g_libcef_pointers.cef_menu_button_create(delegate, text, with_frame);
 }
 
 NO_SANITIZE("cfi-icall")

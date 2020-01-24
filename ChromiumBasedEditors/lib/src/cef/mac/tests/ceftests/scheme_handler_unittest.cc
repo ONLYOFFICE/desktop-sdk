@@ -11,24 +11,23 @@
 #include "include/wrapper/cef_closure_task.h"
 #include "tests/ceftests/test_handler.h"
 #include "tests/ceftests/test_suite.h"
-#include "tests/ceftests/test_util.h"
 
 namespace {
 
 class TestResults {
  public:
-  TestResults() : status_code(200), sub_status_code(200), delay(0) {}
+  TestResults() : status_code(0), sub_status_code(0), delay(0) {}
 
   void reset() {
     url.clear();
     html.clear();
-    status_code = 200;
+    status_code = 0;
     response_error_code = ERR_NONE;
     expected_error_code = ERR_NONE;
     redirect_url.clear();
     sub_url.clear();
     sub_html.clear();
-    sub_status_code = 200;
+    sub_status_code = 0;
     sub_allow_origin.clear();
     exit_url.clear();
     accept_language.clear();
@@ -36,14 +35,11 @@ class TestResults {
     got_request.reset();
     got_read.reset();
     got_output.reset();
-    got_sub_output.reset();
     got_redirect.reset();
     got_error.reset();
-    got_sub_error.reset();
     got_sub_request.reset();
     got_sub_read.reset();
     got_sub_success.reset();
-    got_exit_request.reset();
   }
 
   std::string url;
@@ -72,9 +68,8 @@ class TestResults {
   // Delay for returning scheme handler results.
   int delay;
 
-  TrackCallback got_request, got_read, got_output, got_sub_output, got_redirect,
-      got_error, got_sub_error, got_sub_redirect, got_sub_request, got_sub_read,
-      got_sub_success, got_exit_request;
+  TrackCallback got_request, got_read, got_output, got_redirect, got_error,
+      got_sub_redirect, got_sub_request, got_sub_read, got_sub_success;
 };
 
 // Current scheme handler object. Used when destroying the test from
@@ -106,41 +101,18 @@ class TestSchemeHandler : public TestHandler {
   // ClientSchemeHandler::ProcessRequest().
   void DestroyTest() override { TestHandler::DestroyTest(); }
 
-  void DestroyTestIfDone() {
-    if (!test_results_->exit_url.empty() && !test_results_->got_exit_request) {
-      return;
-    }
-
-    if (!test_results_->sub_url.empty() &&
-        !(test_results_->got_sub_output || test_results_->got_sub_error ||
-          test_results_->got_exit_request)) {
-      return;
-    }
-
-    if (!(test_results_->got_output || test_results_->got_error)) {
-      return;
-    }
-
-    DestroyTest();
-  }
-
-  bool IsExitURL(const std::string& url) const {
-    return !test_results_->exit_url.empty() &&
-           url.find(test_results_->exit_url) != std::string::npos;
-  }
-
   cef_return_value_t OnBeforeResourceLoad(
       CefRefPtr<CefBrowser> browser,
       CefRefPtr<CefFrame> frame,
       CefRefPtr<CefRequest> request,
       CefRefPtr<CefRequestCallback> callback) override {
-    const std::string& newUrl = request->GetURL();
-    if (IsExitURL(newUrl)) {
-      test_results_->got_exit_request.yes();
+    std::string newUrl = request->GetURL();
+    if (!test_results_->exit_url.empty() &&
+        newUrl.find(test_results_->exit_url) != std::string::npos) {
       // XHR tests use an exit URL to destroy the test.
       if (newUrl.find("SUCCESS") != std::string::npos)
         test_results_->got_sub_success.yes();
-      DestroyTestIfDone();
+      DestroyTest();
       return RV_CANCEL;
     }
 
@@ -167,20 +139,17 @@ class TestSchemeHandler : public TestHandler {
   void OnLoadEnd(CefRefPtr<CefBrowser> browser,
                  CefRefPtr<CefFrame> frame,
                  int httpStatusCode) override {
-    const std::string& url = frame->GetURL();
-    if (url == test_results_->url)
+    std::string url = frame->GetURL();
+    if (url == test_results_->url || (test_results_->status_code != 200 &&
+                                      test_results_->status_code != 0)) {
       test_results_->got_output.yes();
-    else if (url == test_results_->sub_url)
-      test_results_->got_sub_output.yes();
-    else if (IsExitURL(url))
-      return;
 
-    if (url == test_results_->url || test_results_->status_code != 200) {
       // Test that the status code is correct.
       EXPECT_EQ(httpStatusCode, test_results_->status_code);
-    }
 
-    DestroyTestIfDone();
+      if (test_results_->sub_url.empty())
+        DestroyTest();
+    }
   }
 
   void OnLoadError(CefRefPtr<CefBrowser> browser,
@@ -188,22 +157,13 @@ class TestSchemeHandler : public TestHandler {
                    ErrorCode errorCode,
                    const CefString& errorText,
                    const CefString& failedUrl) override {
-    const std::string& url = failedUrl;
-    if (url == test_results_->url)
-      test_results_->got_error.yes();
-    else if (url == test_results_->sub_url)
-      test_results_->got_sub_error.yes();
-    else if (IsExitURL(url))
-      return;
-
+    test_results_->got_error.yes();
     // Tests sometimes also fail with ERR_ABORTED.
     if (!(test_results_->expected_error_code == 0 &&
           errorCode == ERR_ABORTED)) {
-      EXPECT_EQ(test_results_->expected_error_code, errorCode)
-          << failedUrl.ToString();
+      EXPECT_EQ(test_results_->expected_error_code, errorCode);
     }
-
-    DestroyTestIfDone();
+    DestroyTest();
   }
 
  protected:
@@ -256,10 +216,9 @@ class ClientSchemeHandler : public CefResourceHandler {
       EXPECT_STREQ(test_results_->accept_language.data(),
                    accept_language.data());
     } else {
-      // CEF_SETTINGS_ACCEPT_LANGUAGE value from
-      // CefSettings.accept_language_list set in CefTestSuite::GetSettings()
-      // and expanded internally by ComputeAcceptLanguageFromPref.
-      EXPECT_STREQ("en-GB,en;q=0.9", accept_language.data());
+      // Value from CefSettings.accept_language set in
+      // CefTestSuite::GetSettings().
+      EXPECT_STREQ(CEF_SETTINGS_ACCEPT_LANGUAGE, accept_language.data());
     }
 
     if (handled) {
@@ -428,6 +387,7 @@ struct XHRTestSettings {
 void SetUpXHR(const XHRTestSettings& settings) {
   g_TestResults.sub_url = settings.sub_url;
   g_TestResults.sub_html = "SUCCESS";
+  g_TestResults.sub_status_code = 200;
   g_TestResults.sub_allow_origin = settings.sub_allow_origin;
   g_TestResults.sub_redirect_url = settings.sub_redirect_url;
 
@@ -484,6 +444,7 @@ void SetUpXHR(const XHRTestSettings& settings) {
         "Running execXMLHttpRequest..."
         "</body></html>";
   g_TestResults.html = ss.str();
+  g_TestResults.status_code = 200;
 
   g_TestResults.exit_url = "http://tests/exit";
 }
@@ -500,6 +461,7 @@ struct FetchTestSettings {
 void SetUpFetch(const FetchTestSettings& settings) {
   g_TestResults.sub_url = settings.sub_url;
   g_TestResults.sub_html = "SUCCESS";
+  g_TestResults.sub_status_code = 200;
   g_TestResults.sub_allow_origin = settings.sub_allow_origin;
   g_TestResults.sub_redirect_url = settings.sub_redirect_url;
 
@@ -542,6 +504,7 @@ void SetUpFetch(const FetchTestSettings& settings) {
         "Running execFetchHttpRequest..."
         "</body></html>";
   g_TestResults.html = ss.str();
+  g_TestResults.status_code = 200;
 
   g_TestResults.exit_url = "http://tests/exit";
 }  // namespace
@@ -578,6 +541,7 @@ void SetUpXSS(const std::string& url,
         "Running execXSSRequest..."
         "</body></html>";
   g_TestResults.sub_html = ss.str();
+  g_TestResults.sub_status_code = 200;
 
   g_TestResults.url = url;
   ss.str("");
@@ -598,6 +562,7 @@ void SetUpXSS(const std::string& url,
      << "\" id=\"s\">"
         "</body></html>";
   g_TestResults.html = ss.str();
+  g_TestResults.status_code = 200;
 
   g_TestResults.exit_url = "http://tests/exit";
 }
@@ -610,6 +575,7 @@ TEST(SchemeHandlerTest, Registration) {
   g_TestResults.url = "customstd://test/run.html";
   g_TestResults.html =
       "<html><head></head><body><h1>Success!</h1></body></html>";
+  g_TestResults.status_code = 200;
 
   CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
   handler->ExecuteTest();
@@ -658,6 +624,7 @@ TEST(SchemeHandlerTest, CustomStandardNormalResponse) {
   g_TestResults.url = "customstd://test/run.html";
   g_TestResults.html =
       "<html><head></head><body><h1>Success!</h1></body></html>";
+  g_TestResults.status_code = 200;
 
   CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
   handler->ExecuteTest();
@@ -677,6 +644,7 @@ TEST(SchemeHandlerTest, CustomStandardNormalResponseDelayed) {
   g_TestResults.url = "customstd://test/run.html";
   g_TestResults.html =
       "<html><head></head><body><h1>Success!</h1></body></html>";
+  g_TestResults.status_code = 200;
   g_TestResults.delay = 100;
 
   CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
@@ -696,6 +664,7 @@ TEST(SchemeHandlerTest, CustomNonStandardNormalResponse) {
   g_TestResults.url = "customnonstd:some%20value";
   g_TestResults.html =
       "<html><head></head><body><h1>Success!</h1></body></html>";
+  g_TestResults.status_code = 200;
 
   CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
   handler->ExecuteTest();
@@ -807,7 +776,7 @@ TEST(SchemeHandlerTest, CustomNonStandardNameNotHandled) {
 TEST(SchemeHandlerTest, CustomStandardDomainNotHandled) {
   RegisterTestScheme("customstd", "test");
   g_TestResults.url = "customstd://noexist/run.html";
-  g_TestResults.expected_error_code = ERR_UNKNOWN_URL_SCHEME;
+  g_TestResults.expected_error_code = ERR_FAILED;
 
   CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
   handler->ExecuteTest();
@@ -1902,7 +1871,10 @@ TEST(SchemeHandlerTest,
 }
 
 // Test that a custom standard scheme can generate cross-domain XHR requests
-// that perform redirects when using the cross-origin whitelist.
+// that perform redirects when using the cross-origin whitelist. This is
+// because we add an "Access-Control-Allow-Origin" header internally in
+// CefResourceDispatcherHostDelegate::OnRequestRedirected() for the redirect
+// request.
 TEST(SchemeHandlerTest,
      CustomStandardXHRDifferentOriginRedirectWithWhitelistAsync1) {
   RegisterTestScheme("customstd", "test1");
@@ -2008,7 +1980,10 @@ TEST(SchemeHandlerTest,
 }
 
 // Test that a custom standard scheme can generate cross-domain Fetch requests
-// that perform redirects when using the cross-origin whitelist.
+// that perform redirects when using the cross-origin whitelist. This is
+// because we add an "Access-Control-Allow-Origin" header internally in
+// CefResourceDispatcherHostDelegate::OnRequestRedirected() for the redirect
+// request.
 TEST(SchemeHandlerTest,
      CustomStandardFetchDifferentOriginRedirectWithWhitelist1) {
   RegisterTestScheme("customstdfetch", "test1");
@@ -2116,6 +2091,7 @@ TEST(SchemeHandlerTest, AcceptLanguage) {
   g_TestResults.url = "customstd://test/run.html";
   g_TestResults.html =
       "<html><head></head><body><h1>Success!</h1></body></html>";
+  g_TestResults.status_code = 200;
 
   // Value that will be set via CefBrowserSettings.accept_language in
   // PopulateBrowserSettings().

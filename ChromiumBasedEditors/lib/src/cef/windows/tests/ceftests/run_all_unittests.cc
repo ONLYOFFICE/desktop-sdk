@@ -3,9 +3,8 @@
 // can be found in the LICENSE file.
 
 #include "include/base/cef_build.h"
-#include "include/cef_config.h"
 
-#if defined(OS_LINUX) && defined(CEF_X11)
+#if defined(OS_LINUX)
 #include <X11/Xlib.h>
 // Definitions conflict with gtest.
 #undef None
@@ -85,7 +84,7 @@ void ContinueOnUIThread(CefRefPtr<CefTaskRunner> test_task_runner) {
       CefCreateClosureTask(base::Bind(&RunTestsOnTestThread)));
 }
 
-#if defined(OS_LINUX) && defined(CEF_X11)
+#if defined(OS_LINUX)
 int XErrorHandlerImpl(Display* display, XErrorEvent* event) {
   LOG(WARNING) << "X error received: "
                << "type " << event->type << ", "
@@ -100,7 +99,7 @@ int XErrorHandlerImpl(Display* display, XErrorEvent* event) {
 int XIOErrorHandlerImpl(Display* display) {
   return 0;
 }
-#endif  // defined(OS_LINUX) && defined(CEF_X11)
+#endif  // defined(OS_LINUX)
 
 }  // namespace
 
@@ -174,7 +173,7 @@ int main(int argc, char* argv[]) {
   PlatformInit();
 #endif
 
-#if defined(OS_LINUX) && defined(CEF_X11)
+#if defined(OS_LINUX)
   // Install xlib error handlers so that the application won't be terminated
   // on non-fatal errors.
   XSetErrorHandler(XErrorHandlerImpl);

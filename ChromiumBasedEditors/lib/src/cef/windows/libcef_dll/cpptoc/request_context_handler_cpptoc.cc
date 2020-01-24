@@ -9,15 +9,12 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=16c737f9006a13e5a445d2402c04bc833d68961a$
+// $hash=2decd7941020bd2b96ebfa736624d1729a82fa55$
 //
 
 #include "libcef_dll/cpptoc/request_context_handler_cpptoc.h"
-#include "libcef_dll/cpptoc/resource_request_handler_cpptoc.h"
-#include "libcef_dll/ctocpp/browser_ctocpp.h"
-#include "libcef_dll/ctocpp/frame_ctocpp.h"
+#include "libcef_dll/ctocpp/cookie_manager_ctocpp.h"
 #include "libcef_dll/ctocpp/request_context_ctocpp.h"
-#include "libcef_dll/ctocpp/request_ctocpp.h"
 #include "libcef_dll/ctocpp/web_plugin_info_ctocpp.h"
 
 namespace {
@@ -40,6 +37,22 @@ void CEF_CALLBACK request_context_handler_on_request_context_initialized(
   // Execute
   CefRequestContextHandlerCppToC::Get(self)->OnRequestContextInitialized(
       CefRequestContextCToCpp::Wrap(request_context));
+}
+
+cef_cookie_manager_t* CEF_CALLBACK request_context_handler_get_cookie_manager(
+    struct _cef_request_context_handler_t* self) {
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self)
+    return NULL;
+
+  // Execute
+  CefRefPtr<CefCookieManager> _retval =
+      CefRequestContextHandlerCppToC::Get(self)->GetCookieManager();
+
+  // Return type: refptr_diff
+  return CefCookieManagerCToCpp::Unwrap(_retval);
 }
 
 int CEF_CALLBACK request_context_handler_on_before_plugin_load(
@@ -79,51 +92,6 @@ int CEF_CALLBACK request_context_handler_on_before_plugin_load(
   return _retval;
 }
 
-struct _cef_resource_request_handler_t* CEF_CALLBACK
-request_context_handler_get_resource_request_handler(
-    struct _cef_request_context_handler_t* self,
-    cef_browser_t* browser,
-    cef_frame_t* frame,
-    cef_request_t* request,
-    int is_navigation,
-    int is_download,
-    const cef_string_t* request_initiator,
-    int* disable_default_handling) {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  DCHECK(self);
-  if (!self)
-    return NULL;
-  // Verify param: request; type: refptr_diff
-  DCHECK(request);
-  if (!request)
-    return NULL;
-  // Verify param: disable_default_handling; type: bool_byref
-  DCHECK(disable_default_handling);
-  if (!disable_default_handling)
-    return NULL;
-  // Unverified params: browser, frame, request_initiator
-
-  // Translate param: disable_default_handling; type: bool_byref
-  bool disable_default_handlingBool =
-      (disable_default_handling && *disable_default_handling) ? true : false;
-
-  // Execute
-  CefRefPtr<CefResourceRequestHandler> _retval =
-      CefRequestContextHandlerCppToC::Get(self)->GetResourceRequestHandler(
-          CefBrowserCToCpp::Wrap(browser), CefFrameCToCpp::Wrap(frame),
-          CefRequestCToCpp::Wrap(request), is_navigation ? true : false,
-          is_download ? true : false, CefString(request_initiator),
-          disable_default_handlingBool);
-
-  // Restore param: disable_default_handling; type: bool_byref
-  if (disable_default_handling)
-    *disable_default_handling = disable_default_handlingBool ? true : false;
-
-  // Return type: refptr_same
-  return CefResourceRequestHandlerCppToC::Wrap(_retval);
-}
-
 }  // namespace
 
 // CONSTRUCTOR - Do not edit by hand.
@@ -131,10 +99,9 @@ request_context_handler_get_resource_request_handler(
 CefRequestContextHandlerCppToC::CefRequestContextHandlerCppToC() {
   GetStruct()->on_request_context_initialized =
       request_context_handler_on_request_context_initialized;
+  GetStruct()->get_cookie_manager = request_context_handler_get_cookie_manager;
   GetStruct()->on_before_plugin_load =
       request_context_handler_on_before_plugin_load;
-  GetStruct()->get_resource_request_handler =
-      request_context_handler_get_resource_request_handler;
 }
 
 // DESTRUCTOR - Do not edit by hand.

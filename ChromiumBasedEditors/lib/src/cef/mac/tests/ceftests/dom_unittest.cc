@@ -223,7 +223,7 @@ class TestDOMVisitor : public CefDOMVisitor {
     CefRefPtr<CefProcessMessage> return_msg =
         CefProcessMessage::Create(kTestMessage);
     EXPECT_TRUE(return_msg->GetArgumentList()->SetBool(0, result));
-    browser_->GetMainFrame()->SendProcessMessage(PID_BROWSER, return_msg);
+    EXPECT_TRUE(browser_->SendProcessMessage(PID_BROWSER, return_msg));
   }
 
   CefRefPtr<CefBrowser> browser_;
@@ -239,7 +239,6 @@ class DOMRendererTest : public ClientAppRenderer::Delegate {
 
   bool OnProcessMessageReceived(CefRefPtr<ClientAppRenderer> app,
                                 CefRefPtr<CefBrowser> browser,
-                                CefRefPtr<CefFrame> frame,
                                 CefProcessId source_process,
                                 CefRefPtr<CefProcessMessage> message) override {
     if (message->GetName() == kTestMessage) {
@@ -289,12 +288,11 @@ class TestDOMHandler : public TestHandler {
       CefRefPtr<CefProcessMessage> message(
           CefProcessMessage::Create(kTestMessage));
       message->GetArgumentList()->SetInt(0, test_type_);
-      frame->SendProcessMessage(PID_RENDERER, message);
+      EXPECT_TRUE(browser->SendProcessMessage(PID_RENDERER, message));
     }
   }
 
   bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
-                                CefRefPtr<CefFrame> frame,
                                 CefProcessId source_process,
                                 CefRefPtr<CefProcessMessage> message) override {
     EXPECT_STREQ(message->GetName().ToString().c_str(), kTestMessage);

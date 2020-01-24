@@ -9,13 +9,12 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=1abf9303cc2c0f6d86b9e84b4edddcb294330294$
+// $hash=75233e51355652a53c7dcdae740eba004e76605e$
 //
 
 #include "libcef_dll/cpptoc/render_process_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/load_handler_cpptoc.h"
 #include "libcef_dll/ctocpp/browser_ctocpp.h"
-#include "libcef_dll/ctocpp/dictionary_value_ctocpp.h"
 #include "libcef_dll/ctocpp/domnode_ctocpp.h"
 #include "libcef_dll/ctocpp/frame_ctocpp.h"
 #include "libcef_dll/ctocpp/list_value_ctocpp.h"
@@ -60,8 +59,7 @@ void CEF_CALLBACK render_process_handler_on_web_kit_initialized(
 
 void CEF_CALLBACK render_process_handler_on_browser_created(
     struct _cef_render_process_handler_t* self,
-    cef_browser_t* browser,
-    struct _cef_dictionary_value_t* extra_info) {
+    cef_browser_t* browser) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -71,15 +69,10 @@ void CEF_CALLBACK render_process_handler_on_browser_created(
   DCHECK(browser);
   if (!browser)
     return;
-  // Verify param: extra_info; type: refptr_diff
-  DCHECK(extra_info);
-  if (!extra_info)
-    return;
 
   // Execute
   CefRenderProcessHandlerCppToC::Get(self)->OnBrowserCreated(
-      CefBrowserCToCpp::Wrap(browser),
-      CefDictionaryValueCToCpp::Wrap(extra_info));
+      CefBrowserCToCpp::Wrap(browser));
 }
 
 void CEF_CALLBACK render_process_handler_on_browser_destroyed(
@@ -239,7 +232,6 @@ void CEF_CALLBACK render_process_handler_on_focused_node_changed(
 int CEF_CALLBACK render_process_handler_on_process_message_received(
     struct _cef_render_process_handler_t* self,
     cef_browser_t* browser,
-    cef_frame_t* frame,
     cef_process_id_t source_process,
     cef_process_message_t* message) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
@@ -251,10 +243,6 @@ int CEF_CALLBACK render_process_handler_on_process_message_received(
   DCHECK(browser);
   if (!browser)
     return 0;
-  // Verify param: frame; type: refptr_diff
-  DCHECK(frame);
-  if (!frame)
-    return 0;
   // Verify param: message; type: refptr_diff
   DCHECK(message);
   if (!message)
@@ -263,8 +251,8 @@ int CEF_CALLBACK render_process_handler_on_process_message_received(
   // Execute
   bool _retval =
       CefRenderProcessHandlerCppToC::Get(self)->OnProcessMessageReceived(
-          CefBrowserCToCpp::Wrap(browser), CefFrameCToCpp::Wrap(frame),
-          source_process, CefProcessMessageCToCpp::Wrap(message));
+          CefBrowserCToCpp::Wrap(browser), source_process,
+          CefProcessMessageCToCpp::Wrap(message));
 
   // Return type: bool
   return _retval;

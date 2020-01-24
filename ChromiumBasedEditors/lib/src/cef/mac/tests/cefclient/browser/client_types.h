@@ -18,12 +18,15 @@
 #endif
 
 #if defined(OS_MACOSX)
-#define ClientNativeMacWindow void*
+// Forward declaration of ObjC types used by cefclient and not provided by
+// include/internal/cef_types_mac.h.
+#ifdef __cplusplus
 #ifdef __OBJC__
-#define CAST_CLIENT_NATIVE_MAC_WINDOW_TO_NSWINDOW(native) \
-  (__bridge NSWindow*)native
-#define CAST_NSWINDOW_TO_CLIENT_NATIVE_MAC_WINDOW(window) (__bridge void*)window
-#endif  // __OBJC__
+@class NSWindow;
+#else
+class NSWindow;
+#endif
+#endif
 #endif  // defined OS_MACOSX
 
 #endif  // CEF_TESTS_CEFCLIENT_BROWSER_CLIENT_TYPES_H_
