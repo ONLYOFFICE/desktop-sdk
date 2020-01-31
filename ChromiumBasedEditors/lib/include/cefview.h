@@ -56,14 +56,32 @@ class CAscApplicationManager;
 class CCefViewWidgetImpl
 {
 public:
-    virtual bool parent_window_is_empty() { return false; }
-    virtual int parent_x() { return 0; }
-    virtual int parent_y() { return 0; }
-    virtual int parent_width() { return 0; }
-    virtual int parent_height() { return 0; }
-    virtual WindowHandleId parent_wid() { return 0; }
-    virtual void child_loaded() { }
-    virtual void releaseFromChild() { }
+    WindowHandleId cef_handle;
+    unsigned int cef_ex_style;
+    unsigned int cef_style;
+
+    unsigned int cef_x;
+    unsigned int cef_y;
+    unsigned int cef_width;
+    unsigned int cef_height;
+
+public:
+    CCefViewWidgetImpl()
+    {
+        cef_handle = 0;
+        cef_ex_style = 0;
+        cef_style = 0;
+
+        cef_x = 0;
+        cef_y = 0;
+        cef_width = 0;
+        cef_height = 0;
+    }
+
+public:
+    virtual void UpdateSize() {}
+    virtual void OnLoaded() {}
+    virtual void OnRelease() {}
 };
 
 class DESKTOP_DECL CCefView
@@ -79,9 +97,8 @@ public:
 
     void focus(bool value = true);
 
-    void resizeEvent(int width = 0, int height = 0);
+    void resizeEvent();
     void moveEvent();
-    bool nativeEvent(const char* data, const int& datalen, void *message, long *result);
 
     void Apply(NSEditorApi::CAscMenuEvent* );
     NSEditorApi::CAscMenuEvent* ApplySync(NSEditorApi::CAscMenuEvent* );

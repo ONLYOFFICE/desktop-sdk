@@ -972,7 +972,7 @@ int CAscDpiChecker::GetWidgetImplDpi(CCefViewWidgetImpl* wid, unsigned int* _dx,
     if (NULL == wid)
         return -1;
 #ifdef WIN32
-    return GetWindowDpi(wid->parent_wid(), _dx, _dy);
+    return GetWindowDpi(wid->cef_handle, _dx, _dy);
 #endif
     return -1;
 }

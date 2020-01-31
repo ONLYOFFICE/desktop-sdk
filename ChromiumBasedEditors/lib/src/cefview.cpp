@@ -770,10 +770,6 @@ public:
     bool m_bIsExternalCloud;
     CExternalCloudRegister m_oExternalCloud;
 
-    // запоминаем размеры окна, пока не готов webview
-    int m_lStartControlWidth;
-    int m_lStartControlHeight;
-
     // облачный криптованный файл => downloadAs
     int m_nCryptoDownloadAsFormat;
     std::string m_sCryptoDownloadAsParams;
@@ -846,9 +842,6 @@ public:
 
         m_bIsCloudCryptFile = false;
         m_bIsExternalCloud = false;
-
-        m_lStartControlWidth = -1;
-        m_lStartControlHeight = -1;
 
         m_nCryptoDownloadAsFormat = -1;
 
@@ -1763,7 +1756,7 @@ public:
 
             if (!m_bIsLoaded)
             {
-                m_pParent->GetWidgetImpl()->child_loaded();
+                m_pParent->GetWidgetImpl()->OnLoaded();
                 m_bIsLoaded = true;
             }
         }
@@ -2458,7 +2451,7 @@ public:
             if (NULL != pVerifier)
             {
                 COOXMLSignature* pSign = pVerifier->GetSignature(nIndex);
-                WindowHandleId _handle = m_pParent->GetWidgetImpl()->parent_wid();
+                WindowHandleId _handle = m_pParent->GetWidgetImpl()->cef_handle;
                 int nRet = pSign ? pSign->GetCertificate()->ShowCertificate(&_handle) : 0;
 
                 CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("on_signature_viewcertificate_ret");
@@ -2491,7 +2484,7 @@ public:
             // диалог выбора сертификата
             ICertificate* pCert = ICertificate::CreateInstance();
 
-            WindowHandleId _handle = m_pParent->GetWidgetImpl()->parent_wid();
+            WindowHandleId _handle = m_pParent->GetWidgetImpl()->cef_handle;
             int nShowDialogResult = pCert->ShowSelectDialog(&_handle);
 
             if (-1 == nShowDialogResult)
@@ -4782,10 +4775,9 @@ void CCefView::load(const std::wstring& urlInputSrc)
     if (pAscCEfJSDialogHandler)
         pAscCEfJSDialogHandler->SetAppManager(m_pInternal->m_pManager);
 
-    CefWindowHandle hWnd = (CefWindowHandle)m_pInternal->m_pWidgetImpl->parent_wid();
+    CefWindowHandle hWnd = (CefWindowHandle)m_pInternal->m_pWidgetImpl->cef_handle;
     //m_pInternal->m_handler->SetMainWindowHandle(hWnd);
 
-    CefWindowInfo info;
     CefBrowserSettings _settings;
     _settings.file_access_from_file_urls = STATE_ENABLED;
     _settings.universal_access_from_file_urls = STATE_ENABLED;
@@ -4793,47 +4785,19 @@ void CCefView::load(const std::wstring& urlInputSrc)
     _settings.plugins = STATE_DISABLED;
     _settings.background_color = (m_eWrapperType == cvwtEditor) ? 0xFFF4F4F4 : 0xFFFFFFFF;
 
-    // Initialize window info to the defaults for a child window.
-    int nParentW = m_pInternal->m_pWidgetImpl->parent_width();
-    int nParentH = m_pInternal->m_pWidgetImpl->parent_height();
-    if (-1 != m_pInternal->m_lStartControlWidth && -1 != m_pInternal->m_lStartControlHeight)
-    {
-        nParentW = m_pInternal->m_lStartControlWidth;
-        nParentH = m_pInternal->m_lStartControlHeight;
-
-        m_pInternal->m_lStartControlWidth = -1;
-        m_pInternal->m_lStartControlHeight = -1;
-    }
+    CefWindowInfo info;
+    CefWindowHandle _handle = (CefWindowHandle)m_pInternal->m_pWidgetImpl->cef_handle;
+    int _w = m_pInternal->m_pWidgetImpl->cef_width;
+    int _h = m_pInternal->m_pWidgetImpl->cef_height;
 
 #ifdef WIN32
-    RECT rect;
-    rect.left = 0;
-    rect.top = 0;
-    rect.right = nParentW - 1;
-    rect.bottom = nParentH - 1;
-    info.SetAsChild(hWnd, rect);
+    info.SetAsChild(_handle, RECT { 0, 0, _w, _h });
 #endif
-
 #if defined(_LINUX) && !defined(_MAC)
-    CefRect rect;
-    rect.x = 0;
-    rect.y = 0;
-    rect.width = nParentW;
-    rect.height = nParentH;
-
-    Display* display = cef_get_xdisplay();
-    Window x11root = XDefaultRootWindow(display);
-    Window x11w = XCreateSimpleWindow(display, x11root, 0, 0, rect.width, rect.height, 0, 0, _settings.background_color);
-
-    XReparentWindow(display, x11w, hWnd, 0, 0);
-    XMapWindow(display, x11w);
-    m_pInternal->m_lNaturalParent = x11w;
-
-    info.SetAsChild(m_pInternal->m_lNaturalParent, rect);
+    info.SetAsChild(_handle, CefRect(0, 0, _w, _h));
 #endif
-
 #ifdef _MAC
-    info.SetAsChild(hWnd, 0, 0, nParentW, nParentH);
+    info.SetAsChild(_handle, 0, 0, _w, _h);
 #endif
 
     CefString sUrl = url;
@@ -4874,101 +4838,20 @@ void CCefView::focus(bool value)
         browser->GetHost()->SetFocus(value);
 }
 
-void CCefView::resizeEvent(int width, int height)
+void CCefView::resizeEvent()
 {
-    if (!m_pInternal->m_handler || !m_pInternal->m_handler->GetBrowser() || !m_pInternal->m_handler->GetBrowser()->GetHost())
-    {
-        // запоминаем размеры. чтобы максимально быстро сресайзиться
-        m_pInternal->m_lStartControlWidth = width;
-        m_pInternal->m_lStartControlHeight = height;
-        return;
-    }
-
-    if (!m_pInternal->m_pWidgetImpl || m_pInternal->m_bIsClosing)
-        return;
-
-    if (-1 != m_pInternal->m_lStartControlWidth && -1 != m_pInternal->m_lStartControlHeight)
-    {
-        m_pInternal->m_lStartControlWidth = width;
-        m_pInternal->m_lStartControlHeight = height;
-    }
-
-    CefWindowHandle hwnd = m_pInternal->m_handler->GetBrowser()->GetHost()->GetWindowHandle();
-
-#ifdef WIN32
-    RECT rect;
-    rect.left = 0;
-    rect.top = 0;
-    rect.right = (0 >= width) ? (m_pInternal->m_pWidgetImpl->parent_width() - 1) : width;
-    rect.bottom = (0 >= height) ? (m_pInternal->m_pWidgetImpl->parent_height() - 1) : height;
-
-    HDWP hdwp = BeginDeferWindowPos(1);
-    hdwp = DeferWindowPos(hdwp, hwnd, NULL, rect.left, rect.top, rect.right - rect.left + 1, rect.bottom - rect.top + 1, SWP_NOZORDER);
-    EndDeferWindowPos(hdwp);
-#endif
-
-#if defined(_LINUX) && !defined(_MAC)
-    ::Display* xdisplay = cef_get_xdisplay();
-
-    XWindowChanges changes = {0};
-    changes.width = (0 == width) ? (m_pInternal->m_pWidgetImpl->parent_width()) : width;
-    changes.height = (0 == height) ? (m_pInternal->m_pWidgetImpl->parent_height()) : height;
-    changes.y = 0;
-    changes.y = 0;
-
-    XConfigureWindow(xdisplay, m_pInternal->m_lNaturalParent, CWHeight | CWWidth | CWY, &changes);
-    XConfigureWindow(xdisplay, hwnd, CWHeight | CWWidth | CWY, &changes);
-#endif
-
-#ifdef _MAC
-    MAC_COMMON_set_window_handle_sizes(hwnd, 0, 0,
-        (0 == width) ? (m_pInternal->m_pWidgetImpl->parent_width()) : width,
-        (0 == height) ? (m_pInternal->m_pWidgetImpl->parent_height()) : height);
-#endif
-
-    focus();
-    m_pInternal->CheckZoom();
+    this->moveEvent();
 }
 void CCefView::moveEvent()
 {
-#if defined(_LINUX) && !defined(_MAC)
-    if (m_pInternal && m_pInternal->m_handler && m_pInternal->m_handler->GetBrowser() && m_pInternal->m_handler->GetBrowser()->GetHost())
-    {
-        m_pInternal->m_handler->GetBrowser()->GetHost()->NotifyMoveOrResizeStarted();
-    }
-#endif
+    if (!m_pInternal->m_pWidgetImpl || m_pInternal->m_bIsClosing)
+        return;
 
+    this->GetWidgetImpl()->UpdateSize();
     m_pInternal->CheckZoom();
-}
-bool CCefView::nativeEvent(const char* data, const int& datalen, void *message, long *result)
-{
-#ifdef WIN32
-    *result = 0;
-    MSG *msg = static_cast<MSG *>(message);
 
-    if (msg->message == WM_ERASEBKGND)
-    {
-        if (m_pInternal->m_handler && m_pInternal->m_handler->GetBrowser())
-        {
-            // Don't erase the background.
-            return true;
-        }
-    }
-    else if (msg->message == WM_MOVE || msg->message == WM_MOVING)
-    {
-        if (m_pInternal->m_handler && m_pInternal->m_handler->GetBrowser() && m_pInternal->m_handler->GetBrowser()->GetHost())
-        {
-            m_pInternal->m_handler->GetBrowser()->GetHost()->NotifyMoveOrResizeStarted();
-        }
-        return true;
-    }
-    else if (msg->message == (WM_USER + 1))
-    {
-        return true;
-    }
-#endif
-
-    return false;
+    if (m_pInternal->m_handler && m_pInternal->m_handler->GetBrowser() && m_pInternal->m_handler->GetBrowser()->GetHost())
+        m_pInternal->m_handler->GetBrowser()->GetHost()->NotifyMoveOrResizeStarted();
 }
 
 void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
@@ -5076,7 +4959,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             m_pInternal->m_oConverterFromEditor.Stop();
             m_pInternal->m_oConverterToEditor.Stop();
 
-            m_pInternal->m_pWidgetImpl->releaseFromChild();
+            m_pInternal->m_pWidgetImpl->OnRelease();
             m_pInternal->m_pWidgetImpl = NULL;
             if (m_pInternal && m_pInternal->m_handler && m_pInternal->m_handler->GetBrowser())
             {

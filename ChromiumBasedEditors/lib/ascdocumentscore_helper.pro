@@ -23,3 +23,7 @@ core_linux {
 }
 
 SOURCES += helper_main.cpp
+
+core_debug {
+    DESTDIR = $$PWD/../../../desktop-apps/win-linux/build/debug/$$CORE_BUILDS_PLATFORM_PREFIX
+}

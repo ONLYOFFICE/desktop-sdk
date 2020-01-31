@@ -37,6 +37,7 @@
 #include <QStyleOption>
 #include <QCloseEvent>
 #include <QDebug>
+#include <QPointer>
 
 #include "./../include/cefview.h"
 #include "./../include/applicationmanager.h"
@@ -45,61 +46,74 @@ class QCefView : public QWidget, public CCefViewWidgetImpl
 {
     Q_OBJECT
 
-signals:
-    void _loaded();
-    void _closed();
-
 public:
-    QCefView(QWidget* parent);
+    QCefView(QWidget* parent, const QSize& initial_size = QSize());
     virtual ~QCefView();
 
-    virtual void paintEvent(QPaintEvent *);
-    void SetBackgroundCefColor(unsigned char r, unsigned char g, unsigned char b);
-
+    // focus
     virtual void focusInEvent(QFocusEvent* e);
+    virtual void focusOutEvent(QFocusEvent* e);
+
+    // move/resize
     virtual void resizeEvent(QResizeEvent* e);
     virtual void moveEvent(QMoveEvent* e);
-    virtual void closeEvent(QCloseEvent *);
+    virtual void UpdateSize();
 
-    virtual bool nativeEvent(const QByteArray &eventType, void *message, long *result);
+    // close
+    virtual void closeEvent(QCloseEvent *e);
 
-#if 0
-    virtual void dragEnterEvent(QDragEnterEvent *e);
-    virtual void dragMoveEvent(QDragMoveEvent *e);
-    virtual void dragLeaveEvent(QDragLeaveEvent *e);
-    virtual void dropEvent(QDropEvent *e);
-#endif
-
+    // work with cefview
     CCefView* GetCefView();
     void Create(CAscApplicationManager* pManager, CefViewWrapperType eType);
     void CreateReporter(CAscApplicationManager* pManager, CAscReporterData* data);
 
+    // multimedia
     virtual void OnMediaStart(NSEditorApi::CAscExternalMedia* data);
     virtual void OnMediaEnd();
 
-    virtual void releaseFromChild();
+    // events
+    virtual void OnLoaded();
+    virtual void OnRelease();
+
+    // get natural view
+    QWidget* GetViewWidget();
+
+    // background color
+    void SetBackgroundCefColor(unsigned char r, unsigned char g, unsigned char b);
 
 protected:
     CCefView* m_pCefView;
-    QWidget* m_pLoader;
+    QPointer<QWidget> m_pOverride;
 
-public:
-    // CCefViewWidgetImpl
-    virtual int parent_x();
-    virtual int parent_y();
-    virtual int parent_width();
-    virtual int parent_height();
-    virtual WindowHandleId parent_wid();
-    virtual bool parent_window_is_empty();
-    virtual void child_loaded();
+    void Init();
 
 signals:
     void closeWidget(QCloseEvent *);
+    void _loaded();
+    void _closed();
 
 protected slots:
-
     void _loadedSlot();
     void _closedSlot();
 };
+
+#if defined (_LINUX) && !defined(_MAC)
+
+class QCefEmbedWindow : public QWindow
+{
+    Q_OBJECT
+
+public:
+    explicit QCefEmbedWindow(QPointer<QCefView> _qcef_parent, QWindow* _parent = NULL);
+
+protected:
+    virtual void moveEvent(QMoveEvent*);
+    virtual void resizeEvent(QResizeEvent*);
+
+ private:
+    QPointer<QCefView> qcef_parent;
+};
+
+#endif
 
 #endif  // CEFCLIENT_QCEFWEBVIEW_H

@@ -34,16 +34,14 @@
 
 #include <QPainter>
 
-QCefView::QCefView(QWidget* parent) : QWidget(parent)
+QCefView::QCefView(QWidget* parent, const QSize& initial_size) : QWidget(parent)
 {
     m_pCefView = NULL;
 
-    m_pLoader = new QWidget(this);
-    m_pLoader->setGeometry(0, 0, width(), height());
+    if (!initial_size.isEmpty())
+        resize(initial_size);
 
-    SetBackgroundCefColor(255, 255, 255);
-
-    m_pLoader->setHidden(false);
+    Init();
 
     QObject::connect(this, SIGNAL( _loaded() ) , this, SLOT( _loadedSlot() ), Qt::QueuedConnection );
     QObject::connect(this, SIGNAL( _closed() ) , this, SLOT( _closedSlot() ), Qt::QueuedConnection );
@@ -54,90 +52,39 @@ QCefView::~QCefView()
     // release from CApplicationManager
 }
 
-void QCefView::paintEvent(QPaintEvent *)
-{
-     QStyleOption opt;
-     opt.init(this);
-     QPainter p(this);
-     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
-}
-
-void QCefView::SetBackgroundCefColor(unsigned char r, unsigned char g, unsigned char b)
-{
-    QString sR = QString::number((int)r, 16);
-    QString sG = QString::number((int)g, 16);
-    QString sB = QString::number((int)b, 16);
-    if (sR.length() < 2)
-        sR = "0" + sR;
-    if (sG.length() < 2)
-        sG = "0" + sG;
-    if (sB.length() < 2)
-        sB = "0" + sB;
-
-    QString sColor = sR + sG + sB;
-    QString sStyle = "background-color:#" + sColor + ";";
-    this->setStyleSheet(sStyle);
-    m_pLoader->setStyleSheet(sStyle);
-}
-
+// focus
 void QCefView::focusInEvent(QFocusEvent* e)
 {
-    if (NULL != m_pCefView)
-        m_pCefView->focus();
+    if (m_pCefView)
+        m_pCefView->focus(true);
+}
+void QCefView::focusOutEvent(QFocusEvent* e)
+{
+    return;
+    if (m_pCefView)
+        m_pCefView->focus(false);
 }
 
+// move/resize
 void QCefView::resizeEvent(QResizeEvent* e)
 {
-    if (NULL != e)
-        QWidget::resizeEvent(e);
-    m_pLoader->setGeometry(0, 0, width(), height());
-    if (NULL != m_pCefView)
+    if (m_pCefView)
         m_pCefView->resizeEvent();
+    cef_width = width();
+    cef_height = height();
 }
-
 void QCefView::moveEvent(QMoveEvent* e)
 {
-    if (NULL != e)
-        QWidget::moveEvent(e);
-
-    if (NULL != m_pCefView)
+    if (m_pCefView)
         m_pCefView->moveEvent();
+    QWidget::moveEvent(e);
 }
 
+// close
 void QCefView::closeEvent(QCloseEvent* e)
 {
     emit closeWidget(e);
 }
-
-bool QCefView::nativeEvent(const QByteArray &eventType, void *message, long *result)
-{
-    if (m_pCefView)
-    {
-        if (m_pCefView->nativeEvent(NULL, 0, message, result))
-            return true;
-    }
-
-    return QWidget::nativeEvent(eventType, message, result);
-}
-
-#if 0
-void QCefView::dragEnterEvent(QDragEnterEvent *e)
-{
-    m_pCefView->dragEnterEvent(e);
-}
-void QCefView::dragMoveEvent(QDragMoveEvent *e)
-{
-    m_pCefView->dragMoveEvent(e);
-}
-void QCefView::dragLeaveEvent(QDragLeaveEvent *e)
-{
-    m_pCefView->dragLeaveEvent(e);
-}
-void QCefView::dropEvent(QDropEvent *e)
-{
-    m_pCefView->dropEvent(e);
-}
-#endif
 
 CCefView* QCefView::GetCefView()
 {
@@ -175,38 +122,122 @@ void QCefView::OnMediaEnd()
 {
 }
 
-void QCefView::releaseFromChild()
+// events
+void QCefView::OnRelease()
 {
     emit _closed();
-    //this->deleteLater();
 }
-
-// CCefViewWidgetImpl
-int QCefView::parent_x() { return this->pos().x(); }
-int QCefView::parent_y() { return this->pos().y(); }
-int QCefView::parent_width() { return this->width() * this->devicePixelRatio(); }
-int QCefView::parent_height() { return this->height() * this->devicePixelRatio(); }
-WindowHandleId QCefView::parent_wid()
-{
-#if 1
-    return (WindowHandleId)this->winId();
-#else
-    return (WindowHandleId)m_pLoader->winId();
-#endif
-}
-bool QCefView::parent_window_is_empty() { return true; }
-void QCefView::child_loaded()
+void QCefView::OnLoaded()
 {
     emit _loaded();
 }
 
+// slots
 void QCefView::_loadedSlot()
 {
-    if (!m_pLoader->isHidden())
-        m_pLoader->setHidden(true);
 }
-
 void QCefView::_closedSlot()
 {
     this->OnMediaEnd();
 }
+
+// get natural view
+QWidget* QCefView::GetViewWidget()
+{
+    return m_pOverride ? m_pOverride : this;
+}
+
+// background color
+void QCefView::SetBackgroundCefColor(unsigned char r, unsigned char g, unsigned char b)
+{
+}
+
+#ifdef _WIN32
+
+void QCefView::Init()
+{
+    cef_handle = reinterpret_cast<WindowHandleId>(winId());
+    //cef_ex_style = WS_EX_NOACTIVATE;
+    cef_width = width();
+    cef_height = height();
+}
+
+void QCefView::UpdateSize()
+{
+    HWND _parent = reinterpret_cast<HWND>(winId());
+    HWND _child = GetWindow(_parent, GW_CHILD);
+    SetWindowPos(_child, _parent, 0, 0, width(), height(), SWP_NOZORDER);
+}
+
+#endif
+
+#if defined (_LINUX) && !defined(_MAC)
+
+// OVERRIDE WIDGET
+QCefEmbedWindow::QCefEmbedWindow(QPointer<QCefView> _qcef_parent, QWindow* _parent) : QWindow(_parent), qcef_parent(_qcef_parent)
+{
+}
+
+void QCefEmbedWindow::resizeEvent(QResizeEvent* e)
+{
+    if (qcef_parent)
+        qcef_parent->UpdateSize();
+}
+void QCefEmbedWindow::moveEvent(QMoveEvent* e)
+{
+    if (qcef_parent)
+        qcef_parent->UpdateSize();
+}
+
+void QCefView::Init()
+{
+    QWindow* win = new QCefEmbedWindow(this);
+    m_pOverride = QWidget::createWindowContainer(win, this);
+
+    connect(m_pOverride, &QWidget::destroyed, this, [=](QObject*) {
+        deleteLater();
+    });
+
+    cef_handle = reinterpret_cast<WindowHandleId>(win->winId());
+    cef_width = width();
+    cef_height = height();
+}
+
+#include <X11/Xlib.h>
+
+Window GetChild(Window parent)
+{
+    Display xdisplay = cef_get_xdisplay();
+    Window root_ret;
+    Window parent_ret;
+    Window* children_ret;
+    unsigned int child_count_ret;
+    Status status = XQueryTree(xdisplay, parent, &root_ret, &parent_ret, &children_ret, &child_count_ret);
+    Window ret = 0;
+    if (status != 0 && child_count_ret > 0)
+    {
+        ret = children_ret[0];
+        XFree(children_ret);
+    }
+    return ret;
+}
+
+void QCefView::UpdateSize()
+{
+    Window child = GetChild(window_info_.parent_window);
+    if (child > 0)
+    {
+        Display* xdisplay = cef_get_xdisplay();
+        XWindowChanges changes = {};
+        changes.x = 0;
+        changes.y = 0;
+        changes.width = m_pOverride->width();
+        changes.height = m_pOverride->height();
+        XConfigureWindow(xdisplay,
+                         child,
+                         CWX | CWY | CWHeight | CWWidth,
+                         &changes);
+    }
+}
+
+#endif
