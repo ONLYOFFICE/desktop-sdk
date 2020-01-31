@@ -4807,11 +4807,17 @@ void CCefView::load(const std::wstring& urlInputSrc)
     m_pInternal->m_arSSOSecondDomain.clear();
 
     // Creat the new child browser window
-    CefBrowserHost::CreateBrowserSync(info, m_pInternal->m_handler.get(), sUrl, _settings, NULL
-                              #ifndef MESSAGE_IN_BROWSER
-                                  , NULL
-                              #endif
-                                  );
+#ifdef _WIN32
+    // need after window->show
+    CefBrowserHost::CreateBrowser(
+#else
+    CefBrowserHost::CreateBrowserSync(
+#endif
+                info, m_pInternal->m_handler.get(), sUrl, _settings, NULL
+            #ifndef MESSAGE_IN_BROWSER
+                , NULL
+            #endif
+                );
 
     GetWidgetImpl()->AfterCreate();
 
