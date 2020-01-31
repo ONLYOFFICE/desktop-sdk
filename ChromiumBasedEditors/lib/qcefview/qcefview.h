@@ -33,6 +33,7 @@
 #ifndef CEFCLIENT_QCEFWEBVIEW_H
 #define CEFCLIENT_QCEFWEBVIEW_H
 
+#include <QWindow>
 #include <QWidget>
 #include <QStyleOption>
 #include <QCloseEvent>
@@ -59,6 +60,9 @@ public:
     virtual void moveEvent(QMoveEvent* e);
     virtual void UpdateSize();
 
+    // After create
+    virtual void AfterCreate();
+
     // close
     virtual void closeEvent(QCloseEvent *e);
 
@@ -84,6 +88,7 @@ public:
 protected:
     CCefView* m_pCefView;
     QPointer<QWidget> m_pOverride;
+    void* m_pProperties;
 
     void Init();
 

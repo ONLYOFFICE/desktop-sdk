@@ -80,8 +80,9 @@ public:
 
 public:
     virtual void UpdateSize() {}
+    virtual void AfterCreate() {}
     virtual void OnLoaded() {}
-    virtual void OnRelease() {}
+    virtual void OnRelease() {}    
 };
 
 class DESKTOP_DECL CCefView
@@ -168,5 +169,9 @@ public:
 
     static int GetFileFormat(const std::wstring& sFilePath);
 };
+
+#if defined(_LINUX) && !defined(_MAC)
+DESKTOP_DECL void* CefGetXDisplay(void);
+#endif
 
 #endif  // CEFCLIENT_CEFWEBVIEW_H

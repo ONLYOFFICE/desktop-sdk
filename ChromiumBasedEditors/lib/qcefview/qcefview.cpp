@@ -37,6 +37,7 @@
 QCefView::QCefView(QWidget* parent, const QSize& initial_size) : QWidget(parent)
 {
     m_pCefView = NULL;
+    m_pProperties = NULL;
 
     if (!initial_size.isEmpty())
         resize(initial_size);
@@ -68,6 +69,8 @@ void QCefView::focusOutEvent(QFocusEvent* e)
 // move/resize
 void QCefView::resizeEvent(QResizeEvent* e)
 {
+    if (m_pOverride)
+        m_pOverride->setGeometry(0, 0, width(), height());
     if (m_pCefView)
         m_pCefView->resizeEvent();
     cef_width = width();
@@ -169,9 +172,20 @@ void QCefView::UpdateSize()
     SetWindowPos(_child, _parent, 0, 0, width(), height(), SWP_NOZORDER);
 }
 
+void QCefView::AfterCreate()
+{
+}
+
 #endif
 
 #if defined (_LINUX) && !defined(_MAC)
+#include <QGridLayout>
+
+class QCefViewProps
+{
+public:
+    QWindow* m_window;
+};
 
 // OVERRIDE WIDGET
 QCefEmbedWindow::QCefEmbedWindow(QPointer<QCefView> _qcef_parent, QWindow* _parent) : QWindow(_parent), qcef_parent(_qcef_parent)
@@ -192,22 +206,37 @@ void QCefEmbedWindow::moveEvent(QMoveEvent* e)
 void QCefView::Init()
 {
     QWindow* win = new QCefEmbedWindow(this);
-    m_pOverride = QWidget::createWindowContainer(win, this);
 
-    connect(m_pOverride, &QWidget::destroyed, this, [=](QObject*) {
-        deleteLater();
-    });
+    QCefViewProps* props = new QCefViewProps();
+    props->m_window = win;
+    m_pProperties = props;
 
-    cef_handle = reinterpret_cast<WindowHandleId>(win->winId());
+    cef_handle = (WindowHandleId)(win->winId());
     cef_width = width();
     cef_height = height();
+}
+
+void QCefView::AfterCreate()
+{
+    QCefViewProps* props = (QCefViewProps*)m_pProperties;
+    m_pOverride = QWidget::createWindowContainer(props->m_window, this);
+    delete m_pProperties;
+    m_pProperties = NULL;
+
+    /*connect(m_pOverride, &QWidget::destroyed, this, [=](QObject*) {
+        deleteLater();
+    });*/
+
+    //setLayout(new QGridLayout());
+    //layout()->addWidget(m_pOverride);
+    //m_pOverride->show();
 }
 
 #include <X11/Xlib.h>
 
 Window GetChild(Window parent)
 {
-    Display xdisplay = cef_get_xdisplay();
+    Display* xdisplay = (Display*)CefGetXDisplay();
     Window root_ret;
     Window parent_ret;
     Window* children_ret;
@@ -224,15 +253,15 @@ Window GetChild(Window parent)
 
 void QCefView::UpdateSize()
 {
-    Window child = GetChild(window_info_.parent_window);
+    Window child = GetChild(cef_handle);
     if (child > 0)
     {
-        Display* xdisplay = cef_get_xdisplay();
+        Display* xdisplay = (Display*)CefGetXDisplay();
         XWindowChanges changes = {};
         changes.x = 0;
         changes.y = 0;
-        changes.width = m_pOverride->width();
-        changes.height = m_pOverride->height();
+        changes.width = width();
+        changes.height = height();
         XConfigureWindow(xdisplay,
                          child,
                          CWX | CWY | CWHeight | CWWidth,

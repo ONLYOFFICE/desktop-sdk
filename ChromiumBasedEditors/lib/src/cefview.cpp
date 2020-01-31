@@ -4807,11 +4807,13 @@ void CCefView::load(const std::wstring& urlInputSrc)
     m_pInternal->m_arSSOSecondDomain.clear();
 
     // Creat the new child browser window
-    CefBrowserHost::CreateBrowser(info, m_pInternal->m_handler.get(), sUrl, _settings, NULL
+    CefBrowserHost::CreateBrowserSync(info, m_pInternal->m_handler.get(), sUrl, _settings, NULL
                               #ifndef MESSAGE_IN_BROWSER
                                   , NULL
                               #endif
                                   );
+
+    GetWidgetImpl()->AfterCreate();
 
     focus();
 }
@@ -6218,3 +6220,11 @@ void CAscApplicationManager_Private::ChangeEditorViewsCount()
         }
     }
 }
+
+#if defined(_LINUX) && !defined(_MAC)
+void* CefGetXDisplay(void)
+{
+    return (void*)cef_get_xdisplay();
+}
+
+#endif
