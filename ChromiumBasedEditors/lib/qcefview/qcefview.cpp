@@ -181,7 +181,6 @@ void QCefView::AfterCreate()
 #if defined (_LINUX) && !defined(_MAC)
 #include <QDragEnterEvent>
 #include <QDropEvent>
-#include <QGridLayout>
 #include <QFileInfo>
 #include <QUrl>
 #include <QMimeData>
@@ -323,13 +322,9 @@ void QCefView::AfterCreate()
     delete m_pProperties;
     m_pProperties = NULL;
 
-    /*connect(m_pOverride, &QWidget::destroyed, this, [=](QObject*) {
+    connect(m_pOverride.operator ->(), &QWidget::destroyed, this, [=](QObject*) {
         deleteLater();
-    });*/
-
-    //setLayout(new QGridLayout());
-    //layout()->addWidget(m_pOverride);
-    //m_pOverride->show();
+    });
 }
 
 #include <X11/Xlib.h>
