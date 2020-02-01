@@ -47,6 +47,9 @@ class QCefView : public QWidget, public CCefViewWidgetImpl
 {
     Q_OBJECT
 
+Q_SIGNALS:
+    void onDropFiles(QList<QString> files);
+
 public:
     QCefView(QWidget* parent, const QSize& initial_size = QSize());
     virtual ~QCefView();
@@ -114,6 +117,7 @@ public:
 protected:
     virtual void moveEvent(QMoveEvent*);
     virtual void resizeEvent(QResizeEvent*);
+    virtual bool eventFilter(QObject *watched, QEvent *event);
 
  private:
     QPointer<QCefView> qcef_parent;

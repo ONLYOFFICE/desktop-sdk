@@ -179,7 +179,12 @@ void QCefView::AfterCreate()
 #endif
 
 #if defined (_LINUX) && !defined(_MAC)
+#include <QDragEnterEvent>
+#include <QDropEvent>
 #include <QGridLayout>
+#include <QFileInfo>
+#include <QUrl>
+#include <QMimeData>
 
 class QCefViewProps
 {
@@ -190,6 +195,7 @@ public:
 // OVERRIDE WIDGET
 QCefEmbedWindow::QCefEmbedWindow(QPointer<QCefView> _qcef_parent, QWindow* _parent) : QWindow(_parent), qcef_parent(_qcef_parent)
 {
+    this->installEventFilter(this);
 }
 
 void QCefEmbedWindow::resizeEvent(QResizeEvent* e)
@@ -201,6 +207,100 @@ void QCefEmbedWindow::moveEvent(QMoveEvent* e)
 {
     if (qcef_parent)
         qcef_parent->UpdateSize();
+}
+
+#include <QDebug>
+bool QCefEmbedWindow::eventFilter(QObject *watched, QEvent *event)
+{
+    if (this != watched)
+        return false;
+
+    switch (event->type())
+    {
+        case QEvent::DragEnter:
+        {
+            if (!qcef_parent)
+                return false;
+
+            QDragEnterEvent* e = (QDragEnterEvent*)event;
+            QList<QUrl> urls = e->mimeData()->urls();
+
+            bool isSupport = false;
+            QSet<QString> _exts;
+            _exts << "docx" << "doc" << "odt" << "rtf" << "txt" << "doct" << "dotx" << "ott";
+            _exts << "html" << "mht" << "epub";
+            _exts << "pptx" << "ppt" << "odp" << "ppsx" << "pptt" << "potx" << "otp";
+            _exts << "xlsx" << "xls" << "ods" << "csv" << "xlst" << "xltx" << "ots";
+            _exts << "pdf" << "djvu" << "xps";
+            _exts << "plugin";
+
+            for (int i = 0; i < urls.length(); i++)
+            {
+                QFileInfo oInfo(urls[i].toString());
+                if (!_exts.contains(oInfo.suffix()))
+                {
+                    isSupport = false;
+                    break;
+                }
+                isSupport = true;
+            }
+
+            if (isSupport)
+                e->acceptProposedAction();
+            else
+            {
+                e->setDropAction(Qt::IgnoreAction);
+                e->accept();
+            }
+
+            return true;
+        }
+        case QEvent::Drop:
+        {
+            if (!qcef_parent)
+                return false;
+
+            QDropEvent* e = (QDropEvent*)event;
+            QList<QUrl> urls = e->mimeData()->urls();
+
+            QList<QString> files;
+            for (int i = 0; i < urls.length(); i++)
+            {
+                QString qpath = urls[i].path();
+                std::wstring path = qpath.toStdWString();
+
+                std::wstring::size_type nPosPluginExt = path.rfind(L".plugin");
+                std::wstring::size_type nUrlLen = path.length();
+                if ((nPosPluginExt != std::wstring::npos) && ((nPosPluginExt + 7) == nUrlLen))
+                {
+                    // register plugin
+                    NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
+                    pEvent->m_nType = ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_ADD_PLUGIN;
+                    NSEditorApi::CAscAddPlugin* pData = new NSEditorApi::CAscAddPlugin();
+                    pData->put_Path(path);
+                    pEvent->m_pData = pData;
+
+                    qcef_parent->GetCefView()->GetAppManager()->Apply(pEvent);
+                }
+                else
+                {
+                    files.push_back(qpath);
+                }
+            }
+
+            if (files.length() > 0)
+            {
+                emit qcef_parent->onDropFiles(files);
+            }
+
+            e->acceptProposedAction();
+            return true;
+        }
+    default:
+        break;
+    }
+
+    return QWindow::eventFilter(watched, event);
 }
 
 void QCefView::Init()
