@@ -253,7 +253,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     CefSettings settings;
 
 #ifndef _MAC
-    std::wstring sHelperPath = NSFile::GetProcessDirectory() + L"/ascdocumentscore_helper";
+    std::wstring sHelperPath = NSFile::GetProcessDirectory() + L"/editors_helper";
 #ifdef _WIN32
     sHelperPath += L".exe";
 #endif

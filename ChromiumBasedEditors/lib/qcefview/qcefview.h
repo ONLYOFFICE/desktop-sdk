@@ -43,6 +43,7 @@
 #include "./../include/cefview.h"
 #include "./../include/applicationmanager.h"
 
+class QCefViewProps;
 class QCefView : public QWidget, public CCefViewWidgetImpl
 {
     Q_OBJECT
@@ -91,11 +92,12 @@ public:
 
     // check support z-index
     static bool IsSupportLayers();
+    void SetCaptionMaskSize(int);
 
 protected:
     CCefView* m_pCefView;
     QPointer<QWidget> m_pOverride;
-    void* m_pProperties;
+    QCefViewProps* m_pProperties;
 
     void Init();
 
@@ -115,13 +117,17 @@ class QCefEmbedWindow : public QWindow
 {
     Q_OBJECT
 
+private:
+    int m_nCaptionSize;
+
 public:
     explicit QCefEmbedWindow(QPointer<QCefView> _qcef_parent, QWindow* _parent = NULL);
+    void SetCaptionMaskSize(int);
 
 protected:
     virtual void moveEvent(QMoveEvent*);
     virtual void resizeEvent(QResizeEvent*);
-    virtual bool eventFilter(QObject *watched, QEvent *event);
+    virtual bool eventFilter(QObject *watched, QEvent *event);   
 
  private:
     QPointer<QCefView> qcef_parent;

@@ -31,8 +31,18 @@
  */
 
 #include "./qcefview.h"
-
 #include <QPainter>
+
+class QCefViewProps
+{
+public:
+    QWindow* m_window;
+public:
+    QCefViewProps()
+    {
+        m_window = NULL;
+    }
+};
 
 QCefView::QCefView(QWidget* parent, const QSize& initial_size) : QWidget(parent)
 {
@@ -51,6 +61,11 @@ QCefView::QCefView(QWidget* parent, const QSize& initial_size) : QWidget(parent)
 QCefView::~QCefView()
 {
     // release from CApplicationManager
+    if (m_pProperties)
+    {
+        delete m_pProperties;
+        m_pProperties = NULL;
+    }
 }
 
 // focus
@@ -201,6 +216,10 @@ bool QCefView::IsSupportLayers()
 {
     return true;
 }
+void QCefView::SetCaptionMaskSize(int)
+{
+    // not using
+}
 
 #endif
 
@@ -211,20 +230,21 @@ bool QCefView::IsSupportLayers()
 #include <QUrl>
 #include <QMimeData>
 
-class QCefViewProps
-{
-public:
-    QWindow* m_window;
-};
-
 // OVERRIDE WIDGET
 QCefEmbedWindow::QCefEmbedWindow(QPointer<QCefView> _qcef_parent, QWindow* _parent) : QWindow(_parent), qcef_parent(_qcef_parent)
 {
+    m_nCaptionSize = 0;
     this->installEventFilter(this);
 }
 
 void QCefEmbedWindow::resizeEvent(QResizeEvent* e)
 {
+    if (0 != m_nCaptionSize)
+    {
+        setMask(QRegion());
+        setMask(QRegion(0, m_nCaptionSize, width(), height() - m_nCaptionSize));
+    }
+
     if (qcef_parent)
         qcef_parent->UpdateSize();
 }
@@ -232,6 +252,15 @@ void QCefEmbedWindow::moveEvent(QMoveEvent* e)
 {
     if (qcef_parent)
         qcef_parent->UpdateSize();
+}
+
+void QCefEmbedWindow::SetCaptionMaskSize(int size)
+{
+    if (m_nCaptionSize == size)
+        return;
+    m_nCaptionSize = size;
+    if (0 == m_nCaptionSize)
+        setMask(QRegion());
 }
 
 bool QCefEmbedWindow::eventFilter(QObject *watched, QEvent *event)
@@ -331,9 +360,8 @@ void QCefView::Init()
 {
     QWindow* win = new QCefEmbedWindow(this);
 
-    QCefViewProps* props = new QCefViewProps();
-    props->m_window = win;
-    m_pProperties = props;
+    m_pProperties = new QCefViewProps();
+    m_pProperties->m_window = win;
 
     cef_handle = (WindowHandleId)(win->winId());
     cef_width = width();
@@ -342,11 +370,7 @@ void QCefView::Init()
 
 void QCefView::AfterCreate()
 {
-    QCefViewProps* props = (QCefViewProps*)m_pProperties;
-    m_pOverride = QWidget::createWindowContainer(props->m_window, this);
-    delete m_pProperties;
-    m_pProperties = NULL;
-
+    m_pOverride = QWidget::createWindowContainer(m_pProperties->m_window, this);
     connect(m_pOverride.operator ->(), &QWidget::destroyed, this, [=](QObject*) {
         deleteLater();
     });
@@ -355,6 +379,11 @@ void QCefView::AfterCreate()
 bool QCefView::IsSupportLayers()
 {
     return false;
+}
+void QCefView::SetCaptionMaskSize(int size)
+{
+    if (m_pProperties && m_pProperties->m_window)
+        ((QCefEmbedWindow*)m_pProperties->m_window)->SetCaptionMaskSize(size);
 }
 
 #include <X11/Xlib.h>

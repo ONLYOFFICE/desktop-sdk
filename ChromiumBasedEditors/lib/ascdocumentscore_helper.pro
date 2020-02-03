@@ -1,7 +1,7 @@
 QT -= core
 QT -= gui
 
-TARGET = ascdocumentscore_helper
+TARGET = editors_helper
 TEMPLATE = app
 CONFIG += app_bundle
 
