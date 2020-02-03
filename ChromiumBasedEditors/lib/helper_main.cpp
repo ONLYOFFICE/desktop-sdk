@@ -42,17 +42,5 @@ int main( int argc, char *argv[] )
     CApplicationCEF application;
     CAscApplicationManager manager;
 
-    std::wstring user_data_path = L"C:/Users/oleg.korshul/AppData/Local/ONLYOFFICE/DesktopEditors";
-    manager.m_oSettings.cookie_path                   = user_data_path + L"/cookie";
-    manager.m_oSettings.recover_path                  = user_data_path + L"/recover";
-    manager.m_oSettings.fonts_cache_info_path         = user_data_path + L"/fonts";
-
-    std::wstring app_path = NSFile::GetProcessDirectory();
-    manager.m_oSettings.spell_dictionaries_path       = app_path + L"/dictionaries";
-    manager.m_oSettings.file_converter_path           = app_path + L"/converter";
-    manager.m_oSettings.recover_path                  = user_data_path + L"/recover";
-    manager.m_oSettings.user_plugins_path             = user_data_path + L"/sdkjs-plugins";
-    manager.m_oSettings.additional_fonts_folder.push_back(app_path + L"/fonts");
-
     return application.Init_CEF(&manager, argc, argv);
 }

@@ -153,6 +153,27 @@ QWidget* QCefView::GetViewWidget()
 // background color
 void QCefView::SetBackgroundCefColor(unsigned char r, unsigned char g, unsigned char b)
 {
+    QString sR = QString::number((int)r, 16);
+    QString sG = QString::number((int)g, 16);
+    QString sB = QString::number((int)b, 16);
+    if (sR.length() < 2)
+        sR = "0" + sR;
+    if (sG.length() < 2)
+        sG = "0" + sG;
+    if (sB.length() < 2)
+        sB = "0" + sB;
+
+    QString sColor = sR + sG + sB;
+    QString sStyle = "background-color:#" + sColor + ";";
+    this->setStyleSheet(sStyle);
+}
+
+void QCefView::paintEvent(QPaintEvent *)
+{
+     QStyleOption opt;
+     opt.init(this);
+     QPainter p(this);
+     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 }
 
 #ifdef _WIN32
@@ -174,6 +195,11 @@ void QCefView::UpdateSize()
 
 void QCefView::AfterCreate()
 {
+}
+
+bool QCefView::IsSupportLayers()
+{
+    return true;
 }
 
 #endif
@@ -208,7 +234,6 @@ void QCefEmbedWindow::moveEvent(QMoveEvent* e)
         qcef_parent->UpdateSize();
 }
 
-#include <QDebug>
 bool QCefEmbedWindow::eventFilter(QObject *watched, QEvent *event)
 {
     if (this != watched)
@@ -325,6 +350,11 @@ void QCefView::AfterCreate()
     connect(m_pOverride.operator ->(), &QWidget::destroyed, this, [=](QObject*) {
         deleteLater();
     });
+}
+
+bool QCefView::IsSupportLayers()
+{
+    return false;
 }
 
 #include <X11/Xlib.h>

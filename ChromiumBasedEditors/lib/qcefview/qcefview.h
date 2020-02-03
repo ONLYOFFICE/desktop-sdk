@@ -87,6 +87,10 @@ public:
 
     // background color
     void SetBackgroundCefColor(unsigned char r, unsigned char g, unsigned char b);
+    void paintEvent(QPaintEvent *event);
+
+    // check support z-index
+    static bool IsSupportLayers();
 
 protected:
     CCefView* m_pCefView;
