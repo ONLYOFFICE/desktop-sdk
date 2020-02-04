@@ -109,5 +109,8 @@ core_mac {
     LIBS += -framework Security
 
     HEADERS += ./include/mac_cefview.h
-    OBJECTIVE_SOURCES += ./src/widget_impl.mm
+
+    OBJECTIVE_SOURCES += \
+        ./src/widget_impl.mm \
+        ./src/mac_application.mm
 }

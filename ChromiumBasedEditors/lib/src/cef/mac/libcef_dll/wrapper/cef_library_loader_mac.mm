@@ -15,7 +15,7 @@ namespace {
 
 const char kFrameworkPath[] =
     "Chromium Embedded Framework.framework/Chromium Embedded Framework";
-const char kPathFromHelperExe[] = "";
+const char kPathFromHelperExe[] = "../../..";
 const char kPathFromMainExe[] = "../Frameworks";
 
 std::string GetFrameworkPath(bool helper) {
