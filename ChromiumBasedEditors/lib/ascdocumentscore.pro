@@ -104,3 +104,10 @@ SOURCES += \
     ./src/cefwrapper/monitor_info.cpp
 
 }
+
+core_mac {
+    LIBS += -framework Security
+
+    HEADERS += ./include/mac_cefview.h
+    OBJECTIVE_SOURCES += ./src/widget_impl.mm
+}

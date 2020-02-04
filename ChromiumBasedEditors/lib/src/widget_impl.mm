@@ -30,26 +30,11 @@
  *
  */
 
-#ifndef ASC_CEF_WINDOW_COMMON_H
-#define ASC_CEF_WINDOW_COMMON_H
+#include <Cocoa/Cocoa.h>
+#include "./../include/cefview.h"
 
-#include "../include/base.h"
-
-#ifdef WIN32
-static void SetParentNULL(WindowHandleId handle)
+void CCefViewWidgetImpl::SetParentNull(WindowHandleId handle)
 {
-    SetParent(handle, NULL);
+    NSView* view = (__bridge NSView*)handle;
+    [view removeFromSuperview];
 }
-#endif
-
-#if defined(_LINUX) && !defined(_MAC)
-void SetParentNULL(WindowHandleId handle)
-{
-}
-#endif
-
-#ifdef _MAC
-void SetParentNULL(WindowHandleId handle);
-#endif
-
-#endif // ASC_CEF_WINDOW_COMMON_H

@@ -30,24 +30,80 @@
  *
  */
 
-#include <Cocoa/Cocoa.h>
-#include "mac_common.h"
-#include "window_common.h"
+#include "./cefview.h"
+#import <Cocoa/Cocoa.h>
 
-void MAC_COMMON_set_window_handle_sizes(WindowHandleId handle,
-                                               int x, int y, int w, int h)
+class CCefViewWrapper : public CCefViewWidgetImpl
 {
-    NSView* view = (__bridge NSView*)handle;
-    NSRect f = view.frame;
-    f.origin.x = x;
-    f.origin.y = y;
-    f.size.width = w;
-    f.size.height = h;
-    view.frame = f;
-}
+public:
+    CCefView* m_pCefView;
+    NSView* m_pParent;
 
-void SetParentNULL(WindowHandleId handle)
-{
-    NSView* view = (__bridge NSView*)handle;
-    [view removeFromSuperview];
-}
+public:
+    CCefViewWrapper(NSView* pView) : CCefViewWidgetImpl()
+    {
+        m_pParent = pView;
+        m_pCefView = NULL;
+
+        cef_handle = (__bridge WindowHandleId)m_pParent;
+    }
+    virtual ~CCefViewWrapper()
+    {
+    }
+
+    void SetBackgroundCefColor(unsigned char r, unsigned char g, unsigned char b)
+    {
+    }
+
+    CCefView* GetCefView()
+    {
+        return m_pCefView;
+    }
+
+    void focusInEvent()
+    {
+        if (NULL != m_pCefView)
+            m_pCefView->focus();
+    }
+
+    void resizeEvent()
+    {
+        UpdateGeometry();
+        if (NULL != m_pCefView)
+            m_pCefView->resizeEvent();
+    }
+
+    void moveEvent()
+    {
+        UpdateGeometry();
+        if (NULL != m_pCefView)
+            m_pCefView->moveEvent();
+    }
+
+public:
+    virtual void UpdateSize()
+    {
+        NSView* child = nil;
+
+        if (m_pParent.subviews.length > 0)
+            child = m_pParent.subviews[0];
+
+        NSRect f = m_pParent.frame;
+        f.origin.x = 0;
+        f.origin.y = 0;
+        child.frame = f;
+    }
+
+protected:
+    void UpdateGeometry()
+    {
+        //CGFloat koef = [[NSScreen mainScreen] backingScaleFactor];
+        CGFloat koef = 1;
+        cef_x = 0;
+        cef_y = 0;
+        cef_width = (int)(m_pParent.frame.size.width * koef);
+        cef_height = (int)(m_pParent.frame.size.height * koef);
+    }
+};
+
+#endif

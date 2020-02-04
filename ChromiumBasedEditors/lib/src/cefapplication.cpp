@@ -95,6 +95,9 @@ namespace client {
 namespace client {
     typedef MainMessageLoopStd MainMessageLoopMultithreaded;
 }
+
+#include "include/wrapper/cef_library_loader.h"
+
 #endif
 #endif
 
@@ -191,9 +194,20 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     // Parse command-line arguments.
     CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
     command_line->InitFromArgv(argc, argv);
+
 #endif
 
     client::ClientApp::ProcessType process_type = client::ClientApp::GetProcessType(command_line);
+
+#ifdef _MAC
+
+    CefScopedLibraryLoader library_loader;
+    if (process_type == client::ClientApp::BrowserProcess)
+        library_loader.LoadInMain();
+    else
+        library_loader.LoadInHelper();
+
+#endif
 
     if (process_type == client::ClientApp::BrowserProcess)
     {
@@ -211,6 +225,13 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
             pManager->m_pInternal->CheckSetting(sName, sValue);
         }
         pManager->m_pInternal->SaveSettings();
+
+
+    }
+    else
+    {
+          if (!library_loader.LoadInHelper())
+            return 1;
     }
 
 #ifdef WIN32

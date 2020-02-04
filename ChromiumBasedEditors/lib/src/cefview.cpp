@@ -50,8 +50,6 @@
 #include "include/wrapper/cef_stream_resource_handler.h"
 #include "include/wrapper/cef_byte_read_handler.h"
 
-#include "window_common.h"
-
 #include "../../../../core/Common/OfficeFileFormatChecker.h"
 #include "./fileconverter.h"
 #include "./fileprinter.h"
@@ -69,6 +67,18 @@
 
 #include "./cefwrapper/client_scheme.h"
 #include "./mailto.h"
+
+#ifdef _WIN32
+void CCefViewWidgetImpl::SetParentNull(WindowHandleId handle)
+{
+    SetParent(handle, NULL);
+}
+#endif
+#if defined(_LINUX) && !defined(_MAC)
+void CCefViewWidgetImpl::SetParentNull(WindowHandleId handle)
+{
+}
+#endif
 
 #define CRYPTO_CLOUD_SUPPORT 5020300
 
@@ -323,10 +333,6 @@ public:
 
 #if defined(_LINUX) && !defined(_MAC)
 #include <X11/Xlib.h>
-#endif
-
-#ifdef _MAC
-#include "mac_common.h"
 #endif
 
 #ifdef CEF_2623
@@ -3279,7 +3285,7 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
 
         NotifyBrowserClosing(browser);
 
-        SetParentNULL(browser->GetHost()->GetWindowHandle());
+        CCefViewWidgetImpl::SetParentNull(browser->GetHost()->GetWindowHandle());
 
         // Allow the close. For windowed browsers this will result in the OS close
         // event being sent.

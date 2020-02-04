@@ -83,6 +83,8 @@ public:
     virtual void AfterCreate() {}
     virtual void OnLoaded() {}
     virtual void OnRelease() {}    
+
+    static void SetParentNull(WindowHandleId handle);
 };
 
 class DESKTOP_DECL CCefView
