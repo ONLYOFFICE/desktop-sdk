@@ -29,6 +29,8 @@
  * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
  *
  */
+#ifndef MAC_CEF_VIEW_H
+#define MAC_CEF_VIEW_H
 
 #include "./cefview.h"
 #import <Cocoa/Cocoa.h>
@@ -85,13 +87,13 @@ public:
     {
         NSView* child = nil;
 
-        if (m_pParent.subviews.length > 0)
-            child = m_pParent.subviews[0];
+        if ([[m_pParent subviews] count] > 0)
+            child = [m_pParent subviews][0];
 
-        NSRect f = m_pParent.frame;
-        f.origin.x = 0;
-        f.origin.y = 0;
-        child.frame = f;
+        NSRect childRect = m_pParent.frame;
+        childRect.origin.x = 0;
+        childRect.origin.y = 0;
+        child.frame = childRect;
     }
 
 protected:

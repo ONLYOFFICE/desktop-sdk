@@ -259,7 +259,7 @@ public:
         m_pView = [[NSAscPrintView alloc] initWithParams:NSMakeRect(0, 0, 100, 100) manager:m_pManager viewId:nViewId info:&m_oInfo];
         m_pParent = m_pManager->GetViewById(nViewId);
         
-        NSView* pViewParent = (__bridge NSView*)m_pParent->GetWidgetImpl()->parent_wid();
+        NSView* pViewParent = (__bridge NSView*)(m_pParent->GetWidgetImpl()->cef_handle);
         
         // start print dialog
         NSPrintInfo* pPrintInfo;
