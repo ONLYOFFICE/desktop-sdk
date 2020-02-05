@@ -225,13 +225,6 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
             pManager->m_pInternal->CheckSetting(sName, sValue);
         }
         pManager->m_pInternal->SaveSettings();
-
-
-    }
-    else
-    {
-          if (!library_loader.LoadInHelper())
-            return 1;
     }
 
 #ifdef WIN32
