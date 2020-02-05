@@ -275,6 +275,9 @@ public:
             if (0 != forceDpi)
                 command_line->AppendSwitchWithValue("--force-device-scale-factor", std::to_string(forceDpi));
 
+            if (m_manager->GetDebugInfoSupport())
+                command_line->AppendSwitchWithValue("--remote-debugging-port", "8080");
+
 #ifdef DISABLE_WEB_SEQURITY
             command_line->AppendSwitch("--disable-web-security");
 #endif
