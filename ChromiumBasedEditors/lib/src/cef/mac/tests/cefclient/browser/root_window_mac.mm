@@ -489,7 +489,7 @@ void RootWindowMac::CreateRootWindow(const CefBrowserSettings& settings,
                            NSUnifiedTitleAndToolbarWindowMask)
                   backing:NSBackingStoreBuffered
                     defer:NO];
-  [window_ setTitle:@"cefclient"];
+  [window_ setTitle:@"ONLYOFFICE"];
 
   // Create the delegate for control and browser window events.
   RootWindowDelegate* delegate =
