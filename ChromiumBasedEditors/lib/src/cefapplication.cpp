@@ -236,40 +236,34 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
         pManager->m_pInternal->SaveSettings();
     }
 
-#ifdef WIN32
-    // Create a ClientApp of the correct type.
-    if (process_type == client::ClientApp::BrowserProcess)
-        m_pInternal->m_app = new CAscClientAppBrowser(pManager->m_pInternal->m_mapSettings, pManager);
-    else if (process_type == client::ClientApp::RendererProcess ||
-             process_type == client::ClientApp::ZygoteProcess)
-        m_pInternal->m_app = new CAscClientAppRenderer(pManager->m_pInternal->m_mapSettings);
-    else if (process_type == client::ClientApp::OtherProcess)
-        m_pInternal->m_app = new CAscClientAppOther(pManager->m_pInternal->m_mapSettings);
-#endif
+    switch (process_type)
+    {
+        case client::ClientApp::BrowserProcess:
+        {
+            m_pInternal->m_app = new CAscClientAppBrowser(pManager->m_pInternal->m_mapSettings, pManager);
+            break;
+        }
+        case client::ClientApp::RendererProcess:
+        case client::ClientApp::ZygoteProcess:
+        {
+            m_pInternal->m_app = new CAscClientAppRenderer(pManager->m_pInternal->m_mapSettings);
+            break;
+        }
+        case client::ClientApp::OtherProcess:
+        {
+            m_pInternal->m_app = new CAscClientAppOther(pManager->m_pInternal->m_mapSettings);
+            break;
+        }
+        default:
+            break;
+    }
 
-#if defined(_LINUX) && !defined(_MAC)
-    // Create a ClientApp of the correct type.    
-    if (process_type == client::ClientApp::BrowserProcess)
-        m_pInternal->m_app = new CAscClientAppBrowser(pManager->m_pInternal->m_mapSettings, pManager);
-    else if (process_type == client::ClientApp::RendererProcess ||
-             process_type == client::ClientApp::ZygoteProcess)
-        m_pInternal->m_app = new CAscClientAppRenderer(pManager->m_pInternal->m_mapSettings);
-    else if (process_type == client::ClientApp::OtherProcess)
-        m_pInternal->m_app = new CAscClientAppOther(pManager->m_pInternal->m_mapSettings);
-#endif
-
-#ifdef _MAC
-    m_pInternal->m_app = new CAscClientAppBrowser(pManager->m_pInternal->m_mapSettings, pManager);
-#endif
-
-#if 1
     // Execute the secondary process, if any.
     m_pInternal->m_nReturnCodeInitCef = CefExecuteProcess(main_args, m_pInternal->m_app.get(), NULL);
     if (m_pInternal->m_nReturnCodeInitCef >= 0)
     {        
         return m_pInternal->m_nReturnCodeInitCef;
     }
-#endif
 
     LOGGER_STRING("CApplicationCEF::Init_CEF::main");
 
@@ -291,10 +285,6 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 
 #if !defined(CEF_USE_SANDBOX)
     settings.no_sandbox = true;
-#endif
-
-#if 0
-    settings.single_process = 1;
 #endif
 
     // Populate the settings based on command line arguments.

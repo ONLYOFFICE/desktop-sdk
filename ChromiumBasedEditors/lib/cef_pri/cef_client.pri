@@ -195,7 +195,6 @@ HEADERS += \
     $$CEF_SRC_PATH/tests/cefclient/browser/window_test_runner_mac.h
 SOURCES += \
     $$CEF_SRC_PATH/tests/shared/browser/resource_util_posix.cc \
-    $$CEF_SRC_PATH/tests/shared/process_helper_mac.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/main_context_impl_posix.cc
 OBJECTIVE_SOURCES += \
     $$CEF_SRC_PATH/tests/shared/browser/main_message_loop_external_pump_mac.mm \
@@ -211,7 +210,8 @@ OBJECTIVE_SOURCES += \
 #    $$CEF_SRC_PATH/tests/cefclient/browser/text_input_client_osr_mac.h
 #SOURCES += \
 #    $$CEF_SRC_PATH/tests/cefclient/browser/osr_accessibility_helper.cc \
-#    $$CEF_SRC_PATH/tests/cefclient/browser/osr_accessibility_node.cc
+#    $$CEF_SRC_PATH/tests/cefclient/browser/osr_accessibility_node.cc \
+#    $$CEF_SRC_PATH/tests/shared/process_helper_mac.cc \
 #OBJECTIVE_SOURCES += \
 #    $$CEF_SRC_PATH/tests/cefclient/browser/browser_window_osr_mac.mm \
 #    $$CEF_SRC_PATH/tests/cefclient/browser/osr_accessibility_node_mac.mm \

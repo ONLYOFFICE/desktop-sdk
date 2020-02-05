@@ -33,11 +33,13 @@
 #include <Cocoa/Cocoa.h>
 
 #include "include/cef_app.h"
-#import "include/cef_application_mac.h"
 #include "tests/shared/browser/client_app_browser.h"
 #include "tests/shared/browser/main_message_loop_std.h"
 
 #include "../../../../core/DesktopEditor/graphics/BaseThread.h"
+#import "include/cef_application_mac.h"
+
+#define ASC_DISABLE_PROTOCOLS
 #include "../include/mac_application.h"
 
 namespace
