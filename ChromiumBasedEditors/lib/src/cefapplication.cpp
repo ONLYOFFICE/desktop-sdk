@@ -151,6 +151,25 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 {
     LOGGER_STRING("CApplicationCEF::Init_CEF::start");
 
+#ifdef _MAC
+    bool bIsHelper = false;
+    for (int arg_index = 0; arg_index < argc; ++arg_index)
+    {
+        std::string sHelperTest(argv[arg_index]);
+        if (0 == sHelperTest.find("--type="))
+        {
+            bIsHelper = true;
+            break;
+        }
+    }
+
+    CefScopedLibraryLoader library_loader;
+    if (bIsHelper)
+        library_loader.LoadInHelper();
+    else
+        library_loader.LoadInMain();
+#endif
+
     if (NULL == pManager->m_pInternal->m_pDpiChecker)
         pManager->m_pInternal->m_pDpiChecker = pManager->InitDpiChecker();
 
@@ -198,16 +217,6 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 #endif
 
     client::ClientApp::ProcessType process_type = client::ClientApp::GetProcessType(command_line);
-
-#ifdef _MAC
-
-    CefScopedLibraryLoader library_loader;
-    if (process_type == client::ClientApp::BrowserProcess)
-        library_loader.LoadInMain();
-    else
-        library_loader.LoadInHelper();
-
-#endif
 
     if (process_type == client::ClientApp::BrowserProcess)
     {

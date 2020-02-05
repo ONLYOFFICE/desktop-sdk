@@ -13,7 +13,7 @@ include(../../../core/Common/base.pri)
 
 DESTDIR = $$CORE_BUILDS_BINARY_PATH
 
-ADD_DEPENDENCY(graphics, kernel, UnicodeConverter, PdfWriter, PdfReader, XpsFile, DjVuFile, HtmlRenderer, hunspell, ooxmlsignature, ascdocumentscore)
+ADD_DEPENDENCY(graphics, kernel, UnicodeConverter, PdfReader, XpsFile, DjVuFile, HtmlRenderer, ooxmlsignature, ascdocumentscore)
 
 core_linux {
     QMAKE_LFLAGS += "-Wl,-rpath,\'\$$ORIGIN\'"
@@ -24,6 +24,8 @@ core_linux {
 
 SOURCES += helper_main.cpp
 
-core_debug {
-    DESTDIR = $$PWD/../../../desktop-apps/win-linux/build/debug/$$CORE_BUILDS_PLATFORM_PREFIX
+!core_mac {
+    core_debug {
+        DESTDIR = $$PWD/../../../desktop-apps/win-linux/build/debug/$$CORE_BUILDS_PLATFORM_PREFIX
+    }
 }
