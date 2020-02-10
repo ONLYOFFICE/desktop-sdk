@@ -9,7 +9,7 @@
 #include "include/base/cef_bind.h"
 #include "include/cef_app.h"
 #include "include/cef_application_mac.h"
-#include "tests/cefclient/browser/browser_window_osr_mac.h"
+//#include "tests/cefclient/browser/browser_window_osr_mac.h"
 #include "tests/cefclient/browser/browser_window_std_mac.h"
 #include "tests/cefclient/browser/main_context.h"
 #include "tests/cefclient/browser/temp_window.h"
@@ -356,8 +356,8 @@ void RootWindowMacImpl::CreateBrowserWindow(const std::string& startup_url) {
   if (with_osr_) {
     OsrRendererSettings settings = {};
     MainContext::Get()->PopulateOsrSettings(&settings);
-    browser_window_.reset(
-        new BrowserWindowOsrMac(&root_window_, startup_url, settings));
+    //browser_window_.reset(
+    //    new BrowserWindowOsrMac(&root_window_, startup_url, settings));
   } else {
     browser_window_.reset(new BrowserWindowStdMac(&root_window_, startup_url));
   }
@@ -399,7 +399,7 @@ void RootWindowMacImpl::CreateRootWindow(const CefBrowserSettings& settings,
                            NSUnifiedTitleAndToolbarWindowMask)
                   backing:NSBackingStoreBuffered
                     defer:NO];
-  [window_ setTitle:@"cefclient"];
+  [window_ setTitle:@"ONLYOFFICE"];
   // No dark mode, please
   window_.appearance = [NSAppearance appearanceNamed:NSAppearanceNameAqua];
 
