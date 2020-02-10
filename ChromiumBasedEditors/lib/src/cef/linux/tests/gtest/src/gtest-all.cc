@@ -354,6 +354,11 @@ GTEST_DISABLE_MSC_WARNINGS_POP_()  //  4251
 
 #elif GTEST_OS_WINDOWS  // We are on Windows proper.
 
+# include <windows.h>  // NOLINT
+# undef min
+
+# include <crtdbg.h>  // NOLINT
+# include <debugapi.h>  // NOLINT
 # include <io.h>  // NOLINT
 # include <sys/timeb.h>  // NOLINT
 # include <sys/types.h>  // NOLINT
@@ -364,11 +369,6 @@ GTEST_DISABLE_MSC_WARNINGS_POP_()  //  4251
 #  define GTEST_HAS_GETTIMEOFDAY_ 1
 #  include <sys/time.h>  // NOLINT
 # endif  // GTEST_OS_WINDOWS_MINGW
-
-// cpplint thinks that the header is already included, so we want to
-// silence it.
-# include <windows.h>  // NOLINT
-# undef min
 
 #else
 
@@ -491,14 +491,14 @@ const char kFlagfileFlag[] = "flagfile";
 // A valid random seed must be in [1, kMaxRandomSeed].
 const int kMaxRandomSeed = 99999;
 
-// g_help_flag is true iff the --help flag or an equivalent form is
+// g_help_flag is true if the --help flag or an equivalent form is
 // specified on the command line.
 GTEST_API_ extern bool g_help_flag;
 
 // Returns the current time in milliseconds.
 GTEST_API_ TimeInMillis GetTimeInMillis();
 
-// Returns true iff Google Test should use colors in the output.
+// Returns true if Google Test should use colors in the output.
 GTEST_API_ bool ShouldUseColor(bool stdout_is_tty);
 
 // Formats the given time in milliseconds as seconds.
@@ -658,7 +658,7 @@ GTEST_API_ bool ShouldShard(const char* total_shards_str,
 GTEST_API_ Int32 Int32FromEnvOrDie(const char* env_var, Int32 default_val);
 
 // Given the total number of shards, the shard index, and the test id,
-// returns true iff the test should be run on this shard. The test id is
+// returns true if the test should be run on this shard. The test id is
 // some arbitrary but unique non-negative integer assigned to each test
 // method. Assumes that 0 <= shard_index < total_shards.
 GTEST_API_ bool ShouldRunTestOnShard(
@@ -690,7 +690,8 @@ void ForEach(const Container& c, Functor functor) {
 // in range [0, v.size()).
 template <typename E>
 inline E GetElementOr(const std::vector<E>& v, int i, E default_value) {
-  return (i < 0 || i >= static_cast<int>(v.size())) ? default_value : v[i];
+  return (i < 0 || i >= static_cast<int>(v.size())) ? default_value
+                                                    : v[static_cast<size_t>(i)];
 }
 
 // Performs an in-place shuffle of a range of the vector's elements.
@@ -712,8 +713,11 @@ void ShuffleRange(internal::Random* random, int begin, int end,
   // http://en.wikipedia.org/wiki/Fisher-Yates_shuffle
   for (int range_width = end - begin; range_width >= 2; range_width--) {
     const int last_in_range = begin + range_width - 1;
-    const int selected = begin + random->Generate(range_width);
-    std::swap((*v)[selected], (*v)[last_in_range]);
+    const int selected =
+        begin +
+        static_cast<int>(random->Generate(static_cast<UInt32>(range_width)));
+    std::swap((*v)[static_cast<size_t>(selected)],
+              (*v)[static_cast<size_t>(last_in_range)]);
   }
 }
 
@@ -740,7 +744,7 @@ class TestPropertyKeyIs {
   // TestPropertyKeyIs has NO default constructor.
   explicit TestPropertyKeyIs(const std::string& key) : key_(key) {}
 
-  // Returns true iff the test name of test property matches on key_.
+  // Returns true if the test name of test property matches on key_.
   bool operator()(const TestProperty& test_property) const {
     return test_property.key() == key_;
   }
@@ -773,14 +777,14 @@ class GTEST_API_ UnitTestOptions {
 
   // Functions for processing the gtest_filter flag.
 
-  // Returns true iff the wildcard pattern matches the string.  The
+  // Returns true if the wildcard pattern matches the string.  The
   // first ':' or '\0' character in pattern marks the end of it.
   //
   // This recursive algorithm isn't very efficient, but is clear and
   // works well enough for matching test names, which are short.
   static bool PatternMatchesString(const char *pattern, const char *str);
 
-  // Returns true iff the user-specified filter matches the test suite
+  // Returns true if the user-specified filter matches the test suite
   // name and the test name.
   static bool FilterMatchesTest(const std::string& test_suite_name,
                                 const std::string& test_name);
@@ -965,10 +969,10 @@ class GTEST_API_ UnitTestImpl {
   // Gets the elapsed time, in milliseconds.
   TimeInMillis elapsed_time() const { return elapsed_time_; }
 
-  // Returns true iff the unit test passed (i.e. all test suites passed).
+  // Returns true if the unit test passed (i.e. all test suites passed).
   bool Passed() const { return !Failed(); }
 
-  // Returns true iff the unit test failed (i.e. some test suite failed
+  // Returns true if the unit test failed (i.e. some test suite failed
   // or something outside of all tests failed).
   bool Failed() const {
     return failed_test_suite_count() > 0 || ad_hoc_test_result()->Failed();
@@ -978,7 +982,7 @@ class GTEST_API_ UnitTestImpl {
   // total_test_suite_count() - 1. If i is not in that range, returns NULL.
   const TestSuite* GetTestSuite(int i) const {
     const int index = GetElementOr(test_suite_indices_, i, -1);
-    return index < 0 ? nullptr : test_suites_[i];
+    return index < 0 ? nullptr : test_suites_[static_cast<size_t>(i)];
   }
 
   //  Legacy API is deprecated but still available
@@ -990,7 +994,7 @@ class GTEST_API_ UnitTestImpl {
   // total_test_suite_count() - 1. If i is not in that range, returns NULL.
   TestSuite* GetMutableSuiteCase(int i) {
     const int index = GetElementOr(test_suite_indices_, i, -1);
-    return index < 0 ? nullptr : test_suites_[index];
+    return index < 0 ? nullptr : test_suites_[static_cast<size_t>(index)];
   }
 
   // Provides access to the event listener list.
@@ -1299,7 +1303,7 @@ class GTEST_API_ UnitTestImpl {
   // desired.
   OsStackTraceGetterInterface* os_stack_trace_getter_;
 
-  // True iff PostFlagParsingInit() has been called.
+  // True if PostFlagParsingInit() has been called.
   bool post_flag_parse_init_performed_;
 
   // The random number seed used at the beginning of the test run.
@@ -1475,8 +1479,8 @@ class StreamingListener : public EmptyTestEventListener {
       GTEST_CHECK_(sockfd_ != -1)
           << "Send() can be called only when there is a connection.";
 
-      const int len = static_cast<int>(message.length());
-      if (write(sockfd_, message.c_str(), len) != len) {
+      const auto len = static_cast<size_t>(message.length());
+      if (write(sockfd_, message.c_str(), len) != static_cast<ssize_t>(len)) {
         GTEST_LOG_(WARNING)
             << "stream_result_to: failed to stream to "
             << host_name_ << ":" << port_num_;
@@ -1653,7 +1657,7 @@ namespace internal {
 // stack trace.
 const char kStackTraceMarker[] = "\nStack trace:\n";
 
-// g_help_flag is true iff the --help flag or an equivalent form is
+// g_help_flag is true if the --help flag or an equivalent form is
 // specified on the command line.
 bool g_help_flag = false;
 
@@ -1693,12 +1697,12 @@ GTEST_DEFINE_bool_(
 GTEST_DEFINE_bool_(
     break_on_failure,
     internal::BoolFromGTestEnv("break_on_failure", false),
-    "True iff a failed assertion should be a debugger break-point.");
+    "True if a failed assertion should be a debugger break-point.");
 
 GTEST_DEFINE_bool_(
     catch_exceptions,
     internal::BoolFromGTestEnv("catch_exceptions", true),
-    "True iff " GTEST_NAME_
+    "True if " GTEST_NAME_
     " should catch exceptions and treat them as test failures.");
 
 GTEST_DEFINE_string_(
@@ -1749,13 +1753,13 @@ GTEST_DEFINE_string_(
 GTEST_DEFINE_bool_(
     print_time,
     internal::BoolFromGTestEnv("print_time", true),
-    "True iff " GTEST_NAME_
+    "True if " GTEST_NAME_
     " should display elapsed time in text output.");
 
 GTEST_DEFINE_bool_(
     print_utf8,
     internal::BoolFromGTestEnv("print_utf8", true),
-    "True iff " GTEST_NAME_
+    "True if " GTEST_NAME_
     " prints UTF8 characters as text.");
 
 GTEST_DEFINE_int32_(
@@ -1772,13 +1776,13 @@ GTEST_DEFINE_int32_(
 
 GTEST_DEFINE_bool_(
     show_internal_stack_frames, false,
-    "True iff " GTEST_NAME_ " should include internal stack frames when "
+    "True if " GTEST_NAME_ " should include internal stack frames when "
     "printing test failure stack traces.");
 
 GTEST_DEFINE_bool_(
     shuffle,
     internal::BoolFromGTestEnv("shuffle", false),
-    "True iff " GTEST_NAME_
+    "True if " GTEST_NAME_
     " should randomize tests' order on every run.");
 
 GTEST_DEFINE_int32_(
@@ -1830,7 +1834,7 @@ UInt32 Random::Generate(UInt32 range) {
   return state_ % range;
 }
 
-// GTestIsInitialized() returns true iff the user has initialized
+// GTestIsInitialized() returns true if the user has initialized
 // Google Test.  Useful for catching the user mistake of not initializing
 // Google Test before calling RUN_ALL_TESTS().
 static bool GTestIsInitialized() { return GetArgvs().size() > 0; }
@@ -1847,17 +1851,17 @@ static int SumOverTestSuiteList(const std::vector<TestSuite*>& case_list,
   return sum;
 }
 
-// Returns true iff the test suite passed.
+// Returns true if the test suite passed.
 static bool TestSuitePassed(const TestSuite* test_suite) {
   return test_suite->should_run() && test_suite->Passed();
 }
 
-// Returns true iff the test suite failed.
+// Returns true if the test suite failed.
 static bool TestSuiteFailed(const TestSuite* test_suite) {
   return test_suite->should_run() && test_suite->Failed();
 }
 
-// Returns true iff test_suite contains at least one test that should
+// Returns true if test_suite contains at least one test that should
 // run.
 static bool ShouldRunTestSuite(const TestSuite* test_suite) {
   return test_suite->should_run();
@@ -1922,7 +1926,8 @@ std::string UnitTestOptions::GetOutputFormat() {
   const char* const colon = strchr(gtest_output_flag, ':');
   return (colon == nullptr)
              ? std::string(gtest_output_flag)
-             : std::string(gtest_output_flag, colon - gtest_output_flag);
+             : std::string(gtest_output_flag,
+                           static_cast<size_t>(colon - gtest_output_flag));
 }
 
 // Returns the name of the requested output file, or the default if none
@@ -1957,7 +1962,7 @@ std::string UnitTestOptions::GetAbsolutePathToOutputFile() {
   return result.string();
 }
 
-// Returns true iff the wildcard pattern matches the string.  The
+// Returns true if the wildcard pattern matches the string.  The
 // first ':' or '\0' character in pattern marks the end of it.
 //
 // This recursive algorithm isn't very efficient, but is clear and
@@ -2000,7 +2005,7 @@ bool UnitTestOptions::MatchesFilter(
   }
 }
 
-// Returns true iff the user-specified filter matches the test suite
+// Returns true if the user-specified filter matches the test suite
 // name and the test name.
 bool UnitTestOptions::FilterMatchesTest(const std::string& test_suite_name,
                                         const std::string& test_name) {
@@ -2385,7 +2390,7 @@ const char* String::Utf16ToAnsi(LPCWSTR utf16_str)  {
 
 #endif  // GTEST_OS_WINDOWS_MOBILE
 
-// Compares two C strings.  Returns true iff they have the same content.
+// Compares two C strings.  Returns true if they have the same content.
 //
 // Unlike strcmp(), this function can handle NULL argument(s).  A NULL
 // C string is considered different to any non-NULL C string,
@@ -2398,7 +2403,7 @@ bool String::CStringEquals(const char * lhs, const char * rhs) {
   return strcmp(lhs, rhs) == 0;
 }
 
-#if GTEST_HAS_STD_WSTRING || GTEST_HAS_GLOBAL_WSTRING
+#if GTEST_HAS_STD_WSTRING
 
 // Converts an array of wide chars to a narrow string using the UTF-8
 // encoding, and streams the result to the given Message object.
@@ -2416,7 +2421,7 @@ static void StreamWideCharsToMessage(const wchar_t* wstr, size_t length,
   }
 }
 
-#endif  // GTEST_HAS_STD_WSTRING || GTEST_HAS_GLOBAL_WSTRING
+#endif  // GTEST_HAS_STD_WSTRING
 
 void SplitString(const ::std::string& str, char delimiter,
                  ::std::vector< ::std::string>* dest) {
@@ -2465,15 +2470,6 @@ Message& Message::operator <<(const ::std::wstring& wstr) {
   return *this;
 }
 #endif  // GTEST_HAS_STD_WSTRING
-
-#if GTEST_HAS_GLOBAL_WSTRING
-// Converts the given wide string to a narrow string using the UTF-8
-// encoding, and streams the result to this Message object.
-Message& Message::operator <<(const ::wstring& wstr) {
-  internal::StreamWideCharsToMessage(wstr.c_str(), wstr.length(), this);
-  return *this;
-}
-#endif  // GTEST_HAS_GLOBAL_WSTRING
 
 // Gets the text streamed to this object so far as an std::string.
 // Each '\0' character in the buffer is replaced with "\\0".
@@ -2725,9 +2721,10 @@ std::string CreateUnifiedDiff(const std::vector<std::string>& left,
     for (; edit_i < edits.size(); ++edit_i) {
       if (n_suffix >= context) {
         // Continue only if the next hunk is very close.
-        std::vector<EditType>::const_iterator it = edits.begin() + edit_i;
+        auto it = edits.begin() + static_cast<int>(edit_i);
         while (it != edits.end() && *it == kMatch) ++it;
-        if (it == edits.end() || (it - edits.begin()) - edit_i >= context) {
+        if (it == edits.end() ||
+            static_cast<size_t>(it - edits.begin()) - edit_i >= context) {
           // There is no next edit or it is too far away.
           break;
         }
@@ -2803,7 +2800,7 @@ std::vector<std::string> SplitEscapedString(const std::string& str) {
 //   lhs_value:      "5"
 //   rhs_value:      "6"
 //
-// The ignoring_case parameter is true iff the assertion is a
+// The ignoring_case parameter is true if the assertion is a
 // *_STRCASEEQ*.  When it's true, the string "Ignoring case" will
 // be inserted into the message.
 AssertionResult EqFailure(const char* lhs_expression,
@@ -3046,7 +3043,7 @@ namespace {
 
 // Helper functions for implementing IsSubString() and IsNotSubstring().
 
-// This group of overloaded functions return true iff needle is a
+// This group of overloaded functions return true if needle is a
 // substring of haystack.  NULL is considered a substring of itself
 // only.
 
@@ -3174,7 +3171,7 @@ AssertionResult HRESULTFailureHelper(const char* expr,
   char error_text[kBufSize] = { '\0' };
   DWORD message_length = ::FormatMessageA(kFlags,
                                           0,   // no source, we're asking system
-                                          hr,  // the error
+                                          static_cast<DWORD>(hr),  // the error
                                           0,   // no line width restrictions
                                           error_text,  // output buffer
                                           kBufSize,    // buf size
@@ -3252,7 +3249,7 @@ inline UInt32 ChopLowBits(UInt32* bits, int n) {
 // to "(Invalid Unicode 0xXXXXXXXX)".
 std::string CodePointToUtf8(UInt32 code_point) {
   if (code_point > kMaxCodePoint4) {
-    return "(Invalid Unicode 0x" + String::FormatHexInt(code_point) + ")";
+    return "(Invalid Unicode 0x" + String::FormatHexUInt32(code_point) + ")";
   }
 
   char str[5];  // Big enough for the largest valid code point.
@@ -3293,12 +3290,15 @@ inline bool IsUtf16SurrogatePair(wchar_t first, wchar_t second) {
 // Creates a Unicode code point from UTF16 surrogate pair.
 inline UInt32 CreateCodePointFromUtf16SurrogatePair(wchar_t first,
                                                     wchar_t second) {
+  const auto first_u = static_cast<UInt32>(first);
+  const auto second_u = static_cast<UInt32>(second);
   const UInt32 mask = (1 << 10) - 1;
-  return (sizeof(wchar_t) == 2) ?
-      (((first & mask) << 10) | (second & mask)) + 0x10000 :
-      // This function should not be called when the condition is
-      // false, but we provide a sensible default in case it is.
-      static_cast<UInt32>(first);
+  return (sizeof(wchar_t) == 2)
+             ? (((first_u & mask) << 10) | (second_u & mask)) + 0x10000
+             :
+             // This function should not be called when the condition is
+             // false, but we provide a sensible default in case it is.
+             first_u;
 }
 
 // Converts a wide string to a narrow string in UTF-8 encoding.
@@ -3345,7 +3345,7 @@ std::string String::ShowWideCString(const wchar_t * wide_c_str) {
   return internal::WideStringToUtf8(wide_c_str, -1);
 }
 
-// Compares two wide C strings.  Returns true iff they have the same
+// Compares two wide C strings.  Returns true if they have the same
 // content.
 //
 // Unlike wcscmp(), this function can handle NULL argument(s).  A NULL
@@ -3390,7 +3390,7 @@ AssertionResult CmpHelperSTRNE(const char* s1_expression,
                             << " vs " << PrintToString(s2);
 }
 
-// Compares two C strings, ignoring case.  Returns true iff they have
+// Compares two C strings, ignoring case.  Returns true if they have
 // the same content.
 //
 // Unlike strcasecmp(), this function can handle NULL argument(s).  A
@@ -3402,7 +3402,7 @@ bool String::CaseInsensitiveCStringEquals(const char * lhs, const char * rhs) {
   return posix::StrCaseCmp(lhs, rhs) == 0;
 }
 
-  // Compares two wide C strings, ignoring case.  Returns true iff they
+  // Compares two wide C strings, ignoring case.  Returns true if they
   // have the same content.
   //
   // Unlike wcscasecmp(), this function can handle NULL argument(s).
@@ -3429,14 +3429,14 @@ bool String::CaseInsensitiveWideCStringEquals(const wchar_t* lhs,
   // Other unknown OSes may not define it either.
   wint_t left, right;
   do {
-    left = towlower(*lhs++);
-    right = towlower(*rhs++);
+    left = towlower(static_cast<wint_t>(*lhs++));
+    right = towlower(static_cast<wint_t>(*rhs++));
   } while (left && left == right);
   return left == right;
 #endif  // OS selector
 }
 
-// Returns true iff str ends with the given suffix, ignoring case.
+// Returns true if str ends with the given suffix, ignoring case.
 // Any string is considered to end with an empty suffix.
 bool String::EndsWithCaseInsensitive(
     const std::string& str, const std::string& suffix) {
@@ -3455,10 +3455,15 @@ std::string String::FormatIntWidth2(int value) {
 }
 
 // Formats an int value as "%X".
-std::string String::FormatHexInt(int value) {
+std::string String::FormatHexUInt32(UInt32 value) {
   std::stringstream ss;
   ss << std::hex << std::uppercase << value;
   return ss.str();
+}
+
+// Formats an int value as "%X".
+std::string String::FormatHexInt(int value) {
+  return FormatHexUInt32(static_cast<UInt32>(value));
 }
 
 // Formats a byte as "%02X".
@@ -3477,7 +3482,7 @@ std::string StringStreamToString(::std::stringstream* ss) {
   const char* const end = start + str.length();
 
   std::string result;
-  result.reserve(2 * (end - start));
+  result.reserve(static_cast<size_t>(2 * (end - start)));
   for (const char* ch = start; ch != end; ++ch) {
     if (*ch == '\0') {
       result += "\\0";  // Replaces NUL with "\\0";
@@ -3507,9 +3512,7 @@ std::string AppendUserMessage(const std::string& gtest_msg,
 
 // Creates an empty TestResult.
 TestResult::TestResult()
-    : death_test_count_(0),
-      elapsed_time_(0) {
-}
+    : death_test_count_(0), start_timestamp_(0), elapsed_time_(0) {}
 
 // D'tor.
 TestResult::~TestResult() {
@@ -3521,7 +3524,7 @@ TestResult::~TestResult() {
 const TestPartResult& TestResult::GetTestPartResult(int i) const {
   if (i < 0 || i >= total_part_count())
     internal::posix::Abort();
-  return test_part_results_.at(i);
+  return test_part_results_.at(static_cast<size_t>(i));
 }
 
 // Returns the i-th test property. i can range from 0 to
@@ -3530,7 +3533,7 @@ const TestPartResult& TestResult::GetTestPartResult(int i) const {
 const TestProperty& TestResult::GetTestProperty(int i) const {
   if (i < 0 || i >= test_property_count())
     internal::posix::Abort();
-  return test_properties_.at(i);
+  return test_properties_.at(static_cast<size_t>(i));
 }
 
 // Clears the test part results.
@@ -3578,18 +3581,18 @@ static const char* const kReservedTestSuitesAttributes[] = {
 // The list of reserved attributes used in the <testsuite> element of XML
 // output.
 static const char* const kReservedTestSuiteAttributes[] = {
-  "disabled",
-  "errors",
-  "failures",
-  "name",
-  "tests",
-  "time"
-};
+    "disabled", "errors", "failures", "name", "tests", "time", "timestamp"};
 
 // The list of reserved attributes used in the <testcase> element of XML output.
 static const char* const kReservedTestCaseAttributes[] = {
-    "classname",  "name",        "status", "time",
-    "type_param", "value_param", "file",   "line"};
+    "classname",   "name", "status", "time",  "type_param",
+    "value_param", "file", "line"};
+
+// Use a slightly different set for allowed output to ensure existing tests can
+// still RecordProperty("result") or "RecordProperty(timestamp")
+static const char* const kReservedOutputTestCaseAttributes[] = {
+    "classname",   "name", "status", "time",   "type_param",
+    "value_param", "file", "line",   "result", "timestamp"};
 
 template <int kSize>
 std::vector<std::string> ArrayAsVector(const char* const (&array)[kSize]) {
@@ -3604,6 +3607,22 @@ static std::vector<std::string> GetReservedAttributesForElement(
     return ArrayAsVector(kReservedTestSuiteAttributes);
   } else if (xml_element == "testcase") {
     return ArrayAsVector(kReservedTestCaseAttributes);
+  } else {
+    GTEST_CHECK_(false) << "Unrecognized xml_element provided: " << xml_element;
+  }
+  // This code is unreachable but some compilers may not realizes that.
+  return std::vector<std::string>();
+}
+
+// TODO(jdesprez): Merge the two getReserved attributes once skip is improved
+static std::vector<std::string> GetReservedOutputAttributesForElement(
+    const std::string& xml_element) {
+  if (xml_element == "testsuites") {
+    return ArrayAsVector(kReservedTestSuitesAttributes);
+  } else if (xml_element == "testsuite") {
+    return ArrayAsVector(kReservedTestSuiteAttributes);
+  } else if (xml_element == "testcase") {
+    return ArrayAsVector(kReservedOutputTestCaseAttributes);
   } else {
     GTEST_CHECK_(false) << "Unrecognized xml_element provided: " << xml_element;
   }
@@ -3659,12 +3678,12 @@ static bool TestPartSkipped(const TestPartResult& result) {
   return result.skipped();
 }
 
-// Returns true iff the test was skipped.
+// Returns true if the test was skipped.
 bool TestResult::Skipped() const {
   return !Failed() && CountIf(test_part_results_, TestPartSkipped) > 0;
 }
 
-// Returns true iff the test failed.
+// Returns true if the test failed.
 bool TestResult::Failed() const {
   for (int i = 0; i < total_part_count(); ++i) {
     if (GetTestPartResult(i).failed())
@@ -3673,22 +3692,22 @@ bool TestResult::Failed() const {
   return false;
 }
 
-// Returns true iff the test part fatally failed.
+// Returns true if the test part fatally failed.
 static bool TestPartFatallyFailed(const TestPartResult& result) {
   return result.fatally_failed();
 }
 
-// Returns true iff the test fatally failed.
+// Returns true if the test fatally failed.
 bool TestResult::HasFatalFailure() const {
   return CountIf(test_part_results_, TestPartFatallyFailed) > 0;
 }
 
-// Returns true iff the test part non-fatally failed.
+// Returns true if the test part non-fatally failed.
 static bool TestPartNonfatallyFailed(const TestPartResult& result) {
   return result.nonfatally_failed();
 }
 
-// Returns true iff the test has a non-fatal failure.
+// Returns true if the test has a non-fatal failure.
 bool TestResult::HasNonfatalFailure() const {
   return CountIf(test_part_results_, TestPartNonfatallyFailed) > 0;
 }
@@ -3984,18 +4003,18 @@ void Test::Run() {
       this, &Test::TearDown, "TearDown()");
 }
 
-// Returns true iff the current test has a fatal failure.
+// Returns true if the current test has a fatal failure.
 bool Test::HasFatalFailure() {
   return internal::GetUnitTestImpl()->current_test_result()->HasFatalFailure();
 }
 
-// Returns true iff the current test has a non-fatal failure.
+// Returns true if the current test has a non-fatal failure.
 bool Test::HasNonfatalFailure() {
   return internal::GetUnitTestImpl()->current_test_result()->
       HasNonfatalFailure();
 }
 
-// Returns true iff the current test was skipped.
+// Returns true if the current test was skipped.
 bool Test::IsSkipped() {
   return internal::GetUnitTestImpl()->current_test_result()->Skipped();
 }
@@ -4094,7 +4113,7 @@ class TestNameIs {
   explicit TestNameIs(const char* name)
       : name_(name) {}
 
-  // Returns true iff the test name of test_info matches name_.
+  // Returns true if the test name of test_info matches name_.
   bool operator()(const TestInfo * test_info) const {
     return test_info && test_info->name() == name_;
   }
@@ -4158,6 +4177,7 @@ void TestInfo::Run() {
         test, &Test::DeleteSelf_, "the test fixture's destructor");
   }
 
+  result_.set_start_timestamp(start);
   result_.set_elapsed_time(internal::GetTimeInMillis() - start);
 
   // Notifies the unit test event listener that a test has just finished.
@@ -4227,6 +4247,7 @@ TestSuite::TestSuite(const char* a_name, const char* a_type_param,
       set_up_tc_(set_up_tc),
       tear_down_tc_(tear_down_tc),
       should_run_(false),
+      start_timestamp_(0),
       elapsed_time_(0) {}
 
 // Destructor of TestSuite.
@@ -4239,14 +4260,14 @@ TestSuite::~TestSuite() {
 // total_test_count() - 1. If i is not in that range, returns NULL.
 const TestInfo* TestSuite::GetTestInfo(int i) const {
   const int index = GetElementOr(test_indices_, i, -1);
-  return index < 0 ? nullptr : test_info_list_[index];
+  return index < 0 ? nullptr : test_info_list_[static_cast<size_t>(index)];
 }
 
 // Returns the i-th test among all the tests. i can range from 0 to
 // total_test_count() - 1. If i is not in that range, returns NULL.
 TestInfo* TestSuite::GetMutableTestInfo(int i) {
   const int index = GetElementOr(test_indices_, i, -1);
-  return index < 0 ? nullptr : test_info_list_[index];
+  return index < 0 ? nullptr : test_info_list_[static_cast<size_t>(index)];
 }
 
 // Adds a test to this test suite.  Will delete the test upon
@@ -4276,11 +4297,11 @@ void TestSuite::Run() {
   internal::HandleExceptionsInMethodIfSupported(
       this, &TestSuite::RunSetUpTestSuite, "SetUpTestSuite()");
 
-  const internal::TimeInMillis start = internal::GetTimeInMillis();
+  start_timestamp_ = internal::GetTimeInMillis();
   for (int i = 0; i < total_test_count(); i++) {
     GetMutableTestInfo(i)->Run();
   }
-  elapsed_time_ = internal::GetTimeInMillis() - start;
+  elapsed_time_ = internal::GetTimeInMillis() - start_timestamp_;
 
   impl->os_stack_trace_getter()->UponLeavingGTest();
   internal::HandleExceptionsInMethodIfSupported(
@@ -4446,12 +4467,12 @@ static const char* GetAnsiColorCode(GTestColor color) {
     case COLOR_YELLOW:  return "3";
     default:
       return nullptr;
-  };
+  }
 }
 
 #endif  // GTEST_OS_WINDOWS && !GTEST_OS_WINDOWS_MOBILE
 
-// Returns true iff Google Test should use colors in the output.
+// Returns true if Google Test should use colors in the output.
 bool ShouldUseColor(bool stdout_is_tty) {
   const char* const gtest_color = GTEST_FLAG(color).c_str();
 
@@ -4576,11 +4597,22 @@ class PrettyUnitTestResultPrinter : public TestEventListener {
   void OnTestIterationStart(const UnitTest& unit_test, int iteration) override;
   void OnEnvironmentsSetUpStart(const UnitTest& unit_test) override;
   void OnEnvironmentsSetUpEnd(const UnitTest& /*unit_test*/) override {}
-  void OnTestCaseStart(const TestSuite& test_suite) override;
+#ifndef GTEST_REMOVE_LEGACY_TEST_CASEAPI_
+  void OnTestCaseStart(const TestCase& test_case) override;
+#else
+  void OnTestSuiteStart(const TestSuite& test_suite) override;
+#endif  // OnTestCaseStart
+
   void OnTestStart(const TestInfo& test_info) override;
+
   void OnTestPartResult(const TestPartResult& result) override;
   void OnTestEnd(const TestInfo& test_info) override;
-  void OnTestCaseEnd(const TestSuite& test_suite) override;
+#ifndef GTEST_REMOVE_LEGACY_TEST_CASEAPI_
+  void OnTestCaseEnd(const TestCase& test_case) override;
+#else
+  void OnTestSuiteEnd(const TestSuite& test_suite) override;
+#endif  // GTEST_REMOVE_LEGACY_TEST_CASEAPI_
+
   void OnEnvironmentsTearDownStart(const UnitTest& unit_test) override;
   void OnEnvironmentsTearDownEnd(const UnitTest& /*unit_test*/) override {}
   void OnTestIterationEnd(const UnitTest& unit_test, int iteration) override;
@@ -4634,7 +4666,22 @@ void PrettyUnitTestResultPrinter::OnEnvironmentsSetUpStart(
   fflush(stdout);
 }
 
-void PrettyUnitTestResultPrinter::OnTestCaseStart(const TestSuite& test_suite) {
+#ifndef GTEST_REMOVE_LEGACY_TEST_CASEAPI_
+void PrettyUnitTestResultPrinter::OnTestCaseStart(const TestCase& test_case) {
+  const std::string counts =
+      FormatCountableNoun(test_case.test_to_run_count(), "test", "tests");
+  ColoredPrintf(COLOR_GREEN, "[----------] ");
+  printf("%s from %s", counts.c_str(), test_case.name());
+  if (test_case.type_param() == nullptr) {
+    printf("\n");
+  } else {
+    printf(", where %s = %s\n", kTypeParamLabel, test_case.type_param());
+  }
+  fflush(stdout);
+}
+#else
+void PrettyUnitTestResultPrinter::OnTestSuiteStart(
+    const TestSuite& test_suite) {
   const std::string counts =
       FormatCountableNoun(test_suite.test_to_run_count(), "test", "tests");
   ColoredPrintf(COLOR_GREEN, "[----------] ");
@@ -4646,6 +4693,7 @@ void PrettyUnitTestResultPrinter::OnTestCaseStart(const TestSuite& test_suite) {
   }
   fflush(stdout);
 }
+#endif  // GTEST_REMOVE_LEGACY_TEST_CASEAPI_
 
 void PrettyUnitTestResultPrinter::OnTestStart(const TestInfo& test_info) {
   ColoredPrintf(COLOR_GREEN,  "[ RUN      ] ");
@@ -4692,7 +4740,19 @@ void PrettyUnitTestResultPrinter::OnTestEnd(const TestInfo& test_info) {
   fflush(stdout);
 }
 
-void PrettyUnitTestResultPrinter::OnTestCaseEnd(const TestSuite& test_suite) {
+#ifndef GTEST_REMOVE_LEGACY_TEST_CASEAPI_
+void PrettyUnitTestResultPrinter::OnTestCaseEnd(const TestCase& test_case) {
+  if (!GTEST_FLAG(print_time)) return;
+
+  const std::string counts =
+      FormatCountableNoun(test_case.test_to_run_count(), "test", "tests");
+  ColoredPrintf(COLOR_GREEN, "[----------] ");
+  printf("%s from %s (%s ms total)\n\n", counts.c_str(), test_case.name(),
+         internal::StreamableToString(test_case.elapsed_time()).c_str());
+  fflush(stdout);
+}
+#else
+void PrettyUnitTestResultPrinter::OnTestSuiteEnd(const TestSuite& test_suite) {
   if (!GTEST_FLAG(print_time)) return;
 
   const std::string counts =
@@ -4702,6 +4762,7 @@ void PrettyUnitTestResultPrinter::OnTestCaseEnd(const TestSuite& test_suite) {
          internal::StreamableToString(test_suite.elapsed_time()).c_str());
   fflush(stdout);
 }
+#endif  // GTEST_REMOVE_LEGACY_TEST_CASEAPI_
 
 void PrettyUnitTestResultPrinter::OnEnvironmentsTearDownStart(
     const UnitTest& /*unit_test*/) {
@@ -4826,17 +4887,17 @@ class TestEventRepeater : public TestEventListener {
   void OnEnvironmentsSetUpStart(const UnitTest& unit_test) override;
   void OnEnvironmentsSetUpEnd(const UnitTest& unit_test) override;
 //  Legacy API is deprecated but still available
-#ifndef GTEST_REMOVE_LEGACY_TEST_CASEAPI
+#ifndef GTEST_REMOVE_LEGACY_TEST_CASEAPI_
   void OnTestCaseStart(const TestSuite& parameter) override;
-#endif  //  GTEST_REMOVE_LEGACY_TEST_CASEAPI
+#endif  //  GTEST_REMOVE_LEGACY_TEST_CASEAPI_
   void OnTestSuiteStart(const TestSuite& parameter) override;
   void OnTestStart(const TestInfo& test_info) override;
   void OnTestPartResult(const TestPartResult& result) override;
   void OnTestEnd(const TestInfo& test_info) override;
 //  Legacy API is deprecated but still available
-#ifndef GTEST_REMOVE_LEGACY_TEST_CASEAPI
-  void OnTestCaseEnd(const TestSuite& parameter) override;
-#endif  //  GTEST_REMOVE_LEGACY_TEST_CASEAPI
+#ifndef GTEST_REMOVE_LEGACY_TEST_CASEAPI_
+  void OnTestCaseEnd(const TestCase& parameter) override;
+#endif  //  GTEST_REMOVE_LEGACY_TEST_CASEAPI_
   void OnTestSuiteEnd(const TestSuite& parameter) override;
   void OnEnvironmentsTearDownStart(const UnitTest& unit_test) override;
   void OnEnvironmentsTearDownEnd(const UnitTest& unit_test) override;
@@ -4864,7 +4925,7 @@ void TestEventRepeater::Append(TestEventListener *listener) {
 TestEventListener* TestEventRepeater::Release(TestEventListener *listener) {
   for (size_t i = 0; i < listeners_.size(); ++i) {
     if (listeners_[i] == listener) {
-      listeners_.erase(listeners_.begin() + i);
+      listeners_.erase(listeners_.begin() + static_cast<int>(i));
       return listener;
     }
   }
@@ -4884,14 +4945,14 @@ void TestEventRepeater::Name(const Type& parameter) { \
 }
 // This defines a member that forwards the call to all listeners in reverse
 // order.
-#define GTEST_REVERSE_REPEATER_METHOD_(Name, Type) \
-void TestEventRepeater::Name(const Type& parameter) { \
-  if (forwarding_enabled_) { \
-    for (int i = static_cast<int>(listeners_.size()) - 1; i >= 0; i--) { \
-      listeners_[i]->Name(parameter); \
-    } \
-  } \
-}
+#define GTEST_REVERSE_REPEATER_METHOD_(Name, Type)      \
+  void TestEventRepeater::Name(const Type& parameter) { \
+    if (forwarding_enabled_) {                          \
+      for (size_t i = listeners_.size(); i != 0; i--) { \
+        listeners_[i - 1]->Name(parameter);             \
+      }                                                 \
+    }                                                   \
+  }
 
 GTEST_REPEATER_METHOD_(OnTestProgramStart, UnitTest)
 GTEST_REPEATER_METHOD_(OnEnvironmentsSetUpStart, UnitTest)
@@ -4928,8 +4989,8 @@ void TestEventRepeater::OnTestIterationStart(const UnitTest& unit_test,
 void TestEventRepeater::OnTestIterationEnd(const UnitTest& unit_test,
                                            int iteration) {
   if (forwarding_enabled_) {
-    for (int i = static_cast<int>(listeners_.size()) - 1; i >= 0; i--) {
-      listeners_[i]->OnTestIterationEnd(unit_test, iteration);
+    for (size_t i = listeners_.size(); i > 0; i--) {
+      listeners_[i - 1]->OnTestIterationEnd(unit_test, iteration);
     }
   }
 }
@@ -5193,7 +5254,7 @@ void XmlUnitTestResultPrinter::OutputXmlAttribute(
     const std::string& name,
     const std::string& value) {
   const std::vector<std::string>& allowed_names =
-      GetReservedAttributesForElement(element_name);
+      GetReservedOutputAttributesForElement(element_name);
 
   GTEST_CHECK_(std::find(allowed_names.begin(), allowed_names.end(), name) !=
                    allowed_names.end())
@@ -5233,11 +5294,17 @@ void XmlUnitTestResultPrinter::OutputXmlTestInfo(::std::ostream* stream,
     return;
   }
 
-  OutputXmlAttribute(
-      stream, kTestsuite, "status",
-      result.Skipped() ? "skipped" : test_info.should_run() ? "run" : "notrun");
+  OutputXmlAttribute(stream, kTestsuite, "status",
+                     test_info.should_run() ? "run" : "notrun");
+  OutputXmlAttribute(stream, kTestsuite, "result",
+                     test_info.should_run()
+                         ? (result.Skipped() ? "skipped" : "completed")
+                         : "suppressed");
   OutputXmlAttribute(stream, kTestsuite, "time",
                      FormatTimeInMillisAsSeconds(result.elapsed_time()));
+  OutputXmlAttribute(
+      stream, kTestsuite, "timestamp",
+      FormatEpochTimeInMillisAsIso8601(result.start_timestamp()));
   OutputXmlAttribute(stream, kTestsuite, "classname", test_suite_name);
 
   int failures = 0;
@@ -5288,6 +5355,9 @@ void XmlUnitTestResultPrinter::PrintXmlTestSuite(std::ostream* stream,
     OutputXmlAttribute(stream, kTestsuite, "errors", "0");
     OutputXmlAttribute(stream, kTestsuite, "time",
                        FormatTimeInMillisAsSeconds(test_suite.elapsed_time()));
+    OutputXmlAttribute(
+        stream, kTestsuite, "timestamp",
+        FormatEpochTimeInMillisAsIso8601(test_suite.start_timestamp()));
     *stream << TestPropertiesAsXmlAttributes(test_suite.ad_hoc_test_result());
   }
   *stream << ">\n";
@@ -5314,11 +5384,11 @@ void XmlUnitTestResultPrinter::PrintXmlUnitTest(std::ostream* stream,
       stream, kTestsuites, "disabled",
       StreamableToString(unit_test.reportable_disabled_test_count()));
   OutputXmlAttribute(stream, kTestsuites, "errors", "0");
+  OutputXmlAttribute(stream, kTestsuites, "time",
+                     FormatTimeInMillisAsSeconds(unit_test.elapsed_time()));
   OutputXmlAttribute(
       stream, kTestsuites, "timestamp",
       FormatEpochTimeInMillisAsIso8601(unit_test.start_timestamp()));
-  OutputXmlAttribute(stream, kTestsuites, "time",
-                     FormatTimeInMillisAsSeconds(unit_test.elapsed_time()));
 
   if (GTEST_FLAG(shuffle)) {
     OutputXmlAttribute(stream, kTestsuites, "random_seed",
@@ -5529,7 +5599,7 @@ static std::string FormatEpochTimeInMillisAsRFC3339(TimeInMillis ms) {
       String::FormatIntWidth2(time_struct.tm_sec) + "Z";
 }
 
-static inline std::string Indent(int width) {
+static inline std::string Indent(size_t width) {
   return std::string(width, ' ');
 }
 
@@ -5541,7 +5611,7 @@ void JsonUnitTestResultPrinter::OutputJsonKey(
     const std::string& indent,
     bool comma) {
   const std::vector<std::string>& allowed_names =
-      GetReservedAttributesForElement(element_name);
+      GetReservedOutputAttributesForElement(element_name);
 
   GTEST_CHECK_(std::find(allowed_names.begin(), allowed_names.end(), name) !=
                    allowed_names.end())
@@ -5561,7 +5631,7 @@ void JsonUnitTestResultPrinter::OutputJsonKey(
     const std::string& indent,
     bool comma) {
   const std::vector<std::string>& allowed_names =
-      GetReservedAttributesForElement(element_name);
+      GetReservedOutputAttributesForElement(element_name);
 
   GTEST_CHECK_(std::find(allowed_names.begin(), allowed_names.end(), name) !=
                    allowed_names.end())
@@ -5599,10 +5669,16 @@ void JsonUnitTestResultPrinter::OutputJsonTestInfo(::std::ostream* stream,
     return;
   }
 
-  OutputJsonKey(
-      stream, kTestsuite, "status",
-      result.Skipped() ? "SKIPPED" : test_info.should_run() ? "RUN" : "NOTRUN",
-      kIndent);
+  OutputJsonKey(stream, kTestsuite, "status",
+                test_info.should_run() ? "RUN" : "NOTRUN", kIndent);
+  OutputJsonKey(stream, kTestsuite, "result",
+                test_info.should_run()
+                    ? (result.Skipped() ? "SKIPPED" : "COMPLETED")
+                    : "SUPPRESSED",
+                kIndent);
+  OutputJsonKey(stream, kTestsuite, "timestamp",
+                FormatEpochTimeInMillisAsRFC3339(result.start_timestamp()),
+                kIndent);
   OutputJsonKey(stream, kTestsuite, "time",
                 FormatTimeInMillisAsDuration(result.elapsed_time()), kIndent);
   OutputJsonKey(stream, kTestsuite, "classname", test_suite_name, kIndent,
@@ -5649,6 +5725,10 @@ void JsonUnitTestResultPrinter::PrintJsonTestSuite(
     OutputJsonKey(stream, kTestsuite, "disabled",
                   test_suite.reportable_disabled_test_count(), kIndent);
     OutputJsonKey(stream, kTestsuite, "errors", 0, kIndent);
+    OutputJsonKey(
+        stream, kTestsuite, "timestamp",
+        FormatEpochTimeInMillisAsRFC3339(test_suite.start_timestamp()),
+        kIndent);
     OutputJsonKey(stream, kTestsuite, "time",
                   FormatTimeInMillisAsDuration(test_suite.elapsed_time()),
                   kIndent, false);
@@ -6109,10 +6189,10 @@ internal::TimeInMillis UnitTest::elapsed_time() const {
   return impl()->elapsed_time();
 }
 
-// Returns true iff the unit test passed (i.e. all test suites passed).
+// Returns true if the unit test passed (i.e. all test suites passed).
 bool UnitTest::Passed() const { return impl()->Passed(); }
 
-// Returns true iff the unit test failed (i.e. some test suite failed
+// Returns true if the unit test failed (i.e. some test suite failed
 // or something outside of all tests failed).
 bool UnitTest::Failed() const { return impl()->Failed(); }
 
@@ -6183,8 +6263,7 @@ void UnitTest::AddTestPartResult(
   if (impl_->gtest_trace_stack().size() > 0) {
     msg << "\n" << GTEST_NAME_ << " trace:";
 
-    for (int i = static_cast<int>(impl_->gtest_trace_stack().size());
-         i > 0; --i) {
+    for (size_t i = impl_->gtest_trace_stack().size(); i > 0; --i) {
       const internal::TraceInfo& trace = impl_->gtest_trace_stack()[i - 1];
       msg << "\n" << internal::FormatFileLocation(trace.file, trace.line)
           << " " << trace.message;
@@ -6315,6 +6394,16 @@ int UnitTest::Run() {
           0x0,                                    // Clear the following flags:
           _WRITE_ABORT_MSG | _CALL_REPORTFAULT);  // pop-up window, core dump.
 # endif
+
+    // In debug mode, the Windows CRT can crash with an assertion over invalid
+    // input (e.g. passing an invalid file descriptor).  The default handling
+    // for these assertions is to pop up a dialog and wait for user input.
+    // Instead ask the CRT to dump such assertions to stderr non-interactively.
+    if (!IsDebuggerPresent()) {
+      (void)_CrtSetReportMode(_CRT_ASSERT,
+                              _CRTDBG_MODE_FILE | _CRTDBG_MODE_DEBUG);
+      (void)_CrtSetReportFile(_CRT_ASSERT, _CRTDBG_FILE_STDERR);
+    }
   }
 #endif  // GTEST_OS_WINDOWS
 
@@ -6552,7 +6641,7 @@ class TestSuiteNameIs {
   // Constructor.
   explicit TestSuiteNameIs(const std::string& name) : name_(name) {}
 
-  // Returns true iff the name of test_suite matches name_.
+  // Returns true if the name of test_suite matches name_.
   bool operator()(const TestSuite* test_suite) const {
     return test_suite != nullptr &&
            strcmp(test_suite->name(), name_.c_str()) == 0;
@@ -6623,7 +6712,7 @@ static void TearDownEnvironment(Environment* env) { env->TearDown(); }
 // All other functions called from RunAllTests() may safely assume that
 // parameterized tests are ready to be counted and run.
 bool UnitTestImpl::RunAllTests() {
-  // True iff Google Test is initialized before RUN_ALL_TESTS() is called.
+  // True if Google Test is initialized before RUN_ALL_TESTS() is called.
   const bool gtest_is_initialized_before_run_all_tests = GTestIsInitialized();
 
   // Do not run any test if the --help flag was specified.
@@ -6639,7 +6728,7 @@ bool UnitTestImpl::RunAllTests() {
   // protocol.
   internal::WriteToShardStatusFileIfNeeded();
 
-  // True iff we are in a subprocess for running a thread-safe-style
+  // True if we are in a subprocess for running a thread-safe-style
   // death test.
   bool in_subprocess_for_death_test = false;
 
@@ -6672,7 +6761,7 @@ bool UnitTestImpl::RunAllTests() {
   random_seed_ = GTEST_FLAG(shuffle) ?
       GetRandomSeedFromFlag(GTEST_FLAG(random_seed)) : 0;
 
-  // True iff at least one test has failed.
+  // True if at least one test has failed.
   bool failed = false;
 
   TestEventListener* repeater = listeners()->repeater();
@@ -6684,8 +6773,8 @@ bool UnitTestImpl::RunAllTests() {
   // when we are inside the subprocess of a death test.
   const int repeat = in_subprocess_for_death_test ? 1 : GTEST_FLAG(repeat);
   // Repeats forever if the repeat count is negative.
-  const bool forever = repeat < 0;
-  for (int i = 0; forever || i != repeat; i++) {
+  const bool gtest_repeat_forever = repeat < 0;
+  for (int i = 0; gtest_repeat_forever || i != repeat; i++) {
     // We want to preserve failures generated by ad-hoc test
     // assertions executed before RUN_ALL_TESTS().
     ClearNonAdHocTestResult();
@@ -6694,7 +6783,7 @@ bool UnitTestImpl::RunAllTests() {
 
     // Shuffles test suites and tests if requested.
     if (has_tests_to_run && GTEST_FLAG(shuffle)) {
-      random()->Reseed(random_seed_);
+      random()->Reseed(static_cast<UInt32>(random_seed_));
       // This should be done before calling OnTestIterationStart(),
       // such that a test event listener can see the actual test order
       // in the event.
@@ -6711,9 +6800,23 @@ bool UnitTestImpl::RunAllTests() {
       ForEach(environments_, SetUpEnvironment);
       repeater->OnEnvironmentsSetUpEnd(*parent_);
 
-      // Runs the tests only if there was no fatal failure during global
-      // set-up.
-      if (!Test::HasFatalFailure()) {
+      // Runs the tests only if there was no fatal failure or skip triggered
+      // during global set-up.
+      if (Test::IsSkipped()) {
+        // Emit diagnostics when global set-up calls skip, as it will not be
+        // emitted by default.
+        TestResult& test_result =
+            *internal::GetUnitTestImpl()->current_test_result();
+        for (int j = 0; j < test_result.total_part_count(); ++j) {
+          const TestPartResult& test_part_result =
+              test_result.GetTestPartResult(j);
+          if (test_part_result.type() == TestPartResult::kSkip) {
+            const std::string& result = test_part_result.message();
+            printf("%s\n", result.c_str());
+          }
+        }
+        fflush(stdout);
+      } else if (!Test::HasFatalFailure()) {
         for (int test_index = 0; test_index < total_test_suite_count();
              test_index++) {
           GetMutableSuiteCase(test_index)->Run();
@@ -6856,7 +6959,7 @@ Int32 Int32FromEnvOrDie(const char* var, Int32 default_val) {
 }
 
 // Given the total number of shards, the shard index, and the test id,
-// returns true iff the test should be run on this shard. The test id is
+// returns true if the test should be run on this shard. The test id is
 // some arbitrary but unique non-negative integer assigned to each test
 // method. Assumes that 0 <= shard_index < total_shards.
 bool ShouldRunTestOnShard(int total_shards, int shard_index, int test_id) {
@@ -7430,7 +7533,7 @@ void ParseGoogleTestFlagsOnlyImpl(int* argc, CharType** argv) {
 void ParseGoogleTestFlagsOnly(int* argc, char** argv) {
   ParseGoogleTestFlagsOnlyImpl(argc, argv);
 
-  // Fix the value of *_NSGetArgc() on macOS, but iff
+  // Fix the value of *_NSGetArgc() on macOS, but if
   // *_NSGetArgv() == argv
   // Only applicable to char** version of argv
 #if GTEST_OS_MAC
@@ -7623,6 +7726,7 @@ ScopedTrace::~ScopedTrace()
 #  include <lib/fdio/fd.h>
 #  include <lib/fdio/io.h>
 #  include <lib/fdio/spawn.h>
+#  include <lib/zx/channel.h>
 #  include <lib/zx/port.h>
 #  include <lib/zx/process.h>
 #  include <lib/zx/socket.h>
@@ -8114,7 +8218,7 @@ static ::std::string FormatDeathTestOutput(const ::std::string& output) {
 //   status_ok: true if exit_status is acceptable in the context of
 //              this particular death test, which fails if it is false
 //
-// Returns true iff all of the above conditions are met.  Otherwise, the
+// Returns true if all of the above conditions are met.  Otherwise, the
 // first failing condition, in the order given above, is the one that is
 // reported. Also sets the last death test message string.
 bool DeathTestImpl::Passed(bool status_ok) {
@@ -8383,7 +8487,7 @@ class FuchsiaDeathTest : public DeathTestImpl {
   std::string captured_stderr_;
 
   zx::process child_process_;
-  zx::port port_;
+  zx::channel exception_channel_;
   zx::socket stderr_socket_;
 };
 
@@ -8428,43 +8532,53 @@ class Arguments {
 int FuchsiaDeathTest::Wait() {
   const int kProcessKey = 0;
   const int kSocketKey = 1;
+  const int kExceptionKey = 2;
 
   if (!spawned())
     return 0;
 
-  // Register to wait for the child process to terminate.
+  // Create a port to wait for socket/task/exception events.
   zx_status_t status_zx;
-  status_zx = child_process_.wait_async(
-      port_, kProcessKey, ZX_PROCESS_TERMINATED, ZX_WAIT_ASYNC_ONCE);
+  zx::port port;
+  status_zx = zx::port::create(0, &port);
   GTEST_DEATH_TEST_CHECK_(status_zx == ZX_OK);
+
+  // Register to wait for the child process to terminate.
+  status_zx = child_process_.wait_async(
+      port, kProcessKey, ZX_PROCESS_TERMINATED, ZX_WAIT_ASYNC_ONCE);
+  GTEST_DEATH_TEST_CHECK_(status_zx == ZX_OK);
+
   // Register to wait for the socket to be readable or closed.
   status_zx = stderr_socket_.wait_async(
-      port_, kSocketKey, ZX_SOCKET_READABLE | ZX_SOCKET_PEER_CLOSED,
-      ZX_WAIT_ASYNC_REPEATING);
+      port, kSocketKey, ZX_SOCKET_READABLE | ZX_SOCKET_PEER_CLOSED,
+      ZX_WAIT_ASYNC_ONCE);
+  GTEST_DEATH_TEST_CHECK_(status_zx == ZX_OK);
+
+  // Register to wait for an exception.
+  status_zx = exception_channel_.wait_async(
+      port, kExceptionKey, ZX_CHANNEL_READABLE, ZX_WAIT_ASYNC_ONCE);
   GTEST_DEATH_TEST_CHECK_(status_zx == ZX_OK);
 
   bool process_terminated = false;
   bool socket_closed = false;
   do {
     zx_port_packet_t packet = {};
-    status_zx = port_.wait(zx::time::infinite(), &packet);
+    status_zx = port.wait(zx::time::infinite(), &packet);
     GTEST_DEATH_TEST_CHECK_(status_zx == ZX_OK);
 
-    if (packet.key == kProcessKey) {
-      if (ZX_PKT_IS_EXCEPTION(packet.type)) {
-        // Process encountered an exception. Kill it directly rather than
-        // letting other handlers process the event. We will get a second
-        // kProcessKey event when the process actually terminates.
-        status_zx = child_process_.kill();
-        GTEST_DEATH_TEST_CHECK_(status_zx == ZX_OK);
-      } else {
-        // Process terminated.
-        GTEST_DEATH_TEST_CHECK_(ZX_PKT_IS_SIGNAL_ONE(packet.type));
-        GTEST_DEATH_TEST_CHECK_(packet.signal.observed & ZX_PROCESS_TERMINATED);
-        process_terminated = true;
-      }
+    if (packet.key == kExceptionKey) {
+      // Process encountered an exception. Kill it directly rather than
+      // letting other handlers process the event. We will get a kProcessKey
+      // event when the process actually terminates.
+      status_zx = child_process_.kill();
+      GTEST_DEATH_TEST_CHECK_(status_zx == ZX_OK);
+    } else if (packet.key == kProcessKey) {
+      // Process terminated.
+      GTEST_DEATH_TEST_CHECK_(ZX_PKT_IS_SIGNAL_ONE(packet.type));
+      GTEST_DEATH_TEST_CHECK_(packet.signal.observed & ZX_PROCESS_TERMINATED);
+      process_terminated = true;
     } else if (packet.key == kSocketKey) {
-      GTEST_DEATH_TEST_CHECK_(ZX_PKT_IS_SIGNAL_REP(packet.type));
+      GTEST_DEATH_TEST_CHECK_(ZX_PKT_IS_SIGNAL_ONE(packet.type));
       if (packet.signal.observed & ZX_SOCKET_READABLE) {
         // Read data from the socket.
         constexpr size_t kBufferSize = 1024;
@@ -8481,6 +8595,10 @@ int FuchsiaDeathTest::Wait() {
           socket_closed = true;
         } else {
           GTEST_DEATH_TEST_CHECK_(status_zx == ZX_ERR_SHOULD_WAIT);
+          status_zx = stderr_socket_.wait_async(
+              port, kSocketKey, ZX_SOCKET_READABLE | ZX_SOCKET_PEER_CLOSED,
+              ZX_WAIT_ASYNC_ONCE);
+          GTEST_DEATH_TEST_CHECK_(status_zx == ZX_OK);
         }
       } else {
         GTEST_DEATH_TEST_CHECK_(packet.signal.observed & ZX_SOCKET_PEER_CLOSED);
@@ -8540,16 +8658,16 @@ DeathTest::TestRole FuchsiaDeathTest::AssumeRole() {
   // Build the pipe for communication with the child.
   zx_status_t status;
   zx_handle_t child_pipe_handle;
-  uint32_t type;
-  status = fdio_pipe_half(&child_pipe_handle, &type);
-  GTEST_DEATH_TEST_CHECK_(status >= 0);
-  set_read_fd(status);
+  int child_pipe_fd;
+  status = fdio_pipe_half(&child_pipe_fd, &child_pipe_handle);
+  GTEST_DEATH_TEST_CHECK_(status == ZX_OK);
+  set_read_fd(child_pipe_fd);
 
   // Set the pipe handle for the child.
   fdio_spawn_action_t spawn_actions[2] = {};
   fdio_spawn_action_t* add_handle_action = &spawn_actions[0];
   add_handle_action->action = FDIO_SPAWN_ACTION_ADD_HANDLE;
-  add_handle_action->h.id = PA_HND(type, kFuchsiaReadPipeFd);
+  add_handle_action->h.id = PA_HND(PA_FD, kFuchsiaReadPipeFd);
   add_handle_action->h.handle = child_pipe_handle;
 
   // Create a socket pair will be used to receive the child process' stderr.
@@ -8581,12 +8699,11 @@ DeathTest::TestRole FuchsiaDeathTest::AssumeRole() {
       child_job, ZX_JOB_POL_RELATIVE, ZX_JOB_POL_BASIC, &policy, 1);
   GTEST_DEATH_TEST_CHECK_(status == ZX_OK);
 
-  // Create an exception port and attach it to the |child_job|, to allow
+  // Create an exception channel attached to the |child_job|, to allow
   // us to suppress the system default exception handler from firing.
-  status = zx::port::create(0, &port_);
-  GTEST_DEATH_TEST_CHECK_(status == ZX_OK);
-  status = zx_task_bind_exception_port(
-      child_job, port_.get(), 0 /* key */, 0 /*options */);
+  status =
+      zx_task_create_exception_channel(
+          child_job, 0, exception_channel_.reset_and_get_address());
   GTEST_DEATH_TEST_CHECK_(status == ZX_OK);
 
   // Spawn the child process.
@@ -8822,6 +8939,9 @@ static int ExecDeathTestChildMain(void* child_arg) {
 // correct answer.
 static void StackLowerThanAddress(const void* ptr,
                                   bool* result) GTEST_NO_INLINE_;
+// HWAddressSanitizer add a random tag to the MSB of the local variable address,
+// making comparison result unpredictable.
+GTEST_ATTRIBUTE_NO_SANITIZE_HWADDRESS_
 static void StackLowerThanAddress(const void* ptr, bool* result) {
   int dummy;
   *result = (&dummy < ptr);
@@ -8829,6 +8949,7 @@ static void StackLowerThanAddress(const void* ptr, bool* result) {
 
 // Make sure AddressSanitizer does not tamper with the stack here.
 GTEST_ATTRIBUTE_NO_SANITIZE_ADDRESS_
+GTEST_ATTRIBUTE_NO_SANITIZE_HWADDRESS_
 static bool StackGrowsDown() {
   int dummy;
   bool result;
@@ -8898,7 +9019,7 @@ static pid_t ExecDeathTestSpawnChild(char* const* argv, int close_fd) {
 
   if (!use_fork) {
     static const bool stack_grows_down = StackGrowsDown();
-    const size_t stack_size = getpagesize();
+    const auto stack_size = static_cast<size_t>(getpagesize());
     // MMAP_ANONYMOUS is not defined on Mac, so we use MAP_ANON instead.
     void* const stack = mmap(nullptr, stack_size, PROT_READ | PROT_WRITE,
                              MAP_ANON | MAP_PRIVATE, -1, 0);
@@ -8914,8 +9035,9 @@ static pid_t ExecDeathTestSpawnChild(char* const* argv, int close_fd) {
     void* const stack_top =
         static_cast<char*>(stack) +
             (stack_grows_down ? stack_size - kMaxStackAlignment : 0);
-    GTEST_DEATH_TEST_CHECK_(stack_size > kMaxStackAlignment &&
-        reinterpret_cast<intptr_t>(stack_top) % kMaxStackAlignment == 0);
+    GTEST_DEATH_TEST_CHECK_(
+        static_cast<size_t>(stack_size) > kMaxStackAlignment &&
+        reinterpret_cast<uintptr_t>(stack_top) % kMaxStackAlignment == 0);
 
     child_pid = clone(&ExecDeathTestChildMain, stack_top, SIGCHLD, &args);
 
@@ -9345,7 +9467,7 @@ FilePath FilePath::RemoveFileName() const {
   const char* const last_sep = FindLastPathSeparator();
   std::string dir;
   if (last_sep) {
-    dir = std::string(c_str(), last_sep + 1 - c_str());
+    dir = std::string(c_str(), static_cast<size_t>(last_sep + 1 - c_str()));
   } else {
     dir = kCurrentDirectoryString;
   }
@@ -9602,14 +9724,6 @@ namespace testing {
 // equal to s.
 Matcher<const std::string&>::Matcher(const std::string& s) { *this = Eq(s); }
 
-#if GTEST_HAS_GLOBAL_STRING
-// Constructs a matcher that matches a const std::string& whose value is
-// equal to s.
-Matcher<const std::string&>::Matcher(const ::string& s) {
-  *this = Eq(static_cast<std::string>(s));
-}
-#endif  // GTEST_HAS_GLOBAL_STRING
-
 // Constructs a matcher that matches a const std::string& whose value is
 // equal to s.
 Matcher<const std::string&>::Matcher(const char* s) {
@@ -9620,44 +9734,9 @@ Matcher<const std::string&>::Matcher(const char* s) {
 // s.
 Matcher<std::string>::Matcher(const std::string& s) { *this = Eq(s); }
 
-#if GTEST_HAS_GLOBAL_STRING
-// Constructs a matcher that matches a std::string whose value is equal to
-// s.
-Matcher<std::string>::Matcher(const ::string& s) {
-  *this = Eq(static_cast<std::string>(s));
-}
-#endif  // GTEST_HAS_GLOBAL_STRING
-
 // Constructs a matcher that matches a std::string whose value is equal to
 // s.
 Matcher<std::string>::Matcher(const char* s) { *this = Eq(std::string(s)); }
-
-#if GTEST_HAS_GLOBAL_STRING
-// Constructs a matcher that matches a const ::string& whose value is
-// equal to s.
-Matcher<const ::string&>::Matcher(const std::string& s) {
-  *this = Eq(static_cast<::string>(s));
-}
-
-// Constructs a matcher that matches a const ::string& whose value is
-// equal to s.
-Matcher<const ::string&>::Matcher(const ::string& s) { *this = Eq(s); }
-
-// Constructs a matcher that matches a const ::string& whose value is
-// equal to s.
-Matcher<const ::string&>::Matcher(const char* s) { *this = Eq(::string(s)); }
-
-// Constructs a matcher that matches a ::string whose value is equal to s.
-Matcher<::string>::Matcher(const std::string& s) {
-  *this = Eq(static_cast<::string>(s));
-}
-
-// Constructs a matcher that matches a ::string whose value is equal to s.
-Matcher<::string>::Matcher(const ::string& s) { *this = Eq(s); }
-
-// Constructs a matcher that matches a string whose value is equal to s.
-Matcher<::string>::Matcher(const char* s) { *this = Eq(::string(s)); }
-#endif  // GTEST_HAS_GLOBAL_STRING
 
 #if GTEST_HAS_ABSL
 // Constructs a matcher that matches a const absl::string_view& whose value is
@@ -9665,12 +9744,6 @@ Matcher<::string>::Matcher(const char* s) { *this = Eq(::string(s)); }
 Matcher<const absl::string_view&>::Matcher(const std::string& s) {
   *this = Eq(s);
 }
-
-#if GTEST_HAS_GLOBAL_STRING
-// Constructs a matcher that matches a const absl::string_view& whose value is
-// equal to s.
-Matcher<const absl::string_view&>::Matcher(const ::string& s) { *this = Eq(s); }
-#endif  // GTEST_HAS_GLOBAL_STRING
 
 // Constructs a matcher that matches a const absl::string_view& whose value is
 // equal to s.
@@ -9687,12 +9760,6 @@ Matcher<const absl::string_view&>::Matcher(absl::string_view s) {
 // Constructs a matcher that matches a absl::string_view whose value is equal to
 // s.
 Matcher<absl::string_view>::Matcher(const std::string& s) { *this = Eq(s); }
-
-#if GTEST_HAS_GLOBAL_STRING
-// Constructs a matcher that matches a absl::string_view whose value is equal to
-// s.
-Matcher<absl::string_view>::Matcher(const ::string& s) { *this = Eq(s); }
-#endif  // GTEST_HAS_GLOBAL_STRING
 
 // Constructs a matcher that matches a absl::string_view whose value is equal to
 // s.
@@ -9821,7 +9888,7 @@ T ReadProcFileField(const std::string& filename, int field) {
 size_t GetThreadCount() {
   const std::string filename =
       (Message() << "/proc/" << getpid() << "/stat").GetString();
-  return ReadProcFileField<int>(filename, 19);
+  return ReadProcFileField<size_t>(filename, 19);
 }
 
 #elif GTEST_OS_MAC
@@ -9879,7 +9946,7 @@ size_t GetThreadCount() {
   if (sysctl(mib, miblen, &info, &size, NULL, 0)) {
     return 0;
   }
-  return KP_NLWP(info);
+  return static_cast<size_t>(KP_NLWP(info));
 }
 #elif GTEST_OS_OPENBSD
 
@@ -9983,7 +10050,7 @@ size_t GetThreadCount() {
 #if GTEST_IS_THREADSAFE && GTEST_OS_WINDOWS
 
 void SleepMilliseconds(int n) {
-  ::Sleep(n);
+  ::Sleep(static_cast<DWORD>(n));
 }
 
 AutoHandle::AutoHandle()
@@ -10084,6 +10151,7 @@ void Mutex::AssertHeld() {
 
 namespace {
 
+#ifdef _MSC_VER
 // Use the RAII idiom to flag mem allocs that are intentionally never
 // deallocated. The motivation is to silence the false positive mem leaks
 // that are reported by the debug version of MS's CRT which can only detect
@@ -10096,19 +10164,15 @@ class MemoryIsNotDeallocated
 {
  public:
   MemoryIsNotDeallocated() : old_crtdbg_flag_(0) {
-#ifdef _MSC_VER
     old_crtdbg_flag_ = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG);
     // Set heap allocation block type to _IGNORE_BLOCK so that MS debug CRT
     // doesn't report mem leak if there's no matching deallocation.
     _CrtSetDbgFlag(old_crtdbg_flag_ & ~_CRTDBG_ALLOC_MEM_DF);
-#endif  //  _MSC_VER
   }
 
   ~MemoryIsNotDeallocated() {
-#ifdef _MSC_VER
     // Restore the original _CRTDBG_ALLOC_MEM_DF flag
     _CrtSetDbgFlag(old_crtdbg_flag_);
-#endif  //  _MSC_VER
   }
 
  private:
@@ -10116,6 +10180,7 @@ class MemoryIsNotDeallocated
 
   GTEST_DISALLOW_COPY_AND_ASSIGN_(MemoryIsNotDeallocated);
 };
+#endif  // _MSC_VER
 
 }  // namespace
 
@@ -10131,7 +10196,9 @@ void Mutex::ThreadSafeLazyInit() {
         owner_thread_id_ = 0;
         {
           // Use RAII to flag that following mem alloc is never deallocated.
+#ifdef _MSC_VER
           MemoryIsNotDeallocated memory_is_not_deallocated;
+#endif  // _MSC_VER
           critical_section_ = new CRITICAL_SECTION;
         }
         ::InitializeCriticalSection(critical_section_);
@@ -10374,7 +10441,9 @@ class ThreadLocalRegistryImpl {
   // Returns map of thread local instances.
   static ThreadIdToThreadLocals* GetThreadLocalsMapLocked() {
     mutex_.AssertHeld();
+#ifdef _MSC_VER
     MemoryIsNotDeallocated memory_is_not_deallocated;
+#endif  // _MSC_VER
     static ThreadIdToThreadLocals* map = new ThreadIdToThreadLocals();
     return map;
   }
@@ -10417,7 +10486,7 @@ RE::~RE() {
   free(const_cast<char*>(pattern_));
 }
 
-// Returns true iff regular expression re matches the entire str.
+// Returns true if regular expression re matches the entire str.
 bool RE::FullMatch(const char* str, const RE& re) {
   if (!re.is_valid_) return false;
 
@@ -10425,7 +10494,7 @@ bool RE::FullMatch(const char* str, const RE& re) {
   return regexec(&re.full_regex_, str, 1, &match, 0) == 0;
 }
 
-// Returns true iff regular expression re matches a substring of str
+// Returns true if regular expression re matches a substring of str
 // (including str itself).
 bool RE::PartialMatch(const char* str, const RE& re) {
   if (!re.is_valid_) return false;
@@ -10466,13 +10535,13 @@ void RE::Init(const char* regex) {
 
 #elif GTEST_USES_SIMPLE_RE
 
-// Returns true iff ch appears anywhere in str (excluding the
+// Returns true if ch appears anywhere in str (excluding the
 // terminating '\0' character).
 bool IsInSet(char ch, const char* str) {
   return ch != '\0' && strchr(str, ch) != nullptr;
 }
 
-// Returns true iff ch belongs to the given classification.  Unlike
+// Returns true if ch belongs to the given classification.  Unlike
 // similar functions in <ctype.h>, these aren't affected by the
 // current locale.
 bool IsAsciiDigit(char ch) { return '0' <= ch && ch <= '9'; }
@@ -10486,12 +10555,12 @@ bool IsAsciiWordChar(char ch) {
       ('0' <= ch && ch <= '9') || ch == '_';
 }
 
-// Returns true iff "\\c" is a supported escape sequence.
+// Returns true if "\\c" is a supported escape sequence.
 bool IsValidEscape(char c) {
   return (IsAsciiPunct(c) || IsInSet(c, "dDfnrsStvwW"));
 }
 
-// Returns true iff the given atom (specified by escaped and pattern)
+// Returns true if the given atom (specified by escaped and pattern)
 // matches ch.  The result is undefined if the atom is invalid.
 bool AtomMatchesChar(bool escaped, char pattern_char, char ch) {
   if (escaped) {  // "\\p" where p is pattern_char.
@@ -10530,7 +10599,7 @@ bool ValidateRegex(const char* regex) {
 
   bool is_valid = true;
 
-  // True iff ?, *, or + can follow the previous atom.
+  // True if ?, *, or + can follow the previous atom.
   bool prev_repeatable = false;
   for (int i = 0; regex[i]; i++) {
     if (regex[i] == '\\') {  // An escape sequence
@@ -10606,7 +10675,7 @@ bool MatchRepetitionAndRegexAtHead(
   return false;
 }
 
-// Returns true iff regex matches a prefix of str.  regex must be a
+// Returns true if regex matches a prefix of str.  regex must be a
 // valid simple regular expression and not start with "^", or the
 // result is undefined.
 bool MatchRegexAtHead(const char* regex, const char* str) {
@@ -10637,7 +10706,7 @@ bool MatchRegexAtHead(const char* regex, const char* str) {
   }
 }
 
-// Returns true iff regex matches any substring of str.  regex must be
+// Returns true if regex matches any substring of str.  regex must be
 // a valid simple regular expression, or the result is undefined.
 //
 // The algorithm is recursive, but the recursion depth doesn't exceed
@@ -10666,12 +10735,12 @@ RE::~RE() {
   free(const_cast<char*>(full_pattern_));
 }
 
-// Returns true iff regular expression re matches the entire str.
+// Returns true if regular expression re matches the entire str.
 bool RE::FullMatch(const char* str, const RE& re) {
   return re.is_valid_ && MatchRegexAnywhere(re.full_pattern_, str);
 }
 
-// Returns true iff regular expression re matches a substring of str
+// Returns true if regular expression re matches a substring of str
 // (including str itself).
 bool RE::PartialMatch(const char* str, const RE& re) {
   return re.is_valid_ && MatchRegexAnywhere(re.pattern_, str);
@@ -10815,6 +10884,11 @@ class CapturedStream {
     char name_template[] = "/tmp/captured_stream.XXXXXX";
 #  endif  // GTEST_OS_LINUX_ANDROID
     const int captured_fd = mkstemp(name_template);
+    if (captured_fd == -1) {
+      GTEST_LOG_(WARNING)
+          << "Failed to create tmp file " << name_template
+          << " for test; does the test have access to the /tmp directory?";
+    }
     filename_ = name_template;
 # endif  // GTEST_OS_WINDOWS
     fflush(nullptr);
@@ -10836,6 +10910,10 @@ class CapturedStream {
     }
 
     FILE* const file = posix::FOpen(filename_.c_str(), "r");
+    if (file == nullptr) {
+      GTEST_LOG_(FATAL) << "Failed to open tmp file " << filename_
+                        << " for capturing stream.";
+    }
     const std::string content = ReadEntireFile(file);
     posix::FClose(file);
     return content;
@@ -10949,13 +11027,6 @@ void SetInjectableArgvs(const std::vector<std::string>& new_argvs) {
       new std::vector<std::string>(new_argvs.begin(), new_argvs.end()));
 }
 
-#if GTEST_HAS_GLOBAL_STRING
-void SetInjectableArgvs(const std::vector< ::string>& new_argvs) {
-  SetInjectableArgvs(
-      new std::vector<std::string>(new_argvs.begin(), new_argvs.end()));
-}
-#endif  // GTEST_HAS_GLOBAL_STRING
-
 void ClearInjectableArgvs() {
   delete g_injected_test_argvs;
   g_injected_test_argvs = nullptr;
@@ -11030,7 +11101,7 @@ bool ParseInt32(const Message& src_text, const char* str, Int32* value) {
 // Reads and returns the Boolean environment variable corresponding to
 // the given flag; if it's not set, returns default_value.
 //
-// The value is considered true iff it's not "0".
+// The value is considered true if it's not "0".
 bool BoolFromGTestEnv(const char* flag, bool default_value) {
 #if defined(GTEST_GET_BOOL_FROM_ENV_)
   return GTEST_GET_BOOL_FROM_ENV_(flag, default_value);
@@ -11158,6 +11229,7 @@ using ::std::ostream;
 // Prints a segment of bytes in the given object.
 GTEST_ATTRIBUTE_NO_SANITIZE_MEMORY_
 GTEST_ATTRIBUTE_NO_SANITIZE_ADDRESS_
+GTEST_ATTRIBUTE_NO_SANITIZE_HWADDRESS_
 GTEST_ATTRIBUTE_NO_SANITIZE_THREAD_
 void PrintByteSegmentInObjectTo(const unsigned char* obj_bytes, size_t start,
                                 size_t count, ostream* os) {
@@ -11242,7 +11314,8 @@ inline bool IsPrintableAscii(wchar_t c) {
 // which is the type of c.
 template <typename UnsignedChar, typename Char>
 static CharFormat PrintAsCharLiteralTo(Char c, ostream* os) {
-  switch (static_cast<wchar_t>(c)) {
+  wchar_t w_c = static_cast<wchar_t>(c);
+  switch (w_c) {
     case L'\0':
       *os << "\\0";
       break;
@@ -11274,7 +11347,7 @@ static CharFormat PrintAsCharLiteralTo(Char c, ostream* os) {
       *os << "\\v";
       break;
     default:
-      if (IsPrintableAscii(c)) {
+      if (IsPrintableAscii(w_c)) {
         *os << static_cast<char>(c);
         return kAsIs;
       } else {
@@ -11334,7 +11407,7 @@ void PrintCharAndCodeTo(Char c, ostream* os) {
   if (format == kHexEscape || (1 <= c && c <= 9)) {
     // Do nothing.
   } else {
-    *os << ", 0x" << String::FormatHexInt(static_cast<UnsignedChar>(c));
+    *os << ", 0x" << String::FormatHexInt(static_cast<int>(c));
   }
   *os << ")";
 }
@@ -11359,6 +11432,7 @@ void PrintTo(wchar_t wc, ostream* os) {
 template <typename CharType>
 GTEST_ATTRIBUTE_NO_SANITIZE_MEMORY_
 GTEST_ATTRIBUTE_NO_SANITIZE_ADDRESS_
+GTEST_ATTRIBUTE_NO_SANITIZE_HWADDRESS_
 GTEST_ATTRIBUTE_NO_SANITIZE_THREAD_
 static CharFormat PrintCharsAsStringTo(
     const CharType* begin, size_t len, ostream* os) {
@@ -11389,6 +11463,7 @@ static CharFormat PrintCharsAsStringTo(
 template <typename CharType>
 GTEST_ATTRIBUTE_NO_SANITIZE_MEMORY_
 GTEST_ATTRIBUTE_NO_SANITIZE_ADDRESS_
+GTEST_ATTRIBUTE_NO_SANITIZE_HWADDRESS_
 GTEST_ATTRIBUTE_NO_SANITIZE_THREAD_
 static void UniversalPrintCharArray(
     const CharType* begin, size_t len, ostream* os) {
@@ -11518,17 +11593,6 @@ void ConditionalPrintAsText(const char* str, size_t length, ostream* os) {
 
 }  // anonymous namespace
 
-// Prints a ::string object.
-#if GTEST_HAS_GLOBAL_STRING
-void PrintStringTo(const ::string& s, ostream* os) {
-  if (PrintCharsAsStringTo(s.data(), s.size(), os) == kHexEscape) {
-    if (GTEST_FLAG(print_utf8)) {
-      ConditionalPrintAsText(s.data(), s.size(), os);
-    }
-  }
-}
-#endif  // GTEST_HAS_GLOBAL_STRING
-
 void PrintStringTo(const ::std::string& s, ostream* os) {
   if (PrintCharsAsStringTo(s.data(), s.size(), os) == kHexEscape) {
     if (GTEST_FLAG(print_utf8)) {
@@ -11536,13 +11600,6 @@ void PrintStringTo(const ::std::string& s, ostream* os) {
     }
   }
 }
-
-// Prints a ::wstring object.
-#if GTEST_HAS_GLOBAL_WSTRING
-void PrintWideStringTo(const ::wstring& s, ostream* os) {
-  PrintCharsAsStringTo(s.data(), s.size(), os);
-}
-#endif  // GTEST_HAS_GLOBAL_WSTRING
 
 #if GTEST_HAS_STD_WSTRING
 void PrintWideStringTo(const ::std::wstring& s, ostream* os) {
@@ -11623,7 +11680,7 @@ const TestPartResult& TestPartResultArray::GetTestPartResult(int index) const {
     internal::posix::Abort();
   }
 
-  return array_[index];
+  return array_[static_cast<size_t>(index)];
 }
 
 // Returns the number of TestPartResult objects in the array.

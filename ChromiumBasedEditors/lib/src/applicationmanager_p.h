@@ -59,11 +59,11 @@
 
 #include "utils.h"
 
-// с версии выше 74 - убрать определение
 #ifdef CEF_2623
 #define MESSAGE_IN_BROWSER
 #else
-#define MESSAGE_IN_BROWSER
+// с версии выше 74 - убрать определение
+//#define MESSAGE_IN_BROWSER
 #endif
 
 #ifdef MESSAGE_IN_BROWSER

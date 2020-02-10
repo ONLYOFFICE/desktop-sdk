@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=4a9ff86018ea7b82b0b46f7f187d410ffebe3dc7$
+// $hash=40590f49f3e6fb36f98cf2e88558def58d41b58e$
 //
 
 #include "libcef_dll/ctocpp/response_ctocpp.h"
@@ -118,10 +118,7 @@ void CefResponseCToCpp::SetStatusText(const CefString& statusText) {
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
-  // Verify param: statusText; type: string_byref_const
-  DCHECK(!statusText.empty());
-  if (statusText.empty())
-    return;
+  // Unverified params: statusText
 
   // Execute
   _struct->set_status_text(_struct, statusText.GetStruct());
@@ -151,19 +148,46 @@ void CefResponseCToCpp::SetMimeType(const CefString& mimeType) {
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
-  // Verify param: mimeType; type: string_byref_const
-  DCHECK(!mimeType.empty());
-  if (mimeType.empty())
-    return;
+  // Unverified params: mimeType
 
   // Execute
   _struct->set_mime_type(_struct, mimeType.GetStruct());
 }
 
-NO_SANITIZE("cfi-icall")
-CefString CefResponseCToCpp::GetHeader(const CefString& name) {
+NO_SANITIZE("cfi-icall") CefString CefResponseCToCpp::GetCharset() {
   cef_response_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, get_header))
+  if (CEF_MEMBER_MISSING(_struct, get_charset))
+    return CefString();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  cef_string_userfree_t _retval = _struct->get_charset(_struct);
+
+  // Return type: string
+  CefString _retvalStr;
+  _retvalStr.AttachToUserFree(_retval);
+  return _retvalStr;
+}
+
+NO_SANITIZE("cfi-icall")
+void CefResponseCToCpp::SetCharset(const CefString& charset) {
+  cef_response_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, set_charset))
+    return;
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Unverified params: charset
+
+  // Execute
+  _struct->set_charset(_struct, charset.GetStruct());
+}
+
+NO_SANITIZE("cfi-icall")
+CefString CefResponseCToCpp::GetHeaderByName(const CefString& name) {
+  cef_response_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, get_header_by_name))
     return CefString();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
@@ -175,12 +199,33 @@ CefString CefResponseCToCpp::GetHeader(const CefString& name) {
 
   // Execute
   cef_string_userfree_t _retval =
-      _struct->get_header(_struct, name.GetStruct());
+      _struct->get_header_by_name(_struct, name.GetStruct());
 
   // Return type: string
   CefString _retvalStr;
   _retvalStr.AttachToUserFree(_retval);
   return _retvalStr;
+}
+
+NO_SANITIZE("cfi-icall")
+void CefResponseCToCpp::SetHeaderByName(const CefString& name,
+                                        const CefString& value,
+                                        bool overwrite) {
+  cef_response_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, set_header_by_name))
+    return;
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Verify param: name; type: string_byref_const
+  DCHECK(!name.empty());
+  if (name.empty())
+    return;
+  // Unverified params: value
+
+  // Execute
+  _struct->set_header_by_name(_struct, name.GetStruct(), value.GetStruct(),
+                              overwrite);
 }
 
 NO_SANITIZE("cfi-icall")
@@ -253,10 +298,7 @@ NO_SANITIZE("cfi-icall") void CefResponseCToCpp::SetURL(const CefString& url) {
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
-  // Verify param: url; type: string_byref_const
-  DCHECK(!url.empty());
-  if (url.empty())
-    return;
+  // Unverified params: url
 
   // Execute
   _struct->set_url(_struct, url.GetStruct());

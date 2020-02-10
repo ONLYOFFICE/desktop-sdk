@@ -9,29 +9,30 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=7158e06e5c71ed020f193c698a2fdfd6d0b170c8$
+// $hash=ee7eab38c1a75c054316c4fc1cb3166f7da875bf$
 //
 
-#ifndef CEF_LIBCEF_DLL_CPPTOC_AUDIO_HANDLER_CPPTOC_H_
-#define CEF_LIBCEF_DLL_CPPTOC_AUDIO_HANDLER_CPPTOC_H_
+#ifndef CEF_LIBCEF_DLL_CPPTOC_RESOURCE_REQUEST_HANDLER_CPPTOC_H_
+#define CEF_LIBCEF_DLL_CPPTOC_RESOURCE_REQUEST_HANDLER_CPPTOC_H_
 #pragma once
 
 #if !defined(WRAPPING_CEF_SHARED)
 #error This file can be included wrapper-side only
 #endif
 
-#include "include/capi/cef_audio_handler_capi.h"
-#include "include/cef_audio_handler.h"
+#include "include/capi/cef_resource_request_handler_capi.h"
+#include "include/cef_resource_request_handler.h"
 #include "libcef_dll/cpptoc/cpptoc_ref_counted.h"
 
 // Wrap a C++ class with a C structure.
 // This class may be instantiated and accessed wrapper-side only.
-class CefAudioHandlerCppToC : public CefCppToCRefCounted<CefAudioHandlerCppToC,
-                                                         CefAudioHandler,
-                                                         cef_audio_handler_t> {
+class CefResourceRequestHandlerCppToC
+    : public CefCppToCRefCounted<CefResourceRequestHandlerCppToC,
+                                 CefResourceRequestHandler,
+                                 cef_resource_request_handler_t> {
  public:
-  CefAudioHandlerCppToC();
-  virtual ~CefAudioHandlerCppToC();
+  CefResourceRequestHandlerCppToC();
+  virtual ~CefResourceRequestHandlerCppToC();
 };
 
-#endif  // CEF_LIBCEF_DLL_CPPTOC_AUDIO_HANDLER_CPPTOC_H_
+#endif  // CEF_LIBCEF_DLL_CPPTOC_RESOURCE_REQUEST_HANDLER_CPPTOC_H_

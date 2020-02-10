@@ -12,6 +12,7 @@
 #include "tests/cefclient/browser/main_context.h"
 #include "tests/cefclient/browser/test_runner.h"
 #include "tests/shared/browser/extension_util.h"
+#include "tests/shared/browser/file_util.h"
 #include "tests/shared/browser/resource_util.h"
 #include "tests/shared/common/client_switches.h"
 
@@ -22,14 +23,7 @@ namespace {
 class ClientRequestContextHandler : public CefRequestContextHandler,
                                     public CefExtensionHandler {
  public:
-  ClientRequestContextHandler() {
-    CefRefPtr<CefCommandLine> command_line =
-        CefCommandLine::GetGlobalCommandLine();
-    if (command_line->HasSwitch(switches::kRequestContextBlockCookies)) {
-      // Use a cookie manager that neither stores nor retrieves cookies.
-      cookie_manager_ = CefCookieManager::GetBlockingManager();
-    }
-  }
+  ClientRequestContextHandler() {}
 
   // CefRequestContextHandler methods:
   bool OnBeforePluginLoad(const CefString& mime_type,
@@ -80,10 +74,6 @@ class ClientRequestContextHandler : public CefRequestContextHandler,
     }
   }
 
-  CefRefPtr<CefCookieManager> GetCookieManager() OVERRIDE {
-    return cookie_manager_;
-  }
-
   // CefExtensionHandler methods:
   void OnExtensionLoaded(CefRefPtr<CefExtension> extension) OVERRIDE {
     CEF_REQUIRE_UI_THREAD();
@@ -110,8 +100,6 @@ class ClientRequestContextHandler : public CefRequestContextHandler,
   }
 
  private:
-  CefRefPtr<CefCookieManager> cookie_manager_;
-
   IMPLEMENT_REFCOUNTING(ClientRequestContextHandler);
   DISALLOW_COPY_AND_ASSIGN(ClientRequestContextHandler);
 };
@@ -119,8 +107,7 @@ class ClientRequestContextHandler : public CefRequestContextHandler,
 }  // namespace
 
 RootWindowManager::RootWindowManager(bool terminate_when_all_windows_closed)
-    : terminate_when_all_windows_closed_(terminate_when_all_windows_closed),
-      image_cache_(new ImageCache) {
+    : terminate_when_all_windows_closed_(terminate_when_all_windows_closed) {
   CefRefPtr<CefCommandLine> command_line =
       CefCommandLine::GetGlobalCommandLine();
   DCHECK(command_line.get());
@@ -348,7 +335,7 @@ CefRefPtr<CefRequestContext> RootWindowManager::GetRequestContext(
         // isolated context objects.
         std::stringstream ss;
         ss << command_line->GetSwitchValue(switches::kCachePath).ToString()
-           << time(NULL);
+           << file_util::kPathSep << time(NULL);
         CefString(&settings.cache_path) = ss.str();
       }
     }
@@ -366,8 +353,11 @@ CefRefPtr<CefRequestContext> RootWindowManager::GetRequestContext(
 }
 
 scoped_refptr<ImageCache> RootWindowManager::GetImageCache() {
-  REQUIRE_MAIN_THREAD();
+  CEF_REQUIRE_UI_THREAD();
 
+  if (!image_cache_) {
+    image_cache_ = new ImageCache;
+  }
   return image_cache_;
 }
 
@@ -456,6 +446,10 @@ void RootWindowManager::CleanupOnUIThread() {
   if (temp_window_) {
     // TempWindow must be destroyed on the UI thread.
     temp_window_.reset(nullptr);
+  }
+
+  if (image_cache_) {
+    image_cache_ = nullptr;
   }
 
   // Quit the main message loop.

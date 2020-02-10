@@ -4,6 +4,7 @@
 
 #include "include/base/cef_bind.h"
 #include "include/cef_pack_resources.h"
+#include "include/cef_request_context_handler.h"
 #include "include/cef_resource_bundle.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "include/wrapper/cef_stream_resource_handler.h"
@@ -127,16 +128,13 @@ class PluginTestHandler : public RoutingTestHandler,
         if (!handler_->got_on_before_plugin_empty_origin_) {
           // Checking for PDF support in the plugin frame (navigator.plugins
           // listing, pdf load, etc).
-          EXPECT_EQ(handler_->HasDirectPluginLoad(), is_main_frame);
           handler_->got_on_before_plugin_empty_origin_.yes();
         } else if (handler_->HasNoList()) {
           // When listing is disabled there should be an additional check in the
           // main frame for the navigator.plugins listing.
           if (!handler_->got_on_before_plugin_empty_origin2_) {
-            EXPECT_EQ(true, is_main_frame);
+            EXPECT_TRUE(is_main_frame);
             handler_->got_on_before_plugin_empty_origin2_.yes();
-          } else {
-            NOTREACHED();
           }
         }
 

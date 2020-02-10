@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=bd8fe0f41380bc1e5ecedbcab726bc2ed875f827$
+// $hash=87369bed5916a070a4f1a7f4bb9fcff5885cd31f$
 //
 
 #include "libcef_dll/ctocpp/cookie_manager_ctocpp.h"
@@ -36,40 +36,12 @@ CefRefPtr<CefCookieManager> CefCookieManager::GetGlobalManager(
   return CefCookieManagerCToCpp::Wrap(_retval);
 }
 
-NO_SANITIZE("cfi-icall")
-CefRefPtr<CefCookieManager> CefCookieManager::GetBlockingManager() {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Execute
-  cef_cookie_manager_t* _retval = cef_cookie_manager_get_blocking_manager();
-
-  // Return type: refptr_same
-  return CefCookieManagerCToCpp::Wrap(_retval);
-}
-
-NO_SANITIZE("cfi-icall")
-CefRefPtr<CefCookieManager> CefCookieManager::CreateManager(
-    const CefString& path,
-    bool persist_session_cookies,
-    CefRefPtr<CefCompletionCallback> callback) {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Unverified params: path, callback
-
-  // Execute
-  cef_cookie_manager_t* _retval = cef_cookie_manager_create_manager(
-      path.GetStruct(), persist_session_cookies,
-      CefCompletionCallbackCppToC::Wrap(callback));
-
-  // Return type: refptr_same
-  return CefCookieManagerCToCpp::Wrap(_retval);
-}
-
 // VIRTUAL METHODS - Body may be edited by hand.
 
 NO_SANITIZE("cfi-icall")
 void CefCookieManagerCToCpp::SetSupportedSchemes(
     const std::vector<CefString>& schemes,
+    bool include_defaults,
     CefRefPtr<CefCompletionCallback> callback) {
   cef_cookie_manager_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, set_supported_schemes))
@@ -86,7 +58,7 @@ void CefCookieManagerCToCpp::SetSupportedSchemes(
     transfer_string_list_contents(schemes, schemesList);
 
   // Execute
-  _struct->set_supported_schemes(_struct, schemesList,
+  _struct->set_supported_schemes(_struct, schemesList, include_defaults,
                                  CefCompletionCallbackCppToC::Wrap(callback));
 
   // Restore param:schemes; type: string_vec_byref_const
@@ -187,28 +159,6 @@ bool CefCookieManagerCToCpp::DeleteCookies(
   int _retval =
       _struct->delete_cookies(_struct, url.GetStruct(), cookie_name.GetStruct(),
                               CefDeleteCookiesCallbackCppToC::Wrap(callback));
-
-  // Return type: bool
-  return _retval ? true : false;
-}
-
-NO_SANITIZE("cfi-icall")
-bool CefCookieManagerCToCpp::SetStoragePath(
-    const CefString& path,
-    bool persist_session_cookies,
-    CefRefPtr<CefCompletionCallback> callback) {
-  cef_cookie_manager_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, set_storage_path))
-    return false;
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Unverified params: path, callback
-
-  // Execute
-  int _retval = _struct->set_storage_path(
-      _struct, path.GetStruct(), persist_session_cookies,
-      CefCompletionCallbackCppToC::Wrap(callback));
 
   // Return type: bool
   return _retval ? true : false;

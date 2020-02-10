@@ -4766,7 +4766,7 @@ void CCefView::load(const std::wstring& urlInputSrc)
         return;
     }
 
-#ifndef MESSAGE_IN_BROWSER
+#ifdef MESSAGE_IN_BROWSER
     CefRefPtr<CefCookieManager> manager = CefCookieManager::GetGlobalManager(NULL);
     manager->SetStoragePath(m_pInternal->m_pManager->m_oSettings.cookie_path, true, NULL);
 #endif

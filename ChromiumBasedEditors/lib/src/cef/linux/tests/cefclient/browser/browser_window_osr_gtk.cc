@@ -1001,6 +1001,7 @@ void BrowserWindowOsrGtk::CreateBrowser(
     ClientWindowHandle parent_handle,
     const CefRect& rect,
     const CefBrowserSettings& settings,
+    CefRefPtr<CefDictionaryValue> extra_info,
     CefRefPtr<CefRequestContext> request_context) {
   REQUIRE_MAIN_THREAD();
 
@@ -1021,7 +1022,7 @@ void BrowserWindowOsrGtk::CreateBrowser(
   // Create the browser asynchronously.
   CefBrowserHost::CreateBrowser(window_info, client_handler_,
                                 client_handler_->startup_url(), settings,
-                                request_context);
+                                extra_info, request_context);
 }
 
 void BrowserWindowOsrGtk::GetPopupConfig(CefWindowHandle temp_handle,
@@ -1359,6 +1360,11 @@ void BrowserWindowOsrGtk::OnImeCompositionRangeChanged(
 }
 
 void BrowserWindowOsrGtk::UpdateAccessibilityTree(CefRefPtr<CefValue> value) {
+  CEF_REQUIRE_UI_THREAD();
+}
+
+void BrowserWindowOsrGtk::UpdateAccessibilityLocation(
+    CefRefPtr<CefValue> value) {
   CEF_REQUIRE_UI_THREAD();
 }
 

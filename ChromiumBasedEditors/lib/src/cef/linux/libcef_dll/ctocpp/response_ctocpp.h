@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=df2e29ce3f4dbed69447e10ddde7d73ef7aceaf1$
+// $hash=8ebf9fb3b9657402c801523ad86ca9773511a86b$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_RESPONSE_CTOCPP_H_
@@ -43,7 +43,12 @@ class CefResponseCToCpp : public CefCToCppRefCounted<CefResponseCToCpp,
   void SetStatusText(const CefString& statusText) OVERRIDE;
   CefString GetMimeType() OVERRIDE;
   void SetMimeType(const CefString& mimeType) OVERRIDE;
-  CefString GetHeader(const CefString& name) OVERRIDE;
+  CefString GetCharset() OVERRIDE;
+  void SetCharset(const CefString& charset) OVERRIDE;
+  CefString GetHeaderByName(const CefString& name) OVERRIDE;
+  void SetHeaderByName(const CefString& name,
+                       const CefString& value,
+                       bool overwrite) OVERRIDE;
   void GetHeaderMap(HeaderMap& headerMap) OVERRIDE;
   void SetHeaderMap(const HeaderMap& headerMap) OVERRIDE;
   CefString GetURL() OVERRIDE;

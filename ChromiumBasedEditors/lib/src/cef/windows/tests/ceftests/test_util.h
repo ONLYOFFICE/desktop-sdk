@@ -13,8 +13,9 @@
 #include "include/cef_values.h"
 #include "tests/ceftests/test_suite.h"
 
-// Test that CefRequest::HeaderMap objects are equal
-// If |allowExtras| is true then additional header fields will be allowed in
+// Test that CefRequest::HeaderMap objects are equal. Multiple values with the
+// same key are allowed, but not duplicate entries with the same key/value. If
+// |allowExtras| is true then additional header fields will be allowed in
 // |map2|.
 void TestMapEqual(const CefRequest::HeaderMap& map1,
                   const CefRequest::HeaderMap& map2,

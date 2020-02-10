@@ -128,6 +128,7 @@ std::string GetSSLVersionString(cef_ssl_version_t version) {
   VALUE(version, SSL_CONNECTION_VERSION_TLS1);
   VALUE(version, SSL_CONNECTION_VERSION_TLS1_1);
   VALUE(version, SSL_CONNECTION_VERSION_TLS1_2);
+  VALUE(version, SSL_CONNECTION_VERSION_TLS1_3);
   VALUE(version, SSL_CONNECTION_VERSION_QUIC);
   return std::string();
 }
@@ -259,7 +260,7 @@ ClientHandler::ClientHandler(Delegate* delegate,
 #endif
 
   resource_manager_ = new CefResourceManager();
-  test_runner::SetupResourceManager(resource_manager_);
+  test_runner::SetupResourceManager(resource_manager_, &string_resource_map_);
 
   // Read command line settings.
   CefRefPtr<CefCommandLine> command_line =
@@ -281,11 +282,12 @@ void ClientHandler::DetachDelegate() {
 
 bool ClientHandler::OnProcessMessageReceived(
     CefRefPtr<CefBrowser> browser,
+    CefRefPtr<CefFrame> frame,
     CefProcessId source_process,
     CefRefPtr<CefProcessMessage> message) {
   CEF_REQUIRE_UI_THREAD();
 
-  if (message_router_->OnProcessMessageReceived(browser, source_process,
+  if (message_router_->OnProcessMessageReceived(browser, frame, source_process,
                                                 message)) {
     return true;
   }
@@ -486,6 +488,7 @@ bool ClientHandler::OnDragEnter(CefRefPtr<CefBrowser> browser,
 
 void ClientHandler::OnDraggableRegionsChanged(
     CefRefPtr<CefBrowser> browser,
+    CefRefPtr<CefFrame> frame,
     const std::vector<CefDraggableRegion>& regions) {
   CEF_REQUIRE_UI_THREAD();
 
@@ -545,6 +548,7 @@ bool ClientHandler::OnBeforePopup(
     CefWindowInfo& windowInfo,
     CefRefPtr<CefClient>& client,
     CefBrowserSettings& settings,
+    CefRefPtr<CefDictionaryValue>& extra_info,
     bool* no_javascript_access) {
   CEF_REQUIRE_UI_THREAD();
 
@@ -686,35 +690,42 @@ bool ClientHandler::OnOpenURLFromTab(
   return false;
 }
 
-cef_return_value_t ClientHandler::OnBeforeResourceLoad(
+CefRefPtr<CefResourceRequestHandler> ClientHandler::GetResourceRequestHandler(
     CefRefPtr<CefBrowser> browser,
     CefRefPtr<CefFrame> frame,
     CefRefPtr<CefRequest> request,
-    CefRefPtr<CefRequestCallback> callback) {
+    bool is_navigation,
+    bool is_download,
+    const CefString& request_initiator,
+    bool& disable_default_handling) {
   CEF_REQUIRE_IO_THREAD();
-
-  return resource_manager_->OnBeforeResourceLoad(browser, frame, request,
-                                                 callback);
+  return this;
 }
 
-CefRefPtr<CefResourceHandler> ClientHandler::GetResourceHandler(
-    CefRefPtr<CefBrowser> browser,
-    CefRefPtr<CefFrame> frame,
-    CefRefPtr<CefRequest> request) {
+bool ClientHandler::GetAuthCredentials(CefRefPtr<CefBrowser> browser,
+                                       const CefString& origin_url,
+                                       bool isProxy,
+                                       const CefString& host,
+                                       int port,
+                                       const CefString& realm,
+                                       const CefString& scheme,
+                                       CefRefPtr<CefAuthCallback> callback) {
   CEF_REQUIRE_IO_THREAD();
 
-  return resource_manager_->GetResourceHandler(browser, frame, request);
-}
+  // Used for testing authentication with a proxy server.
+  // For example, CCProxy on Windows.
+  if (isProxy) {
+    callback->Continue("guest", "guest");
+    return true;
+  }
 
-CefRefPtr<CefResponseFilter> ClientHandler::GetResourceResponseFilter(
-    CefRefPtr<CefBrowser> browser,
-    CefRefPtr<CefFrame> frame,
-    CefRefPtr<CefRequest> request,
-    CefRefPtr<CefResponse> response) {
-  CEF_REQUIRE_IO_THREAD();
+  // Used for testing authentication with https://jigsaw.w3.org/HTTP/.
+  if (host == "jigsaw.w3.org") {
+    callback->Continue("guest", "guest");
+    return true;
+  }
 
-  return test_runner::GetResourceResponseFilter(browser, frame, request,
-                                                response);
+  return false;
 }
 
 bool ClientHandler::OnQuotaRequest(CefRefPtr<CefBrowser> browser,
@@ -728,18 +739,6 @@ bool ClientHandler::OnQuotaRequest(CefRefPtr<CefBrowser> browser,
   // Grant the quota request if the size is reasonable.
   callback->Continue(new_size <= max_size);
   return true;
-}
-
-void ClientHandler::OnProtocolExecution(CefRefPtr<CefBrowser> browser,
-                                        const CefString& url,
-                                        bool& allow_os_execution) {
-  CEF_REQUIRE_UI_THREAD();
-
-  std::string urlStr = url;
-
-  // Allow OS execution of Spotify URIs.
-  if (urlStr.find("spotify:") == 0)
-    allow_os_execution = true;
 }
 
 bool ClientHandler::OnCertificateError(CefRefPtr<CefBrowser> browser,
@@ -832,6 +831,50 @@ void ClientHandler::OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser,
     return;
 
   frame->LoadURL(startup_url_);
+}
+
+cef_return_value_t ClientHandler::OnBeforeResourceLoad(
+    CefRefPtr<CefBrowser> browser,
+    CefRefPtr<CefFrame> frame,
+    CefRefPtr<CefRequest> request,
+    CefRefPtr<CefRequestCallback> callback) {
+  CEF_REQUIRE_IO_THREAD();
+
+  return resource_manager_->OnBeforeResourceLoad(browser, frame, request,
+                                                 callback);
+}
+
+CefRefPtr<CefResourceHandler> ClientHandler::GetResourceHandler(
+    CefRefPtr<CefBrowser> browser,
+    CefRefPtr<CefFrame> frame,
+    CefRefPtr<CefRequest> request) {
+  CEF_REQUIRE_IO_THREAD();
+
+  return resource_manager_->GetResourceHandler(browser, frame, request);
+}
+
+CefRefPtr<CefResponseFilter> ClientHandler::GetResourceResponseFilter(
+    CefRefPtr<CefBrowser> browser,
+    CefRefPtr<CefFrame> frame,
+    CefRefPtr<CefRequest> request,
+    CefRefPtr<CefResponse> response) {
+  CEF_REQUIRE_IO_THREAD();
+
+  return test_runner::GetResourceResponseFilter(browser, frame, request,
+                                                response);
+}
+
+void ClientHandler::OnProtocolExecution(CefRefPtr<CefBrowser> browser,
+                                        CefRefPtr<CefFrame> frame,
+                                        CefRefPtr<CefRequest> request,
+                                        bool& allow_os_execution) {
+  CEF_REQUIRE_IO_THREAD();
+
+  std::string urlStr = request->GetURL();
+
+  // Allow OS execution of Spotify URIs.
+  if (urlStr.find("spotify:") == 0)
+    allow_os_execution = true;
 }
 
 int ClientHandler::GetBrowserCount() const {
@@ -928,6 +971,17 @@ void ClientHandler::ShowSSLInformation(CefRefPtr<CefBrowser> browser) {
   config.with_osr = is_osr();
   config.url = test_runner::GetDataURI(ss.str(), "text/html");
   MainContext::Get()->GetRootWindowManager()->CreateRootWindow(config);
+}
+
+void ClientHandler::SetStringResource(const std::string& page,
+                                      const std::string& data) {
+  if (!CefCurrentlyOn(TID_IO)) {
+    CefPostTask(TID_IO, base::Bind(&ClientHandler::SetStringResource, this,
+                                   page, data));
+    return;
+  }
+
+  string_resource_map_[page] = data;
 }
 
 bool ClientHandler::CreatePopupWindow(CefRefPtr<CefBrowser> browser,

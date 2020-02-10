@@ -9,11 +9,10 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=47ed1f92a294b94c071f554621484722483c3bd6$
+// $hash=376e1cc8d7296348282ac0e9f74a1149bbb97780$
 //
 
 #include "libcef_dll/cpptoc/client_cpptoc.h"
-#include "libcef_dll/cpptoc/audio_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/context_menu_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/dialog_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/display_handler_cpptoc.h"
@@ -28,27 +27,12 @@
 #include "libcef_dll/cpptoc/render_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/request_handler_cpptoc.h"
 #include "libcef_dll/ctocpp/browser_ctocpp.h"
+#include "libcef_dll/ctocpp/frame_ctocpp.h"
 #include "libcef_dll/ctocpp/process_message_ctocpp.h"
 
 namespace {
 
 // MEMBER FUNCTIONS - Body may be edited by hand.
-
-cef_audio_handler_t* CEF_CALLBACK
-client_get_audio_handler(struct _cef_client_t* self) {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  DCHECK(self);
-  if (!self)
-    return NULL;
-
-  // Execute
-  CefRefPtr<CefAudioHandler> _retval =
-      CefClientCppToC::Get(self)->GetAudioHandler();
-
-  // Return type: refptr_same
-  return CefAudioHandlerCppToC::Wrap(_retval);
-}
 
 struct _cef_context_menu_handler_t* CEF_CALLBACK
 client_get_context_menu_handler(struct _cef_client_t* self) {
@@ -261,6 +245,7 @@ client_get_request_handler(struct _cef_client_t* self) {
 int CEF_CALLBACK
 client_on_process_message_received(struct _cef_client_t* self,
                                    cef_browser_t* browser,
+                                   struct _cef_frame_t* frame,
                                    cef_process_id_t source_process,
                                    struct _cef_process_message_t* message) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
@@ -272,6 +257,10 @@ client_on_process_message_received(struct _cef_client_t* self,
   DCHECK(browser);
   if (!browser)
     return 0;
+  // Verify param: frame; type: refptr_diff
+  DCHECK(frame);
+  if (!frame)
+    return 0;
   // Verify param: message; type: refptr_diff
   DCHECK(message);
   if (!message)
@@ -279,8 +268,8 @@ client_on_process_message_received(struct _cef_client_t* self,
 
   // Execute
   bool _retval = CefClientCppToC::Get(self)->OnProcessMessageReceived(
-      CefBrowserCToCpp::Wrap(browser), source_process,
-      CefProcessMessageCToCpp::Wrap(message));
+      CefBrowserCToCpp::Wrap(browser), CefFrameCToCpp::Wrap(frame),
+      source_process, CefProcessMessageCToCpp::Wrap(message));
 
   // Return type: bool
   return _retval;
@@ -291,7 +280,6 @@ client_on_process_message_received(struct _cef_client_t* self,
 // CONSTRUCTOR - Do not edit by hand.
 
 CefClientCppToC::CefClientCppToC() {
-  GetStruct()->get_audio_handler = client_get_audio_handler;
   GetStruct()->get_context_menu_handler = client_get_context_menu_handler;
   GetStruct()->get_dialog_handler = client_get_dialog_handler;
   GetStruct()->get_display_handler = client_get_display_handler;

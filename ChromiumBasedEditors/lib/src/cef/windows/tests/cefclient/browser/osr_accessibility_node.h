@@ -11,12 +11,19 @@
 #include "include/cef_browser.h"
 
 #if defined(OS_MACOSX)
-#ifdef __OBJC__
-@class NSObject;
-#else
-class NSObject;
-#endif
-typedef NSObject CefNativeAccessible;
+typedef void CefNativeAccessible;
+#if __OBJC__
+#if __has_feature(objc_arc)
+#define CAST_CEF_NATIVE_ACCESSIBLE_TO_NSOBJECT(accessible) \
+  (__bridge NSObject*)accessible
+#define CAST_NSOBJECT_TO_CEF_NATIVE_ACCESSIBLE(object) \
+  (__bridge CefNativeAccessible*)object
+#else  // __has_feature(objc_arc)
+#define CAST_CEF_NATIVE_ACCESSIBLE_TO_NSOBJECT(accessible) (NSObject*)accessible
+#define CAST_NSOBJECT_TO_CEF_NATIVE_ACCESSIBLE(object) \
+  (__bridge CefNativeAccessible*)object
+#endif  // __has_feature(objc_arc)
+#endif  // __OBJC__
 #elif defined(OS_WIN)
 struct IAccessible;
 typedef IAccessible CefNativeAccessible;
@@ -33,11 +40,16 @@ class OsrAccessibilityHelper;
 class OsrAXNode {
  public:
   // Create and return the platform specific OsrAXNode Object.
-  static OsrAXNode* CreateNode(CefRefPtr<CefDictionaryValue> value,
+  static OsrAXNode* CreateNode(int treeId,
+                               int nodeId,
+                               CefRefPtr<CefDictionaryValue> value,
                                OsrAccessibilityHelper* helper);
 
   // Update Value.
   void UpdateValue(CefRefPtr<CefDictionaryValue> value);
+
+  // UpdateLocation
+  void UpdateLocation(CefRefPtr<CefDictionaryValue> value);
 
   // Fire a platform-specific notification that an event has occurred on
   // this object.
@@ -58,12 +70,14 @@ class OsrAXNode {
     return accessibility_helper_;
   }
 
-  int GetChildCount() const { return static_cast<int>(child_ids_.size()); }
+  int GetChildCount() const;
 
   // Return the Child at the specified index
   OsrAXNode* ChildAtIndex(int index) const;
 
   const CefString& AxRole() const { return role_; }
+
+  int OsrAXTreeId() const { return tree_id_; }
 
   int OsrAXNodeId() const { return node_id_; }
 
@@ -82,15 +96,20 @@ class OsrAXNode {
   void SetParent(OsrAXNode* parent);
 
  protected:
-  OsrAXNode(CefRefPtr<CefDictionaryValue> value,
+  OsrAXNode(int treeId,
+            int nodeId,
+            CefRefPtr<CefDictionaryValue> value,
             OsrAccessibilityHelper* helper);
 
+  int tree_id_;
   int node_id_;
+  int child_tree_id_;
   CefString role_;
   CefString value_;
   CefString name_;
   CefString description_;
   CefRect location_;
+  CefPoint scroll_;
   std::vector<int> child_ids_;
   CefNativeAccessible* platform_accessibility_;
   OsrAXNode* parent_;

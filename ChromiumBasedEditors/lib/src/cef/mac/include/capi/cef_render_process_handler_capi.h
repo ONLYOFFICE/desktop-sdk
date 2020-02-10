@@ -33,7 +33,7 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=63544b02e263d0aeb2f6553bf40c52bcf72d9f0b$
+// $hash=6c6efd722dda7480a5449ef31f1d6d9a16fd3465$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_RENDER_PROCESS_HANDLER_CAPI_H_
@@ -83,11 +83,16 @@ typedef struct _cef_render_process_handler_t {
   ///
   // Called after a browser has been created. When browsing cross-origin a new
   // browser will be created before the old browser with the same identifier is
-  // destroyed.
+  // destroyed. |extra_info| is a read-only value originating from
+  // cef_browser_host_t::cef_browser_host_create_browser(),
+  // cef_browser_host_t::cef_browser_host_create_browser_sync(),
+  // cef_life_span_handler_t::on_before_popup() or
+  // cef_browser_view_t::cef_browser_view_create().
   ///
   void(CEF_CALLBACK* on_browser_created)(
       struct _cef_render_process_handler_t* self,
-      struct _cef_browser_t* browser);
+      struct _cef_browser_t* browser,
+      struct _cef_dictionary_value_t* extra_info);
 
   ///
   // Called before a browser is destroyed.
@@ -161,6 +166,7 @@ typedef struct _cef_render_process_handler_t {
   int(CEF_CALLBACK* on_process_message_received)(
       struct _cef_render_process_handler_t* self,
       struct _cef_browser_t* browser,
+      struct _cef_frame_t* frame,
       cef_process_id_t source_process,
       struct _cef_process_message_t* message);
 } cef_render_process_handler_t;

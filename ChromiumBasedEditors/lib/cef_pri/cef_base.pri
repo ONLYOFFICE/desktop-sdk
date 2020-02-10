@@ -38,11 +38,11 @@ HEADERS += \
     $$CEF_SRC_PATH/include/base/internal/cef_bind_internal.h \
     $$CEF_SRC_PATH/include/base/internal/cef_callback_internal.h \
     $$CEF_SRC_PATH/include/base/internal/cef_lock_impl.h \
+    $$CEF_SRC_PATH/include/base/internal/cef_net_error_list.h \
     $$CEF_SRC_PATH/include/base/internal/cef_raw_scoped_refptr_mismatch_checker.h \
     $$CEF_SRC_PATH/include/base/internal/cef_thread_checker_impl.h \
     $$CEF_SRC_PATH/include/capi/cef_accessibility_handler_capi.h \
     $$CEF_SRC_PATH/include/capi/cef_app_capi.h \
-    $$CEF_SRC_PATH/include/capi/cef_audio_handler_capi.h \
     $$CEF_SRC_PATH/include/capi/cef_auth_callback_capi.h \
     $$CEF_SRC_PATH/include/capi/cef_base_capi.h \
     $$CEF_SRC_PATH/include/capi/cef_browser_capi.h \
@@ -83,6 +83,7 @@ HEADERS += \
     $$CEF_SRC_PATH/include/capi/cef_process_util_capi.h \
     $$CEF_SRC_PATH/include/capi/cef_render_handler_capi.h \
     $$CEF_SRC_PATH/include/capi/cef_render_process_handler_capi.h \
+    $$CEF_SRC_PATH/include/capi/cef_request_callback_capi.h \
     $$CEF_SRC_PATH/include/capi/cef_request_capi.h \
     $$CEF_SRC_PATH/include/capi/cef_request_context_capi.h \
     $$CEF_SRC_PATH/include/capi/cef_request_context_handler_capi.h \
@@ -90,6 +91,7 @@ HEADERS += \
     $$CEF_SRC_PATH/include/capi/cef_resource_bundle_capi.h \
     $$CEF_SRC_PATH/include/capi/cef_resource_bundle_handler_capi.h \
     $$CEF_SRC_PATH/include/capi/cef_resource_handler_capi.h \
+    $$CEF_SRC_PATH/include/capi/cef_resource_request_handler_capi.h \
     $$CEF_SRC_PATH/include/capi/cef_response_capi.h \
     $$CEF_SRC_PATH/include/capi/cef_response_filter_capi.h \
     $$CEF_SRC_PATH/include/capi/cef_scheme_capi.h \
@@ -134,7 +136,6 @@ HEADERS += \
     $$CEF_SRC_PATH/include/cef_accessibility_handler.h \
     $$CEF_SRC_PATH/include/cef_api_hash.h \
     $$CEF_SRC_PATH/include/cef_app.h \
-    $$CEF_SRC_PATH/include/cef_audio_handler.h \
     $$CEF_SRC_PATH/include/cef_auth_callback.h \
     $$CEF_SRC_PATH/include/cef_base.h \
     $$CEF_SRC_PATH/include/cef_browser.h \
@@ -142,6 +143,7 @@ HEADERS += \
     $$CEF_SRC_PATH/include/cef_callback.h \
     $$CEF_SRC_PATH/include/cef_client.h \
     $$CEF_SRC_PATH/include/cef_command_line.h \
+    $$CEF_SRC_PATH/include/cef_config.h \
     $$CEF_SRC_PATH/include/cef_context_menu_handler.h \
     $$CEF_SRC_PATH/include/cef_cookie.h \
     $$CEF_SRC_PATH/include/cef_crash_util.h \
@@ -178,12 +180,14 @@ HEADERS += \
     $$CEF_SRC_PATH/include/cef_render_handler.h \
     $$CEF_SRC_PATH/include/cef_render_process_handler.h \
     $$CEF_SRC_PATH/include/cef_request.h \
+    $$CEF_SRC_PATH/include/cef_request_callback.h \
     $$CEF_SRC_PATH/include/cef_request_context.h \
     $$CEF_SRC_PATH/include/cef_request_context_handler.h \
     $$CEF_SRC_PATH/include/cef_request_handler.h \
     $$CEF_SRC_PATH/include/cef_resource_bundle.h \
     $$CEF_SRC_PATH/include/cef_resource_bundle_handler.h \
     $$CEF_SRC_PATH/include/cef_resource_handler.h \
+    $$CEF_SRC_PATH/include/cef_resource_request_handler.h \
     $$CEF_SRC_PATH/include/cef_response.h \
     $$CEF_SRC_PATH/include/cef_response_filter.h \
     $$CEF_SRC_PATH/include/cef_scheme.h \
@@ -251,13 +255,13 @@ HEADERS += \
     $$CEF_SRC_PATH/include/wrapper/cef_zip_archive.h \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/accessibility_handler_cpptoc.h \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/app_cpptoc.h \
-    $$CEF_SRC_PATH/libcef_dll/cpptoc/audio_handler_cpptoc.h \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/base_ref_counted_cpptoc.h \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/base_scoped_cpptoc.h \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/browser_process_handler_cpptoc.h \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/client_cpptoc.h \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/completion_callback_cpptoc.h \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/context_menu_handler_cpptoc.h \
+    $$CEF_SRC_PATH/libcef_dll/cpptoc/cookie_access_filter_cpptoc.h \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/cookie_visitor_cpptoc.h \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/cpptoc_ref_counted.h \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/cpptoc_scoped.h \
@@ -289,6 +293,7 @@ HEADERS += \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/resolve_callback_cpptoc.h \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/resource_bundle_handler_cpptoc.h \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/resource_handler_cpptoc.h \
+    $$CEF_SRC_PATH/libcef_dll/cpptoc/resource_request_handler_cpptoc.h \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/response_filter_cpptoc.h \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/run_file_dialog_callback_cpptoc.h \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/scheme_handler_factory_cpptoc.h \
@@ -351,6 +356,8 @@ HEADERS += \
     $$CEF_SRC_PATH/libcef_dll/ctocpp/request_context_ctocpp.h \
     $$CEF_SRC_PATH/libcef_dll/ctocpp/request_ctocpp.h \
     $$CEF_SRC_PATH/libcef_dll/ctocpp/resource_bundle_ctocpp.h \
+    $$CEF_SRC_PATH/libcef_dll/ctocpp/resource_read_callback_ctocpp.h \
+    $$CEF_SRC_PATH/libcef_dll/ctocpp/resource_skip_callback_ctocpp.h \
     $$CEF_SRC_PATH/libcef_dll/ctocpp/response_ctocpp.h \
     $$CEF_SRC_PATH/libcef_dll/ctocpp/run_context_menu_callback_ctocpp.h \
     $$CEF_SRC_PATH/libcef_dll/ctocpp/scheme_registrar_ctocpp.h \
@@ -416,13 +423,13 @@ SOURCES += \
     $$CEF_SRC_PATH/libcef_dll/base/cef_weak_ptr.cc \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/accessibility_handler_cpptoc.cc \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/app_cpptoc.cc \
-    $$CEF_SRC_PATH/libcef_dll/cpptoc/audio_handler_cpptoc.cc \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/base_ref_counted_cpptoc.cc \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/base_scoped_cpptoc.cc \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/browser_process_handler_cpptoc.cc \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/client_cpptoc.cc \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/completion_callback_cpptoc.cc \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/context_menu_handler_cpptoc.cc \
+    $$CEF_SRC_PATH/libcef_dll/cpptoc/cookie_access_filter_cpptoc.cc \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/cookie_visitor_cpptoc.cc \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/delete_cookies_callback_cpptoc.cc \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/dialog_handler_cpptoc.cc \
@@ -452,6 +459,7 @@ SOURCES += \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/resolve_callback_cpptoc.cc \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/resource_bundle_handler_cpptoc.cc \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/resource_handler_cpptoc.cc \
+    $$CEF_SRC_PATH/libcef_dll/cpptoc/resource_request_handler_cpptoc.cc \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/response_filter_cpptoc.cc \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/run_file_dialog_callback_cpptoc.cc \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/scheme_handler_factory_cpptoc.cc \
@@ -512,6 +520,8 @@ SOURCES += \
     $$CEF_SRC_PATH/libcef_dll/ctocpp/request_context_ctocpp.cc \
     $$CEF_SRC_PATH/libcef_dll/ctocpp/request_ctocpp.cc \
     $$CEF_SRC_PATH/libcef_dll/ctocpp/resource_bundle_ctocpp.cc \
+    $$CEF_SRC_PATH/libcef_dll/ctocpp/resource_read_callback_ctocpp.cc \
+    $$CEF_SRC_PATH/libcef_dll/ctocpp/resource_skip_callback_ctocpp.cc \
     $$CEF_SRC_PATH/libcef_dll/ctocpp/response_ctocpp.cc \
     $$CEF_SRC_PATH/libcef_dll/ctocpp/run_context_menu_callback_ctocpp.cc \
     $$CEF_SRC_PATH/libcef_dll/ctocpp/scheme_registrar_ctocpp.cc \
@@ -572,6 +582,7 @@ SOURCES += \
 
 core_windows {
 HEADERS += \
+    $$CEF_SRC_PATH/include/base/internal/cef_atomicops_arm64_msvc.h \
     $$CEF_SRC_PATH/include/base/internal/cef_atomicops_x86_msvc.h \
     $$CEF_SRC_PATH/include/base/internal/cef_bind_internal_win.h \
     $$CEF_SRC_PATH/include/cef_sandbox_win.h \
@@ -581,6 +592,7 @@ HEADERS += \
 
 core_linux {
 HEADERS += \
+    $$CEF_SRC_PATH/include/base/internal/cef_atomicops_arm64_gcc.h \
     $$CEF_SRC_PATH/include/base/internal/cef_atomicops_arm_gcc.h \
     $$CEF_SRC_PATH/include/base/internal/cef_atomicops_atomicword_compat.h \
     $$CEF_SRC_PATH/include/base/internal/cef_atomicops_x86_gcc.h \
