@@ -13,7 +13,7 @@ include(../../../core/Common/base.pri)
 
 DESTDIR = $$CORE_BUILDS_BINARY_PATH
 
-ADD_DEPENDENCY(graphics, kernel, UnicodeConverter, PdfReader, XpsFile, DjVuFile, HtmlRenderer, ooxmlsignature, ascdocumentscore)
+ADD_DEPENDENCY(ascdocumentscore)
 
 core_linux {
     QMAKE_LFLAGS += "-Wl,-rpath,\'\$$ORIGIN\'"
