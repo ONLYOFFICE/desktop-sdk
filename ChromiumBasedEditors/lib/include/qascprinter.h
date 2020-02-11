@@ -195,10 +195,7 @@ public:
             QRect rect((int)x + nPhysicalX, (int)y + nPhysicalY, nWDst, nHDst);
             QRect rectSrc(nPhysicalX, nPhysicalY, nWDst, nHDst);
 
-            //QRectF rectF((float)x + nPhysicalX, (float)y, (float)w, (float)h);
-            //painter->drawImage(rectF, oImage);
-
-            painter->drawImage(rect, oImage, rectSrc);
+            this->DrawImage(painter, oImage, rect, rectSrc);
         }
         else
         {
@@ -217,7 +214,7 @@ public:
             QRect rect((int)x + nPhysicalX, (int)y + nPhysicalY, nWDst, nHDst);
             QRect rectSrc(nPhysicalX, nPhysicalY, nWDst, nHDst);
 
-            painter->drawImage(rect, oImage, rectSrc);
+            this->DrawImage(painter, oImage, rect, rectSrc);
         }
 
         painter->restore();
@@ -229,6 +226,37 @@ public:
         }
 
         //m_oPrinter.setFullPage(false);
+    }
+
+private:
+    void DrawImage(QPainter* painter, const QImage& image, const QRect& rect, const QRect& rectSrc)
+    {
+#if 0
+        // нельзя просто печатать весь растр целиком, так как некоторые принтеры
+        // не пропускают столько информации.
+        painter->drawImage(rect, image, rectSrc);
+#endif
+
+        int nHDst = rect.height();
+        int nMaxHeight = 100;
+        int nCurHeight = 0;
+        while (nCurHeight < nHDst)
+        {
+            int nRowH = nHDst - nCurHeight;
+            if (nRowH > nMaxHeight)
+                nRowH = nMaxHeight;
+
+            QRect _rect = rect;
+            _rect.setY(_rect.y() + nCurHeight);
+            _rect.setHeight(nRowH);
+            QRect _rectSrc = rectSrc;
+            _rectSrc.setY(_rectSrc.y() + nCurHeight);
+            _rectSrc.setHeight(nRowH);
+
+            painter->drawImage(_rect, image, _rectSrc);
+
+            nCurHeight += nRowH;
+        }
     }
 };
 
