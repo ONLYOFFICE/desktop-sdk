@@ -54,6 +54,21 @@
 #include "tests/cefclient/browser/root_window_manager.h"
 #include <iostream>
 
+#ifdef CEF_2623
+#define MESSAGE_IN_BROWSER
+#else
+// с версии выше 74 - убрать определение
+//#define MESSAGE_IN_BROWSER
+#endif
+
+#ifdef MESSAGE_IN_BROWSER
+#define SEND_MESSAGE_TO_BROWSER_PROCESS(message) CefV8Context::GetCurrentContext()->GetBrowser()->SendProcessMessage(PID_BROWSER, message)
+#define SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message) browser->SendProcessMessage(PID_RENDERER, message)
+#else
+#define SEND_MESSAGE_TO_BROWSER_PROCESS(message) CefV8Context::GetCurrentContext()->GetFrame()->SendProcessMessage(PID_BROWSER, message)
+#define SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message) browser->GetMainFrame()->SendProcessMessage(PID_RENDERER, message)
+#endif
+
 class CGlobalHtmlFileParams
 {
 public:
@@ -74,12 +89,19 @@ class CHtmlRenderHandler : public CefRenderHandler
 public:
     CHtmlRenderHandler() {}
 
-public:    
+public:
+#ifdef CEF_2623
     virtual bool GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
     {
         rect = CefRect(0, 0, 1000, 1000);
         return true;
     }
+#else
+    virtual void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
+    {
+        rect = CefRect(0, 0, 1000, 1000);
+    }
+#endif
     virtual void OnPaint(CefRefPtr<CefBrowser> browser,
                          PaintElementType type,
                          const RectList& dirtyRects,
@@ -126,6 +148,10 @@ public:
     {
         return m_render;
     }
+
+#ifndef CEF_2623
+    virtual void OnAutoResize(const CefSize& new_size) OVERRIDE {}
+#endif
 
     void Init()
     {
@@ -344,6 +370,9 @@ window.onload = function ()\
     }    
 
     virtual bool OnConsoleMessage(CefRefPtr<CefBrowser> browser,
+                                  #ifndef CEF_2623
+                                  cef_log_severity_t level,
+                                  #endif
                                   const CefString& message,
                                   const CefString& source,
                                   int line) OVERRIDE

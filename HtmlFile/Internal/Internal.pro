@@ -7,10 +7,22 @@ TEMPLATE = app
 
 CORE_ROOT_DIR = $$PWD/../../../core
 PWD_ROOT_DIR = $$PWD
+
+CONFIG += core_static_link_libstd
 include($$CORE_ROOT_DIR/Common/base.pri)
 include($$CORE_ROOT_DIR/Common/3dParty/icu/icu.pri)
 
-include($$CORE_ROOT_DIR/../desktop-sdk/ChromiumBasedEditors/lib/AscDocumentsCore_base.pri)
+DEFINES += ASC_HIDE_WINDOW
+
+CEF_PROJECT_PRI=$$PWD_ROOT_DIR/../../ChromiumBasedEditors/lib/cef_pri
+build_xp {
+    include($$CEF_PROJECT_PRI/cef_base_xp.pri)
+    include($$CEF_PROJECT_PRI/cef_client_xp.pri)
+} else {
+    include($$CEF_PROJECT_PRI/cef_base.pri)
+    include($$CEF_PROJECT_PRI/cef_client.pri)
+}
+
 ADD_DEPENDENCY(graphics, kernel, UnicodeConverter)
 
 DESTDIR=$$CORE_BUILDS_LIBRARIES_PATH
@@ -24,21 +36,6 @@ SOURCES += \
 
 SOURCES += \
     $$PWD/src/main.cpp
-
-win32 {
-    include($$CORE_ROOT_DIR/../desktop-sdk/ChromiumBasedEditors/lib/AscDocumentsCore_windows.pri)
-}
-linux-g++ | linux-g++-64 | linux-g++-32 {
-    include($$CORE_ROOT_DIR/../desktop-sdk/ChromiumBasedEditors/lib/AscDocumentsCore_linux.pri)
-
-    CONFIG += link_pkgconfig c++11
-    PKGCONFIG += glib-2.0 gdk-2.0 atk cairo gtk+-unix-print-2.0
-    LIBS += -lX11
-
-    QMAKE_LFLAGS += "-Wl,-rpath,\'\$$ORIGIN\'"
-    QMAKE_LFLAGS += "-Wl,-rpath,\'\$$ORIGIN/converter\'"
-    QMAKE_LFLAGS += -static-libstdc++ -static-libgcc
-}
 
 #DEFINES += DEBUG_WINDOW_SHOW
 #DESTDIR=$$CORE_ROOT_DIR/HtmlFile/test/Debug/HtmlFileInternal

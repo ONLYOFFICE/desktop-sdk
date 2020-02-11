@@ -202,9 +202,11 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
     // Initialize CEF.
     context->Initialize(main_args, settings, app, NULL);
 
+#ifdef CEF_2623
     CefRefPtr<CefCookieManager> manager = CefCookieManager::GetGlobalManager(NULL);
-    manager->SetStoragePath(sCachePath, true, NULL);
+    manager->SetStoragePath(sCachePath, true, NULL);    
     manager = NULL;
+#endif
 
 #ifdef _LINUX
     // Install a signal handler so we clean up after ourselves.
@@ -222,10 +224,13 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
     window_info.SetAsWindowless(NULL);
 #endif
 
-    CefRefPtr<CefRequestContext> request_context;
     CefBrowserSettings browser_settings;
     browser_settings.plugins = STATE_DISABLED;
-    CefBrowserHost::CreateBrowser(window_info, client_handler.get(), client_handler->GetUrl(), browser_settings, request_context);
+    CefBrowserHost::CreateBrowser(window_info, client_handler.get(), client_handler->GetUrl(), browser_settings, NULL
+                                              #ifndef MESSAGE_IN_BROWSER
+                                                  , NULL
+                                              #endif
+                                  );
 
     scoped_ptr<client::MainMessageLoop> message_loop;
     message_loop.reset(new client::MainMessageLoopStd);
