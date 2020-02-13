@@ -79,6 +79,85 @@ int XIOErrorHandlerImpl(Display *display)
 #include "tests/shared/browser/main_message_loop_std.h"
 #include "tests/shared/browser/main_message_loop_external_pump.h"
 
+class CMainMessageLoopExternalPumpBase : public client::MainMessageLoopExternalPump
+{
+private:
+    bool timer_pending_;
+    IExternalMessageLoop* message_loop_;
+
+public:
+    CMainMessageLoopExternalPumpBase(IExternalMessageLoop* native_loop) : client::MainMessageLoopExternalPump()
+    {
+        timer_pending_ = false;
+        message_loop_ = native_loop;
+    }
+    ~CMainMessageLoopExternalPumpBase()
+    {
+        message_loop_->KillTimer();
+    }
+
+    virtual void Quit() OVERRIDE
+    {
+        message_loop_->Exit();
+    }
+    virtual int Run() OVERRIDE
+    {
+        message_loop_->Run();
+
+        for (int i = 0; i < 10; ++i)
+        {
+            // Do some work.
+            CefDoMessageLoopWork();
+
+            // Sleep to allow the CEF proc to do work.
+            NSThreads::Sleep(50);
+        }
+
+        return 0;
+    }
+
+    void OnScheduleMessagePumpWork(int64 delay_ms) OVERRIDE
+    {
+        message_loop_->Execute(new int64(delay_ms));
+    }
+
+    static scoped_ptr<client::MainMessageLoopExternalPump> Create(IExternalMessageLoop* native_loop)
+    {
+        return scoped_ptr<client::MainMessageLoopExternalPump>(new CMainMessageLoopExternalPumpBase(native_loop));
+    }
+
+public:
+    void OnExecute(void* message)
+    {
+        int64* addr = (int64*)message;
+        const int64 delay_ms = *addr;
+        delete addr;
+        OnScheduleWork(delay_ms);
+
+    }
+    void OnTimer()
+    {
+        OnTimerTimeout();
+    }
+
+protected:
+    virtual bool IsTimerPending() OVERRIDE
+    {
+        return timer_pending_;
+    }
+
+    virtual void SetTimer(int64 delay_ms) OVERRIDE
+    {
+        timer_pending_ = true;
+        message_loop_->SetTimer(delay_ms);
+    }
+    virtual void KillTimer() OVERRIDE
+    {
+        message_loop_->KillTimer();
+        timer_pending_ = false;
+    }
+};
+
 #ifdef WIN32
 #include "tests/cefclient/browser/main_message_loop_multithreaded_win.h"
 namespace client {
@@ -299,13 +378,17 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     //isMultithreaded = true;
 #endif
 
+    pManager->SetApplication(this);
+
     bool is_external = false;
 #ifndef CEF_2623
     if (m_pInternal->m_pManager->IsExternalEventLoop())
     {
-        settings.external_message_pump = 1;
-        m_pInternal->message_loop = client::MainMessageLoopExternalPump::Create();
-        is_external = true;
+        if (m_pInternal->message_loop)
+        {
+            settings.external_message_pump = 1;
+            is_external = true;
+        }
     }
 #endif
     if (!is_external)
@@ -359,8 +442,6 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     XSetErrorHandler(XErrorHandlerImpl);
     XSetIOErrorHandler(XIOErrorHandlerImpl);
 #endif
-
-    pManager->SetApplication(this);
 
     CPluginsManager oPlugins;
     oPlugins.m_strDirectory = pManager->m_oSettings.system_plugins_path;
@@ -501,3 +582,30 @@ bool CApplicationCEF::IsMainProcess(int argc, char* argv[])
 #endif
     return bIsMain;
 }
+
+// External message loop
+bool CAscApplicationManager::IsExternalEventLoop()
+{
+    return false;
+}
+void CAscApplicationManager::SetExternalMessageLoop(IExternalMessageLoop* message_loop)
+{
+#ifndef CEF_2623
+    m_pInternal->m_pApplication->m_pInternal->message_loop = CMainMessageLoopExternalPumpBase::Create(message_loop);
+#endif
+}
+void CAscApplicationManager::ExternalMessageLoop_OnExecute(void* message)
+{
+#ifndef CEF_2623
+    CMainMessageLoopExternalPumpBase* loop = (CMainMessageLoopExternalPumpBase*)(m_pInternal->m_pApplication->m_pInternal->message_loop.get());
+    loop->OnExecute(message);
+#endif
+}
+void CAscApplicationManager::ExternalMessageLoop_OnTimeout()
+{
+#ifndef CEF_2623
+    CMainMessageLoopExternalPumpBase* loop = (CMainMessageLoopExternalPumpBase*)(m_pInternal->m_pApplication->m_pInternal->message_loop.get());
+    loop->OnTimer();
+#endif
+}
+//

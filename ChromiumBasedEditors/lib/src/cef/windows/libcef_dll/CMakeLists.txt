@@ -47,6 +47,8 @@ set(LIBCEF_CPPTOC_SRCS
   cpptoc/accessibility_handler_cpptoc.h
   cpptoc/app_cpptoc.cc
   cpptoc/app_cpptoc.h
+  cpptoc/audio_handler_cpptoc.cc
+  cpptoc/audio_handler_cpptoc.h
   cpptoc/base_ref_counted_cpptoc.cc
   cpptoc/base_ref_counted_cpptoc.h
   cpptoc/base_scoped_cpptoc.cc
@@ -366,6 +368,7 @@ set(LIBCEF_INCLUDE_SRCS
   ../include/cef_accessibility_handler.h
   ../include/cef_api_hash.h
   ../include/cef_app.h
+  ../include/cef_audio_handler.h
   ../include/cef_auth_callback.h
   ../include/cef_base.h
   ../include/cef_browser.h
@@ -483,7 +486,6 @@ set(LIBCEF_INCLUDE_BASE_INTERNAL_SRCS
   ../include/base/internal/cef_thread_checker_impl.h
   )
 set(LIBCEF_INCLUDE_BASE_INTERNAL_SRCS_LINUX
-  ../include/base/internal/cef_atomicops_arm64_gcc.h
   ../include/base/internal/cef_atomicops_arm_gcc.h
   ../include/base/internal/cef_atomicops_atomicword_compat.h
   ../include/base/internal/cef_atomicops_x86_gcc.h
@@ -493,7 +495,6 @@ set(LIBCEF_INCLUDE_BASE_INTERNAL_SRCS_MACOSX
   ../include/base/internal/cef_atomicops_mac.h
   )
 set(LIBCEF_INCLUDE_BASE_INTERNAL_SRCS_WINDOWS
-  ../include/base/internal/cef_atomicops_arm64_msvc.h
   ../include/base/internal/cef_atomicops_x86_msvc.h
   ../include/base/internal/cef_bind_internal_win.h
   )
@@ -503,6 +504,7 @@ source_group(include\\\\base\\\\internal FILES ${LIBCEF_INCLUDE_BASE_INTERNAL_SR
 set(LIBCEF_INCLUDE_CAPI_SRCS
   ../include/capi/cef_accessibility_handler_capi.h
   ../include/capi/cef_app_capi.h
+  ../include/capi/cef_audio_handler_capi.h
   ../include/capi/cef_auth_callback_capi.h
   ../include/capi/cef_base_capi.h
   ../include/capi/cef_browser_capi.h

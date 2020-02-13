@@ -30,54 +30,38 @@
  *
  */
 
-#include "./qcefview_media.h"
+#ifndef QEXTERNAL_MESSAGE_LOOP_H
+#define QEXTERNAL_MESSAGE_LOOP_H
 
-void QCefView_SetProperty(QObject* w, const QVariant& p)
+#include "./../include/applicationmanager.h"
+#include <QApplication>
+#include <QTimer>
+
+class DESKTOP_DECL QExternalMessageLoop : public QObject, public IExternalMessageLoop
 {
-    w->setProperty("native_dpi", p);
-    QObjectList childs = w->children();
-    for (int i = childs.count() - 1; i >= 0; --i)
-    {
-        QCefView_SetProperty(childs.at(i), p);
-    }
-}
+    Q_OBJECT
 
-void QCefView_SetDPI(QWidget* w, const double& v)
-{
-    QVariant p(v);
-    QCefView_SetProperty(w, p);
-}
+public:
+    QExternalMessageLoop(CAscApplicationManager* manager);
+    virtual ~QExternalMessageLoop();
 
-QCefView_Media::QCefView_Media(QWidget* parent) : QCefView(parent)
-{
-    m_pMediaView = NULL;
-}
+public:
+    virtual void Run();
+    virtual void Execute(void* message);
+    virtual void SetTimer(long delay);
+    virtual void KillTimer();
+    virtual void Exit();
 
-QCefView_Media::~QCefView_Media()
-{
-    OnMediaEnd();
-}
+Q_SIGNALS:
+    void onExecuteCommand(void*);
 
-void QCefView_Media::OnMediaStart(NSEditorApi::CAscExternalMedia* data)
-{
-    if (m_pMediaView)
-        return;
+public Q_SLOTS:
+    void slot_onExecuteCommand(void*);
+    void slot_onTimeout();
 
-    m_pMediaView = new QAscVideoView(this, 49, 52, 55);
-    m_pMediaView->setPlayListUsed(false);
-    m_pMediaView->setFullScreenUsed(false);
-    m_pMediaView->setPresentationMode(true);
-    QCefView_SetDPI(this, m_pCefView->GetDeviceScale());
-    m_pMediaView->setGeometry(data->get_BoundsX(), data->get_BoundsY(), data->get_BoundsW(), data->get_BoundsH());
-    m_pMediaView->setMedia(QString::fromStdWString(data->get_Url()));
-    //m_pMediaView->show();
-}
-void QCefView_Media::OnMediaEnd()
-{
-    if (!m_pMediaView)
-        return;
+private:
+    QTimer m_timer;
+    CAscApplicationManager* m_manager;
+};
 
-    m_pMediaView->Stop();
-    m_pMediaView->deleteLater();
-    m_pMediaView = NULL;
-}
+#endif  // QEXTERNAL_MESSAGE_LOOP_H

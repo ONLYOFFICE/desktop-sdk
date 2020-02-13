@@ -48,17 +48,14 @@ class TestWindowDelegate : public CefWindowDelegate {
                   const CefKeyEvent& event) override;
 
  private:
-  TestWindowDelegate(CefRefPtr<CefWaitableEvent> event,
-                     const Config& config,
-                     const CefSize& window_size);
+  TestWindowDelegate(CefRefPtr<CefWaitableEvent> event, const Config& config);
   ~TestWindowDelegate() override;
 
   void OnCloseWindow();
   void OnTimeoutWindow();
 
   CefRefPtr<CefWaitableEvent> event_;
-  const Config config_;
-  const CefSize window_size_;
+  Config config_;
 
   CefRefPtr<CefWindow> window_;
 

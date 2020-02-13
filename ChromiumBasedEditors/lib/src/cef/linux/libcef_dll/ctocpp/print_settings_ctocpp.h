@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=b9e902ff99086dca1a15f17daaeda2f9e32f6d89$
+// $hash=d031ce1331738df412c61dd9bf4c6d36f94b82a8$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_PRINT_SETTINGS_CTOCPP_H_
@@ -37,6 +37,7 @@ class CefPrintSettingsCToCpp
   // CefPrintSettings methods.
   bool IsValid() OVERRIDE;
   bool IsReadOnly() OVERRIDE;
+  CefRefPtr<CefPrintSettings> Copy() OVERRIDE;
   void SetOrientation(bool landscape) OVERRIDE;
   bool IsLandscape() OVERRIDE;
   void SetPrinterPrintableArea(const CefSize& physical_size_device_units,

@@ -30,25 +30,45 @@
  *
  */
 
-#ifndef CEFCLIENT_QCEFWEBVIEW_MEDIA_H
-#define CEFCLIENT_QCEFWEBVIEW_MEDIA_H
+#ifndef QASCPRINTER_H
+#define QASCPRINTER_H
 
-#include "./qcefview.h"
-#include "../../videoplayerlib/qascvideoview.h"
+#include <QtPrintSupport/QPrinter>
+#include <QtPrintSupport/QPrintDialog>
+#include <QPainter>
+#include <QPaintEngine>
 
-class QCefView_Media : public QCefView
+#include "./../../include/base.h"
+#include "./../../include/applicationmanager_events.h"
+
+class DESKTOP_DECL QAscPrinterContext : public NSEditorApi::CAscPrinterContextBase
 {
-    Q_OBJECT
+private:
+    QPrinter m_oPrinter;
+    QPainter m_oPainter;
+    bool m_bIsUsePainter;
 
 public:
-    QCefView_Media(QWidget* parent);
-    virtual ~QCefView_Media();
+    QAscPrinterContext(QPrinter::PrinterMode eMode = QPrinter::HighResolution);
+    QAscPrinterContext(const QPrinterInfo& pi, QPrinter::PrinterMode eMode = QPrinter::HighResolution);
+    virtual ~QAscPrinterContext();
 
-    virtual void OnMediaStart(NSEditorApi::CAscExternalMedia* data);
-    virtual void OnMediaEnd();
+    bool BeginPaint();
+    void EndPaint();
 
-protected:
-    QAscVideoView* m_pMediaView;
+    QPrinter* getPrinter();
+
+    virtual void GetLogicalDPI(int& nDpiX, int& nDpiY);
+
+    virtual void GetPhysicalRect(int& nX, int& nY, int& nW, int& nH);
+
+    virtual void GetPrintAreaSize(int& nW, int& nH);
+
+    virtual void BitBlt(unsigned char* pBGRA, const int& nRasterX, const int& nRasterY, const int& nRasterW, const int& nRasterH,
+                        const double& x, const double& y, const double& w, const double& h, const double& dAngle);
+
+private:
+    void DrawImage(QPainter* painter, const QImage& image, const QRect& rect, const QRect& rectSrc);
 };
 
-#endif  // CEFCLIENT_QCEFWEBVIEW_MEDIA_H
+#endif  // QASCPRINTER_H

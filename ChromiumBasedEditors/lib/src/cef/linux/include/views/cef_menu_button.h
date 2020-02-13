@@ -63,7 +63,8 @@ class CefMenuButton : public CefLabelButton {
   /*--cef(optional_param=text)--*/
   static CefRefPtr<CefMenuButton> CreateMenuButton(
       CefRefPtr<CefMenuButtonDelegate> delegate,
-      const CefString& text);
+      const CefString& text,
+      bool with_frame);
 
   ///
   // Show a menu with contents |menu_model|. |screen_point| specifies the menu

@@ -30,8 +30,8 @@
  *
  */
 
-#ifndef CEFCLIENT_QCEFWEBVIEW_H
-#define CEFCLIENT_QCEFWEBVIEW_H
+#ifndef QCEFWEBVIEW_H
+#define QCEFWEBVIEW_H
 
 #include <QWindow>
 #include <QWidget>
@@ -44,7 +44,7 @@
 #include "./../include/applicationmanager.h"
 
 class QCefViewProps;
-class QCefView : public QWidget, public CCefViewWidgetImpl
+class DESKTOP_DECL QCefView : public QWidget, public CCefViewWidgetImpl
 {
     Q_OBJECT
 
@@ -113,7 +113,7 @@ protected slots:
 
 #if defined (_LINUX) && !defined(_MAC)
 
-class QCefEmbedWindow : public QWindow
+class DESKTOP_DECL QCefEmbedWindow : public QWindow
 {
     Q_OBJECT
 
@@ -135,4 +135,4 @@ protected:
 
 #endif
 
-#endif  // CEFCLIENT_QCEFWEBVIEW_H
+#endif  // QCEFWEBVIEW_H

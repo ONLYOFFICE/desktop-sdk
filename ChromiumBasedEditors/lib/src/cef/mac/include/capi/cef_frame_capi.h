@@ -33,7 +33,7 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=69e96203a1f5a71808125a25e511d99b599b7915$
+// $hash=6bef924a259845dbf03e9cf5084ff7feb2771034$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_FRAME_CAPI_H_
@@ -131,10 +131,6 @@ typedef struct _cef_frame_t {
 
   ///
   // Load the request represented by the |request| object.
-  //
-  // WARNING: This function will fail with "bad IPC message" reason
-  // INVALID_INITIATOR_ORIGIN (213) unless you first navigate to the request
-  // origin using some other mechanism (LoadURL, link click, etc).
   ///
   void(CEF_CALLBACK* load_request)(struct _cef_frame_t* self,
                                    struct _cef_request_t* request);
@@ -144,6 +140,15 @@ typedef struct _cef_frame_t {
   ///
   void(CEF_CALLBACK* load_url)(struct _cef_frame_t* self,
                                const cef_string_t* url);
+
+  ///
+  // Load the contents of |string_val| with the specified dummy |url|. |url|
+  // should have a standard scheme (for example, http scheme) or behaviors like
+  // link clicks and web security restrictions may not behave as expected.
+  ///
+  void(CEF_CALLBACK* load_string)(struct _cef_frame_t* self,
+                                  const cef_string_t* string_val,
+                                  const cef_string_t* url);
 
   ///
   // Execute a string of JavaScript code in this frame. The |script_url|

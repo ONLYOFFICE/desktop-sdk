@@ -89,9 +89,8 @@ class RootWindowViews : public RootWindow,
  private:
   void CreateClientHandler(const std::string& url);
 
-  void InitOnUIThread(const CefBrowserSettings& settings,
-                      const std::string& startup_url,
-                      CefRefPtr<CefRequestContext> request_context);
+  void InitOnMainThread(const CefBrowserSettings& settings,
+                        const std::string& startup_url);
   void CreateViewsWindow(const CefBrowserSettings& settings,
                          const std::string& startup_url,
                          CefRefPtr<CefRequestContext> request_context,

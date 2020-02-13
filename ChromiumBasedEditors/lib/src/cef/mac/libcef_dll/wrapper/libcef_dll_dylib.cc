@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=33f5c103833cb9b4e6555f6a82fcaec06f3ff449$
+// $hash=436002ae114825124a9a52a24928a974fcf5408a$
 //
 
 #include <dlfcn.h>
@@ -153,6 +153,7 @@ typedef int (*cef_register_scheme_handler_factory_ptr)(
     struct _cef_scheme_handler_factory_t*);
 typedef int (*cef_clear_scheme_handler_factories_ptr)();
 typedef int (*cef_is_cert_status_error_ptr)(cef_cert_status_t);
+typedef int (*cef_is_cert_status_minor_error_ptr)(cef_cert_status_t);
 typedef int (*cef_currently_on_ptr)(cef_thread_id_t);
 typedef int (*cef_post_task_ptr)(cef_thread_id_t, struct _cef_task_t*);
 typedef int (*cef_post_delayed_task_ptr)(cef_thread_id_t,
@@ -316,10 +317,12 @@ typedef size_t (*cef_display_get_count_ptr)();
 typedef void (*cef_display_get_alls_ptr)(size_t*, struct _cef_display_t**);
 typedef struct _cef_label_button_t* (*cef_label_button_create_ptr)(
     struct _cef_button_delegate_t*,
-    const cef_string_t*);
+    const cef_string_t*,
+    int);
 typedef struct _cef_menu_button_t* (*cef_menu_button_create_ptr)(
     struct _cef_menu_button_delegate_t*,
-    const cef_string_t*);
+    const cef_string_t*,
+    int);
 typedef struct _cef_panel_t* (*cef_panel_create_ptr)(
     struct _cef_panel_delegate_t*);
 typedef struct _cef_scroll_view_t* (*cef_scroll_view_create_ptr)(
@@ -552,6 +555,7 @@ struct libcef_pointers {
   cef_register_scheme_handler_factory_ptr cef_register_scheme_handler_factory;
   cef_clear_scheme_handler_factories_ptr cef_clear_scheme_handler_factories;
   cef_is_cert_status_error_ptr cef_is_cert_status_error;
+  cef_is_cert_status_minor_error_ptr cef_is_cert_status_minor_error;
   cef_currently_on_ptr cef_currently_on;
   cef_post_task_ptr cef_post_task;
   cef_post_delayed_task_ptr cef_post_delayed_task;
@@ -767,6 +771,7 @@ int libcef_init_pointers(const char* path) {
   INIT_ENTRY(cef_register_scheme_handler_factory);
   INIT_ENTRY(cef_clear_scheme_handler_factories);
   INIT_ENTRY(cef_is_cert_status_error);
+  INIT_ENTRY(cef_is_cert_status_minor_error);
   INIT_ENTRY(cef_currently_on);
   INIT_ENTRY(cef_post_task);
   INIT_ENTRY(cef_post_delayed_task);
@@ -1172,6 +1177,11 @@ NO_SANITIZE("cfi-icall") int cef_clear_scheme_handler_factories() {
 NO_SANITIZE("cfi-icall")
 int cef_is_cert_status_error(cef_cert_status_t status) {
   return g_libcef_pointers.cef_is_cert_status_error(status);
+}
+
+NO_SANITIZE("cfi-icall")
+int cef_is_cert_status_minor_error(cef_cert_status_t status) {
+  return g_libcef_pointers.cef_is_cert_status_minor_error(status);
 }
 
 NO_SANITIZE("cfi-icall") int cef_currently_on(cef_thread_id_t threadId) {
@@ -1655,15 +1665,17 @@ void cef_display_get_alls(size_t* displaysCount,
 NO_SANITIZE("cfi-icall")
 struct _cef_label_button_t* cef_label_button_create(
     struct _cef_button_delegate_t* delegate,
-    const cef_string_t* text) {
-  return g_libcef_pointers.cef_label_button_create(delegate, text);
+    const cef_string_t* text,
+    int with_frame) {
+  return g_libcef_pointers.cef_label_button_create(delegate, text, with_frame);
 }
 
 NO_SANITIZE("cfi-icall")
 struct _cef_menu_button_t* cef_menu_button_create(
     struct _cef_menu_button_delegate_t* delegate,
-    const cef_string_t* text) {
-  return g_libcef_pointers.cef_menu_button_create(delegate, text);
+    const cef_string_t* text,
+    int with_frame) {
+  return g_libcef_pointers.cef_menu_button_create(delegate, text, with_frame);
 }
 
 NO_SANITIZE("cfi-icall")

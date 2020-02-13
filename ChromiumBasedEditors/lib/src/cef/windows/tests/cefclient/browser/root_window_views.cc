@@ -59,8 +59,8 @@ void RootWindowViews::Init(RootWindow::Delegate* delegate,
   CreateClientHandler(config.url);
   initialized_ = true;
 
-  // Continue initialization on the UI thread.
-  InitOnUIThread(settings, config.url, delegate_->GetRequestContext(this));
+  // Continue initialization on the main thread.
+  InitOnMainThread(settings, config.url);
 }
 
 void RootWindowViews::InitAsPopup(RootWindow::Delegate* delegate,
@@ -187,17 +187,17 @@ ClientWindowHandle RootWindowViews::GetWindowHandle() const {
 }
 
 bool RootWindowViews::WithExtension() const {
-  DCHECK(initialized_);
+  REQUIRE_MAIN_THREAD();
   return with_extension_;
 }
 
 bool RootWindowViews::WithControls() {
-  DCHECK(initialized_);
+  CEF_REQUIRE_UI_THREAD();
   return with_controls_;
 }
 
 bool RootWindowViews::WithExtension() {
-  DCHECK(initialized_);
+  REQUIRE_MAIN_THREAD();
   return with_extension_;
 }
 
@@ -475,14 +475,12 @@ void RootWindowViews::CreateClientHandler(const std::string& url) {
   client_handler_->set_download_favicon_images(true);
 }
 
-void RootWindowViews::InitOnUIThread(
-    const CefBrowserSettings& settings,
-    const std::string& startup_url,
-    CefRefPtr<CefRequestContext> request_context) {
-  if (!CefCurrentlyOn(TID_UI)) {
-    // Execute this method on the UI thread.
-    CefPostTask(TID_UI, base::Bind(&RootWindowViews::InitOnUIThread, this,
-                                   settings, startup_url, request_context));
+void RootWindowViews::InitOnMainThread(const CefBrowserSettings& settings,
+                                       const std::string& startup_url) {
+  if (!CURRENTLY_ON_MAIN_THREAD()) {
+    // Execute this method on the main thread.
+    MAIN_POST_CLOSURE(base::Bind(&RootWindowViews::InitOnMainThread, this,
+                                 settings, startup_url));
     return;
   }
 
@@ -495,7 +493,7 @@ void RootWindowViews::InitOnUIThread(
 
   image_cache_->LoadImages(
       image_set, base::Bind(&RootWindowViews::CreateViewsWindow, this, settings,
-                            startup_url, request_context));
+                            startup_url, delegate_->GetRequestContext(this)));
 }
 
 void RootWindowViews::CreateViewsWindow(

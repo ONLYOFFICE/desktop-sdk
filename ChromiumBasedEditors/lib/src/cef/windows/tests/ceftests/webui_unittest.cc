@@ -172,6 +172,7 @@ void RunWebUITest(const std::string& url) {
 WEBUI_TEST(appcache_internals)
 WEBUI_TEST(accessibility)
 WEBUI_TEST(blob_internals)
+WEBUI_TEST(credits)
 WEBUI_TEST(extensions_support)
 WEBUI_TEST(gpu)
 WEBUI_TEST(histograms)

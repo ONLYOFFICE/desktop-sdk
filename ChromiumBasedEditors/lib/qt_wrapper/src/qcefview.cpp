@@ -30,7 +30,7 @@
  *
  */
 
-#include "./qcefview.h"
+#include "./../include/qcefview.h"
 #include <QPainter>
 
 class QCefViewProps

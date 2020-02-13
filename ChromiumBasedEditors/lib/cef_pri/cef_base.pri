@@ -43,6 +43,7 @@ HEADERS += \
     $$CEF_SRC_PATH/include/base/internal/cef_thread_checker_impl.h \
     $$CEF_SRC_PATH/include/capi/cef_accessibility_handler_capi.h \
     $$CEF_SRC_PATH/include/capi/cef_app_capi.h \
+    $$CEF_SRC_PATH/include/capi/cef_audio_handler_capi.h \
     $$CEF_SRC_PATH/include/capi/cef_auth_callback_capi.h \
     $$CEF_SRC_PATH/include/capi/cef_base_capi.h \
     $$CEF_SRC_PATH/include/capi/cef_browser_capi.h \
@@ -136,6 +137,7 @@ HEADERS += \
     $$CEF_SRC_PATH/include/cef_accessibility_handler.h \
     $$CEF_SRC_PATH/include/cef_api_hash.h \
     $$CEF_SRC_PATH/include/cef_app.h \
+    $$CEF_SRC_PATH/include/cef_audio_handler.h \
     $$CEF_SRC_PATH/include/cef_auth_callback.h \
     $$CEF_SRC_PATH/include/cef_base.h \
     $$CEF_SRC_PATH/include/cef_browser.h \
@@ -255,6 +257,7 @@ HEADERS += \
     $$CEF_SRC_PATH/include/wrapper/cef_zip_archive.h \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/accessibility_handler_cpptoc.h \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/app_cpptoc.h \
+    $$CEF_SRC_PATH/libcef_dll/cpptoc/audio_handler_cpptoc.h \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/base_ref_counted_cpptoc.h \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/base_scoped_cpptoc.h \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/browser_process_handler_cpptoc.h \
@@ -423,6 +426,7 @@ SOURCES += \
     $$CEF_SRC_PATH/libcef_dll/base/cef_weak_ptr.cc \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/accessibility_handler_cpptoc.cc \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/app_cpptoc.cc \
+    $$CEF_SRC_PATH/libcef_dll/cpptoc/audio_handler_cpptoc.cc \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/base_ref_counted_cpptoc.cc \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/base_scoped_cpptoc.cc \
     $$CEF_SRC_PATH/libcef_dll/cpptoc/browser_process_handler_cpptoc.cc \
@@ -582,7 +586,6 @@ SOURCES += \
 
 core_windows {
 HEADERS += \
-    $$CEF_SRC_PATH/include/base/internal/cef_atomicops_arm64_msvc.h \
     $$CEF_SRC_PATH/include/base/internal/cef_atomicops_x86_msvc.h \
     $$CEF_SRC_PATH/include/base/internal/cef_bind_internal_win.h \
     $$CEF_SRC_PATH/include/cef_sandbox_win.h \
@@ -592,7 +595,6 @@ HEADERS += \
 
 core_linux {
 HEADERS += \
-    $$CEF_SRC_PATH/include/base/internal/cef_atomicops_arm64_gcc.h \
     $$CEF_SRC_PATH/include/base/internal/cef_atomicops_arm_gcc.h \
     $$CEF_SRC_PATH/include/base/internal/cef_atomicops_atomicword_compat.h \
     $$CEF_SRC_PATH/include/base/internal/cef_atomicops_x86_gcc.h \

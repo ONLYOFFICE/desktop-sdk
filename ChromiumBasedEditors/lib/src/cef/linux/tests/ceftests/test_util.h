@@ -65,6 +65,9 @@ void TestProcessMessageEqual(CefRefPtr<CefProcessMessage> val1,
 void TestStringVectorEqual(const std::vector<CefString>& val1,
                            const std::vector<CefString>& val2);
 
+// Returns true if the NetworkService is enabled.
+bool IsNetworkServiceEnabled();
+
 enum TestRequestContextMode {
   TEST_RC_MODE_NONE,
   TEST_RC_MODE_GLOBAL,
