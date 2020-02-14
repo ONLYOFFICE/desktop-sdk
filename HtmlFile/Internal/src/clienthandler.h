@@ -131,13 +131,7 @@ public:
     CefRefPtr<CefBrowser> m_browser;
 
 public:
-    CHtmlClientHandler(CGlobalHtmlFileParams* params) : client::ClientHandler(this,
-                                                                          #ifdef DEBUG_WINDOW_SHOW
-                                                                              false,
-                                                                          #else
-                                                                              true,
-                                                                          #endif
-                                                                              "html_file")
+    CHtmlClientHandler(CGlobalHtmlFileParams* params) : client::ClientHandler(this, true, "html_file")
     {
         m_global = params;
         m_render = new CHtmlRenderHandler();
