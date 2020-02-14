@@ -548,7 +548,6 @@ void CApplicationCEF::DoMessageLoopEvent()
 bool CApplicationCEF::ExitMessageLoop()
 {
     m_pInternal->message_loop->Quit();
-    m_pInternal->message_loop.reset();
     return true;
 }
 
