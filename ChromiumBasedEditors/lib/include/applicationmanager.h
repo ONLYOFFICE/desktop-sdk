@@ -133,6 +133,8 @@ public:
 class IExternalMessageLoop
 {
 public:
+    IExternalMessageLoop() {}
+    virtual ~IExternalMessageLoop() {}
     virtual void Run() = 0;
     virtual void Execute(void* message) = 0;
     virtual void SetTimer(long delay) = 0;
