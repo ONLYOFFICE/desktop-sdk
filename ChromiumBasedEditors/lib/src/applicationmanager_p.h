@@ -328,6 +328,10 @@ public:
     // показывать ли консоль для дебага
     bool m_bDebugInfoSupport;
 
+    // использовать ли внешнюю очередь сообщений
+    bool m_bIsUseExternalMessageLoop;
+    IExternalMessageLoop* m_pExternalMessageLoop;
+
     // event listener
     NSEditorApi::CAscCefMenuEventListener* m_pListener;
 
@@ -431,6 +435,8 @@ public:
         m_pApplication = NULL;
 
         m_bDebugInfoSupport = false;
+        m_bIsUseExternalMessageLoop = false;
+        m_pExternalMessageLoop = NULL;
 
         m_nIsCefSaveDialogWait = -1;        
 
@@ -457,6 +463,8 @@ public:
     }
     virtual ~CAscApplicationManager_Private()
     {
+        RELEASEOBJECT(m_pExternalMessageLoop);
+
         CloseApplication();
         RELEASEOBJECT(m_pAdditional);
 
@@ -599,6 +607,10 @@ public:
         std::map<std::string, std::string>::iterator pairConvertLogs = m_mapSettings.find("converter-logging");
         if (pairConvertLogs != m_mapSettings.end())
             m_bIsEnableConvertLogs = ("1" == pairConvertLogs->second) ? true : false;
+
+        std::map<std::string, std::string>::iterator pairEML = m_mapSettings.find("external-message-loop");
+        if (pairEML != m_mapSettings.end())
+            m_bIsUseExternalMessageLoop = ("1" == pairEML->second) ? true : false;
     }
     void CheckSetting(const std::string& sName, const std::string& sValue)
     {
@@ -606,7 +618,7 @@ public:
         {
             m_bDebugInfoSupport = true;
             return;
-        }
+        }        
 
         bool bIsChanged = false;
         const char* namePtr = sName.c_str();

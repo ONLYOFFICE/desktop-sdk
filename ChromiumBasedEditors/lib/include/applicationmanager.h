@@ -147,7 +147,7 @@ class DESKTOP_DECL CAscApplicationManager
 {
 public:
     CAscApplicationManager();
-    ~CAscApplicationManager();
+    virtual ~CAscApplicationManager();
 
 public:
     CAscApplicationSettings m_oSettings;
@@ -213,7 +213,7 @@ public:
 
     // external message loop
     virtual bool IsExternalEventLoop();
-    virtual void SetExternalMessageLoop(IExternalMessageLoop* message_loop);
+    virtual IExternalMessageLoop* GetExternalMessageLoop();
     virtual void ExternalMessageLoop_OnExecute(void* message);
     virtual void ExternalMessageLoop_OnTimeout();
 

@@ -74,6 +74,9 @@ int XIOErrorHandlerImpl(Display *display)
 #include "cefclient/browser/main_context_impl.h"
 #include "cefclient/browser/main_message_loop_multithreaded_win.h"
 #include "cefclient/browser/main_message_loop_std.h"
+namespace client {
+    typedef MainMessageLoopMultithreadedWin MainMessageLoopMultithreaded;
+}
 #else
 #include "tests/cefclient/browser/main_context_impl.h"
 #include "tests/shared/browser/main_message_loop_std.h"
@@ -329,12 +332,11 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
             break;
         }
         case client::ClientApp::OtherProcess:
+        default:
         {
             m_pInternal->m_app = new CAscClientAppOther(pManager->m_pInternal->m_mapSettings);
             break;
         }
-        default:
-            break;
     }
 
     // Execute the secondary process, if any.
@@ -380,28 +382,20 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 
     pManager->SetApplication(this);
 
-    bool is_external = false;
-#ifndef CEF_2623
     if (m_pInternal->m_pManager->IsExternalEventLoop())
     {
-        if (m_pInternal->message_loop)
-        {
-            settings.external_message_pump = 1;
-            is_external = true;
-        }
-    }
+#ifndef CEF_2623
+        settings.external_message_pump = 1;
 #endif
-    if (!is_external)
+    }
+    else if (isMultithreaded)
     {
-        if (isMultithreaded)
-        {
-            settings.multi_threaded_message_loop = 1;
-            m_pInternal->message_loop.reset(new client::MainMessageLoopMultithreaded);
-        }
-        else
-        {
-            m_pInternal->message_loop.reset(new client::MainMessageLoopStd);
-        }
+        settings.multi_threaded_message_loop = 1;
+        m_pInternal->message_loop.reset(new client::MainMessageLoopMultithreaded);
+    }
+    else
+    {
+        m_pInternal->message_loop.reset(new client::MainMessageLoopStd);
     }
 
     std::wstring sCachePath = pManager->m_oSettings.cache_path;
@@ -554,6 +548,7 @@ void CApplicationCEF::DoMessageLoopEvent()
 bool CApplicationCEF::ExitMessageLoop()
 {
     m_pInternal->message_loop->Quit();
+    m_pInternal->message_loop.reset();
     return true;
 }
 
@@ -586,13 +581,26 @@ bool CApplicationCEF::IsMainProcess(int argc, char* argv[])
 // External message loop
 bool CAscApplicationManager::IsExternalEventLoop()
 {
+#if defined(CEF_2623) || defined(_MAC)
+    m_pInternal->m_bIsUseExternalMessageLoop = false;
+#else
+    if (m_pInternal->m_bIsUseExternalMessageLoop)
+    {
+        IExternalMessageLoop* external_message_loop = GetExternalMessageLoop();
+        if (NULL != external_message_loop)
+        {
+            m_pInternal->m_pExternalMessageLoop = external_message_loop;
+            m_pInternal->m_pApplication->m_pInternal->message_loop = CMainMessageLoopExternalPumpBase::Create(external_message_loop);
+            return true;
+        }
+    }
+#endif
+
     return false;
 }
-void CAscApplicationManager::SetExternalMessageLoop(IExternalMessageLoop* message_loop)
+IExternalMessageLoop* CAscApplicationManager::GetExternalMessageLoop()
 {
-#ifndef CEF_2623
-    m_pInternal->m_pApplication->m_pInternal->message_loop = CMainMessageLoopExternalPumpBase::Create(message_loop);
-#endif
+    return NULL;
 }
 void CAscApplicationManager::ExternalMessageLoop_OnExecute(void* message)
 {
