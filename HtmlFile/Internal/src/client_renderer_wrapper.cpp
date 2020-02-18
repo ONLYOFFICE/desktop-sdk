@@ -187,7 +187,7 @@ public:
                 sDivId = val->GetStringValue().ToString();
             }
 
-            std::string sCode = "window.AscNotLoadAllScript = true;var _asc_sdk_value = new window.asc_docs_api({'id-view':\"" + sDivId + "\" });window.editor.CreateComponents();";
+            std::string sCode = "var _asc_sdk_value = new window.asc_docs_api({'id-view':\"" + sDivId + "\" });window.editor.CreateComponents();";
 
             CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetFrame();
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
