@@ -12,8 +12,6 @@ CONFIG += core_static_link_libstd
 include($$CORE_ROOT_DIR/Common/base.pri)
 include($$CORE_ROOT_DIR/Common/3dParty/icu/icu.pri)
 
-DEFINES += ASC_HIDE_WINDOW
-
 CEF_PROJECT_PRI=$$PWD_ROOT_DIR/../../ChromiumBasedEditors/lib/cef_pri
 build_xp {
     include($$CEF_PROJECT_PRI/cef_base_xp.pri)
@@ -37,5 +35,7 @@ SOURCES += \
 SOURCES += \
     $$PWD/src/main.cpp
 
+DEFINES += ASC_HIDE_WINDOW
 #DEFINES += DEBUG_WINDOW_SHOW
-#DESTDIR=$$CORE_ROOT_DIR/HtmlFile/test/Debug/HtmlFileInternal
+
+#core_debug:DESTDIR=$$CORE_ROOT_DIR/HtmlFile/test/Debug/HtmlFileInternal

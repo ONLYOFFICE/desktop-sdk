@@ -30,8 +30,6 @@
  *
  */
 
-#include "tests/cefclient/renderer/client_renderer.h"
-
 #include <sstream>
 #include <string>
 #include <map>
@@ -423,7 +421,12 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     // add AscEditorNative
     CefRefPtr<CefV8Value> object = context->GetGlobal();
 
+#ifdef CEF_2623
+    CefRefPtr<CefV8Value> objNative = CefV8Value::CreateObject(NULL);
+#else
     CefRefPtr<CefV8Value> objNative = CefV8Value::CreateObject(NULL, NULL);
+#endif
+
     CAscEditorNativeV8Handler* pNativeHandlerWrapper = new CAscEditorNativeV8Handler();
     pNativeHandlerWrapper->sync_command_check = &sync_command_check;
 

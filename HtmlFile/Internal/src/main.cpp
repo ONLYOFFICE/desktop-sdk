@@ -37,10 +37,6 @@
 #include "./src/clienthandler.h"
 #include "./src/client_app.h"
 
-#include "tests/shared/common/client_switches.h"
-#include "tests/cefclient/browser/main_context_impl.h"
-#include "tests/shared/browser/main_message_loop_std.h"
-
 #ifdef GetTempPath
 #undef GetTempPath
 #endif
@@ -227,7 +223,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
     CefBrowserSettings browser_settings;
     browser_settings.plugins = STATE_DISABLED;
     CefBrowserHost::CreateBrowser(window_info, client_handler.get(), client_handler->GetUrl(), browser_settings, NULL
-                                              #ifndef MESSAGE_IN_BROWSER
+                                              #ifndef CEF_2623
                                                   , NULL
                                               #endif
                                   );

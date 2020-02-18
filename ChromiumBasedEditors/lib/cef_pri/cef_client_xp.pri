@@ -66,8 +66,7 @@ SOURCES += \
     $$CEF_SRC_PATH/cefclient/browser/urlrequest_test.cc \
     $$CEF_SRC_PATH/cefclient/browser/util_win.cc \
     $$CEF_SRC_PATH/cefclient/browser/window_test.cc \
-    $$CEF_SRC_PATH/cefclient/browser/window_test_win.cc \
-    $$CEF_SRC_PATH/cefclient/cefclient_win.cc \
+    $$CEF_SRC_PATH/cefclient/browser/window_test_win.cc \    
     $$CEF_SRC_PATH/cefclient/common/client_app.cc \
     $$CEF_SRC_PATH/cefclient/common/client_app_other.cc \
     $$CEF_SRC_PATH/cefclient/common/client_switches.cc \
@@ -92,5 +91,6 @@ SOURCES += \
 #    $$CEF_SRC_PATH/cefclient/browser/osr_renderer.cc \
 #    $$CEF_SRC_PATH/cefclient/browser/osr_window_win.cc \
 #    $$CEF_SRC_PATH/cefclient/common/client_app_delegates_common.cc \
-#    $$CEF_SRC_PATH/cefclient/renderer/client_app_delegates_renderer.cc
+#    $$CEF_SRC_PATH/cefclient/renderer/client_app_delegates_renderer.cc \
+#    $$CEF_SRC_PATH/cefclient/cefclient_win.cc
 

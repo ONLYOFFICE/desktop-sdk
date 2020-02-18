@@ -33,11 +33,19 @@
 #ifndef CEF_ASC_CLIENT_APP_H_
 #define CEF_ASC_CLIENT_APP_H_
 
+#ifdef CEF_2623
+#include "cefclient/common/client_app.h"
+#include "cefclient/browser/client_app_browser.h"
+#include "cefclient/renderer/client_app_renderer.h"
+#include "cefclient/common/client_app_other.h"
+#include "cefclient/renderer/client_renderer.h"
+#else
 #include "tests/shared/common/client_app.h"
 #include "tests/shared/browser/client_app_browser.h"
 #include "tests/shared/renderer/client_app_renderer.h"
 #include "tests/shared/common/client_app_other.h"
 #include "tests/cefclient/renderer/client_renderer.h"
+#endif
 
 #include "./clienthandler.h"
 
