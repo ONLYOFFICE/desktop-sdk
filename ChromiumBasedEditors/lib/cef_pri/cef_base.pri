@@ -663,7 +663,7 @@ core_linux {
 LIBS += -L$$PWD/../../../../core/Common/3dParty/cef/$$CORE_BUILDS_PLATFORM_PREFIX/build -lcef
 
 CONFIG += link_pkgconfig
-PKGCONFIG += glib-2.0 gdk-2.0 atk cairo gtk+-unix-print-2.0
+PKGCONFIG += glib-2.0 gdk-3.0 atk
 LIBS += -lX11
 
 QMAKE_CXXFLAGS += -fPIC
