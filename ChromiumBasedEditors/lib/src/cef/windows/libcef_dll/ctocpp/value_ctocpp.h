@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=f0494edd5fdf58f4c3d999ab6bf4f29658e0f819$
+// $hash=14b514e55f58dff0d1c611f684e05890c9f246ef$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_VALUE_CTOCPP_H_
@@ -30,6 +30,7 @@ class CefValueCToCpp
     : public CefCToCppRefCounted<CefValueCToCpp, CefValue, cef_value_t> {
  public:
   CefValueCToCpp();
+  virtual ~CefValueCToCpp();
 
   // CefValue methods.
   bool IsValid() OVERRIDE;

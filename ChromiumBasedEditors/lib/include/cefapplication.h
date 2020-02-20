@@ -57,6 +57,8 @@ public:
     bool IsChromiumSubprocess();
 
     static bool IsMainProcess(int argc = 0, char* argv[] = NULL);
+
+    friend class CAscApplicationManager;
 };
 
 #endif // APPLICATION_CEF_H

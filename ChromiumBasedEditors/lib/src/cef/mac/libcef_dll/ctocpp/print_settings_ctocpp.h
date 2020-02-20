@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=a1320a64f63df47ffc59cdc4cf5859f1b877a0a7$
+// $hash=d031ce1331738df412c61dd9bf4c6d36f94b82a8$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_PRINT_SETTINGS_CTOCPP_H_
@@ -32,6 +32,7 @@ class CefPrintSettingsCToCpp
                                  cef_print_settings_t> {
  public:
   CefPrintSettingsCToCpp();
+  virtual ~CefPrintSettingsCToCpp();
 
   // CefPrintSettings methods.
   bool IsValid() OVERRIDE;

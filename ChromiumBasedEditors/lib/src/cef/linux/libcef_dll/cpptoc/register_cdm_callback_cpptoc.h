@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=61d87a325371d018c2c7c4edc2ff5cc361c78a35$
+// $hash=6be76ea998e3de0a650a4e3d03a9f7c84bf4a913$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_REGISTER_CDM_CALLBACK_CPPTOC_H_
@@ -34,6 +34,7 @@ class CefRegisterCdmCallbackCppToC
                                  cef_register_cdm_callback_t> {
  public:
   CefRegisterCdmCallbackCppToC();
+  virtual ~CefRegisterCdmCallbackCppToC();
 };
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_REGISTER_CDM_CALLBACK_CPPTOC_H_

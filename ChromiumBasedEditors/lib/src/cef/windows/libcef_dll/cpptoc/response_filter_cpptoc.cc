@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,10 +9,11 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=add253ed8b10b0894c57c9459720a39699afe34d$
+// $hash=60cadf5ac7749d4b8ee5c38aad5015cdf40dc9c3$
 //
 
 #include "libcef_dll/cpptoc/response_filter_cpptoc.h"
+#include "libcef_dll/shutdown_checker.h"
 
 namespace {
 
@@ -20,6 +21,8 @@ namespace {
 
 int CEF_CALLBACK
 response_filter_init_filter(struct _cef_response_filter_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -41,6 +44,8 @@ response_filter_filter(struct _cef_response_filter_t* self,
                        void* data_out,
                        size_t data_out_size,
                        size_t* data_out_written) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -91,6 +96,12 @@ CefResponseFilterCppToC::CefResponseFilterCppToC() {
   GetStruct()->filter = response_filter_filter;
 }
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefResponseFilterCppToC::~CefResponseFilterCppToC() {
+  shutdown_checker::AssertNotShutdown();
+}
+
 template <>
 CefRefPtr<CefResponseFilter> CefCppToCRefCounted<
     CefResponseFilterCppToC,
@@ -100,14 +111,6 @@ CefRefPtr<CefResponseFilter> CefCppToCRefCounted<
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCppToCRefCounted<CefResponseFilterCppToC,
-                                         CefResponseFilter,
-                                         cef_response_filter_t>::DebugObjCt
-    ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType CefCppToCRefCounted<CefResponseFilterCppToC,

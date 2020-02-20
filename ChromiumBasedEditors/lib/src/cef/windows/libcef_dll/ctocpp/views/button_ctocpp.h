@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=e96ae0220686ce1cb36adf65a51dd725eba8786e$
+// $hash=795f7c4a5926767eb80460ead3551196db4c9d64$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_VIEWS_BUTTON_CTOCPP_H_
@@ -32,6 +32,7 @@ class CefButtonCToCpp
     : public CefCToCppRefCounted<CefButtonCToCpp, CefButton, cef_button_t> {
  public:
   CefButtonCToCpp();
+  virtual ~CefButtonCToCpp();
 
   // CefButton methods.
   CefRefPtr<CefLabelButton> AsLabelButton() OVERRIDE;

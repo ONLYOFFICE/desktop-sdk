@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,11 +9,12 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=1177066a4e47d71855efa3103f191a5f3ef78100$
+// $hash=d99da52e4250154237795c67228bd8950e9664de$
 //
 
 #include "libcef_dll/cpptoc/menu_model_delegate_cpptoc.h"
 #include "libcef_dll/ctocpp/menu_model_ctocpp.h"
+#include "libcef_dll/shutdown_checker.h"
 
 namespace {
 
@@ -24,6 +25,8 @@ menu_model_delegate_execute_command(struct _cef_menu_model_delegate_t* self,
                                     cef_menu_model_t* menu_model,
                                     int command_id,
                                     cef_event_flags_t event_flags) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -43,6 +46,8 @@ void CEF_CALLBACK
 menu_model_delegate_mouse_outside_menu(struct _cef_menu_model_delegate_t* self,
                                        cef_menu_model_t* menu_model,
                                        const cef_point_t* screen_point) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -69,6 +74,8 @@ void CEF_CALLBACK menu_model_delegate_unhandled_open_submenu(
     struct _cef_menu_model_delegate_t* self,
     cef_menu_model_t* menu_model,
     int is_rtl) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -88,6 +95,8 @@ void CEF_CALLBACK menu_model_delegate_unhandled_close_submenu(
     struct _cef_menu_model_delegate_t* self,
     cef_menu_model_t* menu_model,
     int is_rtl) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -106,6 +115,8 @@ void CEF_CALLBACK menu_model_delegate_unhandled_close_submenu(
 void CEF_CALLBACK
 menu_model_delegate_menu_will_show(struct _cef_menu_model_delegate_t* self,
                                    cef_menu_model_t* menu_model) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -124,6 +135,8 @@ menu_model_delegate_menu_will_show(struct _cef_menu_model_delegate_t* self,
 void CEF_CALLBACK
 menu_model_delegate_menu_closed(struct _cef_menu_model_delegate_t* self,
                                 cef_menu_model_t* menu_model) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -143,6 +156,8 @@ int CEF_CALLBACK
 menu_model_delegate_format_label(struct _cef_menu_model_delegate_t* self,
                                  cef_menu_model_t* menu_model,
                                  cef_string_t* label) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -184,6 +199,12 @@ CefMenuModelDelegateCppToC::CefMenuModelDelegateCppToC() {
   GetStruct()->format_label = menu_model_delegate_format_label;
 }
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefMenuModelDelegateCppToC::~CefMenuModelDelegateCppToC() {
+  shutdown_checker::AssertNotShutdown();
+}
+
 template <>
 CefRefPtr<CefMenuModelDelegate> CefCppToCRefCounted<
     CefMenuModelDelegateCppToC,
@@ -193,14 +214,6 @@ CefRefPtr<CefMenuModelDelegate> CefCppToCRefCounted<
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCppToCRefCounted<CefMenuModelDelegateCppToC,
-                                         CefMenuModelDelegate,
-                                         cef_menu_model_delegate_t>::DebugObjCt
-    ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType CefCppToCRefCounted<CefMenuModelDelegateCppToC,

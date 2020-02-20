@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=1b9460a910eefbb7c238fee39d1a7461c238d5eb$
+// $hash=87369bed5916a070a4f1a7f4bb9fcff5885cd31f$
 //
 
 #include "libcef_dll/ctocpp/cookie_manager_ctocpp.h"
@@ -21,6 +21,7 @@
 
 // STATIC METHODS - Body may be edited by hand.
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefCookieManager> CefCookieManager::GetGlobalManager(
     CefRefPtr<CefCompletionCallback> callback) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
@@ -35,27 +36,12 @@ CefRefPtr<CefCookieManager> CefCookieManager::GetGlobalManager(
   return CefCookieManagerCToCpp::Wrap(_retval);
 }
 
-CefRefPtr<CefCookieManager> CefCookieManager::CreateManager(
-    const CefString& path,
-    bool persist_session_cookies,
-    CefRefPtr<CefCompletionCallback> callback) {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Unverified params: path, callback
-
-  // Execute
-  cef_cookie_manager_t* _retval = cef_cookie_manager_create_manager(
-      path.GetStruct(), persist_session_cookies,
-      CefCompletionCallbackCppToC::Wrap(callback));
-
-  // Return type: refptr_same
-  return CefCookieManagerCToCpp::Wrap(_retval);
-}
-
 // VIRTUAL METHODS - Body may be edited by hand.
 
+NO_SANITIZE("cfi-icall")
 void CefCookieManagerCToCpp::SetSupportedSchemes(
     const std::vector<CefString>& schemes,
+    bool include_defaults,
     CefRefPtr<CefCompletionCallback> callback) {
   cef_cookie_manager_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, set_supported_schemes))
@@ -72,7 +58,7 @@ void CefCookieManagerCToCpp::SetSupportedSchemes(
     transfer_string_list_contents(schemes, schemesList);
 
   // Execute
-  _struct->set_supported_schemes(_struct, schemesList,
+  _struct->set_supported_schemes(_struct, schemesList, include_defaults,
                                  CefCompletionCallbackCppToC::Wrap(callback));
 
   // Restore param:schemes; type: string_vec_byref_const
@@ -80,6 +66,7 @@ void CefCookieManagerCToCpp::SetSupportedSchemes(
     cef_string_list_free(schemesList);
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefCookieManagerCToCpp::VisitAllCookies(
     CefRefPtr<CefCookieVisitor> visitor) {
   cef_cookie_manager_t* _struct = GetStruct();
@@ -101,6 +88,7 @@ bool CefCookieManagerCToCpp::VisitAllCookies(
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefCookieManagerCToCpp::VisitUrlCookies(
     const CefString& url,
     bool includeHttpOnly,
@@ -129,6 +117,7 @@ bool CefCookieManagerCToCpp::VisitUrlCookies(
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefCookieManagerCToCpp::SetCookie(
     const CefString& url,
     const CefCookie& cookie,
@@ -153,6 +142,7 @@ bool CefCookieManagerCToCpp::SetCookie(
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefCookieManagerCToCpp::DeleteCookies(
     const CefString& url,
     const CefString& cookie_name,
@@ -174,27 +164,7 @@ bool CefCookieManagerCToCpp::DeleteCookies(
   return _retval ? true : false;
 }
 
-bool CefCookieManagerCToCpp::SetStoragePath(
-    const CefString& path,
-    bool persist_session_cookies,
-    CefRefPtr<CefCompletionCallback> callback) {
-  cef_cookie_manager_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, set_storage_path))
-    return false;
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Unverified params: path, callback
-
-  // Execute
-  int _retval = _struct->set_storage_path(
-      _struct, path.GetStruct(), persist_session_cookies,
-      CefCompletionCallbackCppToC::Wrap(callback));
-
-  // Return type: bool
-  return _retval ? true : false;
-}
-
+NO_SANITIZE("cfi-icall")
 bool CefCookieManagerCToCpp::FlushStore(
     CefRefPtr<CefCompletionCallback> callback) {
   cef_cookie_manager_t* _struct = GetStruct();
@@ -217,6 +187,10 @@ bool CefCookieManagerCToCpp::FlushStore(
 
 CefCookieManagerCToCpp::CefCookieManagerCToCpp() {}
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefCookieManagerCToCpp::~CefCookieManagerCToCpp() {}
+
 template <>
 cef_cookie_manager_t*
 CefCToCppRefCounted<CefCookieManagerCToCpp,
@@ -226,14 +200,6 @@ CefCToCppRefCounted<CefCookieManagerCToCpp,
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCToCppRefCounted<CefCookieManagerCToCpp,
-                                         CefCookieManager,
-                                         cef_cookie_manager_t>::DebugObjCt
-    ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType CefCToCppRefCounted<CefCookieManagerCToCpp,

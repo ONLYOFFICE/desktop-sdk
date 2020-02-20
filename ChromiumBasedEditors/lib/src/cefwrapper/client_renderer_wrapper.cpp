@@ -530,7 +530,7 @@ retval, exception);
 
                 CefRefPtr<CefProcessMessage> messageVersion = CefProcessMessage::Create("set_editors_version");
                 messageVersion->GetArgumentList()->SetString(0, m_sVersion);
-                browser->SendProcessMessage(PID_BROWSER, messageVersion);
+                SEND_MESSAGE_TO_BROWSER_PROCESS(messageVersion);
             }
 
             CefRefPtr<CefV8Value> val = *arguments.begin();
@@ -553,10 +553,9 @@ retval, exception);
                     if (m_etType != Presentation)
                     {
                         m_etType = Presentation;
-                        CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
                         CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("EditorType");
                         message->GetArgumentList()->SetInt(0, (int)m_etType);
-                        browser->SendProcessMessage(PID_BROWSER, message);
+                        SEND_MESSAGE_TO_BROWSER_PROCESS(message);
                     }
                 }
             }
@@ -570,10 +569,9 @@ retval, exception);
                 else if (sUrl.find("spreadsheeteditor") != std::wstring::npos)
                     m_etType = Spreadsheet;
 
-                CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
                 CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("EditorType");
                 message->GetArgumentList()->SetInt(0, (int)m_etType);
-                browser->SendProcessMessage(PID_BROWSER, message);
+                SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             }
             retval = CefV8Value::CreateInt(0);
             return true;
@@ -785,13 +783,12 @@ retval, exception);
         }
         else if (name == "SpellCheck")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             int64 frameId = CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("spell_check_task");
             message->GetArgumentList()->SetInt(0, (int)m_nEditorId);
             message->GetArgumentList()->SetString(1, arguments[0]->GetStringValue());
             message->GetArgumentList()->SetInt(2, (int)frameId);
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "CreateEditorApi")
@@ -799,9 +796,8 @@ retval, exception);
             volatile bool* pChecker = this->sync_command_check;
             *pChecker = true;
 
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("create_editor_api");
-            browser->SendProcessMessage(PID_BROWSER, message);            
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "ConsoleLog")
@@ -816,14 +812,13 @@ retval, exception);
 
             std::vector<CefRefPtr<CefV8Value> >::const_iterator iter = arguments.begin();
 
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("set_cookie");
             message->GetArgumentList()->SetString(0, (*iter)->GetStringValue()); ++iter;
             message->GetArgumentList()->SetString(1, (*iter)->GetStringValue()); ++iter;
             message->GetArgumentList()->SetString(2, (*iter)->GetStringValue()); ++iter;
             message->GetArgumentList()->SetString(3, (*iter)->GetStringValue()); ++iter;
             message->GetArgumentList()->SetString(4, (*iter)->GetStringValue()); ++iter;
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 
             return true;
         }
@@ -834,15 +829,13 @@ retval, exception);
 
             std::vector<CefRefPtr<CefV8Value> >::const_iterator iter = arguments.begin();
 
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("set_cookie");
             message->GetArgumentList()->SetString(0, (*iter)->GetStringValue()); ++iter;
             message->GetArgumentList()->SetString(1, (*iter)->GetStringValue()); ++iter;
             message->GetArgumentList()->SetString(2, (*iter)->GetStringValue()); ++iter;
             message->GetArgumentList()->SetString(3, "asc_auth_key");
             message->GetArgumentList()->SetString(4, (*iter)->GetStringValue()); ++iter;
-            browser->SendProcessMessage(PID_BROWSER, message);
-
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "getCookiePresent")
@@ -852,12 +845,10 @@ retval, exception);
 
             std::vector<CefRefPtr<CefV8Value> >::const_iterator iter = arguments.begin();
 
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("is_cookie_present");
             message->GetArgumentList()->SetString(0, (*iter)->GetStringValue()); ++iter;
             message->GetArgumentList()->SetString(1, (*iter)->GetStringValue()); ++iter;
-            browser->SendProcessMessage(PID_BROWSER, message);
-
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "getAuth")
@@ -867,11 +858,10 @@ retval, exception);
 
             std::vector<CefRefPtr<CefV8Value> >::const_iterator iter = arguments.begin();
 
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("is_cookie_present");
             message->GetArgumentList()->SetString(0, (*iter)->GetStringValue()); ++iter;
             message->GetArgumentList()->SetString(1, "asc_auth_key");
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 
             return true;
         }
@@ -885,7 +875,6 @@ retval, exception);
             std::vector<CefString> arrKeys;
             _param->GetKeys(arrKeys);
 
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_check_auth");
             message->GetArgumentList()->SetInt(0, (int)arrKeys.size());
 
@@ -893,8 +882,7 @@ retval, exception);
             for (std::vector<CefString>::iterator i = arrKeys.begin(); i != arrKeys.end(); i++)
                 message->GetArgumentList()->SetString(nCurrent++, *i);
 
-            browser->SendProcessMessage(PID_BROWSER, message);
-
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "onDocumentModifiedChanged")
@@ -908,11 +896,9 @@ retval, exception);
             CefRefPtr<CefV8Value> val = *arguments.begin();
             bool bValue = val->GetBoolValue();
 
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onDocumentModifiedChanged");
             message->GetArgumentList()->SetBool(0, bValue);
-            browser->SendProcessMessage(PID_BROWSER, message);
-
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "SetDocumentName")
@@ -923,10 +909,9 @@ retval, exception);
             CefRefPtr<CefV8Value> val = *arguments.begin();
             CefString sName = val->GetStringValue();
 
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("set_document_name");
             message->GetArgumentList()->SetString(0, sName);
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 
             // HACK!!!
             if (m_nCryptoMode > 0)
@@ -942,10 +927,8 @@ DE.controllers.Main.DisableVersionHistory(); \
         }
         else if (name == "OnSave")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_document_save");
-            browser->SendProcessMessage(PID_BROWSER, message);
-
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "js_message")
@@ -955,12 +938,10 @@ DE.controllers.Main.DisableVersionHistory(); \
 
             std::vector<CefRefPtr<CefV8Value> >::const_iterator iter = arguments.begin();
 
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("js_message");
             message->GetArgumentList()->SetString(0, (*iter)->GetStringValue()); ++iter;
             message->GetArgumentList()->SetString(1, (*iter)->GetStringValue()); ++iter;
-            browser->SendProcessMessage(PID_BROWSER, message);
-
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "Print_Start")
@@ -970,14 +951,13 @@ DE.controllers.Main.DisableVersionHistory(); \
 
             std::vector<CefRefPtr<CefV8Value> >::const_iterator iter = arguments.begin();
 
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("print_start");
             message->GetArgumentList()->SetString(0, (*iter)->GetStringValue()); ++iter;
             message->GetArgumentList()->SetInt(1, (*iter)->GetIntValue()); ++iter;
-            message->GetArgumentList()->SetString(2, browser->GetFocusedFrame()->GetURL());
+            message->GetArgumentList()->SetString(2, CefV8Context::GetCurrentContext()->GetBrowser()->GetFocusedFrame()->GetURL());
             message->GetArgumentList()->SetString(3, (*iter)->GetStringValue()); ++iter;
             message->GetArgumentList()->SetInt(4, (*iter)->GetIntValue());
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 
             m_nCurrentPrintIndex = 0;
             m_bIsPrinting = true;
@@ -990,26 +970,24 @@ DE.controllers.Main.DisableVersionHistory(); \
 
             std::vector<CefRefPtr<CefV8Value> >::const_iterator iter = arguments.begin();
 
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("print_page");
             message->GetArgumentList()->SetString(0, (*iter)->GetStringValue()); ++iter;
             message->GetArgumentList()->SetInt(1, m_nCurrentPrintIndex);
             message->GetArgumentList()->SetDouble(2, (*iter)->GetDoubleValue()); ++iter;
             message->GetArgumentList()->SetDouble(3, (*iter)->GetDoubleValue()); ++iter;
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 
             m_nCurrentPrintIndex++;
             return true;
         }
         else if (name == "Print_End")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("print_end");
 
             if (arguments.size() > 0)
                 message->GetArgumentList()->SetInt(0, arguments[0]->GetIntValue());
 
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 
             m_nCurrentPrintIndex = 0;
             m_bIsPrinting = false;
@@ -1017,11 +995,10 @@ DE.controllers.Main.DisableVersionHistory(); \
         }
         else if (name == "Print")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("print");
             if (arguments.size() == 1)
                 message->GetArgumentList()->SetString(0, (*arguments.begin())->GetStringValue());
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "IsSupportNativePrint")
@@ -1115,34 +1092,30 @@ DE.controllers.Main.DisableVersionHistory(); \
             if (arguments.size() > 0)
                 bIsFullScreen = arguments[0]->GetBoolValue();
 
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create(bIsFullScreen ? "onfullscreenenter" : "onfullscreenleave");
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "LocalStartOpen")
         {
             // редактор загрузился и готов к файлу
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_loadstart");
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "LocalFileOpen")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_open");
             if (arguments.size() == 1)
                 message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "LocalFileCreate")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_create");
             message->GetArgumentList()->SetInt(0, arguments[0]->GetIntValue());
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "LocalFileRecoverFolder")
@@ -1184,62 +1157,54 @@ DE.controllers.Main.DisableVersionHistory(); \
         }
         else if (name == "LocalFileRecents")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_sendrecents");
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "LocalFileOpenRecent")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_openrecents");
             message->GetArgumentList()->SetInt(0, arguments[0]->GetIntValue());
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "LocalFileRemoveRecent")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_removerecents");
             message->GetArgumentList()->SetInt(0, arguments[0]->GetIntValue());
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "LocalFileRemoveAllRecents")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_removeallrecents");
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "LocalFileRecovers")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_sendrecovers");
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "LocalFileOpenRecover")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_openrecovers");
             message->GetArgumentList()->SetInt(0, arguments[0]->GetIntValue());
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "LocalFileRemoveRecover")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_removerecovers");
             message->GetArgumentList()->SetInt(0, arguments[0]->GetIntValue());
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "LocalFileRemoveAllRecovers")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_removeallrecovers");
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "LocalFileSaveChanges")
@@ -1287,12 +1252,11 @@ DE.controllers.Main.DisableVersionHistory(); \
         }
         else if (name == "LocalFileSave")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_onsavestart");
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
             message->GetArgumentList()->SetString(1, ((arguments.size() > 1) && arguments[1]->IsString()) ? arguments[1]->GetStringValue() : "");
             message->GetArgumentList()->SetString(2, ((arguments.size() > 2) && arguments[2]->IsString()) ? arguments[2]->GetStringValue() : "");
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "LocalFileGetSourcePath")
@@ -1325,14 +1289,12 @@ DE.controllers.Main.DisableVersionHistory(); \
         }
         else if (name == "LocalFileGetImageUrlFromOpenFileDialog")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_onaddimage");
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "execCommand")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_exec_command");
 
             std::vector<CefRefPtr<CefV8Value>>::const_iterator iter = arguments.begin();
@@ -1341,15 +1303,14 @@ DE.controllers.Main.DisableVersionHistory(); \
             if (2 == arguments.size())
                 message->GetArgumentList()->SetString(1, (*iter)->GetStringValue()); ++iter;
 
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "Logout")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_logout");
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "SetDropFiles")
@@ -1385,38 +1346,33 @@ DE.controllers.Main.DisableVersionHistory(); \
         }
         else if (name == "DropOfficeFiles")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("DropOfficeFiles");
 
             int nCurrent = 0;
             for (std::vector<std::wstring>::iterator i = m_arDropFiles.begin(); i != m_arDropFiles.end(); i++)
                  message->GetArgumentList()->SetString(nCurrent++, *i);
 
-            browser->SendProcessMessage(PID_BROWSER, message);
-
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "SetAdvancedOptions")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_setadvancedoptions");
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "ApplyAction")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_core_check_info");
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "InitJSContext")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_init_js_context");
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 
             CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetFrame();
             if (_frame)
@@ -1615,11 +1571,10 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
                     }
                     m_nNativeOpenFileTimerID = -1;
 
-                    CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
                     CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("native_viewer_onopened");
                     message->GetArgumentList()->SetString(0, (sBase64File == "error") ? "" : sBase64File);
                     message->GetArgumentList()->SetString(1, m_oNativeViewer.GetPassword());
-                    browser->SendProcessMessage(PID_BROWSER, message);
+                    SEND_MESSAGE_TO_BROWSER_PROCESS(message);
                 }
             }
 
@@ -1758,7 +1713,6 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
         }
         else if (name == "Sign")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_sign");
 
             int nSize = (int)arguments.size();
@@ -1767,96 +1721,85 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
             message->GetArgumentList()->SetString(2, (nSize > 2) ? arguments[2]->GetStringValue() : "");
             message->GetArgumentList()->SetString(3, (nSize > 3) ? arguments[3]->GetStringValue() : "");
 
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "RemoveSignature")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_remove");
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "RemoveAllSignatures")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_remove");
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "ViewCertificate")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_viewcertificate");
             message->GetArgumentList()->SetInt(0, arguments[0]->GetIntValue());
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "SelectCertificate")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_selectsertificate");
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "GetDefaultCertificate")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_defaultcertificate");
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "_OpenFilenameDialog")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_open_filename_dialog");
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
             message->GetArgumentList()->SetString(1, std::to_string(CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier()));
             if (arguments.size() > 1)
                 message->GetArgumentList()->SetBool(2, arguments[1]->GetBoolValue());
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "SaveQuestion")
         {            
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_file_save_question");
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "startReporter")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_start_reporter");
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
             message->GetArgumentList()->SetString(1, m_sLocalFileFolder);
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "endReporter")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_end_reporter");
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "sendToReporter")
         {
             // сообщение докладчику
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("send_to_reporter");
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "sendFromReporter")
         {
             // сообщение от докладчика
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("send_from_reporter");
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "IsSignaturesSupport")
@@ -1898,7 +1841,6 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
         }
         else if (name == "_sendSystemMessage")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("send_system_message");
 
             int64 frameID = CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier();
@@ -1906,43 +1848,39 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
             message->GetArgumentList()->SetString(1, std::to_string(frameID));
 
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "_GetHash")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("file_get_hash");
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
             message->GetArgumentList()->SetString(1, (arguments.size() > 1) ? arguments[1]->GetStringValue() : "sha-256");
             message->GetArgumentList()->SetString(2, std::to_string(CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier()));
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "_CallInAllWindows")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("call_in_all_windows");
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "_OpenFileCrypt")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("open_file_crypt");
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
             message->GetArgumentList()->SetString(1, arguments[1]->GetStringValue());
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "buildCryptedStart")
         {
             if (arguments.size() == 0)
             {
-                CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
                 CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("build_crypted");
-                browser->SendProcessMessage(PID_BROWSER, message);
+                SEND_MESSAGE_TO_BROWSER_PROCESS(message);
                 return true;
             }
 
@@ -1959,19 +1897,17 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
 
             RELEASEARRAYOBJECTS(pDataDst);
 
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("build_crypted");
             message->GetArgumentList()->SetString(0, arguments[2]->GetStringValue());
             message->GetArgumentList()->SetString(1, arguments[3]->GetStringValue());
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "buildCryptedEnd")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("build_crypted_end");
             message->GetArgumentList()->SetBool(0, arguments[0]->GetBoolValue());
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "SetCryptDocumentFolder")
@@ -1981,11 +1917,10 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
         }
         else if (name == "PreloadCryptoImage")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("preload_crypto_image");
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
             message->GetArgumentList()->SetString(1, arguments[1]->GetStringValue());
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "ResaveFile")
@@ -2066,8 +2001,7 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
                 }
             }
 
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 
             return true;
         }
@@ -2085,8 +2019,7 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
             message->GetArgumentList()->SetInt(1, arguments[1]->GetIntValue());
             message->GetArgumentList()->SetBool(2, (arguments.size() > 2) ? arguments[2]->GetBoolValue() : false);
             message->GetArgumentList()->SetInt(3, (int)CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "GetImageFormat")
@@ -2145,8 +2078,7 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("get_advanced_encrypted_data");
             message->GetArgumentList()->SetInt(0, (int)CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
             message->GetArgumentList()->SetString(1, arguments[0]->GetStringValue());
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "_SetAdvancedEncryptedData")
@@ -2155,8 +2087,7 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
             message->GetArgumentList()->SetInt(0, (int)CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
             message->GetArgumentList()->SetString(1, arguments[0]->GetStringValue());
             message->GetArgumentList()->SetString(2, arguments[1]->GetStringValue());
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "GetExternalClouds")
@@ -2216,8 +2147,7 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("crypto_download_as");
             message->GetArgumentList()->SetInt(0, nFormat);
             message->GetArgumentList()->SetString(1, sParams);
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 
             return true;
         }
@@ -2241,15 +2171,13 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
                 message->GetArgumentList()->SetDouble(11, arguments[11]->GetDoubleValue());
             }
 
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "MediaEnd")
         {
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("media_end");
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
 
@@ -2469,8 +2397,7 @@ _e.asc_AddVideo(\"" + sImage + L".png\", \"" + sImage + L"." + sExt + L"\");\n\
             }
 
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("send_by_mail");
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "IsLocalFileExist")
@@ -2541,37 +2468,33 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
             if (arguments.size() > 1)
                 bIsNeedRemoveAfterUse = arguments[1]->GetBoolValue();
 
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("cloud_crypto_upload");
             message->GetArgumentList()->SetBool(0, bIsNeedRemoveAfterUse);
             message->GetArgumentList()->SetInt(1, CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
             message->GetArgumentList()->SetInt(2, nCount);
             for (int i = 0; i < nCount; ++i)
                 message->GetArgumentList()->SetString(3 + i, arguments[0]->GetValue(i)->GetStringValue());
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "_CloudCryptoUploadPass")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("cloud_crypto_upload_pass");
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
             message->GetArgumentList()->SetString(1, arguments[1]->GetStringValue());
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "_CloudCryptoUploadSave")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("cloud_crypto_upload_save");
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "CloudCryptUploadEnd")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("cloud_crypto_upload_end");
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "getLocalFileSize")
@@ -2601,11 +2524,10 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
         }
         else if (name == "_SaveFilenameDialog")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_save_filename_dialog");
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
             message->GetArgumentList()->SetString(1, std::to_string(CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier()));
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "_ImportAdvancedEncryptedData")
@@ -2633,27 +2555,24 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
         }
         else if (name == "CompareDocumentUrl")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_compare_document");
             message->GetArgumentList()->SetString(0, "url");
             message->GetArgumentList()->SetString(1, arguments[0]->GetStringValue());
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "CompareDocumentFile")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_compare_document");
             message->GetArgumentList()->SetString(0, "file");
             message->GetArgumentList()->SetString(1, arguments[0]->GetStringValue());
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
         else if (name == "onDocumentContentReady")
         {
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_document_content_ready");
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
 
@@ -2991,7 +2910,7 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
     }
 
     // Provide the reference counting implementation for this class.
-    IMPLEMENT_REFCOUNTING(CAscEditorNativeV8Handler)
+    IMPLEMENT_REFCOUNTING(CAscEditorNativeV8Handler);
 };
 
 class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
@@ -3238,7 +3157,11 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
     }
 
     CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_js_context_created");
+#ifndef MESSAGE_IN_BROWSER
+    curFrame->SendProcessMessage(PID_BROWSER, message);
+#else
     browser->SendProcessMessage(PID_BROWSER, message);
+#endif
   }
 
   virtual void OnContextReleased(CefRefPtr<client::ClientAppRenderer> app,
@@ -3269,6 +3192,9 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
   virtual bool OnProcessMessageReceived(
       CefRefPtr<client::ClientAppRenderer> app,
       CefRefPtr<CefBrowser> browser,
+#ifndef MESSAGE_IN_BROWSER
+      CefRefPtr<CefFrame> messageFrame,
+#endif
       CefProcessId source_process,
       CefRefPtr<CefProcessMessage> message) OVERRIDE
 {
@@ -4174,7 +4100,11 @@ delete window[\"crypto_images_map\"][_url];\n\
         return true;
 
     return message_router_->OnProcessMessageReceived(
-        browser, source_process, message);
+        browser,
+        #ifndef MESSAGE_IN_BROWSER
+        messageFrame,
+        #endif
+        source_process, message);
 }
 
 private:
@@ -4228,7 +4158,7 @@ private:
   NSCommon::smart_ptr<CApplicationRendererAdditionalBase> m_pAdditional;
   bool m_bIsNativeViewer;
 
-  IMPLEMENT_REFCOUNTING(ClientRenderDelegate)
+  IMPLEMENT_REFCOUNTING(ClientRenderDelegate);
 };
 
 void CreateRenderDelegates(client::ClientAppRenderer::DelegateSet& delegates) {

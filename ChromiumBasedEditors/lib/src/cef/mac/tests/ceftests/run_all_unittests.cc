@@ -3,8 +3,9 @@
 // can be found in the LICENSE file.
 
 #include "include/base/cef_build.h"
+#include "include/cef_config.h"
 
-#if defined(OS_LINUX)
+#if defined(OS_LINUX) && defined(CEF_X11)
 #include <X11/Xlib.h>
 // Definitions conflict with gtest.
 #undef None
@@ -29,8 +30,19 @@
 #include "tests/shared/common/client_app_other.h"
 #include "tests/shared/renderer/client_app_renderer.h"
 
-#if defined(OS_WIN)
+#if defined(OS_MACOSX)
+#include "include/wrapper/cef_library_loader.h"
+#endif
+
+// When generating projects with CMake the CEF_USE_SANDBOX value will be defined
+// automatically if using the required compiler version. Pass -DUSE_SANDBOX=OFF
+// to the CMake command-line to disable use of the sandbox.
+#if defined(OS_WIN) && defined(CEF_USE_SANDBOX)
 #include "include/cef_sandbox_win.h"
+
+// The cef_sandbox.lib static library may not link successfully with all VS
+// versions.
+#pragma comment(lib, "cef_sandbox.lib")
 #endif
 
 namespace {
@@ -73,7 +85,7 @@ void ContinueOnUIThread(CefRefPtr<CefTaskRunner> test_task_runner) {
       CefCreateClosureTask(base::Bind(&RunTestsOnTestThread)));
 }
 
-#if defined(OS_LINUX)
+#if defined(OS_LINUX) && defined(CEF_X11)
 int XErrorHandlerImpl(Display* display, XErrorEvent* event) {
   LOG(WARNING) << "X error received: "
                << "type " << event->type << ", "
@@ -88,11 +100,19 @@ int XErrorHandlerImpl(Display* display, XErrorEvent* event) {
 int XIOErrorHandlerImpl(Display* display) {
   return 0;
 }
-#endif  // defined(OS_LINUX)
+#endif  // defined(OS_LINUX) && defined(CEF_X11)
 
 }  // namespace
 
 int main(int argc, char* argv[]) {
+#if defined(OS_MACOSX)
+  // Load the CEF framework library at runtime instead of linking directly
+  // as required by the macOS sandbox implementation.
+  CefScopedLibraryLoader library_loader;
+  if (!library_loader.LoadInMain())
+    return 1;
+#endif
+
   // Create the singleton test suite object.
   CefTestSuite test_suite(argc, argv);
 
@@ -109,7 +129,7 @@ int main(int argc, char* argv[]) {
 
   void* windows_sandbox_info = NULL;
 
-#if defined(OS_WIN)
+#if defined(OS_WIN) && defined(CEF_USE_SANDBOX)
   // Manages the life span of the sandbox information object.
   CefScopedSandboxInfo scoped_sandbox;
   windows_sandbox_info = scoped_sandbox.sandbox_info();
@@ -141,6 +161,11 @@ int main(int argc, char* argv[]) {
 #endif
 
   CefSettings settings;
+
+#if !defined(CEF_USE_SANDBOX)
+  settings.no_sandbox = true;
+#endif
+
   test_suite.GetSettings(settings);
 
 #if defined(OS_MACOSX)
@@ -149,7 +174,7 @@ int main(int argc, char* argv[]) {
   PlatformInit();
 #endif
 
-#if defined(OS_LINUX)
+#if defined(OS_LINUX) && defined(CEF_X11)
   // Install xlib error handlers so that the application won't be terminated
   // on non-fatal errors.
   XSetErrorHandler(XErrorHandlerImpl);
@@ -200,6 +225,8 @@ int main(int argc, char* argv[]) {
 
   // Shut down CEF.
   CefShutdown();
+
+  test_suite.DeleteTempDirectories();
 
   // Destroy the MessageLoop.
   message_loop.reset(nullptr);

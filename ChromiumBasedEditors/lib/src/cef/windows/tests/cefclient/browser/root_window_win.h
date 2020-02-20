@@ -29,11 +29,8 @@ class RootWindowWin : public RootWindow, public BrowserWindow::Delegate {
 
   // RootWindow methods.
   void Init(RootWindow::Delegate* delegate,
-            bool with_controls,
-            bool with_osr,
-            const CefRect& rect,
-            const CefBrowserSettings& settings,
-            const std::string& url) OVERRIDE;
+            const RootWindowConfig& config,
+            const CefBrowserSettings& settings) OVERRIDE;
   void InitAsPopup(RootWindow::Delegate* delegate,
                    bool with_controls,
                    bool with_osr,
@@ -49,10 +46,13 @@ class RootWindowWin : public RootWindow, public BrowserWindow::Delegate {
   float GetDeviceScaleFactor() const OVERRIDE;
   CefRefPtr<CefBrowser> GetBrowser() const OVERRIDE;
   ClientWindowHandle GetWindowHandle() const OVERRIDE;
+  bool WithWindowlessRendering() const OVERRIDE;
+  bool WithExtension() const OVERRIDE;
 
  private:
   void CreateBrowserWindow(const std::string& startup_url);
-  void CreateRootWindow(const CefBrowserSettings& settings);
+  void CreateRootWindow(const CefBrowserSettings& settings,
+                        bool initially_hidden);
 
   // Register the root window class.
   static void RegisterRootClass(HINSTANCE hInstance,
@@ -80,13 +80,17 @@ class RootWindowWin : public RootWindow, public BrowserWindow::Delegate {
   // Event handlers.
   void OnPaint();
   void OnFocus();
+  void OnActivate(bool active);
   void OnSize(bool minimized);
   void OnMove();
+  void OnDpiChanged(WPARAM wParam, LPARAM lParam);
   bool OnEraseBkgnd();
   bool OnCommand(UINT id);
   void OnFind();
   void OnFindEvent();
   void OnAbout();
+  void OnNCCreate(LPCREATESTRUCT lpCreateStruct);
+  void OnCreate(LPCREATESTRUCT lpCreateStruct);
   bool OnClose();
   void OnDestroyed();
 
@@ -96,6 +100,7 @@ class RootWindowWin : public RootWindow, public BrowserWindow::Delegate {
   void OnSetAddress(const std::string& url) OVERRIDE;
   void OnSetTitle(const std::string& title) OVERRIDE;
   void OnSetFullscreen(bool fullscreen) OVERRIDE;
+  void OnAutoResize(const CefSize& new_size) OVERRIDE;
   void OnSetLoadingState(bool isLoading,
                          bool canGoBack,
                          bool canGoForward) OVERRIDE;
@@ -106,12 +111,14 @@ class RootWindowWin : public RootWindow, public BrowserWindow::Delegate {
 
   // After initialization all members are only accessed on the main thread.
   // Members set during initialization.
-  RootWindow::Delegate* delegate_;
   bool with_controls_;
+  bool always_on_top_;
   bool with_osr_;
+  bool with_extension_;
   bool is_popup_;
   RECT start_rect_;
   scoped_ptr<BrowserWindow> browser_window_;
+  CefBrowserSettings browser_settings_;
   bool initialized_;
 
   // Main window.
@@ -122,6 +129,7 @@ class RootWindowWin : public RootWindow, public BrowserWindow::Delegate {
 
   // Font for buttons and text fields.
   HFONT font_;
+  int font_height_;
 
   // Buttons.
   HWND back_hwnd_;
@@ -147,6 +155,8 @@ class RootWindowWin : public RootWindow, public BrowserWindow::Delegate {
 
   bool window_destroyed_;
   bool browser_destroyed_;
+
+  bool called_enable_non_client_dpi_scaling_;
 
   DISALLOW_COPY_AND_ASSIGN(RootWindowWin);
 };

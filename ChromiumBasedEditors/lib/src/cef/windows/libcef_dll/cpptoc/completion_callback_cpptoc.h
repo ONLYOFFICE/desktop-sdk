@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=e34dbc70b1ad79757db547ae0d27f043db480ac9$
+// $hash=cbc3105e5384f038d4dd174438e0b054437c5114$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_COMPLETION_CALLBACK_CPPTOC_H_
@@ -32,6 +32,7 @@ class CefCompletionCallbackCppToC
                                  cef_completion_callback_t> {
  public:
   CefCompletionCallbackCppToC();
+  virtual ~CefCompletionCallbackCppToC();
 };
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_COMPLETION_CALLBACK_CPPTOC_H_

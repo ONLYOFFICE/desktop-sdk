@@ -50,12 +50,15 @@ bool ClientHandlerOsr::GetRootScreenRect(CefRefPtr<CefBrowser> browser,
   return osr_delegate_->GetRootScreenRect(browser, rect);
 }
 
-bool ClientHandlerOsr::GetViewRect(CefRefPtr<CefBrowser> browser,
+void ClientHandlerOsr::GetViewRect(CefRefPtr<CefBrowser> browser,
                                    CefRect& rect) {
   CEF_REQUIRE_UI_THREAD();
-  if (!osr_delegate_)
-    return false;
-  return osr_delegate_->GetViewRect(browser, rect);
+  if (!osr_delegate_) {
+    // Never return an empty rectangle.
+    rect.width = rect.height = 1;
+    return;
+  }
+  osr_delegate_->GetViewRect(browser, rect);
 }
 
 bool ClientHandlerOsr::GetScreenPoint(CefRefPtr<CefBrowser> browser,
@@ -102,6 +105,17 @@ void ClientHandlerOsr::OnPaint(CefRefPtr<CefBrowser> browser,
   if (!osr_delegate_)
     return;
   osr_delegate_->OnPaint(browser, type, dirtyRects, buffer, width, height);
+}
+
+void ClientHandlerOsr::OnAcceleratedPaint(
+    CefRefPtr<CefBrowser> browser,
+    CefRenderHandler::PaintElementType type,
+    const CefRenderHandler::RectList& dirtyRects,
+    void* share_handle) {
+  CEF_REQUIRE_UI_THREAD();
+  if (!osr_delegate_)
+    return;
+  osr_delegate_->OnAcceleratedPaint(browser, type, dirtyRects, share_handle);
 }
 
 void ClientHandlerOsr::OnCursorChange(CefRefPtr<CefBrowser> browser,
@@ -151,6 +165,14 @@ void ClientHandlerOsr::OnAccessibilityTreeChange(CefRefPtr<CefValue> value) {
   if (!osr_delegate_)
     return;
   osr_delegate_->UpdateAccessibilityTree(value);
+}
+
+void ClientHandlerOsr::OnAccessibilityLocationChange(
+    CefRefPtr<CefValue> value) {
+  CEF_REQUIRE_UI_THREAD();
+  if (!osr_delegate_)
+    return;
+  osr_delegate_->UpdateAccessibilityLocation(value);
 }
 
 }  // namespace client

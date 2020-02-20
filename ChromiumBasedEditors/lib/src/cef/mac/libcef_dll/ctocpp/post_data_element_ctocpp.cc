@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,13 +9,14 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=85d400500ae15b1750ac10905cac8c90e3ab1541$
+// $hash=4e51305feb380b458aebcd9e386ecee4e6c0b487$
 //
 
 #include "libcef_dll/ctocpp/post_data_element_ctocpp.h"
 
 // STATIC METHODS - Body may be edited by hand.
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefPostDataElement> CefPostDataElement::Create() {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -28,7 +29,7 @@ CefRefPtr<CefPostDataElement> CefPostDataElement::Create() {
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
-bool CefPostDataElementCToCpp::IsReadOnly() {
+NO_SANITIZE("cfi-icall") bool CefPostDataElementCToCpp::IsReadOnly() {
   cef_post_data_element_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, is_read_only))
     return false;
@@ -42,7 +43,7 @@ bool CefPostDataElementCToCpp::IsReadOnly() {
   return _retval ? true : false;
 }
 
-void CefPostDataElementCToCpp::SetToEmpty() {
+NO_SANITIZE("cfi-icall") void CefPostDataElementCToCpp::SetToEmpty() {
   cef_post_data_element_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, set_to_empty))
     return;
@@ -53,6 +54,7 @@ void CefPostDataElementCToCpp::SetToEmpty() {
   _struct->set_to_empty(_struct);
 }
 
+NO_SANITIZE("cfi-icall")
 void CefPostDataElementCToCpp::SetToFile(const CefString& fileName) {
   cef_post_data_element_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, set_to_file))
@@ -69,6 +71,7 @@ void CefPostDataElementCToCpp::SetToFile(const CefString& fileName) {
   _struct->set_to_file(_struct, fileName.GetStruct());
 }
 
+NO_SANITIZE("cfi-icall")
 void CefPostDataElementCToCpp::SetToBytes(size_t size, const void* bytes) {
   cef_post_data_element_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, set_to_bytes))
@@ -85,6 +88,7 @@ void CefPostDataElementCToCpp::SetToBytes(size_t size, const void* bytes) {
   _struct->set_to_bytes(_struct, size, bytes);
 }
 
+NO_SANITIZE("cfi-icall")
 CefPostDataElement::Type CefPostDataElementCToCpp::GetType() {
   cef_post_data_element_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_type))
@@ -99,7 +103,7 @@ CefPostDataElement::Type CefPostDataElementCToCpp::GetType() {
   return _retval;
 }
 
-CefString CefPostDataElementCToCpp::GetFile() {
+NO_SANITIZE("cfi-icall") CefString CefPostDataElementCToCpp::GetFile() {
   cef_post_data_element_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_file))
     return CefString();
@@ -115,7 +119,7 @@ CefString CefPostDataElementCToCpp::GetFile() {
   return _retvalStr;
 }
 
-size_t CefPostDataElementCToCpp::GetBytesCount() {
+NO_SANITIZE("cfi-icall") size_t CefPostDataElementCToCpp::GetBytesCount() {
   cef_post_data_element_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_bytes_count))
     return 0;
@@ -129,6 +133,7 @@ size_t CefPostDataElementCToCpp::GetBytesCount() {
   return _retval;
 }
 
+NO_SANITIZE("cfi-icall")
 size_t CefPostDataElementCToCpp::GetBytes(size_t size, void* bytes) {
   cef_post_data_element_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_bytes))
@@ -152,6 +157,10 @@ size_t CefPostDataElementCToCpp::GetBytes(size_t size, void* bytes) {
 
 CefPostDataElementCToCpp::CefPostDataElementCToCpp() {}
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefPostDataElementCToCpp::~CefPostDataElementCToCpp() {}
+
 template <>
 cef_post_data_element_t* CefCToCppRefCounted<
     CefPostDataElementCToCpp,
@@ -161,14 +170,6 @@ cef_post_data_element_t* CefCToCppRefCounted<
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCToCppRefCounted<CefPostDataElementCToCpp,
-                                         CefPostDataElement,
-                                         cef_post_data_element_t>::DebugObjCt
-    ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType CefCToCppRefCounted<CefPostDataElementCToCpp,

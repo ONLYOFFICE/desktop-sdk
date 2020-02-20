@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=89c5f96f547bcb4d721e63e583579d5ac343c26f$
+// $hash=2602ada83129023b288002fede3c7aaf898d0e47$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_WEB_PLUGIN_INFO_VISITOR_CPPTOC_H_
@@ -34,6 +34,7 @@ class CefWebPluginInfoVisitorCppToC
                                  cef_web_plugin_info_visitor_t> {
  public:
   CefWebPluginInfoVisitorCppToC();
+  virtual ~CefWebPluginInfoVisitorCppToC();
 };
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_WEB_PLUGIN_INFO_VISITOR_CPPTOC_H_

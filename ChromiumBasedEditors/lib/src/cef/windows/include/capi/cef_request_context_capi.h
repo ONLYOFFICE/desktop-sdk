@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2019 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,7 +33,7 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=791231acc78a2b601257fb0b86d904eace796d63$
+// $hash=fdfce3e4e33a1d4e1170497d2a476f0837994060$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_REQUEST_CONTEXT_CAPI_H_
@@ -42,13 +42,15 @@
 
 #include "include/capi/cef_callback_capi.h"
 #include "include/capi/cef_cookie_capi.h"
-#include "include/capi/cef_request_context_handler_capi.h"
+#include "include/capi/cef_extension_capi.h"
+#include "include/capi/cef_extension_handler_capi.h"
 #include "include/capi/cef_values_capi.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+struct _cef_request_context_handler_t;
 struct _cef_scheme_handler_factory_t;
 
 ///
@@ -61,9 +63,9 @@ typedef struct _cef_resolve_callback_t {
   cef_base_ref_counted_t base;
 
   ///
-  // Called after the ResolveHost request has completed. |result| will be the
-  // result code. |resolved_ips| will be the list of resolved IP addresses or
-  // NULL if the resolution failed.
+  // Called on the UI thread after the ResolveHost request has completed.
+  // |result| will be the result code. |resolved_ips| will be the list of
+  // resolved IP addresses or NULL if the resolution failed.
   ///
   void(CEF_CALLBACK* on_resolve_completed)(struct _cef_resolve_callback_t* self,
                                            cef_errorcode_t result,
@@ -128,14 +130,11 @@ typedef struct _cef_request_context_t {
       struct _cef_request_context_t* self);
 
   ///
-  // Returns the default cookie manager for this object. This will be the global
-  // cookie manager if this object is the global request context. Otherwise,
-  // this will be the default cookie manager used when this request context does
-  // not receive a value via cef_request_tContextHandler::get_cookie_manager().
-  // If |callback| is non-NULL it will be executed asnychronously on the IO
-  // thread after the manager's storage has been initialized.
+  // Returns the cookie manager for this object. If |callback| is non-NULL it
+  // will be executed asnychronously on the IO thread after the manager's
+  // storage has been initialized.
   ///
-  struct _cef_cookie_manager_t*(CEF_CALLBACK* get_default_cookie_manager)(
+  struct _cef_cookie_manager_t*(CEF_CALLBACK* get_cookie_manager)(
       struct _cef_request_context_t* self,
       struct _cef_completion_callback_t* callback);
 
@@ -240,9 +239,18 @@ typedef struct _cef_request_context_t {
       struct _cef_completion_callback_t* callback);
 
   ///
+  // Clears all HTTP authentication credentials that were added as part of
+  // handling GetAuthCredentials. If |callback| is non-NULL it will be executed
+  // on the UI thread after completion.
+  ///
+  void(CEF_CALLBACK* clear_http_auth_credentials)(
+      struct _cef_request_context_t* self,
+      struct _cef_completion_callback_t* callback);
+
+  ///
   // Clears all active and idle connections that Chromium currently has. This is
   // only recommended if you have released all other CEF objects but don't yet
-  // want to call cef_shutdown(). If |callback| is non-NULL it will be executed
+  // want to call Cefshutdown(). If |callback| is non-NULL it will be executed
   // on the UI thread after completion.
   ///
   void(CEF_CALLBACK* close_all_connections)(
@@ -258,15 +266,93 @@ typedef struct _cef_request_context_t {
                                    struct _cef_resolve_callback_t* callback);
 
   ///
-  // Attempts to resolve |origin| to a list of associated IP addresses using
-  // cached data. |resolved_ips| will be populated with the list of resolved IP
-  // addresses or NULL if no cached data is available. Returns ERR_NONE on
-  // success. This function must be called on the browser process IO thread.
+  // Load an extension.
+  //
+  // If extension resources will be read from disk using the default load
+  // implementation then |root_directory| should be the absolute path to the
+  // extension resources directory and |manifest| should be NULL. If extension
+  // resources will be provided by the client (e.g. via cef_request_tHandler
+  // and/or cef_extension_tHandler) then |root_directory| should be a path
+  // component unique to the extension (if not absolute this will be internally
+  // prefixed with the PK_DIR_RESOURCES path) and |manifest| should contain the
+  // contents that would otherwise be read from the "manifest.json" file on
+  // disk.
+  //
+  // The loaded extension will be accessible in all contexts sharing the same
+  // storage (HasExtension returns true (1)). However, only the context on which
+  // this function was called is considered the loader (DidLoadExtension returns
+  // true (1)) and only the loader will receive cef_request_tContextHandler
+  // callbacks for the extension.
+  //
+  // cef_extension_tHandler::OnExtensionLoaded will be called on load success or
+  // cef_extension_tHandler::OnExtensionLoadFailed will be called on load
+  // failure.
+  //
+  // If the extension specifies a background script via the "background"
+  // manifest key then cef_extension_tHandler::OnBeforeBackgroundBrowser will be
+  // called to create the background browser. See that function for additional
+  // information about background scripts.
+  //
+  // For visible extension views the client application should evaluate the
+  // manifest to determine the correct extension URL to load and then pass that
+  // URL to the cef_browser_host_t::CreateBrowser* function after the extension
+  // has loaded. For example, the client can look for the "browser_action"
+  // manifest key as documented at
+  // https://developer.chrome.com/extensions/browserAction. Extension URLs take
+  // the form "chrome-extension://<extension_id>/<path>".
+  //
+  // Browsers that host extensions differ from normal browsers as follows:
+  //  - Can access chrome.* JavaScript APIs if allowed by the manifest. Visit
+  //    chrome://extensions-support for the list of extension APIs currently
+  //    supported by CEF.
+  //  - Main frame navigation to non-extension content is blocked.
+  //  - Pinch-zooming is disabled.
+  //  - CefBrowserHost::GetExtension returns the hosted extension.
+  //  - CefBrowserHost::IsBackgroundHost returns true for background hosts.
+  //
+  // See https://developer.chrome.com/extensions for extension implementation
+  // and usage documentation.
   ///
-  cef_errorcode_t(CEF_CALLBACK* resolve_host_cached)(
+  void(CEF_CALLBACK* load_extension)(struct _cef_request_context_t* self,
+                                     const cef_string_t* root_directory,
+                                     struct _cef_dictionary_value_t* manifest,
+                                     struct _cef_extension_handler_t* handler);
+
+  ///
+  // Returns true (1) if this context was used to load the extension identified
+  // by |extension_id|. Other contexts sharing the same storage will also have
+  // access to the extension (see HasExtension). This function must be called on
+  // the browser process UI thread.
+  ///
+  int(CEF_CALLBACK* did_load_extension)(struct _cef_request_context_t* self,
+                                        const cef_string_t* extension_id);
+
+  ///
+  // Returns true (1) if this context has access to the extension identified by
+  // |extension_id|. This may not be the context that was used to load the
+  // extension (see DidLoadExtension). This function must be called on the
+  // browser process UI thread.
+  ///
+  int(CEF_CALLBACK* has_extension)(struct _cef_request_context_t* self,
+                                   const cef_string_t* extension_id);
+
+  ///
+  // Retrieve the list of all extensions that this context has access to (see
+  // HasExtension). |extension_ids| will be populated with the list of extension
+  // ID values. Returns true (1) on success. This function must be called on the
+  // browser process UI thread.
+  ///
+  int(CEF_CALLBACK* get_extensions)(struct _cef_request_context_t* self,
+                                    cef_string_list_t extension_ids);
+
+  ///
+  // Returns the extension matching |extension_id| or NULL if no matching
+  // extension is accessible in this context (see HasExtension). This function
+  // must be called on the browser process UI thread.
+  ///
+  struct _cef_extension_t*(CEF_CALLBACK* get_extension)(
       struct _cef_request_context_t* self,
-      const cef_string_t* origin,
-      cef_string_list_t resolved_ips);
+      const cef_string_t* extension_id);
 } cef_request_context_t;
 
 ///

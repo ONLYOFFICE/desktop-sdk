@@ -25,10 +25,12 @@ void ClientAppRenderer::OnWebKitInitialized() {
     (*it)->OnWebKitInitialized(this);
 }
 
-void ClientAppRenderer::OnBrowserCreated(CefRefPtr<CefBrowser> browser) {
+void ClientAppRenderer::OnBrowserCreated(
+    CefRefPtr<CefBrowser> browser,
+    CefRefPtr<CefDictionaryValue> extra_info) {
   DelegateSet::iterator it = delegates_.begin();
   for (; it != delegates_.end(); ++it)
-    (*it)->OnBrowserCreated(this, browser);
+    (*it)->OnBrowserCreated(this, browser, extra_info);
 }
 
 void ClientAppRenderer::OnBrowserDestroyed(CefRefPtr<CefBrowser> browser) {
@@ -44,22 +46,6 @@ CefRefPtr<CefLoadHandler> ClientAppRenderer::GetLoadHandler() {
     load_handler = (*it)->GetLoadHandler(this);
 
   return load_handler;
-}
-
-bool ClientAppRenderer::OnBeforeNavigation(CefRefPtr<CefBrowser> browser,
-                                           CefRefPtr<CefFrame> frame,
-                                           CefRefPtr<CefRequest> request,
-                                           NavigationType navigation_type,
-                                           bool is_redirect) {
-  DelegateSet::iterator it = delegates_.begin();
-  for (; it != delegates_.end(); ++it) {
-    if ((*it)->OnBeforeNavigation(this, browser, frame, request,
-                                  navigation_type, is_redirect)) {
-      return true;
-    }
-  }
-
-  return false;
 }
 
 void ClientAppRenderer::OnContextCreated(CefRefPtr<CefBrowser> browser,
@@ -101,6 +87,7 @@ void ClientAppRenderer::OnFocusedNodeChanged(CefRefPtr<CefBrowser> browser,
 
 bool ClientAppRenderer::OnProcessMessageReceived(
     CefRefPtr<CefBrowser> browser,
+    CefRefPtr<CefFrame> frame,
     CefProcessId source_process,
     CefRefPtr<CefProcessMessage> message) {
   DCHECK_EQ(source_process, PID_BROWSER);
@@ -109,8 +96,8 @@ bool ClientAppRenderer::OnProcessMessageReceived(
 
   DelegateSet::iterator it = delegates_.begin();
   for (; it != delegates_.end() && !handled; ++it) {
-    handled =
-        (*it)->OnProcessMessageReceived(this, browser, source_process, message);
+    handled = (*it)->OnProcessMessageReceived(this, browser, frame,
+                                              source_process, message);
   }
 
   return handled;

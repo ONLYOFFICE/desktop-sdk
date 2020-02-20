@@ -26,7 +26,8 @@ class ClientAppRenderer : public ClientApp, public CefRenderProcessHandler {
     virtual void OnWebKitInitialized(CefRefPtr<ClientAppRenderer> app) {}
 
     virtual void OnBrowserCreated(CefRefPtr<ClientAppRenderer> app,
-                                  CefRefPtr<CefBrowser> browser) {}
+                                  CefRefPtr<CefBrowser> browser,
+                                  CefRefPtr<CefDictionaryValue> extra_info) {}
 
     virtual void OnBrowserDestroyed(CefRefPtr<ClientAppRenderer> app,
                                     CefRefPtr<CefBrowser> browser) {}
@@ -34,15 +35,6 @@ class ClientAppRenderer : public ClientApp, public CefRenderProcessHandler {
     virtual CefRefPtr<CefLoadHandler> GetLoadHandler(
         CefRefPtr<ClientAppRenderer> app) {
       return NULL;
-    }
-
-    virtual bool OnBeforeNavigation(CefRefPtr<ClientAppRenderer> app,
-                                    CefRefPtr<CefBrowser> browser,
-                                    CefRefPtr<CefFrame> frame,
-                                    CefRefPtr<CefRequest> request,
-                                    cef_navigation_type_t navigation_type,
-                                    bool is_redirect) {
-      return false;
     }
 
     virtual void OnContextCreated(CefRefPtr<ClientAppRenderer> app,
@@ -74,6 +66,7 @@ class ClientAppRenderer : public ClientApp, public CefRenderProcessHandler {
     virtual bool OnProcessMessageReceived(
         CefRefPtr<ClientAppRenderer> app,
         CefRefPtr<CefBrowser> browser,
+        CefRefPtr<CefFrame> frame,
         CefProcessId source_process,
         CefRefPtr<CefProcessMessage> message) {
       return false;
@@ -97,14 +90,10 @@ class ClientAppRenderer : public ClientApp, public CefRenderProcessHandler {
   // CefRenderProcessHandler methods.
   void OnRenderThreadCreated(CefRefPtr<CefListValue> extra_info) OVERRIDE;
   void OnWebKitInitialized() OVERRIDE;
-  void OnBrowserCreated(CefRefPtr<CefBrowser> browser) OVERRIDE;
+  void OnBrowserCreated(CefRefPtr<CefBrowser> browser,
+                        CefRefPtr<CefDictionaryValue> extra_info) OVERRIDE;
   void OnBrowserDestroyed(CefRefPtr<CefBrowser> browser) OVERRIDE;
   CefRefPtr<CefLoadHandler> GetLoadHandler() OVERRIDE;
-  bool OnBeforeNavigation(CefRefPtr<CefBrowser> browser,
-                          CefRefPtr<CefFrame> frame,
-                          CefRefPtr<CefRequest> request,
-                          NavigationType navigation_type,
-                          bool is_redirect) OVERRIDE;
   void OnContextCreated(CefRefPtr<CefBrowser> browser,
                         CefRefPtr<CefFrame> frame,
                         CefRefPtr<CefV8Context> context) OVERRIDE;
@@ -120,6 +109,7 @@ class ClientAppRenderer : public ClientApp, public CefRenderProcessHandler {
                             CefRefPtr<CefFrame> frame,
                             CefRefPtr<CefDOMNode> node) OVERRIDE;
   bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
+                                CefRefPtr<CefFrame> frame,
                                 CefProcessId source_process,
                                 CefRefPtr<CefProcessMessage> message) OVERRIDE;
 

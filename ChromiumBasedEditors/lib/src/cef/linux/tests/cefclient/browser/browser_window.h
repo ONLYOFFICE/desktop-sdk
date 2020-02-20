@@ -25,6 +25,9 @@ class BrowserWindow : public ClientHandler::Delegate {
     // Called when the browser has been created.
     virtual void OnBrowserCreated(CefRefPtr<CefBrowser> browser) = 0;
 
+    // Called when the BrowserWindow is closing.
+    virtual void OnBrowserWindowClosing() {}
+
     // Called when the BrowserWindow has been destroyed.
     virtual void OnBrowserWindowDestroyed() = 0;
 
@@ -57,6 +60,7 @@ class BrowserWindow : public ClientHandler::Delegate {
   virtual void CreateBrowser(ClientWindowHandle parent_handle,
                              const CefRect& rect,
                              const CefBrowserSettings& settings,
+                             CefRefPtr<CefDictionaryValue> extra_info,
                              CefRefPtr<CefRequestContext> request_context) = 0;
 
   // Retrieve the configuration that will be used when creating a popup window.

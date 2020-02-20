@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=a358f21b2b2c5923476110bf59aebd9f35f65184$
+// $hash=575d2bda3e2c0b6a811b102511e7444fcdc5f955$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_END_TRACING_CALLBACK_CPPTOC_H_
@@ -32,6 +32,7 @@ class CefEndTracingCallbackCppToC
                                  cef_end_tracing_callback_t> {
  public:
   CefEndTracingCallbackCppToC();
+  virtual ~CefEndTracingCallbackCppToC();
 };
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_END_TRACING_CALLBACK_CPPTOC_H_

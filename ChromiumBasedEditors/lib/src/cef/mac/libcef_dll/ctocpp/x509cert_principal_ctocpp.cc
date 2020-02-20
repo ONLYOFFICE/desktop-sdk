@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,15 +9,19 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=894bf599d661a7014fd8106d8cccbaff20b9d7ac$
+// $hash=b720082955a366e530d9bf5ee3515f532d226acf$
 //
 
 #include "libcef_dll/ctocpp/x509cert_principal_ctocpp.h"
+#include "libcef_dll/shutdown_checker.h"
 #include "libcef_dll/transfer_util.h"
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
+NO_SANITIZE("cfi-icall")
 CefString CefX509CertPrincipalCToCpp::GetDisplayName() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_x509cert_principal_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_display_name))
     return CefString();
@@ -33,7 +37,9 @@ CefString CefX509CertPrincipalCToCpp::GetDisplayName() {
   return _retvalStr;
 }
 
-CefString CefX509CertPrincipalCToCpp::GetCommonName() {
+NO_SANITIZE("cfi-icall") CefString CefX509CertPrincipalCToCpp::GetCommonName() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_x509cert_principal_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_common_name))
     return CefString();
@@ -49,7 +55,10 @@ CefString CefX509CertPrincipalCToCpp::GetCommonName() {
   return _retvalStr;
 }
 
+NO_SANITIZE("cfi-icall")
 CefString CefX509CertPrincipalCToCpp::GetLocalityName() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_x509cert_principal_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_locality_name))
     return CefString();
@@ -65,7 +74,10 @@ CefString CefX509CertPrincipalCToCpp::GetLocalityName() {
   return _retvalStr;
 }
 
+NO_SANITIZE("cfi-icall")
 CefString CefX509CertPrincipalCToCpp::GetStateOrProvinceName() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_x509cert_principal_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_state_or_province_name))
     return CefString();
@@ -81,7 +93,10 @@ CefString CefX509CertPrincipalCToCpp::GetStateOrProvinceName() {
   return _retvalStr;
 }
 
+NO_SANITIZE("cfi-icall")
 CefString CefX509CertPrincipalCToCpp::GetCountryName() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_x509cert_principal_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_country_name))
     return CefString();
@@ -97,8 +112,11 @@ CefString CefX509CertPrincipalCToCpp::GetCountryName() {
   return _retvalStr;
 }
 
+NO_SANITIZE("cfi-icall")
 void CefX509CertPrincipalCToCpp::GetStreetAddresses(
     std::vector<CefString>& addresses) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_x509cert_principal_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_street_addresses))
     return;
@@ -122,8 +140,11 @@ void CefX509CertPrincipalCToCpp::GetStreetAddresses(
   }
 }
 
+NO_SANITIZE("cfi-icall")
 void CefX509CertPrincipalCToCpp::GetOrganizationNames(
     std::vector<CefString>& names) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_x509cert_principal_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_organization_names))
     return;
@@ -147,8 +168,11 @@ void CefX509CertPrincipalCToCpp::GetOrganizationNames(
   }
 }
 
+NO_SANITIZE("cfi-icall")
 void CefX509CertPrincipalCToCpp::GetOrganizationUnitNames(
     std::vector<CefString>& names) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_x509cert_principal_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_organization_unit_names))
     return;
@@ -172,8 +196,11 @@ void CefX509CertPrincipalCToCpp::GetOrganizationUnitNames(
   }
 }
 
+NO_SANITIZE("cfi-icall")
 void CefX509CertPrincipalCToCpp::GetDomainComponents(
     std::vector<CefString>& components) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_x509cert_principal_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_domain_components))
     return;
@@ -201,6 +228,12 @@ void CefX509CertPrincipalCToCpp::GetDomainComponents(
 
 CefX509CertPrincipalCToCpp::CefX509CertPrincipalCToCpp() {}
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefX509CertPrincipalCToCpp::~CefX509CertPrincipalCToCpp() {
+  shutdown_checker::AssertNotShutdown();
+}
+
 template <>
 cef_x509cert_principal_t* CefCToCppRefCounted<
     CefX509CertPrincipalCToCpp,
@@ -210,14 +243,6 @@ cef_x509cert_principal_t* CefCToCppRefCounted<
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCToCppRefCounted<CefX509CertPrincipalCToCpp,
-                                         CefX509CertPrincipal,
-                                         cef_x509cert_principal_t>::DebugObjCt
-    ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType CefCToCppRefCounted<CefX509CertPrincipalCToCpp,

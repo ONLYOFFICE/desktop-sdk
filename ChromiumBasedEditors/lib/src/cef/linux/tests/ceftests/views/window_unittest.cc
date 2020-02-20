@@ -399,7 +399,7 @@ bool OnKeyEvent(CefRefPtr<CefWindow> window, const CefKeyEvent& event) {
     else
       EXPECT_TRUE(got_accelerator);
 
-    EXPECT_EQ(event.modifiers, EVENTFLAG_ALT_DOWN);
+    EXPECT_EQ(EVENTFLAG_ALT_DOWN, static_cast<int>(event.modifiers));
     got_key_event_alt_count++;
   } else if (event.windows_key_code == kChar) {
     // Then we get the char key press with the ALT modifier if the accelerator
@@ -408,7 +408,7 @@ bool OnKeyEvent(CefRefPtr<CefWindow> window, const CefKeyEvent& event) {
     EXPECT_EQ(got_key_event_alt_count, 2);
     EXPECT_FALSE(got_key_event_char);
 
-    EXPECT_EQ(event.modifiers, EVENTFLAG_ALT_DOWN);
+    EXPECT_EQ(EVENTFLAG_ALT_DOWN, static_cast<int>(event.modifiers));
     got_key_event_char = true;
 
     // Call this method just to make sure it doesn't crash.
@@ -479,18 +479,18 @@ void WindowAcceleratorImpl(CefRefPtr<CefWaitableEvent> event) {
 // Test window functionality. This is primarily to exercise exposed CEF APIs
 // and is not intended to comprehensively test window-related behavior (which
 // we presume that Chromium is testing).
-WINDOW_TEST_ASYNC(WindowCreate);
-WINDOW_TEST_ASYNC(WindowCreateFrameless);
-WINDOW_TEST_ASYNC(WindowShowHide);
-WINDOW_TEST_ASYNC(WindowShowHideFrameless);
-WINDOW_TEST_ASYNC(WindowLayoutAndCoords);
-WINDOW_TEST_ASYNC(WindowLayoutAndCoordsFrameless);
-WINDOW_TEST_ASYNC(WindowMaximize);
-WINDOW_TEST_ASYNC(WindowMaximizeFrameless);
-WINDOW_TEST_ASYNC(WindowMinimize);
-WINDOW_TEST_ASYNC(WindowMinimizeFrameless);
-WINDOW_TEST_ASYNC(WindowFullscreen);
-WINDOW_TEST_ASYNC(WindowFullscreenFrameless);
-WINDOW_TEST_ASYNC(WindowIcon);
-WINDOW_TEST_ASYNC(WindowIconFrameless);
-WINDOW_TEST_ASYNC(WindowAccelerator);
+WINDOW_TEST_ASYNC(WindowCreate)
+WINDOW_TEST_ASYNC(WindowCreateFrameless)
+WINDOW_TEST_ASYNC(WindowShowHide)
+WINDOW_TEST_ASYNC(WindowShowHideFrameless)
+WINDOW_TEST_ASYNC(WindowLayoutAndCoords)
+WINDOW_TEST_ASYNC(WindowLayoutAndCoordsFrameless)
+WINDOW_TEST_ASYNC(WindowMaximize)
+WINDOW_TEST_ASYNC(WindowMaximizeFrameless)
+WINDOW_TEST_ASYNC(WindowMinimize)
+WINDOW_TEST_ASYNC(WindowMinimizeFrameless)
+WINDOW_TEST_ASYNC(WindowFullscreen)
+WINDOW_TEST_ASYNC(WindowFullscreenFrameless)
+WINDOW_TEST_ASYNC(WindowIcon)
+WINDOW_TEST_ASYNC(WindowIconFrameless)
+WINDOW_TEST_ASYNC(WindowAccelerator)
