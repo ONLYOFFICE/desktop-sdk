@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2019 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,7 +33,7 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=5d20fc88dea8dad8691f05bfb7e8c1ce5cf2bbc1$
+// $hash=0640490eead86e5631e8db67f3a0de8b43c10640$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_RENDER_HANDLER_CAPI_H_
@@ -68,7 +68,8 @@ typedef struct _cef_render_handler_t {
 
   ///
   // Called to retrieve the root window rectangle in screen coordinates. Return
-  // true (1) if the rectangle was provided.
+  // true (1) if the rectangle was provided. If this function returns false (0)
+  // the rectangle from GetViewRect will be used.
   ///
   int(CEF_CALLBACK* get_root_screen_rect)(struct _cef_render_handler_t* self,
                                           struct _cef_browser_t* browser,
@@ -76,11 +77,11 @@ typedef struct _cef_render_handler_t {
 
   ///
   // Called to retrieve the view rectangle which is relative to screen
-  // coordinates. Return true (1) if the rectangle was provided.
+  // coordinates. This function must always provide a non-NULL rectangle.
   ///
-  int(CEF_CALLBACK* get_view_rect)(struct _cef_render_handler_t* self,
-                                   struct _cef_browser_t* browser,
-                                   cef_rect_t* rect);
+  void(CEF_CALLBACK* get_view_rect)(struct _cef_render_handler_t* self,
+                                    struct _cef_browser_t* browser,
+                                    cef_rect_t* rect);
 
   ///
   // Called to retrieve the translation from view coordinates to actual screen
@@ -130,7 +131,8 @@ typedef struct _cef_render_handler_t {
   // contains the pixel data for the whole image. |dirtyRects| contains the set
   // of rectangles in pixel coordinates that need to be repainted. |buffer| will
   // be |width|*|height|*4 bytes in size and represents a BGRA image with an
-  // upper-left origin.
+  // upper-left origin. This function is only called when
+  // cef_window_tInfo::shared_texture_enabled is set to false (0).
   ///
   void(CEF_CALLBACK* on_paint)(struct _cef_render_handler_t* self,
                                struct _cef_browser_t* browser,
@@ -140,6 +142,22 @@ typedef struct _cef_render_handler_t {
                                const void* buffer,
                                int width,
                                int height);
+
+  ///
+  // Called when an element has been rendered to the shared texture handle.
+  // |type| indicates whether the element is the view or the popup widget.
+  // |dirtyRects| contains the set of rectangles in pixel coordinates that need
+  // to be repainted. |shared_handle| is the handle for a D3D11 Texture2D that
+  // can be accessed via ID3D11Device using the OpenSharedResource function.
+  // This function is only called when cef_window_tInfo::shared_texture_enabled
+  // is set to true (1), and is currently only supported on Windows.
+  ///
+  void(CEF_CALLBACK* on_accelerated_paint)(struct _cef_render_handler_t* self,
+                                           struct _cef_browser_t* browser,
+                                           cef_paint_element_type_t type,
+                                           size_t dirtyRectsCount,
+                                           cef_rect_t const* dirtyRects,
+                                           void* shared_handle);
 
   ///
   // Called when the browser's cursor has changed. If |type| is CT_CUSTOM then
@@ -202,6 +220,28 @@ typedef struct _cef_render_handler_t {
       const cef_range_t* selected_range,
       size_t character_boundsCount,
       cef_rect_t const* character_bounds);
+
+  ///
+  // Called when text selection has changed for the specified |browser|.
+  // |selected_text| is the currently selected text and |selected_range| is the
+  // character range.
+  ///
+  void(CEF_CALLBACK* on_text_selection_changed)(
+      struct _cef_render_handler_t* self,
+      struct _cef_browser_t* browser,
+      const cef_string_t* selected_text,
+      const cef_range_t* selected_range);
+
+  ///
+  // Called when an on-screen keyboard should be shown or hidden for the
+  // specified |browser|. |input_mode| specifies what kind of keyboard should be
+  // opened. If |input_mode| is CEF_TEXT_INPUT_MODE_NONE, any existing keyboard
+  // for this browser should be hidden.
+  ///
+  void(CEF_CALLBACK* on_virtual_keyboard_requested)(
+      struct _cef_render_handler_t* self,
+      struct _cef_browser_t* browser,
+      cef_text_input_mode_t input_mode);
 } cef_render_handler_t;
 
 #ifdef __cplusplus

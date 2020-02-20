@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,10 +9,11 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=90d60ea4d8a4674cac8c3086ee7383bb5c19ec18$
+// $hash=9afe6821e0c7e4bca936ad8fb1f4d9b21b2b6355$
 //
 
 #include "libcef_dll/cpptoc/string_visitor_cpptoc.h"
+#include "libcef_dll/shutdown_checker.h"
 
 namespace {
 
@@ -20,6 +21,8 @@ namespace {
 
 void CEF_CALLBACK string_visitor_visit(struct _cef_string_visitor_t* self,
                                        const cef_string_t* string) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -39,6 +42,12 @@ CefStringVisitorCppToC::CefStringVisitorCppToC() {
   GetStruct()->visit = string_visitor_visit;
 }
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefStringVisitorCppToC::~CefStringVisitorCppToC() {
+  shutdown_checker::AssertNotShutdown();
+}
+
 template <>
 CefRefPtr<CefStringVisitor> CefCppToCRefCounted<
     CefStringVisitorCppToC,
@@ -48,14 +57,6 @@ CefRefPtr<CefStringVisitor> CefCppToCRefCounted<
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCppToCRefCounted<CefStringVisitorCppToC,
-                                         CefStringVisitor,
-                                         cef_string_visitor_t>::DebugObjCt
-    ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType CefCppToCRefCounted<CefStringVisitorCppToC,

@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=bc7d12635ad04ecf9ee8a19c75fe4601f1f98c37$
+// $hash=569e3a4f5aab05c0a8bb3f5d4ed99104b3d08d9a$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_V8HANDLER_CPPTOC_H_
@@ -31,6 +31,7 @@ class CefV8HandlerCppToC : public CefCppToCRefCounted<CefV8HandlerCppToC,
                                                       cef_v8handler_t> {
  public:
   CefV8HandlerCppToC();
+  virtual ~CefV8HandlerCppToC();
 };
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_V8HANDLER_CPPTOC_H_

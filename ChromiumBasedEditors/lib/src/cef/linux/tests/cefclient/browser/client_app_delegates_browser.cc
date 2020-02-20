@@ -6,7 +6,7 @@
 
 #include "tests/cefclient/browser/client_browser.h"
 
-#if defined(OS_LINUX)
+#if defined(OS_LINUX_DISABLE)
 #include "tests/cefclient/browser/print_handler_gtk.h"
 #endif
 
@@ -19,7 +19,7 @@ void ClientAppBrowser::CreateDelegates(DelegateSet& delegates) {
 
 // static
 CefRefPtr<CefPrintHandler> ClientAppBrowser::CreatePrintHandler() {
-#if defined(OS_LINUX)
+#if defined(OS_LINUX_DISABLE)
   return new ClientPrintHandlerGtk();
 #else
   return NULL;

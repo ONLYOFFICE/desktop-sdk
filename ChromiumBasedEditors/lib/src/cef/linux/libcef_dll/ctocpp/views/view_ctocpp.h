@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=8a0511296741305bd92e37397a1587afc35565c2$
+// $hash=ffb88cfe6b2e62b3141b974fb8b95134efe7e41d$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_VIEWS_VIEW_CTOCPP_H_
@@ -42,6 +42,7 @@ class CefViewCToCpp
     : public CefCToCppRefCounted<CefViewCToCpp, CefView, cef_view_t> {
  public:
   CefViewCToCpp();
+  virtual ~CefViewCToCpp();
 
   // CefView methods.
   CefRefPtr<CefBrowserView> AsBrowserView() OVERRIDE;

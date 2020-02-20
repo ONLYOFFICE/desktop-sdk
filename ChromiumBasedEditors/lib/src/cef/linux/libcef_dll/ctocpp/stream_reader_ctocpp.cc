@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,16 +9,20 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=f8e375a0bb12a3664942be7069d81472233024d4$
+// $hash=d0ceaaf01cbd0d23d7e5762fa01d8a73d218620a$
 //
 
 #include "libcef_dll/ctocpp/stream_reader_ctocpp.h"
 #include "libcef_dll/cpptoc/read_handler_cpptoc.h"
+#include "libcef_dll/shutdown_checker.h"
 
 // STATIC METHODS - Body may be edited by hand.
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefStreamReader> CefStreamReader::CreateForFile(
     const CefString& fileName) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: fileName; type: string_byref_const
@@ -34,8 +38,11 @@ CefRefPtr<CefStreamReader> CefStreamReader::CreateForFile(
   return CefStreamReaderCToCpp::Wrap(_retval);
 }
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefStreamReader> CefStreamReader::CreateForData(void* data,
                                                           size_t size) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: data; type: simple_byaddr
@@ -50,8 +57,11 @@ CefRefPtr<CefStreamReader> CefStreamReader::CreateForData(void* data,
   return CefStreamReaderCToCpp::Wrap(_retval);
 }
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefStreamReader> CefStreamReader::CreateForHandler(
     CefRefPtr<CefReadHandler> handler) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: handler; type: refptr_diff
@@ -69,7 +79,10 @@ CefRefPtr<CefStreamReader> CefStreamReader::CreateForHandler(
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
+NO_SANITIZE("cfi-icall")
 size_t CefStreamReaderCToCpp::Read(void* ptr, size_t size, size_t n) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_stream_reader_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, read))
     return 0;
@@ -88,7 +101,10 @@ size_t CefStreamReaderCToCpp::Read(void* ptr, size_t size, size_t n) {
   return _retval;
 }
 
+NO_SANITIZE("cfi-icall")
 int CefStreamReaderCToCpp::Seek(int64 offset, int whence) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_stream_reader_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, seek))
     return 0;
@@ -102,7 +118,9 @@ int CefStreamReaderCToCpp::Seek(int64 offset, int whence) {
   return _retval;
 }
 
-int64 CefStreamReaderCToCpp::Tell() {
+NO_SANITIZE("cfi-icall") int64 CefStreamReaderCToCpp::Tell() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_stream_reader_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, tell))
     return 0;
@@ -116,7 +134,9 @@ int64 CefStreamReaderCToCpp::Tell() {
   return _retval;
 }
 
-int CefStreamReaderCToCpp::Eof() {
+NO_SANITIZE("cfi-icall") int CefStreamReaderCToCpp::Eof() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_stream_reader_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, eof))
     return 0;
@@ -130,7 +150,9 @@ int CefStreamReaderCToCpp::Eof() {
   return _retval;
 }
 
-bool CefStreamReaderCToCpp::MayBlock() {
+NO_SANITIZE("cfi-icall") bool CefStreamReaderCToCpp::MayBlock() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_stream_reader_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, may_block))
     return false;
@@ -148,6 +170,12 @@ bool CefStreamReaderCToCpp::MayBlock() {
 
 CefStreamReaderCToCpp::CefStreamReaderCToCpp() {}
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefStreamReaderCToCpp::~CefStreamReaderCToCpp() {
+  shutdown_checker::AssertNotShutdown();
+}
+
 template <>
 cef_stream_reader_t*
 CefCToCppRefCounted<CefStreamReaderCToCpp,
@@ -157,14 +185,6 @@ CefCToCppRefCounted<CefStreamReaderCToCpp,
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCToCppRefCounted<CefStreamReaderCToCpp,
-                                         CefStreamReader,
-                                         cef_stream_reader_t>::DebugObjCt
-    ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType CefCToCppRefCounted<CefStreamReaderCToCpp,

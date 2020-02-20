@@ -11,13 +11,21 @@ namespace client {
 int GetResourceId(const char* resource_name) {
   // Map of resource labels to BINARY id values.
   static struct _resource_map {
-    char* name;
+    const char* name;
     int id;
   } resource_map[] = {
       {"binding.html", IDS_BINDING_HTML},
       {"dialogs.html", IDS_DIALOGS_HTML},
       {"draggable.html", IDS_DRAGGABLE_HTML},
       {"drm.html", IDS_DRM_HTML},
+      {"extensions/set_page_color/icon.png",
+       IDS_EXTENSIONS_SET_PAGE_COLOR_ICON_PNG},
+      {"extensions/set_page_color/manifest.json",
+       IDS_EXTENSIONS_SET_PAGE_COLOR_MANIFEST_JSON},
+      {"extensions/set_page_color/popup.html",
+       IDS_EXTENSIONS_SET_PAGE_COLOR_POPUP_HTML},
+      {"extensions/set_page_color/popup.js",
+       IDS_EXTENSIONS_SET_PAGE_COLOR_POPUP_JS},
       {"logo.png", IDS_LOGO_PNG},
       {"localstorage.html", IDS_LOCALSTORAGE_HTML},
       {"menu_icon.1x.png", IDS_MENU_ICON_1X_PNG},
@@ -30,15 +38,17 @@ int GetResourceId(const char* resource_name) {
       {"performance2.html", IDS_PERFORMANCE2_HTML},
       {"preferences.html", IDS_PREFERENCES_HTML},
       {"response_filter.html", IDS_RESPONSE_FILTER_HTML},
+      {"server.html", IDS_SERVER_HTML},
       {"transparency.html", IDS_TRANSPARENCY_HTML},
       {"urlrequest.html", IDS_URLREQUEST_HTML},
+      {"websocket.html", IDS_WEBSOCKET_HTML},
       {"window.html", IDS_WINDOW_HTML},
       {"window_icon.1x.png", IDS_WINDOW_ICON_1X_PNG},
       {"window_icon.2x.png", IDS_WINDOW_ICON_2X_PNG},
       {"xmlhttprequest.html", IDS_XMLHTTPREQUEST_HTML},
   };
 
-  for (int i = 0; i < sizeof(resource_map) / sizeof(_resource_map); ++i) {
+  for (size_t i = 0; i < sizeof(resource_map) / sizeof(_resource_map); ++i) {
     if (!strcmp(resource_map[i].name, resource_name))
       return resource_map[i].id;
   }

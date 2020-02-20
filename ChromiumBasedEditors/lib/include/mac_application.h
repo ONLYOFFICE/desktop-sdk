@@ -38,6 +38,7 @@
 
 #include "applicationmanager.h"
 
+#ifndef ASC_DISABLE_PROTOCOLS
 @protocol CrAppProtocol
 - (BOOL)isHandlingSendEvent;
 @end
@@ -48,6 +49,7 @@
 
 @protocol CefAppProtocol<CrAppControlProtocol>
 @end
+#endif
 
 Q_DECL_EXPORT @interface NSAscApplication : NSApplication<CefAppProtocol>
 

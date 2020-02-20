@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,13 +9,14 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=e6ed7dea6c86313a621700a6ea5678775926d931$
+// $hash=d08dd55fbd32bdc2fe5e3623d9526af11fa7ada0$
 //
 
 #include "libcef_dll/ctocpp/resource_bundle_ctocpp.h"
 
 // STATIC METHODS - Body may be edited by hand.
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefResourceBundle> CefResourceBundle::GetGlobal() {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -28,6 +29,7 @@ CefRefPtr<CefResourceBundle> CefResourceBundle::GetGlobal() {
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
+NO_SANITIZE("cfi-icall")
 CefString CefResourceBundleCToCpp::GetLocalizedString(int string_id) {
   cef_resource_bundle_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_localized_string))
@@ -45,6 +47,7 @@ CefString CefResourceBundleCToCpp::GetLocalizedString(int string_id) {
   return _retvalStr;
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefResourceBundleCToCpp::GetDataResource(int resource_id,
                                               void*& data,
                                               size_t& data_size) {
@@ -62,6 +65,7 @@ bool CefResourceBundleCToCpp::GetDataResource(int resource_id,
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefResourceBundleCToCpp::GetDataResourceForScale(int resource_id,
                                                       ScaleFactor scale_factor,
                                                       void*& data,
@@ -84,6 +88,10 @@ bool CefResourceBundleCToCpp::GetDataResourceForScale(int resource_id,
 
 CefResourceBundleCToCpp::CefResourceBundleCToCpp() {}
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefResourceBundleCToCpp::~CefResourceBundleCToCpp() {}
+
 template <>
 cef_resource_bundle_t* CefCToCppRefCounted<
     CefResourceBundleCToCpp,
@@ -93,14 +101,6 @@ cef_resource_bundle_t* CefCToCppRefCounted<
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCToCppRefCounted<CefResourceBundleCToCpp,
-                                         CefResourceBundle,
-                                         cef_resource_bundle_t>::DebugObjCt
-    ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType CefCToCppRefCounted<CefResourceBundleCToCpp,

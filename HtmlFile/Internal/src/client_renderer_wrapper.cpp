@@ -30,8 +30,6 @@
  *
  */
 
-#include "tests/cefclient/renderer/client_renderer.h"
-
 #include <sstream>
 #include <string>
 #include <map>
@@ -304,10 +302,8 @@ public:
             fclose(f);
 #endif
 
-            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
-
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("Exit");
-            browser->SendProcessMessage(PID_BROWSER, message);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 
             return true;
         }
@@ -425,7 +421,12 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     // add AscEditorNative
     CefRefPtr<CefV8Value> object = context->GetGlobal();
 
+#ifdef CEF_2623
+    CefRefPtr<CefV8Value> objNative = CefV8Value::CreateObject(NULL);
+#else
     CefRefPtr<CefV8Value> objNative = CefV8Value::CreateObject(NULL, NULL);
+#endif
+
     CAscEditorNativeV8Handler* pNativeHandlerWrapper = new CAscEditorNativeV8Handler();
     pNativeHandlerWrapper->sync_command_check = &sync_command_check;
 
@@ -478,6 +479,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
   virtual bool OnProcessMessageReceived(
       CefRefPtr<client::ClientAppRenderer> app,
       CefRefPtr<CefBrowser> browser,
+#ifndef MESSAGE_IN_BROWSER
+      CefRefPtr<CefFrame> messageFrame,
+#endif
       CefProcessId source_process,
       CefRefPtr<CefProcessMessage> message) OVERRIDE
 {
@@ -485,7 +489,11 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     std::string sMessageName = message->GetName().ToString();
 
     return message_router_->OnProcessMessageReceived(
-        browser, source_process, message);
+        browser,
+#ifndef MESSAGE_IN_BROWSER
+        messageFrame,
+#endif
+        source_process, message);
 }
 
  private:

@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=4848ed28ad4e3a9cf60282aeafafb4404309ad62$
+// $hash=789a1cb3970193193b0e5216be27e4d0b989fd54$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_BINARY_VALUE_CTOCPP_H_
@@ -31,6 +31,7 @@ class CefBinaryValueCToCpp : public CefCToCppRefCounted<CefBinaryValueCToCpp,
                                                         cef_binary_value_t> {
  public:
   CefBinaryValueCToCpp();
+  virtual ~CefBinaryValueCToCpp();
 
   // CefBinaryValue methods.
   bool IsValid() OVERRIDE;

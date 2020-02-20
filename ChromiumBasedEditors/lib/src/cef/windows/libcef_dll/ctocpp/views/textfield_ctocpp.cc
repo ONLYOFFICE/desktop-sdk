@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=181a9fa9d977205038ab682b3e36e5589059e0ca$
+// $hash=5dcf22a90a9ba43c10917c041f546652df4bc360$
 //
 
 #include "libcef_dll/ctocpp/views/textfield_ctocpp.h"
@@ -21,11 +21,15 @@
 #include "libcef_dll/ctocpp/views/scroll_view_ctocpp.h"
 #include "libcef_dll/ctocpp/views/view_ctocpp.h"
 #include "libcef_dll/ctocpp/views/window_ctocpp.h"
+#include "libcef_dll/shutdown_checker.h"
 
 // STATIC METHODS - Body may be edited by hand.
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefTextfield> CefTextfield::CreateTextfield(
     CefRefPtr<CefTextfieldDelegate> delegate) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Unverified params: delegate
@@ -40,7 +44,10 @@ CefRefPtr<CefTextfield> CefTextfield::CreateTextfield(
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
+NO_SANITIZE("cfi-icall")
 void CefTextfieldCToCpp::SetPasswordInput(bool password_input) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_textfield_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, set_password_input))
     return;
@@ -51,7 +58,9 @@ void CefTextfieldCToCpp::SetPasswordInput(bool password_input) {
   _struct->set_password_input(_struct, password_input);
 }
 
-bool CefTextfieldCToCpp::IsPasswordInput() {
+NO_SANITIZE("cfi-icall") bool CefTextfieldCToCpp::IsPasswordInput() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_textfield_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, is_password_input))
     return false;
@@ -65,7 +74,9 @@ bool CefTextfieldCToCpp::IsPasswordInput() {
   return _retval ? true : false;
 }
 
-void CefTextfieldCToCpp::SetReadOnly(bool read_only) {
+NO_SANITIZE("cfi-icall") void CefTextfieldCToCpp::SetReadOnly(bool read_only) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_textfield_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, set_read_only))
     return;
@@ -76,7 +87,9 @@ void CefTextfieldCToCpp::SetReadOnly(bool read_only) {
   _struct->set_read_only(_struct, read_only);
 }
 
-bool CefTextfieldCToCpp::IsReadOnly() {
+NO_SANITIZE("cfi-icall") bool CefTextfieldCToCpp::IsReadOnly() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_textfield_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, is_read_only))
     return false;
@@ -90,7 +103,9 @@ bool CefTextfieldCToCpp::IsReadOnly() {
   return _retval ? true : false;
 }
 
-CefString CefTextfieldCToCpp::GetText() {
+NO_SANITIZE("cfi-icall") CefString CefTextfieldCToCpp::GetText() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_textfield_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_text))
     return CefString();
@@ -106,7 +121,10 @@ CefString CefTextfieldCToCpp::GetText() {
   return _retvalStr;
 }
 
+NO_SANITIZE("cfi-icall")
 void CefTextfieldCToCpp::SetText(const CefString& text) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_textfield_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, set_text))
     return;
@@ -122,7 +140,10 @@ void CefTextfieldCToCpp::SetText(const CefString& text) {
   _struct->set_text(_struct, text.GetStruct());
 }
 
+NO_SANITIZE("cfi-icall")
 void CefTextfieldCToCpp::AppendText(const CefString& text) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_textfield_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, append_text))
     return;
@@ -138,7 +159,10 @@ void CefTextfieldCToCpp::AppendText(const CefString& text) {
   _struct->append_text(_struct, text.GetStruct());
 }
 
+NO_SANITIZE("cfi-icall")
 void CefTextfieldCToCpp::InsertOrReplaceText(const CefString& text) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_textfield_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, insert_or_replace_text))
     return;
@@ -154,7 +178,9 @@ void CefTextfieldCToCpp::InsertOrReplaceText(const CefString& text) {
   _struct->insert_or_replace_text(_struct, text.GetStruct());
 }
 
-bool CefTextfieldCToCpp::HasSelection() {
+NO_SANITIZE("cfi-icall") bool CefTextfieldCToCpp::HasSelection() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_textfield_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, has_selection))
     return false;
@@ -168,7 +194,9 @@ bool CefTextfieldCToCpp::HasSelection() {
   return _retval ? true : false;
 }
 
-CefString CefTextfieldCToCpp::GetSelectedText() {
+NO_SANITIZE("cfi-icall") CefString CefTextfieldCToCpp::GetSelectedText() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_textfield_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_selected_text))
     return CefString();
@@ -184,7 +212,9 @@ CefString CefTextfieldCToCpp::GetSelectedText() {
   return _retvalStr;
 }
 
-void CefTextfieldCToCpp::SelectAll(bool reversed) {
+NO_SANITIZE("cfi-icall") void CefTextfieldCToCpp::SelectAll(bool reversed) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_textfield_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, select_all))
     return;
@@ -195,7 +225,9 @@ void CefTextfieldCToCpp::SelectAll(bool reversed) {
   _struct->select_all(_struct, reversed);
 }
 
-void CefTextfieldCToCpp::ClearSelection() {
+NO_SANITIZE("cfi-icall") void CefTextfieldCToCpp::ClearSelection() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_textfield_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, clear_selection))
     return;
@@ -206,7 +238,9 @@ void CefTextfieldCToCpp::ClearSelection() {
   _struct->clear_selection(_struct);
 }
 
-CefRange CefTextfieldCToCpp::GetSelectedRange() {
+NO_SANITIZE("cfi-icall") CefRange CefTextfieldCToCpp::GetSelectedRange() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_textfield_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_selected_range))
     return CefRange();
@@ -220,7 +254,10 @@ CefRange CefTextfieldCToCpp::GetSelectedRange() {
   return _retval;
 }
 
+NO_SANITIZE("cfi-icall")
 void CefTextfieldCToCpp::SelectRange(const CefRange& range) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_textfield_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, select_range))
     return;
@@ -231,7 +268,9 @@ void CefTextfieldCToCpp::SelectRange(const CefRange& range) {
   _struct->select_range(_struct, &range);
 }
 
-size_t CefTextfieldCToCpp::GetCursorPosition() {
+NO_SANITIZE("cfi-icall") size_t CefTextfieldCToCpp::GetCursorPosition() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_textfield_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_cursor_position))
     return 0;
@@ -245,7 +284,10 @@ size_t CefTextfieldCToCpp::GetCursorPosition() {
   return _retval;
 }
 
+NO_SANITIZE("cfi-icall")
 void CefTextfieldCToCpp::SetTextColor(cef_color_t color) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_textfield_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, set_text_color))
     return;
@@ -256,7 +298,9 @@ void CefTextfieldCToCpp::SetTextColor(cef_color_t color) {
   _struct->set_text_color(_struct, color);
 }
 
-cef_color_t CefTextfieldCToCpp::GetTextColor() {
+NO_SANITIZE("cfi-icall") cef_color_t CefTextfieldCToCpp::GetTextColor() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_textfield_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_text_color))
     return 0;
@@ -270,7 +314,10 @@ cef_color_t CefTextfieldCToCpp::GetTextColor() {
   return _retval;
 }
 
+NO_SANITIZE("cfi-icall")
 void CefTextfieldCToCpp::SetSelectionTextColor(cef_color_t color) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_textfield_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, set_selection_text_color))
     return;
@@ -281,7 +328,10 @@ void CefTextfieldCToCpp::SetSelectionTextColor(cef_color_t color) {
   _struct->set_selection_text_color(_struct, color);
 }
 
+NO_SANITIZE("cfi-icall")
 cef_color_t CefTextfieldCToCpp::GetSelectionTextColor() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_textfield_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_selection_text_color))
     return 0;
@@ -295,7 +345,10 @@ cef_color_t CefTextfieldCToCpp::GetSelectionTextColor() {
   return _retval;
 }
 
+NO_SANITIZE("cfi-icall")
 void CefTextfieldCToCpp::SetSelectionBackgroundColor(cef_color_t color) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_textfield_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, set_selection_background_color))
     return;
@@ -306,7 +359,10 @@ void CefTextfieldCToCpp::SetSelectionBackgroundColor(cef_color_t color) {
   _struct->set_selection_background_color(_struct, color);
 }
 
+NO_SANITIZE("cfi-icall")
 cef_color_t CefTextfieldCToCpp::GetSelectionBackgroundColor() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_textfield_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_selection_background_color))
     return 0;
@@ -320,7 +376,10 @@ cef_color_t CefTextfieldCToCpp::GetSelectionBackgroundColor() {
   return _retval;
 }
 
+NO_SANITIZE("cfi-icall")
 void CefTextfieldCToCpp::SetFontList(const CefString& font_list) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_textfield_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, set_font_list))
     return;
@@ -336,8 +395,11 @@ void CefTextfieldCToCpp::SetFontList(const CefString& font_list) {
   _struct->set_font_list(_struct, font_list.GetStruct());
 }
 
+NO_SANITIZE("cfi-icall")
 void CefTextfieldCToCpp::ApplyTextColor(cef_color_t color,
                                         const CefRange& range) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_textfield_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, apply_text_color))
     return;
@@ -348,9 +410,12 @@ void CefTextfieldCToCpp::ApplyTextColor(cef_color_t color,
   _struct->apply_text_color(_struct, color, &range);
 }
 
+NO_SANITIZE("cfi-icall")
 void CefTextfieldCToCpp::ApplyTextStyle(cef_text_style_t style,
                                         bool add,
                                         const CefRange& range) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_textfield_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, apply_text_style))
     return;
@@ -361,7 +426,10 @@ void CefTextfieldCToCpp::ApplyTextStyle(cef_text_style_t style,
   _struct->apply_text_style(_struct, style, add, &range);
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefTextfieldCToCpp::IsCommandEnabled(int command_id) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_textfield_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, is_command_enabled))
     return false;
@@ -375,7 +443,10 @@ bool CefTextfieldCToCpp::IsCommandEnabled(int command_id) {
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 void CefTextfieldCToCpp::ExecuteCommand(int command_id) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_textfield_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, execute_command))
     return;
@@ -386,7 +457,9 @@ void CefTextfieldCToCpp::ExecuteCommand(int command_id) {
   _struct->execute_command(_struct, command_id);
 }
 
-void CefTextfieldCToCpp::ClearEditHistory() {
+NO_SANITIZE("cfi-icall") void CefTextfieldCToCpp::ClearEditHistory() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_textfield_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, clear_edit_history))
     return;
@@ -397,7 +470,10 @@ void CefTextfieldCToCpp::ClearEditHistory() {
   _struct->clear_edit_history(_struct);
 }
 
+NO_SANITIZE("cfi-icall")
 void CefTextfieldCToCpp::SetPlaceholderText(const CefString& text) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_textfield_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, set_placeholder_text))
     return;
@@ -413,7 +489,9 @@ void CefTextfieldCToCpp::SetPlaceholderText(const CefString& text) {
   _struct->set_placeholder_text(_struct, text.GetStruct());
 }
 
-CefString CefTextfieldCToCpp::GetPlaceholderText() {
+NO_SANITIZE("cfi-icall") CefString CefTextfieldCToCpp::GetPlaceholderText() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_textfield_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_placeholder_text))
     return CefString();
@@ -429,7 +507,10 @@ CefString CefTextfieldCToCpp::GetPlaceholderText() {
   return _retvalStr;
 }
 
+NO_SANITIZE("cfi-icall")
 void CefTextfieldCToCpp::SetPlaceholderTextColor(cef_color_t color) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_textfield_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, set_placeholder_text_color))
     return;
@@ -440,7 +521,10 @@ void CefTextfieldCToCpp::SetPlaceholderTextColor(cef_color_t color) {
   _struct->set_placeholder_text_color(_struct, color);
 }
 
+NO_SANITIZE("cfi-icall")
 void CefTextfieldCToCpp::SetAccessibleName(const CefString& name) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_textfield_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, set_accessible_name))
     return;
@@ -456,7 +540,10 @@ void CefTextfieldCToCpp::SetAccessibleName(const CefString& name) {
   _struct->set_accessible_name(_struct, name.GetStruct());
 }
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefBrowserView> CefTextfieldCToCpp::AsBrowserView() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, as_browser_view))
     return NULL;
@@ -470,7 +557,9 @@ CefRefPtr<CefBrowserView> CefTextfieldCToCpp::AsBrowserView() {
   return CefBrowserViewCToCpp::Wrap(_retval);
 }
 
-CefRefPtr<CefButton> CefTextfieldCToCpp::AsButton() {
+NO_SANITIZE("cfi-icall") CefRefPtr<CefButton> CefTextfieldCToCpp::AsButton() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, as_button))
     return NULL;
@@ -484,7 +573,9 @@ CefRefPtr<CefButton> CefTextfieldCToCpp::AsButton() {
   return CefButtonCToCpp::Wrap(_retval);
 }
 
-CefRefPtr<CefPanel> CefTextfieldCToCpp::AsPanel() {
+NO_SANITIZE("cfi-icall") CefRefPtr<CefPanel> CefTextfieldCToCpp::AsPanel() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, as_panel))
     return NULL;
@@ -498,7 +589,10 @@ CefRefPtr<CefPanel> CefTextfieldCToCpp::AsPanel() {
   return CefPanelCToCpp::Wrap(_retval);
 }
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefScrollView> CefTextfieldCToCpp::AsScrollView() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, as_scroll_view))
     return NULL;
@@ -512,7 +606,10 @@ CefRefPtr<CefScrollView> CefTextfieldCToCpp::AsScrollView() {
   return CefScrollViewCToCpp::Wrap(_retval);
 }
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefTextfield> CefTextfieldCToCpp::AsTextfield() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, as_textfield))
     return NULL;
@@ -526,7 +623,9 @@ CefRefPtr<CefTextfield> CefTextfieldCToCpp::AsTextfield() {
   return CefTextfieldCToCpp::Wrap(_retval);
 }
 
-CefString CefTextfieldCToCpp::GetTypeString() {
+NO_SANITIZE("cfi-icall") CefString CefTextfieldCToCpp::GetTypeString() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, get_type_string))
     return CefString();
@@ -542,7 +641,10 @@ CefString CefTextfieldCToCpp::GetTypeString() {
   return _retvalStr;
 }
 
+NO_SANITIZE("cfi-icall")
 CefString CefTextfieldCToCpp::ToString(bool include_children) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, to_string))
     return CefString();
@@ -558,7 +660,9 @@ CefString CefTextfieldCToCpp::ToString(bool include_children) {
   return _retvalStr;
 }
 
-bool CefTextfieldCToCpp::IsValid() {
+NO_SANITIZE("cfi-icall") bool CefTextfieldCToCpp::IsValid() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, is_valid))
     return false;
@@ -572,7 +676,9 @@ bool CefTextfieldCToCpp::IsValid() {
   return _retval ? true : false;
 }
 
-bool CefTextfieldCToCpp::IsAttached() {
+NO_SANITIZE("cfi-icall") bool CefTextfieldCToCpp::IsAttached() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, is_attached))
     return false;
@@ -586,7 +692,10 @@ bool CefTextfieldCToCpp::IsAttached() {
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefTextfieldCToCpp::IsSame(CefRefPtr<CefView> that) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, is_same))
     return false;
@@ -605,7 +714,10 @@ bool CefTextfieldCToCpp::IsSame(CefRefPtr<CefView> that) {
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefViewDelegate> CefTextfieldCToCpp::GetDelegate() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, get_delegate))
     return NULL;
@@ -619,7 +731,9 @@ CefRefPtr<CefViewDelegate> CefTextfieldCToCpp::GetDelegate() {
   return CefViewDelegateCppToC::Unwrap(_retval);
 }
 
-CefRefPtr<CefWindow> CefTextfieldCToCpp::GetWindow() {
+NO_SANITIZE("cfi-icall") CefRefPtr<CefWindow> CefTextfieldCToCpp::GetWindow() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, get_window))
     return NULL;
@@ -633,7 +747,9 @@ CefRefPtr<CefWindow> CefTextfieldCToCpp::GetWindow() {
   return CefWindowCToCpp::Wrap(_retval);
 }
 
-int CefTextfieldCToCpp::GetID() {
+NO_SANITIZE("cfi-icall") int CefTextfieldCToCpp::GetID() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, get_id))
     return 0;
@@ -647,7 +763,9 @@ int CefTextfieldCToCpp::GetID() {
   return _retval;
 }
 
-void CefTextfieldCToCpp::SetID(int id) {
+NO_SANITIZE("cfi-icall") void CefTextfieldCToCpp::SetID(int id) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, set_id))
     return;
@@ -658,7 +776,9 @@ void CefTextfieldCToCpp::SetID(int id) {
   _struct->set_id(_struct, id);
 }
 
-int CefTextfieldCToCpp::GetGroupID() {
+NO_SANITIZE("cfi-icall") int CefTextfieldCToCpp::GetGroupID() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, get_group_id))
     return 0;
@@ -672,7 +792,9 @@ int CefTextfieldCToCpp::GetGroupID() {
   return _retval;
 }
 
-void CefTextfieldCToCpp::SetGroupID(int group_id) {
+NO_SANITIZE("cfi-icall") void CefTextfieldCToCpp::SetGroupID(int group_id) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, set_group_id))
     return;
@@ -683,7 +805,10 @@ void CefTextfieldCToCpp::SetGroupID(int group_id) {
   _struct->set_group_id(_struct, group_id);
 }
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefView> CefTextfieldCToCpp::GetParentView() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, get_parent_view))
     return NULL;
@@ -697,7 +822,10 @@ CefRefPtr<CefView> CefTextfieldCToCpp::GetParentView() {
   return CefViewCToCpp::Wrap(_retval);
 }
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefView> CefTextfieldCToCpp::GetViewForID(int id) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, get_view_for_id))
     return NULL;
@@ -711,7 +839,10 @@ CefRefPtr<CefView> CefTextfieldCToCpp::GetViewForID(int id) {
   return CefViewCToCpp::Wrap(_retval);
 }
 
+NO_SANITIZE("cfi-icall")
 void CefTextfieldCToCpp::SetBounds(const CefRect& bounds) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, set_bounds))
     return;
@@ -722,7 +853,9 @@ void CefTextfieldCToCpp::SetBounds(const CefRect& bounds) {
   _struct->set_bounds(_struct, &bounds);
 }
 
-CefRect CefTextfieldCToCpp::GetBounds() {
+NO_SANITIZE("cfi-icall") CefRect CefTextfieldCToCpp::GetBounds() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, get_bounds))
     return CefRect();
@@ -736,7 +869,9 @@ CefRect CefTextfieldCToCpp::GetBounds() {
   return _retval;
 }
 
-CefRect CefTextfieldCToCpp::GetBoundsInScreen() {
+NO_SANITIZE("cfi-icall") CefRect CefTextfieldCToCpp::GetBoundsInScreen() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, get_bounds_in_screen))
     return CefRect();
@@ -750,7 +885,9 @@ CefRect CefTextfieldCToCpp::GetBoundsInScreen() {
   return _retval;
 }
 
-void CefTextfieldCToCpp::SetSize(const CefSize& size) {
+NO_SANITIZE("cfi-icall") void CefTextfieldCToCpp::SetSize(const CefSize& size) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, set_size))
     return;
@@ -761,7 +898,9 @@ void CefTextfieldCToCpp::SetSize(const CefSize& size) {
   _struct->set_size(_struct, &size);
 }
 
-CefSize CefTextfieldCToCpp::GetSize() {
+NO_SANITIZE("cfi-icall") CefSize CefTextfieldCToCpp::GetSize() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, get_size))
     return CefSize();
@@ -775,7 +914,10 @@ CefSize CefTextfieldCToCpp::GetSize() {
   return _retval;
 }
 
+NO_SANITIZE("cfi-icall")
 void CefTextfieldCToCpp::SetPosition(const CefPoint& position) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, set_position))
     return;
@@ -786,7 +928,9 @@ void CefTextfieldCToCpp::SetPosition(const CefPoint& position) {
   _struct->set_position(_struct, &position);
 }
 
-CefPoint CefTextfieldCToCpp::GetPosition() {
+NO_SANITIZE("cfi-icall") CefPoint CefTextfieldCToCpp::GetPosition() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, get_position))
     return CefPoint();
@@ -800,7 +944,9 @@ CefPoint CefTextfieldCToCpp::GetPosition() {
   return _retval;
 }
 
-CefSize CefTextfieldCToCpp::GetPreferredSize() {
+NO_SANITIZE("cfi-icall") CefSize CefTextfieldCToCpp::GetPreferredSize() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, get_preferred_size))
     return CefSize();
@@ -814,7 +960,9 @@ CefSize CefTextfieldCToCpp::GetPreferredSize() {
   return _retval;
 }
 
-void CefTextfieldCToCpp::SizeToPreferredSize() {
+NO_SANITIZE("cfi-icall") void CefTextfieldCToCpp::SizeToPreferredSize() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, size_to_preferred_size))
     return;
@@ -825,7 +973,9 @@ void CefTextfieldCToCpp::SizeToPreferredSize() {
   _struct->size_to_preferred_size(_struct);
 }
 
-CefSize CefTextfieldCToCpp::GetMinimumSize() {
+NO_SANITIZE("cfi-icall") CefSize CefTextfieldCToCpp::GetMinimumSize() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, get_minimum_size))
     return CefSize();
@@ -839,7 +989,9 @@ CefSize CefTextfieldCToCpp::GetMinimumSize() {
   return _retval;
 }
 
-CefSize CefTextfieldCToCpp::GetMaximumSize() {
+NO_SANITIZE("cfi-icall") CefSize CefTextfieldCToCpp::GetMaximumSize() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, get_maximum_size))
     return CefSize();
@@ -853,7 +1005,9 @@ CefSize CefTextfieldCToCpp::GetMaximumSize() {
   return _retval;
 }
 
-int CefTextfieldCToCpp::GetHeightForWidth(int width) {
+NO_SANITIZE("cfi-icall") int CefTextfieldCToCpp::GetHeightForWidth(int width) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, get_height_for_width))
     return 0;
@@ -867,7 +1021,9 @@ int CefTextfieldCToCpp::GetHeightForWidth(int width) {
   return _retval;
 }
 
-void CefTextfieldCToCpp::InvalidateLayout() {
+NO_SANITIZE("cfi-icall") void CefTextfieldCToCpp::InvalidateLayout() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, invalidate_layout))
     return;
@@ -878,7 +1034,9 @@ void CefTextfieldCToCpp::InvalidateLayout() {
   _struct->invalidate_layout(_struct);
 }
 
-void CefTextfieldCToCpp::SetVisible(bool visible) {
+NO_SANITIZE("cfi-icall") void CefTextfieldCToCpp::SetVisible(bool visible) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, set_visible))
     return;
@@ -889,7 +1047,9 @@ void CefTextfieldCToCpp::SetVisible(bool visible) {
   _struct->set_visible(_struct, visible);
 }
 
-bool CefTextfieldCToCpp::IsVisible() {
+NO_SANITIZE("cfi-icall") bool CefTextfieldCToCpp::IsVisible() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, is_visible))
     return false;
@@ -903,7 +1063,9 @@ bool CefTextfieldCToCpp::IsVisible() {
   return _retval ? true : false;
 }
 
-bool CefTextfieldCToCpp::IsDrawn() {
+NO_SANITIZE("cfi-icall") bool CefTextfieldCToCpp::IsDrawn() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, is_drawn))
     return false;
@@ -917,7 +1079,9 @@ bool CefTextfieldCToCpp::IsDrawn() {
   return _retval ? true : false;
 }
 
-void CefTextfieldCToCpp::SetEnabled(bool enabled) {
+NO_SANITIZE("cfi-icall") void CefTextfieldCToCpp::SetEnabled(bool enabled) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, set_enabled))
     return;
@@ -928,7 +1092,9 @@ void CefTextfieldCToCpp::SetEnabled(bool enabled) {
   _struct->set_enabled(_struct, enabled);
 }
 
-bool CefTextfieldCToCpp::IsEnabled() {
+NO_SANITIZE("cfi-icall") bool CefTextfieldCToCpp::IsEnabled() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, is_enabled))
     return false;
@@ -942,7 +1108,9 @@ bool CefTextfieldCToCpp::IsEnabled() {
   return _retval ? true : false;
 }
 
-void CefTextfieldCToCpp::SetFocusable(bool focusable) {
+NO_SANITIZE("cfi-icall") void CefTextfieldCToCpp::SetFocusable(bool focusable) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, set_focusable))
     return;
@@ -953,7 +1121,9 @@ void CefTextfieldCToCpp::SetFocusable(bool focusable) {
   _struct->set_focusable(_struct, focusable);
 }
 
-bool CefTextfieldCToCpp::IsFocusable() {
+NO_SANITIZE("cfi-icall") bool CefTextfieldCToCpp::IsFocusable() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, is_focusable))
     return false;
@@ -967,7 +1137,9 @@ bool CefTextfieldCToCpp::IsFocusable() {
   return _retval ? true : false;
 }
 
-bool CefTextfieldCToCpp::IsAccessibilityFocusable() {
+NO_SANITIZE("cfi-icall") bool CefTextfieldCToCpp::IsAccessibilityFocusable() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, is_accessibility_focusable))
     return false;
@@ -981,7 +1153,9 @@ bool CefTextfieldCToCpp::IsAccessibilityFocusable() {
   return _retval ? true : false;
 }
 
-void CefTextfieldCToCpp::RequestFocus() {
+NO_SANITIZE("cfi-icall") void CefTextfieldCToCpp::RequestFocus() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, request_focus))
     return;
@@ -992,7 +1166,10 @@ void CefTextfieldCToCpp::RequestFocus() {
   _struct->request_focus(_struct);
 }
 
+NO_SANITIZE("cfi-icall")
 void CefTextfieldCToCpp::SetBackgroundColor(cef_color_t color) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, set_background_color))
     return;
@@ -1003,7 +1180,9 @@ void CefTextfieldCToCpp::SetBackgroundColor(cef_color_t color) {
   _struct->set_background_color(_struct, color);
 }
 
-cef_color_t CefTextfieldCToCpp::GetBackgroundColor() {
+NO_SANITIZE("cfi-icall") cef_color_t CefTextfieldCToCpp::GetBackgroundColor() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, get_background_color))
     return 0;
@@ -1017,7 +1196,10 @@ cef_color_t CefTextfieldCToCpp::GetBackgroundColor() {
   return _retval;
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefTextfieldCToCpp::ConvertPointToScreen(CefPoint& point) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, convert_point_to_screen))
     return false;
@@ -1031,7 +1213,10 @@ bool CefTextfieldCToCpp::ConvertPointToScreen(CefPoint& point) {
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefTextfieldCToCpp::ConvertPointFromScreen(CefPoint& point) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, convert_point_from_screen))
     return false;
@@ -1045,7 +1230,10 @@ bool CefTextfieldCToCpp::ConvertPointFromScreen(CefPoint& point) {
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefTextfieldCToCpp::ConvertPointToWindow(CefPoint& point) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, convert_point_to_window))
     return false;
@@ -1059,7 +1247,10 @@ bool CefTextfieldCToCpp::ConvertPointToWindow(CefPoint& point) {
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefTextfieldCToCpp::ConvertPointFromWindow(CefPoint& point) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, convert_point_from_window))
     return false;
@@ -1073,8 +1264,11 @@ bool CefTextfieldCToCpp::ConvertPointFromWindow(CefPoint& point) {
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefTextfieldCToCpp::ConvertPointToView(CefRefPtr<CefView> view,
                                             CefPoint& point) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, convert_point_to_view))
     return false;
@@ -1094,8 +1288,11 @@ bool CefTextfieldCToCpp::ConvertPointToView(CefRefPtr<CefView> view,
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefTextfieldCToCpp::ConvertPointFromView(CefRefPtr<CefView> view,
                                               CefPoint& point) {
+  shutdown_checker::AssertNotShutdown();
+
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, convert_point_from_view))
     return false;
@@ -1119,6 +1316,12 @@ bool CefTextfieldCToCpp::ConvertPointFromView(CefRefPtr<CefView> view,
 
 CefTextfieldCToCpp::CefTextfieldCToCpp() {}
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefTextfieldCToCpp::~CefTextfieldCToCpp() {
+  shutdown_checker::AssertNotShutdown();
+}
+
 template <>
 cef_textfield_t*
 CefCToCppRefCounted<CefTextfieldCToCpp, CefTextfield, cef_textfield_t>::
@@ -1126,13 +1329,6 @@ CefCToCppRefCounted<CefTextfieldCToCpp, CefTextfield, cef_textfield_t>::
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount
-    CefCToCppRefCounted<CefTextfieldCToCpp, CefTextfield, cef_textfield_t>::
-        DebugObjCt ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType CefCToCppRefCounted<CefTextfieldCToCpp,

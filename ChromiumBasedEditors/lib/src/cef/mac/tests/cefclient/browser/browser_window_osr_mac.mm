@@ -21,19 +21,8 @@
 
 #import <AppKit/NSAccessibility.h>
 
-namespace {
-
-CefTextInputClientOSRMac* GetInputClientFromContext(
-    const NSTextInputContext* context) {
-  if (!context)
-    return NULL;
-  return reinterpret_cast<CefTextInputClientOSRMac*>([context client]);
-}
-
-}  // namespace
-
 @interface BrowserOpenGLView
-    : NSOpenGLView<NSDraggingSource, NSDraggingDestination, NSAccessibility> {
+    : NSOpenGLView <NSDraggingSource, NSDraggingDestination, NSAccessibility> {
  @private
   NSTrackingArea* tracking_area_;
   client::BrowserWindowOsrMac* browser_window_;
@@ -51,10 +40,11 @@ CefTextInputClientOSRMac* GetInputClientFromContext(
   NSDragOperation current_drag_op_;
   NSDragOperation current_allowed_ops_;
   NSPasteboard* pasteboard_;
-  CFStringRef fileUTI_;
+  NSString* fileUTI_;
 
   // For intreacting with IME.
   NSTextInputContext* text_input_context_osr_mac_;
+  CefTextInputClientOSRMac* text_input_client_;
 
   // Manages Accessibility Tree
   client::OsrAccessibilityHelper* accessibility_helper_;
@@ -63,53 +53,7 @@ CefTextInputClientOSRMac* GetInputClientFromContext(
   id endWheelMonitor_;
 }
 
-- (id)initWithFrame:(NSRect)frame
-    andBrowserWindow:(client::BrowserWindowOsrMac*)browser_window
-         andRenderer:(client::OsrRenderer*)renderer;
-- (void)detach;
-
-- (CefRefPtr<CefBrowser>)getBrowser;
-- (NSPoint)getClickPointForEvent:(NSEvent*)event;
-- (void)getKeyEvent:(CefKeyEvent&)keyEvent forEvent:(NSEvent*)event;
-- (void)getMouseEvent:(CefMouseEvent&)mouseEvent forEvent:(NSEvent*)event;
-- (void)getMouseEvent:(CefMouseEvent&)mouseEvent
-          forDragInfo:(id<NSDraggingInfo>)info;
-- (int)getModifiersForEvent:(NSEvent*)event;
-- (BOOL)isKeyUpEvent:(NSEvent*)event;
-- (BOOL)isKeyPadEvent:(NSEvent*)event;
-- (BOOL)startDragging:(CefRefPtr<CefDragData>)drag_data
-           allowedOps:(NSDragOperation)ops
-                point:(NSPoint)p;
-- (void)setCurrentDragOp:(NSDragOperation)op;
-
-- (void)resetDragDrop;
-- (void)fillPasteboard;
-- (void)populateDropData:(CefRefPtr<CefDragData>)data
-          fromPasteboard:(NSPasteboard*)pboard;
-- (NSPoint)flipWindowPointToView:(const NSPoint&)windowPoint;
-- (void)resetDeviceScaleFactor;
-- (void)setDeviceScaleFactor:(float)device_scale_factor;
-- (float)getDeviceScaleFactor;
-- (void)windowDidChangeBackingProperties:(NSNotification*)notification;
-
-- (bool)isOverPopupWidgetX:(int)x andY:(int)y;
-- (void)applyPopupOffsetToX:(int&)x andY:(int&)y;
-- (int)getPopupXOffset;
-- (int)getPopupYOffset;
-
-- (void)sendMouseClick:(NSEvent*)event
-                button:(CefBrowserHost::MouseButtonType)type
-                  isUp:(bool)isUp;
-
-- (NSPoint)convertPointFromBackingInternal:(NSPoint)aPoint;
-- (NSPoint)convertPointToBackingInternal:(NSPoint)aPoint;
-- (NSRect)convertRectFromBackingInternal:(NSRect)aRect;
-- (NSRect)convertRectToBackingInternal:(NSRect)aRect;
-- (void)ChangeCompositionRange:(CefRange)range
-              character_bounds:
-                  (const CefRenderHandler::RectList&)character_bounds;
-- (void)UpdateAccessibilityTree:(CefRefPtr<CefValue>)value;
-@end
+@end  // @interface BrowserOpenGLView
 
 namespace {
 
@@ -134,10 +78,6 @@ class ScopedGLContext {
   const bool swap_buffers_;
 };
 
-BrowserOpenGLView* GLView(NSView* view) {
-  return static_cast<BrowserOpenGLView*>(view);
-}
-
 NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
   NSRect point_rect = NSMakeRect(point.x, point.y, 0, 0);
   return [window convertRectToScreen:point_rect].origin;
@@ -154,7 +94,9 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
       initWithAttributes:(NSOpenGLPixelFormatAttribute[]){
                              NSOpenGLPFADoubleBuffer, NSOpenGLPFADepthSize, 32,
                              0}];
+#if !__has_feature(objc_arc)
   [pixelFormat autorelease];
+#endif  // !__has_feature(objc_arc)
 
   if (self = [super initWithFrame:frame pixelFormat:pixelFormat]) {
     browser_window_ = browser_window;
@@ -190,20 +132,20 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
       removeObserver:self
                 name:NSWindowDidChangeBackingPropertiesNotification
               object:nil];
-
+#if !__has_feature(objc_arc)
   if (text_input_context_osr_mac_) {
-    [GetInputClientFromContext(text_input_context_osr_mac_) release];
+    [text_input_client_ release];
     [text_input_context_osr_mac_ release];
   }
-
   [super dealloc];
+#endif  // !__has_feature(objc_arc)
 }
 
 - (void)detach {
   renderer_ = NULL;
   browser_window_ = NULL;
-  if (text_input_context_osr_mac_)
-    [GetInputClientFromContext(text_input_context_osr_mac_) detach];
+  if (text_input_client_)
+    [text_input_client_ detach];
 }
 
 - (CefRefPtr<CefBrowser>)getBrowser {
@@ -238,8 +180,8 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
   point = [self convertPointToBackingInternal:point];
 
   if (!isUp) {
-    was_last_mouse_down_on_view_ =
-        ![self isOverPopupWidgetX:point.x andY:point.y];
+    was_last_mouse_down_on_view_ = ![self isOverPopupWidgetX:point.x
+                                                        andY:point.y];
   } else if (was_last_mouse_down_on_view_ &&
              [self isOverPopupWidgetX:point.x andY:point.y] &&
              ([self getPopupXOffset] || [self getPopupYOffset])) {
@@ -343,11 +285,8 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
     return;
 
   if ([event type] != NSFlagsChanged) {
-    CefTextInputClientOSRMac* client =
-        GetInputClientFromContext(text_input_context_osr_mac_);
-
-    if (client) {
-      [client HandleKeyEventBeforeTextInputClient:event];
+    if (text_input_client_) {
+      [text_input_client_ HandleKeyEventBeforeTextInputClient:event];
 
       // The return value of this method seems to always be set to YES, thus we
       // ignore it and ask the host view whether IME is active or not.
@@ -356,9 +295,113 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
       CefKeyEvent keyEvent;
       [self getKeyEvent:keyEvent forEvent:event];
 
-      [client HandleKeyEventAfterTextInputClient:keyEvent];
+      [text_input_client_ HandleKeyEventAfterTextInputClient:keyEvent];
     }
   }
+
+  // Check for Caps lock and Toggle Touch Emulation
+  if (client::MainContext::Get()->TouchEventsEnabled())
+    [self toggleTouchEmulation:event];
+}
+
+// OSX does not have touch screens, so we emulate it by mapping multitouch
+// events on TrackPad to Touch Events on Screen. To ensure it does not
+// interfere with other Trackpad events, this mapping is only enabled if
+// touch-events=enabled commandline is passed and caps lock key is on.
+- (void)toggleTouchEmulation:(NSEvent*)event {
+  if ([event type] == NSFlagsChanged && [event keyCode] == 0x39) {
+    NSUInteger flags = [event modifierFlags];
+    BOOL touch_enabled = flags & NSAlphaShiftKeyMask ? YES : NO;
+    [self setAcceptsTouchEvents:touch_enabled];
+  }
+}
+
+- (cef_touch_event_type_t)getTouchPhase:(NSTouchPhase)phase {
+  cef_touch_event_type_t event_type = CEF_TET_RELEASED;
+  switch (phase) {
+    case NSTouchPhaseBegan:
+      event_type = CEF_TET_PRESSED;
+      break;
+    case NSTouchPhaseMoved:
+      event_type = CEF_TET_MOVED;
+      break;
+    case NSTouchPhaseEnded:
+      event_type = CEF_TET_RELEASED;
+      break;
+    case NSTouchPhaseCancelled:
+      event_type = CEF_TET_CANCELLED;
+      break;
+    default:
+      break;
+  }
+  return event_type;
+}
+
+// Translate NSTouch events to CefTouchEvents and send to browser.
+- (void)sendTouchEvent:(NSEvent*)event touchPhase:(NSTouchPhase)phase {
+  int modifiers = [self getModifiersForEvent:event];
+  CefRefPtr<CefBrowser> browser = [self getBrowser];
+
+  NSSet* touches = [event touchesMatchingPhase:phase inView:self];
+
+  for (NSTouch* touch in touches) {
+    // Convert NSTouch to CefTouchEvent.
+    CefTouchEvent touch_event;
+
+    // NSTouch.identity is unique during the life of the touch
+    touch_event.id = touch.identity.hash;
+    touch_event.type = [self getTouchPhase:phase];
+
+    NSPoint scaled_pos = [touch normalizedPosition];
+    NSSize view_size = [self bounds].size;
+
+    // Map point on Touch Device to View coordinates.
+    NSPoint touch_point = NSMakePoint(scaled_pos.x * view_size.width,
+                                      scaled_pos.y * view_size.height);
+
+    NSPoint contentLocal = [self convertPoint:touch_point fromView:nil];
+    NSPoint point;
+    point.x = contentLocal.x;
+    point.y = [self frame].size.height - contentLocal.y;  // Flip y.
+
+    // Convert to device coordinates.
+    point = [self convertPointToBackingInternal:point];
+
+    int device_x = point.x;
+    int device_y = point.y;
+
+    const float device_scale_factor = [self getDeviceScaleFactor];
+    // Convert to browser view coordinates.
+    touch_event.x = client::DeviceToLogical(device_x, device_scale_factor);
+    touch_event.y = client::DeviceToLogical(device_y, device_scale_factor);
+
+    touch_event.radius_x = 0;
+    touch_event.radius_y = 0;
+
+    touch_event.rotation_angle = 0;
+    touch_event.pressure = 0;
+
+    touch_event.modifiers = modifiers;
+
+    // Notify the browser of touch event.
+    browser->GetHost()->SendTouchEvent(touch_event);
+  }
+}
+
+- (void)touchesBeganWithEvent:(NSEvent*)event {
+  [self sendTouchEvent:event touchPhase:NSTouchPhaseBegan];
+}
+
+- (void)touchesMovedWithEvent:(NSEvent*)event {
+  [self sendTouchEvent:event touchPhase:NSTouchPhaseMoved];
+}
+
+- (void)touchesEndedWithEvent:(NSEvent*)event {
+  [self sendTouchEvent:event touchPhase:NSTouchPhaseEnded];
+}
+
+- (void)touchesCancelledWithEvent:(NSEvent*)event {
+  [self sendTouchEvent:event touchPhase:NSTouchPhaseCancelled];
 }
 
 - (void)keyUp:(NSEvent*)event {
@@ -490,7 +533,7 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
     browser->GetFocusedFrame()->Paste();
 }
 
-- (void) delete:(id)sender {
+- (void)delete:(id)sender {
   CefRefPtr<CefBrowser> browser = [self getBrowser];
   if (browser.get())
     browser->GetFocusedFrame()->Delete();
@@ -535,12 +578,14 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
 
 - (NSTextInputContext*)inputContext {
   if (!text_input_context_osr_mac_) {
-    CefTextInputClientOSRMac* text_input_client =
-        [[[CefTextInputClientOSRMac alloc] initWithBrowser:[self getBrowser]]
-            retain];
-
+    text_input_client_ =
+        [[CefTextInputClientOSRMac alloc] initWithBrowser:[self getBrowser]];
     text_input_context_osr_mac_ =
-        [[[NSTextInputContext alloc] initWithClient:text_input_client] retain];
+        [[NSTextInputContext alloc] initWithClient:text_input_client_];
+#if !__has_feature(objc_arc)
+    [text_input_client_ retain];
+    [text_input_context_osr_mac_ retain];
+#endif  // !__has_feature(objc_arc)
   }
 
   return text_input_context_osr_mac_;
@@ -923,7 +968,7 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
     [pboard setString:strTitle forType:kNSURLTitlePboardType];
 
     // File contents.
-  } else if ([type isEqualToString:(NSString*)fileUTI_]) {
+  } else if ([type isEqualToString:fileUTI_]) {
     size_t size = current_drag_data_->GetFileContents(NULL);
     DCHECK_GT(size, 0U);
     CefRefPtr<client::BytesWriteHandler> handler =
@@ -935,7 +980,7 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
 
     [pboard setData:[NSData dataWithBytes:handler->GetData()
                                    length:handler->GetDataSize()]
-            forType:(NSString*)fileUTI_];
+            forType:fileUTI_];
 
     // Plain text.
   } else if ([type isEqualToString:NSStringPboardType]) {
@@ -979,7 +1024,8 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
     client::OsrAXNode* node = accessibility_helper_->GetRootNode();
     // Add Root as first Kid
     NSMutableArray* kids = [NSMutableArray arrayWithCapacity:1];
-    NSObject* child = node->GetNativeAccessibleObject(NULL);
+    NSObject* child = CAST_CEF_NATIVE_ACCESSIBLE_TO_NSOBJECT(
+        node->GetNativeAccessibleObject(NULL));
     [kids addObject:child];
     return NSAccessibilityUnignoredChildren(kids);
   } else {
@@ -990,7 +1036,9 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
 - (id)accessibilityFocusedUIElement {
   if (accessibility_helper_) {
     client::OsrAXNode* node = accessibility_helper_->GetFocusedNode();
-    return node ? node->GetNativeAccessibleObject(NULL) : nil;
+    return node ? CAST_CEF_NATIVE_ACCESSIBLE_TO_NSOBJECT(
+                      node->GetNativeAccessibleObject(NULL))
+                : nil;
   }
   return nil;
 }
@@ -1001,18 +1049,25 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
   current_allowed_ops_ = NSDragOperationNone;
   current_drag_data_ = NULL;
   if (fileUTI_) {
-    CFRelease(fileUTI_);
-    fileUTI_ = NULL;
+#if !__has_feature(objc_arc)
+    [fileUTI_ release];
+#endif  // !__has_feature(objc_arc)
+    fileUTI_ = nil;
   }
   if (pasteboard_) {
+#if !__has_feature(objc_arc)
     [pasteboard_ release];
+#endif  // !__has_feature(objc_arc)
     pasteboard_ = nil;
   }
 }
 
 - (void)fillPasteboard {
   DCHECK(!pasteboard_);
-  pasteboard_ = [[NSPasteboard pasteboardWithName:NSDragPboard] retain];
+  pasteboard_ = [NSPasteboard pasteboardWithName:NSDragPboard];
+#if !__has_feature(objc_arc)
+  [pasteboard_ retain];
+#endif  // !__has_feature(objc_arc)
 
   [pasteboard_ declareTypes:@[ kCEFDragDummyPboardType ] owner:self];
 
@@ -1041,11 +1096,11 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
       mimeTypeCF = CFStringCreateWithCString(kCFAllocatorDefault,
                                              mimeType.ToString().c_str(),
                                              kCFStringEncodingUTF8);
-      fileUTI_ = UTTypeCreatePreferredIdentifierForTag(kUTTagClassMIMEType,
-                                                       mimeTypeCF, NULL);
+      fileUTI_ = (__bridge NSString*)UTTypeCreatePreferredIdentifierForTag(
+          kUTTagClassMIMEType, mimeTypeCF, NULL);
       CFRelease(mimeTypeCF);
       // File (HFS) promise.
-      NSArray* fileUTIList = @[ (NSString*)fileUTI_ ];
+      NSArray* fileUTIList = @[ fileUTI_ ];
       [pasteboard_ addTypes:@[ NSFilesPromisePboardType ] owner:self];
       [pasteboard_ setPropertyList:fileUTIList
                            forType:NSFilesPromisePboardType];
@@ -1182,10 +1237,8 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
 
 - (void)ChangeCompositionRange:(CefRange)range
               character_bounds:(const CefRenderHandler::RectList&)bounds {
-  CefTextInputClientOSRMac* client =
-      GetInputClientFromContext(text_input_context_osr_mac_);
-  if (client)
-    [client ChangeCompositionRange:range character_bounds:bounds];
+  if (text_input_client_)
+    [text_input_client_ ChangeCompositionRange:range character_bounds:bounds];
 }
 
 - (void)UpdateAccessibilityTree:(CefRefPtr<CefValue>)value {
@@ -1202,32 +1255,127 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
   }
   return;
 }
+
+- (void)UpdateAccessibilityLocation:(CefRefPtr<CefValue>)value {
+  if (accessibility_helper_) {
+    accessibility_helper_->UpdateAccessibilityLocation(value);
+  }
+
+  if (accessibility_helper_) {
+    NSAccessibilityPostNotification(self,
+                                    NSAccessibilityValueChangedNotification);
+  }
+  return;
+}
 @end
 
 namespace client {
 
-BrowserWindowOsrMac::BrowserWindowOsrMac(BrowserWindow::Delegate* delegate,
-                                         const std::string& startup_url,
-                                         const OsrRenderer::Settings& settings)
-    : BrowserWindow(delegate),
-      renderer_(settings),
-      nsview_(NULL),
-      hidden_(false),
-      painting_popup_(false) {
-  client_handler_ = new ClientHandlerOsr(this, this, startup_url);
-}
+class BrowserWindowOsrMacImpl {
+ public:
+  BrowserWindowOsrMacImpl(BrowserWindow::Delegate* delegate,
+                          const std::string& startup_url,
+                          const OsrRendererSettings& settings,
+                          BrowserWindowOsrMac& browser_window);
+  ~BrowserWindowOsrMacImpl();
 
-BrowserWindowOsrMac::~BrowserWindowOsrMac() {
-  if (nsview_) {
+  // BrowserWindow methods.
+  void CreateBrowser(ClientWindowHandle parent_handle,
+                     const CefRect& rect,
+                     const CefBrowserSettings& settings,
+                     CefRefPtr<CefDictionaryValue> extra_info,
+                     CefRefPtr<CefRequestContext> request_context);
+  void GetPopupConfig(CefWindowHandle temp_handle,
+                      CefWindowInfo& windowInfo,
+                      CefRefPtr<CefClient>& client,
+                      CefBrowserSettings& settings);
+  void ShowPopup(ClientWindowHandle parent_handle,
+                 int x,
+                 int y,
+                 size_t width,
+                 size_t height);
+  void Show();
+  void Hide();
+  void SetBounds(int x, int y, size_t width, size_t height);
+  void SetFocus(bool focus);
+  void SetDeviceScaleFactor(float device_scale_factor);
+  float GetDeviceScaleFactor() const;
+  ClientWindowHandle GetWindowHandle() const;
+
+  // ClientHandlerOsr::OsrDelegate methods.
+  void OnAfterCreated(CefRefPtr<CefBrowser> browser);
+  void OnBeforeClose(CefRefPtr<CefBrowser> browser);
+  bool GetRootScreenRect(CefRefPtr<CefBrowser> browser, CefRect& rect);
+  void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect);
+  bool GetScreenPoint(CefRefPtr<CefBrowser> browser,
+                      int viewX,
+                      int viewY,
+                      int& screenX,
+                      int& screenY);
+  bool GetScreenInfo(CefRefPtr<CefBrowser> browser, CefScreenInfo& screen_info);
+  void OnPopupShow(CefRefPtr<CefBrowser> browser, bool show);
+  void OnPopupSize(CefRefPtr<CefBrowser> browser, const CefRect& rect);
+  void OnPaint(CefRefPtr<CefBrowser> browser,
+               CefRenderHandler::PaintElementType type,
+               const CefRenderHandler::RectList& dirtyRects,
+               const void* buffer,
+               int width,
+               int height);
+  void OnCursorChange(CefRefPtr<CefBrowser> browser,
+                      CefCursorHandle cursor,
+                      CefRenderHandler::CursorType type,
+                      const CefCursorInfo& custom_cursor_info);
+  bool StartDragging(CefRefPtr<CefBrowser> browser,
+                     CefRefPtr<CefDragData> drag_data,
+                     CefRenderHandler::DragOperationsMask allowed_ops,
+                     int x,
+                     int y);
+  void UpdateDragCursor(CefRefPtr<CefBrowser> browser,
+                        CefRenderHandler::DragOperation operation);
+  void OnImeCompositionRangeChanged(
+      CefRefPtr<CefBrowser> browser,
+      const CefRange& selection_range,
+      const CefRenderHandler::RectList& character_bounds);
+
+  void UpdateAccessibilityTree(CefRefPtr<CefValue> value);
+  void UpdateAccessibilityLocation(CefRefPtr<CefValue> value);
+
+ private:
+  // Create the NSView.
+  void Create(ClientWindowHandle parent_handle, const CefRect& rect);
+
+  BrowserWindowOsrMac& browser_window_;
+  // The below members will only be accessed on the main thread which should be
+  // the same as the CEF UI thread.
+  OsrRenderer renderer_;
+  BrowserOpenGLView* native_browser_view_;
+  bool hidden_;
+  bool painting_popup_;
+};
+
+BrowserWindowOsrMacImpl::BrowserWindowOsrMacImpl(
+    BrowserWindow::Delegate* delegate,
+    const std::string& startup_url,
+    const OsrRendererSettings& settings,
+    BrowserWindowOsrMac& browser_window)
+    : browser_window_(browser_window),
+      renderer_(settings),
+      native_browser_view_(nil),
+      hidden_(false),
+      painting_popup_(false) {}
+
+BrowserWindowOsrMacImpl::~BrowserWindowOsrMacImpl() {
+  if (native_browser_view_) {
     // Disassociate the view with |this|.
-    [GLView(nsview_) detach];
+    [native_browser_view_ detach];
   }
 }
 
-void BrowserWindowOsrMac::CreateBrowser(
+void BrowserWindowOsrMacImpl::CreateBrowser(
     ClientWindowHandle parent_handle,
     const CefRect& rect,
     const CefBrowserSettings& settings,
+    CefRefPtr<CefDictionaryValue> extra_info,
     CefRefPtr<CefRequestContext> request_context) {
   REQUIRE_MAIN_THREAD();
 
@@ -1235,31 +1383,32 @@ void BrowserWindowOsrMac::CreateBrowser(
   Create(parent_handle, rect);
 
   CefWindowInfo window_info;
-  window_info.SetAsWindowless(nsview_);
+  window_info.SetAsWindowless(
+      CAST_NSVIEW_TO_CEF_WINDOW_HANDLE(native_browser_view_));
 
   // Create the browser asynchronously.
-  CefBrowserHost::CreateBrowser(window_info, client_handler_,
-                                client_handler_->startup_url(), settings,
-                                request_context);
+  CefBrowserHost::CreateBrowser(window_info, browser_window_.client_handler_,
+                                browser_window_.client_handler_->startup_url(),
+                                settings, extra_info, request_context);
 }
 
-void BrowserWindowOsrMac::GetPopupConfig(CefWindowHandle temp_handle,
-                                         CefWindowInfo& windowInfo,
-                                         CefRefPtr<CefClient>& client,
-                                         CefBrowserSettings& settings) {
+void BrowserWindowOsrMacImpl::GetPopupConfig(CefWindowHandle temp_handle,
+                                             CefWindowInfo& windowInfo,
+                                             CefRefPtr<CefClient>& client,
+                                             CefBrowserSettings& settings) {
   CEF_REQUIRE_UI_THREAD();
 
   windowInfo.SetAsWindowless(temp_handle);
-  client = client_handler_;
+  client = browser_window_.client_handler_;
 }
 
-void BrowserWindowOsrMac::ShowPopup(ClientWindowHandle parent_handle,
-                                    int x,
-                                    int y,
-                                    size_t width,
-                                    size_t height) {
+void BrowserWindowOsrMacImpl::ShowPopup(ClientWindowHandle parent_handle,
+                                        int x,
+                                        int y,
+                                        size_t width,
+                                        size_t height) {
   REQUIRE_MAIN_THREAD();
-  DCHECK(browser_.get());
+  DCHECK(browser_window_.browser_.get());
 
   // Create the native NSView.
   Create(parent_handle,
@@ -1267,123 +1416,133 @@ void BrowserWindowOsrMac::ShowPopup(ClientWindowHandle parent_handle,
 
   // Send resize notification so the compositor is assigned the correct
   // viewport size and begins rendering.
-  browser_->GetHost()->WasResized();
+  browser_window_.browser_->GetHost()->WasResized();
 
   Show();
 }
 
-void BrowserWindowOsrMac::Show() {
+void BrowserWindowOsrMacImpl::Show() {
   REQUIRE_MAIN_THREAD();
 
   if (hidden_) {
     // Set the browser as visible.
-    browser_->GetHost()->WasHidden(false);
+    browser_window_.browser_->GetHost()->WasHidden(false);
     hidden_ = false;
   }
 
   // Give focus to the browser.
-  browser_->GetHost()->SendFocusEvent(true);
+  browser_window_.browser_->GetHost()->SendFocusEvent(true);
 }
 
-void BrowserWindowOsrMac::Hide() {
+void BrowserWindowOsrMacImpl::Hide() {
   REQUIRE_MAIN_THREAD();
 
-  if (!browser_.get())
+  if (!browser_window_.browser_.get())
     return;
 
   // Remove focus from the browser.
-  browser_->GetHost()->SendFocusEvent(false);
+  browser_window_.browser_->GetHost()->SendFocusEvent(false);
 
   if (!hidden_) {
     // Set the browser as hidden.
-    browser_->GetHost()->WasHidden(true);
+    browser_window_.browser_->GetHost()->WasHidden(true);
     hidden_ = true;
   }
 }
 
-void BrowserWindowOsrMac::SetBounds(int x, int y, size_t width, size_t height) {
+void BrowserWindowOsrMacImpl::SetBounds(int x,
+                                        int y,
+                                        size_t width,
+                                        size_t height) {
   REQUIRE_MAIN_THREAD();
   // Nothing to do here. GTK will take care of positioning in the container.
 }
 
-void BrowserWindowOsrMac::SetFocus(bool focus) {
+void BrowserWindowOsrMacImpl::SetFocus(bool focus) {
   REQUIRE_MAIN_THREAD();
-  if (nsview_)
-    [[nsview_ window] makeFirstResponder:nsview_];
+  if (native_browser_view_)
+    [native_browser_view_.window makeFirstResponder:native_browser_view_];
 }
 
-void BrowserWindowOsrMac::SetDeviceScaleFactor(float device_scale_factor) {
+void BrowserWindowOsrMacImpl::SetDeviceScaleFactor(float device_scale_factor) {
   REQUIRE_MAIN_THREAD();
-  if (nsview_)
-    [GLView(nsview_) setDeviceScaleFactor:device_scale_factor];
+  if (native_browser_view_)
+    [native_browser_view_ setDeviceScaleFactor:device_scale_factor];
 }
 
-float BrowserWindowOsrMac::GetDeviceScaleFactor() const {
+float BrowserWindowOsrMacImpl::GetDeviceScaleFactor() const {
   REQUIRE_MAIN_THREAD();
-  if (nsview_)
-    return [GLView(nsview_) getDeviceScaleFactor];
+  if (native_browser_view_)
+    return [native_browser_view_ getDeviceScaleFactor];
   return 1.0f;
 }
 
-ClientWindowHandle BrowserWindowOsrMac::GetWindowHandle() const {
+ClientWindowHandle BrowserWindowOsrMacImpl::GetWindowHandle() const {
   REQUIRE_MAIN_THREAD();
-  return nsview_;
+  return CAST_NSVIEW_TO_CEF_WINDOW_HANDLE(native_browser_view_);
 }
 
-void BrowserWindowOsrMac::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
+void BrowserWindowOsrMacImpl::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
   CEF_REQUIRE_UI_THREAD();
 }
 
-void BrowserWindowOsrMac::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
+void BrowserWindowOsrMacImpl::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
   CEF_REQUIRE_UI_THREAD();
   REQUIRE_MAIN_THREAD();
 
   // Detach |this| from the ClientHandlerOsr.
-  static_cast<ClientHandlerOsr*>(client_handler_.get())->DetachOsrDelegate();
+  static_cast<ClientHandlerOsr*>(browser_window_.client_handler_.get())
+      ->DetachOsrDelegate();
 }
 
-bool BrowserWindowOsrMac::GetRootScreenRect(CefRefPtr<CefBrowser> browser,
-                                            CefRect& rect) {
+bool BrowserWindowOsrMacImpl::GetRootScreenRect(CefRefPtr<CefBrowser> browser,
+                                                CefRect& rect) {
   CEF_REQUIRE_UI_THREAD();
   return false;
 }
 
-bool BrowserWindowOsrMac::GetViewRect(CefRefPtr<CefBrowser> browser,
-                                      CefRect& rect) {
+void BrowserWindowOsrMacImpl::GetViewRect(CefRefPtr<CefBrowser> browser,
+                                          CefRect& rect) {
   CEF_REQUIRE_UI_THREAD();
   REQUIRE_MAIN_THREAD();
 
-  if (!nsview_)
-    return false;
+  rect.x = rect.y = 0;
 
-  const float device_scale_factor = [GLView(nsview_) getDeviceScaleFactor];
+  if (!native_browser_view_) {
+    // Never return an empty rectangle.
+    rect.width = rect.height = 1;
+    return;
+  }
+
+  const float device_scale_factor = [native_browser_view_ getDeviceScaleFactor];
 
   // |bounds| is in OS X view coordinates.
-  NSRect bounds = [nsview_ bounds];
+  NSRect bounds = native_browser_view_.bounds;
 
   // Convert to device coordinates.
-  bounds = [GLView(nsview_) convertRectToBackingInternal:bounds];
+  bounds = [native_browser_view_ convertRectToBackingInternal:bounds];
 
   // Convert to browser view coordinates.
-  rect.x = rect.y = 0;
   rect.width = DeviceToLogical(bounds.size.width, device_scale_factor);
+  if (rect.width == 0)
+    rect.width = 1;
   rect.height = DeviceToLogical(bounds.size.height, device_scale_factor);
-
-  return true;
+  if (rect.height == 0)
+    rect.height = 1;
 }
 
-bool BrowserWindowOsrMac::GetScreenPoint(CefRefPtr<CefBrowser> browser,
-                                         int viewX,
-                                         int viewY,
-                                         int& screenX,
-                                         int& screenY) {
+bool BrowserWindowOsrMacImpl::GetScreenPoint(CefRefPtr<CefBrowser> browser,
+                                             int viewX,
+                                             int viewY,
+                                             int& screenX,
+                                             int& screenY) {
   CEF_REQUIRE_UI_THREAD();
   REQUIRE_MAIN_THREAD();
 
-  if (!nsview_)
+  if (!native_browser_view_)
     return false;
 
-  const float device_scale_factor = [GLView(nsview_) getDeviceScaleFactor];
+  const float device_scale_factor = [native_browser_view_ getDeviceScaleFactor];
 
   // (viewX, viewX) is in browser view coordinates.
   // Convert to device coordinates.
@@ -1391,34 +1550,34 @@ bool BrowserWindowOsrMac::GetScreenPoint(CefRefPtr<CefBrowser> browser,
                                 LogicalToDevice(viewY, device_scale_factor));
 
   // Convert to OS X view coordinates.
-  view_pt = [GLView(nsview_) convertPointFromBackingInternal:view_pt];
+  view_pt = [native_browser_view_ convertPointFromBackingInternal:view_pt];
 
   // Reverse the Y component.
-  const NSRect bounds = [nsview_ bounds];
+  const NSRect bounds = native_browser_view_.bounds;
   view_pt.y = bounds.size.height - view_pt.y;
 
   // Convert to screen coordinates.
-  NSPoint window_pt = [nsview_ convertPoint:view_pt toView:nil];
+  NSPoint window_pt = [native_browser_view_ convertPoint:view_pt toView:nil];
   NSPoint screen_pt =
-      ConvertPointFromWindowToScreen([nsview_ window], window_pt);
+      ConvertPointFromWindowToScreen(native_browser_view_.window, window_pt);
 
   screenX = screen_pt.x;
   screenY = screen_pt.y;
   return true;
 }
 
-bool BrowserWindowOsrMac::GetScreenInfo(CefRefPtr<CefBrowser> browser,
-                                        CefScreenInfo& screen_info) {
+bool BrowserWindowOsrMacImpl::GetScreenInfo(CefRefPtr<CefBrowser> browser,
+                                            CefScreenInfo& screen_info) {
   CEF_REQUIRE_UI_THREAD();
   REQUIRE_MAIN_THREAD();
 
-  if (!nsview_)
+  if (!native_browser_view_)
     return false;
 
   CefRect view_rect;
   GetViewRect(browser, view_rect);
 
-  screen_info.device_scale_factor = [GLView(nsview_) getDeviceScaleFactor];
+  screen_info.device_scale_factor = [native_browser_view_ getDeviceScaleFactor];
 
   // The screen info rectangles are used by the renderer to create and position
   // popups. Keep popups inside the view rectangle.
@@ -1428,12 +1587,12 @@ bool BrowserWindowOsrMac::GetScreenInfo(CefRefPtr<CefBrowser> browser,
   return true;
 }
 
-void BrowserWindowOsrMac::OnPopupShow(CefRefPtr<CefBrowser> browser,
-                                      bool show) {
+void BrowserWindowOsrMacImpl::OnPopupShow(CefRefPtr<CefBrowser> browser,
+                                          bool show) {
   CEF_REQUIRE_UI_THREAD();
   REQUIRE_MAIN_THREAD();
 
-  if (!nsview_)
+  if (!native_browser_view_)
     return;
 
   if (!show) {
@@ -1443,15 +1602,15 @@ void BrowserWindowOsrMac::OnPopupShow(CefRefPtr<CefBrowser> browser,
   renderer_.OnPopupShow(browser, show);
 }
 
-void BrowserWindowOsrMac::OnPopupSize(CefRefPtr<CefBrowser> browser,
-                                      const CefRect& rect) {
+void BrowserWindowOsrMacImpl::OnPopupSize(CefRefPtr<CefBrowser> browser,
+                                          const CefRect& rect) {
   CEF_REQUIRE_UI_THREAD();
   REQUIRE_MAIN_THREAD();
 
-  if (!nsview_)
+  if (!native_browser_view_)
     return;
 
-  const float device_scale_factor = [GLView(nsview_) getDeviceScaleFactor];
+  const float device_scale_factor = [native_browser_view_ getDeviceScaleFactor];
 
   // |rect| is in browser view coordinates. Convert to device coordinates.
   CefRect device_rect = LogicalToDevice(rect, device_scale_factor);
@@ -1459,16 +1618,17 @@ void BrowserWindowOsrMac::OnPopupSize(CefRefPtr<CefBrowser> browser,
   renderer_.OnPopupSize(browser, device_rect);
 }
 
-void BrowserWindowOsrMac::OnPaint(CefRefPtr<CefBrowser> browser,
-                                  CefRenderHandler::PaintElementType type,
-                                  const CefRenderHandler::RectList& dirtyRects,
-                                  const void* buffer,
-                                  int width,
-                                  int height) {
+void BrowserWindowOsrMacImpl::OnPaint(
+    CefRefPtr<CefBrowser> browser,
+    CefRenderHandler::PaintElementType type,
+    const CefRenderHandler::RectList& dirtyRects,
+    const void* buffer,
+    int width,
+    int height) {
   CEF_REQUIRE_UI_THREAD();
   REQUIRE_MAIN_THREAD();
 
-  if (!nsview_)
+  if (!native_browser_view_)
     return;
 
   if (width <= 2 && height <= 2) {
@@ -1481,7 +1641,7 @@ void BrowserWindowOsrMac::OnPaint(CefRefPtr<CefBrowser> browser,
     return;
   }
 
-  ScopedGLContext scoped_gl_context(GLView(nsview_), true);
+  ScopedGLContext scoped_gl_context(native_browser_view_, true);
 
   renderer_.OnPaint(browser, type, dirtyRects, buffer, width, height);
   if (type == PET_VIEW && !renderer_.popup_rect().IsEmpty()) {
@@ -1492,7 +1652,7 @@ void BrowserWindowOsrMac::OnPaint(CefRefPtr<CefBrowser> browser,
   renderer_.Render();
 }
 
-void BrowserWindowOsrMac::OnCursorChange(
+void BrowserWindowOsrMacImpl::OnCursorChange(
     CefRefPtr<CefBrowser> browser,
     CefCursorHandle cursor,
     CefRenderHandler::CursorType type,
@@ -1500,10 +1660,10 @@ void BrowserWindowOsrMac::OnCursorChange(
   CEF_REQUIRE_UI_THREAD();
   REQUIRE_MAIN_THREAD();
 
-  [cursor set];
+  [CAST_CEF_CURSOR_HANDLE_TO_NSCURSOR(cursor) set];
 }
 
-bool BrowserWindowOsrMac::StartDragging(
+bool BrowserWindowOsrMacImpl::StartDragging(
     CefRefPtr<CefBrowser> browser,
     CefRefPtr<CefDragData> drag_data,
     CefRenderHandler::DragOperationsMask allowed_ops,
@@ -1512,10 +1672,11 @@ bool BrowserWindowOsrMac::StartDragging(
   CEF_REQUIRE_UI_THREAD();
   REQUIRE_MAIN_THREAD();
 
-  if (!nsview_)
+  if (!native_browser_view_)
     return false;
 
-  static float device_scale_factor = [GLView(nsview_) getDeviceScaleFactor];
+  static float device_scale_factor =
+      [native_browser_view_ getDeviceScaleFactor];
 
   // |point| is in browser view coordinates.
   NSPoint point = NSMakePoint(x, y);
@@ -1525,65 +1686,232 @@ bool BrowserWindowOsrMac::StartDragging(
   point.y = LogicalToDevice(point.y, device_scale_factor);
 
   // Convert to OS X view coordinates.
-  point = [GLView(nsview_) convertPointFromBackingInternal:point];
+  point = [native_browser_view_ convertPointFromBackingInternal:point];
 
-  return
-      [GLView(nsview_) startDragging:drag_data
-                          allowedOps:static_cast<NSDragOperation>(allowed_ops)
-                               point:point];
+  return [native_browser_view_
+      startDragging:drag_data
+         allowedOps:static_cast<NSDragOperation>(allowed_ops)
+              point:point];
 }
 
-void BrowserWindowOsrMac::UpdateDragCursor(
+void BrowserWindowOsrMacImpl::UpdateDragCursor(
     CefRefPtr<CefBrowser> browser,
     CefRenderHandler::DragOperation operation) {
   CEF_REQUIRE_UI_THREAD();
   REQUIRE_MAIN_THREAD();
 
-  if (nsview_)
-    [GLView(nsview_) setCurrentDragOp:operation];
+  if (native_browser_view_)
+    [native_browser_view_ setCurrentDragOp:operation];
 }
 
-void BrowserWindowOsrMac::OnImeCompositionRangeChanged(
+void BrowserWindowOsrMacImpl::OnImeCompositionRangeChanged(
     CefRefPtr<CefBrowser> browser,
     const CefRange& selection_range,
     const CefRenderHandler::RectList& bounds) {
   CEF_REQUIRE_UI_THREAD();
 
-  if (nsview_) {
-    [GLView(nsview_) ChangeCompositionRange:selection_range
-                           character_bounds:bounds];
+  if (native_browser_view_) {
+    [native_browser_view_ ChangeCompositionRange:selection_range
+                                character_bounds:bounds];
   }
+}
+
+void BrowserWindowOsrMacImpl::UpdateAccessibilityTree(
+    CefRefPtr<CefValue> value) {
+  CEF_REQUIRE_UI_THREAD();
+
+  if (native_browser_view_) {
+    [native_browser_view_ UpdateAccessibilityTree:value];
+  }
+}
+
+void BrowserWindowOsrMacImpl::UpdateAccessibilityLocation(
+    CefRefPtr<CefValue> value) {
+  CEF_REQUIRE_UI_THREAD();
+
+  if (native_browser_view_) {
+    [native_browser_view_ UpdateAccessibilityLocation:value];
+  }
+}
+
+void BrowserWindowOsrMacImpl::Create(ClientWindowHandle parent_handle,
+                                     const CefRect& rect) {
+  REQUIRE_MAIN_THREAD();
+  DCHECK(!native_browser_view_);
+
+  NSRect window_rect = NSMakeRect(rect.x, rect.y, rect.width, rect.height);
+  native_browser_view_ =
+      [[BrowserOpenGLView alloc] initWithFrame:window_rect
+                              andBrowserWindow:&browser_window_
+                                   andRenderer:&renderer_];
+  native_browser_view_.autoresizingMask =
+      (NSViewWidthSizable | NSViewHeightSizable);
+  native_browser_view_.autoresizesSubviews = YES;
+  [CAST_CEF_WINDOW_HANDLE_TO_NSVIEW(parent_handle)
+      addSubview:native_browser_view_];
+
+  // Determine the default scale factor.
+  [native_browser_view_ resetDeviceScaleFactor];
+
+  [[NSNotificationCenter defaultCenter]
+      addObserver:native_browser_view_
+         selector:@selector(windowDidChangeBackingProperties:)
+             name:NSWindowDidChangeBackingPropertiesNotification
+           object:native_browser_view_.window];
+}
+
+BrowserWindowOsrMac::BrowserWindowOsrMac(BrowserWindow::Delegate* delegate,
+                                         const std::string& startup_url,
+                                         const OsrRendererSettings& settings)
+    : BrowserWindow(delegate) {
+  client_handler_ = new ClientHandlerOsr(this, this, startup_url);
+  impl_.reset(
+      new BrowserWindowOsrMacImpl(delegate, startup_url, settings, *this));
+}
+
+BrowserWindowOsrMac::~BrowserWindowOsrMac() {}
+
+void BrowserWindowOsrMac::CreateBrowser(
+    ClientWindowHandle parent_handle,
+    const CefRect& rect,
+    const CefBrowserSettings& settings,
+    CefRefPtr<CefDictionaryValue> extra_info,
+    CefRefPtr<CefRequestContext> request_context) {
+  impl_->CreateBrowser(parent_handle, rect, settings, extra_info,
+                       request_context);
+}
+
+void BrowserWindowOsrMac::GetPopupConfig(CefWindowHandle temp_handle,
+                                         CefWindowInfo& windowInfo,
+                                         CefRefPtr<CefClient>& client,
+                                         CefBrowserSettings& settings) {
+  impl_->GetPopupConfig(temp_handle, windowInfo, client, settings);
+}
+
+void BrowserWindowOsrMac::ShowPopup(ClientWindowHandle parent_handle,
+                                    int x,
+                                    int y,
+                                    size_t width,
+                                    size_t height) {
+  impl_->ShowPopup(parent_handle, x, y, width, height);
+}
+
+void BrowserWindowOsrMac::Show() {
+  impl_->Show();
+}
+
+void BrowserWindowOsrMac::Hide() {
+  impl_->Hide();
+}
+
+void BrowserWindowOsrMac::SetBounds(int x, int y, size_t width, size_t height) {
+  impl_->SetBounds(x, y, width, height);
+}
+
+void BrowserWindowOsrMac::SetFocus(bool focus) {
+  impl_->SetFocus(focus);
+}
+
+void BrowserWindowOsrMac::SetDeviceScaleFactor(float device_scale_factor) {
+  impl_->SetDeviceScaleFactor(device_scale_factor);
+}
+
+float BrowserWindowOsrMac::GetDeviceScaleFactor() const {
+  return impl_->GetDeviceScaleFactor();
+}
+
+ClientWindowHandle BrowserWindowOsrMac::GetWindowHandle() const {
+  return impl_->GetWindowHandle();
+}
+
+void BrowserWindowOsrMac::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
+  impl_->OnAfterCreated(browser);
+}
+
+void BrowserWindowOsrMac::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
+  impl_->OnBeforeClose(browser);
+}
+
+bool BrowserWindowOsrMac::GetRootScreenRect(CefRefPtr<CefBrowser> browser,
+                                            CefRect& rect) {
+  return impl_->GetRootScreenRect(browser, rect);
+}
+
+void BrowserWindowOsrMac::GetViewRect(CefRefPtr<CefBrowser> browser,
+                                      CefRect& rect) {
+  impl_->GetViewRect(browser, rect);
+}
+
+bool BrowserWindowOsrMac::GetScreenPoint(CefRefPtr<CefBrowser> browser,
+                                         int viewX,
+                                         int viewY,
+                                         int& screenX,
+                                         int& screenY) {
+  return impl_->GetScreenPoint(browser, viewX, viewY, screenX, screenY);
+}
+
+bool BrowserWindowOsrMac::GetScreenInfo(CefRefPtr<CefBrowser> browser,
+                                        CefScreenInfo& screen_info) {
+  return impl_->GetScreenInfo(browser, screen_info);
+}
+
+void BrowserWindowOsrMac::OnPopupShow(CefRefPtr<CefBrowser> browser,
+                                      bool show) {
+  impl_->OnPopupShow(browser, show);
+}
+
+void BrowserWindowOsrMac::OnPopupSize(CefRefPtr<CefBrowser> browser,
+                                      const CefRect& rect) {
+  impl_->OnPopupSize(browser, rect);
+}
+
+void BrowserWindowOsrMac::OnPaint(CefRefPtr<CefBrowser> browser,
+                                  CefRenderHandler::PaintElementType type,
+                                  const CefRenderHandler::RectList& dirtyRects,
+                                  const void* buffer,
+                                  int width,
+                                  int height) {
+  impl_->OnPaint(browser, type, dirtyRects, buffer, width, height);
+}
+
+void BrowserWindowOsrMac::OnCursorChange(
+    CefRefPtr<CefBrowser> browser,
+    CefCursorHandle cursor,
+    CefRenderHandler::CursorType type,
+    const CefCursorInfo& custom_cursor_info) {
+  impl_->OnCursorChange(browser, cursor, type, custom_cursor_info);
+}
+
+bool BrowserWindowOsrMac::StartDragging(
+    CefRefPtr<CefBrowser> browser,
+    CefRefPtr<CefDragData> drag_data,
+    CefRenderHandler::DragOperationsMask allowed_ops,
+    int x,
+    int y) {
+  return impl_->StartDragging(browser, drag_data, allowed_ops, x, y);
+}
+
+void BrowserWindowOsrMac::UpdateDragCursor(
+    CefRefPtr<CefBrowser> browser,
+    CefRenderHandler::DragOperation operation) {
+  impl_->UpdateDragCursor(browser, operation);
+}
+
+void BrowserWindowOsrMac::OnImeCompositionRangeChanged(
+    CefRefPtr<CefBrowser> browser,
+    const CefRange& selection_range,
+    const CefRenderHandler::RectList& character_bounds) {
+  impl_->OnImeCompositionRangeChanged(browser, selection_range,
+                                      character_bounds);
 }
 
 void BrowserWindowOsrMac::UpdateAccessibilityTree(CefRefPtr<CefValue> value) {
-  CEF_REQUIRE_UI_THREAD();
-
-  if (nsview_) {
-    [GLView(nsview_) UpdateAccessibilityTree:value];
-  }
+  impl_->UpdateAccessibilityTree(value);
 }
 
-void BrowserWindowOsrMac::Create(ClientWindowHandle parent_handle,
-                                 const CefRect& rect) {
-  REQUIRE_MAIN_THREAD();
-  DCHECK(!nsview_);
-
-  NSRect window_rect = NSMakeRect(rect.x, rect.y, rect.width, rect.height);
-  nsview_ = [[BrowserOpenGLView alloc] initWithFrame:window_rect
-                                    andBrowserWindow:this
-                                         andRenderer:&renderer_];
-  [nsview_ setAutoresizingMask:(NSViewWidthSizable | NSViewHeightSizable)];
-  [nsview_ setAutoresizesSubviews:true];
-  [parent_handle addSubview:nsview_];
-
-  // Determine the default scale factor.
-  [GLView(nsview_) resetDeviceScaleFactor];
-
-  [[NSNotificationCenter defaultCenter]
-      addObserver:nsview_
-         selector:@selector(windowDidChangeBackingProperties:)
-             name:NSWindowDidChangeBackingPropertiesNotification
-           object:[nsview_ window]];
+void BrowserWindowOsrMac::UpdateAccessibilityLocation(
+    CefRefPtr<CefValue> value) {
+  impl_->UpdateAccessibilityLocation(value);
 }
 
 }  // namespace client

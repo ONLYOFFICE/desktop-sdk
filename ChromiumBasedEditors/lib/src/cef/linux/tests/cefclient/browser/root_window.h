@@ -17,11 +17,18 @@
 #include "tests/cefclient/browser/image_cache.h"
 #include "tests/shared/browser/main_message_loop.h"
 
+#if defined(OS_MACOSX) && __OBJC__
+@class NSWindow;
+#endif  // defined(OS_MACOSX) && __OBJC__
+
 namespace client {
 
 // Used to configure how a RootWindow is created.
 struct RootWindowConfig {
   RootWindowConfig();
+
+  // If true the window will always display above other windows.
+  bool always_on_top;
 
   // If true the window will show controls.
   bool with_controls;
@@ -114,7 +121,7 @@ class RootWindow
   // called on the main thread.
   static scoped_refptr<RootWindow> GetForBrowser(int browser_id);
 
-#if defined(OS_MACOSX)
+#if defined(OS_MACOSX) && __OBJC__
   // Returns the RootWindow associated with the specified |window|. Must be
   // called on the main thread.
   static scoped_refptr<RootWindow> GetForNSWindow(NSWindow* window);
@@ -147,6 +154,7 @@ class RootWindow
     ShowNormal,
     ShowMinimized,
     ShowMaximized,
+    ShowNoActivate,
   };
 
   // Show the window.

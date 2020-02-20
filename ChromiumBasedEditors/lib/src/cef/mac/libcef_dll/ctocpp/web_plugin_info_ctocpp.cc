@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,14 +9,17 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=d79f25c885d7397e93bb73626c50fa387a3cf1c6$
+// $hash=a7132654899772f508fcce25d2011980e187e405$
 //
 
 #include "libcef_dll/ctocpp/web_plugin_info_ctocpp.h"
+#include "libcef_dll/shutdown_checker.h"
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
-CefString CefWebPluginInfoCToCpp::GetName() {
+NO_SANITIZE("cfi-icall") CefString CefWebPluginInfoCToCpp::GetName() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_web_plugin_info_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_name))
     return CefString();
@@ -32,7 +35,9 @@ CefString CefWebPluginInfoCToCpp::GetName() {
   return _retvalStr;
 }
 
-CefString CefWebPluginInfoCToCpp::GetPath() {
+NO_SANITIZE("cfi-icall") CefString CefWebPluginInfoCToCpp::GetPath() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_web_plugin_info_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_path))
     return CefString();
@@ -48,7 +53,9 @@ CefString CefWebPluginInfoCToCpp::GetPath() {
   return _retvalStr;
 }
 
-CefString CefWebPluginInfoCToCpp::GetVersion() {
+NO_SANITIZE("cfi-icall") CefString CefWebPluginInfoCToCpp::GetVersion() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_web_plugin_info_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_version))
     return CefString();
@@ -64,7 +71,9 @@ CefString CefWebPluginInfoCToCpp::GetVersion() {
   return _retvalStr;
 }
 
-CefString CefWebPluginInfoCToCpp::GetDescription() {
+NO_SANITIZE("cfi-icall") CefString CefWebPluginInfoCToCpp::GetDescription() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_web_plugin_info_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_description))
     return CefString();
@@ -84,6 +93,12 @@ CefString CefWebPluginInfoCToCpp::GetDescription() {
 
 CefWebPluginInfoCToCpp::CefWebPluginInfoCToCpp() {}
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefWebPluginInfoCToCpp::~CefWebPluginInfoCToCpp() {
+  shutdown_checker::AssertNotShutdown();
+}
+
 template <>
 cef_web_plugin_info_t*
 CefCToCppRefCounted<CefWebPluginInfoCToCpp,
@@ -93,14 +108,6 @@ CefCToCppRefCounted<CefWebPluginInfoCToCpp,
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCToCppRefCounted<CefWebPluginInfoCToCpp,
-                                         CefWebPluginInfo,
-                                         cef_web_plugin_info_t>::DebugObjCt
-    ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType CefCToCppRefCounted<CefWebPluginInfoCToCpp,

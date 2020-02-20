@@ -445,7 +445,7 @@ namespace NSEditorApi
         }
 
         LINK_PROPERTY_INT(Page)
-        LINK_PROPERTY_BOOL(IsRotate);
+        LINK_PROPERTY_BOOL(IsRotate)
 
         inline CAscPrinterContextBase* get_Context()
         {

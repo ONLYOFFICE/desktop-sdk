@@ -50,8 +50,6 @@
 #include "include/wrapper/cef_stream_resource_handler.h"
 #include "include/wrapper/cef_byte_read_handler.h"
 
-#include "window_common.h"
-
 #include "../../../../core/Common/OfficeFileFormatChecker.h"
 #include "./fileconverter.h"
 #include "./fileprinter.h"
@@ -69,6 +67,18 @@
 
 #include "./cefwrapper/client_scheme.h"
 #include "./mailto.h"
+
+#ifdef _WIN32
+void CCefViewWidgetImpl::SetParentNull(WindowHandleId handle)
+{
+    SetParent(handle, NULL);
+}
+#endif
+#if defined(_LINUX) && !defined(_MAC)
+void CCefViewWidgetImpl::SetParentNull(WindowHandleId handle)
+{
+}
+#endif
 
 #define CRYPTO_CLOUD_SUPPORT 5020300
 
@@ -140,7 +150,7 @@ protected:
         virtual CefString GetContentDisposition() { return ""; }
         virtual CefString GetMimeType() { return "download_aborted_timer"; }
 
-        IMPLEMENT_REFCOUNTING(CefDownloadItemAborted)
+        IMPLEMENT_REFCOUNTING(CefDownloadItemAborted);
     };
 
 public:
@@ -325,10 +335,6 @@ public:
 #include <X11/Xlib.h>
 #endif
 
-#ifdef _MAC
-#include "mac_common.h"
-#endif
-
 #ifdef CEF_2623
 #define CefBase_Class CefBase
 #else
@@ -351,7 +357,7 @@ public:
     }
 
 public:
-    IMPLEMENT_REFCOUNTING(CCefBinaryFileReaderCounter)
+    IMPLEMENT_REFCOUNTING(CCefBinaryFileReaderCounter);
 };
 
 class CNativeFileViewerInfo
@@ -770,10 +776,6 @@ public:
     bool m_bIsExternalCloud;
     CExternalCloudRegister m_oExternalCloud;
 
-    // запоминаем размеры окна, пока не готов webview
-    int m_lStartControlWidth;
-    int m_lStartControlHeight;
-
     // облачный криптованный файл => downloadAs
     int m_nCryptoDownloadAsFormat;
     std::string m_sCryptoDownloadAsParams;
@@ -846,9 +848,6 @@ public:
 
         m_bIsCloudCryptFile = false;
         m_bIsExternalCloud = false;
-
-        m_lStartControlWidth = -1;
-        m_lStartControlHeight = -1;
 
         m_nCryptoDownloadAsFormat = -1;
 
@@ -1007,7 +1006,7 @@ public:
                 std::string sJSON = "{hash:\"" + sHash + "\",docinfo:\"" + sDocInfoA + "\"}";
                 message->GetArgumentList()->SetString(2, sJSON);
 
-                GetBrowser()->SendProcessMessage(PID_RENDERER, message);
+                SEND_MESSAGE_TO_RENDERER_PROCESS(GetBrowser(), message);
 
                 return;
             }
@@ -1034,7 +1033,7 @@ public:
 
                 CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("send_system_message");
                 message->GetArgumentList()->SetString(0, sysMessage.Message);
-                pMainView->m_pInternal->GetBrowser()->SendProcessMessage(PID_RENDERER, message);
+                SEND_MESSAGE_TO_RENDERER_PROCESS(pMainView->m_pInternal->GetBrowser(), message);
             }
             else
             {
@@ -1055,14 +1054,14 @@ public:
                 CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("send_system_message");
                 message->GetArgumentList()->SetString(0, sysMessage.Message);
                 message->GetArgumentList()->SetString(1, messageSrc.FrameID);
-                pSrcSender->m_pInternal->GetBrowser()->SendProcessMessage(PID_RENDERER, message);
+                SEND_MESSAGE_TO_RENDERER_PROCESS(pSrcSender->m_pInternal->GetBrowser(), message);
             }
 
             if (0 != m_arSystemMessages.size())
             {
                 CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("send_system_message");
                 message->GetArgumentList()->SetString(0, m_arSystemMessages[0].Message);
-                pMainView->m_pInternal->GetBrowser()->SendProcessMessage(PID_RENDERER, message);
+                SEND_MESSAGE_TO_RENDERER_PROCESS(pMainView->m_pInternal->GetBrowser(), message);
             }
         }
     }
@@ -1126,7 +1125,7 @@ public:
             if (this->GetBrowser())
             {
                 CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("crypto_download_as_end");
-                this->GetBrowser()->SendProcessMessage(PID_RENDERER, message);
+                SEND_MESSAGE_TO_RENDERER_PROCESS(GetBrowser(), message);
             }
             return;
         }
@@ -1256,7 +1255,7 @@ public:
         CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create(m_oTxtToDocx.m_bIsToDocx ? "set_advanced_encrypted_data" : "get_advanced_encrypted_data");
         message->GetArgumentList()->SetInt(0, m_oTxtToDocx.m_nFrameId);
         message->GetArgumentList()->SetString(1, m_oTxtToDocx.m_sData);
-        GetBrowser()->SendProcessMessage(PID_RENDERER, message);
+        SEND_MESSAGE_TO_RENDERER_PROCESS(GetBrowser(), message);
     }
 
     void SendProcessMessage(CefProcessId target_process, CefRefPtr<CefProcessMessage> message);
@@ -1308,7 +1307,7 @@ public:
         }
 
     public:
-        IMPLEMENT_REFCOUNTING(CAscCefJSDialogHandler)
+        IMPLEMENT_REFCOUNTING(CAscCefJSDialogHandler);
     };
 
 public:
@@ -1541,6 +1540,9 @@ public:
         CefWindowInfo& windowInfo,
         CefRefPtr<CefClient>& client,
         CefBrowserSettings& settings,
+        #ifndef MESSAGE_IN_BROWSER
+        CefRefPtr<CefDictionaryValue>& extra_info,
+        #endif
         bool* no_javascript_access) OVERRIDE
     {
         CEF_REQUIRE_IO_THREAD();
@@ -1579,7 +1581,10 @@ public:
     virtual bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
                                 CefRefPtr<CefFrame> frame,
                                 CefRefPtr<CefRequest> request,
-                                bool is_redirect)
+                            #ifndef CEF_2623
+                                bool user_gesture,
+                            #endif
+                                bool is_redirect) OVERRIDE
     {
         std::wstring sUrl = request->GetURL().ToWString();
 
@@ -1745,7 +1750,11 @@ public:
                 return true;
         }
 
-        bool ret = client::ClientHandler::OnBeforeBrowse(browser, frame, request, is_redirect);
+        bool ret = client::ClientHandler::OnBeforeBrowse(browser, frame, request,
+                                                 #ifndef CEF_2623
+                                                         user_gesture,
+                                                 #endif
+                                                         is_redirect);
         if (NULL != m_pParent)
         {            
             m_pParent->resizeEvent();
@@ -1753,7 +1762,7 @@ public:
 
             if (!m_bIsLoaded)
             {
-                m_pParent->GetWidgetImpl()->child_loaded();
+                m_pParent->GetWidgetImpl()->OnLoaded();
                 m_bIsLoaded = true;
             }
         }
@@ -1761,8 +1770,11 @@ public:
     }
 
     virtual bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
+                                      #ifndef MESSAGE_IN_BROWSER
+                                          CefRefPtr<CefFrame> frame,
+                                      #endif
                                           CefProcessId source_process,
-                                          CefRefPtr<CefProcessMessage> message)
+                                          CefRefPtr<CefProcessMessage> message) OVERRIDE
     {
         CEF_REQUIRE_UI_THREAD();
 
@@ -1847,7 +1859,7 @@ public:
             CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("on_js_context_created_callback");
             messageOut->GetArgumentList()->SetInt(0, nFlags);
             messageOut->GetArgumentList()->SetInt(1, nCryptoMode);
-            browser->SendProcessMessage(PID_RENDERER, messageOut);
+            SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
             return true;
         }
         else if (message_name == "on_init_js_context")
@@ -2397,7 +2409,7 @@ public:
 
                 CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("on_signature_update_signatures");
                 message->GetArgumentList()->SetString(0, sSignatures);
-                browser->SendProcessMessage(PID_RENDERER, messageOut);
+                SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
             }
 
             RELEASEOBJECT(pCertificate);
@@ -2432,7 +2444,7 @@ public:
 
             CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("on_signature_update_signatures");
             messageOut->GetArgumentList()->SetString(0, sSignatures);
-            browser->SendProcessMessage(PID_RENDERER, messageOut);
+            SEND_MESSAGE_TO_RENDERER_PROCESS(browser, messageOut);
 
             oZIP.Close();
             return true;
@@ -2445,12 +2457,12 @@ public:
             if (NULL != pVerifier)
             {
                 COOXMLSignature* pSign = pVerifier->GetSignature(nIndex);
-                WindowHandleId _handle = m_pParent->GetWidgetImpl()->parent_wid();
+                WindowHandleId _handle = m_pParent->GetWidgetImpl()->cef_handle;
                 int nRet = pSign ? pSign->GetCertificate()->ShowCertificate(&_handle) : 0;
 
                 CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("on_signature_viewcertificate_ret");
                 messageOut->GetArgumentList()->SetString(0, std::to_string(nRet));
-                browser->SendProcessMessage(PID_RENDERER, messageOut);
+                SEND_MESSAGE_TO_RENDERER_PROCESS(browser, messageOut);
             }
             return true;
         }
@@ -2470,7 +2482,7 @@ public:
 
             CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("on_signature_defaultcertificate_ret");
             messageOut->GetArgumentList()->SetString(0, serializer.GetData());
-            browser->SendProcessMessage(PID_RENDERER, messageOut);
+            SEND_MESSAGE_TO_RENDERER_PROCESS(browser, messageOut);
             return true;
         }
         else if (message_name == "on_signature_selectsertificate")
@@ -2478,7 +2490,7 @@ public:
             // диалог выбора сертификата
             ICertificate* pCert = ICertificate::CreateInstance();
 
-            WindowHandleId _handle = m_pParent->GetWidgetImpl()->parent_wid();
+            WindowHandleId _handle = m_pParent->GetWidgetImpl()->cef_handle;
             int nShowDialogResult = pCert->ShowSelectDialog(&_handle);
 
             if (-1 == nShowDialogResult)
@@ -2506,7 +2518,7 @@ public:
                 messageOut->GetArgumentList()->SetString(0, serializer.GetData());
             }
             RELEASEOBJECT(pCert);
-            browser->SendProcessMessage(PID_RENDERER, messageOut);
+            SEND_MESSAGE_TO_RENDERER_PROCESS(browser, messageOut);
             return true;
         }
         else if (message_name == "on_open_filename_dialog")
@@ -2782,7 +2794,7 @@ public:
                     messageOut->GetArgumentList()->SetInt(0, 0);
                     messageOut->GetArgumentList()->SetString(1, sNum);
                     messageOut->GetArgumentList()->SetString(2, sUrl1);
-                    browser->SendProcessMessage(PID_RENDERER, messageOut);
+                    SEND_MESSAGE_TO_RENDERER_PROCESS(browser, messageOut);
                 }
                 else
                 {
@@ -2798,7 +2810,7 @@ public:
                 CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("on_preload_crypto_image");
                 messageOut->GetArgumentList()->SetInt(0, 1);
                 messageOut->GetArgumentList()->SetString(1, sUrl1);
-                browser->SendProcessMessage(PID_RENDERER, messageOut);
+                SEND_MESSAGE_TO_RENDERER_PROCESS(browser, messageOut);
             }
 
             return true;
@@ -2883,7 +2895,7 @@ public:
                 CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("set_crypto_mode");
                 messageOut->GetArgumentList()->SetInt(0, bIsEditorPresent ? 1 : 0);
                 messageOut->GetArgumentList()->SetInt(1, nFrameId);
-                browser->SendProcessMessage(PID_RENDERER, messageOut);
+                SEND_MESSAGE_TO_RENDERER_PROCESS(browser, messageOut);
             }
 
             return true;
@@ -2985,7 +2997,7 @@ public:
             if (bIsCryptoSupport && NSFileDownloader::IsNeedDownload(sMainFrameUrl) && m_pParent->m_pInternal->m_nCloudVersion < CRYPTO_CLOUD_SUPPORT)
             {
                 CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("set_editors_version_no_crypto");
-                browser->SendProcessMessage(PID_RENDERER, messageOut);
+                SEND_MESSAGE_TO_RENDERER_PROCESS(browser, messageOut);
             }
             return true;
         }
@@ -3223,7 +3235,11 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
         if (pInternalMan->m_pAdditional && pInternalMan->m_pAdditional->OnProcessMessageReceived(browser, source_process, message, m_pParent))
             return true;
 
-        if (message_router_->OnProcessMessageReceived(browser, source_process, message))
+        if (message_router_->OnProcessMessageReceived(browser,
+                                              #ifndef MESSAGE_IN_BROWSER
+                                                      frame,
+                                              #endif
+                                                      source_process, message))
         {
             return true;
         }
@@ -3269,7 +3285,7 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
 
         NotifyBrowserClosing(browser);
 
-        SetParentNULL(browser->GetHost()->GetWindowHandle());
+        CCefViewWidgetImpl::SetParentNull(browser->GetHost()->GetWindowHandle());
 
         // Allow the close. For windowed browsers this will result in the OS close
         // event being sent.
@@ -3487,9 +3503,12 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
     }
 
     virtual bool OnConsoleMessage(CefRefPtr<CefBrowser> browser,
-                          const CefString& message,
-                          const CefString& source,
-                          int line) OVERRIDE
+                                  #ifndef CEF_2623
+                                  cef_log_severity_t level,
+                                  #endif
+                                  const CefString& message,
+                                  const CefString& source,
+                                  int line) OVERRIDE
     {
         return false;
     }
@@ -3965,7 +3984,7 @@ require.load = function (context, moduleName, url) {\n\
 
                     if (!browser)
                         browser = m_pParent->m_pInternal->GetBrowser();
-                    browser->SendProcessMessage(PID_RENDERER, message);
+                    SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
 
                     m_pParent->m_pInternal->m_arCryptoImages.erase(findCryptoImage);
                 }
@@ -4000,7 +4019,7 @@ require.load = function (context, moduleName, url) {\n\
 
                         if (!browser)
                             browser = m_pParent->m_pInternal->GetBrowser();
-                        browser->SendProcessMessage(PID_RENDERER, message);
+                        SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
 
                         m_pParent->m_pInternal->m_arDownloadedFilesComplete.clear();
                         m_pParent->m_pInternal->m_arDownloadedFiles.clear();
@@ -4132,12 +4151,12 @@ require.load = function (context, moduleName, url) {\n\
     // Set the draggable regions.
     virtual void OnSetDraggableRegions(const std::vector<CefDraggableRegion>& regions) OVERRIDE {}
 
-#ifdef CEF_3202
+#ifndef CEF_2623
     virtual void OnAutoResize(const CefSize& new_size) OVERRIDE {}
 #endif
 
 public:
-    IMPLEMENT_REFCOUNTING(CAscClientHandler)
+    IMPLEMENT_REFCOUNTING(CAscClientHandler);
 };
 
 void CCefView_Private::CloseBrowser(bool _force_close)
@@ -4170,7 +4189,7 @@ void CCefView_Private::LocalFile_End()
         CefRefPtr<CefProcessMessage> messageCrypt = CefProcessMessage::Create("onload_crypt_document");
         messageCrypt->GetArgumentList()->SetString(0, m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/Editor.bin");
 
-        m_handler->GetBrowser()->SendProcessMessage(PID_RENDERER, messageCrypt);
+        SEND_MESSAGE_TO_RENDERER_PROCESS(m_handler->GetBrowser(), messageCrypt);
         m_oLocalInfo.m_oInfo.m_nCounterConvertion = 1; // for reload enable
         return;
     }
@@ -4180,7 +4199,7 @@ void CCefView_Private::LocalFile_End()
     message->GetArgumentList()->SetString(1, m_oLocalInfo.m_oInfo.m_sFileSrc);
     message->GetArgumentList()->SetBool(2, m_oLocalInfo.m_oInfo.m_bIsSaved);
     message->GetArgumentList()->SetString(3, m_oConverterToEditor.GetSignaturesJSON());
-    m_handler->GetBrowser()->SendProcessMessage(PID_RENDERER, message);
+    SEND_MESSAGE_TO_RENDERER_PROCESS(m_handler->GetBrowser(), message);
 
     m_oLocalInfo.m_oInfo.m_nCounterConvertion = 1; // for reload enable
 }
@@ -4238,7 +4257,7 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
             }
         }
 
-        m_handler->GetBrowser()->SendProcessMessage(PID_RENDERER, message);
+        SEND_MESSAGE_TO_RENDERER_PROCESS(m_handler->GetBrowser(), message);
         return;
     }
 
@@ -4339,7 +4358,7 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
         message->GetArgumentList()->SetString(3, sHash);
     }
 
-    m_handler->GetBrowser()->SendProcessMessage(PID_RENDERER, message);
+    SEND_MESSAGE_TO_RENDERER_PROCESS(m_handler->GetBrowser(), message);
 }
 
 void CCefView_Private::LocalFile_IncrementCounter()
@@ -4377,7 +4396,7 @@ void CCefView_Private::LocalFile_IncrementCounter()
                         message->GetArgumentList()->SetString(2, sDocInfo);
                 }
 
-                browser->SendProcessMessage(PID_RENDERER, message);
+                SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
             }
             return;
         }
@@ -4418,7 +4437,7 @@ void CCefView_Private::OnFileConvertToEditor(const int& nError)
                         message->GetArgumentList()->SetString(2, sDocInfo);
                 }
 
-                browser->SendProcessMessage(PID_RENDERER, message);
+                SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
             }
             return;
         }
@@ -4427,7 +4446,7 @@ void CCefView_Private::OnFileConvertToEditor(const int& nError)
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("oncompare_loadend");
             message->GetArgumentList()->SetInt(0, nError);
             message->GetArgumentList()->SetString(1, m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/compare");
-            m_handler->GetBrowser()->SendProcessMessage(PID_RENDERER, message);
+            SEND_MESSAGE_TO_RENDERER_PROCESS(m_handler->GetBrowser(), message);
 
             m_oConverterToEditor.m_sComparingFile = L"";
 
@@ -4500,7 +4519,7 @@ void CCefView_Private::SendProcessMessage(CefProcessId target_process, CefRefPtr
 {
     if (m_handler && m_handler->GetBrowser())
     {
-        m_handler->GetBrowser()->SendProcessMessage(target_process, message);
+        SEND_MESSAGE_TO_RENDERER_PROCESS(m_handler->GetBrowser(), message);
     }
 }
 
@@ -4512,7 +4531,7 @@ void CAscClientHandler::OnFoundCookie(bool bIsPresent, std::string sValue)
     CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_is_cookie_present");
     message->GetArgumentList()->SetBool(0, bIsPresent);
     message->GetArgumentList()->SetString(1, sValue);
-    m_pParent->m_pInternal->m_handler->GetBrowser()->SendProcessMessage(PID_RENDERER, message);
+    SEND_MESSAGE_TO_RENDERER_PROCESS(m_pParent->m_pInternal->m_handler->GetBrowser(), message);
 }
 void CAscClientHandler::OnFoundCookies(std::map<std::string, std::string>& mapValues)
 {
@@ -4529,7 +4548,7 @@ void CAscClientHandler::OnFoundCookies(std::map<std::string, std::string>& mapVa
         message->GetArgumentList()->SetString(nCurrent++, i->second);
     }
 
-    m_pParent->m_pInternal->m_handler->GetBrowser()->SendProcessMessage(PID_RENDERER, message);
+    SEND_MESSAGE_TO_RENDERER_PROCESS(m_pParent->m_pInternal->m_handler->GetBrowser(), message);
 }
 
 void CAscClientHandler::OnSetCookie()
@@ -4538,7 +4557,7 @@ void CAscClientHandler::OnSetCookie()
         return;
 
     CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_set_cookie");
-    m_pParent->m_pInternal->m_handler->GetBrowser()->SendProcessMessage(PID_RENDERER, message);
+    SEND_MESSAGE_TO_RENDERER_PROCESS(m_pParent->m_pInternal->m_handler->GetBrowser(), message);
 }
 
 void CAscClientHandler::OnDeleteCookie(bool bIsPresent)
@@ -4747,8 +4766,10 @@ void CCefView::load(const std::wstring& urlInputSrc)
         return;
     }
 
+#ifdef MESSAGE_IN_BROWSER
     CefRefPtr<CefCookieManager> manager = CefCookieManager::GetGlobalManager(NULL);
     manager->SetStoragePath(m_pInternal->m_pManager->m_oSettings.cookie_path, true, NULL);
+#endif
 
     // Create the single static handler class instance
     CAscClientHandler* pClientHandler = new CAscClientHandler();
@@ -4760,10 +4781,9 @@ void CCefView::load(const std::wstring& urlInputSrc)
     if (pAscCEfJSDialogHandler)
         pAscCEfJSDialogHandler->SetAppManager(m_pInternal->m_pManager);
 
-    CefWindowHandle hWnd = (CefWindowHandle)m_pInternal->m_pWidgetImpl->parent_wid();
+    CefWindowHandle hWnd = (CefWindowHandle)m_pInternal->m_pWidgetImpl->cef_handle;
     //m_pInternal->m_handler->SetMainWindowHandle(hWnd);
 
-    CefWindowInfo info;
     CefBrowserSettings _settings;
     _settings.file_access_from_file_urls = STATE_ENABLED;
     _settings.universal_access_from_file_urls = STATE_ENABLED;
@@ -4771,47 +4791,19 @@ void CCefView::load(const std::wstring& urlInputSrc)
     _settings.plugins = STATE_DISABLED;
     _settings.background_color = (m_eWrapperType == cvwtEditor) ? 0xFFF4F4F4 : 0xFFFFFFFF;
 
-    // Initialize window info to the defaults for a child window.
-    int nParentW = m_pInternal->m_pWidgetImpl->parent_width();
-    int nParentH = m_pInternal->m_pWidgetImpl->parent_height();
-    if (-1 != m_pInternal->m_lStartControlWidth && -1 != m_pInternal->m_lStartControlHeight)
-    {
-        nParentW = m_pInternal->m_lStartControlWidth;
-        nParentH = m_pInternal->m_lStartControlHeight;
-
-        m_pInternal->m_lStartControlWidth = -1;
-        m_pInternal->m_lStartControlHeight = -1;
-    }
+    CefWindowInfo info;
+    CefWindowHandle _handle = (CefWindowHandle)m_pInternal->m_pWidgetImpl->cef_handle;
+    int _w = m_pInternal->m_pWidgetImpl->cef_width;
+    int _h = m_pInternal->m_pWidgetImpl->cef_height;
 
 #ifdef WIN32
-    RECT rect;
-    rect.left = 0;
-    rect.top = 0;
-    rect.right = nParentW - 1;
-    rect.bottom = nParentH - 1;
-    info.SetAsChild(hWnd, rect);
+    info.SetAsChild(_handle, RECT { 0, 0, _w, _h });
 #endif
-
 #if defined(_LINUX) && !defined(_MAC)
-    CefRect rect;
-    rect.x = 0;
-    rect.y = 0;
-    rect.width = nParentW;
-    rect.height = nParentH;
-
-    Display* display = cef_get_xdisplay();
-    Window x11root = XDefaultRootWindow(display);
-    Window x11w = XCreateSimpleWindow(display, x11root, 0, 0, rect.width, rect.height, 0, 0, _settings.background_color);
-
-    XReparentWindow(display, x11w, hWnd, 0, 0);
-    XMapWindow(display, x11w);
-    m_pInternal->m_lNaturalParent = x11w;
-
-    info.SetAsChild(m_pInternal->m_lNaturalParent, rect);
+    info.SetAsChild(_handle, CefRect(0, 0, _w, _h));
 #endif
-
 #ifdef _MAC
-    info.SetAsChild(hWnd, 0, 0, nParentW, nParentH);
+    info.SetAsChild(_handle, 0, 0, _w, _h);
 #endif
 
     CefString sUrl = url;
@@ -4821,7 +4813,19 @@ void CCefView::load(const std::wstring& urlInputSrc)
     m_pInternal->m_arSSOSecondDomain.clear();
 
     // Creat the new child browser window
-    CefBrowserHost::CreateBrowser(info, m_pInternal->m_handler.get(), sUrl, _settings, NULL);
+#ifdef _WIN32
+    // need after window->show
+    CefBrowserHost::CreateBrowser(
+#else
+    CefBrowserHost::CreateBrowserSync(
+#endif
+                info, m_pInternal->m_handler.get(), sUrl, _settings, NULL
+            #ifndef MESSAGE_IN_BROWSER
+                , NULL
+            #endif
+                );
+
+    GetWidgetImpl()->AfterCreate();
 
     focus();
 }
@@ -4848,101 +4852,20 @@ void CCefView::focus(bool value)
         browser->GetHost()->SetFocus(value);
 }
 
-void CCefView::resizeEvent(int width, int height)
+void CCefView::resizeEvent()
 {
-    if (!m_pInternal->m_handler || !m_pInternal->m_handler->GetBrowser() || !m_pInternal->m_handler->GetBrowser()->GetHost())
-    {
-        // запоминаем размеры. чтобы максимально быстро сресайзиться
-        m_pInternal->m_lStartControlWidth = width;
-        m_pInternal->m_lStartControlHeight = height;
-        return;
-    }
-
-    if (!m_pInternal->m_pWidgetImpl || m_pInternal->m_bIsClosing)
-        return;
-
-    if (-1 != m_pInternal->m_lStartControlWidth && -1 != m_pInternal->m_lStartControlHeight)
-    {
-        m_pInternal->m_lStartControlWidth = width;
-        m_pInternal->m_lStartControlHeight = height;
-    }
-
-    CefWindowHandle hwnd = m_pInternal->m_handler->GetBrowser()->GetHost()->GetWindowHandle();
-
-#ifdef WIN32
-    RECT rect;
-    rect.left = 0;
-    rect.top = 0;
-    rect.right = (0 >= width) ? (m_pInternal->m_pWidgetImpl->parent_width() - 1) : width;
-    rect.bottom = (0 >= height) ? (m_pInternal->m_pWidgetImpl->parent_height() - 1) : height;
-
-    HDWP hdwp = BeginDeferWindowPos(1);
-    hdwp = DeferWindowPos(hdwp, hwnd, NULL, rect.left, rect.top, rect.right - rect.left + 1, rect.bottom - rect.top + 1, SWP_NOZORDER);
-    EndDeferWindowPos(hdwp);
-#endif
-
-#if defined(_LINUX) && !defined(_MAC)
-    ::Display* xdisplay = cef_get_xdisplay();
-
-    XWindowChanges changes = {0};
-    changes.width = (0 == width) ? (m_pInternal->m_pWidgetImpl->parent_width()) : width;
-    changes.height = (0 == height) ? (m_pInternal->m_pWidgetImpl->parent_height()) : height;
-    changes.y = 0;
-    changes.y = 0;
-
-    XConfigureWindow(xdisplay, m_pInternal->m_lNaturalParent, CWHeight | CWWidth | CWY, &changes);
-    XConfigureWindow(xdisplay, hwnd, CWHeight | CWWidth | CWY, &changes);
-#endif
-
-#ifdef _MAC
-    MAC_COMMON_set_window_handle_sizes(hwnd, 0, 0,
-        (0 == width) ? (m_pInternal->m_pWidgetImpl->parent_width()) : width,
-        (0 == height) ? (m_pInternal->m_pWidgetImpl->parent_height()) : height);
-#endif
-
-    focus();
-    m_pInternal->CheckZoom();
+    this->moveEvent();
 }
 void CCefView::moveEvent()
 {
-#if defined(_LINUX) && !defined(_MAC)
-    if (m_pInternal && m_pInternal->m_handler && m_pInternal->m_handler->GetBrowser() && m_pInternal->m_handler->GetBrowser()->GetHost())
-    {
-        m_pInternal->m_handler->GetBrowser()->GetHost()->NotifyMoveOrResizeStarted();
-    }
-#endif
+    if (!m_pInternal->m_pWidgetImpl || m_pInternal->m_bIsClosing)
+        return;
 
+    this->GetWidgetImpl()->UpdateSize();
     m_pInternal->CheckZoom();
-}
-bool CCefView::nativeEvent(const char* data, const int& datalen, void *message, long *result)
-{
-#ifdef WIN32
-    *result = 0;
-    MSG *msg = static_cast<MSG *>(message);
 
-    if (msg->message == WM_ERASEBKGND)
-    {
-        if (m_pInternal->m_handler && m_pInternal->m_handler->GetBrowser())
-        {
-            // Don't erase the background.
-            return true;
-        }
-    }
-    else if (msg->message == WM_MOVE || msg->message == WM_MOVING)
-    {
-        if (m_pInternal->m_handler && m_pInternal->m_handler->GetBrowser() && m_pInternal->m_handler->GetBrowser()->GetHost())
-        {
-            m_pInternal->m_handler->GetBrowser()->GetHost()->NotifyMoveOrResizeStarted();
-        }
-        return true;
-    }
-    else if (msg->message == (WM_USER + 1))
-    {
-        return true;
-    }
-#endif
-
-    return false;
+    if (m_pInternal->m_handler && m_pInternal->m_handler->GetBrowser() && m_pInternal->m_handler->GetBrowser()->GetHost())
+        m_pInternal->m_handler->GetBrowser()->GetHost()->NotifyMoveOrResizeStarted();
 }
 
 void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
@@ -4980,7 +4903,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("keyboard_layout");
             message->GetArgumentList()->SetInt(0, pData->get_Language());
-            browser->SendProcessMessage(PID_RENDERER, message);
+            SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
 
             break;
         }
@@ -4991,7 +4914,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("spell_check_response");
             message->GetArgumentList()->SetString(0, pData->get_Result());
             message->GetArgumentList()->SetInt(1, pData->get_FrameId());
-            browser->SendProcessMessage(PID_RENDERER, message);
+            SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
             break;
         }
         case ASC_MENU_EVENT_TYPE_CEF_CONTROL_ID:
@@ -4999,13 +4922,13 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("cef_control_id");
             message->GetArgumentList()->SetInt(0, m_nId);
             message->GetArgumentList()->SetBool(1, GetAppManager()->m_oSettings.sign_support);
-            browser->SendProcessMessage(PID_RENDERER, message);
+            SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
             break;
         }
         case ASC_MENU_EVENT_TYPE_CEF_SYNC_COMMAND:
         {
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("sync_command_end");
-            browser->SendProcessMessage(PID_RENDERER, message);
+            SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
             break;
         }
         case ASC_MENU_EVENT_TYPE_CEF_CLOSE:
@@ -5050,7 +4973,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             m_pInternal->m_oConverterFromEditor.Stop();
             m_pInternal->m_oConverterToEditor.Stop();
 
-            m_pInternal->m_pWidgetImpl->releaseFromChild();
+            m_pInternal->m_pWidgetImpl->OnRelease();
             m_pInternal->m_pWidgetImpl = NULL;
             if (m_pInternal && m_pInternal->m_handler && m_pInternal->m_handler->GetBrowser())
             {
@@ -5067,7 +4990,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                 m_pInternal->m_pManager->m_pInternal->m_pAdditional->Local_Save_Start();
 
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("document_save");
-            browser->SendProcessMessage(PID_RENDERER, message);
+            SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
             break;
         }
         case ASC_MENU_EVENT_TYPE_CEF_PRINT_START:
@@ -5124,7 +5047,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                 CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("print");
                 if ("" != sPrintParameters)
                     message->GetArgumentList()->SetString(0, sPrintParameters);
-                browser->SendProcessMessage(PID_RENDERER, message);
+                SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
             }
             else
             {
@@ -5181,7 +5104,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             message->GetArgumentList()->SetString(0, pData->get_Destination());
             message->GetArgumentList()->SetString(1, pData->get_Url());
             message->GetArgumentList()->SetInt(2, pData->get_FrameId());
-            browser->SendProcessMessage(PID_RENDERER, message);
+            SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
             break;
         }
         case ASC_MENU_EVENT_TYPE_CEF_SAVEFILEDIALOG:
@@ -5211,7 +5134,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                 CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_save_filename_dialog");
                 message->GetArgumentList()->SetString(0, m_pInternal->m_sIFrameIDMethod);
                 message->GetArgumentList()->SetString(1, pData->get_FilePath());
-                browser->SendProcessMessage(PID_RENDERER, message);
+                SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
                 m_pInternal->m_sIFrameIDMethod = "";
             }
 
@@ -5224,7 +5147,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_sendrecents");
             message->GetArgumentList()->SetString(0, pData->get_JSON());
 
-            browser->SendProcessMessage(PID_RENDERER, message);
+            SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
             break;
         }
         case ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_RECOVERS:
@@ -5234,7 +5157,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_sendrecovers");
             message->GetArgumentList()->SetString(0, pData->get_JSON());
 
-            browser->SendProcessMessage(PID_RENDERER, message);
+            SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
             break;
         }
         case ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_SAVE_PATH:
@@ -5294,7 +5217,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             }
 
             message->GetArgumentList()->SetString(0, sPath);
-            browser->SendProcessMessage(PID_RENDERER, message);
+            SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
             break;
         }
         case ASC_MENU_EVENT_TYPE_CEF_EXECUTE_COMMAND_JS:
@@ -5305,7 +5228,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             message->GetArgumentList()->SetString(1, pData->get_Param());
             message->GetArgumentList()->SetString(2, pData->get_FrameName());
 
-            browser->SendProcessMessage(PID_RENDERER, message);
+            SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
             break;
         }
         case ASC_MENU_EVENT_TYPE_CEF_EDITOR_EXECUTE_COMMAND:
@@ -5315,13 +5238,13 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             message->GetArgumentList()->SetString(0, pData->get_Command());
             message->GetArgumentList()->SetString(1, pData->get_Params());
 
-            browser->SendProcessMessage(PID_RENDERER, message);
+            SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
             break;
         }        
         case ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_ADD_PLUGIN:
         {
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("update_install_plugins");
-            browser->SendProcessMessage(PID_RENDERER, message);
+            SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
             break;
         }
         case ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_OPENFILENAME_DIALOG:
@@ -5394,7 +5317,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                 }
             }
 
-            browser->SendProcessMessage(PID_RENDERER, message);
+            SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
             break;
         }
         case ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_SAVE_YES_NO:
@@ -5403,7 +5326,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_file_save_question");
             message->GetArgumentList()->SetBool(0, pData->get_Value());
 
-            browser->SendProcessMessage(PID_RENDERER, message);
+            SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
             break;
         }
         case ASC_MENU_EVENT_TYPE_REPORTER_MESSAGE_FROM:
@@ -5411,7 +5334,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             NSEditorApi::CAscReporterMessage* pData = (NSEditorApi::CAscReporterMessage*)pEvent->m_pData;
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("from_reporter_message");
             message->GetArgumentList()->SetString(0, pData->get_Message());
-            browser->SendProcessMessage(PID_RENDERER, message);
+            SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
             break;
         }
         case ASC_MENU_EVENT_TYPE_REPORTER_MESSAGE_TO:
@@ -5419,7 +5342,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             NSEditorApi::CAscReporterMessage* pData = (NSEditorApi::CAscReporterMessage*)pEvent->m_pData;
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("to_reporter_message");
             message->GetArgumentList()->SetString(0, pData->get_Message());
-            browser->SendProcessMessage(PID_RENDERER, message);
+            SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
             break;
         }
         case ASC_MENU_EVENT_TYPE_UI_THREAD_MESSAGE:
@@ -5475,7 +5398,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                 RELEASEOBJECT(pCert);
             }
 
-            browser->SendProcessMessage(PID_RENDERER, message);
+            SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
             break;
         }
         case ASC_MENU_EVENT_TYPE_BINARY_FROM_RENDERER:
@@ -6309,3 +6232,11 @@ void CAscApplicationManager_Private::ChangeEditorViewsCount()
         }
     }
 }
+
+#if defined(_LINUX) && !defined(_MAC)
+void* CefGetXDisplay(void)
+{
+    return (void*)cef_get_xdisplay();
+}
+
+#endif

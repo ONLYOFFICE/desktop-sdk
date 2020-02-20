@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=101c51d45d4911ff0497fe2e32a75869ff262361$
+// $hash=1fb982d98cd8936ef4804b74635e351c79162fe2$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_VIEWS_BOX_LAYOUT_CTOCPP_H_
@@ -33,6 +33,7 @@ class CefBoxLayoutCToCpp : public CefCToCppRefCounted<CefBoxLayoutCToCpp,
                                                       cef_box_layout_t> {
  public:
   CefBoxLayoutCToCpp();
+  virtual ~CefBoxLayoutCToCpp();
 
   // CefBoxLayout methods.
   void SetFlexForView(CefRefPtr<CefView> view, int flex) OVERRIDE;

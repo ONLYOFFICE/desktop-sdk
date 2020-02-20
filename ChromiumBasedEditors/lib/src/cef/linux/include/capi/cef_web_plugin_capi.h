@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2019 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,7 +33,7 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=95dbecaa1c2b67c99e32d29e7bcd3aff4d126baf$
+// $hash=1b004b5701d21996ea83edc81523f5cf9b0c46dc$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_WEB_PLUGIN_CAPI_H_
@@ -202,9 +202,6 @@ CEF_EXPORT void cef_is_web_plugin_unstable(
 //   2. widevinecdm file from the CDM binary distribution (e.g.
 //      widevinecdm.dll on on Windows, libwidevinecdm.dylib on OS X,
 //      libwidevinecdm.so on Linux).
-//   3. widevidecdmadapter file from the CEF binary distribution (e.g.
-//      widevinecdmadapter.dll on Windows, widevinecdmadapter.plugin on OS X,
-//      libwidevinecdmadapter.so on Linux).
 //
 // If any of these files are missing or if the manifest file has incorrect
 // contents the registration will fail and |callback| will receive a |result|

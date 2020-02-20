@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=4704f46ff34238699c6ac24f6e2e1d2f3b9d6bd2$
+// $hash=f2b1e20d398edfe2ab1caf79af86163b992e14e0$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_MENU_MODEL_CTOCPP_H_
@@ -31,6 +31,7 @@ class CefMenuModelCToCpp : public CefCToCppRefCounted<CefMenuModelCToCpp,
                                                       cef_menu_model_t> {
  public:
   CefMenuModelCToCpp();
+  virtual ~CefMenuModelCToCpp();
 
   // CefMenuModel methods.
   bool IsSubMenu() OVERRIDE;

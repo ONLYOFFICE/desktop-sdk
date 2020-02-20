@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2019 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,7 +33,7 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=81e857497b1f5e1732af7fca2250edf78c0e5415$
+// $hash=fdfce3e4e33a1d4e1170497d2a476f0837994060$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_REQUEST_CONTEXT_CAPI_H_
@@ -44,13 +44,13 @@
 #include "include/capi/cef_cookie_capi.h"
 #include "include/capi/cef_extension_capi.h"
 #include "include/capi/cef_extension_handler_capi.h"
-#include "include/capi/cef_request_context_handler_capi.h"
 #include "include/capi/cef_values_capi.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+struct _cef_request_context_handler_t;
 struct _cef_scheme_handler_factory_t;
 
 ///
@@ -130,14 +130,11 @@ typedef struct _cef_request_context_t {
       struct _cef_request_context_t* self);
 
   ///
-  // Returns the default cookie manager for this object. This will be the global
-  // cookie manager if this object is the global request context. Otherwise,
-  // this will be the default cookie manager used when this request context does
-  // not receive a value via cef_request_tContextHandler::get_cookie_manager().
-  // If |callback| is non-NULL it will be executed asnychronously on the IO
-  // thread after the manager's storage has been initialized.
+  // Returns the cookie manager for this object. If |callback| is non-NULL it
+  // will be executed asnychronously on the IO thread after the manager's
+  // storage has been initialized.
   ///
-  struct _cef_cookie_manager_t*(CEF_CALLBACK* get_default_cookie_manager)(
+  struct _cef_cookie_manager_t*(CEF_CALLBACK* get_cookie_manager)(
       struct _cef_request_context_t* self,
       struct _cef_completion_callback_t* callback);
 
@@ -242,9 +239,18 @@ typedef struct _cef_request_context_t {
       struct _cef_completion_callback_t* callback);
 
   ///
+  // Clears all HTTP authentication credentials that were added as part of
+  // handling GetAuthCredentials. If |callback| is non-NULL it will be executed
+  // on the UI thread after completion.
+  ///
+  void(CEF_CALLBACK* clear_http_auth_credentials)(
+      struct _cef_request_context_t* self,
+      struct _cef_completion_callback_t* callback);
+
+  ///
   // Clears all active and idle connections that Chromium currently has. This is
   // only recommended if you have released all other CEF objects but don't yet
-  // want to call cef_shutdown(). If |callback| is non-NULL it will be executed
+  // want to call Cefshutdown(). If |callback| is non-NULL it will be executed
   // on the UI thread after completion.
   ///
   void(CEF_CALLBACK* close_all_connections)(
@@ -258,17 +264,6 @@ typedef struct _cef_request_context_t {
   void(CEF_CALLBACK* resolve_host)(struct _cef_request_context_t* self,
                                    const cef_string_t* origin,
                                    struct _cef_resolve_callback_t* callback);
-
-  ///
-  // Attempts to resolve |origin| to a list of associated IP addresses using
-  // cached data. |resolved_ips| will be populated with the list of resolved IP
-  // addresses or NULL if no cached data is available. Returns ERR_NONE on
-  // success. This function must be called on the browser process IO thread.
-  ///
-  cef_errorcode_t(CEF_CALLBACK* resolve_host_cached)(
-      struct _cef_request_context_t* self,
-      const cef_string_t* origin,
-      cef_string_list_t resolved_ips);
 
   ///
   // Load an extension.

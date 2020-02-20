@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,22 +9,67 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=e5ec12b632b53457ea3fee7ec5088ae8f939d8bf$
+// $hash=e95db24c85f1c1880048b6319660133038f8b213$
 //
 
 #include "libcef_dll/cpptoc/resource_handler_cpptoc.h"
 #include "libcef_dll/ctocpp/callback_ctocpp.h"
 #include "libcef_dll/ctocpp/request_ctocpp.h"
+#include "libcef_dll/ctocpp/resource_read_callback_ctocpp.h"
+#include "libcef_dll/ctocpp/resource_skip_callback_ctocpp.h"
 #include "libcef_dll/ctocpp/response_ctocpp.h"
+#include "libcef_dll/shutdown_checker.h"
 
 namespace {
 
 // MEMBER FUNCTIONS - Body may be edited by hand.
 
+int CEF_CALLBACK resource_handler_open(struct _cef_resource_handler_t* self,
+                                       cef_request_t* request,
+                                       int* handle_request,
+                                       cef_callback_t* callback) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self)
+    return 0;
+  // Verify param: request; type: refptr_diff
+  DCHECK(request);
+  if (!request)
+    return 0;
+  // Verify param: handle_request; type: bool_byref
+  DCHECK(handle_request);
+  if (!handle_request)
+    return 0;
+  // Verify param: callback; type: refptr_diff
+  DCHECK(callback);
+  if (!callback)
+    return 0;
+
+  // Translate param: handle_request; type: bool_byref
+  bool handle_requestBool = (handle_request && *handle_request) ? true : false;
+
+  // Execute
+  bool _retval = CefResourceHandlerCppToC::Get(self)->Open(
+      CefRequestCToCpp::Wrap(request), handle_requestBool,
+      CefCallbackCToCpp::Wrap(callback));
+
+  // Restore param: handle_request; type: bool_byref
+  if (handle_request)
+    *handle_request = handle_requestBool ? true : false;
+
+  // Return type: bool
+  return _retval;
+}
+
 int CEF_CALLBACK
 resource_handler_process_request(struct _cef_resource_handler_t* self,
                                  cef_request_t* request,
                                  cef_callback_t* callback) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -52,6 +97,8 @@ resource_handler_get_response_headers(struct _cef_resource_handler_t* self,
                                       struct _cef_response_t* response,
                                       int64* response_length,
                                       cef_string_t* redirectUrl) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -84,12 +131,91 @@ resource_handler_get_response_headers(struct _cef_resource_handler_t* self,
     *response_length = response_lengthVal;
 }
 
+int CEF_CALLBACK resource_handler_skip(struct _cef_resource_handler_t* self,
+                                       int64 bytes_to_skip,
+                                       int64* bytes_skipped,
+                                       cef_resource_skip_callback_t* callback) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self)
+    return 0;
+  // Verify param: bytes_skipped; type: simple_byref
+  DCHECK(bytes_skipped);
+  if (!bytes_skipped)
+    return 0;
+  // Verify param: callback; type: refptr_diff
+  DCHECK(callback);
+  if (!callback)
+    return 0;
+
+  // Translate param: bytes_skipped; type: simple_byref
+  int64 bytes_skippedVal = bytes_skipped ? *bytes_skipped : 0;
+
+  // Execute
+  bool _retval = CefResourceHandlerCppToC::Get(self)->Skip(
+      bytes_to_skip, bytes_skippedVal,
+      CefResourceSkipCallbackCToCpp::Wrap(callback));
+
+  // Restore param: bytes_skipped; type: simple_byref
+  if (bytes_skipped)
+    *bytes_skipped = bytes_skippedVal;
+
+  // Return type: bool
+  return _retval;
+}
+
+int CEF_CALLBACK resource_handler_read(struct _cef_resource_handler_t* self,
+                                       void* data_out,
+                                       int bytes_to_read,
+                                       int* bytes_read,
+                                       cef_resource_read_callback_t* callback) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self)
+    return 0;
+  // Verify param: data_out; type: simple_byaddr
+  DCHECK(data_out);
+  if (!data_out)
+    return 0;
+  // Verify param: bytes_read; type: simple_byref
+  DCHECK(bytes_read);
+  if (!bytes_read)
+    return 0;
+  // Verify param: callback; type: refptr_diff
+  DCHECK(callback);
+  if (!callback)
+    return 0;
+
+  // Translate param: bytes_read; type: simple_byref
+  int bytes_readVal = bytes_read ? *bytes_read : 0;
+
+  // Execute
+  bool _retval = CefResourceHandlerCppToC::Get(self)->Read(
+      data_out, bytes_to_read, bytes_readVal,
+      CefResourceReadCallbackCToCpp::Wrap(callback));
+
+  // Restore param: bytes_read; type: simple_byref
+  if (bytes_read)
+    *bytes_read = bytes_readVal;
+
+  // Return type: bool
+  return _retval;
+}
+
 int CEF_CALLBACK
 resource_handler_read_response(struct _cef_resource_handler_t* self,
                                void* data_out,
                                int bytes_to_read,
                                int* bytes_read,
                                cef_callback_t* callback) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -124,58 +250,10 @@ resource_handler_read_response(struct _cef_resource_handler_t* self,
   return _retval;
 }
 
-int CEF_CALLBACK
-resource_handler_can_get_cookie(struct _cef_resource_handler_t* self,
-                                const struct _cef_cookie_t* cookie) {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  DCHECK(self);
-  if (!self)
-    return 0;
-  // Verify param: cookie; type: struct_byref_const
-  DCHECK(cookie);
-  if (!cookie)
-    return 0;
-
-  // Translate param: cookie; type: struct_byref_const
-  CefCookie cookieObj;
-  if (cookie)
-    cookieObj.Set(*cookie, false);
-
-  // Execute
-  bool _retval = CefResourceHandlerCppToC::Get(self)->CanGetCookie(cookieObj);
-
-  // Return type: bool
-  return _retval;
-}
-
-int CEF_CALLBACK
-resource_handler_can_set_cookie(struct _cef_resource_handler_t* self,
-                                const struct _cef_cookie_t* cookie) {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  DCHECK(self);
-  if (!self)
-    return 0;
-  // Verify param: cookie; type: struct_byref_const
-  DCHECK(cookie);
-  if (!cookie)
-    return 0;
-
-  // Translate param: cookie; type: struct_byref_const
-  CefCookie cookieObj;
-  if (cookie)
-    cookieObj.Set(*cookie, false);
-
-  // Execute
-  bool _retval = CefResourceHandlerCppToC::Get(self)->CanSetCookie(cookieObj);
-
-  // Return type: bool
-  return _retval;
-}
-
 void CEF_CALLBACK
 resource_handler_cancel(struct _cef_resource_handler_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -191,12 +269,19 @@ resource_handler_cancel(struct _cef_resource_handler_t* self) {
 // CONSTRUCTOR - Do not edit by hand.
 
 CefResourceHandlerCppToC::CefResourceHandlerCppToC() {
+  GetStruct()->open = resource_handler_open;
   GetStruct()->process_request = resource_handler_process_request;
   GetStruct()->get_response_headers = resource_handler_get_response_headers;
+  GetStruct()->skip = resource_handler_skip;
+  GetStruct()->read = resource_handler_read;
   GetStruct()->read_response = resource_handler_read_response;
-  GetStruct()->can_get_cookie = resource_handler_can_get_cookie;
-  GetStruct()->can_set_cookie = resource_handler_can_set_cookie;
   GetStruct()->cancel = resource_handler_cancel;
+}
+
+// DESTRUCTOR - Do not edit by hand.
+
+CefResourceHandlerCppToC::~CefResourceHandlerCppToC() {
+  shutdown_checker::AssertNotShutdown();
 }
 
 template <>
@@ -208,14 +293,6 @@ CefRefPtr<CefResourceHandler> CefCppToCRefCounted<
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCppToCRefCounted<CefResourceHandlerCppToC,
-                                         CefResourceHandler,
-                                         cef_resource_handler_t>::DebugObjCt
-    ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType CefCppToCRefCounted<CefResourceHandlerCppToC,

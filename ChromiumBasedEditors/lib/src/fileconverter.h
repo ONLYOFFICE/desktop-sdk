@@ -1042,6 +1042,16 @@ public:
         // disable cache
         oBuilder.WriteString(L"<m_nDoctParams>1</m_nDoctParams>");
 
+        // tmp dir
+        std::wstring sDstTmpDir = NSFile::CFileBinary::CreateTempFileWithUniqueName(m_oInfo.m_sRecoveryDir, L"XT_");
+        if (NSFile::CFileBinary::Exists(sDstTmpDir))
+            NSFile::CFileBinary::Remove(sDstTmpDir);
+        NSDirectory::CreateDirectory(sDstTmpDir);
+
+        oBuilder.WriteString(L"<m_sTempDir>");
+        oBuilder.WriteEncodeXmlString(sDstTmpDir);
+        oBuilder.WriteString(L"</m_sTempDir>");
+
         oBuilder.WriteString(L"</TaskQueueDataConvert>");
 
         std::wstring sXmlConvert = oBuilder.GetData();
@@ -1075,6 +1085,8 @@ public:
         m_bIsRetina = false;
 
         NSFile::CFileBinary::Remove(sTempFileForParams);
+        NSDirectory::DeleteDirectory(sDstTmpDir);
+
         m_pEvents->OnFileConvertFromEditor(nReturnCode, m_oInfo.m_sPassword);
 
         if (m_pManager->m_pInternal->m_pAdditional)

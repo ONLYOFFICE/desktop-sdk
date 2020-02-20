@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=248c96d294c4c35ac2310d1231202e0d6f12d133$
+// $hash=f1aa0d5b3328c69c25d4e2b721dfe23fc4b8dd67$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_V8INTERCEPTOR_CPPTOC_H_
@@ -32,6 +32,7 @@ class CefV8InterceptorCppToC
                                  cef_v8interceptor_t> {
  public:
   CefV8InterceptorCppToC();
+  virtual ~CefV8InterceptorCppToC();
 };
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_V8INTERCEPTOR_CPPTOC_H_

@@ -130,6 +130,18 @@ public:
     virtual double GetScale(unsigned int, unsigned int);
 };
 
+class IExternalMessageLoop
+{
+public:
+    IExternalMessageLoop() {}
+    virtual ~IExternalMessageLoop() {}
+    virtual void Run() = 0;
+    virtual void Execute(void* message) = 0;
+    virtual void SetTimer(long delay) = 0;
+    virtual void KillTimer() = 0;
+    virtual void Exit() = 0;
+};
+
 class CAscReporterData;
 class CAscApplicationManager_Private;
 namespace NSFonts { class IApplicationFonts; }
@@ -137,7 +149,7 @@ class DESKTOP_DECL CAscApplicationManager
 {
 public:
     CAscApplicationManager();
-    ~CAscApplicationManager();
+    virtual ~CAscApplicationManager();
 
 public:
     CAscApplicationSettings m_oSettings;
@@ -202,10 +214,10 @@ public:
     void UnlockCS(int nId);
 
     // external message loop
-    static void DoMessageLoopWork();
     virtual bool IsExternalEventLoop();
-    virtual bool OnScheduleMessagePumpWork();
-    virtual void ExitExternalEventLoop();
+    virtual IExternalMessageLoop* GetExternalMessageLoop();
+    virtual void ExternalMessageLoop_OnExecute(void* message);
+    virtual void ExternalMessageLoop_OnTimeout();
 
     // parameters to local file url
     void InitAdditionalEditorParams(std::wstring& sParams);

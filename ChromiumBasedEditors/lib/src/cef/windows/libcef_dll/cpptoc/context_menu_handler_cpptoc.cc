@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=4efcbb85fedc05657096c4e7067510d4a4d6201d$
+// $hash=b840f4ff3504ccc605d74312fc0ad124dfa3abd6$
 //
 
 #include "libcef_dll/cpptoc/context_menu_handler_cpptoc.h"
@@ -18,6 +18,7 @@
 #include "libcef_dll/ctocpp/frame_ctocpp.h"
 #include "libcef_dll/ctocpp/menu_model_ctocpp.h"
 #include "libcef_dll/ctocpp/run_context_menu_callback_ctocpp.h"
+#include "libcef_dll/shutdown_checker.h"
 
 namespace {
 
@@ -29,6 +30,8 @@ void CEF_CALLBACK context_menu_handler_on_before_context_menu(
     struct _cef_frame_t* frame,
     struct _cef_context_menu_params_t* params,
     struct _cef_menu_model_t* model) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -65,6 +68,8 @@ int CEF_CALLBACK context_menu_handler_run_context_menu(
     struct _cef_context_menu_params_t* params,
     struct _cef_menu_model_t* model,
     cef_run_context_menu_callback_t* callback) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -108,6 +113,8 @@ int CEF_CALLBACK context_menu_handler_on_context_menu_command(
     struct _cef_context_menu_params_t* params,
     int command_id,
     cef_event_flags_t event_flags) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -139,6 +146,8 @@ void CEF_CALLBACK context_menu_handler_on_context_menu_dismissed(
     struct _cef_context_menu_handler_t* self,
     cef_browser_t* browser,
     struct _cef_frame_t* frame) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -172,6 +181,12 @@ CefContextMenuHandlerCppToC::CefContextMenuHandlerCppToC() {
       context_menu_handler_on_context_menu_dismissed;
 }
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefContextMenuHandlerCppToC::~CefContextMenuHandlerCppToC() {
+  shutdown_checker::AssertNotShutdown();
+}
+
 template <>
 CefRefPtr<CefContextMenuHandler> CefCppToCRefCounted<
     CefContextMenuHandlerCppToC,
@@ -181,14 +196,6 @@ CefRefPtr<CefContextMenuHandler> CefCppToCRefCounted<
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCppToCRefCounted<CefContextMenuHandlerCppToC,
-                                         CefContextMenuHandler,
-                                         cef_context_menu_handler_t>::DebugObjCt
-    ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType CefCppToCRefCounted<CefContextMenuHandlerCppToC,

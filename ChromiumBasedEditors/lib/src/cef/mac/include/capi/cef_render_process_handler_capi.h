@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2019 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,7 +33,7 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=04ddf8c8cc5e09610a6cd6dbee96194eb6567b41$
+// $hash=6c6efd722dda7480a5449ef31f1d6d9a16fd3465$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_RENDER_PROCESS_HANDLER_CAPI_H_
@@ -83,11 +83,16 @@ typedef struct _cef_render_process_handler_t {
   ///
   // Called after a browser has been created. When browsing cross-origin a new
   // browser will be created before the old browser with the same identifier is
-  // destroyed.
+  // destroyed. |extra_info| is a read-only value originating from
+  // cef_browser_host_t::cef_browser_host_create_browser(),
+  // cef_browser_host_t::cef_browser_host_create_browser_sync(),
+  // cef_life_span_handler_t::on_before_popup() or
+  // cef_browser_view_t::cef_browser_view_create().
   ///
   void(CEF_CALLBACK* on_browser_created)(
       struct _cef_render_process_handler_t* self,
-      struct _cef_browser_t* browser);
+      struct _cef_browser_t* browser,
+      struct _cef_dictionary_value_t* extra_info);
 
   ///
   // Called before a browser is destroyed.
@@ -101,19 +106,6 @@ typedef struct _cef_render_process_handler_t {
   ///
   struct _cef_load_handler_t*(CEF_CALLBACK* get_load_handler)(
       struct _cef_render_process_handler_t* self);
-
-  ///
-  // Called before browser navigation. Return true (1) to cancel the navigation
-  // or false (0) to allow the navigation to proceed. The |request| object
-  // cannot be modified in this callback.
-  ///
-  int(CEF_CALLBACK* on_before_navigation)(
-      struct _cef_render_process_handler_t* self,
-      struct _cef_browser_t* browser,
-      struct _cef_frame_t* frame,
-      struct _cef_request_t* request,
-      cef_navigation_type_t navigation_type,
-      int is_redirect);
 
   ///
   // Called immediately after the V8 context for a frame has been created. To
@@ -174,6 +166,7 @@ typedef struct _cef_render_process_handler_t {
   int(CEF_CALLBACK* on_process_message_received)(
       struct _cef_render_process_handler_t* self,
       struct _cef_browser_t* browser,
+      struct _cef_frame_t* frame,
       cef_process_id_t source_process,
       struct _cef_process_message_t* message);
 } cef_render_process_handler_t;

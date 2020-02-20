@@ -71,17 +71,24 @@ struct CefWindowInfoTraits {
   typedef cef_window_info_t struct_type;
 
   static inline void init(struct_type* s) {}
-  static inline void clear(struct_type* s) {}
+
+  static inline void clear(struct_type* s) {
+    cef_string_clear(&s->window_name);
+  }
 
   static inline void set(const struct_type* src,
                          struct_type* target,
                          bool copy) {
+    cef_string_set(src->window_name.str, src->window_name.length,
+                   &target->window_name, copy);
     target->x = src->x;
     target->y = src->y;
     target->width = src->width;
     target->height = src->height;
     target->parent_window = src->parent_window;
     target->windowless_rendering_enabled = src->windowless_rendering_enabled;
+    target->shared_texture_enabled = src->shared_texture_enabled;
+    target->external_begin_frame_enabled = src->external_begin_frame_enabled;
     target->window = src->window;
   }
 };

@@ -28,16 +28,7 @@
 
 			$(function() {	
 				AscDesktopEditor.SetCryptoMode("", ASC_DESKTOP_EDITOR_DEFAULT_MODE, function(retCode) {
-					switch(retCode) {
-						case 0:
-							ONLYONET.UI.init();
-							break;
-						case 1:
-							alert("[ERROR] FAILED TO SET CRYPTO MODE AS " + ASC_DESKTOP_EDITOR_DEFAULT_MODE);
-							break;
-						default:
-							break;
-					}
+					ONLYONET.UI.init();
 				});
 			});			
 		</script>

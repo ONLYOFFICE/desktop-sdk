@@ -4,6 +4,7 @@
 
 #include "tests/ceftests/test_suite.h"
 
+#include "include/cef_file_util.h"
 #include "tests/gtest/include/gtest/gtest.h"
 #include "tests/shared/common/client_switches.h"
 
@@ -118,7 +119,7 @@ int CefTestSuite::Run() {
 }
 
 void CefTestSuite::GetSettings(CefSettings& settings) const {
-#if defined(OS_WIN)
+#if (defined(OS_WIN) || defined(OS_LINUX))
   settings.multi_threaded_message_loop =
       command_line_->HasSwitch(client::switches::kMultiThreadedMessageLoop);
 #endif
@@ -160,6 +161,19 @@ bool CefTestSuite::GetCachePath(std::string& path) const {
   }
 
   return false;
+}
+
+void CefTestSuite::RegisterTempDirectory(const CefString& directory) {
+  base::AutoLock lock_scope(temp_directories_lock_);
+  temp_directories_.push_back(directory);
+}
+
+void CefTestSuite::DeleteTempDirectories() {
+  base::AutoLock lock_scope(temp_directories_lock_);
+  for (size_t i = 0U; i < temp_directories_.size(); ++i) {
+    CefDeleteFile(temp_directories_[i], true);
+  }
+  temp_directories_.clear();
 }
 
 void CefTestSuite::PreInitialize() {
