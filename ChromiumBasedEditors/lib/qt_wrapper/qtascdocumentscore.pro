@@ -37,6 +37,8 @@ LIBS += -luser32
 
 core_linux {
 
+    QT += x11extras
+
     LIBS += -L$$CORE_ROOT_DIR/Common/3dParty/cef/$$CORE_BUILDS_PLATFORM_PREFIX/build -lcef
     include($$CORE_ROOT_DIR/Common/3dParty/icu/icu.pri)
     ADD_DEPENDENCY(graphics, kernel, UnicodeConverter, PdfWriter, PdfReader, XpsFile, DjVuFile, HtmlRenderer, hunspell, ooxmlsignature)
