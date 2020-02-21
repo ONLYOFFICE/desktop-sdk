@@ -17,13 +17,17 @@ HEADERS += \
     $$PWD/include/qcefview.h \
     $$PWD/include/qcefview_media.h \
     $$PWD/include/qascprinter.h \
-    $$PWD/include/qexternalmessageloop.h
+    $$PWD/include/qexternalmessageloop.h \
+    $$PWD/include/qascapplicationmanager.h \
+    $$PWD/include/qdpichecker.h
 
 SOURCES += \
     $$PWD/src/qcefview.cpp \
     $$PWD/src/qcefview_media.cpp \
     $$PWD/src/qascprinter.cpp \
-    $$PWD/src/qexternalmessageloop.cpp
+    $$PWD/src/qexternalmessageloop.cpp \
+    $$PWD/src/qascapplicationmanager.cpp \
+    $$PWD/src/qdpichecker.cpp
 
 core_windows {
 
