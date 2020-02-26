@@ -1420,6 +1420,14 @@ window.AscDesktopEditor.SetAdvancedEncryptedData = function(password, data, call
   window.on_set_advanced_encrypted_data = callback;\n\
   window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
 };\n\
+window.AscDesktopEditor.AddVideo = function(file, callback) {\n\
+  window.on_add_multimedia_local = callback;\n\
+  window.AscDesktopEditor._AddVideo(file);\n\
+};\n\
+window.AscDesktopEditor.AddAudio = function(file, callback) {\n\
+  window.on_add_multimedia_local = callback;\n\
+  window.AscDesktopEditor._AddAudio(file);\n\
+};\n\
 window.AscDesktopEditor.ImportAdvancedEncryptedData = function(callback) {\n\
   window.AscDesktopEditor.OpenFilenameDialog('Key File (*docx);;All files (*.*)', false, function(files) {\n\
     var file = Array.isArray(files) ? files[0] : files;\n\
@@ -2297,18 +2305,6 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
         }
         else if (name == "AddAudio")
         {
-            CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetBrowser()->GetFrame("frameEditor");
-            if (!_frame || arguments.size() != 2)
-                return true;
-
-            if (CefV8Context::GetCurrentContext()->GetFrame()->GetName() != "frameEditor")
-            {
-                std::string sCode = "window.AscDesktopEditor.AddAudio(\"" +
-                        arguments[0]->GetStringValue().ToString() + "\", \"" + arguments[1]->GetStringValue().ToString() + "\");";
-                _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
-                return true;
-            }
-
             std::wstring sFile = arguments[0]->GetStringValue().ToWString();
             std::wstring sExt = NSCommon::GetFileExtention(sFile);
             std::wstring sImage = L"display8image" + std::to_wstring(m_nLocalImagesNextIndex++);
@@ -2317,43 +2313,19 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
 
             NSFile::CFileBinary::Copy(sFile, sDst);
 
-            std::wstring sSrc = m_sSystemPlugins + L"/" + arguments[1]->GetStringValue().ToWString() + L"/image";
+            std::wstring sSrc = m_sSystemPlugins + L"/../sdkjs/common/Images/local/audio/image";
 
             //NSFile::CFileBinary::Copy(sSrc + L".svg", sDstMain + L"svg");
             //NSFile::CFileBinary::Copy(sSrc + L".emf", sDstMain + L"emf");
             NSFile::CFileBinary::Copy(sSrc + L".png", sDstMain + L"png");
 
-            std::wstring sCode = L"(function(){ \n\
-var _e = undefined;\n\
-if (window[\"Asc\"] && window[\"Asc\"][\"editor\"]) \n\
-{\n\
-_e = window[\"Asc\"][\"editor\"];\n\
-}\n\
-else if (window[\"editor\"])\n\
-{\n\
-_e = window[\"editor\"];\n\
-}\n\
-if (!_e) return;\n\
-_e.asc_AddAudio(\"" + sImage + L".png\", \"" + sImage + L"." + sExt + L"\");\n\
-})();"; // .svg
-
+            std::wstring sCode = L"(function(){ window.on_add_multimedia_local(\"" + sImage + L".png\", \"" + sImage + L"." + sExt + L"\"); window.on_add_multimedia_local = undefined; })();"; // .svg
+            CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetFrame();
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
             return true;
         }
         else if (name == "AddVideo")
         {
-            CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetBrowser()->GetFrame("frameEditor");
-            if (!_frame || arguments.size() != 2)
-                return true;
-
-            if (CefV8Context::GetCurrentContext()->GetFrame()->GetName() != "frameEditor")
-            {
-                std::string sCode = "window.AscDesktopEditor.AddVideo(\"" +
-                        arguments[0]->GetStringValue().ToString() + "\", \"" + arguments[1]->GetStringValue().ToString() + "\");";
-                _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
-                return true;
-            }
-
             std::wstring sFile = arguments[0]->GetStringValue().ToWString();
             std::wstring sExt = NSCommon::GetFileExtention(sFile);
             std::wstring sImage = L"display8image" + std::to_wstring(m_nLocalImagesNextIndex++);
@@ -2362,24 +2334,12 @@ _e.asc_AddAudio(\"" + sImage + L".png\", \"" + sImage + L"." + sExt + L"\");\n\
 
             NSFile::CFileBinary::Copy(sFile, sDst);
 
-            std::wstring sSrc = m_sSystemPlugins + L"/" + arguments[1]->GetStringValue().ToWString() + L"/image";
+            std::wstring sSrc = m_sSystemPlugins + L"/../sdkjs/common/Images/local/video/image";
 
             NSFile::CFileBinary::Copy(sSrc + L".png", sDstMain + L"png");
 
-            std::wstring sCode = L"(function(){ \n\
-var _e = undefined;\n\
-if (window[\"Asc\"] && window[\"Asc\"][\"editor\"]) \n\
-{\n\
-_e = window[\"Asc\"][\"editor\"];\n\
-}\n\
-else if (window[\"editor\"])\n\
-{\n\
-_e = window[\"editor\"];\n\
-}\n\
-if (!_e) return;\n\
-_e.asc_AddVideo(\"" + sImage + L".png\", \"" + sImage + L"." + sExt + L"\");\n\
-})();";
-
+            std::wstring sCode = L"(function(){ window.on_add_multimedia_local(\"" + sImage + L".png\", \"" + sImage + L"." + sExt + L"\"); window.on_add_multimedia_local = undefined; })();"; // .svg
+            CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetFrame();
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
             return true;
         }
@@ -3101,8 +3061,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         "MediaStart",
         "GetImageOriginalSize",
         "MediaEnd",
-        "AddAudio",
-        "AddVideo",
+        "_AddAudio",
+        "_AddVideo",
         "SendByMail",
         "IsLocalFileExist",
 
