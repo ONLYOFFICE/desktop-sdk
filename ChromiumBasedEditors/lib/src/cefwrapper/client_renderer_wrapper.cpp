@@ -2303,7 +2303,7 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
             retval->SetValue("H", CefV8Value::CreateInt(nH), V8_PROPERTY_ATTRIBUTE_NONE);
             return true;
         }
-        else if (name == "AddAudio")
+        else if (name == "_AddAudio")
         {
             std::wstring sFile = arguments[0]->GetStringValue().ToWString();
             std::wstring sExt = NSCommon::GetFileExtention(sFile);
@@ -2324,7 +2324,7 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
             return true;
         }
-        else if (name == "AddVideo")
+        else if (name == "_AddVideo")
         {
             std::wstring sFile = arguments[0]->GetStringValue().ToWString();
             std::wstring sExt = NSCommon::GetFileExtention(sFile);
