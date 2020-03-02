@@ -56,7 +56,7 @@ public:
 
     bool IsChromiumSubprocess();
 
-    static bool IsMainProcess(int argc = 0, char* argv[] = NULL);
+    static void Prepare(int argc = 0, char* argv[] = NULL);
 
     friend class CAscApplicationManager;
 };
