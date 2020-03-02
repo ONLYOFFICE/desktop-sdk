@@ -461,6 +461,17 @@ public:
         frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
     }
 
+    bool IsLocalFile(bool isUrlCheck)
+    {
+        if (isUrlCheck && m_sLocalFileFolderWithoutFile.empty())
+        {
+            std::string sUrl = CefV8Context::GetCurrentContext()->GetFrame()->GetURL().ToString();
+            if (0 == sUrl.find("file:/"))
+                return true;
+        }
+        return m_sLocalFileFolderWithoutFile.empty() ? false : true;
+    }
+
     virtual bool Execute(const CefString& sMessageName,
                        CefRefPtr<CefV8Value> object,
                        const CefV8ValueList& arguments,
@@ -1697,21 +1708,10 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
         else if (name == "IsLocalFile")
         {
             bool isUrlCheck = false;
-            if (arguments.size() > 0 && m_sLocalFileFolderWithoutFile.empty())
-            {
+            if (arguments.size() > 0)
                 isUrlCheck = (*arguments.begin())->GetBoolValue();
-                if (isUrlCheck)
-                {
-                    std::string sUrl = CefV8Context::GetCurrentContext()->GetFrame()->GetURL().ToString();
-                    if (0 == sUrl.find("file:/"))
-                    {
-                        retval = CefV8Value::CreateBool(true);
-                        return true;
-                    }
-                }
-            }
 
-            retval = CefV8Value::CreateBool(m_sLocalFileFolderWithoutFile.empty() ? false : true);
+            retval = CefV8Value::CreateBool(IsLocalFile(isUrlCheck));
             return true;
         }
         else if (name == "IsFilePrinting")
@@ -2535,6 +2535,15 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
             SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
+        else if (name == "IsSupportMedia")
+        {
+            bool bIsLocal = IsLocalFile(false);
+#ifdef _MAC
+            bIsLocal = false;
+#endif
+            retval = CefV8Value::CreateBool(bIsLocal);
+            return true;
+        }
 
         // Function does not exist.
         return false;
@@ -2908,7 +2917,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
 
-    #define EXTEND_METHODS_COUNT 130
+    #define EXTEND_METHODS_COUNT 131
     const char* methods[EXTEND_METHODS_COUNT] = {
         "Copy",
         "Paste",
@@ -3083,6 +3092,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
         "CompareDocumentUrl",
         "CompareDocumentFile",
+
+        "IsSupportMedia",
 
         NULL
     };
