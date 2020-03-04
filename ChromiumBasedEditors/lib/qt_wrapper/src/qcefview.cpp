@@ -54,6 +54,9 @@ QCefView::QCefView(QWidget* parent, const QSize& initial_size) : QWidget(parent)
 
     QObject::connect(this, SIGNAL( _loaded() ) , this, SLOT( _loadedSlot() ), Qt::QueuedConnection );
     QObject::connect(this, SIGNAL( _closed() ) , this, SLOT( _closedSlot() ), Qt::QueuedConnection );
+
+    if (IsSupportLayers())
+        this->installEventFilter(this);
 }
 
 QCefView::~QCefView()
@@ -64,6 +67,14 @@ QCefView::~QCefView()
         delete m_pProperties;
         m_pProperties = NULL;
     }
+}
+
+bool QCefView::eventFilter(QObject *watched, QEvent *event)
+{
+    if (this == watched && event->type() == QEvent::Resize)
+        OnMediaEnd();
+
+    return QWidget::eventFilter(watched, event);
 }
 
 // focus
@@ -82,12 +93,13 @@ void QCefView::focusOutEvent(QFocusEvent* e)
 // move/resize
 void QCefView::resizeEvent(QResizeEvent* e)
 {
-    if (m_pOverride)
-        m_pOverride->setGeometry(0, 0, width(), height());
-    if (m_pCefView)
-        m_pCefView->resizeEvent();
     cef_width = width();
     cef_height = height();
+
+    if (m_pOverride)
+        m_pOverride->setGeometry(0, 0, cef_width, cef_height);
+    if (m_pCefView)
+        m_pCefView->resizeEvent();
 }
 void QCefView::moveEvent(QMoveEvent* e)
 {
