@@ -461,6 +461,17 @@ public:
         frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
     }
 
+    bool IsLocalFile(bool isUrlCheck)
+    {
+        if (isUrlCheck && m_sLocalFileFolderWithoutFile.empty())
+        {
+            std::string sUrl = CefV8Context::GetCurrentContext()->GetFrame()->GetURL().ToString();
+            if (0 == sUrl.find("file:/"))
+                return true;
+        }
+        return m_sLocalFileFolderWithoutFile.empty() ? false : true;
+    }
+
     virtual bool Execute(const CefString& sMessageName,
                        CefRefPtr<CefV8Value> object,
                        const CefV8ValueList& arguments,
@@ -1420,6 +1431,14 @@ window.AscDesktopEditor.SetAdvancedEncryptedData = function(password, data, call
   window.on_set_advanced_encrypted_data = callback;\n\
   window.AscDesktopEditor._SetAdvancedEncryptedData(password, data);\n\
 };\n\
+window.AscDesktopEditor.AddVideo = function(file, callback) {\n\
+  window.on_add_multimedia_local = callback;\n\
+  window.AscDesktopEditor._AddVideo(file);\n\
+};\n\
+window.AscDesktopEditor.AddAudio = function(file, callback) {\n\
+  window.on_add_multimedia_local = callback;\n\
+  window.AscDesktopEditor._AddAudio(file);\n\
+};\n\
 window.AscDesktopEditor.ImportAdvancedEncryptedData = function(callback) {\n\
   window.AscDesktopEditor.OpenFilenameDialog('Key File (*docx);;All files (*.*)', false, function(files) {\n\
     var file = Array.isArray(files) ? files[0] : files;\n\
@@ -1689,21 +1708,10 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
         else if (name == "IsLocalFile")
         {
             bool isUrlCheck = false;
-            if (arguments.size() > 0 && m_sLocalFileFolderWithoutFile.empty())
-            {
+            if (arguments.size() > 0)
                 isUrlCheck = (*arguments.begin())->GetBoolValue();
-                if (isUrlCheck)
-                {
-                    std::string sUrl = CefV8Context::GetCurrentContext()->GetFrame()->GetURL().ToString();
-                    if (0 == sUrl.find("file:/"))
-                    {
-                        retval = CefV8Value::CreateBool(true);
-                        return true;
-                    }
-                }
-            }
 
-            retval = CefV8Value::CreateBool(m_sLocalFileFolderWithoutFile.empty() ? false : true);
+            retval = CefV8Value::CreateBool(IsLocalFile(isUrlCheck));
             return true;
         }
         else if (name == "IsFilePrinting")
@@ -2295,20 +2303,8 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
             retval->SetValue("H", CefV8Value::CreateInt(nH), V8_PROPERTY_ATTRIBUTE_NONE);
             return true;
         }
-        else if (name == "AddAudio")
+        else if (name == "_AddAudio")
         {
-            CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetBrowser()->GetFrame("frameEditor");
-            if (!_frame || arguments.size() != 2)
-                return true;
-
-            if (CefV8Context::GetCurrentContext()->GetFrame()->GetName() != "frameEditor")
-            {
-                std::string sCode = "window.AscDesktopEditor.AddAudio(\"" +
-                        arguments[0]->GetStringValue().ToString() + "\", \"" + arguments[1]->GetStringValue().ToString() + "\");";
-                _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
-                return true;
-            }
-
             std::wstring sFile = arguments[0]->GetStringValue().ToWString();
             std::wstring sExt = NSCommon::GetFileExtention(sFile);
             std::wstring sImage = L"display8image" + std::to_wstring(m_nLocalImagesNextIndex++);
@@ -2317,43 +2313,19 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
 
             NSFile::CFileBinary::Copy(sFile, sDst);
 
-            std::wstring sSrc = m_sSystemPlugins + L"/" + arguments[1]->GetStringValue().ToWString() + L"/image";
+            std::wstring sSrc = m_sSystemPlugins + L"/../sdkjs/common/Images/local/audio/image";
 
             //NSFile::CFileBinary::Copy(sSrc + L".svg", sDstMain + L"svg");
             //NSFile::CFileBinary::Copy(sSrc + L".emf", sDstMain + L"emf");
             NSFile::CFileBinary::Copy(sSrc + L".png", sDstMain + L"png");
 
-            std::wstring sCode = L"(function(){ \n\
-var _e = undefined;\n\
-if (window[\"Asc\"] && window[\"Asc\"][\"editor\"]) \n\
-{\n\
-_e = window[\"Asc\"][\"editor\"];\n\
-}\n\
-else if (window[\"editor\"])\n\
-{\n\
-_e = window[\"editor\"];\n\
-}\n\
-if (!_e) return;\n\
-_e.asc_AddAudio(\"" + sImage + L".png\", \"" + sImage + L"." + sExt + L"\");\n\
-})();"; // .svg
-
+            std::wstring sCode = L"(function(){ window.on_add_multimedia_local(\"" + sImage + L".png\", \"" + sImage + L"." + sExt + L"\"); window.on_add_multimedia_local = undefined; })();"; // .svg
+            CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetFrame();
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
             return true;
         }
-        else if (name == "AddVideo")
+        else if (name == "_AddVideo")
         {
-            CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetBrowser()->GetFrame("frameEditor");
-            if (!_frame || arguments.size() != 2)
-                return true;
-
-            if (CefV8Context::GetCurrentContext()->GetFrame()->GetName() != "frameEditor")
-            {
-                std::string sCode = "window.AscDesktopEditor.AddVideo(\"" +
-                        arguments[0]->GetStringValue().ToString() + "\", \"" + arguments[1]->GetStringValue().ToString() + "\");";
-                _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
-                return true;
-            }
-
             std::wstring sFile = arguments[0]->GetStringValue().ToWString();
             std::wstring sExt = NSCommon::GetFileExtention(sFile);
             std::wstring sImage = L"display8image" + std::to_wstring(m_nLocalImagesNextIndex++);
@@ -2362,24 +2334,12 @@ _e.asc_AddAudio(\"" + sImage + L".png\", \"" + sImage + L"." + sExt + L"\");\n\
 
             NSFile::CFileBinary::Copy(sFile, sDst);
 
-            std::wstring sSrc = m_sSystemPlugins + L"/" + arguments[1]->GetStringValue().ToWString() + L"/image";
+            std::wstring sSrc = m_sSystemPlugins + L"/../sdkjs/common/Images/local/video/image";
 
             NSFile::CFileBinary::Copy(sSrc + L".png", sDstMain + L"png");
 
-            std::wstring sCode = L"(function(){ \n\
-var _e = undefined;\n\
-if (window[\"Asc\"] && window[\"Asc\"][\"editor\"]) \n\
-{\n\
-_e = window[\"Asc\"][\"editor\"];\n\
-}\n\
-else if (window[\"editor\"])\n\
-{\n\
-_e = window[\"editor\"];\n\
-}\n\
-if (!_e) return;\n\
-_e.asc_AddVideo(\"" + sImage + L".png\", \"" + sImage + L"." + sExt + L"\");\n\
-})();";
-
+            std::wstring sCode = L"(function(){ window.on_add_multimedia_local(\"" + sImage + L".png\", \"" + sImage + L"." + sExt + L"\"); window.on_add_multimedia_local = undefined; })();"; // .svg
+            CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetFrame();
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
             return true;
         }
@@ -2573,6 +2533,15 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
         {
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_document_content_ready");
             SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+            return true;
+        }
+        else if (name == "IsSupportMedia")
+        {
+            bool bIsLocal = IsLocalFile(false);
+#ifdef _MAC
+            bIsLocal = false;
+#endif
+            retval = CefV8Value::CreateBool(bIsLocal);
             return true;
         }
 
@@ -2948,7 +2917,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
 
-    #define EXTEND_METHODS_COUNT 130
+    #define EXTEND_METHODS_COUNT 131
     const char* methods[EXTEND_METHODS_COUNT] = {
         "Copy",
         "Paste",
@@ -3101,8 +3070,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         "MediaStart",
         "GetImageOriginalSize",
         "MediaEnd",
-        "AddAudio",
-        "AddVideo",
+        "_AddAudio",
+        "_AddVideo",
         "SendByMail",
         "IsLocalFileExist",
 
@@ -3123,6 +3092,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
         "CompareDocumentUrl",
         "CompareDocumentFile",
+
+        "IsSupportMedia",
 
         NULL
     };

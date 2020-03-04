@@ -30,35 +30,24 @@
  *
  */
 
-#ifndef APPLICATION_CEF_H
-#define APPLICATION_CEF_H
+#ifndef Q_ASC_APPLICATION_MANAGER_H
+#define Q_ASC_APPLICATION_MANAGER_H
 
-#include "base.h"
+#include "./../include/applicationmanager.h"
+#include <QtCore/qobject.h>
 
-class CApplicationCEF_Private;
-class CAscApplicationManager;
-class DESKTOP_DECL CApplicationCEF
+class DESKTOP_DECL QAscApplicationManager : public CAscApplicationManager
 {
-protected:
-    CApplicationCEF_Private* m_pInternal;
+public:
+    QAscApplicationManager();
+    virtual ~QAscApplicationManager();
 
 public:
 
-    CApplicationCEF();
-
-    int Init_CEF(CAscApplicationManager* , int argc = 0, char* argv[] = NULL);
-    virtual ~CApplicationCEF();
-    void Close();
-
-    int RunMessageLoop(bool& is_runned);
-    void DoMessageLoopEvent();
-    bool ExitMessageLoop();
-
-    bool IsChromiumSubprocess();
-
-    static void Prepare(int argc = 0, char* argv[] = NULL);
-
-    friend class CAscApplicationManager;
+    virtual CAscDpiChecker* InitDpiChecker();
+    virtual IExternalMessageLoop* GetExternalMessageLoop();
+    virtual int GetPlatformKeyboardLayout();
+    virtual void OnNeedCheckKeyboard();
 };
 
-#endif // APPLICATION_CEF_H
+#endif  // Q_ASC_APPLICATION_MANAGER_H

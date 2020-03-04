@@ -556,25 +556,11 @@ bool CApplicationCEF::IsChromiumSubprocess()
     return (m_pInternal->m_nReturnCodeInitCef >= 0) ? true : false;
 }
 
-bool CApplicationCEF::IsMainProcess(int argc, char* argv[])
+void CApplicationCEF::Prepare(int argc, char* argv[])
 {
-    bool bIsMain = true;
-#ifdef WIN32
-    std::string sCommandLine = GetCommandLineA();
-    if (sCommandLine.find("--type") != std::string::npos)
-        bIsMain = false;
-#else
-    for (int i = 0; i < argc; ++i)
-    {
-        std::string sCommandLine(argv[i]);
-        if (sCommandLine.find("--type") != std::string::npos)
-        {
-            bIsMain = false;
-            break;
-        }
-    }
+#if defined(_LINUX) && !defined(_MAC)
+    NSSystem::SetEnvValueA("GDK_BACKEND", "x11");
 #endif
-    return bIsMain;
 }
 
 // External message loop

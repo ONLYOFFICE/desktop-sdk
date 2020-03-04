@@ -30,35 +30,19 @@
  *
  */
 
-#ifndef APPLICATION_CEF_H
-#define APPLICATION_CEF_H
+#ifndef Q_ASC_DPICHECKER_H
+#define Q_ASC_DPICHECKER_H
 
-#include "base.h"
+#include "./../include/applicationmanager.h"
+#include <QWidget>
 
-class CApplicationCEF_Private;
-class CAscApplicationManager;
-class DESKTOP_DECL CApplicationCEF
+class DESKTOP_DECL QDpiChecker : public CAscDpiChecker
 {
-protected:
-    CApplicationCEF_Private* m_pInternal;
-
 public:
-
-    CApplicationCEF();
-
-    int Init_CEF(CAscApplicationManager* , int argc = 0, char* argv[] = NULL);
-    virtual ~CApplicationCEF();
-    void Close();
-
-    int RunMessageLoop(bool& is_runned);
-    void DoMessageLoopEvent();
-    bool ExitMessageLoop();
-
-    bool IsChromiumSubprocess();
-
-    static void Prepare(int argc = 0, char* argv[] = NULL);
-
-    friend class CAscApplicationManager;
+    virtual int GetWindowDpi(WindowHandleId wid, unsigned int* dx, unsigned int* dy);
+    virtual int GetMonitorDpi(int nScreenNumber, unsigned int* dx, unsigned int* dy);
+    virtual int GetWidgetImplDpi(CCefViewWidgetImpl* w, unsigned int* dx, unsigned int* dy);
+    virtual int GetWidgetDpi(QWidget* w, unsigned int* dx, unsigned int* dy);
 };
 
-#endif // APPLICATION_CEF_H
+#endif  // Q_ASC_DPICHECKER_H

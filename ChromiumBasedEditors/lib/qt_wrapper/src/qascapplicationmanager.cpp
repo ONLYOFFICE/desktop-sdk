@@ -30,35 +30,30 @@
  *
  */
 
-#ifndef APPLICATION_CEF_H
-#define APPLICATION_CEF_H
+#include "./../include/qascapplicationmanager.h"
+#include "./../include/qexternalmessageloop.h"
+#include "./../include/qdpichecker.h"
 
-#include "base.h"
+QAscApplicationManager::QAscApplicationManager() : CAscApplicationManager() {}
+QAscApplicationManager::~QAscApplicationManager() {}
 
-class CApplicationCEF_Private;
-class CAscApplicationManager;
-class DESKTOP_DECL CApplicationCEF
+CAscDpiChecker* QAscApplicationManager::InitDpiChecker()
 {
-protected:
-    CApplicationCEF_Private* m_pInternal;
+    return new QDpiChecker();
+}
+IExternalMessageLoop* QAscApplicationManager::GetExternalMessageLoop()
+{
+    return new QExternalMessageLoop(this);
+}
+int QAscApplicationManager::GetPlatformKeyboardLayout()
+{
+    if (this->IsPlatformKeyboardSupport())
+        return CAscApplicationManager::GetPlatformKeyboardLayout();
 
-public:
-
-    CApplicationCEF();
-
-    int Init_CEF(CAscApplicationManager* , int argc = 0, char* argv[] = NULL);
-    virtual ~CApplicationCEF();
-    void Close();
-
-    int RunMessageLoop(bool& is_runned);
-    void DoMessageLoopEvent();
-    bool ExitMessageLoop();
-
-    bool IsChromiumSubprocess();
-
-    static void Prepare(int argc = 0, char* argv[] = NULL);
-
-    friend class CAscApplicationManager;
-};
-
-#endif // APPLICATION_CEF_H
+    return -1;
+}
+void QAscApplicationManager::OnNeedCheckKeyboard()
+{
+    if (GetEventListener())
+        GetEventListener()->OnEvent(new NSEditorApi::CAscCefMenuEvent(ASC_MENU_EVENT_TYPE_CEF_CHECK_KEYBOARD));
+}
