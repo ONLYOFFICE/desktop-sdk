@@ -19,6 +19,8 @@ set(CEF_TARGET libcef_dll_wrapper)
 
 set(LIBCEF_SRCS
   ptr_util.h
+  shutdown_checker.cc
+  shutdown_checker.h
   transfer_util.cc
   transfer_util.h
   wrapper_types.h
@@ -36,7 +38,6 @@ set(LIBCEF_BASE_SRCS
   base/cef_ref_counted.cc
   base/cef_string16.cc
   base/cef_thread_checker_impl.cc
-  base/cef_thread_collision_warner.cc
   base/cef_weak_ptr.cc
   )
 source_group(libcef_dll\\\\base FILES ${LIBCEF_BASE_SRCS})
@@ -46,6 +47,8 @@ set(LIBCEF_CPPTOC_SRCS
   cpptoc/accessibility_handler_cpptoc.h
   cpptoc/app_cpptoc.cc
   cpptoc/app_cpptoc.h
+  cpptoc/audio_handler_cpptoc.cc
+  cpptoc/audio_handler_cpptoc.h
   cpptoc/base_ref_counted_cpptoc.cc
   cpptoc/base_ref_counted_cpptoc.h
   cpptoc/base_scoped_cpptoc.cc
@@ -58,6 +61,8 @@ set(LIBCEF_CPPTOC_SRCS
   cpptoc/completion_callback_cpptoc.h
   cpptoc/context_menu_handler_cpptoc.cc
   cpptoc/context_menu_handler_cpptoc.h
+  cpptoc/cookie_access_filter_cpptoc.cc
+  cpptoc/cookie_access_filter_cpptoc.h
   cpptoc/cookie_visitor_cpptoc.cc
   cpptoc/cookie_visitor_cpptoc.h
   cpptoc/cpptoc_ref_counted.h
@@ -84,10 +89,6 @@ set(LIBCEF_CPPTOC_SRCS
   cpptoc/find_handler_cpptoc.h
   cpptoc/focus_handler_cpptoc.cc
   cpptoc/focus_handler_cpptoc.h
-  cpptoc/geolocation_handler_cpptoc.cc
-  cpptoc/geolocation_handler_cpptoc.h
-  cpptoc/get_geolocation_callback_cpptoc.cc
-  cpptoc/get_geolocation_callback_cpptoc.h
   cpptoc/jsdialog_handler_cpptoc.cc
   cpptoc/jsdialog_handler_cpptoc.h
   cpptoc/keyboard_handler_cpptoc.cc
@@ -122,12 +123,16 @@ set(LIBCEF_CPPTOC_SRCS
   cpptoc/resource_bundle_handler_cpptoc.h
   cpptoc/resource_handler_cpptoc.cc
   cpptoc/resource_handler_cpptoc.h
+  cpptoc/resource_request_handler_cpptoc.cc
+  cpptoc/resource_request_handler_cpptoc.h
   cpptoc/response_filter_cpptoc.cc
   cpptoc/response_filter_cpptoc.h
   cpptoc/run_file_dialog_callback_cpptoc.cc
   cpptoc/run_file_dialog_callback_cpptoc.h
   cpptoc/scheme_handler_factory_cpptoc.cc
   cpptoc/scheme_handler_factory_cpptoc.h
+  cpptoc/server_handler_cpptoc.cc
+  cpptoc/server_handler_cpptoc.h
   cpptoc/set_cookie_callback_cpptoc.cc
   cpptoc/set_cookie_callback_cpptoc.h
   cpptoc/string_visitor_cpptoc.cc
@@ -138,6 +143,8 @@ set(LIBCEF_CPPTOC_SRCS
   cpptoc/urlrequest_client_cpptoc.h
   cpptoc/v8accessor_cpptoc.cc
   cpptoc/v8accessor_cpptoc.h
+  cpptoc/v8array_buffer_release_callback_cpptoc.cc
+  cpptoc/v8array_buffer_release_callback_cpptoc.h
   cpptoc/v8handler_cpptoc.cc
   cpptoc/v8handler_cpptoc.h
   cpptoc/v8interceptor_cpptoc.cc
@@ -220,8 +227,6 @@ set(LIBCEF_CTOCPP_SRCS
   ctocpp/file_dialog_callback_ctocpp.h
   ctocpp/frame_ctocpp.cc
   ctocpp/frame_ctocpp.h
-  ctocpp/geolocation_callback_ctocpp.cc
-  ctocpp/geolocation_callback_ctocpp.h
   ctocpp/get_extension_resource_callback_ctocpp.cc
   ctocpp/get_extension_resource_callback_ctocpp.h
   ctocpp/image_ctocpp.cc
@@ -254,6 +259,10 @@ set(LIBCEF_CTOCPP_SRCS
   ctocpp/request_ctocpp.h
   ctocpp/resource_bundle_ctocpp.cc
   ctocpp/resource_bundle_ctocpp.h
+  ctocpp/resource_read_callback_ctocpp.cc
+  ctocpp/resource_read_callback_ctocpp.h
+  ctocpp/resource_skip_callback_ctocpp.cc
+  ctocpp/resource_skip_callback_ctocpp.h
   ctocpp/response_ctocpp.cc
   ctocpp/response_ctocpp.h
   ctocpp/run_context_menu_callback_ctocpp.cc
@@ -262,6 +271,8 @@ set(LIBCEF_CTOCPP_SRCS
   ctocpp/scheme_registrar_ctocpp.h
   ctocpp/select_client_certificate_callback_ctocpp.cc
   ctocpp/select_client_certificate_callback_ctocpp.h
+  ctocpp/server_ctocpp.cc
+  ctocpp/server_ctocpp.h
   ctocpp/sslinfo_ctocpp.cc
   ctocpp/sslinfo_ctocpp.h
   ctocpp/sslstatus_ctocpp.cc
@@ -355,7 +366,9 @@ source_group(libcef_dll\\\\ctocpp\\\\views FILES ${LIBCEF_CTOCPP_VIEWS_SRCS})
 
 set(LIBCEF_INCLUDE_SRCS
   ../include/cef_accessibility_handler.h
+  ../include/cef_api_hash.h
   ../include/cef_app.h
+  ../include/cef_audio_handler.h
   ../include/cef_auth_callback.h
   ../include/cef_base.h
   ../include/cef_browser.h
@@ -363,6 +376,7 @@ set(LIBCEF_INCLUDE_SRCS
   ../include/cef_callback.h
   ../include/cef_client.h
   ../include/cef_command_line.h
+  ../include/cef_config.h
   ../include/cef_context_menu_handler.h
   ../include/cef_cookie.h
   ../include/cef_crash_util.h
@@ -379,8 +393,6 @@ set(LIBCEF_INCLUDE_SRCS
   ../include/cef_find_handler.h
   ../include/cef_focus_handler.h
   ../include/cef_frame.h
-  ../include/cef_geolocation.h
-  ../include/cef_geolocation_handler.h
   ../include/cef_image.h
   ../include/cef_jsdialog_handler.h
   ../include/cef_keyboard_handler.h
@@ -399,15 +411,18 @@ set(LIBCEF_INCLUDE_SRCS
   ../include/cef_render_handler.h
   ../include/cef_render_process_handler.h
   ../include/cef_request.h
+  ../include/cef_request_callback.h
   ../include/cef_request_context.h
   ../include/cef_request_context_handler.h
   ../include/cef_request_handler.h
   ../include/cef_resource_bundle.h
   ../include/cef_resource_bundle_handler.h
   ../include/cef_resource_handler.h
+  ../include/cef_resource_request_handler.h
   ../include/cef_response.h
   ../include/cef_response_filter.h
   ../include/cef_scheme.h
+  ../include/cef_server.h
   ../include/cef_ssl_info.h
   ../include/cef_ssl_status.h
   ../include/cef_stream.h
@@ -427,6 +442,7 @@ set(LIBCEF_INCLUDE_SRCS
   )
 set(LIBCEF_INCLUDE_SRCS_MACOSX
   ../include/cef_application_mac.h
+  ../include/cef_sandbox_mac.h
   )
 set(LIBCEF_INCLUDE_SRCS_WINDOWS
   ../include/cef_sandbox_win.h
@@ -456,7 +472,6 @@ set(LIBCEF_INCLUDE_BASE_SRCS
   ../include/base/cef_string16.h
   ../include/base/cef_template_util.h
   ../include/base/cef_thread_checker.h
-  ../include/base/cef_thread_collision_warner.h
   ../include/base/cef_trace_event.h
   ../include/base/cef_tuple.h
   ../include/base/cef_weak_ptr.h
@@ -489,6 +504,7 @@ source_group(include\\\\base\\\\internal FILES ${LIBCEF_INCLUDE_BASE_INTERNAL_SR
 set(LIBCEF_INCLUDE_CAPI_SRCS
   ../include/capi/cef_accessibility_handler_capi.h
   ../include/capi/cef_app_capi.h
+  ../include/capi/cef_audio_handler_capi.h
   ../include/capi/cef_auth_callback_capi.h
   ../include/capi/cef_base_capi.h
   ../include/capi/cef_browser_capi.h
@@ -512,8 +528,6 @@ set(LIBCEF_INCLUDE_CAPI_SRCS
   ../include/capi/cef_find_handler_capi.h
   ../include/capi/cef_focus_handler_capi.h
   ../include/capi/cef_frame_capi.h
-  ../include/capi/cef_geolocation_capi.h
-  ../include/capi/cef_geolocation_handler_capi.h
   ../include/capi/cef_image_capi.h
   ../include/capi/cef_jsdialog_handler_capi.h
   ../include/capi/cef_keyboard_handler_capi.h
@@ -531,6 +545,7 @@ set(LIBCEF_INCLUDE_CAPI_SRCS
   ../include/capi/cef_process_util_capi.h
   ../include/capi/cef_render_handler_capi.h
   ../include/capi/cef_render_process_handler_capi.h
+  ../include/capi/cef_request_callback_capi.h
   ../include/capi/cef_request_capi.h
   ../include/capi/cef_request_context_capi.h
   ../include/capi/cef_request_context_handler_capi.h
@@ -538,9 +553,11 @@ set(LIBCEF_INCLUDE_CAPI_SRCS
   ../include/capi/cef_resource_bundle_capi.h
   ../include/capi/cef_resource_bundle_handler_capi.h
   ../include/capi/cef_resource_handler_capi.h
+  ../include/capi/cef_resource_request_handler_capi.h
   ../include/capi/cef_response_capi.h
   ../include/capi/cef_response_filter_capi.h
   ../include/capi/cef_scheme_capi.h
+  ../include/capi/cef_server_capi.h
   ../include/capi/cef_ssl_info_capi.h
   ../include/capi/cef_ssl_status_capi.h
   ../include/capi/cef_stream_capi.h
@@ -661,6 +678,10 @@ set(LIBCEF_INCLUDE_WRAPPER_SRCS
   ../include/wrapper/cef_xml_object.h
   ../include/wrapper/cef_zip_archive.h
   )
+set(LIBCEF_INCLUDE_WRAPPER_SRCS_MACOSX
+  ../include/wrapper/cef_library_loader.h
+  )
+LIBCEF_APPEND_PLATFORM_SOURCES(LIBCEF_INCLUDE_WRAPPER_SRCS)
 source_group(include\\\\wrapper FILES ${LIBCEF_INCLUDE_WRAPPER_SRCS})
 
 set(LIBCEF_WRAPPER_SRCS
@@ -676,6 +697,11 @@ set(LIBCEF_WRAPPER_SRCS
   wrapper/libcef_dll_wrapper.cc
   wrapper/libcef_dll_wrapper2.cc
   )
+set(LIBCEF_WRAPPER_SRCS_MACOSX
+  wrapper/cef_library_loader_mac.mm
+  wrapper/libcef_dll_dylib.cc
+  )
+LIBCEF_APPEND_PLATFORM_SOURCES(LIBCEF_WRAPPER_SRCS)
 source_group(libcef_dll\\\\wrapper FILES ${LIBCEF_WRAPPER_SRCS})
 
 add_library(${CEF_TARGET}

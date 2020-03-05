@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=46749f3da032d1c3197dd996aea65a25dfc80bf5$
+// $hash=ceedb00b43b104cb120d80d766029d28585d9b3a$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_RESOLVE_CALLBACK_CPPTOC_H_
@@ -21,8 +21,10 @@
 #endif
 
 #include "include/capi/cef_request_context_capi.h"
+#include "include/capi/cef_request_context_handler_capi.h"
 #include "include/capi/cef_scheme_capi.h"
 #include "include/cef_request_context.h"
+#include "include/cef_request_context_handler.h"
 #include "include/cef_scheme.h"
 #include "libcef_dll/cpptoc/cpptoc_ref_counted.h"
 
@@ -34,6 +36,7 @@ class CefResolveCallbackCppToC
                                  cef_resolve_callback_t> {
  public:
   CefResolveCallbackCppToC();
+  virtual ~CefResolveCallbackCppToC();
 };
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_RESOLVE_CALLBACK_CPPTOC_H_

@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2019 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,7 +33,7 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=8b7354f5a1ad6b255d77e477c64374b927f4fe28$
+// $hash=d8c4816346fdf48b987c88a94c51c9d67624abe0$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_CRASH_UTIL_CAPI_H_
@@ -129,14 +129,12 @@ extern "C" {
 //
 // CrashKeys section:
 //
-// Any number of crash keys can be specified for use by the application. Crash
-// key values will be truncated based on the specified size (small = 63 bytes,
-// medium = 252 bytes, large = 1008 bytes). The value of crash keys can be set
-// from any thread or process using the CefSetCrashKeyValue function. These
-// key/value pairs will be sent to the crash server along with the crash dump
-// file. Medium and large values will be chunked for submission. For example, if
-// your key is named "mykey" then the value will be broken into ordered chunks
-// and submitted using keys named "mykey-1", "mykey-2", etc.
+// A maximum of 26 crash keys of each size can be specified for use by the
+// application. Crash key values will be truncated based on the specified size
+// (small = 64 bytes, medium = 256 bytes, large = 1024 bytes). The value of
+// crash keys can be set from any thread or process using the
+// CefSetCrashKeyValue function. These key/value pairs will be sent to the crash
+// server along with the crash dump file.
 ///
 CEF_EXPORT int cef_crash_reporting_enabled();
 

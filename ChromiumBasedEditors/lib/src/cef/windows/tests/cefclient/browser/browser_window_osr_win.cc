@@ -5,16 +5,13 @@
 #include "tests/cefclient/browser/browser_window_osr_win.h"
 
 #include "tests/shared/browser/main_message_loop.h"
-#include "tests/shared/browser/util_win.h"
 
 namespace client {
 
 BrowserWindowOsrWin::BrowserWindowOsrWin(BrowserWindow::Delegate* delegate,
                                          const std::string& startup_url,
-                                         const OsrRenderer::Settings& settings)
-    : BrowserWindow(delegate),
-      osr_hwnd_(NULL),
-      device_scale_factor_(client::GetDeviceScaleFactor()) {
+                                         const OsrRendererSettings& settings)
+    : BrowserWindow(delegate), osr_hwnd_(NULL), device_scale_factor_(0) {
   osr_window_ = new OsrWindowWin(this, settings);
   client_handler_ = new ClientHandlerOsr(this, osr_window_.get(), startup_url);
 }
@@ -23,13 +20,15 @@ void BrowserWindowOsrWin::CreateBrowser(
     ClientWindowHandle parent_handle,
     const CefRect& rect,
     const CefBrowserSettings& settings,
+    CefRefPtr<CefDictionaryValue> extra_info,
     CefRefPtr<CefRequestContext> request_context) {
   REQUIRE_MAIN_THREAD();
 
   // Create the new browser and native window on the UI thread.
   RECT wnd_rect = {rect.x, rect.y, rect.x + rect.width, rect.y + rect.height};
   osr_window_->CreateBrowser(parent_handle, wnd_rect, client_handler_, settings,
-                             request_context, client_handler_->startup_url());
+                             extra_info, request_context,
+                             client_handler_->startup_url());
 }
 
 void BrowserWindowOsrWin::GetPopupConfig(CefWindowHandle temp_handle,
@@ -39,6 +38,14 @@ void BrowserWindowOsrWin::GetPopupConfig(CefWindowHandle temp_handle,
   CEF_REQUIRE_UI_THREAD();
 
   windowInfo.SetAsWindowless(temp_handle);
+  windowInfo.shared_texture_enabled =
+      osr_window_->settings().shared_texture_enabled;
+  windowInfo.external_begin_frame_enabled =
+      osr_window_->settings().external_begin_frame_enabled;
+
+  // Don't activate the hidden browser on creation.
+  windowInfo.ex_style |= WS_EX_NOACTIVATE;
+
   client = client_handler_;
 }
 
@@ -92,6 +99,7 @@ void BrowserWindowOsrWin::SetDeviceScaleFactor(float device_scale_factor) {
 
 float BrowserWindowOsrWin::GetDeviceScaleFactor() const {
   REQUIRE_MAIN_THREAD();
+  DCHECK_GT(device_scale_factor_, 0);
   return device_scale_factor_;
 }
 

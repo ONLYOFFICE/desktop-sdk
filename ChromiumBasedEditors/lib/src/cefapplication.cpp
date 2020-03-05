@@ -74,15 +74,112 @@ int XIOErrorHandlerImpl(Display *display)
 #include "cefclient/browser/main_context_impl.h"
 #include "cefclient/browser/main_message_loop_multithreaded_win.h"
 #include "cefclient/browser/main_message_loop_std.h"
+namespace client {
+    typedef MainMessageLoopMultithreadedWin MainMessageLoopMultithreaded;
+}
 #else
 #include "tests/cefclient/browser/main_context_impl.h"
+#include "tests/shared/browser/main_message_loop_std.h"
+#include "tests/shared/browser/main_message_loop_external_pump.h"
+
+class CMainMessageLoopExternalPumpBase : public client::MainMessageLoopExternalPump
+{
+private:
+    bool timer_pending_;
+    IExternalMessageLoop* message_loop_;
+
+public:
+    CMainMessageLoopExternalPumpBase(IExternalMessageLoop* native_loop) : client::MainMessageLoopExternalPump()
+    {
+        timer_pending_ = false;
+        message_loop_ = native_loop;
+    }
+    ~CMainMessageLoopExternalPumpBase()
+    {
+        message_loop_->KillTimer();
+    }
+
+    virtual void Quit() OVERRIDE
+    {
+        message_loop_->Exit();
+    }
+    virtual int Run() OVERRIDE
+    {
+        message_loop_->Run();
+
+        for (int i = 0; i < 10; ++i)
+        {
+            // Do some work.
+            CefDoMessageLoopWork();
+
+            // Sleep to allow the CEF proc to do work.
+            NSThreads::Sleep(50);
+        }
+
+        return 0;
+    }
+
+    void OnScheduleMessagePumpWork(int64 delay_ms) OVERRIDE
+    {
+        message_loop_->Execute(new int64(delay_ms));
+    }
+
+    static scoped_ptr<client::MainMessageLoopExternalPump> Create(IExternalMessageLoop* native_loop)
+    {
+        return scoped_ptr<client::MainMessageLoopExternalPump>(new CMainMessageLoopExternalPumpBase(native_loop));
+    }
+
+public:
+    void OnExecute(void* message)
+    {
+        int64* addr = (int64*)message;
+        const int64 delay_ms = *addr;
+        delete addr;
+        OnScheduleWork(delay_ms);
+
+    }
+    void OnTimer()
+    {
+        OnTimerTimeout();
+    }
+
+protected:
+    virtual bool IsTimerPending() OVERRIDE
+    {
+        return timer_pending_;
+    }
+
+    virtual void SetTimer(int64 delay_ms) OVERRIDE
+    {
+        timer_pending_ = true;
+        message_loop_->SetTimer(delay_ms);
+    }
+    virtual void KillTimer() OVERRIDE
+    {
+        message_loop_->KillTimer();
+        timer_pending_ = false;
+    }
+};
 
 #ifdef WIN32
 #include "tests/cefclient/browser/main_message_loop_multithreaded_win.h"
+namespace client {
+    typedef MainMessageLoopMultithreadedWin MainMessageLoopMultithreaded;
+}
 #endif
-#include "tests/shared/browser/main_message_loop_std.h"
-#ifndef _MAC
-#include "tests/shared/browser/main_message_loop_external_pump.h"
+#if defined(_LINUX) && !defined(_MAC)
+#include "tests/cefclient/browser/main_message_loop_multithreaded_gtk.h"
+namespace client {
+    typedef MainMessageLoopMultithreadedGtk MainMessageLoopMultithreaded;
+}
+#endif
+#if defined(_MAC)
+namespace client {
+    typedef MainMessageLoopStd MainMessageLoopMultithreaded;
+}
+
+#include "include/wrapper/cef_library_loader.h"
+
 #endif
 #endif
 
@@ -136,6 +233,25 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 {
     LOGGER_STRING("CApplicationCEF::Init_CEF::start");
 
+#ifdef _MAC
+    bool bIsHelper = false;
+    for (int arg_index = 0; arg_index < argc; ++arg_index)
+    {
+        std::string sHelperTest(argv[arg_index]);
+        if (0 == sHelperTest.find("--type="))
+        {
+            bIsHelper = true;
+            break;
+        }
+    }
+
+    CefScopedLibraryLoader library_loader;
+    if (bIsHelper)
+        library_loader.LoadInHelper();
+    else
+        library_loader.LoadInMain();
+#endif
+
     if (NULL == pManager->m_pInternal->m_pDpiChecker)
         pManager->m_pInternal->m_pDpiChecker = pManager->InitDpiChecker();
 
@@ -179,6 +295,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     // Parse command-line arguments.
     CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
     command_line->InitFromArgv(argc, argv);
+
 #endif
 
     client::ClientApp::ProcessType process_type = client::ClientApp::GetProcessType(command_line);
@@ -201,105 +318,85 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
         pManager->m_pInternal->SaveSettings();
     }
 
-#ifdef WIN32
-    // Create a ClientApp of the correct type.
-    if (process_type == client::ClientApp::BrowserProcess)
-        m_pInternal->m_app = new CAscClientAppBrowser(pManager->m_pInternal->m_mapSettings, pManager);
-    else if (process_type == client::ClientApp::RendererProcess ||
-             process_type == client::ClientApp::ZygoteProcess)
-        m_pInternal->m_app = new CAscClientAppRenderer(pManager->m_pInternal->m_mapSettings);
-    else if (process_type == client::ClientApp::OtherProcess)
-        m_pInternal->m_app = new CAscClientAppOther(pManager->m_pInternal->m_mapSettings);
-#endif
+    switch (process_type)
+    {
+        case client::ClientApp::BrowserProcess:
+        {
+            m_pInternal->m_app = new CAscClientAppBrowser(pManager->m_pInternal->m_mapSettings, pManager);
+            break;
+        }
+        case client::ClientApp::RendererProcess:
+        case client::ClientApp::ZygoteProcess:
+        {
+            m_pInternal->m_app = new CAscClientAppRenderer(pManager->m_pInternal->m_mapSettings);
+            break;
+        }
+        case client::ClientApp::OtherProcess:
+        default:
+        {
+            m_pInternal->m_app = new CAscClientAppOther(pManager->m_pInternal->m_mapSettings);
+            break;
+        }
+    }
 
-#if defined(_LINUX) && !defined(_MAC)
-    // Create a ClientApp of the correct type.    
-    if (process_type == client::ClientApp::BrowserProcess)
-        m_pInternal->m_app = new CAscClientAppBrowser(pManager->m_pInternal->m_mapSettings, pManager);
-    else if (process_type == client::ClientApp::RendererProcess ||
-             process_type == client::ClientApp::ZygoteProcess)
-        m_pInternal->m_app = new CAscClientAppRenderer(pManager->m_pInternal->m_mapSettings);
-    else if (process_type == client::ClientApp::OtherProcess)
-        m_pInternal->m_app = new CAscClientAppOther(pManager->m_pInternal->m_mapSettings);
-#endif
-
-#ifdef _MAC
-    m_pInternal->m_app = new CAscClientAppBrowser(pManager->m_pInternal->m_mapSettings, pManager);
-#endif
-
-#if 1
     // Execute the secondary process, if any.
     m_pInternal->m_nReturnCodeInitCef = CefExecuteProcess(main_args, m_pInternal->m_app.get(), NULL);
     if (m_pInternal->m_nReturnCodeInitCef >= 0)
     {        
         return m_pInternal->m_nReturnCodeInitCef;
     }
-#endif
 
     LOGGER_STRING("CApplicationCEF::Init_CEF::main");
 
     CefSettings settings;
-    
+
+    std::wstring sHelperPath = NSFile::GetProcessDirectory();
 #ifdef _MAC
-#if 0
-    std::wstring sSubprocessPath = NSFile::GetProcessDirectory();
-    std::wstring sName = NSCommon::GetFileName(NSFile::GetProcessPath());
-    sSubprocessPath += L"/../Frameworks/ONLYOFFICE Helper.app/Contents/MacOS/ONLYOFFICE Helper";
-    
+    sHelperPath += L"/../Frameworks/editors_helper.app/Contents/MacOS";
+#endif
+    sHelperPath += L"/editors_helper";
+#ifdef _WIN32
+    sHelperPath += L".exe";
+#endif
+
     cef_string_t _subprocess;
     memset(&_subprocess, 0, sizeof(_subprocess));
-    cef_string_from_wide(sSubprocessPath.c_str(), sSubprocessPath.length(), &_subprocess);
+    cef_string_from_wide(sHelperPath.c_str(), sHelperPath.length(), &_subprocess);
     settings.browser_subprocess_path = _subprocess;
-    
-    // second variant
-    //CefString(&settings.browser_subprocess_path).FromWString(sSubprocessPath);
-#endif
-#endif
 
 #if !defined(CEF_USE_SANDBOX)
     settings.no_sandbox = true;
-#endif
-
-#if 0
-    settings.single_process = 1;
 #endif
 
     // Populate the settings based on command line arguments.
     m_pInternal->context.reset(new client::MainContextImpl(command_line, false));
     m_pInternal->context->PopulateSettings(&settings);
 
+    bool isMultithreaded = false;
 #ifdef WIN32
-    if (!m_pInternal->m_pManager->IsExternalEventLoop())
-        settings.multi_threaded_message_loop = 1;
+    isMultithreaded = true;
+#endif
+#if defined(_LINUX) && !defined(_MAC)
+    //isMultithreaded = true;
 #endif
 
-#ifdef _MAC
-    m_pInternal->message_loop.reset(new client::MainMessageLoopStd);
-#else
-    if (!m_pInternal->m_pManager->IsExternalEventLoop())
-    {
-#ifdef WIN32
-        if (settings.multi_threaded_message_loop)
-            m_pInternal->message_loop.reset(new client::MainMessageLoopMultithreadedWin);
-        else
-            m_pInternal->message_loop.reset(new client::MainMessageLoopStd);
-#else
-        m_pInternal->message_loop.reset(new client::MainMessageLoopStd);
-#endif
-    }
-    else
+    pManager->SetApplication(this);
+
+    if (m_pInternal->m_pManager->IsExternalEventLoop())
     {
 #ifndef CEF_2623
         settings.external_message_pump = 1;
-        m_pInternal->message_loop = client::MainMessageLoopExternalPump::Create();
-#else
-        if (settings.multi_threaded_message_loop)
-            m_pInternal->message_loop.reset(new client::MainMessageLoopMultithreadedWin);
-        else
-            m_pInternal->message_loop.reset(new client::MainMessageLoopStd);
 #endif
     }
-#endif
+    else if (isMultithreaded)
+    {
+        settings.multi_threaded_message_loop = 1;
+        m_pInternal->message_loop.reset(new client::MainMessageLoopMultithreaded);
+    }
+    else
+    {
+        m_pInternal->message_loop.reset(new client::MainMessageLoopStd);
+    }
 
     std::wstring sCachePath = pManager->m_oSettings.cache_path;
 
@@ -339,8 +436,6 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     XSetErrorHandler(XErrorHandlerImpl);
     XSetIOErrorHandler(XIOErrorHandlerImpl);
 #endif
-
-    pManager->SetApplication(this);
 
     CPluginsManager oPlugins;
     oPlugins.m_strDirectory = pManager->m_oSettings.system_plugins_path;
@@ -461,23 +556,49 @@ bool CApplicationCEF::IsChromiumSubprocess()
     return (m_pInternal->m_nReturnCodeInitCef >= 0) ? true : false;
 }
 
-bool CApplicationCEF::IsMainProcess(int argc, char* argv[])
+void CApplicationCEF::Prepare(int argc, char* argv[])
 {
-    bool bIsMain = true;
-#ifdef WIN32
-    std::string sCommandLine = GetCommandLineA();
-    if (sCommandLine.find("--type") != std::string::npos)
-        bIsMain = false;
+#if defined(_LINUX) && !defined(_MAC)
+    NSSystem::SetEnvValueA("GDK_BACKEND", "x11");
+#endif
+}
+
+// External message loop
+bool CAscApplicationManager::IsExternalEventLoop()
+{
+#if defined(CEF_2623) || defined(_MAC)
+    m_pInternal->m_bIsUseExternalMessageLoop = false;
 #else
-    for (int i = 0; i < argc; ++i)
+    if (m_pInternal->m_bIsUseExternalMessageLoop)
     {
-        std::string sCommandLine(argv[i]);
-        if (sCommandLine.find("--type") != std::string::npos)
+        IExternalMessageLoop* external_message_loop = GetExternalMessageLoop();
+        if (NULL != external_message_loop)
         {
-            bIsMain = false;
-            break;
+            m_pInternal->m_pExternalMessageLoop = external_message_loop;
+            m_pInternal->m_pApplication->m_pInternal->message_loop = CMainMessageLoopExternalPumpBase::Create(external_message_loop);
+            return true;
         }
     }
 #endif
-    return bIsMain;
+
+    return false;
 }
+IExternalMessageLoop* CAscApplicationManager::GetExternalMessageLoop()
+{
+    return NULL;
+}
+void CAscApplicationManager::ExternalMessageLoop_OnExecute(void* message)
+{
+#ifndef CEF_2623
+    CMainMessageLoopExternalPumpBase* loop = (CMainMessageLoopExternalPumpBase*)(m_pInternal->m_pApplication->m_pInternal->message_loop.get());
+    loop->OnExecute(message);
+#endif
+}
+void CAscApplicationManager::ExternalMessageLoop_OnTimeout()
+{
+#ifndef CEF_2623
+    CMainMessageLoopExternalPumpBase* loop = (CMainMessageLoopExternalPumpBase*)(m_pInternal->m_pApplication->m_pInternal->message_loop.get());
+    loop->OnTimer();
+#endif
+}
+//

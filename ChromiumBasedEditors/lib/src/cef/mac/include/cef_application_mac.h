@@ -31,7 +31,9 @@
 #define CEF_INCLUDE_CEF_APPLICATION_MAC_H_
 #pragma once
 
+#ifdef __cplusplus
 #include "include/cef_base.h"
+#endif  // __cplusplus
 
 #if defined(OS_MACOSX) && defined(__OBJC__)
 
@@ -57,7 +59,6 @@
 #import <AppKit/AppKit.h>
 #import <Cocoa/Cocoa.h>
 
-#if 0
 // Copy of definition from base/message_loop/message_pump_mac.h.
 @protocol CrAppProtocol
 // Must return true if -[NSApplication sendEvent:] is currently on the stack.
@@ -68,9 +69,6 @@
 @protocol CrAppControlProtocol<CrAppProtocol>
 - (void)setHandlingSendEvent:(BOOL)handlingSendEvent;
 @end
-#endif
-
-#import "../../../../include/mac_application.h"
 
 // Copy of definition from ui/base/cocoa/underlay_opengl_hosting_window.h.
 // Common base class for windows that host a OpenGL surface that renders under
@@ -81,12 +79,12 @@
 
 #endif  // USING_CHROMIUM_INCLUDES
 
-#if 0
 // All CEF client applications must subclass NSApplication and implement this
 // protocol.
 @protocol CefAppProtocol<CrAppControlProtocol>
 @end
-#endif
+
+#ifdef __cplusplus
 
 // Controls the state of |isHandlingSendEvent| in the event loop so that it is
 // reset properly.
@@ -104,6 +102,8 @@ class CefScopedSendingEvent {
   NSApplication<CefAppProtocol>* app_;
   BOOL handling_;
 };
+
+#endif  // __cplusplus
 
 #endif  // defined(OS_MACOSX) && defined(__OBJC__)
 

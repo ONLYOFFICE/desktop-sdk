@@ -45,12 +45,19 @@ IDS_PERFORMANCE_HTML BINARY "..\\performance.html"
 IDS_PERFORMANCE2_HTML BINARY "..\\performance2.html"
 IDS_PREFERENCES_HTML BINARY "..\\preferences.html"
 IDS_RESPONSE_FILTER_HTML BINARY "..\\response_filter.html"
+IDS_SERVER_HTML BINARY "..\\server.html"
 IDS_TRANSPARENCY_HTML BINARY "..\\transparency.html"
 IDS_URLREQUEST_HTML BINARY "..\\urlrequest.html"
+IDS_WEBSOCKET_HTML BINARY "..\\websocket.html"
 IDS_WINDOW_HTML BINARY "..\\window.html"
 IDS_WINDOW_ICON_1X_PNG BINARY "..\\..\\..\\shared\\resources\\window_icon.1x.png"
 IDS_WINDOW_ICON_2X_PNG BINARY "..\\..\\..\\shared\\resources\\window_icon.2x.png"
 IDS_XMLHTTPREQUEST_HTML BINARY "..\\xmlhttprequest.html"
+
+IDS_EXTENSIONS_SET_PAGE_COLOR_ICON_PNG BINARY "..\\extensions\\set_page_color\\icon.png"
+IDS_EXTENSIONS_SET_PAGE_COLOR_MANIFEST_JSON BINARY "..\\extensions\\set_page_color\\manifest.json"
+IDS_EXTENSIONS_SET_PAGE_COLOR_POPUP_HTML BINARY "..\\extensions\\set_page_color\\popup.html"
+IDS_EXTENSIONS_SET_PAGE_COLOR_POPUP_JS BINARY "..\\extensions\\set_page_color\\popup.js"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -96,6 +103,8 @@ BEGIN
         MENUITEM "End Tracing",                 ID_TESTS_TRACING_END
         MENUITEM "Print",                       ID_TESTS_PRINT
         MENUITEM "Print to PDF",                ID_TESTS_PRINT_TO_PDF
+        MENUITEM "Mute Audio",                  ID_TESTS_MUTE_AUDIO
+        MENUITEM "Unmute Audio",                ID_TESTS_UNMUTE_AUDIO
         MENUITEM "Other Tests",                 ID_TESTS_OTHER_TESTS
    END
 END
@@ -135,8 +144,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION CEF_VERSION_MAJOR,CHROME_VERSION_BUILD,CEF_COMMIT_NUMBER,0
- PRODUCTVERSION CEF_VERSION_MAJOR,CHROME_VERSION_BUILD,CEF_COMMIT_NUMBER,0
+ FILEVERSION CEF_VERSION_MAJOR,CEF_VERSION_MINOR,CEF_VERSION_PATCH,0
+ PRODUCTVERSION CEF_VERSION_MAJOR,CEF_VERSION_MINOR,CEF_VERSION_PATCH,0
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L

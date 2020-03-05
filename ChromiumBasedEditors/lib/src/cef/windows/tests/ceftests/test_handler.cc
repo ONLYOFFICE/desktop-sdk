@@ -5,6 +5,7 @@
 #include "tests/ceftests/test_handler.h"
 
 #include "include/base/cef_bind.h"
+#include "include/base/cef_logging.h"
 #include "include/cef_command_line.h"
 #include "include/cef_stream.h"
 #include "include/wrapper/cef_closure_task.h"
@@ -283,6 +284,11 @@ CefRefPtr<CefResourceHandler> TestHandler::GetResourceHandler(
   return NULL;
 }
 
+void TestHandler::OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser,
+                                            TerminationStatus status) {
+  LOG(WARNING) << "OnRenderProcessTerminated: status = " << status << ".";
+}
+
 CefRefPtr<CefBrowser> TestHandler::GetBrowser() {
   return first_browser_;
 }
@@ -344,20 +350,22 @@ void TestHandler::DestroyTest() {
 
 void TestHandler::OnTestTimeout(int timeout_ms, bool treat_as_error) {
   EXPECT_UI_THREAD();
-  if (treat_as_error)
+  if (treat_as_error) {
     EXPECT_TRUE(false) << "Test timed out after " << timeout_ms << "ms";
+  }
   DestroyTest();
 }
 
 void TestHandler::CreateBrowser(const CefString& url,
-                                CefRefPtr<CefRequestContext> request_context) {
+                                CefRefPtr<CefRequestContext> request_context,
+                                CefRefPtr<CefDictionaryValue> extra_info) {
 #if defined(USE_AURA)
   const bool use_views = CefCommandLine::GetGlobalCommandLine()->HasSwitch(
       client::switches::kUseViews);
   if (use_views && !CefCurrentlyOn(TID_UI)) {
     // Views classes must be accessed on the UI thread.
     CefPostTask(TID_UI, base::Bind(&TestHandler::CreateBrowser, this, url,
-                                   request_context));
+                                   request_context, extra_info));
     return;
   }
 #endif  // defined(USE_AURA)
@@ -370,7 +378,8 @@ void TestHandler::CreateBrowser(const CefString& url,
   if (use_views) {
     // Create the BrowserView.
     CefRefPtr<CefBrowserView> browser_view = CefBrowserView::CreateBrowserView(
-        this, url, settings, request_context, new TestBrowserViewDelegate());
+        this, url, settings, extra_info, request_context,
+        new TestBrowserViewDelegate());
 
     // Create the Window. It will show itself after creation.
     TestWindowDelegate::CreateBrowserWindow(browser_view, std::string());
@@ -381,7 +390,7 @@ void TestHandler::CreateBrowser(const CefString& url,
     windowInfo.SetAsPopup(NULL, "CefUnitTest");
     windowInfo.style |= WS_VISIBLE;
 #endif
-    CefBrowserHost::CreateBrowser(windowInfo, this, url, settings,
+    CefBrowserHost::CreateBrowser(windowInfo, this, url, settings, extra_info,
                                   request_context);
   }
 }
@@ -441,6 +450,11 @@ void TestHandler::SetTestTimeout(int timeout_ms, bool treat_as_error) {
     return;
   }
 
+  if (destroy_test_called_) {
+    // No need to set the timeout if the test has already completed.
+    return;
+  }
+
   if (treat_as_error && CefCommandLine::GetGlobalCommandLine()->HasSwitch(
                             "disable-test-timeout")) {
     return;
@@ -466,7 +480,7 @@ void TestHandler::TestComplete() {
 
 TestHandler::UIThreadHelper* TestHandler::GetUIThreadHelper() {
   EXPECT_UI_THREAD();
-  EXPECT_FALSE(destroy_test_called_);
+  CHECK(!destroy_test_called_);
 
   if (!ui_thread_helper_.get())
     ui_thread_helper_.reset(new UIThreadHelper());

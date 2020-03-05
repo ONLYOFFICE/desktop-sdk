@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=c42ac838cae212695711e3e335c1a3ca439eda74$
+// $hash=f637f19e554e1965c168ec7eec7de8dcf0505adc$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_POST_DATA_CTOCPP_H_
@@ -31,6 +31,7 @@ class CefPostDataCToCpp : public CefCToCppRefCounted<CefPostDataCToCpp,
                                                      cef_post_data_t> {
  public:
   CefPostDataCToCpp();
+  virtual ~CefPostDataCToCpp();
 
   // CefPostData methods.
   bool IsReadOnly() OVERRIDE;

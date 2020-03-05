@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=31fe8c2d8fe2d46080061e5f84f6abc4c600195e$
+// $hash=6f275e66e6c9ad024935d52a4fe7e8141cbf6d57$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_WEB_PLUGIN_UNSTABLE_CALLBACK_CPPTOC_H_
@@ -34,6 +34,7 @@ class CefWebPluginUnstableCallbackCppToC
                                  cef_web_plugin_unstable_callback_t> {
  public:
   CefWebPluginUnstableCallbackCppToC();
+  virtual ~CefWebPluginUnstableCallbackCppToC();
 };
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_WEB_PLUGIN_UNSTABLE_CALLBACK_CPPTOC_H_

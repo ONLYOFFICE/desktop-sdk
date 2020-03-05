@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,10 +9,11 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=20109c1591f4c081a1f35885f2c336c090ea805e$
+// $hash=b32f1d7c13f178735b3364d8cfe32881d4132b8e$
 //
 
 #include "libcef_dll/cpptoc/cookie_visitor_cpptoc.h"
+#include "libcef_dll/shutdown_checker.h"
 
 namespace {
 
@@ -23,6 +24,8 @@ int CEF_CALLBACK cookie_visitor_visit(struct _cef_cookie_visitor_t* self,
                                       int count,
                                       int total,
                                       int* deleteCookie) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -64,6 +67,12 @@ CefCookieVisitorCppToC::CefCookieVisitorCppToC() {
   GetStruct()->visit = cookie_visitor_visit;
 }
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefCookieVisitorCppToC::~CefCookieVisitorCppToC() {
+  shutdown_checker::AssertNotShutdown();
+}
+
 template <>
 CefRefPtr<CefCookieVisitor> CefCppToCRefCounted<
     CefCookieVisitorCppToC,
@@ -73,14 +82,6 @@ CefRefPtr<CefCookieVisitor> CefCppToCRefCounted<
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCppToCRefCounted<CefCookieVisitorCppToC,
-                                         CefCookieVisitor,
-                                         cef_cookie_visitor_t>::DebugObjCt
-    ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType CefCppToCRefCounted<CefCookieVisitorCppToC,

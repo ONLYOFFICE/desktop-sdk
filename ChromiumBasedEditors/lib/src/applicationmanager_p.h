@@ -59,6 +59,21 @@
 
 #include "utils.h"
 
+#ifdef CEF_2623
+#define MESSAGE_IN_BROWSER
+#else
+// с версии выше 74 - убрать определение
+//#define MESSAGE_IN_BROWSER
+#endif
+
+#ifdef MESSAGE_IN_BROWSER
+#define SEND_MESSAGE_TO_BROWSER_PROCESS(message) CefV8Context::GetCurrentContext()->GetBrowser()->SendProcessMessage(PID_BROWSER, message)
+#define SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message) browser->SendProcessMessage(PID_RENDERER, message)
+#else
+#define SEND_MESSAGE_TO_BROWSER_PROCESS(message) CefV8Context::GetCurrentContext()->GetFrame()->SendProcessMessage(PID_BROWSER, message)
+#define SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message) browser->GetMainFrame()->SendProcessMessage(PID_RENDERER, message)
+#endif
+
 #define NO_CACHE_WEB_CLOUD_SCRIPTS
 
 #ifdef LINUX
@@ -313,6 +328,10 @@ public:
     // показывать ли консоль для дебага
     bool m_bDebugInfoSupport;
 
+    // использовать ли внешнюю очередь сообщений
+    bool m_bIsUseExternalMessageLoop;
+    IExternalMessageLoop* m_pExternalMessageLoop;
+
     // event listener
     NSEditorApi::CAscCefMenuEventListener* m_pListener;
 
@@ -400,7 +419,7 @@ public:
     bool m_bIsEnableConvertLogs;
 
 public:
-    IMPLEMENT_REFCOUNTING(CAscApplicationManager_Private)
+    IMPLEMENT_REFCOUNTING(CAscApplicationManager_Private);
 
 public:
     CAscApplicationManager_Private() : m_oKeyboardTimer(this)
@@ -416,6 +435,8 @@ public:
         m_pApplication = NULL;
 
         m_bDebugInfoSupport = false;
+        m_bIsUseExternalMessageLoop = false;
+        m_pExternalMessageLoop = NULL;
 
         m_nIsCefSaveDialogWait = -1;        
 
@@ -442,6 +463,8 @@ public:
     }
     virtual ~CAscApplicationManager_Private()
     {
+        RELEASEOBJECT(m_pExternalMessageLoop);
+
         CloseApplication();
         RELEASEOBJECT(m_pAdditional);
 
@@ -584,6 +607,10 @@ public:
         std::map<std::string, std::string>::iterator pairConvertLogs = m_mapSettings.find("converter-logging");
         if (pairConvertLogs != m_mapSettings.end())
             m_bIsEnableConvertLogs = ("1" == pairConvertLogs->second) ? true : false;
+
+        std::map<std::string, std::string>::iterator pairEML = m_mapSettings.find("external-message-loop");
+        if (pairEML != m_mapSettings.end())
+            m_bIsUseExternalMessageLoop = ("1" == pairEML->second) ? true : false;
     }
     void CheckSetting(const std::string& sName, const std::string& sValue)
     {
@@ -591,7 +618,7 @@ public:
         {
             m_bDebugInfoSupport = true;
             return;
-        }
+        }        
 
         bool bIsChanged = false;
         const char* namePtr = sName.c_str();
@@ -781,6 +808,20 @@ public:
         oWorker.m_sDirectory = m_pMain->m_oSettings.fonts_cache_info_path;
         oWorker.m_bIsUseSystemFonts = m_pMain->m_oSettings.use_system_fonts;
         oWorker.m_arAdditionalFolders = m_pMain->m_oSettings.additional_fonts_folder;
+
+#if defined(_LINUX)
+        std::wstring sHome = GetHomeDirectory();
+        if (!sHome.empty())
+        {
+#ifdef _MAC
+            oWorker.m_arAdditionalFolders.push_back(sHome + L"/Library/Fonts");
+#else
+            oWorker.m_arAdditionalFolders.push_back(sHome + L"/.fonts");
+            oWorker.m_arAdditionalFolders.push_back(sHome + L"/.local/share/fonts");
+#endif
+        }
+#endif
+
         oWorker.m_bIsUseOpenType = true;
         oWorker.m_bIsNeedThumbnails = true;
 

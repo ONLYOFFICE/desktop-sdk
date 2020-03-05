@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=3a7f32cc5c3a0e1ffe8f81167d44318c9d8eec41$
+// $hash=dcc8b483920f60ab8b9b2ba533d7bfd05b6b6f0f$
 //
 
 #include "libcef_dll/cpptoc/test/translator_test_scoped_client_cpptoc.h"
@@ -42,6 +42,10 @@ CefTranslatorTestScopedClientCppToC::CefTranslatorTestScopedClientCppToC() {
   GetStruct()->get_value = translator_test_scoped_client_get_value;
 }
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefTranslatorTestScopedClientCppToC::~CefTranslatorTestScopedClientCppToC() {}
+
 template <>
 CefOwnPtr<CefTranslatorTestScopedClient>
 CefCppToCScoped<CefTranslatorTestScopedClientCppToC,
@@ -73,14 +77,6 @@ CefCppToCScoped<CefTranslatorTestScopedClientCppToC,
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCppToCScoped<
-    CefTranslatorTestScopedClientCppToC,
-    CefTranslatorTestScopedClient,
-    cef_translator_test_scoped_client_t>::DebugObjCt ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType

@@ -10,8 +10,10 @@
 
 namespace client {
 
+class TempWindowMacImpl;
+
 // Represents a singleton hidden window that acts as a temporary parent for
-// popup browsers.
+// popup browsers. Only accessed on the UI thread.
 class TempWindowMac {
  public:
   // Returns the singleton window handle.
@@ -20,11 +22,13 @@ class TempWindowMac {
  private:
   // A single instance will be created/owned by RootWindowManager.
   friend class RootWindowManager;
+  // Allow deletion via scoped_ptr only.
+  friend struct base::DefaultDeleter<TempWindowMac>;
 
   TempWindowMac();
   ~TempWindowMac();
 
-  NSWindow* window_;
+  scoped_ptr<TempWindowMacImpl> impl_;
 
   DISALLOW_COPY_AND_ASSIGN(TempWindowMac);
 };

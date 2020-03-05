@@ -180,7 +180,7 @@ public:
     }
 
 public:
-    IMPLEMENT_REFCOUNTING(CCefCookieVisitor)
+    IMPLEMENT_REFCOUNTING(CCefCookieVisitor);
 };
 
 #ifdef CEF_2623
@@ -257,7 +257,7 @@ public:
     }
 
 public:
-    IMPLEMENT_REFCOUNTING(CCefCookieSetter)
+    IMPLEMENT_REFCOUNTING(CCefCookieSetter);
 };
 
 #endif // CEF_COOKIES_WORKER_H

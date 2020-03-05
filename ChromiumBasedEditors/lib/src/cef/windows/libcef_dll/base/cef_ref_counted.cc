@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 #include "include/base/cef_ref_counted.h"
-#include "include/base/cef_thread_collision_warner.h"
 
 namespace base {
 
@@ -11,6 +10,11 @@ namespace cef_subtle {
 
 bool RefCountedThreadSafeBase::HasOneRef() const {
   return AtomicRefCountIsOne(
+      &const_cast<RefCountedThreadSafeBase*>(this)->ref_count_);
+}
+
+bool RefCountedThreadSafeBase::HasAtLeastOneRef() const {
+  return !AtomicRefCountIsZero(
       &const_cast<RefCountedThreadSafeBase*>(this)->ref_count_);
 }
 

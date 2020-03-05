@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,15 +9,18 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=f887df57dfc145b107991b7a93a32ba42dd745f0$
+// $hash=f7a5a803a603ac83adeb3d55f5dbd62769cd8727$
 //
 
 #include "libcef_dll/ctocpp/sslstatus_ctocpp.h"
 #include "libcef_dll/ctocpp/x509certificate_ctocpp.h"
+#include "libcef_dll/shutdown_checker.h"
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
-bool CefSSLStatusCToCpp::IsSecureConnection() {
+NO_SANITIZE("cfi-icall") bool CefSSLStatusCToCpp::IsSecureConnection() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_sslstatus_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, is_secure_connection))
     return false;
@@ -31,7 +34,9 @@ bool CefSSLStatusCToCpp::IsSecureConnection() {
   return _retval ? true : false;
 }
 
-cef_cert_status_t CefSSLStatusCToCpp::GetCertStatus() {
+NO_SANITIZE("cfi-icall") cef_cert_status_t CefSSLStatusCToCpp::GetCertStatus() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_sslstatus_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_cert_status))
     return CERT_STATUS_NONE;
@@ -45,7 +50,9 @@ cef_cert_status_t CefSSLStatusCToCpp::GetCertStatus() {
   return _retval;
 }
 
-cef_ssl_version_t CefSSLStatusCToCpp::GetSSLVersion() {
+NO_SANITIZE("cfi-icall") cef_ssl_version_t CefSSLStatusCToCpp::GetSSLVersion() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_sslstatus_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_sslversion))
     return SSL_CONNECTION_VERSION_UNKNOWN;
@@ -59,7 +66,10 @@ cef_ssl_version_t CefSSLStatusCToCpp::GetSSLVersion() {
   return _retval;
 }
 
+NO_SANITIZE("cfi-icall")
 cef_ssl_content_status_t CefSSLStatusCToCpp::GetContentStatus() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_sslstatus_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_content_status))
     return SSL_CONTENT_NORMAL_CONTENT;
@@ -73,7 +83,10 @@ cef_ssl_content_status_t CefSSLStatusCToCpp::GetContentStatus() {
   return _retval;
 }
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefX509Certificate> CefSSLStatusCToCpp::GetX509Certificate() {
+  shutdown_checker::AssertNotShutdown();
+
   cef_sslstatus_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_x509certificate))
     return NULL;
@@ -91,6 +104,12 @@ CefRefPtr<CefX509Certificate> CefSSLStatusCToCpp::GetX509Certificate() {
 
 CefSSLStatusCToCpp::CefSSLStatusCToCpp() {}
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefSSLStatusCToCpp::~CefSSLStatusCToCpp() {
+  shutdown_checker::AssertNotShutdown();
+}
+
 template <>
 cef_sslstatus_t*
 CefCToCppRefCounted<CefSSLStatusCToCpp, CefSSLStatus, cef_sslstatus_t>::
@@ -98,13 +117,6 @@ CefCToCppRefCounted<CefSSLStatusCToCpp, CefSSLStatus, cef_sslstatus_t>::
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount
-    CefCToCppRefCounted<CefSSLStatusCToCpp, CefSSLStatus, cef_sslstatus_t>::
-        DebugObjCt ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType CefCToCppRefCounted<CefSSLStatusCToCpp,

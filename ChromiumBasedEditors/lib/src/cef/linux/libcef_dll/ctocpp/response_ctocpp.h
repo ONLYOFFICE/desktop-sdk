@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=e47f062a6fd7366b38f2f02b71415ced089445d1$
+// $hash=529b0d3676e398d5047eb714a8210fefcc937e76$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_RESPONSE_CTOCPP_H_
@@ -31,6 +31,7 @@ class CefResponseCToCpp : public CefCToCppRefCounted<CefResponseCToCpp,
                                                      cef_response_t> {
  public:
   CefResponseCToCpp();
+  virtual ~CefResponseCToCpp();
 
   // CefResponse methods.
   bool IsReadOnly() OVERRIDE;
@@ -42,9 +43,13 @@ class CefResponseCToCpp : public CefCToCppRefCounted<CefResponseCToCpp,
   void SetStatusText(const CefString& statusText) OVERRIDE;
   CefString GetMimeType() OVERRIDE;
   void SetMimeType(const CefString& mimeType) OVERRIDE;
+  CefString GetCharset() OVERRIDE;
+  void SetCharset(const CefString& charset) OVERRIDE;
   CefString GetHeader(const CefString& name) OVERRIDE;
   void GetHeaderMap(HeaderMap& headerMap) OVERRIDE;
   void SetHeaderMap(const HeaderMap& headerMap) OVERRIDE;
+  CefString GetURL() OVERRIDE;
+  void SetURL(const CefString& url) OVERRIDE;
 };
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_RESPONSE_CTOCPP_H_

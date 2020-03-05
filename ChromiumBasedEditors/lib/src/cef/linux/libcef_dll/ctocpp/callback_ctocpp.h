@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=256892a4f1a26b461dd5149e5ba4bcafdb6a47a5$
+// $hash=43e81996fa631df9a05493e8ca020a90a2831b96$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_CALLBACK_CTOCPP_H_
@@ -31,6 +31,7 @@ class CefCallbackCToCpp : public CefCToCppRefCounted<CefCallbackCToCpp,
                                                      cef_callback_t> {
  public:
   CefCallbackCToCpp();
+  virtual ~CefCallbackCToCpp();
 
   // CefCallback methods.
   void Continue() OVERRIDE;

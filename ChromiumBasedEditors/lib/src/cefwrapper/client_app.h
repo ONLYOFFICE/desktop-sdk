@@ -259,6 +259,7 @@ public:
 #endif
 
             command_line->AppendSwitch("--disable-extensions");
+            command_line->AppendSwitch("--disable-plugins");
             command_line->AppendSwitch("--enable-file-cookies");
             command_line->AppendSwitch("--disable-pinch");
             command_line->AppendSwitch("--enable-aggressive-domstorage-flushing");
@@ -273,6 +274,9 @@ public:
             int forceDpi = IsForceDpiRound();
             if (0 != forceDpi)
                 command_line->AppendSwitchWithValue("--force-device-scale-factor", std::to_string(forceDpi));
+
+            if (m_manager->GetDebugInfoSupport())
+                command_line->AppendSwitchWithValue("--remote-debugging-port", "8080");
 
 #ifdef DISABLE_WEB_SEQURITY
             command_line->AppendSwitch("--disable-web-security");
@@ -299,14 +303,12 @@ public:
 #ifndef CEF_2623
     virtual void OnScheduleMessagePumpWork(int64 delay) OVERRIDE
     {
-        if (m_manager->OnScheduleMessagePumpWork())
-            return;
         client::ClientAppBrowser::OnScheduleMessagePumpWork(delay);
     }
 #endif
 
 public:
-    IMPLEMENT_REFCOUNTING(CAscClientAppBrowser)
+    IMPLEMENT_REFCOUNTING(CAscClientAppBrowser);
 };
 #endif
 
@@ -354,6 +356,7 @@ public:
 #endif
 
             command_line->AppendSwitch("--disable-extensions");
+            command_line->AppendSwitch("--disable-plugins");
             command_line->AppendSwitch("--enable-file-cookies");
             command_line->AppendSwitch("--disable-pinch");
             command_line->AppendSwitch("--enable-aggressive-domstorage-flushing");
@@ -376,7 +379,7 @@ public:
     }
 
 public:
-    IMPLEMENT_REFCOUNTING(CAscClientAppOther)
+    IMPLEMENT_REFCOUNTING(CAscClientAppOther);
 };
 
 class CAscClientAppRenderer : public client::ClientAppRenderer, public CAppSettings
@@ -413,6 +416,7 @@ public:
 #endif
 
             command_line->AppendSwitch("--disable-extensions");
+            command_line->AppendSwitch("--disable-plugins");
             command_line->AppendSwitch("--enable-file-cookies");
             command_line->AppendSwitch("--disable-pinch");
             command_line->AppendSwitch("--enable-aggressive-domstorage-flushing");

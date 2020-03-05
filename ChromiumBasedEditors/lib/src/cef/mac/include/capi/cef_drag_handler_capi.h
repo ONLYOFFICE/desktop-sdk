@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2019 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,7 +33,7 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=c557dad9522f4bd4c6b3295d149c6b893fc18d52$
+// $hash=5c7eb1cee72dcb8b7657007b3f9db64680ea8c4d$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_DRAG_HANDLER_CAPI_H_
@@ -43,6 +43,7 @@
 #include "include/capi/cef_base_capi.h"
 #include "include/capi/cef_browser_capi.h"
 #include "include/capi/cef_drag_data_capi.h"
+#include "include/capi/cef_frame_capi.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -79,6 +80,7 @@ typedef struct _cef_drag_handler_t {
   void(CEF_CALLBACK* on_draggable_regions_changed)(
       struct _cef_drag_handler_t* self,
       struct _cef_browser_t* browser,
+      struct _cef_frame_t* frame,
       size_t regionsCount,
       cef_draggable_region_t const* regions);
 } cef_drag_handler_t;

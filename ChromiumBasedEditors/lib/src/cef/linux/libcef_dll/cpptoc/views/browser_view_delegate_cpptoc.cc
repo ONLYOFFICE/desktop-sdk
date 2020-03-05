@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=02a5e27f4359f971859d711c0943d87e1bf0e883$
+// $hash=0805935e3a3a9e62249c1296ef7204aa029a9c07$
 //
 
 #include "libcef_dll/cpptoc/views/browser_view_delegate_cpptoc.h"
@@ -17,6 +17,7 @@
 #include "libcef_dll/ctocpp/browser_ctocpp.h"
 #include "libcef_dll/ctocpp/views/browser_view_ctocpp.h"
 #include "libcef_dll/ctocpp/views/view_ctocpp.h"
+#include "libcef_dll/shutdown_checker.h"
 
 namespace {
 
@@ -26,6 +27,8 @@ void CEF_CALLBACK browser_view_delegate_on_browser_created(
     struct _cef_browser_view_delegate_t* self,
     cef_browser_view_t* browser_view,
     cef_browser_t* browser) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -50,6 +53,8 @@ void CEF_CALLBACK browser_view_delegate_on_browser_destroyed(
     struct _cef_browser_view_delegate_t* self,
     cef_browser_view_t* browser_view,
     cef_browser_t* browser) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -77,6 +82,8 @@ browser_view_delegate_get_delegate_for_popup_browser_view(
     const struct _cef_browser_settings_t* settings,
     cef_client_t* client,
     int is_devtools) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -115,6 +122,8 @@ int CEF_CALLBACK browser_view_delegate_on_popup_browser_view_created(
     cef_browser_view_t* browser_view,
     cef_browser_view_t* popup_browser_view,
     int is_devtools) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -143,6 +152,8 @@ int CEF_CALLBACK browser_view_delegate_on_popup_browser_view_created(
 cef_size_t CEF_CALLBACK
 browser_view_delegate_get_preferred_size(struct _cef_view_delegate_t* self,
                                          cef_view_t* view) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -165,6 +176,8 @@ browser_view_delegate_get_preferred_size(struct _cef_view_delegate_t* self,
 cef_size_t CEF_CALLBACK
 browser_view_delegate_get_minimum_size(struct _cef_view_delegate_t* self,
                                        cef_view_t* view) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -187,6 +200,8 @@ browser_view_delegate_get_minimum_size(struct _cef_view_delegate_t* self,
 cef_size_t CEF_CALLBACK
 browser_view_delegate_get_maximum_size(struct _cef_view_delegate_t* self,
                                        cef_view_t* view) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -210,6 +225,8 @@ int CEF_CALLBACK
 browser_view_delegate_get_height_for_width(struct _cef_view_delegate_t* self,
                                            cef_view_t* view,
                                            int width) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -234,6 +251,8 @@ browser_view_delegate_on_parent_view_changed(struct _cef_view_delegate_t* self,
                                              cef_view_t* view,
                                              int added,
                                              cef_view_t* parent) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -260,6 +279,8 @@ browser_view_delegate_on_child_view_changed(struct _cef_view_delegate_t* self,
                                             cef_view_t* view,
                                             int added,
                                             cef_view_t* child) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -284,6 +305,8 @@ browser_view_delegate_on_child_view_changed(struct _cef_view_delegate_t* self,
 void CEF_CALLBACK
 browser_view_delegate_on_focus(struct _cef_view_delegate_t* self,
                                cef_view_t* view) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -303,6 +326,8 @@ browser_view_delegate_on_focus(struct _cef_view_delegate_t* self,
 void CEF_CALLBACK
 browser_view_delegate_on_blur(struct _cef_view_delegate_t* self,
                               cef_view_t* view) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -345,6 +370,12 @@ CefBrowserViewDelegateCppToC::CefBrowserViewDelegateCppToC() {
   GetStruct()->base.on_blur = browser_view_delegate_on_blur;
 }
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefBrowserViewDelegateCppToC::~CefBrowserViewDelegateCppToC() {
+  shutdown_checker::AssertNotShutdown();
+}
+
 template <>
 CefRefPtr<CefBrowserViewDelegate> CefCppToCRefCounted<
     CefBrowserViewDelegateCppToC,
@@ -355,14 +386,6 @@ CefRefPtr<CefBrowserViewDelegate> CefCppToCRefCounted<
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCppToCRefCounted<
-    CefBrowserViewDelegateCppToC,
-    CefBrowserViewDelegate,
-    cef_browser_view_delegate_t>::DebugObjCt ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType CefCppToCRefCounted<CefBrowserViewDelegateCppToC,

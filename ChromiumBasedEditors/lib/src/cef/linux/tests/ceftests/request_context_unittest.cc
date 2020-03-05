@@ -8,9 +8,10 @@
 #include "include/wrapper/cef_closure_task.h"
 #include "include/wrapper/cef_scoped_temp_dir.h"
 #include "tests/ceftests/test_handler.h"
+#include "tests/ceftests/test_util.h"
 #include "tests/gtest/include/gtest/gtest.h"
 
-TEST(RequestContextTest, GetGlobalContext) {
+TEST(RequestContextTest, BasicGetGlobal) {
   CefRefPtr<CefRequestContext> context1 = CefRequestContext::GetGlobalContext();
   EXPECT_TRUE(context1.get());
   EXPECT_TRUE(context1->IsGlobal());
@@ -29,11 +30,10 @@ TEST(RequestContextTest, GetGlobalContext) {
   EXPECT_TRUE(context2->IsSharingWith(context1));
 }
 
-TEST(RequestContextTest, CreateContext) {
+TEST(RequestContextTest, BasicCreate) {
   class Handler : public CefRequestContextHandler {
    public:
     Handler() {}
-    CefRefPtr<CefCookieManager> GetCookieManager() override { return NULL; }
 
    private:
     IMPLEMENT_REFCOUNTING(Handler);
@@ -76,7 +76,7 @@ TEST(RequestContextTest, CreateContext) {
   EXPECT_FALSE(context2->IsSharingWith(context3));
 }
 
-TEST(RequestContextTest, CreateContextNoHandler) {
+TEST(RequestContextTest, BasicCreateNoHandler) {
   CefRequestContextSettings settings;
 
   CefRefPtr<CefRequestContext> context1 =
@@ -112,7 +112,7 @@ TEST(RequestContextTest, CreateContextNoHandler) {
   EXPECT_FALSE(context2->IsSharingWith(context3));
 }
 
-TEST(RequestContextTest, CreateContextSharedGlobal) {
+TEST(RequestContextTest, BasicCreateSharedGlobal) {
   CefRequestContextSettings settings;
 
   CefRefPtr<CefRequestContext> context1 = CefRequestContext::GetGlobalContext();
@@ -134,7 +134,7 @@ TEST(RequestContextTest, CreateContextSharedGlobal) {
   EXPECT_TRUE(context1->IsSharingWith(context2));
 }
 
-TEST(RequestContextTest, CreateContextSharedOnDisk) {
+TEST(RequestContextTest, BasicCreateSharedOnDisk) {
   CefScopedTempDir tempdir;
   EXPECT_TRUE(tempdir.CreateUniqueTempDir());
 
@@ -196,157 +196,8 @@ TEST(RequestContextTest, CreateContextSharedOnDisk) {
 
 namespace {
 
-class CookieTestHandler : public TestHandler {
- public:
-  class RequestContextHandler : public CefRequestContextHandler {
-   public:
-    explicit RequestContextHandler(CookieTestHandler* handler)
-        : handler_(handler) {}
-
-    CefRefPtr<CefCookieManager> GetCookieManager() override {
-      EXPECT_TRUE(handler_);
-      handler_->got_get_cookie_manager_.yes();
-      return handler_->cookie_manager_;
-    }
-
-    void Detach() { handler_ = NULL; }
-
-   private:
-    CookieTestHandler* handler_;
-
-    IMPLEMENT_REFCOUNTING(RequestContextHandler);
-  };
-
-  CookieTestHandler(const std::string& url) : url_(url) {}
-
-  void RunTest() override {
-    AddResource(url_,
-                "<html>"
-                "<head><script>document.cookie='name1=value1';</script></head>"
-                "<body>Nav1</body>"
-                "</html>",
-                "text/html");
-
-    CefRequestContextSettings settings;
-
-    context_handler_ = new RequestContextHandler(this);
-    context_ =
-        CefRequestContext::CreateContext(settings, context_handler_.get());
-    cookie_manager_ = CefCookieManager::CreateManager(CefString(), true, NULL);
-
-    // Create browser that loads the 1st URL.
-    CreateBrowser(url_, context_);
-
-    // Time out the test after a reasonable period of time.
-    SetTestTimeout();
-  }
-
-  void OnLoadEnd(CefRefPtr<CefBrowser> browser,
-                 CefRefPtr<CefFrame> frame,
-                 int httpStatusCode) override {
-    CefRefPtr<CefRequestContext> context =
-        browser->GetHost()->GetRequestContext();
-    EXPECT_TRUE(context.get());
-    EXPECT_TRUE(context->IsSame(context_));
-    EXPECT_FALSE(context->IsGlobal());
-    EXPECT_EQ(context->GetHandler().get(), context_handler_.get());
-
-    FinishTest();
-  }
-
- protected:
-  void FinishTest() {
-    // Verify that the cookie was set correctly.
-    class TestVisitor : public CefCookieVisitor {
-     public:
-      explicit TestVisitor(CookieTestHandler* handler) : handler_(handler) {}
-      ~TestVisitor() override {
-        // Destroy the test.
-        CefPostTask(TID_UI,
-                    base::Bind(&CookieTestHandler::DestroyTest, handler_));
-      }
-
-      bool Visit(const CefCookie& cookie,
-                 int count,
-                 int total,
-                 bool& deleteCookie) override {
-        const std::string& name = CefString(&cookie.name);
-        const std::string& value = CefString(&cookie.value);
-        if (name == "name1" && value == "value1")
-          handler_->got_cookie_.yes();
-        return true;
-      }
-
-     private:
-      CookieTestHandler* handler_;
-      IMPLEMENT_REFCOUNTING(TestVisitor);
-    };
-
-    cookie_manager_->VisitAllCookies(new TestVisitor(this));
-  }
-
-  void DestroyTest() override {
-    // Verify test expectations.
-    EXPECT_TRUE(got_get_cookie_manager_);
-    EXPECT_TRUE(got_cookie_);
-
-    context_handler_->Detach();
-    context_handler_ = NULL;
-    context_ = NULL;
-
-    TestHandler::DestroyTest();
-  }
-
-  std::string url_;
-  CefRefPtr<CefRequestContext> context_;
-  CefRefPtr<RequestContextHandler> context_handler_;
-  CefRefPtr<CefCookieManager> cookie_manager_;
-
-  TrackCallback got_get_cookie_manager_;
-  TrackCallback got_cookie_;
-
-  IMPLEMENT_REFCOUNTING(CookieTestHandler);
-};
-
-}  // namespace
-
-// Test that the cookie manager is retrieved via the associated request context.
-TEST(RequestContextTest, GetCookieManager) {
-  CefRefPtr<CookieTestHandler> handler =
-      new CookieTestHandler("http://tests-simple-rch.com/nav1.html");
-  handler->ExecuteTest();
-  ReleaseAndWaitForDestructor(handler);
-}
-
-namespace {
-
 class PopupTestHandler : public TestHandler {
  public:
-  class RequestContextHandler : public CefRequestContextHandler {
-   public:
-    explicit RequestContextHandler(PopupTestHandler* handler)
-        : handler_(handler) {}
-
-    CefRefPtr<CefCookieManager> GetCookieManager() override {
-      EXPECT_TRUE(handler_);
-      if (url_ == handler_->url_)
-        handler_->got_get_cookie_manager1_.yes();
-      else if (url_ == handler_->popup_url_)
-        handler_->got_get_cookie_manager2_.yes();
-      return handler_->cookie_manager_;
-    }
-
-    void SetURL(const std::string& url) { url_ = url; }
-
-    void Detach() { handler_ = NULL; }
-
-   private:
-    PopupTestHandler* handler_;
-    std::string url_;
-
-    IMPLEMENT_REFCOUNTING(RequestContextHandler);
-  };
-
   enum Mode {
     MODE_WINDOW_OPEN,
     MODE_TARGETED_LINK,
@@ -393,11 +244,8 @@ class PopupTestHandler : public TestHandler {
 
     CefRequestContextSettings settings;
 
-    context_handler_ = new RequestContextHandler(this);
-    context_handler_->SetURL(url_);
-    context_ =
-        CefRequestContext::CreateContext(settings, context_handler_.get());
-    cookie_manager_ = CefCookieManager::CreateManager(CefString(), true, NULL);
+    context_ = CefRequestContext::CreateContext(settings, NULL);
+    cookie_manager_ = context_->GetCookieManager(NULL);
 
     // Create browser that loads the 1st URL.
     CreateBrowser(url_, context_);
@@ -420,7 +268,6 @@ class PopupTestHandler : public TestHandler {
     const std::string& url = frame->GetURL();
     if (url == url_) {
       got_load_end1_.yes();
-      context_handler_->SetURL(popup_url_);
       LaunchPopup(browser);
     } else if (url == popup_url_) {
       got_load_end2_.yes();
@@ -440,6 +287,7 @@ class PopupTestHandler : public TestHandler {
                      CefWindowInfo& windowInfo,
                      CefRefPtr<CefClient>& client,
                      CefBrowserSettings& settings,
+                     CefRefPtr<CefDictionaryValue>& extra_info,
                      bool* no_javascript_access) override {
     got_on_before_popup_.yes();
 
@@ -496,10 +344,13 @@ class PopupTestHandler : public TestHandler {
                  bool& deleteCookie) override {
         const std::string& name = CefString(&cookie.name);
         const std::string& value = CefString(&cookie.value);
-        if (name == "name1" && value == "value1")
+        if (name == "name1" && value == "value1") {
           handler_->got_cookie1_.yes();
-        else if (name == "name2" && value == "value2")
+          deleteCookie = true;
+        } else if (name == "name2" && value == "value2") {
           handler_->got_cookie2_.yes();
+          deleteCookie = true;
+        }
         return true;
       }
 
@@ -513,16 +364,11 @@ class PopupTestHandler : public TestHandler {
 
   void DestroyTest() override {
     // Verify test expectations.
-    EXPECT_TRUE(got_get_cookie_manager1_);
     EXPECT_TRUE(got_load_end1_);
     EXPECT_TRUE(got_on_before_popup_);
-    EXPECT_TRUE(got_get_cookie_manager2_);
     EXPECT_TRUE(got_load_end2_);
     EXPECT_TRUE(got_cookie1_);
     EXPECT_TRUE(got_cookie2_);
-
-    context_handler_->Detach();
-    context_handler_ = NULL;
     context_ = NULL;
 
     TestHandler::DestroyTest();
@@ -533,13 +379,10 @@ class PopupTestHandler : public TestHandler {
   Mode mode_;
 
   CefRefPtr<CefRequestContext> context_;
-  CefRefPtr<RequestContextHandler> context_handler_;
   CefRefPtr<CefCookieManager> cookie_manager_;
 
-  TrackCallback got_get_cookie_manager1_;
   TrackCallback got_load_end1_;
   TrackCallback got_on_before_popup_;
-  TrackCallback got_get_cookie_manager2_;
   TrackCallback got_load_end2_;
   TrackCallback got_cookie1_;
   TrackCallback got_cookie2_;
@@ -551,14 +394,14 @@ class PopupTestHandler : public TestHandler {
 
 // Test that a popup created using window.open() will get the same request
 // context as the parent browser.
-TEST(RequestContextTest, WindowOpenSameOrigin) {
+TEST(RequestContextTest, PopupBasicWindowOpenSameOrigin) {
   CefRefPtr<PopupTestHandler> handler =
       new PopupTestHandler(true, PopupTestHandler::MODE_WINDOW_OPEN);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 }
 
-TEST(RequestContextTest, WindowOpenDifferentOrigin) {
+TEST(RequestContextTest, PopupBasicWindowOpenDifferentOrigin) {
   CefRefPtr<PopupTestHandler> handler =
       new PopupTestHandler(false, PopupTestHandler::MODE_WINDOW_OPEN);
   handler->ExecuteTest();
@@ -567,14 +410,14 @@ TEST(RequestContextTest, WindowOpenDifferentOrigin) {
 
 // Test that a popup created using a targeted link will get the same request
 // context as the parent browser.
-TEST(RequestContextTest, TargetedLinkSameOrigin) {
+TEST(RequestContextTest, PopupBasicTargetedLinkSameOrigin) {
   CefRefPtr<PopupTestHandler> handler =
       new PopupTestHandler(true, PopupTestHandler::MODE_TARGETED_LINK);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 }
 
-TEST(RequestContextTest, TargetedLinkDifferentOrigin) {
+TEST(RequestContextTest, PopupBasicTargetedLinkDifferentOrigin) {
   CefRefPtr<PopupTestHandler> handler =
       new PopupTestHandler(false, PopupTestHandler::MODE_TARGETED_LINK);
   handler->ExecuteTest();
@@ -584,14 +427,14 @@ TEST(RequestContextTest, TargetedLinkDifferentOrigin) {
 // Test that a popup created using a noreferrer link will get the same
 // request context as the parent browser. A new render process will
 // be created for the popup browser.
-TEST(RequestContextTest, NoReferrerLinkSameOrigin) {
+TEST(RequestContextTest, PopupBasicNoReferrerLinkSameOrigin) {
   CefRefPtr<PopupTestHandler> handler =
       new PopupTestHandler(true, PopupTestHandler::MODE_NOREFERRER_LINK);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 }
 
-TEST(RequestContextTest, NoReferrerLinkDifferentOrigin) {
+TEST(RequestContextTest, PopupBasicNoReferrerLinkDifferentOrigin) {
   CefRefPtr<PopupTestHandler> handler =
       new PopupTestHandler(false, PopupTestHandler::MODE_NOREFERRER_LINK);
   handler->ExecuteTest();
@@ -608,7 +451,7 @@ const char kPopupNavPopupName[] = "my_popup";
 // Browser side.
 class PopupNavTestHandler : public TestHandler {
  public:
-  enum Mode {
+  enum TestMode {
     ALLOW_CLOSE_POPUP_FIRST,
     ALLOW_CLOSE_POPUP_LAST,
     DENY,
@@ -620,14 +463,11 @@ class PopupNavTestHandler : public TestHandler {
     DESTROY_PARENT_AFTER_CREATION,
     DESTROY_PARENT_AFTER_CREATION_FORCE,
   };
-  enum RCMode {
-    RC_MODE_NONE,
-    RC_MODE_IMPL,
-    RC_MODE_PROXY,
-  };
 
-  PopupNavTestHandler(Mode mode, RCMode rc_mode)
-      : mode_(mode), rc_mode_(rc_mode) {}
+  PopupNavTestHandler(TestMode test_mode,
+                      TestRequestContextMode rc_mode,
+                      const std::string& rc_cache_path)
+      : mode_(test_mode), rc_mode_(rc_mode), rc_cache_path_(rc_cache_path) {}
 
   void RunTest() override {
     // Add the resources that we will navigate to/from.
@@ -640,23 +480,8 @@ class PopupNavTestHandler : public TestHandler {
     if (mode_ == NAVIGATE_AFTER_CREATION)
       AddResource(kPopupNavPopupUrl2, "<html>Popup2</html>", "text/html");
 
-    CefRefPtr<CefRequestContext> request_context;
-    CefRefPtr<CefRequestContextHandler> rc_handler;
-    if (rc_mode_ == RC_MODE_PROXY) {
-      class Handler : public CefRequestContextHandler {
-       public:
-        Handler() {}
-
-       private:
-        IMPLEMENT_REFCOUNTING(Handler);
-      };
-      rc_handler = new Handler();
-    }
-
-    if (rc_mode_ != RC_MODE_NONE) {
-      CefRequestContextSettings settings;
-      request_context = CefRequestContext::CreateContext(settings, rc_handler);
-    }
+    CefRefPtr<CefRequestContext> request_context =
+        CreateTestRequestContext(rc_mode_, rc_cache_path_);
 
     // Create the browser.
     CreateBrowser(kPopupNavPageUrl, request_context);
@@ -675,6 +500,7 @@ class PopupNavTestHandler : public TestHandler {
                      CefWindowInfo& windowInfo,
                      CefRefPtr<CefClient>& client,
                      CefBrowserSettings& settings,
+                     CefRefPtr<CefDictionaryValue>& extra_info,
                      bool* no_javascript_access) override {
     EXPECT_FALSE(got_on_before_popup_);
     got_on_before_popup_.yes();
@@ -855,7 +681,11 @@ class PopupNavTestHandler : public TestHandler {
       EXPECT_FALSE(got_popup_load_end2_);
     } else if (mode_ == NAVIGATE_AFTER_CREATION) {
       EXPECT_FALSE(got_popup_load_start_);
-      EXPECT_TRUE(got_popup_load_error_);
+
+      // With browser-side navigation we will never actually begin the
+      // navigation to the 1st popup URL, so there will be no load error.
+      EXPECT_FALSE(got_popup_load_error_);
+
       EXPECT_FALSE(got_popup_load_end_);
       EXPECT_TRUE(got_popup_load_start2_);
       EXPECT_FALSE(got_popup_load_error2_);
@@ -866,8 +696,9 @@ class PopupNavTestHandler : public TestHandler {
     TestHandler::DestroyTest();
   }
 
-  const Mode mode_;
-  const RCMode rc_mode_;
+  const TestMode mode_;
+  const TestRequestContextMode rc_mode_;
+  const std::string rc_cache_path_;
 
   TrackCallback got_on_before_popup_;
   TrackCallback got_load_start_;
@@ -884,45 +715,37 @@ class PopupNavTestHandler : public TestHandler {
 };
 
 }  // namespace
-
-#define POPUP_TEST(name, test_mode, rc_mode)                           \
-  TEST(RequestContextTest, Popup##name) {                              \
-    CefRefPtr<PopupNavTestHandler> handler = new PopupNavTestHandler(  \
-        PopupNavTestHandler::test_mode, PopupNavTestHandler::rc_mode); \
-    handler->ExecuteTest();                                            \
-    ReleaseAndWaitForDestructor(handler);                              \
-  }
-
-#define POPUP_TEST_GROUP(name, test_mode)            \
-  POPUP_TEST(name##RCNone, test_mode, RC_MODE_NONE); \
-  POPUP_TEST(name##RCImpl, test_mode, RC_MODE_IMPL); \
-  POPUP_TEST(name##RCProxy, test_mode, RC_MODE_PROXY);
+#define POPUP_TEST_GROUP(test_name, test_mode)                     \
+  RC_TEST_GROUP_IN_MEMORY(RequestContextTest, PopupNav##test_name, \
+                          PopupNavTestHandler, test_mode)
 
 // Test allowing popups and closing the popup browser first.
-POPUP_TEST_GROUP(AllowClosePopupFirst, ALLOW_CLOSE_POPUP_FIRST);
+POPUP_TEST_GROUP(AllowClosePopupFirst, ALLOW_CLOSE_POPUP_FIRST)
 
-// Test allowing popups and closing the main browser first to verify that
-// internal objects are tracked correctly (see issue #2162).
-POPUP_TEST_GROUP(AllowClosePopupLast, ALLOW_CLOSE_POPUP_LAST);
+// Test allowing popups and closing the main browser first to verify
+// that internal objects are tracked correctly (see issue #2162).
+POPUP_TEST_GROUP(AllowClosePopupLast, ALLOW_CLOSE_POPUP_LAST)
 
 // Test denying popups.
-POPUP_TEST_GROUP(Deny, DENY);
+POPUP_TEST_GROUP(Deny, DENY)
 
-// Test navigation to a different origin after popup creation to verify that
-// internal objects are tracked correctly (see issue #1392).
-POPUP_TEST_GROUP(NavigateAfterCreation, NAVIGATE_AFTER_CREATION);
+// Test navigation to a different origin after popup creation to
+// verify that internal objects are tracked correctly (see issue
+// #1392).
+POPUP_TEST_GROUP(NavigateAfterCreation, NAVIGATE_AFTER_CREATION)
 
-// Test destroying the parent browser during or immediately after popup creation
-// to verify that internal objects are tracked correctly (see issue #2041).
-POPUP_TEST_GROUP(DestroyParentBeforeCreation, DESTROY_PARENT_BEFORE_CREATION);
+// Test destroying the parent browser during or immediately after
+// popup creation to verify that internal objects are tracked
+// correctly (see issue #2041).
+POPUP_TEST_GROUP(DestroyParentBeforeCreation, DESTROY_PARENT_BEFORE_CREATION)
 POPUP_TEST_GROUP(DestroyParentBeforeCreationForce,
-                 DESTROY_PARENT_BEFORE_CREATION_FORCE);
-POPUP_TEST_GROUP(DestroyParentDuringCreation, DESTROY_PARENT_DURING_CREATION);
+                 DESTROY_PARENT_BEFORE_CREATION_FORCE)
+POPUP_TEST_GROUP(DestroyParentDuringCreation, DESTROY_PARENT_DURING_CREATION)
 POPUP_TEST_GROUP(DestroyParentDuringCreationForce,
-                 DESTROY_PARENT_DURING_CREATION_FORCE);
-POPUP_TEST_GROUP(DestroyParentAfterCreation, DESTROY_PARENT_AFTER_CREATION);
+                 DESTROY_PARENT_DURING_CREATION_FORCE)
+POPUP_TEST_GROUP(DestroyParentAfterCreation, DESTROY_PARENT_AFTER_CREATION)
 POPUP_TEST_GROUP(DestroyParentAfterCreationForce,
-                 DESTROY_PARENT_AFTER_CREATION_FORCE);
+                 DESTROY_PARENT_AFTER_CREATION_FORCE)
 
 namespace {
 
@@ -1013,27 +836,7 @@ class MethodTestHandler : public TestHandler {
     EXPECT_FALSE(got_completion_callback_);
     got_completion_callback_.yes();
 
-    if (method_ == METHOD_RESOLVE_HOST) {
-      // Now try a cached request.
-      CefPostTask(TID_IO, base::Bind(&MethodTestHandler::ResolveHostCached,
-                                     this, browser));
-    } else {
-      DestroyTest();
-    }
-  }
-
-  void ResolveHostCached(CefRefPtr<CefBrowser> browser) {
-    EXPECT_IO_THREAD();
-
-    CefRefPtr<CefRequestContext> context =
-        browser->GetHost()->GetRequestContext();
-    std::vector<CefString> resolved_ips;
-    cef_errorcode_t result =
-        context->ResolveHostCached(kResolveOrigin, resolved_ips);
-    EXPECT_EQ(ERR_NONE, result);
-    EXPECT_TRUE(!resolved_ips.empty());
-
-    CefPostTask(TID_UI, base::Bind(&MethodTestHandler::DestroyTest, this));
+    DestroyTest();
   }
 
  private:
@@ -1052,7 +855,8 @@ class MethodTestHandler : public TestHandler {
 
 }  // namespace
 
-// Test CefRequestContext::ClearCertificateExceptions with the global context.
+// Test CefRequestContext::ClearCertificateExceptions with the global
+// context.
 TEST(RequestContextTest, ClearCertificateExceptionsGlobal) {
   CefRefPtr<MethodTestHandler> handler = new MethodTestHandler(
       true, MethodTestHandler::METHOD_CLEAR_CERTIFICATE_EXCEPTIONS);
@@ -1060,7 +864,8 @@ TEST(RequestContextTest, ClearCertificateExceptionsGlobal) {
   ReleaseAndWaitForDestructor(handler);
 }
 
-// Test CefRequestContext::ClearCertificateExceptions with a custom context.
+// Test CefRequestContext::ClearCertificateExceptions with a custom
+// context.
 TEST(RequestContextTest, ClearCertificateExceptionsCustom) {
   CefRefPtr<MethodTestHandler> handler = new MethodTestHandler(
       false, MethodTestHandler::METHOD_CLEAR_CERTIFICATE_EXCEPTIONS);
@@ -1068,7 +873,8 @@ TEST(RequestContextTest, ClearCertificateExceptionsCustom) {
   ReleaseAndWaitForDestructor(handler);
 }
 
-// Test CefRequestContext::CloseAllConnections with the global context.
+// Test CefRequestContext::CloseAllConnections with the global
+// context.
 TEST(RequestContextTest, CloseAllConnectionsGlobal) {
   CefRefPtr<MethodTestHandler> handler = new MethodTestHandler(
       true, MethodTestHandler::METHOD_CLOSE_ALL_CONNECTIONS);

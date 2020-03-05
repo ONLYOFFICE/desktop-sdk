@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=ba470a970b4e0cd7a80058ff44d604e0a082a2e9$
+// $hash=9fe337283d31b9818ce687c75c9394ee4d380a5e$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_VIEWS_MENU_BUTTON_CTOCPP_H_
@@ -31,6 +31,7 @@ class CefMenuButtonCToCpp : public CefCToCppRefCounted<CefMenuButtonCToCpp,
                                                        cef_menu_button_t> {
  public:
   CefMenuButtonCToCpp();
+  virtual ~CefMenuButtonCToCpp();
 
   // CefMenuButton methods.
   void ShowMenu(CefRefPtr<CefMenuModel> menu_model,

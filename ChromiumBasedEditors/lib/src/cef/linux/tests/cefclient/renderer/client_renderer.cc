@@ -29,9 +29,12 @@ class ClientRenderDelegate : public ClientAppRenderer::Delegate {
     if (CefCrashReportingEnabled()) {
       // Set some crash keys for testing purposes. Keys must be defined in the
       // "crash_reporter.cfg" file. See cef_crash_util.h for details.
-      CefSetCrashKeyValue("testkey1", "value1_renderer");
-      CefSetCrashKeyValue("testkey2", "value2_renderer");
-      CefSetCrashKeyValue("testkey3", "value3_renderer");
+      CefSetCrashKeyValue("testkey_small1", "value1_small_renderer");
+      CefSetCrashKeyValue("testkey_small2", "value2_small_renderer");
+      CefSetCrashKeyValue("testkey_medium1", "value1_medium_renderer");
+      CefSetCrashKeyValue("testkey_medium2", "value2_medium_renderer");
+      CefSetCrashKeyValue("testkey_large1", "value1_large_renderer");
+      CefSetCrashKeyValue("testkey_large2", "value2_large_renderer");
     }
   }
 
@@ -66,16 +69,17 @@ class ClientRenderDelegate : public ClientAppRenderer::Delegate {
       CefRefPtr<CefProcessMessage> message =
           CefProcessMessage::Create(kFocusedNodeChangedMessage);
       message->GetArgumentList()->SetBool(0, is_editable);
-      browser->SendProcessMessage(PID_BROWSER, message);
+      frame->SendProcessMessage(PID_BROWSER, message);
     }
   }
 
   bool OnProcessMessageReceived(CefRefPtr<ClientAppRenderer> app,
                                 CefRefPtr<CefBrowser> browser,
+                                CefRefPtr<CefFrame> frame,
                                 CefProcessId source_process,
                                 CefRefPtr<CefProcessMessage> message) OVERRIDE {
-    return message_router_->OnProcessMessageReceived(browser, source_process,
-                                                     message);
+    return message_router_->OnProcessMessageReceived(browser, frame,
+                                                     source_process, message);
   }
 
  private:

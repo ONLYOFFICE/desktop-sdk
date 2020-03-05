@@ -475,6 +475,9 @@ public:
     COOXMLVerifier* m_pVerifier;
     NSFonts::IApplicationFonts* m_pFonts;
 
+    // конвертер запустился для сравнения
+    std::wstring m_sComparingFile;
+
 public:
     CASCFileConverterToEditor() : NSThreads::CBaseThread()
     {
@@ -504,6 +507,47 @@ public:
 
     virtual DWORD ThreadProc()
     {
+        if (!m_sComparingFile.empty())
+        {
+            std::wstring sCompareDir = m_oInfo.m_sRecoveryDir + L"/compare";
+
+            if (NSDirectory::Exists(sCompareDir))
+                NSDirectory::DeleteDirectory(sCompareDir);
+            NSDirectory::CreateDirectory(sCompareDir);
+
+            std::wstring sInputFile = sCompareDir + L"/" + NSFile::GetFileName(m_sComparingFile);
+            NSFile::CFileBinary::Copy(m_sComparingFile, sInputFile);
+
+            NSStringUtils::CStringBuilder oBuilder;
+            oBuilder.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><TaskQueueDataConvert><m_sFileFrom>");
+            oBuilder.WriteEncodeXmlString(sInputFile);
+            oBuilder.WriteString(L"</m_sFileFrom><m_sFileTo>");
+            oBuilder.WriteEncodeXmlString(sCompareDir);
+            oBuilder.WriteString(L"/Editor.bin</m_sFileTo><m_nFormatTo>8192</m_nFormatTo>");
+            oBuilder.WriteString(L"<m_sThemeDir>./themes</m_sThemeDir><m_bDontSaveAdditional>true</m_bDontSaveAdditional>");
+            oBuilder.WriteString(L"<m_sFontDir>");
+            oBuilder.WriteEncodeXmlString(m_pManager->m_oSettings.fonts_cache_info_path);
+            oBuilder.WriteString(L"</m_sFontDir><m_sHtmlFileInternalPath>");
+            oBuilder.WriteEncodeXmlString(NSFile::GetProcessDirectory() + L"/");
+            oBuilder.WriteString(L"</m_sHtmlFileInternalPath>");
+            if (!m_sAdditionalConvertation.empty())
+                oBuilder.WriteString(m_sAdditionalConvertation);
+            m_sAdditionalConvertation = L"";
+            oBuilder.WriteString(L"</TaskQueueDataConvert>");
+
+            std::wstring sConverterExe = m_pManager->m_oSettings.file_converter_path + L"/x2t";
+            std::wstring sParams = sCompareDir + L"/params.xml";
+
+            NSFile::CFileBinary::SaveToFile(sParams, oBuilder.GetData(), true);
+            int nReturnCode = NSX2T::Convert(sConverterExe, sParams, m_pManager, m_pManager->m_pInternal->m_bIsEnableConvertLogs);
+            NSFile::CFileBinary::Remove(sParams);
+
+            m_pEvents->OnFileConvertToEditor(nReturnCode);
+
+            m_bRunThread = FALSE;
+            return 0;
+        }
+
         if (NSFile::CFileBinary::Exists(m_oInfo.m_sRecoveryDir + L"/Editor.bin"))
         {
             if (true)
@@ -544,6 +588,7 @@ public:
         }
 
         std::wstring sLocalFilePath = m_oInfo.m_sFileSrc;
+
 #ifdef WIN32
         if (0 == sLocalFilePath.find(L"//"))
         {
@@ -988,17 +1033,24 @@ public:
         }
         m_oInfo.m_sDocumentInfo = L"";
 
-        int nDoctRendererParam = 0;
+        oBuilder.WriteString(L"<m_sJsonParams>{");
+        oBuilder.WriteEncodeXmlString(L"\"spreadsheetLayout\":{\"fitToWidth\":1,\"fitToHeight\":1}");
         if (m_bIsRetina)
-            nDoctRendererParam |= 0x01;
-        if (true) // печать пдф (лист = страница)
-            nDoctRendererParam |= 0x02;
+            oBuilder.WriteEncodeXmlString(L",\"printOptions\":{\"retina\":1}");
+        oBuilder.WriteString(L"}</m_sJsonParams>");
 
-        nDoctRendererParam |= 0x04; // disable fast doctrenderer (no rights to dump common information)
+        // disable cache
+        oBuilder.WriteString(L"<m_nDoctParams>1</m_nDoctParams>");
 
-        oBuilder.WriteString(L"<m_nDoctParams>");
-        oBuilder.WriteString(std::to_wstring(nDoctRendererParam));
-        oBuilder.WriteString(L"</m_nDoctParams>");
+        // tmp dir
+        std::wstring sDstTmpDir = NSFile::CFileBinary::CreateTempFileWithUniqueName(m_oInfo.m_sRecoveryDir, L"XT_");
+        if (NSFile::CFileBinary::Exists(sDstTmpDir))
+            NSFile::CFileBinary::Remove(sDstTmpDir);
+        NSDirectory::CreateDirectory(sDstTmpDir);
+
+        oBuilder.WriteString(L"<m_sTempDir>");
+        oBuilder.WriteEncodeXmlString(sDstTmpDir);
+        oBuilder.WriteString(L"</m_sTempDir>");
 
         oBuilder.WriteString(L"</TaskQueueDataConvert>");
 
@@ -1033,6 +1085,8 @@ public:
         m_bIsRetina = false;
 
         NSFile::CFileBinary::Remove(sTempFileForParams);
+        NSDirectory::DeleteDirectory(sDstTmpDir);
+
         m_pEvents->OnFileConvertFromEditor(nReturnCode, m_oInfo.m_sPassword);
 
         if (m_pManager->m_pInternal->m_pAdditional)

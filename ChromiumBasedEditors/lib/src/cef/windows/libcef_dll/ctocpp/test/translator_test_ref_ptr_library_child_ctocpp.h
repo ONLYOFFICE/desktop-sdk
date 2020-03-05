@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=4e4d079f92bba5864128b9310e2085f82e70bf4e$
+// $hash=bfe5377b458c8eba512f3105fe991e38e9a9d165$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_TEST_TRANSLATOR_TEST_REF_PTR_LIBRARY_CHILD_CTOCPP_H_
@@ -32,6 +32,7 @@ class CefTranslatorTestRefPtrLibraryChildCToCpp
                                  cef_translator_test_ref_ptr_library_child_t> {
  public:
   CefTranslatorTestRefPtrLibraryChildCToCpp();
+  virtual ~CefTranslatorTestRefPtrLibraryChildCToCpp();
 
   // CefTranslatorTestRefPtrLibraryChild methods.
   int GetOtherValue() OVERRIDE;

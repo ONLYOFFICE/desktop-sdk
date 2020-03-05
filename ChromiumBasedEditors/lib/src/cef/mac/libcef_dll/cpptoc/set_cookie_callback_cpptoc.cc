@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,10 +9,11 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=843899ae8ed15cf957ab8289ee917d48c1b2080f$
+// $hash=772e4a0488feeed3132dd7c8c6bbcf9510195e37$
 //
 
 #include "libcef_dll/cpptoc/set_cookie_callback_cpptoc.h"
+#include "libcef_dll/shutdown_checker.h"
 
 namespace {
 
@@ -21,6 +22,8 @@ namespace {
 void CEF_CALLBACK
 set_cookie_callback_on_complete(struct _cef_set_cookie_callback_t* self,
                                 int success) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -39,6 +42,12 @@ CefSetCookieCallbackCppToC::CefSetCookieCallbackCppToC() {
   GetStruct()->on_complete = set_cookie_callback_on_complete;
 }
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefSetCookieCallbackCppToC::~CefSetCookieCallbackCppToC() {
+  shutdown_checker::AssertNotShutdown();
+}
+
 template <>
 CefRefPtr<CefSetCookieCallback> CefCppToCRefCounted<
     CefSetCookieCallbackCppToC,
@@ -48,14 +57,6 @@ CefRefPtr<CefSetCookieCallback> CefCppToCRefCounted<
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCppToCRefCounted<CefSetCookieCallbackCppToC,
-                                         CefSetCookieCallback,
-                                         cef_set_cookie_callback_t>::DebugObjCt
-    ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType CefCppToCRefCounted<CefSetCookieCallbackCppToC,

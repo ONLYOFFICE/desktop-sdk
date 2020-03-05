@@ -24,9 +24,8 @@ class DisplayTestHandler : public RoutingTestHandler, public CefRenderHandler {
 
   CefRefPtr<CefRenderHandler> GetRenderHandler() override { return this; }
 
-  bool GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override {
+  void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override {
     rect = CefRect(0, 0, kOsrWidth, kOsrHeight);
-    return true;
   }
 
   bool GetScreenInfo(CefRefPtr<CefBrowser> browser,
@@ -113,12 +112,12 @@ class DisplayTestHandler : public RoutingTestHandler, public CefRenderHandler {
     windowInfo.SetAsWindowless(kNullWindowHandle);
 #endif
 
-    CefBrowserHost::CreateBrowser(windowInfo, this, url, settings, NULL);
+    CefBrowserHost::CreateBrowser(windowInfo, this, url, settings, NULL, NULL);
   }
 
   std::string GetPageContents(const std::string& name,
                               const std::string& status) {
-    return "<html><body>Page1<script>window.testQuery({request:'" +
+    return "<html><body>" + name + "<script>window.testQuery({request:'" +
            std::string(kTestMsg) + ":" + status + "'});</script></body></html>";
   }
 

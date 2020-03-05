@@ -105,34 +105,22 @@ class HistoryNavRendererTest : public ClientAppRenderer::Delegate,
     const NavListItem& item = kHNavList[nav_];
 
     const std::string& url = browser->GetMainFrame()->GetURL();
+    EXPECT_STREQ(item.target, url.c_str());
+
+    EXPECT_EQ(item.can_go_back, browser->CanGoBack())
+        << "nav: " << nav_ << " isLoading: " << isLoading;
+    EXPECT_EQ(item.can_go_back, canGoBack)
+        << "nav: " << nav_ << " isLoading: " << isLoading;
+    EXPECT_EQ(item.can_go_forward, browser->CanGoForward())
+        << "nav: " << nav_ << " isLoading: " << isLoading;
+    EXPECT_EQ(item.can_go_forward, canGoForward)
+        << "nav: " << nav_ << " isLoading: " << isLoading;
+
     if (isLoading) {
       got_loading_state_start_.yes();
-
-      EXPECT_STRNE(item.target, url.c_str());
-
-      if (nav_ > 0) {
-        const NavListItem& last_item = kHNavList[nav_ - 1];
-        EXPECT_EQ(last_item.can_go_back, browser->CanGoBack());
-        EXPECT_EQ(last_item.can_go_back, canGoBack);
-        EXPECT_EQ(last_item.can_go_forward, browser->CanGoForward());
-        EXPECT_EQ(last_item.can_go_forward, canGoForward);
-      } else {
-        EXPECT_FALSE(browser->CanGoBack());
-        EXPECT_FALSE(canGoBack);
-        EXPECT_FALSE(browser->CanGoForward());
-        EXPECT_FALSE(canGoForward);
-      }
     } else {
       got_loading_state_end_.yes();
-
-      EXPECT_STREQ(item.target, url.c_str());
-
-      EXPECT_EQ(item.can_go_back, browser->CanGoBack());
-      EXPECT_EQ(item.can_go_back, canGoBack);
-      EXPECT_EQ(item.can_go_forward, browser->CanGoForward());
-      EXPECT_EQ(item.can_go_forward, canGoForward);
-
-      SendTestResultsIfDone(browser);
+      SendTestResultsIfDone(browser, browser->GetMainFrame());
     }
   }
 
@@ -165,52 +153,19 @@ class HistoryNavRendererTest : public ClientAppRenderer::Delegate,
     EXPECT_EQ(item.can_go_back, browser->CanGoBack());
     EXPECT_EQ(item.can_go_forward, browser->CanGoForward());
 
-    SendTestResultsIfDone(browser);
-  }
-
-  bool OnBeforeNavigation(CefRefPtr<ClientAppRenderer> app,
-                          CefRefPtr<CefBrowser> browser,
-                          CefRefPtr<CefFrame> frame,
-                          CefRefPtr<CefRequest> request,
-                          cef_navigation_type_t navigation_type,
-                          bool is_redirect) override {
-    if (!run_test_)
-      return false;
-
-    const NavListItem& item = kHNavList[nav_];
-
-    std::string url = request->GetURL();
-    EXPECT_STREQ(item.target, url.c_str());
-
-    EXPECT_EQ(RT_SUB_RESOURCE, request->GetResourceType());
-    EXPECT_EQ(TT_EXPLICIT, request->GetTransitionType());
-
-    if (item.action == NA_LOAD) {
-      EXPECT_EQ(NAVIGATION_OTHER, navigation_type);
-    } else if (item.action == NA_BACK || item.action == NA_FORWARD) {
-      EXPECT_EQ(NAVIGATION_BACK_FORWARD, navigation_type);
-    }
-
-    if (nav_ > 0) {
-      const NavListItem& last_item = kHNavList[nav_ - 1];
-      EXPECT_EQ(last_item.can_go_back, browser->CanGoBack());
-      EXPECT_EQ(last_item.can_go_forward, browser->CanGoForward());
-    } else {
-      EXPECT_FALSE(browser->CanGoBack());
-      EXPECT_FALSE(browser->CanGoForward());
-    }
-
-    return false;
+    SendTestResultsIfDone(browser, frame);
   }
 
  protected:
-  void SendTestResultsIfDone(CefRefPtr<CefBrowser> browser) {
+  void SendTestResultsIfDone(CefRefPtr<CefBrowser> browser,
+                             CefRefPtr<CefFrame> frame) {
     if (got_load_end_ && got_loading_state_end_)
-      SendTestResults(browser);
+      SendTestResults(browser, frame);
   }
 
   // Send the test results.
-  void SendTestResults(CefRefPtr<CefBrowser> browser) {
+  void SendTestResults(CefRefPtr<CefBrowser> browser,
+                       CefRefPtr<CefFrame> frame) {
     EXPECT_TRUE(got_loading_state_start_);
     EXPECT_TRUE(got_loading_state_end_);
     EXPECT_TRUE(got_load_start_);
@@ -226,7 +181,7 @@ class HistoryNavRendererTest : public ClientAppRenderer::Delegate,
     EXPECT_TRUE(args.get());
     EXPECT_TRUE(args->SetInt(0, nav_));
     EXPECT_TRUE(args->SetBool(1, result));
-    EXPECT_TRUE(browser->SendProcessMessage(PID_BROWSER, return_msg));
+    frame->SendProcessMessage(PID_BROWSER, return_msg);
 
     // Reset the test results for the next navigation.
     got_loading_state_start_.reset();
@@ -415,6 +370,7 @@ class HistoryNavTestHandler : public TestHandler {
   bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
                       CefRefPtr<CefFrame> frame,
                       CefRefPtr<CefRequest> request,
+                      bool user_gesture,
                       bool is_redirect) override {
     const NavListItem& item = kHNavList[nav_];
 
@@ -535,6 +491,7 @@ class HistoryNavTestHandler : public TestHandler {
   }
 
   bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
+                                CefRefPtr<CefFrame> frame,
                                 CefProcessId source_process,
                                 CefRefPtr<CefProcessMessage> message) override {
     if (message->GetName().ToString() == kHistoryNavMsg) {
@@ -921,7 +878,7 @@ class RedirectTestHandler : public TestHandler {
 
       EXPECT_EQ(302, response->GetStatus());
       EXPECT_STREQ("Found", response->GetStatusText().ToString().c_str());
-      EXPECT_STREQ("text/html", response->GetMimeType().ToString().c_str());
+      EXPECT_STREQ("", response->GetMimeType().ToString().c_str());
       EXPECT_STREQ(kRNav2, response->GetHeader("Location").ToString().c_str());
 
       // Change the redirect to the 3rd URL.
@@ -939,9 +896,16 @@ class RedirectTestHandler : public TestHandler {
       // Called due to the nav3 redirect response.
       got_nav3_redirect_.yes();
 
-      EXPECT_EQ(200, response->GetStatus());
-      EXPECT_TRUE(response->GetStatusText().empty());
-      EXPECT_STREQ("text/html", response->GetMimeType().ToString().c_str());
+      if (IsNetworkServiceEnabled()) {
+        EXPECT_EQ(307, response->GetStatus());
+        EXPECT_STREQ("Temporary Redirect",
+                     response->GetStatusText().ToString().c_str());
+        EXPECT_STREQ("", response->GetMimeType().ToString().c_str());
+      } else {
+        EXPECT_EQ(303, response->GetStatus());
+        EXPECT_STREQ("See Other", response->GetStatusText().ToString().c_str());
+        EXPECT_STREQ("text/html", response->GetMimeType().ToString().c_str());
+      }
     } else {
       got_invalid_redirect_.yes();
     }
@@ -1051,7 +1015,12 @@ TEST(NavigationTest, Redirect) {
   ASSERT_TRUE(handler->got_nav4_load_end_);
   ASSERT_FALSE(handler->got_invalid_load_end_);
   ASSERT_TRUE(handler->got_nav1_redirect_);
-  ASSERT_TRUE(handler->got_nav2_redirect_);
+  if (IsNetworkServiceEnabled()) {
+    ASSERT_FALSE(handler->got_nav2_redirect_);
+  } else {
+    // This seems like a bug in the old network implementation.
+    ASSERT_TRUE(handler->got_nav2_redirect_);
+  }
   ASSERT_TRUE(handler->got_nav3_redirect_);
   ASSERT_FALSE(handler->got_invalid_redirect_);
   ASSERT_TRUE(g_got_nav1_request);
@@ -1168,21 +1137,20 @@ class OrderNavLoadState {
     got_load_end_.yes();
   }
 
-  bool IsStarted() {
+  bool IsStarted() const {
     return got_loading_state_start_ || got_loading_state_end_ ||
            got_load_start_ || got_load_end_;
   }
 
-  bool IsDone() {
+  bool IsDone() const {
     return got_loading_state_start_ && got_loading_state_end_ &&
            got_load_start_ && got_load_end_;
   }
 
- private:
   bool Verify(bool got_loading_state_start,
               bool got_loading_state_end,
               bool got_load_start,
-              bool got_load_end) {
+              bool got_load_end) const {
     EXPECT_EQ(got_loading_state_start, got_loading_state_start_)
         << "Popup: " << is_popup_ << "; Browser Side: " << browser_side_;
     EXPECT_EQ(got_loading_state_end, got_loading_state_end_)
@@ -1197,6 +1165,7 @@ class OrderNavLoadState {
            got_load_start == got_load_start_ && got_load_end == got_load_end_;
   }
 
+ private:
   bool is_popup_;
   bool browser_side_;
 
@@ -1250,7 +1219,8 @@ class OrderNavRendererTest : public ClientAppRenderer::Delegate,
   }
 
   void OnBrowserCreated(CefRefPtr<ClientAppRenderer> app,
-                        CefRefPtr<CefBrowser> browser) override {
+                        CefRefPtr<CefBrowser> browser,
+                        CefRefPtr<CefDictionaryValue> extra_info) override {
     if (!run_test_)
       return;
 
@@ -1296,7 +1266,8 @@ class OrderNavRendererTest : public ClientAppRenderer::Delegate,
       EXPECT_GT(browser->GetIdentifier(), 0);
 
       // Use |browser_main_| to send the message otherwise it will fail.
-      SendTestResults(browser_main_, kOrderNavClosedMsg);
+      SendTestResults(browser_main_, browser_main_->GetMainFrame(),
+                      kOrderNavClosedMsg);
     } else {
       EXPECT_TRUE(got_browser_created_main_);
       EXPECT_FALSE(got_browser_destroyed_main_);
@@ -1340,7 +1311,7 @@ class OrderNavRendererTest : public ClientAppRenderer::Delegate,
     }
 
     if (!isLoading)
-      SendTestResultsIfDone(browser);
+      SendTestResultsIfDone(browser, browser->GetMainFrame());
   }
 
   void OnLoadStart(CefRefPtr<CefBrowser> browser,
@@ -1380,11 +1351,21 @@ class OrderNavRendererTest : public ClientAppRenderer::Delegate,
       state_main_.OnLoadEnd(browser, frame, httpStatusCode);
     }
 
-    SendTestResultsIfDone(browser);
+    SendTestResultsIfDone(browser, frame);
+  }
+
+  void OnLoadError(CefRefPtr<CefBrowser> browser,
+                   CefRefPtr<CefFrame> frame,
+                   ErrorCode errorCode,
+                   const CefString& errorText,
+                   const CefString& failedUrl) override {
+    ADD_FAILURE() << "renderer OnLoadError url: " << failedUrl.ToString()
+                  << " error: " << errorCode;
   }
 
  protected:
-  void SendTestResultsIfDone(CefRefPtr<CefBrowser> browser) {
+  void SendTestResultsIfDone(CefRefPtr<CefBrowser> browser,
+                             CefRefPtr<CefFrame> frame) {
     bool done = false;
     if (browser->IsPopup())
       done = state_popup_.IsDone();
@@ -1392,11 +1373,13 @@ class OrderNavRendererTest : public ClientAppRenderer::Delegate,
       done = state_main_.IsDone();
 
     if (done)
-      SendTestResults(browser, kOrderNavMsg);
+      SendTestResults(browser, frame, kOrderNavMsg);
   }
 
   // Send the test results.
-  void SendTestResults(CefRefPtr<CefBrowser> browser, const char* msg_name) {
+  void SendTestResults(CefRefPtr<CefBrowser> browser,
+                       CefRefPtr<CefFrame> frame,
+                       const char* msg_name) {
     // Check if the test has failed.
     bool result = !TestFailed();
 
@@ -1410,7 +1393,7 @@ class OrderNavRendererTest : public ClientAppRenderer::Delegate,
       EXPECT_TRUE(args->SetInt(1, browser_id_popup_));
     else
       EXPECT_TRUE(args->SetInt(1, browser_id_main_));
-    EXPECT_TRUE(browser->SendProcessMessage(PID_BROWSER, return_msg));
+    frame->SendProcessMessage(PID_BROWSER, return_msg);
   }
 
   bool run_test_;
@@ -1493,6 +1476,7 @@ class OrderNavTestHandler : public TestHandler {
   bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
                       CefRefPtr<CefFrame> frame,
                       CefRefPtr<CefRequest> request,
+                      bool user_gesture,
                       bool is_redirect) override {
     EXPECT_EQ(RT_MAIN_FRAME, request->GetResourceType());
 
@@ -1579,7 +1563,17 @@ class OrderNavTestHandler : public TestHandler {
     ContinueIfReady(browser);
   }
 
+  void OnLoadError(CefRefPtr<CefBrowser> browser,
+                   CefRefPtr<CefFrame> frame,
+                   ErrorCode errorCode,
+                   const CefString& errorText,
+                   const CefString& failedUrl) override {
+    ADD_FAILURE() << "browser OnLoadError url: " << failedUrl.ToString()
+                  << " error: " << errorCode;
+  }
+
   bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
+                                CefRefPtr<CefFrame> frame,
                                 CefProcessId source_process,
                                 CefRefPtr<CefProcessMessage> message) override {
     if (browser->IsPopup()) {
@@ -1625,6 +1619,9 @@ class OrderNavTestHandler : public TestHandler {
     // Verify test expectations.
     EXPECT_TRUE(got_before_browse_main_);
     EXPECT_TRUE(got_before_browse_popup_);
+
+    EXPECT_TRUE(state_main_.Verify(true, true, true, true));
+    EXPECT_TRUE(state_popup_.Verify(true, true, true, true));
 
     TestHandler::DestroyTest();
   }
@@ -1718,7 +1715,8 @@ class LoadNavRendererTest : public ClientAppRenderer::Delegate,
   }
 
   void OnBrowserCreated(CefRefPtr<ClientAppRenderer> app,
-                        CefRefPtr<CefBrowser> browser) override {
+                        CefRefPtr<CefBrowser> browser,
+                        CefRefPtr<CefDictionaryValue> extra_info) override {
     if (!run_test_)
       return;
 
@@ -1769,13 +1767,14 @@ class LoadNavRendererTest : public ClientAppRenderer::Delegate,
       EXPECT_EQ(browser_id_, browser->GetIdentifier());
 
       load_ct_++;
-      SendTestResults(browser);
+      SendTestResults(browser, browser->GetMainFrame());
     }
   }
 
  protected:
   // Send the test results.
-  void SendTestResults(CefRefPtr<CefBrowser> browser) {
+  void SendTestResults(CefRefPtr<CefBrowser> browser,
+                       CefRefPtr<CefFrame> frame) {
     // Check if the test has failed.
     bool result = !TestFailed();
 
@@ -1787,7 +1786,7 @@ class LoadNavRendererTest : public ClientAppRenderer::Delegate,
     EXPECT_TRUE(args->SetBool(0, result));
     EXPECT_TRUE(args->SetInt(1, browser->GetIdentifier()));
     EXPECT_TRUE(args->SetInt(2, load_ct_));
-    EXPECT_TRUE(browser->SendProcessMessage(PID_BROWSER, return_msg));
+    frame->SendProcessMessage(PID_BROWSER, return_msg);
   }
 
   bool run_test_;
@@ -1922,12 +1921,21 @@ class LoadNavTestHandler : public TestHandler {
   bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
                       CefRefPtr<CefFrame> frame,
                       CefRefPtr<CefRequest> request,
+                      bool user_gesture,
                       bool is_redirect) override {
     EXPECT_EQ(RT_MAIN_FRAME, request->GetResourceType());
-    if (mode_ == LOAD || request->GetURL() == kLoadNav1)
+    if (mode_ == LOAD || request->GetURL() == kLoadNav1) {
       EXPECT_EQ(TT_EXPLICIT, request->GetTransitionType());
-    else
+      EXPECT_FALSE(user_gesture);
+    } else {
       EXPECT_EQ(TT_LINK, request->GetTransitionType());
+
+      if (mode_ == LEFT_CLICK) {
+        EXPECT_TRUE(user_gesture);
+      } else {
+        EXPECT_FALSE(user_gesture);
+      }
+    }
 
     EXPECT_GT(browser_id_current_, 0);
     EXPECT_EQ(browser_id_current_, browser->GetIdentifier());
@@ -2016,6 +2024,7 @@ class LoadNavTestHandler : public TestHandler {
   }
 
   bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
+                                CefRefPtr<CefFrame> frame,
                                 CefProcessId source_process,
                                 CefRefPtr<CefProcessMessage> message) override {
     EXPECT_GT(browser_id_current_, 0);
@@ -2254,6 +2263,7 @@ class PopupSimultaneousTestHandler : public TestHandler {
                      CefWindowInfo& windowInfo,
                      CefRefPtr<CefClient>& client,
                      CefBrowserSettings& settings,
+                     CefRefPtr<CefDictionaryValue>& extra_info,
                      bool* no_javascript_access) override {
     const std::string& url = target_url;
     EXPECT_LT(before_popup_ct_, kSimultPopupCount);
@@ -2366,7 +2376,6 @@ const char kPopupJSOpenMainUrl[] = "http://www.tests-pjso.com/main.html";
 const char kPopupJSOpenPopupUrl[] = "http://www.tests-pjso.com/popup.html";
 
 // Test a popup where the URL is a JavaScript URI that opens another popup.
-// See comments on CefBrowserInfoManager::FilterPendingPopupURL.
 class PopupJSWindowOpenTestHandler : public TestHandler {
  public:
   PopupJSWindowOpenTestHandler()
@@ -2396,6 +2405,7 @@ class PopupJSWindowOpenTestHandler : public TestHandler {
                      CefWindowInfo& windowInfo,
                      CefRefPtr<CefClient>& client,
                      CefBrowserSettings& settings,
+                     CefRefPtr<CefDictionaryValue>& extra_info,
                      bool* no_javascript_access) override {
     before_popup_ct_++;
     return false;
@@ -2404,8 +2414,15 @@ class PopupJSWindowOpenTestHandler : public TestHandler {
   void OnAfterCreated(CefRefPtr<CefBrowser> browser) override {
     TestHandler::OnAfterCreated(browser);
 
-    if (browser->IsPopup())
+    if (browser->IsPopup()) {
       after_created_ct_++;
+      if (!popup1_)
+        popup1_ = browser;
+      else if (!popup2_)
+        popup2_ = browser;
+      else
+        ADD_FAILURE();
+    }
   }
 
   void OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
@@ -2417,10 +2434,21 @@ class PopupJSWindowOpenTestHandler : public TestHandler {
 
     if (browser->IsPopup()) {
       const std::string& url = browser->GetMainFrame()->GetURL();
-      if (load_end_ct_ == 0)
+      if (url == kPopupJSOpenPopupUrl) {
+        EXPECT_TRUE(browser->IsSame(popup2_));
+        popup2_ = nullptr;
+
+        // OnLoadingStateChange is not currently called for browser-side
+        // navigations of empty popups. See https://crbug.com/789252.
+        // Explicitly close the empty popup here as a workaround.
+        CloseBrowser(popup1_, true);
+        popup1_ = nullptr;
+      } else {
+        // Empty popup.
         EXPECT_TRUE(url.empty());
-      else
-        EXPECT_STREQ(kPopupJSOpenPopupUrl, url.c_str());
+        EXPECT_TRUE(browser->IsSame(popup1_));
+        popup1_ = nullptr;
+      }
 
       load_end_ct_++;
       CloseBrowser(browser, true);
@@ -2435,6 +2463,15 @@ class PopupJSWindowOpenTestHandler : public TestHandler {
     }
   }
 
+  void OnLoadError(CefRefPtr<CefBrowser> browser,
+                   CefRefPtr<CefFrame> frame,
+                   ErrorCode errorCode,
+                   const CefString& errorText,
+                   const CefString& failedUrl) override {
+    ADD_FAILURE() << "OnLoadError url: " << failedUrl.ToString()
+                  << " error: " << errorCode;
+  }
+
   void OnBeforeClose(CefRefPtr<CefBrowser> browser) override {
     TestHandler::OnBeforeClose(browser);
 
@@ -2447,11 +2484,17 @@ class PopupJSWindowOpenTestHandler : public TestHandler {
   void DestroyTest() override {
     EXPECT_EQ(2U, before_popup_ct_);
     EXPECT_EQ(2U, after_created_ct_);
-    EXPECT_EQ(2U, load_end_ct_);
     EXPECT_EQ(2U, before_close_ct_);
+
+    // OnLoadingStateChange is not currently called for browser-side
+    // navigations of empty popups. See https://crbug.com/789252.
+    EXPECT_EQ(1U, load_end_ct_);
 
     TestHandler::DestroyTest();
   }
+
+  CefRefPtr<CefBrowser> popup1_;
+  CefRefPtr<CefBrowser> popup2_;
 
   size_t before_popup_ct_;
   size_t after_created_ct_;
@@ -2467,6 +2510,110 @@ class PopupJSWindowOpenTestHandler : public TestHandler {
 TEST(NavigationTest, PopupJSWindowOpen) {
   CefRefPtr<PopupJSWindowOpenTestHandler> handler =
       new PopupJSWindowOpenTestHandler();
+  handler->ExecuteTest();
+  ReleaseAndWaitForDestructor(handler);
+}
+
+namespace {
+
+const char kPopupJSEmptyMainUrl[] = "http://www.tests-pjse.com/main.html";
+
+// Test creation of a popup where the URL is empty.
+class PopupJSWindowEmptyTestHandler : public TestHandler {
+ public:
+  PopupJSWindowEmptyTestHandler() {}
+
+  void RunTest() override {
+    AddResource(kPopupJSEmptyMainUrl, "<html>Main</html>", "text/html");
+
+    // Create the browser.
+    CreateBrowser(kPopupJSEmptyMainUrl);
+
+    // Time out the test after a reasonable period of time.
+    SetTestTimeout();
+  }
+
+  bool OnBeforePopup(CefRefPtr<CefBrowser> browser,
+                     CefRefPtr<CefFrame> frame,
+                     const CefString& target_url,
+                     const CefString& target_frame_name,
+                     cef_window_open_disposition_t target_disposition,
+                     bool user_gesture,
+                     const CefPopupFeatures& popupFeatures,
+                     CefWindowInfo& windowInfo,
+                     CefRefPtr<CefClient>& client,
+                     CefBrowserSettings& settings,
+                     CefRefPtr<CefDictionaryValue>& extra_info,
+                     bool* no_javascript_access) override {
+    got_before_popup_.yes();
+    return false;
+  }
+
+  void OnAfterCreated(CefRefPtr<CefBrowser> browser) override {
+    TestHandler::OnAfterCreated(browser);
+
+    if (browser->IsPopup()) {
+      got_after_created_popup_.yes();
+    }
+  }
+
+  void OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
+                            bool isLoading,
+                            bool canGoBack,
+                            bool canGoForward) override {
+    if (isLoading)
+      return;
+
+    if (browser->IsPopup()) {
+      got_load_end_popup_.yes();
+      CloseBrowser(browser, true);
+    } else {
+      browser->GetMainFrame()->LoadURL("javascript:window.open('')");
+    }
+  }
+
+  void OnLoadError(CefRefPtr<CefBrowser> browser,
+                   CefRefPtr<CefFrame> frame,
+                   ErrorCode errorCode,
+                   const CefString& errorText,
+                   const CefString& failedUrl) override {
+    ADD_FAILURE() << "OnLoadError url: " << failedUrl.ToString()
+                  << " error: " << errorCode;
+  }
+
+  void OnBeforeClose(CefRefPtr<CefBrowser> browser) override {
+    TestHandler::OnBeforeClose(browser);
+
+    if (browser->IsPopup()) {
+      got_before_close_popup_.yes();
+      DestroyTest();
+    }
+  }
+
+ private:
+  void DestroyTest() override {
+    EXPECT_TRUE(got_before_popup_);
+    EXPECT_TRUE(got_after_created_popup_);
+    EXPECT_TRUE(got_load_end_popup_);
+    EXPECT_TRUE(got_before_close_popup_);
+
+    TestHandler::DestroyTest();
+  }
+
+  TrackCallback got_before_popup_;
+  TrackCallback got_after_created_popup_;
+  TrackCallback got_load_end_popup_;
+  TrackCallback got_before_close_popup_;
+
+  IMPLEMENT_REFCOUNTING(PopupJSWindowEmptyTestHandler);
+};
+
+}  // namespace
+
+// Test creation of a popup where the URL is empty.
+TEST(NavigationTest, PopupJSWindowEmpty) {
+  CefRefPtr<PopupJSWindowEmptyTestHandler> handler =
+      new PopupJSWindowEmptyTestHandler();
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 }
@@ -2493,6 +2640,7 @@ class BrowseNavTestHandler : public TestHandler {
   bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
                       CefRefPtr<CefFrame> frame,
                       CefRefPtr<CefRequest> request,
+                      bool user_gesture,
                       bool is_redirect) override {
     const std::string& url = request->GetURL();
     EXPECT_STREQ(kBrowseNavPageUrl, url.c_str());
@@ -2655,6 +2803,7 @@ class SameNavTestHandler : public TestHandler {
   bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
                       CefRefPtr<CefFrame> frame,
                       CefRefPtr<CefRequest> request,
+                      bool user_gesture,
                       bool is_redirect) override {
     const std::string& url = request->GetURL();
     EXPECT_STREQ(expected_url_.c_str(), url.c_str());
@@ -2847,6 +2996,7 @@ class CancelBeforeNavTestHandler : public TestHandler {
   bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
                       CefRefPtr<CefFrame> frame,
                       CefRefPtr<CefRequest> request,
+                      bool user_gesture,
                       bool is_redirect) override {
     EXPECT_TRUE(got_loading_state_changed_start_);
     EXPECT_FALSE(got_before_browse_);
@@ -2887,8 +3037,8 @@ class CancelBeforeNavTestHandler : public TestHandler {
 
     got_get_resource_handler_.yes();
 
-    CefPostDelayedTask(
-        TID_UI, base::Bind(&CancelBeforeNavTestHandler::CancelLoad, this), 100);
+    CefPostTask(TID_UI,
+                base::Bind(&CancelBeforeNavTestHandler::CancelLoad, this));
 
     return new UnstartedSchemeHandler();
   }
@@ -2912,20 +3062,10 @@ class CancelBeforeNavTestHandler : public TestHandler {
                    ErrorCode errorCode,
                    const CefString& errorText,
                    const CefString& failedUrl) override {
-    EXPECT_TRUE(got_loading_state_changed_start_);
-    EXPECT_TRUE(got_before_browse_);
-    EXPECT_TRUE(got_get_resource_handler_);
-    EXPECT_FALSE(got_load_start_);
-    EXPECT_TRUE(got_cancel_load_);
-    EXPECT_FALSE(got_load_error_);
-    EXPECT_FALSE(got_load_end_);
-    EXPECT_FALSE(got_loading_state_changed_end_);
-
-    const std::string& url = failedUrl;
-    EXPECT_STREQ(kCancelPageUrl, url.c_str());
     EXPECT_EQ(GetBrowserId(), browser->GetIdentifier());
-    EXPECT_TRUE(frame->IsMain());
-
+    EXPECT_STREQ("", frame->GetURL().ToString().c_str());
+    EXPECT_EQ(ERR_ABORTED, errorCode);
+    EXPECT_STREQ(kCancelPageUrl, failedUrl.ToString().c_str());
     got_load_error_.yes();
   }
 
@@ -3090,6 +3230,7 @@ class CancelAfterNavTestHandler : public TestHandler {
   bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
                       CefRefPtr<CefFrame> frame,
                       CefRefPtr<CefRequest> request,
+                      bool user_gesture,
                       bool is_redirect) override {
     EXPECT_TRUE(got_loading_state_changed_start_);
     EXPECT_FALSE(got_before_browse_);
@@ -3130,8 +3271,9 @@ class CancelAfterNavTestHandler : public TestHandler {
 
     got_get_resource_handler_.yes();
 
+    // The required delay is longer when browser-side navigation is enabled.
     CefPostDelayedTask(
-        TID_UI, base::Bind(&CancelAfterNavTestHandler::CancelLoad, this), 100);
+        TID_UI, base::Bind(&CancelAfterNavTestHandler::CancelLoad, this), 1000);
 
     return new StalledSchemeHandler();
   }
@@ -3288,12 +3430,208 @@ TEST(NavigationTest, CancelAfterCommit) {
   ReleaseAndWaitForDestructor(handler);
 }
 
+namespace {
+
+const char kExtraInfoUrl[] = "http://tests-extrainfonav.com/extra.html";
+const char kExtraInfoPopupUrl[] =
+    "http://tests-extrainfonav.com/extra_popup.html";
+const char kExtraInfoNavMsg[] = "NavigationTest.ExtraInfoNav";
+
+bool g_extra_info_nav_test = false;
+
+void SetBrowserExtraInfo(CefRefPtr<CefDictionaryValue> extra_info) {
+  // Arbitrary data for testing.
+  extra_info->SetBool("bool", true);
+  CefRefPtr<CefDictionaryValue> dict = CefDictionaryValue::Create();
+  dict->SetInt("key1", 5);
+  dict->SetString("key2", "test string");
+  extra_info->SetDictionary("dictionary", dict);
+  extra_info->SetDouble("double", 5.43322);
+  extra_info->SetString("string", "some string");
+}
+
+// Browser side.
+class ExtraInfoNavBrowserTest : public ClientAppBrowser::Delegate {
+ public:
+  ExtraInfoNavBrowserTest() {}
+
+  void OnBeforeChildProcessLaunch(
+      CefRefPtr<ClientAppBrowser> app,
+      CefRefPtr<CefCommandLine> command_line) override {
+    if (!g_extra_info_nav_test)
+      return;
+
+    // Indicate to the render process that the test should be run.
+    command_line->AppendSwitchWithValue("test", kExtraInfoNavMsg);
+  }
+
+ protected:
+  IMPLEMENT_REFCOUNTING(ExtraInfoNavBrowserTest);
+};
+
+// Renderer side
+class ExtraInfoNavRendererTest : public ClientAppRenderer::Delegate {
+ public:
+  ExtraInfoNavRendererTest() : run_test_(false) {}
+
+  void OnRenderThreadCreated(CefRefPtr<ClientAppRenderer> app,
+                             CefRefPtr<CefListValue> extra_info) override {
+    // Check that the test should be run.
+    CefRefPtr<CefCommandLine> command_line =
+        CefCommandLine::GetGlobalCommandLine();
+    const std::string& test = command_line->GetSwitchValue("test");
+    if (test != kExtraInfoNavMsg)
+      return;
+
+    run_test_ = true;
+  }
+
+  void OnBrowserCreated(CefRefPtr<ClientAppRenderer> app,
+                        CefRefPtr<CefBrowser> browser,
+                        CefRefPtr<CefDictionaryValue> extra_info) override {
+    if (!run_test_)
+      return;
+
+    CefRefPtr<CefDictionaryValue> expected = CefDictionaryValue::Create();
+    SetBrowserExtraInfo(expected);
+    TestDictionaryEqual(expected, extra_info);
+
+    SendTestResults(browser, browser->GetMainFrame());
+  }
+
+ protected:
+  // Send the test results.
+  void SendTestResults(CefRefPtr<CefBrowser> browser,
+                       CefRefPtr<CefFrame> frame) {
+    // Check if the test has failed.
+    bool result = !TestFailed();
+
+    CefRefPtr<CefProcessMessage> return_msg =
+        CefProcessMessage::Create(kExtraInfoNavMsg);
+    CefRefPtr<CefListValue> args = return_msg->GetArgumentList();
+    EXPECT_TRUE(args.get());
+    EXPECT_TRUE(args->SetBool(0, result));
+    EXPECT_TRUE(args->SetBool(1, browser->IsPopup()));
+    frame->SendProcessMessage(PID_BROWSER, return_msg);
+  }
+
+  bool run_test_;
+
+  IMPLEMENT_REFCOUNTING(ExtraInfoNavRendererTest);
+};
+
+class ExtraInfoNavTestHandler : public TestHandler {
+ public:
+  ExtraInfoNavTestHandler() : popup_opened_(false) {}
+
+  void RunTest() override {
+    AddResource(kExtraInfoUrl,
+                "<html><head></head><body>ExtraInfo</body></html>",
+                "text/html");
+    AddResource(kExtraInfoPopupUrl, "<html>ExtraInfoPopup</html>", "text/html");
+
+    CefRefPtr<CefDictionaryValue> extra = CefDictionaryValue::Create();
+    SetBrowserExtraInfo(extra);
+
+    // Create the browser.
+    CreateBrowser(kExtraInfoUrl, NULL, extra);
+
+    // Time out the test after a reasonable period of time.
+    SetTestTimeout();
+  }
+
+  void OnLoadEnd(CefRefPtr<CefBrowser> browser,
+                 CefRefPtr<CefFrame> frame,
+                 int httpStatusCode) override {
+    if (popup_opened_) {
+      DestroyTest();
+    } else {
+      browser->GetMainFrame()->ExecuteJavaScript(
+          "window.open('" + std::string(kExtraInfoPopupUrl) + "');",
+          CefString(), 0);
+    }
+  }
+
+  bool OnBeforePopup(CefRefPtr<CefBrowser> browser,
+                     CefRefPtr<CefFrame> frame,
+                     const CefString& target_url,
+                     const CefString& target_frame_name,
+                     cef_window_open_disposition_t target_disposition,
+                     bool user_gesture,
+                     const CefPopupFeatures& popupFeatures,
+                     CefWindowInfo& windowInfo,
+                     CefRefPtr<CefClient>& client,
+                     CefBrowserSettings& settings,
+                     CefRefPtr<CefDictionaryValue>& extra_info,
+                     bool* no_javascript_access) override {
+    const std::string& url = target_url;
+    EXPECT_FALSE(popup_opened_);
+    EXPECT_STREQ(kExtraInfoPopupUrl, url.c_str());
+
+    CefRefPtr<CefDictionaryValue> extra = CefDictionaryValue::Create();
+    SetBrowserExtraInfo(extra);
+
+    extra_info = extra;
+
+    popup_opened_ = true;
+    return false;
+  }
+
+  bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
+                                CefRefPtr<CefFrame> frame,
+                                CefProcessId source_process,
+                                CefRefPtr<CefProcessMessage> message) override {
+    if (message->GetName().ToString() == kExtraInfoNavMsg) {
+      // Test that the renderer side succeeded.
+      CefRefPtr<CefListValue> args = message->GetArgumentList();
+      EXPECT_TRUE(args.get());
+      EXPECT_TRUE(args->GetBool(0));
+      if (popup_opened_) {
+        EXPECT_TRUE(args->GetBool(1));
+        got_process_message_popup_.yes();
+      } else {
+        EXPECT_FALSE(args->GetBool(1));
+        got_process_message_main_.yes();
+      }
+      return true;
+    }
+
+    // Message not handled.
+    return false;
+  }
+
+ protected:
+  bool popup_opened_;
+  TrackCallback got_process_message_main_;
+  TrackCallback got_process_message_popup_;
+
+  void DestroyTest() override {
+    // Verify test expectations.
+    EXPECT_TRUE(got_process_message_main_);
+    EXPECT_TRUE(got_process_message_popup_);
+
+    TestHandler::DestroyTest();
+  }
+
+  IMPLEMENT_REFCOUNTING(ExtraInfoNavTestHandler);
+};
+}  // namespace
+
+TEST(NavigationTest, ExtraInfo) {
+  g_extra_info_nav_test = true;
+  CefRefPtr<ExtraInfoNavTestHandler> handler = new ExtraInfoNavTestHandler();
+  handler->ExecuteTest();
+  g_extra_info_nav_test = false;
+  ReleaseAndWaitForDestructor(handler);
+}
+
 // Entry point for creating navigation browser test objects.
 // Called from client_app_delegates.cc.
 void CreateNavigationBrowserTests(ClientAppBrowser::DelegateSet& delegates) {
   delegates.insert(new HistoryNavBrowserTest);
   delegates.insert(new OrderNavBrowserTest);
   delegates.insert(new LoadNavBrowserTest);
+  delegates.insert(new ExtraInfoNavBrowserTest);
 }
 
 // Entry point for creating navigation renderer test objects.
@@ -3302,4 +3640,5 @@ void CreateNavigationRendererTests(ClientAppRenderer::DelegateSet& delegates) {
   delegates.insert(new HistoryNavRendererTest);
   delegates.insert(new OrderNavRendererTest);
   delegates.insert(new LoadNavRendererTest);
+  delegates.insert(new ExtraInfoNavRendererTest);
 }

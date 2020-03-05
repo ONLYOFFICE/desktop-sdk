@@ -67,23 +67,9 @@ class CefCToCppScoped : public BaseName {
   // ~CefCToCppScoped will be called first followed by this method.
   static void operator delete(void* ptr);
 
-#if DCHECK_IS_ON()
-  // Simple tracking of allocated objects.
-  static base::AtomicRefCount DebugObjCt;
-#endif
-
  protected:
-  CefCToCppScoped() {
-#if DCHECK_IS_ON()
-    base::AtomicRefCountInc(&DebugObjCt);
-#endif
-  }
-
-  virtual ~CefCToCppScoped() {
-#if DCHECK_IS_ON()
-    base::AtomicRefCountDec(&DebugObjCt);
-#endif
-  }
+  CefCToCppScoped() {}
+  virtual ~CefCToCppScoped() {}
 
   // If returning the structure across the DLL boundary use Unwrap() instead.
   StructName* GetStruct() const {
@@ -179,6 +165,7 @@ StructName* CefCToCppScoped<ClassName, BaseName, StructName>::UnwrapRaw(
 }
 
 template <class ClassName, class BaseName, class StructName>
+NO_SANITIZE("cfi-icall")
 void CefCToCppScoped<ClassName, BaseName, StructName>::operator delete(
     void* ptr) {
   WrapperStruct* wrapperStruct = GetWrapperStruct(static_cast<BaseName*>(ptr));

@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,13 +9,14 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=5229edfdc71e95f0f9d7a288acbe6dd7d1a2c94d$
+// $hash=cb2d9b53e35c8e6937669d0cac662b461128f316$
 //
 
 #include "libcef_dll/ctocpp/test/translator_test_scoped_library_child_child_ctocpp.h"
 
 // STATIC METHODS - Body may be edited by hand.
 
+NO_SANITIZE("cfi-icall")
 CefOwnPtr<CefTranslatorTestScopedLibraryChildChild>
 CefTranslatorTestScopedLibraryChildChild::Create(int value,
                                                  int other_value,
@@ -33,6 +34,7 @@ CefTranslatorTestScopedLibraryChildChild::Create(int value,
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
+NO_SANITIZE("cfi-icall")
 int CefTranslatorTestScopedLibraryChildChildCToCpp::GetOtherOtherValue() {
   cef_translator_test_scoped_library_child_child_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_other_other_value))
@@ -47,6 +49,7 @@ int CefTranslatorTestScopedLibraryChildChildCToCpp::GetOtherOtherValue() {
   return _retval;
 }
 
+NO_SANITIZE("cfi-icall")
 void CefTranslatorTestScopedLibraryChildChildCToCpp::SetOtherOtherValue(
     int value) {
   cef_translator_test_scoped_library_child_child_t* _struct = GetStruct();
@@ -59,6 +62,7 @@ void CefTranslatorTestScopedLibraryChildChildCToCpp::SetOtherOtherValue(
   _struct->set_other_other_value(_struct, value);
 }
 
+NO_SANITIZE("cfi-icall")
 int CefTranslatorTestScopedLibraryChildChildCToCpp::GetOtherValue() {
   cef_translator_test_scoped_library_child_t* _struct =
       reinterpret_cast<cef_translator_test_scoped_library_child_t*>(
@@ -75,6 +79,7 @@ int CefTranslatorTestScopedLibraryChildChildCToCpp::GetOtherValue() {
   return _retval;
 }
 
+NO_SANITIZE("cfi-icall")
 void CefTranslatorTestScopedLibraryChildChildCToCpp::SetOtherValue(int value) {
   cef_translator_test_scoped_library_child_t* _struct =
       reinterpret_cast<cef_translator_test_scoped_library_child_t*>(
@@ -88,6 +93,7 @@ void CefTranslatorTestScopedLibraryChildChildCToCpp::SetOtherValue(int value) {
   _struct->set_other_value(_struct, value);
 }
 
+NO_SANITIZE("cfi-icall")
 int CefTranslatorTestScopedLibraryChildChildCToCpp::GetValue() {
   cef_translator_test_scoped_library_t* _struct =
       reinterpret_cast<cef_translator_test_scoped_library_t*>(GetStruct());
@@ -103,6 +109,7 @@ int CefTranslatorTestScopedLibraryChildChildCToCpp::GetValue() {
   return _retval;
 }
 
+NO_SANITIZE("cfi-icall")
 void CefTranslatorTestScopedLibraryChildChildCToCpp::SetValue(int value) {
   cef_translator_test_scoped_library_t* _struct =
       reinterpret_cast<cef_translator_test_scoped_library_t*>(GetStruct());
@@ -119,6 +126,11 @@ void CefTranslatorTestScopedLibraryChildChildCToCpp::SetValue(int value) {
 
 CefTranslatorTestScopedLibraryChildChildCToCpp::
     CefTranslatorTestScopedLibraryChildChildCToCpp() {}
+
+// DESTRUCTOR - Do not edit by hand.
+
+CefTranslatorTestScopedLibraryChildChildCToCpp::
+    ~CefTranslatorTestScopedLibraryChildChildCToCpp() {}
 
 template <>
 cef_translator_test_scoped_library_child_child_t*
@@ -141,15 +153,6 @@ CefCToCppScoped<CefTranslatorTestScopedLibraryChildChildCToCpp,
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCToCppScoped<
-    CefTranslatorTestScopedLibraryChildChildCToCpp,
-    CefTranslatorTestScopedLibraryChildChild,
-    cef_translator_test_scoped_library_child_child_t>::DebugObjCt
-    ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType CefCToCppScoped<

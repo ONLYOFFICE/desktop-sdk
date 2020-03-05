@@ -120,7 +120,7 @@ bool CefRegisterExtension(const CefString& extension_name,
 // A task runner for posting tasks on the associated thread can be retrieved via
 // the CefV8Context::GetTaskRunner() method.
 ///
-/*--cef(source=library)--*/
+/*--cef(source=library,no_debugct_check)--*/
 class CefV8Context : public virtual CefBaseRefCounted {
  public:
   ///
@@ -224,7 +224,7 @@ typedef std::vector<CefRefPtr<CefV8Value>> CefV8ValueList;
 // Interface that should be implemented to handle V8 function calls. The methods
 // of this class will be called on the thread associated with the V8 function.
 ///
-/*--cef(source=client)--*/
+/*--cef(source=client,no_debugct_check)--*/
 class CefV8Handler : public virtual CefBaseRefCounted {
  public:
   ///
@@ -247,7 +247,7 @@ class CefV8Handler : public virtual CefBaseRefCounted {
 // identifiers are registered by calling CefV8Value::SetValue(). The methods
 // of this class will be called on the thread associated with the V8 accessor.
 ///
-/*--cef(source=client)--*/
+/*--cef(source=client,no_debugct_check)--*/
 class CefV8Accessor : public virtual CefBaseRefCounted {
  public:
   ///
@@ -285,7 +285,7 @@ class CefV8Accessor : public virtual CefBaseRefCounted {
 // handlers (with first argument of type int) are called when object is indexed
 // by integer.
 ///
-/*--cef(source=client)--*/
+/*--cef(source=client,no_debugct_check)--*/
 class CefV8Interceptor : public virtual CefBaseRefCounted {
  public:
   ///
@@ -349,7 +349,7 @@ class CefV8Interceptor : public virtual CefBaseRefCounted {
 // Class representing a V8 exception. The methods of this class may be called on
 // any render process thread.
 ///
-/*--cef(source=library)--*/
+/*--cef(source=library,no_debugct_check)--*/
 class CefV8Exception : public virtual CefBaseRefCounted {
  public:
   ///
@@ -408,13 +408,28 @@ class CefV8Exception : public virtual CefBaseRefCounted {
 };
 
 ///
+// Callback interface that is passed to CefV8Value::CreateArrayBuffer.
+///
+/*--cef(source=client,no_debugct_check)--*/
+class CefV8ArrayBufferReleaseCallback : public virtual CefBaseRefCounted {
+ public:
+  ///
+  // Called to release |buffer| when the ArrayBuffer JS object is garbage
+  // collected. |buffer| is the value that was passed to CreateArrayBuffer along
+  // with this object.
+  ///
+  /*--cef()--*/
+  virtual void ReleaseBuffer(void* buffer) = 0;
+};
+
+///
 // Class representing a V8 value handle. V8 handles can only be accessed from
 // the thread on which they are created. Valid threads for creating a V8 handle
 // include the render process main thread (TID_RENDERER) and WebWorker threads.
 // A task runner for posting tasks on the associated thread can be retrieved via
 // the CefV8Context::GetTaskRunner() method.
 ///
-/*--cef(source=library)--*/
+/*--cef(source=library,no_debugct_check)--*/
 class CefV8Value : public virtual CefBaseRefCounted {
  public:
   typedef cef_v8_accesscontrol_t AccessControl;
@@ -494,6 +509,22 @@ class CefV8Value : public virtual CefBaseRefCounted {
   static CefRefPtr<CefV8Value> CreateArray(int length);
 
   ///
+  // Create a new CefV8Value object of type ArrayBuffer which wraps the provided
+  // |buffer| of size |length| bytes. The ArrayBuffer is externalized, meaning
+  // that it does not own |buffer|. The caller is responsible for freeing
+  // |buffer| when requested via a call to CefV8ArrayBufferReleaseCallback::
+  // ReleaseBuffer. This method should only be called from within the scope of a
+  // CefRenderProcessHandler, CefV8Handler or CefV8Accessor callback, or in
+  // combination with calling Enter() and Exit() on a stored CefV8Context
+  // reference.
+  ///
+  /*--cef()--*/
+  static CefRefPtr<CefV8Value> CreateArrayBuffer(
+      void* buffer,
+      size_t length,
+      CefRefPtr<CefV8ArrayBufferReleaseCallback> release_callback);
+
+  ///
   // Create a new CefV8Value object of type function. This method should only be
   // called from within the scope of a CefRenderProcessHandler, CefV8Handler or
   // CefV8Accessor callback, or in combination with calling Enter() and Exit()
@@ -570,6 +601,12 @@ class CefV8Value : public virtual CefBaseRefCounted {
   ///
   /*--cef()--*/
   virtual bool IsArray() = 0;
+
+  ///
+  // True if the value type is an ArrayBuffer.
+  ///
+  /*--cef()--*/
+  virtual bool IsArrayBuffer() = 0;
 
   ///
   // True if the value type is function.
@@ -793,6 +830,25 @@ class CefV8Value : public virtual CefBaseRefCounted {
   /*--cef()--*/
   virtual int GetArrayLength() = 0;
 
+  // ARRAY BUFFER METHODS - These methods are only available on ArrayBuffers.
+
+  ///
+  // Returns the ReleaseCallback object associated with the ArrayBuffer or NULL
+  // if the ArrayBuffer was not created with CreateArrayBuffer.
+  ///
+  /*--cef()--*/
+  virtual CefRefPtr<CefV8ArrayBufferReleaseCallback>
+  GetArrayBufferReleaseCallback() = 0;
+
+  ///
+  // Prevent the ArrayBuffer from using it's memory block by setting the length
+  // to zero. This operation cannot be undone. If the ArrayBuffer was created
+  // with CreateArrayBuffer then CefV8ArrayBufferReleaseCallback::ReleaseBuffer
+  // will be called to release the underlying buffer.
+  ///
+  /*--cef()--*/
+  virtual bool NeuterArrayBuffer() = 0;
+
   // FUNCTION METHODS - These methods are only available on functions.
 
   ///
@@ -882,7 +938,7 @@ class CefV8StackTrace : public virtual CefBaseRefCounted {
 // threads. A task runner for posting tasks on the associated thread can be
 // retrieved via the CefV8Context::GetTaskRunner() method.
 ///
-/*--cef(source=library)--*/
+/*--cef(source=library,no_debugct_check)--*/
 class CefV8StackFrame : public virtual CefBaseRefCounted {
  public:
   ///

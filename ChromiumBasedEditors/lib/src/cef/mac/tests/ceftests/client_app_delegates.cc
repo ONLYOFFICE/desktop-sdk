@@ -70,11 +70,6 @@ void CreateRenderDelegates(ClientAppRenderer::DelegateSet& delegates) {
                                                 delegates);
   CreateRequestHandlerRendererTests(delegates);
 
-  // Bring in the Request tests.
-  extern void CreateRequestRendererTests(ClientAppRenderer::DelegateSet &
-                                         delegates);
-  CreateRequestRendererTests(delegates);
-
   // Bring in the routing test handler delegate.
   extern void CreateRoutingTestHandlerDelegate(ClientAppRenderer::DelegateSet &
                                                delegates);
@@ -114,6 +109,12 @@ void RegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar,
       CefRawPtr<CefSchemeRegistrar> registrar,
       std::vector<CefString> & cookiable_schemes);
   RegisterURLRequestCustomSchemes(registrar, cookiable_schemes);
+
+  // Bring in the resource request handler tests.
+  extern void RegisterResourceRequestHandlerCustomSchemes(
+      CefRawPtr<CefSchemeRegistrar> registrar,
+      std::vector<CefString> & cookiable_schemes);
+  RegisterResourceRequestHandlerCustomSchemes(registrar, cookiable_schemes);
 }
 
 namespace client {

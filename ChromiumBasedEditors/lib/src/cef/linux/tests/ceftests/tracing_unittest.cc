@@ -68,7 +68,7 @@ enum TracingTestType {
   TT_TRACE_EVENT_COPY_ASYNC_END2
 };
 
-const char kTraceTestCategory[] = "test_category";
+const char kTraceTestCategory[] = "cef.client";
 
 class TracingTestHandler : public CefEndTracingCallback,
                            public CefCompletionCallback {
@@ -78,24 +78,20 @@ class TracingTestHandler : public CefEndTracingCallback,
     completion_event_ = CefWaitableEvent::CreateWaitableEvent(true, false);
   }
 
-  void ReadTracingFile(const std::string& file_path) {
-    EXPECT_FILE_THREAD();
+  void ExecuteTest() {
+    // Run the test.
+    CefPostTask(TID_UI, base::Bind(&TracingTestHandler::BeginTracing, this));
 
-    EXPECT_TRUE(client::file_util::ReadFileToString(file_path, &trace_data_));
-    EXPECT_TRUE(CefDeleteFile(file_path, false));
+    // Wait for the test to complete.
+    completion_event_->Wait();
 
-    completion_event_->Signal();
+    // Verify the results.
+    EXPECT_TRUE(!trace_data_.empty());
+    EXPECT_TRUE(trace_type_ != NULL);
+    EXPECT_TRUE(strstr(trace_data_.c_str(), trace_type_) != NULL);
   }
 
-  // CefEndTracingCallback method:
-  void OnEndTracingComplete(const CefString& tracing_file) override {
-    EXPECT_UI_THREAD();
-
-    CefPostTask(TID_FILE, base::Bind(&TracingTestHandler::ReadTracingFile, this,
-                                     tracing_file));
-  }
-
-  void RunTracing() {
+  void BeginTracing() {
     EXPECT_UI_THREAD();
 
     // Results in a call to OnComplete.
@@ -103,6 +99,14 @@ class TracingTestHandler : public CefEndTracingCallback,
   }
 
   void OnComplete() override {
+    EXPECT_UI_THREAD();
+
+    // Add some delay to avoid timing-related test failures.
+    CefPostDelayedTask(TID_UI,
+                       base::Bind(&TracingTestHandler::TestTracing, this), 50);
+  }
+
+  void TestTracing() {
     EXPECT_UI_THREAD();
 
     switch (type_) {
@@ -290,6 +294,7 @@ class TracingTestHandler : public CefEndTracingCallback,
       case TT_TRACE_EVENT_ASYNC_END2:
         TRACE_EVENT_ASYNC_END2(kTraceTestCategory, "TT_TRACE_EVENT_ASYNC_END2",
                                100, "arg1", 1, "arg2", 2);
+        break;
       case TT_TRACE_EVENT_COPY_ASYNC_END0:
         TRACE_EVENT_COPY_ASYNC_END0(kTraceTestCategory,
                                     "TT_TRACE_EVENT_COPY_ASYNC_END0", 100);
@@ -310,17 +315,20 @@ class TracingTestHandler : public CefEndTracingCallback,
     CefEndTracing(CefString(), this);
   }
 
-  void ExecuteTest() {
-    // Run the test.
-    CefPostTask(TID_UI, base::Bind(&TracingTestHandler::RunTracing, this));
+  void OnEndTracingComplete(const CefString& tracing_file) override {
+    EXPECT_UI_THREAD();
 
-    // Wait for the test to complete.
-    completion_event_->Wait();
+    CefPostTask(TID_FILE, base::Bind(&TracingTestHandler::ReadTracingFile, this,
+                                     tracing_file));
+  }
 
-    // Verify the results.
-    EXPECT_TRUE(!trace_data_.empty());
-    EXPECT_TRUE(trace_type_ != NULL);
-    EXPECT_TRUE(strstr(trace_data_.c_str(), trace_type_) != NULL);
+  void ReadTracingFile(const std::string& file_path) {
+    EXPECT_FILE_THREAD();
+
+    EXPECT_TRUE(client::file_util::ReadFileToString(file_path, &trace_data_));
+    EXPECT_TRUE(CefDeleteFile(file_path, false));
+
+    completion_event_->Signal();
   }
 
  private:
@@ -345,57 +353,53 @@ class TracingTestHandler : public CefEndTracingCallback,
   }
 
 // Define the tests.
-TRACING_TEST(TraceEvent0, TT_TRACE_EVENT0);
-TRACING_TEST(TraceEvent1, TT_TRACE_EVENT1);
-TRACING_TEST(TraceEvent2, TT_TRACE_EVENT2);
-TRACING_TEST(TraceEventInstant0, TT_TRACE_EVENT_INSTANT0);
-TRACING_TEST(TraceEventInstant1, TT_TRACE_EVENT_INSTANT1);
-TRACING_TEST(TraceEventInstant2, TT_TRACE_EVENT_INSTANT2);
-TRACING_TEST(TraceEventCopyInstant0, TT_TRACE_EVENT_COPY_INSTANT0);
-TRACING_TEST(TraceEventCopyInstant1, TT_TRACE_EVENT_COPY_INSTANT1);
-TRACING_TEST(TraceEventCopyInstant2, TT_TRACE_EVENT_COPY_INSTANT2);
-TRACING_TEST(TraceEventBegin0, TT_TRACE_EVENT_BEGIN0);
-TRACING_TEST(TraceEventBegin1, TT_TRACE_EVENT_BEGIN1);
-TRACING_TEST(TraceEventBegin2, TT_TRACE_EVENT_BEGIN2);
-TRACING_TEST(TraceEventCopyBegin0, TT_TRACE_EVENT_COPY_BEGIN0);
-TRACING_TEST(TraceEventCopyBegin1, TT_TRACE_EVENT_COPY_BEGIN1);
-TRACING_TEST(TraceEventCopyBegin2, TT_TRACE_EVENT_COPY_BEGIN2);
-TRACING_TEST(TraceEventEnd0, TT_TRACE_EVENT_END0);
-TRACING_TEST(TraceEventEnd1, TT_TRACE_EVENT_END1);
-TRACING_TEST(TraceEventEnd2, TT_TRACE_EVENT_END2);
-TRACING_TEST(TraceEventCopyEnd0, TT_TRACE_EVENT_COPY_END0);
-TRACING_TEST(TraceEventCopyEnd1, TT_TRACE_EVENT_COPY_END1);
-TRACING_TEST(TraceEventCopyEnd2, TT_TRACE_EVENT_COPY_END1);
-TRACING_TEST(TraceCounter1, TT_TRACE_COUNTER1);
-TRACING_TEST(TraceCopyCounter1, TT_TRACE_COPY_COUNTER1);
-TRACING_TEST(TraceCounter2, TT_TRACE_COUNTER2);
-TRACING_TEST(TraceCopyCounter2, TT_TRACE_COPY_COUNTER2);
-TRACING_TEST(TraceCounterId1, TT_TRACE_COUNTER_ID1);
-TRACING_TEST(TraceCopyCounterId1, TT_TRACE_COPY_COUNTER_ID1);
-TRACING_TEST(TraceCounterId2, TT_TRACE_COUNTER_ID2);
-TRACING_TEST(TraceCopyCounterId2, TT_TRACE_COPY_COUNTER_ID1);
-TRACING_TEST(TraceEventAsyncBegin0, TT_TRACE_EVENT_ASYNC_BEGIN0);
-TRACING_TEST(TraceEventAsyncBegin1, TT_TRACE_EVENT_ASYNC_BEGIN1);
-TRACING_TEST(TraceEventAsyncBegin2, TT_TRACE_EVENT_ASYNC_BEGIN2);
-TRACING_TEST(TraceEventCopyAsyncBegin0, TT_TRACE_EVENT_COPY_ASYNC_BEGIN0);
-TRACING_TEST(TraceEventCopyAsyncBegin1, TT_TRACE_EVENT_COPY_ASYNC_BEGIN1);
-TRACING_TEST(TraceEventCopyAsyncBegin2, TT_TRACE_EVENT_COPY_ASYNC_BEGIN2);
-TRACING_TEST(TraceEventAsyncStepInto0, TT_TRACE_EVENT_ASYNC_STEP_INTO0);
-TRACING_TEST(TraceEventAsyncStepInto1, TT_TRACE_EVENT_ASYNC_STEP_INTO1);
-TRACING_TEST(TraceEventCopyAsyncStepInto0,
-             TT_TRACE_EVENT_COPY_ASYNC_STEP_INTO0);
-TRACING_TEST(TraceEventCopyAsyncStepInto1,
-             TT_TRACE_EVENT_COPY_ASYNC_STEP_INTO1);
-TRACING_TEST(TraceEventAsyncStepPast0, TT_TRACE_EVENT_ASYNC_STEP_PAST0);
-TRACING_TEST(TraceEventAsyncStepPast1, TT_TRACE_EVENT_ASYNC_STEP_PAST1);
-TRACING_TEST(TraceEventCopyAsyncStepPast0,
-             TT_TRACE_EVENT_COPY_ASYNC_STEP_PAST0);
-TRACING_TEST(TraceEventCopyAsyncStepPast1,
-             TT_TRACE_EVENT_COPY_ASYNC_STEP_PAST1);
-TRACING_TEST(TraceEventAsyncEnd0, TT_TRACE_EVENT_ASYNC_END0);
-TRACING_TEST(TraceEventAsyncEnd1, TT_TRACE_EVENT_ASYNC_END1);
-TRACING_TEST(TraceEventAsyncEnd2, TT_TRACE_EVENT_ASYNC_END2);
-TRACING_TEST(TraceEventCopyAsyncEnd0, TT_TRACE_EVENT_COPY_ASYNC_END0);
+TRACING_TEST(TraceEvent0, TT_TRACE_EVENT0)
+TRACING_TEST(TraceEvent1, TT_TRACE_EVENT1)
+TRACING_TEST(TraceEvent2, TT_TRACE_EVENT2)
+TRACING_TEST(TraceEventInstant0, TT_TRACE_EVENT_INSTANT0)
+TRACING_TEST(TraceEventInstant1, TT_TRACE_EVENT_INSTANT1)
+TRACING_TEST(TraceEventInstant2, TT_TRACE_EVENT_INSTANT2)
+TRACING_TEST(TraceEventCopyInstant0, TT_TRACE_EVENT_COPY_INSTANT0)
+TRACING_TEST(TraceEventCopyInstant1, TT_TRACE_EVENT_COPY_INSTANT1)
+TRACING_TEST(TraceEventCopyInstant2, TT_TRACE_EVENT_COPY_INSTANT2)
+TRACING_TEST(TraceEventBegin0, TT_TRACE_EVENT_BEGIN0)
+TRACING_TEST(TraceEventBegin1, TT_TRACE_EVENT_BEGIN1)
+TRACING_TEST(TraceEventBegin2, TT_TRACE_EVENT_BEGIN2)
+TRACING_TEST(TraceEventCopyBegin0, TT_TRACE_EVENT_COPY_BEGIN0)
+TRACING_TEST(TraceEventCopyBegin1, TT_TRACE_EVENT_COPY_BEGIN1)
+TRACING_TEST(TraceEventCopyBegin2, TT_TRACE_EVENT_COPY_BEGIN2)
+TRACING_TEST(TraceEventEnd0, TT_TRACE_EVENT_END0)
+TRACING_TEST(TraceEventEnd1, TT_TRACE_EVENT_END1)
+TRACING_TEST(TraceEventEnd2, TT_TRACE_EVENT_END2)
+TRACING_TEST(TraceEventCopyEnd0, TT_TRACE_EVENT_COPY_END0)
+TRACING_TEST(TraceEventCopyEnd1, TT_TRACE_EVENT_COPY_END1)
+TRACING_TEST(TraceEventCopyEnd2, TT_TRACE_EVENT_COPY_END1)
+TRACING_TEST(TraceCounter1, TT_TRACE_COUNTER1)
+TRACING_TEST(TraceCopyCounter1, TT_TRACE_COPY_COUNTER1)
+TRACING_TEST(TraceCounter2, TT_TRACE_COUNTER2)
+TRACING_TEST(TraceCopyCounter2, TT_TRACE_COPY_COUNTER2)
+TRACING_TEST(TraceCounterId1, TT_TRACE_COUNTER_ID1)
+TRACING_TEST(TraceCopyCounterId1, TT_TRACE_COPY_COUNTER_ID1)
+TRACING_TEST(TraceCounterId2, TT_TRACE_COUNTER_ID2)
+TRACING_TEST(TraceCopyCounterId2, TT_TRACE_COPY_COUNTER_ID1)
+TRACING_TEST(TraceEventAsyncBegin0, TT_TRACE_EVENT_ASYNC_BEGIN0)
+TRACING_TEST(TraceEventAsyncBegin1, TT_TRACE_EVENT_ASYNC_BEGIN1)
+TRACING_TEST(TraceEventAsyncBegin2, TT_TRACE_EVENT_ASYNC_BEGIN2)
+TRACING_TEST(TraceEventCopyAsyncBegin0, TT_TRACE_EVENT_COPY_ASYNC_BEGIN0)
+TRACING_TEST(TraceEventCopyAsyncBegin1, TT_TRACE_EVENT_COPY_ASYNC_BEGIN1)
+TRACING_TEST(TraceEventCopyAsyncBegin2, TT_TRACE_EVENT_COPY_ASYNC_BEGIN2)
+TRACING_TEST(TraceEventAsyncStepInto0, TT_TRACE_EVENT_ASYNC_STEP_INTO0)
+TRACING_TEST(TraceEventAsyncStepInto1, TT_TRACE_EVENT_ASYNC_STEP_INTO1)
+TRACING_TEST(TraceEventCopyAsyncStepInto0, TT_TRACE_EVENT_COPY_ASYNC_STEP_INTO0)
+TRACING_TEST(TraceEventCopyAsyncStepInto1, TT_TRACE_EVENT_COPY_ASYNC_STEP_INTO1)
+TRACING_TEST(TraceEventAsyncStepPast0, TT_TRACE_EVENT_ASYNC_STEP_PAST0)
+TRACING_TEST(TraceEventAsyncStepPast1, TT_TRACE_EVENT_ASYNC_STEP_PAST1)
+TRACING_TEST(TraceEventCopyAsyncStepPast0, TT_TRACE_EVENT_COPY_ASYNC_STEP_PAST0)
+TRACING_TEST(TraceEventCopyAsyncStepPast1, TT_TRACE_EVENT_COPY_ASYNC_STEP_PAST1)
+TRACING_TEST(TraceEventAsyncEnd0, TT_TRACE_EVENT_ASYNC_END0)
+TRACING_TEST(TraceEventAsyncEnd1, TT_TRACE_EVENT_ASYNC_END1)
+TRACING_TEST(TraceEventAsyncEnd2, TT_TRACE_EVENT_ASYNC_END2)
+TRACING_TEST(TraceEventCopyAsyncEnd0, TT_TRACE_EVENT_COPY_ASYNC_END0)
 
 TEST(TracingTest, NowFromSystemTraceTime) {
   int64 val = CefNowFromSystemTraceTime();

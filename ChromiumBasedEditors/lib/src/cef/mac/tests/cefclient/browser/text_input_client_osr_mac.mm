@@ -30,7 +30,7 @@ cef_color_t CefColorFromNSColor(NSColor* color) {
 // third_party/WebKit/Source/WebKit/mac/WebView/WebHTMLView.mm
 void ExtractUnderlines(NSAttributedString* string,
                        std::vector<CefCompositionUnderline>* underlines) {
-  int length = (int)[[string string] length];
+  int length = [[string string] length];
   int i = 0;
   while (i < length) {
     NSRange range;
@@ -46,7 +46,7 @@ void ExtractUnderlines(NSAttributedString* string,
             [colorAttr colorUsingColorSpaceName:NSDeviceRGBColorSpace]);
       }
       cef_composition_underline_t line = {
-          {(int)range.location, (int)NSMaxRange(range)}, color, 0, [style intValue] > 1};
+          {range.location, NSMaxRange(range)}, color, 0, [style intValue] > 1};
       underlines->push_back(line);
     }
     i = range.location + range.length;
@@ -105,8 +105,8 @@ extern NSString* NSTextInputReplacementRangeAttributeName;
   if (handlingKeyDown_) {
     textToBeInserted_.append([im_text UTF8String]);
   } else {
-    cef_range_t range = {(int)replacementRange.location,
-                         (int)NSMaxRange(replacementRange)};
+    cef_range_t range = {replacementRange.location,
+                         NSMaxRange(replacementRange)};
     browser_->GetHost()->ImeCommitText([im_text UTF8String], range, 0);
   }
 
@@ -149,8 +149,8 @@ extern NSString* NSTextInputReplacementRangeAttributeName;
   // ongoing composition. Our input method backend will automatically cancel an
   // ongoing composition when we send empty text.
   if (handlingKeyDown_) {
-    setMarkedTextReplacementRange_ = {(int)replacementRange.location,
-                                      (int)NSMaxRange(replacementRange)};
+    setMarkedTextReplacementRange_ = {replacementRange.location,
+                                      NSMaxRange(replacementRange)};
   } else if (!handlingKeyDown_) {
     CefRange replacement_range(replacementRange.location,
                                NSMaxRange(replacementRange));

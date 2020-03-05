@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2019 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,7 +33,7 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=b6308ab5e97eb9f7af95f1f4c371fd6e7edbf852$
+// $hash=623d324a1ef5637353ae74761fdc04eac4d99716$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_BROWSER_CAPI_H_
@@ -45,7 +45,6 @@
 #include "include/capi/cef_frame_capi.h"
 #include "include/capi/cef_image_capi.h"
 #include "include/capi/cef_navigation_entry_capi.h"
-#include "include/capi/cef_process_message_capi.h"
 #include "include/capi/cef_request_context_capi.h"
 
 #ifdef __cplusplus
@@ -115,7 +114,8 @@ typedef struct _cef_browser_t {
   void(CEF_CALLBACK* stop_load)(struct _cef_browser_t* self);
 
   ///
-  // Returns the globally unique identifier for this browser.
+  // Returns the globally unique identifier for this browser. This value is also
+  // used as the tabId for extension APIs.
   ///
   int(CEF_CALLBACK* get_identifier)(struct _cef_browser_t* self);
 
@@ -178,15 +178,6 @@ typedef struct _cef_browser_t {
   ///
   void(CEF_CALLBACK* get_frame_names)(struct _cef_browser_t* self,
                                       cef_string_list_t names);
-
-  ///
-  // Send a message to the specified |target_process|. Returns true (1) if the
-  // message was sent successfully.
-  ///
-  int(CEF_CALLBACK* send_process_message)(
-      struct _cef_browser_t* self,
-      cef_process_id_t target_process,
-      struct _cef_process_message_t* message);
 } cef_browser_t;
 
 ///
@@ -571,6 +562,13 @@ typedef struct _cef_browser_host_t {
                                  cef_paint_element_type_t type);
 
   ///
+  // Issue a BeginFrame request to Chromium.  Only valid when
+  // cef_window_tInfo::external_begin_frame_enabled is set to true (1).
+  ///
+  void(CEF_CALLBACK* send_external_begin_frame)(
+      struct _cef_browser_host_t* self);
+
+  ///
   // Send a key event to the browser.
   ///
   void(CEF_CALLBACK* send_key_event)(struct _cef_browser_host_t* self,
@@ -608,6 +606,12 @@ typedef struct _cef_browser_host_t {
       const struct _cef_mouse_event_t* event,
       int deltaX,
       int deltaY);
+
+  ///
+  // Send a touch event to the browser for a windowless browser.
+  ///
+  void(CEF_CALLBACK* send_touch_event)(struct _cef_browser_host_t* self,
+                                       const struct _cef_touch_event_t* event);
 
   ///
   // Send a focus event to the browser.
@@ -812,6 +816,42 @@ typedef struct _cef_browser_host_t {
   ///
   void(CEF_CALLBACK* set_accessibility_state)(struct _cef_browser_host_t* self,
                                               cef_state_t accessibility_state);
+
+  ///
+  // Enable notifications of auto resize via
+  // cef_display_handler_t::OnAutoResize. Notifications are disabled by default.
+  // |min_size| and |max_size| define the range of allowed sizes.
+  ///
+  void(CEF_CALLBACK* set_auto_resize_enabled)(struct _cef_browser_host_t* self,
+                                              int enabled,
+                                              const cef_size_t* min_size,
+                                              const cef_size_t* max_size);
+
+  ///
+  // Returns the extension hosted in this browser or NULL if no extension is
+  // hosted. See cef_request_tContext::LoadExtension for details.
+  ///
+  struct _cef_extension_t*(CEF_CALLBACK* get_extension)(
+      struct _cef_browser_host_t* self);
+
+  ///
+  // Returns true (1) if this browser is hosting an extension background script.
+  // Background hosts do not have a window and are not displayable. See
+  // cef_request_tContext::LoadExtension for details.
+  ///
+  int(CEF_CALLBACK* is_background_host)(struct _cef_browser_host_t* self);
+
+  ///
+  //  Set whether the browser's audio is muted.
+  ///
+  void(CEF_CALLBACK* set_audio_muted)(struct _cef_browser_host_t* self,
+                                      int mute);
+
+  ///
+  // Returns true (1) if the browser's audio is muted.  This function can only
+  // be called on the UI thread.
+  ///
+  int(CEF_CALLBACK* is_audio_muted)(struct _cef_browser_host_t* self);
 } cef_browser_host_t;
 
 ///
@@ -819,25 +859,33 @@ typedef struct _cef_browser_host_t {
 // |windowInfo|. All values will be copied internally and the actual window will
 // be created on the UI thread. If |request_context| is NULL the global request
 // context will be used. This function can be called on any browser process
-// thread and will not block.
+// thread and will not block. The optional |extra_info| parameter provides an
+// opportunity to specify extra information specific to the created browser that
+// will be passed to cef_render_process_handler_t::on_browser_created() in the
+// render process.
 ///
 CEF_EXPORT int cef_browser_host_create_browser(
     const cef_window_info_t* windowInfo,
     struct _cef_client_t* client,
     const cef_string_t* url,
     const struct _cef_browser_settings_t* settings,
+    struct _cef_dictionary_value_t* extra_info,
     struct _cef_request_context_t* request_context);
 
 ///
 // Create a new browser window using the window parameters specified by
 // |windowInfo|. If |request_context| is NULL the global request context will be
-// used. This function can only be called on the browser process UI thread.
+// used. This function can only be called on the browser process UI thread. The
+// optional |extra_info| parameter provides an opportunity to specify extra
+// information specific to the created browser that will be passed to
+// cef_render_process_handler_t::on_browser_created() in the render process.
 ///
 CEF_EXPORT cef_browser_t* cef_browser_host_create_browser_sync(
     const cef_window_info_t* windowInfo,
     struct _cef_client_t* client,
     const cef_string_t* url,
     const struct _cef_browser_settings_t* settings,
+    struct _cef_dictionary_value_t* extra_info,
     struct _cef_request_context_t* request_context);
 
 #ifdef __cplusplus

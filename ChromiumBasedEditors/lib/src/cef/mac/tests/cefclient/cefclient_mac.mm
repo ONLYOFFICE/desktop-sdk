@@ -6,6 +6,7 @@
 #import <Cocoa/Cocoa.h>
 #include "include/cef_app.h"
 #import "include/cef_application_mac.h"
+#import "include/wrapper/cef_library_loader.h"
 #include "tests/cefclient/browser/main_context_impl.h"
 #include "tests/cefclient/browser/resource.h"
 #include "tests/cefclient/browser/root_window.h"
@@ -39,7 +40,7 @@ NSMenuItem* GetMenuItemWithAction(NSMenu* menu, SEL action_selector) {
 }  // namespace
 
 // Receives notifications from the application. Will delete itself when done.
-@interface ClientAppDelegate : NSObject<NSApplicationDelegate> {
+@interface ClientAppDelegate : NSObject <NSApplicationDelegate> {
  @private
   bool with_controls_;
   bool with_osr_;
@@ -64,12 +65,14 @@ NSMenuItem* GetMenuItemWithAction(NSMenu* menu, SEL action_selector) {
 - (IBAction)menuTestsTracingEnd:(id)sender;
 - (IBAction)menuTestsPrint:(id)sender;
 - (IBAction)menuTestsPrintToPdf:(id)sender;
+- (IBAction)menuTestsMuteAudio:(id)sender;
+- (IBAction)menuTestsUnmuteAudio:(id)sender;
 - (IBAction)menuTestsOtherTests:(id)sender;
 - (void)enableAccessibility:(bool)bEnable;
 @end
 
 // Provide the CefAppProtocol implementation required by CEF.
-@interface ClientApplication : NSApplication<CefAppProtocol> {
+@interface ClientApplication : NSApplication <CefAppProtocol> {
  @private
   BOOL handlingSendEvent_;
 }
@@ -216,12 +219,13 @@ NSMenuItem* GetMenuItemWithAction(NSMenu* menu, SEL action_selector) {
     }
   }
 
+  client::RootWindowConfig window_config;
+  window_config.with_controls = with_controls_;
+  window_config.with_osr = with_osr_;
+
   // Create the first window.
   client::MainContext::Get()->GetRootWindowManager()->CreateRootWindow(
-      with_controls_,  // Show controls.
-      with_osr_,       // Use off-screen rendering.
-      CefRect(),       // Use default system size.
-      std::string());  // Use default URL.
+      window_config);
 }
 
 - (void)tryToTerminateApplication:(NSApplication*)app {
@@ -306,6 +310,14 @@ NSMenuItem* GetMenuItemWithAction(NSMenu* menu, SEL action_selector) {
   [self testsItemSelected:ID_TESTS_PRINT_TO_PDF];
 }
 
+- (IBAction)menuTestsMuteAudio:(id)sender {
+  [self testsItemSelected:ID_TESTS_MUTE_AUDIO];
+}
+
+- (IBAction)menuTestsUnmuteAudio:(id)sender {
+  [self testsItemSelected:ID_TESTS_UNMUTE_AUDIO];
+}
+
 - (IBAction)menuTestsOtherTests:(id)sender {
   [self testsItemSelected:ID_TESTS_OTHER_TESTS];
 }
@@ -337,64 +349,83 @@ namespace client {
 namespace {
 
 int RunMain(int argc, char* argv[]) {
+  // Load the CEF framework library at runtime instead of linking directly
+  // as required by the macOS sandbox implementation.
+  CefScopedLibraryLoader library_loader;
+  if (!library_loader.LoadInMain())
+    return 1;
+
+  int result = -1;
+
   CefMainArgs main_args(argc, argv);
 
-  // Initialize the AutoRelease pool.
-  NSAutoreleasePool* autopool = [[NSAutoreleasePool alloc] init];
+  @autoreleasepool {
+    // Initialize the ClientApplication instance.
+    [ClientApplication sharedApplication];
 
-  // Initialize the ClientApplication instance.
-  [ClientApplication sharedApplication];
+    // Parse command-line arguments.
+    CefRefPtr<CefCommandLine> command_line =
+        CefCommandLine::CreateCommandLine();
+    command_line->InitFromArgv(argc, argv);
 
-  // Parse command-line arguments.
-  CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
-  command_line->InitFromArgv(argc, argv);
+    // Create a ClientApp of the correct type.
+    CefRefPtr<CefApp> app;
+    ClientApp::ProcessType process_type =
+        ClientApp::GetProcessType(command_line);
+    if (process_type == ClientApp::BrowserProcess)
+      app = new ClientAppBrowser();
 
-  // Create a ClientApp of the correct type.
-  CefRefPtr<CefApp> app;
-  ClientApp::ProcessType process_type = ClientApp::GetProcessType(command_line);
-  if (process_type == ClientApp::BrowserProcess)
-    app = new ClientAppBrowser();
+    // Create the main context object.
+    scoped_ptr<MainContextImpl> context(
+        new MainContextImpl(command_line, true));
 
-  // Create the main context object.
-  scoped_ptr<MainContextImpl> context(new MainContextImpl(command_line, true));
+    CefSettings settings;
 
-  CefSettings settings;
+// When generating projects with CMake the CEF_USE_SANDBOX value will be defined
+// automatically. Pass -DUSE_SANDBOX=OFF to the CMake command-line to disable
+// use of the sandbox.
+#if !defined(CEF_USE_SANDBOX)
+    settings.no_sandbox = true;
+#endif
 
-  // Populate the settings based on command line arguments.
-  context->PopulateSettings(&settings);
+    // Populate the settings based on command line arguments.
+    context->PopulateSettings(&settings);
 
-  // Create the main message loop object.
-  scoped_ptr<MainMessageLoop> message_loop;
-  if (settings.external_message_pump)
-    message_loop = MainMessageLoopExternalPump::Create();
-  else
-    message_loop.reset(new MainMessageLoopStd);
+    // Create the main message loop object.
+    scoped_ptr<MainMessageLoop> message_loop;
+    if (settings.external_message_pump)
+      message_loop = MainMessageLoopExternalPump::Create();
+    else
+      message_loop.reset(new MainMessageLoopStd);
 
-  // Initialize CEF.
-  context->Initialize(main_args, settings, app, NULL);
+    // Initialize CEF.
+    context->Initialize(main_args, settings, app, NULL);
 
-  // Register scheme handlers.
-  test_runner::RegisterSchemeHandlers();
+    // Register scheme handlers.
+    test_runner::RegisterSchemeHandlers();
 
-  // Create the application delegate and window.
-  ClientAppDelegate* delegate = [[ClientAppDelegate alloc]
-      initWithControls:!command_line->HasSwitch(switches::kHideControls)
-                andOsr:settings.windowless_rendering_enabled ? true : false];
-  [delegate performSelectorOnMainThread:@selector(createApplication:)
-                             withObject:nil
-                          waitUntilDone:NO];
+    // Create the application delegate and window.
+    ClientAppDelegate* delegate = [[ClientAppDelegate alloc]
+        initWithControls:!command_line->HasSwitch(switches::kHideControls)
+                  andOsr:settings.windowless_rendering_enabled ? true : false];
+    [delegate performSelectorOnMainThread:@selector(createApplication:)
+                               withObject:nil
+                            waitUntilDone:NO];
 
-  // Run the message loop. This will block until Quit() is called.
-  int result = message_loop->Run();
+    // Run the message loop. This will block until Quit() is called.
+    result = message_loop->Run();
 
-  // Shut down CEF.
-  context->Shutdown();
+    // Shut down CEF.
+    context->Shutdown();
 
-  // Release objects in reverse order of creation.
-  [delegate release];
-  message_loop.reset();
-  context.reset();
-  [autopool release];
+    // Release objects in reverse order of creation.
+#if !__has_feature(objc_arc)
+    [delegate release];
+#endif  // !__has_feature(objc_arc)
+    delegate = nil;
+    message_loop.reset();
+    context.reset();
+  }  // @autoreleasepool
 
   return result;
 }
@@ -402,7 +433,7 @@ int RunMain(int argc, char* argv[]) {
 }  // namespace
 }  // namespace client
 
-// Program entry point function.
+// Entry point function for the browser process.
 int main(int argc, char* argv[]) {
   return client::RunMain(argc, argv);
 }

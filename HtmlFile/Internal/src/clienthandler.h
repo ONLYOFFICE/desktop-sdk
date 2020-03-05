@@ -40,19 +40,46 @@
 #include "include/base/cef_bind.h"
 #include "include/cef_frame.h"
 #include "include/wrapper/cef_closure_task.h"
-#include "tests/cefclient/browser/client_handler.h"
-#include "tests/shared/common/client_switches.h"
 #include "include/cef_app.h"
-
-#include "tests/cefclient/renderer/client_renderer.h"
-#include "tests/shared/browser/main_message_loop.h"
 
 #include "../../../core/DesktopEditor/common/File.h"
 #include <string>
 #include <vector>
 
-#include "tests/cefclient/browser/root_window_manager.h"
+#ifdef CEF_2623
+#include "cefclient/browser/client_handler.h"
+#include "cefclient/common/client_switches.h"
+#include "cefclient/renderer/client_renderer.h"
+#include "cefclient/browser/main_context_impl.h"
+#include "cefclient/browser/main_message_loop_std.h"
+#else
+#include "tests/cefclient/browser/client_handler.h"
+#include "tests/shared/common/client_switches.h"
+#include "tests/cefclient/renderer/client_renderer.h"
+#include "tests/cefclient/browser/main_context_impl.h"
+#include "tests/shared/browser/main_message_loop_std.h"
+#endif
+
+#ifdef CEF_2623
+#define CefRawPtr CefRefPtr
+#endif
+
 #include <iostream>
+
+#ifdef CEF_2623
+#define MESSAGE_IN_BROWSER
+#else
+// с версии выше 74 - убрать определение
+//#define MESSAGE_IN_BROWSER
+#endif
+
+#ifdef MESSAGE_IN_BROWSER
+#define SEND_MESSAGE_TO_BROWSER_PROCESS(message) CefV8Context::GetCurrentContext()->GetBrowser()->SendProcessMessage(PID_BROWSER, message)
+#define SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message) browser->SendProcessMessage(PID_RENDERER, message)
+#else
+#define SEND_MESSAGE_TO_BROWSER_PROCESS(message) CefV8Context::GetCurrentContext()->GetFrame()->SendProcessMessage(PID_BROWSER, message)
+#define SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message) browser->GetMainFrame()->SendProcessMessage(PID_RENDERER, message)
+#endif
 
 class CGlobalHtmlFileParams
 {
@@ -74,12 +101,19 @@ class CHtmlRenderHandler : public CefRenderHandler
 public:
     CHtmlRenderHandler() {}
 
-public:    
+public:
+#ifdef CEF_2623
     virtual bool GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
     {
         rect = CefRect(0, 0, 1000, 1000);
         return true;
     }
+#else
+    virtual void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
+    {
+        rect = CefRect(0, 0, 1000, 1000);
+    }
+#endif
     virtual void OnPaint(CefRefPtr<CefBrowser> browser,
                          PaintElementType type,
                          const RectList& dirtyRects,
@@ -110,12 +144,12 @@ public:
 
 public:
     CHtmlClientHandler(CGlobalHtmlFileParams* params) : client::ClientHandler(this,
-                                                                          #ifdef DEBUG_WINDOW_SHOW
-                                                                              false,
-                                                                          #else
-                                                                              true,
-                                                                          #endif
-                                                                              "html_file")
+                                                                              #ifdef DEBUG_WINDOW_SHOW
+                                                                                  false,
+                                                                              #else
+                                                                                  true,
+                                                                              #endif
+                                                                                  "html_file")
     {
         m_global = params;
         m_render = new CHtmlRenderHandler();
@@ -124,8 +158,16 @@ public:
 
     virtual CefRefPtr<CefRenderHandler> GetRenderHandler()
     {
+#ifdef DEBUG_WINDOW_SHOW
+        return NULL;
+#else
         return m_render;
+#endif
     }
+
+#ifndef CEF_2623
+    virtual void OnAutoResize(const CefSize& new_size) OVERRIDE {}
+#endif
 
     void Init()
     {
@@ -277,24 +319,33 @@ window.onload = function ()\
         return m_sCachePath;
     }
 
-    virtual bool OnBeforePopup(CefRefPtr<CefBrowser> browser,
-                                      CefRefPtr<CefFrame> frame,
-                                      const CefString& target_url,
-                                      const CefString& target_frame_name,
-                                      const CefPopupFeatures& popupFeatures,
-                                      CefWindowInfo& windowInfo,
-                                      CefRefPtr<CefClient>& client,
-                                      CefBrowserSettings& settings,
-                                      bool* no_javascript_access)
+    virtual bool OnBeforePopup(
+            CefRefPtr<CefBrowser> browser,
+            CefRefPtr<CefFrame> frame,
+            const CefString& target_url,
+            const CefString& target_frame_name,
+            CefLifeSpanHandler::WindowOpenDisposition target_disposition,
+            bool user_gesture,
+            const CefPopupFeatures& popupFeatures,
+            CefWindowInfo& windowInfo,
+            CefRefPtr<CefClient>& client,
+            CefBrowserSettings& settings,
+            #ifndef MESSAGE_IN_BROWSER
+            CefRefPtr<CefDictionaryValue>& extra_info,
+            #endif
+            bool* no_javascript_access) OVERRIDE
     {
         CEF_REQUIRE_IO_THREAD();
         return true;
     }
 
     virtual bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
-                                CefRefPtr<CefFrame> frame,
-                                CefRefPtr<CefRequest> request,
-                                bool is_redirect)
+                                    CefRefPtr<CefFrame> frame,
+                                    CefRefPtr<CefRequest> request,
+                                #ifndef CEF_2623
+                                    bool user_gesture,
+                                #endif
+                                    bool is_redirect) OVERRIDE
     {
         //std::wstring sUrl = request->GetURL().ToWString();
         bool bIsMain = frame->IsMain();
@@ -310,7 +361,7 @@ window.onload = function ()\
     virtual void OnBeforeDownload(CefRefPtr<CefBrowser> browser,
         CefRefPtr<CefDownloadItem> download_item,
         const CefString& suggested_name,
-        CefRefPtr<CefBeforeDownloadCallback> callback)
+        CefRefPtr<CefBeforeDownloadCallback> callback) OVERRIDE
     {
         CEF_REQUIRE_UI_THREAD();
         callback->Continue("", false);
@@ -325,8 +376,11 @@ window.onload = function ()\
     }
 
     virtual bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
+                                      #ifndef MESSAGE_IN_BROWSER
+                                          CefRefPtr<CefFrame> frame,
+                                      #endif
                                           CefProcessId source_process,
-                                          CefRefPtr<CefProcessMessage> message)
+                                          CefRefPtr<CefProcessMessage> message) OVERRIDE
     {
         CEF_REQUIRE_UI_THREAD();
 
@@ -344,6 +398,9 @@ window.onload = function ()\
     }    
 
     virtual bool OnConsoleMessage(CefRefPtr<CefBrowser> browser,
+                                  #ifndef CEF_2623
+                                  cef_log_severity_t level,
+                                  #endif
                                   const CefString& message,
                                   const CefString& source,
                                   int line) OVERRIDE
@@ -370,66 +427,49 @@ window.onload = function ()\
     void Exit()
     {
         if (m_browser && m_browser->GetHost())
-            m_browser->GetHost()->CloseBrowser(true);
-        client::MainMessageLoop::Get()->Quit();
+            m_browser->GetHost()->CloseBrowser(true);        
     }
 
     /////////////////////////////////////////////////////
     // Called when the browser is created.
-    virtual void OnBrowserCreated(CefRefPtr<CefBrowser> browser)
-      {
-          m_browser = browser;
-      }
+    virtual void OnBrowserCreated(CefRefPtr<CefBrowser> browser) OVERRIDE
+    {
+        m_browser = browser;
+    }
 
     // Called when the browser is closing.
-    virtual void OnBrowserClosing(CefRefPtr<CefBrowser> browser)
-      {
-      }
+    virtual void OnBrowserClosing(CefRefPtr<CefBrowser> browser) OVERRIDE {}
 
     // Called when the browser has been closed.
-    virtual void OnBrowserClosed(CefRefPtr<CefBrowser> browser)
-      {
-      }
+    virtual void OnBrowserClosed(CefRefPtr<CefBrowser> browser) OVERRIDE
+    {
+        client::MainMessageLoop::Get()->Quit();
+    }
 
     // Set the window URL address.
-    virtual void OnSetAddress(const std::string& url)
-      {
-      }
+    virtual void OnSetAddress(const std::string& url) OVERRIDE {}
 
     // Set the window title.
-    virtual void OnSetTitle(const std::string& title)
-      {
-      }
-
-    // Set the Favicon image.
-    virtual void OnSetFavicon(CefRefPtr<CefImage> image){};
+    virtual void OnSetTitle(const std::string& title) OVERRIDE {}
 
     // Set fullscreen mode.
-    virtual void OnSetFullscreen(bool fullscreen)
-      {
-      }
+    virtual void OnSetFullscreen(bool fullscreen) OVERRIDE {}
 
     // Set the loading state.
-    virtual void OnSetLoadingState(bool isLoading,
-                                   bool canGoBack,
-                                   bool canGoForward)
-      {
-      }
+    virtual void OnSetLoadingState(bool isLoading, bool canGoBack, bool canGoForward) OVERRIDE {}
 
     // Set the draggable regions.
-    virtual void OnSetDraggableRegions(
-        const std::vector<CefDraggableRegion>& regions)
-      {
-      }
+    virtual void OnSetDraggableRegions(const std::vector<CefDraggableRegion>& regions) OVERRIDE {}
+
+#ifndef CEF_2623
+    // Set the Favicon image.
+    virtual void OnSetFavicon(CefRefPtr<CefImage> image) OVERRIDE {}
 
     // Set focus to the next/previous control.
-    virtual void OnTakeFocus(bool next) {}
+    virtual void OnTakeFocus(bool next) OVERRIDE {}
 
     // Called on the UI thread before a context menu is displayed.
-    virtual void OnBeforeContextMenu(CefRefPtr<CefMenuModel> model) {}
-
-#ifdef CEF_3202
-    virtual void OnAutoResize(const CefSize& new_size) OVERRIDE {}
+    virtual void OnBeforeContextMenu(CefRefPtr<CefMenuModel> model) OVERRIDE {}
 #endif
 
 public:

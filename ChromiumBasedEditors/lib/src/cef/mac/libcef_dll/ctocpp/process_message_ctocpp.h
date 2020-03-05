@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=12096d5fdfd928cef1cf8a3752f8f08c04444c97$
+// $hash=845fefd8be50141bfc58045b1a0807b4d1204e0d$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_PROCESS_MESSAGE_CTOCPP_H_
@@ -32,6 +32,7 @@ class CefProcessMessageCToCpp
                                  cef_process_message_t> {
  public:
   CefProcessMessageCToCpp();
+  virtual ~CefProcessMessageCToCpp();
 
   // CefProcessMessage methods.
   bool IsValid() OVERRIDE;

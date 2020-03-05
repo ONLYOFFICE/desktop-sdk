@@ -8,23 +8,19 @@
 
 #include "include/cef_browser.h"
 #include "include/wrapper/cef_helpers.h"
+#include "tests/cefclient/browser/test_runner.h"
+#include "tests/shared/browser/file_util.h"
 
 namespace client {
 namespace dialog_test {
 
 namespace {
 
-const char kTestUrl[] = "http://tests/dialogs";
+const char kTestUrlPath[] = "/dialogs";
 const char kFileOpenMessageName[] = "DialogTest.FileOpen";
 const char kFileOpenMultipleMessageName[] = "DialogTest.FileOpenMultiple";
 const char kFileOpenFolderMessageName[] = "DialogTest.FileOpenFolder";
 const char kFileSaveMessageName[] = "DialogTest.FileSave";
-
-#if defined(OS_WIN)
-#define PATH_SEP '\\'
-#else
-#define PATH_SEP '/'
-#endif
 
 // Store persistent dialog state information.
 class DialogState : public base::RefCountedThreadSafe<DialogState> {
@@ -61,10 +57,10 @@ class DialogCallback : public CefRunFileDialogCallback {
       dialog_state_->last_file_ = file_paths[0];
       if (dialog_state_->mode_ == FILE_DIALOG_OPEN_FOLDER) {
         std::string last_file = dialog_state_->last_file_;
-        if (last_file[last_file.length() - 1] != PATH_SEP) {
+        if (last_file[last_file.length() - 1] != file_util::kPathSep) {
           // Add a trailing slash so we know it's a directory. Otherwise, file
           // dialogs will think the last path component is a file name.
-          last_file += PATH_SEP;
+          last_file += file_util::kPathSep;
           dialog_state_->last_file_ = last_file;
         }
       }
@@ -109,7 +105,7 @@ class Handler : public CefMessageRouterBrowserSide::Handler {
 
     // Only handle messages from the test URL.
     const std::string& url = frame->GetURL();
-    if (url.find(kTestUrl) != 0)
+    if (!test_runner::IsTestURL(url, kTestUrlPath))
       return false;
 
     if (!dialog_state_.get())

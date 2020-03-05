@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,10 +9,11 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=4706e2b6b731c9db45eaa330b4432440ab8886d7$
+// $hash=5f5cc7814718bbcf37d222f56383d51df5135fa1$
 //
 
 #include "libcef_dll/cpptoc/read_handler_cpptoc.h"
+#include "libcef_dll/shutdown_checker.h"
 
 namespace {
 
@@ -22,6 +23,8 @@ size_t CEF_CALLBACK read_handler_read(struct _cef_read_handler_t* self,
                                       void* ptr,
                                       size_t size,
                                       size_t n) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -42,6 +45,8 @@ size_t CEF_CALLBACK read_handler_read(struct _cef_read_handler_t* self,
 int CEF_CALLBACK read_handler_seek(struct _cef_read_handler_t* self,
                                    int64 offset,
                                    int whence) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -56,6 +61,8 @@ int CEF_CALLBACK read_handler_seek(struct _cef_read_handler_t* self,
 }
 
 int64 CEF_CALLBACK read_handler_tell(struct _cef_read_handler_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -70,6 +77,8 @@ int64 CEF_CALLBACK read_handler_tell(struct _cef_read_handler_t* self) {
 }
 
 int CEF_CALLBACK read_handler_eof(struct _cef_read_handler_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -84,6 +93,8 @@ int CEF_CALLBACK read_handler_eof(struct _cef_read_handler_t* self) {
 }
 
 int CEF_CALLBACK read_handler_may_block(struct _cef_read_handler_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -109,6 +120,12 @@ CefReadHandlerCppToC::CefReadHandlerCppToC() {
   GetStruct()->may_block = read_handler_may_block;
 }
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefReadHandlerCppToC::~CefReadHandlerCppToC() {
+  shutdown_checker::AssertNotShutdown();
+}
+
 template <>
 CefRefPtr<CefReadHandler>
 CefCppToCRefCounted<CefReadHandlerCppToC, CefReadHandler, cef_read_handler_t>::
@@ -116,14 +133,6 @@ CefCppToCRefCounted<CefReadHandlerCppToC, CefReadHandler, cef_read_handler_t>::
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCppToCRefCounted<CefReadHandlerCppToC,
-                                         CefReadHandler,
-                                         cef_read_handler_t>::DebugObjCt
-    ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType CefCppToCRefCounted<CefReadHandlerCppToC,
