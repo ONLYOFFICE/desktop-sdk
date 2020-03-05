@@ -141,7 +141,8 @@ void QCefView::Create(CAscApplicationManager* pManager, CefViewWrapperType eType
 
 void QCefView::CreateReporter(CAscApplicationManager* pManager, CAscReporterData* data)
 {
-    m_pCefView = pManager->CreateCefPresentationReporter(this, data);
+    Init();
+    m_pCefView = pManager->CreateCefPresentationReporter(this, data);    
 }
 
 void QCefView::OnMediaStart(NSEditorApi::CAscExternalMedia* data)
@@ -376,7 +377,7 @@ void QCefView::Init()
         Display* display = (Display*)CefGetXDisplay();
         Window x11root = XDefaultRootWindow(display);
         Window x11w = XCreateSimpleWindow(display, x11root, 0, 0, width(), height(), 0, 0,
-                                          (m_pCefView && m_pCefView->GetType() == cvwtEditor) ? 0xFFF4F4F4 : 0xFFFFFFFF);
+                                          (m_pCefView && m_pCefView->GetType() != cvwtEditor) ? 0xFFFFFFFF : 0xFFF4F4F4);
         XReparentWindow(display, x11w, this->winId(), 0, 0);
         XMapWindow(display, x11w);
         XDestroyWindow(display, x11root);
