@@ -94,6 +94,8 @@ public:
     static bool IsSupportLayers();
     void SetCaptionMaskSize(int);
 
+    virtual bool eventFilter(QObject *watched, QEvent *event);
+
 protected:
     CCefView* m_pCefView;
     QPointer<QWidget> m_pOverride;
