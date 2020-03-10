@@ -72,7 +72,7 @@ QCefView::~QCefView()
 bool QCefView::eventFilter(QObject *watched, QEvent *event)
 {
     if (this == watched && event->type() == QEvent::Resize)
-        OnMediaEnd();
+        OnMediaEnd(true);
 
     return QWidget::eventFilter(watched, event);
 }
@@ -148,7 +148,7 @@ void QCefView::CreateReporter(CAscApplicationManager* pManager, CAscReporterData
 void QCefView::OnMediaStart(NSEditorApi::CAscExternalMedia* data)
 {
 }
-void QCefView::OnMediaEnd()
+void QCefView::OnMediaEnd(bool isFromResize)
 {
 }
 
