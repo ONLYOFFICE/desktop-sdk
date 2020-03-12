@@ -52,10 +52,11 @@ QCefView::QCefView(QWidget* parent, const QSize& initial_size) : QWidget(parent)
     if (!initial_size.isEmpty())
         resize(initial_size);
 
-    Init();
-
     QObject::connect(this, SIGNAL( _loaded() ) , this, SLOT( _loadedSlot() ), Qt::QueuedConnection );
     QObject::connect(this, SIGNAL( _closed() ) , this, SLOT( _closedSlot() ), Qt::QueuedConnection );
+
+    if (IsSupportLayers())
+        this->installEventFilter(this);
 }
 
 QCefView::~QCefView()
@@ -66,6 +67,14 @@ QCefView::~QCefView()
         delete m_pProperties;
         m_pProperties = NULL;
     }
+}
+
+bool QCefView::eventFilter(QObject *watched, QEvent *event)
+{
+    if (this == watched && event->type() == QEvent::Resize)
+        OnMediaEnd(true);
+
+    return QWidget::eventFilter(watched, event);
 }
 
 // focus
@@ -84,12 +93,13 @@ void QCefView::focusOutEvent(QFocusEvent* e)
 // move/resize
 void QCefView::resizeEvent(QResizeEvent* e)
 {
-    if (m_pOverride)
-        m_pOverride->setGeometry(0, 0, width(), height());
-    if (m_pCefView)
-        m_pCefView->resizeEvent();
     cef_width = width();
     cef_height = height();
+
+    if (m_pOverride)
+        m_pOverride->setGeometry(0, 0, cef_width, cef_height);
+    if (m_pCefView)
+        m_pCefView->resizeEvent();
 }
 void QCefView::moveEvent(QMoveEvent* e)
 {
@@ -126,17 +136,19 @@ void QCefView::Create(CAscApplicationManager* pManager, CefViewWrapperType eType
     default:
         break;
     }
+    Init();
 }
 
 void QCefView::CreateReporter(CAscApplicationManager* pManager, CAscReporterData* data)
 {
-    m_pCefView = pManager->CreateCefPresentationReporter(this, data);
+    Init();
+    m_pCefView = pManager->CreateCefPresentationReporter(this, data);    
 }
 
 void QCefView::OnMediaStart(NSEditorApi::CAscExternalMedia* data)
 {
 }
-void QCefView::OnMediaEnd()
+void QCefView::OnMediaEnd(bool isFromResize)
 {
 }
 
@@ -185,10 +197,10 @@ void QCefView::SetBackgroundCefColor(unsigned char r, unsigned char g, unsigned 
 
 void QCefView::paintEvent(QPaintEvent *)
 {
-     QStyleOption opt;
-     opt.init(this);
-     QPainter p(this);
-     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
+    QStyleOption opt;
+    opt.init(this);
+    QPainter p(this);
+    style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 }
 
 #ifdef _WIN32
@@ -356,37 +368,51 @@ bool QCefEmbedWindow::eventFilter(QObject *watched, QEvent *event)
     return QWindow::eventFilter(watched, event);
 }
 
+#include <X11/Xlib.h>
+
 void QCefView::Init()
 {
-    QWindow* win = new QCefEmbedWindow(this);
-
-    m_pProperties = new QCefViewProps();
-    m_pProperties->m_window = win;
-
-    cef_handle = (WindowHandleId)(win->winId());
+    if (IsSupportLayers())
+    {
+        Display* display = (Display*)CefGetXDisplay();
+        Window x11root = XDefaultRootWindow(display);
+        Window x11w = XCreateSimpleWindow(display, x11root, 0, 0, width(), height(), 0, 0,
+                                          (m_pCefView && m_pCefView->GetType() != cvwtEditor) ? 0xFFFFFFFF : 0xFFF4F4F4);
+        XReparentWindow(display, x11w, this->winId(), 0, 0);
+        XMapWindow(display, x11w);
+        XDestroyWindow(display, x11root);
+        cef_handle = x11w;
+    }
+    else
+    {
+        QWindow* win = new QCefEmbedWindow(this);
+        m_pProperties = new QCefViewProps();
+        m_pProperties->m_window = win;
+        cef_handle = (WindowHandleId)(win->winId());
+    }
     cef_width = width();
     cef_height = height();
 }
 
 void QCefView::AfterCreate()
 {
+    if (IsSupportLayers())
+        return;
     m_pOverride = QWidget::createWindowContainer(m_pProperties->m_window, this);
     connect(m_pOverride.operator ->(), &QWidget::destroyed, this, [=](QObject*) {
         deleteLater();
-    });
+    });    
 }
 
 bool QCefView::IsSupportLayers()
 {
-    return false;
+    return true;
 }
 void QCefView::SetCaptionMaskSize(int size)
 {
     if (m_pProperties && m_pProperties->m_window)
         ((QCefEmbedWindow*)m_pProperties->m_window)->SetCaptionMaskSize(size);
 }
-
-#include <X11/Xlib.h>
 
 Window GetChild(Window parent)
 {
@@ -405,22 +431,28 @@ Window GetChild(Window parent)
     return ret;
 }
 
-void QCefView::UpdateSize()
+void SetWindowSize(Window window, QWidget* parent)
 {
-    Window child = GetChild(cef_handle);
-    if (child > 0)
+    if (window > 0)
     {
         Display* xdisplay = (Display*)CefGetXDisplay();
         XWindowChanges changes = {};
         changes.x = 0;
         changes.y = 0;
-        changes.width = width();
-        changes.height = height();
+        changes.width = parent->width();
+        changes.height = parent->height();
         XConfigureWindow(xdisplay,
-                         child,
+                         window,
                          CWX | CWY | CWHeight | CWWidth,
                          &changes);
     }
+}
+
+void QCefView::UpdateSize()
+{
+    if (IsSupportLayers())
+        SetWindowSize(cef_handle, this);
+    SetWindowSize(GetChild(cef_handle), this);
 }
 
 #endif

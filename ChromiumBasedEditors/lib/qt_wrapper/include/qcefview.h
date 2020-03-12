@@ -77,7 +77,7 @@ public:
 
     // multimedia
     virtual void OnMediaStart(NSEditorApi::CAscExternalMedia* data);
-    virtual void OnMediaEnd();
+    virtual void OnMediaEnd(bool isFromResize = false);
 
     // events
     virtual void OnLoaded();
@@ -93,6 +93,8 @@ public:
     // check support z-index
     static bool IsSupportLayers();
     void SetCaptionMaskSize(int);
+
+    virtual bool eventFilter(QObject *watched, QEvent *event);
 
 protected:
     CCefView* m_pCefView;
