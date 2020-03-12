@@ -1975,6 +1975,20 @@ public:
                     else if  (1 ==m_pParent->m_pInternal->m_nEditorType)
                         nType = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
 
+                    if (true)
+                    {
+                        // уточняем формат по расширению
+                        COfficeFileFormatChecker oChecker;
+                        int nTypeByExt = oChecker.GetFormatByExtension(L"." + NSFile::GetFileExtention(pData->get_Name()));
+
+                        if (nType == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX && (((nTypeByExt & AVS_OFFICESTUDIO_FILE_DOCUMENT) != 0) || ((nTypeByExt & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM) != 0)))
+                            nType = nTypeByExt;
+                        else if (nType == AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX && ((nTypeByExt & AVS_OFFICESTUDIO_FILE_SPREADSHEET) != 0))
+                            nType = nTypeByExt;
+                        else if (nType == AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX && ((nTypeByExt & AVS_OFFICESTUDIO_FILE_PRESENTATION) != 0))
+                            nType = nTypeByExt;
+                    }
+
                     std::wstring sExtId = L"";
                     if (m_pParent->m_pInternal->m_bIsExternalCloud)
                         sExtId = m_pParent->m_pInternal->m_oExternalCloud.id;
