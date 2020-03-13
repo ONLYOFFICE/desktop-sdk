@@ -10,7 +10,6 @@ CONFIG += plugin
 #CONFIG += build_xp
 
 CORE_ROOT_DIR = $$PWD/../../../core
-PWD_ROOT_DIR = $$PWD
 include($$CORE_ROOT_DIR/Common/base.pri)
 
 DEFINES += \
