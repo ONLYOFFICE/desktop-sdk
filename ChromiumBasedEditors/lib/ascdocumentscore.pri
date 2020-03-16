@@ -27,6 +27,7 @@ CEF_PROJECT_PRI=$$PWD/cef_pri
 build_xp {
     include($$CEF_PROJECT_PRI/cef_base_xp.pri)
     include($$CEF_PROJECT_PRI/cef_client_xp.pri)
+    DESTDIR=$$DESTDIR/xp
 } else {
     include($$CEF_PROJECT_PRI/cef_base.pri)
     include($$CEF_PROJECT_PRI/cef_client.pri)
