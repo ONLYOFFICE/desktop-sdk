@@ -418,6 +418,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     message_router_->OnContextCreated(browser,  frame, context);
 
+    if (!frame->IsMain())
+        return;
+
     // add AscEditorNative
     CefRefPtr<CefV8Value> object = context->GetGlobal();
 
