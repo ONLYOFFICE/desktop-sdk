@@ -3959,6 +3959,9 @@ require.load = function (context, moduleName, url) {\n\
         if (NULL == m_pParent)
             return;
 
+        if (!download_item->IsValid())
+            return;
+
         std::wstring sUrl = download_item->GetURL().ToWString();
         std::wstring sPath = download_item->GetFullPath().ToWString();
 
