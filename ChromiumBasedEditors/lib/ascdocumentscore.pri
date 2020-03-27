@@ -20,6 +20,8 @@ DEFINES += \
 
 DEFINES += DESKTOP_USE_DYNAMIC_LIBRARY_BUILDING
 
+core_mac:DEFINES += _XCODE
+
 ADD_DEPENDENCY(graphics, kernel, UnicodeConverter, PdfWriter, PdfReader, XpsFile, DjVuFile, HtmlRenderer, hunspell, ooxmlsignature)
 !core_windows:DEFINES += DOCUMENTSCORE_OPENSSL_SUPPORT
 
