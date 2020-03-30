@@ -3413,7 +3413,10 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
             sImageMap += "\",";
         }
 
-        sImageMap[sImageMap.length() - 1] = '}';
+        if (sImageMap[sImageMap.length() - 1] == ',')
+            sImageMap[sImageMap.length() - 1] = '}';
+        else
+            sImageMap += "}";
 
         std::string sCode = "window.onDocumentCompare && window.onDocumentCompare(\"" + U_TO_UTF8(sFolder) + "\", \"" + sFileData + "\", " + std::to_string(nFileDataLen) + ", " + sImageMap + ");";
         _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
