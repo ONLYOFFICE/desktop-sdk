@@ -527,9 +527,7 @@ public:
             oBuilder.WriteString(L"<m_sThemeDir>./themes</m_sThemeDir><m_bDontSaveAdditional>true</m_bDontSaveAdditional>");
             oBuilder.WriteString(L"<m_sFontDir>");
             oBuilder.WriteEncodeXmlString(m_pManager->m_oSettings.fonts_cache_info_path);
-            oBuilder.WriteString(L"</m_sFontDir><m_sHtmlFileInternalPath>");
-            oBuilder.WriteEncodeXmlString(NSFile::GetProcessDirectory() + L"/");
-            oBuilder.WriteString(L"</m_sHtmlFileInternalPath>");
+            oBuilder.WriteString(L"</m_sFontDir>");
             if (!m_sAdditionalConvertation.empty())
                 oBuilder.WriteString(m_sAdditionalConvertation);
             m_sAdditionalConvertation = L"";
@@ -694,19 +692,6 @@ public:
             oBuilderFonts.WriteString(L"<m_sFontDir>");
             oBuilderFonts.WriteEncodeXmlString(strDirectoryFonts);
             oBuilderFonts.WriteString(L"</m_sFontDir>");
-
-#ifdef WIN32
-            oBuilderFonts.WriteString(L"<m_sHtmlFileInternalPath>");
-            oBuilderFonts.WriteEncodeXmlString(NSFile::GetProcessDirectory() + L"/");
-            oBuilderFonts.WriteString(L"</m_sHtmlFileInternalPath>");
-#endif
-
-#if defined(_LINUX) && !defined(_MAC)
-            oBuilderFonts.WriteString(L"<m_sHtmlFileInternalPath>");
-            oBuilderFonts.WriteEncodeXmlString(NSFile::GetProcessDirectory() + L"/");
-            oBuilderFonts.WriteString(L"</m_sHtmlFileInternalPath>");
-#endif
-
             sParams += oBuilderFonts.GetData();
         }
 
@@ -729,7 +714,7 @@ public:
 
         int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileForParams, m_pManager, m_pManager->m_pInternal->m_bIsEnableConvertLogs);
 
-        NSFile::CFileBinary::Remove(sTempFileForParams);
+        //NSFile::CFileBinary::Remove(sTempFileForParams);
 
         if (0 == nReturnCode)
             CheckSignatures(sDestinationPath);

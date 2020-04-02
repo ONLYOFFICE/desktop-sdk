@@ -96,6 +96,8 @@ public:
 
     virtual bool eventFilter(QObject *watched, QEvent *event);
 
+    bool setFocusToCef();
+
 protected:
     CCefView* m_pCefView;
     QPointer<QWidget> m_pOverride;
