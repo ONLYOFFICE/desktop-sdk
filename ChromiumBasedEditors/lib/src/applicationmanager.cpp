@@ -668,7 +668,7 @@ void CAscApplicationManager::SetApplication(CApplicationCEF* pApp)
 
     // создаем все папки, если надо
     if (!NSDirectory::Exists(m_oSettings.recover_path))
-        NSDirectory::CreateDirectory(m_oSettings.recover_path);
+        NSDirectory::CreateDirectories(m_oSettings.recover_path);
 }
 
 void CAscApplicationManager::SetDebugInfoSupport(bool bIsSupport)
