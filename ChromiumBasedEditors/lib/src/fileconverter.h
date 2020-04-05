@@ -1091,7 +1091,7 @@ public:
 class CTextDocxConverter : public NSThreads::CBaseThread
 {
 public:
-    int m_nFrameId;
+    int_64_type m_nFrameId;
 
     std::wstring m_sData;
     std::wstring m_sPassword;
