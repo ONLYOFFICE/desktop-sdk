@@ -192,7 +192,7 @@ class CEditorFrameId
 {
 public:
     int EditorId;
-    int FrameId;
+    int_64_type FrameId;
     std::wstring Url;
 };
 
@@ -303,6 +303,20 @@ public:
     std::wstring Url;
     std::wstring Parent;
 };
+
+namespace NSArgumentList
+{
+    static int64 GetInt64(CefRefPtr<CefListValue>& args, const int& index)
+    {
+        std::string tmp = args->GetString(index).ToString();
+        return (int64)std::stoll(tmp);
+    }
+    static bool SetInt64(CefRefPtr<CefListValue>& args, const int& index, const int64& value)
+    {
+        std::string tmp = std::to_string(value);
+        return args->SetString(index, tmp);
+    }
+}
 
 class CAscApplicationManager_Private : public CefBase_Class,
         public CCookieFoundCallback,

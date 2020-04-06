@@ -386,7 +386,7 @@ public:
 
     std::list<std::string>      m_arTask;
     std::list<int>              m_arTaskParent;
-    std::list<int>              m_arTaskParentFrameId;
+    std::list<int_64_type>      m_arTaskParentFrameId;
 
     std::wstring                m_sUserDictionaries;
     Hunhandle*                  m_pUserAllDict;
@@ -427,7 +427,7 @@ public:
         m_oCS.DeleteCriticalSection();
     }
 
-    void AddTask(const int& nParentId, const std::string& sTask, int nId)
+    void AddTask(const int& nParentId, const std::string& sTask, int_64_type nId)
     {
         CTemporaryCS oCS(&m_oCS);
         m_arTask.push_back(sTask);
@@ -459,7 +459,7 @@ public:
         int nParentId = *m_arTaskParent.begin();
         m_arTaskParent.pop_front();
 
-        int nFrameId = *m_arTaskParentFrameId.begin();
+        int_64_type nFrameId = *m_arTaskParentFrameId.begin();
         m_arTaskParentFrameId.pop_front();
 
         m_oCS.Leave();
@@ -841,7 +841,7 @@ void CAscSpellChecker::SetApplicationManager(CAscApplicationManager* pManager)
     m_pInternal->m_pManager = pManager;
 }
 
-void CAscSpellChecker::AddTask(const int& nEditorId, const std::string& sTask, int nId)
+void CAscSpellChecker::AddTask(const int& nEditorId, const std::string& sTask, int_64_type nId)
 {
     if (m_pInternal->IsRunned())
         m_pInternal->AddTask(nEditorId, sTask, nId);

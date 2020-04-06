@@ -190,6 +190,8 @@ class CApplicationCEF_Private
 public:
     CefRefPtr<client::ClientApp> m_app;
     scoped_ptr<client::MainContextImpl> context;
+
+    bool m_bIsMessageLoopRunned;
     scoped_ptr<client::MainMessageLoop> message_loop;
 
     CAscApplicationManager* m_pManager;
@@ -208,6 +210,7 @@ public:
 #endif
 
         m_pManager = NULL;
+        m_bIsMessageLoopRunned = false;
     }
     ~CApplicationCEF_Private()
     {
@@ -525,6 +528,16 @@ void CApplicationCEF::Close()
 {
     if (NULL != m_pInternal)
     {
+        if (m_pInternal->m_bIsMessageLoopRunned)
+        {
+#ifdef _WIN32
+            // https://bitbucket.org/chromiumembedded/cef/issues/2703/crash-in-createnetworkcontext-on-shutdown
+            // TODO: fix in new cef builds (next release)
+            ExitMessageLoop();
+            return;
+#endif
+        }
+
         if (m_pInternal->context)
             m_pInternal->context->Shutdown();
         RELEASEOBJECT(m_pInternal);
@@ -534,6 +547,7 @@ void CApplicationCEF::Close()
 int CApplicationCEF::RunMessageLoop(bool& is_runned)
 {
     is_runned = true;
+    m_pInternal->m_bIsMessageLoopRunned = true;
 #ifdef LINUX
     CLinuxData::Check(m_pInternal->m_pManager);
 #endif
@@ -548,6 +562,7 @@ void CApplicationCEF::DoMessageLoopEvent()
 bool CApplicationCEF::ExitMessageLoop()
 {
     m_pInternal->message_loop->Quit();
+    m_pInternal->m_bIsMessageLoopRunned = false;
     return true;
 }
 
