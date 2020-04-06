@@ -306,12 +306,12 @@ public:
 
 namespace NSArgumentList
 {
-    static int64 GetInt64(CefRefPtr<CefListValue>& args, const int& index)
+    static int64 GetInt64(CefRefPtr<CefListValue> args, const int& index)
     {
         std::string tmp = args->GetString(index).ToString();
         return (int64)std::stoll(tmp);
     }
-    static bool SetInt64(CefRefPtr<CefListValue>& args, const int& index, const int64& value)
+    static bool SetInt64(CefRefPtr<CefListValue> args, const int& index, const int64& value)
     {
         std::string tmp = std::to_string(value);
         return args->SetString(index, tmp);
