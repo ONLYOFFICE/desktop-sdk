@@ -78,6 +78,7 @@ void QCefView_Media::OnMediaEnd()
         return;
 
     m_pMediaView->Stop();
+    m_pMediaView->hide();
     m_pMediaView->deleteLater();
     m_pMediaView = NULL;
 }
