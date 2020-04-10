@@ -15,6 +15,10 @@ DESTDIR = $$CORE_BUILDS_BINARY_PATH
 
 ADD_DEPENDENCY(ascdocumentscore)
 
+core_windows {
+    build_xp:DESTDIR=$$DESTDIR/xp
+}
+
 core_linux {
     QMAKE_LFLAGS += "-Wl,-rpath,\'\$$ORIGIN\'"
     QMAKE_LFLAGS += "-Wl,-rpath,\'\$$ORIGIN/converter\'"

@@ -31,6 +31,7 @@
  */
 
 #include "./../include/qcefview_media.h"
+#include <QTimer>
 
 void QCefView_SetProperty(QObject* w, const QVariant& p)
 {
@@ -72,13 +73,19 @@ void QCefView_Media::OnMediaStart(NSEditorApi::CAscExternalMedia* data)
     m_pMediaView->setMedia(QString::fromStdWString(data->get_Url()));
     //m_pMediaView->show();
 }
-void QCefView_Media::OnMediaEnd()
+void QCefView_Media::OnMediaEnd(bool isFromResize)
 {
     if (!m_pMediaView)
         return;
 
-    m_pMediaView->Stop();
     m_pMediaView->hide();
+    m_pMediaView->Stop();    
     m_pMediaView->deleteLater();
     m_pMediaView = NULL;
+
+    if (isFromResize)
+    {
+        // под виндоус проблемы с ресайзом.
+        QTimer::singleShot(100, [=]{ this->resizeEvent(NULL); });
+    }
 }

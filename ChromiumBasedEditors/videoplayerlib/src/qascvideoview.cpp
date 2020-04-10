@@ -438,6 +438,11 @@ void QAscVideoView::UpdatePlayPause()
 
 void QAscVideoView::slotOpenFile(QString sFile)
 {
+    if (sFile.isEmpty() && m_pInternal->m_bIsPresentationMode)
+    {
+        slotSeekChanged(0);
+        return;
+    }
     m_pInternal->m_pPlayer->open(sFile);
 
     if (sFile == "")

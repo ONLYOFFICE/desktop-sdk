@@ -256,6 +256,7 @@ public:
                     command_line->AppendSwitch("--disable-lcd-text");
                 }
             }
+            command_line->AppendSwitchWithValue("--password-store", "basic");
 #endif
 
             command_line->AppendSwitch("--disable-extensions");

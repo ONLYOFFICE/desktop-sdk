@@ -77,7 +77,7 @@ public:
 
     // multimedia
     virtual void OnMediaStart(NSEditorApi::CAscExternalMedia* data);
-    virtual void OnMediaEnd();
+    virtual void OnMediaEnd(bool isFromResize = false);
 
     // events
     virtual void OnLoaded();
@@ -95,6 +95,8 @@ public:
     void SetCaptionMaskSize(int);
 
     virtual bool eventFilter(QObject *watched, QEvent *event);
+
+    bool setFocusToCef();
 
 protected:
     CCefView* m_pCefView;

@@ -726,7 +726,7 @@ retval, exception);
                     int64 frameId = CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier();
                     message->GetArgumentList()->SetString(0, GetFullUrl2(strUrl, CefV8Context::GetCurrentContext()->GetFrame()->GetURL().ToWString()));
                     message->GetArgumentList()->SetString(1, strPath);
-                    message->GetArgumentList()->SetInt(2, (int)frameId);
+                    NSArgumentList::SetInt64(message->GetArgumentList(), 2, frameId);
                     browser->SendProcessMessage(PID_BROWSER, message);
 
                     retval = CefV8Value::CreateInt(2);
@@ -798,7 +798,7 @@ retval, exception);
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("spell_check_task");
             message->GetArgumentList()->SetInt(0, (int)m_nEditorId);
             message->GetArgumentList()->SetString(1, arguments[0]->GetStringValue());
-            message->GetArgumentList()->SetInt(2, (int)frameId);
+            NSArgumentList::SetInt64(message->GetArgumentList(), 2, frameId);
             SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
@@ -1990,7 +1990,7 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
             int nIndex = 0;
 
             message->GetArgumentList()->SetInt(nIndex++, nParams);
-            message->GetArgumentList()->SetInt(nIndex++, (int)CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
+            NSArgumentList::SetInt64(message->GetArgumentList(), nIndex++, CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
 
             for (int i = 0; i < nCount; ++i)
             {
@@ -2026,7 +2026,7 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
             message->GetArgumentList()->SetInt(1, arguments[1]->GetIntValue());
             message->GetArgumentList()->SetBool(2, (arguments.size() > 2) ? arguments[2]->GetBoolValue() : false);
-            message->GetArgumentList()->SetInt(3, (int)CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
+            NSArgumentList::SetInt64(message->GetArgumentList(), 3, CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
             SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
@@ -2084,7 +2084,7 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
         else if (name == "_GetAdvancedEncryptedData")
         {
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("get_advanced_encrypted_data");
-            message->GetArgumentList()->SetInt(0, (int)CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
+            NSArgumentList::SetInt64(message->GetArgumentList(), 0, CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
             message->GetArgumentList()->SetString(1, arguments[0]->GetStringValue());
             SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
@@ -2092,7 +2092,7 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
         else if (name == "_SetAdvancedEncryptedData")
         {
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("set_advanced_encrypted_data");
-            message->GetArgumentList()->SetInt(0, (int)CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
+            NSArgumentList::SetInt64(message->GetArgumentList(), 0, CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
             message->GetArgumentList()->SetString(1, arguments[0]->GetStringValue());
             message->GetArgumentList()->SetString(2, arguments[1]->GetStringValue());
             SEND_MESSAGE_TO_BROWSER_PROCESS(message);
@@ -2430,7 +2430,7 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
 
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("cloud_crypto_upload");
             message->GetArgumentList()->SetBool(0, bIsNeedRemoveAfterUse);
-            message->GetArgumentList()->SetInt(1, CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
+            NSArgumentList::SetInt64(message->GetArgumentList(), 1, CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
             message->GetArgumentList()->SetInt(2, nCount);
             for (int i = 0; i < nCount; ++i)
                 message->GetArgumentList()->SetString(3 + i, arguments[0]->GetValue(i)->GetStringValue());
@@ -3226,7 +3226,7 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
     }
     else if (sMessageName == "spell_check_response")
     {
-        int64 nFrameId = (int64)message->GetArgumentList()->GetInt(1);
+        int64 nFrameId = NSArgumentList::GetInt64(message->GetArgumentList(), 1);
         CefRefPtr<CefFrame> _frame = browser->GetFrame(nFrameId);
         if (_frame)
         {
@@ -3307,7 +3307,7 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
     }
     else if (sMessageName == "on_load_js")
     {
-        int64 frameId = (int64)message->GetArgumentList()->GetInt(2);
+        int64 frameId = NSArgumentList::GetInt64(message->GetArgumentList(), 2);
         CefRefPtr<CefFrame> _frame = browser->GetFrame(frameId);
         if (_frame)
         {
@@ -3413,7 +3413,10 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
             sImageMap += "\",";
         }
 
-        sImageMap[sImageMap.length() - 1] = '}';
+        if (sImageMap[sImageMap.length() - 1] == ',')
+            sImageMap[sImageMap.length() - 1] = '}';
+        else
+            sImageMap += "}";
 
         std::string sCode = "window.onDocumentCompare && window.onDocumentCompare(\"" + U_TO_UTF8(sFolder) + "\", \"" + sFileData + "\", " + std::to_string(nFileDataLen) + ", " + sImageMap + ");";
         _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
@@ -4022,7 +4025,7 @@ delete window[\"crypto_images_map\"][_url];\n\
     else if (sMessageName == "set_crypto_mode")
     {
         int nError = message->GetArgumentList()->GetInt(0);
-        int64 nFrameId = (int64)message->GetArgumentList()->GetInt(1);
+        int64 nFrameId = NSArgumentList::GetInt64(message->GetArgumentList(), 1);
 
         CefRefPtr<CefFrame> _frame = browser->GetFrame(nFrameId);
         if (_frame)
@@ -4030,7 +4033,7 @@ delete window[\"crypto_images_map\"][_url];\n\
     }
     else if (sMessageName == "get_advanced_encrypted_data")
     {
-        int64 nFrameId = (int64)message->GetArgumentList()->GetInt(0);
+        int64 nFrameId = NSArgumentList::GetInt64(message->GetArgumentList(), 0);
         std::string sRet = message->GetArgumentList()->GetString(1);
         NSCommon::string_replaceA(sRet, "\\", "\\\\");
 
@@ -4040,7 +4043,7 @@ delete window[\"crypto_images_map\"][_url];\n\
     }
     else if (sMessageName == "set_advanced_encrypted_data")
     {
-        int64 nFrameId = (int64)message->GetArgumentList()->GetInt(0);
+        int64 nFrameId = NSArgumentList::GetInt64(message->GetArgumentList(), 0);
         std::string sRet = message->GetArgumentList()->GetString(1);
         NSCommon::string_replaceA(sRet, "\\", "\\\\");
 

@@ -417,7 +417,7 @@ public:
 
         std::list<std::wstring> Files;
         std::list<std::wstring> FilesDst;
-        int FrameID;
+        int_64_type FrameID;
         bool IsRemove;
 
         CCloudCryptoUpload()
@@ -1253,7 +1253,7 @@ public:
     virtual void CTextDocxConverterCallback_OnConvert(std::wstring sData)
     {
         CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create(m_oTxtToDocx.m_bIsToDocx ? "set_advanced_encrypted_data" : "get_advanced_encrypted_data");
-        message->GetArgumentList()->SetInt(0, m_oTxtToDocx.m_nFrameId);
+        NSArgumentList::SetInt64(message->GetArgumentList(), 0, m_oTxtToDocx.m_nFrameId);
         message->GetArgumentList()->SetString(1, m_oTxtToDocx.m_sData);
         SEND_MESSAGE_TO_RENDERER_PROCESS(GetBrowser(), message);
     }
@@ -1811,7 +1811,7 @@ public:
             // задача для проверки орфографии
             m_pParent->GetAppManager()->SpellCheck(args->GetInt(0),
                                                    args->GetString(1).ToString(),
-                                                   args->GetInt(2));
+                                                   NSArgumentList::GetInt64(args, 2));
             return true;
         }
         else if (message_name == "create_editor_api")
@@ -1974,6 +1974,20 @@ public:
                         nType = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX;
                     else if  (1 ==m_pParent->m_pInternal->m_nEditorType)
                         nType = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
+
+                    if (true)
+                    {
+                        // уточняем формат по расширению
+                        COfficeFileFormatChecker oChecker;
+                        int nTypeByExt = oChecker.GetFormatByExtension(L"." + NSFile::GetFileExtention(pData->get_Name()));
+
+                        if (nType == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX && (((nTypeByExt & AVS_OFFICESTUDIO_FILE_DOCUMENT) != 0) || ((nTypeByExt & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM) != 0)))
+                            nType = nTypeByExt;
+                        else if (nType == AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX && ((nTypeByExt & AVS_OFFICESTUDIO_FILE_SPREADSHEET) != 0))
+                            nType = nTypeByExt;
+                        else if (nType == AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX && ((nTypeByExt & AVS_OFFICESTUDIO_FILE_PRESENTATION) != 0))
+                            nType = nTypeByExt;
+                    }
 
                     std::wstring sExtId = L"";
                     if (m_pParent->m_pInternal->m_bIsExternalCloud)
@@ -2143,7 +2157,7 @@ public:
             pData->put_Url(args->GetString(0).ToWString());
             pData->put_Destination(args->GetString(1).ToWString());
             pData->put_Id(m_pParent->GetId());
-            pData->put_FrameId(args->GetInt(2));
+            pData->put_FrameId(NSArgumentList::GetInt64(args, 2));
 
             NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
             pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_SCRIPT_EDITOR_VERSION;
@@ -2825,7 +2839,7 @@ public:
 
             int nIndex = 0;
             int nParams = args->GetInt(nIndex++);
-            int nFrameID = args->GetInt(nIndex++);
+            int_64_type nFrameID = NSArgumentList::GetInt64(args, nIndex++);
 
             while (nIndex < nCount)
             {
@@ -2847,7 +2861,7 @@ public:
 
             if (nParams == 1)
             {
-                CefRefPtr<CefFrame> frame = browser->GetFrame((int64)nFrameID);
+                CefRefPtr<CefFrame> frame = browser->GetFrame(nFrameID);
                 if (frame)
                     frame->ExecuteJavaScript("window.onSystemMessage && window.onSystemMessage({ type : \"operation\", block : true, opType : 0 });", frame->GetURL(), 0);
             }
@@ -2861,7 +2875,7 @@ public:
             std::string sPass = args->GetString(0).ToString();
             int nMode = args->GetInt(1);
             bool bIsCallback = args->GetBool(2);
-            int nFrameId = args->GetInt(3);
+            int_64_type nFrameId = NSArgumentList::GetInt64(args, 3);
 
             if (!bIsCallback)
             {
@@ -2894,7 +2908,7 @@ public:
 
                 CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("set_crypto_mode");
                 messageOut->GetArgumentList()->SetInt(0, bIsEditorPresent ? 1 : 0);
-                messageOut->GetArgumentList()->SetInt(1, nFrameId);
+                NSArgumentList::SetInt64(messageOut->GetArgumentList(), 1, nFrameId);
                 SEND_MESSAGE_TO_RENDERER_PROCESS(browser, messageOut);
             }
 
@@ -2902,7 +2916,7 @@ public:
         }
         else if (message_name == "get_advanced_encrypted_data")
         {
-            m_pParent->m_pInternal->m_oTxtToDocx.m_nFrameId = args->GetInt(0);
+            m_pParent->m_pInternal->m_oTxtToDocx.m_nFrameId = NSArgumentList::GetInt64(args, 0);
             m_pParent->m_pInternal->m_oTxtToDocx.m_sPassword = args->GetString(1);
             m_pParent->m_pInternal->m_oTxtToDocx.ToData();
 
@@ -2910,7 +2924,7 @@ public:
         }
         else if (message_name == "set_advanced_encrypted_data")
         {
-            m_pParent->m_pInternal->m_oTxtToDocx.m_nFrameId = args->GetInt(0);
+            m_pParent->m_pInternal->m_oTxtToDocx.m_nFrameId = NSArgumentList::GetInt64(args, 0);
             m_pParent->m_pInternal->m_oTxtToDocx.m_sPassword = args->GetString(1);
             m_pParent->m_pInternal->m_oTxtToDocx.m_sData = args->GetString(2);
             m_pParent->m_pInternal->m_oTxtToDocx.ToDocx();
@@ -3171,7 +3185,7 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
 
             m_pParent->m_pInternal->m_pUploadFiles = new CCefView_Private::CCloudCryptoUpload();
             m_pParent->m_pInternal->m_pUploadFiles->IsRemove = args->GetBool(0);
-            m_pParent->m_pInternal->m_pUploadFiles->FrameID = args->GetInt(1);
+            m_pParent->m_pInternal->m_pUploadFiles->FrameID = NSArgumentList::GetInt64(args, 1);
             m_pParent->m_pInternal->m_pUploadFiles->View = m_pParent->m_pInternal;
             m_pParent->m_pInternal->m_pUploadFiles->Manager = m_pParent->GetAppManager();
             int nCount = args->GetInt(2);
@@ -3943,6 +3957,9 @@ require.load = function (context, moduleName, url) {\n\
         CEF_REQUIRE_UI_THREAD();
 
         if (NULL == m_pParent)
+            return;
+
+        if (!download_item->IsValid())
             return;
 
         std::wstring sUrl = download_item->GetURL().ToWString();
@@ -4913,7 +4930,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("spell_check_response");
             message->GetArgumentList()->SetString(0, pData->get_Result());
-            message->GetArgumentList()->SetInt(1, pData->get_FrameId());
+            NSArgumentList::SetInt64(message->GetArgumentList(), 1, pData->get_FrameId());
             SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
             break;
         }
@@ -5103,7 +5120,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_load_js");
             message->GetArgumentList()->SetString(0, pData->get_Destination());
             message->GetArgumentList()->SetString(1, pData->get_Url());
-            message->GetArgumentList()->SetInt(2, pData->get_FrameId());
+            NSArgumentList::SetInt64(message->GetArgumentList(), 2, pData->get_FrameId());
             SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
             break;
         }
@@ -5571,7 +5588,7 @@ CefRefPtr<CefFrame> CCefView_Private::CCloudCryptoUpload::GetFrame()
 {
     if (!View->m_handler || !View->m_handler->GetBrowser())
         return NULL;
-    return View->m_handler->GetBrowser()->GetFrame((int64)FrameID);
+    return View->m_handler->GetBrowser()->GetFrame(FrameID);
 }
 
 // CefViewEditor --------------------------------------------------------------------------

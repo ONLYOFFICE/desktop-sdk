@@ -45,7 +45,7 @@ public:
     virtual ~QCefView_Media();
 
     virtual void OnMediaStart(NSEditorApi::CAscExternalMedia* data);
-    virtual void OnMediaEnd();
+    virtual void OnMediaEnd(bool isFromResize = false);
 
 protected:
     QAscVideoView* m_pMediaView;

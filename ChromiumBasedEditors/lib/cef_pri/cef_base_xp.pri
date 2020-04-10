@@ -411,8 +411,8 @@ core_windows {
 
 DEFINES += NOMINMAX _WINDOWS
 
-core_win_64:LIBS += -L$$PWD/../../../../core/Common/3dParty/cef/winxp_64/build -llibcef
-core_win_32:LIBS += -L$$PWD/../../../../core/Common/3dParty/cef/winxp_32/build -llibcef
+core_win_64:LIBS += -L$$PWD/../../../../core/Common/3dParty/cef/win_64_xp/build -llibcef
+core_win_32:LIBS += -L$$PWD/../../../../core/Common/3dParty/cef/win_32_xp/build -llibcef
 LIBS += \
     -lwininet \
     -ldnsapi \

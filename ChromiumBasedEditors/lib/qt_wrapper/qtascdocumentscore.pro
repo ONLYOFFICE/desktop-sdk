@@ -32,6 +32,7 @@ SOURCES += \
 core_windows {
 
 LIBS += -luser32
+build_xp:DESTDIR=$$DESTDIR/xp
 
 }
 
