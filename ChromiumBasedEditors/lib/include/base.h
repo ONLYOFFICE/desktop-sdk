@@ -67,4 +67,6 @@
 
 #endif
 
+typedef long long int_64_type;
+
 #endif // APPLICATION_BASE_H

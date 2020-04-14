@@ -32,6 +32,7 @@
 
 #include "./../include/qcefview.h"
 #include <QPainter>
+#include <QApplication>
 
 class QCefViewProps
 {
@@ -75,6 +76,31 @@ bool QCefView::eventFilter(QObject *watched, QEvent *event)
         OnMediaEnd(true);
 
     return QWidget::eventFilter(watched, event);
+}
+
+bool QCefView::setFocusToCef()
+{
+    if (!m_pCefView)
+        return false;
+
+    bool isActivate = false;
+#ifdef _WIN32
+    HWND hwndForeground = ::GetForegroundWindow();
+    HWND hwndQCef = (HWND)this->winId();
+    if (::IsChild(hwndForeground, hwndQCef))
+        isActivate = true;
+#endif
+
+#if defined (_LINUX) && !defined(_MAC)
+    // TODO: check foreground window
+    isActivate = true;
+#endif
+
+    if (isActivate)
+        m_pCefView->focus(true);
+
+    //qDebug() << "focus: id = " << m_pCefView->GetId() << ", use = " << isActivate;
+    return isActivate;
 }
 
 // focus

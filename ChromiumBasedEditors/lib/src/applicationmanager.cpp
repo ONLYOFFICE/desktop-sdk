@@ -137,7 +137,7 @@ void CAscApplicationManager::StopSpellChecker()
     m_pInternal->m_oSpellChecker.End();
 }
 
-void CAscApplicationManager::SpellCheck(const int& nEditorId, const std::string& sTask, int nId)
+void CAscApplicationManager::SpellCheck(const int& nEditorId, const std::string& sTask, int_64_type nId)
 {
     m_pInternal->m_oSpellChecker.AddTask(nEditorId, sTask, nId);
 }
@@ -668,7 +668,7 @@ void CAscApplicationManager::SetApplication(CApplicationCEF* pApp)
 
     // создаем все папки, если надо
     if (!NSDirectory::Exists(m_oSettings.recover_path))
-        NSDirectory::CreateDirectory(m_oSettings.recover_path);
+        NSDirectory::CreateDirectories(m_oSettings.recover_path);
 }
 
 void CAscApplicationManager::SetDebugInfoSupport(bool bIsSupport)

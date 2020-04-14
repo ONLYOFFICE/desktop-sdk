@@ -246,7 +246,7 @@ namespace NSEditorApi
     private:
         std::string m_sResult;
         int         m_nEditorId;
-        int         m_nFrameId;
+        long long   m_nFrameId;
 
     public:
         CAscSpellCheckType()
@@ -260,7 +260,15 @@ namespace NSEditorApi
 
         LINK_PROPERTY_STRINGA(Result)
         LINK_PROPERTY_INT(EditorId)
-        LINK_PROPERTY_INT(FrameId)
+
+        inline long long get_FrameId()
+        {
+            return m_nFrameId;
+        }
+        inline void put_FrameId(const long long& newVal)
+        {
+            m_nFrameId = newVal;
+        }
     };
 
     class CAscKeyboardLayout : public IMenuEventDataBase
@@ -463,7 +471,7 @@ namespace NSEditorApi
         std::wstring m_sUrl;
         std::wstring m_sDestination;
         int m_nId;
-        int m_nFrameId;
+        long long m_nFrameId;
 
     public:
         CAscEditorScript()
@@ -478,7 +486,15 @@ namespace NSEditorApi
         LINK_PROPERTY_INT(Id)
         LINK_PROPERTY_STRING(Url)
         LINK_PROPERTY_STRING(Destination)
-        LINK_PROPERTY_INT(FrameId)
+
+        inline long long get_FrameId()
+        {
+            return m_nFrameId;
+        }
+        inline void put_FrameId(const long long& newVal)
+        {
+            m_nFrameId = newVal;
+        }
     };
 
     class CAscEditorSaveQuestion : public IMenuEventDataBase
