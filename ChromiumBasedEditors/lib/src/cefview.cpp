@@ -3253,6 +3253,10 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
 
             return true;
         }
+        else if ("on_set_is_readonly" == message_name)
+        {
+            return true;
+        }
 
         CAscApplicationManager_Private* pInternalMan = m_pParent->GetAppManager()->m_pInternal;
         if (pInternalMan->m_pAdditional && pInternalMan->m_pAdditional->OnProcessMessageReceived(browser, source_process, message, m_pParent))
@@ -4225,7 +4229,16 @@ void CCefView_Private::LocalFile_End()
     message->GetArgumentList()->SetString(1, m_oLocalInfo.m_oInfo.m_sFileSrc);
     message->GetArgumentList()->SetBool(2, m_oLocalInfo.m_oInfo.m_bIsSaved);
     message->GetArgumentList()->SetString(3, m_oConverterToEditor.GetSignaturesJSON());
-    message->GetArgumentList()->SetBool(4, NSSystem::CLocalFileLocker::IsLocked(m_oLocalInfo.m_oInfo.m_sFileSrc));
+
+    bool isLocked = false;
+    if (m_oLocalInfo.m_oInfo.m_bIsSaved)
+        isLocked = NSSystem::CLocalFileLocker::IsLocked(m_oLocalInfo.m_oInfo.m_sFileSrc);
+
+    message->GetArgumentList()->SetBool(4, isLocked);
+
+    if (isLocked)
+        m_oLocalInfo.m_oInfo.m_bIsSaved = false;
+
     SEND_MESSAGE_TO_RENDERER_PROCESS(m_handler->GetBrowser(), message);
 
     m_oLocalInfo.m_oInfo.m_nCounterConvertion = 1; // for reload enable

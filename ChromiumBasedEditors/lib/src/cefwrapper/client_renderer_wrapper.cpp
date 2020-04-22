@@ -2544,6 +2544,12 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
             retval = CefV8Value::CreateBool(bIsLocal);
             return true;
         }
+        else if (name == "SetIsReadOnly")
+        {
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_set_is_readonly");
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+            return true;
+        }
 
         // Function does not exist.
         return false;
@@ -2917,7 +2923,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
 
-    #define EXTEND_METHODS_COUNT 131
+    #define EXTEND_METHODS_COUNT 132
     const char* methods[EXTEND_METHODS_COUNT] = {
         "Copy",
         "Paste",
@@ -3094,6 +3100,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         "CompareDocumentFile",
 
         "IsSupportMedia",
+
+        "SetIsReadOnly",
 
         NULL
     };
