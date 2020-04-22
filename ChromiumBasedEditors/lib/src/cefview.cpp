@@ -796,6 +796,9 @@ public:
     std::wstring m_sComparingFile;
     int m_nComparingFileType; // 0 - file, 1 - url
 
+    bool m_bIsLocalFileLocked; // залочен ли файл?
+    NSSystem::CLocalFileLocker* m_pLocalFileLocker; // класс для лока открытых файлов
+
 public:
     CCefView_Private()
     {
@@ -856,6 +859,9 @@ public:
         m_pUploadFiles = NULL;
 
         m_nComparingFileType = -1;
+
+        m_bIsLocalFileLocked = false;
+        m_pLocalFileLocker = NULL;
     }
 
     void Destroy()
@@ -866,6 +872,9 @@ public:
         m_oConverterToEditor.Stop();
         m_oConverterFromEditor.Stop();
         m_oTxtToDocx.Stop();
+
+        // разлочиваем файл
+        RELEASEOBJECT(m_pLocalFileLocker);
 
         // смотрим, есть ли несохраненные данные
         m_oLocalInfo.m_oCS.Enter();
@@ -4216,6 +4225,7 @@ void CCefView_Private::LocalFile_End()
     message->GetArgumentList()->SetString(1, m_oLocalInfo.m_oInfo.m_sFileSrc);
     message->GetArgumentList()->SetBool(2, m_oLocalInfo.m_oInfo.m_bIsSaved);
     message->GetArgumentList()->SetString(3, m_oConverterToEditor.GetSignaturesJSON());
+    message->GetArgumentList()->SetBool(4, NSSystem::CLocalFileLocker::IsLocked(m_oLocalInfo.m_oInfo.m_sFileSrc));
     SEND_MESSAGE_TO_RENDERER_PROCESS(m_handler->GetBrowser(), message);
 
     m_oLocalInfo.m_oInfo.m_nCounterConvertion = 1; // for reload enable
@@ -6104,6 +6114,21 @@ std::wstring CCefViewEditor::GetRecoveryDir()
 
 int CCefViewEditor::GetFileFormat(const std::wstring& sFilePath)
 {
+    if (!NSFile::CFileBinary::Exists(sFilePath))
+    {
+        if (NSSystem::CLocalFileLocker::IsLocked(sFilePath))
+        {
+            std::wstring sTmpFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"TMP");
+            if (NSFile::CFileBinary::Exists(sTmpFile))
+                NSFile::CFileBinary::Remove(sTmpFile);
+            sTmpFile += (L"." + NSCommon::GetFileExtention(sFilePath));
+            NSFile::CFileBinary::Copy(sFilePath, sTmpFile);
+            int nFormat = GetFileFormat(sTmpFile);
+            NSFile::CFileBinary::Remove(sTmpFile);
+            return nFormat;
+        }
+    }
+
     // формат файла по файлу
     // если файл зашифрован (MS_OFFCRYPTO) - то определяем по расширению
     COfficeFileFormatChecker oChecker;

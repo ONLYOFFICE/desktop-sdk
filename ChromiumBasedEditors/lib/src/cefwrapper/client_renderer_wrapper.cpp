@@ -3338,6 +3338,7 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
             bool bIsSaved = message->GetArgumentList()->GetBool(2);
 
             std::wstring sSignatures = message->GetArgumentList()->GetString(3).ToWString();
+            bool bIsLockedFile = message->GetArgumentList()->GetBool(4);
             NSCommon::string_replace(sSignatures, L"\"", L"\\\"");
 
             if (bIsSaved)
@@ -3374,6 +3375,12 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
                         sChanges + ");window.AscDesktopEditor.LocalFileSetOpenChangesCount(" +
                         std::to_string(nCounter) + ");";
                 _frame->ExecuteJavaScript(sChanges, _frame->GetURL(), 0);
+            }
+
+            if (bIsLockedFile)
+            {
+                _frame->ExecuteJavaScript("(function(){var _editor = window[\"editor\"]; if (!_editor && window[\"Asc\"]) _editor = window[\"Asc\"][\"editor\"]; if (_editor) _editor.asc_setIsReadOnly(true, true);})();",
+                                          _frame->GetURL(), 0);
             }
 
             sCode = "";
