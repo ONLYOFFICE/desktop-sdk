@@ -332,7 +332,7 @@ namespace NSSystem
             std::string sFileA = U_TO_UTF8(m_sFile);
             m_nDescriptor = open(sFileA.c_str(), O_RDWR | O_EXCL);
             if (-1 == m_nDescriptor)
-                return;
+                return true;
 
             struct flock _lock;
             memset(&_lock, 0, sizeof(_lock));
@@ -352,7 +352,7 @@ namespace NSSystem
             m_oLocker.CloseFile();
 #else
             if (-1 == m_nDescriptor)
-                return;
+                return true;
 
             struct flock _lock;
             memset(&_lock, 0, sizeof(_lock));
