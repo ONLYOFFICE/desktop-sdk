@@ -56,6 +56,7 @@
 #include "../crypto_mode.h"
 #include "../../../../../core/DesktopEditor/common/CalculatorCRC32.h"
 #include "./client_renderer_params.h"
+#include "../../../../../core/Common/3dParty/openssl/common/common_openssl.h"
 
 namespace NSCommon
 {
@@ -366,6 +367,9 @@ public:
 
     NSCriticalSection::CRITICAL_SECTION m_oCompleteTasksCS;
 
+    // AES key & iv
+    BYTE* m_pAES_KeyIv;
+
     CAscEditorNativeV8Handler()
     {
         m_etType = Document;
@@ -398,6 +402,8 @@ public:
         m_oCompleteTasksCS.InitializeCriticalSection();
 
         CheckDefaults();
+
+        m_pAES_KeyIv = NULL;
     }
 
     void CheckDefaults()
@@ -427,6 +433,8 @@ public:
 
     virtual ~CAscEditorNativeV8Handler()
     {
+        if (m_pAES_KeyIv)
+            NSOpenSSL::openssl_free(m_pAES_KeyIv);
         NSBase::Release(m_pLocalApplicationFonts);
         m_oCompleteTasksCS.DeleteCriticalSection();
     }
@@ -2549,6 +2557,76 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_set_is_readonly");
             SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
+        }            
+        else if (name == "CryptoAES_Init")
+        {
+            std::string sPassword = arguments[0]->GetStringValue().ToString();
+            if (NULL != m_pAES_KeyIv)
+                NSOpenSSL::openssl_free(m_pAES_KeyIv);
+            m_pAES_KeyIv = NSOpenSSL::PBKDF2_desktop(sPassword);
+            return true;
+        }
+        else if (name == "CryptoAES_Clean")
+        {
+            if (NULL != m_pAES_KeyIv)
+                NSOpenSSL::openssl_free(m_pAES_KeyIv);
+            return true;
+        }
+        else if (name == "CryptoAES_Encrypt")
+        {
+            std::string sMessage = arguments[0]->GetStringValue().ToString();
+            std::string sOut;
+            NSOpenSSL::AES_Encrypt_desktop(m_pAES_KeyIv, sMessage, sOut);
+            retval = CefV8Value::CreateString(sOut);
+            return true;
+        }
+        else if (name == "CryptoAES_Decrypt")
+        {
+            std::string sMessage = arguments[0]->GetStringValue().ToString();
+            std::string sOut;
+            NSOpenSSL::AES_Decrypt_desktop(m_pAES_KeyIv, sMessage, sOut);
+            retval = CefV8Value::CreateString(sOut);
+            return true;
+        }
+        else if (name == "CryproRSA_CreateKeys")
+        {
+            unsigned char* publicKey = NULL;
+            unsigned char* privateKey = NULL;
+            NSOpenSSL::RSA_GenerateKeys(publicKey, privateKey);
+
+            std::string sPublic((char*)publicKey);
+            std::string sPrivate((char*)privateKey);
+
+            retval = CefV8Value::CreateArray(2);
+            retval->SetValue(0, CefV8Value::CreateString(sPrivate));
+            retval->SetValue(1, CefV8Value::CreateString(sPublic));
+
+            NSOpenSSL::openssl_free(publicKey);
+            NSOpenSSL::openssl_free(privateKey);
+            return true;
+        }
+        else if (name == "CryproRSA_EncryptPublic")
+        {
+            std::string sKey = arguments[0]->GetStringValue().ToString();
+            std::string sMessage = arguments[1]->GetStringValue().ToString();
+            std::string sOut;
+            NSOpenSSL::RSA_EncryptPublic_desktop((unsigned char*)sKey.c_str(), sMessage, sOut);
+            retval = CefV8Value::CreateString(sOut);
+            return true;
+        }
+        else if (name == "CryproRSA_DecryptPrivate")
+        {
+            std::string sKey = arguments[0]->GetStringValue().ToString();
+            std::string sMessage = arguments[1]->GetStringValue().ToString();
+            std::string sOut;
+            NSOpenSSL::RSA_DecryptPrivate_desktop((unsigned char*)sKey.c_str(), sMessage, sOut);
+            retval = CefV8Value::CreateString(sOut);
+            return true;
+        }
+        else if (name == "IsCloudCryptoSupport")
+        {
+            retval = CefV8Value::CreateBool(true);
+            return true;
         }
 
         // Function does not exist.
@@ -2923,7 +3001,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
 
-    #define EXTEND_METHODS_COUNT 132
+    #define EXTEND_METHODS_COUNT 140
     const char* methods[EXTEND_METHODS_COUNT] = {
         "Copy",
         "Paste",
@@ -3102,6 +3180,16 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         "IsSupportMedia",
 
         "SetIsReadOnly",
+
+        "CryptoAES_Init",
+        "CryptoAES_Clean",
+        "CryptoAES_Encrypt",
+        "CryptoAES_Decrypt",
+
+        "CryproRSA_CreateKeys",
+        "CryproRSA_EncryptPublic",
+        "CryproRSA_DecryptPrivate",
+        "IsCloudCryptoSupport",
 
         NULL
     };

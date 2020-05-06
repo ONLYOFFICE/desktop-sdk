@@ -76,6 +76,7 @@ HEADERS += \
     $$PWD/src/applicationmanager_p.h \
     $$PWD/src/nativeviewer.h \
     $$PWD/src/plugins.h \
+    $$PWD/src/cloud_crypto.h \
     $$PWD/src/crypto_mode.h \
     $$PWD/include/keychain.h \
     $$PWD/src/utils.h
