@@ -47,6 +47,7 @@
 
 #include "../../../../core/DesktopEditor/xml/include/xmlutils.h"
 #include "../../../../core/Common/OfficeFileFormatChecker.h"
+#include "./cloud_crypto.h"
 
 #define ASC_CONSTANT_CANCEL_SAVE 0x00005678
 #define LOCK_CS_SCRIPT 0
