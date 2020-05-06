@@ -2628,6 +2628,17 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
             retval = CefV8Value::CreateBool(true);
             return true;
         }
+        else if (name == "CryptoGetHash")
+        {
+            std::string sMessage = arguments[0]->GetStringValue().ToString();
+            int alg = arguments[1]->GetIntValue();
+            unsigned int data_len = 0;
+            unsigned char* data = NSOpenSSL::GetHash((unsigned char*)sMessage.c_str(), (unsigned int)sMessage.length(), alg, data_len);
+            std::string sResult = NSOpenSSL::Serialize(data, data_len, OPENSSL_SERIALIZE_TYPE_HEX);
+            NSOpenSSL::openssl_free(data);
+            retval = CefV8Value::CreateString(sResult);
+            return true;
+        }
 
         // Function does not exist.
         return false;
@@ -3001,7 +3012,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
 
-    #define EXTEND_METHODS_COUNT 140
+    #define EXTEND_METHODS_COUNT 141
     const char* methods[EXTEND_METHODS_COUNT] = {
         "Copy",
         "Paste",
@@ -3190,6 +3201,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         "CryproRSA_EncryptPublic",
         "CryproRSA_DecryptPrivate",
         "IsCloudCryptoSupport",
+
+        "CryptoGetHash",
 
         NULL
     };
