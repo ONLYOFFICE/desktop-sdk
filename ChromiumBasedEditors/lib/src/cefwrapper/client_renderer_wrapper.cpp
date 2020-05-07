@@ -1372,7 +1372,7 @@ DE.controllers.Main.DisableVersionHistory(); \
 
                             // отсылаем ключи
                             NSCommon::string_replaceA(sPublic, "\n", "&#xA");
-                            std::string sCode = ("window.cloudCryptoCommand(\"encryptionKeys\", { publicKey : \"" + sPublic + "\", privateKeyEnc : \"" + privateEnc + "\" });");
+                            std::string sCode = ("setTimeout(function() { window.cloudCryptoCommand(\"encryptionKeys\", { publicKey : \"" + sPublic + "\", privateKeyEnc : \"" + privateEnc + "\" }); }, 10);");
                             CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetFrame();
                             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
                         }
