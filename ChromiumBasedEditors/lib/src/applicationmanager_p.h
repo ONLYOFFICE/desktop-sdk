@@ -612,6 +612,9 @@ public:
 
     void CloseApplication()
     {
+        if (NSFile::CFileBinary::Exists(m_pMain->m_oSettings.user_plugins_path + L"/cloud_crypto_tmp.xml"))
+            NSFile::CFileBinary::Remove(m_pMain->m_oSettings.user_plugins_path + L"/cloud_crypto_tmp.xml");
+
         Stop();
         m_oKeyboardTimer.Stop();        
         m_oSpellChecker.End();
