@@ -42,6 +42,7 @@ class CAscRendererProcessParams
 {
 private:
     std::map<std::string, std::string> m_params;
+    std::map<std::string, std::string> m_props;
 
 public:
     CAscRendererProcessParams()
@@ -112,6 +113,21 @@ public:
         if (find != m_params.end())
             return std::stoi(find->second);
         return default_value;
+    }
+
+    std::string GetProperty(const std::string& name)
+    {
+        std::map<std::string, std::string>::iterator find = m_props.find(name);
+        if (find == m_props.end())
+            return "";
+        return find->second;
+    }
+    void SetProperty(const std::string& name, const std::string& value)
+    {
+        std::map<std::string, std::string>::iterator find = m_props.find(name);
+        if (find != m_props.end())
+            m_props.erase(find);
+        m_props.insert(std::pair<std::string, std::string>(name, value));
     }
 
     static CAscRendererProcessParams& getInstance()

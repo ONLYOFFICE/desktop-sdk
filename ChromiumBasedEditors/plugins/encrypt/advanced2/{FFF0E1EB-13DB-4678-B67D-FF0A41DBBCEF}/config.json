@@ -18,6 +18,7 @@
             "initDataType"    : "desktop",
             "initData"        : "encryption",
 			"cryptoMode"      : "2",
+			"cryptoModeExt"   : "disable",
 
             "isUpdateOleOnResize" : false,
 

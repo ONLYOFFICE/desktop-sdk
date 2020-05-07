@@ -370,6 +370,8 @@ public:
     // AES key & iv
     BYTE* m_pAES_KeyIv;
 
+    int m_nIsCryptoModeProperty;
+
     CAscEditorNativeV8Handler()
     {
         m_etType = Document;
@@ -404,6 +406,7 @@ public:
         CheckDefaults();
 
         m_pAES_KeyIv = NULL;
+        m_nIsCryptoModeProperty = 0;
     }
 
     void CheckDefaults()
@@ -437,6 +440,15 @@ public:
             NSOpenSSL::openssl_free(m_pAES_KeyIv);
         NSBase::Release(m_pLocalApplicationFonts);
         m_oCompleteTasksCS.DeleteCriticalSection();
+    }
+
+    bool IsPropertyCryptoMode()
+    {
+        if (m_nCryptoMode > 0)
+            return true;
+        if (!CAscRendererProcessParams::getInstance().GetProperty("cryptoEngineId").empty())
+            return true;
+        return false;
     }
 
     virtual void OnDocumentOpened(const std::string& sBase64)
@@ -933,7 +945,7 @@ retval, exception);
             SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 
             // HACK!!!
-            if (m_nCryptoMode > 0)
+            if (IsPropertyCryptoMode())
             {
                 CefRefPtr<CefFrame> _frame =  CefV8Context::GetCurrentContext()->GetFrame();
                 _frame->ExecuteJavaScript("(function() { try { \
@@ -1327,10 +1339,14 @@ DE.controllers.Main.DisableVersionHistory(); \
 
             if ("portal:login" == sCommand)
             {
-                std::wstring sCloudCryptoGuid = CPluginsManager::GetObjectValueW(sArg, "cryptoGuid");
+                LOGGER_STRING2(sArg);
 
-                if (!sCloudCryptoGuid.empty() || true) // пока Серега не передает гуид
+                std::wstring sCloudCryptoGuid = CPluginsManager::GetStringValueW(sArg, "cryptoEngineId");
+
+                if (!sCloudCryptoGuid.empty())
                 {
+                    CAscRendererProcessParams::getInstance().SetProperty("cryptoEngineId", U_TO_UTF8(sCloudCryptoGuid));
+
                     CCloudCryptoDesktop info;
                     info.GUID = sCloudCryptoGuid;
                     info.Portal = CPluginsManager::GetStringValueW(sArg, "domain");
@@ -1615,7 +1631,11 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
     callback(null);\n\
   };\n\
   xhr.send(null);\n\
-};", _frame->GetURL(), 0);
+};\n\
+Object.defineProperty(window.AscDesktopEditor, 'CryptoMode', {\n\
+get: function() { return window.AscDesktopEditor.Property_GetCryptoMode(); },\n\
+set: function(value) { window.AscDesktopEditor.Property_SetCryptoMode(value); }\n\
+});", _frame->GetURL(), 0);
             }
 
             return true;
@@ -1771,6 +1791,7 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
             oPlugins.m_strDirectory = m_sSystemPlugins;
             oPlugins.m_strUserDirectory = m_sUserPlugins;
             oPlugins.m_nCryptoMode = m_nCryptoMode;
+            oPlugins.m_strCryptoPluginAttack = CAscRendererProcessParams::getInstance().GetProperty("cryptoEngineId");
             std::string sData = oPlugins.GetPluginsJson(true);
             retval = CefV8Value::CreateString(sData);
             return true;
@@ -1930,7 +1951,7 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
             bool bIsProtect = m_bIsSupportProtect;
             if (bIsProtect)
             {
-                if (m_bIsSupportOnlyPass && (m_nCryptoMode > 0))
+                if (m_bIsSupportOnlyPass && IsPropertyCryptoMode())
                     bIsProtect = false;
             }
             retval = CefV8Value::CreateBool(bIsProtect);
@@ -1954,7 +1975,7 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
         }
         else if (name == "isBlockchainSupport")
         {
-            retval = CefV8Value::CreateBool(m_bIsSupportOnlyPass && (m_nCryptoMode > 0));
+            retval = CefV8Value::CreateBool(m_bIsSupportOnlyPass && IsPropertyCryptoMode());
             return true;
         }
         else if (name == "_sendSystemMessage")
@@ -2741,6 +2762,26 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
             retval = CefV8Value::CreateString(sResult);
             return true;
         }
+        else if (name == "CryptoCloud_GetUserInfo")
+        {
+            return true;
+        }
+        else if (name == "Property_GetCryptoMode")
+        {
+            int nMode = m_nIsCryptoModeProperty;
+
+            std::string sPluginCryptoAttack = CAscRendererProcessParams::getInstance().GetProperty("cryptoEngineId");
+            if (!sPluginCryptoAttack.empty()) // и существует!!!
+                nMode = 2;
+
+            retval = CefV8Value::CreateInt(nMode);
+            return true;
+        }
+        else if (name == "Property_SetCryptoMode")
+        {
+            m_nIsCryptoModeProperty = arguments[0]->GetIntValue();
+            return true;
+        }
 
         // Function does not exist.
         return false;
@@ -3114,7 +3155,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
 
-    #define EXTEND_METHODS_COUNT 141
+    #define EXTEND_METHODS_COUNT 144
     const char* methods[EXTEND_METHODS_COUNT] = {
         "Copy",
         "Paste",
@@ -3294,6 +3335,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
         "SetIsReadOnly",
 
+        "CryptoCloud_GetUserInfo",
+
         "CryptoAES_Init",
         "CryptoAES_Clean",
         "CryptoAES_Encrypt",
@@ -3305,6 +3348,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         "IsCloudCryptoSupport",
 
         "CryptoGetHash",
+
+        "Property_GetCryptoMode",
+        "Property_SetCryptoMode",
 
         NULL
     };
