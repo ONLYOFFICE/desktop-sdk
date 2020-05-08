@@ -46,6 +46,7 @@ class CCloudCrypto
 public:
     std::wstring GUID;           // идентификатор плагина для криптования
     std::wstring User;
+    std::wstring Email;
     std::wstring Portal;
     std::wstring PublicKey;      // публичный ключ пользователя
     std::wstring PrivateKeyEnc;  // зашифрованный паролем к порталу закрытый ключ
@@ -67,6 +68,10 @@ public:
         builder.WriteEncodeXmlString(User);
         builder.WriteString(L"</user>");
 
+        builder.WriteString(L"<email>");
+        builder.WriteEncodeXmlString(Email);
+        builder.WriteString(L"</email>");
+
         builder.WriteString(L"<portal>");
         builder.WriteEncodeXmlString(Portal);
         builder.WriteString(L"</portal>");
@@ -86,6 +91,7 @@ public:
     {
         GUID = node.ReadValueString(L"guid");
         User = node.ReadValueString(L"user");
+        Email = node.ReadValueString(L"email");
         Portal = node.ReadValueString(L"portal");
         PublicKey = node.ReadValueString(L"publickey");
         PrivateKeyEnc = node.ReadValueString(L"privatekeyenc");
@@ -148,13 +154,15 @@ public:
                 CCloudCryptoDesktop userInfo;
                 userInfo.Read(nodeInfo);
 
-                m_mapUsers.insert(std::pair<std::wstring, CCloudCryptoDesktop>(userInfo.User + userInfo.Portal, userInfo));
+                std::wstring sKey = userInfo.User;
+                NSCommon::makeLowerW(sKey);
+                m_mapUsers.insert(std::pair<std::wstring, CCloudCryptoDesktop>(sKey, userInfo));
             }
         }
     }
     void AddInfo(const CCloudCryptoDesktop& info)
     {
-        std::wstring sKey = info.User + info.Portal;
+        std::wstring sKey = info.User;
         NSCommon::makeLowerW(sKey);
 
         std::map<std::wstring, CCloudCryptoDesktop>::iterator find = m_mapUsers.find(sKey);
@@ -167,6 +175,7 @@ public:
             CCloudCryptoDesktop& old = find->second;
             old.GUID = info.GUID;
             old.User = info.User;
+            old.Email = info.Email;
             old.Portal = info.Portal;
             old.PublicKey = info.PublicKey;
             old.PrivateKeyEnc = info.PrivateKeyEnc;
@@ -190,7 +199,7 @@ public:
 
     CCloudCryptoDesktop* GetInfo(const CCloudCryptoDesktop& info)
     {
-        std::wstring sKey = info.User + info.Portal;
+        std::wstring sKey = info.User;
         NSCommon::makeLowerW(sKey);
         std::map<std::wstring, CCloudCryptoDesktop>::iterator find = m_mapUsers.find(sKey);
         if (find == m_mapUsers.end())
@@ -205,6 +214,7 @@ class CCloudCryptoTmpInfo
 public:
     std::wstring m_sUser;
     std::wstring m_sPassword;
+    std::wstring m_sEmail;
     std::wstring m_sDomain;
 
 public:
@@ -215,6 +225,10 @@ public:
         builder.WriteString(L"<user>");
         builder.WriteEncodeXmlString(m_sUser);
         builder.WriteString(L"</user>");
+
+        builder.WriteString(L"<email>");
+        builder.WriteEncodeXmlString(m_sEmail);
+        builder.WriteString(L"</email>");
 
         builder.WriteString(L"<password>");
         builder.WriteEncodeXmlString(m_sPassword);
@@ -249,7 +263,7 @@ public:
             {
                 XmlUtils::CXmlNode nodeInfo;
                 nodes.GetAt(i, nodeInfo);
-                addInfo(nodeInfo.ReadValueString(L"user"), nodeInfo.ReadValueString(L"password"), nodeInfo.ReadValueString(L"domain"));
+                addInfo(nodeInfo.ReadValueString(L"user"), nodeInfo.ReadValueString(L"email"), nodeInfo.ReadValueString(L"password"), nodeInfo.ReadValueString(L"domain"));
             }
         }
     }
@@ -271,14 +285,15 @@ public:
     }
 
 public:
-    void addInfo(const std::wstring& user, const std::wstring& password, const std::wstring& domain)
+    void addInfo(const std::wstring& user, const std::wstring& email, const std::wstring& password, const std::wstring& domain)
     {
         CCloudCryptoTmpInfo add;
         add.m_sUser = user; NSCommon::makeLowerW(add.m_sUser);
+        add.m_sEmail = email; NSCommon::makeLowerW(add.m_sEmail);
         add.m_sPassword = password;
         add.m_sDomain = domain; NSCommon::makeLowerW(add.m_sDomain);
 
-        std::wstring key = add.m_sUser + add.m_sDomain;
+        std::wstring key = add.m_sEmail + add.m_sDomain;
         std::map<std::wstring, CCloudCryptoTmpInfo>::iterator find = m_mapTmpInfo.find(key);
         if (find == m_mapTmpInfo.end())
         {
@@ -287,14 +302,15 @@ public:
         else
         {
             find->second.m_sUser = add.m_sUser;
+            find->second.m_sEmail = add.m_sEmail;
             find->second.m_sPassword = add.m_sPassword;
             find->second.m_sDomain = add.m_sDomain;
         }
         Save();
     }
-    void removeInfo(const std::wstring& user, const std::wstring& domain)
+    void removeInfo(const std::wstring& email, const std::wstring& domain)
     {
-        std::wstring key = user + domain;
+        std::wstring key = email + domain;
         NSCommon::makeLowerW(key);
         std::map<std::wstring, CCloudCryptoTmpInfo>::iterator find = m_mapTmpInfo.find(key);
         if (find != m_mapTmpInfo.end())
@@ -302,9 +318,9 @@ public:
         Save();
     }
 
-    CCloudCryptoTmpInfo* getInfo(const std::wstring& user, const std::wstring& domain)
+    CCloudCryptoTmpInfo* getInfo(const std::wstring& email, const std::wstring& domain)
     {
-        std::wstring key = user + domain;
+        std::wstring key = email + domain;
         NSCommon::makeLowerW(key);
         std::map<std::wstring, CCloudCryptoTmpInfo>::iterator find = m_mapTmpInfo.find(key);
         if (find != m_mapTmpInfo.end())

@@ -1326,12 +1326,18 @@ DE.controllers.Main.DisableVersionHistory(); \
         }
         else if (name == "execCommand")
         {
-            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_exec_command");
-
             std::string sCommand = arguments[0]->GetStringValue().ToString();
             std::string sArg = "";
             if (2 == arguments.size())
                 sArg = arguments[1]->GetStringValue().ToString();
+
+            if ("portal:cryptoinfo" == sCommand)
+            {
+                CAscRendererProcessParams::getInstance().SetProperty("cryptoEngineId", CPluginsManager::GetStringValue(sArg, "cryptoEngineId"));
+                CAscRendererProcessParams::getInstance().SetProperty("user", CPluginsManager::GetStringValue(sArg, "userId"));
+                return true;
+            }
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_exec_command");
 
             message->GetArgumentList()->SetString(0, sCommand);
             if (!sArg.empty())
@@ -1339,27 +1345,27 @@ DE.controllers.Main.DisableVersionHistory(); \
 
             if ("portal:login" == sCommand)
             {
-                LOGGER_STRING2(sArg);
-
                 std::wstring sCloudCryptoGuid = CPluginsManager::GetStringValueW(sArg, "cryptoEngineId");
 
                 if (!sCloudCryptoGuid.empty())
                 {
-                    CAscRendererProcessParams::getInstance().SetProperty("cryptoEngineId", U_TO_UTF8(sCloudCryptoGuid));
-
                     CCloudCryptoDesktop info;
                     info.GUID = sCloudCryptoGuid;
+                    info.User = CPluginsManager::GetStringValueW(sArg, "userId");
                     info.Portal = CPluginsManager::GetStringValueW(sArg, "domain");
-                    info.User = CPluginsManager::GetStringValueW(sArg, "email");
+                    info.Email = CPluginsManager::GetStringValueW(sArg, "email");
                     info.PublicKey = CPluginsManager::GetStringValueW(sArg, "publicKey");
                     NSCommon::string_replace(info.PublicKey, L"&#xA", L"\n");
                     info.PrivateKeyEnc = CPluginsManager::GetStringValueW(sArg, "privateKeyEnc");
+
+                    CAscRendererProcessParams::getInstance().SetProperty("cryptoEngineId", U_TO_UTF8(sCloudCryptoGuid));
+                    CAscRendererProcessParams::getInstance().SetProperty("user", U_TO_UTF8(info.User));
 
                     CCloudCryptoApp oApp(m_sUserPlugins + L"/cloud_crypto.xml");
                     CCloudCryptoTmpInfoApp oAppTmp(m_sUserPlugins + L"/cloud_crypto_tmp.xml");
 
                     CCloudCryptoDesktop* savedInfo = oApp.GetInfo(info);
-                    CCloudCryptoTmpInfo* tmpInfo = oAppTmp.getInfo(info.User, info.Portal);
+                    CCloudCryptoTmpInfo* tmpInfo = oAppTmp.getInfo(info.Email, info.Portal);
 
                     if (NULL == savedInfo && tmpInfo)
                     {
@@ -1381,14 +1387,14 @@ DE.controllers.Main.DisableVersionHistory(); \
                             info.PrivateKey = NSFile::CUtf8Converter::GetUnicodeFromCharPtr(sPrivate);
 
                             std::string privateEnc;
-                            NSOpenSSL::AES_Encrypt_desktop(U_TO_UTF8(tmpInfo->m_sPassword), sPrivate, privateEnc);
+                            NSOpenSSL::AES_Encrypt_desktop(U_TO_UTF8(tmpInfo->m_sPassword), sPrivate, privateEnc, CAscRendererProcessParams::getInstance().GetProperty("user"));
                             info.PrivateKeyEnc = NSFile::CUtf8Converter::GetUnicodeFromCharPtr(privateEnc);
 
                             oApp.AddInfo(info);
 
                             // отсылаем ключи
                             NSCommon::string_replaceA(sPublic, "\n", "&#xA");
-                            std::string sCode = ("setTimeout(function() { window.cloudCryptoCommand(\"encryptionKeys\", { publicKey : \"" + sPublic + "\", privateKeyEnc : \"" + privateEnc + "\" }); }, 10);");
+                            std::string sCode = ("setTimeout(function() { window.cloudCryptoCommand && window.cloudCryptoCommand(\"encryptionKeys\", { publicKey : \"" + sPublic + "\", privateKeyEnc : \"" + privateEnc + "\" }); }, 10);");
                             CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetFrame();
                             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
                         }
@@ -1397,35 +1403,42 @@ DE.controllers.Main.DisableVersionHistory(); \
                             // декодируем ключ
                             std::string privateKeyEnc = U_TO_UTF8(info.PrivateKeyEnc);
                             std::string privateKey;
-                            NSOpenSSL::AES_Decrypt_desktop(U_TO_UTF8(tmpInfo->m_sPassword), privateKeyEnc, privateKey);
+                            NSOpenSSL::AES_Decrypt_desktop(U_TO_UTF8(tmpInfo->m_sPassword), privateKeyEnc, privateKey, CAscRendererProcessParams::getInstance().GetProperty("user"));
                             info.PrivateKey = NSFile::CUtf8Converter::GetUnicodeFromCharPtr(privateKey);
 
                             oApp.AddInfo(info);
                         }
                     }
+                    else if (!savedInfo)
+                    {
+                        // TODO: перелогиньтесь!!!
+                        std::string sCode = ("setTimeout(function() { window.cloudCryptoCommand && window.cloudCryptoCommand(\"relogin\"); }, 10);");
+                        CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetBrowser()->GetMainFrame();
+                        _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+                    }
 
                     if (tmpInfo)
-                        oAppTmp.removeInfo(info.User, info.Portal);
+                        oAppTmp.removeInfo(info.Email, info.Portal);
                 }
             }
             else if ("portal:checkpwd" == sCommand)
             {
-                std::string userId = CPluginsManager::GetStringValue(sArg, "emailInput");
+                std::string emailId = CPluginsManager::GetStringValue(sArg, "emailInput");
                 std::string passwordId = CPluginsManager::GetStringValue(sArg, "pwdInput");
 
-                std::wstring sUser;
+                std::wstring sEmail;
                 std::wstring sPassword;
 
                 CefRefPtr<CefV8Value> retval;
                 CefRefPtr<CefV8Exception> exception;
-                bool bValid = CefV8Context::GetCurrentContext()->Eval("(function() { return document.getElementById(\"" + userId + "\").value; })();",
+                bool bValid = CefV8Context::GetCurrentContext()->Eval("(function() { return document.getElementById(\"" + emailId + "\").value; })();",
 #ifndef CEF_2623
             "", 0,
 #endif
 retval, exception);
 
                 if (bValid && retval && retval->IsString())
-                    sUser = retval->GetStringValue().ToWString();
+                    sEmail = retval->GetStringValue().ToWString();
 
                 bValid = CefV8Context::GetCurrentContext()->Eval("(function() { return document.getElementById(\"" + passwordId + "\").value; })();",
 #ifndef CEF_2623
@@ -1437,7 +1450,7 @@ retval, exception);
                     sPassword = retval->GetStringValue().ToWString();
 
                 CCloudCryptoTmpInfoApp oAppTmp(m_sUserPlugins + L"/cloud_crypto_tmp.xml");
-                oAppTmp.addInfo(sUser, sPassword, CPluginsManager::GetStringValueW(sArg, "domain"));
+                oAppTmp.addInfo(L"", sEmail, sPassword, CPluginsManager::GetStringValueW(sArg, "domain"));
             }
 
             SEND_MESSAGE_TO_BROWSER_PROCESS(message);
@@ -2684,9 +2697,13 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
         else if (name == "CryptoAES_Init")
         {
             std::string sPassword = arguments[0]->GetStringValue().ToString();
+            std::string sSalt = "";
+            if (arguments.size() > 1)
+                sSalt = arguments[0]->GetStringValue().ToString();
+
             if (NULL != m_pAES_KeyIv)
                 NSOpenSSL::openssl_free(m_pAES_KeyIv);
-            m_pAES_KeyIv = NSOpenSSL::PBKDF2_desktop(sPassword);
+            m_pAES_KeyIv = NSOpenSSL::PBKDF2_desktop(sPassword, sSalt);
             return true;
         }
         else if (name == "CryptoAES_Clean")
@@ -2764,6 +2781,20 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
         }
         else if (name == "CryptoCloud_GetUserInfo")
         {
+            std::string userA = CAscRendererProcessParams::getInstance().GetProperty("user");
+            CCloudCryptoDesktop info;
+            info.User = UTF8_TO_U(userA);
+
+            CCloudCryptoApp oApp(m_sUserPlugins + L"/cloud_crypto.xml");
+            CCloudCryptoDesktop* pInfo = oApp.GetInfo(info);
+
+            if (!pInfo)
+                return true;
+
+            retval = CefV8Value::CreateArray(3);
+            retval->SetValue(0, CefV8Value::CreateString(pInfo->PrivateKey));
+            retval->SetValue(1, CefV8Value::CreateString(pInfo->PublicKey));
+            retval->SetValue(2, CefV8Value::CreateString(pInfo->User));
             return true;
         }
         else if (name == "Property_GetCryptoMode")
