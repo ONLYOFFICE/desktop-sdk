@@ -17,7 +17,8 @@
 			{			
 				this.documentHash = obj.hash;
 				this.documentInfo = obj.docinfo;
-				this.documentPassword = obj.password;				
+				this.documentPassword = obj.password;
+				window.AscDesktopEditor.CryptoAES_Init(this.documentPassword);
 				break;
 			}
 			case "generatePassword":
@@ -144,12 +145,14 @@
 			{
 				this.documentInfo = e.docinfo;
 				this.documentPassword = e.password;
+				window.AscDesktopEditor.CryptoAES_Init(this.documentPassword);
 				this.executeMethodSync("OnEncryption", [{ type : "generatePassword", password : e.password, docinfo : e.docinfo }]);
 				break;
 			}
 			case "getPasswordByFile":
 			{
 				this.documentPassword = e.password;
+				window.AscDesktopEditor.CryptoAES_Init(this.documentPassword);
 				this.executeMethodSync("OnEncryption", [{ type : "getPasswordByFile", password : e.password, docinfo : this.documentInfo, hash : this.documentHash }]);
 				break;
 			}

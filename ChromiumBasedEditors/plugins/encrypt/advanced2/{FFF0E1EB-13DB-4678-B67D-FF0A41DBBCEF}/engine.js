@@ -12,12 +12,22 @@
 
 	function generate_password() 
 	{
-		var _pass = generate_password_guid_random();
-		return { pass : _pass, docinfo : "" };
+		if (!window.engine.user)
+			return { pass : "", docinfo : "" };
+		
+		var ret = { pass : generate_password_guid_random(), docinfo : "" };
+		
+		// TODO: all keys
+		ret.docinfo = window.AscDesktopEditor.CryproRSA_EncryptPublic(window.engine.user[1], ret.pass);
+		
+		return ret;
 	}
 	
 	window.engine.sendSystemMessage = function(obj)
 	{
+		if (!window.engine.user)
+			window.engine.user = window.AscDesktopEditor.CryptoCloud_GetUserInfo();
+		
 		switch (obj.type)
 		{
 			case "generatePassword":
@@ -28,11 +38,13 @@
 			}
 			case "getPasswordByFile":
 			{
-				// TODO:
-				// 1) read docinfo & find record: publicKey & crypted password
-				// 2) decrypt password with privateKey				
-				window.Asc.plugin.onEngineSystemMessage({ type : "getPasswordByFile", password : "" });
-				break;
+				var encPasswordForUser = obj.docinfo; // TODO: parse for user
+				var _pass = "";
+				if (window.engine.user)
+					_pass = window.AscDesktopEditor.CryproRSA_DecryptPrivate(window.engine.user[0], encPasswordForUser);
+				
+				window.Asc.plugin.onEngineSystemMessage({ type : "getPasswordByFile", password : _pass });
+ 				break;
 			}
 			case "setPasswordByFile":
 			{
