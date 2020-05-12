@@ -1648,7 +1648,13 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
 Object.defineProperty(window.AscDesktopEditor, 'CryptoMode', {\n\
 get: function() { return window.AscDesktopEditor.Property_GetCryptoMode(); },\n\
 set: function(value) { window.AscDesktopEditor.Property_SetCryptoMode(value); }\n\
-});", _frame->GetURL(), 0);
+});\n\
+window.AscDesktopEditor.cloudCryptoCommandMainFrame = function(obj, callback){\n\
+  window.cloudCryptoCommandMainFrame_callback = callback;\n\
+  window.AscDesktopEditor._cloudCryptoCommandMainFrame(window.AscDesktopEditor.GetFrameId(), JSON.stringify(obj));\n\
+};\n\
+window.AscDesktopEditor.cloudCryptoCommand = function(){\n\
+};", _frame->GetURL(), 0);
             }
 
             return true;
@@ -2748,6 +2754,7 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
         else if (name == "CryproRSA_EncryptPublic")
         {
             std::string sKey = arguments[0]->GetStringValue().ToString();
+            NSCommon::string_replaceA(sKey, "&#xA", "\n");
             std::string sMessage = arguments[1]->GetStringValue().ToString();
             std::string sOut;
             NSOpenSSL::RSA_EncryptPublic_desktop((unsigned char*)sKey.c_str(), sMessage, sOut);
@@ -2811,6 +2818,47 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
         else if (name == "Property_SetCryptoMode")
         {
             m_nIsCryptoModeProperty = arguments[0]->GetIntValue();
+            return true;
+        }
+        else if (name == "GetFrameId")
+        {
+            int64 frameID = CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier();
+            uint64 uframeID = (uint64)frameID;
+            std::string sId = std::to_string(uframeID);
+            retval = CefV8Value::CreateString(sId);
+            return true;
+        }
+        else if (name == "CallInFrame")
+        {
+            std::string sId = arguments[0]->GetStringValue().ToString();
+            std::string sCode = arguments[1]->GetStringValue().ToString();
+            int64 frameId = (int64)(std::stoull(sId));
+            CefRefPtr<CefFrame> frame = CefV8Context::GetCurrentContext()->GetBrowser()->GetFrame(frameId);
+            if (frame)
+                frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
+            return true;
+        }
+        else if (name == "_cloudCryptoCommandMainFrame")
+        {
+            std::string sId = arguments[0]->GetStringValue().ToString();
+            std::string sArg = arguments[1]->GetStringValue().ToString();
+
+            NSCommon::string_replaceA(sArg, "\r", "");
+            NSCommon::string_replaceA(sArg, "\n", "");
+            NSCommon::string_replaceA(sArg, "\\", "\\\\");
+            NSCommon::string_replaceA(sArg, "\"", "\\\"");
+
+            CefRefPtr<CefFrame> mainFrame = CefV8Context::GetCurrentContext()->GetBrowser()->GetMainFrame();
+
+            std::string sCode = "(function(){\n\
+var obj = JSON.parse(\"" + sArg + "\");\n\
+window.cloudCryptoCommand(obj.type, obj.param, function(param){\n\
+window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
+\"window.cloudCryptoCommandMainFrame_callback(\" + JSON.stringify(param || {}) + \");delete window.cloudCryptoCommandMainFrame_callback;\");\n\
+});\n\
+})();";
+            if (mainFrame)
+                mainFrame->ExecuteJavaScript(sCode, mainFrame->GetURL(), 0);
             return true;
         }
 
@@ -3186,7 +3234,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
 
-    #define EXTEND_METHODS_COUNT 144
+    #define EXTEND_METHODS_COUNT 147
     const char* methods[EXTEND_METHODS_COUNT] = {
         "Copy",
         "Paste",
@@ -3382,6 +3430,10 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
         "Property_GetCryptoMode",
         "Property_SetCryptoMode",
+
+        "_cloudCryptoCommandMainFrame",
+        "GetFrameId",
+        "CallInFrame",
 
         NULL
     };
@@ -3860,6 +3912,7 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
             if (3 <= message->GetArgumentList()->GetSize())
             {
                 std::string sDocInfo = message->GetArgumentList()->GetString(2).ToString();
+                NSCommon::string_replaceA(sDocInfo, "\n", "<!--break-->");
                 sCode += ",\"";
                 sCode += sDocInfo;
                 sCode += "\"";

@@ -981,7 +981,10 @@ public:
             {
                 int nSymbol = sDocInfoData[i];
                 if (nSymbol > 0xFF || nSymbol < 0x20)
-                    sDocInfoData[i] = ' ';
+                {
+                    if (nSymbol != '\n')
+                        sDocInfoData[i] = ' ';
+                }
             }
         }
         return sDocInfo;
