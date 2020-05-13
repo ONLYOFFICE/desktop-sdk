@@ -1650,7 +1650,7 @@ Object.defineProperty(window.AscDesktopEditor, 'CryptoMode', {\n\
 get: function() { return window.AscDesktopEditor.Property_GetCryptoMode(); },\n\
 set: function(value) { window.AscDesktopEditor.Property_SetCryptoMode(value); }\n\
 });\n\
-window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(o,d){window.cloudCryptoCommandMainFrame_callback=d,window.AscDesktopEditor._cloudCryptoCommandMainFrame(window.AscDesktopEditor.GetFrameId(),JSON.stringify(o))},window.AscDesktopEditor.cloudCryptoCommand=function(o,d,n){switch(window.AscDesktopEditor.initCryptoWorker(d.cryptoEngineId),window.cloudCryptoCommandCounter=0,window.cloudCryptoCommandCount=0,window.cloudCryptoCommandParam=d,window.cloudCryptoCommandCallback=n,o){case\"share\":var t=Array.isArray(d.file)?d.file:[d.file];window.cloudCryptoCommandCount=t.length,window.AscDesktopEditor.DownloadFiles(t,[],function(o){for(var d in o){var n,t=o[d],r=window.AscDesktopEditor.getDocumentInfo(t),e=window.cloudCryptoCommandParam,w=!1;\"\"==r?(n=window.AscCrypto.CryptoWorker.createPassword(),r=window.AscCrypto.CryptoWorker.generateDocInfo(e.keys,n),w=window.AscDesktopEditor.setDocumentInfo(t,n,r)):(n=window.AscCrypto.CryptoWorker.readPassword(r),console.log(\"111: \"+n),r=window.AscCrypto.CryptoWorker.generateDocInfo(e.keys,n),console.log(\"222: \"+r),w=window.AscDesktopEditor.setDocumentInfo(t,n,r),console.log(\"333: \"+w)),window.AscDesktopEditor.loadLocalFile(t,function(o){window.cloudCryptoCommandCallback({bytes:o,isCrypto:w,url:d}),window.AscDesktopEditor.RemoveFile(t),window.cloudCryptoCommandCounter++,window.cloudCryptoCommandCounter==window.cloudCryptoCommandCount&&(window.cloudCryptoCommandCount=0,delete window.cloudCryptoCommandParam,delete window.cloudCryptoCommandCallback)})}},1);break;default:n(null),delete window.cloudCryptoCommandParam,delete window.cloudCryptoCommandCallback}};\n\
+window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(o,d){window.cloudCryptoCommandMainFrame_callback=d,window.AscDesktopEditor._cloudCryptoCommandMainFrame(window.AscDesktopEditor.GetFrameId(),JSON.stringify(o))},window.AscDesktopEditor.cloudCryptoCommand=function(o,d,n){switch(window.AscDesktopEditor.initCryptoWorker(d.cryptoEngineId),window.cloudCryptoCommandCounter=0,window.cloudCryptoCommandCount=0,window.cloudCryptoCommandParam=d,window.cloudCryptoCommandCallback=n,o){case\"share\":var t=Array.isArray(d.file)?d.file:[d.file];window.cloudCryptoCommandCount=t.length,window.AscDesktopEditor.DownloadFiles(t,[],function(o){for(var d in o){var n,t,r,i=o[d],e=window.AscDesktopEditor.isFileSupportCloudCrypt(i),w=!1;e&&(t=window.AscDesktopEditor.getDocumentInfo(i),n=window.cloudCryptoCommandParam,w=(t=(r=\"\"==t?window.AscCrypto.CryptoWorker.createPassword():window.AscCrypto.CryptoWorker.readPassword(t),window.AscCrypto.CryptoWorker.generateDocInfo(n.keys,r)),window.AscDesktopEditor.setDocumentInfo(i,r,t))),window.AscDesktopEditor.loadLocalFile(i,function(o){window.cloudCryptoCommandCallback({bytes:o,isCrypto:w,url:d}),window.AscDesktopEditor.RemoveFile(i),window.cloudCryptoCommandCounter++,window.cloudCryptoCommandCounter==window.cloudCryptoCommandCount&&(window.cloudCryptoCommandCount=0,delete window.cloudCryptoCommandParam,delete window.cloudCryptoCommandCallback)})}},1);break;case\"upload\":var r=d.filter||\"any\";window.AscDesktopEditor.OpenFilenameDialog(r,!0,function(o){Array.isArray(o)||(o=[o]),window.cloudCryptoCommandCount=o.length;for(var d=0;d<o.length;d++){var n,t,r=o[d],i=window.AscDesktopEditor.isFileSupportCloudCrypt(r),e=window.AscDesktopEditor.isFileCrypt(r),w=!1;i&&!e&&(n=window.AscCrypto.CryptoWorker.createPassword(),t=window.AscCrypto.CryptoWorker.User,docinfo=window.AscCrypto.CryptoWorker.generateDocInfo([{userId:t[2],publicKey:t[1]}],n),w=window.AscDesktopEditor.setDocumentInfo(r,n,docinfo));var a=d;window.AscDesktopEditor.loadLocalFile(r,function(o){var d=r,n=d.lastIndexOf(\"/\");-1!=n&&(d=d.substring(n+1)),-1!=(n=d.lastIndexOf(\"\\\"))&&(d=d.substring(n+1)),window.cloudCryptoCommandCallback({bytes:o,isCrypto:w,name:d,index:a,count:window.cloudCryptoCommandCount}),window.cloudCryptoCommandCounter++,window.cloudCryptoCommandCounter==window.cloudCryptoCommandCount&&(window.cloudCryptoCommandCount=0,delete window.cloudCryptoCommandParam,delete window.cloudCryptoCommandCallback)})}});break;default:n(null),delete window.cloudCryptoCommandParam,delete window.cloudCryptoCommandCallback}};\n\
 ", _frame->GetURL(), 0);
             }
 
@@ -2927,6 +2927,42 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
             retval = CefV8Value::CreateBool(isCrypt);
             return true;
         }
+        else if (name == "isFileSupportCloudCrypt")
+        {
+            std::wstring sFile = arguments[0]->GetStringValue().ToWString();
+            bool isSupportCrypt = false;
+            COfficeFileFormatChecker oChecker;
+            if (oChecker.isOfficeFile(sFile))
+            {
+                switch (oChecker.nFileType)
+                {
+                    case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX:
+                    case AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX:
+                    case AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX:
+                    case AVS_OFFICESTUDIO_FILE_OTHER_MS_OFFCRYPTO:
+                    {
+                        isSupportCrypt = true;
+                        break;
+                    }
+                    default:
+                        break;
+                }
+            }
+            retval = CefV8Value::CreateBool(isSupportCrypt);
+            return true;
+        }
+        else if (name == "isFileCrypt")
+        {
+            std::wstring sFile = arguments[0]->GetStringValue().ToWString();
+            bool isCrypt = false;
+            COfficeFileFormatChecker oChecker;
+            if (oChecker.isOfficeFile(sFile))
+            {
+                isCrypt = (AVS_OFFICESTUDIO_FILE_OTHER_MS_OFFCRYPTO == oChecker.nFileType) ? true : false;
+            }
+            retval = CefV8Value::CreateBool(isCrypt);
+            return true;
+        }
 
         // Function does not exist.
         return false;
@@ -3300,7 +3336,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
 
-    #define EXTEND_METHODS_COUNT 150
+    #define EXTEND_METHODS_COUNT 152
     const char* methods[EXTEND_METHODS_COUNT] = {
         "Copy",
         "Paste",
@@ -3504,6 +3540,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         "initCryptoWorker",
         "getDocumentInfo",
         "setDocumentInfo",
+        "isFileSupportCloudCrypt",
+        "isFileCrypt",
 
         NULL
     };
