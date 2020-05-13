@@ -106,9 +106,73 @@
 		}
     };
 	
-	window.Asc.plugin.sendSystemMessage = function(e)
+	window.Asc.plugin.sendSystemMessage = function(obj)
 	{
-		window.engine.sendSystemMessage(e);
+		switch (obj.type)
+		{
+			case "generatePassword":
+			{
+				// async... callback inside worker (get sharing info)
+				window.AscCrypto.CryptoWorker.generatePassword(this.documentPassword);
+				break;
+			}
+			case "getPasswordByFile":
+			{
+				this.onSystemMessage({ 
+					type : "getPasswordByFile", 
+					password : window.AscCrypto.CryptoWorker.readPassword(obj.docinfo)
+				});
+ 				break;
+			}
+			case "setPasswordByFile":
+			{
+				if (obj.isNeedMessage)
+				{
+					obj.message = "Save to storage...";
+					this.onSystemMessage(obj);					
+				}
+				else
+				{
+					// send message on end
+					setTimeout(function() {
+						// timer only for visibility saving message (delay)
+						window.Asc.plugin.onSystemMessage(obj);
+					}, 500);
+				}
+				break;
+			}
+			case "encryptData":
+			{
+				if (obj.password)
+				{
+					for (var i = 0; i < obj.data.length; i++)
+					{
+						obj.data[i] = window.AscCrypto.CryptoWorker.encrypt(obj.data[i]);
+					}
+				}
+				
+				this.onSystemMessage(obj);
+				break;
+			}
+			case "decryptData":
+			{
+				if (obj.password)
+				{
+					for (var i = 0; i < obj.data.length; i++)
+					{
+						obj.data[i] = window.AscCrypto.CryptoWorker.decrypt(obj.data[i]);
+					}
+				}
+				
+				this.onSystemMessage(obj);
+				break;
+			}
+			default:
+			{
+				this.onSystemMessage(obj);
+				break;
+			}
+		}
 	};
 	
 	window.Asc.plugin.executeMethodSync = function(name, arg)
@@ -137,7 +201,7 @@
 		}
 	};		
 	
-	window.Asc.plugin.onEngineSystemMessage = function(e)
+	window.Asc.plugin.onSystemMessage = function(e)
     {
         switch (e.type)
 		{
@@ -145,14 +209,14 @@
 			{
 				this.documentInfo = e.docinfo;
 				this.documentPassword = e.password;
-				window.AscDesktopEditor.CryptoAES_Init(this.documentPassword);
+				window.AscCrypto.CryptoWorker.cryptInit(this.documentPassword);
 				this.executeMethodSync("OnEncryption", [{ type : "generatePassword", password : e.password, docinfo : e.docinfo }]);
 				break;
 			}
 			case "getPasswordByFile":
 			{
 				this.documentPassword = e.password;
-				window.AscDesktopEditor.CryptoAES_Init(this.documentPassword);
+				window.AscCrypto.CryptoWorker.cryptInit(this.documentPassword);
 				this.executeMethodSync("OnEncryption", [{ type : "getPasswordByFile", password : e.password, docinfo : this.documentInfo, hash : this.documentHash }]);
 				break;
 			}
