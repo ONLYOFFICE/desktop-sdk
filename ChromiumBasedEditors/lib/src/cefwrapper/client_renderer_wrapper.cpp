@@ -57,6 +57,7 @@
 #include "../../../../../core/DesktopEditor/common/CalculatorCRC32.h"
 #include "./client_renderer_params.h"
 #include "../../../../../core/Common/3dParty/openssl/common/common_openssl.h"
+#include "../../../../../core/OfficeCryptReader/source/ECMACryptFile.h"
 
 namespace NSCommon
 {
@@ -1649,12 +1650,8 @@ Object.defineProperty(window.AscDesktopEditor, 'CryptoMode', {\n\
 get: function() { return window.AscDesktopEditor.Property_GetCryptoMode(); },\n\
 set: function(value) { window.AscDesktopEditor.Property_SetCryptoMode(value); }\n\
 });\n\
-window.AscDesktopEditor.cloudCryptoCommandMainFrame = function(obj, callback){\n\
-  window.cloudCryptoCommandMainFrame_callback = callback;\n\
-  window.AscDesktopEditor._cloudCryptoCommandMainFrame(window.AscDesktopEditor.GetFrameId(), JSON.stringify(obj));\n\
-};\n\
-window.AscDesktopEditor.cloudCryptoCommand = function(){\n\
-};", _frame->GetURL(), 0);
+window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(o,d){window.cloudCryptoCommandMainFrame_callback=d,window.AscDesktopEditor._cloudCryptoCommandMainFrame(window.AscDesktopEditor.GetFrameId(),JSON.stringify(o))},window.AscDesktopEditor.cloudCryptoCommand=function(o,d,n){switch(window.AscDesktopEditor.initCryptoWorker(d.cryptoEngineId),window.cloudCryptoCommandCounter=0,window.cloudCryptoCommandCount=0,window.cloudCryptoCommandParam=d,window.cloudCryptoCommandCallback=n,o){case\"share\":var t=Array.isArray(d.file)?d.file:[d.file];window.cloudCryptoCommandCount=t.length,window.AscDesktopEditor.DownloadFiles(t,[],function(o){for(var d in o){var n,t=o[d],r=window.AscDesktopEditor.getDocumentInfo(t),e=window.cloudCryptoCommandParam,w=!1;\"\"==r?(n=window.AscCrypto.CryptoWorker.createPassword(),r=window.AscCrypto.CryptoWorker.generateDocInfo(e.keys,n),w=window.AscDesktopEditor.setDocumentInfo(t,n,r)):(n=window.AscCrypto.CryptoWorker.readPassword(r),console.log(\"111: \"+n),r=window.AscCrypto.CryptoWorker.generateDocInfo(e.keys,n),console.log(\"222: \"+r),w=window.AscDesktopEditor.setDocumentInfo(t,n,r),console.log(\"333: \"+w)),window.AscDesktopEditor.loadLocalFile(t,function(o){window.cloudCryptoCommandCallback({bytes:o,isCrypto:w,url:d}),window.AscDesktopEditor.RemoveFile(t),window.cloudCryptoCommandCounter++,window.cloudCryptoCommandCounter==window.cloudCryptoCommandCount&&(window.cloudCryptoCommandCount=0,delete window.cloudCryptoCommandParam,delete window.cloudCryptoCommandCallback)})}},1);break;default:n(null),delete window.cloudCryptoCommandParam,delete window.cloudCryptoCommandCallback}};\n\
+", _frame->GetURL(), 0);
             }
 
             return true;
@@ -2861,6 +2858,75 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
                 mainFrame->ExecuteJavaScript(sCode, mainFrame->GetURL(), 0);
             return true;
         }
+        else if (name == "initCryptoWorker")
+        {
+            std::wstring sId = arguments[0]->GetStringValue().ToWString();
+            NSCommon::string_replace(sId, L"asc.", L"");
+            std::wstring sFile = m_sSystemPlugins + L"/" + sId + L"/worker.js";
+            std::string sContentWorker;
+            if (NSFile::CFileBinary::Exists(sFile))
+                NSFile::CFileBinary::ReadAllTextUtf8A(sFile, sContentWorker);
+            else
+            {
+                sFile = m_sUserPlugins + L"/" + sId + L"/worker.js";
+                if (NSFile::CFileBinary::Exists(sFile))
+                    NSFile::CFileBinary::ReadAllTextUtf8A(sFile, sContentWorker);
+            }
+
+            if (!sContentWorker.empty())
+            {
+                CefRefPtr<CefFrame> frame = CefV8Context::GetCurrentContext()->GetFrame();
+                if (frame)
+                    frame->ExecuteJavaScript(sContentWorker, frame->GetURL(), 0);
+            }
+            return true;
+        }
+        else if (name == "getDocumentInfo")
+        {
+            std::wstring sFile = arguments[0]->GetStringValue().ToWString();
+
+            COfficeFileFormatChecker oChecker;
+            oChecker.isOfficeFile(sFile);
+            if (AVS_OFFICESTUDIO_FILE_OTHER_MS_OFFCRYPTO != oChecker.nFileType)
+            {
+                retval = CefV8Value::CreateString("");
+                return true;
+            }
+
+            ECMACryptFile file;
+            std::string docinfo = file.ReadAdditional(sFile, L"DocumentID");
+            if (!docinfo.empty())
+                NSCommon::string_replaceA(docinfo, "\n", "<!--break-->");
+            retval = CefV8Value::CreateString(docinfo);
+            return true;
+        }
+        else if (name == "setDocumentInfo")
+        {
+            std::wstring sFile = arguments[0]->GetStringValue().ToWString();
+            std::wstring sPassword = arguments[1]->GetStringValue().ToWString();
+            std::wstring sDocinfo = arguments[2]->GetStringValue().ToWString();
+            bool isCrypt = false;
+
+            COfficeFileFormatChecker oChecker;
+            oChecker.isOfficeFile(sFile);
+            if (AVS_OFFICESTUDIO_FILE_OTHER_MS_OFFCRYPTO != oChecker.nFileType)
+            {
+                ECMACryptFile file;
+                if (file.EncryptOfficeFile(sFile, sFile, sPassword))
+                {
+                    file.WriteAdditional(sFile, L"DocumentID", U_TO_UTF8(sDocinfo));
+                    isCrypt = true;
+                }
+            }
+            else
+            {
+                ECMACryptFile file;
+                isCrypt = file.WriteAdditional(sFile, L"DocumentID", U_TO_UTF8(sDocinfo));
+            }
+
+            retval = CefV8Value::CreateBool(isCrypt);
+            return true;
+        }
 
         // Function does not exist.
         return false;
@@ -3234,7 +3300,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
 
-    #define EXTEND_METHODS_COUNT 147
+    #define EXTEND_METHODS_COUNT 150
     const char* methods[EXTEND_METHODS_COUNT] = {
         "Copy",
         "Paste",
@@ -3434,6 +3500,10 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         "_cloudCryptoCommandMainFrame",
         "GetFrameId",
         "CallInFrame",
+
+        "initCryptoWorker",
+        "getDocumentInfo",
+        "setDocumentInfo",
 
         NULL
     };

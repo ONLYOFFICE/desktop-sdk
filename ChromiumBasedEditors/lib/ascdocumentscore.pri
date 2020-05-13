@@ -98,6 +98,19 @@ SOURCES += \
     $$CORE_ROOT_DIR/HtmlRenderer/src/ASCSVGWriter.cpp \
     $$CORE_ROOT_DIR/DesktopEditor/fontengine/ApplicationFontsWorker.cpp
 
+# crypto ----------------------------------
+LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lCryptoPPLib
+DEFINES += CRYPTOPP_DISABLE_ASM
+HEADERS += \
+    $$CORE_ROOT_DIR/OfficeCryptReader/source/ECMACryptFile.h \
+    $$CORE_ROOT_DIR/OfficeCryptReader/source/CryptTransform.h
+
+SOURCES += \
+    $$CORE_ROOT_DIR/OfficeCryptReader/source/ECMACryptFile.cpp \
+    $$CORE_ROOT_DIR/OfficeCryptReader/source/CryptTransform.cpp
+# -----------------------------------------
+
+
 core_windows {
 
 SOURCES += \
