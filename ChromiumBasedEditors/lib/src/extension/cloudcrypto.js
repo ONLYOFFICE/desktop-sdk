@@ -19,23 +19,23 @@ window.AscDesktopEditor.cloudCryptoCommand = function(type, param, callback)
 				
 				for (var fileItem in files)
 				{
-					var file = files[fileItem];
-					var isSupportCrypt = window.AscDesktopEditor.isFileSupportCloudCrypt(file);
-					var isCrypto = false;
+					let file = files[fileItem];
+					let isSupportCrypt = window.AscDesktopEditor.isFileSupportCloudCrypt(file);
+					let isCrypto = false;
 
 					if (isSupportCrypt)
 					{
-						var docinfo = window.AscDesktopEditor.getDocumentInfo(file);
-						var param = window.cloudCryptoCommandParam;					
+						let docinfo = window.AscDesktopEditor.getDocumentInfo(file);
+						let param = window.cloudCryptoCommandParam;					
 						if (docinfo == "")
 						{
-							var password = window.AscCrypto.CryptoWorker.createPassword();
+							let password = window.AscCrypto.CryptoWorker.createPassword();
 							docinfo = window.AscCrypto.CryptoWorker.generateDocInfo(param.keys, password);
 							isCrypto = window.AscDesktopEditor.setDocumentInfo(file, password, docinfo);
 						}
 						else
 						{
-							var password = window.AscCrypto.CryptoWorker.readPassword(docinfo);						
+							let password = window.AscCrypto.CryptoWorker.readPassword(docinfo);						
 							docinfo = window.AscCrypto.CryptoWorker.generateDocInfo(param.keys, password);						
 							isCrypto = window.AscDesktopEditor.setDocumentInfo(file, password, docinfo);						
 						}
@@ -67,6 +67,9 @@ window.AscDesktopEditor.cloudCryptoCommand = function(type, param, callback)
 		case "upload":
 		{
 			var filter = param.filter || "any";
+			var keys = param.keys || [];
+			var user = window.AscCrypto.CryptoWorker.User;
+			keys.push({ userId : user[2], publicKey : user[1] });
 			window.AscDesktopEditor.OpenFilenameDialog(filter, true, function(files) {
 				if (!Array.isArray(files))
 					files = [files];
@@ -74,21 +77,20 @@ window.AscDesktopEditor.cloudCryptoCommand = function(type, param, callback)
 				window.cloudCryptoCommandCount = files.length;
 				for (var i = 0; i < files.length; i++)
 				{
-					var file = files[i];
-					var isSupportCrypt = window.AscDesktopEditor.isFileSupportCloudCrypt(file);
-					var isOfficeFileCrypt = window.AscDesktopEditor.isFileCrypt(file);
-					var isCrypto = false;
+					let file = files[i];
+					let isSupportCrypt = window.AscDesktopEditor.isFileSupportCloudCrypt(file);
+					let isOfficeFileCrypt = window.AscDesktopEditor.isFileCrypt(file);
+					let cryptoFile = "";
 
 					if (isSupportCrypt && !isOfficeFileCrypt)
 					{
-						var password = window.AscCrypto.CryptoWorker.createPassword();
-						var user = window.AscCrypto.CryptoWorker.User;
-						docinfo = window.AscCrypto.CryptoWorker.generateDocInfo([{ userId : user[2], publicKey : user[1] }], password);
-						isCrypto = window.AscDesktopEditor.setDocumentInfo(file, password, docinfo);
+						let password = window.AscCrypto.CryptoWorker.createPassword();						
+						docinfo = window.AscCrypto.CryptoWorker.generateDocInfo(keys, password);
+						cryptoFile = window.AscDesktopEditor.setDocumentInfo(file, password, docinfo, true);
 					}
-
-					var curIndex = i;
-					window.AscDesktopEditor.loadLocalFile(file, function(data){
+					let isCrypto = ("" != cryptoFile) ? true : false;
+					let curIndex = i;
+					window.AscDesktopEditor.loadLocalFile(isCrypto ? cryptoFile : file, function(data){
 						
 						var fileName = file;
 						var index = fileName.lastIndexOf("/");
@@ -103,6 +105,9 @@ window.AscDesktopEditor.cloudCryptoCommand = function(type, param, callback)
 							index : curIndex,
 							count : window.cloudCryptoCommandCount
 						});
+
+						if (isCrypto)
+							window.AscDesktopEditor.RemoveFile(cryptoFile);
 						
 						window.cloudCryptoCommandCounter++;
 						if (window.cloudCryptoCommandCounter == window.cloudCryptoCommandCount)
