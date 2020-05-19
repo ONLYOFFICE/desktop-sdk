@@ -5268,7 +5268,10 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             NSEditorApi::CAscExecCommandJS* pData = (NSEditorApi::CAscExecCommandJS*)pEvent->m_pData;
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_native_message");
             message->GetArgumentList()->SetString(0, pData->get_Command());
-            message->GetArgumentList()->SetString(1, pData->get_Param());
+            std::wstring sParam = pData->get_Param();
+            NSCommon::string_replace(sParam, L"\\", L"\\\\");
+            NSCommon::string_replace(sParam, L"\"", L"\\\"");
+            message->GetArgumentList()->SetString(1, sParam);
             message->GetArgumentList()->SetString(2, pData->get_FrameName());
 
             SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
