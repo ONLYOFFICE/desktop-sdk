@@ -38,7 +38,6 @@ build_xp {
 # ------------------------------------------------------
 
 # for cloud debug
-#DEFINES += DEBUG_CLOUD_5_2
 #DEFINES += DEBUG_LOCAL_SERVER
 
 ####################  BOOST  ###########################

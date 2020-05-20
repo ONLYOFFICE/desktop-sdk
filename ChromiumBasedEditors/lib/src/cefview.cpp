@@ -3628,44 +3628,31 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
         }
 #endif
 
-#ifdef DEBUG_CLOUD_5_2
-
 #ifdef DEBUG_LOCAL_SERVER
-        if (std::wstring::npos != url.find(L"AllFonts.js"))
+
+        std::wstring sBaseWebCloudPath = NSFile::GetProcessDirectory() + L"/sdkjs";
+        std::wstring::size_type posSdkAll = url.rfind(L"/sdk-all");
+
+        if (std::wstring::npos != posSdkAll)
         {
-            std::wstring sPathFonts = m_pParent->GetAppManager()->m_oSettings.fonts_cache_info_path + L"/AllFonts.js";
-            return GetLocalFileRequest(sPathFonts, "", "");
-        }
-#endif
-
-        if (url.find(L"file:/") != 0)
-        {
-#if 1
-            std::wstring sBaseWebCloudPath = L"C:/ProgramData/ONLYOFFICE/webdata/cloud/5.2.0";
-#else
-            wchar_t buffer[257];
-            memset(buffer, 0, 257 * sizeof(wchar_t));
-            DWORD size = sizeof(buffer);
-            GetUserNameW(buffer, &size);
-
-            std::wstring sUserName(buffer);
-            std::wstring sBaseWebCloudPath = L"C:/Users/" + sUserName + L"/AppData/Local/ONLYOFFICE/DesktopEditors/webdata/cloud/5.2.0";
-#endif
-
-            std::wstring::size_type posSdkAll = url.rfind(L"/sdk-all");
-
-            if (std::wstring::npos != posSdkAll)
+            std::wstring::size_type posEditorSdk = url.rfind('/', posSdkAll - 1);
+            if (std::wstring::npos != posEditorSdk)
             {
-                std::wstring::size_type posEditorSdk = url.rfind('/', posSdkAll - 1);
-                if (std::wstring::npos != posEditorSdk)
+                std::wstring sTestPath = sBaseWebCloudPath + url.substr(posEditorSdk);
+                if (NSFile::CFileBinary::Exists(sTestPath))
                 {
-                    std::wstring sTestPath = sBaseWebCloudPath + url.substr(posEditorSdk);
-                    if (NSFile::CFileBinary::Exists(sTestPath))
-                    {
-                        return GetLocalFileRequest(sTestPath, "", "");
-                    }
+                    return GetLocalFileRequest(sTestPath, "", "");
                 }
             }
+        }
+
+        if (std::wstring::npos != url.find(L"/fonts.js"))
+        {
+            return GetLocalFileRequest(sBaseWebCloudPath + L"/common/libfont/wasm/fonts.js", "", "");
+        }
+        if (std::wstring::npos != url.find(L"/fonts.wasm"))
+        {
+            return GetLocalFileRequest(sBaseWebCloudPath + L"/common/libfont/wasm/fonts.wasm", "", "");
         }
 
 #endif
