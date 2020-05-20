@@ -4472,12 +4472,17 @@ delete window[\"crypto_images_map\"][_url];\n\
     }
     else if (sMessageName == "on_download_files")
     {
-        CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
+        int nCount = message->GetArgumentList()->GetSize();
+        int nIndex = 0;
+        int64 nFrameId = NSArgumentList::GetInt64(message->GetArgumentList(), nIndex++);
+
+        CefRefPtr<CefFrame> _frame = browser->GetFrame(nFrameId);
+        if (!_frame)
+            _frame = GetEditorFrame(browser);
+
         if (_frame)
         {
             std::string sParam = "{";
-            int nCount = message->GetArgumentList()->GetSize();
-            int nIndex = 0;
             while (nIndex < nCount)
             {
                 sParam += ("\"" + message->GetArgumentList()->GetString(nIndex++).ToString() + "\" : \"");

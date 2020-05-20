@@ -758,6 +758,7 @@ public:
     // файлы с ссылками для метода AscDesktopEditor.DownloadFiles
     std::map<std::wstring, std::wstring> m_arDownloadedFiles;
     std::map<std::wstring, std::wstring> m_arDownloadedFilesComplete;
+    int64 m_nDownloadedFilesFrameId;
 
     // приходил ли хоть раз евент onDocumentModifiedChanged
     bool m_bIsReceiveOnce_OnDocumentModified;
@@ -862,6 +863,8 @@ public:
 
         m_bIsLocalFileLocked = false;
         m_pLocalFileLocker = NULL;
+
+        m_nDownloadedFilesFrameId = -1;
     }
 
     void Destroy()
@@ -2852,6 +2855,7 @@ public:
             int nIndex = 0;
             int nParams = args->GetInt(nIndex++);
             int_64_type nFrameID = NSArgumentList::GetInt64(args, nIndex++);
+            m_pParent->m_pInternal->m_nDownloadedFilesFrameId = nFrameID;
 
             while (nIndex < nCount)
             {
@@ -4030,6 +4034,9 @@ require.load = function (context, moduleName, url) {\n\
                         CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_download_files");
 
                         int nIndex = 0;
+                        NSArgumentList::SetInt64(message->GetArgumentList(), nIndex++, m_pParent->m_pInternal->m_nDownloadedFilesFrameId);
+                        m_pParent->m_pInternal->m_nDownloadedFilesFrameId = -1;
+
                         for (std::map<std::wstring, std::wstring>::iterator iter = m_pParent->m_pInternal->m_arDownloadedFilesComplete.begin();
                              iter != m_pParent->m_pInternal->m_arDownloadedFilesComplete.end(); iter++)
                         {
