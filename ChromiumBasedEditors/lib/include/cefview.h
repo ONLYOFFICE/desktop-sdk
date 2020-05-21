@@ -94,6 +94,7 @@ public:
     virtual ~CCefView();
 
     void load(const std::wstring& url);
+    void reload();
     std::wstring GetUrl();
     std::wstring GetOriginalUrl();
     std::wstring GetUrlAsLocal();

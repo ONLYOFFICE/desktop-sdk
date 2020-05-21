@@ -4866,6 +4866,10 @@ void CCefView::load(const std::wstring& urlInputSrc)
 
     focus();
 }
+void CCefView::reload()
+{
+    this->load(this->GetUrl());
+}
 std::wstring CCefView::GetUrl()
 {
     return m_pInternal ? m_pInternal->m_strUrl : L"";
