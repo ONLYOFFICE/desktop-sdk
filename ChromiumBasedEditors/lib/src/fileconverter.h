@@ -653,6 +653,8 @@ public:
             }
         }
 
+        sLocalFilePath = CorrectPathW(sLocalFilePath);
+        sDestinationPath = CorrectPathW(sDestinationPath);
         NSFile::CFileBinary::Copy(sLocalFilePath, sDestinationPath);
 
         if (m_bIsNativeSupport && m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
