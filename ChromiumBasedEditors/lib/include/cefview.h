@@ -126,7 +126,7 @@ public:
     bool GetModified();
 
     bool IsPresentationReporter();
-    void LoadReporter(int nParentId, std::wstring url);
+    void LoadReporter(void* reporter_data);
 
     double GetDeviceScale();
 

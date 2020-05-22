@@ -726,6 +726,7 @@ public:
     bool m_bIsReporter; // репортер
     int m_nReporterParentId; // репортер
     int m_nReporterChildId; // id репортера у parent
+    std::string m_sCloudCryptoReporter;
 
     // sso
     bool m_bIsSSO;
@@ -1894,6 +1895,20 @@ public:
                 pAdditional->m_arApplyEvents->clear();
                 pAdditional->m_arApplyEvents = NULL;
             }
+
+            // прокидываем cloudCrypto для репортера
+            if (m_pParent->m_pInternal->m_bIsReporter && !m_pParent->m_pInternal->m_sCloudCryptoReporter.empty())
+            {
+                CefRefPtr<CefFrame> _frame = browser->GetMainFrame();
+                if (_frame)
+                {
+                    std::string sCloudCryptoJson = m_pParent->m_pInternal->m_sCloudCryptoReporter;
+                    NSCommon::string_replaceA(sCloudCryptoJson, "\\", "\\\\");
+                    NSCommon::string_replaceA(sCloudCryptoJson, "\"", "\\\"");
+                    std::string sCodeReporter = "window.AscDesktopEditor.execCommand(\"portal:cryptoinfo\", \"" + sCloudCryptoJson + "\");";
+                    _frame->ExecuteJavaScript(sCodeReporter, _frame->GetURL(), 0);
+                }
+            }
             return true;
         }
         else if (message_name == "is_cookie_present")
@@ -2599,6 +2614,10 @@ public:
             pCreate->ParentId = m_pParent->GetId();
             pCreate->Url = args->GetString(0).ToWString();
             pCreate->LocalRecoverFolder = args->GetString(1).ToWString();
+
+            if (args->GetSize() > 2)
+                pCreate->CloudCryptoInfo = args->GetString(2).ToString();
+
             pData->put_Data(pCreate);
 
             pEvent->m_pData = pData;
@@ -5571,10 +5590,15 @@ bool CCefView::IsPresentationReporter()
 {
     return m_pInternal->m_bIsReporter;
 }
-void CCefView::LoadReporter(int nParentId, std::wstring url)
+void CCefView::LoadReporter(void* reporter_data)
 {
+    CAscReporterData* pReporterData = (CAscReporterData*)reporter_data;
+    int nParentId = pReporterData->ParentId;
+    std::wstring url = pReporterData->Url;
+
     m_pInternal->m_bIsReporter = true;
     m_pInternal->m_nReporterParentId = nParentId;
+    m_pInternal->m_sCloudCryptoReporter = pReporterData->CloudCryptoInfo;
 
     // url - parent url
     std::wstring urlReporter = url;

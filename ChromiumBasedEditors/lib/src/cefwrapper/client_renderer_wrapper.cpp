@@ -1932,6 +1932,18 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_start_reporter");
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
             message->GetArgumentList()->SetString(1, m_sLocalFileFolder);
+
+            // проверяекм на cloudCrypto
+            std::string sCloudCryptoId = CAscRendererProcessParams::getInstance().GetProperty("cryptoEngineId");
+            if (!sCloudCryptoId.empty())
+            {
+                std::string sJson = "{ \"cryptoEngineId\" : \"" + sCloudCryptoId + "\", \"userId\" : \"";
+                sJson += CAscRendererProcessParams::getInstance().GetProperty("user");
+                sJson += "\" }";
+
+                message->GetArgumentList()->SetString(2, sJson);
+            }
+
             SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
@@ -4199,7 +4211,7 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
             std::string sParam = message->GetArgumentList()->GetString(0);
             NSCommon::string_replaceA(sParam, "\\", "\\\\");
             NSCommon::string_replaceA(sParam, "\"", "\\\"");
-            _frame->ExecuteJavaScript("window.editor.DemonstrationReporterMessages({ data : \"" + sParam + "\" });", _frame->GetURL(), 0);
+            _frame->ExecuteJavaScript("window.editor && window.editor.DemonstrationReporterMessages({ data : \"" + sParam + "\" });", _frame->GetURL(), 0);
         }
 
         return true;
@@ -4213,7 +4225,7 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
             std::string sParam = message->GetArgumentList()->GetString(0);
             NSCommon::string_replaceA(sParam, "\\", "\\\\");
             NSCommon::string_replaceA(sParam, "\"", "\\\"");
-            _frame->ExecuteJavaScript("window.editor.DemonstrationToReporterMessages({ data : \"" + sParam + "\" });", _frame->GetURL(), 0);
+            _frame->ExecuteJavaScript("window.editor && window.editor.DemonstrationToReporterMessages({ data : \"" + sParam + "\" });", _frame->GetURL(), 0);
         }
 
         return true;

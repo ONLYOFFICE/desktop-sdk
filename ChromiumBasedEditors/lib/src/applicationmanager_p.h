@@ -116,6 +116,8 @@ public:
     std::wstring Url;
     std::wstring LocalRecoverFolder;
 
+    std::string CloudCryptoInfo;
+
 public:
 
     CAscReporterData()
