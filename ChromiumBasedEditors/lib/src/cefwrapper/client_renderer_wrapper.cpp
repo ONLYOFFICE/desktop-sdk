@@ -1556,6 +1556,7 @@ window.AscDesktopEditor.SaveFilenameDialog = function(filter, callback) {\n\
   window.AscDesktopEditor._SaveFilenameDialog(filter);\n\
 };\n\
 window.AscDesktopEditor.DownloadFiles = function(filesSrc, filesDst, callback, params) {\n\
+  if (filesSrc.length == 0) return callback({});\n\
   window.on_native_download_files = callback;\n\
   window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst, params);\n\
 };\n\
