@@ -726,6 +726,7 @@ public:
     bool m_bIsReporter; // репортер
     int m_nReporterParentId; // репортер
     int m_nReporterChildId; // id репортера у parent
+    std::string m_sCloudCryptoReporter;
 
     // sso
     bool m_bIsSSO;
@@ -758,6 +759,7 @@ public:
     // файлы с ссылками для метода AscDesktopEditor.DownloadFiles
     std::map<std::wstring, std::wstring> m_arDownloadedFiles;
     std::map<std::wstring, std::wstring> m_arDownloadedFilesComplete;
+    int64 m_nDownloadedFilesFrameId;
 
     // приходил ли хоть раз евент onDocumentModifiedChanged
     bool m_bIsReceiveOnce_OnDocumentModified;
@@ -795,6 +797,9 @@ public:
     // после открытия нужно прокинуть в редактор и удалить файл (если он временный (по урлу))
     std::wstring m_sComparingFile;
     int m_nComparingFileType; // 0 - file, 1 - url
+
+    bool m_bIsLocalFileLocked; // залочен ли файл?
+    NSSystem::CLocalFileLocker* m_pLocalFileLocker; // класс для лока открытых файлов
 
 public:
     CCefView_Private()
@@ -856,6 +861,11 @@ public:
         m_pUploadFiles = NULL;
 
         m_nComparingFileType = -1;
+
+        m_bIsLocalFileLocked = false;
+        m_pLocalFileLocker = NULL;
+
+        m_nDownloadedFilesFrameId = -1;
     }
 
     void Destroy()
@@ -866,6 +876,9 @@ public:
         m_oConverterToEditor.Stop();
         m_oConverterFromEditor.Stop();
         m_oTxtToDocx.Stop();
+
+        // разлочиваем файл
+        RELEASEOBJECT(m_pLocalFileLocker);
 
         // смотрим, есть ли несохраненные данные
         m_oLocalInfo.m_oCS.Enter();
@@ -972,7 +985,10 @@ public:
             {
                 int nSymbol = sDocInfoData[i];
                 if (nSymbol > 0xFF || nSymbol < 0x20)
-                    sDocInfoData[i] = ' ';
+                {
+                    if (nSymbol != '\n')
+                        sDocInfoData[i] = ' ';
+                }
             }
         }
         return sDocInfo;
@@ -1879,6 +1895,20 @@ public:
                 pAdditional->m_arApplyEvents->clear();
                 pAdditional->m_arApplyEvents = NULL;
             }
+
+            // прокидываем cloudCrypto для репортера
+            if (m_pParent->m_pInternal->m_bIsReporter && !m_pParent->m_pInternal->m_sCloudCryptoReporter.empty())
+            {
+                CefRefPtr<CefFrame> _frame = browser->GetMainFrame();
+                if (_frame)
+                {
+                    std::string sCloudCryptoJson = m_pParent->m_pInternal->m_sCloudCryptoReporter;
+                    NSCommon::string_replaceA(sCloudCryptoJson, "\\", "\\\\");
+                    NSCommon::string_replaceA(sCloudCryptoJson, "\"", "\\\"");
+                    std::string sCodeReporter = "window.AscDesktopEditor.execCommand(\"portal:cryptoinfo\", \"" + sCloudCryptoJson + "\");";
+                    _frame->ExecuteJavaScript(sCodeReporter, _frame->GetURL(), 0);
+                }
+            }
             return true;
         }
         else if (message_name == "is_cookie_present")
@@ -2584,6 +2614,10 @@ public:
             pCreate->ParentId = m_pParent->GetId();
             pCreate->Url = args->GetString(0).ToWString();
             pCreate->LocalRecoverFolder = args->GetString(1).ToWString();
+
+            if (args->GetSize() > 2)
+                pCreate->CloudCryptoInfo = args->GetString(2).ToString();
+
             pData->put_Data(pCreate);
 
             pEvent->m_pData = pData;
@@ -2840,6 +2874,7 @@ public:
             int nIndex = 0;
             int nParams = args->GetInt(nIndex++);
             int_64_type nFrameID = NSArgumentList::GetInt64(args, nIndex++);
+            m_pParent->m_pInternal->m_nDownloadedFilesFrameId = nFrameID;
 
             while (nIndex < nCount)
             {
@@ -3244,6 +3279,10 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
 
             return true;
         }
+        else if ("on_set_is_readonly" == message_name)
+        {
+            return true;
+        }
 
         CAscApplicationManager_Private* pInternalMan = m_pParent->GetAppManager()->m_pInternal;
         if (pInternalMan->m_pAdditional && pInternalMan->m_pAdditional->OnProcessMessageReceived(browser, source_process, message, m_pParent))
@@ -3612,44 +3651,31 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
         }
 #endif
 
-#ifdef DEBUG_CLOUD_5_2
-
 #ifdef DEBUG_LOCAL_SERVER
-        if (std::wstring::npos != url.find(L"AllFonts.js"))
+
+        std::wstring sBaseWebCloudPath = NSFile::GetProcessDirectory() + L"/sdkjs";
+        std::wstring::size_type posSdkAll = url.rfind(L"/sdk-all");
+
+        if (std::wstring::npos != posSdkAll)
         {
-            std::wstring sPathFonts = m_pParent->GetAppManager()->m_oSettings.fonts_cache_info_path + L"/AllFonts.js";
-            return GetLocalFileRequest(sPathFonts, "", "");
-        }
-#endif
-
-        if (url.find(L"file:/") != 0)
-        {
-#if 1
-            std::wstring sBaseWebCloudPath = L"C:/ProgramData/ONLYOFFICE/webdata/cloud/5.2.0";
-#else
-            wchar_t buffer[257];
-            memset(buffer, 0, 257 * sizeof(wchar_t));
-            DWORD size = sizeof(buffer);
-            GetUserNameW(buffer, &size);
-
-            std::wstring sUserName(buffer);
-            std::wstring sBaseWebCloudPath = L"C:/Users/" + sUserName + L"/AppData/Local/ONLYOFFICE/DesktopEditors/webdata/cloud/5.2.0";
-#endif
-
-            std::wstring::size_type posSdkAll = url.rfind(L"/sdk-all");
-
-            if (std::wstring::npos != posSdkAll)
+            std::wstring::size_type posEditorSdk = url.rfind('/', posSdkAll - 1);
+            if (std::wstring::npos != posEditorSdk)
             {
-                std::wstring::size_type posEditorSdk = url.rfind('/', posSdkAll - 1);
-                if (std::wstring::npos != posEditorSdk)
+                std::wstring sTestPath = sBaseWebCloudPath + url.substr(posEditorSdk);
+                if (NSFile::CFileBinary::Exists(sTestPath))
                 {
-                    std::wstring sTestPath = sBaseWebCloudPath + url.substr(posEditorSdk);
-                    if (NSFile::CFileBinary::Exists(sTestPath))
-                    {
-                        return GetLocalFileRequest(sTestPath, "", "");
-                    }
+                    return GetLocalFileRequest(sTestPath, "", "");
                 }
             }
+        }
+
+        if (std::wstring::npos != url.find(L"/fonts.js"))
+        {
+            return GetLocalFileRequest(sBaseWebCloudPath + L"/common/libfont/wasm/fonts.js", "", "");
+        }
+        if (std::wstring::npos != url.find(L"/fonts.wasm"))
+        {
+            return GetLocalFileRequest(sBaseWebCloudPath + L"/common/libfont/wasm/fonts.wasm", "", "");
         }
 
 #endif
@@ -4027,6 +4053,9 @@ require.load = function (context, moduleName, url) {\n\
                         CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_download_files");
 
                         int nIndex = 0;
+                        NSArgumentList::SetInt64(message->GetArgumentList(), nIndex++, m_pParent->m_pInternal->m_nDownloadedFilesFrameId);
+                        m_pParent->m_pInternal->m_nDownloadedFilesFrameId = -1;
+
                         for (std::map<std::wstring, std::wstring>::iterator iter = m_pParent->m_pInternal->m_arDownloadedFilesComplete.begin();
                              iter != m_pParent->m_pInternal->m_arDownloadedFilesComplete.end(); iter++)
                         {
@@ -4216,6 +4245,16 @@ void CCefView_Private::LocalFile_End()
     message->GetArgumentList()->SetString(1, m_oLocalInfo.m_oInfo.m_sFileSrc);
     message->GetArgumentList()->SetBool(2, m_oLocalInfo.m_oInfo.m_bIsSaved);
     message->GetArgumentList()->SetString(3, m_oConverterToEditor.GetSignaturesJSON());
+
+    bool isLocked = false;
+    if (m_oLocalInfo.m_oInfo.m_bIsSaved)
+        isLocked = NSSystem::CLocalFileLocker::IsLocked(m_oLocalInfo.m_oInfo.m_sFileSrc);
+
+    message->GetArgumentList()->SetBool(4, isLocked);
+
+    if (isLocked)
+        m_oLocalInfo.m_oInfo.m_bIsSaved = false;
+
     SEND_MESSAGE_TO_RENDERER_PROCESS(m_handler->GetBrowser(), message);
 
     m_oLocalInfo.m_oInfo.m_nCounterConvertion = 1; // for reload enable
@@ -4846,6 +4885,10 @@ void CCefView::load(const std::wstring& urlInputSrc)
 
     focus();
 }
+void CCefView::reload()
+{
+    this->load(this->GetUrl());
+}
 std::wstring CCefView::GetUrl()
 {
     return m_pInternal ? m_pInternal->m_strUrl : L"";
@@ -5242,7 +5285,10 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             NSEditorApi::CAscExecCommandJS* pData = (NSEditorApi::CAscExecCommandJS*)pEvent->m_pData;
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_native_message");
             message->GetArgumentList()->SetString(0, pData->get_Command());
-            message->GetArgumentList()->SetString(1, pData->get_Param());
+            std::wstring sParam = pData->get_Param();
+            NSCommon::string_replace(sParam, L"\\", L"\\\\");
+            NSCommon::string_replace(sParam, L"\"", L"\\\"");
+            message->GetArgumentList()->SetString(1, sParam);
             message->GetArgumentList()->SetString(2, pData->get_FrameName());
 
             SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
@@ -5544,10 +5590,15 @@ bool CCefView::IsPresentationReporter()
 {
     return m_pInternal->m_bIsReporter;
 }
-void CCefView::LoadReporter(int nParentId, std::wstring url)
+void CCefView::LoadReporter(void* reporter_data)
 {
+    CAscReporterData* pReporterData = (CAscReporterData*)reporter_data;
+    int nParentId = pReporterData->ParentId;
+    std::wstring url = pReporterData->Url;
+
     m_pInternal->m_bIsReporter = true;
     m_pInternal->m_nReporterParentId = nParentId;
+    m_pInternal->m_sCloudCryptoReporter = pReporterData->CloudCryptoInfo;
 
     // url - parent url
     std::wstring urlReporter = url;
@@ -6104,6 +6155,21 @@ std::wstring CCefViewEditor::GetRecoveryDir()
 
 int CCefViewEditor::GetFileFormat(const std::wstring& sFilePath)
 {
+    if (!NSFile::CFileBinary::Exists(sFilePath))
+    {
+        if (NSSystem::CLocalFileLocker::IsLocked(sFilePath))
+        {
+            std::wstring sTmpFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"TMP");
+            if (NSFile::CFileBinary::Exists(sTmpFile))
+                NSFile::CFileBinary::Remove(sTmpFile);
+            sTmpFile += (L"." + NSCommon::GetFileExtention(sFilePath));
+            NSFile::CFileBinary::Copy(sFilePath, sTmpFile);
+            int nFormat = GetFileFormat(sTmpFile);
+            NSFile::CFileBinary::Remove(sTmpFile);
+            return nFormat;
+        }
+    }
+
     // формат файла по файлу
     // если файл зашифрован (MS_OFFCRYPTO) - то определяем по расширению
     COfficeFileFormatChecker oChecker;

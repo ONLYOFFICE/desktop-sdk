@@ -94,6 +94,7 @@ public:
     virtual ~CCefView();
 
     void load(const std::wstring& url);
+    void reload();
     std::wstring GetUrl();
     std::wstring GetOriginalUrl();
     std::wstring GetUrlAsLocal();
@@ -125,7 +126,7 @@ public:
     bool GetModified();
 
     bool IsPresentationReporter();
-    void LoadReporter(int nParentId, std::wstring url);
+    void LoadReporter(void* reporter_data);
 
     double GetDeviceScale();
 

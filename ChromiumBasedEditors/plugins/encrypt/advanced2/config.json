@@ -1,0 +1,28 @@
+{
+    "name" : "Onlyoffice: CloudCrypto",
+    "guid" : "asc.{FFF0E1EB-13DB-4678-B67D-FF0A41DBBCEF}",
+
+    "variations" : [
+        {
+            "description" : "CloudCrypto",
+            "url"         : "index.html",
+
+            "icons"           : [],
+            "isViewer"        : true,
+            "EditorsSupport"  : ["word", "cell", "slide"],
+
+            "isVisual"        : false,
+            "isModal"         : false,
+            "isInsideMode"    : false,
+
+            "initDataType"    : "desktop",
+            "initData"        : "encryption",
+			"cryptoMode"      : "2",
+			"cryptoModeExt"   : "disable",
+
+            "isUpdateOleOnResize" : false,
+
+            "buttons"         : []
+        }
+    ]
+}

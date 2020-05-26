@@ -500,7 +500,7 @@ CCefViewEditor* CAscApplicationManager::CreateCefPresentationReporter(CCefViewWi
     m_pInternal->m_mapViews[m_pInternal->m_nIdCounter] = pView;
     m_pInternal->ChangeEditorViewsCount();
 
-    pView->LoadReporter(data->ParentId, data->Url);
+    pView->LoadReporter(data);
     if (!data->LocalRecoverFolder.empty())
     {
         pView->OpenReporter(data->LocalRecoverFolder);

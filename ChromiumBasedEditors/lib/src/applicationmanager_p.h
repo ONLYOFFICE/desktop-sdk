@@ -47,6 +47,7 @@
 
 #include "../../../../core/DesktopEditor/xml/include/xmlutils.h"
 #include "../../../../core/Common/OfficeFileFormatChecker.h"
+#include "./cloud_crypto.h"
 
 #define ASC_CONSTANT_CANCEL_SAVE 0x00005678
 #define LOCK_CS_SCRIPT 0
@@ -114,6 +115,8 @@ public:
     int ParentId;
     std::wstring Url;
     std::wstring LocalRecoverFolder;
+
+    std::string CloudCryptoInfo;
 
 public:
 
@@ -296,6 +299,116 @@ public:
         return *this;
     }
 };
+
+namespace NSSystem
+{
+#ifndef _WIN32
+#include <fcntl.h>
+#endif
+
+    class CLocalFileLocker
+    {
+    private:
+        std::wstring m_sFile;
+#ifdef _WIN32
+        NSFile::CFileBinary m_oLocker;
+#else
+        int m_nDescriptor;
+#endif
+
+    public:
+        CLocalFileLocker(const std::wstring& sFile)
+        {
+            m_sFile = sFile;
+#ifndef _WIN32
+            m_nDescriptor = -1;
+#endif
+
+            Lock();
+        }
+        bool Lock()
+        {
+            Unlock();
+#ifdef _WIN32
+            m_oLocker.OpenFile(m_sFile);
+#else
+            std::string sFileA = U_TO_UTF8(m_sFile);
+            m_nDescriptor = open(sFileA.c_str(), O_RDWR | O_EXCL);
+            if (-1 == m_nDescriptor)
+                return true;
+
+            struct flock _lock;
+            memset(&_lock, 0, sizeof(_lock));
+            _lock.l_type   = F_WRLCK;
+            _lock.l_whence = SEEK_SET;
+            _lock.l_start  = 0;
+            _lock.l_len    = 0;
+            _lock.l_pid    = getpid();
+
+            fcntl(m_nDescriptor, F_SETLKW, &_lock);
+#endif
+            return true;
+        }
+        bool Unlock()
+        {
+#ifdef _WIN32
+            m_oLocker.CloseFile();
+#else
+            if (-1 == m_nDescriptor)
+                return true;
+
+            struct flock _lock;
+            memset(&_lock, 0, sizeof(_lock));
+            _lock.l_type   = F_UNLCK;
+            _lock.l_whence = SEEK_SET;
+            _lock.l_start  = 0;
+            _lock.l_len    = 0;
+            _lock.l_pid    = getpid();
+
+            fcntl(m_nDescriptor, F_SETLKW, &_lock);
+            close(m_nDescriptor);
+#endif
+            return true;
+        }
+        ~CLocalFileLocker()
+        {
+            Unlock();
+        }
+
+        static bool IsLocked(const::std::wstring& sFile)
+        {
+            bool isLocked = false;
+#ifdef _WIN32
+            HANDLE hFile = CreateFileW(sFile.c_str(),                   // открываемый файл
+                                        GENERIC_READ | GENERIC_WRITE,   // открываем для чтения и записи
+                                        0,                              // для совместного чтения
+                                        NULL,                           // защита по умолчанию
+                                        OPEN_EXISTING,                  // только существующий файл
+                                        FILE_ATTRIBUTE_NORMAL,          // обычный файл
+                                        NULL);                          // атрибутов шаблона нет
+            if (hFile == INVALID_HANDLE_VALUE)
+            {
+                if (INVALID_FILE_ATTRIBUTES != GetFileAttributesW(sFile.c_str()))
+                    isLocked = true;
+            }
+            CloseHandle(hFile);
+#else
+            std::string sFileA = U_TO_UTF8(sFile);
+            int nDescriptor = open(sFileA.c_str(), O_RDWR | O_EXCL);
+            if (-1 == nDescriptor)
+                return false;
+
+            struct flock _lock;
+            memset(&_lock, 0, sizeof(_lock));
+            fcntl(nDescriptor, F_GETLK, &_lock);
+            if (F_WRLCK == (_lock.l_type & F_WRLCK))
+                isLocked = true;
+            close(nDescriptor);
+#endif
+            return isLocked;
+        }
+    };
+}
 
 class CRecentParent
 {
@@ -501,6 +614,9 @@ public:
 
     void CloseApplication()
     {
+        if (NSFile::CFileBinary::Exists(m_pMain->m_oSettings.user_plugins_path + L"/cloud_crypto_tmp.xml"))
+            NSFile::CFileBinary::Remove(m_pMain->m_oSettings.user_plugins_path + L"/cloud_crypto_tmp.xml");
+
         Stop();
         m_oKeyboardTimer.Stop();        
         m_oSpellChecker.End();
