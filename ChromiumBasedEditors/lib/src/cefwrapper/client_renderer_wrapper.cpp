@@ -59,6 +59,8 @@
 #include "../../../../../core/Common/3dParty/openssl/common/common_openssl.h"
 #include "../../../../../core/OfficeCryptReader/source/ECMACryptFile.h"
 
+bool CPluginsManager::m_bIsUserInit = false;
+
 namespace NSCommon
 {
     template <typename Type>

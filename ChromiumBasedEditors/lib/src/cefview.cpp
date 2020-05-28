@@ -2385,20 +2385,9 @@ public:
             for (int i = 0; i < nCount; i++)
             {
                 std::wstring sValue = args->GetString(i).ToWString();
-
-                COfficeFileFormatChecker oChecker;
-                if (oChecker.isOfficeFile(sValue))
-                {
-                    if (AVS_OFFICESTUDIO_FILE_DOCUMENT_TXT == oChecker.nFileType)
-                    {
-                        std::wstring sExt = NSCommon::GetFileExtention(sValue);
-                        NSCommon::makeUpperW(sExt);
-                        if (sExt == L"TXT" || sExt == L"XML")
-                            arFolder.push_back(sValue);
-                    }
-                    else
-                        arFolder.push_back(sValue);
-                }
+                COfficeFileFormatCheckerWrapper oChecker;
+                if (oChecker.isOfficeFile2(sValue))
+                    arFolder.push_back(sValue);
             }
 
             NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILES_OPEN);
@@ -5837,53 +5826,21 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
 }
 void CCefViewEditor::CreateLocalFile(const int& nFileFormat, const std::wstring& sName)
 {
-    m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX;
     m_pInternal->m_oLocalInfo.m_oInfo.m_bIsSaved = false;
 
-    std::string sCountry = this->GetAppManager()->m_oSettings.country;
-    NSCommon::makeUpper(sCountry);
+    std::wstring sFilePath = this->GetAppManager()->GetNewFilePath(nFileFormat);
 
-    std::wstring sPrefix = m_pInternal->m_pManager->m_pInternal->m_mainLang;
-    if (NSDirectory::Exists(this->GetAppManager()->m_oSettings.file_converter_path + L"/empty/" + sPrefix))
-    {
-        sPrefix += L"/";
-    }
-    else
-    {
-        sPrefix = L"mm_";
-        if ("US" == sCountry || "CA" == sCountry)
-        {
-            sPrefix = L"in_";
-        }
-    }
-
-    std::wstring sFilePath = this->GetAppManager()->m_oSettings.file_converter_path + L"/empty/" + sPrefix + L"new.";
-    std::wstring sExtension = L"docx";
-
+    m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX;
     std::wstring sParams = L"placement=desktop";
-    int nType = nFileFormat;
     if (nFileFormat == etPresentation)
     {
         sParams = L"placement=desktop&doctype=presentation";
         m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
-        sFilePath += L"pptx";
-        sExtension = L"pptx";
     }
     else if (nFileFormat == etSpreadsheet)
     {
         sParams = L"placement=desktop&doctype=spreadsheet";
         m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX;
-        sFilePath += L"xlsx";
-        sExtension = L"xlsx";
-    }
-    else
-        sFilePath += L"docx";
-
-    if (!NSFile::CFileBinary::Exists(sFilePath))
-    {
-        std::wstring sTestName = this->GetAppManager()->m_oSettings.file_converter_path + L"/empty/" + L"new." + sExtension;
-        if (NSFile::CFileBinary::Exists(sTestName))
-            sFilePath = sTestName;
     }
     
     if (!GetAppManager()->m_pInternal->GetEditorPermission())
@@ -6172,23 +6129,10 @@ int CCefViewEditor::GetFileFormat(const std::wstring& sFilePath)
 
     // формат файла по файлу
     // если файл зашифрован (MS_OFFCRYPTO) - то определяем по расширению
-    COfficeFileFormatChecker oChecker;
-    oChecker.isOfficeFile(sFilePath);
-
-    if (AVS_OFFICESTUDIO_FILE_DOCUMENT_TXT == oChecker.nFileType)
-    {
-        std::wstring sExt = NSCommon::GetFileExtention(sFilePath);
-        NSCommon::makeUpperW(sExt);
-        if (sExt != L"TXT" && sExt != L"XML")
-            return 0;
-    }
-    else if (AVS_OFFICESTUDIO_FILE_OTHER_MS_OFFCRYPTO == oChecker.nFileType)
-    {
-        std::wstring sExt = NSCommon::GetFileExtention(sFilePath);
-        return COfficeFileFormatChecker::GetFormatByExtension(L"." + sExt);
-    }
-
-    return oChecker.nFileType;
+    COfficeFileFormatCheckerWrapper oChecker;
+    if (oChecker.isOfficeFile2(sFilePath))
+        return oChecker.nFileType2;
+    return 0;
 }
 
 // NATIVE file converter

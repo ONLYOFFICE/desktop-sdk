@@ -66,6 +66,8 @@ public:
 
     // плагин не для редактора, а для главной страницы (для системных сообщенией)
     std::vector<CExternalPluginInfo> m_arExternals;
+
+    static bool m_bIsUserInit;
 public:
     CPluginsManager()
     {
@@ -82,18 +84,15 @@ public:
         if (!NSDirectory::Exists(m_strUserDirectory))
             NSDirectory::CreateDirectory(m_strUserDirectory);
 
-        std::wstring strBase = m_strUserDirectory + L"/pluginBase.js";
-        if (NSFile::CFileBinary::Exists(strBase))
-            NSFile::CFileBinary::Remove(strBase);
-
-        std::wstring strBaseCSS = m_strUserDirectory + L"/plugins.css";
-        if (NSFile::CFileBinary::Exists(strBaseCSS))
-            NSFile::CFileBinary::Remove(strBaseCSS);
-
-        if (true)
+        if (!m_bIsUserInit)
         {
-            NSFile::CFileBinary::Copy(m_strDirectory + L"/pluginBase.js", m_strUserDirectory + L"/pluginBase.js");
-            NSFile::CFileBinary::Copy(m_strDirectory + L"/plugins.css", m_strUserDirectory + L"/plugins.css");
+            std::wstring strBase = m_strUserDirectory + L"/v1";
+            if (NSDirectory::Exists(strBase))
+                NSFile::CFileBinary::Remove(strBase);
+
+            NSDirectory::CopyDirectory(m_strDirectory + L"/v1", strBase);
+
+            m_bIsUserInit = true;
         }
 
         std::string sPluginsJSON = "[";

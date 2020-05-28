@@ -188,6 +188,9 @@ public:
     CCefViewEditor* CreateCefEditor(CCefViewWidgetImpl* parent);
     CCefViewEditor* CreateCefPresentationReporter(CCefViewWidgetImpl* parent, CAscReporterData* data);
 
+    // new files path
+    std::wstring GetNewFilePath(const int& format);
+
     // <view> <-> <id>
     CCefView* GetViewById(int nId);
     CCefView* GetViewByUrl(const std::wstring& url);

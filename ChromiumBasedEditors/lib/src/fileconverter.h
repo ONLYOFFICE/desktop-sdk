@@ -655,6 +655,27 @@ public:
 
         sLocalFilePath = CorrectPathW(sLocalFilePath);
         sDestinationPath = CorrectPathW(sDestinationPath);
+
+        // пустые файлы
+        if (true)
+        {
+            NSFile::CFileBinary oFileEmptyCheck;
+            if (oFileEmptyCheck.OpenFile(sLocalFilePath))
+            {
+                if (0 == oFileEmptyCheck.GetFileSize())
+                {
+                    int nFormatEmpty = etDocument;
+                    if (m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_PRESENTATION)
+                        nFormatEmpty = etPresentation;
+                    else if (m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
+                        nFormatEmpty = etSpreadsheet;
+
+                    sLocalFilePath = m_pManager->GetNewFilePath(nFormatEmpty);
+                }
+                oFileEmptyCheck.CloseFile();
+            }
+        }
+
         NSFile::CFileBinary::Copy(sLocalFilePath, sDestinationPath);
 
         if (m_bIsNativeSupport && m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)

@@ -127,6 +127,82 @@ public:
     }
 };
 
+class COfficeFileFormatCheckerWrapper : public COfficeFileFormatChecker
+{
+public:
+    int nFileType2;
+public:
+    COfficeFileFormatCheckerWrapper() : COfficeFileFormatChecker()
+    {
+        nFileType2 = nFileType;
+    }
+public:
+    bool isOfficeFile2(const std::wstring& fileName)
+    {
+        // check empty file!!!
+        NSFile::CFileBinary oFile;
+        if (oFile.OpenFile(fileName))
+        {
+            long nFileSize = oFile.GetFileSize();
+            if (0 == nFileSize)
+            {
+                int nFormat = GetFormatByExtension(L"." + NSFile::GetFileExtention(fileName));
+
+                switch (nFormat)
+                {
+                    case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX:
+                    case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOC:
+                    case AVS_OFFICESTUDIO_FILE_DOCUMENT_ODT:
+                    case AVS_OFFICESTUDIO_FILE_DOCUMENT_RTF:
+                    case AVS_OFFICESTUDIO_FILE_DOCUMENT_TXT:
+                    case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOTX:
+                    case AVS_OFFICESTUDIO_FILE_DOCUMENT_OTT:
+                    case AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX:
+                    case AVS_OFFICESTUDIO_FILE_PRESENTATION_ODP:
+                    case AVS_OFFICESTUDIO_FILE_PRESENTATION_POTX:
+                    case AVS_OFFICESTUDIO_FILE_PRESENTATION_OTP:
+                    case AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX:
+                    case AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLS:
+                    case AVS_OFFICESTUDIO_FILE_SPREADSHEET_ODS:
+                    case AVS_OFFICESTUDIO_FILE_SPREADSHEET_CSV:
+                    case AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLTX:
+                    case AVS_OFFICESTUDIO_FILE_SPREADSHEET_OTS:
+                    {
+                        this->nFileType = nFormat;
+                        this->nFileType2 = this->nFileType;
+                        return true;
+                    }
+                }
+            }
+        }
+        bool isOfficeFileBase = isOfficeFile(fileName);
+        if (!isOfficeFileBase)
+            return false;
+
+        this->nFileType2 = this->nFileType;
+        switch (this->nFileType)
+        {
+            case AVS_OFFICESTUDIO_FILE_DOCUMENT_TXT:
+            {
+                std::wstring sExt = NSCommon::GetFileExtention(fileName);
+                NSCommon::makeUpperW(sExt);
+                if (sExt != L"TXT" && sExt != L"XML")
+                    isOfficeFileBase = false;
+                break;
+            }
+            case AVS_OFFICESTUDIO_FILE_OTHER_MS_OFFCRYPTO:
+            {
+                std::wstring sExt = NSCommon::GetFileExtention(fileName);
+                this->nFileType2 = COfficeFileFormatChecker::GetFormatByExtension(L"." + sExt);
+                break;
+            }
+            default:
+                break;
+        }
+        return isOfficeFileBase;
+    }
+};
+
 class CCefScriptLoader : public NSThreads::CBaseThread
 {
 public:

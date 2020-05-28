@@ -511,6 +511,43 @@ CCefViewEditor* CAscApplicationManager::CreateCefPresentationReporter(CCefViewWi
     return pView;
 }
 
+std::wstring CAscApplicationManager::GetNewFilePath(const int& nFileFormat)
+{
+    std::string sCountry = m_oSettings.country;
+    NSCommon::makeUpper(sCountry);
+
+    std::wstring sPrefix = m_pInternal->m_mainLang;
+    if (NSDirectory::Exists(m_oSettings.file_converter_path + L"/empty/" + sPrefix))
+    {
+        sPrefix += L"/";
+    }
+    else
+    {
+        sPrefix = L"mm_";
+        if ("US" == sCountry || "CA" == sCountry)
+        {
+            sPrefix = L"in_";
+        }
+    }
+
+    std::wstring sFilePath = m_oSettings.file_converter_path + L"/empty/" + sPrefix + L"new.";
+    std::wstring sExtension = L"docx";
+
+    if (nFileFormat == etPresentation)
+        sExtension = L"pptx";
+    else if (nFileFormat == etSpreadsheet)
+        sExtension = L"xlsx";
+
+    sFilePath += sExtension;
+    if (!NSFile::CFileBinary::Exists(sFilePath))
+    {
+        std::wstring sTestName = m_oSettings.file_converter_path + L"/empty/" + L"new." + sExtension;
+        if (NSFile::CFileBinary::Exists(sTestName))
+            sFilePath = sTestName;
+    }
+    return sFilePath;
+}
+
 CCefView* CAscApplicationManager::GetViewById(int nId)
 {
     std::map<int, CCefView*>::iterator i = m_pInternal->m_mapViews.find(nId);
