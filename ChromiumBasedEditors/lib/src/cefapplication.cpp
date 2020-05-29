@@ -514,6 +514,30 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 
     pManager->m_pInternal->LocalFiles_Init();
 
+    // user plugins
+    if (true)
+    {
+        std::wstring sSystemPlugins = pManager->m_oSettings.system_plugins_path;
+        std::wstring sUserPlugins = pManager->m_oSettings.user_plugins_path;
+
+        if (!NSDirectory::Exists(sUserPlugins))
+            NSDirectory::CreateDirectories(sUserPlugins);
+
+        std::wstring strBase = sUserPlugins + L"/v1";
+        if (NSDirectory::Exists(strBase))
+            NSFile::CFileBinary::Remove(strBase);
+
+        NSDirectory::CopyDirectory(sSystemPlugins + L"/v1", strBase);
+
+        if (NSFile::CFileBinary::Exists(sUserPlugins + L"/pluginBase.js"))
+            NSFile::CFileBinary::Remove(sUserPlugins + L"/pluginBase.js");
+        if (NSFile::CFileBinary::Exists(sUserPlugins + L"/plugins.css"))
+            NSFile::CFileBinary::Remove(sUserPlugins + L"/plugins.css");
+
+        NSFile::CFileBinary::Copy(sSystemPlugins + L"/pluginBase.js", sUserPlugins + L"/pluginBase.js");
+        NSFile::CFileBinary::Copy(sSystemPlugins + L"/plugins.css", sUserPlugins + L"/plugins.css");
+    }
+
     LOGGER_STRING("CApplicationCEF::Init_CEF::end");
 
     return 0;
