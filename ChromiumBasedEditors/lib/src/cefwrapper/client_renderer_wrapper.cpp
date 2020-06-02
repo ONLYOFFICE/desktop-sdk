@@ -2994,6 +2994,73 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
             retval = CefV8Value::CreateBool(isCrypt);
             return true;
         }
+        else if (name == "Crypto_GetLocalImageBase64")
+        {
+            // из локальной ссылки делаем base64!!! (для копирования из зашифрованного файла)
+            std::wstring sInput = arguments[0]->GetStringValue().ToWString();
+
+            if (IsNeedDownload(sInput))
+            {
+                retval = CefV8Value::CreateString(sInput);
+                return true;
+            }
+            if (0 == sInput.find(L"data:"))
+            {
+                retval = CefV8Value::CreateString(sInput);
+                return true;
+            }
+
+            std::wstring sOutput = NSFile::GetFileName(sInput);
+            bool isExist = false;
+            if (NSFile::CFileBinary::Exists(m_sCryptDocumentFolder + L"/media/" + sOutput))
+            {
+                sOutput = m_sCryptDocumentFolder + L"/media/" + sOutput;
+                isExist = true;
+            }
+            else if (NSFile::CFileBinary::Exists(m_sLocalFileFolderWithoutFile + L"/media/" + sOutput))
+            {
+                sOutput = m_sLocalFileFolderWithoutFile + L"/media/" + sOutput;
+                isExist = true;
+            }
+
+            if (isExist)
+            {
+                CImageFileFormatChecker checker;
+                if (checker.isImageFile(sOutput))
+                {
+                    std::string sImageData = GetFileBase64(sOutput);
+                    switch (checker.eFileType)
+                    {
+                    case _CXIMAGE_FORMAT_BMP:
+                        sImageData = "data:image/bmp;base64," + sImageData;
+                        break;
+                    case _CXIMAGE_FORMAT_JPG:
+                    case _CXIMAGE_FORMAT_JP2:
+                    case _CXIMAGE_FORMAT_JPC:
+                        sImageData = "data:image/jpeg;base64," + sImageData;
+                        break;
+                    case _CXIMAGE_FORMAT_PNG:
+                        sImageData = "data:image/png;base64," + sImageData;
+                        break;
+                    case _CXIMAGE_FORMAT_GIF:
+                        sImageData = "data:image/gif;base64," + sImageData;
+                        break;
+                    case _CXIMAGE_FORMAT_TIF:
+                        sImageData = "data:image/tiff;base64," + sImageData;
+                        break;
+                    default:
+                        sImageData = "data:image/png;base64," + sImageData;
+                        break;
+                    }
+
+                    retval = CefV8Value::CreateString(sImageData);
+                    return true;
+                }
+            }
+
+            retval = CefV8Value::CreateString(sInput);
+            return true;
+        }
 
         // Function does not exist.
         return false;
@@ -3367,7 +3434,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
 
-    #define EXTEND_METHODS_COUNT 152
+    #define EXTEND_METHODS_COUNT 153
     const char* methods[EXTEND_METHODS_COUNT] = {
         "Copy",
         "Paste",
@@ -3573,6 +3640,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         "setDocumentInfo",
         "isFileSupportCloudCrypt",
         "isFileCrypt",
+
+        "Crypto_GetLocalImageBase64",
 
         NULL
     };
