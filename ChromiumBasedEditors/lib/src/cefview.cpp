@@ -2877,18 +2877,94 @@ public:
                 m_pParent->m_pInternal->m_arDownloadedFiles.insert(std::pair<std::wstring, std::wstring>(sUrl, sFile));
             }
 
-            for (std::map<std::wstring, std::wstring>::iterator iter = m_pParent->m_pInternal->m_arDownloadedFiles.begin();
-                 iter != m_pParent->m_pInternal->m_arDownloadedFiles.end(); iter++)
-            {
-                m_pParent->StartDownload(iter->first);
-            }
-
             if (nParams == 1)
             {
                 CefRefPtr<CefFrame> frame = browser->GetFrame(nFrameID);
                 if (frame)
                     frame->ExecuteJavaScript("window.onSystemMessage && window.onSystemMessage({ type : \"operation\", block : true, opType : 0 });", frame->GetURL(), 0);
             }
+
+            for (std::map<std::wstring, std::wstring>::iterator iter = m_pParent->m_pInternal->m_arDownloadedFiles.begin();
+                 iter != m_pParent->m_pInternal->m_arDownloadedFiles.end(); /*nothing*/)
+            {
+                // могут прийти локальные ссылки, или base64 (наприменр при вставке картинок в зашифрованный файл).
+                // нужно просто имитировать скачку - просто сохранить файлы во временные
+                bool isEmulate = false;
+                std::wstring sEmulateLocal = iter->first;
+                if (0 == sEmulateLocal.find(L"file://"))
+                {
+                    std::wstring sFileLocal = sEmulateLocal.substr(7);
+                    if (!NSFile::CFileBinary::Exists(sFileLocal))
+                        sFileLocal = sFileLocal.substr(1);
+
+                    NSFile::CFileBinary::Copy(sFileLocal, iter->second);
+                    isEmulate = true;
+                }
+                else if (0 == sEmulateLocal.find(L"data:"))
+                {
+                    std::wstring::size_type nBase64Start = sEmulateLocal.find(L"base64,");
+                    if (nBase64Start != std::wstring::npos)
+                    {
+                        int nStartIndex = (int)nBase64Start + 7;
+                        int nCount = (int)sEmulateLocal.length() - nStartIndex;
+
+                        char* pData = new char[nCount];
+                        const wchar_t* pDataSrc = sEmulateLocal.c_str();
+                        for (int i = 0; i < nCount; ++i)
+                            pData[i] = (char)pDataSrc[i + nStartIndex];
+
+                        BYTE* pDataDecode = NULL;
+                        int nLenDecode = 0;
+                        NSFile::CBase64Converter::Decode(pData, nCount, pDataDecode, nLenDecode);
+
+                        RELEASEARRAYOBJECTS(pData);
+
+                        NSFile::CFileBinary oFile;
+                        if (oFile.CreateFileW(iter->second))
+                        {
+                            oFile.WriteFile(pDataDecode, (DWORD)nLenDecode);
+                            oFile.CloseFile();
+                        }
+
+                        RELEASEARRAYOBJECTS(pDataDecode);
+                    }
+                    isEmulate = true;
+                }
+
+                if (isEmulate)
+                {
+                    m_pParent->m_pInternal->m_arDownloadedFilesComplete.insert(std::pair<std::wstring, std::wstring>(iter->first, iter->second));
+                    m_pParent->m_pInternal->m_arDownloadedFiles.erase(iter++);
+
+                    if (m_pParent->m_pInternal->m_arDownloadedFiles.empty())
+                    {
+                        CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_download_files");
+
+                        int nIndex = 0;
+                        NSArgumentList::SetInt64(message->GetArgumentList(), nIndex++, m_pParent->m_pInternal->m_nDownloadedFilesFrameId);
+                        m_pParent->m_pInternal->m_nDownloadedFilesFrameId = -1;
+
+                        for (std::map<std::wstring, std::wstring>::iterator iterComplete = m_pParent->m_pInternal->m_arDownloadedFilesComplete.begin();
+                             iterComplete != m_pParent->m_pInternal->m_arDownloadedFilesComplete.end(); iterComplete++)
+                        {
+                            message->GetArgumentList()->SetString(nIndex++, iterComplete->first);
+                            message->GetArgumentList()->SetString(nIndex++, iterComplete->second);
+                        }
+
+                        if (!browser)
+                            browser = m_pParent->m_pInternal->GetBrowser();
+                        SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
+
+                        m_pParent->m_pInternal->m_arDownloadedFilesComplete.clear();
+                        m_pParent->m_pInternal->m_arDownloadedFiles.clear();
+                        break;
+                    }
+                    continue;
+                }
+
+                m_pParent->StartDownload(iter->first);
+                iter++;
+            }            
 
             return true;
         }
@@ -3642,29 +3718,33 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
 
 #ifdef DEBUG_LOCAL_SERVER
 
-        std::wstring sBaseWebCloudPath = NSFile::GetProcessDirectory() + L"/sdkjs";
-        std::wstring::size_type posSdkAll = url.rfind(L"/sdk-all");
-
-        if (std::wstring::npos != posSdkAll)
+        // local files check
+        if (std::string::npos == frame->GetURL().ToString().find("file://"))
         {
-            std::wstring::size_type posEditorSdk = url.rfind('/', posSdkAll - 1);
-            if (std::wstring::npos != posEditorSdk)
+            std::wstring sBaseWebCloudPath = NSFile::GetProcessDirectory() + L"/sdkjs";
+            std::wstring::size_type posSdkAll = url.rfind(L"/sdk-all");
+
+            if (std::wstring::npos != posSdkAll)
             {
-                std::wstring sTestPath = sBaseWebCloudPath + url.substr(posEditorSdk);
-                if (NSFile::CFileBinary::Exists(sTestPath))
+                std::wstring::size_type posEditorSdk = url.rfind('/', posSdkAll - 1);
+                if (std::wstring::npos != posEditorSdk)
                 {
-                    return GetLocalFileRequest(sTestPath, "", "");
+                    std::wstring sTestPath = sBaseWebCloudPath + url.substr(posEditorSdk);
+                    if (NSFile::CFileBinary::Exists(sTestPath))
+                    {
+                        return GetLocalFileRequest(sTestPath, "", "");
+                    }
                 }
             }
-        }
 
-        if (std::wstring::npos != url.find(L"/fonts.js"))
-        {
-            return GetLocalFileRequest(sBaseWebCloudPath + L"/common/libfont/wasm/fonts.js", "", "");
-        }
-        if (std::wstring::npos != url.find(L"/fonts.wasm"))
-        {
-            return GetLocalFileRequest(sBaseWebCloudPath + L"/common/libfont/wasm/fonts.wasm", "", "");
+            if (std::wstring::npos != url.find(L"/fonts.js"))
+            {
+                return GetLocalFileRequest(sBaseWebCloudPath + L"/common/libfont/wasm/fonts.js", "", "");
+            }
+            if (std::wstring::npos != url.find(L"/fonts.wasm"))
+            {
+                return GetLocalFileRequest(sBaseWebCloudPath + L"/common/libfont/wasm/fonts.wasm", "", "");
+            }
         }
 
 #endif
