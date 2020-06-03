@@ -674,6 +674,7 @@ public:
 
     // вызывается для скачки файлов, после того, как покажем диалог для выбора куда качать
     CefRefPtr<CefBeforeDownloadCallback> m_before_callback;
+    NSEditorApi::CAscDownloadFileInfo* m_before_callback_info; // мы можем отменить скачку (а евенты наверх уше ушли - надо удалить из приложения)
 
     // информация для локальных файлов
     CAscLocalFileInfoCS m_oLocalInfo;
@@ -823,6 +824,7 @@ public:
         m_strUrl = L"";
 
         m_before_callback = NULL;
+        m_before_callback_info = NULL;
 
         m_oConverterToEditor.m_pEvents = this;
         m_oConverterFromEditor.m_pEvents = this;
@@ -4156,6 +4158,15 @@ require.load = function (context, moduleName, url) {\n\
         pData->put_Speed(download_item->GetCurrentSpeed() / 1024.0);
         pData->put_IdDownload(uId);
 
+        if (m_pParent->m_pInternal->m_before_callback)
+        {
+            if (m_pParent->m_pInternal->m_before_callback_info)
+                m_pParent->m_pInternal->m_before_callback_info->Release();
+            m_pParent->m_pInternal->m_before_callback_info = pData->Copy();
+            m_pParent->m_pInternal->m_before_callback_info->put_IsCanceled(true);
+            m_pParent->m_pInternal->m_before_callback_info->put_IsComplete(true);
+        }
+
         NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
         pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_DOWNLOAD;
         pEvent->m_pData = pData;
@@ -5247,6 +5258,15 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                 if (strPath.empty())
                 {
                     GetAppManager()->CancelDownload(pData->get_IdDownload());
+
+                    if (m_pInternal->m_before_callback_info)
+                    {
+                        NSEditorApi::CAscCefMenuEvent* pCefEvent = new NSEditorApi::CAscCefMenuEvent(ASC_MENU_EVENT_TYPE_CEF_DOWNLOAD);
+                        pCefEvent->put_SenderId(m_pInternal->m_before_callback_info->get_Id());
+                        pCefEvent->m_pData = m_pInternal->m_before_callback_info;
+                        m_pInternal->m_before_callback_info->AddRef();
+                        GetAppManager()->GetEventListener()->OnEvent(pCefEvent);
+                    }
                 }
                 else
                 {
@@ -5255,6 +5275,11 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                     m_pInternal->m_before_callback->Continue(sPath, false);
                 }
 
+                if (m_pInternal->m_before_callback_info)
+                {
+                    m_pInternal->m_before_callback_info->Release();
+                    m_pInternal->m_before_callback_info = NULL;
+                }
                 m_pInternal->m_before_callback->Release();
                 m_pInternal->m_before_callback = NULL;
             }
