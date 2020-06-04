@@ -6014,6 +6014,19 @@ bool CCefViewEditor::OpenCopyAsRecoverFile(const int& nIdSrc)
 
     NSDirectory::CopyDirectory(pViewSrc->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir, sNewRecoveryDir);
 
+    // check on cloud crypto
+    if (NSFile::CFileBinary::Exists(sNewRecoveryDir + L"/EditorForCompare.bin"))
+    {
+        if (NSFile::CFileBinary::Exists(sNewRecoveryDir + L"/Editor.bin"))
+            NSFile::CFileBinary::Remove(sNewRecoveryDir + L"/Editor.bin");
+        NSFile::CFileBinary::Copy(sNewRecoveryDir + L"/EditorForCompare.bin", sNewRecoveryDir + L"/Editor.bin");
+        if (NSFile::CFileBinary::Exists(sNewRecoveryDir + L"/EditorForCompare.bin"))
+            NSFile::CFileBinary::Remove(sNewRecoveryDir + L"/EditorForCompare.bin");
+
+        if (NSDirectory::Exists(sNewRecoveryDir + L"/openaslocal"))
+            NSDirectory::DeleteDirectory(sNewRecoveryDir + L"/openaslocal");
+    }
+
     m_pInternal->m_oLocalInfo.m_oInfo.m_bIsSaved = false;
 
     std::wstring sUrl = GetAppManager()->m_oSettings.local_editors_path;

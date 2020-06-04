@@ -737,7 +737,7 @@ public:
 
         int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileForParams, m_pManager, m_pManager->m_pInternal->m_bIsEnableConvertLogs);
 
-        //NSFile::CFileBinary::Remove(sTempFileForParams);
+        NSFile::CFileBinary::Remove(sTempFileForParams);
 
         if (0 == nReturnCode)
             CheckSignatures(sDestinationPath);

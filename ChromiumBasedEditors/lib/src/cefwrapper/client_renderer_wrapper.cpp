@@ -2678,6 +2678,27 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_compare_document");
             message->GetArgumentList()->SetString(0, "url");
             message->GetArgumentList()->SetString(1, arguments[0]->GetStringValue());
+
+            if (arguments.size() == 4)
+            {
+                std::wstring sLocalDir = m_sCryptDocumentFolder;
+                if (!sLocalDir.empty())
+                {
+                    std::string sContent = arguments[2]->GetStringValue().ToString();
+                    BYTE* pDataDst = NULL;
+                    int nLenDst = 0;
+
+                    NSFile::CBase64Converter::Decode(sContent.c_str(), sContent.length(), pDataDst, nLenDst);
+
+                    NSFile::CFileBinary oFileWithChanges;
+                    oFileWithChanges.CreateFileW(sLocalDir + L"/EditorForCompare.bin");
+                    oFileWithChanges.WriteFile(pDataDst, nLenDst);
+                    oFileWithChanges.CloseFile();
+
+                    RELEASEARRAYOBJECTS(pDataDst);
+                }
+            }
+
             SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
@@ -2686,6 +2707,27 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_compare_document");
             message->GetArgumentList()->SetString(0, "file");
             message->GetArgumentList()->SetString(1, arguments[0]->GetStringValue());
+
+            if (arguments.size() == 4)
+            {
+                std::wstring sLocalDir = m_sCryptDocumentFolder;
+                if (!sLocalDir.empty())
+                {
+                    std::string sContent = arguments[2]->GetStringValue().ToString();
+                    BYTE* pDataDst = NULL;
+                    int nLenDst = 0;
+
+                    NSFile::CBase64Converter::Decode(sContent.c_str(), sContent.length(), pDataDst, nLenDst);
+
+                    NSFile::CFileBinary oFileWithChanges;
+                    oFileWithChanges.CreateFileW(sLocalDir + L"/EditorForCompare.bin");
+                    oFileWithChanges.WriteFile(pDataDst, nLenDst);
+                    oFileWithChanges.CloseFile();
+
+                    RELEASEARRAYOBJECTS(pDataDst);
+                }
+            }
+
             SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
