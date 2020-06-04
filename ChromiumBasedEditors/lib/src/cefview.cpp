@@ -132,7 +132,7 @@ protected:
         }
 
     public:
-        virtual bool IsValid() { return false; }
+        virtual bool IsValid() { return true; }
         virtual bool IsInProgress() { return false; }
         virtual bool IsComplete() { return false; }
         virtual bool IsCanceled() { return true; }
