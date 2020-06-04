@@ -77,7 +77,7 @@
 			window.Asc.plugin.onSystemMessage({ 
 				type : "generatePassword", 
 				password : worker.TmpPassword, 
-				docinfo : worker.generateDocInfo(obj.keys, worker.TmpPassword)
+				docinfo : (obj.keys && obj.keys.length) ? worker.generateDocInfo(obj.keys, worker.TmpPassword) : ""
 			});
 			worker.TmpPassword = "";
 			
