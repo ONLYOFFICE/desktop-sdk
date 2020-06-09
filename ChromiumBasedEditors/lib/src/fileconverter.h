@@ -687,7 +687,7 @@ public:
         else
         {
             NSFile::CFileBinary oTestFile;
-            if (oTestFile.OpenFile(sDestinationPath))
+            if (!NSFile::CFileBinary::Exists(sLocalFilePath) && oTestFile.OpenFile(sDestinationPath))
             {
                 if (0 == oTestFile.GetFileSize())
                     bIsTestFile = false;
