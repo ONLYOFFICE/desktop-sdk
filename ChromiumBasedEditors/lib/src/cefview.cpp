@@ -3996,7 +3996,7 @@ require.load = function (context, moduleName, url) {\n\
         CEF_REQUIRE_UI_THREAD();
 
         std::wstring sUrl = download_item->GetURL().ToWString();
-        m_pParent->m_pInternal->m_oDownloaderAbortChecker.EndDownload(sUrl);
+        //m_pParent->m_pInternal->m_oDownloaderAbortChecker.EndDownload(sUrl);
 
         // если указан m_pDownloadViewCallback - то уже все готово. просто продолжаем
         if (NULL != m_pParent->m_pInternal->m_pDownloadViewCallback)
@@ -4056,13 +4056,81 @@ require.load = function (context, moduleName, url) {\n\
         if (NULL == m_pParent)
             return;
 
+#if 0
+        FILE* f = fopen("...", "a+");
+
+        fprintf(f, "-------------------------------\n");
+        fprintf(f, "IsValid: %d\n", download_item->IsValid() ? 1 : 0);
+        fprintf(f, "IsInProgress: %d\n", download_item->IsInProgress() ? 1 : 0);
+        fprintf(f, "IsComplete: %d\n", download_item->IsComplete() ? 1 : 0);
+        fprintf(f, "IsCanceled: %d\n", download_item->IsCanceled() ? 1 : 0);
+
+        fprintf(f, "GetCurrentSpeed: %d\n", (int)download_item->GetCurrentSpeed());
+        fprintf(f, "GetPercentComplete: %d\n", (int)download_item->GetPercentComplete());
+        fprintf(f, "GetTotalBytes: %d\n", (int)download_item->GetTotalBytes());
+        fprintf(f, "GetReceivedBytes: %d\n", (int)download_item->GetReceivedBytes());
+        fprintf(f, "GetId: %d\n", (int)download_item->GetId());
+
+        if (!download_item->GetFullPath().empty())
+        {
+            std::string s = download_item->GetFullPath().ToString();
+            NSCommon::string_replaceA(s, "%", "%%");
+            fprintf(f, "GetFullPath: ");
+            fprintf(f, s.c_str());
+            fprintf(f, "\n");
+        }
+        if (!download_item->GetOriginalUrl().empty())
+        {
+            std::string s = download_item->GetOriginalUrl().ToString();
+            NSCommon::string_replaceA(s, "%", "%%");
+            fprintf(f, "GetOriginalUrl: ");
+            fprintf(f, s.c_str());
+            fprintf(f, "\n");
+        }
+        if (!download_item->GetURL().empty())
+        {
+            std::string s = download_item->GetURL().ToString();
+            NSCommon::string_replaceA(s, "%", "%%");
+            fprintf(f, "GetURL: ");
+            fprintf(f, s.c_str());
+            fprintf(f, "\n");
+        }
+        if (!download_item->GetSuggestedFileName().empty())
+        {
+            std::string s = download_item->GetSuggestedFileName().ToString();
+            NSCommon::string_replaceA(s, "%", "%%");
+            fprintf(f, "GetSuggestedFileName: ");
+            fprintf(f, s.c_str());
+            fprintf(f, "\n");
+        }
+        if (!download_item->GetContentDisposition().empty())
+        {
+            std::string s = download_item->GetContentDisposition().ToString();
+            NSCommon::string_replaceA(s, "%", "%%");
+            fprintf(f, "GetContentDisposition: ");
+            fprintf(f, s.c_str());
+            fprintf(f, "\n");
+        }
+        if (!download_item->GetMimeType().empty())
+        {
+            std::string s = download_item->GetMimeType().ToString();
+            NSCommon::string_replaceA(s, "%", "%%");
+            fprintf(f, "GetMimeType: ");
+            fprintf(f, s.c_str());
+            fprintf(f, "\n");
+        }
+
+        fclose(f);
+#endif
+
         if (!download_item->IsValid())
             return;
 
         std::wstring sUrl = download_item->GetURL().ToWString();
         std::wstring sPath = download_item->GetFullPath().ToWString();
 
-        m_pParent->m_pInternal->m_oDownloaderAbortChecker.EndDownload(sUrl);
+        if (download_item->IsInProgress() || download_item->IsCanceled() || download_item->IsComplete() || (0 != download_item->GetReceivedBytes()))
+            m_pParent->m_pInternal->m_oDownloaderAbortChecker.EndDownload(sUrl);
 
         // проверяем на m_pDownloadViewCallback
         if (NULL != m_pParent->m_pInternal->m_pDownloadViewCallback)

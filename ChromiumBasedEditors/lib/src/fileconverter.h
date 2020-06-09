@@ -41,6 +41,7 @@
 
 #include "../../../../core/DesktopEditor/raster/BgraFrame.h"
 #include "../../../../core/DesktopEditor/graphics/pro/Image.h"
+#include "../../../../core/Common/OfficeFileErrorDescription.h"
 
 #ifdef LINUX
 #include <unistd.h>
@@ -673,10 +674,32 @@ public:
                     sLocalFilePath = m_pManager->GetNewFilePath(nFormatEmpty);
                 }
                 oFileEmptyCheck.CloseFile();
-            }
+            }            
         }
 
         NSFile::CFileBinary::Copy(sLocalFilePath, sDestinationPath);
+
+        bool bIsTestFile = true;
+        if (!NSFile::CFileBinary::Exists(sDestinationPath))
+        {
+            bIsTestFile = false;
+        }
+        else
+        {
+            NSFile::CFileBinary oTestFile;
+            if (oTestFile.OpenFile(sDestinationPath))
+            {
+                if (0 == oTestFile.GetFileSize())
+                    bIsTestFile = false;
+                oTestFile.CloseFile();
+            }
+        }
+        if (!bIsTestFile)
+        {
+            m_pEvents->OnFileConvertToEditor(AVS_ERROR_FILEACCESS);
+            m_bRunThread = FALSE;
+            return 0;
+        }
 
         if (m_bIsNativeSupport && m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
         {

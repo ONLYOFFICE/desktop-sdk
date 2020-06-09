@@ -3969,7 +3969,7 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
 
             if (bIsLockedFile)
             {
-                _frame->ExecuteJavaScript("(function(){var _editor = window[\"editor\"]; if (!_editor && window[\"Asc\"]) _editor = window[\"Asc\"][\"editor\"]; if (_editor) _editor.asc_setIsReadOnly(true, true);})();",
+                _frame->ExecuteJavaScript("(function(){var _editor = window[\"editor\"]; if (!_editor && window[\"Asc\"]) _editor = window[\"Asc\"][\"editor\"]; if (_editor && _editor.asc_setIsReadOnly) _editor.asc_setIsReadOnly(true, true);})();",
                                           _frame->GetURL(), 0);
             }
 
