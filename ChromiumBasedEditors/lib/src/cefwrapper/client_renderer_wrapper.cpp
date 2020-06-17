@@ -830,6 +830,12 @@ retval, exception);
 
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("create_editor_api");
             SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+
+            CSdkjsAddons oAddonsChecker(m_sUserPlugins);
+            if (IsLocalFile(true))
+                oAddonsChecker.CheckLocal(CefV8Context::GetCurrentContext());
+            else
+                oAddonsChecker.CheckCloud(CefV8Context::GetCurrentContext());
             return true;
         }
         else if (name == "ConsoleLog")
