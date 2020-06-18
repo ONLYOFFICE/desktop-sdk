@@ -300,7 +300,7 @@ public:
         }
     }
 
-    void CheckCloud(CefRefPtr<CefV8Context>& context)
+    void CheckCloud(CefRefPtr<CefV8Context> context)
     {
         std::string sFeatures;
 
@@ -420,7 +420,7 @@ retval, exception);
         }
     }
 
-    void CheckLocal(CefRefPtr<CefV8Context>& context)
+    void CheckLocal(CefRefPtr<CefV8Context> context)
     {
         std::string sFeatures;
 
