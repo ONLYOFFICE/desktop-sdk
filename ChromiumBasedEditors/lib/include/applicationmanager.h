@@ -86,6 +86,20 @@ public:
     void SetUserDataPath(std::wstring sPath);
 };
 
+class CUserSettings_Private;
+class DESKTOP_DECL CUserSettings
+{
+public:
+    CUserSettings();
+    ~CUserSettings();
+    std::wstring Get(const std::wstring& name);
+    void Set(const std::wstring& name, const std::wstring& value);
+
+private:
+    CUserSettings_Private* m_pInternal;
+    friend class CAscApplicationManager;
+};
+
 class CAscPrintSettings
 {
 public:
@@ -256,6 +270,9 @@ public:
     // get file format by extention
     static int GetFileFormatByExtentionForSave(const std::wstring& sFileName);
 
+    // get user settings
+    CUserSettings* GetUserSettings();
+
 protected:
     int GenerateNextViewId();
     virtual CAscDpiChecker* InitDpiChecker();
@@ -270,6 +287,7 @@ protected:
     friend class CASCFileConverterFromEditor;
     friend class CASCFileConverterToEditor;
     friend class CApplicationCEF;
+    friend class CUserSettings;
 };
 
 #endif // APPLICATION_MANAGER_H

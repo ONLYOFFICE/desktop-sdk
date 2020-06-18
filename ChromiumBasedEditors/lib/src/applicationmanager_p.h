@@ -1033,7 +1033,8 @@ public:
     // работа с настройками редактора ----------------------------------------------------------
     void LoadSettings()
     {
-        std::wstring sFile = m_pMain->m_oSettings.fonts_cache_info_path + L"/settings.xml";
+        m_mapSettings.clear();
+        std::wstring sFile = m_pMain->m_oSettings.fonts_cache_info_path + L"/../settings.xml";
         XmlUtils::CXmlNode oNode;
         if (!oNode.FromXmlFile(sFile))
             return;
@@ -1058,7 +1059,7 @@ public:
     }
     void SaveSettings()
     {
-        std::wstring sFile = m_pMain->m_oSettings.fonts_cache_info_path + L"/settings.xml";
+        std::wstring sFile = m_pMain->m_oSettings.fonts_cache_info_path + L"/../settings.xml";
         NSStringUtils::CStringBuilder oBuilder;
         oBuilder.WriteString(L"<Settings>");
 

@@ -100,6 +100,115 @@ void CAscApplicationSettings::SetUserDataPath(std::wstring sPath)
     user_plugins_path               = app_data_path + L"/data/sdkjs-plugins";
 }
 
+// ---------------------------------------------------------------------------------
+class CUserSettings_Private
+{
+public:
+    std::map<std::string, std::string> m_mapSettings;
+    CAscApplicationManager* m_pManager;
+
+public:
+    CUserSettings_Private()
+    {
+        m_pManager = NULL;
+    }
+
+    void SetManager(CAscApplicationManager* pManager)
+    {
+        m_pManager = pManager;
+
+        std::wstring sFile = m_pManager->m_oSettings.fonts_cache_info_path + L"/../settings.xml";
+        XmlUtils::CXmlNode oNode;
+        if (!oNode.FromXmlFile(sFile))
+            return;
+
+        XmlUtils::CXmlNodes oNodes;
+        if (!oNode.GetChilds(oNodes))
+            return;
+
+        int nCount = oNodes.GetCount();
+        for (int i = 0; i < nCount; ++i)
+        {
+            XmlUtils::CXmlNode oSetting;
+            oNodes.GetAt(i, oSetting);
+
+            std::wstring nameW = oSetting.GetName();
+            std::string name = U_TO_UTF8(nameW);
+            std::wstring valueW = oSetting.GetText();
+            std::string value = U_TO_UTF8(valueW);
+
+            m_mapSettings.insert(std::pair<std::string, std::string>(name, value));
+        }
+    }
+
+    std::wstring Get(const std::wstring& name)
+    {
+        if (!m_pManager)
+            return L"";
+        std::string sNameA = U_TO_UTF8(name);
+        std::map<std::string, std::string>::iterator pair = m_mapSettings.find(sNameA);
+        if (pair == m_mapSettings.end())
+            return L"";
+        return UTF8_TO_U((pair->second));
+    }
+    void Set(const std::wstring& name, const std::wstring& value)
+    {
+        if (!m_pManager)
+            return;
+        std::string sNameA = U_TO_UTF8(name);
+        std::map<std::string, std::string>::iterator pair = m_mapSettings.find(sNameA);
+        if (pair != m_mapSettings.end())
+            m_mapSettings.erase(pair);
+        std::string sValueA = U_TO_UTF8(value);
+
+        m_mapSettings.insert(std::pair<std::string, std::string>(sNameA, sValueA));
+
+        std::wstring sFile = m_pManager->m_oSettings.fonts_cache_info_path + L"/../settings.xml";
+        NSStringUtils::CStringBuilder oBuilder;
+        oBuilder.WriteString(L"<Settings>");
+
+        for (std::map<std::string, std::string>::iterator pair = m_mapSettings.begin(); pair != m_mapSettings.end(); pair++)
+        {
+            std::string name = pair->first;
+            std::string value = pair->second;
+            std::wstring nameW = UTF8_TO_U(name);
+            std::wstring valueW = UTF8_TO_U(value);
+
+            oBuilder.AddCharSafe('<');
+            oBuilder.WriteString(nameW);
+            oBuilder.AddCharSafe('>');
+            oBuilder.WriteEncodeXmlString(valueW);
+            oBuilder.AddCharSafe('<');
+            oBuilder.AddCharSafe('/');
+            oBuilder.WriteString(nameW);
+            oBuilder.AddCharSafe('>');
+        }
+
+        oBuilder.WriteString(L"</Settings>");
+
+        NSFile::CFileBinary::SaveToFile(sFile, oBuilder.GetData());        
+    }
+};
+
+CUserSettings::CUserSettings()
+{
+    m_pInternal = new CUserSettings_Private();
+}
+CUserSettings::~CUserSettings()
+{
+    RELEASEOBJECT(m_pInternal);
+}
+std::wstring CUserSettings::Get(const std::wstring& name)
+{
+    return m_pInternal->Get(name);
+}
+void CUserSettings::Set(const std::wstring& name, const std::wstring& value)
+{
+    m_pInternal->Set(name, value);
+    m_pInternal->m_pManager->m_pInternal->LoadSettings();
+}
+// ---------------------------------------------------------------------------------
+
 void CTimerKeyboardChecker::OnTimer()
 {
     if (m_pManager->m_pMain)
@@ -1043,4 +1152,11 @@ std::vector<std::string> CAscApplicationManager::GetRendererStartupProperties()
     props.push_back("fonts_cache_path=" + U_TO_UTF8(m_oSettings.fonts_cache_info_path));
 
     return props;
+}
+
+CUserSettings* CAscApplicationManager::GetUserSettings()
+{
+    CUserSettings* pSettings = new CUserSettings();
+    pSettings->m_pInternal->SetManager(this);
+    return pSettings;
 }
