@@ -82,9 +82,7 @@ void CCefViewWidgetImpl::SetParentNull(WindowHandleId handle)
 
 #define CRYPTO_CLOUD_SUPPORT 5020300
 
-#ifdef _MAC
 #include <math.h>
-#endif
 
 #ifdef CEF_2623
 typedef CefStreamResourceHandler CefStreamResourceHandlerCORS;
