@@ -308,7 +308,7 @@ public:
         CefRefPtr<CefV8Exception> exception;
         bool bValid = false;
 
-        bValid = context->Eval("(function() { if (!window.Asc || !window.Asc.Addons) return ''; var features = ''; for (var i in window.Asc.Addons) { features += (i + ' '); } return features; })();",
+        bValid = context->Eval("(function() { if (!window.Asc || !window.Asc.Addons) return ''; var features = ''; for (var i in window.Asc.Addons) { var j = i; if (j === \"content-\\u0441ontrols\") j = \"content-controls\"; features += (j + ' '); } return features; })();",
 #ifndef CEF_2623
     "", 0,
 #endif
