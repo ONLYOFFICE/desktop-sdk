@@ -210,7 +210,7 @@
 				this.documentInfo = e.docinfo;
 				this.documentPassword = e.password;
 				window.AscCrypto.CryptoWorker.cryptInit(this.documentPassword);
-				this.executeMethodSync("OnEncryption", [{ type : "generatePassword", password : e.password, docinfo : e.docinfo }]);
+				this.executeMethodSync("OnEncryption", [{ type : "generatePassword", password : e.password, docinfo : e.docinfo, error : (e.docinfo !== "") ? "" : "no_build" }]);
 				break;
 			}
 			case "getPasswordByFile":

@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <QPushButton>
 #include <QResizeEvent>
+#include <math.h>
 
 static QString getButtonBackground(QString src, QString srcH, QString srcP, double dDpi = 0.0)
 {

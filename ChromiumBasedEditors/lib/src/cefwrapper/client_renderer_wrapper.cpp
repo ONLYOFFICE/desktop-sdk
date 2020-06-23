@@ -830,6 +830,12 @@ retval, exception);
 
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("create_editor_api");
             SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+
+            CSdkjsAddons oAddonsChecker(m_sUserPlugins);
+            if (IsLocalFile(true))
+                oAddonsChecker.CheckLocal(CefV8Context::GetCurrentContext());
+            else
+                oAddonsChecker.CheckCloud(CefV8Context::GetCurrentContext());
             return true;
         }
         else if (name == "ConsoleLog")
@@ -2678,6 +2684,27 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_compare_document");
             message->GetArgumentList()->SetString(0, "url");
             message->GetArgumentList()->SetString(1, arguments[0]->GetStringValue());
+
+            if (arguments.size() == 4)
+            {
+                std::wstring sLocalDir = m_sCryptDocumentFolder;
+                if (!sLocalDir.empty())
+                {
+                    std::string sContent = arguments[2]->GetStringValue().ToString();
+                    BYTE* pDataDst = NULL;
+                    int nLenDst = 0;
+
+                    NSFile::CBase64Converter::Decode(sContent.c_str(), sContent.length(), pDataDst, nLenDst);
+
+                    NSFile::CFileBinary oFileWithChanges;
+                    oFileWithChanges.CreateFileW(sLocalDir + L"/EditorForCompare.bin");
+                    oFileWithChanges.WriteFile(pDataDst, nLenDst);
+                    oFileWithChanges.CloseFile();
+
+                    RELEASEARRAYOBJECTS(pDataDst);
+                }
+            }
+
             SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
@@ -2686,6 +2713,27 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_compare_document");
             message->GetArgumentList()->SetString(0, "file");
             message->GetArgumentList()->SetString(1, arguments[0]->GetStringValue());
+
+            if (arguments.size() == 4)
+            {
+                std::wstring sLocalDir = m_sCryptDocumentFolder;
+                if (!sLocalDir.empty())
+                {
+                    std::string sContent = arguments[2]->GetStringValue().ToString();
+                    BYTE* pDataDst = NULL;
+                    int nLenDst = 0;
+
+                    NSFile::CBase64Converter::Decode(sContent.c_str(), sContent.length(), pDataDst, nLenDst);
+
+                    NSFile::CFileBinary oFileWithChanges;
+                    oFileWithChanges.CreateFileW(sLocalDir + L"/EditorForCompare.bin");
+                    oFileWithChanges.WriteFile(pDataDst, nLenDst);
+                    oFileWithChanges.CloseFile();
+
+                    RELEASEARRAYOBJECTS(pDataDst);
+                }
+            }
+
             SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
@@ -2992,6 +3040,73 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
                 isCrypt = (AVS_OFFICESTUDIO_FILE_OTHER_MS_OFFCRYPTO == oChecker.nFileType) ? true : false;
             }
             retval = CefV8Value::CreateBool(isCrypt);
+            return true;
+        }
+        else if (name == "Crypto_GetLocalImageBase64")
+        {
+            // из локальной ссылки делаем base64!!! (для копирования из зашифрованного файла)
+            std::wstring sInput = arguments[0]->GetStringValue().ToWString();
+
+            if (IsNeedDownload(sInput))
+            {
+                retval = CefV8Value::CreateString(sInput);
+                return true;
+            }
+            if (0 == sInput.find(L"data:"))
+            {
+                retval = CefV8Value::CreateString(sInput);
+                return true;
+            }
+
+            std::wstring sOutput = NSFile::GetFileName(sInput);
+            bool isExist = false;
+            if (NSFile::CFileBinary::Exists(m_sCryptDocumentFolder + L"/media/" + sOutput))
+            {
+                sOutput = m_sCryptDocumentFolder + L"/media/" + sOutput;
+                isExist = true;
+            }
+            else if (NSFile::CFileBinary::Exists(m_sLocalFileFolderWithoutFile + L"/media/" + sOutput))
+            {
+                sOutput = m_sLocalFileFolderWithoutFile + L"/media/" + sOutput;
+                isExist = true;
+            }
+
+            if (isExist)
+            {
+                CImageFileFormatChecker checker;
+                if (checker.isImageFile(sOutput))
+                {
+                    std::string sImageData = GetFileBase64(sOutput);
+                    switch (checker.eFileType)
+                    {
+                    case _CXIMAGE_FORMAT_BMP:
+                        sImageData = "data:image/bmp;base64," + sImageData;
+                        break;
+                    case _CXIMAGE_FORMAT_JPG:
+                    case _CXIMAGE_FORMAT_JP2:
+                    case _CXIMAGE_FORMAT_JPC:
+                        sImageData = "data:image/jpeg;base64," + sImageData;
+                        break;
+                    case _CXIMAGE_FORMAT_PNG:
+                        sImageData = "data:image/png;base64," + sImageData;
+                        break;
+                    case _CXIMAGE_FORMAT_GIF:
+                        sImageData = "data:image/gif;base64," + sImageData;
+                        break;
+                    case _CXIMAGE_FORMAT_TIF:
+                        sImageData = "data:image/tiff;base64," + sImageData;
+                        break;
+                    default:
+                        sImageData = "data:image/png;base64," + sImageData;
+                        break;
+                    }
+
+                    retval = CefV8Value::CreateString(sImageData);
+                    return true;
+                }
+            }
+
+            retval = CefV8Value::CreateString(sInput);
             return true;
         }
 
@@ -3367,7 +3482,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
 
-    #define EXTEND_METHODS_COUNT 152
+    #define EXTEND_METHODS_COUNT 153
     const char* methods[EXTEND_METHODS_COUNT] = {
         "Copy",
         "Paste",
@@ -3573,6 +3688,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         "setDocumentInfo",
         "isFileSupportCloudCrypt",
         "isFileCrypt",
+
+        "Crypto_GetLocalImageBase64",
 
         NULL
     };
@@ -3858,7 +3975,7 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
 
             if (bIsLockedFile)
             {
-                _frame->ExecuteJavaScript("(function(){var _editor = window[\"editor\"]; if (!_editor && window[\"Asc\"]) _editor = window[\"Asc\"][\"editor\"]; if (_editor) _editor.asc_setIsReadOnly(true, true);})();",
+                _frame->ExecuteJavaScript("(function(){var _editor = window[\"editor\"]; if (!_editor && window[\"Asc\"]) _editor = window[\"Asc\"][\"editor\"]; if (_editor && _editor.asc_setIsReadOnly) _editor.asc_setIsReadOnly(true, true);})();",
                                           _frame->GetURL(), 0);
             }
 

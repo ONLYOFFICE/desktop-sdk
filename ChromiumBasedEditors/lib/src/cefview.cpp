@@ -82,9 +82,7 @@ void CCefViewWidgetImpl::SetParentNull(WindowHandleId handle)
 
 #define CRYPTO_CLOUD_SUPPORT 5020300
 
-#ifdef _MAC
 #include <math.h>
-#endif
 
 #ifdef CEF_2623
 typedef CefStreamResourceHandler CefStreamResourceHandlerCORS;
@@ -132,7 +130,7 @@ protected:
         }
 
     public:
-        virtual bool IsValid() { return false; }
+        virtual bool IsValid() { return true; }
         virtual bool IsInProgress() { return false; }
         virtual bool IsComplete() { return false; }
         virtual bool IsCanceled() { return true; }
@@ -674,6 +672,7 @@ public:
 
     // вызывается для скачки файлов, после того, как покажем диалог для выбора куда качать
     CefRefPtr<CefBeforeDownloadCallback> m_before_callback;
+    NSEditorApi::CAscDownloadFileInfo* m_before_callback_info; // мы можем отменить скачку (а евенты наверх уше ушли - надо удалить из приложения)
 
     // информация для локальных файлов
     CAscLocalFileInfoCS m_oLocalInfo;
@@ -823,6 +822,7 @@ public:
         m_strUrl = L"";
 
         m_before_callback = NULL;
+        m_before_callback_info = NULL;
 
         m_oConverterToEditor.m_pEvents = this;
         m_oConverterFromEditor.m_pEvents = this;
@@ -2385,20 +2385,9 @@ public:
             for (int i = 0; i < nCount; i++)
             {
                 std::wstring sValue = args->GetString(i).ToWString();
-
-                COfficeFileFormatChecker oChecker;
-                if (oChecker.isOfficeFile(sValue))
-                {
-                    if (AVS_OFFICESTUDIO_FILE_DOCUMENT_TXT == oChecker.nFileType)
-                    {
-                        std::wstring sExt = NSCommon::GetFileExtention(sValue);
-                        NSCommon::makeUpperW(sExt);
-                        if (sExt == L"TXT" || sExt == L"XML")
-                            arFolder.push_back(sValue);
-                    }
-                    else
-                        arFolder.push_back(sValue);
-                }
+                COfficeFileFormatCheckerWrapper oChecker;
+                if (oChecker.isOfficeFile2(sValue))
+                    arFolder.push_back(sValue);
             }
 
             NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILES_OPEN);
@@ -2888,18 +2877,94 @@ public:
                 m_pParent->m_pInternal->m_arDownloadedFiles.insert(std::pair<std::wstring, std::wstring>(sUrl, sFile));
             }
 
-            for (std::map<std::wstring, std::wstring>::iterator iter = m_pParent->m_pInternal->m_arDownloadedFiles.begin();
-                 iter != m_pParent->m_pInternal->m_arDownloadedFiles.end(); iter++)
-            {
-                m_pParent->StartDownload(iter->first);
-            }
-
             if (nParams == 1)
             {
                 CefRefPtr<CefFrame> frame = browser->GetFrame(nFrameID);
                 if (frame)
                     frame->ExecuteJavaScript("window.onSystemMessage && window.onSystemMessage({ type : \"operation\", block : true, opType : 0 });", frame->GetURL(), 0);
             }
+
+            for (std::map<std::wstring, std::wstring>::iterator iter = m_pParent->m_pInternal->m_arDownloadedFiles.begin();
+                 iter != m_pParent->m_pInternal->m_arDownloadedFiles.end(); /*nothing*/)
+            {
+                // могут прийти локальные ссылки, или base64 (наприменр при вставке картинок в зашифрованный файл).
+                // нужно просто имитировать скачку - просто сохранить файлы во временные
+                bool isEmulate = false;
+                std::wstring sEmulateLocal = iter->first;
+                if (0 == sEmulateLocal.find(L"file://"))
+                {
+                    std::wstring sFileLocal = sEmulateLocal.substr(7);
+                    if (!NSFile::CFileBinary::Exists(sFileLocal))
+                        sFileLocal = sFileLocal.substr(1);
+
+                    NSFile::CFileBinary::Copy(sFileLocal, iter->second);
+                    isEmulate = true;
+                }
+                else if (0 == sEmulateLocal.find(L"data:"))
+                {
+                    std::wstring::size_type nBase64Start = sEmulateLocal.find(L"base64,");
+                    if (nBase64Start != std::wstring::npos)
+                    {
+                        int nStartIndex = (int)nBase64Start + 7;
+                        int nCount = (int)sEmulateLocal.length() - nStartIndex;
+
+                        char* pData = new char[nCount];
+                        const wchar_t* pDataSrc = sEmulateLocal.c_str();
+                        for (int i = 0; i < nCount; ++i)
+                            pData[i] = (char)pDataSrc[i + nStartIndex];
+
+                        BYTE* pDataDecode = NULL;
+                        int nLenDecode = 0;
+                        NSFile::CBase64Converter::Decode(pData, nCount, pDataDecode, nLenDecode);
+
+                        RELEASEARRAYOBJECTS(pData);
+
+                        NSFile::CFileBinary oFile;
+                        if (oFile.CreateFileW(iter->second))
+                        {
+                            oFile.WriteFile(pDataDecode, (DWORD)nLenDecode);
+                            oFile.CloseFile();
+                        }
+
+                        RELEASEARRAYOBJECTS(pDataDecode);
+                    }
+                    isEmulate = true;
+                }
+
+                if (isEmulate)
+                {
+                    m_pParent->m_pInternal->m_arDownloadedFilesComplete.insert(std::pair<std::wstring, std::wstring>(iter->first, iter->second));
+                    m_pParent->m_pInternal->m_arDownloadedFiles.erase(iter++);
+
+                    if (m_pParent->m_pInternal->m_arDownloadedFiles.empty())
+                    {
+                        CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_download_files");
+
+                        int nIndex = 0;
+                        NSArgumentList::SetInt64(message->GetArgumentList(), nIndex++, m_pParent->m_pInternal->m_nDownloadedFilesFrameId);
+                        m_pParent->m_pInternal->m_nDownloadedFilesFrameId = -1;
+
+                        for (std::map<std::wstring, std::wstring>::iterator iterComplete = m_pParent->m_pInternal->m_arDownloadedFilesComplete.begin();
+                             iterComplete != m_pParent->m_pInternal->m_arDownloadedFilesComplete.end(); iterComplete++)
+                        {
+                            message->GetArgumentList()->SetString(nIndex++, iterComplete->first);
+                            message->GetArgumentList()->SetString(nIndex++, iterComplete->second);
+                        }
+
+                        if (!browser)
+                            browser = m_pParent->m_pInternal->GetBrowser();
+                        SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
+
+                        m_pParent->m_pInternal->m_arDownloadedFilesComplete.clear();
+                        m_pParent->m_pInternal->m_arDownloadedFiles.clear();
+                        break;
+                    }
+                    continue;
+                }
+
+                m_pParent->StartDownload(iter->first);
+                iter++;
+            }            
 
             return true;
         }
@@ -3653,29 +3718,33 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
 
 #ifdef DEBUG_LOCAL_SERVER
 
-        std::wstring sBaseWebCloudPath = NSFile::GetProcessDirectory() + L"/sdkjs";
-        std::wstring::size_type posSdkAll = url.rfind(L"/sdk-all");
-
-        if (std::wstring::npos != posSdkAll)
+        // local files check
+        if (std::string::npos == frame->GetURL().ToString().find("file://"))
         {
-            std::wstring::size_type posEditorSdk = url.rfind('/', posSdkAll - 1);
-            if (std::wstring::npos != posEditorSdk)
+            std::wstring sBaseWebCloudPath = NSFile::GetProcessDirectory() + L"/sdkjs";
+            std::wstring::size_type posSdkAll = url.rfind(L"/sdk-all");
+
+            if (std::wstring::npos != posSdkAll)
             {
-                std::wstring sTestPath = sBaseWebCloudPath + url.substr(posEditorSdk);
-                if (NSFile::CFileBinary::Exists(sTestPath))
+                std::wstring::size_type posEditorSdk = url.rfind('/', posSdkAll - 1);
+                if (std::wstring::npos != posEditorSdk)
                 {
-                    return GetLocalFileRequest(sTestPath, "", "");
+                    std::wstring sTestPath = sBaseWebCloudPath + url.substr(posEditorSdk);
+                    if (NSFile::CFileBinary::Exists(sTestPath))
+                    {
+                        return GetLocalFileRequest(sTestPath, "", "");
+                    }
                 }
             }
-        }
 
-        if (std::wstring::npos != url.find(L"/fonts.js"))
-        {
-            return GetLocalFileRequest(sBaseWebCloudPath + L"/common/libfont/wasm/fonts.js", "", "");
-        }
-        if (std::wstring::npos != url.find(L"/fonts.wasm"))
-        {
-            return GetLocalFileRequest(sBaseWebCloudPath + L"/common/libfont/wasm/fonts.wasm", "", "");
+            if (std::wstring::npos != url.find(L"/fonts.js"))
+            {
+                return GetLocalFileRequest(sBaseWebCloudPath + L"/common/libfont/wasm/fonts.js", "", "");
+            }
+            if (std::wstring::npos != url.find(L"/fonts.wasm"))
+            {
+                return GetLocalFileRequest(sBaseWebCloudPath + L"/common/libfont/wasm/fonts.wasm", "", "");
+            }
         }
 
 #endif
@@ -3925,7 +3994,7 @@ require.load = function (context, moduleName, url) {\n\
         CEF_REQUIRE_UI_THREAD();
 
         std::wstring sUrl = download_item->GetURL().ToWString();
-        m_pParent->m_pInternal->m_oDownloaderAbortChecker.EndDownload(sUrl);
+        //m_pParent->m_pInternal->m_oDownloaderAbortChecker.EndDownload(sUrl);
 
         // если указан m_pDownloadViewCallback - то уже все готово. просто продолжаем
         if (NULL != m_pParent->m_pInternal->m_pDownloadViewCallback)
@@ -3985,13 +4054,81 @@ require.load = function (context, moduleName, url) {\n\
         if (NULL == m_pParent)
             return;
 
+#if 0
+        FILE* f = fopen("...", "a+");
+
+        fprintf(f, "-------------------------------\n");
+        fprintf(f, "IsValid: %d\n", download_item->IsValid() ? 1 : 0);
+        fprintf(f, "IsInProgress: %d\n", download_item->IsInProgress() ? 1 : 0);
+        fprintf(f, "IsComplete: %d\n", download_item->IsComplete() ? 1 : 0);
+        fprintf(f, "IsCanceled: %d\n", download_item->IsCanceled() ? 1 : 0);
+
+        fprintf(f, "GetCurrentSpeed: %d\n", (int)download_item->GetCurrentSpeed());
+        fprintf(f, "GetPercentComplete: %d\n", (int)download_item->GetPercentComplete());
+        fprintf(f, "GetTotalBytes: %d\n", (int)download_item->GetTotalBytes());
+        fprintf(f, "GetReceivedBytes: %d\n", (int)download_item->GetReceivedBytes());
+        fprintf(f, "GetId: %d\n", (int)download_item->GetId());
+
+        if (!download_item->GetFullPath().empty())
+        {
+            std::string s = download_item->GetFullPath().ToString();
+            NSCommon::string_replaceA(s, "%", "%%");
+            fprintf(f, "GetFullPath: ");
+            fprintf(f, s.c_str());
+            fprintf(f, "\n");
+        }
+        if (!download_item->GetOriginalUrl().empty())
+        {
+            std::string s = download_item->GetOriginalUrl().ToString();
+            NSCommon::string_replaceA(s, "%", "%%");
+            fprintf(f, "GetOriginalUrl: ");
+            fprintf(f, s.c_str());
+            fprintf(f, "\n");
+        }
+        if (!download_item->GetURL().empty())
+        {
+            std::string s = download_item->GetURL().ToString();
+            NSCommon::string_replaceA(s, "%", "%%");
+            fprintf(f, "GetURL: ");
+            fprintf(f, s.c_str());
+            fprintf(f, "\n");
+        }
+        if (!download_item->GetSuggestedFileName().empty())
+        {
+            std::string s = download_item->GetSuggestedFileName().ToString();
+            NSCommon::string_replaceA(s, "%", "%%");
+            fprintf(f, "GetSuggestedFileName: ");
+            fprintf(f, s.c_str());
+            fprintf(f, "\n");
+        }
+        if (!download_item->GetContentDisposition().empty())
+        {
+            std::string s = download_item->GetContentDisposition().ToString();
+            NSCommon::string_replaceA(s, "%", "%%");
+            fprintf(f, "GetContentDisposition: ");
+            fprintf(f, s.c_str());
+            fprintf(f, "\n");
+        }
+        if (!download_item->GetMimeType().empty())
+        {
+            std::string s = download_item->GetMimeType().ToString();
+            NSCommon::string_replaceA(s, "%", "%%");
+            fprintf(f, "GetMimeType: ");
+            fprintf(f, s.c_str());
+            fprintf(f, "\n");
+        }
+
+        fclose(f);
+#endif
+
         if (!download_item->IsValid())
             return;
 
         std::wstring sUrl = download_item->GetURL().ToWString();
         std::wstring sPath = download_item->GetFullPath().ToWString();
 
-        m_pParent->m_pInternal->m_oDownloaderAbortChecker.EndDownload(sUrl);
+        if (download_item->IsInProgress() || download_item->IsCanceled() || download_item->IsComplete() || (0 != download_item->GetReceivedBytes()))
+            m_pParent->m_pInternal->m_oDownloaderAbortChecker.EndDownload(sUrl);
 
         // проверяем на m_pDownloadViewCallback
         if (NULL != m_pParent->m_pInternal->m_pDownloadViewCallback)
@@ -4086,6 +4223,15 @@ require.load = function (context, moduleName, url) {\n\
         pData->put_Id(m_pParent->GetId());
         pData->put_Speed(download_item->GetCurrentSpeed() / 1024.0);
         pData->put_IdDownload(uId);
+
+        if (m_pParent->m_pInternal->m_before_callback)
+        {
+            if (m_pParent->m_pInternal->m_before_callback_info)
+                m_pParent->m_pInternal->m_before_callback_info->Release();
+            m_pParent->m_pInternal->m_before_callback_info = pData->Copy();
+            m_pParent->m_pInternal->m_before_callback_info->put_IsCanceled(true);
+            m_pParent->m_pInternal->m_before_callback_info->put_IsComplete(true);
+        }
 
         NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
         pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_DOWNLOAD;
@@ -5178,6 +5324,15 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                 if (strPath.empty())
                 {
                     GetAppManager()->CancelDownload(pData->get_IdDownload());
+
+                    if (m_pInternal->m_before_callback_info)
+                    {
+                        NSEditorApi::CAscCefMenuEvent* pCefEvent = new NSEditorApi::CAscCefMenuEvent(ASC_MENU_EVENT_TYPE_CEF_DOWNLOAD);
+                        pCefEvent->put_SenderId(m_pInternal->m_before_callback_info->get_Id());
+                        pCefEvent->m_pData = m_pInternal->m_before_callback_info;
+                        m_pInternal->m_before_callback_info->AddRef();
+                        GetAppManager()->GetEventListener()->OnEvent(pCefEvent);
+                    }
                 }
                 else
                 {
@@ -5186,6 +5341,11 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                     m_pInternal->m_before_callback->Continue(sPath, false);
                 }
 
+                if (m_pInternal->m_before_callback_info)
+                {
+                    m_pInternal->m_before_callback_info->Release();
+                    m_pInternal->m_before_callback_info = NULL;
+                }
                 m_pInternal->m_before_callback->Release();
                 m_pInternal->m_before_callback = NULL;
             }
@@ -5837,53 +5997,21 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
 }
 void CCefViewEditor::CreateLocalFile(const int& nFileFormat, const std::wstring& sName)
 {
-    m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX;
     m_pInternal->m_oLocalInfo.m_oInfo.m_bIsSaved = false;
 
-    std::string sCountry = this->GetAppManager()->m_oSettings.country;
-    NSCommon::makeUpper(sCountry);
+    std::wstring sFilePath = this->GetAppManager()->GetNewFilePath(nFileFormat);
 
-    std::wstring sPrefix = m_pInternal->m_pManager->m_pInternal->m_mainLang;
-    if (NSDirectory::Exists(this->GetAppManager()->m_oSettings.file_converter_path + L"/empty/" + sPrefix))
-    {
-        sPrefix += L"/";
-    }
-    else
-    {
-        sPrefix = L"mm_";
-        if ("US" == sCountry || "CA" == sCountry)
-        {
-            sPrefix = L"in_";
-        }
-    }
-
-    std::wstring sFilePath = this->GetAppManager()->m_oSettings.file_converter_path + L"/empty/" + sPrefix + L"new.";
-    std::wstring sExtension = L"docx";
-
+    m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX;
     std::wstring sParams = L"placement=desktop";
-    int nType = nFileFormat;
     if (nFileFormat == etPresentation)
     {
         sParams = L"placement=desktop&doctype=presentation";
         m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
-        sFilePath += L"pptx";
-        sExtension = L"pptx";
     }
     else if (nFileFormat == etSpreadsheet)
     {
         sParams = L"placement=desktop&doctype=spreadsheet";
         m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX;
-        sFilePath += L"xlsx";
-        sExtension = L"xlsx";
-    }
-    else
-        sFilePath += L"docx";
-
-    if (!NSFile::CFileBinary::Exists(sFilePath))
-    {
-        std::wstring sTestName = this->GetAppManager()->m_oSettings.file_converter_path + L"/empty/" + L"new." + sExtension;
-        if (NSFile::CFileBinary::Exists(sTestName))
-            sFilePath = sTestName;
     }
     
     if (!GetAppManager()->m_pInternal->GetEditorPermission())
@@ -5951,6 +6079,19 @@ bool CCefViewEditor::OpenCopyAsRecoverFile(const int& nIdSrc)
         return false;
 
     NSDirectory::CopyDirectory(pViewSrc->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir, sNewRecoveryDir);
+
+    // check on cloud crypto
+    if (NSFile::CFileBinary::Exists(sNewRecoveryDir + L"/EditorForCompare.bin"))
+    {
+        if (NSFile::CFileBinary::Exists(sNewRecoveryDir + L"/Editor.bin"))
+            NSFile::CFileBinary::Remove(sNewRecoveryDir + L"/Editor.bin");
+        NSFile::CFileBinary::Copy(sNewRecoveryDir + L"/EditorForCompare.bin", sNewRecoveryDir + L"/Editor.bin");
+        if (NSFile::CFileBinary::Exists(sNewRecoveryDir + L"/EditorForCompare.bin"))
+            NSFile::CFileBinary::Remove(sNewRecoveryDir + L"/EditorForCompare.bin");
+
+        if (NSDirectory::Exists(sNewRecoveryDir + L"/openaslocal"))
+            NSDirectory::DeleteDirectory(sNewRecoveryDir + L"/openaslocal");
+    }
 
     m_pInternal->m_oLocalInfo.m_oInfo.m_bIsSaved = false;
 
@@ -6172,23 +6313,10 @@ int CCefViewEditor::GetFileFormat(const std::wstring& sFilePath)
 
     // формат файла по файлу
     // если файл зашифрован (MS_OFFCRYPTO) - то определяем по расширению
-    COfficeFileFormatChecker oChecker;
-    oChecker.isOfficeFile(sFilePath);
-
-    if (AVS_OFFICESTUDIO_FILE_DOCUMENT_TXT == oChecker.nFileType)
-    {
-        std::wstring sExt = NSCommon::GetFileExtention(sFilePath);
-        NSCommon::makeUpperW(sExt);
-        if (sExt != L"TXT" && sExt != L"XML")
-            return 0;
-    }
-    else if (AVS_OFFICESTUDIO_FILE_OTHER_MS_OFFCRYPTO == oChecker.nFileType)
-    {
-        std::wstring sExt = NSCommon::GetFileExtention(sFilePath);
-        return COfficeFileFormatChecker::GetFormatByExtension(L"." + sExt);
-    }
-
-    return oChecker.nFileType;
+    COfficeFileFormatCheckerWrapper oChecker;
+    if (oChecker.isOfficeFile2(sFilePath))
+        return oChecker.nFileType2;
+    return 0;
 }
 
 // NATIVE file converter

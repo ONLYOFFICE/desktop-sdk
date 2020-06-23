@@ -193,6 +193,23 @@ namespace NSEditorApi
         virtual ~CAscDownloadFileInfo()
         {
         }
+        CAscDownloadFileInfo* Copy()
+        {
+            CAscDownloadFileInfo* ret = new CAscDownloadFileInfo();
+            ret->m_sUrl = m_sUrl;
+            ret->m_sFilePath = m_sFilePath;
+
+            ret->m_nId = m_nId;
+
+            ret->m_dSpeed = m_dSpeed;
+            ret->m_nPercent = m_nPercent;
+            ret->m_bIsComplete = m_bIsComplete;
+            ret->m_bIsCanceled = m_bIsCanceled;
+
+            ret->m_nIdDownload = m_nIdDownload;
+
+            return ret;
+        }
 
         LINK_PROPERTY_STRING(Url)
         LINK_PROPERTY_STRING(FilePath)
