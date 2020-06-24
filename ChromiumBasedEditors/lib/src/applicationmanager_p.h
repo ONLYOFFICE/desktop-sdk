@@ -1054,16 +1054,21 @@ public:
             std::wstring valueW = oSetting.GetText();
             std::string value = U_TO_UTF8(valueW);
 
-            m_mapSettings.insert(std::pair<std::string, std::string>(name, value));
+            if (value != "default")
+                m_mapSettings.insert(std::pair<std::string, std::string>(name, value));
         }
     }
-    void SaveSettings()
+    void SaveSettings(std::map<std::string, std::string>* settings = NULL)
     {
+        std::map<std::string, std::string>* _map = settings;
+        if (NULL == _map)
+            _map = &m_mapSettings;
+
         std::wstring sFile = m_pMain->m_oSettings.fonts_cache_info_path + L"/../settings.xml";
         NSStringUtils::CStringBuilder oBuilder;
         oBuilder.WriteString(L"<Settings>");
 
-        for (std::map<std::string, std::string>::iterator pair = m_mapSettings.begin(); pair != m_mapSettings.end(); pair++)
+        for (std::map<std::string, std::string>::iterator pair = _map->begin(); pair != _map->end(); pair++)
         {
             std::string name = pair->first;
             std::string value = pair->second;
@@ -1085,20 +1090,20 @@ public:
         NSFile::CFileBinary::SaveToFile(sFile, oBuilder.GetData());
 
         // after - check settings
-        std::map<std::string, std::string>::iterator pairForceDisplayScale = m_mapSettings.find("force-scale");
-        if (pairForceDisplayScale != m_mapSettings.end())
+        std::map<std::string, std::string>::iterator pairForceDisplayScale = _map->find("force-scale");
+        if (pairForceDisplayScale != _map->end())
             m_nForceDisplayScale = std::stoi(pairForceDisplayScale->second);
 
-        std::map<std::string, std::string>::iterator pairCryptoMode = m_mapSettings.find("crypto-mode");
-        if (pairCryptoMode != m_mapSettings.end())
+        std::map<std::string, std::string>::iterator pairCryptoMode = _map->find("crypto-mode");
+        if (pairCryptoMode != _map->end())
             m_nCurrentCryptoMode = (NSAscCrypto::AscCryptoType)std::stoi(pairCryptoMode->second);
 
-        std::map<std::string, std::string>::iterator pairConvertLogs = m_mapSettings.find("converter-logging");
-        if (pairConvertLogs != m_mapSettings.end())
+        std::map<std::string, std::string>::iterator pairConvertLogs = _map->find("converter-logging");
+        if (pairConvertLogs != _map->end())
             m_bIsEnableConvertLogs = ("1" == pairConvertLogs->second) ? true : false;
 
-        std::map<std::string, std::string>::iterator pairEML = m_mapSettings.find("external-message-loop");
-        if (pairEML != m_mapSettings.end())
+        std::map<std::string, std::string>::iterator pairEML = _map->find("external-message-loop");
+        if (pairEML != _map->end())
             m_bIsUseExternalMessageLoop = ("1" == pairEML->second) ? true : false;
     }
     void CheckSetting(const std::string& sName, const std::string& sValue)

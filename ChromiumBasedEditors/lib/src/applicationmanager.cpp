@@ -105,7 +105,7 @@ class CUserSettings_Private
 {
 public:
     std::map<std::string, std::string> m_mapSettings;
-    CAscApplicationManager* m_pManager;
+    CAscApplicationManager* m_pManager;    
 
 public:
     CUserSettings_Private()
@@ -159,34 +159,12 @@ public:
         std::map<std::string, std::string>::iterator pair = m_mapSettings.find(sNameA);
         if (pair != m_mapSettings.end())
             m_mapSettings.erase(pair);
-        std::string sValueA = U_TO_UTF8(value);
 
-        m_mapSettings.insert(std::pair<std::string, std::string>(sNameA, sValueA));
-
-        std::wstring sFile = m_pManager->m_oSettings.fonts_cache_info_path + L"/../settings.xml";
-        NSStringUtils::CStringBuilder oBuilder;
-        oBuilder.WriteString(L"<Settings>");
-
-        for (std::map<std::string, std::string>::iterator pair = m_mapSettings.begin(); pair != m_mapSettings.end(); pair++)
+        if (L"default" != value)
         {
-            std::string name = pair->first;
-            std::string value = pair->second;
-            std::wstring nameW = UTF8_TO_U(name);
-            std::wstring valueW = UTF8_TO_U(value);
-
-            oBuilder.AddCharSafe('<');
-            oBuilder.WriteString(nameW);
-            oBuilder.AddCharSafe('>');
-            oBuilder.WriteEncodeXmlString(valueW);
-            oBuilder.AddCharSafe('<');
-            oBuilder.AddCharSafe('/');
-            oBuilder.WriteString(nameW);
-            oBuilder.AddCharSafe('>');
+            std::string sValueA = U_TO_UTF8(value);
+            m_mapSettings.insert(std::pair<std::string, std::string>(sNameA, sValueA));
         }
-
-        oBuilder.WriteString(L"</Settings>");
-
-        NSFile::CFileBinary::SaveToFile(sFile, oBuilder.GetData());        
     }
 };
 
@@ -205,6 +183,7 @@ std::wstring CUserSettings::Get(const std::wstring& name)
 void CUserSettings::Set(const std::wstring& name, const std::wstring& value)
 {
     m_pInternal->Set(name, value);
+    m_pInternal->m_pManager->m_pInternal->SaveSettings(&m_pInternal->m_mapSettings);
     m_pInternal->m_pManager->m_pInternal->LoadSettings();
 }
 // ---------------------------------------------------------------------------------
