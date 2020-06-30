@@ -1663,7 +1663,7 @@ public:
                     pListener->OnEvent(pEvent);
                 }
 
-                sUrlPortal += L"products/files/?desktop=true";
+                sUrlPortal += L"Products/Files/?desktop=true";
 
                 if (!m_pParent->m_pInternal->m_strSSOFirstDomain.empty())
                 {
@@ -1726,7 +1726,7 @@ public:
                 if (sUrl.rfind(L"/") != (sUrl.length() - 1))
                     sUrl += L"/";
 
-                m_pParent->load(sUrl + L"products/files/?desktop=true");
+                m_pParent->load(sUrl + L"Products/Files/?desktop=true");
                 return true;
             }
 
