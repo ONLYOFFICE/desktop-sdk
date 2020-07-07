@@ -1440,14 +1440,28 @@ public:
         return false;
     }
 
+    std::wstring makeLowerUrl(const std::wstring& url)
+    {
+        std::wstring::size_type nLen = url.length();
+        const wchar_t* pStr = (wchar_t*)url.c_str();
+
+        std::wstring sRet;
+        sRet.reserve(nLen);
+
+        for (int i = 0; i < nLen; ++i)
+        {
+            sRet.append(1, (pStr[i] >= 'A' && pStr[i] <= 'Z') ? (pStr[i] + 'a' - 'A') : pStr[i]);
+        }
+        return sRet;
+    }
+
     bool CheckPopup(std::wstring sUrl, bool bIsBeforeBrowse = false, bool bIsBackground = false, bool bIsNotOpenLinks = false)
     {
         NSEditorApi::CAscCefMenuEventListener* pListener = NULL;
         if (NULL != m_pParent && NULL != m_pParent->GetAppManager())
             pListener = m_pParent->GetAppManager()->GetEventListener();
 
-        std::wstring sUrlLower = sUrl;
-        NSCommon::makeLowerW(sUrlLower);
+        std::wstring sUrlLower = makeLowerUrl(sUrl);
 
         // определяем, редактор ли это
         bool bIsEditor = (sUrlLower.find(L"files/doceditor.aspx?fileid") == std::wstring::npos) ? false : true;
