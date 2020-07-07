@@ -68,6 +68,10 @@
 #include "./cefwrapper/client_scheme.h"
 #include "./mailto.h"
 
+#if defined (_LINUX) && !defined(_MAC)
+#define DONT_USE_NATIVE_FILE_DIALOGS
+#endif
+
 #ifdef _WIN32
 void CCefViewWidgetImpl::SetParentNull(WindowHandleId handle)
 {
@@ -1435,6 +1439,47 @@ public:
         }
 #endif
 
+#endif
+
+#ifdef DONT_USE_NATIVE_FILE_DIALOGS
+        if (nMode == FILE_DIALOG_OPEN || nMode == FILE_DIALOG_OPEN_MULTIPLE)
+        {
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_OPENFILENAME_DIALOG);
+            NSEditorApi::CAscLocalOpenFileDialog* pData = new NSEditorApi::CAscLocalOpenFileDialog();
+            pData->put_Id(m_pParent->GetId());
+            pData->put_IsMultiselect((nMode == FILE_DIALOG_OPEN_MULTIPLE) ? true : false);
+
+            std::wstring sFilterInput;
+            bool isFirst = true;
+            for (std::vector<CefString>::const_iterator iter = accept_filters.begin(); iter != accept_filters.end(); iter++)
+            {
+                if (!isFirst)
+                {
+                    sFilterInput += L";;";
+                    isFirst = false;
+                }
+
+                sFilterInput += (iter->ToWString());
+            }
+            if (sFilterInput.empty())
+                sFilterInput = L"any";
+            else
+                sFilterInput += L";;*.*";
+
+            // пока не учитываем фильтры (переводы)
+            std::wstring sFilter = L"any";
+            if (L".docx.doc.docm.dot.dotm.dotx.epub.fodt.odt.ott.rtf;;*.*" == sFilterInput)
+                sFilter = L"word";
+
+            pData->put_Filter(sFilter);
+            pEvent->m_pData = pData;
+
+            // save callback
+            m_pFileDialogCallback = callback;
+
+            pListener->OnEvent(pEvent);
+            return true;
+        }
 #endif
 
         return false;
