@@ -373,6 +373,8 @@ public:
 
     int m_nIsCryptoModeProperty;
 
+    std::string m_sEditorsCloudFeatures;
+
     CAscEditorNativeV8Handler()
     {
         m_etType = Document;
@@ -835,7 +837,7 @@ retval, exception);
             if (IsLocalFile(true))
                 oAddonsChecker.CheckLocal(CefV8Context::GetCurrentContext());
             else
-                oAddonsChecker.CheckCloud(CefV8Context::GetCurrentContext());
+                m_sEditorsCloudFeatures = oAddonsChecker.CheckCloud(CefV8Context::GetCurrentContext());
             return true;
         }
         else if (name == "ConsoleLog")
@@ -1814,7 +1816,10 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
             oPlugins.m_strDirectory = m_sSystemPlugins;
             oPlugins.m_strUserDirectory = m_sUserPlugins;
             oPlugins.m_nCryptoMode = m_nCryptoMode;
-            oPlugins.m_strCryptoPluginAttack = CAscRendererProcessParams::getInstance().GetProperty("cryptoEngineId");
+
+            if (m_sEditorsCloudFeatures.length() > 1)
+                oPlugins.m_strCryptoPluginAttack = CAscRendererProcessParams::getInstance().GetProperty("cryptoEngineId");
+
             std::string sData = oPlugins.GetPluginsJson(true);
             retval = CefV8Value::CreateString(sData);
             return true;
@@ -3018,7 +3023,7 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
                     case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX:
                     case AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX:
                     case AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX:
-                    case AVS_OFFICESTUDIO_FILE_OTHER_MS_OFFCRYPTO:
+                    //case AVS_OFFICESTUDIO_FILE_OTHER_MS_OFFCRYPTO:
                     {
                         isSupportCrypt = true;
                         break;

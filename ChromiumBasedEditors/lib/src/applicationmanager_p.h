@@ -300,7 +300,7 @@ public:
         }
     }
 
-    void CheckCloud(CefRefPtr<CefV8Context> context)
+    std::string CheckCloud(CefRefPtr<CefV8Context> context)
     {
         std::string sFeatures;
 
@@ -365,7 +365,7 @@ retval, exception);
         else
         {
             // такого быть не должно
-            return;
+            return sFeatures;
         }
 
         // check cloud
@@ -418,6 +418,8 @@ retval, exception);
             oFileDst.WriteFile((BYTE*)sContent.c_str(), (DWORD)sContent.size());
             oFileDst.CloseFile();
         }
+
+        return sFeatures;
     }
 
     void CheckLocal(CefRefPtr<CefV8Context> context)
