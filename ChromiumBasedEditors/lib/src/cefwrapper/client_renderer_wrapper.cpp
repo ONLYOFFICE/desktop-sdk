@@ -374,6 +374,8 @@ public:
     int m_nIsCryptoModeProperty;
 
     std::string m_sEditorsCloudFeatures;
+    bool m_bEditorsCloudFeaturesCheck;
+    std::vector<std::string> m_arCloudFeaturesBlackList;
 
     CAscEditorNativeV8Handler()
     {
@@ -410,6 +412,9 @@ public:
 
         m_pAES_KeyIv = NULL;
         m_nIsCryptoModeProperty = 0;
+
+        m_bEditorsCloudFeaturesCheck = false;
+        m_arCloudFeaturesBlackList.push_back("personal.onlyoffice.com");
     }
 
     void CheckDefaults()
@@ -825,7 +830,7 @@ retval, exception);
             SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
-        else if (name == "CreateEditorApi")
+        else if (name == "_CreateEditorApi")
         {
             volatile bool* pChecker = this->sync_command_check;
             *pChecker = true;
@@ -833,11 +838,15 @@ retval, exception);
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("create_editor_api");
             SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 
-            CSdkjsAddons oAddonsChecker(m_sUserPlugins);
             if (IsLocalFile(true))
+            {
+                CSdkjsAddons oAddonsChecker(m_sUserPlugins);
                 oAddonsChecker.CheckLocal(CefV8Context::GetCurrentContext());
+            }
             else
-                m_sEditorsCloudFeatures = oAddonsChecker.CheckCloud(CefV8Context::GetCurrentContext());
+            {
+                // ждем asc_onGetEditorPermissions
+            }
             return true;
         }
         else if (name == "ConsoleLog")
@@ -1537,6 +1546,10 @@ retval, exception);
             if (_frame)
             {
                 _frame->ExecuteJavaScript("\
+window.AscDesktopEditor.CreateEditorApi = function(api) {\n\
+api && api.asc_registerCallback('asc_onGetEditorPermissions', function(e) { window.AscDesktopEditor.CheckCloudFeatures(e.asc_getLicenseType()); });\n\
+window.AscDesktopEditor._CreateEditorApi();\n\
+};\n\
 window.AscDesktopEditor.sendSystemMessage = function(arg) {\n\
   window.AscDesktopEditor.isSendSystemMessage = true;\n\
   // expand system message\n\
@@ -1817,7 +1830,7 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
             oPlugins.m_strUserDirectory = m_sUserPlugins;
             oPlugins.m_nCryptoMode = m_nCryptoMode;
 
-            if (m_sEditorsCloudFeatures.length() > 1)
+            if (!m_bEditorsCloudFeaturesCheck || m_sEditorsCloudFeatures.length() > 1)
                 oPlugins.m_strCryptoPluginAttack = CAscRendererProcessParams::getInstance().GetProperty("cryptoEngineId");
 
             std::string sData = oPlugins.GetPluginsJson(true);
@@ -3114,6 +3127,104 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
             retval = CefV8Value::CreateString(sInput);
             return true;
         }
+        else if (name == "CheckCloudFeatures")
+        {
+            /*
+            std::string __sCloudCryptoId = CAscRendererProcessParams::getInstance().GetProperty("cryptoEngineId");
+            FILE* f = fopen("D:\\111.txt", "a+");
+            fprintf(f, "id: ");
+            fprintf(f, __sCloudCryptoId.c_str());
+            fprintf(f, "\n");
+            fclose(f);
+            */
+
+            bool bIsStopPaydDesktopFeatures = false;
+
+            // проверяем лицензию...
+            if (!bIsStopPaydDesktopFeatures)
+            {
+                int nLicenceType = arguments[0]->GetIntValue();
+                if (nLicenceType != 3) // c_oLicenseResult.Success
+                    bIsStopPaydDesktopFeatures = true;
+            }
+
+            if (!bIsStopPaydDesktopFeatures)
+            {
+                // check on blacklist
+                std::string sMainUrl = "";
+                CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+                if (browser && browser->GetMainFrame())
+                    sMainUrl = browser->GetMainFrame()->GetURL().ToString();
+
+                bool bIsInBlackList = false;
+                for (std::vector<std::string>::const_iterator iter = m_arCloudFeaturesBlackList.begin(); iter != m_arCloudFeaturesBlackList.end(); iter++)
+                {
+                    std::string::size_type pos = sMainUrl.find(*iter);
+                    if (pos != std::string::npos && pos < 10)
+                    {
+                        bIsInBlackList = true;
+                        break;
+                    }
+                }
+
+                if (bIsInBlackList)
+                    bIsStopPaydDesktopFeatures = true;
+            }
+
+            if (!bIsStopPaydDesktopFeatures)
+            {
+                CSdkjsAddons oAddonsChecker(m_sUserPlugins);
+                bool bIsChanged = false;
+                m_sEditorsCloudFeatures = oAddonsChecker.CheckCloud(CefV8Context::GetCurrentContext(), bIsChanged);
+
+                if (bIsChanged)
+                {
+                    CefRefPtr<CefV8Value> retval;
+                    CefRefPtr<CefV8Exception> exception;
+                    bool bValid = CefV8Context::GetCurrentContext()->Eval("window.AscDesktopEditor.CallInAllWindows(\
+\"function(){ window.onfeaturesavailable && window.onfeaturesavailable(" + oAddonsChecker.GetFeaturesJSArray() + "); }\"\
+);",
+            #ifndef CEF_2623
+                "", 0,
+            #endif
+            retval, exception);
+                }
+            }
+
+            m_bEditorsCloudFeaturesCheck = true;
+
+            if (m_sEditorsCloudFeatures.empty())
+            {
+                // этот метод может вызваться ПОСЛЕ вызова GetInstallPlugins (если права пришли позже sdk-all)
+                // и может быть нудно застопить зря запущенный плагин
+
+                std::string sCloudCryptoId = CAscRendererProcessParams::getInstance().GetProperty("cryptoEngineId");
+
+                if (!sCloudCryptoId.empty())
+                {
+                    CefRefPtr<CefV8Value> retval;
+                    CefRefPtr<CefV8Exception> exception;
+                    bool bValid = CefV8Context::GetCurrentContext()->Eval("(function(){var _editor = window.Asc.editor ? window.Asc.editor : window.editor; _editor && _editor.asc_pluginStop && _editor.asc_pluginStop(\"" + sCloudCryptoId + "\");})();",
+            #ifndef CEF_2623
+                "", 0,
+            #endif
+            retval, exception);
+                }
+            }
+
+            return true;
+        }
+        else if (name == "GetLocalFeatures")
+        {
+            CSdkjsAddons oAddonsChecker(m_sUserPlugins);
+            std::vector<std::string> arrFeatures = oAddonsChecker.GetFeaturesArray();
+            int nCount = (int)arrFeatures.size();
+            retval = CefV8Value::CreateArray(nCount);
+            int nCurrent = 0;
+            for (std::vector<std::string>::iterator i = arrFeatures.begin(); i != arrFeatures.end(); i++)
+                retval->SetValue(nCurrent++, CefV8Value::CreateString(*i));
+            return true;
+        }
 
         // Function does not exist.
         return false;
@@ -3487,7 +3598,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
 
-    #define EXTEND_METHODS_COUNT 153
+    #define EXTEND_METHODS_COUNT 155
     const char* methods[EXTEND_METHODS_COUNT] = {
         "Copy",
         "Paste",
@@ -3498,8 +3609,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         "SetEditorId",
         "GetEditorId",
         "SpellCheck",
-        "CreateEditorApi",
+        "_CreateEditorApi",
         "ConsoleLog",
+        "CheckCloudFeatures",
 
         "setCookie",
         "setAuth",
@@ -3534,6 +3646,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         "LocalFileRecents",
         "LocalFileOpenRecent",
         "LocalFileRemoveRecent",
+        "GetLocalFeatures",
 
         "LocalFileRecovers",
         "LocalFileOpenRecover",

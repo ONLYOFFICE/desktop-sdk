@@ -216,6 +216,61 @@ public:
         m_sPath = sUserPlugins + L"/addons";
     }
 
+    std::vector<std::string> GetFeaturesArray()
+    {
+        std::vector<std::string> retArray;
+        int nCounterVersion = 0;
+        NSFile::CFileBinary oFile;
+        if (oFile.OpenFile(m_sPath))
+        {
+            int nSize = oFile.GetFileSize();
+            char* pBuffer = new char[nSize];
+            DWORD dwReaden = 0;
+            oFile.ReadFile((BYTE*)pBuffer, nSize, dwReaden);
+            oFile.CloseFile();
+
+            int nStart = 0;
+            int nCur = nStart;
+            for (; nCur < nSize; ++nCur)
+            {
+                if (pBuffer[nCur] == '\n')
+                {
+                    int nEnd = nCur - 1;
+                    if (nEnd >= nStart)
+                    {
+                        ++nCounterVersion;
+                        if (2 < nCounterVersion)
+                        {
+                            std::string s(pBuffer + nStart, nEnd - nStart + 1);
+                            retArray.push_back(s);
+                        }
+                    }
+                    nStart = nCur + 1;
+                }
+            }
+
+            delete[] pBuffer;
+        }
+        return retArray;
+    }
+
+    std::string GetFeaturesJSArray()
+    {
+        std::vector<std::string> arrFeatures = GetFeaturesArray();
+        std::string sFeatures = "[";
+        int nCounter = 0;
+        for (std::vector<std::string>::const_iterator iter = arrFeatures.begin(); iter != arrFeatures.end(); iter++, nCounter++)
+        {
+            if (0 != nCounter)
+                sFeatures += ",";
+            sFeatures += "'";
+            sFeatures += *iter;
+            sFeatures += "'";
+        }
+        sFeatures += "]";
+        return sFeatures;
+    }
+
     void CheckVersion(const std::wstring& sDirectory)
     {
         std::string sHashLocal = "";
@@ -262,9 +317,7 @@ public:
                         else if (2 == nCounterVersion)
                         {
                             if (sHashLocal != s)
-                            {
                                 bIsNewVersion = true;
-                            }
                             break;
                         }
                     }
@@ -300,13 +353,14 @@ public:
         }
     }
 
-    std::string CheckCloud(CefRefPtr<CefV8Context> context)
+    std::string CheckCloud(CefRefPtr<CefV8Context> context, bool& bIsChanged)
     {
         std::string sFeatures;
 
         CefRefPtr<CefV8Value> retval;
         CefRefPtr<CefV8Exception> exception;
         bool bValid = false;
+        bIsChanged = false;
 
         bValid = context->Eval("(function() { if (!window.Asc || !window.Asc.Addons) return ''; var features = ''; for (var i in window.Asc.Addons) { var j = i; if (j === \"content-\\u0441ontrols\") j = \"content-controls\"; features += (j + ' '); } return features; })();",
 #ifndef CEF_2623
@@ -417,6 +471,8 @@ retval, exception);
             oFileDst.CreateFileW(m_sPath);
             oFileDst.WriteFile((BYTE*)sContent.c_str(), (DWORD)sContent.size());
             oFileDst.CloseFile();
+
+            bIsChanged = true;
         }
 
         return sFeatures;
