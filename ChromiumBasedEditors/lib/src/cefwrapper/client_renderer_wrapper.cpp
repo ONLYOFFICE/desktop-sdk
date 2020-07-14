@@ -3140,6 +3140,12 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
 
             bool bIsStopPaydDesktopFeatures = false;
 
+            // проверяем облачность...
+            if (IsLocalFile(true))
+            {
+                bIsStopPaydDesktopFeatures = true;
+            }
+
             // проверяем лицензию...
             if (!bIsStopPaydDesktopFeatures)
             {
@@ -3148,6 +3154,7 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
                     bIsStopPaydDesktopFeatures = true;
             }
 
+            // проверяем черный список...
             if (!bIsStopPaydDesktopFeatures)
             {
                 // check on blacklist
