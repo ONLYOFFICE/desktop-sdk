@@ -3129,15 +3129,6 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
         }
         else if (name == "CheckCloudFeatures")
         {
-            /*
-            std::string __sCloudCryptoId = CAscRendererProcessParams::getInstance().GetProperty("cryptoEngineId");
-            FILE* f = fopen("D:\\111.txt", "a+");
-            fprintf(f, "id: ");
-            fprintf(f, __sCloudCryptoId.c_str());
-            fprintf(f, "\n");
-            fclose(f);
-            */
-
             bool bIsStopPaydDesktopFeatures = false;
 
             // проверяем облачность...
