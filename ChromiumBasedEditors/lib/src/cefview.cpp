@@ -6012,7 +6012,14 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
                     sNameBase = sNameBase.substr(0, pos1);
             }
 
-            NSCommon::string_replace(sNameBase, L" ", L"");
+            // нужно удалить все пробелы в конце файла
+            posDot = sNameBase.rfind(L".");
+            if (std::wstring::npos != posDot)
+            {
+                std::wstring::size_type posRemove = sNameBase.find(' ', posDot);
+                if (std::wstring::npos != posRemove)
+                    sNameBase = sNameBase.substr(0, posRemove);
+            }
         }
 
         std::wstring sFilePathSrc = m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/openaslocal/" + sNameBase;
