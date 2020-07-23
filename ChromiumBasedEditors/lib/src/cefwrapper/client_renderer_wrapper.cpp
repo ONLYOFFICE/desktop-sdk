@@ -3720,6 +3720,8 @@ _style.innerHTML = \"\
 .webkit-scrollbar::-webkit-scrollbar-corner { background:inherit; }\";\n\
 document.getElementsByTagName(\"head\")[0].appendChild(_style);\n\
 }, false);\n\
+if (window.navigator) { window.oldNavigatorUserAgent = navigator.userAgent; Object.defineProperty(navigator, 'userAgent', { get: function () { return window.oldNavigatorUserAgent + \" AscDesktopEditor 5.6.0\"; } }); }\n\
+\n\
 window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
     }
 
