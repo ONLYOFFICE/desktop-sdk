@@ -68,6 +68,10 @@
 #include "./cefwrapper/client_scheme.h"
 #include "./mailto.h"
 
+#if defined (_LINUX) && !defined(_MAC)
+#define DONT_USE_NATIVE_FILE_DIALOGS
+#endif
+
 #ifdef _WIN32
 void CCefViewWidgetImpl::SetParentNull(WindowHandleId handle)
 {
@@ -1437,7 +1441,63 @@ public:
 
 #endif
 
+#ifdef DONT_USE_NATIVE_FILE_DIALOGS
+        if (nMode == FILE_DIALOG_OPEN || nMode == FILE_DIALOG_OPEN_MULTIPLE)
+        {
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_OPENFILENAME_DIALOG);
+            NSEditorApi::CAscLocalOpenFileDialog* pData = new NSEditorApi::CAscLocalOpenFileDialog();
+            pData->put_Id(m_pParent->GetId());
+            pData->put_IsMultiselect((nMode == FILE_DIALOG_OPEN_MULTIPLE) ? true : false);
+
+            std::wstring sFilterInput;
+            bool isFirst = true;
+            for (std::vector<CefString>::const_iterator iter = accept_filters.begin(); iter != accept_filters.end(); iter++)
+            {
+                if (!isFirst)
+                {
+                    sFilterInput += L";;";
+                    isFirst = false;
+                }
+
+                sFilterInput += (iter->ToWString());
+            }
+            if (sFilterInput.empty())
+                sFilterInput = L"any";
+            else
+                sFilterInput += L";;*.*";
+
+            // пока не учитываем фильтры (переводы)
+            std::wstring sFilter = L"any";
+            if (L".docx.doc.docm.dot.dotm.dotx.epub.fodt.odt.ott.rtf;;*.*" == sFilterInput)
+                sFilter = L"word";
+
+            pData->put_Filter(sFilter);
+            pEvent->m_pData = pData;
+
+            // save callback
+            m_pFileDialogCallback = callback;
+
+            pListener->OnEvent(pEvent);
+            return true;
+        }
+#endif
+
         return false;
+    }
+
+    std::wstring makeLowerUrl(const std::wstring& url)
+    {
+        std::wstring::size_type nLen = url.length();
+        const wchar_t* pStr = (wchar_t*)url.c_str();
+
+        std::wstring sRet;
+        sRet.reserve(nLen);
+
+        for (int i = 0; i < nLen; ++i)
+        {
+            sRet.append(1, (pStr[i] >= 'A' && pStr[i] <= 'Z') ? (pStr[i] + 'a' - 'A') : pStr[i]);
+        }
+        return sRet;
     }
 
     bool CheckPopup(std::wstring sUrl, bool bIsBeforeBrowse = false, bool bIsBackground = false, bool bIsNotOpenLinks = false)
@@ -1446,8 +1506,7 @@ public:
         if (NULL != m_pParent && NULL != m_pParent->GetAppManager())
             pListener = m_pParent->GetAppManager()->GetEventListener();
 
-        std::wstring sUrlLower = sUrl;
-        NSCommon::makeLowerW(sUrlLower);
+        std::wstring sUrlLower = makeLowerUrl(sUrl);
 
         // определяем, редактор ли это
         bool bIsEditor = (sUrlLower.find(L"files/doceditor.aspx?fileid") == std::wstring::npos) ? false : true;
@@ -5953,7 +6012,14 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
                     sNameBase = sNameBase.substr(0, pos1);
             }
 
-            NSCommon::string_replace(sNameBase, L" ", L"");
+            // нужно удалить все пробелы в конце файла
+            posDot = sNameBase.rfind(L".");
+            if (std::wstring::npos != posDot)
+            {
+                std::wstring::size_type posRemove = sNameBase.find(' ', posDot);
+                if (std::wstring::npos != posRemove)
+                    sNameBase = sNameBase.substr(0, posRemove);
+            }
         }
 
         std::wstring sFilePathSrc = m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/openaslocal/" + sNameBase;

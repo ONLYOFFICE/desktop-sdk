@@ -126,3 +126,9 @@ core_mac {
         $$PWD/src/widget_impl.mm \
         $$PWD/src/mac_application.mm
 }
+
+core_linux {
+    QMAKE_LFLAGS += "-Wl,-rpath,\'\$$ORIGIN\'"
+    QMAKE_LFLAGS += "-Wl,-rpath,\'\$$ORIGIN/converter\'"
+    QMAKE_LFLAGS += -Wl,--disable-new-dtags
+}
