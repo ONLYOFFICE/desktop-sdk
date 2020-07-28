@@ -41,6 +41,7 @@
 
 #include "../../../../core/DesktopEditor/raster/BgraFrame.h"
 #include "../../../../core/DesktopEditor/graphics/pro/Image.h"
+#include "../../../../core/Common/OfficeFileErrorDescription.h"
 
 #ifdef LINUX
 #include <unistd.h>
@@ -653,7 +654,52 @@ public:
             }
         }
 
+        sLocalFilePath = CorrectPathW(sLocalFilePath);
+        sDestinationPath = CorrectPathW(sDestinationPath);
+
+        // пустые файлы
+        if (true)
+        {
+            NSFile::CFileBinary oFileEmptyCheck;
+            if (oFileEmptyCheck.OpenFile(sLocalFilePath))
+            {
+                if (0 == oFileEmptyCheck.GetFileSize())
+                {
+                    int nFormatEmpty = etDocument;
+                    if (m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_PRESENTATION)
+                        nFormatEmpty = etPresentation;
+                    else if (m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
+                        nFormatEmpty = etSpreadsheet;
+
+                    sLocalFilePath = m_pManager->GetNewFilePath(nFormatEmpty);
+                }
+                oFileEmptyCheck.CloseFile();
+            }            
+        }
+
         NSFile::CFileBinary::Copy(sLocalFilePath, sDestinationPath);
+
+        bool bIsTestFile = true;
+        if (!NSFile::CFileBinary::Exists(sDestinationPath))
+        {
+            bIsTestFile = false;
+        }
+        else
+        {
+            NSFile::CFileBinary oTestFile;
+            if (!NSFile::CFileBinary::Exists(sLocalFilePath) && oTestFile.OpenFile(sDestinationPath))
+            {
+                if (0 == oTestFile.GetFileSize())
+                    bIsTestFile = false;
+                oTestFile.CloseFile();
+            }
+        }
+        if (!bIsTestFile)
+        {
+            m_pEvents->OnFileConvertToEditor(AVS_ERROR_FILEACCESS);
+            m_bRunThread = FALSE;
+            return 0;
+        }
 
         if (m_bIsNativeSupport && m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
         {
@@ -714,7 +760,7 @@ public:
 
         int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileForParams, m_pManager, m_pManager->m_pInternal->m_bIsEnableConvertLogs);
 
-        //NSFile::CFileBinary::Remove(sTempFileForParams);
+        NSFile::CFileBinary::Remove(sTempFileForParams);
 
         if (0 == nReturnCode)
             CheckSignatures(sDestinationPath);

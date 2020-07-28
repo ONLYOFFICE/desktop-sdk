@@ -47,6 +47,7 @@
 
 #include "../../../../core/DesktopEditor/xml/include/xmlutils.h"
 #include "../../../../core/Common/OfficeFileFormatChecker.h"
+#include "./cloud_crypto.h"
 
 #define ASC_CONSTANT_CANCEL_SAVE 0x00005678
 #define LOCK_CS_SCRIPT 0
@@ -58,6 +59,7 @@
 #include "plugins.h"
 
 #include "utils.h"
+#include "../../../../core/DesktopEditor/xmlsec/src/include/XmlCertificate.h"
 
 #ifdef CEF_2623
 #define MESSAGE_IN_BROWSER
@@ -115,6 +117,8 @@ public:
     std::wstring Url;
     std::wstring LocalRecoverFolder;
 
+    std::string CloudCryptoInfo;
+
 public:
 
     CAscReporterData()
@@ -123,6 +127,421 @@ public:
         ParentId = -1;
     }
 };
+
+class COfficeFileFormatCheckerWrapper : public COfficeFileFormatChecker
+{
+public:
+    int nFileType2;
+public:
+    COfficeFileFormatCheckerWrapper() : COfficeFileFormatChecker()
+    {
+        nFileType2 = nFileType;
+    }
+public:
+    bool isOfficeFile2(const std::wstring& fileName)
+    {
+        // check empty file!!!
+        NSFile::CFileBinary oFile;
+        if (oFile.OpenFile(fileName))
+        {
+            long nFileSize = oFile.GetFileSize();
+            if (0 == nFileSize)
+            {
+                int nFormat = GetFormatByExtension(L"." + NSFile::GetFileExtention(fileName));
+
+                switch (nFormat)
+                {
+                    case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX:
+                    case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOC:
+                    case AVS_OFFICESTUDIO_FILE_DOCUMENT_ODT:
+                    case AVS_OFFICESTUDIO_FILE_DOCUMENT_RTF:
+                    case AVS_OFFICESTUDIO_FILE_DOCUMENT_TXT:
+                    case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOTX:
+                    case AVS_OFFICESTUDIO_FILE_DOCUMENT_OTT:
+                    case AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX:
+                    case AVS_OFFICESTUDIO_FILE_PRESENTATION_ODP:
+                    case AVS_OFFICESTUDIO_FILE_PRESENTATION_POTX:
+                    case AVS_OFFICESTUDIO_FILE_PRESENTATION_OTP:
+                    case AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX:
+                    case AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLS:
+                    case AVS_OFFICESTUDIO_FILE_SPREADSHEET_ODS:
+                    case AVS_OFFICESTUDIO_FILE_SPREADSHEET_CSV:
+                    case AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLTX:
+                    case AVS_OFFICESTUDIO_FILE_SPREADSHEET_OTS:
+                    {
+                        this->nFileType = nFormat;
+                        this->nFileType2 = this->nFileType;
+                        return true;
+                    }
+                }
+            }
+        }
+        bool isOfficeFileBase = isOfficeFile(fileName);
+        if (!isOfficeFileBase)
+            return false;
+
+        this->nFileType2 = this->nFileType;
+        switch (this->nFileType)
+        {
+            case AVS_OFFICESTUDIO_FILE_DOCUMENT_TXT:
+            {
+                std::wstring sExt = NSCommon::GetFileExtention(fileName);
+                NSCommon::makeUpperW(sExt);
+                if (sExt != L"TXT" && sExt != L"XML")
+                    isOfficeFileBase = false;
+                break;
+            }
+            case AVS_OFFICESTUDIO_FILE_OTHER_MS_OFFCRYPTO:
+            {
+                std::wstring sExt = NSCommon::GetFileExtention(fileName);
+                this->nFileType2 = COfficeFileFormatChecker::GetFormatByExtension(L"." + sExt);
+                break;
+            }
+            default:
+                break;
+        }
+        return isOfficeFileBase;
+    }
+};
+
+// -------------------------------------------------------
+#define SDKJS_ADDONS_VERSION 1
+class CSdkjsAddons
+{
+private:
+    std::wstring m_sPath;
+public:
+    CSdkjsAddons(const std::wstring& sUserPlugins)
+    {
+        m_sPath = sUserPlugins + L"/addons";
+    }
+
+    std::vector<std::string> GetFeaturesArray()
+    {
+        std::vector<std::string> retArray;
+        int nCounterVersion = 0;
+        NSFile::CFileBinary oFile;
+        if (oFile.OpenFile(m_sPath))
+        {
+            int nSize = oFile.GetFileSize();
+            char* pBuffer = new char[nSize];
+            DWORD dwReaden = 0;
+            oFile.ReadFile((BYTE*)pBuffer, nSize, dwReaden);
+            oFile.CloseFile();
+
+            int nStart = 0;
+            int nCur = nStart;
+            for (; nCur < nSize; ++nCur)
+            {
+                if (pBuffer[nCur] == '\n')
+                {
+                    int nEnd = nCur - 1;
+                    if (nEnd >= nStart)
+                    {
+                        ++nCounterVersion;
+                        if (2 < nCounterVersion)
+                        {
+                            std::string s(pBuffer + nStart, nEnd - nStart + 1);
+                            retArray.push_back(s);
+                        }
+                    }
+                    nStart = nCur + 1;
+                }
+            }
+
+            delete[] pBuffer;
+        }
+        return retArray;
+    }
+
+    std::string GetFeaturesJSArray()
+    {
+        std::vector<std::string> arrFeatures = GetFeaturesArray();
+        std::string sFeatures = "[";
+        int nCounter = 0;
+        for (std::vector<std::string>::const_iterator iter = arrFeatures.begin(); iter != arrFeatures.end(); iter++, nCounter++)
+        {
+            if (0 != nCounter)
+                sFeatures += ",";
+            sFeatures += "'";
+            sFeatures += *iter;
+            sFeatures += "'";
+        }
+        sFeatures += "]";
+        return sFeatures;
+    }
+
+    void CheckVersion(const std::wstring& sDirectory)
+    {
+        std::string sHashLocal = "";
+        ICertificate* pCert = ICertificate::CreateInstance();
+
+        sHashLocal += pCert->GetHash(sDirectory + L"/word/sdk-all-min.js", OOXML_HASH_ALG_SHA256);
+        sHashLocal += pCert->GetHash(sDirectory + L"/slide/sdk-all-min.js", OOXML_HASH_ALG_SHA256);
+        sHashLocal += pCert->GetHash(sDirectory + L"/cell/sdk-all-min.js", OOXML_HASH_ALG_SHA256);
+
+        delete pCert;
+
+        // check old file
+        bool bIsNewVersion = false;
+        int nCounterVersion = 0;
+        NSFile::CFileBinary oFile;
+        if (oFile.OpenFile(m_sPath))
+        {
+            int nSize = oFile.GetFileSize();
+            char* pBuffer = new char[nSize];
+            DWORD dwReaden = 0;
+            oFile.ReadFile((BYTE*)pBuffer, nSize, dwReaden);
+            oFile.CloseFile();
+
+            int nStart = 0;
+            int nCur = nStart;
+            for (; nCur < nSize; ++nCur)
+            {
+                if (pBuffer[nCur] == '\n')
+                {
+                    int nEnd = nCur - 1;
+                    if (nEnd >= nStart)
+                    {
+                        std::string s(pBuffer + nStart, nEnd - nStart + 1);
+                        ++nCounterVersion;
+                        if (1 == nCounterVersion)
+                        {
+                            if (SDKJS_ADDONS_VERSION != std::stoi(s))
+                            {
+                                bIsNewVersion = true;
+                                break;
+                            }
+
+                        }
+                        else if (2 == nCounterVersion)
+                        {
+                            if (sHashLocal != s)
+                                bIsNewVersion = true;
+                            break;
+                        }
+                    }
+                    nStart = nCur + 1;
+                }
+            }
+
+            if (nCounterVersion < 2)
+                bIsNewVersion = true;
+
+            delete[] pBuffer;
+        }
+        else
+        {
+            bIsNewVersion = true;
+        }
+
+        if (bIsNewVersion)
+        {
+            if (NSFile::CFileBinary::Exists(m_sPath))
+                NSFile::CFileBinary::Remove(m_sPath);
+
+            std::string sContent = std::to_string((int)SDKJS_ADDONS_VERSION);
+            sContent += "\n";
+
+            sContent += sHashLocal;
+            sContent += "\n";
+
+            NSFile::CFileBinary oFileDst;
+            oFileDst.CreateFileW(m_sPath);
+            oFileDst.WriteFile((BYTE*)sContent.c_str(), (DWORD)sContent.size());
+            oFileDst.CloseFile();
+        }
+    }
+
+    std::string CheckCloud(CefRefPtr<CefV8Context> context, bool& bIsChanged)
+    {
+        std::string sFeatures;
+
+        CefRefPtr<CefV8Value> retval;
+        CefRefPtr<CefV8Exception> exception;
+        bool bValid = false;
+        bIsChanged = false;
+
+        bValid = context->Eval("(function() { if (!window.Asc || !window.Asc.Addons) return ''; var features = ''; for (var i in window.Asc.Addons) { var j = i; if (j === \"content-\\u0441ontrols\") j = \"content-controls\"; features += (j + ' '); } return features; })();",
+#ifndef CEF_2623
+    "", 0,
+#endif
+retval, exception);
+
+        if (bValid && retval && retval->IsString())
+            sFeatures = retval->GetStringValue().ToString();
+
+        std::map<std::string, bool> mapFeatures;
+
+        // check old file
+        int nCounterVersion = 0;
+        std::string sSHA;
+        NSFile::CFileBinary oFile;
+        if (oFile.OpenFile(m_sPath))
+        {
+            int nSize = oFile.GetFileSize();
+            char* pBuffer = new char[nSize];
+            DWORD dwReaden = 0;
+            oFile.ReadFile((BYTE*)pBuffer, nSize, dwReaden);
+            oFile.CloseFile();
+
+            int nStart = 0;
+            int nCur = nStart;
+            for (; nCur < nSize; ++nCur)
+            {
+                if (pBuffer[nCur] == '\n')
+                {
+                    int nEnd = nCur - 1;
+                    if (nEnd >= nStart)
+                    {
+                        std::string s(pBuffer + nStart, nEnd - nStart + 1);
+                        ++nCounterVersion;
+                        if (1 == nCounterVersion)
+                        {
+                            if (SDKJS_ADDONS_VERSION != std::stoi(s))
+                                break;
+                        }
+                        else if (2 == nCounterVersion)
+                        {
+                            sSHA = s;
+                        }
+                        else
+                        {
+                            mapFeatures.insert(std::pair<std::string, bool>(s, true));
+                        }
+                    }
+                    nStart = nCur + 1;
+                }
+            }
+
+            delete[] pBuffer;
+        }
+        else
+        {
+            // такого быть не должно
+            return sFeatures;
+        }
+
+        // check cloud
+        bool bIsNewFeatures = false;
+        if (true)
+        {
+            int nSize = (int)sFeatures.length();
+            const char* pBuffer = sFeatures.c_str();
+
+            int nStart = 0;
+            int nCur = nStart;
+            for (; nCur < nSize; ++nCur)
+            {
+                if (pBuffer[nCur] == ' ')
+                {
+                    int nEnd = nCur - 1;
+                    if (nEnd > nStart)
+                    {
+                        std::string s(pBuffer + nStart, nEnd - nStart + 1);
+                        if (mapFeatures.find(s) == mapFeatures.end())
+                        {
+                            mapFeatures.insert(std::pair<std::string, bool>(s, true));
+                            bIsNewFeatures = true;
+                        }
+                    }
+                    nStart = nCur + 1;
+                }
+            }
+        }
+
+        if (bIsNewFeatures)
+        {
+            if (NSFile::CFileBinary::Exists(m_sPath))
+                NSFile::CFileBinary::Remove(m_sPath);
+
+            std::string sContent = std::to_string((int)SDKJS_ADDONS_VERSION);
+            sContent += "\n";
+
+            sContent += sSHA;
+            sContent += "\n";
+
+            for (std::map<std::string, bool>::iterator iter = mapFeatures.begin(); iter != mapFeatures.end(); iter++)
+            {
+                sContent += iter->first;
+                sContent += "\n";
+            }
+
+            NSFile::CFileBinary oFileDst;
+            oFileDst.CreateFileW(m_sPath);
+            oFileDst.WriteFile((BYTE*)sContent.c_str(), (DWORD)sContent.size());
+            oFileDst.CloseFile();
+
+            bIsChanged = true;
+        }
+
+        return sFeatures;
+    }
+
+    void CheckLocal(CefRefPtr<CefV8Context> context)
+    {
+        std::string sFeatures;
+
+        // check file
+        int nCounterVersion = 0;
+        NSFile::CFileBinary oFile;
+        if (oFile.OpenFile(m_sPath))
+        {
+            int nSize = oFile.GetFileSize();
+            char* pBuffer = new char[nSize];
+            DWORD dwReaden = 0;
+            oFile.ReadFile((BYTE*)pBuffer, nSize, dwReaden);
+            oFile.CloseFile();
+
+            int nStart = 0;
+            int nCur = nStart;
+            for (; nCur < nSize; ++nCur)
+            {
+                if (pBuffer[nCur] == '\n')
+                {
+                    int nEnd = nCur - 1;
+                    if (nEnd >= nStart)
+                    {
+                        std::string s(pBuffer + nStart, nEnd - nStart + 1);
+                        ++nCounterVersion;
+                        if (1 == nCounterVersion)
+                        {
+                            if (SDKJS_ADDONS_VERSION != std::stoi(s))
+                                break;
+                        }
+                        else if (2 == nCounterVersion)
+                        {
+                            // SHA
+                        }
+                        else
+                        {
+                            sFeatures += (s + " ");
+                        }
+                    }
+                    nStart = nCur + 1;
+                }
+            }
+
+            delete[] pBuffer;
+        }
+
+        CefRefPtr<CefV8Value> retval;
+        CefRefPtr<CefV8Exception> exception;
+
+        std::string sCode = "(function(features){\n\
+var addons = window.Asc ? window.Asc.Addons : null;\n\
+if (!addons) return; var arr = features.split(' ');\n\
+for (var i = 0, len = arr.length; i < len; i++) { if (arr[i] && false === addons[arr[i]]) addons[arr[i]] = true; }\n\
+})(\"" + sFeatures + "\");";
+
+        bool bValid = context->Eval(sCode,
+#ifndef CEF_2623
+    "", 0,
+#endif
+retval, exception);
+    }
+};
+// -------------------------------------------------------
 
 class CCefScriptLoader : public NSThreads::CBaseThread
 {
@@ -296,6 +715,116 @@ public:
         return *this;
     }
 };
+
+namespace NSSystem
+{
+#ifndef _WIN32
+#include <fcntl.h>
+#endif
+
+    class CLocalFileLocker
+    {
+    private:
+        std::wstring m_sFile;
+#ifdef _WIN32
+        NSFile::CFileBinary m_oLocker;
+#else
+        int m_nDescriptor;
+#endif
+
+    public:
+        CLocalFileLocker(const std::wstring& sFile)
+        {
+            m_sFile = sFile;
+#ifndef _WIN32
+            m_nDescriptor = -1;
+#endif
+
+            Lock();
+        }
+        bool Lock()
+        {
+            Unlock();
+#ifdef _WIN32
+            m_oLocker.OpenFile(m_sFile);
+#else
+            std::string sFileA = U_TO_UTF8(m_sFile);
+            m_nDescriptor = open(sFileA.c_str(), O_RDWR | O_EXCL);
+            if (-1 == m_nDescriptor)
+                return true;
+
+            struct flock _lock;
+            memset(&_lock, 0, sizeof(_lock));
+            _lock.l_type   = F_WRLCK;
+            _lock.l_whence = SEEK_SET;
+            _lock.l_start  = 0;
+            _lock.l_len    = 0;
+            _lock.l_pid    = getpid();
+
+            fcntl(m_nDescriptor, F_SETLKW, &_lock);
+#endif
+            return true;
+        }
+        bool Unlock()
+        {
+#ifdef _WIN32
+            m_oLocker.CloseFile();
+#else
+            if (-1 == m_nDescriptor)
+                return true;
+
+            struct flock _lock;
+            memset(&_lock, 0, sizeof(_lock));
+            _lock.l_type   = F_UNLCK;
+            _lock.l_whence = SEEK_SET;
+            _lock.l_start  = 0;
+            _lock.l_len    = 0;
+            _lock.l_pid    = getpid();
+
+            fcntl(m_nDescriptor, F_SETLKW, &_lock);
+            close(m_nDescriptor);
+#endif
+            return true;
+        }
+        ~CLocalFileLocker()
+        {
+            Unlock();
+        }
+
+        static bool IsLocked(const::std::wstring& sFile)
+        {
+            bool isLocked = false;
+#ifdef _WIN32
+            HANDLE hFile = CreateFileW(sFile.c_str(),                   // открываемый файл
+                                        GENERIC_READ | GENERIC_WRITE,   // открываем для чтения и записи
+                                        0,                              // для совместного чтения
+                                        NULL,                           // защита по умолчанию
+                                        OPEN_EXISTING,                  // только существующий файл
+                                        FILE_ATTRIBUTE_NORMAL,          // обычный файл
+                                        NULL);                          // атрибутов шаблона нет
+            if (hFile == INVALID_HANDLE_VALUE)
+            {
+                if (INVALID_FILE_ATTRIBUTES != GetFileAttributesW(sFile.c_str()))
+                    isLocked = true;
+            }
+            CloseHandle(hFile);
+#else
+            std::string sFileA = U_TO_UTF8(sFile);
+            int nDescriptor = open(sFileA.c_str(), O_RDWR | O_EXCL);
+            if (-1 == nDescriptor)
+                return false;
+
+            struct flock _lock;
+            memset(&_lock, 0, sizeof(_lock));
+            fcntl(nDescriptor, F_GETLK, &_lock);
+            if (F_WRLCK == (_lock.l_type & F_WRLCK))
+                isLocked = true;
+            close(nDescriptor);
+#endif
+            return isLocked;
+        }
+    };
+}
 
 class CRecentParent
 {
@@ -501,6 +1030,9 @@ public:
 
     void CloseApplication()
     {
+        if (NSFile::CFileBinary::Exists(m_pMain->m_oSettings.user_plugins_path + L"/cloud_crypto_tmp.xml"))
+            NSFile::CFileBinary::Remove(m_pMain->m_oSettings.user_plugins_path + L"/cloud_crypto_tmp.xml");
+
         Stop();
         m_oKeyboardTimer.Stop();        
         m_oSpellChecker.End();
@@ -559,7 +1091,8 @@ public:
     // работа с настройками редактора ----------------------------------------------------------
     void LoadSettings()
     {
-        std::wstring sFile = m_pMain->m_oSettings.fonts_cache_info_path + L"/settings.xml";
+        m_mapSettings.clear();
+        std::wstring sFile = m_pMain->m_oSettings.fonts_cache_info_path + L"/../settings.xml";
         XmlUtils::CXmlNode oNode;
         if (!oNode.FromXmlFile(sFile))
             return;
@@ -579,16 +1112,21 @@ public:
             std::wstring valueW = oSetting.GetText();
             std::string value = U_TO_UTF8(valueW);
 
-            m_mapSettings.insert(std::pair<std::string, std::string>(name, value));
+            if (value != "default")
+                m_mapSettings.insert(std::pair<std::string, std::string>(name, value));
         }
     }
-    void SaveSettings()
+    void SaveSettings(std::map<std::string, std::string>* settings = NULL)
     {
-        std::wstring sFile = m_pMain->m_oSettings.fonts_cache_info_path + L"/settings.xml";
+        std::map<std::string, std::string>* _map = settings;
+        if (NULL == _map)
+            _map = &m_mapSettings;
+
+        std::wstring sFile = m_pMain->m_oSettings.fonts_cache_info_path + L"/../settings.xml";
         NSStringUtils::CStringBuilder oBuilder;
         oBuilder.WriteString(L"<Settings>");
 
-        for (std::map<std::string, std::string>::iterator pair = m_mapSettings.begin(); pair != m_mapSettings.end(); pair++)
+        for (std::map<std::string, std::string>::iterator pair = _map->begin(); pair != _map->end(); pair++)
         {
             std::string name = pair->first;
             std::string value = pair->second;
@@ -610,20 +1148,20 @@ public:
         NSFile::CFileBinary::SaveToFile(sFile, oBuilder.GetData());
 
         // after - check settings
-        std::map<std::string, std::string>::iterator pairForceDisplayScale = m_mapSettings.find("force-scale");
-        if (pairForceDisplayScale != m_mapSettings.end())
+        std::map<std::string, std::string>::iterator pairForceDisplayScale = _map->find("force-scale");
+        if (pairForceDisplayScale != _map->end())
             m_nForceDisplayScale = std::stoi(pairForceDisplayScale->second);
 
-        std::map<std::string, std::string>::iterator pairCryptoMode = m_mapSettings.find("crypto-mode");
-        if (pairCryptoMode != m_mapSettings.end())
+        std::map<std::string, std::string>::iterator pairCryptoMode = _map->find("crypto-mode");
+        if (pairCryptoMode != _map->end())
             m_nCurrentCryptoMode = (NSAscCrypto::AscCryptoType)std::stoi(pairCryptoMode->second);
 
-        std::map<std::string, std::string>::iterator pairConvertLogs = m_mapSettings.find("converter-logging");
-        if (pairConvertLogs != m_mapSettings.end())
+        std::map<std::string, std::string>::iterator pairConvertLogs = _map->find("converter-logging");
+        if (pairConvertLogs != _map->end())
             m_bIsEnableConvertLogs = ("1" == pairConvertLogs->second) ? true : false;
 
-        std::map<std::string, std::string>::iterator pairEML = m_mapSettings.find("external-message-loop");
-        if (pairEML != m_mapSettings.end())
+        std::map<std::string, std::string>::iterator pairEML = _map->find("external-message-loop");
+        if (pairEML != _map->end())
             m_bIsUseExternalMessageLoop = ("1" == pairEML->second) ? true : false;
     }
     void CheckSetting(const std::string& sName, const std::string& sValue)
@@ -840,6 +1378,20 @@ public:
         oWorker.m_bIsNeedThumbnails = true;
 
         m_pApplicationFonts = oWorker.Check();
+
+        if (true)
+        {
+            // check features
+            CSdkjsAddons oAddons(m_pMain->m_oSettings.user_plugins_path);
+
+            std::wstring sEditorsPath = m_pMain->m_oSettings.local_editors_path;
+            std::wstring::size_type nPosPostfix = sEditorsPath.rfind(L"web-apps/apps/api/documents/index.html");
+            if (nPosPostfix != std::wstring::npos)
+                sEditorsPath = sEditorsPath.substr(0, nPosPostfix);
+            sEditorsPath += L"sdkjs";
+
+            oAddons.CheckVersion(sEditorsPath);
+        }
 
         m_bRunThread = FALSE;
         return 0;

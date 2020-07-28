@@ -62,8 +62,11 @@ public:
     bool m_bCryptoDisableForInternalCloud;
     bool m_bCryptoDisableForExternalCloud;
 
+    std::string m_strCryptoPluginAttack;
+
     // плагин не для редактора, а для главной страницы (для системных сообщенией)
     std::vector<CExternalPluginInfo> m_arExternals;
+
 public:
     CPluginsManager()
     {
@@ -79,20 +82,6 @@ public:
     {
         if (!NSDirectory::Exists(m_strUserDirectory))
             NSDirectory::CreateDirectory(m_strUserDirectory);
-
-        std::wstring strBase = m_strUserDirectory + L"/pluginBase.js";
-        if (NSFile::CFileBinary::Exists(strBase))
-            NSFile::CFileBinary::Remove(strBase);
-
-        std::wstring strBaseCSS = m_strUserDirectory + L"/plugins.css";
-        if (NSFile::CFileBinary::Exists(strBaseCSS))
-            NSFile::CFileBinary::Remove(strBaseCSS);
-
-        if (true)
-        {
-            NSFile::CFileBinary::Copy(m_strDirectory + L"/pluginBase.js", m_strUserDirectory + L"/pluginBase.js");
-            NSFile::CFileBinary::Copy(m_strDirectory + L"/plugins.css", m_strUserDirectory + L"/plugins.css");
-        }
 
         std::string sPluginsJSON = "[";
 
@@ -264,18 +253,35 @@ private:
         {
             int nMode = 1;
             std::string sMode = GetStringValue(strJson, "cryptoMode");
+            std::string sModeExt = GetStringValue(strJson, "cryptoModeExt");
             if (!sMode.empty())
                 nMode = std::stoi(sMode);
 
+            if (checkCrypto && sModeExt == "disable" && m_strCryptoPluginAttack.empty())
+                return false;
+
+            std::string sGuid = GetStringValue(strJson, "guid");
+
             if (checkCrypto)
             {
+                if (!m_strCryptoPluginAttack.empty() )
+                {
+                    std::string s1 = sGuid;
+                    string_replaceA(s1, "asc.", "");
+                    std::string s2 = m_strCryptoPluginAttack;
+                    string_replaceA(s2, "asc.", "");
+
+                    if (s1 == s2)
+                        return true;
+
+                    return false;
+                }
+
                 if (m_nCryptoMode != nMode)
                 {
                     return false;
                 }
             }
-
-            std::string sGuid = GetStringValue(strJson, "guid");
 
             if (m_arCryptoModes.find(nMode) == m_arCryptoModes.end())
                 m_arCryptoModes.insert(std::pair<int, std::string>(nMode, sGuid));

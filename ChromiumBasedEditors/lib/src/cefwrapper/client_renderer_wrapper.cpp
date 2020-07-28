@@ -56,6 +56,8 @@
 #include "../crypto_mode.h"
 #include "../../../../../core/DesktopEditor/common/CalculatorCRC32.h"
 #include "./client_renderer_params.h"
+#include "../../../../../core/Common/3dParty/openssl/common/common_openssl.h"
+#include "../../../../../core/OfficeCryptReader/source/ECMACryptFile.h"
 
 namespace NSCommon
 {
@@ -366,6 +368,15 @@ public:
 
     NSCriticalSection::CRITICAL_SECTION m_oCompleteTasksCS;
 
+    // AES key & iv
+    BYTE* m_pAES_KeyIv;
+
+    int m_nIsCryptoModeProperty;
+
+    std::string m_sEditorsCloudFeatures;
+    bool m_bEditorsCloudFeaturesCheck;
+    std::vector<std::string> m_arCloudFeaturesBlackList;
+
     CAscEditorNativeV8Handler()
     {
         m_etType = Document;
@@ -398,6 +409,12 @@ public:
         m_oCompleteTasksCS.InitializeCriticalSection();
 
         CheckDefaults();
+
+        m_pAES_KeyIv = NULL;
+        m_nIsCryptoModeProperty = 0;
+
+        m_bEditorsCloudFeaturesCheck = false;
+        m_arCloudFeaturesBlackList.push_back("personal.onlyoffice.com");
     }
 
     void CheckDefaults()
@@ -427,8 +444,19 @@ public:
 
     virtual ~CAscEditorNativeV8Handler()
     {
+        if (m_pAES_KeyIv)
+            NSOpenSSL::openssl_free(m_pAES_KeyIv);
         NSBase::Release(m_pLocalApplicationFonts);
         m_oCompleteTasksCS.DeleteCriticalSection();
+    }
+
+    bool IsPropertyCryptoMode()
+    {
+        if (m_nCryptoMode > 0)
+            return true;
+        if (!CAscRendererProcessParams::getInstance().GetProperty("cryptoEngineId").empty())
+            return true;
+        return false;
     }
 
     virtual void OnDocumentOpened(const std::string& sBase64)
@@ -802,13 +830,23 @@ retval, exception);
             SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
-        else if (name == "CreateEditorApi")
+        else if (name == "_CreateEditorApi")
         {
             volatile bool* pChecker = this->sync_command_check;
             *pChecker = true;
 
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("create_editor_api");
             SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+
+            if (IsLocalFile(true))
+            {
+                CSdkjsAddons oAddonsChecker(m_sUserPlugins);
+                oAddonsChecker.CheckLocal(CefV8Context::GetCurrentContext());
+            }
+            else
+            {
+                // ждем asc_onGetEditorPermissions
+            }
             return true;
         }
         else if (name == "ConsoleLog")
@@ -925,7 +963,7 @@ retval, exception);
             SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 
             // HACK!!!
-            if (m_nCryptoMode > 0)
+            if (IsPropertyCryptoMode())
             {
                 CefRefPtr<CefFrame> _frame =  CefV8Context::GetCurrentContext()->GetFrame();
                 _frame->ExecuteJavaScript("(function() { try { \
@@ -1306,13 +1344,132 @@ DE.controllers.Main.DisableVersionHistory(); \
         }
         else if (name == "execCommand")
         {
+            std::string sCommand = arguments[0]->GetStringValue().ToString();
+            std::string sArg = "";
+            if (2 == arguments.size())
+                sArg = arguments[1]->GetStringValue().ToString();
+
+            if ("portal:cryptoinfo" == sCommand)
+            {
+                CAscRendererProcessParams::getInstance().SetProperty("cryptoEngineId", CPluginsManager::GetStringValue(sArg, "cryptoEngineId"));
+                CAscRendererProcessParams::getInstance().SetProperty("user", CPluginsManager::GetStringValue(sArg, "userId"));
+                return true;
+            }
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_exec_command");
 
-            std::vector<CefRefPtr<CefV8Value>>::const_iterator iter = arguments.begin();
-            message->GetArgumentList()->SetString(0, (*iter)->GetStringValue()); ++iter;
+            message->GetArgumentList()->SetString(0, sCommand);
+            if (!sArg.empty())
+                message->GetArgumentList()->SetString(1, sArg);
 
-            if (2 == arguments.size())
-                message->GetArgumentList()->SetString(1, (*iter)->GetStringValue()); ++iter;
+            if ("portal:login" == sCommand)
+            {
+                std::wstring sCloudCryptoGuid = CPluginsManager::GetStringValueW(sArg, "cryptoEngineId");
+
+                if (!sCloudCryptoGuid.empty())
+                {
+                    CCloudCryptoDesktop info;
+                    info.GUID = sCloudCryptoGuid;
+                    info.User = CPluginsManager::GetStringValueW(sArg, "userId");
+                    info.Portal = CPluginsManager::GetStringValueW(sArg, "domain");
+                    info.Email = CPluginsManager::GetStringValueW(sArg, "email");
+                    info.PublicKey = CPluginsManager::GetStringValueW(sArg, "publicKey");
+                    NSCommon::string_replace(info.PublicKey, L"&#xA", L"\n");
+                    info.PrivateKeyEnc = CPluginsManager::GetStringValueW(sArg, "privateKeyEnc");
+
+                    CAscRendererProcessParams::getInstance().SetProperty("cryptoEngineId", U_TO_UTF8(sCloudCryptoGuid));
+                    CAscRendererProcessParams::getInstance().SetProperty("user", U_TO_UTF8(info.User));
+
+                    CCloudCryptoApp oApp(m_sUserPlugins + L"/cloud_crypto.xml");
+                    CCloudCryptoTmpInfoApp oAppTmp(m_sUserPlugins + L"/cloud_crypto_tmp.xml");
+
+                    CCloudCryptoDesktop* savedInfo = oApp.GetInfo(info);
+                    CCloudCryptoTmpInfo* tmpInfo = oAppTmp.getInfo(info.Email, info.Portal);
+
+                    if (NULL == savedInfo && tmpInfo)
+                    {
+                        // ничего не сохранено. значит это первый логин
+                        if (info.PrivateKeyEnc.empty() && info.PublicKey.empty())
+                        {
+                            // генерируем ключи!
+                            unsigned char* publicKey = NULL;
+                            unsigned char* privateKey = NULL;
+                            NSOpenSSL::RSA_GenerateKeys(publicKey, privateKey);
+
+                            std::string sPublic((char*)publicKey);
+                            std::string sPrivate((char*)privateKey);
+
+                            NSOpenSSL::openssl_free(publicKey);
+                            NSOpenSSL::openssl_free(privateKey);
+
+                            info.PublicKey = NSFile::CUtf8Converter::GetUnicodeFromCharPtr(sPublic);
+                            info.PrivateKey = NSFile::CUtf8Converter::GetUnicodeFromCharPtr(sPrivate);
+
+                            std::string privateEnc;
+                            NSOpenSSL::AES_Encrypt_desktop(U_TO_UTF8(tmpInfo->m_sPassword), sPrivate, privateEnc, CAscRendererProcessParams::getInstance().GetProperty("user"));
+                            info.PrivateKeyEnc = NSFile::CUtf8Converter::GetUnicodeFromCharPtr(privateEnc);
+
+                            oApp.AddInfo(info);
+
+                            // отсылаем ключи
+                            NSCommon::string_replaceA(sPublic, "\n", "&#xA");
+                            std::string sCode = ("setTimeout(function() { window.cloudCryptoCommand && window.cloudCryptoCommand(\"encryptionKeys\", { publicKey : \"" + sPublic + "\", privateKeyEnc : \"" + privateEnc + "\" }); }, 10);");
+                            CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetFrame();
+                            _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+                        }
+                        else
+                        {
+                            // декодируем ключ
+                            std::string privateKeyEnc = U_TO_UTF8(info.PrivateKeyEnc);
+                            std::string privateKey;
+                            NSOpenSSL::AES_Decrypt_desktop(U_TO_UTF8(tmpInfo->m_sPassword), privateKeyEnc, privateKey, CAscRendererProcessParams::getInstance().GetProperty("user"));
+                            info.PrivateKey = NSFile::CUtf8Converter::GetUnicodeFromCharPtr(privateKey);
+
+                            oApp.AddInfo(info);
+                        }
+                    }
+                    else if (!savedInfo)
+                    {
+                        // TODO: перелогиньтесь!!!
+                        std::string sCode = ("setTimeout(function() { window.cloudCryptoCommand && window.cloudCryptoCommand(\"relogin\"); }, 10);");
+                        CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetBrowser()->GetMainFrame();
+                        _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+                    }
+
+                    if (tmpInfo)
+                        oAppTmp.removeInfo(info.Email, info.Portal);
+                }
+            }
+            else if ("portal:checkpwd" == sCommand)
+            {
+                std::string emailId = CPluginsManager::GetStringValue(sArg, "emailInput");
+                std::string passwordId = CPluginsManager::GetStringValue(sArg, "pwdInput");
+
+                std::wstring sEmail;
+                std::wstring sPassword;
+
+                CefRefPtr<CefV8Value> retval;
+                CefRefPtr<CefV8Exception> exception;
+                bool bValid = CefV8Context::GetCurrentContext()->Eval("(function() { return document.getElementById(\"" + emailId + "\").value; })();",
+#ifndef CEF_2623
+            "", 0,
+#endif
+retval, exception);
+
+                if (bValid && retval && retval->IsString())
+                    sEmail = retval->GetStringValue().ToWString();
+
+                bValid = CefV8Context::GetCurrentContext()->Eval("(function() { return document.getElementById(\"" + passwordId + "\").value; })();",
+#ifndef CEF_2623
+            "", 0,
+#endif
+retval, exception);
+
+                if (bValid && retval && retval->IsString())
+                    sPassword = retval->GetStringValue().ToWString();
+
+                CCloudCryptoTmpInfoApp oAppTmp(m_sUserPlugins + L"/cloud_crypto_tmp.xml");
+                oAppTmp.addInfo(L"", sEmail, sPassword, CPluginsManager::GetStringValueW(sArg, "domain"));
+            }
 
             SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
@@ -1389,6 +1546,10 @@ DE.controllers.Main.DisableVersionHistory(); \
             if (_frame)
             {
                 _frame->ExecuteJavaScript("\
+window.AscDesktopEditor.CreateEditorApi = function(api) {\n\
+api && api.asc_registerCallback('asc_onGetEditorPermissions', function(e) { window.AscDesktopEditor.CheckCloudFeatures(e.asc_getLicenseType()); });\n\
+window.AscDesktopEditor._CreateEditorApi();\n\
+};\n\
 window.AscDesktopEditor.sendSystemMessage = function(arg) {\n\
   window.AscDesktopEditor.isSendSystemMessage = true;\n\
   // expand system message\n\
@@ -1416,6 +1577,7 @@ window.AscDesktopEditor.SaveFilenameDialog = function(filter, callback) {\n\
   window.AscDesktopEditor._SaveFilenameDialog(filter);\n\
 };\n\
 window.AscDesktopEditor.DownloadFiles = function(filesSrc, filesDst, callback, params) {\n\
+  if (filesSrc.length == 0) return callback({});\n\
   window.on_native_download_files = callback;\n\
   window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst, params);\n\
 };\n\
@@ -1505,7 +1667,13 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
     callback(null);\n\
   };\n\
   xhr.send(null);\n\
-};", _frame->GetURL(), 0);
+};\n\
+Object.defineProperty(window.AscDesktopEditor, 'CryptoMode', {\n\
+get: function() { return window.AscDesktopEditor.Property_GetCryptoMode(); },\n\
+set: function(value) { window.AscDesktopEditor.Property_SetCryptoMode(value); }\n\
+});\n\
+window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCryptoCommandMainFrame_callback=b,window.AscDesktopEditor._cloudCryptoCommandMainFrame(window.AscDesktopEditor.GetFrameId(),JSON.stringify(a))},window.AscDesktopEditor.cloudCryptoCommand=function(a,b,c){switch(window.AscDesktopEditor.initCryptoWorker(b.cryptoEngineId),window.cloudCryptoCommandCounter=0,window.cloudCryptoCommandCount=0,window.cloudCryptoCommandParam=b,window.cloudCryptoCommandCallback=c,a){case\"share\":{var d=Array.isArray(b.file)?b.file:[b.file];window.cloudCryptoCommandCount=d.length,window.AscDesktopEditor.DownloadFiles(d,[],function(a){for(var b in a){let c=a[b],d=window.AscDesktopEditor.isFileSupportCloudCrypt(c),e=!1;if(d){let a=window.AscDesktopEditor.getDocumentInfo(c),b=window.cloudCryptoCommandParam;if(\"\"==a){let d=window.AscCrypto.CryptoWorker.createPassword();a=window.AscCrypto.CryptoWorker.generateDocInfo(b.keys,d),e=window.AscDesktopEditor.setDocumentInfo(c,d,a)}else{let d=window.AscCrypto.CryptoWorker.readPassword(a);a=window.AscCrypto.CryptoWorker.generateDocInfo(b.keys,d),e=window.AscDesktopEditor.setDocumentInfo(c,d,a)}}window.AscDesktopEditor.loadLocalFile(c,function(a){window.cloudCryptoCommandCallback({bytes:a,isCrypto:e,url:b}),window.AscDesktopEditor.RemoveFile(c),window.cloudCryptoCommandCounter++,window.cloudCryptoCommandCounter==window.cloudCryptoCommandCount&&(window.cloudCryptoCommandCount=0,delete window.cloudCryptoCommandParam,delete window.cloudCryptoCommandCallback)})}},1);break}case\"upload\":{var e=b.filter||\"any\",f=b.keys||[],g=window.AscCrypto.CryptoWorker.User;f.push({userId:g[2],publicKey:g[1]}),window.AscDesktopEditor.OpenFilenameDialog(e,!0,function(a){Array.isArray(a)||(a=[a]),window.cloudCryptoCommandCount=a.length;for(var b=0;b<a.length;b++){let c=a[b],d=window.AscDesktopEditor.isFileSupportCloudCrypt(c),e=window.AscDesktopEditor.isFileCrypt(c),g=\"\";if(d&&!e){let a=window.AscCrypto.CryptoWorker.createPassword();docinfo=window.AscCrypto.CryptoWorker.generateDocInfo(f,a),g=window.AscDesktopEditor.setDocumentInfo(c,a,docinfo,!0)}let h=\"\"!=g,i=b;window.AscDesktopEditor.loadLocalFile(h?g:c,function(a){var b=c,d=b.lastIndexOf(\"/\");-1!=d&&(b=b.substring(d+1)),d=b.lastIndexOf(\"\\\\\"),-1!=d&&(b=b.substring(d+1)),window.cloudCryptoCommandCallback({bytes:a,isCrypto:h,name:b,index:i,count:window.cloudCryptoCommandCount}),h&&window.AscDesktopEditor.RemoveFile(g),window.cloudCryptoCommandCounter++,window.cloudCryptoCommandCounter==window.cloudCryptoCommandCount&&(window.cloudCryptoCommandCount=0,delete window.cloudCryptoCommandParam,delete window.cloudCryptoCommandCallback)})}});break}default:{c(null),delete window.cloudCryptoCommandParam,delete window.cloudCryptoCommandCallback;break}}};\n\
+", _frame->GetURL(), 0);
             }
 
             return true;
@@ -1661,6 +1829,10 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
             oPlugins.m_strDirectory = m_sSystemPlugins;
             oPlugins.m_strUserDirectory = m_sUserPlugins;
             oPlugins.m_nCryptoMode = m_nCryptoMode;
+
+            if (!m_bEditorsCloudFeaturesCheck || m_sEditorsCloudFeatures.length() > 1)
+                oPlugins.m_strCryptoPluginAttack = CAscRendererProcessParams::getInstance().GetProperty("cryptoEngineId");
+
             std::string sData = oPlugins.GetPluginsJson(true);
             retval = CefV8Value::CreateString(sData);
             return true;
@@ -1785,6 +1957,18 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_start_reporter");
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
             message->GetArgumentList()->SetString(1, m_sLocalFileFolder);
+
+            // проверяекм на cloudCrypto
+            std::string sCloudCryptoId = CAscRendererProcessParams::getInstance().GetProperty("cryptoEngineId");
+            if (!sCloudCryptoId.empty())
+            {
+                std::string sJson = "{ \"cryptoEngineId\" : \"" + sCloudCryptoId + "\", \"userId\" : \"";
+                sJson += CAscRendererProcessParams::getInstance().GetProperty("user");
+                sJson += "\" }";
+
+                message->GetArgumentList()->SetString(2, sJson);
+            }
+
             SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
@@ -1820,7 +2004,7 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
             bool bIsProtect = m_bIsSupportProtect;
             if (bIsProtect)
             {
-                if (m_bIsSupportOnlyPass && (m_nCryptoMode > 0))
+                if (m_bIsSupportOnlyPass && IsPropertyCryptoMode())
                     bIsProtect = false;
             }
             retval = CefV8Value::CreateBool(bIsProtect);
@@ -1844,7 +2028,7 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
         }
         else if (name == "isBlockchainSupport")
         {
-            retval = CefV8Value::CreateBool(m_bIsSupportOnlyPass && (m_nCryptoMode > 0));
+            retval = CefV8Value::CreateBool(m_bIsSupportOnlyPass && IsPropertyCryptoMode());
             return true;
         }
         else if (name == "_sendSystemMessage")
@@ -2518,6 +2702,27 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_compare_document");
             message->GetArgumentList()->SetString(0, "url");
             message->GetArgumentList()->SetString(1, arguments[0]->GetStringValue());
+
+            if (arguments.size() == 4)
+            {
+                std::wstring sLocalDir = m_sCryptDocumentFolder;
+                if (!sLocalDir.empty())
+                {
+                    std::string sContent = arguments[2]->GetStringValue().ToString();
+                    BYTE* pDataDst = NULL;
+                    int nLenDst = 0;
+
+                    NSFile::CBase64Converter::Decode(sContent.c_str(), sContent.length(), pDataDst, nLenDst);
+
+                    NSFile::CFileBinary oFileWithChanges;
+                    oFileWithChanges.CreateFileW(sLocalDir + L"/EditorForCompare.bin");
+                    oFileWithChanges.WriteFile(pDataDst, nLenDst);
+                    oFileWithChanges.CloseFile();
+
+                    RELEASEARRAYOBJECTS(pDataDst);
+                }
+            }
+
             SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
@@ -2526,6 +2731,27 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_compare_document");
             message->GetArgumentList()->SetString(0, "file");
             message->GetArgumentList()->SetString(1, arguments[0]->GetStringValue());
+
+            if (arguments.size() == 4)
+            {
+                std::wstring sLocalDir = m_sCryptDocumentFolder;
+                if (!sLocalDir.empty())
+                {
+                    std::string sContent = arguments[2]->GetStringValue().ToString();
+                    BYTE* pDataDst = NULL;
+                    int nLenDst = 0;
+
+                    NSFile::CBase64Converter::Decode(sContent.c_str(), sContent.length(), pDataDst, nLenDst);
+
+                    NSFile::CFileBinary oFileWithChanges;
+                    oFileWithChanges.CreateFileW(sLocalDir + L"/EditorForCompare.bin");
+                    oFileWithChanges.WriteFile(pDataDst, nLenDst);
+                    oFileWithChanges.CloseFile();
+
+                    RELEASEARRAYOBJECTS(pDataDst);
+                }
+            }
+
             SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
@@ -2542,6 +2768,459 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
             bIsLocal = false;
 #endif
             retval = CefV8Value::CreateBool(bIsLocal);
+            return true;
+        }
+        else if (name == "SetIsReadOnly")
+        {
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_set_is_readonly");
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+            return true;
+        }            
+        else if (name == "CryptoAES_Init")
+        {
+            std::string sPassword = arguments[0]->GetStringValue().ToString();
+            std::string sSalt = "";
+            if (arguments.size() > 1)
+                sSalt = arguments[0]->GetStringValue().ToString();
+
+            if (NULL != m_pAES_KeyIv)
+                NSOpenSSL::openssl_free(m_pAES_KeyIv);
+            m_pAES_KeyIv = NSOpenSSL::PBKDF2_desktop(sPassword, sSalt);
+            return true;
+        }
+        else if (name == "CryptoAES_Clean")
+        {
+            if (NULL != m_pAES_KeyIv)
+                NSOpenSSL::openssl_free(m_pAES_KeyIv);
+            return true;
+        }
+        else if (name == "CryptoAES_Encrypt")
+        {
+            std::string sMessage = arguments[0]->GetStringValue().ToString();
+            std::string sOut;
+            NSOpenSSL::AES_Encrypt_desktop(m_pAES_KeyIv, sMessage, sOut);
+            retval = CefV8Value::CreateString(sOut);
+            return true;
+        }
+        else if (name == "CryptoAES_Decrypt")
+        {
+            std::string sMessage = arguments[0]->GetStringValue().ToString();
+            std::string sOut;
+            NSOpenSSL::AES_Decrypt_desktop(m_pAES_KeyIv, sMessage, sOut);
+            retval = CefV8Value::CreateString(sOut);
+            return true;
+        }
+        else if (name == "CryproRSA_CreateKeys")
+        {
+            unsigned char* publicKey = NULL;
+            unsigned char* privateKey = NULL;
+            NSOpenSSL::RSA_GenerateKeys(publicKey, privateKey);
+
+            std::string sPublic((char*)publicKey);
+            std::string sPrivate((char*)privateKey);
+
+            retval = CefV8Value::CreateArray(2);
+            retval->SetValue(0, CefV8Value::CreateString(sPrivate));
+            retval->SetValue(1, CefV8Value::CreateString(sPublic));
+
+            NSOpenSSL::openssl_free(publicKey);
+            NSOpenSSL::openssl_free(privateKey);
+            return true;
+        }
+        else if (name == "CryproRSA_EncryptPublic")
+        {
+            std::string sKey = arguments[0]->GetStringValue().ToString();
+            NSCommon::string_replaceA(sKey, "&#xA", "\n");
+            std::string sMessage = arguments[1]->GetStringValue().ToString();
+            std::string sOut;
+            NSOpenSSL::RSA_EncryptPublic_desktop((unsigned char*)sKey.c_str(), sMessage, sOut);
+            retval = CefV8Value::CreateString(sOut);
+            return true;
+        }
+        else if (name == "CryproRSA_DecryptPrivate")
+        {
+            std::string sKey = arguments[0]->GetStringValue().ToString();
+            std::string sMessage = arguments[1]->GetStringValue().ToString();
+            std::string sOut;
+            NSOpenSSL::RSA_DecryptPrivate_desktop((unsigned char*)sKey.c_str(), sMessage, sOut);
+            retval = CefV8Value::CreateString(sOut);
+            return true;
+        }
+        else if (name == "IsCloudCryptoSupport")
+        {
+            retval = CefV8Value::CreateBool(true);
+            return true;
+        }
+        else if (name == "CryptoGetHash")
+        {
+            std::string sMessage = arguments[0]->GetStringValue().ToString();
+            int alg = arguments[1]->GetIntValue();
+            unsigned int data_len = 0;
+            unsigned char* data = NSOpenSSL::GetHash((unsigned char*)sMessage.c_str(), (unsigned int)sMessage.length(), alg, data_len);
+            std::string sResult = NSOpenSSL::Serialize(data, data_len, OPENSSL_SERIALIZE_TYPE_HEX);
+            NSOpenSSL::openssl_free(data);
+            retval = CefV8Value::CreateString(sResult);
+            return true;
+        }
+        else if (name == "CryptoCloud_GetUserInfo")
+        {
+            std::string userA = CAscRendererProcessParams::getInstance().GetProperty("user");
+            CCloudCryptoDesktop info;
+            info.User = UTF8_TO_U(userA);
+
+            CCloudCryptoApp oApp(m_sUserPlugins + L"/cloud_crypto.xml");
+            CCloudCryptoDesktop* pInfo = oApp.GetInfo(info);
+
+            if (!pInfo)
+                return true;
+
+            retval = CefV8Value::CreateArray(3);
+            retval->SetValue(0, CefV8Value::CreateString(pInfo->PrivateKey));
+            retval->SetValue(1, CefV8Value::CreateString(pInfo->PublicKey));
+            retval->SetValue(2, CefV8Value::CreateString(pInfo->User));
+            return true;
+        }
+        else if (name == "Property_GetCryptoMode")
+        {
+            int nMode = m_nIsCryptoModeProperty;
+
+            std::string sPluginCryptoAttack = CAscRendererProcessParams::getInstance().GetProperty("cryptoEngineId");
+            if (!sPluginCryptoAttack.empty()) // и существует!!!
+                nMode = 2;
+
+            retval = CefV8Value::CreateInt(nMode);
+            return true;
+        }
+        else if (name == "Property_SetCryptoMode")
+        {
+            m_nIsCryptoModeProperty = arguments[0]->GetIntValue();
+            return true;
+        }
+        else if (name == "GetFrameId")
+        {
+            int64 frameID = CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier();
+            uint64 uframeID = (uint64)frameID;
+            std::string sId = std::to_string(uframeID);
+            retval = CefV8Value::CreateString(sId);
+            return true;
+        }
+        else if (name == "CallInFrame")
+        {
+            std::string sId = arguments[0]->GetStringValue().ToString();
+            std::string sCode = arguments[1]->GetStringValue().ToString();
+            int64 frameId = (int64)(std::stoull(sId));
+            CefRefPtr<CefFrame> frame = CefV8Context::GetCurrentContext()->GetBrowser()->GetFrame(frameId);
+            if (frame)
+                frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
+            return true;
+        }
+        else if (name == "_cloudCryptoCommandMainFrame")
+        {
+            std::string sId = arguments[0]->GetStringValue().ToString();
+            std::string sArg = arguments[1]->GetStringValue().ToString();
+
+            NSCommon::string_replaceA(sArg, "\r", "");
+            NSCommon::string_replaceA(sArg, "\n", "");
+            NSCommon::string_replaceA(sArg, "\\", "\\\\");
+            NSCommon::string_replaceA(sArg, "\"", "\\\"");
+
+            CefRefPtr<CefFrame> mainFrame = CefV8Context::GetCurrentContext()->GetBrowser()->GetMainFrame();
+
+            std::string sCode = "(function(){\n\
+var obj = JSON.parse(\"" + sArg + "\");\n\
+window.cloudCryptoCommand(obj.type, obj.param, function(param){\n\
+window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
+\"window.cloudCryptoCommandMainFrame_callback(\" + JSON.stringify(param || {}) + \");delete window.cloudCryptoCommandMainFrame_callback;\");\n\
+});\n\
+})();";
+            if (mainFrame)
+                mainFrame->ExecuteJavaScript(sCode, mainFrame->GetURL(), 0);
+            return true;
+        }
+        else if (name == "initCryptoWorker")
+        {
+            std::wstring sId = arguments[0]->GetStringValue().ToWString();
+            NSCommon::string_replace(sId, L"asc.", L"");
+            std::wstring sFile = m_sSystemPlugins + L"/" + sId + L"/worker.js";
+            std::string sContentWorker;
+            if (NSFile::CFileBinary::Exists(sFile))
+                NSFile::CFileBinary::ReadAllTextUtf8A(sFile, sContentWorker);
+            else
+            {
+                sFile = m_sUserPlugins + L"/" + sId + L"/worker.js";
+                if (NSFile::CFileBinary::Exists(sFile))
+                    NSFile::CFileBinary::ReadAllTextUtf8A(sFile, sContentWorker);
+            }
+
+            if (!sContentWorker.empty())
+            {
+                CefRefPtr<CefFrame> frame = CefV8Context::GetCurrentContext()->GetFrame();
+                if (frame)
+                    frame->ExecuteJavaScript(sContentWorker, frame->GetURL(), 0);
+            }
+            return true;
+        }
+        else if (name == "getDocumentInfo")
+        {
+            std::wstring sFile = arguments[0]->GetStringValue().ToWString();
+
+            COfficeFileFormatChecker oChecker;
+            oChecker.isOfficeFile(sFile);
+            if (AVS_OFFICESTUDIO_FILE_OTHER_MS_OFFCRYPTO != oChecker.nFileType)
+            {
+                retval = CefV8Value::CreateString("");
+                return true;
+            }
+
+            ECMACryptFile file;
+            std::string docinfo = file.ReadAdditional(sFile, L"DocumentID");
+            if (!docinfo.empty())
+                NSCommon::string_replaceA(docinfo, "\n", "<!--break-->");
+            retval = CefV8Value::CreateString(docinfo);
+            return true;
+        }
+        else if (name == "setDocumentInfo")
+        {
+            std::wstring sFile = arguments[0]->GetStringValue().ToWString();
+            std::wstring sPassword = arguments[1]->GetStringValue().ToWString();
+            std::wstring sDocinfo = arguments[2]->GetStringValue().ToWString();
+            bool bIsCopy = false;
+            if (arguments.size() >= 4)
+                bIsCopy = arguments[3]->GetBoolValue();
+
+            std::wstring sTmpFile = L"";
+            if (bIsCopy)
+            {
+                sTmpFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"IMG");
+                if (NSFile::CFileBinary::Exists(sTmpFile))
+                    NSFile::CFileBinary::Remove(sTmpFile);
+
+                NSFile::CFileBinary::Copy(sFile, sTmpFile);
+                sFile = sTmpFile;
+            }
+
+            bool isCrypt = false;
+
+            COfficeFileFormatChecker oChecker;
+            oChecker.isOfficeFile(sFile);
+            if (AVS_OFFICESTUDIO_FILE_OTHER_MS_OFFCRYPTO != oChecker.nFileType)
+            {
+                ECMACryptFile file;
+                if (file.EncryptOfficeFile(sFile, sFile, sPassword))
+                {
+                    file.WriteAdditional(sFile, L"DocumentID", U_TO_UTF8(sDocinfo));
+                    isCrypt = true;
+                }
+            }
+            else
+            {
+                ECMACryptFile file;
+                isCrypt = file.WriteAdditional(sFile, L"DocumentID", U_TO_UTF8(sDocinfo));
+            }
+
+            if (!bIsCopy)
+                retval = CefV8Value::CreateBool(isCrypt);
+            else
+                retval = CefV8Value::CreateString(sTmpFile);
+            return true;
+        }
+        else if (name == "isFileSupportCloudCrypt")
+        {
+            std::wstring sFile = arguments[0]->GetStringValue().ToWString();
+            bool isSupportCrypt = false;
+            COfficeFileFormatChecker oChecker;
+            if (oChecker.isOfficeFile(sFile))
+            {
+                switch (oChecker.nFileType)
+                {
+                    case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX:
+                    case AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX:
+                    case AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX:
+                    //case AVS_OFFICESTUDIO_FILE_OTHER_MS_OFFCRYPTO:
+                    {
+                        isSupportCrypt = true;
+                        break;
+                    }
+                    default:
+                        break;
+                }
+            }
+            retval = CefV8Value::CreateBool(isSupportCrypt);
+            return true;
+        }
+        else if (name == "isFileCrypt")
+        {
+            std::wstring sFile = arguments[0]->GetStringValue().ToWString();
+            bool isCrypt = false;
+            COfficeFileFormatChecker oChecker;
+            if (oChecker.isOfficeFile(sFile))
+            {
+                isCrypt = (AVS_OFFICESTUDIO_FILE_OTHER_MS_OFFCRYPTO == oChecker.nFileType) ? true : false;
+            }
+            retval = CefV8Value::CreateBool(isCrypt);
+            return true;
+        }
+        else if (name == "Crypto_GetLocalImageBase64")
+        {
+            // из локальной ссылки делаем base64!!! (для копирования из зашифрованного файла)
+            std::wstring sInput = arguments[0]->GetStringValue().ToWString();
+
+            if (IsNeedDownload(sInput))
+            {
+                retval = CefV8Value::CreateString(sInput);
+                return true;
+            }
+            if (0 == sInput.find(L"data:"))
+            {
+                retval = CefV8Value::CreateString(sInput);
+                return true;
+            }
+
+            std::wstring sOutput = NSFile::GetFileName(sInput);
+            bool isExist = false;
+            if (NSFile::CFileBinary::Exists(m_sCryptDocumentFolder + L"/media/" + sOutput))
+            {
+                sOutput = m_sCryptDocumentFolder + L"/media/" + sOutput;
+                isExist = true;
+            }
+            else if (NSFile::CFileBinary::Exists(m_sLocalFileFolderWithoutFile + L"/media/" + sOutput))
+            {
+                sOutput = m_sLocalFileFolderWithoutFile + L"/media/" + sOutput;
+                isExist = true;
+            }
+
+            if (isExist)
+            {
+                CImageFileFormatChecker checker;
+                if (checker.isImageFile(sOutput))
+                {
+                    std::string sImageData = GetFileBase64(sOutput);
+                    switch (checker.eFileType)
+                    {
+                    case _CXIMAGE_FORMAT_BMP:
+                        sImageData = "data:image/bmp;base64," + sImageData;
+                        break;
+                    case _CXIMAGE_FORMAT_JPG:
+                    case _CXIMAGE_FORMAT_JP2:
+                    case _CXIMAGE_FORMAT_JPC:
+                        sImageData = "data:image/jpeg;base64," + sImageData;
+                        break;
+                    case _CXIMAGE_FORMAT_PNG:
+                        sImageData = "data:image/png;base64," + sImageData;
+                        break;
+                    case _CXIMAGE_FORMAT_GIF:
+                        sImageData = "data:image/gif;base64," + sImageData;
+                        break;
+                    case _CXIMAGE_FORMAT_TIF:
+                        sImageData = "data:image/tiff;base64," + sImageData;
+                        break;
+                    default:
+                        sImageData = "data:image/png;base64," + sImageData;
+                        break;
+                    }
+
+                    retval = CefV8Value::CreateString(sImageData);
+                    return true;
+                }
+            }
+
+            retval = CefV8Value::CreateString(sInput);
+            return true;
+        }
+        else if (name == "CheckCloudFeatures")
+        {
+            bool bIsStopPaydDesktopFeatures = false;
+
+            // проверяем облачность...
+            if (IsLocalFile(true))
+            {
+                bIsStopPaydDesktopFeatures = true;
+            }
+
+            // проверяем лицензию...
+            if (!bIsStopPaydDesktopFeatures)
+            {
+                int nLicenceType = arguments[0]->GetIntValue();
+                if (nLicenceType != 3) // c_oLicenseResult.Success
+                    bIsStopPaydDesktopFeatures = true;
+            }
+
+            // проверяем черный список...
+            if (!bIsStopPaydDesktopFeatures)
+            {
+                // check on blacklist
+                std::string sMainUrl = "";
+                CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+                if (browser && browser->GetMainFrame())
+                    sMainUrl = browser->GetMainFrame()->GetURL().ToString();
+
+                bool bIsInBlackList = false;
+                for (std::vector<std::string>::const_iterator iter = m_arCloudFeaturesBlackList.begin(); iter != m_arCloudFeaturesBlackList.end(); iter++)
+                {
+                    std::string::size_type pos = sMainUrl.find(*iter);
+                    if (pos != std::string::npos && pos < 10)
+                    {
+                        bIsInBlackList = true;
+                        break;
+                    }
+                }
+
+                if (bIsInBlackList)
+                    bIsStopPaydDesktopFeatures = true;
+            }
+
+            if (!bIsStopPaydDesktopFeatures)
+            {
+                CSdkjsAddons oAddonsChecker(m_sUserPlugins);
+                bool bIsChanged = false;
+                m_sEditorsCloudFeatures = oAddonsChecker.CheckCloud(CefV8Context::GetCurrentContext(), bIsChanged);
+
+                if (bIsChanged)
+                {
+                    CefRefPtr<CefV8Value> retval;
+                    CefRefPtr<CefV8Exception> exception;
+                    bool bValid = CefV8Context::GetCurrentContext()->Eval("window.AscDesktopEditor.CallInAllWindows(\
+\"function(){ window.onfeaturesavailable && window.onfeaturesavailable(" + oAddonsChecker.GetFeaturesJSArray() + "); }\"\
+);",
+            #ifndef CEF_2623
+                "", 0,
+            #endif
+            retval, exception);
+                }
+            }
+
+            m_bEditorsCloudFeaturesCheck = true;
+
+            if (m_sEditorsCloudFeatures.empty())
+            {
+                // этот метод может вызваться ПОСЛЕ вызова GetInstallPlugins (если права пришли позже sdk-all)
+                // и может быть нудно застопить зря запущенный плагин
+
+                std::string sCloudCryptoId = CAscRendererProcessParams::getInstance().GetProperty("cryptoEngineId");
+
+                if (!sCloudCryptoId.empty())
+                {
+                    CefRefPtr<CefV8Value> retval;
+                    CefRefPtr<CefV8Exception> exception;
+                    bool bValid = CefV8Context::GetCurrentContext()->Eval("(function(){var _editor = window.Asc.editor ? window.Asc.editor : window.editor; _editor && _editor.asc_pluginStop && _editor.asc_pluginStop(\"" + sCloudCryptoId + "\");})();",
+            #ifndef CEF_2623
+                "", 0,
+            #endif
+            retval, exception);
+                }
+            }
+
+            return true;
+        }
+        else if (name == "GetLocalFeatures")
+        {
+            CSdkjsAddons oAddonsChecker(m_sUserPlugins);
+            std::vector<std::string> arrFeatures = oAddonsChecker.GetFeaturesArray();
+            int nCount = (int)arrFeatures.size();
+            retval = CefV8Value::CreateArray(nCount);
+            int nCurrent = 0;
+            for (std::vector<std::string>::iterator i = arrFeatures.begin(); i != arrFeatures.end(); i++)
+                retval->SetValue(nCurrent++, CefV8Value::CreateString(*i));
             return true;
         }
 
@@ -2917,7 +3596,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
 
-    #define EXTEND_METHODS_COUNT 131
+    #define EXTEND_METHODS_COUNT 155
     const char* methods[EXTEND_METHODS_COUNT] = {
         "Copy",
         "Paste",
@@ -2928,8 +3607,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         "SetEditorId",
         "GetEditorId",
         "SpellCheck",
-        "CreateEditorApi",
+        "_CreateEditorApi",
         "ConsoleLog",
+        "CheckCloudFeatures",
 
         "setCookie",
         "setAuth",
@@ -2964,6 +3644,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         "LocalFileRecents",
         "LocalFileOpenRecent",
         "LocalFileRemoveRecent",
+        "GetLocalFeatures",
 
         "LocalFileRecovers",
         "LocalFileOpenRecover",
@@ -3094,6 +3775,37 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         "CompareDocumentFile",
 
         "IsSupportMedia",
+
+        "SetIsReadOnly",
+
+        "CryptoCloud_GetUserInfo",
+
+        "CryptoAES_Init",
+        "CryptoAES_Clean",
+        "CryptoAES_Encrypt",
+        "CryptoAES_Decrypt",
+
+        "CryproRSA_CreateKeys",
+        "CryproRSA_EncryptPublic",
+        "CryproRSA_DecryptPrivate",
+        "IsCloudCryptoSupport",
+
+        "CryptoGetHash",
+
+        "Property_GetCryptoMode",
+        "Property_SetCryptoMode",
+
+        "_cloudCryptoCommandMainFrame",
+        "GetFrameId",
+        "CallInFrame",
+
+        "initCryptoWorker",
+        "getDocumentInfo",
+        "setDocumentInfo",
+        "isFileSupportCloudCrypt",
+        "isFileCrypt",
+
+        "Crypto_GetLocalImageBase64",
 
         NULL
     };
@@ -3338,6 +4050,7 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
             bool bIsSaved = message->GetArgumentList()->GetBool(2);
 
             std::wstring sSignatures = message->GetArgumentList()->GetString(3).ToWString();
+            bool bIsLockedFile = message->GetArgumentList()->GetBool(4);
             NSCommon::string_replace(sSignatures, L"\"", L"\\\"");
 
             if (bIsSaved)
@@ -3374,6 +4087,12 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
                         sChanges + ");window.AscDesktopEditor.LocalFileSetOpenChangesCount(" +
                         std::to_string(nCounter) + ");";
                 _frame->ExecuteJavaScript(sChanges, _frame->GetURL(), 0);
+            }
+
+            if (bIsLockedFile)
+            {
+                _frame->ExecuteJavaScript("(function(){var _editor = window[\"editor\"]; if (!_editor && window[\"Asc\"]) _editor = window[\"Asc\"][\"editor\"]; if (_editor && _editor.asc_setIsReadOnly) _editor.asc_setIsReadOnly(true, true);})();",
+                                          _frame->GetURL(), 0);
             }
 
             sCode = "";
@@ -3565,6 +4284,7 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
             if (3 <= message->GetArgumentList()->GetSize())
             {
                 std::string sDocInfo = message->GetArgumentList()->GetString(2).ToString();
+                NSCommon::string_replaceA(sDocInfo, "\n", "<!--break-->");
                 sCode += ",\"";
                 sCode += sDocInfo;
                 sCode += "\"";
@@ -3725,7 +4445,7 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
             std::string sParam = message->GetArgumentList()->GetString(0);
             NSCommon::string_replaceA(sParam, "\\", "\\\\");
             NSCommon::string_replaceA(sParam, "\"", "\\\"");
-            _frame->ExecuteJavaScript("window.editor.DemonstrationReporterMessages({ data : \"" + sParam + "\" });", _frame->GetURL(), 0);
+            _frame->ExecuteJavaScript("window.editor && window.editor.DemonstrationReporterMessages({ data : \"" + sParam + "\" });", _frame->GetURL(), 0);
         }
 
         return true;
@@ -3739,7 +4459,7 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
             std::string sParam = message->GetArgumentList()->GetString(0);
             NSCommon::string_replaceA(sParam, "\\", "\\\\");
             NSCommon::string_replaceA(sParam, "\"", "\\\"");
-            _frame->ExecuteJavaScript("window.editor.DemonstrationToReporterMessages({ data : \"" + sParam + "\" });", _frame->GetURL(), 0);
+            _frame->ExecuteJavaScript("window.editor && window.editor.DemonstrationToReporterMessages({ data : \"" + sParam + "\" });", _frame->GetURL(), 0);
         }
 
         return true;
@@ -3998,12 +4718,17 @@ delete window[\"crypto_images_map\"][_url];\n\
     }
     else if (sMessageName == "on_download_files")
     {
-        CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
+        int nCount = message->GetArgumentList()->GetSize();
+        int nIndex = 0;
+        int64 nFrameId = NSArgumentList::GetInt64(message->GetArgumentList(), nIndex++);
+
+        CefRefPtr<CefFrame> _frame = browser->GetFrame(nFrameId);
+        if (!_frame)
+            _frame = GetEditorFrame(browser);
+
         if (_frame)
         {
             std::string sParam = "{";
-            int nCount = message->GetArgumentList()->GetSize();
-            int nIndex = 0;
             while (nIndex < nCount)
             {
                 sParam += ("\"" + message->GetArgumentList()->GetString(nIndex++).ToString() + "\" : \"");
