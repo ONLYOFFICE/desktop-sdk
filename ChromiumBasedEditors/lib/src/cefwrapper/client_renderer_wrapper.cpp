@@ -1830,8 +1830,10 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
             oPlugins.m_strUserDirectory = m_sUserPlugins;
             oPlugins.m_nCryptoMode = m_nCryptoMode;
 
-            if (!m_bEditorsCloudFeaturesCheck || m_sEditorsCloudFeatures.length() > 1)
-                oPlugins.m_strCryptoPluginAttack = CAscRendererProcessParams::getInstance().GetProperty("cryptoEngineId");
+            // TODO: пока нет платных фич во всех редакторах - это неправильно
+            //if (!m_bEditorsCloudFeaturesCheck || m_sEditorsCloudFeatures.length() > 1)
+            //    oPlugins.m_strCryptoPluginAttack = CAscRendererProcessParams::getInstance().GetProperty("cryptoEngineId");
+            oPlugins.m_strCryptoPluginAttack = CAscRendererProcessParams::getInstance().GetProperty("cryptoEngineId");
 
             std::string sData = oPlugins.GetPluginsJson(true);
             retval = CefV8Value::CreateString(sData);
