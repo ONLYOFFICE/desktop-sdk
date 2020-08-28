@@ -947,6 +947,16 @@ public:
 
     CefRefPtr<CefBrowser> GetBrowser() const;
 
+    void CheckLockLocalFile()
+    {
+        if (m_oLocalInfo.m_oInfo.m_bIsSaved && NSFile::CFileBinary::Exists(m_oLocalInfo.m_oInfo.m_sFileSrc))
+        {
+            if (m_pLocalFileLocker)
+                RELEASEOBJECT(m_pLocalFileLocker);
+            m_pLocalFileLocker = new NSSystem::CLocalFileLocker(m_oLocalInfo.m_oInfo.m_sFileSrc);
+        }
+    }
+
     int GetViewCryptoMode()
     {
         // общий режим
@@ -1111,6 +1121,7 @@ public:
 
     void LocalFile_SaveStart(std::wstring sPath = L"", int nType = -1)
     {
+        RELEASEOBJECT(m_pLocalFileLocker);
         m_oLocalInfo.SetupOptions(m_oConverterFromEditor.m_oInfo);
         m_oLocalInfo.m_oInfo.m_sDocumentInfo = L"";
 
@@ -4455,6 +4466,9 @@ void CCefView_Private::LocalFile_End()
     if (m_oLocalInfo.m_oInfo.m_bIsSaved)
         isLocked = NSSystem::CLocalFileLocker::IsLocked(m_oLocalInfo.m_oInfo.m_sFileSrc);
 
+    if (!isLocked)
+        CheckLockLocalFile();
+
     message->GetArgumentList()->SetBool(4, isLocked);
 
     if (isLocked)
@@ -4536,6 +4550,8 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
             // обновим информацию о файле
             m_oLocalInfo.m_oInfo.m_sFileSrc = m_oConverterFromEditor.m_oInfo.m_sFileSrc;
             m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat;
+
+            CheckLockLocalFile();
 
             // информация для recover
             std::wstring sNameInfo = m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/asc_name.info";
