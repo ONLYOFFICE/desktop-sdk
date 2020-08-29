@@ -1674,6 +1674,15 @@ public:
     {
         std::wstring sUrl = request->GetURL().ToWString();
 
+        if (0 == sUrl.find(L"mailto"))
+        {
+            // disable navigation
+            std::wstring sCode = L"window.open(\"" + sUrl + L"\");";
+            if (frame)
+                frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
+            return true;
+        }
+
         if (m_pParent->m_pInternal->m_bIsSSO)
         {
             if (m_pParent->m_pInternal->m_bIsFirstLoadSSO)
