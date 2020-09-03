@@ -604,7 +604,7 @@ std::wstring CAscApplicationManager::GetNewFilePath(const int& nFileFormat)
     std::string sCountry = m_oSettings.country;
     NSCommon::makeUpper(sCountry);
 
-    std::wstring sPrefix = m_pInternal->m_mainLang;
+    std::wstring sPrefix = NSUrlParse::GetUrlValue(m_pInternal->m_sAdditionalUrlParams, L"lang");
     if (NSDirectory::Exists(m_oSettings.file_converter_path + L"/empty/" + sPrefix))
     {
         sPrefix += L"/";
