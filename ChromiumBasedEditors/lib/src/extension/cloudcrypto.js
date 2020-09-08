@@ -20,7 +20,7 @@ window.AscDesktopEditor.cloudCryptoCommand = function(type, param, callback)
 				for (var fileItem in files)
 				{
 					let file = files[fileItem];
-					let isSupportCrypt = window.AscDesktopEditor.isFileSupportCloudCrypt(file);
+					let isSupportCrypt = window.AscDesktopEditor.isFileSupportCloudCrypt(file, true);
 					let isCrypto = false;
 
 					if (isSupportCrypt)
