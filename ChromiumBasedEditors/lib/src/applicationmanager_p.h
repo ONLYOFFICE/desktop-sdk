@@ -1041,6 +1041,9 @@ public:
     // logout из портала -----------------------------------------------------------------------
     void Logout(std::wstring strUrl, CefRefPtr<CefCookieManager> manager)
     {
+        if (0 == strUrl.find(L"onlyoffice.com"))
+            return;
+
         CCefCookieVisitor* pVisitor = new CCefCookieVisitor();
         pVisitor->m_pCallback       = this;
         pVisitor->m_bIsDelete       = true;
