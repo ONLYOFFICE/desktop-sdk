@@ -2520,13 +2520,22 @@ public:
                 std::wstring sSignatures = pConverter->GetSignaturesJSON();
 
                 CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("on_signature_update_signatures");
-                message->GetArgumentList()->SetString(0, sSignatures);
-                SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
+                messageOut->GetArgumentList()->SetString(0, sSignatures);
+                SEND_MESSAGE_TO_RENDERER_PROCESS(browser, messageOut);
             }
 
             RELEASEOBJECT(pCertificate);
 
+            std::wstring sLockedFile = L"";
+            if (m_pParent->m_pInternal->m_pLocalFileLocker)
+                sLockedFile = m_pParent->m_pInternal->m_pLocalFileLocker->GetFileLocked();
+
+            RELEASEOBJECT(m_pParent->m_pInternal->m_pLocalFileLocker);
             oZIP.Close();
+
+            if (!sLockedFile.empty())
+                m_pParent->m_pInternal->m_pLocalFileLocker = new NSSystem::CLocalFileLocker(sLockedFile);
+
             return true;
         }
         else if (message_name == "on_signature_remove")
@@ -2558,7 +2567,15 @@ public:
             messageOut->GetArgumentList()->SetString(0, sSignatures);
             SEND_MESSAGE_TO_RENDERER_PROCESS(browser, messageOut);
 
+            std::wstring sLockedFile = L"";
+            if (m_pParent->m_pInternal->m_pLocalFileLocker)
+                sLockedFile = m_pParent->m_pInternal->m_pLocalFileLocker->GetFileLocked();
+
+            RELEASEOBJECT(m_pParent->m_pInternal->m_pLocalFileLocker);
             oZIP.Close();
+
+            if (!sLockedFile.empty())
+                m_pParent->m_pInternal->m_pLocalFileLocker = new NSSystem::CLocalFileLocker(sLockedFile);
             return true;
         }
         else if (message_name == "on_signature_viewcertificate")
