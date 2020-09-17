@@ -823,6 +823,11 @@ namespace NSSystem
 #endif
             return isLocked;
         }
+
+        std::wstring GetFileLocked()
+        {
+            return m_sFile;
+        }
     };
 }
 
@@ -870,6 +875,9 @@ public:
 
     // показывать ли консоль для дебага
     bool m_bDebugInfoSupport;
+
+    // экспериментальные возможности
+    bool m_bExperimentalFeatures;
 
     // использовать ли внешнюю очередь сообщений
     bool m_bIsUseExternalMessageLoop;
@@ -978,6 +986,8 @@ public:
         m_pApplication = NULL;
 
         m_bDebugInfoSupport = false;
+        m_bExperimentalFeatures = false;
+
         m_bIsUseExternalMessageLoop = false;
         m_pExternalMessageLoop = NULL;
 
@@ -1173,7 +1183,12 @@ public:
         {
             m_bDebugInfoSupport = true;
             return;
-        }        
+        }
+        if ("--ascdesktop-enable-experimental-features" == sName)
+        {
+            m_bExperimentalFeatures = true;
+            return;
+        }
 
         bool bIsChanged = false;
         const char* namePtr = sName.c_str();

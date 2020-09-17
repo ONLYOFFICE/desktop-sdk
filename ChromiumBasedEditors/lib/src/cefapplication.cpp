@@ -321,6 +321,13 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
         pManager->m_pInternal->SaveSettings();
     }
 
+    if (pManager->m_pInternal->m_bExperimentalFeatures)
+    {
+        pManager->m_oSettings.pass_support = true;
+        pManager->m_oSettings.sign_support = true;
+        pManager->m_oSettings.protect_support = true;
+    }
+
     switch (process_type)
     {
         case client::ClientApp::BrowserProcess:
