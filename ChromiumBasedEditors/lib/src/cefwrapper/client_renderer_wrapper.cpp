@@ -2493,6 +2493,7 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
         {
             std::wstring sFile = arguments[0]->GetStringValue().ToWString();
             std::wstring sExt = NSCommon::GetFileExtention(sFile);
+            sExt = NSCommon::makeLowerW(sExt);
             std::wstring sImage = L"display8image" + std::to_wstring(m_nLocalImagesNextIndex++);
             std::wstring sDstMain = m_sLocalFileFolderWithoutFile + L"/media/" + sImage + L".";
             std::wstring sDst = sDstMain + sExt;
@@ -2514,6 +2515,7 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
         {
             std::wstring sFile = arguments[0]->GetStringValue().ToWString();
             std::wstring sExt = NSCommon::GetFileExtention(sFile);
+            sExt = NSCommon::makeLowerW(sExt);
             std::wstring sImage = L"display8image" + std::to_wstring(m_nLocalImagesNextIndex++);
             std::wstring sDstMain = m_sLocalFileFolderWithoutFile + L"/media/" + sImage + L".";
             std::wstring sDst = sDstMain + sExt;
