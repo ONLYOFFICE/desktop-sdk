@@ -2646,6 +2646,10 @@ public:
 
                 messageOut->GetArgumentList()->SetString(0, serializer.GetData());
             }
+            else
+            {
+                messageOut->GetArgumentList()->SetString(0, "{}");
+            }
             RELEASEOBJECT(pCert);
             SEND_MESSAGE_TO_RENDERER_PROCESS(browser, messageOut);
             return true;
