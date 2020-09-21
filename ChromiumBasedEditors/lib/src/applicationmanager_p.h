@@ -744,6 +744,10 @@ namespace NSSystem
         }
         bool Lock()
         {
+#ifdef _MAC
+            return true;
+#endif
+            
             Unlock();
 #ifdef _WIN32
             m_oLocker.OpenFile(m_sFile);
@@ -767,6 +771,10 @@ namespace NSSystem
         }
         bool Unlock()
         {
+#ifdef _MAC
+            return true;
+#endif
+            
 #ifdef _WIN32
             m_oLocker.CloseFile();
 #else
@@ -793,6 +801,10 @@ namespace NSSystem
 
         static bool IsLocked(const::std::wstring& sFile)
         {
+#ifdef _MAC
+            return false;
+#endif
+            
             bool isLocked = false;
 #ifdef _WIN32
             HANDLE hFile = CreateFileW(sFile.c_str(),                   // открываемый файл
