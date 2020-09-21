@@ -1378,6 +1378,7 @@ public:
         oWorker.m_sDirectory = m_pMain->m_oSettings.fonts_cache_info_path;
         oWorker.m_bIsUseSystemFonts = m_pMain->m_oSettings.use_system_fonts;
         oWorker.m_arAdditionalFolders = m_pMain->m_oSettings.additional_fonts_folder;
+        oWorker.m_bIsUseAllVersions = true;
 
 #if defined(_LINUX)
         std::wstring sHome = GetHomeDirectory();

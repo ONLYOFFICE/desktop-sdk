@@ -846,6 +846,37 @@ retval, exception);
             else
             {
                 // ждем asc_onGetEditorPermissions
+
+                // формат AllFonts.js изменен!!!
+                // смотрим на версию и если она старая - берем нужную версию файла
+
+                std::string::size_type pos = m_sVersion.find_first_of(".,");
+                if (pos != std::string::npos)
+                {
+                    try
+                    {
+                        int nMajorVersion = std::stoi(m_sVersion.substr(0, pos));
+                        if (nMajorVersion < 6)
+                        {
+                            // берем нужную версию
+                            std::string sCode;
+                            NSFile::CFileBinary::ReadAllTextUtf8A(m_sFontsData + L"/AllFonts.js.1", sCode);
+                            if (!sCode.empty())
+                            {
+                                CefRefPtr<CefV8Value> retval;
+                                CefRefPtr<CefV8Exception> exception;
+                                CefV8Context::GetCurrentContext()->Eval(sCode,
+                                #ifndef CEF_2623
+                                            "", 0,
+                                #endif
+                                retval, exception);
+                            }
+                        }
+                    }
+                    catch (...)
+                    {
+                    }
+                }
             }
             return true;
         }
