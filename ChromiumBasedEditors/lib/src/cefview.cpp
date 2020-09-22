@@ -804,6 +804,8 @@ public:
     bool m_bIsLocalFileLocked; // залочен ли файл?
     NSSystem::CLocalFileLocker* m_pLocalFileLocker; // класс для лока открытых файлов
 
+    std::string m_sVersionForReporter;
+
 public:
     CCefView_Private()
     {
@@ -2703,9 +2705,10 @@ public:
             pCreate->ParentId = m_pParent->GetId();
             pCreate->Url = args->GetString(0).ToWString();
             pCreate->LocalRecoverFolder = args->GetString(1).ToWString();
+            pCreate->Version = args->GetString(2).ToString();
 
-            if (args->GetSize() > 2)
-                pCreate->CloudCryptoInfo = args->GetString(2).ToString();
+            if (args->GetSize() > 3)
+                pCreate->CloudCryptoInfo = args->GetString(3).ToString();
 
             pData->put_Data(pCreate);
 
@@ -3812,6 +3815,16 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
                 NSThreads::Sleep( 10 );
 
             std::wstring sPathFonts = m_pParent->GetAppManager()->m_oSettings.fonts_cache_info_path + L"/AllFonts.js";
+
+            if (true)
+            {
+                int nMajorVersion = NSVersion::GetMajorVersion(m_pParent->m_pInternal->m_sVersionForReporter);
+                if (nMajorVersion != 0 && nMajorVersion < 6)
+                {
+                    sPathFonts += L".1";
+                }
+            }
+
             return GetLocalFileRequest(sPathFonts, "", "");
         }
 #endif
@@ -4067,6 +4080,9 @@ require.load = function (context, moduleName, url) {\n\
         //    return "application/octet-stream";
         //else if (sExt == L"otf")
         //    return "application/octet-stream";
+
+        if (L"1" == sExt && std::wstring::npos != sFile.find(L"AllFonts.js.1"))
+            return "application/javascript";
 
         return "";
     }
@@ -5864,6 +5880,7 @@ void CCefView::LoadReporter(void* reporter_data)
     m_pInternal->m_bIsReporter = true;
     m_pInternal->m_nReporterParentId = nParentId;
     m_pInternal->m_sCloudCryptoReporter = pReporterData->CloudCryptoInfo;
+    m_pInternal->m_sVersionForReporter = pReporterData->Version;
 
     // url - parent url
     std::wstring urlReporter = url;

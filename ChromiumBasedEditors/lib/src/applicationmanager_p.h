@@ -109,6 +109,29 @@ public:
 
 #endif
 
+namespace NSVersion
+{
+    static int GetMajorVersion(const std::string& sVersion)
+    {
+        if (sVersion.empty())
+            return 0;
+        std::string::size_type pos = sVersion.find_first_of(".,");
+        int nVersion = 0;
+        if (pos != std::string::npos)
+        {
+            try
+            {
+                nVersion = std::stoi(sVersion.substr(0, pos));
+            }
+            catch (...)
+            {
+                nVersion = 0;
+            }
+        }
+        return nVersion;
+    }
+}
+
 class CAscReporterData
 {
 public:
@@ -116,6 +139,7 @@ public:
     int ParentId;
     std::wstring Url;
     std::wstring LocalRecoverFolder;
+    std::string Version;
 
     std::string CloudCryptoInfo;
 

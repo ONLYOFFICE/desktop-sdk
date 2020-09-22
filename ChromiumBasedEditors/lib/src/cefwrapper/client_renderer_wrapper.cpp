@@ -850,31 +850,21 @@ retval, exception);
                 // формат AllFonts.js изменен!!!
                 // смотрим на версию и если она старая - берем нужную версию файла
 
-                std::string::size_type pos = m_sVersion.find_first_of(".,");
-                if (pos != std::string::npos)
+                int nMajorVersion = NSVersion::GetMajorVersion(m_sVersion);
+                if (nMajorVersion != 0 && nMajorVersion < 6)
                 {
-                    try
+                    // берем нужную версию
+                    std::string sCode;
+                    NSFile::CFileBinary::ReadAllTextUtf8A(m_sFontsData + L"/AllFonts.js.1", sCode);
+                    if (!sCode.empty())
                     {
-                        int nMajorVersion = std::stoi(m_sVersion.substr(0, pos));
-                        if (nMajorVersion < 6)
-                        {
-                            // берем нужную версию
-                            std::string sCode;
-                            NSFile::CFileBinary::ReadAllTextUtf8A(m_sFontsData + L"/AllFonts.js.1", sCode);
-                            if (!sCode.empty())
-                            {
-                                CefRefPtr<CefV8Value> retval;
-                                CefRefPtr<CefV8Exception> exception;
-                                CefV8Context::GetCurrentContext()->Eval(sCode,
-                                #ifndef CEF_2623
-                                            "", 0,
-                                #endif
-                                retval, exception);
-                            }
-                        }
-                    }
-                    catch (...)
-                    {
+                        CefRefPtr<CefV8Value> retval;
+                        CefRefPtr<CefV8Exception> exception;
+                        CefV8Context::GetCurrentContext()->Eval(sCode,
+                        #ifndef CEF_2623
+                                    "", 0,
+                        #endif
+                        retval, exception);
                     }
                 }
             }
@@ -1990,6 +1980,7 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_start_reporter");
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
             message->GetArgumentList()->SetString(1, m_sLocalFileFolder);
+            message->GetArgumentList()->SetString(2, m_sVersion);
 
             // проверяекм на cloudCrypto
             std::string sCloudCryptoId = CAscRendererProcessParams::getInstance().GetProperty("cryptoEngineId");
@@ -1999,7 +1990,7 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
                 sJson += CAscRendererProcessParams::getInstance().GetProperty("user");
                 sJson += "\" }";
 
-                message->GetArgumentList()->SetString(2, sJson);
+                message->GetArgumentList()->SetString(3, sJson);
             }
 
             SEND_MESSAGE_TO_BROWSER_PROCESS(message);
