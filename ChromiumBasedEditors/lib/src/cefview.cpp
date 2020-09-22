@@ -2467,7 +2467,7 @@ public:
             {
                 std::wstring sValue = args->GetString(i).ToWString();
                 COfficeFileFormatCheckerWrapper oChecker;
-                if (oChecker.isOfficeFile2(sValue))
+                if (oChecker.isOfficeFile2(sValue, true))
                     arFolder.push_back(sValue);
             }
 
