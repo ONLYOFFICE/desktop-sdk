@@ -797,7 +797,8 @@ public:
             }
             else
             {
-                std::wstring sUnzipDir = NSCommon::GetDirectoryName(sFile) + L"/" + NSCommon::GetFileName(sFile) + L"_uncompress";
+                //std::wstring sUnzipDir = NSCommon::GetDirectoryName(sFile) + L"/" + NSCommon::GetFileName(sFile) + L"_uncompress";
+                std::wstring sUnzipDir = NSDirectory::CreateDirectoryWithUniqueName(NSDirectory::GetTempPath());
                 NSDirectory::CreateDirectory(sUnzipDir);
 
                 COfficeUtils oCOfficeUtils(NULL);
