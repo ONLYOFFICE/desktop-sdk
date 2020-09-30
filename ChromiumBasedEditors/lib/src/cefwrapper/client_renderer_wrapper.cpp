@@ -846,6 +846,27 @@ retval, exception);
             else
             {
                 // ждем asc_onGetEditorPermissions
+
+                // формат AllFonts.js изменен!!!
+                // смотрим на версию и если она старая - берем нужную версию файла
+
+                int nMajorVersion = NSVersion::GetMajorVersion(m_sVersion);
+                if (nMajorVersion != 0 && nMajorVersion < 6)
+                {
+                    // берем нужную версию
+                    std::string sCode;
+                    NSFile::CFileBinary::ReadAllTextUtf8A(m_sFontsData + L"/AllFonts.js.1", sCode);
+                    if (!sCode.empty())
+                    {
+                        CefRefPtr<CefV8Value> retval;
+                        CefRefPtr<CefV8Exception> exception;
+                        CefV8Context::GetCurrentContext()->Eval(sCode,
+                        #ifndef CEF_2623
+                                    "", 0,
+                        #endif
+                        retval, exception);
+                    }
+                }
             }
             return true;
         }
@@ -1959,6 +1980,7 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_start_reporter");
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
             message->GetArgumentList()->SetString(1, m_sLocalFileFolder);
+            message->GetArgumentList()->SetString(2, m_sVersion);
 
             // проверяекм на cloudCrypto
             std::string sCloudCryptoId = CAscRendererProcessParams::getInstance().GetProperty("cryptoEngineId");
@@ -1968,7 +1990,7 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
                 sJson += CAscRendererProcessParams::getInstance().GetProperty("user");
                 sJson += "\" }";
 
-                message->GetArgumentList()->SetString(2, sJson);
+                message->GetArgumentList()->SetString(3, sJson);
             }
 
             SEND_MESSAGE_TO_BROWSER_PROCESS(message);
@@ -2493,6 +2515,7 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
         {
             std::wstring sFile = arguments[0]->GetStringValue().ToWString();
             std::wstring sExt = NSCommon::GetFileExtention(sFile);
+            NSCommon::makeLowerW(sExt);
             std::wstring sImage = L"display8image" + std::to_wstring(m_nLocalImagesNextIndex++);
             std::wstring sDstMain = m_sLocalFileFolderWithoutFile + L"/media/" + sImage + L".";
             std::wstring sDst = sDstMain + sExt;
@@ -2514,6 +2537,7 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
         {
             std::wstring sFile = arguments[0]->GetStringValue().ToWString();
             std::wstring sExt = NSCommon::GetFileExtention(sFile);
+            NSCommon::makeLowerW(sExt);
             std::wstring sImage = L"display8image" + std::to_wstring(m_nLocalImagesNextIndex++);
             std::wstring sDstMain = m_sLocalFileFolderWithoutFile + L"/media/" + sImage + L".";
             std::wstring sDst = sDstMain + sExt;
@@ -2765,7 +2789,7 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
         }
         else if (name == "IsSupportMedia")
         {
-            bool bIsLocal = IsLocalFile(false);
+            bool bIsLocal = IsLocalFile(true);
 #ifdef _MAC
             bIsLocal = false;
 #endif

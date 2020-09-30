@@ -109,6 +109,29 @@ public:
 
 #endif
 
+namespace NSVersion
+{
+    static int GetMajorVersion(const std::string& sVersion)
+    {
+        if (sVersion.empty())
+            return 0;
+        std::string::size_type pos = sVersion.find_first_of(".,");
+        int nVersion = 0;
+        if (pos != std::string::npos)
+        {
+            try
+            {
+                nVersion = std::stoi(sVersion.substr(0, pos));
+            }
+            catch (...)
+            {
+                nVersion = 0;
+            }
+        }
+        return nVersion;
+    }
+}
+
 class CAscReporterData
 {
 public:
@@ -116,6 +139,7 @@ public:
     int ParentId;
     std::wstring Url;
     std::wstring LocalRecoverFolder;
+    std::string Version;
 
     std::string CloudCryptoInfo;
 
@@ -128,6 +152,121 @@ public:
     }
 };
 
+namespace NSSystem
+{
+#ifndef _WIN32
+#include <fcntl.h>
+#endif
+
+    class CLocalFileLocker
+    {
+    private:
+        std::wstring m_sFile;
+#ifdef _WIN32
+        NSFile::CFileBinary m_oLocker;
+#else
+        int m_nDescriptor;
+#endif
+
+    public:
+        CLocalFileLocker(const std::wstring& sFile)
+        {
+            m_sFile = sFile;
+#ifndef _WIN32
+            m_nDescriptor = -1;
+#endif
+
+            Lock();
+        }
+        bool Lock()
+        {
+            Unlock();
+#ifdef _WIN32
+            m_oLocker.OpenFile(m_sFile);
+#else
+            std::string sFileA = U_TO_UTF8(m_sFile);
+            m_nDescriptor = open(sFileA.c_str(), O_RDWR | O_EXCL);
+            if (-1 == m_nDescriptor)
+                return true;
+
+            struct flock _lock;
+            memset(&_lock, 0, sizeof(_lock));
+            _lock.l_type   = F_WRLCK;
+            _lock.l_whence = SEEK_SET;
+            _lock.l_start  = 0;
+            _lock.l_len    = 0;
+            _lock.l_pid    = getpid();
+
+            fcntl(m_nDescriptor, F_SETLKW, &_lock);
+#endif
+            return true;
+        }
+        bool Unlock()
+        {
+#ifdef _WIN32
+            m_oLocker.CloseFile();
+#else
+            if (-1 == m_nDescriptor)
+                return true;
+
+            struct flock _lock;
+            memset(&_lock, 0, sizeof(_lock));
+            _lock.l_type   = F_UNLCK;
+            _lock.l_whence = SEEK_SET;
+            _lock.l_start  = 0;
+            _lock.l_len    = 0;
+            _lock.l_pid    = getpid();
+
+            fcntl(m_nDescriptor, F_SETLKW, &_lock);
+            close(m_nDescriptor);
+#endif
+            return true;
+        }
+        ~CLocalFileLocker()
+        {
+            Unlock();
+        }
+
+        static bool IsLocked(const::std::wstring& sFile)
+        {
+            bool isLocked = false;
+#ifdef _WIN32
+            HANDLE hFile = CreateFileW(sFile.c_str(),                   // открываемый файл
+                                        GENERIC_READ | GENERIC_WRITE,   // открываем для чтения и записи
+                                        0,                              // для совместного чтения
+                                        NULL,                           // защита по умолчанию
+                                        OPEN_EXISTING,                  // только существующий файл
+                                        FILE_ATTRIBUTE_NORMAL,          // обычный файл
+                                        NULL);                          // атрибутов шаблона нет
+            if (hFile == INVALID_HANDLE_VALUE)
+            {
+                if (INVALID_FILE_ATTRIBUTES != GetFileAttributesW(sFile.c_str()))
+                    isLocked = true;
+            }
+            CloseHandle(hFile);
+#else
+            std::string sFileA = U_TO_UTF8(sFile);
+            int nDescriptor = open(sFileA.c_str(), O_RDWR | O_EXCL);
+            if (-1 == nDescriptor)
+                return false;
+
+            struct flock _lock;
+            memset(&_lock, 0, sizeof(_lock));
+            fcntl(nDescriptor, F_GETLK, &_lock);
+            if (F_WRLCK == (_lock.l_type & F_WRLCK))
+                isLocked = true;
+            close(nDescriptor);
+#endif
+            return isLocked;
+        }
+
+        std::wstring GetFileLocked()
+        {
+            return m_sFile;
+        }
+    };
+}
+
 class COfficeFileFormatCheckerWrapper : public COfficeFileFormatChecker
 {
 public:
@@ -138,7 +277,7 @@ public:
         nFileType2 = nFileType;
     }
 public:
-    bool isOfficeFile2(const std::wstring& fileName)
+    bool isOfficeFile2(const std::wstring& fileName, bool isCheckLocal = false)
     {
         // check empty file!!!
         NSFile::CFileBinary oFile;
@@ -177,6 +316,26 @@ public:
             }
         }
         bool isOfficeFileBase = isOfficeFile(fileName);
+
+        if (isCheckLocal)
+        {
+            // check locked files
+            int nFormat = GetFormatByExtension(L"." + NSFile::GetFileExtention(fileName));
+            if (nFormat != 0)
+            {
+                if (NSSystem::CLocalFileLocker::IsLocked(fileName))
+                {
+                    std::wstring sTmpFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"TMP");
+                    if (NSFile::CFileBinary::Exists(sTmpFile))
+                        NSFile::CFileBinary::Remove(sTmpFile);
+                    sTmpFile += (L"." + NSCommon::GetFileExtention(fileName));
+                    NSFile::CFileBinary::Copy(fileName, sTmpFile);
+                    isOfficeFileBase = isOfficeFile(sTmpFile);
+                    NSFile::CFileBinary::Remove(sTmpFile);
+                }
+            }
+        }
+
         if (!isOfficeFileBase)
             return false;
 
@@ -716,116 +875,6 @@ public:
     }
 };
 
-namespace NSSystem
-{
-#ifndef _WIN32
-#include <fcntl.h>
-#endif
-
-    class CLocalFileLocker
-    {
-    private:
-        std::wstring m_sFile;
-#ifdef _WIN32
-        NSFile::CFileBinary m_oLocker;
-#else
-        int m_nDescriptor;
-#endif
-
-    public:
-        CLocalFileLocker(const std::wstring& sFile)
-        {
-            m_sFile = sFile;
-#ifndef _WIN32
-            m_nDescriptor = -1;
-#endif
-
-            Lock();
-        }
-        bool Lock()
-        {
-            Unlock();
-#ifdef _WIN32
-            m_oLocker.OpenFile(m_sFile);
-#else
-            std::string sFileA = U_TO_UTF8(m_sFile);
-            m_nDescriptor = open(sFileA.c_str(), O_RDWR | O_EXCL);
-            if (-1 == m_nDescriptor)
-                return true;
-
-            struct flock _lock;
-            memset(&_lock, 0, sizeof(_lock));
-            _lock.l_type   = F_WRLCK;
-            _lock.l_whence = SEEK_SET;
-            _lock.l_start  = 0;
-            _lock.l_len    = 0;
-            _lock.l_pid    = getpid();
-
-            fcntl(m_nDescriptor, F_SETLKW, &_lock);
-#endif
-            return true;
-        }
-        bool Unlock()
-        {
-#ifdef _WIN32
-            m_oLocker.CloseFile();
-#else
-            if (-1 == m_nDescriptor)
-                return true;
-
-            struct flock _lock;
-            memset(&_lock, 0, sizeof(_lock));
-            _lock.l_type   = F_UNLCK;
-            _lock.l_whence = SEEK_SET;
-            _lock.l_start  = 0;
-            _lock.l_len    = 0;
-            _lock.l_pid    = getpid();
-
-            fcntl(m_nDescriptor, F_SETLKW, &_lock);
-            close(m_nDescriptor);
-#endif
-            return true;
-        }
-        ~CLocalFileLocker()
-        {
-            Unlock();
-        }
-
-        static bool IsLocked(const::std::wstring& sFile)
-        {
-            bool isLocked = false;
-#ifdef _WIN32
-            HANDLE hFile = CreateFileW(sFile.c_str(),                   // открываемый файл
-                                        GENERIC_READ | GENERIC_WRITE,   // открываем для чтения и записи
-                                        0,                              // для совместного чтения
-                                        NULL,                           // защита по умолчанию
-                                        OPEN_EXISTING,                  // только существующий файл
-                                        FILE_ATTRIBUTE_NORMAL,          // обычный файл
-                                        NULL);                          // атрибутов шаблона нет
-            if (hFile == INVALID_HANDLE_VALUE)
-            {
-                if (INVALID_FILE_ATTRIBUTES != GetFileAttributesW(sFile.c_str()))
-                    isLocked = true;
-            }
-            CloseHandle(hFile);
-#else
-            std::string sFileA = U_TO_UTF8(sFile);
-            int nDescriptor = open(sFileA.c_str(), O_RDWR | O_EXCL);
-            if (-1 == nDescriptor)
-                return false;
-
-            struct flock _lock;
-            memset(&_lock, 0, sizeof(_lock));
-            fcntl(nDescriptor, F_GETLK, &_lock);
-            if (F_WRLCK == (_lock.l_type & F_WRLCK))
-                isLocked = true;
-            close(nDescriptor);
-#endif
-            return isLocked;
-        }
-    };
-}
-
 class CRecentParent
 {
 public:
@@ -870,6 +919,9 @@ public:
 
     // показывать ли консоль для дебага
     bool m_bDebugInfoSupport;
+
+    // экспериментальные возможности
+    bool m_bExperimentalFeatures;
 
     // использовать ли внешнюю очередь сообщений
     bool m_bIsUseExternalMessageLoop;
@@ -978,6 +1030,8 @@ public:
         m_pApplication = NULL;
 
         m_bDebugInfoSupport = false;
+        m_bExperimentalFeatures = false;
+
         m_bIsUseExternalMessageLoop = false;
         m_pExternalMessageLoop = NULL;
 
@@ -1041,6 +1095,9 @@ public:
     // logout из портала -----------------------------------------------------------------------
     void Logout(std::wstring strUrl, CefRefPtr<CefCookieManager> manager)
     {
+        if (0 == strUrl.find(L"onlyoffice.com"))
+            return;
+
         CCefCookieVisitor* pVisitor = new CCefCookieVisitor();
         pVisitor->m_pCallback       = this;
         pVisitor->m_bIsDelete       = true;
@@ -1170,7 +1227,12 @@ public:
         {
             m_bDebugInfoSupport = true;
             return;
-        }        
+        }
+        if ("--ascdesktop-enable-experimental-features" == sName)
+        {
+            m_bExperimentalFeatures = true;
+            return;
+        }
 
         bool bIsChanged = false;
         const char* namePtr = sName.c_str();
@@ -1360,6 +1422,7 @@ public:
         oWorker.m_sDirectory = m_pMain->m_oSettings.fonts_cache_info_path;
         oWorker.m_bIsUseSystemFonts = m_pMain->m_oSettings.use_system_fonts;
         oWorker.m_arAdditionalFolders = m_pMain->m_oSettings.additional_fonts_folder;
+        oWorker.m_bIsUseAllVersions = true;
 
 #if defined(_LINUX)
         std::wstring sHome = GetHomeDirectory();

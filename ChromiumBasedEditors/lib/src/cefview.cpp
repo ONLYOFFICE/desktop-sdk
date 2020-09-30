@@ -804,6 +804,8 @@ public:
     bool m_bIsLocalFileLocked; // залочен ли файл?
     NSSystem::CLocalFileLocker* m_pLocalFileLocker; // класс для лока открытых файлов
 
+    std::string m_sVersionForReporter;
+
 public:
     CCefView_Private()
     {
@@ -946,6 +948,16 @@ public:
     void CloseBrowser(bool _force_close);
 
     CefRefPtr<CefBrowser> GetBrowser() const;
+
+    void CheckLockLocalFile()
+    {
+        if (m_oLocalInfo.m_oInfo.m_bIsSaved && NSFile::CFileBinary::Exists(m_oLocalInfo.m_oInfo.m_sFileSrc))
+        {
+            if (m_pLocalFileLocker)
+                RELEASEOBJECT(m_pLocalFileLocker);
+            m_pLocalFileLocker = new NSSystem::CLocalFileLocker(m_oLocalInfo.m_oInfo.m_sFileSrc);
+        }
+    }
 
     int GetViewCryptoMode()
     {
@@ -1111,6 +1123,7 @@ public:
 
     void LocalFile_SaveStart(std::wstring sPath = L"", int nType = -1)
     {
+        RELEASEOBJECT(m_pLocalFileLocker);
         m_oLocalInfo.SetupOptions(m_oConverterFromEditor.m_oInfo);
         m_oLocalInfo.m_oInfo.m_sDocumentInfo = L"";
 
@@ -1662,6 +1675,15 @@ public:
                                 bool is_redirect) OVERRIDE
     {
         std::wstring sUrl = request->GetURL().ToWString();
+
+        if (0 == sUrl.find(L"mailto"))
+        {
+            // disable navigation
+            std::wstring sCode = L"window.open(\"" + sUrl + L"\");";
+            if (frame)
+                frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
+            return true;
+        }
 
         if (m_pParent->m_pInternal->m_bIsSSO)
         {
@@ -2445,7 +2467,7 @@ public:
             {
                 std::wstring sValue = args->GetString(i).ToWString();
                 COfficeFileFormatCheckerWrapper oChecker;
-                if (oChecker.isOfficeFile2(sValue))
+                if (oChecker.isOfficeFile2(sValue, true))
                     arFolder.push_back(sValue);
             }
 
@@ -2500,13 +2522,22 @@ public:
                 std::wstring sSignatures = pConverter->GetSignaturesJSON();
 
                 CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("on_signature_update_signatures");
-                message->GetArgumentList()->SetString(0, sSignatures);
-                SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
+                messageOut->GetArgumentList()->SetString(0, sSignatures);
+                SEND_MESSAGE_TO_RENDERER_PROCESS(browser, messageOut);
             }
 
             RELEASEOBJECT(pCertificate);
 
+            std::wstring sLockedFile = L"";
+            if (m_pParent->m_pInternal->m_pLocalFileLocker)
+                sLockedFile = m_pParent->m_pInternal->m_pLocalFileLocker->GetFileLocked();
+
+            RELEASEOBJECT(m_pParent->m_pInternal->m_pLocalFileLocker);
             oZIP.Close();
+
+            if (!sLockedFile.empty())
+                m_pParent->m_pInternal->m_pLocalFileLocker = new NSSystem::CLocalFileLocker(sLockedFile);
+
             return true;
         }
         else if (message_name == "on_signature_remove")
@@ -2538,7 +2569,15 @@ public:
             messageOut->GetArgumentList()->SetString(0, sSignatures);
             SEND_MESSAGE_TO_RENDERER_PROCESS(browser, messageOut);
 
+            std::wstring sLockedFile = L"";
+            if (m_pParent->m_pInternal->m_pLocalFileLocker)
+                sLockedFile = m_pParent->m_pInternal->m_pLocalFileLocker->GetFileLocked();
+
+            RELEASEOBJECT(m_pParent->m_pInternal->m_pLocalFileLocker);
             oZIP.Close();
+
+            if (!sLockedFile.empty())
+                m_pParent->m_pInternal->m_pLocalFileLocker = new NSSystem::CLocalFileLocker(sLockedFile);
             return true;
         }
         else if (message_name == "on_signature_viewcertificate")
@@ -2609,6 +2648,10 @@ public:
 
                 messageOut->GetArgumentList()->SetString(0, serializer.GetData());
             }
+            else
+            {
+                messageOut->GetArgumentList()->SetString(0, "{}");
+            }
             RELEASEOBJECT(pCert);
             SEND_MESSAGE_TO_RENDERER_PROCESS(browser, messageOut);
             return true;
@@ -2662,9 +2705,10 @@ public:
             pCreate->ParentId = m_pParent->GetId();
             pCreate->Url = args->GetString(0).ToWString();
             pCreate->LocalRecoverFolder = args->GetString(1).ToWString();
+            pCreate->Version = args->GetString(2).ToString();
 
-            if (args->GetSize() > 2)
-                pCreate->CloudCryptoInfo = args->GetString(2).ToString();
+            if (args->GetSize() > 3)
+                pCreate->CloudCryptoInfo = args->GetString(3).ToString();
 
             pData->put_Data(pCreate);
 
@@ -3771,6 +3815,16 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
                 NSThreads::Sleep( 10 );
 
             std::wstring sPathFonts = m_pParent->GetAppManager()->m_oSettings.fonts_cache_info_path + L"/AllFonts.js";
+
+            if (true)
+            {
+                int nMajorVersion = NSVersion::GetMajorVersion(m_pParent->m_pInternal->m_sVersionForReporter);
+                if (nMajorVersion != 0 && nMajorVersion < 6)
+                {
+                    sPathFonts += L".1";
+                }
+            }
+
             return GetLocalFileRequest(sPathFonts, "", "");
         }
 #endif
@@ -4026,6 +4080,9 @@ require.load = function (context, moduleName, url) {\n\
         //    return "application/octet-stream";
         //else if (sExt == L"otf")
         //    return "application/octet-stream";
+
+        if (L"1" == sExt && std::wstring::npos != sFile.find(L"AllFonts.js.1"))
+            return "application/javascript";
 
         return "";
     }
@@ -4455,6 +4512,9 @@ void CCefView_Private::LocalFile_End()
     if (m_oLocalInfo.m_oInfo.m_bIsSaved)
         isLocked = NSSystem::CLocalFileLocker::IsLocked(m_oLocalInfo.m_oInfo.m_sFileSrc);
 
+    if (!isLocked)
+        CheckLockLocalFile();
+
     message->GetArgumentList()->SetBool(4, isLocked);
 
     if (isLocked)
@@ -4536,6 +4596,8 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
             // обновим информацию о файле
             m_oLocalInfo.m_oInfo.m_sFileSrc = m_oConverterFromEditor.m_oInfo.m_sFileSrc;
             m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat;
+
+            CheckLockLocalFile();
 
             // информация для recover
             std::wstring sNameInfo = m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/asc_name.info";
@@ -5818,6 +5880,7 @@ void CCefView::LoadReporter(void* reporter_data)
     m_pInternal->m_bIsReporter = true;
     m_pInternal->m_nReporterParentId = nParentId;
     m_pInternal->m_sCloudCryptoReporter = pReporterData->CloudCryptoInfo;
+    m_pInternal->m_sVersionForReporter = pReporterData->Version;
 
     // url - parent url
     std::wstring urlReporter = url;
