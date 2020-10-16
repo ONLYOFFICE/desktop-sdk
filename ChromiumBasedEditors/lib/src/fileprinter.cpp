@@ -518,7 +518,7 @@ std::wstring CPrintData::GetImagePath(const std::wstring& sPath)
 
 bool CPrintData::CheckPrintRotate(NSEditorApi::CAscPrinterContextBase* pContext, const CAscPrintSettings& settingsConst, const int& nPageIndex)
 {
-    if (nPageIndex < 0 || nPageIndex >= m_arPages.GetCount())
+    if (nPageIndex < 0 || nPageIndex >= (int)m_arPages.size())
         return false;
 
     CAscPrintSettings settings = settingsConst;
@@ -777,7 +777,7 @@ bool CPrintData::CheckPrintRotate(NSEditorApi::CAscPrinterContextBase* pContext,
 
 void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAscPrintSettings& settingsConst, const int& nPageIndex)
 {
-    if (nPageIndex < 0 || nPageIndex >= m_arPages.GetCount())
+    if (nPageIndex < 0 || nPageIndex >= (int)m_arPages.size())
         return;
 
     CAscPrintSettings settings = settingsConst;

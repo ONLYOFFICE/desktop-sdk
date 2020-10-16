@@ -66,13 +66,13 @@ public:
     virtual void Open(const std::wstring& sPath, const std::wstring& sRecoveryDir) = 0;
     virtual void Close() = 0;
 
-    virtual void Check(CArray<CPagePrintData>& arPages) = 0;
+    virtual void Check(std::vector<CPagePrintData>& arPages) = 0;
 };
 
 class CPrintData
 {
 public:
-    CArray<CPagePrintData> m_arPages;
+    std::vector<CPagePrintData> m_arPages;
     int m_nCurrentPage;
     std::wstring m_sFrameUrl;
     std::wstring m_sDocumentUrl;
