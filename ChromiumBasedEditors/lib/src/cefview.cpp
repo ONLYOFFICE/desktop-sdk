@@ -5943,7 +5943,7 @@ AscEditorType CCefViewEditor::GetEditorType()
     return m_eType;
 }
 
-void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFileFormat_)
+void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFileFormat_, const std::wstring& params)
 {
     if (sFilePath.empty())
     {
@@ -6027,7 +6027,7 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
         if (!GetAppManager()->m_pInternal->GetEditorPermission() && sParams.find(L"mode=view") == std::wstring::npos)
             sParams += L"&mode=view";
 
-        std::wstring sAdditionalParams = GetAppManager()->m_pInternal->m_sAdditionalUrlParams;
+        std::wstring sAdditionalParams = !params.empty() ? params : GetAppManager()->m_pInternal->m_sAdditionalUrlParams;
         if (!sAdditionalParams.empty())
             sParams += (L"&" + sAdditionalParams);
 
