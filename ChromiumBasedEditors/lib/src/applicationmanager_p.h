@@ -152,6 +152,10 @@ public:
     }
 };
 
+#ifdef _MAC
+#define DISABLE_LOCK_FUNCTIONALITY
+#endif
+
 namespace NSSystem
 {
 #ifndef _WIN32
@@ -180,6 +184,10 @@ namespace NSSystem
         }
         bool Lock()
         {
+#ifdef DISABLE_LOCK_FUNCTIONALITY
+            return true;
+#endif
+
             Unlock();
 #ifdef _WIN32
             m_oLocker.OpenFile(m_sFile);
@@ -203,6 +211,10 @@ namespace NSSystem
         }
         bool Unlock()
         {
+#ifdef DISABLE_LOCK_FUNCTIONALITY
+            return true;
+#endif
+
 #ifdef _WIN32
             m_oLocker.CloseFile();
 #else
@@ -229,6 +241,10 @@ namespace NSSystem
 
         static bool IsLocked(const::std::wstring& sFile)
         {
+#ifdef DISABLE_LOCK_FUNCTIONALITY
+            return false;
+#endif
+
             bool isLocked = false;
 #ifdef _WIN32
             HANDLE hFile = CreateFileW(sFile.c_str(),                   // открываемый файл
