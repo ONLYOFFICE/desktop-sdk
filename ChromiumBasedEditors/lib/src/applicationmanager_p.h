@@ -184,9 +184,8 @@ namespace NSSystem
         }
         bool Lock()
         {
-#ifdef DISABLE_LOCK_FUNCTIONALITY
-            return true;
-#endif
+            if (!IsSupportFunctionality())
+                return true;
 
             Unlock();
 #ifdef _WIN32
@@ -211,9 +210,8 @@ namespace NSSystem
         }
         bool Unlock()
         {
-#ifdef DISABLE_LOCK_FUNCTIONALITY
-            return true;
-#endif
+            if (!IsSupportFunctionality())
+                return true;
 
 #ifdef _WIN32
             m_oLocker.CloseFile();
@@ -241,9 +239,8 @@ namespace NSSystem
 
         static bool IsLocked(const::std::wstring& sFile)
         {
-#ifdef DISABLE_LOCK_FUNCTIONALITY
-            return false;
-#endif
+            if (!IsSupportFunctionality())
+                return false;
 
             bool isLocked = false;
 #ifdef _WIN32
@@ -279,6 +276,15 @@ namespace NSSystem
         std::wstring GetFileLocked()
         {
             return m_sFile;
+        }
+
+        static bool IsSupportFunctionality()
+        {
+#ifdef DISABLE_LOCK_FUNCTIONALITY
+            return false;
+#else
+            return true;
+#endif
         }
     };
 }
@@ -1029,6 +1035,8 @@ public:
     // логи конвертера
     bool m_bIsEnableConvertLogs;
 
+    bool m_bIsOnlyEditorWindowMode;
+
 public:
     IMPLEMENT_REFCOUNTING(CAscApplicationManager_Private);
 
@@ -1069,6 +1077,8 @@ public:
         m_bCryptoDisableForLocal = false;
         m_bCryptoDisableForInternalCloud = false;
         m_bCryptoDisableForExternalCloud = false;
+
+        m_bIsOnlyEditorWindowMode = false;
 
         m_oCS_Scripts.InitializeCriticalSection();
         m_oCS_LocalFiles.InitializeCriticalSection();
@@ -1247,6 +1257,11 @@ public:
         if ("--ascdesktop-enable-experimental-features" == sName)
         {
             m_bExperimentalFeatures = true;
+            return;
+        }
+        if ("--single-window-app" == sName)
+        {
+            m_bIsOnlyEditorWindowMode = true;
             return;
         }
 
@@ -1733,6 +1748,10 @@ public:
             std::wstring sName;
             int nType = -1;
             bool bIsViewer = false;
+
+            std::wstring sRecoveryLocker = arDirectories[i] + L"/rec.lock";
+            if (NSFile::CFileBinary::Exists(sRecoveryLocker) && NSSystem::CLocalFileLocker::IsLocked(sRecoveryLocker))
+                continue;
 
             if (!NSFile::CFileBinary::Exists(arDirectories[i] + L"/changes/changes0.json"))
             {
