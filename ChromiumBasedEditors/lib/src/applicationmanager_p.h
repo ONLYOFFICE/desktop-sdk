@@ -1264,6 +1264,11 @@ public:
             m_bIsOnlyEditorWindowMode = true;
             return;
         }
+        if ("--edit" == sName || "--view" == sName || "--review" == sName)
+        {
+            // files
+            return;
+        }
 
         bool bIsChanged = false;
         const char* namePtr = sName.c_str();
