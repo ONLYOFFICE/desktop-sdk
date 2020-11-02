@@ -804,6 +804,8 @@ public:
     bool m_bIsLocalFileLocked; // залочен ли файл?
     NSSystem::CLocalFileLocker* m_pLocalFileLocker; // класс для лока открытых файлов
 
+    NSSystem::CLocalFileLocker* m_pLockRecover; // для корректнрой работы рековеров в не singleapplication mode
+
     std::string m_sVersionForReporter;
 
 public:
@@ -872,12 +874,16 @@ public:
         m_pLocalFileLocker = NULL;
 
         m_nDownloadedFilesFrameId = -1;
+
+        m_pLockRecover = NULL;
     }
 
     void Destroy()
     {
         if (m_bIsDestroy)
             return;
+
+        RELEASEOBJECT(m_pLockRecover);
 
         m_oConverterToEditor.Stop();
         m_oConverterFromEditor.Stop();
@@ -956,6 +962,15 @@ public:
             if (m_pLocalFileLocker)
                 RELEASEOBJECT(m_pLocalFileLocker);
             m_pLocalFileLocker = new NSSystem::CLocalFileLocker(m_oLocalInfo.m_oInfo.m_sFileSrc);
+        }
+    }
+    void CheckLockRecoveryFile()
+    {
+        if (m_pManager->m_pInternal->m_bIsOnlyEditorWindowMode)
+        {
+            std::wstring sRecoveryLockerFile = m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/rec.lock";
+            NSFile::CFileBinary::SaveToFile(sRecoveryLockerFile, L"lock");
+            m_pLockRecover = new NSSystem::CLocalFileLocker(sRecoveryLockerFile);
         }
     }
 
@@ -6056,6 +6071,7 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
     }
 
     NSDirectory::CreateDirectory(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir);
+    m_pInternal->CheckLockRecoveryFile();
 
     if (!m_pInternal->m_sCloudCryptSrc.empty())
     {
@@ -6187,6 +6203,7 @@ void CCefViewEditor::CreateLocalFile(const int& nFileFormat, const std::wstring&
     }
 
     NSDirectory::CreateDirectory(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir);
+    m_pInternal->CheckLockRecoveryFile();
 
     m_pInternal->LocalFile_Start();
 
