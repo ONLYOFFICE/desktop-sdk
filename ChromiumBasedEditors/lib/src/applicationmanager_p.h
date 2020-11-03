@@ -1133,13 +1133,30 @@ public:
             pVisitor->m_sDomain = pVisitor->m_sDomain.substr(8);
         else if (0 == pVisitor->m_sDomain.find("http://"))
             pVisitor->m_sDomain = pVisitor->m_sDomain.substr(7);
-        
+
         std::string::size_type pos = pVisitor->m_sDomain.find("?");
         if (pos != std::string::npos)
             pVisitor->m_sDomain = pVisitor->m_sDomain.substr(0, pos);
         pos = pVisitor->m_sDomain.rfind("/");
         if ((pos != std::string::npos) && ((pos + 1) == pVisitor->m_sDomain.length()))
             pVisitor->m_sDomain = pVisitor->m_sDomain.substr(0, pos);
+
+        // check port
+        std::string::size_type posLen = pVisitor->m_sDomain.length();
+        std::string::size_type posPort = pVisitor->m_sDomain.find(":");
+        while (std::string::npos != posPort)
+        {
+            if (posPort < (posLen - 1))
+            {
+                char cNext = pVisitor->m_sDomain.c_str()[posPort + 1];
+                if (cNext >= '0' && cNext <= '9')
+                {
+                    pVisitor->m_sDomain = pVisitor->m_sDomain.substr(0, posPort);
+                    break;
+                }
+            }
+            posPort = pVisitor->m_sDomain.find(":", posPort + 1);
+        }
 
         if (true)
         {
