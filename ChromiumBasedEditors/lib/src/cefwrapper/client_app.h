@@ -285,6 +285,7 @@ public:
         }
     }
 
+#ifndef CEF_VERSION_ABOVE_86
     virtual void OnRenderProcessThreadCreated(CefRefPtr<CefListValue> extra_info) OVERRIDE
     {
         size_t nCount = extra_info->GetSize();
@@ -300,6 +301,7 @@ public:
 
         client::ClientAppBrowser::OnRenderProcessThreadCreated(extra_info);
     }
+#endif
 
 #ifndef CEF_2623
     virtual void OnScheduleMessagePumpWork(int64 delay) OVERRIDE
@@ -439,6 +441,7 @@ public:
         }
     }
 
+#ifndef CEF_VERSION_ABOVE_86
     virtual void OnRenderThreadCreated(CefRefPtr<CefListValue> extra_info) OVERRIDE
     {
         size_t nCount = extra_info->GetSize();
@@ -449,6 +452,19 @@ public:
 
         CAscRendererProcessParams::getInstance().Check(params);
     }
+#else
+    virtual void OnBrowserCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDictionaryValue> extra_info) OVERRIDE
+    {
+        std::vector<CefString> arKeys;
+        extra_info->GetKeys(arKeys);
+
+        std::vector<std::string> params;
+        for (std::vector<CefString>::iterator i = arKeys.begin(); i != arKeys.end(); i++)
+            params.push_back(extra_info->GetString(*i).ToString());
+
+        CAscRendererProcessParams::getInstance().Check(params);
+    }
+#endif
 };
 #endif
 

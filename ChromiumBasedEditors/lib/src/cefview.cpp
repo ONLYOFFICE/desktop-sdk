@@ -5150,6 +5150,16 @@ void CCefView::load(const std::wstring& urlInputSrc)
     m_pInternal->m_strSSOFirstDomain = L"";
     m_pInternal->m_arSSOSecondDomain.clear();
 
+#ifdef CEF_VERSION_ABOVE_86
+    CefRefPtr<CefDictionaryValue> extra_info = CefDictionaryValue::Create();
+    size_t nCount = 0;
+    std::vector<std::string> props = m_pInternal->m_pManager->GetRendererStartupProperties();
+    for (std::vector<std::string>::iterator iter = props.begin(); iter != props.end(); iter++)
+    {
+        extra_info->SetString(std::to_string(++nCount), *iter);
+    }
+#endif
+
     // Creat the new child browser window
 #ifdef _WIN32
     // need after window->show
@@ -5157,11 +5167,15 @@ void CCefView::load(const std::wstring& urlInputSrc)
 #else
     CefBrowserHost::CreateBrowserSync(
 #endif
-                info, m_pInternal->m_handler.get(), sUrl, _settings, NULL
-            #ifndef MESSAGE_IN_BROWSER
-                , NULL
+            #ifdef CEF_2623
+                info, m_pInternal->m_handler.get(), sUrl, _settings, NULL);
+            #else
+            #ifdef CEF_VERSION_ABOVE_86
+                info, m_pInternal->m_handler.get(), sUrl, _settings, extra_info, NULL);
+            #else
+                info, m_pInternal->m_handler.get(), sUrl, _settings, NULL, NULL);
             #endif
-                );
+            #endif
 
     GetWidgetImpl()->AfterCreate();
 
