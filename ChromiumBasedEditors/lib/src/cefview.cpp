@@ -314,10 +314,10 @@ public:
         m_pReader->Close();
     }
 
-    virtual void Check(CArray<CPagePrintData>& arPages)
+    virtual void Check(std::vector<CPagePrintData>& arPages)
     {
         int nPagesCount = m_pReader->GetPagesCount();
-        arPages.SetCount(nPagesCount);
+        arPages.resize(nPagesCount);
         for (int i = 0; i < nPagesCount; ++i)
         {
             double dPageDpiX, dPageDpiY;
@@ -2192,7 +2192,7 @@ public:
             // начало печати
             m_pParent->m_pInternal->m_oPrintData.m_sDocumentUrl = args->GetString(0).ToWString();
             m_pParent->m_pInternal->m_oPrintData.m_sFrameUrl = args->GetString(2).ToWString();
-            m_pParent->m_pInternal->m_oPrintData.m_arPages.SetCount(args->GetInt(1));
+            m_pParent->m_pInternal->m_oPrintData.m_arPages.resize(args->GetInt(1));
             m_pParent->m_pInternal->m_oPrintData.m_sThemesUrl = args->GetString(3).ToWString();
             m_pParent->m_pInternal->m_oPrintData.m_nCurrentPage = args->GetInt(4);
 
@@ -2215,7 +2215,7 @@ public:
         {
             // запоминаем пдф-команды для каждой страницы
             int nIndex = args->GetInt(1);
-            int nProgress = 100 * (nIndex + 1) / m_pParent->m_pInternal->m_oPrintData.m_arPages.GetCount();
+            int nProgress = 100 * (nIndex + 1) / (int)m_pParent->m_pInternal->m_oPrintData.m_arPages.size();
 
             if (nProgress >= 0 && nProgress <= 100)
             {
@@ -2242,7 +2242,7 @@ public:
 
             NSEditorApi::CAscPrintEnd* pData = new NSEditorApi::CAscPrintEnd();
             pData->put_Id(m_pParent->GetId());
-            pData->put_PagesCount(m_pParent->m_pInternal->m_oPrintData.m_arPages.GetCount());
+            pData->put_PagesCount((int)m_pParent->m_pInternal->m_oPrintData.m_arPages.size());
             pData->put_CurrentPage(m_pParent->m_pInternal->m_oPrintData.m_nCurrentPage);
             pEvent->m_pData = pData;
 
@@ -5414,7 +5414,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 
                     NSEditorApi::CAscPrintEnd* pData = new NSEditorApi::CAscPrintEnd();
                     pData->put_Id(GetId());
-                    pData->put_PagesCount(m_pInternal->m_oPrintData.m_arPages.GetCount());
+                    pData->put_PagesCount((int)m_pInternal->m_oPrintData.m_arPages.size());
                     pData->put_CurrentPage(0);
                     pEvent->m_pData = pData;
 
