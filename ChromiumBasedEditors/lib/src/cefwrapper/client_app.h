@@ -267,6 +267,10 @@ public:
             command_line->AppendSwitch("--enable-color-correct-rendering");
             command_line->AppendSwitchWithValue("--log-severity", "disable");
 
+#ifdef CEF_VERSION_ABOVE_86
+            command_line->AppendSwitch("--disable-site-isolation-trials");
+#endif
+
             //command_line->AppendSwitch("--allow-file-access-from-files");
             //command_line->AppendSwitch("--allow-file-access");
 
