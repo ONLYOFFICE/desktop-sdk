@@ -68,6 +68,8 @@
 #include "./cefwrapper/client_scheme.h"
 #include "./mailto.h"
 
+#include <boost/regex.hpp>
+
 #if defined (_LINUX) && !defined(_MAC)
 #define DONT_USE_NATIVE_FILE_DIALOGS
 #endif
@@ -1530,6 +1532,23 @@ public:
         return sRet;
     }
 
+    bool IsExternalCloudEditor(const std::wstring& sUrl, const std::wstring& sTest)
+    {
+        if (0 == sTest.find(L"regex:"))
+        {
+            std::wstring sTestRegex = sTest.substr(6);
+            boost::wregex oRegEx(sTestRegex);
+            if (boost::regex_match(sUrl, oRegEx))
+                return true;
+        }
+        else
+        {
+            if (std::wstring::npos != sUrl.find(m_pParent->m_pInternal->m_oExternalCloud.test_editor))
+                return true;
+        }
+        return false;
+    }
+
     bool CheckPopup(std::wstring sUrl, bool bIsBeforeBrowse = false, bool bIsBackground = false, bool bIsNotOpenLinks = false)
     {
         NSEditorApi::CAscCefMenuEventListener* pListener = NULL;
@@ -1543,7 +1562,7 @@ public:
 
         if (!bIsEditor && m_pParent->m_pInternal->m_bIsExternalCloud)
         {
-            bIsEditor = (sUrlLower.find(m_pParent->m_pInternal->m_oExternalCloud.test_editor) == std::wstring::npos) ? false : true;
+            bIsEditor = IsExternalCloudEditor(sUrlLower, m_pParent->m_pInternal->m_oExternalCloud.test_editor);
 
             if (bIsEditor)
             {

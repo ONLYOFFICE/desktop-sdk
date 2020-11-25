@@ -47,6 +47,7 @@ build_xp {
 ####################  BOOST  ###########################
 
 CONFIG += core_boost_libs
+CONFIG += core_boost_regex
 include($$CORE_ROOT_DIR/Common/3dParty/boost/boost.pri)
 
 ########################################################
