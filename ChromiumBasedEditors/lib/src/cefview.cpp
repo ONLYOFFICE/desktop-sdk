@@ -2214,11 +2214,7 @@ public:
             m_pParent->m_pInternal->m_oPrintData.m_sDocumentUrl = args->GetString(0).ToWString();
             m_pParent->m_pInternal->m_oPrintData.m_sFrameUrl = args->GetString(2).ToWString();
 
-            int nCountPages = args->GetInt(1);
-            m_pParent->m_pInternal->m_oPrintData.m_arPages.clear();
-            for (int i = 0; i < nCountPages; ++i)
-                m_pParent->m_pInternal->m_oPrintData.m_arPages.push_back(CPagePrintData());
-
+            m_pParent->m_pInternal->m_oPrintData.m_arPages.resize(args->GetInt(1));
             m_pParent->m_pInternal->m_oPrintData.m_sThemesUrl = args->GetString(3).ToWString();
             m_pParent->m_pInternal->m_oPrintData.m_nCurrentPage = args->GetInt(4);
 
