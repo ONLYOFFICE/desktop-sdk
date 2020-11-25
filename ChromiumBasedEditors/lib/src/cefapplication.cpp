@@ -482,32 +482,14 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 
     pManager->m_pInternal->LoadCryptoData();
 
-    std::wstring sExternalClouds = NSCommon::GetDirectoryName(pManager->m_oSettings.system_plugins_path) + L"/externalcloud.json";
-    std::string sExternalCloudsData = "";
-    bool bIsReadExternalClouds = NSFile::CFileBinary::ReadAllTextUtf8A(sExternalClouds, sExternalCloudsData);
+    CExternalClouds oClouds;
+#ifdef _MAC
+    oClouds.m_sSystemDirectory = NSFile::GetProcessDirectory() + L"/../../../../Resources/providers";
+#else
+    oClouds.m_sSystemDirectory = NSFile::GetProcessDirectory() + L"/providers";
+#endif
 
-    if (bIsReadExternalClouds)
-    {
-        std::string::size_type posExt = sExternalCloudsData.find("\"id\"", 0);
-        while (std::string::npos != posExt)
-        {
-            std::string sExternalCloudsDataCurrent = sExternalCloudsData.substr(posExt);
-            std::string::size_type posExtOld = sExternalCloudsDataCurrent.find("\"id\"", 2);
-            if (posExtOld != std::string::npos)
-                sExternalCloudsDataCurrent = sExternalCloudsDataCurrent.substr(0, posExtOld);
-
-            CExternalCloudRegister cloudEx;
-            cloudEx.id = CPluginsManager::GetStringValueW(sExternalCloudsDataCurrent, "id");
-            cloudEx.name = CPluginsManager::GetStringValueW(sExternalCloudsDataCurrent, "name");
-            cloudEx.test_editor = CPluginsManager::GetStringValueW(sExternalCloudsDataCurrent, "editorPage");
-            std::wstring sCryptoTest = CPluginsManager::GetStringValueW(sExternalCloudsDataCurrent, "cryptoSupport");
-            if (sCryptoTest == L"true" || sCryptoTest == L"1")
-                cloudEx.crypto_support = true;
-
-            pManager->m_pInternal->m_arExternalClouds.push_back(cloudEx);
-            posExt = sExternalCloudsData.find("\"id\"", posExt + 2);
-        }
-    }
+    oClouds.Load(pManager->m_pInternal->m_arExternalClouds);
 
     NSSystem::SetEnvValueA("APPLICATION_NAME", pManager->m_oSettings.converter_application_name);
     NSSystem::SetEnvValueA("COMPANY_NAME", pManager->m_oSettings.converter_application_company);

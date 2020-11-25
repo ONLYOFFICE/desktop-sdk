@@ -78,6 +78,8 @@ public:
     std::string                     converter_application_name;
     std::string                     converter_application_company;
 
+    std::wstring                    user_providers_path;
+
     std::map<std::string, std::string> converter_environments;
 
 public:

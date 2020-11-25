@@ -57,6 +57,7 @@
 
 #include "crypto_mode.h"
 #include "plugins.h"
+#include "providers.h"
 
 #include "utils.h"
 #include "../../../../core/DesktopEditor/xmlsec/src/include/XmlCertificate.h"
@@ -855,45 +856,6 @@ public:
         if (nVal < 10)
             return L"0" + std::to_wstring(nVal);
         return std::to_wstring(nVal);
-    }
-};
-
-class CExternalCloudRegister
-{
-public:
-    std::wstring id;
-    std::wstring name;
-    std::wstring test_editor;
-    std::string correct_code;
-    bool crypto_support;
-
-public:
-    CExternalCloudRegister()
-    {
-        id = L"";
-        name = L"";
-        test_editor = L"";
-        correct_code = "";
-        crypto_support = false;
-    }
-
-    CExternalCloudRegister(const CExternalCloudRegister& src)
-    {
-        id = src.id;
-        name = src.name;
-        test_editor = src.test_editor;
-        correct_code = src.correct_code;
-        crypto_support = src.crypto_support;
-    }
-
-    CExternalCloudRegister& operator=(const CExternalCloudRegister& src)
-    {
-        id = src.id;
-        name = src.name;
-        test_editor = src.test_editor;
-        correct_code = src.correct_code;
-        crypto_support = src.crypto_support;
-        return *this;
     }
 };
 
