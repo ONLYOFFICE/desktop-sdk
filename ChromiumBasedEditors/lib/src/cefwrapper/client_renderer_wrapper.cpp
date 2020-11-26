@@ -2319,12 +2319,12 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
             std::string sClouds = oClouds.GetAllJSON();
             if ("[]" != sClouds)
             {
-                CefRefPtr<CefV8Exception> exception;
-                CefV8Context::GetCurrentContext()->Eval("(function(){ return JSON.parse(\"" + sClouds + "\"); })();",
+                CefRefPtr<CefV8Exception> exception1;
+                CefV8Context::GetCurrentContext()->Eval("(function(){ return " + sClouds + "; })();",
                                                                           #ifndef CEF_2623
                                                                                       "", 0,
                                                                           #endif
-                                                                          retval, exception);
+                                                                          retval, exception1);
             }
             else
             {

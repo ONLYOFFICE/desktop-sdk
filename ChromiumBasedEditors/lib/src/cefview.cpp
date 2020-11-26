@@ -1538,7 +1538,7 @@ public:
         {
             std::wstring sTestRegex = sTest.substr(6);
             boost::wregex oRegEx(sTestRegex);
-            if (boost::regex_match(sUrl, oRegEx))
+            if (boost::regex_search(sUrl, oRegEx))
                 return true;
         }
         else
@@ -4927,7 +4927,7 @@ void CAscClientHandler::OnDeleteCookie(bool bIsPresent)
 
 // CefView --------------------------------------------------------------------------------
 CCefView::CCefView(CCefViewWidgetImpl* parent, int nId)
-{
+{    
     m_pInternal = new CCefView_Private();
     m_pInternal->m_pWidgetImpl = parent;
     m_nId = nId;
