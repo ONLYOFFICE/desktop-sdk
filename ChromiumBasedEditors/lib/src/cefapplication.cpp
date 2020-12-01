@@ -488,16 +488,18 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 
     if (bIsReadExternalClouds)
     {
-        std::string::size_type posExt = sExternalCloudsData.find("\"provider\"", 0);
+        std::string sProviderId = "provider";
+        std::string sProfiderIdField = "\"" + sProviderId + "\"";
+        std::string::size_type posExt = sExternalCloudsData.find(sProfiderIdField, 0);
         while (std::string::npos != posExt)
         {
             std::string sExternalCloudsDataCurrent = sExternalCloudsData.substr(posExt);
-            std::string::size_type posExtOld = sExternalCloudsDataCurrent.find("\"provider\"", 2);
+            std::string::size_type posExtOld = sExternalCloudsDataCurrent.find(sProfiderIdField, 2);
             if (posExtOld != std::string::npos)
                 sExternalCloudsDataCurrent = sExternalCloudsDataCurrent.substr(0, posExtOld);
 
             CExternalCloudRegister cloudEx;
-            cloudEx.id = CPluginsManager::GetStringValueW(sExternalCloudsDataCurrent, "provider");
+            cloudEx.id = CPluginsManager::GetStringValueW(sExternalCloudsDataCurrent, sProviderId);
             cloudEx.name = CPluginsManager::GetStringValueW(sExternalCloudsDataCurrent, "name");
             cloudEx.test_editor = CPluginsManager::GetStringValueW(sExternalCloudsDataCurrent, "editorPage");
             std::wstring sCryptoTest = CPluginsManager::GetStringValueW(sExternalCloudsDataCurrent, "cryptoSupport");
@@ -505,7 +507,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
                 cloudEx.crypto_support = true;
 
             pManager->m_pInternal->m_arExternalClouds.push_back(cloudEx);
-            posExt = sExternalCloudsData.find("\"provider\"", posExt + 2);
+            posExt = sExternalCloudsData.find(sProfiderIdField, posExt + 2);
         }
     }
 
