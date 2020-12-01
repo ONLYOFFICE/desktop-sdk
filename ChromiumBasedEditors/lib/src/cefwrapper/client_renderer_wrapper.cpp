@@ -1404,7 +1404,7 @@ DE.controllers.Main.DisableVersionHistory(); \
                     CCloudCryptoTmpInfoApp oAppTmp(m_sUserPlugins + L"/cloud_crypto_tmp.xml");
 
                     CCloudCryptoDesktop* savedInfo = oApp.GetInfo(info);
-                    CCloudCryptoTmpInfo* tmpInfo = oAppTmp.getInfo(info.Email, info.Portal);
+                    CCloudCryptoTmpInfo* tmpInfo = oAppTmp.getInfo(/*info.Email*/L"", info.Portal);
 
                     if (NULL == savedInfo && tmpInfo)
                     {
@@ -1489,7 +1489,7 @@ retval, exception);
                     sPassword = retval->GetStringValue().ToWString();
 
                 CCloudCryptoTmpInfoApp oAppTmp(m_sUserPlugins + L"/cloud_crypto_tmp.xml");
-                oAppTmp.addInfo(L"", sEmail, sPassword, CPluginsManager::GetStringValueW(sArg, "domain"));
+                oAppTmp.addInfo(L"", /*sEmail*/L"", sPassword, CPluginsManager::GetStringValueW(sArg, "domain"));
             }
 
             SEND_MESSAGE_TO_BROWSER_PROCESS(message);
@@ -3871,6 +3871,8 @@ _style.innerHTML = \"\
 .webkit-scrollbar::-webkit-scrollbar-corner { background:inherit; }\";\n\
 document.getElementsByTagName(\"head\")[0].appendChild(_style);\n\
 }, false);\n\
+if (window.navigator) { window.oldNavigatorUserAgent = navigator.userAgent; Object.defineProperty(navigator, 'userAgent', { get: function () { return window.oldNavigatorUserAgent + \" AscDesktopEditor 6.1.0\"; } }); }\n\
+\n\
 window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
     }
 

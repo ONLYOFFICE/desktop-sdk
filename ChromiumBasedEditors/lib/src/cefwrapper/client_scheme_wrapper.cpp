@@ -228,6 +228,11 @@ public:
         response->SetMimeType(mime_type_);
         response->SetStatus(200);
 
+        CefResponse::HeaderMap headers;
+        response->GetHeaderMap(headers);
+        headers.insert(std::make_pair("Access-Control-Allow-Origin", "*"));
+        response->SetHeaderMap(headers);
+
         // Set the resulting response length
         response_length = (NULL == data_binary_) ? data_.length() : data_binary_len_;
     }

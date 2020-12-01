@@ -31,6 +31,10 @@ build_xp {
     include($$CEF_PROJECT_PRI/cef_client_xp.pri)
     DESTDIR=$$DESTDIR/xp
 } else {
+    !core_linux {
+        DEFINES += CEF_VERSION_ABOVE_86
+        CEF_PROJECT_PRI=$$PWD/cef_pri_87
+    }
     include($$CEF_PROJECT_PRI/cef_base.pri)
     include($$CEF_PROJECT_PRI/cef_client.pri)
 }
@@ -46,10 +50,6 @@ CONFIG += core_boost_libs
 include($$CORE_ROOT_DIR/Common/3dParty/boost/boost.pri)
 
 ########################################################
-
-INCLUDEPATH += \
-    $$CORE_ROOT_DIR/DesktopEditor/agg-2.4/include \
-    $$CORE_ROOT_DIR/DesktopEditor/freetype-2.5.2/include
 
 HEADERS += \
     $$PWD/src/cookiesworker.h \
