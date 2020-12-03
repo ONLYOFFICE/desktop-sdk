@@ -3258,6 +3258,12 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
                 retval->SetValue(nCurrent++, CefV8Value::CreateString(*i));
             return true;
         }
+        else if (name == "cloudCryptoCommand")
+        {
+            // empty method
+            retval = CefV8Value::CreateString("empty");
+            return true;
+        }
 
         // Function does not exist.
         return false;
@@ -3631,7 +3637,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
 
-    #define EXTEND_METHODS_COUNT 155
+    #define EXTEND_METHODS_COUNT 156
     const char* methods[EXTEND_METHODS_COUNT] = {
         "Copy",
         "Paste",
@@ -3841,6 +3847,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         "isFileCrypt",
 
         "Crypto_GetLocalImageBase64",
+
+        "cloudCryptoCommand",
 
         NULL
     };
