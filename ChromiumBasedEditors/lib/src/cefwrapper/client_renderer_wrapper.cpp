@@ -1458,7 +1458,7 @@ DE.controllers.Main.DisableVersionHistory(); \
                     }
 
                     if (tmpInfo)
-                        oAppTmp.removeInfo(info.Email, info.Portal);
+                        oAppTmp.removeInfo(L""/*info.Email*/, info.Portal);
                 }
             }
             else if ("portal:checkpwd" == sCommand)

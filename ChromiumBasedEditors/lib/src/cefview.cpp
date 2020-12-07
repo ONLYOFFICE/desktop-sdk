@@ -86,6 +86,15 @@ void CCefViewWidgetImpl::SetParentNull(WindowHandleId handle)
 }
 #endif
 
+std::wstring GetUrlWithoutProtocol(const std::wstring& url)
+{
+    if (0 == url.find(L"http://"))
+        return url.substr(7);
+    if (0 == url.find(L"https://"))
+        return url.substr(8);
+    return url;
+}
+
 #define CRYPTO_CLOUD_SUPPORT 5020300
 
 #include <math.h>
@@ -156,6 +165,29 @@ protected:
 
         IMPLEMENT_REFCOUNTING(CefDownloadItemAborted);
     };
+    class CUrlInfo
+    {
+    public:
+        std::wstring Url;
+        DWORD Time;
+    public:
+        CUrlInfo(const std::wstring& _url = L"", const DWORD& _time = 0)
+        {
+            Url = _url;
+            Time = _time;
+        }
+        CUrlInfo(const CUrlInfo& src)
+        {
+            Url = src.Url;
+            Time = src.Time;
+        }
+        CUrlInfo& operator=(const CUrlInfo& src)
+        {
+            Url = src.Url;
+            Time = src.Time;
+            return *this;
+        }
+    };
 
 public:
     CDownloadFilesAborted() : NSTimers::CTimer()
@@ -179,13 +211,13 @@ public:
     DWORD m_dwIntervalCheck;
     bool m_bIsSkipNextIteration;
 
-    std::map<std::wstring, DWORD> m_mapUrls;
+    std::map<std::wstring, CUrlInfo> m_mapUrls;
 
 public:
     void StartDownload(const std::wstring& sUrl)
     {
         CTemporaryCS oCS(&m_oCS);
-        m_mapUrls.insert(std::pair<std::wstring, DWORD>(sUrl, NSTimers::GetTickCount()));
+        m_mapUrls.insert(std::pair<std::wstring, CUrlInfo>(GetUrlWithoutProtocol(sUrl), CUrlInfo(sUrl, NSTimers::GetTickCount())));
         if (!IsRunned())
         {
             Start(0);
@@ -203,7 +235,7 @@ public:
 
         CTemporaryCS oCS(&m_oCS);
 
-        std::map<std::wstring, DWORD>::iterator find = m_mapUrls.find(sUrl);
+        std::map<std::wstring, CUrlInfo>::iterator find = m_mapUrls.find(GetUrlWithoutProtocol(sUrl));
         if (find != m_mapUrls.end())
             m_mapUrls.erase(find);
 
@@ -225,10 +257,10 @@ public:
         }
 
         std::vector<std::wstring> arRemoved;
-        for (std::map<std::wstring, DWORD>::iterator iter = m_mapUrls.begin(); iter != m_mapUrls.end(); iter++)
+        for (std::map<std::wstring, CUrlInfo>::iterator iter = m_mapUrls.begin(); iter != m_mapUrls.end(); iter++)
         {
-            if (NSTimers::GetTickCount() > (iter->second + m_dwIntervalCheck))
-                arRemoved.push_back(iter->first);
+            if (NSTimers::GetTickCount() > (iter->second.Time + m_dwIntervalCheck))
+                arRemoved.push_back(iter->second.Url);
         }
 
         for (std::vector<std::wstring>::iterator iter = arRemoved.begin(); iter != arRemoved.end(); iter++)
@@ -248,6 +280,31 @@ public:
         {
             StopNoJoin();
         }
+    }
+};
+
+class CDownloadFileItem
+{
+public:
+    std::wstring Url;
+    std::wstring Path;
+
+public:
+    CDownloadFileItem(const std::wstring& _url = L"", const std::wstring& _path = L"")
+    {
+        Url = _url;
+        Path = _path;
+    }
+    CDownloadFileItem(const CDownloadFileItem& src)
+    {
+        Url = src.Url;
+        Path = src.Path;
+    }
+    CDownloadFileItem& operator=(const CDownloadFileItem& src)
+    {
+        Url = src.Url;
+        Path = src.Path;
+        return *this;
     }
 };
 
@@ -764,7 +821,7 @@ public:
     std::map<std::wstring, std::wstring> m_arCryptoImages;
 
     // файлы с ссылками для метода AscDesktopEditor.DownloadFiles
-    std::map<std::wstring, std::wstring> m_arDownloadedFiles;
+    std::map<std::wstring, CDownloadFileItem> m_arDownloadedFiles;
     std::map<std::wstring, std::wstring> m_arDownloadedFilesComplete;
     int64 m_nDownloadedFilesFrameId;
 
@@ -3014,7 +3071,7 @@ public:
                 NSCommon::string_replace(sFile, L"/", L"\\");
 #endif
 
-                m_pParent->m_pInternal->m_arDownloadedFiles.insert(std::pair<std::wstring, std::wstring>(sUrl, sFile));
+                m_pParent->m_pInternal->m_arDownloadedFiles.insert(std::pair<std::wstring, CDownloadFileItem>(GetUrlWithoutProtocol(sUrl), CDownloadFileItem(sUrl, sFile)));
             }
 
             if (nParams == 1)
@@ -3024,20 +3081,20 @@ public:
                     frame->ExecuteJavaScript("window.onSystemMessage && window.onSystemMessage({ type : \"operation\", block : true, opType : 0 });", frame->GetURL(), 0);
             }
 
-            for (std::map<std::wstring, std::wstring>::iterator iter = m_pParent->m_pInternal->m_arDownloadedFiles.begin();
+            for (std::map<std::wstring, CDownloadFileItem>::iterator iter = m_pParent->m_pInternal->m_arDownloadedFiles.begin();
                  iter != m_pParent->m_pInternal->m_arDownloadedFiles.end(); /*nothing*/)
             {
                 // могут прийти локальные ссылки, или base64 (наприменр при вставке картинок в зашифрованный файл).
                 // нужно просто имитировать скачку - просто сохранить файлы во временные
                 bool isEmulate = false;
-                std::wstring sEmulateLocal = iter->first;
+                std::wstring sEmulateLocal = iter->second.Url;
                 if (0 == sEmulateLocal.find(L"file://"))
                 {
                     std::wstring sFileLocal = sEmulateLocal.substr(7);
                     if (!NSFile::CFileBinary::Exists(sFileLocal))
                         sFileLocal = sFileLocal.substr(1);
 
-                    NSFile::CFileBinary::Copy(sFileLocal, iter->second);
+                    NSFile::CFileBinary::Copy(sFileLocal, iter->second.Path);
                     isEmulate = true;
                 }
                 else if (0 == sEmulateLocal.find(L"data:"))
@@ -3060,7 +3117,7 @@ public:
                         RELEASEARRAYOBJECTS(pData);
 
                         NSFile::CFileBinary oFile;
-                        if (oFile.CreateFileW(iter->second))
+                        if (oFile.CreateFileW(iter->second.Path))
                         {
                             oFile.WriteFile(pDataDecode, (DWORD)nLenDecode);
                             oFile.CloseFile();
@@ -3073,7 +3130,7 @@ public:
 
                 if (isEmulate)
                 {
-                    m_pParent->m_pInternal->m_arDownloadedFilesComplete.insert(std::pair<std::wstring, std::wstring>(iter->first, iter->second));
+                    m_pParent->m_pInternal->m_arDownloadedFilesComplete.insert(std::pair<std::wstring, std::wstring>(iter->second.Url, iter->second.Path));
                     m_pParent->m_pInternal->m_arDownloadedFiles.erase(iter++);
 
                     if (m_pParent->m_pInternal->m_arDownloadedFiles.empty())
@@ -3102,7 +3159,7 @@ public:
                     continue;
                 }
 
-                m_pParent->StartDownload(iter->first);
+                m_pParent->StartDownload(iter->second.Url);
                 iter++;
             }            
 
@@ -4147,6 +4204,7 @@ require.load = function (context, moduleName, url) {\n\
         CEF_REQUIRE_UI_THREAD();
 
         std::wstring sUrl = download_item->GetURL().ToWString();
+        std::wstring sUrlWithoutProtocol = GetUrlWithoutProtocol(sUrl);
         //m_pParent->m_pInternal->m_oDownloaderAbortChecker.EndDownload(sUrl);
 
         // если указан m_pDownloadViewCallback - то уже все готово. просто продолжаем
@@ -4158,7 +4216,7 @@ require.load = function (context, moduleName, url) {\n\
 
         // если ссылка приватная (внутренняя) - то уже все готово. просто продолжаем
         std::wstring sPrivateDownloadUrl = m_pParent->GetAppManager()->m_pInternal->GetPrivateDownloadUrl();
-        if (sUrl == sPrivateDownloadUrl)
+        if (sUrlWithoutProtocol == GetUrlWithoutProtocol(sPrivateDownloadUrl))
         {
             callback->Continue(m_pParent->GetAppManager()->m_pInternal->GetPrivateDownloadPath(), false);
             return;
@@ -4177,10 +4235,10 @@ require.load = function (context, moduleName, url) {\n\
         }
 
         // проверяем на файлы метода AscDesktopEditor.DownloadFiles
-        std::map<std::wstring, std::wstring>::iterator findDownloadFile = m_pParent->m_pInternal->m_arDownloadedFiles.find(sUrl);
+        std::map<std::wstring, CDownloadFileItem>::iterator findDownloadFile = m_pParent->m_pInternal->m_arDownloadedFiles.find(sUrlWithoutProtocol);
         if (findDownloadFile != m_pParent->m_pInternal->m_arDownloadedFiles.end())
         {
-            callback->Continue(findDownloadFile->second, false);
+            callback->Continue(findDownloadFile->second.Path, false);
             return;
         }
         
@@ -4278,6 +4336,7 @@ require.load = function (context, moduleName, url) {\n\
             return;
 
         std::wstring sUrl = download_item->GetURL().ToWString();
+        std::wstring sUrlWithoutProtocol = GetUrlWithoutProtocol(sUrl);
         std::wstring sPath = download_item->GetFullPath().ToWString();
 
         if (download_item->IsInProgress() || download_item->IsCanceled() || download_item->IsComplete() || (0 != download_item->GetReceivedBytes()))
@@ -4328,13 +4387,13 @@ require.load = function (context, moduleName, url) {\n\
         // проверяем на файлы метода AscDesktopEditor.DownloadFiles
         if (!m_pParent->m_pInternal->m_arDownloadedFiles.empty())
         {
-            std::map<std::wstring, std::wstring>::iterator findDownloadFile = m_pParent->m_pInternal->m_arDownloadedFiles.find(sUrl);
+            std::map<std::wstring, CDownloadFileItem>::iterator findDownloadFile = m_pParent->m_pInternal->m_arDownloadedFiles.find(sUrlWithoutProtocol);
             if (findDownloadFile != m_pParent->m_pInternal->m_arDownloadedFiles.end())
             {
                 if (download_item->IsComplete() || download_item->IsCanceled())
                 {
                     m_pParent->m_pInternal->m_arDownloadedFilesComplete.insert(
-                                std::pair<std::wstring, std::wstring>(findDownloadFile->first, findDownloadFile->second));
+                                std::pair<std::wstring, std::wstring>(findDownloadFile->second.Url, findDownloadFile->second.Path));
 
                     m_pParent->m_pInternal->m_arDownloadedFiles.erase(findDownloadFile);
 
