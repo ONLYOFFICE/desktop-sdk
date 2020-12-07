@@ -488,7 +488,6 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 #else
     oClouds.m_sSystemDirectory = NSFile::GetProcessDirectory() + L"/providers";
 #endif
-
     oClouds.Load(pManager->m_pInternal->m_arExternalClouds);
 
     NSSystem::SetEnvValueA("APPLICATION_NAME", pManager->m_oSettings.converter_application_name);
