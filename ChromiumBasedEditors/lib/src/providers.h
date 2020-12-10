@@ -142,7 +142,7 @@ public:
                 NSCommon::string_replaceA(sConfigData, "\r", "");
                 NSCommon::string_replaceA(sConfigData, "\n", "");
                 NSCommon::string_replaceA(sConfigData, "\\", "\\\\");
-                NSCommon::string_replaceA(sConfigData, "\"", "\\\"");
+                //NSCommon::string_replaceA(sConfigData, "\"", "\\\"");
 
                 if (1 != sResult.length())
                     sResult += ",";
@@ -169,7 +169,7 @@ public:
                 NSCommon::string_replaceA(sConfigData, "\r", "");
                 NSCommon::string_replaceA(sConfigData, "\n", "");
                 NSCommon::string_replaceA(sConfigData, "\\", "\\\\");
-                NSCommon::string_replaceA(sConfigData, "\"", "\\\"");
+                //NSCommon::string_replaceA(sConfigData, "\"", "\\\"");
 
                 if (1 != sResult.length())
                     sResult += ",";

@@ -51,6 +51,7 @@
 
 #include "../../src/nativeviewer.h"
 #include "../../src/plugins.h"
+#include "../../src/providers.h"
 
 #include "../../src/additional/renderer.h"
 #include "../crypto_mode.h"
@@ -2308,31 +2309,22 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
         }
         else if (name == "GetExternalClouds")
         {
-            std::wstring sSP = m_sSystemPlugins;
-            if (sSP.empty())
-            {
+            CExternalClouds oClouds;
 #ifdef _MAC
-                sSP = NSFile::GetProcessDirectory() + L"/../../../../Resources/editors/sdkjs-plugins";
+            oClouds.m_sSystemDirectory = NSFile::GetProcessDirectory() + L"/../../../../Resources/providers";
 #else
-                sSP = NSFile::GetProcessDirectory() + L"/editors/sdkjs-plugins";
+            oClouds.m_sSystemDirectory = NSFile::GetProcessDirectory() + L"/providers";
 #endif
-            }
 
-            std::wstring sFile = NSCommon::GetDirectoryName(sSP) + L"/externalcloud.json";
-            std::string sContent = "";
-
-            if (NSFile::CFileBinary::ReadAllTextUtf8A(sFile, sContent))
+            std::string sClouds = oClouds.GetAllJSON();
+            if ("[]" != sClouds)
             {
-                NSCommon::string_replaceA(sContent, "\r", "");
-                NSCommon::string_replaceA(sContent, "\n", "");
-                NSCommon::string_replaceA(sContent, "\\", "\\\\");
-                NSCommon::string_replaceA(sContent, "\"", "\\\"");
-                CefRefPtr<CefV8Exception> exception;
-                CefV8Context::GetCurrentContext()->Eval("(function(){ return JSON.parse(\"" + sContent + "\"); })();",
+                CefRefPtr<CefV8Exception> exception1;
+                CefV8Context::GetCurrentContext()->Eval("(function(){ return " + sClouds + "; })();",
                                                                           #ifndef CEF_2623
                                                                                       "", 0,
                                                                           #endif
-                                                                          retval, exception);
+                                                                          retval, exception1);
             }
             else
             {
