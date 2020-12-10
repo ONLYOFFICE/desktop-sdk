@@ -128,7 +128,7 @@
 			{
 				if (obj.isNeedMessage)
 				{
-					obj.message = "Save to storage...";
+					obj.message = window.Asc.plugin.tr("Sending encrypted file to storage");
 					this.onSystemMessage(obj);					
 				}
 				else
