@@ -1,3 +1,4 @@
 {
-    "Sending encrypted file to storage": "Envoi d'un fichier chiffré au stockage"
+    "Sending encrypted file to storage": "Envoi d'un fichier chiffré au stockage",
+    "Unable to open the encrypted document. Please, ask the document owner to re-share it." : "Impossible d’ouvrir le document chiffré. Veuillez demander au propriétaire de le partager de nouveau."
 }

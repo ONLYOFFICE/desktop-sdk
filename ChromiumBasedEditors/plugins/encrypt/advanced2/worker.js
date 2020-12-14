@@ -17,7 +17,7 @@
 	// create from passwords
 	window.AscCrypto.CryptoWorker.generateDocInfo = function(users, password)
 	{
-		var result = "";
+		var result = "ONLYOFFICE CryptoEngine (Version 1)\n\n";
 		for (var i = 0, len = users.length; i < len; i++)
 		{
 			if (users[i].publicKey)
