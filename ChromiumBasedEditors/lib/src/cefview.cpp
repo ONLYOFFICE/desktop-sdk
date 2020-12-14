@@ -5002,6 +5002,45 @@ void CCefView::load(const std::wstring& urlInputSrc)
 {
     std::wstring urlInput = urlInputSrc;
 
+    bool bIsScheme = false;
+    if (0 == urlInput.find(L"oo-office:"))
+    {
+        bIsScheme = true;
+        if (0 == urlInput.find(L"oo-office://"))
+            urlInput = urlInput.substr(12);
+        else
+            urlInput = urlInput.substr(10);
+    }
+    if (!bIsScheme)
+    {
+        if (0 == urlInput.find(L"open|"))
+            bIsScheme = true;
+    }
+    if (bIsScheme)
+    {
+        std::vector<std::wstring> arParams;
+        std::wstring::size_type posOld = 0;
+        std::wstring::size_type pos = urlInput.find('|');
+        while (pos != std::wstring::npos)
+        {
+            arParams.push_back(urlInput.substr(posOld, pos - posOld));
+            posOld = pos + 1;
+            pos = urlInput.find('|', posOld);
+        }
+        if (posOld < urlInput.length())
+            arParams.push_back(urlInput.substr(posOld));
+
+        size_t nSizeParams = (size_t)arParams.size();
+        if (1 == nSizeParams)
+        {
+            urlInput = arParams[0];
+        }
+        else if (1 < nSizeParams && L"open" == arParams[0])
+        {
+            urlInput = arParams[nSizeParams - 1];
+        }
+    }
+
     if (NSFileDownloader::IsNeedDownload(urlInput))
     {
         // проверяем на recent parent
