@@ -68,6 +68,8 @@
 #include "./cefwrapper/client_scheme.h"
 #include "./mailto.h"
 
+#include <boost/regex.hpp>
+
 #if defined (_LINUX) && !defined(_MAC)
 #define DONT_USE_NATIVE_FILE_DIALOGS
 #endif
@@ -374,7 +376,6 @@ public:
     virtual void Check(std::vector<CPagePrintData>& arPages)
     {
         int nPagesCount = m_pReader->GetPagesCount();
-        arPages.resize(nPagesCount);
         for (int i = 0; i < nPagesCount; ++i)
         {
             double dPageDpiX, dPageDpiY;
@@ -384,8 +385,11 @@ public:
             dWidth  *= 25.4 / dPageDpiX;
             dHeight *= 25.4 / dPageDpiY;
 
-            arPages[i].Width = dWidth;
-            arPages[i].Height = dHeight;
+            CPagePrintData data;
+            data.Width = dWidth;
+            data.Height = dHeight;
+
+            arPages.push_back(data);
         }
     }
 };
@@ -1585,6 +1589,23 @@ public:
         return sRet;
     }
 
+    bool IsExternalCloudEditor(const std::wstring& sUrl, const std::wstring& sTest)
+    {
+        if (0 == sTest.find(L"regex:"))
+        {
+            std::wstring sTestRegex = sTest.substr(6);
+            boost::wregex oRegEx(sTestRegex);
+            if (boost::regex_search(sUrl, oRegEx))
+                return true;
+        }
+        else
+        {
+            if (std::wstring::npos != sUrl.find(m_pParent->m_pInternal->m_oExternalCloud.test_editor))
+                return true;
+        }
+        return false;
+    }
+
     bool CheckPopup(std::wstring sUrl, bool bIsBeforeBrowse = false, bool bIsBackground = false, bool bIsNotOpenLinks = false)
     {
         NSEditorApi::CAscCefMenuEventListener* pListener = NULL;
@@ -1598,7 +1619,7 @@ public:
 
         if (!bIsEditor && m_pParent->m_pInternal->m_bIsExternalCloud)
         {
-            bIsEditor = (sUrlLower.find(m_pParent->m_pInternal->m_oExternalCloud.test_editor) == std::wstring::npos) ? false : true;
+            bIsEditor = IsExternalCloudEditor(sUrlLower, m_pParent->m_pInternal->m_oExternalCloud.test_editor);
 
             if (bIsEditor)
             {
@@ -2249,6 +2270,7 @@ public:
             // начало печати
             m_pParent->m_pInternal->m_oPrintData.m_sDocumentUrl = args->GetString(0).ToWString();
             m_pParent->m_pInternal->m_oPrintData.m_sFrameUrl = args->GetString(2).ToWString();
+
             m_pParent->m_pInternal->m_oPrintData.m_arPages.resize(args->GetInt(1));
             m_pParent->m_pInternal->m_oPrintData.m_sThemesUrl = args->GetString(3).ToWString();
             m_pParent->m_pInternal->m_oPrintData.m_nCurrentPage = args->GetInt(4);
@@ -4964,7 +4986,7 @@ void CAscClientHandler::OnDeleteCookie(bool bIsPresent)
 
 // CefView --------------------------------------------------------------------------------
 CCefView::CCefView(CCefViewWidgetImpl* parent, int nId)
-{
+{    
     m_pInternal = new CCefView_Private();
     m_pInternal->m_pWidgetImpl = parent;
     m_nId = nId;
