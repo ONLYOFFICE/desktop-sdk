@@ -3928,29 +3928,24 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
         // local files check
         if (std::string::npos == frame->GetURL().ToString().find("file://"))
         {
-            std::wstring sBaseWebCloudPath = NSFile::GetProcessDirectory() + L"/sdkjs";
-            std::wstring::size_type posSdkAll = url.rfind(L"/sdk-all");
+            std::wstring sResourcePath = L"";
 
-            if (std::wstring::npos != posSdkAll)
+            std::wstring::size_type pos = url.find(L"/sdkjs/");
+            if (std::wstring::npos != pos)
             {
-                std::wstring::size_type posEditorSdk = url.rfind('/', posSdkAll - 1);
-                if (std::wstring::npos != posEditorSdk)
-                {
-                    std::wstring sTestPath = sBaseWebCloudPath + url.substr(posEditorSdk);
-                    if (NSFile::CFileBinary::Exists(sTestPath))
-                    {
-                        return GetLocalFileRequest(sTestPath, "", "");
-                    }
-                }
+                sResourcePath = NSFile::GetProcessDirectory() + L"/web" + url.substr(pos);
+            }
+            else if (std::wstring::npos != (pos = url.find(L"/web-apps/")))
+            {
+                sResourcePath = NSFile::GetProcessDirectory() + L"/web" + url.substr(pos);
             }
 
-            if (std::wstring::npos != url.find(L"/fonts.js"))
+            if (!sResourcePath.empty() &&
+                std::wstring::npos == sResourcePath.find(L"AllFonts.js") &&
+                std::wstring::npos == sResourcePath.find(L"require.js") &&
+                NSFile::CFileBinary::Exists(sResourcePath))
             {
-                return GetLocalFileRequest(sBaseWebCloudPath + L"/common/libfont/wasm/fonts.js", "", "");
-            }
-            if (std::wstring::npos != url.find(L"/fonts.wasm"))
-            {
-                return GetLocalFileRequest(sBaseWebCloudPath + L"/common/libfont/wasm/fonts.wasm", "", "");
+                return GetLocalFileRequest(sResourcePath, "window.compareVersions=true;", "");
             }
         }
 
