@@ -118,10 +118,15 @@
 			}
 			case "getPasswordByFile":
 			{
-				this.onSystemMessage({ 
+				var passData = { 
 					type : "getPasswordByFile", 
 					password : window.AscCrypto.CryptoWorker.readPassword(obj.docinfo)
-				});
+				};
+				if ("" == passData.password && obj.docinfo === "string" && 0 == obj.docinfo.indexOf("ONLYOFFICE CryptoEngine"))
+				{
+					passData.message = window.Asc.plugin.tr("Unable to open the encrypted document. Please, ask the document owner to re-share it.");
+				}
+				this.onSystemMessage(passData);
  				break;
 			}
 			case "setPasswordByFile":
@@ -217,7 +222,7 @@
 			{
 				this.documentPassword = e.password;
 				window.AscCrypto.CryptoWorker.cryptInit(this.documentPassword);
-				this.executeMethodSync("OnEncryption", [{ type : "getPasswordByFile", password : e.password, docinfo : this.documentInfo, hash : this.documentHash }]);
+				this.executeMethodSync("OnEncryption", [{ type : "getPasswordByFile", password : e.password, docinfo : this.documentInfo, hash : this.documentHash, message : e.message }]);
 				break;
 			}
 			case "setPasswordByFile":
