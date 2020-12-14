@@ -276,6 +276,8 @@ public:
 
             //command_line->AppendSwitch("--allow-running-insecure-content");
 
+            command_line->AppendSwitchWithValue("--product-version", "AscDesktopEditor 6.1.1");
+
             int forceDpi = IsForceDpiRound();
             if (0 != forceDpi)
                 command_line->AppendSwitchWithValue("--force-device-scale-factor", std::to_string(forceDpi));
