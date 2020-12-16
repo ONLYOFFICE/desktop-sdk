@@ -1058,6 +1058,20 @@ public:
         m_oCS_SystemMessages.DeleteCriticalSection();
     }
 
+    std::wstring StartTmpDirectory()
+    {
+        std::wstring sTmp = m_pMain->m_oSettings.cache_path + L"/work_temp";
+        if (!NSDirectory::Exists(sTmp))
+            NSDirectory::CreateDirectory(sTmp);
+        return sTmp;
+    }
+    void EndTmpDirectory()
+    {
+        std::wstring sTmp = m_pMain->m_oSettings.cache_path + L"/work_temp";
+        if (NSDirectory::Exists(sTmp))
+            NSDirectory::DeleteDirectory(sTmp);
+    }
+
     bool GetEditorPermission()
     {
         // разрешение на редактирование
@@ -1074,6 +1088,8 @@ public:
     {
         if (NSFile::CFileBinary::Exists(m_pMain->m_oSettings.user_plugins_path + L"/cloud_crypto_tmp.xml"))
             NSFile::CFileBinary::Remove(m_pMain->m_oSettings.user_plugins_path + L"/cloud_crypto_tmp.xml");
+
+        EndTmpDirectory();
 
         Stop();
         m_oKeyboardTimer.Stop();        
