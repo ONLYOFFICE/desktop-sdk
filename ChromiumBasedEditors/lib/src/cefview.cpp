@@ -6107,9 +6107,13 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
             }
 
             m_pInternal->m_pDownloadViewCallback = this;
-            m_pInternal->m_sDownloadViewPath = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"OL");
+            m_pInternal->m_sDownloadViewPath = NSFile::CFileBinary::CreateTempFileWithUniqueName(m_pInternal->m_pManager->m_pInternal->StartTmpDirectory(), L"OL");
             if (NSFile::CFileBinary::Exists(m_pInternal->m_sDownloadViewPath))
                 NSFile::CFileBinary::Remove(m_pInternal->m_sDownloadViewPath);
+
+#ifdef WIN32
+            NSCommon::string_replace(m_pInternal->m_sDownloadViewPath, L"/", L"\\");
+#endif
 
             std::wstring sExtBase = m_pInternal->m_sCloudCryptName;
 
