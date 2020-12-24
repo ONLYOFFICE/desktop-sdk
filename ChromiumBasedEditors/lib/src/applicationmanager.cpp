@@ -73,9 +73,19 @@ CAscApplicationSettings::CAscApplicationSettings()
 
     country                         = "RU";
 
-    sign_support                    = true;
-    pass_support                    = true;
+#ifdef FEATURE_ENABLE_PROTECT
     protect_support                 = true;
+#else
+    protect_support                 = false;
+#endif
+
+#ifdef FEATURE_ENABLE_SIGNATURE
+    sign_support                    = true;
+#else
+    sign_support                    = false;
+#endif
+
+    pass_support                    = true;
 
     user_providers_path             = L"";
 
