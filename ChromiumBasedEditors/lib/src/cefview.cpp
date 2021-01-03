@@ -4202,38 +4202,50 @@ require.load = function (context, moduleName, url) {\n\
         std::wstring sUrlWithoutProtocol = GetUrlWithoutProtocol(sUrl);
         //m_pParent->m_pInternal->m_oDownloaderAbortChecker.EndDownload(sUrl);
 
+        std::wstring sDestPath = L"";
+
         // если указан m_pDownloadViewCallback - то уже все готово. просто продолжаем
         if (NULL != m_pParent->m_pInternal->m_pDownloadViewCallback)
         {
-            callback->Continue(m_pParent->m_pInternal->m_pDownloadViewCallback->m_pInternal->GetViewDownloadPath(), false);
-            return;
-        }               
-
-        // если ссылка приватная (внутренняя) - то уже все готово. просто продолжаем
-        std::wstring sPrivateDownloadUrl = m_pParent->GetAppManager()->m_pInternal->GetPrivateDownloadUrl();
-        if (sUrlWithoutProtocol == GetUrlWithoutProtocol(sPrivateDownloadUrl))
-        {
-            callback->Continue(m_pParent->GetAppManager()->m_pInternal->GetPrivateDownloadPath(), false);
-            return;
+            sDestPath = m_pParent->m_pInternal->m_pDownloadViewCallback->m_pInternal->GetViewDownloadPath();
         }
 
-        // проверяем на зашифрованные картинки
-        std::map<std::wstring, std::wstring>::iterator findCryptoImage = m_pParent->m_pInternal->m_arCryptoImages.find(sUrl);
-        if (findCryptoImage != m_pParent->m_pInternal->m_arCryptoImages.end())
+        if (sDestPath.empty())
         {
-            std::wstring sRetTemp = findCryptoImage->second;
-#ifdef WIN32
-            NSCommon::string_replace(sRetTemp, L"/", L"\\");
+            // если ссылка приватная (внутренняя) - то уже все готово. просто продолжаем
+            std::wstring sPrivateDownloadUrl = m_pParent->GetAppManager()->m_pInternal->GetPrivateDownloadUrl();
+            if (sUrlWithoutProtocol == GetUrlWithoutProtocol(sPrivateDownloadUrl))
+            {
+                sDestPath = m_pParent->GetAppManager()->m_pInternal->GetPrivateDownloadPath();
+            }
+        }
+
+        if (sDestPath.empty())
+        {
+            // проверяем на зашифрованные картинки
+            std::map<std::wstring, std::wstring>::iterator findCryptoImage = m_pParent->m_pInternal->m_arCryptoImages.find(sUrl);
+            if (findCryptoImage != m_pParent->m_pInternal->m_arCryptoImages.end())
+            {
+                sDestPath = findCryptoImage->second;
+            }
+        }
+
+        if (sDestPath.empty())
+        {
+            // проверяем на файлы метода AscDesktopEditor.DownloadFiles
+            std::map<std::wstring, CDownloadFileItem>::iterator findDownloadFile = m_pParent->m_pInternal->m_arDownloadedFiles.find(sUrlWithoutProtocol);
+            if (findDownloadFile != m_pParent->m_pInternal->m_arDownloadedFiles.end())
+            {
+                sDestPath = findDownloadFile->second.Path;
+            }
+        }
+
+        if (!sDestPath.empty())
+        {
+#ifdef _WIN32
+            NSCommon::string_replace(sDestPath, L"/", L"\\");
 #endif
-            callback->Continue(sRetTemp, false);
-            return;
-        }
-
-        // проверяем на файлы метода AscDesktopEditor.DownloadFiles
-        std::map<std::wstring, CDownloadFileItem>::iterator findDownloadFile = m_pParent->m_pInternal->m_arDownloadedFiles.find(sUrlWithoutProtocol);
-        if (findDownloadFile != m_pParent->m_pInternal->m_arDownloadedFiles.end())
-        {
-            callback->Continue(findDownloadFile->second.Path, false);
+            callback->Continue(sDestPath, false);
             return;
         }
         
