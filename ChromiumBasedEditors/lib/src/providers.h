@@ -106,6 +106,8 @@ public:
             {
                 CExternalCloudRegister cloudEx;
                 cloudEx.id = CPluginsManager::GetStringValueW(sConfigData, "id");
+                if (cloudEx.id.empty())
+                    cloudEx.id = CPluginsManager::GetStringValueW(sConfigData, "provider");
                 cloudEx.name = CPluginsManager::GetStringValueW(sConfigData, "name");
                 cloudEx.test_editor = CPluginsManager::GetStringValueW(sConfigData, "editorPage");
                 std::wstring sCryptoTest = CPluginsManager::GetStringValueW(sConfigData, "cryptoSupport");
