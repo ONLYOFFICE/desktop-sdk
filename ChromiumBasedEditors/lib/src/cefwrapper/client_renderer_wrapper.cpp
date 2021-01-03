@@ -3250,6 +3250,12 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
                 retval->SetValue(nCurrent++, CefV8Value::CreateString(*i));
             return true;
         }
+        else if (name == "cloudCryptoCommand")
+        {
+            // empty method
+            retval = CefV8Value::CreateString("empty");
+            return true;
+        }
 
         // Function does not exist.
         return false;
@@ -3623,7 +3629,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
 
-    #define EXTEND_METHODS_COUNT 155
+    #define EXTEND_METHODS_COUNT 156
     const char* methods[EXTEND_METHODS_COUNT] = {
         "Copy",
         "Paste",
@@ -3834,6 +3840,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
         "Crypto_GetLocalImageBase64",
 
+        "cloudCryptoCommand",
+
         NULL
     };
 
@@ -3863,7 +3871,6 @@ _style.innerHTML = \"\
 .webkit-scrollbar::-webkit-scrollbar-corner { background:inherit; }\";\n\
 document.getElementsByTagName(\"head\")[0].appendChild(_style);\n\
 }, false);\n\
-if (window.navigator) { window.oldNavigatorUserAgent = navigator.userAgent; Object.defineProperty(navigator, 'userAgent', { get: function () { return window.oldNavigatorUserAgent + \" AscDesktopEditor 6.1.0\"; } }); }\n\
 \n\
 window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
     }

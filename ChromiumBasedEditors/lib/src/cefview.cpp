@@ -3928,29 +3928,24 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
         // local files check
         if (std::string::npos == frame->GetURL().ToString().find("file://"))
         {
-            std::wstring sBaseWebCloudPath = NSFile::GetProcessDirectory() + L"/sdkjs";
-            std::wstring::size_type posSdkAll = url.rfind(L"/sdk-all");
+            std::wstring sResourcePath = L"";
 
-            if (std::wstring::npos != posSdkAll)
+            std::wstring::size_type pos = url.find(L"/sdkjs/");
+            if (std::wstring::npos != pos)
             {
-                std::wstring::size_type posEditorSdk = url.rfind('/', posSdkAll - 1);
-                if (std::wstring::npos != posEditorSdk)
-                {
-                    std::wstring sTestPath = sBaseWebCloudPath + url.substr(posEditorSdk);
-                    if (NSFile::CFileBinary::Exists(sTestPath))
-                    {
-                        return GetLocalFileRequest(sTestPath, "", "");
-                    }
-                }
+                sResourcePath = NSFile::GetProcessDirectory() + L"/web" + url.substr(pos);
+            }
+            else if (std::wstring::npos != (pos = url.find(L"/web-apps/")))
+            {
+                sResourcePath = NSFile::GetProcessDirectory() + L"/web" + url.substr(pos);
             }
 
-            if (std::wstring::npos != url.find(L"/fonts.js"))
+            if (!sResourcePath.empty() &&
+                std::wstring::npos == sResourcePath.find(L"AllFonts.js") &&
+                std::wstring::npos == sResourcePath.find(L"require.js") &&
+                NSFile::CFileBinary::Exists(sResourcePath))
             {
-                return GetLocalFileRequest(sBaseWebCloudPath + L"/common/libfont/wasm/fonts.js", "", "");
-            }
-            if (std::wstring::npos != url.find(L"/fonts.wasm"))
-            {
-                return GetLocalFileRequest(sBaseWebCloudPath + L"/common/libfont/wasm/fonts.wasm", "", "");
+                return GetLocalFileRequest(sResourcePath, "window.compareVersions=true;", "");
             }
         }
 
@@ -5001,6 +4996,45 @@ CCefView::~CCefView()
 void CCefView::load(const std::wstring& urlInputSrc)
 {
     std::wstring urlInput = urlInputSrc;
+
+    bool bIsScheme = false;
+    if (0 == urlInput.find(L"oo-office:"))
+    {
+        bIsScheme = true;
+        if (0 == urlInput.find(L"oo-office://"))
+            urlInput = urlInput.substr(12);
+        else
+            urlInput = urlInput.substr(10);
+    }
+    if (!bIsScheme)
+    {
+        if (0 == urlInput.find(L"open|"))
+            bIsScheme = true;
+    }
+    if (bIsScheme)
+    {
+        std::vector<std::wstring> arParams;
+        std::wstring::size_type posOld = 0;
+        std::wstring::size_type pos = urlInput.find('|');
+        while (pos != std::wstring::npos)
+        {
+            arParams.push_back(urlInput.substr(posOld, pos - posOld));
+            posOld = pos + 1;
+            pos = urlInput.find('|', posOld);
+        }
+        if (posOld < urlInput.length())
+            arParams.push_back(urlInput.substr(posOld));
+
+        size_t nSizeParams = (size_t)arParams.size();
+        if (1 == nSizeParams)
+        {
+            urlInput = arParams[0];
+        }
+        else if (1 < nSizeParams && L"open" == arParams[0])
+        {
+            urlInput = arParams[nSizeParams - 1];
+        }
+    }
 
     if (NSFileDownloader::IsNeedDownload(urlInput))
     {
@@ -6073,9 +6107,13 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
             }
 
             m_pInternal->m_pDownloadViewCallback = this;
-            m_pInternal->m_sDownloadViewPath = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"OL");
+            m_pInternal->m_sDownloadViewPath = NSFile::CFileBinary::CreateTempFileWithUniqueName(m_pInternal->m_pManager->m_pInternal->StartTmpDirectory(), L"OL");
             if (NSFile::CFileBinary::Exists(m_pInternal->m_sDownloadViewPath))
                 NSFile::CFileBinary::Remove(m_pInternal->m_sDownloadViewPath);
+
+#ifdef WIN32
+            NSCommon::string_replace(m_pInternal->m_sDownloadViewPath, L"/", L"\\");
+#endif
 
             std::wstring sExtBase = m_pInternal->m_sCloudCryptName;
 
