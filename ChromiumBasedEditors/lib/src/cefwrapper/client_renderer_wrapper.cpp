@@ -378,6 +378,8 @@ public:
     bool m_bEditorsCloudFeaturesCheck;
     std::vector<std::string> m_arCloudFeaturesBlackList;
 
+    std::wstring m_sAppTmpFolder;
+
     CAscEditorNativeV8Handler()
     {
         m_etType = Document;
@@ -437,6 +439,8 @@ public:
 
         m_sFontsData = default_params.GetValueW("fonts_cache_path");
         m_sAppData = default_params.GetValueW("app_data_path");
+
+        m_sAppTmpFolder = default_params.GetValueW("tmp_folder");
 
 #if 0
         default_params.Print();
@@ -2176,6 +2180,8 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
             std::wstring sDirTmp = m_sCryptDocumentFolder;
             if (sDirTmp.empty())
                 sDirTmp = m_sLocalFileFolderWithoutFile;
+            if (sDirTmp.empty())
+                sDirTmp = m_sAppTmpFolder;
             if (sDirTmp.empty())
                 sDirTmp = NSFile::CFileBinary::GetTempPath();
 
