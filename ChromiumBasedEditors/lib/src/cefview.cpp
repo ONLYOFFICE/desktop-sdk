@@ -2946,7 +2946,7 @@ public:
                 sBaseUrl = GetBaseDomain(sBaseUrl, true);
                 std::wstring sBaseDownloadLink = GetBaseDomain(sDownloadLink, true);
 
-                if (sBaseUrl != sBaseDownloadLink)
+                if (!sBaseUrl.empty() && sBaseUrl != sBaseDownloadLink)
                 {
                     sDownloadLink = sBaseUrl + sDownloadLink.substr(sBaseDownloadLink.length());
                 }
