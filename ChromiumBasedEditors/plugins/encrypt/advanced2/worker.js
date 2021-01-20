@@ -7,7 +7,14 @@
 	window.AscCrypto.CryptoWorker = {};
 	window.AscCrypto.CryptoWorker.isUseOnePasswordOnAllVersions = false;
 	window.AscCrypto.CryptoWorker.TmpPassword = "";
-	window.AscCrypto.CryptoWorker.User = null;	
+	window.AscCrypto.CryptoWorker.User = null;
+	
+	window.AscCrypto.CryptoWorker._correctForGenerateDocInfo = function()
+	{
+		if (!this.User)
+			return null;
+		return [{ publicKey : this.User[1].replace(/\n/g, "&#xA"), userId : this.User[2] }];
+	};
 	
 	// read user info
 	window.AscCrypto.CryptoWorker.init = function(users, password)
@@ -16,8 +23,14 @@
 	};	
 	// create from passwords
 	window.AscCrypto.CryptoWorker.generateDocInfo = function(users, password)
-	{
-		var result = "";
+	{		
+		if (!Array.isArray(users) || users.length === 0)
+			users = this._correctForGenerateDocInfo();
+			
+		if (!Array.isArray(users))
+			return "";
+		
+		var result = "ONLYOFFICE CryptoEngine (Version 1)\n\n";
 		for (var i = 0, len = users.length; i < len; i++)
 		{
 			if (users[i].publicKey)

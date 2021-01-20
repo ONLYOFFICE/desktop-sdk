@@ -439,6 +439,29 @@ public:
     }
 };
 
+class CTemporaryDocumentInfo
+{
+public:
+    std::wstring PathSrc;
+    int Type;
+    std::wstring Url;
+    std::wstring ExternalCloud;
+    std::wstring ParentUrl;
+
+public:
+    CTemporaryDocumentInfo(const std::wstring& sPathSrc, const int& nType,
+                           const std::wstring& sUrl = L"",
+                           const std::wstring& sExternalCloudId = L"",
+                           const std::wstring& sParentUrl = L"")
+    {
+        PathSrc = sPathSrc;
+        Type = nType;
+        Url = sUrl;
+        ExternalCloud = sExternalCloudId;
+        ParentUrl = sParentUrl;
+    }
+};
+
 class CAscClientHandler;
 class CCefView_Private : public NSEditorApi::IMenuEventDataBase, public IASCFileConverterEvents, public CTextDocxConverterCallback
 {
@@ -869,6 +892,8 @@ public:
 
     std::string m_sVersionForReporter;
 
+    CTemporaryDocumentInfo* m_pTemporaryCloudFileInfo;
+
 public:
     CCefView_Private()
     {
@@ -937,6 +962,7 @@ public:
         m_nDownloadedFilesFrameId = -1;
 
         m_pLockRecover = NULL;
+        m_pTemporaryCloudFileInfo = NULL;
     }
 
     void Destroy()
@@ -2197,9 +2223,11 @@ public:
                     if (m_pParent->m_pInternal->m_bIsExternalCloud)
                         sExtId = m_pParent->m_pInternal->m_oExternalCloud.id;
 
-                    pManager->m_pInternal->Recents_Add(sPath + L"/" + pData->get_Name(),
-                                                                         nType, sUrl, sExtId, m_pParent->m_pInternal->m_sParentUrl);
+                    CTemporaryDocumentInfo* pTempInfo = new CTemporaryDocumentInfo(sPath + L"/" + pData->get_Name(),
+                                                                                   nType, sUrl, sExtId, m_pParent->m_pInternal->m_sParentUrl);
+                    m_pParent->m_pInternal->m_pTemporaryCloudFileInfo = pTempInfo;
 
+                    pManager->m_pInternal->Recents_Add(pTempInfo->PathSrc, pTempInfo->Type, pTempInfo->Url, pTempInfo->ExternalCloud, pTempInfo->ParentUrl);
                     pData->put_Path(sPath);
                     pData->put_Url(sUrl);
                 }
@@ -2946,7 +2974,7 @@ public:
                 sBaseUrl = GetBaseDomain(sBaseUrl, true);
                 std::wstring sBaseDownloadLink = GetBaseDomain(sDownloadLink, true);
 
-                if (sBaseUrl != sBaseDownloadLink)
+                if (!sBaseUrl.empty() && sBaseUrl != sBaseDownloadLink)
                 {
                     sDownloadLink = sBaseUrl + sDownloadLink.substr(sBaseDownloadLink.length());
                 }
@@ -3928,29 +3956,24 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
         // local files check
         if (std::string::npos == frame->GetURL().ToString().find("file://"))
         {
-            std::wstring sBaseWebCloudPath = NSFile::GetProcessDirectory() + L"/sdkjs";
-            std::wstring::size_type posSdkAll = url.rfind(L"/sdk-all");
+            std::wstring sResourcePath = L"";
 
-            if (std::wstring::npos != posSdkAll)
+            std::wstring::size_type pos = url.find(L"/sdkjs/");
+            if (std::wstring::npos != pos)
             {
-                std::wstring::size_type posEditorSdk = url.rfind('/', posSdkAll - 1);
-                if (std::wstring::npos != posEditorSdk)
-                {
-                    std::wstring sTestPath = sBaseWebCloudPath + url.substr(posEditorSdk);
-                    if (NSFile::CFileBinary::Exists(sTestPath))
-                    {
-                        return GetLocalFileRequest(sTestPath, "", "");
-                    }
-                }
+                sResourcePath = NSFile::GetProcessDirectory() + L"/web" + url.substr(pos);
+            }
+            else if (std::wstring::npos != (pos = url.find(L"/web-apps/")))
+            {
+                sResourcePath = NSFile::GetProcessDirectory() + L"/web" + url.substr(pos);
             }
 
-            if (std::wstring::npos != url.find(L"/fonts.js"))
+            if (!sResourcePath.empty() &&
+                std::wstring::npos == sResourcePath.find(L"AllFonts.js") &&
+                std::wstring::npos == sResourcePath.find(L"require.js") &&
+                NSFile::CFileBinary::Exists(sResourcePath))
             {
-                return GetLocalFileRequest(sBaseWebCloudPath + L"/common/libfont/wasm/fonts.js", "", "");
-            }
-            if (std::wstring::npos != url.find(L"/fonts.wasm"))
-            {
-                return GetLocalFileRequest(sBaseWebCloudPath + L"/common/libfont/wasm/fonts.wasm", "", "");
+                return GetLocalFileRequest(sResourcePath, "window.compareVersions=true;", "");
             }
         }
 
@@ -4207,38 +4230,50 @@ require.load = function (context, moduleName, url) {\n\
         std::wstring sUrlWithoutProtocol = GetUrlWithoutProtocol(sUrl);
         //m_pParent->m_pInternal->m_oDownloaderAbortChecker.EndDownload(sUrl);
 
+        std::wstring sDestPath = L"";
+
         // если указан m_pDownloadViewCallback - то уже все готово. просто продолжаем
         if (NULL != m_pParent->m_pInternal->m_pDownloadViewCallback)
         {
-            callback->Continue(m_pParent->m_pInternal->m_pDownloadViewCallback->m_pInternal->GetViewDownloadPath(), false);
-            return;
-        }               
-
-        // если ссылка приватная (внутренняя) - то уже все готово. просто продолжаем
-        std::wstring sPrivateDownloadUrl = m_pParent->GetAppManager()->m_pInternal->GetPrivateDownloadUrl();
-        if (sUrlWithoutProtocol == GetUrlWithoutProtocol(sPrivateDownloadUrl))
-        {
-            callback->Continue(m_pParent->GetAppManager()->m_pInternal->GetPrivateDownloadPath(), false);
-            return;
+            sDestPath = m_pParent->m_pInternal->m_pDownloadViewCallback->m_pInternal->GetViewDownloadPath();
         }
 
-        // проверяем на зашифрованные картинки
-        std::map<std::wstring, std::wstring>::iterator findCryptoImage = m_pParent->m_pInternal->m_arCryptoImages.find(sUrl);
-        if (findCryptoImage != m_pParent->m_pInternal->m_arCryptoImages.end())
+        if (sDestPath.empty())
         {
-            std::wstring sRetTemp = findCryptoImage->second;
-#ifdef WIN32
-            NSCommon::string_replace(sRetTemp, L"/", L"\\");
+            // если ссылка приватная (внутренняя) - то уже все готово. просто продолжаем
+            std::wstring sPrivateDownloadUrl = m_pParent->GetAppManager()->m_pInternal->GetPrivateDownloadUrl();
+            if (sUrlWithoutProtocol == GetUrlWithoutProtocol(sPrivateDownloadUrl))
+            {
+                sDestPath = m_pParent->GetAppManager()->m_pInternal->GetPrivateDownloadPath();
+            }
+        }
+
+        if (sDestPath.empty())
+        {
+            // проверяем на зашифрованные картинки
+            std::map<std::wstring, std::wstring>::iterator findCryptoImage = m_pParent->m_pInternal->m_arCryptoImages.find(sUrl);
+            if (findCryptoImage != m_pParent->m_pInternal->m_arCryptoImages.end())
+            {
+                sDestPath = findCryptoImage->second;
+            }
+        }
+
+        if (sDestPath.empty())
+        {
+            // проверяем на файлы метода AscDesktopEditor.DownloadFiles
+            std::map<std::wstring, CDownloadFileItem>::iterator findDownloadFile = m_pParent->m_pInternal->m_arDownloadedFiles.find(sUrlWithoutProtocol);
+            if (findDownloadFile != m_pParent->m_pInternal->m_arDownloadedFiles.end())
+            {
+                sDestPath = findDownloadFile->second.Path;
+            }
+        }
+
+        if (!sDestPath.empty())
+        {
+#ifdef _WIN32
+            NSCommon::string_replace(sDestPath, L"/", L"\\");
 #endif
-            callback->Continue(sRetTemp, false);
-            return;
-        }
-
-        // проверяем на файлы метода AscDesktopEditor.DownloadFiles
-        std::map<std::wstring, CDownloadFileItem>::iterator findDownloadFile = m_pParent->m_pInternal->m_arDownloadedFiles.find(sUrlWithoutProtocol);
-        if (findDownloadFile != m_pParent->m_pInternal->m_arDownloadedFiles.end())
-        {
-            callback->Continue(findDownloadFile->second.Path, false);
+            callback->Continue(sDestPath, false);
             return;
         }
         
@@ -5001,6 +5036,45 @@ CCefView::~CCefView()
 void CCefView::load(const std::wstring& urlInputSrc)
 {
     std::wstring urlInput = urlInputSrc;
+
+    bool bIsScheme = false;
+    if (0 == urlInput.find(L"oo-office:"))
+    {
+        bIsScheme = true;
+        if (0 == urlInput.find(L"oo-office://"))
+            urlInput = urlInput.substr(12);
+        else
+            urlInput = urlInput.substr(10);
+    }
+    if (!bIsScheme)
+    {
+        if (0 == urlInput.find(L"open|"))
+            bIsScheme = true;
+    }
+    if (bIsScheme)
+    {
+        std::vector<std::wstring> arParams;
+        std::wstring::size_type posOld = 0;
+        std::wstring::size_type pos = urlInput.find('|');
+        while (pos != std::wstring::npos)
+        {
+            arParams.push_back(urlInput.substr(posOld, pos - posOld));
+            posOld = pos + 1;
+            pos = urlInput.find('|', posOld);
+        }
+        if (posOld < urlInput.length())
+            arParams.push_back(urlInput.substr(posOld));
+
+        size_t nSizeParams = (size_t)arParams.size();
+        if (1 == nSizeParams)
+        {
+            urlInput = arParams[0];
+        }
+        else if (1 < nSizeParams && L"open" == arParams[0])
+        {
+            urlInput = arParams[nSizeParams - 1];
+        }
+    }
 
     if (NSFileDownloader::IsNeedDownload(urlInput))
     {
@@ -6073,9 +6147,13 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
             }
 
             m_pInternal->m_pDownloadViewCallback = this;
-            m_pInternal->m_sDownloadViewPath = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"OL");
+            m_pInternal->m_sDownloadViewPath = NSFile::CFileBinary::CreateTempFileWithUniqueName(m_pInternal->m_pManager->m_pInternal->StartTmpDirectory(), L"OL");
             if (NSFile::CFileBinary::Exists(m_pInternal->m_sDownloadViewPath))
                 NSFile::CFileBinary::Remove(m_pInternal->m_sDownloadViewPath);
+
+#ifdef WIN32
+            NSCommon::string_replace(m_pInternal->m_sDownloadViewPath, L"/", L"\\");
+#endif
 
             std::wstring sExtBase = m_pInternal->m_sCloudCryptName;
 
@@ -6205,6 +6283,11 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
         NSFile::CFileBinary::Remove(sFilePath);
 
         m_pInternal->LocalFile_IncrementCounter();
+
+        // Send crypto flag to recents
+        CTemporaryDocumentInfo* pTempInfo = m_pInternal->m_pTemporaryCloudFileInfo;
+        if (pTempInfo)
+            m_pInternal->m_pManager->m_pInternal->Recents_Add(pTempInfo->PathSrc, pTempInfo->Type, pTempInfo->Url, pTempInfo->ExternalCloud, pTempInfo->ParentUrl, true);
     }
     else
     {
@@ -6212,6 +6295,12 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
         NSCommon::string_replace(m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc, L"\\", L"/");
 
         this->GetAppManager()->m_pInternal->Recents_Add(sFilePath, nFileFormat, L"", L"", m_pInternal->m_sParentUrl);
+    }
+
+    if (m_pInternal->m_pTemporaryCloudFileInfo)
+    {
+        delete m_pInternal->m_pTemporaryCloudFileInfo;
+        m_pInternal->m_pTemporaryCloudFileInfo = NULL;
     }
 
     m_pInternal->m_oConverterToEditor.m_pManager = this->GetAppManager();
