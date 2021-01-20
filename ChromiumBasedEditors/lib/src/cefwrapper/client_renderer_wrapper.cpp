@@ -268,7 +268,8 @@ class CAscEditorNativeV8Handler : public CefV8Handler, public INativeViewer_Even
     {
         Document        = 0,
         Presentation    = 1,
-        Spreadsheet     = 2
+        Spreadsheet     = 2,
+        etUndefined     = 255
     };
 
     class CSavedPageInfo
@@ -382,7 +383,7 @@ public:
 
     CAscEditorNativeV8Handler()
     {
-        m_etType = Document;
+        m_etType = etUndefined;
         m_nEditorId = -1;
         sync_command_check = NULL;
 
@@ -503,6 +504,69 @@ public:
                 return true;
         }
         return m_sLocalFileFolderWithoutFile.empty() ? false : true;
+    }
+
+    bool CheckSW()
+    {
+        // функция, которая работает при включенном service worker
+        // не подменился require.js и так далее
+        if (!m_sVersion.empty() || m_etType != etUndefined)
+            return false;
+
+        CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+
+        if (0 == browser->GetMainFrame()->GetURL().ToString().find("file://"))
+            return false;
+
+        if (true)
+        {
+            CefRefPtr<CefV8Value> retval;
+            CefRefPtr<CefV8Exception> exception;
+
+            bool bIsVersion = browser->GetMainFrame()->GetV8Context()->Eval(
+"(function() { \n\
+//console.log(\"!!! service worker !!!\");\n\
+if (window.DocsAPI && window.DocsAPI.DocEditor) \n\
+return window.DocsAPI.DocEditor.version(); \n\
+else \n\
+return undefined; \n\
+})();",
+#ifndef CEF_2623
+        "", 0,
+#endif
+retval, exception);
+
+            if (bIsVersion && retval->IsString())
+                m_sVersion = retval->GetStringValue().ToString();
+
+            if (m_sVersion.empty())
+                m_sVersion = "undefined";
+
+            CefRefPtr<CefProcessMessage> messageVersion = CefProcessMessage::Create("set_editors_version");
+            messageVersion->GetArgumentList()->SetString(0, m_sVersion);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(messageVersion);
+        }
+
+        std::string sUrl = CefV8Context::GetCurrentContext()->GetFrame()->GetURL().ToString();
+        if (m_sVersion == "undefined" && sUrl.find("index.reporter.html") != std::string::npos)
+        {
+            m_etType = Presentation;
+        }
+        else
+        {
+            // сначала определим тип редактора
+            if (sUrl.find("documenteditor") != std::wstring::npos)
+                m_etType = Document;
+            else if (sUrl.find("presentationeditor") != std::wstring::npos)
+                m_etType = Presentation;
+            else if (sUrl.find("spreadsheeteditor") != std::wstring::npos)
+                m_etType = Spreadsheet;
+        }
+
+        CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("EditorType");
+        message->GetArgumentList()->SetInt(0, (int)m_etType);
+        SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+        return true;
     }
 
     virtual bool Execute(const CefString& sMessageName,
@@ -856,11 +920,17 @@ retval, exception);
                 // смотрим на версию и если она старая - берем нужную версию файла
 
                 int nMajorVersion = NSVersion::GetMajorVersion(m_sVersion);
+                std::wstring sAllFontsVersion = L"";
                 if (nMajorVersion != 0 && nMajorVersion < 6)
+                    sAllFontsVersion = L"/AllFonts.js.1";
+                else if (CheckSW())
+                    sAllFontsVersion = L"/AllFonts.js";
+
+                if (!sAllFontsVersion.empty())
                 {
                     // берем нужную версию
                     std::string sCode;
-                    NSFile::CFileBinary::ReadAllTextUtf8A(m_sFontsData + L"/AllFonts.js.1", sCode);
+                    NSFile::CFileBinary::ReadAllTextUtf8A(m_sFontsData + sAllFontsVersion, sCode);
                     if (!sCode.empty())
                     {
                         CefRefPtr<CefV8Value> retval;
@@ -3858,6 +3928,16 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefFrame> curFrame = context->GetFrame();
     if (curFrame)
     {
+#if 0
+        std::string sDisableSW = "\
+navigator.serviceWorker.register2 = navigator.serviceWorker.register;\n\
+navigator.serviceWorker.register = function() { \n\
+var path = arguments[0]; var pathEnd = path.lastIndexOf('/');\n\
+arguments[0] = (pathEnd === -1) ? (\"ascdesktop_\" + path) : (path.substr(0, pathEnd) + \"/ascdesktop_\" + path.substr(pathEnd + 1));;\n\
+return navigator.serviceWorker.register2.apply(this, arguments);\n\
+};\n\"";
+#endif
+
         curFrame->ExecuteJavaScript("\
 window.addEventListener(\"DOMContentLoaded\", function(){\n\
 var _style = document.createElement(\"style\");\n\

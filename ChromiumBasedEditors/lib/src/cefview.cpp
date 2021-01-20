@@ -439,6 +439,29 @@ public:
     }
 };
 
+class CTemporaryDocumentInfo
+{
+public:
+    std::wstring PathSrc;
+    int Type;
+    std::wstring Url;
+    std::wstring ExternalCloud;
+    std::wstring ParentUrl;
+
+public:
+    CTemporaryDocumentInfo(const std::wstring& sPathSrc, const int& nType,
+                           const std::wstring& sUrl = L"",
+                           const std::wstring& sExternalCloudId = L"",
+                           const std::wstring& sParentUrl = L"")
+    {
+        PathSrc = sPathSrc;
+        Type = nType;
+        Url = sUrl;
+        ExternalCloud = sExternalCloudId;
+        ParentUrl = sParentUrl;
+    }
+};
+
 class CAscClientHandler;
 class CCefView_Private : public NSEditorApi::IMenuEventDataBase, public IASCFileConverterEvents, public CTextDocxConverterCallback
 {
@@ -869,6 +892,8 @@ public:
 
     std::string m_sVersionForReporter;
 
+    CTemporaryDocumentInfo* m_pTemporaryCloudFileInfo;
+
 public:
     CCefView_Private()
     {
@@ -937,6 +962,7 @@ public:
         m_nDownloadedFilesFrameId = -1;
 
         m_pLockRecover = NULL;
+        m_pTemporaryCloudFileInfo = NULL;
     }
 
     void Destroy()
@@ -2197,9 +2223,11 @@ public:
                     if (m_pParent->m_pInternal->m_bIsExternalCloud)
                         sExtId = m_pParent->m_pInternal->m_oExternalCloud.id;
 
-                    pManager->m_pInternal->Recents_Add(sPath + L"/" + pData->get_Name(),
-                                                                         nType, sUrl, sExtId, m_pParent->m_pInternal->m_sParentUrl);
+                    CTemporaryDocumentInfo* pTempInfo = new CTemporaryDocumentInfo(sPath + L"/" + pData->get_Name(),
+                                                                                   nType, sUrl, sExtId, m_pParent->m_pInternal->m_sParentUrl);
+                    m_pParent->m_pInternal->m_pTemporaryCloudFileInfo = pTempInfo;
 
+                    pManager->m_pInternal->Recents_Add(pTempInfo->PathSrc, pTempInfo->Type, pTempInfo->Url, pTempInfo->ExternalCloud, pTempInfo->ParentUrl);
                     pData->put_Path(sPath);
                     pData->put_Url(sUrl);
                 }
@@ -2946,7 +2974,7 @@ public:
                 sBaseUrl = GetBaseDomain(sBaseUrl, true);
                 std::wstring sBaseDownloadLink = GetBaseDomain(sDownloadLink, true);
 
-                if (sBaseUrl != sBaseDownloadLink)
+                if (!sBaseUrl.empty() && sBaseUrl != sBaseDownloadLink)
                 {
                     sDownloadLink = sBaseUrl + sDownloadLink.substr(sBaseDownloadLink.length());
                 }
@@ -6255,6 +6283,11 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
         NSFile::CFileBinary::Remove(sFilePath);
 
         m_pInternal->LocalFile_IncrementCounter();
+
+        // Send crypto flag to recents
+        CTemporaryDocumentInfo* pTempInfo = m_pInternal->m_pTemporaryCloudFileInfo;
+        if (pTempInfo)
+            m_pInternal->m_pManager->m_pInternal->Recents_Add(pTempInfo->PathSrc, pTempInfo->Type, pTempInfo->Url, pTempInfo->ExternalCloud, pTempInfo->ParentUrl, true);
     }
     else
     {
@@ -6262,6 +6295,12 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
         NSCommon::string_replace(m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc, L"\\", L"/");
 
         this->GetAppManager()->m_pInternal->Recents_Add(sFilePath, nFileFormat, L"", L"", m_pInternal->m_sParentUrl);
+    }
+
+    if (m_pInternal->m_pTemporaryCloudFileInfo)
+    {
+        delete m_pInternal->m_pTemporaryCloudFileInfo;
+        m_pInternal->m_pTemporaryCloudFileInfo = NULL;
     }
 
     m_pInternal->m_oConverterToEditor.m_pManager = this->GetAppManager();
