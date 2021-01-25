@@ -1769,22 +1769,6 @@ public:
         return true;
     }
 
-    std::wstring GetBaseDomain(const std::wstring& url, bool bIsHeader = false)
-    {
-        std::wstring::size_type pos1 = url.find(L"//");
-        if (std::wstring::npos == pos1)
-            pos1 = 0;
-        pos1 += 2;
-
-        std::wstring::size_type pos2 = url.find(L"/", pos1);
-        if (std::wstring::npos == pos2)
-            return L"";
-
-        if (!bIsHeader)
-            return url.substr(pos1, pos2 - pos1);        
-        return url.substr(0, pos2);
-    }
-
     virtual bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
                                 CefRefPtr<CefFrame> frame,
                                 CefRefPtr<CefRequest> request,
@@ -1808,7 +1792,7 @@ public:
         {
             if (m_pParent->m_pInternal->m_bIsFirstLoadSSO)
             {
-                m_pParent->m_pInternal->m_strSSOFirstDomain = GetBaseDomain(sUrl);
+                m_pParent->m_pInternal->m_strSSOFirstDomain = NSCommon::GetBaseDomain(sUrl);
                 m_pParent->m_pInternal->m_bIsFirstLoadSSO = false;
             }
             else
@@ -1829,7 +1813,7 @@ public:
                         }
                     }
 
-                    std::wstring sCurrentBaseDomain = GetBaseDomain(sUrl);
+                    std::wstring sCurrentBaseDomain = NSCommon::GetBaseDomain(sUrl);
 
                     if (!sCurrentBaseDomain.empty() && sCurrentBaseDomain != m_pParent->m_pInternal->m_strSSOFirstDomain)
                     {
@@ -2971,8 +2955,8 @@ public:
             else
             {
                 // change base domains
-                sBaseUrl = GetBaseDomain(sBaseUrl, true);
-                std::wstring sBaseDownloadLink = GetBaseDomain(sDownloadLink, true);
+                sBaseUrl = NSCommon::GetBaseDomain(sBaseUrl, true);
+                std::wstring sBaseDownloadLink = NSCommon::GetBaseDomain(sDownloadLink, true);
 
                 if (!sBaseUrl.empty() && sBaseUrl != sBaseDownloadLink)
                 {

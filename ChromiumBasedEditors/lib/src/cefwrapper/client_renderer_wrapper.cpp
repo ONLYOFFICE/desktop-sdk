@@ -381,6 +381,10 @@ public:
 
     std::wstring m_sAppTmpFolder;
 
+    // для преобразования внутренняя ссылка => внешняя при скачивании
+    std::wstring m_sEditorPageDomain;
+    std::wstring m_sInternalEditorPageDomain;
+
     CAscEditorNativeV8Handler()
     {
         m_etType = etUndefined;
@@ -2160,6 +2164,9 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
         }
         else if (name == "_OpenFileCrypt")
         {
+            m_sEditorPageDomain = NSCommon::GetBaseDomain(CefV8Context::GetCurrentContext()->GetFrame()->GetURL().ToWString(), true);
+            m_sInternalEditorPageDomain = NSCommon::GetBaseDomain(arguments[1]->GetStringValue().ToWString(), true);
+
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("open_file_crypt");
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
             message->GetArgumentList()->SetString(1, arguments[1]->GetStringValue());
@@ -2279,7 +2286,13 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
 
             for (int i = 0; i < nCount; ++i)
             {
-                message->GetArgumentList()->SetString(nIndex++, val->GetValue(i)->GetStringValue());
+                std::wstring sUrlCurrent = val->GetValue(i)->GetStringValue().ToWString();
+                if (!m_sEditorPageDomain.empty() && !m_sInternalEditorPageDomain.empty() && 0 == sUrlCurrent.find(m_sInternalEditorPageDomain))
+                {
+                    sUrlCurrent = m_sEditorPageDomain + sUrlCurrent.substr(m_sInternalEditorPageDomain.length());
+                }
+
+                message->GetArgumentList()->SetString(nIndex++, sUrlCurrent);
 
                 if (i < nCount2)
                 {

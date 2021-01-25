@@ -133,6 +133,25 @@ namespace NSVersion
     }
 }
 
+namespace NSCommon
+{
+    static std::wstring GetBaseDomain(const std::wstring& url, bool bIsHeader = false)
+    {
+        std::wstring::size_type pos1 = url.find(L"//");
+        if (std::wstring::npos == pos1)
+            pos1 = 0;
+        pos1 += 2;
+
+        std::wstring::size_type pos2 = url.find(L"/", pos1);
+        if (std::wstring::npos == pos2)
+            return L"";
+
+        if (!bIsHeader)
+            return url.substr(pos1, pos2 - pos1);
+        return url.substr(0, pos2);
+    }
+}
+
 class CAscReporterData
 {
 public:
