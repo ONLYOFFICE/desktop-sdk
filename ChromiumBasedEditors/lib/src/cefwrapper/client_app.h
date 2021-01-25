@@ -276,7 +276,7 @@ public:
 
             //command_line->AppendSwitch("--allow-running-insecure-content");
 
-            command_line->AppendSwitchWithValue("--product-version", "AscDesktopEditor 6.1.1");
+            command_line->AppendSwitchWithValue("--product-version", "Chrome AscDesktopEditor 6.2.0");
 
             int forceDpi = IsForceDpiRound();
             if (0 != forceDpi)
