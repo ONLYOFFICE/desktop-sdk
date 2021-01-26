@@ -2436,6 +2436,7 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
             oFileWithChanges.CloseFile();
 
             int nFormat = arguments[1]->GetIntValue();
+            nFormat = NSCommon::CorrectSaveFormat(nFormat);
 
             std::string sParams = "";
             if (arguments.size() > 2)
