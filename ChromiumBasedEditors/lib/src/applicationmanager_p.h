@@ -150,6 +150,18 @@ namespace NSCommon
             return url.substr(pos1, pos2 - pos1);
         return url.substr(0, pos2);
     }
+
+    static int CorrectSaveFormat(const int& nFormat)
+    {
+        switch (nFormat)
+        {
+        case 2305:
+            return AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA;
+        default:
+            break;
+        }
+        return nFormat;
+    }
 }
 
 class CAscReporterData
