@@ -4514,6 +4514,8 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
 
         if (_frame)
         {
+            if (2 == sParamCallback.length())
+                sParamCallback = L"[\"\"]";
             std::wstring sCode = L"(function() { window.on_native_open_filename_dialog(" + sParamCallback + L"); delete window.on_native_open_filename_dialog; })();";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
         }
