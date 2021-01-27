@@ -2218,6 +2218,7 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("preload_crypto_image");
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
             message->GetArgumentList()->SetString(1, arguments[1]->GetStringValue());
+            NSArgumentList::SetInt64(message->GetArgumentList(), 2, CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
             SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
@@ -4797,14 +4798,22 @@ window.AscDesktopEditor.openFileCryptCallback = null;\n\
         if (_frame)
         {
             int nType = message->GetArgumentList()->GetInt(0);
-            std::wstring sFileSrc = message->GetArgumentList()->GetString(1).ToWString();
+            int64 nFrameId = NSArgumentList::GetInt64(message->GetArgumentList(), 1);
+            if (0 != nFrameId)
+            {
+                CefRefPtr<CefFrame> _frameID = browser->GetFrame(nFrameId);
+                if (_frameID)
+                    _frame = _frameID;
+            }
+
+            std::wstring sFileSrc = message->GetArgumentList()->GetString(2).ToWString();
 
             std::string sUrl = U_TO_UTF8(sFileSrc);
             std::string sUrlNatural = sUrl;
             std::string sData = "";
             if (0 == nType)
             {
-                sUrlNatural = message->GetArgumentList()->GetString(2).ToString();
+                sUrlNatural = message->GetArgumentList()->GetString(3).ToString();
                 sUrl = "ascdesktop://fonts/" + sUrl;
 
                 std::string sTest = "";

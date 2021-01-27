@@ -842,6 +842,7 @@ public:
 
     // картинки для скачки, в криптованном режиме
     std::map<std::wstring, std::wstring> m_arCryptoImages;
+    std::map<std::wstring, int_64_type> m_arCryptoImagesFrameId;
 
     // файлы с ссылками для метода AscDesktopEditor.DownloadFiles
     std::map<std::wstring, CDownloadFileItem> m_arDownloadedFiles;
@@ -3025,6 +3026,7 @@ public:
         {
             std::wstring sUrl1 = args->GetString(0).ToWString();
             std::wstring sUrl2 = args->GetString(1).ToWString();
+            int_64_type nFrameID = NSArgumentList::GetInt64(args, 2);
 
             if (sUrl2.empty() && ((0 == sUrl1.find(L"image")) || (0 == sUrl1.find(L"display"))))
             {
@@ -3038,8 +3040,9 @@ public:
                 {
                     CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("on_preload_crypto_image");
                     messageOut->GetArgumentList()->SetInt(0, 0);
-                    messageOut->GetArgumentList()->SetString(1, sNum);
-                    messageOut->GetArgumentList()->SetString(2, sUrl1);
+                    NSArgumentList::SetInt64(messageOut->GetArgumentList(), 1, nFrameID);
+                    messageOut->GetArgumentList()->SetString(2, sNum);
+                    messageOut->GetArgumentList()->SetString(3, sUrl1);
                     SEND_MESSAGE_TO_RENDERER_PROCESS(browser, messageOut);
                 }
                 else
@@ -3047,6 +3050,7 @@ public:
                     if (m_pParent->m_pInternal->m_arCryptoImages.find(sUrl1) == m_pParent->m_pInternal->m_arCryptoImages.end())
                     {
                         m_pParent->m_pInternal->m_arCryptoImages.insert(std::pair<std::wstring, std::wstring>(sUrl1, sNum));
+                        m_pParent->m_pInternal->m_arCryptoImagesFrameId.insert(std::pair<std::wstring, int_64_type>(sUrl1, nFrameID));
                         m_pParent->StartDownload(sUrl1);
                     }
                 }
@@ -3055,7 +3059,8 @@ public:
             {
                 CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("on_preload_crypto_image");
                 messageOut->GetArgumentList()->SetInt(0, 1);
-                messageOut->GetArgumentList()->SetString(1, sUrl1);
+                NSArgumentList::SetInt64(messageOut->GetArgumentList(), 1, nFrameID);
+                messageOut->GetArgumentList()->SetString(2, sUrl1);
                 SEND_MESSAGE_TO_RENDERER_PROCESS(browser, messageOut);
             }
 
@@ -4388,10 +4393,19 @@ require.load = function (context, moduleName, url) {\n\
             {
                 if (download_item->IsComplete() || download_item->IsCanceled())
                 {
+                    int_64_type nFrameID = 0;
+                    std::map<std::wstring, int_64_type>::iterator findCryptoImageFrameId = m_pParent->m_pInternal->m_arCryptoImagesFrameId.find(sUrl);
+                    if (findCryptoImageFrameId !=  m_pParent->m_pInternal->m_arCryptoImagesFrameId.end())
+                    {
+                        nFrameID = findCryptoImageFrameId->second;
+                        m_pParent->m_pInternal->m_arCryptoImagesFrameId.erase(findCryptoImageFrameId);
+                    }
+
                     CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_preload_crypto_image");
                     message->GetArgumentList()->SetInt(0, 0);
-                    message->GetArgumentList()->SetString(1, findCryptoImage->second);
-                    message->GetArgumentList()->SetString(2, findCryptoImage->first);
+                    NSArgumentList::SetInt64(message->GetArgumentList(), 1, nFrameID);
+                    message->GetArgumentList()->SetString(2, findCryptoImage->second);
+                    message->GetArgumentList()->SetString(3, findCryptoImage->first);
 
                     if (!browser)
                         browser = m_pParent->m_pInternal->GetBrowser();
