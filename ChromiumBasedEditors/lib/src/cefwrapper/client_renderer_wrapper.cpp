@@ -51,6 +51,7 @@
 
 #include "../../src/nativeviewer.h"
 #include "../../src/plugins.h"
+#include "../../src/providers.h"
 
 #include "../../src/additional/renderer.h"
 #include "../crypto_mode.h"
@@ -2308,31 +2309,22 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
         }
         else if (name == "GetExternalClouds")
         {
-            std::wstring sSP = m_sSystemPlugins;
-            if (sSP.empty())
-            {
+            CExternalClouds oClouds;
 #ifdef _MAC
-                sSP = NSFile::GetProcessDirectory() + L"/../../../../Resources/editors/sdkjs-plugins";
+            oClouds.m_sSystemDirectory = NSFile::GetProcessDirectory() + L"/../../../../Resources/providers";
 #else
-                sSP = NSFile::GetProcessDirectory() + L"/editors/sdkjs-plugins";
+            oClouds.m_sSystemDirectory = NSFile::GetProcessDirectory() + L"/providers";
 #endif
-            }
 
-            std::wstring sFile = NSCommon::GetDirectoryName(sSP) + L"/externalcloud.json";
-            std::string sContent = "";
-
-            if (NSFile::CFileBinary::ReadAllTextUtf8A(sFile, sContent))
+            std::string sClouds = oClouds.GetAllJSON();
+            if ("[]" != sClouds)
             {
-                NSCommon::string_replaceA(sContent, "\r", "");
-                NSCommon::string_replaceA(sContent, "\n", "");
-                NSCommon::string_replaceA(sContent, "\\", "\\\\");
-                NSCommon::string_replaceA(sContent, "\"", "\\\"");
-                CefRefPtr<CefV8Exception> exception;
-                CefV8Context::GetCurrentContext()->Eval("(function(){ return JSON.parse(\"" + sContent + "\"); })();",
+                CefRefPtr<CefV8Exception> exception1;
+                CefV8Context::GetCurrentContext()->Eval("(function(){ return " + sClouds + "; })();",
                                                                           #ifndef CEF_2623
                                                                                       "", 0,
                                                                           #endif
-                                                                          retval, exception);
+                                                                          retval, exception1);
             }
             else
             {
@@ -3258,6 +3250,12 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
                 retval->SetValue(nCurrent++, CefV8Value::CreateString(*i));
             return true;
         }
+        else if (name == "cloudCryptoCommand")
+        {
+            // empty method
+            retval = CefV8Value::CreateString("empty");
+            return true;
+        }
 
         // Function does not exist.
         return false;
@@ -3631,7 +3629,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
 
-    #define EXTEND_METHODS_COUNT 155
+    #define EXTEND_METHODS_COUNT 156
     const char* methods[EXTEND_METHODS_COUNT] = {
         "Copy",
         "Paste",
@@ -3842,6 +3840,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
         "Crypto_GetLocalImageBase64",
 
+        "cloudCryptoCommand",
+
         NULL
     };
 
@@ -3871,7 +3871,6 @@ _style.innerHTML = \"\
 .webkit-scrollbar::-webkit-scrollbar-corner { background:inherit; }\";\n\
 document.getElementsByTagName(\"head\")[0].appendChild(_style);\n\
 }, false);\n\
-if (window.navigator) { window.oldNavigatorUserAgent = navigator.userAgent; Object.defineProperty(navigator, 'userAgent', { get: function () { return window.oldNavigatorUserAgent + \" AscDesktopEditor 6.1.0\"; } }); }\n\
 \n\
 window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
     }

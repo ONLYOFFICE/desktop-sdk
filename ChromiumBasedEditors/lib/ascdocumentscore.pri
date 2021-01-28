@@ -50,6 +50,7 @@ build_xp {
 ####################  BOOST  ###########################
 
 CONFIG += core_boost_libs
+CONFIG += core_boost_regex
 include($$CORE_ROOT_DIR/Common/3dParty/boost/boost.pri)
 
 ########################################################
@@ -78,6 +79,7 @@ HEADERS += \
     $$PWD/src/applicationmanager_p.h \
     $$PWD/src/nativeviewer.h \
     $$PWD/src/plugins.h \
+    $$PWD/src/providers.h \
     $$PWD/src/cloud_crypto.h \
     $$PWD/src/crypto_mode.h \
     $$PWD/include/keychain.h \

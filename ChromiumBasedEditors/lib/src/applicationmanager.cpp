@@ -87,6 +87,8 @@ CAscApplicationSettings::CAscApplicationSettings()
 
     pass_support                    = true;
 
+    user_providers_path             = L"";
+
     converter_application_name      = "ONLYOFFICE";
     converter_application_company   = "Ascensio System SIA Copyright (c) 2018";
 }
