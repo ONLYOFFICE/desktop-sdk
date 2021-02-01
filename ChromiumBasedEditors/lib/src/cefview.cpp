@@ -790,6 +790,8 @@ public:
     bool m_bIsDestroy;
     // упал ли процесс рендерера
     bool m_bIsCrashed;
+    // ошибка загрузки
+    bool m_bIsLoadingError;
 
     // поддерживается ли криптование
     bool m_bIsOnlyPassSupport;
@@ -913,6 +915,7 @@ public:
         m_bIsBuilding = false;
         m_bIsDestroy = false;
         m_bIsCrashed = false;
+        m_bIsLoadingError = false;
 
         m_strUrl = L"";
 
@@ -3720,6 +3723,7 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
         if (m_pParent && errorCode != ERR_ABORTED)
         {
             m_pParent->load(L"ascdesktop://loaderror.html");
+            m_pParent->m_pInternal->m_bIsLoadingError = true;
         }
     }
 
@@ -6593,6 +6597,8 @@ bool CCefViewEditor::OpenRecentFile(const int& nId)
 bool CCefViewEditor::CheckCloudCryptoNeedBuild()
 {
     if (!m_pInternal->m_bIsCloudCryptFile)
+        return false;
+    if (m_pInternal->m_bIsCrashed || m_pInternal->m_bIsLoadingError)
         return false;
 
     CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("is_need_build_crypted_file");
