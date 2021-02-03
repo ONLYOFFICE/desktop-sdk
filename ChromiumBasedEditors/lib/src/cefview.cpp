@@ -6004,7 +6004,7 @@ bool CCefView::StartDownload(const std::wstring& sUrl)
 
 void CCefView::SetExternalCloud(const std::wstring& sProviderId)
 {
-    if (L"asc" == sProviderId)
+    if (L"asc" == sProviderId || L"onlyoffice" == sProviderId)
     {
         m_pInternal->m_bIsSSO = true;
         return;
