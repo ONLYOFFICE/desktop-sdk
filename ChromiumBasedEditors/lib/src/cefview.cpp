@@ -5111,7 +5111,8 @@ void CCefView::load(const std::wstring& urlInputSrc)
     {
         if (m_pInternal->m_bIsExternalCloud && GetType() == cvwtSimple)
         {
-            NSCommon::string_replace(urlInput, L"/products/files/", L"/");
+            //NSCommon::string_replace(urlInput, L"/products/files/", L"/");
+            // теперь смотрим за этим выше
         }
         else if (GetType() == cvwtEditor)
         {
