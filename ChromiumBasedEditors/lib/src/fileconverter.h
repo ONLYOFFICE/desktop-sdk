@@ -1334,18 +1334,32 @@ public:
         }
         else
         {
+            std::wstring sAdditionXml = L"";
             NSStringUtils::CStringBuilder oBuilder;
             oBuilder.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><TaskQueueDataConvert><m_sFileFrom>");
             oBuilder.WriteEncodeXmlString(m_sRecoverFolder + L"/EditorWithChanges.bin");
             oBuilder.WriteString(L"</m_sFileFrom><m_sFileTo>");
             oBuilder.WriteEncodeXmlString(m_sOutputPath);
             oBuilder.WriteString(L"</m_sFileTo><m_nFormatTo>");
-            oBuilder.WriteString(std::to_wstring(m_nOutputFormat));
+
+            int nOutputFormat = NSCommon::CorrectSaveFormat(m_nOutputFormat);
+            if (AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA == nOutputFormat)
+            {
+                nOutputFormat = AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF;
+                sAdditionXml = L"<m_bIsPDFA>true</m_bIsPDFA>";
+            }
+
+
+            oBuilder.WriteString(std::to_wstring(nOutputFormat));
             oBuilder.WriteString(L"</m_nFormatTo><m_sFontDir>");
             oBuilder.WriteEncodeXmlString(m_pManager->m_oSettings.fonts_cache_info_path);
             oBuilder.WriteString(L"</m_sFontDir>");
             oBuilder.WriteString(UTF8_TO_U(m_sOutputParams));
             oBuilder.WriteString(L"<m_bIsNoBase64>false</m_bIsNoBase64>");
+
+            if (!sAdditionXml.empty())
+                oBuilder.WriteString(sAdditionXml);
+
             oBuilder.WriteString(L"</TaskQueueDataConvert>");
 
             std::wstring sTempFileForParams = m_sRecoverFolder + L"/params_simple_converter.xml";
