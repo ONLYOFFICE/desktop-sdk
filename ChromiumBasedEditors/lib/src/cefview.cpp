@@ -5925,6 +5925,10 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 
                     message->GetArgumentList()->SetString(0, serializer.GetData());
                 }
+                else
+                {
+                    message->GetArgumentList()->SetString(0, "{}");
+                }
 
                 RELEASEOBJECT(pCert);
             }
