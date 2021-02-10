@@ -2709,6 +2709,29 @@ public:
                         NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_WINDOW_SHOW_CERTIFICATE);
                         NSEditorApi::CAscX509CertificateData* pData = new NSEditorApi::CAscX509CertificateData();
                         pData->put_Data(UTF8_TO_U(sData));
+#ifdef _MAC
+                        std::string sCertificateContent = pSign->GetCertificate()->GetCertificateBase64();
+                        BYTE* pDataCert = NULL;
+                        int nDataCertLen = 0;
+                        NSFile::CBase64Converter::Decode(sCertificateContent.c_str(), (int)sCertificateContent.length(), pDataCert, nDataCertLen);
+
+                        if (0 < nDataCertLen)
+                        {
+                            std::wstring sFilePath = NSFile::CFileBinary::CreateTempFileWithUniqueName(m_pParent->m_pInternal->m_pManager->m_pInternal->StartTmpDirectory(), L"OL");
+                            if (NSFile::CFileBinary::Exists(sFilePath))
+                                NSFile::CFileBinary::Remove(sFilePath);
+                            NSFile::CFileBinary oFile;
+                            if (oFile.CreateFileW(sFilePath))
+                            {
+                                oFile.WriteFile(pDataCert, (DWORD)nDataCertLen);
+                            }
+                            oFile.CloseFile();
+                            pData->put_FilePath(sFilePath);
+                        }
+
+                        RELEASEARRAYOBJECTS(pDataCert);
+#endif
+
                         pEvent->m_pData = pData;
                         pListener->OnEvent(pEvent);
                     }

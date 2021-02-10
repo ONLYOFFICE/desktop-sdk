@@ -1034,6 +1034,7 @@ namespace NSEditorApi
     {
     private:
         std::wstring m_sData;
+        std::wstring m_sFilePath; // used only on macOS
 
     public:
         CAscX509CertificateData()
@@ -1044,6 +1045,7 @@ namespace NSEditorApi
         }
 
         LINK_PROPERTY_STRING(Data)
+        LINK_PROPERTY_STRING(FilePath)
     };
 }
 
