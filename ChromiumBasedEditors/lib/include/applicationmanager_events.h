@@ -138,6 +138,8 @@
 
 #define ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_SAVEFILENAME_DIALOG 8011
 
+#define ASC_MENU_EVENT_TYPE_WINDOW_SHOW_CERTIFICATE         9001
+
 
 #define ASC_MENU_EVENT_TYPE_WINDOWS_MESSAGE_USER_COUNT      10
 
@@ -1023,6 +1025,25 @@ namespace NSEditorApi
         LINK_PROPERTY_DOUBLE(sy)
         LINK_PROPERTY_DOUBLE(tx)
         LINK_PROPERTY_DOUBLE(ty)
+    };
+}
+
+namespace NSEditorApi
+{
+    class CAscX509CertificateData : public IMenuEventDataBase
+    {
+    private:
+        std::wstring m_sData;
+
+    public:
+        CAscX509CertificateData()
+        {
+        }
+        virtual ~CAscX509CertificateData()
+        {
+        }
+
+        LINK_PROPERTY_STRING(Data)
     };
 }
 

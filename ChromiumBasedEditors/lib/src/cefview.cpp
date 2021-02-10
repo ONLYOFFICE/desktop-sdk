@@ -2701,6 +2701,19 @@ public:
                 WindowHandleId _handle = m_pParent->GetWidgetImpl()->cef_handle;
                 int nRet = pSign ? pSign->GetCertificate()->ShowCertificate(&_handle) : 0;
 
+                if (-1 == nRet)
+                {
+                    std::string sData = pSign->GetCertificate()->Print();
+                    if (!sData.empty())
+                    {
+                        NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_WINDOW_SHOW_CERTIFICATE);
+                        NSEditorApi::CAscX509CertificateData* pData = new NSEditorApi::CAscX509CertificateData();
+                        pData->put_Data(UTF8_TO_U(sData));
+                        pEvent->m_pData = pData;
+                        pListener->OnEvent(pEvent);
+                    }
+                }
+
                 CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("on_signature_viewcertificate_ret");
                 messageOut->GetArgumentList()->SetString(0, std::to_string(nRet));
                 SEND_MESSAGE_TO_RENDERER_PROCESS(browser, messageOut);
