@@ -2720,6 +2720,7 @@ public:
                             std::wstring sFilePath = NSFile::CFileBinary::CreateTempFileWithUniqueName(m_pParent->m_pInternal->m_pManager->m_pInternal->StartTmpDirectory(), L"OL");
                             if (NSFile::CFileBinary::Exists(sFilePath))
                                 NSFile::CFileBinary::Remove(sFilePath);
+                            sFilePath += L".cer";
                             NSFile::CFileBinary oFile;
                             if (oFile.CreateFileW(sFilePath))
                             {
