@@ -9,8 +9,8 @@ CONFIG += plugin
 
 #CONFIG += build_xp
 
-enable_protection:DEFINES += FEATURE_ENABLE_PROTECT
-enable_signatures:DEFINES += FEATURE_ENABLE_SIGNATURE
+!disable_protection:DEFINES += FEATURE_ENABLE_PROTECT
+!disable_signatures:DEFINES += FEATURE_ENABLE_SIGNATURE
 
 CORE_ROOT_DIR = $$PWD/../../../core
 include($$CORE_ROOT_DIR/Common/base.pri)
