@@ -3516,7 +3516,7 @@ public:
                         sCodeApp += U_TO_UTF8(sUrlFile);
                     }
                     system(sCodeApp.c_str());
-                    return;
+                    return true;
 #endif
                     CefRefPtr<CefFrame> _frame = browser->GetFrame("frameEditor");
                     if (_frame)
