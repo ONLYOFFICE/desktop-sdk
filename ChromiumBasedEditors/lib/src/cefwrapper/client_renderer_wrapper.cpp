@@ -4183,6 +4183,13 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
         {
             std::wstring sFolder = message->GetArgumentList()->GetString(0).ToWString();
             std::wstring sFileSrc = message->GetArgumentList()->GetString(1).ToWString();
+            std::wstring sFolderJS = sFolder;
+#ifndef _WIN32
+            NSCommon::string_replace(sFolderJS, L"\\", L"\\\\");
+            NSCommon::string_replace(sFolderJS, L"\"", L"\\\"");
+            NSCommon::string_replace(sFileSrc, L"\\", L"\\\\");
+            NSCommon::string_replace(sFileSrc, L"\"", L"\\\"");
+#endif
 
             bool bIsSaved = message->GetArgumentList()->GetBool(2);
 
@@ -4198,7 +4205,7 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
             int nFileDataLen = 0;
             std::string sFileData = GetFileData(sFolder + L"/Editor.bin", nFileDataLen);
 
-            std::string sCode = "window.AscDesktopEditor.LocalFileRecoverFolder(\"" + U_TO_UTF8(sFolder) +
+            std::string sCode = "window.AscDesktopEditor.LocalFileRecoverFolder(\"" + U_TO_UTF8(sFolderJS) +
                     "\");window.AscDesktopEditor.LocalFileSetSourcePath(\"" + U_TO_UTF8(sFileSrc) + "\");";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
 
@@ -4298,6 +4305,10 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
 
             if (!sFileSrc.empty())
             {
+#ifndef _WIN32
+                NSCommon::string_replaceA(sFileSrc, "\\", "\\\\");
+                NSCommon::string_replaceA(sFileSrc, "\"", "\\\"");
+#endif
                 std::string sCode = "window.AscDesktopEditor.LocalFileSetSourcePath(\"" + sFileSrc + "\");";
                 _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
             }

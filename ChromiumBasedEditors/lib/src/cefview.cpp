@@ -3513,7 +3513,25 @@ public:
                     if (!sUrlFile.empty())
                     {
                         sCodeApp += " ";
-                        sCodeApp += U_TO_UTF8(sUrlFile);
+
+                        std::string sUrlFileA = U_TO_UTF8(sUrlFile);
+                        NSStringUtils::string_replaceA(sUrlFileA, "\\", "\\\\");
+                        NSStringUtils::string_replaceA(sUrlFileA, " ", "\\ ");
+                        NSStringUtils::string_replaceA(sUrlFileA, "<", "\\<");
+                        NSStringUtils::string_replaceA(sUrlFileA, ">", "\\>");
+                        NSStringUtils::string_replaceA(sUrlFileA, "(", "\\(");
+                        NSStringUtils::string_replaceA(sUrlFileA, ")", "\\)");
+                        NSStringUtils::string_replaceA(sUrlFileA, "[", "\\[");
+                        NSStringUtils::string_replaceA(sUrlFileA, "]", "\\]");
+                        NSStringUtils::string_replaceA(sUrlFileA, "?", "\\?");
+                        NSStringUtils::string_replaceA(sUrlFileA, "!", "\\!");
+                        NSStringUtils::string_replaceA(sUrlFileA, "'", "\\'");
+                        NSStringUtils::string_replaceA(sUrlFileA, "\"", "\\\"");
+                        NSStringUtils::string_replaceA(sUrlFileA, "|", "\\|");
+                        NSStringUtils::string_replaceA(sUrlFileA, "&", "\\&");
+
+                        sCodeApp += sUrlFileA;
+                        sCodeApp += "";
                     }
                     system(sCodeApp.c_str());
                     return true;
@@ -6346,7 +6364,9 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
     else
     {
         m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc = sFilePath;
+#ifdef _WIN32
         NSCommon::string_replace(m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc, L"\\", L"/");
+#endif
 
         this->GetAppManager()->m_pInternal->Recents_Add(sFilePath, nFileFormat, L"", L"", m_pInternal->m_sParentUrl);
     }
