@@ -381,6 +381,10 @@ public:
 
     std::wstring m_sAppTmpFolder;
 
+    // для преобразования внутренняя ссылка => внешняя при скачивании
+    std::wstring m_sEditorPageDomain;
+    std::wstring m_sInternalEditorPageDomain;
+
     CAscEditorNativeV8Handler()
     {
         m_etType = etUndefined;
@@ -2160,6 +2164,9 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
         }
         else if (name == "_OpenFileCrypt")
         {
+            m_sEditorPageDomain = NSCommon::GetBaseDomain(CefV8Context::GetCurrentContext()->GetFrame()->GetURL().ToWString(), true);
+            m_sInternalEditorPageDomain = NSCommon::GetBaseDomain(arguments[1]->GetStringValue().ToWString(), true);
+
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("open_file_crypt");
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
             message->GetArgumentList()->SetString(1, arguments[1]->GetStringValue());
@@ -2211,6 +2218,7 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("preload_crypto_image");
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
             message->GetArgumentList()->SetString(1, arguments[1]->GetStringValue());
+            NSArgumentList::SetInt64(message->GetArgumentList(), 2, CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
             SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
@@ -2279,7 +2287,13 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
 
             for (int i = 0; i < nCount; ++i)
             {
-                message->GetArgumentList()->SetString(nIndex++, val->GetValue(i)->GetStringValue());
+                std::wstring sUrlCurrent = val->GetValue(i)->GetStringValue().ToWString();
+                if (!m_sEditorPageDomain.empty() && !m_sInternalEditorPageDomain.empty() && 0 == sUrlCurrent.find(m_sInternalEditorPageDomain))
+                {
+                    sUrlCurrent = m_sEditorPageDomain + sUrlCurrent.substr(m_sInternalEditorPageDomain.length());
+                }
+
+                message->GetArgumentList()->SetString(nIndex++, sUrlCurrent);
 
                 if (i < nCount2)
                 {
@@ -2423,6 +2437,7 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
             oFileWithChanges.CloseFile();
 
             int nFormat = arguments[1]->GetIntValue();
+            nFormat = NSCommon::CorrectSaveFormat(nFormat);
 
             std::string sParams = "";
             if (arguments.size() > 2)
@@ -4168,6 +4183,13 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
         {
             std::wstring sFolder = message->GetArgumentList()->GetString(0).ToWString();
             std::wstring sFileSrc = message->GetArgumentList()->GetString(1).ToWString();
+            std::wstring sFolderJS = sFolder;
+#ifndef _WIN32
+            NSCommon::string_replace(sFolderJS, L"\\", L"\\\\");
+            NSCommon::string_replace(sFolderJS, L"\"", L"\\\"");
+            NSCommon::string_replace(sFileSrc, L"\\", L"\\\\");
+            NSCommon::string_replace(sFileSrc, L"\"", L"\\\"");
+#endif
 
             bool bIsSaved = message->GetArgumentList()->GetBool(2);
 
@@ -4183,7 +4205,7 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
             int nFileDataLen = 0;
             std::string sFileData = GetFileData(sFolder + L"/Editor.bin", nFileDataLen);
 
-            std::string sCode = "window.AscDesktopEditor.LocalFileRecoverFolder(\"" + U_TO_UTF8(sFolder) +
+            std::string sCode = "window.AscDesktopEditor.LocalFileRecoverFolder(\"" + U_TO_UTF8(sFolderJS) +
                     "\");window.AscDesktopEditor.LocalFileSetSourcePath(\"" + U_TO_UTF8(sFileSrc) + "\");";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
 
@@ -4283,6 +4305,10 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
 
             if (!sFileSrc.empty())
             {
+#ifndef _WIN32
+                NSCommon::string_replaceA(sFileSrc, "\\", "\\\\");
+                NSCommon::string_replaceA(sFileSrc, "\"", "\\\"");
+#endif
                 std::string sCode = "window.AscDesktopEditor.LocalFileSetSourcePath(\"" + sFileSrc + "\");";
                 _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
             }
@@ -4783,14 +4809,22 @@ window.AscDesktopEditor.openFileCryptCallback = null;\n\
         if (_frame)
         {
             int nType = message->GetArgumentList()->GetInt(0);
-            std::wstring sFileSrc = message->GetArgumentList()->GetString(1).ToWString();
+            int64 nFrameId = NSArgumentList::GetInt64(message->GetArgumentList(), 1);
+            if (0 != nFrameId)
+            {
+                CefRefPtr<CefFrame> _frameID = browser->GetFrame(nFrameId);
+                if (_frameID)
+                    _frame = _frameID;
+            }
+
+            std::wstring sFileSrc = message->GetArgumentList()->GetString(2).ToWString();
 
             std::string sUrl = U_TO_UTF8(sFileSrc);
             std::string sUrlNatural = sUrl;
             std::string sData = "";
             if (0 == nType)
             {
-                sUrlNatural = message->GetArgumentList()->GetString(2).ToString();
+                sUrlNatural = message->GetArgumentList()->GetString(3).ToString();
                 sUrl = "ascdesktop://fonts/" + sUrl;
 
                 std::string sTest = "";

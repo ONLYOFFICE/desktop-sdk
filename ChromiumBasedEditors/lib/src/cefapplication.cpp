@@ -484,7 +484,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 
     CExternalClouds oClouds;
 #ifdef _MAC
-    oClouds.m_sSystemDirectory = NSFile::GetProcessDirectory() + L"/../../../../Resources/providers";
+    oClouds.m_sSystemDirectory = NSFile::GetProcessDirectory() + L"/../Resources/providers";
 #else
     oClouds.m_sSystemDirectory = NSFile::GetProcessDirectory() + L"/providers";
 #endif

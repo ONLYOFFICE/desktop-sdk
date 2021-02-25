@@ -133,6 +133,37 @@ namespace NSVersion
     }
 }
 
+namespace NSCommon
+{
+    static std::wstring GetBaseDomain(const std::wstring& url, bool bIsHeader = false)
+    {
+        std::wstring::size_type pos1 = url.find(L"//");
+        if (std::wstring::npos == pos1)
+            pos1 = 0;
+        pos1 += 2;
+
+        std::wstring::size_type pos2 = url.find(L"/", pos1);
+        if (std::wstring::npos == pos2)
+            return L"";
+
+        if (!bIsHeader)
+            return url.substr(pos1, pos2 - pos1);
+        return url.substr(0, pos2);
+    }
+
+    static int CorrectSaveFormat(const int& nFormat)
+    {
+        switch (nFormat)
+        {
+        case 2305:
+            return AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA;
+        default:
+            break;
+        }
+        return nFormat;
+    }
+}
+
 class CAscReporterData
 {
 public:
