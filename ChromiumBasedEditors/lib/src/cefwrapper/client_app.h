@@ -38,6 +38,7 @@
 #else
 #include "cefclient/common/client_app.h"
 #endif
+#include "include/cef_version.h"
 
 #if defined(_LINUX) && !defined(_MAC)
 #include <gdk/gdk.h>
@@ -276,7 +277,8 @@ public:
 
             //command_line->AppendSwitch("--allow-running-insecure-content");
 
-            command_line->AppendSwitchWithValue("--product-version", "AscDesktopEditor 6.1.1");
+            std::string sAppNavigator = "Chrome/" + std::to_string(CEF_VERSION_MAJOR) + " AscDesktopEditor/6.2.0";
+            command_line->AppendSwitchWithValue("--product-version", sAppNavigator);
 
             int forceDpi = IsForceDpiRound();
             if (0 != forceDpi)

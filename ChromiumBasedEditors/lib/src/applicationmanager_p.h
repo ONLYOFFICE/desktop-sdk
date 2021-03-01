@@ -133,6 +133,37 @@ namespace NSVersion
     }
 }
 
+namespace NSCommon
+{
+    static std::wstring GetBaseDomain(const std::wstring& url, bool bIsHeader = false)
+    {
+        std::wstring::size_type pos1 = url.find(L"//");
+        if (std::wstring::npos == pos1)
+            pos1 = 0;
+        pos1 += 2;
+
+        std::wstring::size_type pos2 = url.find(L"/", pos1);
+        if (std::wstring::npos == pos2)
+            return L"";
+
+        if (!bIsHeader)
+            return url.substr(pos1, pos2 - pos1);
+        return url.substr(0, pos2);
+    }
+
+    static int CorrectSaveFormat(const int& nFormat)
+    {
+        switch (nFormat)
+        {
+        case 2305:
+            return AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA;
+        default:
+            break;
+        }
+        return nFormat;
+    }
+}
+
 class CAscReporterData
 {
 public:
@@ -826,6 +857,7 @@ public:
     std::wstring    m_sUrl;
     std::wstring    m_sExternalCloudId;
     std::wstring    m_sParentUrl;
+    bool            m_bIsCrypted;
 
 public:
     CAscEditorFileInfo()
@@ -834,6 +866,7 @@ public:
         m_nId = -1;
         m_nFileType = 0;
         m_bIsViewer = false;
+        m_bIsCrypted = false;
     }
 
     void UpdateDate()
@@ -1550,6 +1583,7 @@ public:
                 oInfo.m_sUrl = oFile.GetAttribute(L"url");
                 oInfo.m_sExternalCloudId = oFile.GetAttribute(L"externalcloud");
                 oInfo.m_sParentUrl = oFile.GetAttribute(L"parent");
+                oInfo.m_bIsCrypted = (oFile.GetAttribute(L"crypted") == L"1") ? true : false;
                 m_arRecents.push_back(oInfo);
 
                 map_files.insert(std::pair<std::wstring, bool>(sPath, true));
@@ -1558,7 +1592,7 @@ public:
 
         Recents_Dump(false);
     }
-    void Recents_Add(const std::wstring& sPathSrc, const int& nType, const std::wstring& sUrl = L"", const std::wstring& sExternalCloudId = L"", const std::wstring& sParentUrl = L"")
+    void Recents_Add(const std::wstring& sPathSrc, const int& nType, const std::wstring& sUrl = L"", const std::wstring& sExternalCloudId = L"", const std::wstring& sParentUrl = L"", bool bIsCrypted = false)
     {
         CTemporaryCS oCS(&m_oCS_LocalFiles);
 
@@ -1587,6 +1621,7 @@ public:
         oInfo.m_sUrl = sUrl;
         oInfo.m_sExternalCloudId = sExternalCloudId;
         oInfo.m_sParentUrl = sParentUrl;
+        oInfo.m_bIsCrypted = bIsCrypted;
         oInfo.UpdateDate();
 
         oInfo.m_nFileType = nType;
@@ -1674,6 +1709,11 @@ public:
                 oBuilder.WriteEncodeXmlString(i->m_sParentUrl);
             }
 
+            if (i->m_bIsCrypted)
+            {
+                oBuilder.WriteString(L"\" crypted=\"1");
+            }
+
             oBuilder.WriteString(L"\" />");
         }
         oBuilder.WriteString(L"</recents>");
@@ -1705,6 +1745,8 @@ public:
             oBuilder.AddInt(i->m_nId);
             oBuilder.WriteString(L",type:");
             oBuilder.AddInt(i->m_nFileType);
+            oBuilder.WriteString(L",crypted:");
+            oBuilder.AddInt(i->m_bIsCrypted ? 1 : 0);
             oBuilder.WriteString(L",path:\"");
             oBuilder.WriteEncodeXmlString(i->m_sPath);
             oBuilder.WriteString(L"\",modifyed:\"");

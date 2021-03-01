@@ -268,7 +268,8 @@ class CAscEditorNativeV8Handler : public CefV8Handler, public INativeViewer_Even
     {
         Document        = 0,
         Presentation    = 1,
-        Spreadsheet     = 2
+        Spreadsheet     = 2,
+        etUndefined     = 255
     };
 
     class CSavedPageInfo
@@ -378,9 +379,15 @@ public:
     bool m_bEditorsCloudFeaturesCheck;
     std::vector<std::string> m_arCloudFeaturesBlackList;
 
+    std::wstring m_sAppTmpFolder;
+
+    // для преобразования внутренняя ссылка => внешняя при скачивании
+    std::wstring m_sEditorPageDomain;
+    std::wstring m_sInternalEditorPageDomain;
+
     CAscEditorNativeV8Handler()
     {
-        m_etType = Document;
+        m_etType = etUndefined;
         m_nEditorId = -1;
         sync_command_check = NULL;
 
@@ -437,6 +444,8 @@ public:
 
         m_sFontsData = default_params.GetValueW("fonts_cache_path");
         m_sAppData = default_params.GetValueW("app_data_path");
+
+        m_sAppTmpFolder = default_params.GetValueW("tmp_folder");
 
 #if 0
         default_params.Print();
@@ -499,6 +508,69 @@ public:
                 return true;
         }
         return m_sLocalFileFolderWithoutFile.empty() ? false : true;
+    }
+
+    bool CheckSW()
+    {
+        // функция, которая работает при включенном service worker
+        // не подменился require.js и так далее
+        if (!m_sVersion.empty() || m_etType != etUndefined)
+            return false;
+
+        CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+
+        if (0 == browser->GetMainFrame()->GetURL().ToString().find("file://"))
+            return false;
+
+        if (true)
+        {
+            CefRefPtr<CefV8Value> retval;
+            CefRefPtr<CefV8Exception> exception;
+
+            bool bIsVersion = browser->GetMainFrame()->GetV8Context()->Eval(
+"(function() { \n\
+//console.log(\"!!! service worker !!!\");\n\
+if (window.DocsAPI && window.DocsAPI.DocEditor) \n\
+return window.DocsAPI.DocEditor.version(); \n\
+else \n\
+return undefined; \n\
+})();",
+#ifndef CEF_2623
+        "", 0,
+#endif
+retval, exception);
+
+            if (bIsVersion && retval->IsString())
+                m_sVersion = retval->GetStringValue().ToString();
+
+            if (m_sVersion.empty())
+                m_sVersion = "undefined";
+
+            CefRefPtr<CefProcessMessage> messageVersion = CefProcessMessage::Create("set_editors_version");
+            messageVersion->GetArgumentList()->SetString(0, m_sVersion);
+            SEND_MESSAGE_TO_BROWSER_PROCESS(messageVersion);
+        }
+
+        std::string sUrl = CefV8Context::GetCurrentContext()->GetFrame()->GetURL().ToString();
+        if (m_sVersion == "undefined" && sUrl.find("index.reporter.html") != std::string::npos)
+        {
+            m_etType = Presentation;
+        }
+        else
+        {
+            // сначала определим тип редактора
+            if (sUrl.find("documenteditor") != std::wstring::npos)
+                m_etType = Document;
+            else if (sUrl.find("presentationeditor") != std::wstring::npos)
+                m_etType = Presentation;
+            else if (sUrl.find("spreadsheeteditor") != std::wstring::npos)
+                m_etType = Spreadsheet;
+        }
+
+        CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("EditorType");
+        message->GetArgumentList()->SetInt(0, (int)m_etType);
+        SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+        return true;
     }
 
     virtual bool Execute(const CefString& sMessageName,
@@ -852,11 +924,17 @@ retval, exception);
                 // смотрим на версию и если она старая - берем нужную версию файла
 
                 int nMajorVersion = NSVersion::GetMajorVersion(m_sVersion);
+                std::wstring sAllFontsVersion = L"";
                 if (nMajorVersion != 0 && nMajorVersion < 6)
+                    sAllFontsVersion = L"/AllFonts.js.1";
+                else if (CheckSW())
+                    sAllFontsVersion = L"/AllFonts.js";
+
+                if (!sAllFontsVersion.empty())
                 {
                     // берем нужную версию
                     std::string sCode;
-                    NSFile::CFileBinary::ReadAllTextUtf8A(m_sFontsData + L"/AllFonts.js.1", sCode);
+                    NSFile::CFileBinary::ReadAllTextUtf8A(m_sFontsData + sAllFontsVersion, sCode);
                     if (!sCode.empty())
                     {
                         CefRefPtr<CefV8Value> retval;
@@ -2086,6 +2164,9 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
         }
         else if (name == "_OpenFileCrypt")
         {
+            m_sEditorPageDomain = NSCommon::GetBaseDomain(CefV8Context::GetCurrentContext()->GetFrame()->GetURL().ToWString(), true);
+            m_sInternalEditorPageDomain = NSCommon::GetBaseDomain(arguments[1]->GetStringValue().ToWString(), true);
+
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("open_file_crypt");
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
             message->GetArgumentList()->SetString(1, arguments[1]->GetStringValue());
@@ -2137,6 +2218,7 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("preload_crypto_image");
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
             message->GetArgumentList()->SetString(1, arguments[1]->GetStringValue());
+            NSArgumentList::SetInt64(message->GetArgumentList(), 2, CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
             SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
@@ -2177,6 +2259,8 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
             if (sDirTmp.empty())
                 sDirTmp = m_sLocalFileFolderWithoutFile;
             if (sDirTmp.empty())
+                sDirTmp = m_sAppTmpFolder;
+            if (sDirTmp.empty())
                 sDirTmp = NSFile::CFileBinary::GetTempPath();
 
             CefRefPtr<CefV8Value> val = arguments[0];
@@ -2203,7 +2287,13 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
 
             for (int i = 0; i < nCount; ++i)
             {
-                message->GetArgumentList()->SetString(nIndex++, val->GetValue(i)->GetStringValue());
+                std::wstring sUrlCurrent = val->GetValue(i)->GetStringValue().ToWString();
+                if (!m_sEditorPageDomain.empty() && !m_sInternalEditorPageDomain.empty() && 0 == sUrlCurrent.find(m_sInternalEditorPageDomain))
+                {
+                    sUrlCurrent = m_sEditorPageDomain + sUrlCurrent.substr(m_sInternalEditorPageDomain.length());
+                }
+
+                message->GetArgumentList()->SetString(nIndex++, sUrlCurrent);
 
                 if (i < nCount2)
                 {
@@ -2347,6 +2437,7 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
             oFileWithChanges.CloseFile();
 
             int nFormat = arguments[1]->GetIntValue();
+            nFormat = NSCommon::CorrectSaveFormat(nFormat);
 
             std::string sParams = "";
             if (arguments.size() > 2)
@@ -3852,6 +3943,16 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
     CefRefPtr<CefFrame> curFrame = context->GetFrame();
     if (curFrame)
     {
+#if 0
+        std::string sDisableSW = "\
+navigator.serviceWorker.register2 = navigator.serviceWorker.register;\n\
+navigator.serviceWorker.register = function() { \n\
+var path = arguments[0]; var pathEnd = path.lastIndexOf('/');\n\
+arguments[0] = (pathEnd === -1) ? (\"ascdesktop_\" + path) : (path.substr(0, pathEnd) + \"/ascdesktop_\" + path.substr(pathEnd + 1));;\n\
+return navigator.serviceWorker.register2.apply(this, arguments);\n\
+};\n\"";
+#endif
+
         curFrame->ExecuteJavaScript("\
 window.addEventListener(\"DOMContentLoaded\", function(){\n\
 var _style = document.createElement(\"style\");\n\
@@ -4082,6 +4183,13 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
         {
             std::wstring sFolder = message->GetArgumentList()->GetString(0).ToWString();
             std::wstring sFileSrc = message->GetArgumentList()->GetString(1).ToWString();
+            std::wstring sFolderJS = sFolder;
+#ifndef _WIN32
+            NSCommon::string_replace(sFolderJS, L"\\", L"\\\\");
+            NSCommon::string_replace(sFolderJS, L"\"", L"\\\"");
+            NSCommon::string_replace(sFileSrc, L"\\", L"\\\\");
+            NSCommon::string_replace(sFileSrc, L"\"", L"\\\"");
+#endif
 
             bool bIsSaved = message->GetArgumentList()->GetBool(2);
 
@@ -4097,7 +4205,7 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
             int nFileDataLen = 0;
             std::string sFileData = GetFileData(sFolder + L"/Editor.bin", nFileDataLen);
 
-            std::string sCode = "window.AscDesktopEditor.LocalFileRecoverFolder(\"" + U_TO_UTF8(sFolder) +
+            std::string sCode = "window.AscDesktopEditor.LocalFileRecoverFolder(\"" + U_TO_UTF8(sFolderJS) +
                     "\");window.AscDesktopEditor.LocalFileSetSourcePath(\"" + U_TO_UTF8(sFileSrc) + "\");";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
 
@@ -4197,6 +4305,10 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
 
             if (!sFileSrc.empty())
             {
+#ifndef _WIN32
+                NSCommon::string_replaceA(sFileSrc, "\\", "\\\\");
+                NSCommon::string_replaceA(sFileSrc, "\"", "\\\"");
+#endif
                 std::string sCode = "window.AscDesktopEditor.LocalFileSetSourcePath(\"" + sFileSrc + "\");";
                 _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
             }
@@ -4697,14 +4809,22 @@ window.AscDesktopEditor.openFileCryptCallback = null;\n\
         if (_frame)
         {
             int nType = message->GetArgumentList()->GetInt(0);
-            std::wstring sFileSrc = message->GetArgumentList()->GetString(1).ToWString();
+            int64 nFrameId = NSArgumentList::GetInt64(message->GetArgumentList(), 1);
+            if (0 != nFrameId)
+            {
+                CefRefPtr<CefFrame> _frameID = browser->GetFrame(nFrameId);
+                if (_frameID)
+                    _frame = _frameID;
+            }
+
+            std::wstring sFileSrc = message->GetArgumentList()->GetString(2).ToWString();
 
             std::string sUrl = U_TO_UTF8(sFileSrc);
             std::string sUrlNatural = sUrl;
             std::string sData = "";
             if (0 == nType)
             {
-                sUrlNatural = message->GetArgumentList()->GetString(2).ToString();
+                sUrlNatural = message->GetArgumentList()->GetString(3).ToString();
                 sUrl = "ascdesktop://fonts/" + sUrl;
 
                 std::string sTest = "";
