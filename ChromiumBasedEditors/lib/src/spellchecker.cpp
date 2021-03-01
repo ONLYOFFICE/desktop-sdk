@@ -33,7 +33,7 @@
 #include "../src/applicationmanager_p.h"
 #include <map>
 #include <list>
-#include "../../../../core/DesktopEditor/hunspell-1.3.3/src/hunspell/hunspell.h"
+#include "../../../../core/Common/3dParty/hunspell/hunspell/src/hunspell/hunspell.h"
 #include "../../../../core/DesktopEditor/graphics/TemporaryCS.h"
 #include "../../../../core/DesktopEditor/graphics/Timer.h"
 #include "./plugins.h"
