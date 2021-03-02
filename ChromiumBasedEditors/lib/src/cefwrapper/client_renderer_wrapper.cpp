@@ -4570,6 +4570,21 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
         }
         return true;
     }
+    else if (sMessageName == "on_editor_warning")
+    {
+        CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
+
+        if (_frame)
+        {
+            std::string sWarning = message->GetArgumentList()->GetString(0).ToString();
+            NSCommon::string_replaceA(sWarning, "\"", "\\\"");
+
+            std::string sCode = "(function(){var _editor = window.Asc.editor ? window.Asc.editor : window.editor;\
+_editor && _editor.local_sendEvent && _editor.local_sendEvent(\"asc_onError\", \"" + sWarning + "\", 0);})();";
+            _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+        }
+        return true;
+    }
     else if (sMessageName == "on_file_save_question")
     {
         CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);

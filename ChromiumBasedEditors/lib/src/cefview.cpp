@@ -2604,10 +2604,29 @@ public:
             std::wstring sUrl2  = args->GetString(3).ToWString();
 
             std::wstring sFile = m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_sFileSrc;
+            int nCurrentFormat = m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat;
             std::wstring sPassword = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sPassword;
             if (sFile.empty())
             {
                 sFile = m_pParent->m_pInternal->m_oConverterToEditor.m_oInfo.m_sFileSrc;
+                nCurrentFormat = m_pParent->m_pInternal->m_oConverterToEditor.m_oInfo.m_nCurrentFileFormat;
+            }
+
+            switch (nCurrentFormat)
+            {
+                case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX:
+                case AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX:
+                case AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX:
+                {
+                    break;
+                }
+                default:
+                {
+                    CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("on_editor_warning");
+                    messageOut->GetArgumentList()->SetString(0, "This feature only for docx/pptx/xlsx formats");
+                    SEND_MESSAGE_TO_RENDERER_PROCESS(browser, messageOut);
+                    return true;
+                }
             }
 
             NSOOXMLPassword::COOXMLZipDirectory oZIP(m_pParent->GetAppManager());
