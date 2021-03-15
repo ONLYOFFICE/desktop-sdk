@@ -383,15 +383,21 @@ namespace NSOOXMLPassword
             return 0;
         }
 
-        int Close()
+        int Close(bool bIsSimple = false)
         {
+            if (bIsSimple)
+            {
+                NSDirectory::DeleteDirectory(m_sDirectory);
+                return 0;
+            }
+
             if (m_sPassword.empty())
             {
                 NSFile::CFileBinary::Remove(m_sFile);
                 COfficeUtils oCOfficeUtils(NULL);
-                oCOfficeUtils.CompressFileOrDirectory(m_sDirectory, m_sFile, true);
+                HRESULT hRes = oCOfficeUtils.CompressFileOrDirectory(m_sDirectory, m_sFile, true);
                 NSDirectory::DeleteDirectory(m_sDirectory);
-                return 0;
+                return (hRes == S_OK) ? 0 : 1;
             }
 
             std::wstring sTempFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"PASS");
@@ -438,7 +444,7 @@ namespace NSOOXMLPassword
             NSFile::CFileBinary::Remove(sTempFile);
             NSFile::CFileBinary::Remove(sTempFileXml);
 
-            return 0;
+            return (0 == nReturnCode) ? 0 : 1;
         }
 
     public:
