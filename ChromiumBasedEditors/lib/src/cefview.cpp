@@ -6174,7 +6174,17 @@ void CCefView::LoadReporter(void* reporter_data)
 
     // url - parent url
     std::wstring urlReporter = url;
-    std::wstring::size_type pos = url.rfind(L"/index.html");
+
+    // TODO: check .html? ???
+    std::wstring urlParentCheck = L"index.html";
+    std::wstring::size_type pos = url.rfind(L"/" + urlParentCheck);
+    if (std::wstring::npos == pos)
+    {
+        pos = url.rfind(L"/index_loader.html");
+        if (std::wstring::npos != pos)
+            urlParentCheck = L"index_loader.html";
+    }
+
     if (std::wstring::npos != pos)
     {
         urlReporter = url.substr(0, pos);
@@ -6182,7 +6192,7 @@ void CCefView::LoadReporter(void* reporter_data)
     }
 
     std::wstring sUrlParams = L"";
-    std::wstring::size_type posParams = url.find(L"index.html?");
+    std::wstring::size_type posParams = url.find(urlParentCheck + L"?");
     if (posParams != std::wstring::npos)
     {
         std::wstring::size_type posLang = url.find(L"lang=", posParams);
