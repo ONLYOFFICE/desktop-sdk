@@ -4453,9 +4453,18 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
             std::wstring s2 = message->GetArgumentList()->GetString(1).ToWString();
             std::wstring s3 = message->GetArgumentList()->GetString(2).ToWString();
 
+#ifdef _WIN32
             NSCommon::string_replace(s1, L"\\", L"/");
             NSCommon::string_replace(s2, L"\\", L"/");
             NSCommon::string_replace(s3, L"\\", L"/");
+#else
+            NSCommon::string_replace(s1, L"\\", L"\\\\");
+            NSCommon::string_replace(s2, L"\\", L"\\\\");
+            NSCommon::string_replace(s3, L"\\", L"\\\\");
+            NSCommon::string_replace(s1, L"\"", L"\\\"");
+            NSCommon::string_replace(s2, L"\"", L"\\\"");
+            NSCommon::string_replace(s3, L"\"", L"\\\"");
+#endif
 
             std::string sCode = "window.AscDesktopEditor.NativeViewerOpen(\"" + U_TO_UTF8(s1) +
                     "\", \"" + U_TO_UTF8(s2) + "\", \"" + U_TO_UTF8(s3) + "\");";
@@ -4566,6 +4575,21 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
             NSCommon::string_replace(sSignatures, L"\"", L"\\\"");
 
             std::string sCode = "window.DesktopOfflineAppDocumentSignatures(\"" + U_TO_UTF8(sSignatures) + "\");";
+            _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+        }
+        return true;
+    }
+    else if (sMessageName == "on_editor_warning")
+    {
+        CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
+
+        if (_frame)
+        {
+            std::string sWarning = message->GetArgumentList()->GetString(0).ToString();
+            NSCommon::string_replaceA(sWarning, "\"", "\\\"");
+
+            std::string sCode = "(function(){var _editor = window.Asc.editor ? window.Asc.editor : window.editor;\
+_editor && _editor.local_sendEvent && _editor.local_sendEvent(\"asc_onError\", \"" + sWarning + "\", 0);})();";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
         }
         return true;

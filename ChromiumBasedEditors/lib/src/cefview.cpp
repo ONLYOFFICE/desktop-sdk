@@ -2606,10 +2606,29 @@ public:
             std::wstring sUrl2  = args->GetString(3).ToWString();
 
             std::wstring sFile = m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_sFileSrc;
+            int nCurrentFormat = m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat;
             std::wstring sPassword = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sPassword;
             if (sFile.empty())
             {
                 sFile = m_pParent->m_pInternal->m_oConverterToEditor.m_oInfo.m_sFileSrc;
+                nCurrentFormat = m_pParent->m_pInternal->m_oConverterToEditor.m_oInfo.m_nCurrentFileFormat;
+            }
+
+            switch (nCurrentFormat)
+            {
+                case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX:
+                case AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX:
+                case AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX:
+                {
+                    break;
+                }
+                default:
+                {
+                    CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("on_editor_warning");
+                    messageOut->GetArgumentList()->SetString(0, "This feature only for docx/pptx/xlsx formats");
+                    SEND_MESSAGE_TO_RENDERER_PROCESS(browser, messageOut);
+                    return true;
+                }
             }
 
             NSOOXMLPassword::COOXMLZipDirectory oZIP(m_pParent->GetAppManager());
@@ -2618,6 +2637,8 @@ public:
             std::wstring sUnzipDir = oZIP.GetDirectory();
 
             ICertificate* pCertificate = ICertificate::GetById(sId);
+            std::wstring sSignatures = L"";
+            int nSignError = 0;
             if (pCertificate)
             {
                 COOXMLSigner oOOXMLSigner(sUnzipDir, pCertificate);
@@ -2626,16 +2647,12 @@ public:
                 oOOXMLSigner.SetImageValid(sUrl);
                 oOOXMLSigner.SetImageInvalid(sUrl2);
 
-                oOOXMLSigner.Sign();
+                nSignError = oOOXMLSigner.Sign();
 
                 CASCFileConverterToEditor* pConverter = &m_pParent->m_pInternal->m_oConverterToEditor;
                 pConverter->CheckSignaturesByDir(sUnzipDir);
 
-                std::wstring sSignatures = pConverter->GetSignaturesJSON();
-
-                CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("on_signature_update_signatures");
-                messageOut->GetArgumentList()->SetString(0, sSignatures);
-                SEND_MESSAGE_TO_RENDERER_PROCESS(browser, messageOut);
+                sSignatures = pConverter->GetSignaturesJSON();
             }
 
             RELEASEOBJECT(pCertificate);
@@ -2645,7 +2662,21 @@ public:
                 sLockedFile = m_pParent->m_pInternal->m_pLocalFileLocker->GetFileLocked();
 
             RELEASEOBJECT(m_pParent->m_pInternal->m_pLocalFileLocker);
-            oZIP.Close();
+            int nRetValue = oZIP.Close((0 == nSignError) ? false : true);
+
+            if (0 == nRetValue && 0 == nSignError)
+            {
+                CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("on_signature_update_signatures");
+                messageOut->GetArgumentList()->SetString(0, sSignatures);
+                SEND_MESSAGE_TO_RENDERER_PROCESS(browser, messageOut);
+            }
+
+            if (1 == nSignError)
+            {
+                CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("on_editor_warning");
+                messageOut->GetArgumentList()->SetString(0, "This certificate is not supported");
+                SEND_MESSAGE_TO_RENDERER_PROCESS(browser, messageOut);
+            }
 
             if (!sLockedFile.empty())
                 m_pParent->m_pInternal->m_pLocalFileLocker = new NSSystem::CLocalFileLocker(sLockedFile);
@@ -2675,18 +2706,21 @@ public:
             pConverter->CheckSignaturesByDir(sUnzipDir);
             pConverter->m_pVerifier->RemoveSignature(sGuid);
 
-            std::wstring sSignatures = pConverter->GetSignaturesJSON();
-
-            CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("on_signature_update_signatures");
-            messageOut->GetArgumentList()->SetString(0, sSignatures);
-            SEND_MESSAGE_TO_RENDERER_PROCESS(browser, messageOut);
-
             std::wstring sLockedFile = L"";
             if (m_pParent->m_pInternal->m_pLocalFileLocker)
                 sLockedFile = m_pParent->m_pInternal->m_pLocalFileLocker->GetFileLocked();
 
             RELEASEOBJECT(m_pParent->m_pInternal->m_pLocalFileLocker);
-            oZIP.Close();
+            int nRetValue = oZIP.Close();
+
+            if (0 == nRetValue)
+            {
+                std::wstring sSignatures = pConverter->GetSignaturesJSON();
+
+                CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("on_signature_update_signatures");
+                messageOut->GetArgumentList()->SetString(0, sSignatures);
+                SEND_MESSAGE_TO_RENDERER_PROCESS(browser, messageOut);
+            }
 
             if (!sLockedFile.empty())
                 m_pParent->m_pInternal->m_pLocalFileLocker = new NSSystem::CLocalFileLocker(sLockedFile);
@@ -6142,7 +6176,17 @@ void CCefView::LoadReporter(void* reporter_data)
 
     // url - parent url
     std::wstring urlReporter = url;
-    std::wstring::size_type pos = url.rfind(L"/index.html");
+
+    // TODO: check .html? ???
+    std::wstring urlParentCheck = L"index.html";
+    std::wstring::size_type pos = url.rfind(L"/" + urlParentCheck);
+    if (std::wstring::npos == pos)
+    {
+        pos = url.rfind(L"/index_loader.html");
+        if (std::wstring::npos != pos)
+            urlParentCheck = L"index_loader.html";
+    }
+
     if (std::wstring::npos != pos)
     {
         urlReporter = url.substr(0, pos);
@@ -6150,7 +6194,7 @@ void CCefView::LoadReporter(void* reporter_data)
     }
 
     std::wstring sUrlParams = L"";
-    std::wstring::size_type posParams = url.find(L"index.html?");
+    std::wstring::size_type posParams = url.find(urlParentCheck + L"?");
     if (posParams != std::wstring::npos)
     {
         std::wstring::size_type posLang = url.find(L"lang=", posParams);
