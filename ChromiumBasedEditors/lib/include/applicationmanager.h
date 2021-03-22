@@ -243,8 +243,8 @@ public:
 
     // dpi checker
     static CAscDpiChecker* GetDpiChecker();
-    int GetMonitorScaleByIndex(const int& nIndex, unsigned int& nDpiX, unsigned int& nDpiY);
-    int GetMonitorScaleByWindow(const WindowHandleId& nHandle, unsigned int& nDpiX, unsigned int& nDpiY);
+    double GetMonitorScaleByIndex(const int& nIndex, unsigned int& nDpiX, unsigned int& nDpiY);
+    double GetMonitorScaleByWindow(const WindowHandleId& nHandle, unsigned int& nDpiX, unsigned int& nDpiY);
 
     // send to all main pages
     void SetEventToAllMainWindows(NSEditorApi::CAscMenuEvent* pEvent);

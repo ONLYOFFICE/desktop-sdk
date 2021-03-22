@@ -807,7 +807,7 @@ public:
     std::wstring m_sNativeFilePassword;
 
     // текущий devicePixelRatio
-    int m_nDeviceScale;
+    double m_dDeviceScale;
     // нужно ли при move/resize проверять deviceScale
     bool m_bIsWindowsCheckZoom;
 
@@ -932,7 +932,7 @@ public:
         m_lNaturalParent = 0;
 #endif
 
-        m_nDeviceScale = 1;
+        m_dDeviceScale = 1.0;
         m_bIsWindowsCheckZoom = false;
 
         m_bIsReporter = false;
@@ -3473,7 +3473,7 @@ public:
             pData->put_W(dExtW);
             pData->put_H(dExtH);
 
-            double dKoef = (double)m_pParent->m_pInternal->m_nDeviceScale;
+            double dKoef = (double)m_pParent->m_pInternal->m_dDeviceScale;
             double dKoefToPix = 96 / 25.4;
             dKoefToPix *= dScale;
 
@@ -3740,7 +3740,7 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
         {
             // вот тут уже можно делать зум!!!
             m_pParent->m_pInternal->m_bIsWindowsCheckZoom = true;
-            m_pParent->m_pInternal->m_nDeviceScale = -1;
+            m_pParent->m_pInternal->m_dDeviceScale = -1;
             m_pParent->resizeEvent();
         }
     }
@@ -3754,7 +3754,7 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
     {
         // вот тут уже можно делать зум!!!
         m_pParent->m_pInternal->m_bIsWindowsCheckZoom = true;
-        m_pParent->m_pInternal->m_nDeviceScale = -1;
+        m_pParent->m_pInternal->m_dDeviceScale = -1;
         m_pParent->resizeEvent();
     }
 
@@ -5045,25 +5045,24 @@ void CCefView_Private::CheckZoom()
     CefWindowHandle hwnd = _host->GetWindowHandle();
 
 #ifdef WIN32
-    int nDeviceScale = NSMonitor::GetRawMonitorDpi(hwnd);
+    double dDeviceScale = NSMonitor::GetRawMonitorDpi(hwnd);
 #else
     unsigned int _dx = 0;
     unsigned int _dy = 0;
     int nDeviceScaleTmp = CAscApplicationManager::GetDpiChecker()->GetWidgetImplDpi(this->m_pCefView->GetWidgetImpl(), &_dx, &_dy);
-    double dDeviceScaleTmp = CAscApplicationManager::GetDpiChecker()->GetScale(_dx, _dy);
-    int nDeviceScale = (dDeviceScaleTmp > 1.9) ? 2 : 1;
+    double dDeviceScale = CAscApplicationManager::GetDpiChecker()->GetScale(_dx, _dy);
 #endif
 
-    if (-1 != m_pManager->m_pInternal->m_nForceDisplayScale && m_pManager->m_pInternal->m_nForceDisplayScale > 0)
-        nDeviceScale = m_pManager->m_pInternal->m_nForceDisplayScale;
+    if (m_pManager->m_pInternal->m_dForceDisplayScale > 0)
+        dDeviceScale = m_pManager->m_pInternal->m_dForceDisplayScale;
 
-    if (nDeviceScale != m_nDeviceScale)
+    if (fabs(dDeviceScale - m_dDeviceScale) > 0.0001)
     {
-        m_nDeviceScale = nDeviceScale;
+        m_dDeviceScale = dDeviceScale;
 
-        if (m_nDeviceScale >= 1)
+        if (m_dDeviceScale >= 1)
         {
-            double dScale = (m_nDeviceScale == 2) ? (log(2) / log(1.2)) : 0;
+            double dScale = (m_dDeviceScale > 1.1) ? (log(m_dDeviceScale) / log(1.2)) : 0;
 
             _host->SetZoomLevel(dScale);
             _host->NotifyScreenInfoChanged();
@@ -6216,7 +6215,7 @@ void CCefView::LoadReporter(void* reporter_data)
 
 double CCefView::GetDeviceScale()
 {
-    return (double)m_pInternal->m_nDeviceScale;
+    return m_pInternal->m_dDeviceScale;
 }
 
 CefRefPtr<CefFrame> CCefView_Private::CCloudCryptoUpload::GetFrame()

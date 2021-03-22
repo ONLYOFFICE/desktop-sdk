@@ -311,7 +311,17 @@ private:
 
 std::map<std::string, CDetecterOldSystems::CMonitorInfo> CDetecterOldSystems::g_map_old;
 
-int NSMonitor::GetRawMonitorDpi(WindowHandleId handle)
+double NSMonitor::GetRawMonitorScale(const unsigned int& xDpi, const unsigned int& yDpi)
+{
+    if (xDpi > 180 && yDpi > 180)
+        return 2;
+
+    if (xDpi > 120 && yDpi > 120)
+        return 1.5;
+
+    return 1;
+}
+double NSMonitor::GetRawMonitorDpi(WindowHandleId handle)
 {
     if (true)
     {
@@ -319,19 +329,14 @@ int NSMonitor::GetRawMonitorDpi(WindowHandleId handle)
         UINT iuH = 0;
         if (CDetecterOldSystems::GetDpi(handle, iuW, iuH))
         {
-            if (iuW > 180 && iuH > 180)
-                return 2;
-            return 1;
+            return GetRawMonitorScale(iuW, iuH);
         }
     }
 
     if (g_monitor_info.m_func_GetDpiForWindow)
     {
         UINT resDpi = g_monitor_info.m_func_GetDpiForWindow(handle);
-
-        if (resDpi > 180)
-            return 2;
-        return 1;
+        return GetRawMonitorScale(resDpi, resDpi);
     }
 
     if (g_monitor_info.m_func_GetDpiForMonitor)
@@ -340,10 +345,7 @@ int NSMonitor::GetRawMonitorDpi(WindowHandleId handle)
         UINT iuW = 0;
         UINT iuH = 0;
         g_monitor_info.m_func_GetDpiForMonitor(hMonitor, MDT_RAW_DPI, &iuW, &iuH);
-
-        if (iuW > 180 && iuH > 180)
-            return 2;
-        return 1;
+        return GetRawMonitorScale(iuW, iuH);
     }
 
     return 1;
