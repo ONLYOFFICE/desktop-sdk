@@ -694,7 +694,8 @@ public:
             {"sv_SE", 1053},
             {"tr_TR", 1055},
             {"uk_UA", 1058},
-            {"vi_VN", 1066}
+            {"vi_VN", 1066},
+            {"nl_NL", 2067} // nl_BE
         };
 
         for (int i = 0; i < DictionaryRec_count; ++i)
