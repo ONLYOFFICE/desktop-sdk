@@ -647,7 +647,7 @@ public:
 
     void Init(const std::wstring& sDirectory, const std::wstring& sUserDirectory)
     {        
-        #define DictionaryRec_count 45
+        #define DictionaryRec_count 46
         static const DictionaryRec Dictionaries[DictionaryRec_count] =
         {
             {"az_Latn_AZ", 1068},
