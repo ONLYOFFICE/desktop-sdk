@@ -3786,6 +3786,7 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
             // это стартовая страница. отправляем external плагины
             std::vector<CExternalPluginInfo>& arPluginsExternal = m_pParent->m_pInternal->m_pManager->m_pInternal->m_arExternalPlugins;
             std::wstring sSystemPluginsPath = m_pParent->GetAppManager()->m_oSettings.system_plugins_path;
+            std::wstring sUserPluginsPath = m_pParent->GetAppManager()->m_oSettings.user_plugins_path;
 
             if (arPluginsExternal.size() != 0 && NULL != m_pParent->GetAppManager()->GetEventListener())
             {
@@ -3800,7 +3801,7 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
                         sGuidA = sGuidA.substr(4);
                     std::wstring sGuid = UTF8_TO_U(sGuidA);
 
-                    std::wstring sSrc = sSystemPluginsPath + L"/" + sGuid + L"/index.html" + m_pParent->m_pInternal->m_pManager->m_pInternal->m_mainPostFix;
+                    std::wstring sSrc = (iterExt->isUser ? sUserPluginsPath : sSystemPluginsPath) + L"/" + sGuid + L"/index.html" + m_pParent->m_pInternal->m_pManager->m_pInternal->m_mainPostFix;
                     NSCommon::url_correct(sSrc);
 
                     std::wstring sNameG = UTF8_TO_U((iterExt->sName));
