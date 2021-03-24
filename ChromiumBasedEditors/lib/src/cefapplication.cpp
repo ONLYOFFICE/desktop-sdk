@@ -320,7 +320,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
         }
         pManager->m_pInternal->SaveSettings();
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_DEBUG)
         NSSystem::SetEnvValue("PATH", NSFile::GetProcessDirectory() + L"\\converter;%PATH%");
 #endif
     }
