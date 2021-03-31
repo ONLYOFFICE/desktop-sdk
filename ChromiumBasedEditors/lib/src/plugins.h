@@ -46,6 +46,7 @@ public:
     std::string sGuid;
     std::string sName;
     std::string sNameObject;
+    bool isUser;
 };
 
 class CPluginsManager
@@ -109,7 +110,7 @@ public:
                     if (!CheckEncryption(sJson, checkCrypto))
                         continue;
 
-                    if (CheckExternal(sJson))
+                    if (CheckExternal(sJson, i == 0))
                         continue;
 
                     std::string::size_type pos1 = sJson.find('{');
@@ -161,7 +162,7 @@ public:
                 if (NSFile::CFileBinary::ReadAllTextUtf8A(_arPlugins[i] + L"/config.json", sJson))
                 {                    
                     CheckEncryption(sJson, false);
-                    CheckExternal(sJson);
+                    CheckExternal(sJson, i == 0);
 
                     std::string::size_type pos1 = sJson.find("asc.{");
                     std::string::size_type pos2 = sJson.find('}', pos1);
@@ -292,7 +293,7 @@ private:
         return true;
     }
 
-    bool CheckExternal(const std::string& sJson)
+    bool CheckExternal(const std::string& sJson, bool isSystem)
     {
         if ("desktop-external" == GetStringValue(sJson, "initDataType"))
         {
@@ -320,6 +321,7 @@ private:
                 info.sGuid = sJson.substr(pos1, pos2 - pos1 + 1);
                 info.sName = GetStringValue(sJson, "name");
                 info.sNameObject = GetObjectValue(sJson, "nameLocale");
+                info.isUser = isSystem ? false : true;
 
                 m_arExternals.push_back(info);
             }
