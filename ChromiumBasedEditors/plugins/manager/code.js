@@ -140,24 +140,48 @@ function updateList()
         if (EditorPlugins.pluginsData[i].baseUrl != null && EditorPlugins.pluginsData[i].baseUrl != "")
             url = EditorPlugins.pluginsData[i].baseUrl;
 
-        let iconIndex = 0;
         let iconsArray = (EditorPlugins.pluginsData[i].variations[0] && EditorPlugins.pluginsData[i].variations[0].icons && EditorPlugins.pluginsData[i].variations[0].icons.length) ? 
                                     EditorPlugins.pluginsData[i].variations[0].icons : [];
-        if (iconsArray.length >= 4)
+
+        let iconSrc;
+        if (iconsArray.length > 0)
         {
-            iconIndex = (window.devicePixelRatio >= 2) ? 3 : 2;
+            if (typeof iconsArray[0] === "string")
+            {
+                // old scheme
+                let iconIndex = 0;
+                if (iconsArray.length >= 4)
+                    iconIndex = (window.devicePixelRatio >= 2) ? 3 : 2;
+                else
+                    iconIndex = (window.devicePixelRatio >= 2) ? 1 : 0;
+                iconSrc = iconsArray[iconIndex];
+            }   
+            else
+            {
+                let iconIndex = 0;
+                let currentTheme = "";
+                let currentThemeStyle = "";
+
+                for (let i = 0, len = iconsArray.length; i < len; i++)
+                {
+                    if (currentTheme === iconsArray[i].theme)
+                    {
+                        iconIndex = i;
+                        break;
+                    }
+                    if (currentThemeStyle === iconsArray[i].style)
+                    {
+                        iconIndex = i;                    
+                    }
+                }
+                iconSrc = iconsArray[iconIndex]["100%"]["normal"];
+            }
         }
-        else
-        {
-            iconIndex = (window.devicePixelRatio >= 2) ? 1 : 0;
-        }
-        let iconSrc = iconsArray[iconIndex];
+
         if (iconSrc)
             iconSrc = url + iconSrc;
         if (!iconSrc)
-            iconSrc = (window.devicePixelRatio >= 2) ? "defaulticon2@2x.png" : "defaulticon2.png";
-		
-		 
+            iconSrc = (window.devicePixelRatio >= 2) ? "./resources/default@2x.png" : "./resources/default.png";
 
         let item = "<li><a class=\"item\">";
         item += ("<img class=\"icon\" src=\"" + iconSrc + "\"></img>");
@@ -168,7 +192,7 @@ function updateList()
 			_namePlugin = EditorPlugins.pluginsData[i].nameLocale[window.language];
 		}
 		
-        item += ("<span class=\"defaultlable\" style=\"flex-grow: 1;margin-left: 10px; line-height: 20px;\">" + _namePlugin + "</span>");
+        item += ("<span class=\"defaultlable\" style=\"flex-grow: 1;margin-left: 10px; line-height: 28px;\">" + _namePlugin + "</span>");
 
         let classRemove = (window.devicePixelRatio >= 2) ? "del2" : "del";
         if (!EditorPlugins.pluginsData[i].isSystemInstall)

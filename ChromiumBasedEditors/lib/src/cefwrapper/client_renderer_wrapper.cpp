@@ -875,16 +875,17 @@ retval, exception);
         }
         else if (name == "getFontsSprite")
         {
-            bool bIsRetina = false;
+            std::wstring sPath = L"";
             if (arguments.size() > 0)
             {
                 CefRefPtr<CefV8Value> val = *arguments.begin();
-                bIsRetina = val->GetBoolValue();
+                if (val->IsBool() && val->GetBoolValue())
+                    sPath = L"@2x";
+                if (val->IsString())
+                    sPath = val->GetStringValue().ToWString();
             }
 
-            std::wstring strUrl = (false == bIsRetina) ?
-                        (m_sFontsData + L"/fonts_thumbnail.png") :
-                        (m_sFontsData + L"/fonts_thumbnail@2x.png");
+            std::wstring strUrl = m_sFontsData + L"/fonts_thumbnail" + sPath + L".png";
 
             while (!NSFile::CFileBinary::Exists(m_sFontsData + L"/fonts.log"))
                 NSThreads::Sleep(100);
