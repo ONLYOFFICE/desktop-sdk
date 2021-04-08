@@ -3348,6 +3348,14 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
             retval = CefV8Value::CreateString("empty");
             return true;
         }
+        else if (name == "GetSupportedScaleValues")
+        {
+            retval = CefV8Value::CreateArray(3);
+            retval->SetValue(0, CefV8Value::CreateDouble(1));
+            retval->SetValue(1, CefV8Value::CreateDouble(1.5));
+            retval->SetValue(2, CefV8Value::CreateDouble(2));
+            return true;
+        }
 
         // Function does not exist.
         return false;
@@ -3721,7 +3729,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
 
-    #define EXTEND_METHODS_COUNT 156
+    #define EXTEND_METHODS_COUNT 157
     const char* methods[EXTEND_METHODS_COUNT] = {
         "Copy",
         "Paste",
@@ -3933,6 +3941,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         "Crypto_GetLocalImageBase64",
 
         "cloudCryptoCommand",
+
+        "GetSupportedScaleValues",
 
         NULL
     };
