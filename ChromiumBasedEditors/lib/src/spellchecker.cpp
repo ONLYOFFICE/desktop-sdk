@@ -760,6 +760,17 @@ public:
         if (!NSFile::CFileBinary::Exists(sAll_aff))
             NSFile::CFileBinary::SaveToFile(sAll_aff, L"SET UTF-8", true);
 
+        // check empty files
+        NSFile::CFileBinary oFileDic;
+        if (oFileDic.OpenFile(sAll_dic))
+        {
+            long lFileSize = oFileDic.GetFileSize();
+            oFileDic.CloseFile();
+
+            if (lFileSize < 10)
+                NSFile::CFileBinary::Remove(sAll_dic);
+        }
+
         if (!NSFile::CFileBinary::Exists(sAll_dic))
             NSFile::CFileBinary::SaveToFile(sAll_dic, L"2\nonlyoffice\nONLYOFFICE", true);
 
@@ -770,6 +781,7 @@ public:
 
     void AddUserWords_All(const std::list<std::string>& words)
     {
+        std::wstring sAll_aff = m_sUserDictionaries + L"/all/all.aff";
         std::wstring sAll_dic = m_sUserDictionaries + L"/all/all.dic";
 
         BYTE* pFileData = NULL;
@@ -794,6 +806,12 @@ public:
         if (nNewLine == nCountMax)
             return;
 
+        if (m_pUserAllDict)
+        {
+            Hunspell_destroy(m_pUserAllDict);
+            m_pUserAllDict = NULL;
+        }
+
         std::string sCountData((char*)pFileData + nStart, nNewLine - nStart);
         int nCountLine = std::stoi(sCountData);
         nCountLine += (int)words.size();
@@ -817,13 +835,17 @@ public:
         utf8[0] = '\n';
         for (std::list<std::string>::const_iterator iter = words.begin(); iter != words.end(); iter++)
         {
-            Hunspell_add(m_pUserAllDict, iter->c_str());
-
             oFile.WriteFile(utf8, 1);
             oFile.WriteFile((BYTE*)iter->c_str(), (DWORD)iter->length());
         }
 
         oFile.CloseFile();
+
+        RELEASEARRAYOBJECTS(pFileData);
+
+        std::string sAff = U_TO_UTF8(sAll_aff);
+        std::string sDic = U_TO_UTF8(sAll_dic);
+        m_pUserAllDict = Hunspell_create(sAff.c_str(), sDic.c_str());
     }
 };
 
