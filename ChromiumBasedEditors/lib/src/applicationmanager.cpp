@@ -197,6 +197,16 @@ void CUserSettings::Set(const std::wstring& name, const std::wstring& value)
     m_pInternal->Set(name, value);
     m_pInternal->m_pManager->m_pInternal->SaveSettings(&m_pInternal->m_mapSettings);
     m_pInternal->m_pManager->m_pInternal->LoadSettings();
+
+    if (L"force-scale" == name)
+    {
+        std::map<int, CCefView*>* mapViews = &m_pInternal->m_pManager->m_pInternal->m_mapViews;
+        for (std::map<int, CCefView*>::iterator i = mapViews->begin(); i != mapViews->end(); ++i)
+        {
+            CCefView* view = i->second;
+            view->moveEvent();
+        }
+    }
 }
 // ---------------------------------------------------------------------------------
 
