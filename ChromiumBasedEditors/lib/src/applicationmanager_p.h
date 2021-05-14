@@ -1259,6 +1259,7 @@ public:
         NSFile::CFileBinary::SaveToFile(sFile, oBuilder.GetData());
 
         // after - check settings
+        m_dForceDisplayScale = -1;
         std::map<std::string, std::string>::iterator pairForceDisplayScale = _map->find("force-scale");
         if (pairForceDisplayScale != _map->end())
             m_dForceDisplayScale = std::stod(pairForceDisplayScale->second);
