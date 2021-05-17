@@ -110,6 +110,37 @@ public:
 
 #endif
 
+namespace NSStringUtils
+{
+    // locale independent (simple double convert)
+    static double GetDouble(const std::string& sValue)
+    {
+        char delim = '.';
+
+        std::string::size_type posDelim = sValue.find(delim);
+        if (posDelim == std::wstring::npos)
+        {
+            delim = ',';
+            posDelim = sValue.find(delim);
+        }
+
+        if (std::string::npos == posDelim)
+        {
+            return std::stod(sValue);
+        }
+
+        std::string sUnLocale = sValue;
+        sUnLocale.erase(posDelim, 1);
+
+        double dIntValue = (double)std::stoi(sUnLocale);
+        int nCount10 = sValue.length() - posDelim - 1;
+        for (int i = 0; i < nCount10; ++i)
+            dIntValue = (dIntValue / 10);
+
+        return dIntValue;
+    }
+}
+
 namespace NSVersion
 {
     static int GetMajorVersion(const std::string& sVersion)
@@ -1262,7 +1293,7 @@ public:
         m_dForceDisplayScale = -1;
         std::map<std::string, std::string>::iterator pairForceDisplayScale = _map->find("force-scale");
         if (pairForceDisplayScale != _map->end())
-            m_dForceDisplayScale = std::stod(pairForceDisplayScale->second);
+            m_dForceDisplayScale = NSStringUtils::GetDouble(pairForceDisplayScale->second);
 
         std::map<std::string, std::string>::iterator pairCryptoMode = _map->find("crypto-mode");
         if (pairCryptoMode != _map->end())
