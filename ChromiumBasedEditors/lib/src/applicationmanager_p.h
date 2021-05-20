@@ -110,6 +110,37 @@ public:
 
 #endif
 
+namespace NSStringUtils
+{
+    // locale independent (simple double convert)
+    static double GetDouble(const std::string& sValue)
+    {
+        char delim = '.';
+
+        std::string::size_type posDelim = sValue.find(delim);
+        if (posDelim == std::wstring::npos)
+        {
+            delim = ',';
+            posDelim = sValue.find(delim);
+        }
+
+        if (std::string::npos == posDelim)
+        {
+            return std::stod(sValue);
+        }
+
+        std::string sUnLocale = sValue;
+        sUnLocale.erase(posDelim, 1);
+
+        double dIntValue = (double)std::stoi(sUnLocale);
+        int nCount10 = sValue.length() - posDelim - 1;
+        for (int i = 0; i < nCount10; ++i)
+            dIntValue = (dIntValue / 10);
+
+        return dIntValue;
+    }
+}
+
 namespace NSVersion
 {
     static int GetMajorVersion(const std::string& sVersion)
@@ -980,7 +1011,7 @@ public:
     std::map<std::string, std::string> m_mapSettings;
 
     // если ！= -1, то используется для scale всех view
-    int m_nForceDisplayScale;
+    double m_dForceDisplayScale;
 
     // флаг для принудительной перегенерации шрифтов (используется при изменении настроек, какие шрифты использовать)
     bool m_bIsUpdateFontsAttack;
@@ -1059,7 +1090,7 @@ public:
         m_sAdditionalUrlParams = L"";
         m_pAdditional = NULL;
 
-        m_nForceDisplayScale = -1;
+        m_dForceDisplayScale = -1;
 
         m_bIsUpdateFontsAttack = false;
 
@@ -1259,9 +1290,10 @@ public:
         NSFile::CFileBinary::SaveToFile(sFile, oBuilder.GetData());
 
         // after - check settings
+        m_dForceDisplayScale = -1;
         std::map<std::string, std::string>::iterator pairForceDisplayScale = _map->find("force-scale");
         if (pairForceDisplayScale != _map->end())
-            m_nForceDisplayScale = std::stoi(pairForceDisplayScale->second);
+            m_dForceDisplayScale = NSStringUtils::GetDouble(pairForceDisplayScale->second);
 
         std::map<std::string, std::string>::iterator pairCryptoMode = _map->find("crypto-mode");
         if (pairCryptoMode != _map->end())

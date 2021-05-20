@@ -5,7 +5,8 @@
 
 namespace NSMonitor
 {
-    int GetRawMonitorDpi(WindowHandleId handle);
+    double GetRawMonitorScale(const unsigned int& xDpi, const unsigned int& yDpi);
+    double GetRawMonitorDpi(WindowHandleId handle);
 }
 
 #endif

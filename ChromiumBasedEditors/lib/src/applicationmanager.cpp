@@ -197,6 +197,16 @@ void CUserSettings::Set(const std::wstring& name, const std::wstring& value)
     m_pInternal->Set(name, value);
     m_pInternal->m_pManager->m_pInternal->SaveSettings(&m_pInternal->m_mapSettings);
     m_pInternal->m_pManager->m_pInternal->LoadSettings();
+
+    if (L"force-scale" == name)
+    {
+        std::map<int, CCefView*>* mapViews = &m_pInternal->m_pManager->m_pInternal->m_mapViews;
+        for (std::map<int, CCefView*>::iterator i = mapViews->begin(); i != mapViews->end(); ++i)
+        {
+            CCefView* view = i->second;
+            view->moveEvent();
+        }
+    }
 }
 // ---------------------------------------------------------------------------------
 
@@ -953,10 +963,10 @@ void CAscApplicationManager::InitAdditionalEditorParams(std::wstring& sParams)
     m_pInternal->m_sAdditionalUrlParams = sParams;
 }
 
-int CAscApplicationManager::GetMonitorScaleByIndex(const int& nIndex, unsigned int& nDpiX, unsigned int& nDpiY)
+double CAscApplicationManager::GetMonitorScaleByIndex(const int& nIndex, unsigned int& nDpiX, unsigned int& nDpiY)
 {
-    if (m_pInternal->m_nForceDisplayScale > 0)
-        return m_pInternal->m_nForceDisplayScale;
+    if (m_pInternal->m_dForceDisplayScale > 0)
+        return m_pInternal->m_dForceDisplayScale;
 
     CAscDpiChecker* pDpiChecker = CAscApplicationManager::GetDpiChecker();
     if (pDpiChecker)
@@ -966,20 +976,17 @@ int CAscApplicationManager::GetMonitorScaleByIndex(const int& nIndex, unsigned i
         int nRet = pDpiChecker->GetMonitorDpi(nIndex, &nDpiX, &nDpiY);
         if (nRet >= 0)
         {
-            double dDpiApp = pDpiChecker->GetScale(nDpiX, nDpiY);
-
-            // пока только 1 или 2
-            return (dDpiApp > 1.9) ? 2 : 1;
+            return pDpiChecker->GetScale(nDpiX, nDpiY);
         }
     }
 
     return -1;
 }
 
-int CAscApplicationManager::GetMonitorScaleByWindow(const WindowHandleId& nHandle, unsigned int& nDpiX, unsigned int& nDpiY)
+double CAscApplicationManager::GetMonitorScaleByWindow(const WindowHandleId& nHandle, unsigned int& nDpiX, unsigned int& nDpiY)
 {
-    if (m_pInternal->m_nForceDisplayScale > 0)
-        return m_pInternal->m_nForceDisplayScale;
+    if (m_pInternal->m_dForceDisplayScale > 0)
+        return m_pInternal->m_dForceDisplayScale;
 
     CAscDpiChecker* pDpiChecker = CAscApplicationManager::GetDpiChecker();
     if (pDpiChecker)
@@ -993,10 +1000,7 @@ int CAscApplicationManager::GetMonitorScaleByWindow(const WindowHandleId& nHandl
 #endif
         if (nRet >= 0)
         {
-            double dDpiApp = pDpiChecker->GetScale(nDpiX, nDpiY);
-
-            // пока только 1 или 2
-            return (dDpiApp > 1.9) ? 2 : 1;
+            return pDpiChecker->GetScale(nDpiX, nDpiY);
         }
     }
 
@@ -1099,9 +1103,13 @@ int CAscDpiChecker::GetWidgetImplDpi(CCefViewWidgetImpl* wid, unsigned int* _dx,
 }
 double CAscDpiChecker::GetScale(unsigned int dpiX, unsigned int dpiY)
 {
-    double scale = (dpiX + dpiY) / 96.0;
-    int nScale = (int)(scale + 0.5);
-    return (nScale / 2.0);
+    // допустимые значения: 1; 1.5; 2;
+    double dScale = (dpiX + dpiY) / 96.0;
+    int nScale = (int)(dScale + 0.5);
+    double dRetValue = (double)nScale / 2.0;
+    if (dRetValue > 2) dRetValue = 2;
+    if (dRetValue < 1) dRetValue = 1;
+    return dRetValue;
 }
 
 CAscDpiChecker* CAscApplicationManager_Private::m_pDpiChecker = NULL;

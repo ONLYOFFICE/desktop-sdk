@@ -875,16 +875,17 @@ retval, exception);
         }
         else if (name == "getFontsSprite")
         {
-            bool bIsRetina = false;
+            std::wstring sPath = L"";
             if (arguments.size() > 0)
             {
                 CefRefPtr<CefV8Value> val = *arguments.begin();
-                bIsRetina = val->GetBoolValue();
+                if (val->IsBool() && val->GetBoolValue())
+                    sPath = L"@2x";
+                if (val->IsString())
+                    sPath = val->GetStringValue().ToWString();
             }
 
-            std::wstring strUrl = (false == bIsRetina) ?
-                        (m_sFontsData + L"/fonts_thumbnail.png") :
-                        (m_sFontsData + L"/fonts_thumbnail@2x.png");
+            std::wstring strUrl = m_sFontsData + L"/fonts_thumbnail" + sPath + L".png";
 
             while (!NSFile::CFileBinary::Exists(m_sFontsData + L"/fonts.log"))
                 NSThreads::Sleep(100);
@@ -3347,6 +3348,14 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
             retval = CefV8Value::CreateString("empty");
             return true;
         }
+        else if (name == "GetSupportedScaleValues")
+        {
+            retval = CefV8Value::CreateArray(3);
+            retval->SetValue(0, CefV8Value::CreateDouble(1));
+            retval->SetValue(1, CefV8Value::CreateDouble(1.5));
+            retval->SetValue(2, CefV8Value::CreateDouble(2));
+            return true;
+        }
 
         // Function does not exist.
         return false;
@@ -3720,7 +3729,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
 
-    #define EXTEND_METHODS_COUNT 156
+    #define EXTEND_METHODS_COUNT 157
     const char* methods[EXTEND_METHODS_COUNT] = {
         "Copy",
         "Paste",
@@ -3932,6 +3941,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         "Crypto_GetLocalImageBase64",
 
         "cloudCryptoCommand",
+
+        "GetSupportedScaleValues",
 
         NULL
     };
