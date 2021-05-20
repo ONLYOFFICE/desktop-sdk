@@ -133,6 +133,9 @@ function updateList()
 		return;
 	
     let _content = "<ul>";
+	
+	let currentTheme = Asc.plugin.theme ? Asc.plugin.theme.name : "";
+    let currentThemeStyle = Asc.plugin.theme ? Asc.plugin.theme.type : "";
 
     for (let i = 0; i < EditorPlugins.pluginsData.length; i++)
     {
@@ -140,24 +143,59 @@ function updateList()
         if (EditorPlugins.pluginsData[i].baseUrl != null && EditorPlugins.pluginsData[i].baseUrl != "")
             url = EditorPlugins.pluginsData[i].baseUrl;
 
-        let iconIndex = 0;
-        let iconsArray = (EditorPlugins.pluginsData[i].variations[0] && EditorPlugins.pluginsData[i].variations[0].icons && EditorPlugins.pluginsData[i].variations[0].icons.length) ? 
-                                    EditorPlugins.pluginsData[i].variations[0].icons : [];
-        if (iconsArray.length >= 4)
+		let variation = EditorPlugins.pluginsData[i].variations[0];
+		let iconsRecs = (variation && variation.icons2) ? variation.icons2 : variation.icons;
+        let iconsArray = (iconsRecs && iconsRecs.length) ? iconsRecs : [];
+
+        let iconSrc;
+        if (iconsArray.length > 0)
         {
-            iconIndex = (window.devicePixelRatio >= 2) ? 3 : 2;
+            if (typeof iconsArray[0] === "string")
+            {
+                // old scheme
+                let iconIndex = 0;
+                if (iconsArray.length >= 4)
+                    iconIndex = (window.devicePixelRatio >= 2) ? 3 : 2;
+                else
+                    iconIndex = (window.devicePixelRatio >= 2) ? 1 : 0;
+                iconSrc = iconsArray[iconIndex];
+            }   
+            else
+            {
+                let iconIndex = 0;
+                for (let i = 0, len = iconsArray.length; i < len; i++)
+                {
+                    if (currentTheme === iconsArray[i].theme)
+                    {
+                        iconIndex = i;
+                        break;
+                    }
+                    if (currentThemeStyle === iconsArray[i].style)
+                    {
+                        iconIndex = i;                    
+                    }
+                }
+				
+				let procentsScale = "" + ((window.devicePixelRatio * 100 + 0.5) >> 0) + "%";
+				let iconForScale = iconsArray[iconIndex][procentsScale] ? iconsArray[iconIndex][procentsScale] : iconsArray[iconIndex]["100%"];
+                iconSrc = iconForScale["normal"];
+            }
         }
-        else
-        {
-            iconIndex = (window.devicePixelRatio >= 2) ? 1 : 0;
-        }
-        let iconSrc = iconsArray[iconIndex];
-        if (iconSrc)
-            iconSrc = url + iconSrc;
-        if (!iconSrc)
-            iconSrc = (window.devicePixelRatio >= 2) ? "defaulticon2@2x.png" : "defaulticon2.png";
 		
-		 
+		if (iconSrc)
+            iconSrc = url + iconSrc;
+		
+		var addonForDefault = "";
+		if (window.devicePixelRatio > 1.49)
+			addonForDefault = "@1.5x";
+		if (window.devicePixelRatio > 1.99)
+			addonForDefault = "@2x";
+			
+		if (currentThemeStyle === "")
+			currentThemeStyle = "light";			
+        
+        if (!iconSrc)
+            iconSrc = "./resources/" + currentThemeStyle + "/default" + addonForDefault + ".png";
 
         let item = "<li><a class=\"item\">";
         item += ("<img class=\"icon\" src=\"" + iconSrc + "\"></img>");
@@ -168,12 +206,10 @@ function updateList()
 			_namePlugin = EditorPlugins.pluginsData[i].nameLocale[window.language];
 		}
 		
-        item += ("<span class=\"defaultlable\" style=\"flex-grow: 1;margin-left: 10px; line-height: 20px;\">" + _namePlugin + "</span>");
-
-        let classRemove = (window.devicePixelRatio >= 2) ? "del2" : "del";
+        item += ("<span class=\"defaultlable\" style=\"flex-grow: 1;margin-left: 10px; line-height: 28px;\">" + _namePlugin + "</span>");
         if (!EditorPlugins.pluginsData[i].isSystemInstall)
         {
-            item += ("<i class=\"btn " + classRemove + "\" onclick=\"deletePlugin('" + EditorPlugins.pluginsData[i].guid + "');\" title=\"remove plugin\"></i>");
+            item += ("<i class=\"btn\" style=\"background-size:cover; background-image: url(./resources/" + currentThemeStyle + "/remove" + addonForDefault + ".png" + ")\" onclick=\"deletePlugin('" + EditorPlugins.pluginsData[i].guid + "');\" title=\"remove plugin\"></i>");
         }
 
         item += "</a></li>";
@@ -275,7 +311,8 @@ function updateList()
 		}
     };
 	
-	window.Asc.plugin.onTranslate = function(){
+	window.Asc.plugin.onTranslate = function()
+	{
 		window.language = window.Asc.plugin.info.lang;
 		if (window.language && window.language.length >= 2)
 		{
@@ -296,6 +333,18 @@ function updateList()
                 window.Asc.plugin.tr(" to find out what the plugin contents must be and how it is added to the editors.");
 		document.getElementById("button_add").innerHTML = window.Asc.plugin.tr("Add plugin");
 		document.getElementById("l2").innerHTML = window.Asc.plugin.tr("Installed plugins");
+	};
+	
+	window.Asc.plugin.onThemeChanged = function(theme)
+	{
+		window.Asc.plugin.onThemeChangedBase(theme);
+		
+		var styleTheme = document.createElement('style');
+		styleTheme.type = 'text/css';
+		styleTheme.innerHTML = ".item:hover {background-color: " + theme["highlight-button-hover"] + "}";
+		document.getElementsByTagName('head')[0].appendChild(styleTheme);	
+		
+		updateList();
 	};
 
 })(window, undefined);
