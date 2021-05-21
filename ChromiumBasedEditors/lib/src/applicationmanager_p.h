@@ -413,7 +413,7 @@ public:
                     std::wstring sTmpFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"TMP");
                     if (NSFile::CFileBinary::Exists(sTmpFile))
                         NSFile::CFileBinary::Remove(sTmpFile);
-                    sTmpFile += (L"." + NSCommon::GetFileExtention(fileName));
+                    sTmpFile += (L"." + NSFile::GetFileExtention(fileName));
                     NSFile::CFileBinary::Copy(fileName, sTmpFile);
                     isOfficeFileBase = isOfficeFile(sTmpFile);
                     NSFile::CFileBinary::Remove(sTmpFile);
@@ -429,7 +429,7 @@ public:
         {
             case AVS_OFFICESTUDIO_FILE_DOCUMENT_TXT:
             {
-                std::wstring sExt = NSCommon::GetFileExtention(fileName);
+                std::wstring sExt = NSFile::GetFileExtention(fileName);
                 NSCommon::makeUpperW(sExt);
                 if (sExt != L"TXT" && sExt != L"XML")
                     isOfficeFileBase = false;
@@ -437,7 +437,7 @@ public:
             }
             case AVS_OFFICESTUDIO_FILE_OTHER_MS_OFFCRYPTO:
             {
-                std::wstring sExt = NSCommon::GetFileExtention(fileName);
+                std::wstring sExt = NSFile::GetFileExtention(fileName);
                 this->nFileType2 = COfficeFileFormatChecker::GetFormatByExtension(L"." + sExt);
                 break;
             }
@@ -1518,7 +1518,6 @@ public:
         oWorker.m_sDirectory = m_pMain->m_oSettings.fonts_cache_info_path;
         oWorker.m_bIsUseSystemFonts = m_pMain->m_oSettings.use_system_fonts;
         oWorker.m_arAdditionalFolders = m_pMain->m_oSettings.additional_fonts_folder;
-        oWorker.m_bIsUseAllVersions = true;
 
 #if defined(_LINUX)
         std::wstring sHome = GetHomeDirectory();
@@ -1533,8 +1532,10 @@ public:
         }
 #endif
 
+        oWorker.m_bIsUseAllVersions = true;
         oWorker.m_bIsUseOpenType = true;
         oWorker.m_bIsNeedThumbnails = true;
+        oWorker.m_bSeparateThumbnails = true;
 
         m_pApplicationFonts = oWorker.Check();
 
@@ -1552,6 +1553,8 @@ public:
             oAddons.CheckVersion(sEditorsPath);
         }
 
+        oWorker.CheckThumbnails();
+
         m_bRunThread = FALSE;
         return 0;
     }
@@ -1565,7 +1568,7 @@ public:
     {
         std::wstring sRet = m_strPrivateDownloadPath;
 #ifdef WIN32
-        NSCommon::string_replace(sRet, L"/", L"\\");
+        NSStringUtils::string_replace(sRet, L"/", L"\\");
 #endif
         return sRet;
     }
@@ -1631,7 +1634,7 @@ public:
         std::wstring sPath = sPathSrc;
 #ifdef WIN32
         if (!NSFileDownloader::IsNeedDownload(sPath))
-            NSCommon::string_replace(sPath, L"/", L"\\");
+            NSStringUtils::string_replace(sPath, L"/", L"\\");
 #endif
 
         for (std::vector<CAscEditorFileInfo>::iterator i = m_arRecents.begin(); i != m_arRecents.end(); i++)
@@ -1835,7 +1838,7 @@ public:
 
             for (int j = 0; j < nCountFilesRecover; ++j)
             {
-                std::wstring sTmp = NSCommon::GetFileName(arDirectoriesFiles[j]);
+                std::wstring sTmp = NSFile::GetFileName(arDirectoriesFiles[j]);
                 if (L"Editor.bin" == sTmp)
                 {
                     NSFile::CFileBinary oFile;
@@ -1890,7 +1893,7 @@ public:
             {
                 if (bIsAttack)
                 {
-                    NSDirectory::DeleteDirectory(NSCommon::GetDirectoryName(i->m_sPath));
+                    NSDirectory::DeleteDirectory(NSFile::GetDirectoryName(i->m_sPath));
                 }
 
                 m_arRecovers.erase(i);                
@@ -1912,7 +1915,7 @@ public:
 
         for (std::vector<CAscEditorFileInfo>::iterator i = m_arRecovers.begin(); i != m_arRecovers.end(); i++)
         {
-            NSDirectory::DeleteDirectory(NSCommon::GetDirectoryName(i->m_sPath));
+            NSDirectory::DeleteDirectory(NSFile::GetDirectoryName(i->m_sPath));
         }
 
         m_arRecovers.clear();
@@ -1936,7 +1939,7 @@ public:
             oBuilder.WriteString(L",path:\"");
             std::wstring sPath = i->m_sPath;
 #ifdef WIN32
-            NSCommon::string_replace(sPath, L"/", L"\\");
+            NSStringUtils::string_replace(sPath, L"/", L"\\");
 #endif
             oBuilder.WriteEncodeXmlString(sPath);
             oBuilder.WriteString(L"\",modifyed:\"");
@@ -1970,8 +1973,8 @@ public:
                 sPass = UTF8_TO_U(find->second.m_sValue);
         }
 
-        NSCommon::string_replace(sPass, L"\\", L"\\\\");
-        NSCommon::string_replace(sPass, L"\"", L"\\\"");
+        NSStringUtils::string_replace(sPass, L"\\", L"\\\\");
+        NSStringUtils::string_replace(sPass, L"\"", L"\\\"");
 
         std::wstring sCode = L"(function() { \n\
 window.AscDesktopEditor.CryptoMode = " + std::to_wstring(m_nCurrentCryptoMode) + L";\n\

@@ -53,7 +53,7 @@ void posix_death_signal(int signum)
 CAscApplicationSettings::CAscApplicationSettings()
 {
     std::wstring sApplicationPath   = NSFile::GetProcessDirectory();
-    NSCommon::string_replace(sApplicationPath, L"\\", L"/");
+    NSStringUtils::string_replace(sApplicationPath, L"\\", L"/");
 
     app_data_path                   = sApplicationPath;
 
@@ -99,7 +99,7 @@ CAscApplicationSettings::~CAscApplicationSettings()
 void CAscApplicationSettings::SetUserDataPath(std::wstring sPath)
 {
     app_data_path                   = sPath;
-    NSCommon::string_replace(app_data_path, L"\\", L"/");
+    NSStringUtils::string_replace(app_data_path, L"\\", L"/");
 
     cache_path                      = app_data_path + L"/data/cache";
     cookie_path                     = app_data_path + L"/data";
@@ -277,7 +277,7 @@ void CAscApplicationManager::CheckFonts(bool bAsync)
     {
 #ifdef WIN32
         std::wstring sTmpDir = m_oSettings.fonts_cache_info_path;
-        NSCommon::string_replace(sTmpDir, L"/", L"\\");
+        NSStringUtils::string_replace(sTmpDir, L"/", L"\\");
         NSDirectory::CreateDirectories(sTmpDir);
 #else
         NSDirectory::CreateDirectories(m_oSettings.fonts_cache_info_path);
@@ -357,7 +357,7 @@ void CAscApplicationManager::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 
             bool bIsPrivate = false;
             std::wstring s1 = pData->get_Url();
-            NSCommon::string_replace(s1, L"/./", L"/");
+            NSStringUtils::string_replace(s1, L"/./", L"/");
             if (s1 == m_pInternal->m_strPrivateDownloadUrl)
                 bIsPrivate = true;
             
@@ -852,7 +852,7 @@ void CAscApplicationManager::EndSaveDialog(const std::wstring& sPath, unsigned i
 {
     std::wstring sPathWin = sPath;
 #ifdef WIN32
-    NSCommon::string_replace(sPathWin, L"/", L"\\");
+    NSStringUtils::string_replace(sPathWin, L"/", L"\\");
 #endif
 
     CCefView* pView = this->GetViewById(m_pInternal->m_nIsCefSaveDialogWait);
@@ -910,7 +910,7 @@ void CAscApplicationManager::CancelDownload(unsigned int nDownloadId)
 
 int CAscApplicationManager::GetFileFormatByExtentionForSave(const std::wstring& sFileName)
 {
-    std::wstring sName = NSCommon::GetFileExtention(sFileName);
+    std::wstring sName = NSFile::GetFileExtention(sFileName);
 
     int nFormat = -1;
     if (sName == L"docx")

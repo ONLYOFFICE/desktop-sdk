@@ -293,7 +293,7 @@ namespace NSX2T
         {
             std::string sXmlContent;
             NSFile::CFileBinary::ReadAllTextUtf8A(sXmlPath, sXmlContent);
-            NSCommon::string_replaceA(sXmlContent, "%", "%%");
+            NSStringUtils::string_replaceA(sXmlContent, "%", "%%");
 
             std::wstring sLogFile = NSFile::GetDirectoryName(sXmlPath) + L"/errors.log";
             std::string sLogFileA = U_TO_UTF8(sLogFile);
@@ -404,7 +404,7 @@ namespace NSOOXMLPassword
             if (NSFile::CFileBinary::Exists(sTempFile))
                 NSFile::CFileBinary::Remove(sTempFile);
 
-            sTempFile += (L"." + NSCommon::GetFileExtention(m_sFile));
+            sTempFile += (L"." + NSFile::GetFileExtention(m_sFile));
 
             COfficeUtils oCOfficeUtils(NULL);
             oCOfficeUtils.CompressFileOrDirectory(m_sDirectory, sTempFile, true);
@@ -620,11 +620,11 @@ public:
             pListener->OnEvent(pEvent);
         }
 
-        std::wstring sDestinationPath = m_oInfo.m_sRecoveryDir + L"/" + (m_sName.empty() ? NSCommon::GetFileName(sLocalFilePath) : m_sName);
+        std::wstring sDestinationPath = m_oInfo.m_sRecoveryDir + L"/" + (m_sName.empty() ? NSFile::GetFileName(sLocalFilePath) : m_sName);
         m_sNativeSrcPath = sDestinationPath;
         if (m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_HTML)
         {
-            std::wstring sExt = NSCommon::GetFileExtention(sDestinationPath);
+            std::wstring sExt = NSFile::GetFileExtention(sDestinationPath);
             std::string sExtA = U_TO_UTF8(sExt);
             NSCommon::makeUpper(sExtA);
 
@@ -645,14 +645,14 @@ public:
                     if (NSDirectory::Exists(sTestDirectory))
                     {
                         // copy
-                        std::wstring sDestinationCopyDir = m_oInfo.m_sRecoveryDir + L"/" + NSCommon::GetFileName(sTestDirectory);
+                        std::wstring sDestinationCopyDir = m_oInfo.m_sRecoveryDir + L"/" + NSFile::GetFileName(sTestDirectory);
                         NSDirectory::CreateDirectory(sDestinationCopyDir);
 
                         std::vector<std::wstring> arrFiles = NSDirectory::GetFiles(sTestDirectory, false);
 
                         for (std::vector<std::wstring>::iterator i = arrFiles.begin(); i != arrFiles.end(); i++)
                         {
-                            std::wstring sTestFileCopy = NSCommon::GetFileName(*i);
+                            std::wstring sTestFileCopy = NSFile::GetFileName(*i);
                             NSFile::CFileBinary::Copy(*i, sDestinationCopyDir + L"/" + sTestFileCopy);
                         }
                     }
@@ -723,7 +723,7 @@ public:
 
         NSStringUtils::CStringBuilder oBuilderInfo;
         oBuilderInfo.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><info type=\"" + std::to_wstring(m_oInfo.m_nCurrentFileFormat) + L"\" name=\"");
-        oBuilderInfo.WriteEncodeXmlString(NSCommon::GetFileName(sDestinationPath));
+        oBuilderInfo.WriteEncodeXmlString(NSFile::GetFileName(sDestinationPath));
         oBuilderInfo.WriteString(L"\" />");
         NSFile::CFileBinary::SaveToFile(sNameInfo, oBuilderInfo.GetData(), true);
 
@@ -803,7 +803,7 @@ public:
             }
             else
             {
-                //std::wstring sUnzipDir = NSCommon::GetDirectoryName(sFile) + L"/" + NSCommon::GetFileName(sFile) + L"_uncompress";
+                //std::wstring sUnzipDir = NSFile::GetDirectoryName(sFile) + L"/" + NSCommon::GetFileName(sFile) + L"_uncompress";
                 std::wstring sUnzipDir = NSDirectory::CreateDirectoryWithUniqueName(NSDirectory::GetTempPath());
                 NSDirectory::CreateDirectory(sUnzipDir);
 
@@ -845,7 +845,7 @@ public:
                 oBuilder.WriteString(L",");
             oBuilder.WriteString(L"{\"name\":\"");
             std::wstring sParam = pSign->GetCertificate()->GetSignerName();
-            NSCommon::string_replace(sParam, L"\"", L"\\\"");
+            NSStringUtils::string_replace(sParam, L"\"", L"\\\"");
             oBuilder.WriteString(sParam);
             oBuilder.WriteString(L"\",\"guid\":\"");
             std::string sGuid = pSign->GetGuid();
@@ -1019,7 +1019,7 @@ public:
         }
         else
         {
-            std::wstring sPathTmp = m_oInfo.m_sRecoveryDir + L"/" + NSCommon::GetFileName(m_sOriginalFileNameCrossPlatform);
+            std::wstring sPathTmp = m_oInfo.m_sRecoveryDir + L"/" + NSFile::GetFileName(m_sOriginalFileNameCrossPlatform);
             oBuilder.WriteEncodeXmlString(sPathTmp);
             oBuilder.WriteString(L"</m_sFileFrom><m_sFileTo>");
         }

@@ -726,7 +726,7 @@ public:
 
             std::wstring sFileCorrect = sFile;
 #ifdef _WIN32
-            NSCommon::string_replace(sFileCorrect, L"\\", L"/");
+            NSStringUtils::string_replace(sFileCorrect, L"\\", L"/");
 #endif
             pFrame->ExecuteJavaScript("window.on_cloud_crypto_upload && window.on_cloud_crypto_upload(\"" + U_TO_UTF8(sFileCorrect) + (isCrypto ? "\", true);" : "\", false);"), pFrame->GetURL(), 0);
         }
@@ -1939,10 +1939,10 @@ public:
         NSCommon::url_correct(sTest1);
         NSCommon::url_correct(sTest2);
 
-        NSCommon::string_replace(sTest1, L" ", L"%20");
-        NSCommon::string_replace(sTest2, L" ", L"%20");
-        NSCommon::string_replace(sTest1, L"\\", L"/");
-        NSCommon::string_replace(sTest2, L"\\", L"/");
+        NSStringUtils::string_replace(sTest1, L" ", L"%20");
+        NSStringUtils::string_replace(sTest2, L" ", L"%20");
+        NSStringUtils::string_replace(sTest1, L"\\", L"/");
+        NSStringUtils::string_replace(sTest2, L"\\", L"/");
 
         if (frame->IsMain() && m_nBeforeBrowserCounter != 0 && sUrl.find(L"file://") == 0 && sTest1 != sTest2)
             return true;
@@ -2093,8 +2093,8 @@ public:
                 if (_frame)
                 {
                     std::string sCloudCryptoJson = m_pParent->m_pInternal->m_sCloudCryptoReporter;
-                    NSCommon::string_replaceA(sCloudCryptoJson, "\\", "\\\\");
-                    NSCommon::string_replaceA(sCloudCryptoJson, "\"", "\\\"");
+                    NSStringUtils::string_replaceA(sCloudCryptoJson, "\\", "\\\\");
+                    NSStringUtils::string_replaceA(sCloudCryptoJson, "\"", "\\\"");
                     std::string sCodeReporter = "window.AscDesktopEditor.execCommand(\"portal:cryptoinfo\", \"" + sCloudCryptoJson + "\");";
                     _frame->ExecuteJavaScript(sCodeReporter, _frame->GetURL(), 0);
                 }
@@ -2226,7 +2226,7 @@ public:
             {
                 std::wstring sPath = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc;
 #ifdef WIN32
-                NSCommon::string_replace(sPath, L"/", L"\\");
+                NSStringUtils::string_replace(sPath, L"/", L"\\");
 #endif
                 pData->put_Path(sPath);
             }
@@ -2517,7 +2517,7 @@ public:
                 if (!bIsNeedSave)
                     pData->put_Path(m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc);
                 else
-                    pData->put_Path(NSCommon::GetFileName(m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc));
+                    pData->put_Path(NSFile::GetFileName(m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc));
 
                 pData->put_FileType(m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat);
                 m_pParent->m_pInternal->LocalFile_GetSupportSaveFormats(pData->get_SupportFormats());
@@ -3161,7 +3161,7 @@ public:
                 std::wstring sFile = args->GetString(nIndex++);
 
 #ifdef WIN32
-                NSCommon::string_replace(sFile, L"/", L"\\");
+                NSStringUtils::string_replace(sFile, L"/", L"\\");
 #endif
 
                 m_pParent->m_pInternal->m_arDownloadedFiles.insert(std::pair<std::wstring, CDownloadFileItem>(GetUrlWithoutProtocol(sUrl), CDownloadFileItem(sUrl, sFile)));
@@ -3329,7 +3329,7 @@ public:
             NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_SAVE);
             NSEditorApi::CAscLocalSaveFileDialog* pData = new NSEditorApi::CAscLocalSaveFileDialog();
             pData->put_Id(m_pParent->GetId());
-            pData->put_Path(NSCommon::GetFileName(m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc));
+            pData->put_Path(NSFile::GetFileName(m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc));
             pData->put_FileType(m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat);
             if (nFormat == AVS_OFFICESTUDIO_FILE_OTHER_HTMLZIP)
                 pData->get_SupportFormats().push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_HTML);
@@ -4130,11 +4130,12 @@ require.load = function (context, moduleName, url) {\n\
     return this.load2(context, moduleName, url);\n\
 };\n\n";
 
-            std::wstring sPathToEditors = NSCommon::GetDirectoryName(m_pParent->GetAppManager()->m_oSettings.local_editors_path);
+            std::wstring sPathToEditors = NSFile::GetDirectoryName(m_pParent->GetAppManager()->m_oSettings.local_editors_path);
             sPathToEditors += L"/../../../vendor/requirejs/require.js";
             return GetLocalFileRequest(sPathToEditors, sAppData, sFooter);
         }
 
+#ifndef NO_CACHE_WEB_CLOUD_SCRIPTS
         if (true)
         {
             int nPos = url.find(L"apps/documenteditor/main/");
@@ -4177,6 +4178,7 @@ require.load = function (context, moduleName, url) {\n\
                 return GetLocalFileRequest(urlFind);
             }
         }
+#endif
 
         return NULL;
     }
@@ -4366,7 +4368,7 @@ require.load = function (context, moduleName, url) {\n\
         if (!sDestPath.empty())
         {
 #ifdef _WIN32
-            NSCommon::string_replace(sDestPath, L"/", L"\\");
+            NSStringUtils::string_replace(sDestPath, L"/", L"\\");
 #endif
             callback->Continue(sDestPath, false);
             return;
@@ -4413,7 +4415,7 @@ require.load = function (context, moduleName, url) {\n\
         if (!download_item->GetFullPath().empty())
         {
             std::string s = download_item->GetFullPath().ToString();
-            NSCommon::string_replaceA(s, "%", "%%");
+            NSStringUtils::string_replaceA(s, "%", "%%");
             fprintf(f, "GetFullPath: ");
             fprintf(f, s.c_str());
             fprintf(f, "\n");
@@ -4421,7 +4423,7 @@ require.load = function (context, moduleName, url) {\n\
         if (!download_item->GetOriginalUrl().empty())
         {
             std::string s = download_item->GetOriginalUrl().ToString();
-            NSCommon::string_replaceA(s, "%", "%%");
+            NSStringUtils::string_replaceA(s, "%", "%%");
             fprintf(f, "GetOriginalUrl: ");
             fprintf(f, s.c_str());
             fprintf(f, "\n");
@@ -4429,7 +4431,7 @@ require.load = function (context, moduleName, url) {\n\
         if (!download_item->GetURL().empty())
         {
             std::string s = download_item->GetURL().ToString();
-            NSCommon::string_replaceA(s, "%", "%%");
+            NSStringUtils::string_replaceA(s, "%", "%%");
             fprintf(f, "GetURL: ");
             fprintf(f, s.c_str());
             fprintf(f, "\n");
@@ -4437,7 +4439,7 @@ require.load = function (context, moduleName, url) {\n\
         if (!download_item->GetSuggestedFileName().empty())
         {
             std::string s = download_item->GetSuggestedFileName().ToString();
-            NSCommon::string_replaceA(s, "%", "%%");
+            NSStringUtils::string_replaceA(s, "%", "%%");
             fprintf(f, "GetSuggestedFileName: ");
             fprintf(f, s.c_str());
             fprintf(f, "\n");
@@ -4445,7 +4447,7 @@ require.load = function (context, moduleName, url) {\n\
         if (!download_item->GetContentDisposition().empty())
         {
             std::string s = download_item->GetContentDisposition().ToString();
-            NSCommon::string_replaceA(s, "%", "%%");
+            NSStringUtils::string_replaceA(s, "%", "%%");
             fprintf(f, "GetContentDisposition: ");
             fprintf(f, s.c_str());
             fprintf(f, "\n");
@@ -4453,7 +4455,7 @@ require.load = function (context, moduleName, url) {\n\
         if (!download_item->GetMimeType().empty())
         {
             std::string s = download_item->GetMimeType().ToString();
-            NSCommon::string_replaceA(s, "%", "%%");
+            NSStringUtils::string_replaceA(s, "%", "%%");
             fprintf(f, "GetMimeType: ");
             fprintf(f, s.c_str());
             fprintf(f, "\n");
@@ -4626,7 +4628,7 @@ require.load = function (context, moduleName, url) {\n\
             for (std::vector<CefString>::iterator i = arFiles.begin(); i != arFiles.end(); i++)
             {
                 std::string sFile = (*i).ToString();
-                NSCommon::string_replaceA(sFile, "\\", "/");
+                NSStringUtils::string_replaceA(sFile, "\\", "/");
                 sCode += "\"";
                 sCode += sFile;
                 sCode += "\",";
@@ -4841,7 +4843,7 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
 
             NSStringUtils::CStringBuilder oBuilderInfo;
             oBuilderInfo.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><info type=\"" + std::to_wstring(m_oLocalInfo.m_oInfo.m_nCurrentFileFormat) + L"\" name=\"");
-            oBuilderInfo.WriteEncodeXmlString(NSCommon::GetFileName(m_oLocalInfo.m_oInfo.m_sFileSrc));
+            oBuilderInfo.WriteEncodeXmlString(NSFile::GetFileName(m_oLocalInfo.m_oInfo.m_sFileSrc));
             oBuilderInfo.WriteString(L"\" />");
             NSFile::CFileBinary::SaveToFile(sNameInfo, oBuilderInfo.GetData(), true);
 
@@ -4855,12 +4857,12 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
 
                 NSEditorApi::CAscDocumentName* pData = new NSEditorApi::CAscDocumentName();
                 pData->put_Id(m_pCefView->GetId());
-                pData->put_Name(NSCommon::GetFileName(m_oLocalInfo.m_oInfo.m_sFileSrc));
+                pData->put_Name(NSFile::GetFileName(m_oLocalInfo.m_oInfo.m_sFileSrc));
                 if (m_oLocalInfo.m_oInfo.m_bIsSaved)
                 {
                     std::wstring sPath = m_oLocalInfo.m_oInfo.m_sFileSrc;
     #ifdef WIN32
-                    NSCommon::string_replace(sPath, L"/", L"\\");
+                    NSStringUtils::string_replace(sPath, L"/", L"\\");
     #endif
                     pData->put_Path(sPath);
                 }
@@ -5212,7 +5214,7 @@ void CCefView::load(const std::wstring& urlInputSrc)
     {
         if (m_pInternal->m_bIsExternalCloud && GetType() == cvwtSimple)
         {
-            //NSCommon::string_replace(urlInput, L"/products/files/", L"/");
+            //NSStringUtils::string_replace(urlInput, L"/products/files/", L"/");
             // теперь смотрим за этим выше
         }
         else if (GetType() == cvwtEditor)
@@ -5234,7 +5236,7 @@ void CCefView::load(const std::wstring& urlInputSrc)
 
                     std::wstring sReplaceExt = sExternalCloudFind + sExtId + L"_ext_id";
 
-                    NSCommon::string_replace(urlInput, sReplaceExt, L"");
+                    NSStringUtils::string_replace(urlInput, sReplaceExt, L"");
                 }
             }
             else if (!m_pInternal->m_sRecentOpenExternalId.empty())
@@ -5855,8 +5857,8 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_native_message");
             message->GetArgumentList()->SetString(0, pData->get_Command());
             std::wstring sParam = pData->get_Param();
-            NSCommon::string_replace(sParam, L"\\", L"\\\\");
-            NSCommon::string_replace(sParam, L"\"", L"\\\"");
+            NSStringUtils::string_replace(sParam, L"\\", L"\\\\");
+            NSStringUtils::string_replace(sParam, L"\"", L"\\\"");
             message->GetArgumentList()->SetString(1, sParam);
             message->GetArgumentList()->SetString(2, pData->get_FrameName());
 
@@ -6270,7 +6272,7 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
                 NSFile::CFileBinary::Remove(m_pInternal->m_sDownloadViewPath);
 
 #ifdef WIN32
-            NSCommon::string_replace(m_pInternal->m_sDownloadViewPath, L"/", L"\\");
+            NSStringUtils::string_replace(m_pInternal->m_sDownloadViewPath, L"/", L"\\");
 #endif
 
             std::wstring sExtBase = m_pInternal->m_sCloudCryptName;
@@ -6286,8 +6288,8 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
                     sExtBase = sExtBase.substr(0, pos1);
             }
 
-            NSCommon::string_replace(sExtBase, L" ", L"");
-            m_pInternal->m_sDownloadViewPath += (L"." + NSCommon::GetFileExtention(sExtBase));
+            NSStringUtils::string_replace(sExtBase, L" ", L"");
+            m_pInternal->m_sDownloadViewPath += (L"." + NSFile::GetFileExtention(sExtBase));
 
             // load preview...
             if (m_pInternal->m_oLocalInfo.m_oInfo.m_nCounterConvertion != 0)
@@ -6339,7 +6341,7 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
 
         std::wstring sLocalFileName = L"";
         if (NSFile::CFileBinary::Exists(sFilePath))
-            sLocalFileName = NSCommon::GetFileName(sFilePath);
+            sLocalFileName = NSFile::GetFileName(sFilePath);
 
         if (!sLocalFileName.empty())
         {
@@ -6353,7 +6355,7 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
     if (NSFile::CFileBinary::Exists(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir))
         NSFile::CFileBinary::Remove(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir);
 
-    NSCommon::string_replace(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir, L"\\", L"/");
+    NSStringUtils::string_replace(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir, L"\\", L"/");
 
     std::wstring::size_type nPosPoint = m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir.rfind('.');
     if (nPosPoint != std::wstring::npos && nPosPoint > m_pInternal->m_pManager->m_oSettings.recover_path.length())
@@ -6393,7 +6395,7 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
         }
 
         std::wstring sFilePathSrc = m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/openaslocal/" + sNameBase;
-        NSCommon::string_replace(sFilePathSrc, L"\\", L"/");
+        NSStringUtils::string_replace(sFilePathSrc, L"\\", L"/");
 
         NSFile::CFileBinary::Copy(sFilePath, sFilePathSrc);
         m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc = sFilePathSrc;
@@ -6411,7 +6413,7 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
     {
         m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc = sFilePath;
 #ifdef _WIN32
-        NSCommon::string_replace(m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc, L"\\", L"/");
+        NSStringUtils::string_replace(m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc, L"\\", L"/");
 #endif
 
         this->GetAppManager()->m_pInternal->Recents_Add(sFilePath, nFileFormat, L"", L"", m_pInternal->m_sParentUrl);
@@ -6492,13 +6494,13 @@ void CCefViewEditor::CreateLocalFile(const int& nFileFormat, const std::wstring&
     m_pInternal->m_oConverterToEditor.m_sName = sName;
 
     m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc = sFilePath;
-    NSCommon::string_replace(m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc, L"\\", L"/");
+    NSStringUtils::string_replace(m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc, L"\\", L"/");
 
     m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir = NSFile::CFileBinary::CreateTempFileWithUniqueName(m_pInternal->m_pManager->m_oSettings.recover_path, L"DE_");
     if (NSFile::CFileBinary::Exists(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir))
         NSFile::CFileBinary::Remove(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir);
 
-    NSCommon::string_replace(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir, L"\\", L"/");
+    NSStringUtils::string_replace(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir, L"\\", L"/");
 
     std::wstring::size_type nPosPoint = m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir.rfind('.');
     if (nPosPoint != std::wstring::npos && nPosPoint > m_pInternal->m_pManager->m_oSettings.recover_path.length())
@@ -6519,7 +6521,7 @@ bool CCefViewEditor::OpenCopyAsRecoverFile(const int& nIdSrc)
     std::wstring sNewRecoveryDir = NSFile::CFileBinary::CreateTempFileWithUniqueName(GetAppManager()->m_oSettings.recover_path, L"DE_");
     if (NSFile::CFileBinary::Exists(sNewRecoveryDir))
         NSFile::CFileBinary::Remove(sNewRecoveryDir);
-    NSCommon::string_replace(sNewRecoveryDir, L"\\", L"/");
+    NSStringUtils::string_replace(sNewRecoveryDir, L"\\", L"/");
     std::wstring::size_type nPosPoint = sNewRecoveryDir.rfind('.');
     if (nPosPoint != std::wstring::npos && nPosPoint > GetAppManager()->m_oSettings.recover_path.length())
         sNewRecoveryDir = sNewRecoveryDir.substr(0, nPosPoint);
@@ -6571,7 +6573,7 @@ bool CCefViewEditor::OpenCopyAsRecoverFile(const int& nIdSrc)
         sParams += (L"&" + sAdditionalParams);
 
     m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc = NSFile::GetFileName(pViewSrc->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc);
-    NSCommon::string_replace(m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc, L"\\", L"/");
+    NSStringUtils::string_replace(m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc, L"\\", L"/");
 
     m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir = sNewRecoveryDir;
 
@@ -6636,13 +6638,13 @@ bool CCefViewEditor::OpenRecoverFile(const int& nId)
         sParams += (L"&" + sAdditionalParams);
 
     m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc = oInfo.m_sPath;
-    NSCommon::string_replace(m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc, L"\\", L"/");
+    NSStringUtils::string_replace(m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc, L"\\", L"/");
 
-    m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir = NSCommon::GetDirectoryName(oInfo.m_sPath);
+    m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir = NSFile::GetDirectoryName(oInfo.m_sPath);
     if (NSFile::CFileBinary::Exists(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir))
         NSFile::CFileBinary::Remove(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir);
 
-    NSCommon::string_replace(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir, L"\\", L"/");
+    NSStringUtils::string_replace(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir, L"\\", L"/");
 
     m_pInternal->LocalFile_Start();
 
@@ -6667,10 +6669,10 @@ bool CCefViewEditor::OpenReporter(const std::wstring& sFolderInput)
     m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
 
     m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc = sFolder + L"/Editor.bin";
-    NSCommon::string_replace(m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc, L"\\", L"/");
+    NSStringUtils::string_replace(m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc, L"\\", L"/");
 
     m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir = sFolder;
-    NSCommon::string_replace(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir, L"\\", L"/");
+    NSStringUtils::string_replace(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir, L"\\", L"/");
 
     m_pInternal->LocalFile_Start();
     return true;
@@ -6755,7 +6757,7 @@ int CCefViewEditor::GetFileFormat(const std::wstring& sFilePath)
             std::wstring sTmpFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"TMP");
             if (NSFile::CFileBinary::Exists(sTmpFile))
                 NSFile::CFileBinary::Remove(sTmpFile);
-            sTmpFile += (L"." + NSCommon::GetFileExtention(sFilePath));
+            sTmpFile += (L"." + NSFile::GetFileExtention(sFilePath));
             NSFile::CFileBinary::Copy(sFilePath, sTmpFile);
             int nFormat = GetFileFormat(sTmpFile);
             NSFile::CFileBinary::Remove(sTmpFile);
