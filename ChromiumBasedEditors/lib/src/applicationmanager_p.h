@@ -433,9 +433,7 @@ public:
         {
             case AVS_OFFICESTUDIO_FILE_DOCUMENT_TXT:
             {
-                std::wstring sExt = NSFile::GetFileExtention(fileName);
-                NSCommon::makeUpperW(sExt);
-                if (sExt != L"TXT" && sExt != L"XML")
+                if (!IsOpenAsTxtFile(fileName))
                     isOfficeFileBase = false;
                 break;
             }
@@ -449,6 +447,15 @@ public:
                 break;
         }
         return isOfficeFileBase;
+    }
+
+    bool IsOpenAsTxtFile(const std::wstring& fileName)
+    {
+        std::wstring sExt = NSFile::GetFileExtention(fileName);
+        NSCommon::makeLowerW(sExt);
+        if (sExt == L"txt" || sExt == L"xml" || sExt == L"md")
+            return true;
+        return false;
     }
 };
 
