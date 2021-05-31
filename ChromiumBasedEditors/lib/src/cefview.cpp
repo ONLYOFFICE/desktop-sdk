@@ -4017,6 +4017,12 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
                 CefString cefFile = CefURIDecode(cefUrl, false, static_cast<cef_uri_unescape_rule_t>(nFlag));
 
                 std::wstring sBinaryFile = cefFile.ToWString().substr(19);
+                if (0 == sBinaryFile.find(L"fonts_thumbnail"))
+                {
+                    sBinaryFile = (m_pParent->GetAppManager()->m_oSettings.fonts_cache_info_path + L"/" + NSFile::GetFileName(sBinaryFile));
+                    while (!NSFile::CFileBinary::Exists(sBinaryFile) && m_pParent->GetAppManager()->m_pInternal->IsRunned())
+                        NSThreads::Sleep(100);
+                }
 
                 // check on recovery folder!!!
                 return GetLocalFileRequest2(sBinaryFile);
@@ -4028,7 +4034,7 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
         if (std::wstring::npos != url.find(L"sdk/Common/AllFonts.js") ||
             std::wstring::npos != url.find(L"sdkjs/common/AllFonts.js"))
         {
-            while (!m_pParent->GetAppManager()->IsInitFonts())
+            while (!m_pParent->GetAppManager()->IsInitFonts() && m_pParent->GetAppManager()->m_pInternal->IsRunned())
                 NSThreads::Sleep( 10 );
 
             std::wstring sPathFonts = m_pParent->GetAppManager()->m_oSettings.fonts_cache_info_path + L"/AllFonts.js";

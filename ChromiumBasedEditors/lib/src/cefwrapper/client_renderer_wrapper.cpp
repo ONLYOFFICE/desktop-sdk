@@ -885,7 +885,7 @@ retval, exception);
                     sPath = val->GetStringValue().ToWString();
             }
 
-            std::wstring sUrl = L"ascdesktop://fonts/" + m_sFontsData + L"/fonts_thumbnail" + sPath + L".png";
+            std::wstring sUrl = L"ascdesktop://fonts/fonts_thumbnail" + sPath + L".png";
             retval = CefV8Value::CreateString(sUrl);
             return true;
         }

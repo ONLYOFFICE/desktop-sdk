@@ -948,7 +948,8 @@ class CAscApplicationManager_Private : public CefBase_Class,
         public CCookieFoundCallback,
         public NSThreads::CBaseThread,
         public CCefScriptLoader::ICefScriptLoaderCallback,
-        public NSAscCrypto::IAscKeyChainListener
+        public NSAscCrypto::IAscKeyChainListener,
+        public CApplicationFontsWorkerBreaker
 {
 public:
     CAscSpellChecker m_oSpellChecker;
@@ -1537,6 +1538,7 @@ public:
         oWorker.m_bIsNeedThumbnails = true;
         oWorker.m_bSeparateThumbnails = true;
 
+        oWorker.SetBreaker(this);
         m_pApplicationFonts = oWorker.Check();
 
         if (true)
@@ -2053,6 +2055,11 @@ window.AscDesktopEditor.CryptoPassword = \"" + sPass + L"\";\n\
         }
 
         RELEASEOBJECT(m_pKeyChain);
+    }
+
+    virtual bool IsFontsWorkerRunned()
+    {
+        return (m_bRunThread == TRUE) ? true : false;
     }
 };
 

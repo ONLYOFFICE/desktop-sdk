@@ -32,6 +32,7 @@
 
 #include "./applicationmanager_p.h"
 #include "./plugins.h"
+#include "./cefwrapper/client_resource_handler_async.h"
 
 #ifdef LINUX
 CApplicationCEF* CLinuxData::app_cef            = NULL;
@@ -830,6 +831,7 @@ bool CAscApplicationManager::GetDebugInfoSupport()
 
 void CAscApplicationManager::CloseApplication()
 {
+    NSResourceHandlerFileAsyncManager::Destroy();
     this->DestroyCefView(-1);
     this->m_pInternal->CloseApplication();
     if (NULL != m_pInternal->m_pApplication)
