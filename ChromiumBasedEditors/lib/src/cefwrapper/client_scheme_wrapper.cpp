@@ -39,7 +39,9 @@
 #include "include/cef_scheme.h"
 #include "include/wrapper/cef_helpers.h"
 #include "../../../../../core/DesktopEditor/common/File.h"
+#include "../../../../../core/DesktopEditor/graphics/BaseThread.h"
 #include "include/cef_parser.h"
+#include "./client_resource_handler_async.h"
 
 namespace asc_scheme
 {
@@ -119,7 +121,7 @@ unsigned long read_file_with_urls(std::wstring& sUrl, unsigned char*& data)
 }
 
 // Implementation of the schema handler for client:// requests.
-class ClientSchemeHandler : public CefResourceHandler
+class ClientSchemeHandler : public CefResourceHandler, public CResourceHandlerFileAsyncCallback
 {
 public:
     ClientSchemeHandler(CAscApplicationManager* pManager = NULL) : offset_(0)
@@ -133,6 +135,12 @@ public:
     {
         if (NULL != data_binary_)
             delete [] data_binary_;
+    }
+
+    virtual void OnAsyncComplete(const std::wstring& sFile)
+    {
+        std::wstring sCopy = sFile;
+        read_binary_file(sCopy, false);
     }
 
     virtual bool ProcessRequest(CefRefPtr<CefRequest> request,
@@ -179,6 +187,16 @@ public:
         if (posFind != std::string::npos)
         {
             std::wstring sFile = read_file_path(request).substr(19);
+            if (0 == sFile.find(L"fonts_thumbnail"))
+            {
+                sFile = (m_pManager->m_oSettings.fonts_cache_info_path + L"/" + NSFile::GetFileName(sFile));
+                if (!NSFile::CFileBinary::Exists(sFile))
+                {
+                    NSResourceHandlerFileAsyncManager::Create(this, sFile, callback);
+                    return true;
+                }
+            }
+
 #ifndef WIN32
             if (!sFile.empty())
             {
