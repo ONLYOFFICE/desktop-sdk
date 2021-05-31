@@ -371,7 +371,9 @@ public:
             long nFileSize = oFile.GetFileSize();
             if (0 == nFileSize)
             {
-                int nFormat = GetFormatByExtension(L"." + NSFile::GetFileExtention(fileName));
+                std::wstring sFileExt = NSFile::GetFileExtention(fileName);
+                NSCommon::makeLowerW(sFileExt);
+                int nFormat = GetFormatByExtension(L"." + sFileExt);
 
                 switch (nFormat)
                 {
@@ -405,7 +407,9 @@ public:
         if (isCheckLocal)
         {
             // check locked files
-            int nFormat = GetFormatByExtension(L"." + NSFile::GetFileExtention(fileName));
+            std::wstring sFileExt = NSFile::GetFileExtention(fileName);
+            NSCommon::makeLowerW(sFileExt);
+            int nFormat = GetFormatByExtension(L"." + sFileExt);
             if (nFormat != 0)
             {
                 if (NSSystem::CLocalFileLocker::IsLocked(fileName))

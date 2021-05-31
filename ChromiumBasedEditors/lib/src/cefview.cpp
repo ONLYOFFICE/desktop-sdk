@@ -2199,7 +2199,9 @@ public:
                     {
                         // уточняем формат по расширению
                         COfficeFileFormatChecker oChecker;
-                        int nTypeByExt = oChecker.GetFormatByExtension(L"." + NSFile::GetFileExtention(pData->get_Name()));
+                        std::wstring sFileExt = NSFile::GetFileExtention(pData->get_Name());
+                        NSCommon::makeLowerW(sFileExt);
+                        int nTypeByExt = oChecker.GetFormatByExtension(L"." + sFileExt);
 
                         if (nType == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX && (((nTypeByExt & AVS_OFFICESTUDIO_FILE_DOCUMENT) != 0) || ((nTypeByExt & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM) != 0)))
                             nType = nTypeByExt;
