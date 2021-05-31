@@ -35,6 +35,7 @@
 
 #include <QtPrintSupport/QPrinter>
 #include <QtPrintSupport/QPrintDialog>
+#include <QtPrintSupport/QPrinterInfo>
 #include <QPainter>
 #include <QPaintEngine>
 
@@ -69,6 +70,7 @@ public:
 
 private:
     void DrawImage(QPainter* painter, const QImage& image, const QRect& rect, const QRect& rectSrc);
+    void setDefaults();
 };
 
 #endif  // QASCPRINTER_H
