@@ -76,8 +76,8 @@ int QDpiChecker::GetMonitorDpi(int nScreenNumber, unsigned int* dx, unsigned int
     QSize size = _screen->size();
     if (size.width() <= 1600 && size.height() <= 900)
     {
-        nDpiX = 192;
-        nDpiY = 192;
+        nDpiX = 96;
+        nDpiY = 96;
     }
 
     if (nDpiX > 150 && nDpiX < 180 && nDpiY > 150 && nDpiY < 180 && size.width() >= 3840 && size.height() >= 2160)
