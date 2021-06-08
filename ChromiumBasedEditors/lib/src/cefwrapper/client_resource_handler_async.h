@@ -30,47 +30,24 @@
  *
  */
 
-#ifndef QASCPRINTER_H
-#define QASCPRINTER_H
+#ifndef CEF_ASC_RESOURCE_HANDLER_ASYNC_H_
+#define CEF_ASC_RESOURCE_HANDLER_ASYNC_H_
 
-#include <QtPrintSupport/QPrinter>
-#include <QtPrintSupport/QPrintDialog>
-#include <QtPrintSupport/QPrinterInfo>
-#include <QPainter>
-#include <QPaintEngine>
+#include "include/cef_callback.h"
 
-#include "./../../include/base.h"
-#include "./../../include/applicationmanager_events.h"
-
-class DESKTOP_DECL QAscPrinterContext : public NSEditorApi::CAscPrinterContextBase
+class CResourceHandlerFileAsyncCallback
 {
-private:
-    QPrinter m_oPrinter;
-    QPainter m_oPainter;
-    bool m_bIsUsePainter;
-
 public:
-    QAscPrinterContext(QPrinter::PrinterMode eMode = QPrinter::HighResolution);
-    QAscPrinterContext(const QPrinterInfo& pi, QPrinter::PrinterMode eMode = QPrinter::HighResolution);
-    virtual ~QAscPrinterContext();
-
-    bool BeginPaint();
-    void EndPaint();
-
-    QPrinter* getPrinter();
-
-    virtual void GetLogicalDPI(int& nDpiX, int& nDpiY);
-
-    virtual void GetPhysicalRect(int& nX, int& nY, int& nW, int& nH);
-
-    virtual void GetPrintAreaSize(int& nW, int& nH);
-
-    virtual void BitBlt(unsigned char* pBGRA, const int& nRasterX, const int& nRasterY, const int& nRasterW, const int& nRasterH,
-                        const double& x, const double& y, const double& w, const double& h, const double& dAngle);
-
-private:
-    void DrawImage(QPainter* painter, const QImage& image, const QRect& rect, const QRect& rectSrc);
-    void setDefaults();
+    virtual void OnAsyncComplete(const std::wstring& sFile) = 0;
 };
 
-#endif  // QASCPRINTER_H
+namespace NSResourceHandlerFileAsyncManager
+{
+    void Create(CResourceHandlerFileAsyncCallback* handler,
+                       const std::wstring& sFile,
+                       CefRefPtr<CefCallback> callback);
+
+    void Destroy();
+}
+
+#endif // CEF_ASC_RESOURCE_HANDLER_ASYNC_H_
