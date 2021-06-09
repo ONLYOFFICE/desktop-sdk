@@ -42,6 +42,7 @@
 #include "../../../../../core/DesktopEditor/graphics/BaseThread.h"
 #include "include/cef_parser.h"
 #include "./client_resource_handler_async.h"
+#include "../utils.h"
 
 namespace asc_scheme
 {
@@ -124,12 +125,16 @@ unsigned long read_file_with_urls(std::wstring& sUrl, unsigned char*& data)
 class ClientSchemeHandler : public CefResourceHandler, public CResourceHandlerFileAsyncCallback
 {
 public:
-    ClientSchemeHandler(CAscApplicationManager* pManager = NULL) : offset_(0)
+    ClientSchemeHandler(CAscApplicationManager* pManager, const std::wstring& sMainUrl) : offset_(0)
     {
         data_binary_ = NULL;
         data_binary_len_ = 0;
 
         m_pManager = pManager;
+
+        m_bIsLocal = false;
+        if (!NSFileDownloader::IsNeedDownload(sMainUrl))
+            m_bIsLocal = true;
     }
     virtual ~ClientSchemeHandler()
     {
@@ -187,8 +192,10 @@ public:
         if (posFind != std::string::npos)
         {
             std::wstring sFile = read_file_path(request).substr(19);
+            bool bIsCheck = true;
             if (0 == sFile.find(L"fonts_thumbnail"))
             {
+                bIsCheck = false;
                 sFile = (m_pManager->m_oSettings.fonts_cache_info_path + L"/" + NSFile::GetFileName(sFile));
                 if (!NSFile::CFileBinary::Exists(sFile))
                 {
@@ -204,6 +211,9 @@ public:
                     sFile = L"/" + sFile;
             }
 #endif
+            if (bIsCheck && !m_bIsLocal && !m_pManager->IsResolveLocalFile(sFile))
+                return false;
+
             read_binary_file(sFile, false);
 
             callback->Continue();
@@ -214,6 +224,8 @@ public:
         if (posFind != std::string::npos)
         {
             std::wstring sFile = read_file_path(request).substr(28);
+            if (!m_bIsLocal && !m_pManager->IsResolveLocalFile(sFile))
+                return false;
 
             std::wstring::size_type posSearch = sFile.find(L"?lang=");
             if (std::wstring::npos != posSearch)
@@ -333,6 +345,7 @@ private:
     size_t data_binary_len_;
 
     CAscApplicationManager* m_pManager;
+    bool m_bIsLocal;
 
     IMPLEMENT_REFCOUNTING(ClientSchemeHandler);
 };
@@ -358,7 +371,10 @@ public:
                                                OVERRIDE
     {
         CEF_REQUIRE_IO_THREAD();
-        return new ClientSchemeHandler(m_pManager);
+        std::wstring sMainUrl = L"";
+        if (browser && browser->GetMainFrame())
+            sMainUrl = browser->GetMainFrame()->GetURL().ToWString();
+        return new ClientSchemeHandler(m_pManager, sMainUrl);
     }
 
     IMPLEMENT_REFCOUNTING(ClientSchemeHandlerFactory);

@@ -275,6 +275,10 @@ public:
     // get user settings
     CUserSettings* GetUserSettings();
 
+    // check local file
+    bool IsResolveLocalFile(const std::wstring& sFile);
+    void AddFileToLocalResolver(const std::wstring& sFile);
+
 protected:
     int GenerateNextViewId();
     virtual CAscDpiChecker* InitDpiChecker();

@@ -218,12 +218,11 @@ namespace NSCommon
     int CheckEncryptedVersion(const std::string& input, int& offset)
     {
         offset = 0;
-
         // VER%NUMBER%; version from 100 to 999
         if (input.length() > 7)
         {
             const char* input_ptr = input.c_str();
-            if (input_ptr[0] == 'V' && input_ptr[1] != 'E' && input_ptr[2] != 'R')
+            if (input_ptr[0] == 'V' && input_ptr[1] == 'E' && input_ptr[2] == 'R')
             {
                 input_ptr += 3;
                 int nVersion = 0;
@@ -239,21 +238,38 @@ namespace NSCommon
                     nVersion += (*input_ptr - '0');
                     ++input_ptr;
                 }
+                return nVersion;
             }
         }
         return 1;
-    }    
-    int GetEncryptedVersionOffset(const int& version)
+    }
+    int CheckEncryptedVersion(const std::wstring& input, int& offset)
     {
-        // VER%NUMBER%;
-        int nRes = 4;
-        int nVersion = version;
-        while (nVersion)
+        offset = 0;
+        // VER%NUMBER%; version from 100 to 999
+        if (input.length() > 7)
         {
-            nVersion /= 10;
-            ++nRes;
+            const wchar_t* input_ptr = input.c_str();
+            if (input_ptr[0] == 'V' && input_ptr[1] == 'E' && input_ptr[2] == 'R')
+            {
+                input_ptr += 3;
+                int nVersion = 0;
+                for (int i = 0; i < 4; ++i)
+                {
+                    if (*input_ptr == ';')
+                    {
+                        offset = 3 + i + 1;
+                        return nVersion;
+                    }
+
+                    nVersion *= 10;
+                    nVersion += (*input_ptr - '0');
+                    ++input_ptr;
+                }
+                return nVersion;
+            }
         }
-        return nRes;
+        return 1;
     }
 
     std::string ConvertToCharSimple(const std::wstring& sValue)
@@ -263,13 +279,6 @@ namespace NSCommon
         for (std::wstring::size_type pos = 0, len = sValue.length(); pos < len; ++pos)
             sRes.append(1, (char)sValue[pos]);
         return sRes;
-    }
-
-    int CheckEncryptedVersion(const std::wstring& input)
-    {
-        int offset = 0;
-        std::string inputA = ConvertToCharSimple(input);
-        return CheckEncryptedVersion(inputA, offset);
     }
 }
 
@@ -1556,10 +1565,28 @@ DE.controllers.Main.DisableVersionHistory(); \
                     CCloudCryptoDesktop* savedInfo = oApp.GetInfo(info);
                     CCloudCryptoTmpInfo* tmpInfo = oAppTmp.getInfo(/*info.Email*/L"", info.Portal);
 
+                    int nServerPrivateKeyVersion = 0;
+                    int nServerPrivateKeyVersionOffset = 0;
+                    bool bIsServerPrivateKeyExist = (info.PrivateKeyEnc.empty() && info.PublicKey.empty()) ? false : true;
+
+                    if (bIsServerPrivateKeyExist)
+                    {
+                        nServerPrivateKeyVersion = NSCommon::CheckEncryptedVersion(info.PrivateKeyEnc, nServerPrivateKeyVersionOffset);
+
+                        if (nServerPrivateKeyVersion > NSCommon::GetEncryptedVersion())
+                        {
+                            // нужно сказать, что нужно обновить десктоп и выйти
+
+                            // TODO:
+                            // return true;
+                        }
+                    }
+
+                    bool bIsNeedRelogin = false;
                     if (NULL == savedInfo && tmpInfo)
                     {
                         // ничего не сохранено. значит это первый логин
-                        if (info.PrivateKeyEnc.empty() && info.PublicKey.empty())
+                        if (!bIsServerPrivateKeyExist)
                         {
                             // генерируем ключи!
                             unsigned char* publicKey = NULL;
@@ -1593,17 +1620,16 @@ DE.controllers.Main.DisableVersionHistory(); \
                             std::string privateKeyEnc = U_TO_UTF8(info.PrivateKeyEnc);
                             std::string privateKey;
 
-                            int nVersionOffset = 0;
-                            int nVersion = NSCommon::CheckEncryptedVersion(privateKeyEnc, nVersionOffset);
-
-                            if (nVersion == 2)
-                                NSOpenSSL::AES_Decrypt_desktop_GCM(U_TO_UTF8(tmpInfo->m_sPassword), privateKeyEnc, privateKey, CAscRendererProcessParams::getInstance().GetProperty("user"), nVersionOffset);
+                            if (nServerPrivateKeyVersion == 2)
+                                NSOpenSSL::AES_Decrypt_desktop_GCM(U_TO_UTF8(tmpInfo->m_sPassword), privateKeyEnc, privateKey, CAscRendererProcessParams::getInstance().GetProperty("user"), nServerPrivateKeyVersionOffset);
                             else
                                 NSOpenSSL::AES_Decrypt_desktop(U_TO_UTF8(tmpInfo->m_sPassword), privateKeyEnc, privateKey, CAscRendererProcessParams::getInstance().GetProperty("user"));
 
                             info.PrivateKey = NSFile::CUtf8Converter::GetUnicodeFromCharPtr(privateKey);
+                            oApp.AddInfo(info);
 
-                            if (nVersion < NSCommon::GetEncryptedVersion())
+                            // теперь проверим, нужно ли обновить ключ, ведь пароль у нас есть
+                            if (nServerPrivateKeyVersion < NSCommon::GetEncryptedVersion())
                             {
                                 // обновим ключ в новом формате
                                 std::string privateEnc;
@@ -1615,39 +1641,33 @@ DE.controllers.Main.DisableVersionHistory(); \
                                 CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetFrame();
                                 _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
                             }
-                            if (nVersion > NSCommon::GetEncryptedVersion())
-                            {
-                                // посылаем сообщение с просьбой обновить десктоп
-                            }
-
-                            oApp.AddInfo(info);
                         }
                     }
                     else if (!savedInfo)
+                    {
+                        bIsNeedRelogin = true;
+                    }
+
+                    if (bIsServerPrivateKeyExist && nServerPrivateKeyVersion < NSCommon::GetEncryptedVersion())
+                    {
+                        // нужно удалить локальную запись и перелогиниться
+                        // но пока так сделать не могу, так как порталы не готовы к updateEncryptionKeys
+
+                        // TODO:
+                        // oApp.RemoveInfo(info.User);
+                        // bIsNeedRelogin = true;
+                    }
+
+                    if (tmpInfo)
+                        oAppTmp.removeInfo(L""/*info.Email*/, info.Portal);
+
+                    if (bIsNeedRelogin)
                     {
                         // перелогиньтесь!!!
                         std::string sCode = ("setTimeout(function() { window.cloudCryptoCommand && window.cloudCryptoCommand(\"relogin\"); }, 10);");
                         CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetBrowser()->GetMainFrame();
                         _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
                     }
-
-                    if (savedInfo)
-                    {
-                        int nSavedVersion = NSCommon::CheckEncryptedVersion(savedInfo->PrivateKeyEnc);
-                        int nCurrentVersion = NSCommon::GetEncryptedVersion();
-
-                        if (nSavedVersion < nCurrentVersion)
-                        {
-                            // нужно перелогиниться, чтобы перегенерить ключ в новом формате
-                            // перелогиньтесь!!!
-                            std::string sCode = ("setTimeout(function() { window.cloudCryptoCommand && window.cloudCryptoCommand(\"relogin\"); }, 10);");
-                            CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetBrowser()->GetMainFrame();
-                            _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
-                        }
-                    }
-
-                    if (tmpInfo)
-                        oAppTmp.removeInfo(L""/*info.Email*/, info.Portal);
                 }
             }
             else if ("portal:checkpwd" == sCommand)

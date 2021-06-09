@@ -506,6 +506,13 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 
     pManager->m_pInternal->LocalFiles_Init();
 
+    // local files resolver
+    pManager->m_pInternal->m_oLocalFilesResolver.Init(pManager->m_oSettings.fonts_cache_info_path);
+    pManager->m_pInternal->m_oLocalFilesResolver.AddDir(pManager->m_oSettings.recover_path);
+    pManager->m_pInternal->m_oLocalFilesResolver.AddDir(pManager->m_oSettings.user_plugins_path);
+    pManager->m_pInternal->m_oLocalFilesResolver.AddDir(pManager->m_oSettings.system_plugins_path);
+    pManager->m_pInternal->m_oLocalFilesResolver.AddDir(pManager->m_pInternal->StartTmpDirectory());
+
     // user plugins
     if (true)
     {

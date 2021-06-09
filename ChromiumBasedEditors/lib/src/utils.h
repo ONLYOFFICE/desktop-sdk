@@ -45,7 +45,7 @@
 #include "../../../../core/Common/FileDownloader/FileDownloader.h"
 #include "../../../../core/DesktopEditor/fontengine/ApplicationFontsWorker.h"
 #include "../../../../core/DesktopEditor/common/StringBuilder.h"
-#include "../../../../core/DesktopEditor/common/File.h"
+#include "../../../../core/DesktopEditor/common/Directory.h"
 
 namespace NSCommon
 {

@@ -357,7 +357,7 @@ namespace NSSystem
         std::wstring m_sFontsFolder;
         std::set<std::wstring> m_arFontsFolders;
 
-        std::wstring m_sCurrentFileFolder;
+        std::vector<std::wstring> m_arFolders;
         std::set<std::wstring> m_arFilesFromDialog;
 
         bool m_bIsLocalUrl;
@@ -373,15 +373,16 @@ namespace NSSystem
 
     public:
 
-        void Init(const std::wstring& sFonts, const std::wstring& sRecovers)
+        void Init(const std::wstring& sFonts, const std::wstring& sRecovers = L"")
         {
             m_sFontsFolder = CorrectDir(sFonts);
-            SetFileDir(sRecovers);
+            AddDir(sRecovers);
         }
 
-        void SetFileDir(const std::wstring& sFileDir = L"")
+        void AddDir(const std::wstring& sFileDir = L"")
         {
-            m_sCurrentFileFolder = CorrectDir(sFileDir);
+            if (!sFileDir.empty())
+                m_arFolders.push_back(CorrectDir(sFileDir));
         }
 
         void AddFile(const std::wstring& sFilePath)
@@ -473,10 +474,10 @@ namespace NSSystem
                 return true;
 
             std::wstring sFile = CorrectPath(sFilePath);
-            if (!m_sCurrentFileFolder.empty())
+            std::wstring sDir = NSFile::GetDirectoryName(sFile);
+            for (std::vector<std::wstring>::iterator i = m_arFolders.begin(); i != m_arFolders.end(); i++)
             {
-                std::wstring sDir = NSFile::GetDirectoryName(sFile);
-                if (0 == sDir.find(m_sCurrentFileFolder))
+                if (0 == sDir.find(*i))
                     return true;
             }
 
@@ -1236,6 +1237,9 @@ public:
     bool m_bIsEnableConvertLogs;
 
     bool m_bIsOnlyEditorWindowMode;
+
+    // не даем грузить любые локальные файлы
+    NSSystem::CLocalFilesResolver m_oLocalFilesResolver;
 
 public:
     IMPLEMENT_REFCOUNTING(CAscApplicationManager_Private);

@@ -1167,3 +1167,13 @@ CUserSettings* CAscApplicationManager::GetUserSettings()
     pSettings->m_pInternal->SetManager(this);
     return pSettings;
 }
+
+bool CAscApplicationManager::IsResolveLocalFile(const std::wstring& sFile)
+{
+    return m_pInternal->m_oLocalFilesResolver.Check(sFile);
+}
+
+void CAscApplicationManager::AddFileToLocalResolver(const std::wstring& sFile)
+{
+    return m_pInternal->m_oLocalFilesResolver.AddFile(sFile);
+}
