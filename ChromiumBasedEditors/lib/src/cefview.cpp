@@ -897,6 +897,9 @@ public:
 
     CTemporaryDocumentInfo* m_pTemporaryCloudFileInfo;
 
+    // не даем грузить любые локальные файлы
+    NSSystem::CLocalFilesResolver m_oLocalFilesResolver;
+
 public:
     CCefView_Private()
     {
@@ -4026,6 +4029,9 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
                         NSThreads::Sleep(100);
                 }
 
+                if (!m_pParent->m_pInternal->m_oLocalFilesResolver.Check(sBinaryFile))
+                    return NULL;
+
                 // check on recovery folder!!!
                 return GetLocalFileRequest2(sBinaryFile);
             }
@@ -4632,26 +4638,17 @@ require.load = function (context, moduleName, url) {\n\
 
         if (0 != arFiles.size())
         {
-            std::string sCode = "[";
+            // нельзя напрямую - нужно скрыть добавление в resolver
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("set_drop_files");
+            int nIndex = 0;
             for (std::vector<CefString>::iterator i = arFiles.begin(); i != arFiles.end(); i++)
             {
-                std::string sFile = (*i).ToString();
-                NSStringUtils::string_replaceA(sFile, "\\", "/");
-                sCode += "\"";
-                sCode += sFile;
-                sCode += "\",";
+                std::wstring sFile = (*i).ToWString();
+                NSStringUtils::string_replace(sFile, L"\\", L"/");
+                m_pParent->m_pInternal->m_oLocalFilesResolver.AddFile(sFile);
+                message->GetArgumentList()->SetString(nIndex++, sFile);
             }
-            ((char*)sCode.c_str())[sCode.length() - 1] = ']';
-
-            std::vector<int64> arFramesIds;
-            browser->GetFrameIdentifiers(arFramesIds);
-
-            for (std::vector<int64>::iterator i = arFramesIds.begin(); i != arFramesIds.end(); i++)
-            {
-                CefRefPtr<CefFrame> _frame = browser->GetFrame(*i);
-                if (_frame)
-                    _frame->ExecuteJavaScript("window.AscDesktopEditor.SetDropFiles(" + sCode + ");", _frame->GetURL(), 0);
-            }
+            SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
         }
 
         // разруливаем на стороне js
@@ -5429,6 +5426,10 @@ void CCefView::load(const std::wstring& urlInputSrc)
     }
 #endif
 
+    m_pInternal->m_oLocalFilesResolver.Init(m_pInternal->m_pManager->m_oSettings.fonts_cache_info_path,
+                                            m_pInternal->m_pManager->m_oSettings.recover_path);
+    m_pInternal->m_oLocalFilesResolver.CheckUrl(sUrl);
+
     // Creat the new child browser window
 #ifdef _WIN32
     // need after window->show
@@ -5855,6 +5856,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                     sPath = arPaths[0];
             }
 
+            m_pInternal->m_oLocalFilesResolver.AddFile(sPath);
             message->GetArgumentList()->SetString(0, sPath);
             SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
             break;
@@ -5937,6 +5939,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 
             if (!pData->get_IsMultiselect())
             {
+                m_pInternal->m_oLocalFilesResolver.AddFile(pData->get_Path());
                 message->GetArgumentList()->SetString(2, pData->get_Path());
             }
             else
@@ -5948,6 +5951,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                 {
                     for (std::vector<std::wstring>::iterator i = arPaths.begin(); i != arPaths.end(); i++)
                     {
+                        m_pInternal->m_oLocalFilesResolver.AddFile(*i);
                         message->GetArgumentList()->SetString(nIndex++, *i);
                     }
                 }
@@ -5955,7 +5959,10 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                 {
                     std::wstring sPath1 = pData->get_Path();
                     if (!sPath1.empty())
+                    {
+                        m_pInternal->m_oLocalFilesResolver.AddFile(sPath1);
                         message->GetArgumentList()->SetString(nIndex++, sPath1);
+                    }
                 }
             }
 

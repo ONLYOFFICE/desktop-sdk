@@ -1156,6 +1156,7 @@ std::vector<std::string> CAscApplicationManager::GetRendererStartupProperties()
     props.push_back(m_pInternal->m_bDebugInfoSupport ? "debug_mode=true" : "debug_mode=false");
     props.push_back("fonts_cache_path=" + U_TO_UTF8(m_oSettings.fonts_cache_info_path));
     props.push_back("tmp_folder=" + U_TO_UTF8(m_pInternal->StartTmpDirectory()));
+    props.push_back("recovers_folder=" + U_TO_UTF8(m_oSettings.recover_path));
 
     return props;
 }

@@ -212,7 +212,68 @@ namespace NSCommon
             *this = pPointer;
         }
     };
+
+    int GetEncryptedVersion() { return 2; }
+
+    int CheckEncryptedVersion(const std::string& input, int& offset)
+    {
+        offset = 0;
+
+        // VER%NUMBER%; version from 100 to 999
+        if (input.length() > 7)
+        {
+            const char* input_ptr = input.c_str();
+            if (input_ptr[0] == 'V' && input_ptr[1] != 'E' && input_ptr[2] != 'R')
+            {
+                input_ptr += 3;
+                int nVersion = 0;
+                for (int i = 0; i < 4; ++i)
+                {
+                    if (*input_ptr == ';')
+                    {
+                        offset = 3 + i + 1;
+                        return nVersion;
+                    }
+
+                    nVersion *= 10;
+                    nVersion += (*input_ptr - '0');
+                    ++input_ptr;
+                }
+            }
+        }
+        return 1;
+    }    
+    int GetEncryptedVersionOffset(const int& version)
+    {
+        // VER%NUMBER%;
+        int nRes = 4;
+        int nVersion = version;
+        while (nVersion)
+        {
+            nVersion /= 10;
+            ++nRes;
+        }
+        return nRes;
+    }
+
+    std::string ConvertToCharSimple(const std::wstring& sValue)
+    {
+        std::string sRes;
+        sRes.reserve(sValue.length());
+        for (std::wstring::size_type pos = 0, len = sValue.length(); pos < len; ++pos)
+            sRes.append(1, (char)sValue[pos]);
+        return sRes;
+    }
+
+    int CheckEncryptedVersion(const std::wstring& input)
+    {
+        int offset = 0;
+        std::string inputA = ConvertToCharSimple(input);
+        return CheckEncryptedVersion(inputA, offset);
+    }
 }
+
+NSCommon::smart_ptr<NSSystem::CLocalFilesResolver> g_pLocalResolver = NULL;
 
 namespace asc_client_renderer
 {
@@ -324,6 +385,7 @@ public:
     std::wstring m_sSystemPlugins;
     std::wstring m_sUserPlugins;
     std::wstring m_sCryptDocumentFolder; // recover
+    std::wstring m_sRecoversFolder; // recover
 
     std::wstring m_sCookiesPath;
 
@@ -370,8 +432,8 @@ public:
 
     NSCriticalSection::CRITICAL_SECTION m_oCompleteTasksCS;
 
-    // AES key & iv
-    BYTE* m_pAES_KeyIv;
+    // AES key
+    BYTE* m_pAES_Key;
 
     int m_nIsCryptoModeProperty;
 
@@ -385,7 +447,7 @@ public:
     std::wstring m_sEditorPageDomain;
     std::wstring m_sInternalEditorPageDomain;
 
-    CAscEditorNativeV8Handler()
+    CAscEditorNativeV8Handler(const std::wstring& sUrl)
     {
         m_etType = etUndefined;
         m_nEditorId = -1;
@@ -418,7 +480,14 @@ public:
 
         CheckDefaults();
 
-        m_pAES_KeyIv = NULL;
+        if (!g_pLocalResolver.is_init())
+        {
+            g_pLocalResolver = new NSSystem::CLocalFilesResolver();
+            g_pLocalResolver->CheckUrl(sUrl);
+            g_pLocalResolver->Init(m_sFontsData, m_sRecoversFolder);
+        }
+
+        m_pAES_Key = NULL;
         m_nIsCryptoModeProperty = 0;
 
         m_bEditorsCloudFeaturesCheck = false;
@@ -447,6 +516,7 @@ public:
 
         m_sAppTmpFolder = default_params.GetValueW("tmp_folder");
 
+        m_sRecoversFolder = default_params.GetValueW("recovers_folder");
 #if 0
         default_params.Print();
 #endif
@@ -454,8 +524,8 @@ public:
 
     virtual ~CAscEditorNativeV8Handler()
     {
-        if (m_pAES_KeyIv)
-            NSOpenSSL::openssl_free(m_pAES_KeyIv);
+        if (m_pAES_Key)
+            NSOpenSSL::openssl_free(m_pAES_Key);
         NSBase::Release(m_pLocalApplicationFonts);
         m_oCompleteTasksCS.DeleteCriticalSection();
     }
@@ -849,7 +919,9 @@ retval, exception);
             if (0 != strUrl.find(L"embedded"))
             {
                 int nSize = 0;
-                std::string sFontData = GetFileBase64(strUrl, &nSize);
+                std::string sFontData = "";
+                if (g_pLocalResolver->CheckFont(strUrl))
+                    sFontData = GetFileBase64(strUrl, &nSize);
                 std::string sName = U_TO_UTF8(strUrl);
                 sName = "window[\"" + sName + "\"] = \"" + std::to_string(nSize) + ";" + sFontData + "\";";
                 CefV8Context::GetCurrentContext()->GetFrame()->ExecuteJavaScript(sName, "", 0);
@@ -1182,7 +1254,10 @@ DE.controllers.Main.DisableVersionHistory(); \
             std::string sHeader = "";
 
             int nSize = 0;
-            std::string sImageData = GetFileBase64(sFileUrl, &nSize);
+            std::string sImageData = "";
+
+            if (g_pLocalResolver->Check(sFileUrl))
+                sImageData = GetFileBase64(sFileUrl, &nSize);
 
             #define IMAGE_CHECKER_SIZE 50
             if (IMAGE_CHECKER_SIZE > nSize)
@@ -1501,7 +1576,7 @@ DE.controllers.Main.DisableVersionHistory(); \
                             info.PrivateKey = NSFile::CUtf8Converter::GetUnicodeFromCharPtr(sPrivate);
 
                             std::string privateEnc;
-                            NSOpenSSL::AES_Encrypt_desktop(U_TO_UTF8(tmpInfo->m_sPassword), sPrivate, privateEnc, CAscRendererProcessParams::getInstance().GetProperty("user"));
+                            NSOpenSSL::AES_Encrypt_desktop_GCM(U_TO_UTF8(tmpInfo->m_sPassword), sPrivate, privateEnc, CAscRendererProcessParams::getInstance().GetProperty("user"));
                             info.PrivateKeyEnc = NSFile::CUtf8Converter::GetUnicodeFromCharPtr(privateEnc);
 
                             oApp.AddInfo(info);
@@ -1517,18 +1592,58 @@ DE.controllers.Main.DisableVersionHistory(); \
                             // декодируем ключ
                             std::string privateKeyEnc = U_TO_UTF8(info.PrivateKeyEnc);
                             std::string privateKey;
-                            NSOpenSSL::AES_Decrypt_desktop(U_TO_UTF8(tmpInfo->m_sPassword), privateKeyEnc, privateKey, CAscRendererProcessParams::getInstance().GetProperty("user"));
+
+                            int nVersionOffset = 0;
+                            int nVersion = NSCommon::CheckEncryptedVersion(privateKeyEnc, nVersionOffset);
+
+                            if (nVersion == 2)
+                                NSOpenSSL::AES_Decrypt_desktop_GCM(U_TO_UTF8(tmpInfo->m_sPassword), privateKeyEnc, privateKey, CAscRendererProcessParams::getInstance().GetProperty("user"), nVersionOffset);
+                            else
+                                NSOpenSSL::AES_Decrypt_desktop(U_TO_UTF8(tmpInfo->m_sPassword), privateKeyEnc, privateKey, CAscRendererProcessParams::getInstance().GetProperty("user"));
+
                             info.PrivateKey = NSFile::CUtf8Converter::GetUnicodeFromCharPtr(privateKey);
+
+                            if (nVersion < NSCommon::GetEncryptedVersion())
+                            {
+                                // обновим ключ в новом формате
+                                std::string privateEnc;
+                                NSOpenSSL::AES_Encrypt_desktop_GCM(U_TO_UTF8(tmpInfo->m_sPassword), privateKey, privateEnc, CAscRendererProcessParams::getInstance().GetProperty("user"));
+                                info.PrivateKeyEnc = NSFile::CUtf8Converter::GetUnicodeFromCharPtr(privateEnc);
+                                std::string publicKey = NSCommon::ConvertToCharSimple(info.PublicKey);
+
+                                std::string sCode = ("setTimeout(function() { window.cloudCryptoCommand && window.cloudCryptoCommand(\"updateEncryptionKeys\", { publicKey : \"" + publicKey + "\", privateKeyEnc : \"" + privateEnc + "\" }); }, 10);");
+                                CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetFrame();
+                                _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+                            }
+                            if (nVersion > NSCommon::GetEncryptedVersion())
+                            {
+                                // посылаем сообщение с просьбой обновить десктоп
+                            }
 
                             oApp.AddInfo(info);
                         }
                     }
                     else if (!savedInfo)
                     {
-                        // TODO: перелогиньтесь!!!
+                        // перелогиньтесь!!!
                         std::string sCode = ("setTimeout(function() { window.cloudCryptoCommand && window.cloudCryptoCommand(\"relogin\"); }, 10);");
                         CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetBrowser()->GetMainFrame();
                         _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+                    }
+
+                    if (savedInfo)
+                    {
+                        int nSavedVersion = NSCommon::CheckEncryptedVersion(savedInfo->PrivateKeyEnc);
+                        int nCurrentVersion = NSCommon::GetEncryptedVersion();
+
+                        if (nSavedVersion < nCurrentVersion)
+                        {
+                            // нужно перелогиниться, чтобы перегенерить ключ в новом формате
+                            // перелогиньтесь!!!
+                            std::string sCode = ("setTimeout(function() { window.cloudCryptoCommand && window.cloudCryptoCommand(\"relogin\"); }, 10);");
+                            CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetBrowser()->GetMainFrame();
+                            _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+                        }
                     }
 
                     if (tmpInfo)
@@ -1579,6 +1694,7 @@ retval, exception);
         }
         else if (name == "SetDropFiles")
         {
+            // разрешения на файлы даются выше
             CefRefPtr<CefV8Value> val = *arguments.begin();
             int nCount = val->GetArrayLength();
 
@@ -2888,22 +3004,22 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
             if (arguments.size() > 1)
                 sSalt = arguments[0]->GetStringValue().ToString();
 
-            if (NULL != m_pAES_KeyIv)
-                NSOpenSSL::openssl_free(m_pAES_KeyIv);
-            m_pAES_KeyIv = NSOpenSSL::PBKDF2_desktop(sPassword, sSalt);
+            if (NULL != m_pAES_Key)
+                NSOpenSSL::openssl_free(m_pAES_Key);
+            m_pAES_Key = NSOpenSSL::PBKDF2_desktop_GCM(sPassword, sSalt);
             return true;
         }
         else if (name == "CryptoAES_Clean")
         {
-            if (NULL != m_pAES_KeyIv)
-                NSOpenSSL::openssl_free(m_pAES_KeyIv);
+            if (NULL != m_pAES_Key)
+                NSOpenSSL::openssl_free(m_pAES_Key);
             return true;
         }
         else if (name == "CryptoAES_Encrypt")
         {
             std::string sMessage = arguments[0]->GetStringValue().ToString();
             std::string sOut;
-            NSOpenSSL::AES_Encrypt_desktop(m_pAES_KeyIv, sMessage, sOut);
+            NSOpenSSL::AES_Encrypt_desktop_GCM(m_pAES_Key, sMessage, sOut);
             retval = CefV8Value::CreateString(sOut);
             return true;
         }
@@ -2911,7 +3027,15 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
         {
             std::string sMessage = arguments[0]->GetStringValue().ToString();
             std::string sOut;
-            NSOpenSSL::AES_Decrypt_desktop(m_pAES_KeyIv, sMessage, sOut);
+
+            int nVersionOffset = 0;
+            int nVersion = NSCommon::CheckEncryptedVersion(sMessage, nVersionOffset);
+
+            if (nVersion == 2)
+                NSOpenSSL::AES_Decrypt_desktop_GCM(m_pAES_Key, sMessage, sOut, nVersionOffset);
+            else
+                NSOpenSSL::AES_Decrypt_desktop_GCM(m_pAES_Key, sMessage, sOut);
+
             retval = CefV8Value::CreateString(sOut);
             return true;
         }
@@ -3409,6 +3533,9 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
 
     std::wstring GetLocalImageUrl(const std::wstring& sUrl)
     {
+        if (!g_pLocalResolver->Check(sUrl))
+            return L"error";
+
         std::wstring sUrlFile = sUrl;
         if (sUrlFile.find(L"file://") == 0)
         {
@@ -3719,7 +3846,12 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 #else
     CefRefPtr<CefV8Value> obj = CefV8Value::CreateObject(NULL, NULL);
 #endif
-    CAscEditorNativeV8Handler* pWrapper = new CAscEditorNativeV8Handler();
+
+    std::wstring sMainUrl = L"";
+    if (browser && browser->GetMainFrame())
+        sMainUrl = browser->GetMainFrame()->GetURL().ToWString();
+
+    CAscEditorNativeV8Handler* pWrapper = new CAscEditorNativeV8Handler(sMainUrl);
     pWrapper->sync_command_check = &sync_command_check;
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
@@ -4378,6 +4510,8 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
         if (_frame)
         {
             std::wstring sPath = message->GetArgumentList()->GetString(0).ToWString();
+            g_pLocalResolver->AddFile(sPath);
+
             NSStringUtils::string_replace(sPath, L"\\", L"\\\\");
 
             std::wstring sCode = L"window.DesktopOfflineAppDocumentAddImageEnd(\"" + sPath + L"\");";
@@ -4519,6 +4653,7 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
         if (!bIsMulti)
         {
             std::wstring sPath = message->GetArgumentList()->GetString(2).ToWString();
+            g_pLocalResolver->AddFile(sPath);
             NSStringUtils::string_replace(sPath, L"\\", L"\\\\");
             sParamCallback = L"\"" + sPath + L"\"";
         }
@@ -4530,6 +4665,7 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
             for (int nIndex = 2; nIndex < nCount; nIndex++)
             {
                 std::wstring sPath = message->GetArgumentList()->GetString(nIndex).ToWString();
+                g_pLocalResolver->AddFile(sPath);
                 NSStringUtils::string_replace(sPath, L"\\", L"\\\\");
                 sParamCallback += (L"\"" + sPath + L"\"");
 
@@ -4978,6 +5114,34 @@ delete window[\"crypto_images_map\"][_url];\n\
       {
           _frame->ExecuteJavaScript("(function() { window.AscDesktopEditor.CryptoMode = 0; })();", _frame->GetURL(), 0);
       }
+      return true;
+    }
+    else if (sMessageName == "set_drop_files")
+    {
+      int nCount = message->GetArgumentList()->GetSize();
+      int nIndex = 0;
+      std::wstring sCode = L"[";
+      while (nIndex < nCount)
+      {
+          std::wstring sFile = message->GetArgumentList()->GetString(nIndex++).ToWString();
+          g_pLocalResolver->AddFile(sFile);
+
+          sCode += L"\"";
+          sCode += sFile;
+          sCode += L"\",";
+      }
+      ((wchar_t*)sCode.c_str())[sCode.length() - 1] = ']';
+
+      std::vector<int64> arFramesIds;
+      browser->GetFrameIdentifiers(arFramesIds);
+
+      for (std::vector<int64>::iterator i = arFramesIds.begin(); i != arFramesIds.end(); i++)
+      {
+          CefRefPtr<CefFrame> _frame = browser->GetFrame(*i);
+          if (_frame)
+              _frame->ExecuteJavaScript(L"window.AscDesktopEditor.SetDropFiles(" + sCode + L");", _frame->GetURL(), 0);
+      }
+
       return true;
     }
 
