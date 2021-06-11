@@ -353,11 +353,48 @@ namespace NSSystem
 
     class CLocalFilesResolver
     {
+    private:
+        class CResolveFolder
+        {
+        public:
+            std::wstring m_sFolder;
+            std::vector<std::wstring> m_arFilesExclude;
+
+        public:
+            CResolveFolder(const std::wstring& sFolder)
+            {
+                m_sFolder = sFolder;
+            }
+            CResolveFolder(const std::wstring& sFolder, const std::vector<std::wstring>& arExcludes)
+            {
+                m_sFolder = sFolder;
+                m_arFilesExclude = arExcludes;
+            }
+
+            bool Check(const std::wstring& sDir, const std::wstring& sFile)
+            {
+                if (0 != sDir.find(m_sFolder))
+                    return false;
+
+                if (0 == m_arFilesExclude.size())
+                    return true;
+
+                std::wstring sFileName = NSFile::GetFileName(sFile);
+                for (std::vector<std::wstring>::iterator i = m_arFilesExclude.begin(); i != m_arFilesExclude.end(); i++)
+                {
+                    if (*i == sFileName)
+                        return false;
+                }
+
+                return true;
+            }
+        };
+
     public:
         std::wstring m_sFontsFolder;
         std::set<std::wstring> m_arFontsFolders;
 
-        std::vector<std::wstring> m_arFolders;
+        std::vector<CResolveFolder> m_arFolders;
         std::set<std::wstring> m_arFilesFromDialog;
 
         bool m_bIsLocalUrl;
@@ -379,10 +416,15 @@ namespace NSSystem
             AddDir(sRecovers);
         }
 
-        void AddDir(const std::wstring& sFileDir = L"")
+        void AddDir(const std::wstring& sFileDir)
         {
             if (!sFileDir.empty())
-                m_arFolders.push_back(CorrectDir(sFileDir));
+                m_arFolders.push_back(CResolveFolder(CorrectDir(sFileDir)));
+        }
+        void AddDir(const std::wstring& sFileDir, const std::vector<std::wstring>& arExcludes)
+        {
+            if (!sFileDir.empty())
+                m_arFolders.push_back(CResolveFolder(CorrectDir(sFileDir), arExcludes));
         }
 
         void AddFile(const std::wstring& sFilePath)
@@ -475,9 +517,9 @@ namespace NSSystem
 
             std::wstring sFile = CorrectPath(sFilePath);
             std::wstring sDir = NSFile::GetDirectoryName(sFile);
-            for (std::vector<std::wstring>::iterator i = m_arFolders.begin(); i != m_arFolders.end(); i++)
+            for (std::vector<CResolveFolder>::iterator i = m_arFolders.begin(); i != m_arFolders.end(); i++)
             {
-                if (0 == sDir.find(*i))
+                if (i->Check(sDir, sFile))
                     return true;
             }
 
@@ -500,8 +542,15 @@ namespace NSSystem
                 sFile[pos] = '/';
         #endif
             NSCommon::url_correct(sFile);
+
             if (0 == sFile.find(L"file://"))
-                sFile = sFile.substr(0, 7);
+            {
+                sFile = sFile.substr(7);
+            #ifdef _WIN32
+                if (0 == sFile.find(L"/"))
+                    sFile.erase(0, 1);
+            #endif
+            }
 
             return sFile;
         }

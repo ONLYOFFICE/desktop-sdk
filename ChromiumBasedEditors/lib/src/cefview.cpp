@@ -3668,6 +3668,13 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
         {
             return true;
         }
+        else if ("on_need_update_app" == message_name)
+        {
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_ON_NEED_UPDATE_APP);
+            pEvent->m_pData = new NSEditorApi::CAscUpdateApp();
+            pListener->OnEvent(pEvent);
+            return true;
+        }
 
         CAscApplicationManager_Private* pInternalMan = m_pParent->GetAppManager()->m_pInternal;
         if (pInternalMan->m_pAdditional && pInternalMan->m_pAdditional->OnProcessMessageReceived(browser, source_process, message, m_pParent))
