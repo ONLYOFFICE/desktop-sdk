@@ -1575,10 +1575,9 @@ DE.controllers.Main.DisableVersionHistory(); \
 
                         if (nServerPrivateKeyVersion > NSCommon::GetEncryptedVersion())
                         {
-                            // нужно сказать, что нужно обновить десктоп и выйти
-
-                            // TODO:
-                            // return true;
+                            // нужно сказать, что нужно обновить десктоп
+                            CefRefPtr<CefProcessMessage> messageUpdateApp = CefProcessMessage::Create("on_need_update_app");
+                            SEND_MESSAGE_TO_BROWSER_PROCESS(messageUpdateApp);
                         }
                     }
 

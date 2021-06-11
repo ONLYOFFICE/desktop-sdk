@@ -138,6 +138,8 @@
 
 #define ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_SAVEFILENAME_DIALOG 8011
 
+#define ASC_MENU_EVENT_TYPE_ON_NEED_UPDATE_APP              8012
+
 #define ASC_MENU_EVENT_TYPE_WINDOW_SHOW_CERTIFICATE         9001
 
 
@@ -1049,5 +1051,35 @@ namespace NSEditorApi
     };
 }
 
+namespace NSEditorApi
+{
+    typedef enum {
+        utNone = 0
+    } AscUpdateAppType;
+
+    class CAscUpdateApp : public IMenuEventDataBase
+    {
+    private:
+        AscUpdateAppType m_nType;
+
+    public:
+        CAscUpdateApp()
+        {
+            m_nType = utNone;
+        }
+        virtual ~CAscUpdateApp()
+        {
+        }
+
+        inline AscUpdateAppType get_Type()
+        {
+            return m_nType;
+        }
+        inline void put_Type(const AscUpdateAppType& newVal)
+        {
+            m_nType = newVal;
+        }
+    };
+}
 
 #endif // APPLICATION_MANAGER_EVENTS_H
