@@ -32,6 +32,7 @@
 
 #include "./applicationmanager_p.h"
 #include "./plugins.h"
+#include "./cefwrapper/client_resource_handler_async.h"
 
 #ifdef LINUX
 CApplicationCEF* CLinuxData::app_cef            = NULL;
@@ -53,7 +54,7 @@ void posix_death_signal(int signum)
 CAscApplicationSettings::CAscApplicationSettings()
 {
     std::wstring sApplicationPath   = NSFile::GetProcessDirectory();
-    NSCommon::string_replace(sApplicationPath, L"\\", L"/");
+    NSStringUtils::string_replace(sApplicationPath, L"\\", L"/");
 
     app_data_path                   = sApplicationPath;
 
@@ -99,7 +100,7 @@ CAscApplicationSettings::~CAscApplicationSettings()
 void CAscApplicationSettings::SetUserDataPath(std::wstring sPath)
 {
     app_data_path                   = sPath;
-    NSCommon::string_replace(app_data_path, L"\\", L"/");
+    NSStringUtils::string_replace(app_data_path, L"\\", L"/");
 
     cache_path                      = app_data_path + L"/data/cache";
     cookie_path                     = app_data_path + L"/data";
@@ -277,7 +278,7 @@ void CAscApplicationManager::CheckFonts(bool bAsync)
     {
 #ifdef WIN32
         std::wstring sTmpDir = m_oSettings.fonts_cache_info_path;
-        NSCommon::string_replace(sTmpDir, L"/", L"\\");
+        NSStringUtils::string_replace(sTmpDir, L"/", L"\\");
         NSDirectory::CreateDirectories(sTmpDir);
 #else
         NSDirectory::CreateDirectories(m_oSettings.fonts_cache_info_path);
@@ -357,7 +358,7 @@ void CAscApplicationManager::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 
             bool bIsPrivate = false;
             std::wstring s1 = pData->get_Url();
-            NSCommon::string_replace(s1, L"/./", L"/");
+            NSStringUtils::string_replace(s1, L"/./", L"/");
             if (s1 == m_pInternal->m_strPrivateDownloadUrl)
                 bIsPrivate = true;
             
@@ -830,6 +831,7 @@ bool CAscApplicationManager::GetDebugInfoSupport()
 
 void CAscApplicationManager::CloseApplication()
 {
+    NSResourceHandlerFileAsyncManager::Destroy();
     this->DestroyCefView(-1);
     this->m_pInternal->CloseApplication();
     if (NULL != m_pInternal->m_pApplication)
@@ -852,7 +854,7 @@ void CAscApplicationManager::EndSaveDialog(const std::wstring& sPath, unsigned i
 {
     std::wstring sPathWin = sPath;
 #ifdef WIN32
-    NSCommon::string_replace(sPathWin, L"/", L"\\");
+    NSStringUtils::string_replace(sPathWin, L"/", L"\\");
 #endif
 
     CCefView* pView = this->GetViewById(m_pInternal->m_nIsCefSaveDialogWait);
@@ -910,7 +912,7 @@ void CAscApplicationManager::CancelDownload(unsigned int nDownloadId)
 
 int CAscApplicationManager::GetFileFormatByExtentionForSave(const std::wstring& sFileName)
 {
-    std::wstring sName = NSCommon::GetFileExtention(sFileName);
+    std::wstring sName = NSFile::GetFileExtention(sFileName);
 
     int nFormat = -1;
     if (sName == L"docx")
@@ -1154,6 +1156,7 @@ std::vector<std::string> CAscApplicationManager::GetRendererStartupProperties()
     props.push_back(m_pInternal->m_bDebugInfoSupport ? "debug_mode=true" : "debug_mode=false");
     props.push_back("fonts_cache_path=" + U_TO_UTF8(m_oSettings.fonts_cache_info_path));
     props.push_back("tmp_folder=" + U_TO_UTF8(m_pInternal->StartTmpDirectory()));
+    props.push_back("recovers_folder=" + U_TO_UTF8(m_oSettings.recover_path));
 
     return props;
 }
@@ -1163,4 +1166,14 @@ CUserSettings* CAscApplicationManager::GetUserSettings()
     CUserSettings* pSettings = new CUserSettings();
     pSettings->m_pInternal->SetManager(this);
     return pSettings;
+}
+
+bool CAscApplicationManager::IsResolveLocalFile(const std::wstring& sFile)
+{
+    return m_pInternal->m_oLocalFilesResolver.Check(sFile);
+}
+
+void CAscApplicationManager::AddFileToLocalResolver(const std::wstring& sFile)
+{
+    return m_pInternal->m_oLocalFilesResolver.AddFile(sFile);
 }

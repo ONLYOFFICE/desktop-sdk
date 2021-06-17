@@ -41,10 +41,12 @@ typedef void (*SignalHandlerPointer)(int);
 QAscPrinterContext::QAscPrinterContext(QPrinter::PrinterMode eMode) : NSEditorApi::CAscPrinterContextBase(), m_oPrinter(eMode)
 {
     m_bIsUsePainter = false;
+    setDefaults();
 }
 QAscPrinterContext::QAscPrinterContext(const QPrinterInfo& pi, QPrinter::PrinterMode eMode) : NSEditorApi::CAscPrinterContextBase(),
     m_oPrinter(pi, eMode), m_bIsUsePainter(false)
 {
+    setDefaults();
 }
 
 bool QAscPrinterContext::BeginPaint()
@@ -239,4 +241,11 @@ void QAscPrinterContext::DrawImage(QPainter* painter, const QImage& image, const
 
         nCurHeight += nRowH;
     }
+}
+
+void QAscPrinterContext::setDefaults()
+{
+    QPrinterInfo oInfo(m_oPrinter);
+    m_oPrinter.setDuplex(oInfo.defaultDuplexMode());
+    m_oPrinter.setPageSize(oInfo.defaultPageSize());
 }

@@ -43,12 +43,57 @@
 
 #include "Logger.h"
 #include "../../../../core/Common/FileDownloader/FileDownloader.h"
-#include "../../../../core/DesktopEditor/fontengine/application_generate_fonts.h"
 #include "../../../../core/DesktopEditor/fontengine/ApplicationFontsWorker.h"
 #include "../../../../core/DesktopEditor/common/StringBuilder.h"
+#include "../../../../core/DesktopEditor/common/Directory.h"
 
 namespace NSCommon
 {
+    static void makeUpper(std::string& url)
+    {
+        int nLen = (int)url.length();
+        char* pStr = (char*)url.c_str();
+
+        for (int i = 0; i < nLen; ++i)
+        {
+            if (pStr[i] >= 'a' && pStr[i] <= 'z')
+                pStr[i] = pStr[i] + 'A' - 'a';
+        }
+    }
+    static void makeUpperW(std::wstring& url)
+    {
+        int nLen = (int)url.length();
+        wchar_t* pStr = (wchar_t*)url.c_str();
+
+        for (int i = 0; i < nLen; ++i)
+        {
+            if (pStr[i] >= 'a' && pStr[i] <= 'z')
+                pStr[i] = pStr[i] + 'A' - 'a';
+        }
+    }
+    static void makeLower(std::string& url)
+    {
+        int nLen = (int)url.length();
+        char* pStr = (char*)url.c_str();
+
+        for (int i = 0; i < nLen; ++i)
+        {
+            if (pStr[i] >= 'A' && pStr[i] <= 'Z')
+                pStr[i] = pStr[i] + 'a' - 'A';
+        }
+    }
+    static void makeLowerW(std::wstring& url)
+    {
+        int nLen = (int)url.length();
+        wchar_t* pStr = (wchar_t*)url.c_str();
+
+        for (int i = 0; i < nLen; ++i)
+        {
+            if (pStr[i] >= 'A' && pStr[i] <= 'Z')
+                pStr[i] = pStr[i] + 'a' - 'A';
+        }
+    }
+
     static std::wstring::size_type FindLowerCase(const std::wstring& string, const std::wstring& find)
     {
         std::wstring sTmp = string;
@@ -72,6 +117,28 @@ namespace NSCommon
         std::string sTmp = string;
         NSCommon::makeLower(sTmp);
         return sTmp.rfind(find);
+    }
+
+    static void url_correct(std::wstring& url)
+    {
+        NSStringUtils::string_replace(url, L"/./", L"/");
+
+        size_t posn = 0;
+        while (std::wstring::npos != (posn = url.find(L"/../")))
+        {
+            std::wstring::size_type pos2 = url.rfind(L"/", posn - 1);
+
+            if (std::wstring::npos != pos2)
+            {
+                url.erase(pos2, posn - pos2 + 3);
+            }
+        }
+
+        // MAC
+        if (0 == url.find(L"file:/") && 0 != url.find(L"file://"))
+        {
+            url.replace(0, 6, L"file:///");
+        }
     }
 }
 
@@ -291,7 +358,7 @@ public:
 
         std::wstring s = value;
         if (m_isSlash)
-            NSCommon::string_replace(s, L"\"", L"\\\"");
+            NSStringUtils::string_replace(s, L"\"", L"\\\"");
 
         m_isSlash ? builder.WriteString(L"\\\"") : builder.WriteString(L"\"");
         builder.WriteString(s);
@@ -305,7 +372,7 @@ public:
 
         std::wstring s = UTF8_TO_U(value);
         if (m_isSlash)
-            NSCommon::string_replace(s, L"\"", L"\\\"");
+            NSStringUtils::string_replace(s, L"\"", L"\\\"");
 
         m_isSlash ? builder.WriteString(L"\\\"") : builder.WriteString(L"\"");
         builder.WriteString(s);

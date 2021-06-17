@@ -37,7 +37,7 @@
 #include "../../../../core/DesktopEditor/common/Directory.h"
 #include "../../../../core/DesktopEditor/common/StringBuilder.h"
 #include "../../../../core/DesktopEditor/xml/include/xmlutils.h"
-#include "../../../../core/DesktopEditor/fontengine/application_generate_fonts_common.h"
+#include "./utils.h"
 #include "./Logger.h"
 #include <map>
 

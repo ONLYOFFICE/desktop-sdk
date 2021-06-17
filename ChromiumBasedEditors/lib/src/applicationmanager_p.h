@@ -350,6 +350,218 @@ namespace NSSystem
 #endif
         }
     };
+
+    class CLocalFilesResolver
+    {
+    private:
+        class CResolveFolder
+        {
+        public:
+            std::wstring m_sFolder;
+            std::vector<std::wstring> m_arFilesExclude;
+
+        public:
+            CResolveFolder(const std::wstring& sFolder)
+            {
+                m_sFolder = sFolder;
+            }
+            CResolveFolder(const std::wstring& sFolder, const std::vector<std::wstring>& arExcludes)
+            {
+                m_sFolder = sFolder;
+                m_arFilesExclude = arExcludes;
+            }
+
+            bool Check(const std::wstring& sDir, const std::wstring& sFile)
+            {
+                if (0 != sDir.find(m_sFolder))
+                    return false;
+
+                if (0 == m_arFilesExclude.size())
+                    return true;
+
+                std::wstring sFileName = NSFile::GetFileName(sFile);
+                for (std::vector<std::wstring>::iterator i = m_arFilesExclude.begin(); i != m_arFilesExclude.end(); i++)
+                {
+                    if (*i == sFileName)
+                        return false;
+                }
+
+                return true;
+            }
+        };
+
+    public:
+        std::wstring m_sFontsFolder;
+        std::set<std::wstring> m_arFontsFolders;
+
+        std::vector<CResolveFolder> m_arFolders;
+        std::set<std::wstring> m_arFilesFromDialog;
+
+        bool m_bIsLocalUrl;
+
+    public:
+        CLocalFilesResolver()
+        {
+            m_bIsLocalUrl = false;
+        }
+        ~CLocalFilesResolver()
+        {
+        }
+
+    public:
+
+        void Init(const std::wstring& sFonts, const std::wstring& sRecovers = L"")
+        {
+            m_sFontsFolder = CorrectDir(sFonts);
+            AddDir(sRecovers);
+        }
+
+        void AddDir(const std::wstring& sFileDir)
+        {
+            if (!sFileDir.empty())
+                m_arFolders.push_back(CResolveFolder(CorrectDir(sFileDir)));
+        }
+        void AddDir(const std::wstring& sFileDir, const std::vector<std::wstring>& arExcludes)
+        {
+            if (!sFileDir.empty())
+                m_arFolders.push_back(CResolveFolder(CorrectDir(sFileDir), arExcludes));
+        }
+
+        void AddFile(const std::wstring& sFilePath)
+        {
+            std::wstring sFile = CorrectPath(sFilePath);
+            m_arFilesFromDialog.insert(sFile);
+        }
+
+        void CheckUrl(const std::wstring& sUrl)
+        {
+            m_bIsLocalUrl = false;
+            if (0 == sUrl.find(L"file:/"))
+                m_bIsLocalUrl = true;
+        }
+
+    public:
+        bool CheckFont(const std::wstring& sFilePath)
+        {
+            if (m_bIsLocalUrl)
+                return true;
+
+            if (0 == m_arFontsFolders.size())
+            {
+                std::wstring strFontsCheckPath = m_sFontsFolder + L"/fonts.log";
+                std::wstring sLastDir = L"";
+
+                NSFile::CFileBinary oFile;
+                if (oFile.OpenFile(strFontsCheckPath))
+                {
+                    int nSize = oFile.GetFileSize();
+                    char* pBuffer = new char[nSize];
+                    DWORD dwReaden = 0;
+                    oFile.ReadFile((BYTE*)pBuffer, nSize, dwReaden);
+                    oFile.CloseFile();
+
+                    int nStart = 0;
+                    int nCur = nStart;
+                    for (; nCur < nSize; ++nCur)
+                    {
+                        if (pBuffer[nCur] == '\n')
+                        {
+                            int nEnd = nCur - 1;
+                            if (nEnd > nStart)
+                            {
+                                int nSymbolsCount = nEnd - nStart + 1;
+                            #ifdef _WIN32
+                                for (int i = 0; i < nSymbolsCount; ++i)
+                                {
+                                    if (pBuffer[nStart + i] == '\\')
+                                        pBuffer[nStart + i] = '/';
+                                }
+                            #endif
+
+                                bool bIsAdd = true;
+                                if (sLastDir.empty())
+                                {
+                                    std::string sHeader(pBuffer + nStart, nEnd - nStart + 1);
+                                    if (0 == sHeader.find("ONLYOFFICE_FONTS_VERSION_"))
+                                        bIsAdd = false;
+                                }
+
+                                if (bIsAdd)
+                                {
+                                    int nLast = nEnd;
+                                    while (nLast > nStart && pBuffer[nLast] != '/')
+                                        --nLast;
+
+                                    std::wstring sDir = NSFile::CUtf8Converter::GetUnicodeStringFromUTF8((BYTE*)pBuffer + nStart, nLast - nStart);
+                                    if (sDir != sLastDir)
+                                        m_arFontsFolders.insert(sDir);
+
+                                }
+                            }
+                            nStart = nCur + 1;
+                        }
+                    }
+
+                    delete[] pBuffer;
+                }
+            }
+
+            std::wstring sFile = CorrectPath(sFilePath);
+            std::wstring sDir = NSFile::GetDirectoryName(sFile);
+            return (m_arFontsFolders.end() != m_arFontsFolders.find(sDir)) ? true : false;
+        }
+        bool CheckNoFont(const std::wstring& sFilePath)
+        {
+            if (m_bIsLocalUrl)
+                return true;
+
+            std::wstring sFile = CorrectPath(sFilePath);
+            std::wstring sDir = NSFile::GetDirectoryName(sFile);
+            for (std::vector<CResolveFolder>::iterator i = m_arFolders.begin(); i != m_arFolders.end(); i++)
+            {
+                if (i->Check(sDir, sFile))
+                    return true;
+            }
+
+            return (m_arFilesFromDialog.end() != m_arFilesFromDialog.find(sFile)) ? true : false;
+        }
+        bool Check(const std::wstring& sFile)
+        {
+            if (CheckNoFont(sFile))
+                return true;
+            return CheckFont(sFile);
+        }
+
+    private:
+        std::wstring CorrectPath(const std::wstring& sFilePath)
+        {
+            std::wstring sFile = sFilePath;
+        #ifdef _WIN32
+            for (std::wstring::size_type pos = 0, size = sFile.length(); pos < size; ++pos)
+            if (sFile[pos] == '\\')
+                sFile[pos] = '/';
+        #endif
+            NSCommon::url_correct(sFile);
+
+            if (0 == sFile.find(L"file://"))
+            {
+                sFile = sFile.substr(7);
+            #ifdef _WIN32
+                if (0 == sFile.find(L"/"))
+                    sFile.erase(0, 1);
+            #endif
+            }
+
+            return sFile;
+        }
+        std::wstring CorrectDir(const std::wstring& sDirPath)
+        {
+            std::wstring sDir = CorrectPath(sDirPath);
+            if (!sDir.empty() && (sDir.back() == '/'))
+                sDir.pop_back();
+            return sDir;
+        }
+    };
 }
 
 class COfficeFileFormatCheckerWrapper : public COfficeFileFormatChecker
@@ -371,7 +583,9 @@ public:
             long nFileSize = oFile.GetFileSize();
             if (0 == nFileSize)
             {
-                int nFormat = GetFormatByExtension(L"." + NSFile::GetFileExtention(fileName));
+                std::wstring sFileExt = NSFile::GetFileExtention(fileName);
+                NSCommon::makeLowerW(sFileExt);
+                int nFormat = GetFormatByExtension(L"." + sFileExt);
 
                 switch (nFormat)
                 {
@@ -405,7 +619,9 @@ public:
         if (isCheckLocal)
         {
             // check locked files
-            int nFormat = GetFormatByExtension(L"." + NSFile::GetFileExtention(fileName));
+            std::wstring sFileExt = NSFile::GetFileExtention(fileName);
+            NSCommon::makeLowerW(sFileExt);
+            int nFormat = GetFormatByExtension(L"." + sFileExt);
             if (nFormat != 0)
             {
                 if (NSSystem::CLocalFileLocker::IsLocked(fileName))
@@ -413,7 +629,7 @@ public:
                     std::wstring sTmpFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"TMP");
                     if (NSFile::CFileBinary::Exists(sTmpFile))
                         NSFile::CFileBinary::Remove(sTmpFile);
-                    sTmpFile += (L"." + NSCommon::GetFileExtention(fileName));
+                    sTmpFile += (L"." + NSFile::GetFileExtention(fileName));
                     NSFile::CFileBinary::Copy(fileName, sTmpFile);
                     isOfficeFileBase = isOfficeFile(sTmpFile);
                     NSFile::CFileBinary::Remove(sTmpFile);
@@ -429,15 +645,13 @@ public:
         {
             case AVS_OFFICESTUDIO_FILE_DOCUMENT_TXT:
             {
-                std::wstring sExt = NSCommon::GetFileExtention(fileName);
-                NSCommon::makeUpperW(sExt);
-                if (sExt != L"TXT" && sExt != L"XML")
+                if (!IsOpenAsTxtFile(fileName))
                     isOfficeFileBase = false;
                 break;
             }
             case AVS_OFFICESTUDIO_FILE_OTHER_MS_OFFCRYPTO:
             {
-                std::wstring sExt = NSCommon::GetFileExtention(fileName);
+                std::wstring sExt = NSFile::GetFileExtention(fileName);
                 this->nFileType2 = COfficeFileFormatChecker::GetFormatByExtension(L"." + sExt);
                 break;
             }
@@ -445,6 +659,15 @@ public:
                 break;
         }
         return isOfficeFileBase;
+    }
+
+    bool IsOpenAsTxtFile(const std::wstring& fileName)
+    {
+        std::wstring sExt = NSFile::GetFileExtention(fileName);
+        NSCommon::makeLowerW(sExt);
+        if (sExt == L"txt" || sExt == L"xml" || sExt == L"md")
+            return true;
+        return false;
     }
 };
 
@@ -948,7 +1171,8 @@ class CAscApplicationManager_Private : public CefBase_Class,
         public CCookieFoundCallback,
         public NSThreads::CBaseThread,
         public CCefScriptLoader::ICefScriptLoaderCallback,
-        public NSAscCrypto::IAscKeyChainListener
+        public NSAscCrypto::IAscKeyChainListener,
+        public CApplicationFontsWorkerBreaker
 {
 public:
     CAscSpellChecker m_oSpellChecker;
@@ -1062,6 +1286,9 @@ public:
     bool m_bIsEnableConvertLogs;
 
     bool m_bIsOnlyEditorWindowMode;
+
+    // не даем грузить любые локальные файлы
+    NSSystem::CLocalFilesResolver m_oLocalFilesResolver;
 
 public:
     IMPLEMENT_REFCOUNTING(CAscApplicationManager_Private);
@@ -1518,7 +1745,6 @@ public:
         oWorker.m_sDirectory = m_pMain->m_oSettings.fonts_cache_info_path;
         oWorker.m_bIsUseSystemFonts = m_pMain->m_oSettings.use_system_fonts;
         oWorker.m_arAdditionalFolders = m_pMain->m_oSettings.additional_fonts_folder;
-        oWorker.m_bIsUseAllVersions = true;
 
 #if defined(_LINUX)
         std::wstring sHome = GetHomeDirectory();
@@ -1533,9 +1759,12 @@ public:
         }
 #endif
 
+        oWorker.m_bIsUseAllVersions = true;
         oWorker.m_bIsUseOpenType = true;
         oWorker.m_bIsNeedThumbnails = true;
+        oWorker.m_bSeparateThumbnails = true;
 
+        oWorker.SetBreaker(this);
         m_pApplicationFonts = oWorker.Check();
 
         if (true)
@@ -1552,6 +1781,8 @@ public:
             oAddons.CheckVersion(sEditorsPath);
         }
 
+        oWorker.CheckThumbnails();
+
         m_bRunThread = FALSE;
         return 0;
     }
@@ -1565,7 +1796,7 @@ public:
     {
         std::wstring sRet = m_strPrivateDownloadPath;
 #ifdef WIN32
-        NSCommon::string_replace(sRet, L"/", L"\\");
+        NSStringUtils::string_replace(sRet, L"/", L"\\");
 #endif
         return sRet;
     }
@@ -1631,7 +1862,7 @@ public:
         std::wstring sPath = sPathSrc;
 #ifdef WIN32
         if (!NSFileDownloader::IsNeedDownload(sPath))
-            NSCommon::string_replace(sPath, L"/", L"\\");
+            NSStringUtils::string_replace(sPath, L"/", L"\\");
 #endif
 
         for (std::vector<CAscEditorFileInfo>::iterator i = m_arRecents.begin(); i != m_arRecents.end(); i++)
@@ -1835,7 +2066,7 @@ public:
 
             for (int j = 0; j < nCountFilesRecover; ++j)
             {
-                std::wstring sTmp = NSCommon::GetFileName(arDirectoriesFiles[j]);
+                std::wstring sTmp = NSFile::GetFileName(arDirectoriesFiles[j]);
                 if (L"Editor.bin" == sTmp)
                 {
                     NSFile::CFileBinary oFile;
@@ -1890,7 +2121,7 @@ public:
             {
                 if (bIsAttack)
                 {
-                    NSDirectory::DeleteDirectory(NSCommon::GetDirectoryName(i->m_sPath));
+                    NSDirectory::DeleteDirectory(NSFile::GetDirectoryName(i->m_sPath));
                 }
 
                 m_arRecovers.erase(i);                
@@ -1912,7 +2143,7 @@ public:
 
         for (std::vector<CAscEditorFileInfo>::iterator i = m_arRecovers.begin(); i != m_arRecovers.end(); i++)
         {
-            NSDirectory::DeleteDirectory(NSCommon::GetDirectoryName(i->m_sPath));
+            NSDirectory::DeleteDirectory(NSFile::GetDirectoryName(i->m_sPath));
         }
 
         m_arRecovers.clear();
@@ -1936,7 +2167,7 @@ public:
             oBuilder.WriteString(L",path:\"");
             std::wstring sPath = i->m_sPath;
 #ifdef WIN32
-            NSCommon::string_replace(sPath, L"/", L"\\");
+            NSStringUtils::string_replace(sPath, L"/", L"\\");
 #endif
             oBuilder.WriteEncodeXmlString(sPath);
             oBuilder.WriteString(L"\",modifyed:\"");
@@ -1970,8 +2201,8 @@ public:
                 sPass = UTF8_TO_U(find->second.m_sValue);
         }
 
-        NSCommon::string_replace(sPass, L"\\", L"\\\\");
-        NSCommon::string_replace(sPass, L"\"", L"\\\"");
+        NSStringUtils::string_replace(sPass, L"\\", L"\\\\");
+        NSStringUtils::string_replace(sPass, L"\"", L"\\\"");
 
         std::wstring sCode = L"(function() { \n\
 window.AscDesktopEditor.CryptoMode = " + std::to_wstring(m_nCurrentCryptoMode) + L";\n\
@@ -2050,6 +2281,11 @@ window.AscDesktopEditor.CryptoPassword = \"" + sPass + L"\";\n\
         }
 
         RELEASEOBJECT(m_pKeyChain);
+    }
+
+    virtual bool IsFontsWorkerRunned()
+    {
+        return (m_bRunThread == TRUE) ? true : false;
     }
 };
 
