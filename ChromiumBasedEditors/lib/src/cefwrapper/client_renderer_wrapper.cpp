@@ -525,6 +525,9 @@ public:
 
         m_sAppTmpFolder = default_params.GetValueW("tmp_folder");
 
+        if (!m_sAppTmpFolder.empty())
+            NSFile::CFileBinary::SetTempPath(m_sAppTmpFolder);
+
         m_sRecoversFolder = default_params.GetValueW("recovers_folder");
 #if 0
         default_params.Print();
@@ -3552,9 +3555,6 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
 
     std::wstring GetLocalImageUrl(const std::wstring& sUrl)
     {
-        if (!g_pLocalResolver->Check(sUrl))
-            return L"error";
-
         std::wstring sUrlFile = sUrl;
         if (sUrlFile.find(L"file://") == 0)
         {
@@ -3572,6 +3572,9 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
 
         if (NSFile::CFileBinary::Exists(sUrlFile))
         {
+            if (!g_pLocalResolver->Check(sUrlFile))
+                return L"error";
+
             BYTE* pLocalFileData = NULL;
             DWORD dwLocalFileSize = 0;
             unsigned int nCRC32 = 0;
