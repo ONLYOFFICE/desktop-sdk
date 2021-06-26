@@ -155,6 +155,12 @@ public:
             g_map_old.insert(std::pair<std::string, CMonitorInfo>((std::string)monitorInfo.szDevice, info));
         }
 
+        if (nPixW <= 1600 && nPixH <= 900)
+        {
+            iuW = 96;
+            iuH = 96;
+        }
+
         if (iuW > 150 && iuW <= 180 && nPixW >= 3700)
             iuW = 192;
         if (iuH > 150 && iuH <= 180 && nPixH >= 2000)

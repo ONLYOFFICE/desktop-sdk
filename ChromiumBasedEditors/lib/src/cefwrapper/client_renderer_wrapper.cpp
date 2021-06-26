@@ -212,7 +212,77 @@ namespace NSCommon
             *this = pPointer;
         }
     };
+
+    int GetEncryptedVersion() { return 2; }
+
+    int CheckEncryptedVersion(const std::string& input, int& offset)
+    {
+        offset = 0;
+        // VER%NUMBER%; version from 100 to 999
+        if (input.length() > 7)
+        {
+            const char* input_ptr = input.c_str();
+            if (input_ptr[0] == 'V' && input_ptr[1] == 'E' && input_ptr[2] == 'R')
+            {
+                input_ptr += 3;
+                int nVersion = 0;
+                for (int i = 0; i < 4; ++i)
+                {
+                    if (*input_ptr == ';')
+                    {
+                        offset = 3 + i + 1;
+                        return nVersion;
+                    }
+
+                    nVersion *= 10;
+                    nVersion += (*input_ptr - '0');
+                    ++input_ptr;
+                }
+                return nVersion;
+            }
+        }
+        return 1;
+    }
+    int CheckEncryptedVersion(const std::wstring& input, int& offset)
+    {
+        offset = 0;
+        // VER%NUMBER%; version from 100 to 999
+        if (input.length() > 7)
+        {
+            const wchar_t* input_ptr = input.c_str();
+            if (input_ptr[0] == 'V' && input_ptr[1] == 'E' && input_ptr[2] == 'R')
+            {
+                input_ptr += 3;
+                int nVersion = 0;
+                for (int i = 0; i < 4; ++i)
+                {
+                    if (*input_ptr == ';')
+                    {
+                        offset = 3 + i + 1;
+                        return nVersion;
+                    }
+
+                    nVersion *= 10;
+                    nVersion += (*input_ptr - '0');
+                    ++input_ptr;
+                }
+                return nVersion;
+            }
+        }
+        return 1;
+    }
+
+    std::string ConvertToCharSimple(const std::wstring& sValue)
+    {
+        std::string sRes;
+        sRes.reserve(sValue.length());
+        for (std::wstring::size_type pos = 0, len = sValue.length(); pos < len; ++pos)
+            sRes.append(1, (char)sValue[pos]);
+        return sRes;
+    }
 }
+
+NSCommon::smart_ptr<NSSystem::CLocalFilesResolver> g_pLocalResolver = NULL;
 
 namespace asc_client_renderer
 {
@@ -324,6 +394,7 @@ public:
     std::wstring m_sSystemPlugins;
     std::wstring m_sUserPlugins;
     std::wstring m_sCryptDocumentFolder; // recover
+    std::wstring m_sRecoversFolder; // recover
 
     std::wstring m_sCookiesPath;
 
@@ -370,8 +441,8 @@ public:
 
     NSCriticalSection::CRITICAL_SECTION m_oCompleteTasksCS;
 
-    // AES key & iv
-    BYTE* m_pAES_KeyIv;
+    // AES key
+    BYTE* m_pAES_Key;
 
     int m_nIsCryptoModeProperty;
 
@@ -385,7 +456,7 @@ public:
     std::wstring m_sEditorPageDomain;
     std::wstring m_sInternalEditorPageDomain;
 
-    CAscEditorNativeV8Handler()
+    CAscEditorNativeV8Handler(const std::wstring& sUrl)
     {
         m_etType = etUndefined;
         m_nEditorId = -1;
@@ -418,7 +489,14 @@ public:
 
         CheckDefaults();
 
-        m_pAES_KeyIv = NULL;
+        if (!g_pLocalResolver.is_init())
+        {
+            g_pLocalResolver = new NSSystem::CLocalFilesResolver();
+            g_pLocalResolver->CheckUrl(sUrl);
+            g_pLocalResolver->Init(m_sFontsData, m_sRecoversFolder);
+        }
+
+        m_pAES_Key = NULL;
         m_nIsCryptoModeProperty = 0;
 
         m_bEditorsCloudFeaturesCheck = false;
@@ -447,6 +525,7 @@ public:
 
         m_sAppTmpFolder = default_params.GetValueW("tmp_folder");
 
+        m_sRecoversFolder = default_params.GetValueW("recovers_folder");
 #if 0
         default_params.Print();
 #endif
@@ -454,8 +533,8 @@ public:
 
     virtual ~CAscEditorNativeV8Handler()
     {
-        if (m_pAES_KeyIv)
-            NSOpenSSL::openssl_free(m_pAES_KeyIv);
+        if (m_pAES_Key)
+            NSOpenSSL::openssl_free(m_pAES_Key);
         NSBase::Release(m_pLocalApplicationFonts);
         m_oCompleteTasksCS.DeleteCriticalSection();
     }
@@ -849,7 +928,9 @@ retval, exception);
             if (0 != strUrl.find(L"embedded"))
             {
                 int nSize = 0;
-                std::string sFontData = GetFileBase64(strUrl, &nSize);
+                std::string sFontData = "";
+                if (g_pLocalResolver->CheckFont(strUrl))
+                    sFontData = GetFileBase64(strUrl, &nSize);
                 std::string sName = U_TO_UTF8(strUrl);
                 sName = "window[\"" + sName + "\"] = \"" + std::to_string(nSize) + ";" + sFontData + "\";";
                 CefV8Context::GetCurrentContext()->GetFrame()->ExecuteJavaScript(sName, "", 0);
@@ -885,13 +966,8 @@ retval, exception);
                     sPath = val->GetStringValue().ToWString();
             }
 
-            std::wstring strUrl = m_sFontsData + L"/fonts_thumbnail" + sPath + L".png";
-
-            while (!NSFile::CFileBinary::Exists(m_sFontsData + L"/fonts.log"))
-                NSThreads::Sleep(100);
-
-            std::string sData = "data:image/jpeg;base64," + GetFileBase64(strUrl);
-            retval = CefV8Value::CreateString(sData.c_str());
+            std::wstring sUrl = L"ascdesktop://fonts/fonts_thumbnail" + sPath + L".png";
+            retval = CefV8Value::CreateString(sUrl);
             return true;
         }
         else if (name == "SpellCheck")
@@ -1187,7 +1263,10 @@ DE.controllers.Main.DisableVersionHistory(); \
             std::string sHeader = "";
 
             int nSize = 0;
-            std::string sImageData = GetFileBase64(sFileUrl, &nSize);
+            std::string sImageData = "";
+
+            if (g_pLocalResolver->Check(sFileUrl))
+                sImageData = GetFileBase64(sFileUrl, &nSize);
 
             #define IMAGE_CHECKER_SIZE 50
             if (IMAGE_CHECKER_SIZE > nSize)
@@ -1474,7 +1553,7 @@ DE.controllers.Main.DisableVersionHistory(); \
                     info.Portal = CPluginsManager::GetStringValueW(sArg, "domain");
                     info.Email = CPluginsManager::GetStringValueW(sArg, "email");
                     info.PublicKey = CPluginsManager::GetStringValueW(sArg, "publicKey");
-                    NSCommon::string_replace(info.PublicKey, L"&#xA", L"\n");
+                    NSStringUtils::string_replace(info.PublicKey, L"&#xA", L"\n");
                     info.PrivateKeyEnc = CPluginsManager::GetStringValueW(sArg, "privateKeyEnc");
 
                     CAscRendererProcessParams::getInstance().SetProperty("cryptoEngineId", U_TO_UTF8(sCloudCryptoGuid));
@@ -1486,10 +1565,27 @@ DE.controllers.Main.DisableVersionHistory(); \
                     CCloudCryptoDesktop* savedInfo = oApp.GetInfo(info);
                     CCloudCryptoTmpInfo* tmpInfo = oAppTmp.getInfo(/*info.Email*/L"", info.Portal);
 
+                    int nServerPrivateKeyVersion = 0;
+                    int nServerPrivateKeyVersionOffset = 0;
+                    bool bIsServerPrivateKeyExist = (info.PrivateKeyEnc.empty() && info.PublicKey.empty()) ? false : true;
+
+                    if (bIsServerPrivateKeyExist)
+                    {
+                        nServerPrivateKeyVersion = NSCommon::CheckEncryptedVersion(info.PrivateKeyEnc, nServerPrivateKeyVersionOffset);
+
+                        if (nServerPrivateKeyVersion > NSCommon::GetEncryptedVersion())
+                        {
+                            // нужно сказать, что нужно обновить десктоп
+                            CefRefPtr<CefProcessMessage> messageUpdateApp = CefProcessMessage::Create("on_need_update_app");
+                            SEND_MESSAGE_TO_BROWSER_PROCESS(messageUpdateApp);
+                        }
+                    }
+
+                    bool bIsNeedRelogin = false;
                     if (NULL == savedInfo && tmpInfo)
                     {
                         // ничего не сохранено. значит это первый логин
-                        if (info.PrivateKeyEnc.empty() && info.PublicKey.empty())
+                        if (!bIsServerPrivateKeyExist)
                         {
                             // генерируем ключи!
                             unsigned char* publicKey = NULL;
@@ -1506,13 +1602,13 @@ DE.controllers.Main.DisableVersionHistory(); \
                             info.PrivateKey = NSFile::CUtf8Converter::GetUnicodeFromCharPtr(sPrivate);
 
                             std::string privateEnc;
-                            NSOpenSSL::AES_Encrypt_desktop(U_TO_UTF8(tmpInfo->m_sPassword), sPrivate, privateEnc, CAscRendererProcessParams::getInstance().GetProperty("user"));
+                            NSOpenSSL::AES_Encrypt_desktop_GCM(U_TO_UTF8(tmpInfo->m_sPassword), sPrivate, privateEnc, CAscRendererProcessParams::getInstance().GetProperty("user"));
                             info.PrivateKeyEnc = NSFile::CUtf8Converter::GetUnicodeFromCharPtr(privateEnc);
 
                             oApp.AddInfo(info);
 
                             // отсылаем ключи
-                            NSCommon::string_replaceA(sPublic, "\n", "&#xA");
+                            NSStringUtils::string_replaceA(sPublic, "\n", "&#xA");
                             std::string sCode = ("setTimeout(function() { window.cloudCryptoCommand && window.cloudCryptoCommand(\"encryptionKeys\", { publicKey : \"" + sPublic + "\", privateKeyEnc : \"" + privateEnc + "\" }); }, 10);");
                             CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetFrame();
                             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
@@ -1522,22 +1618,55 @@ DE.controllers.Main.DisableVersionHistory(); \
                             // декодируем ключ
                             std::string privateKeyEnc = U_TO_UTF8(info.PrivateKeyEnc);
                             std::string privateKey;
-                            NSOpenSSL::AES_Decrypt_desktop(U_TO_UTF8(tmpInfo->m_sPassword), privateKeyEnc, privateKey, CAscRendererProcessParams::getInstance().GetProperty("user"));
-                            info.PrivateKey = NSFile::CUtf8Converter::GetUnicodeFromCharPtr(privateKey);
 
+                            if (nServerPrivateKeyVersion == 2)
+                                NSOpenSSL::AES_Decrypt_desktop_GCM(U_TO_UTF8(tmpInfo->m_sPassword), privateKeyEnc, privateKey, CAscRendererProcessParams::getInstance().GetProperty("user"), nServerPrivateKeyVersionOffset);
+                            else
+                                NSOpenSSL::AES_Decrypt_desktop(U_TO_UTF8(tmpInfo->m_sPassword), privateKeyEnc, privateKey, CAscRendererProcessParams::getInstance().GetProperty("user"));
+
+                            info.PrivateKey = NSFile::CUtf8Converter::GetUnicodeFromCharPtr(privateKey);
                             oApp.AddInfo(info);
+
+                            // теперь проверим, нужно ли обновить ключ, ведь пароль у нас есть
+                            if (nServerPrivateKeyVersion < NSCommon::GetEncryptedVersion())
+                            {
+                                // обновим ключ в новом формате
+                                std::string privateEnc;
+                                NSOpenSSL::AES_Encrypt_desktop_GCM(U_TO_UTF8(tmpInfo->m_sPassword), privateKey, privateEnc, CAscRendererProcessParams::getInstance().GetProperty("user"));
+                                info.PrivateKeyEnc = NSFile::CUtf8Converter::GetUnicodeFromCharPtr(privateEnc);
+                                std::string publicKey = NSCommon::ConvertToCharSimple(info.PublicKey);
+
+                                std::string sCode = ("setTimeout(function() { window.cloudCryptoCommand && window.cloudCryptoCommand(\"updateEncryptionKeys\", { publicKey : \"" + publicKey + "\", privateKeyEnc : \"" + privateEnc + "\" }); }, 10);");
+                                CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetFrame();
+                                _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+                            }
                         }
                     }
                     else if (!savedInfo)
                     {
-                        // TODO: перелогиньтесь!!!
-                        std::string sCode = ("setTimeout(function() { window.cloudCryptoCommand && window.cloudCryptoCommand(\"relogin\"); }, 10);");
-                        CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetBrowser()->GetMainFrame();
-                        _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+                        bIsNeedRelogin = true;
+                    }
+
+                    if (bIsServerPrivateKeyExist && nServerPrivateKeyVersion < NSCommon::GetEncryptedVersion())
+                    {
+                        // нужно удалить локальную запись и перелогиниться
+                        // но пока так сделать не могу, так как порталы не готовы к updateEncryptionKeys
+
+                        // TODO:
+                        // oApp.RemoveInfo(info.User);
+                        // bIsNeedRelogin = true;
                     }
 
                     if (tmpInfo)
                         oAppTmp.removeInfo(L""/*info.Email*/, info.Portal);
+
+                    if (bIsNeedRelogin)
+                    {
+                        // перелогиньтесь!!!
+                        std::string sCode = ("setTimeout(function() { window.cloudCryptoCommand && window.cloudCryptoCommand(\"relogin\"); }, 10);");
+                        CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetBrowser()->GetMainFrame();
+                        _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+                    }
                 }
             }
             else if ("portal:checkpwd" == sCommand)
@@ -1584,6 +1713,7 @@ retval, exception);
         }
         else if (name == "SetDropFiles")
         {
+            // разрешения на файлы даются выше
             CefRefPtr<CefV8Value> val = *arguments.begin();
             int nCount = val->GetArrayLength();
 
@@ -2234,7 +2364,7 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
                 sFile = sFile.substr(sFileHeader.length());
 
 #ifdef WIN32
-                NSCommon::string_replace(sFile, L"/", L"\\");
+                NSStringUtils::string_replace(sFile, L"/", L"\\");
 #endif
             }
 
@@ -2503,7 +2633,7 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
                 if (0 == sUrlFile.find(L"localhost"))
                     sUrlFile = sUrlFile.substr(9);
 
-                NSCommon::string_replace(sUrlFile, L"%20", L" ");
+                NSStringUtils::string_replace(sUrlFile, L"%20", L" ");
 
                 if (!NSFile::CFileBinary::Exists(sUrlFile))
                     sUrlFile = sUrlFile.substr(1);
@@ -2598,7 +2728,7 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
         else if (name == "_AddAudio")
         {
             std::wstring sFile = arguments[0]->GetStringValue().ToWString();
-            std::wstring sExt = NSCommon::GetFileExtention(sFile);
+            std::wstring sExt = NSFile::GetFileExtention(sFile);
             NSCommon::makeLowerW(sExt);
             std::wstring sImage = L"display8image" + std::to_wstring(m_nLocalImagesNextIndex++);
             std::wstring sDstMain = m_sLocalFileFolderWithoutFile + L"/media/" + sImage + L".";
@@ -2620,7 +2750,7 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
         else if (name == "_AddVideo")
         {
             std::wstring sFile = arguments[0]->GetStringValue().ToWString();
-            std::wstring sExt = NSCommon::GetFileExtention(sFile);
+            std::wstring sExt = NSFile::GetFileExtention(sFile);
             NSCommon::makeLowerW(sExt);
             std::wstring sImage = L"display8image" + std::to_wstring(m_nLocalImagesNextIndex++);
             std::wstring sDstMain = m_sLocalFileFolderWithoutFile + L"/media/" + sImage + L".";
@@ -2893,22 +3023,22 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
             if (arguments.size() > 1)
                 sSalt = arguments[0]->GetStringValue().ToString();
 
-            if (NULL != m_pAES_KeyIv)
-                NSOpenSSL::openssl_free(m_pAES_KeyIv);
-            m_pAES_KeyIv = NSOpenSSL::PBKDF2_desktop(sPassword, sSalt);
+            if (NULL != m_pAES_Key)
+                NSOpenSSL::openssl_free(m_pAES_Key);
+            m_pAES_Key = NSOpenSSL::PBKDF2_desktop_GCM(sPassword, sSalt);
             return true;
         }
         else if (name == "CryptoAES_Clean")
         {
-            if (NULL != m_pAES_KeyIv)
-                NSOpenSSL::openssl_free(m_pAES_KeyIv);
+            if (NULL != m_pAES_Key)
+                NSOpenSSL::openssl_free(m_pAES_Key);
             return true;
         }
         else if (name == "CryptoAES_Encrypt")
         {
             std::string sMessage = arguments[0]->GetStringValue().ToString();
             std::string sOut;
-            NSOpenSSL::AES_Encrypt_desktop(m_pAES_KeyIv, sMessage, sOut);
+            NSOpenSSL::AES_Encrypt_desktop_GCM(m_pAES_Key, sMessage, sOut);
             retval = CefV8Value::CreateString(sOut);
             return true;
         }
@@ -2916,7 +3046,15 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
         {
             std::string sMessage = arguments[0]->GetStringValue().ToString();
             std::string sOut;
-            NSOpenSSL::AES_Decrypt_desktop(m_pAES_KeyIv, sMessage, sOut);
+
+            int nVersionOffset = 0;
+            int nVersion = NSCommon::CheckEncryptedVersion(sMessage, nVersionOffset);
+
+            if (nVersion == 2)
+                NSOpenSSL::AES_Decrypt_desktop_GCM(m_pAES_Key, sMessage, sOut, nVersionOffset);
+            else
+                NSOpenSSL::AES_Decrypt_desktop_GCM(m_pAES_Key, sMessage, sOut);
+
             retval = CefV8Value::CreateString(sOut);
             return true;
         }
@@ -2940,7 +3078,7 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
         else if (name == "CryproRSA_EncryptPublic")
         {
             std::string sKey = arguments[0]->GetStringValue().ToString();
-            NSCommon::string_replaceA(sKey, "&#xA", "\n");
+            NSStringUtils::string_replaceA(sKey, "&#xA", "\n");
             std::string sMessage = arguments[1]->GetStringValue().ToString();
             std::string sOut;
             NSOpenSSL::RSA_EncryptPublic_desktop((unsigned char*)sKey.c_str(), sMessage, sOut);
@@ -3029,10 +3167,10 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
             std::string sId = arguments[0]->GetStringValue().ToString();
             std::string sArg = arguments[1]->GetStringValue().ToString();
 
-            NSCommon::string_replaceA(sArg, "\r", "");
-            NSCommon::string_replaceA(sArg, "\n", "");
-            NSCommon::string_replaceA(sArg, "\\", "\\\\");
-            NSCommon::string_replaceA(sArg, "\"", "\\\"");
+            NSStringUtils::string_replaceA(sArg, "\r", "");
+            NSStringUtils::string_replaceA(sArg, "\n", "");
+            NSStringUtils::string_replaceA(sArg, "\\", "\\\\");
+            NSStringUtils::string_replaceA(sArg, "\"", "\\\"");
 
             CefRefPtr<CefFrame> mainFrame = CefV8Context::GetCurrentContext()->GetBrowser()->GetMainFrame();
 
@@ -3050,7 +3188,7 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
         else if (name == "initCryptoWorker")
         {
             std::wstring sId = arguments[0]->GetStringValue().ToWString();
-            NSCommon::string_replace(sId, L"asc.", L"");
+            NSStringUtils::string_replace(sId, L"asc.", L"");
             std::wstring sFile = m_sSystemPlugins + L"/" + sId + L"/worker.js";
             std::string sContentWorker;
             if (NSFile::CFileBinary::Exists(sFile))
@@ -3085,7 +3223,7 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
             ECMACryptFile file;
             std::string docinfo = file.ReadAdditional(sFile, L"DocumentID");
             if (!docinfo.empty())
-                NSCommon::string_replaceA(docinfo, "\n", "<!--break-->");
+                NSStringUtils::string_replaceA(docinfo, "\n", "<!--break-->");
             retval = CefV8Value::CreateString(docinfo);
             return true;
         }
@@ -3414,6 +3552,9 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
 
     std::wstring GetLocalImageUrl(const std::wstring& sUrl)
     {
+        if (!g_pLocalResolver->Check(sUrl))
+            return L"error";
+
         std::wstring sUrlFile = sUrl;
         if (sUrlFile.find(L"file://") == 0)
         {
@@ -3423,7 +3564,7 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
             if (sUrlFile.find(L"localhost") == 0)
                 sUrlFile = sUrlFile.substr(9);
             
-            NSCommon::string_replace(sUrlFile, L"%20", L" ");
+            NSStringUtils::string_replace(sUrlFile, L"%20", L" ");
             
             if (!NSFile::CFileBinary::Exists(sUrlFile))
                 sUrlFile = sUrlFile.substr(1);
@@ -3724,7 +3865,12 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 #else
     CefRefPtr<CefV8Value> obj = CefV8Value::CreateObject(NULL, NULL);
 #endif
-    CAscEditorNativeV8Handler* pWrapper = new CAscEditorNativeV8Handler();
+
+    std::wstring sMainUrl = L"";
+    if (browser && browser->GetMainFrame())
+        sMainUrl = browser->GetMainFrame()->GetURL().ToWString();
+
+    CAscEditorNativeV8Handler* pWrapper = new CAscEditorNativeV8Handler(sMainUrl);
     pWrapper->sync_command_check = &sync_command_check;
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
@@ -4122,8 +4268,8 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
             std::string sKey = message->GetArgumentList()->GetString(1 + i * 2);
             std::string sValue = message->GetArgumentList()->GetString(2 + i * 2);
 
-            NSCommon::string_replaceA(sKey, "\"", "\\\"");
-            NSCommon::string_replaceA(sValue, "\"", "\\\"");
+            NSStringUtils::string_replaceA(sKey, "\"", "\\\"");
+            NSStringUtils::string_replaceA(sValue, "\"", "\\\"");
 
             sObject += ("\""  + sKey + "\" : \"" + sValue + "\"");
             if (i != (nCount - 1))
@@ -4196,17 +4342,17 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
             std::wstring sFileSrc = message->GetArgumentList()->GetString(1).ToWString();
             std::wstring sFolderJS = sFolder;
 #ifndef _WIN32
-            NSCommon::string_replace(sFolderJS, L"\\", L"\\\\");
-            NSCommon::string_replace(sFolderJS, L"\"", L"\\\"");
-            NSCommon::string_replace(sFileSrc, L"\\", L"\\\\");
-            NSCommon::string_replace(sFileSrc, L"\"", L"\\\"");
+            NSStringUtils::string_replace(sFolderJS, L"\\", L"\\\\");
+            NSStringUtils::string_replace(sFolderJS, L"\"", L"\\\"");
+            NSStringUtils::string_replace(sFileSrc, L"\\", L"\\\\");
+            NSStringUtils::string_replace(sFileSrc, L"\"", L"\\\"");
 #endif
 
             bool bIsSaved = message->GetArgumentList()->GetBool(2);
 
             std::wstring sSignatures = message->GetArgumentList()->GetString(3).ToWString();
             bool bIsLockedFile = message->GetArgumentList()->GetBool(4);
-            NSCommon::string_replace(sSignatures, L"\"", L"\\\"");
+            NSStringUtils::string_replace(sSignatures, L"\"", L"\\\"");
 
             if (bIsSaved)
                 _frame->ExecuteJavaScript("window.AscDesktopEditor.LocalFileSetSaved(true);", _frame->GetURL(), 0);
@@ -4276,8 +4422,8 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
         std::string sImageMap = "{";
         for (std::vector<std::wstring>::iterator i = files.begin(); i != files.end(); i++)
         {
-            std::wstring sFile = *i; NSCommon::string_replace(sFile, L"\\", L"/");
-            NSCommon::string_replace(sFile, L"\"", L"'");
+            std::wstring sFile = *i; NSStringUtils::string_replace(sFile, L"\\", L"/");
+            NSStringUtils::string_replace(sFile, L"\"", L"'");
             std::wstring sName = L"media/" + NSFile::GetFileName(sFile);
 
             sImageMap += "\"";
@@ -4317,8 +4463,8 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
             if (!sFileSrc.empty())
             {
 #ifndef _WIN32
-                NSCommon::string_replaceA(sFileSrc, "\\", "\\\\");
-                NSCommon::string_replaceA(sFileSrc, "\"", "\\\"");
+                NSStringUtils::string_replaceA(sFileSrc, "\\", "\\\\");
+                NSStringUtils::string_replaceA(sFileSrc, "\"", "\\\"");
 #endif
                 std::string sCode = "window.AscDesktopEditor.LocalFileSetSourcePath(\"" + sFileSrc + "\");";
                 _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
@@ -4333,8 +4479,8 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
                 sPass = message->GetArgumentList()->GetString(2).ToString();
                 sHash = message->GetArgumentList()->GetString(3).ToString();
 
-                NSCommon::string_replaceA(sPass, "\\", "\\\\");
-                NSCommon::string_replaceA(sPass, "\"", "\\\"");
+                NSStringUtils::string_replaceA(sPass, "\\", "\\\\");
+                NSStringUtils::string_replaceA(sPass, "\"", "\\\"");
 
                 if (!sPass.empty() && !sHash.empty())
                 {
@@ -4357,7 +4503,7 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
         if (_frame)
         {
             std::wstring sJSON = message->GetArgumentList()->GetString(0).ToWString();
-            NSCommon::string_replace(sJSON, L"\\", L"\\\\");
+            NSStringUtils::string_replace(sJSON, L"\\", L"\\\\");
 
             std::wstring sCode = L"if (window.onupdaterecents) {window.onupdaterecents(" + sJSON + L");}";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
@@ -4370,7 +4516,7 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
         if (_frame)
         {
             std::wstring sJSON = message->GetArgumentList()->GetString(0).ToWString();
-            NSCommon::string_replace(sJSON, L"\\", L"\\\\");
+            NSStringUtils::string_replace(sJSON, L"\\", L"\\\\");
 
             std::wstring sCode = L"if (window.onupdaterecovers) {window.onupdaterecovers(" + sJSON + L");}";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
@@ -4383,7 +4529,9 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
         if (_frame)
         {
             std::wstring sPath = message->GetArgumentList()->GetString(0).ToWString();
-            NSCommon::string_replace(sPath, L"\\", L"\\\\");
+            g_pLocalResolver->AddFile(sPath);
+
+            NSStringUtils::string_replace(sPath, L"\\", L"\\\\");
 
             std::wstring sCode = L"window.DesktopOfflineAppDocumentAddImageEnd(\"" + sPath + L"\");";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
@@ -4443,7 +4591,7 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
             if (3 <= message->GetArgumentList()->GetSize())
             {
                 std::string sDocInfo = message->GetArgumentList()->GetString(2).ToString();
-                NSCommon::string_replaceA(sDocInfo, "\n", "<!--break-->");
+                NSStringUtils::string_replaceA(sDocInfo, "\n", "<!--break-->");
                 sCode += ",\"";
                 sCode += sDocInfo;
                 sCode += "\"";
@@ -4465,16 +4613,16 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
             std::wstring s3 = message->GetArgumentList()->GetString(2).ToWString();
 
 #ifdef _WIN32
-            NSCommon::string_replace(s1, L"\\", L"/");
-            NSCommon::string_replace(s2, L"\\", L"/");
-            NSCommon::string_replace(s3, L"\\", L"/");
+            NSStringUtils::string_replace(s1, L"\\", L"/");
+            NSStringUtils::string_replace(s2, L"\\", L"/");
+            NSStringUtils::string_replace(s3, L"\\", L"/");
 #else
-            NSCommon::string_replace(s1, L"\\", L"\\\\");
-            NSCommon::string_replace(s2, L"\\", L"\\\\");
-            NSCommon::string_replace(s3, L"\\", L"\\\\");
-            NSCommon::string_replace(s1, L"\"", L"\\\"");
-            NSCommon::string_replace(s2, L"\"", L"\\\"");
-            NSCommon::string_replace(s3, L"\"", L"\\\"");
+            NSStringUtils::string_replace(s1, L"\\", L"\\\\");
+            NSStringUtils::string_replace(s2, L"\\", L"\\\\");
+            NSStringUtils::string_replace(s3, L"\\", L"\\\\");
+            NSStringUtils::string_replace(s1, L"\"", L"\\\"");
+            NSStringUtils::string_replace(s2, L"\"", L"\\\"");
+            NSStringUtils::string_replace(s3, L"\"", L"\\\"");
 #endif
 
             std::string sCode = "window.AscDesktopEditor.NativeViewerOpen(\"" + U_TO_UTF8(s1) +
@@ -4524,7 +4672,8 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
         if (!bIsMulti)
         {
             std::wstring sPath = message->GetArgumentList()->GetString(2).ToWString();
-            NSCommon::string_replace(sPath, L"\\", L"\\\\");
+            g_pLocalResolver->AddFile(sPath);
+            NSStringUtils::string_replace(sPath, L"\\", L"\\\\");
             sParamCallback = L"\"" + sPath + L"\"";
         }
         else
@@ -4535,7 +4684,8 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
             for (int nIndex = 2; nIndex < nCount; nIndex++)
             {
                 std::wstring sPath = message->GetArgumentList()->GetString(nIndex).ToWString();
-                NSCommon::string_replace(sPath, L"\\", L"\\\\");
+                g_pLocalResolver->AddFile(sPath);
+                NSStringUtils::string_replace(sPath, L"\\", L"\\\\");
                 sParamCallback += (L"\"" + sPath + L"\"");
 
                 if (nIndex < (nCount - 1))
@@ -4568,7 +4718,7 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
 
         if (_frame)
         {
-            NSCommon::string_replace(sPath, L"\\", L"\\\\");
+            NSStringUtils::string_replace(sPath, L"\\", L"\\\\");
 
             std::wstring sCode = L"(function() { window.on_native_save_filename_dialog(\"" + sPath + L"\"); delete window.on_native_save_filename_dialog; })();";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
@@ -4583,7 +4733,7 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
         if (_frame)
         {
             std::wstring sSignatures = message->GetArgumentList()->GetString(0).ToWString();
-            NSCommon::string_replace(sSignatures, L"\"", L"\\\"");
+            NSStringUtils::string_replace(sSignatures, L"\"", L"\\\"");
 
             std::string sCode = "window.DesktopOfflineAppDocumentSignatures(\"" + U_TO_UTF8(sSignatures) + "\");";
             _frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
@@ -4597,7 +4747,7 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
         if (_frame)
         {
             std::string sWarning = message->GetArgumentList()->GetString(0).ToString();
-            NSCommon::string_replaceA(sWarning, "\"", "\\\"");
+            NSStringUtils::string_replaceA(sWarning, "\"", "\\\"");
 
             std::string sCode = "(function(){var _editor = window.Asc.editor ? window.Asc.editor : window.editor;\
 _editor && _editor.local_sendEvent && _editor.local_sendEvent(\"asc_onError\", \"" + sWarning + "\", 0);})();";
@@ -4626,8 +4776,8 @@ _editor && _editor.local_sendEvent && _editor.local_sendEvent(\"asc_onError\", \
         if (_frame)
         {
             std::string sParam = message->GetArgumentList()->GetString(0);
-            NSCommon::string_replaceA(sParam, "\\", "\\\\");
-            NSCommon::string_replaceA(sParam, "\"", "\\\"");
+            NSStringUtils::string_replaceA(sParam, "\\", "\\\\");
+            NSStringUtils::string_replaceA(sParam, "\"", "\\\"");
             _frame->ExecuteJavaScript("window.editor && window.editor.DemonstrationReporterMessages({ data : \"" + sParam + "\" });", _frame->GetURL(), 0);
         }
 
@@ -4640,8 +4790,8 @@ _editor && _editor.local_sendEvent && _editor.local_sendEvent(\"asc_onError\", \
         if (_frame)
         {
             std::string sParam = message->GetArgumentList()->GetString(0);
-            NSCommon::string_replaceA(sParam, "\\", "\\\\");
-            NSCommon::string_replaceA(sParam, "\"", "\\\"");
+            NSStringUtils::string_replaceA(sParam, "\\", "\\\\");
+            NSStringUtils::string_replaceA(sParam, "\"", "\\\"");
             _frame->ExecuteJavaScript("window.editor && window.editor.DemonstrationToReporterMessages({ data : \"" + sParam + "\" });", _frame->GetURL(), 0);
         }
 
@@ -4666,8 +4816,8 @@ _editor && _editor.local_sendEvent && _editor.local_sendEvent(\"asc_onError\", \
     else if (sMessageName == "send_system_message")
     {
         std::string sArg = message->GetArgumentList()->GetString(0);
-        NSCommon::string_replaceA(sArg, "\\", "\\\\");
-        NSCommon::string_replaceA(sArg, "\"", "\\\"");
+        NSStringUtils::string_replaceA(sArg, "\\", "\\\\");
+        NSStringUtils::string_replaceA(sArg, "\"", "\\\"");
 
         if (message->GetArgumentList()->GetSize() == 1)
         {
@@ -4819,8 +4969,8 @@ window.AscDesktopEditor.openFileCryptCallback = null;\n\
                 sPass = message->GetArgumentList()->GetString(2).ToString();
                 sHash = message->GetArgumentList()->GetString(3).ToString();
 
-                NSCommon::string_replaceA(sPass, "\\", "\\\\");
-                NSCommon::string_replaceA(sPass, "\"", "\\\"");
+                NSStringUtils::string_replaceA(sPass, "\\", "\\\\");
+                NSStringUtils::string_replaceA(sPass, "\"", "\\\"");
 
                 if (!sPass.empty() && !sHash.empty())
                 {
@@ -4925,7 +5075,7 @@ delete window[\"crypto_images_map\"][_url];\n\
                 sParam += ("\"" + message->GetArgumentList()->GetString(nIndex++).ToString() + "\" : \"");
 
                 std::string sFile = message->GetArgumentList()->GetString(nIndex++).ToString();
-                NSCommon::string_replaceA(sFile, "\\", "/");
+                NSStringUtils::string_replaceA(sFile, "\\", "/");
 
                 sParam += (sFile + "\"");
 
@@ -4951,7 +5101,7 @@ delete window[\"crypto_images_map\"][_url];\n\
     {
         int64 nFrameId = NSArgumentList::GetInt64(message->GetArgumentList(), 0);
         std::string sRet = message->GetArgumentList()->GetString(1);
-        NSCommon::string_replaceA(sRet, "\\", "\\\\");
+        NSStringUtils::string_replaceA(sRet, "\\", "\\\\");
 
         CefRefPtr<CefFrame> _frame = browser->GetFrame(nFrameId);
         if (_frame)
@@ -4961,7 +5111,7 @@ delete window[\"crypto_images_map\"][_url];\n\
     {
         int64 nFrameId = NSArgumentList::GetInt64(message->GetArgumentList(), 0);
         std::string sRet = message->GetArgumentList()->GetString(1);
-        NSCommon::string_replaceA(sRet, "\\", "\\\\");
+        NSStringUtils::string_replaceA(sRet, "\\", "\\\\");
 
         CefRefPtr<CefFrame> _frame = browser->GetFrame(nFrameId);
         if (_frame)
@@ -4983,6 +5133,34 @@ delete window[\"crypto_images_map\"][_url];\n\
       {
           _frame->ExecuteJavaScript("(function() { window.AscDesktopEditor.CryptoMode = 0; })();", _frame->GetURL(), 0);
       }
+      return true;
+    }
+    else if (sMessageName == "set_drop_files")
+    {
+      int nCount = message->GetArgumentList()->GetSize();
+      int nIndex = 0;
+      std::wstring sCode = L"[";
+      while (nIndex < nCount)
+      {
+          std::wstring sFile = message->GetArgumentList()->GetString(nIndex++).ToWString();
+          g_pLocalResolver->AddFile(sFile);
+
+          sCode += L"\"";
+          sCode += sFile;
+          sCode += L"\",";
+      }
+      ((wchar_t*)sCode.c_str())[sCode.length() - 1] = ']';
+
+      std::vector<int64> arFramesIds;
+      browser->GetFrameIdentifiers(arFramesIds);
+
+      for (std::vector<int64>::iterator i = arFramesIds.begin(); i != arFramesIds.end(); i++)
+      {
+          CefRefPtr<CefFrame> _frame = browser->GetFrame(*i);
+          if (_frame)
+              _frame->ExecuteJavaScript(L"window.AscDesktopEditor.SetDropFiles(" + sCode + L");", _frame->GetURL(), 0);
+      }
+
       return true;
     }
 

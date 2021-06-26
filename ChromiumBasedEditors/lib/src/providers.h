@@ -141,10 +141,10 @@ public:
                     sConfigData = (sConfigData.substr(0, find_id + 1) + "\"path\":\"./providers/" + U_TO_UTF8(NSFile::GetFileName(*iter)) + "\"," + sConfigData.substr(find_id + 1));
                 }
 
-                NSCommon::string_replaceA(sConfigData, "\r", "");
-                NSCommon::string_replaceA(sConfigData, "\n", "");
-                NSCommon::string_replaceA(sConfigData, "\\", "\\\\");
-                //NSCommon::string_replaceA(sConfigData, "\"", "\\\"");
+                NSStringUtils::string_replaceA(sConfigData, "\r", "");
+                NSStringUtils::string_replaceA(sConfigData, "\n", "");
+                NSStringUtils::string_replaceA(sConfigData, "\\", "\\\\");
+                //NSStringUtils::string_replaceA(sConfigData, "\"", "\\\"");
 
                 if (1 != sResult.length())
                     sResult += ",";
@@ -164,14 +164,14 @@ public:
                 if (std::string::npos != find_id)
                 {
                     std::wstring sDirPath = *iter;
-                    NSCommon::string_replace(sDirPath, L"\\", L"/");
+                    NSStringUtils::string_replace(sDirPath, L"\\", L"/");
                     sConfigData = (sConfigData.substr(0, find_id + 1) + "\"path\":\"" + U_TO_UTF8(sDirPath) + "\"," + sConfigData.substr(find_id + 1));
                 }
 
-                NSCommon::string_replaceA(sConfigData, "\r", "");
-                NSCommon::string_replaceA(sConfigData, "\n", "");
-                NSCommon::string_replaceA(sConfigData, "\\", "\\\\");
-                //NSCommon::string_replaceA(sConfigData, "\"", "\\\"");
+                NSStringUtils::string_replaceA(sConfigData, "\r", "");
+                NSStringUtils::string_replaceA(sConfigData, "\n", "");
+                NSStringUtils::string_replaceA(sConfigData, "\\", "\\\\");
+                //NSStringUtils::string_replaceA(sConfigData, "\"", "\\\"");
 
                 if (1 != sResult.length())
                     sResult += ",";

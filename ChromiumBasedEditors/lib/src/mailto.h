@@ -34,6 +34,7 @@
 #define ASC_MAIL_TO_H
 
 #include "../../../../core/DesktopEditor/common/File.h"
+#include "../../../../core/DesktopEditor/common/StringBuilder.h"
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -157,7 +158,7 @@ public:
                 args.push_back(L"/a");
 
                 std::wstring sFilePathSrc = sFilePath;
-                NSCommon::string_replace(sFilePathSrc, L"/", L"\\");
+                NSStringUtils::string_replace(sFilePathSrc, L"/", L"\\");
                 args.push_back(sFilePathSrc);
             }
         }
@@ -170,7 +171,7 @@ public:
 #ifdef _WIN32
             if (0 == sFilePath.find(L"\\\\") || 0 == sFilePath.find(L"//"))
             {
-                NSCommon::string_replace(sFilePathSrc, L"/", L"\\");
+                NSStringUtils::string_replace(sFilePathSrc, L"/", L"\\");
                 bIsAddFile = false;
             }
 #endif
@@ -189,7 +190,7 @@ public:
 #ifdef _WIN32
             if (0 == sFilePath.find(L"\\\\") || 0 == sFilePath.find(L"//"))
             {
-                NSCommon::string_replace(sFilePathSrc, L"/", L"\\");
+                NSStringUtils::string_replace(sFilePathSrc, L"/", L"\\");
                 bIsAddFile = false;
             }
 #endif
