@@ -1054,7 +1054,7 @@ protected:
         else
         {
             // старый код. теперь используется вью портала
-            CFileDownloader oDownloader(m_sUrl, false);
+            NSNetwork::NSFileTransport::CFileDownloader oDownloader(m_sUrl, false);
             oDownloader.SetFilePath(m_sDestination);
 
             oDownloader.Start( 0 );

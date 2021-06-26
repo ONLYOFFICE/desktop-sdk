@@ -42,7 +42,7 @@
 #endif
 
 #include "Logger.h"
-#include "../../../../core/Common/FileDownloader/FileDownloader.h"
+#include "../../../../core/Common/Network/FileTransporter/include/FileTransporter.h"
 #include "../../../../core/DesktopEditor/fontengine/ApplicationFontsWorker.h"
 #include "../../../../core/DesktopEditor/common/StringBuilder.h"
 #include "../../../../core/DesktopEditor/common/Directory.h"
@@ -167,7 +167,7 @@ public:
 
     int DownloadSync()
     {
-        CFileDownloader oDownloader(m_sUrl, false);
+        NSNetwork::NSFileTransport::CFileDownloader oDownloader(m_sUrl, false);
         oDownloader.SetFilePath(m_sOutput);
         oDownloader.Start( 0 );
         while ( oDownloader.IsRunned() )
