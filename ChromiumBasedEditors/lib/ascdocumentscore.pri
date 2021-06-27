@@ -25,7 +25,7 @@ DEFINES += DESKTOP_USE_DYNAMIC_LIBRARY_BUILDING
 
 core_mac:DEFINES += _XCODE
 
-ADD_DEPENDENCY(graphics, kernel, UnicodeConverter, network, PdfWriter, PdfReader, XpsFile, DjVuFile, HtmlRenderer, hunspell, ooxmlsignature)
+ADD_DEPENDENCY(graphics, kernel, UnicodeConverter, kernel_network, PdfWriter, PdfReader, XpsFile, DjVuFile, HtmlRenderer, hunspell, ooxmlsignature)
 !core_windows:DEFINES += DOCUMENTSCORE_OPENSSL_SUPPORT
 
 CEF_PROJECT_PRI=$$PWD/cef_pri
