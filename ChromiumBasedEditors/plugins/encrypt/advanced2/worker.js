@@ -66,12 +66,25 @@
 		return window.AscDesktopEditor.CryproRSA_DecryptPrivate(this.User[0], encPassword);
 	};	
 	// генерация нового пароля
-	window.AscCrypto.CryptoWorker.createPasswordNew = function() {
+	window.AscCrypto.CryptoWorker.createPasswordNewOld = function() {
 		function s4() {
 			return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
 		}
 		return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
-	}
+	};
+	window.AscCrypto.CryptoWorker.createPasswordNew = function() {
+		if (!window.crypto || !window.crypto.getRandomValues)
+			return window.AscCrypto.CryptoWorker.createPasswordNewOld();
+		
+		var array = new Uint16Array(8);
+		window.crypto.getRandomValues(array);
+		var index = 0;
+		function s4() {
+			var value = 0x10000 + array[index++];
+			return value.toString(16).substring(1);
+		}
+		return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+	};
 	// запрос на новый пароль
 	window.AscCrypto.CryptoWorker.createPassword = function(oldPassword)
 	{

@@ -3668,6 +3668,13 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
         {
             return true;
         }
+        else if ("on_need_update_app" == message_name)
+        {
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_ON_NEED_UPDATE_APP);
+            pEvent->m_pData = new NSEditorApi::CAscUpdateApp();
+            pListener->OnEvent(pEvent);
+            return true;
+        }
 
         CAscApplicationManager_Private* pInternalMan = m_pParent->GetAppManager()->m_pInternal;
         if (pInternalMan->m_pAdditional && pInternalMan->m_pAdditional->OnProcessMessageReceived(browser, source_process, message, m_pParent))
@@ -4019,12 +4026,17 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
                 CefString cefFile = CefURIDecode(cefUrl, false, static_cast<cef_uri_unescape_rule_t>(nFlag));
 
                 std::wstring sBinaryFile = cefFile.ToWString().substr(19);
+                bool bIsCheck = true;
                 if (0 == sBinaryFile.find(L"fonts_thumbnail"))
                 {
                     sBinaryFile = (m_pParent->GetAppManager()->m_oSettings.fonts_cache_info_path + L"/" + NSFile::GetFileName(sBinaryFile));
                     while (!NSFile::CFileBinary::Exists(sBinaryFile) && m_pParent->GetAppManager()->m_pInternal->IsRunned())
                         NSThreads::Sleep(100);
+                    bIsCheck = false;
                 }
+
+                if (bIsCheck && !m_pParent->GetAppManager()->IsResolveLocalFile(sBinaryFile))
+                    return NULL;
 
                 // check on recovery folder!!!
                 return GetLocalFileRequest2(sBinaryFile);
@@ -4632,26 +4644,17 @@ require.load = function (context, moduleName, url) {\n\
 
         if (0 != arFiles.size())
         {
-            std::string sCode = "[";
+            // нельзя напрямую - нужно скрыть добавление в resolver
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("set_drop_files");
+            int nIndex = 0;
             for (std::vector<CefString>::iterator i = arFiles.begin(); i != arFiles.end(); i++)
             {
-                std::string sFile = (*i).ToString();
-                NSStringUtils::string_replaceA(sFile, "\\", "/");
-                sCode += "\"";
-                sCode += sFile;
-                sCode += "\",";
+                std::wstring sFile = (*i).ToWString();
+                NSStringUtils::string_replace(sFile, L"\\", L"/");
+                m_pParent->GetAppManager()->AddFileToLocalResolver(sFile);
+                message->GetArgumentList()->SetString(nIndex++, sFile);
             }
-            ((char*)sCode.c_str())[sCode.length() - 1] = ']';
-
-            std::vector<int64> arFramesIds;
-            browser->GetFrameIdentifiers(arFramesIds);
-
-            for (std::vector<int64>::iterator i = arFramesIds.begin(); i != arFramesIds.end(); i++)
-            {
-                CefRefPtr<CefFrame> _frame = browser->GetFrame(*i);
-                if (_frame)
-                    _frame->ExecuteJavaScript("window.AscDesktopEditor.SetDropFiles(" + sCode + ");", _frame->GetURL(), 0);
-            }
+            SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
         }
 
         // разруливаем на стороне js
@@ -5855,6 +5858,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                     sPath = arPaths[0];
             }
 
+            m_pInternal->m_pManager->AddFileToLocalResolver(sPath);
             message->GetArgumentList()->SetString(0, sPath);
             SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
             break;
@@ -5901,7 +5905,10 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                 {
                     std::wstring sPathRet = pData->get_Path();
                     if (!sPathRet.empty())
+                    {
+                        m_pInternal->m_pManager->AddFileToLocalResolver(sPathRet);
                         file_paths.push_back(sPathRet);
+                    }
                 }
                 else
                 {
@@ -5912,14 +5919,20 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                         {
                             std::wstring sPathRet = *i;
                             if (!sPathRet.empty())
+                            {
+                                m_pInternal->m_pManager->AddFileToLocalResolver(sPathRet);
                                 file_paths.push_back(sPathRet);
+                            }
                         }
                     }
                     else
                     {
                         std::wstring sPathRet = pData->get_Path();
                         if (!sPathRet.empty())
+                        {
+                            m_pInternal->m_pManager->AddFileToLocalResolver(sPathRet);
                             file_paths.push_back(sPathRet);
+                        }
                     }
                 }
 
@@ -5937,6 +5950,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 
             if (!pData->get_IsMultiselect())
             {
+                m_pInternal->m_pManager->AddFileToLocalResolver(pData->get_Path());
                 message->GetArgumentList()->SetString(2, pData->get_Path());
             }
             else
@@ -5948,6 +5962,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                 {
                     for (std::vector<std::wstring>::iterator i = arPaths.begin(); i != arPaths.end(); i++)
                     {
+                        m_pInternal->m_pManager->AddFileToLocalResolver(*i);
                         message->GetArgumentList()->SetString(nIndex++, *i);
                     }
                 }
@@ -5955,7 +5970,10 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
                 {
                     std::wstring sPath1 = pData->get_Path();
                     if (!sPath1.empty())
+                    {
+                        m_pInternal->m_pManager->AddFileToLocalResolver(sPath1);
                         message->GetArgumentList()->SetString(nIndex++, sPath1);
+                    }
                 }
             }
 
