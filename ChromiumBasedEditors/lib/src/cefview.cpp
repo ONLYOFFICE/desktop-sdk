@@ -1648,6 +1648,11 @@ public:
 
         // определяем, редактор ли это
         bool bIsEditor = (sUrlLower.find(L"files/doceditor.aspx?fileid") == std::wstring::npos) ? false : true;
+        if (!bIsEditor)
+        {
+            // есть еще actions...
+            bIsEditor = (sUrlLower.find(L"files/httphandlers/filehandler.ashx?action=") == std::wstring::npos) ? false : true;
+        }
 
         if (!bIsEditor && m_pParent->m_pInternal->m_bIsExternalCloud)
         {
