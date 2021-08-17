@@ -632,18 +632,10 @@ std::wstring CAscApplicationManager::GetNewFilePath(const int& nFileFormat)
     {
         sPrefix += L"/";
     }
-    else if (L"en-EN" == sPrefix && NSDirectory::Exists(m_oSettings.file_converter_path + L"/empty/en-US"))
+    else
     {
         // поддержка en-EN (в документах есть en-GB и en-US)
         sPrefix = L"en-US/";
-    }
-    else
-    {
-        sPrefix = L"mm_";
-        if ("US" == sCountry || "CA" == sCountry)
-        {
-            sPrefix = L"in_";
-        }
     }
 
     std::wstring sFilePath = m_oSettings.file_converter_path + L"/empty/" + sPrefix + L"new.";
