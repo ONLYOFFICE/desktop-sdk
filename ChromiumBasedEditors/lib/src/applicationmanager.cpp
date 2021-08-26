@@ -634,11 +634,8 @@ std::wstring CAscApplicationManager::GetNewFilePath(const int& nFileFormat)
     }
     else
     {
-        sPrefix = L"mm_";
-        if ("US" == sCountry || "CA" == sCountry)
-        {
-            sPrefix = L"in_";
-        }
+        // поддержка en-EN (в документах есть en-GB и en-US)
+        sPrefix = L"en-US/";
     }
 
     std::wstring sFilePath = m_oSettings.file_converter_path + L"/empty/" + sPrefix + L"new.";

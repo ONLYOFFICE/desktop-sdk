@@ -430,6 +430,31 @@ public:
     void AddTask(const int& nParentId, const std::string& sTask, int_64_type nId)
     {
         CTemporaryCS oCS(&m_oCS);
+
+        if (sTask == "clear")
+        {
+            // нужно удалить все задачи для этого редактора
+            std::list<std::string>::iterator iterTask = m_arTask.begin();
+            std::list<int>::iterator iterTaskParent = m_arTaskParent.begin();
+            std::list<int_64_type>::iterator iterTaskParentFrame = m_arTaskParentFrameId.begin();
+
+            while (iterTaskParent != m_arTaskParent.end())
+            {
+                if (*iterTaskParent == nParentId)
+                {
+                    iterTask = m_arTask.erase(iterTask);
+                    iterTaskParent = m_arTaskParent.erase(iterTaskParent);
+                    iterTaskParentFrame = m_arTaskParentFrameId.erase(iterTaskParentFrame);
+                }
+                else
+                {
+                    iterTask++;
+                    iterTaskParent++;
+                    iterTaskParentFrame++;
+                }
+            }
+        }
+
         m_arTask.push_back(sTask);
         m_arTaskParent.push_back(nParentId);
         m_arTaskParentFrameId.push_back(nId);
@@ -471,6 +496,19 @@ public:
         fprintf(ff, "\n");
         fclose(ff);
 #endif
+
+        if ("clear" == sTask)
+        {
+            NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
+            NSEditorApi::CAscSpellCheckType* pData = new NSEditorApi::CAscSpellCheckType();
+            pData->put_EditorId(nParentId);
+            pData->put_FrameId(nFrameId);
+            pData->put_Result("\"clear\"");
+            pEvent->m_pData = pData;
+            pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_SPELLCHECK;
+            m_pManager->Apply(pEvent);
+            return;
+        }
 
         CJsonSpellParser oParser;
         oParser.Parse(sTask);

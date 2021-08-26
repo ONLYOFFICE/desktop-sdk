@@ -100,8 +100,7 @@ SOURCES += \
     $$CORE_ROOT_DIR/Common/OfficeFileFormatChecker2.cpp \
     $$CORE_ROOT_DIR/Common/3dParty/pole/pole.cpp \
     $$CORE_ROOT_DIR/Common/DocxFormat/Source/Base/unicode_util.cpp \
-    $$CORE_ROOT_DIR/HtmlRenderer/src/ASCSVGWriter.cpp \
-    $$CORE_ROOT_DIR/DesktopEditor/fontengine/ApplicationFontsWorker.cpp
+    $$CORE_ROOT_DIR/HtmlRenderer/src/ASCSVGWriter.cpp
 
 # crypto ----------------------------------
 LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lCryptoPPLib
