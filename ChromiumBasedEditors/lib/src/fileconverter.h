@@ -766,7 +766,8 @@ public:
 
         int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileForParams, m_pManager, m_pManager->m_pInternal->m_bIsEnableConvertLogs);
 
-        NSFile::CFileBinary::Remove(sTempFileForParams);
+        if (!m_pManager->m_pInternal->m_bDebugInfoSupport)
+            NSFile::CFileBinary::Remove(sTempFileForParams);
 
         if (0 == nReturnCode)
             CheckSignatures(sDestinationPath);
@@ -1081,10 +1082,7 @@ public:
         oBuilder.WriteString(L"<m_nDoctParams>1</m_nDoctParams>");
 
         // tmp dir
-        std::wstring sDstTmpDir = NSFile::CFileBinary::CreateTempFileWithUniqueName(m_oInfo.m_sRecoveryDir, L"XT_");
-        if (NSFile::CFileBinary::Exists(sDstTmpDir))
-            NSFile::CFileBinary::Remove(sDstTmpDir);
-        NSDirectory::CreateDirectory(sDstTmpDir);
+        std::wstring sDstTmpDir = NSDirectory::CreateDirectoryWithUniqueName(m_oInfo.m_sRecoveryDir);
 
         oBuilder.WriteString(L"<m_sTempDir>");
         oBuilder.WriteEncodeXmlString(sDstTmpDir);
@@ -1122,8 +1120,11 @@ public:
         m_sOriginalFileNameCrossPlatform = L"";
         m_bIsRetina = false;
 
-        NSFile::CFileBinary::Remove(sTempFileForParams);
-        NSDirectory::DeleteDirectory(sDstTmpDir);
+        if (!m_pManager->m_pInternal->m_bDebugInfoSupport)
+        {
+            NSFile::CFileBinary::Remove(sTempFileForParams);
+            NSDirectory::DeleteDirectory(sDstTmpDir);
+        }
 
         m_pEvents->OnFileConvertFromEditor(nReturnCode, m_oInfo.m_sPassword);
 

@@ -148,6 +148,11 @@ public:
         read_binary_file(sCopy, false);
     }
 
+    virtual void ReleaseWrapper()
+    {
+        this->Release();
+    }
+
     virtual bool ProcessRequest(CefRefPtr<CefRequest> request,
                               CefRefPtr<CefCallback> callback)
                               OVERRIDE
@@ -199,6 +204,7 @@ public:
                 sFile = (m_pManager->m_oSettings.fonts_cache_info_path + L"/" + NSFile::GetFileName(sFile));
                 if (!NSFile::CFileBinary::Exists(sFile))
                 {
+                    this->AddRef();
                     NSResourceHandlerFileAsyncManager::Create(this, sFile, callback);
                     return true;
                 }
