@@ -3497,6 +3497,11 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
             retval->SetValue(2, CefV8Value::CreateDouble(2));
             return true;
         }
+        else if (name == "GetFontThumbnailHeight")
+        {
+            retval = CefV8Value::CreateInt(28);
+            return true;
+        }
 
         // Function does not exist.
         return false;
@@ -3878,7 +3883,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
 
-    #define EXTEND_METHODS_COUNT 157
+    #define EXTEND_METHODS_COUNT 158
     const char* methods[EXTEND_METHODS_COUNT] = {
         "Copy",
         "Paste",
@@ -4092,6 +4097,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         "cloudCryptoCommand",
 
         "GetSupportedScaleValues",
+        "GetFontThumbnailHeight",
 
         NULL
     };
