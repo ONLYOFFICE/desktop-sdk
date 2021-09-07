@@ -1290,6 +1290,9 @@ public:
     // не даем грузить любые локальные файлы
     NSSystem::CLocalFilesResolver m_oLocalFilesResolver;
 
+    // json, отправляемый в процесс рендерера
+    std::wstring m_sRendererJSON;
+
 public:
     IMPLEMENT_REFCOUNTING(CAscApplicationManager_Private);
 

@@ -452,6 +452,8 @@ public:
 
     std::wstring m_sAppTmpFolder;
 
+    std::wstring m_sRendererProcessVariable;
+
     // для преобразования внутренняя ссылка => внешняя при скачивании
     std::wstring m_sEditorPageDomain;
     std::wstring m_sInternalEditorPageDomain;
@@ -486,6 +488,8 @@ public:
 
         m_bIsEnableUploadCrypto = false;
         m_oCompleteTasksCS.InitializeCriticalSection();
+
+        m_sRendererProcessVariable = L"";
 
         CheckDefaults();
 
@@ -529,6 +533,7 @@ public:
             NSFile::CFileBinary::SetTempPath(m_sAppTmpFolder);
 
         m_sRecoversFolder = default_params.GetValueW("recovers_folder");
+        m_sRendererProcessVariable = default_params.GetValueW("renderer_process_variable");
 #if 0
         default_params.Print();
 #endif
@@ -4140,6 +4145,10 @@ document.getElementsByTagName(\"head\")[0].appendChild(_style);\n\
 }, false);\n\
 \n\
 window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
+
+        std::string sVar = pWrapper->m_sRendererProcessVariable.empty() ? "{}" : U_TO_UTF8(pWrapper->m_sRendererProcessVariable);
+        NSStringUtils::string_replaceA(sVar, "\n", "");
+        curFrame->ExecuteJavaScript("window.RendererProcessVariable = " + sVar + ";", curFrame->GetURL(), 0);
     }
 
     CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_js_context_created");

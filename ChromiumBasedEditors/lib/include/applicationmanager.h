@@ -279,6 +279,8 @@ public:
     bool IsResolveLocalFile(const std::wstring& sFile);
     void AddFileToLocalResolver(const std::wstring& sFile);
 
+    void SetRendererProcessVariable(const std::wstring& sVariable);
+
 protected:
     int GenerateNextViewId();
     virtual CAscDpiChecker* InitDpiChecker();

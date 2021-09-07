@@ -1154,6 +1154,7 @@ std::vector<std::string> CAscApplicationManager::GetRendererStartupProperties()
     props.push_back("fonts_cache_path=" + U_TO_UTF8(m_oSettings.fonts_cache_info_path));
     props.push_back("tmp_folder=" + U_TO_UTF8(m_pInternal->StartTmpDirectory()));
     props.push_back("recovers_folder=" + U_TO_UTF8(m_oSettings.recover_path));
+    props.push_back("renderer_process_variable=" + U_TO_UTF8(m_pInternal->m_sRendererJSON));
 
     return props;
 }
@@ -1173,4 +1174,9 @@ bool CAscApplicationManager::IsResolveLocalFile(const std::wstring& sFile)
 void CAscApplicationManager::AddFileToLocalResolver(const std::wstring& sFile)
 {
     return m_pInternal->m_oLocalFilesResolver.AddFile(sFile);
+}
+
+void CAscApplicationManager::SetRendererProcessVariable(const std::wstring& sVariable)
+{
+    m_pInternal->m_sRendererJSON = sVariable;
 }
