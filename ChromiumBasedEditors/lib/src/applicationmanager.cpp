@@ -1071,8 +1071,9 @@ NSAscCrypto::CAscKeychain* CAscApplicationManager::GetKeychainEngine()
 
 /////////////////////////////////////////////////////////////
 
-CAscDpiChecker::CAscDpiChecker()
+CAscDpiChecker::CAscDpiChecker(CAscApplicationManager* pManager)
 {
+    m_pManager = pManager;
 }
 CAscDpiChecker::~CAscDpiChecker()
 {
@@ -1111,6 +1112,19 @@ double CAscDpiChecker::GetScale(unsigned int dpiX, unsigned int dpiY)
     return dRetValue;
 }
 
+double CAscDpiChecker::GetForceScale(unsigned int* dpix, unsigned int* dpiy)
+{
+    if (!m_pManager)
+        return -1;
+    if (m_pManager->m_pInternal->m_dForceDisplayScale < 0)
+        return -1;
+
+    double dScale = m_pManager->m_pInternal->m_dForceDisplayScale;
+    if (dpix) *dpix = (unsigned int)(dScale * 96);
+    if (dpiy) *dpiy = (unsigned int)(dScale * 96);
+    return dScale;
+}
+
 CAscDpiChecker* CAscApplicationManager_Private::m_pDpiChecker = NULL;
 
 CAscDpiChecker* CAscApplicationManager::GetDpiChecker()
@@ -1120,7 +1134,7 @@ CAscDpiChecker* CAscApplicationManager::GetDpiChecker()
 CAscDpiChecker* CAscApplicationManager::InitDpiChecker()
 {
 #ifdef WIN32
-    return new CAscDpiChecker();
+    return new CAscDpiChecker(this);
 #else
     return NULL;
 #endif

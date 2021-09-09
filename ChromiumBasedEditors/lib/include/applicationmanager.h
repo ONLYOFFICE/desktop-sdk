@@ -133,10 +133,11 @@ public:
     }
 };
 
+class CAscApplicationManager;
 class DESKTOP_DECL CAscDpiChecker
 {
 public:
-    CAscDpiChecker();
+    CAscDpiChecker(CAscApplicationManager* pManager);
     virtual ~CAscDpiChecker();
 
     virtual int GetWindowDpi(WindowHandleId, unsigned int*, unsigned int*);
@@ -144,6 +145,11 @@ public:
     virtual int GetWidgetImplDpi(CCefViewWidgetImpl*, unsigned int*, unsigned int*);
 
     virtual double GetScale(unsigned int, unsigned int);
+
+    double GetForceScale(unsigned int*, unsigned int*);
+
+private:
+    CAscApplicationManager* m_pManager;
 };
 
 class IExternalMessageLoop
@@ -296,6 +302,7 @@ protected:
     friend class CASCFileConverterToEditor;
     friend class CApplicationCEF;
     friend class CUserSettings;
+    friend class CAscDpiChecker;
 };
 
 #endif // APPLICATION_MANAGER_H
