@@ -4692,6 +4692,7 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
             std::wstring sPath = message->GetArgumentList()->GetString(2).ToWString();
             g_pLocalResolver->AddFile(sPath);
             NSStringUtils::string_replace(sPath, L"\\", L"\\\\");
+            NSStringUtils::string_replace(sPath, L"\"", L"\\\"");
             sParamCallback = L"\"" + sPath + L"\"";
         }
         else
@@ -4704,6 +4705,7 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
                 std::wstring sPath = message->GetArgumentList()->GetString(nIndex).ToWString();
                 g_pLocalResolver->AddFile(sPath);
                 NSStringUtils::string_replace(sPath, L"\\", L"\\\\");
+                NSStringUtils::string_replace(sPath, L"\"", L"\\\"");
                 sParamCallback += (L"\"" + sPath + L"\"");
 
                 if (nIndex < (nCount - 1))
