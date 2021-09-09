@@ -1360,7 +1360,8 @@ public:
 
             if (!bEncryption)
             {
-                arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA);
+                if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat != AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF)
+                    arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA);
             }
         }
     }
