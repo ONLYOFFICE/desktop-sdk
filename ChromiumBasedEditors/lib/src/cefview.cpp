@@ -6763,7 +6763,7 @@ bool CCefViewEditor::IsBuilding()
         return true;
 
     // вставляем сюда и сохранение
-    if (m_pInternal->m_oConverterFromEditor.IsRunned())
+    if (m_pInternal->m_oConverterFromEditor.IsWorking())
         return true;
 
     return false;
