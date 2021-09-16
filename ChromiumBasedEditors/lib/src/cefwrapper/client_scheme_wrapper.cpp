@@ -63,6 +63,8 @@ std::string GetMimeTypeFromExt(const std::wstring& sFile)
         return "image/png";
     if (sExt == L"jpg" || sExt == L"jpeg")
         return "image/jpeg";
+    if (sExt == L"svg")
+        return "image/svg+xml";
 
     return "*/*";
 }
