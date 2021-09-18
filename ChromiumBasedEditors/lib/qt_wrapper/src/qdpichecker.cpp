@@ -41,13 +41,24 @@
 #include <QX11Info>
 #endif
 
+QDpiChecker::QDpiChecker(CAscApplicationManager* pManager) : CAscDpiChecker(pManager)
+{
+}
+
 int QDpiChecker::GetWindowDpi(WindowHandleId wid, unsigned int* dx, unsigned int* dy)
 {
+    double dForceScale = GetForceScale(dx, dy);
+    if (dForceScale > 0)
+        return 0;
     return CAscDpiChecker::GetWindowDpi(wid, dx, dy);
 }
 
 int QDpiChecker::GetMonitorDpi(int nScreenNumber, unsigned int* dx, unsigned int* dy)
 {
+    double dForceScale = GetForceScale(dx, dy);
+    if (dForceScale > 0)
+        return 0;
+
     int nBaseRet = CAscDpiChecker::GetMonitorDpi(nScreenNumber, dx, dy);
     if (-1 != nBaseRet)
         return nBaseRet;
@@ -100,6 +111,10 @@ int QDpiChecker::GetWidgetImplDpi(CCefViewWidgetImpl* w, unsigned int* dx, unsig
 
 int QDpiChecker::GetWidgetDpi(QWidget* w, unsigned int* dx, unsigned int* dy)
 {
+    double dForceScale = GetForceScale(dx, dy);
+    if (dForceScale > 0)
+        return 0;
+
     QDesktopWidget* pDesktop = QApplication::desktop();
     if (!pDesktop && (0 == pDesktop->screenCount()))
     {

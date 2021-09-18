@@ -63,6 +63,8 @@ std::string GetMimeTypeFromExt(const std::wstring& sFile)
         return "image/png";
     if (sExt == L"jpg" || sExt == L"jpeg")
         return "image/jpeg";
+    if (sExt == L"svg")
+        return "image/svg+xml";
 
     return "*/*";
 }
@@ -148,6 +150,11 @@ public:
         read_binary_file(sCopy, false);
     }
 
+    virtual void ReleaseWrapper()
+    {
+        this->Release();
+    }
+
     virtual bool ProcessRequest(CefRefPtr<CefRequest> request,
                               CefRefPtr<CefCallback> callback)
                               OVERRIDE
@@ -199,6 +206,7 @@ public:
                 sFile = (m_pManager->m_oSettings.fonts_cache_info_path + L"/" + NSFile::GetFileName(sFile));
                 if (!NSFile::CFileBinary::Exists(sFile))
                 {
+                    this->AddRef();
                     NSResourceHandlerFileAsyncManager::Create(this, sFile, callback);
                     return true;
                 }

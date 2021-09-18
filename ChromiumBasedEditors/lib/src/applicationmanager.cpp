@@ -1071,8 +1071,9 @@ NSAscCrypto::CAscKeychain* CAscApplicationManager::GetKeychainEngine()
 
 /////////////////////////////////////////////////////////////
 
-CAscDpiChecker::CAscDpiChecker()
+CAscDpiChecker::CAscDpiChecker(CAscApplicationManager* pManager)
 {
+    m_pManager = pManager;
 }
 CAscDpiChecker::~CAscDpiChecker()
 {
@@ -1111,6 +1112,19 @@ double CAscDpiChecker::GetScale(unsigned int dpiX, unsigned int dpiY)
     return dRetValue;
 }
 
+double CAscDpiChecker::GetForceScale(unsigned int* dpix, unsigned int* dpiy)
+{
+    if (!m_pManager)
+        return -1;
+    if (m_pManager->m_pInternal->m_dForceDisplayScale < 0)
+        return -1;
+
+    double dScale = m_pManager->m_pInternal->m_dForceDisplayScale;
+    if (dpix) *dpix = (unsigned int)(dScale * 96);
+    if (dpiy) *dpiy = (unsigned int)(dScale * 96);
+    return dScale;
+}
+
 CAscDpiChecker* CAscApplicationManager_Private::m_pDpiChecker = NULL;
 
 CAscDpiChecker* CAscApplicationManager::GetDpiChecker()
@@ -1120,7 +1134,7 @@ CAscDpiChecker* CAscApplicationManager::GetDpiChecker()
 CAscDpiChecker* CAscApplicationManager::InitDpiChecker()
 {
 #ifdef WIN32
-    return new CAscDpiChecker();
+    return new CAscDpiChecker(this);
 #else
     return NULL;
 #endif
@@ -1154,6 +1168,7 @@ std::vector<std::string> CAscApplicationManager::GetRendererStartupProperties()
     props.push_back("fonts_cache_path=" + U_TO_UTF8(m_oSettings.fonts_cache_info_path));
     props.push_back("tmp_folder=" + U_TO_UTF8(m_pInternal->StartTmpDirectory()));
     props.push_back("recovers_folder=" + U_TO_UTF8(m_oSettings.recover_path));
+    props.push_back("renderer_process_variable=" + U_TO_UTF8(m_pInternal->m_sRendererJSON));
 
     return props;
 }
@@ -1173,4 +1188,9 @@ bool CAscApplicationManager::IsResolveLocalFile(const std::wstring& sFile)
 void CAscApplicationManager::AddFileToLocalResolver(const std::wstring& sFile)
 {
     return m_pInternal->m_oLocalFilesResolver.AddFile(sFile);
+}
+
+void CAscApplicationManager::SetRendererProcessVariable(const std::wstring& sVariable)
+{
+    m_pInternal->m_sRendererJSON = sVariable;
 }

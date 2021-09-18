@@ -260,7 +260,9 @@ public:
             command_line->AppendSwitchWithValue("--password-store", "basic");
 #endif
 
+#ifndef ENABLE_CEF_EXTENSIONS
             command_line->AppendSwitch("--disable-extensions");
+#endif
             command_line->AppendSwitch("--disable-plugins");
             command_line->AppendSwitch("--enable-file-cookies");
             command_line->AppendSwitch("--disable-pinch");
@@ -366,7 +368,9 @@ public:
             }
 #endif
 
+#ifndef ENABLE_CEF_EXTENSIONS
             command_line->AppendSwitch("--disable-extensions");
+#endif
             command_line->AppendSwitch("--disable-plugins");
             command_line->AppendSwitch("--enable-file-cookies");
             command_line->AppendSwitch("--disable-pinch");
@@ -426,7 +430,9 @@ public:
             }
 #endif
 
+#ifndef ENABLE_CEF_EXTENSIONS
             command_line->AppendSwitch("--disable-extensions");
+#endif
             command_line->AppendSwitch("--disable-plugins");
             command_line->AppendSwitch("--enable-file-cookies");
             command_line->AppendSwitch("--disable-pinch");

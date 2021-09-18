@@ -39,6 +39,7 @@ class CResourceHandlerFileAsyncCallback
 {
 public:
     virtual void OnAsyncComplete(const std::wstring& sFile) = 0;
+    virtual void ReleaseWrapper() = 0;
 };
 
 namespace NSResourceHandlerFileAsyncManager

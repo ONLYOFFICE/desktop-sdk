@@ -34,6 +34,7 @@ build_xp {
     include($$CEF_PROJECT_PRI/cef_client_xp.pri)
     DESTDIR=$$DESTDIR/xp
 } else {
+    DEFINES += ENABLE_CEF_EXTENSIONS
     !core_linux {
         DEFINES += CEF_VERSION_ABOVE_86
         CEF_PROJECT_PRI=$$PWD/cef_pri_87
