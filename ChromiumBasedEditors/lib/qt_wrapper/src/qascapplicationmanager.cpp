@@ -39,7 +39,7 @@ QAscApplicationManager::~QAscApplicationManager() {}
 
 CAscDpiChecker* QAscApplicationManager::InitDpiChecker()
 {
-    return new QDpiChecker();
+    return new QDpiChecker(this);
 }
 IExternalMessageLoop* QAscApplicationManager::GetExternalMessageLoop()
 {
