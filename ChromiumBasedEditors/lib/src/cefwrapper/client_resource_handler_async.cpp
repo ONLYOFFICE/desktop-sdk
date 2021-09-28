@@ -58,6 +58,10 @@ public:
         SetInterval(100);
         Start(0);
     }
+    virtual ~CResourceHandlerFileAsync()
+    {
+        m_handler->ReleaseWrapper();
+    }
 
     virtual void OnTimer();
 };
@@ -114,8 +118,8 @@ public:
             if (handler->m_nId == nId)
             {
                 m_handlers.erase(i);
-                handler->Stop();
-                delete handler;
+                handler->StopNoJoin();
+                handler->DestroyOnFinish();
                 break;
             }
         }

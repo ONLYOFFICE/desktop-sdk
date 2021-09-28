@@ -1360,7 +1360,8 @@ public:
 
             if (!bEncryption)
             {
-                arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA);
+                if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat != AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF)
+                    arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA);
             }
         }
     }
@@ -6762,7 +6763,7 @@ bool CCefViewEditor::IsBuilding()
         return true;
 
     // вставляем сюда и сохранение
-    if (m_pInternal->m_oConverterFromEditor.IsRunned())
+    if (m_pInternal->m_oConverterFromEditor.IsWorking())
         return true;
 
     return false;

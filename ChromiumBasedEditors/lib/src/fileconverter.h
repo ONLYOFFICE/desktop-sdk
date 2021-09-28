@@ -766,7 +766,8 @@ public:
 
         int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileForParams, m_pManager, m_pManager->m_pInternal->m_bIsEnableConvertLogs);
 
-        NSFile::CFileBinary::Remove(sTempFileForParams);
+        if (!m_pManager->m_pInternal->m_bDebugInfoSupport)
+            NSFile::CFileBinary::Remove(sTempFileForParams);
 
         if (0 == nReturnCode)
             CheckSignatures(sDestinationPath);
@@ -950,6 +951,7 @@ public:
     CAscApplicationManager* m_pManager;
 
     bool m_bIsEditorWithChanges;
+    bool m_bIsWorking; // not m_bIsRunned
 
 public:
     CASCFileConverterFromEditor() : NSThreads::CBaseThread()
@@ -957,6 +959,20 @@ public:
         m_bIsRetina = false;
         m_nTypeEditorFormat = -1;
         m_bIsEditorWithChanges = false;
+        m_bIsWorking = false;
+    }
+    virtual void Start(int lPriority)
+    {
+        if (m_bRunThread)
+            return;
+        m_bIsWorking = true;
+        NSThreads::CBaseThread::Start(lPriority);
+    }
+    bool IsWorking()
+    {
+        // эта функция, чтобы знать на ONSAVE - идет ли работа.
+        // m_bIsRunThread сбросится позже
+        return m_bIsWorking;
     }
     virtual ~CASCFileConverterFromEditor()
     {
@@ -1081,10 +1097,7 @@ public:
         oBuilder.WriteString(L"<m_nDoctParams>1</m_nDoctParams>");
 
         // tmp dir
-        std::wstring sDstTmpDir = NSFile::CFileBinary::CreateTempFileWithUniqueName(m_oInfo.m_sRecoveryDir, L"XT_");
-        if (NSFile::CFileBinary::Exists(sDstTmpDir))
-            NSFile::CFileBinary::Remove(sDstTmpDir);
-        NSDirectory::CreateDirectory(sDstTmpDir);
+        std::wstring sDstTmpDir = NSDirectory::CreateDirectoryWithUniqueName(m_oInfo.m_sRecoveryDir);
 
         oBuilder.WriteString(L"<m_sTempDir>");
         oBuilder.WriteEncodeXmlString(sDstTmpDir);
@@ -1102,6 +1115,7 @@ public:
         if (!m_pManager->m_pInternal->GetEditorPermission())
         {
             // return!
+            m_bIsWorking = false;
             m_pEvents->OnFileConvertFromEditor(ASC_CONSTANT_CANCEL_SAVE);
             m_bRunThread = FALSE;
             return 0;
@@ -1122,9 +1136,13 @@ public:
         m_sOriginalFileNameCrossPlatform = L"";
         m_bIsRetina = false;
 
-        NSFile::CFileBinary::Remove(sTempFileForParams);
-        NSDirectory::DeleteDirectory(sDstTmpDir);
+        if (!m_pManager->m_pInternal->m_bDebugInfoSupport)
+        {
+            NSFile::CFileBinary::Remove(sTempFileForParams);
+            NSDirectory::DeleteDirectory(sDstTmpDir);
+        }
 
+        m_bIsWorking = false;
         m_pEvents->OnFileConvertFromEditor(nReturnCode, m_oInfo.m_sPassword);
 
         if (m_pManager->m_pInternal->m_pAdditional)
@@ -1363,6 +1381,16 @@ public:
             oBuilder.WriteString(UTF8_TO_U(m_sOutputParams));
             oBuilder.WriteString(L"<m_bIsNoBase64>false</m_bIsNoBase64>");
 
+            oBuilder.WriteString(L"<m_sAllFontsPath>");
+            oBuilder.WriteEncodeXmlString(m_pManager->m_oSettings.fonts_cache_info_path);
+            oBuilder.WriteString(L"/AllFonts.js</m_sAllFontsPath>");
+
+            std::wstring sDstTmpDir = NSDirectory::CreateDirectoryWithUniqueName(m_sRecoverFolder);
+
+            oBuilder.WriteString(L"<m_sTempDir>");
+            oBuilder.WriteEncodeXmlString(sDstTmpDir);
+            oBuilder.WriteString(L"</m_sTempDir>");
+
             if (!sAdditionXml.empty())
                 oBuilder.WriteString(sAdditionXml);
 
@@ -1372,7 +1400,9 @@ public:
             NSFile::CFileBinary::SaveToFile(sTempFileForParams, oBuilder.GetData(), true);
 
             nReturnCode = NSX2T::Convert(m_pManager->m_oSettings.file_converter_path + L"/x2t", sTempFileForParams, m_pManager, m_bIsLogs);
+
             NSFile::CFileBinary::Remove(sTempFileForParams);
+            NSDirectory::DeleteDirectory(sDstTmpDir);
         }
 
         m_pEvents->OnFileConvertFromEditor(nReturnCode);

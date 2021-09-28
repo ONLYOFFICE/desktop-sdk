@@ -452,6 +452,8 @@ public:
 
     std::wstring m_sAppTmpFolder;
 
+    std::wstring m_sRendererProcessVariable;
+
     // для преобразования внутренняя ссылка => внешняя при скачивании
     std::wstring m_sEditorPageDomain;
     std::wstring m_sInternalEditorPageDomain;
@@ -486,6 +488,8 @@ public:
 
         m_bIsEnableUploadCrypto = false;
         m_oCompleteTasksCS.InitializeCriticalSection();
+
+        m_sRendererProcessVariable = L"";
 
         CheckDefaults();
 
@@ -529,6 +533,7 @@ public:
             NSFile::CFileBinary::SetTempPath(m_sAppTmpFolder);
 
         m_sRecoversFolder = default_params.GetValueW("recovers_folder");
+        m_sRendererProcessVariable = default_params.GetValueW("renderer_process_variable");
 #if 0
         default_params.Print();
 #endif
@@ -3497,6 +3502,11 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
             retval->SetValue(2, CefV8Value::CreateDouble(2));
             return true;
         }
+        else if (name == "GetFontThumbnailHeight")
+        {
+            retval = CefV8Value::CreateInt(28);
+            return true;
+        }
 
         // Function does not exist.
         return false;
@@ -3878,7 +3888,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
 
-    #define EXTEND_METHODS_COUNT 157
+    #define EXTEND_METHODS_COUNT 158
     const char* methods[EXTEND_METHODS_COUNT] = {
         "Copy",
         "Paste",
@@ -4092,6 +4102,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         "cloudCryptoCommand",
 
         "GetSupportedScaleValues",
+        "GetFontThumbnailHeight",
 
         NULL
     };
@@ -4134,6 +4145,10 @@ document.getElementsByTagName(\"head\")[0].appendChild(_style);\n\
 }, false);\n\
 \n\
 window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
+
+        std::string sVar = pWrapper->m_sRendererProcessVariable.empty() ? "{}" : U_TO_UTF8(pWrapper->m_sRendererProcessVariable);
+        NSStringUtils::string_replaceA(sVar, "\n", "");
+        curFrame->ExecuteJavaScript("window.RendererProcessVariable = " + sVar + ";", curFrame->GetURL(), 0);
     }
 
     CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_js_context_created");
@@ -4677,6 +4692,7 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
             std::wstring sPath = message->GetArgumentList()->GetString(2).ToWString();
             g_pLocalResolver->AddFile(sPath);
             NSStringUtils::string_replace(sPath, L"\\", L"\\\\");
+            NSStringUtils::string_replace(sPath, L"\"", L"\\\"");
             sParamCallback = L"\"" + sPath + L"\"";
         }
         else
@@ -4689,6 +4705,7 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
                 std::wstring sPath = message->GetArgumentList()->GetString(nIndex).ToWString();
                 g_pLocalResolver->AddFile(sPath);
                 NSStringUtils::string_replace(sPath, L"\\", L"\\\\");
+                NSStringUtils::string_replace(sPath, L"\"", L"\\\"");
                 sParamCallback += (L"\"" + sPath + L"\"");
 
                 if (nIndex < (nCount - 1))
