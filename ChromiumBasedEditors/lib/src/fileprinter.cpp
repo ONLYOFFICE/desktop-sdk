@@ -32,11 +32,6 @@
 
 #include "./fileprinter.h"
 
-namespace agg
-{
-    const double pi = 3.14159265358979323846;
-}
-
 CPrintData::CPrintData()
 {
     m_pApplicationFonts = NULL;
