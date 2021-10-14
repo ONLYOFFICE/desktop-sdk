@@ -1646,13 +1646,18 @@ public:
             pListener = m_pParent->GetAppManager()->GetEventListener();
 
         std::wstring sUrlLower = makeLowerUrl(sUrl);
+        if (!m_pParent->m_pInternal->m_bIsExternalCloud)
+        {
+            NSStringUtils::string_replace(sUrlLower, L".aspx?", L"?");
+            NSStringUtils::string_replace(sUrlLower, L".ashx?", L"?");
+        }
 
         // определяем, редактор ли это
-        bool bIsEditor = (sUrlLower.find(L"files/doceditor.aspx?fileid") == std::wstring::npos) ? false : true;
+        bool bIsEditor = (sUrlLower.find(L"files/doceditor?fileid") == std::wstring::npos) ? false : true;
         if (!bIsEditor)
         {
             // есть еще actions...
-            bIsEditor = (sUrlLower.find(L"files/httphandlers/filehandler.ashx?action=") == std::wstring::npos) ? false : true;
+            bIsEditor = (sUrlLower.find(L"files/httphandlers/filehandler?action=") == std::wstring::npos) ? false : true;
         }
 
         if (!bIsEditor && m_pParent->m_pInternal->m_bIsExternalCloud)
@@ -1668,9 +1673,9 @@ public:
 
         // определяем
         bool bIsDownload    = false;
-        if (sUrlLower.find(L"filehandler.ashx?action=download") != std::wstring::npos)
+        if (sUrlLower.find(L"filehandler?action=download") != std::wstring::npos)
             bIsDownload     = true;
-        else if (sUrlLower.find(L"filehandler.ashx?action=view") != std::wstring::npos)
+        else if (sUrlLower.find(L"filehandler?action=view") != std::wstring::npos)
             bIsDownload     = true;
 
         if (!bIsBeforeBrowse && !bIsEditor && !bIsDownload && !bIsNotOpenLinks)
@@ -5158,6 +5163,9 @@ CCefView::~CCefView()
 void CCefView::load(const std::wstring& urlInputSrc)
 {
     std::wstring urlInput = urlInputSrc;
+
+    // заглушка, чтобы не проверять выше
+    NSStringUtils::string_replace(urlInput, L"//?desktop=true", L"/?desktop=true");
 
     bool bIsScheme = false;
     if (0 == urlInput.find(L"oo-office:"))
