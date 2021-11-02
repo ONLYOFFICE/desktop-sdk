@@ -974,6 +974,37 @@ retval, exception);
                     sPath = val->GetStringValue().ToWString();
             }
 
+            if (std::wstring::npos == sPath.find(L"_ea"))
+            {
+                std::string sMainUrl = CefV8Context::GetCurrentContext()->GetFrame()->GetURL().ToString();
+                std::string::size_type posParams = sMainUrl.find("?");
+                if (posParams != std::string::npos)
+                {
+                    std::string::size_type posLang = sMainUrl.find("lang=", posParams);
+                    if (posLang != std::string::npos)
+                    {
+                        posLang += 5;
+                        std::string::size_type posLang2 = sMainUrl.find("&", posLang);
+                        if (posLang2 == std::string::npos)
+                            posLang2 = sMainUrl.length();
+                        std::string sLang = sMainUrl.substr(posLang, posLang2 - posLang);
+
+                        std::string::size_type posSubLang = sLang.find("-");
+                        if (posSubLang != std::string::npos)
+                            sLang = sLang.substr(0, posSubLang);
+
+                        posSubLang = sLang.find("_");
+                        if (posSubLang != std::string::npos)
+                            sLang = sLang.substr(0, posSubLang);
+
+                        if ("zh" == sLang || "ja" == sLang || "ko" == sLang)
+                        {
+                            sPath = L"_ea" + sPath;
+                        }
+                    }
+                }
+            }
+
             std::wstring sUrl = L"ascdesktop://fonts/fonts_thumbnail" + sPath + L".png";
             retval = CefV8Value::CreateString(sUrl);
             return true;
