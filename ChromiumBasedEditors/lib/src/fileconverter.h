@@ -54,6 +54,8 @@ static bool IsFormatSupportCrypto(const int& nFormat)
     switch (nFormat)
     {
         case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX:
+        case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF:
+        case AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM:
         case AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX:
         case AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX:
         case AVS_OFFICESTUDIO_FILE_DOCUMENT_ODT:

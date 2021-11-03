@@ -1282,6 +1282,8 @@ public:
         if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_DOCUMENT)
         {
             arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX);
+            arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF);
+            arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM);
 
             if (!bEncryption)
             {
@@ -6503,6 +6505,10 @@ void CCefViewEditor::CreateLocalFile(const int& nFileFormat, const std::wstring&
     {
         sParams = L"placement=desktop&doctype=spreadsheet";
         m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX;
+    }
+    else if (nFileFormat == etDocumentMasterForm)
+    {
+        m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF;
     }
     
     if (!GetAppManager()->m_pInternal->GetEditorPermission())
