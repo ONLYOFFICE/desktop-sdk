@@ -3527,10 +3527,12 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
         }
         else if (name == "GetSupportedScaleValues")
         {
-            retval = CefV8Value::CreateArray(3);
+            retval = CefV8Value::CreateArray(5);
             retval->SetValue(0, CefV8Value::CreateDouble(1));
-            retval->SetValue(1, CefV8Value::CreateDouble(1.5));
-            retval->SetValue(2, CefV8Value::CreateDouble(2));
+            retval->SetValue(1, CefV8Value::CreateDouble(1.25));
+            retval->SetValue(2, CefV8Value::CreateDouble(1.5));
+            retval->SetValue(3, CefV8Value::CreateDouble(1.75));
+            retval->SetValue(4, CefV8Value::CreateDouble(2));
             return true;
         }
         else if (name == "GetFontThumbnailHeight")
