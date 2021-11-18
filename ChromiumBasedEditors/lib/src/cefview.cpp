@@ -1048,10 +1048,22 @@ public:
 
     void CheckLockLocalFile()
     {
-        if (m_oLocalInfo.m_oInfo.m_bIsSaved && NSFile::CFileBinary::Exists(m_oLocalInfo.m_oInfo.m_sFileSrc))
+        if (!m_oLocalInfo.m_oInfo.m_bIsSaved)
+            return;
+
+        if (m_oConverterFromEditor.m_bIsUseDstTempFile && NSFile::CFileBinary::Exists(m_oConverterFromEditor.m_sDstTempFile))
+        {
+            if (!m_pLocalFileLocker)
+                m_pLocalFileLocker = new NSSystem::CLocalFileLocker(L"");
+
+            m_pLocalFileLocker->CheckAfter(m_oLocalInfo.m_oInfo.m_sFileSrc, m_oConverterFromEditor.m_sDstTempFile);
+            NSFile::CFileBinary::Remove(m_oConverterFromEditor.m_sDstTempFile);
+        }
+        else if (NSFile::CFileBinary::Exists(m_oLocalInfo.m_oInfo.m_sFileSrc))
         {
             if (m_pLocalFileLocker)
                 RELEASEOBJECT(m_pLocalFileLocker);
+
             m_pLocalFileLocker = new NSSystem::CLocalFileLocker(m_oLocalInfo.m_oInfo.m_sFileSrc);
         }
     }
@@ -1229,7 +1241,6 @@ public:
 
     void LocalFile_SaveStart(std::wstring sPath = L"", int nType = -1)
     {
-        RELEASEOBJECT(m_pLocalFileLocker);
         m_oLocalInfo.SetupOptions(m_oConverterFromEditor.m_oInfo);
         m_oLocalInfo.m_oInfo.m_sDocumentInfo = L"";
 
@@ -1237,6 +1248,14 @@ public:
 
         if (!sPath.empty())
             m_oConverterFromEditor.m_oInfo.m_sFileSrc = sPath;
+
+        if (m_pLocalFileLocker->CheckBefore(m_oConverterFromEditor.m_oInfo.m_sFileSrc))
+            RELEASEOBJECT(m_pLocalFileLocker);
+
+        if (m_sCloudCryptSrc.empty())
+            m_oConverterFromEditor.m_bIsUseDstTempFile = true;
+        else
+            m_oConverterFromEditor.m_bIsUseDstTempFile = false;
 
         if (nType != -1)
             m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat = nType;
@@ -4845,7 +4864,11 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
 
     if (m_sCloudCryptSrc.empty())
     {
-        bool bIsSaved = ((0 == nError) && NSFile::CFileBinary::Exists(m_oConverterFromEditor.m_oInfo.m_sFileSrc)) ? true : false;
+        std::wstring sSavedPath = m_oConverterFromEditor.m_oInfo.m_sFileSrc;
+        if (m_oConverterFromEditor.m_bIsUseDstTempFile)
+            sSavedPath = m_oConverterFromEditor.m_sDstTempFile;
+
+        bool bIsSaved = ((0 == nError) && NSFile::CFileBinary::Exists(sSavedPath)) ? true : false;
 
         if (bIsSaved && !m_oLocalInfo.m_oInfo.m_bIsSaved)
         {

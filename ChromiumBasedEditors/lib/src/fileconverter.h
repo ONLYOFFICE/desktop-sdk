@@ -955,6 +955,10 @@ public:
     bool m_bIsEditorWithChanges;
     bool m_bIsWorking; // not m_bIsRunned
 
+    // временный путь для сохранения (чтобы делать локфайл)
+    bool m_bIsUseDstTempFile;
+    std::wstring m_sDstTempFile;
+
 public:
     CASCFileConverterFromEditor() : NSThreads::CBaseThread()
     {
@@ -962,6 +966,7 @@ public:
         m_nTypeEditorFormat = -1;
         m_bIsEditorWithChanges = false;
         m_bIsWorking = false;
+        m_bIsUseDstTempFile = false;
     }
     virtual void Start(int lPriority)
     {
@@ -991,15 +996,11 @@ public:
         }
 #endif
 
-        bool bIsUseTmpFileDst = false;
-        std::wstring sUseTmpFileDst = L"";
-        if (0 == sLocalFilePath.find(L"\\\\") || 0 == sLocalFilePath.find(L"//"))
+        if (m_bIsUseDstTempFile)
         {
-            bIsUseTmpFileDst = true;
-
-            sUseTmpFileDst = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"OL");
-            if (NSFile::CFileBinary::Exists(sUseTmpFileDst))
-                NSFile::CFileBinary::Remove(sUseTmpFileDst);
+            m_sDstTempFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"OL");
+            if (NSFile::CFileBinary::Exists(m_sDstTempFile))
+                NSFile::CFileBinary::Remove(m_sDstTempFile);
         }
 
         std::wstring sThemesPath = m_pManager->m_oSettings.local_editors_path;
@@ -1041,9 +1042,9 @@ public:
             oBuilder.WriteEncodeXmlString(sPathTmp);
             oBuilder.WriteString(L"</m_sFileFrom><m_sFileTo>");
         }
-        
-        if (bIsUseTmpFileDst)
-            oBuilder.WriteEncodeXmlString(sUseTmpFileDst);
+
+        if (m_bIsUseDstTempFile)
+            oBuilder.WriteEncodeXmlString(m_sDstTempFile);
         else
             oBuilder.WriteEncodeXmlString(sLocalFilePath);
         
@@ -1119,6 +1120,8 @@ public:
             // return!
             m_bIsWorking = false;
             m_pEvents->OnFileConvertFromEditor(ASC_CONSTANT_CANCEL_SAVE);
+            m_bIsUseDstTempFile = false;
+            m_sDstTempFile = L"";
             m_bRunThread = FALSE;
             return 0;
         }
@@ -1127,13 +1130,6 @@ public:
             m_pManager->m_pInternal->m_pAdditional->CheckSaveStart(m_oInfo.m_sRecoveryDir, m_nTypeEditorFormat);
 
         int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileForParams, m_pManager, m_pManager->m_pInternal->m_bIsEnableConvertLogs);
-
-        if (bIsUseTmpFileDst)
-        {
-            NSFile::CFileBinary::Remove(sLocalFilePath);
-            NSFile::CFileBinary::Copy(sUseTmpFileDst, sLocalFilePath);
-            NSFile::CFileBinary::Remove(sUseTmpFileDst);
-        }
 
         m_sOriginalFileNameCrossPlatform = L"";
         m_bIsRetina = false;
@@ -1147,11 +1143,19 @@ public:
         m_bIsWorking = false;
         m_pEvents->OnFileConvertFromEditor(nReturnCode, m_oInfo.m_sPassword);
 
+        m_bIsUseDstTempFile = false;
+        m_sDstTempFile = L"";
+
         if (m_pManager->m_pInternal->m_pAdditional)
             m_pManager->m_pInternal->m_pAdditional->CheckSaveEnd();
 
         m_bRunThread = FALSE;
         return 0;
+    }
+
+    std::wstring GetDstPath()
+    {
+        return m_sDstTempFile;
     }
 };
 
