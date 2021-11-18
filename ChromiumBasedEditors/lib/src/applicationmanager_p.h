@@ -643,6 +643,16 @@ public:
         this->nFileType2 = this->nFileType;
         switch (this->nFileType)
         {
+            case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX:
+            {
+                std::wstring sFileExt = NSFile::GetFileExtention(fileName);
+                NSCommon::makeLowerW(sFileExt);
+                if (L"oform" == sFileExt)
+                    this->nFileType2 = AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM;
+                else if (L"docxf" == sFileExt)
+                    this->nFileType2 = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF;
+                break;
+            }
             case AVS_OFFICESTUDIO_FILE_DOCUMENT_TXT:
             {
                 if (!IsOpenAsTxtFile(fileName))

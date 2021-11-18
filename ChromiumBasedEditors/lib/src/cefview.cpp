@@ -6374,6 +6374,11 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
             sParams = L"placement=desktop&mode=view";
         }
 
+        if (nFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
+        {
+            sParams += L"&filetype=oform";
+        }
+
         if (!GetAppManager()->m_pInternal->GetEditorPermission() && sParams.find(L"mode=view") == std::wstring::npos)
             sParams += L"&mode=view";
 
