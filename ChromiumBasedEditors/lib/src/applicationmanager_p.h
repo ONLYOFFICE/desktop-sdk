@@ -247,34 +247,6 @@ namespace NSSystem
             if (sFile.empty())
                 return;
 
-            CheckAfter(sFile);
-        }
-        bool CheckBefore(const std::wstring& sFile)
-        {
-            if (m_sFile != sFile)
-            {
-                Unlock();
-                return true;
-            }
-            return false;
-        }
-        void CheckAfter(const std::wstring& sFile, const std::wstring& sSavedFile = L"")
-        {
-            if (m_sFile == sFile)
-            {
-                if (!sSavedFile.empty())
-                    SaveFile(sSavedFile);
-                return;
-            }
-            else if (!sSavedFile.empty())
-            {
-                if (NSFile::CFileBinary::Exists(sFile))
-                    NSFile::CFileBinary::Remove(sFile);
-                NSFile::CFileBinary::Copy(sSavedFile, sFile);
-            }
-
-            Unlock();
-
             m_sFile = sFile;
             Lock();
         }
@@ -285,12 +257,13 @@ namespace NSSystem
 
             Unlock();
 #ifdef _WIN32
-            m_nDescriptor = CreateFileW(m_sFile.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+            std::wstring sFileFull = CorrectPathW(m_sFile);
+            m_nDescriptor = CreateFileW(sFileFull.c_str(), GENERIC_READ/* | GENERIC_WRITE*/, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
             if (m_nDescriptor != NULL && m_nDescriptor != INVALID_HANDLE_VALUE)
             {
-                LARGE_INTEGER lFileSize;
-                GetFileSizeEx(m_nDescriptor, &lFileSize);
-                LockFile(m_nDescriptor, 0, 0, lFileSize.LowPart, (DWORD)lFileSize.HighPart);
+                //LARGE_INTEGER lFileSize;
+                //GetFileSizeEx(m_nDescriptor, &lFileSize);
+                //LockFile(m_nDescriptor, 0, 0, lFileSize.LowPart, (DWORD)lFileSize.HighPart);
             }
             else
             {
@@ -467,6 +440,16 @@ namespace NSSystem
 
             oFile.CloseFile();
             RELEASEARRAYOBJECTS(pMemoryBuffer);
+
+            if (!bRes)
+            {
+                Unlock();
+                if (NSFile::CFileBinary::Exists(m_sFile))
+                    NSFile::CFileBinary::Remove(m_sFile);
+                bRes = NSFile::CFileBinary::Copy(sFile, m_sFile);
+                Lock();
+            }
+
             return bRes;
         }
     };

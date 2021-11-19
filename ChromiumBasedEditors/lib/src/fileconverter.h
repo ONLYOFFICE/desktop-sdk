@@ -323,10 +323,14 @@ namespace NSOOXMLPassword
         CAscApplicationManager* m_pManager;
 
     public:
+        NSSystem::CLocalFileLocker* m_pLocker;
+
+    public:
 
         COOXMLZipDirectory(CAscApplicationManager* pManager)
         {
             m_pManager = pManager;
+            m_pLocker = NULL;
         }
 
         int Open(const std::wstring& sFile, const std::wstring& sPassword)
@@ -393,12 +397,31 @@ namespace NSOOXMLPassword
                 return 0;
             }
 
+            std::wstring sLockerSavedPath;
+            if (m_pLocker)
+            {
+                sLockerSavedPath = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"OL");
+                if (NSFile::CFileBinary::Exists(sLockerSavedPath))
+                    NSFile::CFileBinary::Remove(sLockerSavedPath);
+            }
+            else
+            {
+                sLockerSavedPath = m_sFile;
+            }
+
             if (m_sPassword.empty())
             {
                 NSFile::CFileBinary::Remove(m_sFile);
                 COfficeUtils oCOfficeUtils(NULL);
-                HRESULT hRes = oCOfficeUtils.CompressFileOrDirectory(m_sDirectory, m_sFile, true);
+                HRESULT hRes = oCOfficeUtils.CompressFileOrDirectory(m_sDirectory, sLockerSavedPath, true);
                 NSDirectory::DeleteDirectory(m_sDirectory);
+
+                if (m_pLocker && (hRes == S_OK))
+                {
+                    hRes = m_pLocker->SaveFile(sLockerSavedPath) ? S_OK : S_FALSE;
+                    NSFile::CFileBinary::Remove(sLockerSavedPath);
+                }
+
                 return (hRes == S_OK) ? 0 : 1;
             }
 
@@ -419,13 +442,14 @@ namespace NSOOXMLPassword
                 NSFile::CFileBinary::Remove(sTempFileXml);
             sTempFileXml += L".xml";
 
-            NSFile::CFileBinary::Remove(m_sFile);
+            if (!m_pLocker)
+                NSFile::CFileBinary::Remove(m_sFile);
 
             NSStringUtils::CStringBuilder oBuilder;
             oBuilder.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><TaskQueueDataConvert><m_sFileFrom>");
             oBuilder.WriteEncodeXmlString(sTempFile);
             oBuilder.WriteString(L"</m_sFileFrom><m_sFileTo>");
-            oBuilder.WriteEncodeXmlString(m_sFile);
+            oBuilder.WriteEncodeXmlString(sLockerSavedPath);
             oBuilder.WriteString(L"</m_sFileTo><m_nFormatTo>");
             oBuilder.WriteString(std::to_wstring(nFormatType));
             oBuilder.WriteString(L"</m_nFormatTo>");
@@ -445,6 +469,12 @@ namespace NSOOXMLPassword
 
             NSFile::CFileBinary::Remove(sTempFile);
             NSFile::CFileBinary::Remove(sTempFileXml);
+
+            if (0 == nReturnCode && m_pLocker)
+            {
+                nReturnCode = m_pLocker->SaveFile(sLockerSavedPath) ? 0 : 80;
+                NSFile::CFileBinary::Remove(sLockerSavedPath);
+            }
 
             return (0 == nReturnCode) ? 0 : 1;
         }
@@ -956,8 +986,7 @@ public:
     bool m_bIsWorking; // not m_bIsRunned
 
     // временный путь для сохранения (чтобы делать локфайл)
-    bool m_bIsUseDstTempFile;
-    std::wstring m_sDstTempFile;
+    NSSystem::CLocalFileLocker* m_pLocker;
 
 public:
     CASCFileConverterFromEditor() : NSThreads::CBaseThread()
@@ -966,7 +995,7 @@ public:
         m_nTypeEditorFormat = -1;
         m_bIsEditorWithChanges = false;
         m_bIsWorking = false;
-        m_bIsUseDstTempFile = false;
+        m_pLocker = NULL;
     }
     virtual void Start(int lPriority)
     {
@@ -996,11 +1025,12 @@ public:
         }
 #endif
 
-        if (m_bIsUseDstTempFile)
+        std::wstring sLockerSavedPath;
+        if (m_pLocker)
         {
-            m_sDstTempFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"OL");
-            if (NSFile::CFileBinary::Exists(m_sDstTempFile))
-                NSFile::CFileBinary::Remove(m_sDstTempFile);
+            sLockerSavedPath = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"OL");
+            if (NSFile::CFileBinary::Exists(sLockerSavedPath))
+                NSFile::CFileBinary::Remove(sLockerSavedPath);
         }
 
         std::wstring sThemesPath = m_pManager->m_oSettings.local_editors_path;
@@ -1043,8 +1073,8 @@ public:
             oBuilder.WriteString(L"</m_sFileFrom><m_sFileTo>");
         }
 
-        if (m_bIsUseDstTempFile)
-            oBuilder.WriteEncodeXmlString(m_sDstTempFile);
+        if (!sLockerSavedPath.empty())
+            oBuilder.WriteEncodeXmlString(sLockerSavedPath);
         else
             oBuilder.WriteEncodeXmlString(sLocalFilePath);
         
@@ -1120,8 +1150,7 @@ public:
             // return!
             m_bIsWorking = false;
             m_pEvents->OnFileConvertFromEditor(ASC_CONSTANT_CANCEL_SAVE);
-            m_bIsUseDstTempFile = false;
-            m_sDstTempFile = L"";
+            m_pLocker = NULL;
             m_bRunThread = FALSE;
             return 0;
         }
@@ -1140,22 +1169,25 @@ public:
             NSDirectory::DeleteDirectory(sDstTmpDir);
         }
 
+        if (m_pLocker)
+        {
+            m_pLocker->SaveFile(sLockerSavedPath);
+            m_pLocker = NULL;
+
+            if (NSFile::CFileBinary::Exists(sLockerSavedPath))
+                NSFile::CFileBinary::Remove(sLockerSavedPath);
+        }
+
         m_bIsWorking = false;
         m_pEvents->OnFileConvertFromEditor(nReturnCode, m_oInfo.m_sPassword);
 
-        m_bIsUseDstTempFile = false;
-        m_sDstTempFile = L"";
+        m_pLocker = NULL;
 
         if (m_pManager->m_pInternal->m_pAdditional)
             m_pManager->m_pInternal->m_pAdditional->CheckSaveEnd();
 
         m_bRunThread = FALSE;
         return 0;
-    }
-
-    std::wstring GetDstPath()
-    {
-        return m_sDstTempFile;
     }
 };
 

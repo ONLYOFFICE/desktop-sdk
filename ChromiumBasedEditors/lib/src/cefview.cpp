@@ -1051,20 +1051,16 @@ public:
         if (!m_oLocalInfo.m_oInfo.m_bIsSaved)
             return;
 
-        if (m_oConverterFromEditor.m_bIsUseDstTempFile && NSFile::CFileBinary::Exists(m_oConverterFromEditor.m_sDstTempFile))
-        {
-            if (!m_pLocalFileLocker)
-                m_pLocalFileLocker = new NSSystem::CLocalFileLocker(L"");
+        if (!NSSystem::CLocalFileLocker::IsSupportFunctionality())
+            return;
 
-            m_pLocalFileLocker->CheckAfter(m_oLocalInfo.m_oInfo.m_sFileSrc, m_oConverterFromEditor.m_sDstTempFile);
-            NSFile::CFileBinary::Remove(m_oConverterFromEditor.m_sDstTempFile);
-        }
-        else if (NSFile::CFileBinary::Exists(m_oLocalInfo.m_oInfo.m_sFileSrc))
+        if (NSFile::CFileBinary::Exists(m_oLocalInfo.m_oInfo.m_sFileSrc))
         {
-            if (m_pLocalFileLocker)
+            if (m_pLocalFileLocker && m_pLocalFileLocker->GetFileLocked() != m_oLocalInfo.m_oInfo.m_sFileSrc)
                 RELEASEOBJECT(m_pLocalFileLocker);
 
-            m_pLocalFileLocker = new NSSystem::CLocalFileLocker(m_oLocalInfo.m_oInfo.m_sFileSrc);
+            if (!m_pLocalFileLocker)
+                m_pLocalFileLocker = new NSSystem::CLocalFileLocker(m_oLocalInfo.m_oInfo.m_sFileSrc);
         }
     }
     void CheckLockRecoveryFile()
@@ -1249,13 +1245,19 @@ public:
         if (!sPath.empty())
             m_oConverterFromEditor.m_oInfo.m_sFileSrc = sPath;
 
-        if (m_pLocalFileLocker->CheckBefore(m_oConverterFromEditor.m_oInfo.m_sFileSrc))
-            RELEASEOBJECT(m_pLocalFileLocker);
-
-        if (m_sCloudCryptSrc.empty())
-            m_oConverterFromEditor.m_bIsUseDstTempFile = true;
-        else
-            m_oConverterFromEditor.m_bIsUseDstTempFile = false;
+        if (m_pLocalFileLocker)
+        {
+            if (m_pLocalFileLocker->GetFileLocked() != m_oConverterFromEditor.m_oInfo.m_sFileSrc)
+            {
+                // сохраняем не в тот же файл
+                RELEASEOBJECT(m_pLocalFileLocker);
+            }
+            else if (m_sCloudCryptSrc.empty())
+            {
+                // сохраняем обычный локальный файл по тому же пути
+                m_oConverterFromEditor.m_pLocker = m_pLocalFileLocker;
+            }
+        }
 
         if (nType != -1)
             m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat = nType;
@@ -2639,14 +2641,9 @@ public:
             std::wstring sUrl   = args->GetString(2).ToWString();
             std::wstring sUrl2  = args->GetString(3).ToWString();
 
-            std::wstring sFile = m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_sFileSrc;
-            int nCurrentFormat = m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat;
+            std::wstring sFile = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc;
+            int nCurrentFormat = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat;
             std::wstring sPassword = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sPassword;
-            if (sFile.empty())
-            {
-                sFile = m_pParent->m_pInternal->m_oConverterToEditor.m_oInfo.m_sFileSrc;
-                nCurrentFormat = m_pParent->m_pInternal->m_oConverterToEditor.m_oInfo.m_nCurrentFileFormat;
-            }
 
             switch (nCurrentFormat)
             {
@@ -2691,11 +2688,17 @@ public:
 
             RELEASEOBJECT(pCertificate);
 
-            std::wstring sLockedFile = L"";
             if (m_pParent->m_pInternal->m_pLocalFileLocker)
-                sLockedFile = m_pParent->m_pInternal->m_pLocalFileLocker->GetFileLocked();
-
-            RELEASEOBJECT(m_pParent->m_pInternal->m_pLocalFileLocker);
+            {
+                if (m_pParent->m_pInternal->m_pLocalFileLocker->GetFileLocked() != sFile)
+                {
+                    RELEASEOBJECT(m_pParent->m_pInternal->m_pLocalFileLocker);
+                }
+                else
+                {
+                    oZIP.m_pLocker = m_pParent->m_pInternal->m_pLocalFileLocker;
+                }
+            }
             int nRetValue = oZIP.Close((0 == nSignError) ? false : true);
 
             if (0 == nRetValue && 0 == nSignError)
@@ -2712,9 +2715,7 @@ public:
                 SEND_MESSAGE_TO_RENDERER_PROCESS(browser, messageOut);
             }
 
-            if (!sLockedFile.empty())
-                m_pParent->m_pInternal->m_pLocalFileLocker = new NSSystem::CLocalFileLocker(sLockedFile);
-
+            m_pParent->m_pInternal->CheckLockLocalFile();
             return true;
         }
         else if (message_name == "on_signature_remove")
@@ -2724,12 +2725,8 @@ public:
             if (args->GetSize() > 0)
                 sGuid = args->GetString(0).ToString();
 
-            std::wstring sFile = m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_sFileSrc;
+            std::wstring sFile = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc;
             std::wstring sPassword = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sPassword;
-            if (sFile.empty())
-            {
-                sFile = m_pParent->m_pInternal->m_oConverterToEditor.m_oInfo.m_sFileSrc;
-            }
 
             NSOOXMLPassword::COOXMLZipDirectory oZIP(m_pParent->GetAppManager());
             oZIP.Open(sFile, sPassword);
@@ -2740,11 +2737,18 @@ public:
             pConverter->CheckSignaturesByDir(sUnzipDir);
             pConverter->m_pVerifier->RemoveSignature(sGuid);
 
-            std::wstring sLockedFile = L"";
             if (m_pParent->m_pInternal->m_pLocalFileLocker)
-                sLockedFile = m_pParent->m_pInternal->m_pLocalFileLocker->GetFileLocked();
+            {
+                if (m_pParent->m_pInternal->m_pLocalFileLocker->GetFileLocked() != sFile)
+                {
+                    RELEASEOBJECT(m_pParent->m_pInternal->m_pLocalFileLocker);
+                }
+                else
+                {
+                    oZIP.m_pLocker = m_pParent->m_pInternal->m_pLocalFileLocker;
+                }
+            }
 
-            RELEASEOBJECT(m_pParent->m_pInternal->m_pLocalFileLocker);
             int nRetValue = oZIP.Close();
 
             if (0 == nRetValue)
@@ -2756,8 +2760,7 @@ public:
                 SEND_MESSAGE_TO_RENDERER_PROCESS(browser, messageOut);
             }
 
-            if (!sLockedFile.empty())
-                m_pParent->m_pInternal->m_pLocalFileLocker = new NSSystem::CLocalFileLocker(sLockedFile);
+            m_pParent->m_pInternal->CheckLockLocalFile();
             return true;
         }
         else if (message_name == "on_signature_viewcertificate")
@@ -4864,11 +4867,7 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
 
     if (m_sCloudCryptSrc.empty())
     {
-        std::wstring sSavedPath = m_oConverterFromEditor.m_oInfo.m_sFileSrc;
-        if (m_oConverterFromEditor.m_bIsUseDstTempFile)
-            sSavedPath = m_oConverterFromEditor.m_sDstTempFile;
-
-        bool bIsSaved = ((0 == nError) && NSFile::CFileBinary::Exists(sSavedPath)) ? true : false;
+        bool bIsSaved = ((0 == nError) && NSFile::CFileBinary::Exists(m_oConverterFromEditor.m_oInfo.m_sFileSrc)) ? true : false;
 
         if (bIsSaved && !m_oLocalInfo.m_oInfo.m_bIsSaved)
         {
