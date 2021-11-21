@@ -4352,6 +4352,8 @@ require.load = function (context, moduleName, url) {\n\
 
         if (L"1" == sExt && std::wstring::npos != sFile.find(L"AllFonts.js.1"))
             return "application/javascript";
+        else if (L"2" == sExt && std::wstring::npos != sFile.find(L"AllFonts.js.2"))
+            return "application/javascript";
 
         return "";
     }

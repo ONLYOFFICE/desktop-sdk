@@ -1043,6 +1043,8 @@ retval, exception);
                 std::wstring sAllFontsVersion = L"";
                 if (nMajorVersion != 0 && nMajorVersion < 6)
                     sAllFontsVersion = L"/AllFonts.js.1";
+                else if (nMajorVersion != 0 && nMajorVersion < 7)
+                    sAllFontsVersion = L"/AllFonts.js.2";
                 else if (CheckSW())
                     sAllFontsVersion = L"/AllFonts.js";
 
