@@ -897,6 +897,7 @@ void CAscApplicationManager::OnDestroyWindow()
     m_pInternal->m_nWindowCounter--;
     if (0 == m_pInternal->m_nWindowCounter)
     {
+        CefCookieManager::GetGlobalManager(NULL)->FlushStore(NULL);
         m_pInternal->m_pApplication->ExitMessageLoop();
     }
 }

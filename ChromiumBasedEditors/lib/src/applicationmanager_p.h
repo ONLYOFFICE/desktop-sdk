@@ -230,7 +230,7 @@ namespace NSSystem
     private:
         std::wstring m_sFile;
 #ifdef _WIN32
-        NSFile::CFileBinary m_oLocker;
+        HANDLE m_nDescriptor;
 #else
         int m_nDescriptor;
 #endif
@@ -238,11 +238,16 @@ namespace NSSystem
     public:
         CLocalFileLocker(const std::wstring& sFile)
         {
-            m_sFile = sFile;
-#ifndef _WIN32
+#ifdef _WIN32
+            m_nDescriptor = INVALID_HANDLE_VALUE;
+#else
             m_nDescriptor = -1;
 #endif
 
+            if (sFile.empty())
+                return;
+
+            m_sFile = sFile;
             Lock();
         }
         bool Lock()
@@ -252,7 +257,18 @@ namespace NSSystem
 
             Unlock();
 #ifdef _WIN32
-            m_oLocker.OpenFile(m_sFile);
+            std::wstring sFileFull = CorrectPathW(m_sFile);
+            m_nDescriptor = CreateFileW(sFileFull.c_str(), GENERIC_READ/* | GENERIC_WRITE*/, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+            if (m_nDescriptor != NULL && m_nDescriptor != INVALID_HANDLE_VALUE)
+            {
+                //LARGE_INTEGER lFileSize;
+                //GetFileSizeEx(m_nDescriptor, &lFileSize);
+                //LockFile(m_nDescriptor, 0, 0, lFileSize.LowPart, (DWORD)lFileSize.HighPart);
+            }
+            else
+            {
+                m_nDescriptor = INVALID_HANDLE_VALUE;
+            }
 #else
             std::string sFileA = U_TO_UTF8(m_sFile);
             m_nDescriptor = open(sFileA.c_str(), O_RDWR | O_EXCL);
@@ -277,7 +293,15 @@ namespace NSSystem
                 return true;
 
 #ifdef _WIN32
-            m_oLocker.CloseFile();
+            if (INVALID_HANDLE_VALUE != m_nDescriptor)
+            {
+                LARGE_INTEGER lFileSize;
+                GetFileSizeEx(m_nDescriptor, &lFileSize);
+                UnlockFile(m_nDescriptor, 0, 0, lFileSize.LowPart, (DWORD)lFileSize.HighPart);
+
+                CloseHandle(m_nDescriptor);
+                m_nDescriptor = INVALID_HANDLE_VALUE;
+            }            
 #else
             if (-1 == m_nDescriptor)
                 return true;
@@ -292,6 +316,8 @@ namespace NSSystem
 
             fcntl(m_nDescriptor, F_SETLKW, &_lock);
             close(m_nDescriptor);
+
+            m_nDescriptor = -1;
 #endif
             return true;
         }
@@ -348,6 +374,83 @@ namespace NSSystem
 #else
             return true;
 #endif
+        }
+
+        bool SaveFile(const std::wstring& sFile)
+        {
+            DWORD nSection = 10 * 1024 * 1024;
+            DWORD nFileSize = 0;
+
+            NSFile::CFileBinary oFile;
+            if (!oFile.OpenFile(sFile))
+                return false;
+
+            nFileSize = (DWORD)oFile.GetFileSize();
+
+            DWORD nChunkSize = nSection;
+            DWORD nNeedWrite = nFileSize;
+            BYTE* pMemoryBuffer = NULL;
+            if (nFileSize > nSection)
+            {
+                pMemoryBuffer = new BYTE[nSection];
+            }
+            else
+            {
+                nChunkSize = nFileSize;
+                pMemoryBuffer = new BYTE[nFileSize];
+            }
+
+            bool bRes = true;
+#ifdef _WIN32
+            SetFilePointer(m_nDescriptor, 0, 0, FILE_BEGIN);
+#else
+            lseek(m_nDescriptor, 0, SEEK_SET);
+#endif
+
+            DWORD dwRead = 0;
+            DWORD dwWrite = 0;
+            while (nNeedWrite > 0)
+            {
+                if (nNeedWrite < nChunkSize)
+                    nChunkSize = nNeedWrite;
+                oFile.ReadFile(pMemoryBuffer, nChunkSize, dwRead);
+
+#ifdef _WIN32
+                WriteFile(m_nDescriptor, pMemoryBuffer, nChunkSize, &dwWrite, NULL);
+#else
+                dwWrite = (DWORD)write(m_nDescriptor, pMemoryBuffer, nChunkSize);
+#endif
+
+                if (dwRead != nChunkSize || dwWrite != nChunkSize)
+                {
+                    bRes = false;
+                    break;
+                }
+
+                nNeedWrite -= nChunkSize;
+            }
+
+#ifdef _WIN32
+            SetFilePointer(m_nDescriptor, (LONG)nFileSize, 0, FILE_BEGIN);
+            SetEndOfFile(m_nDescriptor);
+#else
+            lseek(m_nDescriptor, (DWORD)nFileSize, SEEK_SET);
+            ftruncate(m_nDescriptor, (DWORD)nFileSize);
+#endif
+
+            oFile.CloseFile();
+            RELEASEARRAYOBJECTS(pMemoryBuffer);
+
+            if (!bRes)
+            {
+                Unlock();
+                if (NSFile::CFileBinary::Exists(m_sFile))
+                    NSFile::CFileBinary::Remove(m_sFile);
+                bRes = NSFile::CFileBinary::Copy(sFile, m_sFile);
+                Lock();
+            }
+
+            return bRes;
         }
     };
 
@@ -643,6 +746,16 @@ public:
         this->nFileType2 = this->nFileType;
         switch (this->nFileType)
         {
+            case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX:
+            {
+                std::wstring sFileExt = NSFile::GetFileExtention(fileName);
+                NSCommon::makeLowerW(sFileExt);
+                if (L"oform" == sFileExt)
+                    this->nFileType2 = AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM;
+                else if (L"docxf" == sFileExt)
+                    this->nFileType2 = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF;
+                break;
+            }
             case AVS_OFFICESTUDIO_FILE_DOCUMENT_TXT:
             {
                 if (!IsOpenAsTxtFile(fileName))

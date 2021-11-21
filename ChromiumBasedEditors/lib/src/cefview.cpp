@@ -1048,11 +1048,19 @@ public:
 
     void CheckLockLocalFile()
     {
-        if (m_oLocalInfo.m_oInfo.m_bIsSaved && NSFile::CFileBinary::Exists(m_oLocalInfo.m_oInfo.m_sFileSrc))
+        if (!m_oLocalInfo.m_oInfo.m_bIsSaved)
+            return;
+
+        if (!NSSystem::CLocalFileLocker::IsSupportFunctionality())
+            return;
+
+        if (NSFile::CFileBinary::Exists(m_oLocalInfo.m_oInfo.m_sFileSrc))
         {
-            if (m_pLocalFileLocker)
+            if (m_pLocalFileLocker && m_pLocalFileLocker->GetFileLocked() != m_oLocalInfo.m_oInfo.m_sFileSrc)
                 RELEASEOBJECT(m_pLocalFileLocker);
-            m_pLocalFileLocker = new NSSystem::CLocalFileLocker(m_oLocalInfo.m_oInfo.m_sFileSrc);
+
+            if (!m_pLocalFileLocker)
+                m_pLocalFileLocker = new NSSystem::CLocalFileLocker(m_oLocalInfo.m_oInfo.m_sFileSrc);
         }
     }
     void CheckLockRecoveryFile()
@@ -1229,7 +1237,6 @@ public:
 
     void LocalFile_SaveStart(std::wstring sPath = L"", int nType = -1)
     {
-        RELEASEOBJECT(m_pLocalFileLocker);
         m_oLocalInfo.SetupOptions(m_oConverterFromEditor.m_oInfo);
         m_oLocalInfo.m_oInfo.m_sDocumentInfo = L"";
 
@@ -1237,6 +1244,20 @@ public:
 
         if (!sPath.empty())
             m_oConverterFromEditor.m_oInfo.m_sFileSrc = sPath;
+
+        if (m_pLocalFileLocker)
+        {
+            if (m_pLocalFileLocker->GetFileLocked() != m_oConverterFromEditor.m_oInfo.m_sFileSrc)
+            {
+                // сохраняем не в тот же файл
+                RELEASEOBJECT(m_pLocalFileLocker);
+            }
+            else if (m_sCloudCryptSrc.empty())
+            {
+                // сохраняем обычный локальный файл по тому же пути
+                m_oConverterFromEditor.m_pLocker = m_pLocalFileLocker;
+            }
+        }
 
         if (nType != -1)
             m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat = nType;
@@ -1282,6 +1303,8 @@ public:
         if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_DOCUMENT)
         {
             arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX);
+            arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF);
+            arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM);
 
             if (!bEncryption)
             {
@@ -2618,14 +2641,9 @@ public:
             std::wstring sUrl   = args->GetString(2).ToWString();
             std::wstring sUrl2  = args->GetString(3).ToWString();
 
-            std::wstring sFile = m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_sFileSrc;
-            int nCurrentFormat = m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat;
+            std::wstring sFile = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc;
+            int nCurrentFormat = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat;
             std::wstring sPassword = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sPassword;
-            if (sFile.empty())
-            {
-                sFile = m_pParent->m_pInternal->m_oConverterToEditor.m_oInfo.m_sFileSrc;
-                nCurrentFormat = m_pParent->m_pInternal->m_oConverterToEditor.m_oInfo.m_nCurrentFileFormat;
-            }
 
             switch (nCurrentFormat)
             {
@@ -2670,11 +2688,17 @@ public:
 
             RELEASEOBJECT(pCertificate);
 
-            std::wstring sLockedFile = L"";
             if (m_pParent->m_pInternal->m_pLocalFileLocker)
-                sLockedFile = m_pParent->m_pInternal->m_pLocalFileLocker->GetFileLocked();
-
-            RELEASEOBJECT(m_pParent->m_pInternal->m_pLocalFileLocker);
+            {
+                if (m_pParent->m_pInternal->m_pLocalFileLocker->GetFileLocked() != sFile)
+                {
+                    RELEASEOBJECT(m_pParent->m_pInternal->m_pLocalFileLocker);
+                }
+                else
+                {
+                    oZIP.m_pLocker = m_pParent->m_pInternal->m_pLocalFileLocker;
+                }
+            }
             int nRetValue = oZIP.Close((0 == nSignError) ? false : true);
 
             if (0 == nRetValue && 0 == nSignError)
@@ -2691,9 +2715,7 @@ public:
                 SEND_MESSAGE_TO_RENDERER_PROCESS(browser, messageOut);
             }
 
-            if (!sLockedFile.empty())
-                m_pParent->m_pInternal->m_pLocalFileLocker = new NSSystem::CLocalFileLocker(sLockedFile);
-
+            m_pParent->m_pInternal->CheckLockLocalFile();
             return true;
         }
         else if (message_name == "on_signature_remove")
@@ -2703,12 +2725,8 @@ public:
             if (args->GetSize() > 0)
                 sGuid = args->GetString(0).ToString();
 
-            std::wstring sFile = m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo.m_sFileSrc;
+            std::wstring sFile = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc;
             std::wstring sPassword = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sPassword;
-            if (sFile.empty())
-            {
-                sFile = m_pParent->m_pInternal->m_oConverterToEditor.m_oInfo.m_sFileSrc;
-            }
 
             NSOOXMLPassword::COOXMLZipDirectory oZIP(m_pParent->GetAppManager());
             oZIP.Open(sFile, sPassword);
@@ -2719,11 +2737,18 @@ public:
             pConverter->CheckSignaturesByDir(sUnzipDir);
             pConverter->m_pVerifier->RemoveSignature(sGuid);
 
-            std::wstring sLockedFile = L"";
             if (m_pParent->m_pInternal->m_pLocalFileLocker)
-                sLockedFile = m_pParent->m_pInternal->m_pLocalFileLocker->GetFileLocked();
+            {
+                if (m_pParent->m_pInternal->m_pLocalFileLocker->GetFileLocked() != sFile)
+                {
+                    RELEASEOBJECT(m_pParent->m_pInternal->m_pLocalFileLocker);
+                }
+                else
+                {
+                    oZIP.m_pLocker = m_pParent->m_pInternal->m_pLocalFileLocker;
+                }
+            }
 
-            RELEASEOBJECT(m_pParent->m_pInternal->m_pLocalFileLocker);
             int nRetValue = oZIP.Close();
 
             if (0 == nRetValue)
@@ -2735,8 +2760,7 @@ public:
                 SEND_MESSAGE_TO_RENDERER_PROCESS(browser, messageOut);
             }
 
-            if (!sLockedFile.empty())
-                m_pParent->m_pInternal->m_pLocalFileLocker = new NSSystem::CLocalFileLocker(sLockedFile);
+            m_pParent->m_pInternal->CheckLockLocalFile();
             return true;
         }
         else if (message_name == "on_signature_viewcertificate")
@@ -4327,6 +4351,8 @@ require.load = function (context, moduleName, url) {\n\
         //    return "application/octet-stream";
 
         if (L"1" == sExt && std::wstring::npos != sFile.find(L"AllFonts.js.1"))
+            return "application/javascript";
+        else if (L"2" == sExt && std::wstring::npos != sFile.find(L"AllFonts.js.2"))
             return "application/javascript";
 
         return "";
@@ -6372,6 +6398,11 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
             sParams = L"placement=desktop&mode=view";
         }
 
+        if (nFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
+        {
+            sParams += L"&filetype=oform";
+        }
+
         if (!GetAppManager()->m_pInternal->GetEditorPermission() && sParams.find(L"mode=view") == std::wstring::npos)
             sParams += L"&mode=view";
 
@@ -6503,6 +6534,10 @@ void CCefViewEditor::CreateLocalFile(const int& nFileFormat, const std::wstring&
     {
         sParams = L"placement=desktop&doctype=spreadsheet";
         m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX;
+    }
+    else if (nFileFormat == etDocumentMasterForm)
+    {
+        m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF;
     }
     
     if (!GetAppManager()->m_pInternal->GetEditorPermission())
