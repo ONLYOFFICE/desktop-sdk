@@ -258,7 +258,8 @@ namespace NSSystem
             Unlock();
 #ifdef _WIN32
             std::wstring sFileFull = CorrectPathW(m_sFile);
-            m_nDescriptor = CreateFileW(sFileFull.c_str(), GENERIC_READ/* | GENERIC_WRITE*/, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+            DWORD dwFileAttributes = 0;//GetFileAttributesW(sFileFull.c_str());
+            m_nDescriptor = CreateFileW(sFileFull.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, dwFileAttributes, NULL);
             if (m_nDescriptor != NULL && m_nDescriptor != INVALID_HANDLE_VALUE)
             {
                 //LARGE_INTEGER lFileSize;
