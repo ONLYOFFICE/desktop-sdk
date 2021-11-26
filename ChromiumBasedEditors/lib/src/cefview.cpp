@@ -6402,6 +6402,10 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
         {
             sParams += L"&filetype=oform";
         }
+        else if (nFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF)
+        {
+            sParams += L"&filetype=docxf";
+        }
 
         if (!GetAppManager()->m_pInternal->GetEditorPermission() && sParams.find(L"mode=view") == std::wstring::npos)
             sParams += L"&mode=view";
@@ -6538,6 +6542,7 @@ void CCefViewEditor::CreateLocalFile(const int& nFileFormat, const std::wstring&
     else if (nFileFormat == etDocumentMasterForm)
     {
         m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF;
+        sParams += L"&filetype=docxf";
     }
     
     if (!GetAppManager()->m_pInternal->GetEditorPermission())
