@@ -836,15 +836,36 @@ public:
             }
             else
             {
-                //std::wstring sUnzipDir = NSFile::GetDirectoryName(sFile) + L"/" + NSCommon::GetFileName(sFile) + L"_uncompress";
-                std::wstring sUnzipDir = NSDirectory::CreateDirectoryWithUniqueName(NSDirectory::GetTempPath());
-                NSDirectory::CreateDirectory(sUnzipDir);
+                ULONG nBufferSize = 0;
+                BYTE *pBuffer = NULL;
 
+                bool bIsNeedCheck = false;
                 COfficeUtils oCOfficeUtils(NULL);
-                if (S_OK == oCOfficeUtils.ExtractToDirectory(sFile, sUnzipDir, NULL, 0))
+                if (S_OK == oCOfficeUtils.LoadFileFromArchive(sFile, L"[Content_Types].xml", &pBuffer, nBufferSize))
                 {
-                    m_pVerifier = new COOXMLVerifier(sUnzipDir);
-                    NSDirectory::DeleteDirectory(sUnzipDir);
+                    const char *find1 = "application/vnd.openxmlformats-package.digital-signature-origin";
+                    const char *find2 = "application/vnd.openxmlformats-package.digital-signature-xmlsignature+xml";
+
+                    std::string strContentTypes((char*)pBuffer, nBufferSize);
+                    if (std::string::npos != strContentTypes.find(find1) && std::string::npos != strContentTypes.find(find2))
+                    {
+                        bIsNeedCheck = true;
+                    }
+                }
+                delete []pBuffer;
+                pBuffer = NULL;
+
+                if (bIsNeedCheck)
+                {
+                    std::wstring sUnzipDir = NSDirectory::CreateDirectoryWithUniqueName(NSDirectory::GetTempPath());
+                    NSDirectory::CreateDirectory(sUnzipDir);
+
+                    COfficeUtils oCOfficeUtils2(NULL);
+                    if (S_OK == oCOfficeUtils2.ExtractToDirectory(sFile, sUnzipDir, NULL, 0))
+                    {
+                        m_pVerifier = new COOXMLVerifier(sUnzipDir);
+                        NSDirectory::DeleteDirectory(sUnzipDir);
+                    }
                 }
             }
         }

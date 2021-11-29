@@ -915,6 +915,10 @@ int CAscApplicationManager::GetFileFormatByExtentionForSave(const std::wstring& 
     int nFormat = -1;
     if (sName == L"docx")
         nFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX;
+    else if (sName == L"docxf")
+        nFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF;
+    else if (sName == L"oform")
+        nFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM;
     else if (sName == L"dotx")
         nFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOTX;
     else if (sName == L"odt")

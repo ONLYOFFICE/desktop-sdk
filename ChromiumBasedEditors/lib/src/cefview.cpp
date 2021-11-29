@@ -830,6 +830,7 @@ public:
     bool m_bIsCloudCryptFile;
     std::wstring m_sCloudCryptSrc;
     std::wstring m_sCloudCryptName;
+    int m_nCloudCryptFileType;
 
     // скачка криптованного файла (в принципе можно просто качать что угодно)
     CCefView* m_pDownloadViewCallback;
@@ -951,6 +952,7 @@ public:
 
         m_bIsCloudCryptFile = false;
         m_bIsExternalCloud = false;
+        m_nCloudCryptFileType = 0;
 
         m_nCryptoDownloadAsFormat = -1;
 
@@ -2648,6 +2650,8 @@ public:
             switch (nCurrentFormat)
             {
                 case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX:
+                case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF:
+                case AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM:
                 case AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX:
                 case AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX:
                 {
@@ -3098,6 +3102,9 @@ public:
                 nType = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX;
             else if  (1 ==m_pParent->m_pInternal->m_nEditorType)
                 nType = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
+
+            if (nType == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX && 0 != m_pParent->m_pInternal->m_nCloudCryptFileType)
+                nType = m_pParent->m_pInternal->m_nCloudCryptFileType;
 
             m_pParent->m_pInternal->m_oLocalInfo.SetupOptions(m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo);
             m_pParent->m_pInternal->m_oConverterFromEditor.m_bIsEditorWithChanges = true;
@@ -6355,7 +6362,14 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
             }
 
             NSStringUtils::string_replace(sExtBase, L" ", L"");
-            m_pInternal->m_sDownloadViewPath += (L"." + NSFile::GetFileExtention(sExtBase));
+            std::wstring sExt = NSFile::GetFileExtention(sExtBase);
+            m_pInternal->m_sDownloadViewPath += (L"." + sExt);
+
+            m_pInternal->m_nCloudCryptFileType = 0;
+            if (sExt == L"docxf")
+                m_pInternal->m_nCloudCryptFileType = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF;
+            else if (sExt == L"oform")
+                m_pInternal->m_nCloudCryptFileType = AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM;
 
             // load preview...
             if (m_pInternal->m_oLocalInfo.m_oInfo.m_nCounterConvertion != 0)
