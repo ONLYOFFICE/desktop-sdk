@@ -772,6 +772,16 @@ public:
             default:
                 break;
         }
+
+#ifdef DISABLE_OFORM_SUPPORT
+        if (this->nFileType2 == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM ||
+            this->nFileType2 == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF)
+        {
+            this->nFileType2 = AVS_OFFICESTUDIO_FILE_UNKNOWN;
+            return false;
+        }
+#endif
+
         return isOfficeFileBase;
     }
 
