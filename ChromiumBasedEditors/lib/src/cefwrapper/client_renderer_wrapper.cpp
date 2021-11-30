@@ -62,6 +62,22 @@
 
 #ifndef CEF_2623
 #define CEF_V8_SUPPORT_TYPED_ARRAYS
+
+class CAscCefV8ArrayBufferReleaseCallback : public CefV8ArrayBufferReleaseCallback
+{
+public:
+    virtual void ReleaseBuffer(void* buffer) OVERRIDE
+    {
+#if 0
+        FILE* f = fopen("release_log.txt", "a+");
+        fprintf(f, "release\n");
+        fclose(f);
+#endif
+        delete [] ((BYTE*)buffer);
+    }
+
+    IMPLEMENT_REFCOUNTING(CAscCefV8ArrayBufferReleaseCallback);
+};
 #endif
 
 namespace NSCommon
@@ -362,22 +378,6 @@ std::string GetFileBase64(const std::wstring& sFile, int* outSize = NULL)
 
     return sBase64;
 }
-
-class CAscCefV8ArrayBufferReleaseCallback : public CefV8ArrayBufferReleaseCallback
-{
-public:
-    virtual void ReleaseBuffer(void* buffer) OVERRIDE
-    {
-#if 0
-        FILE* f = fopen("release_log.txt", "a+");
-        fprintf(f, "release\n");
-        fclose(f);
-#endif
-        delete [] ((BYTE*)buffer);
-    }
-
-    IMPLEMENT_REFCOUNTING(CAscCefV8ArrayBufferReleaseCallback);
-};
 
 class CAscEditorNativeV8Handler : public CefV8Handler, public INativeViewer_Events
 {
