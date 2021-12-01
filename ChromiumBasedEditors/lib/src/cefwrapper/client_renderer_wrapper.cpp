@@ -2096,9 +2096,15 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
             int nPageStart = arguments[3]->GetIntValue();
             int nPageEnd = arguments[4]->GetIntValue();
 
+            if (arguments.size() > 5)
+            {
+                bool bIsDarkMode = arguments[5]->GetBoolValue();
+                m_oNativeViewer.CheckDarkMode(bIsDarkMode);
+            }
+
             std::wstring sUrl = m_oNativeViewer.GetPathPageImage(oInfo);
             if (NSFile::CFileBinary::Exists(sUrl))
-                retval = CefV8Value::CreateString(sUrl);
+                retval = CefV8Value::CreateString(sUrl + m_oNativeViewer.GetUrlAddon());
             else
             {
                 m_oNativeViewer.AddTask(oInfo, nPageStart, nPageEnd);
@@ -3599,11 +3605,18 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
             std::string sPath = arguments[0]->GetStringValue().ToString();
             std::wstring sFilePath = NSCommon::GetFilePathFromBase64(sPath);
 
-            BYTE* pData = NULL;
-            DWORD dwFileLen = 0;
-            NSFile::CFileBinary::ReadAllBytes(sFilePath, &pData, dwFileLen);
+            if (g_pLocalResolver->CheckNoFont(sFilePath))
+            {
+                BYTE* pData = NULL;
+                DWORD dwFileLen = 0;
+                NSFile::CFileBinary::ReadAllBytes(sFilePath, &pData, dwFileLen);
 
-            retval = CefV8Value::CreateArrayBuffer((void*)pData, (size_t)dwFileLen, new CAscCefV8ArrayBufferReleaseCallback());
+                retval = CefV8Value::CreateArrayBuffer((void*)pData, (size_t)dwFileLen, new CAscCefV8ArrayBufferReleaseCallback());
+            }
+            else
+            {
+                retval = CefV8Value::CreateUndefined();
+            }
 #endif
             return true;
         }
