@@ -1463,6 +1463,8 @@ public:
         m_oCS_Scripts.InitializeCriticalSection();
         m_oCS_LocalFiles.InitializeCriticalSection();
         m_oCS_SystemMessages.InitializeCriticalSection();
+
+        COfficeUtils::SetAddonFlag(ZLIB_ADDON_FLAG_WINDOWS_SHARED_WRITE);
     }
     virtual ~CAscApplicationManager_Private()
     {
