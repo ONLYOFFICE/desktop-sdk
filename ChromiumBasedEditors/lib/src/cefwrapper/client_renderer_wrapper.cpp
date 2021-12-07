@@ -3611,7 +3611,10 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
                 DWORD dwFileLen = 0;
                 NSFile::CFileBinary::ReadAllBytes(sFilePath, &pData, dwFileLen);
 
-                retval = CefV8Value::CreateArrayBuffer((void*)pData, (size_t)dwFileLen, new CAscCefV8ArrayBufferReleaseCallback());
+                if (0 != dwFileLen)
+                    retval = CefV8Value::CreateArrayBuffer((void*)pData, (size_t)dwFileLen, new CAscCefV8ArrayBufferReleaseCallback());
+                else
+                    retval = CefV8Value::CreateUndefined();
             }
             else
             {
