@@ -502,6 +502,17 @@ void CAscApplicationManager::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             }
             break;
         }
+        case ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_OPENDIRECTORY_DIALOG:
+        {
+            CCefView* pView = GetViewById(((NSEditorApi::CAscCefMenuEvent*)pEvent)->get_SenderId());
+
+            if (NULL != pView)
+            {
+                ADDREFINTERFACE(pEvent);
+                pView->Apply(pEvent);
+            }
+            break;
+        }
         case ASC_MENU_EVENT_TYPE_UI_THREAD_MESSAGE:
         {
             int nId = ((NSEditorApi::CAscCefMenuEvent*)pEvent)->get_SenderId();

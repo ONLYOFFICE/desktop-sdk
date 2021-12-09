@@ -1492,6 +1492,7 @@ public:
     CefRefPtr<CefJSDialogHandler> m_pCefJSDialogHandler;
 
     CefRefPtr<CefFileDialogCallback> m_pFileDialogCallback;
+    CefRefPtr<CefFileDialogCallback> m_pDirectoryDialogCallback;
 
     enum client_menu_ids
     {
@@ -1551,7 +1552,7 @@ public:
             pListener = m_pParent->GetAppManager()->GetEventListener();
 
         int nMode = (mode & 0xFF);
-        if ((nMode == 0 || nMode == 1) && accept_filters.empty() && pListener)
+        if ((nMode == FILE_DIALOG_OPEN || nMode == FILE_DIALOG_OPEN_MULTIPLE) && accept_filters.empty() && pListener)
         {
             NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_OPENFILENAME_DIALOG);
             NSEditorApi::CAscLocalOpenFileDialog* pData = new NSEditorApi::CAscLocalOpenFileDialog();
@@ -1570,7 +1571,7 @@ public:
         std::string sFilterCheck = "";
         if (1 == accept_filters.size())
             sFilterCheck = accept_filters[0].ToString();
-        if ((nMode == 0 || nMode == 1) && ("image/*" == sFilterCheck) && pListener)
+        if ((nMode == FILE_DIALOG_OPEN || nMode == FILE_DIALOG_OPEN_MULTIPLE) && ("image/*" == sFilterCheck) && pListener)
         {
             NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_OPENFILENAME_DIALOG);
             NSEditorApi::CAscLocalOpenFileDialog* pData = new NSEditorApi::CAscLocalOpenFileDialog();
@@ -1624,6 +1625,17 @@ public:
             // save callback
             m_pFileDialogCallback = callback;
 
+            pListener->OnEvent(pEvent);
+            return true;
+        }
+
+        if (nMode == FILE_DIALOG_OPEN_FOLDER)
+        {
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_OPENDIRECTORY_DIALOG);
+            NSEditorApi::CAscLocalOpenDirectoryDialog* pData = new NSEditorApi::CAscLocalOpenDirectoryDialog();
+            pEvent->m_pData = pData;
+
+            m_pDirectoryDialogCallback = callback;
             pListener->OnEvent(pEvent);
             return true;
         }
@@ -6025,6 +6037,24 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             }
 
             SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
+            break;
+        }
+        case ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_OPENDIRECTORY_DIALOG:
+        {
+            NSEditorApi::CAscLocalOpenDirectoryDialog* pData = (NSEditorApi::CAscLocalOpenDirectoryDialog*)pEvent->m_pData;
+            if (m_pInternal->m_handler->m_pDirectoryDialogCallback)
+            {
+                std::wstring sPath = pData->get_Path();
+                if (sPath.empty())
+                    m_pInternal->m_handler->m_pDirectoryDialogCallback->Cancel();
+                else
+                {
+                    std::vector<CefString> file_paths;
+                    file_paths.push_back(sPath);
+                    m_pInternal->m_handler->m_pDirectoryDialogCallback->Continue(0, file_paths);
+                }
+                m_pInternal->m_handler->m_pDirectoryDialogCallback = NULL;
+            }
             break;
         }
         case ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_SAVE_YES_NO:
