@@ -1261,7 +1261,10 @@ DE.controllers.Main.DisableVersionHistory(); \
         else if (name == "Print_Start")
         {
             if (arguments.size() != 4)
+            {
+                m_bIsPrinting = true;
                 return true;
+            }
 
             std::vector<CefRefPtr<CefV8Value> >::const_iterator iter = arguments.begin();
 
