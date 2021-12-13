@@ -4404,6 +4404,9 @@ require.load = function (context, moduleName, url) {\n\
     {
         CEF_REQUIRE_UI_THREAD();
 
+        std::wstring sUrlOriginal = download_item->GetOriginalUrl().ToWString();
+        std::wstring sUrlOriginalWithoutProtocol = GetUrlWithoutProtocol(sUrlOriginal);
+
         std::wstring sUrl = download_item->GetURL().ToWString();
         std::wstring sUrlWithoutProtocol = GetUrlWithoutProtocol(sUrl);
         //m_pParent->m_pInternal->m_oDownloaderAbortChecker.EndDownload(sUrl);
@@ -4420,7 +4423,7 @@ require.load = function (context, moduleName, url) {\n\
         {
             // если ссылка приватная (внутренняя) - то уже все готово. просто продолжаем
             std::wstring sPrivateDownloadUrl = m_pParent->GetAppManager()->m_pInternal->GetPrivateDownloadUrl();
-            if (sUrlWithoutProtocol == GetUrlWithoutProtocol(sPrivateDownloadUrl))
+            if (sUrlOriginalWithoutProtocol == GetUrlWithoutProtocol(sPrivateDownloadUrl))
             {
                 sDestPath = m_pParent->GetAppManager()->m_pInternal->GetPrivateDownloadPath();
             }
@@ -4429,7 +4432,7 @@ require.load = function (context, moduleName, url) {\n\
         if (sDestPath.empty())
         {
             // проверяем на зашифрованные картинки
-            std::map<std::wstring, std::wstring>::iterator findCryptoImage = m_pParent->m_pInternal->m_arCryptoImages.find(sUrl);
+            std::map<std::wstring, std::wstring>::iterator findCryptoImage = m_pParent->m_pInternal->m_arCryptoImages.find(sUrlOriginal);
             if (findCryptoImage != m_pParent->m_pInternal->m_arCryptoImages.end())
             {
                 sDestPath = findCryptoImage->second;
@@ -4439,7 +4442,7 @@ require.load = function (context, moduleName, url) {\n\
         if (sDestPath.empty())
         {
             // проверяем на файлы метода AscDesktopEditor.DownloadFiles
-            std::map<std::wstring, CDownloadFileItem>::iterator findDownloadFile = m_pParent->m_pInternal->m_arDownloadedFiles.find(sUrlWithoutProtocol);
+            std::map<std::wstring, CDownloadFileItem>::iterator findDownloadFile = m_pParent->m_pInternal->m_arDownloadedFiles.find(sUrlOriginalWithoutProtocol);
             if (findDownloadFile != m_pParent->m_pInternal->m_arDownloadedFiles.end())
             {
                 sDestPath = findDownloadFile->second.Path;
@@ -4548,8 +4551,12 @@ require.load = function (context, moduleName, url) {\n\
         if (!download_item->IsValid())
             return;
 
+        std::wstring sUrlOriginal = download_item->GetOriginalUrl().ToWString();
+        std::wstring sUrlOriginalWithoutProtocol = GetUrlWithoutProtocol(sUrlOriginal);
+
         std::wstring sUrl = download_item->GetURL().ToWString();
         std::wstring sUrlWithoutProtocol = GetUrlWithoutProtocol(sUrl);
+
         std::wstring sPath = download_item->GetFullPath().ToWString();
 
         if (download_item->IsInProgress() || download_item->IsCanceled() || download_item->IsComplete() || (0 != download_item->GetReceivedBytes()))
@@ -4577,13 +4584,13 @@ require.load = function (context, moduleName, url) {\n\
         // проверяем на зашифрованные картинки
         if (!m_pParent->m_pInternal->m_arCryptoImages.empty())
         {
-            std::map<std::wstring, std::wstring>::iterator findCryptoImage = m_pParent->m_pInternal->m_arCryptoImages.find(sUrl);
+            std::map<std::wstring, std::wstring>::iterator findCryptoImage = m_pParent->m_pInternal->m_arCryptoImages.find(sUrlOriginal);
             if (findCryptoImage != m_pParent->m_pInternal->m_arCryptoImages.end())
             {
                 if (download_item->IsComplete() || download_item->IsCanceled())
                 {
                     int_64_type nFrameID = 0;
-                    std::map<std::wstring, int_64_type>::iterator findCryptoImageFrameId = m_pParent->m_pInternal->m_arCryptoImagesFrameId.find(sUrl);
+                    std::map<std::wstring, int_64_type>::iterator findCryptoImageFrameId = m_pParent->m_pInternal->m_arCryptoImagesFrameId.find(sUrlOriginal);
                     if (findCryptoImageFrameId !=  m_pParent->m_pInternal->m_arCryptoImagesFrameId.end())
                     {
                         nFrameID = findCryptoImageFrameId->second;
@@ -4609,7 +4616,7 @@ require.load = function (context, moduleName, url) {\n\
         // проверяем на файлы метода AscDesktopEditor.DownloadFiles
         if (!m_pParent->m_pInternal->m_arDownloadedFiles.empty())
         {
-            std::map<std::wstring, CDownloadFileItem>::iterator findDownloadFile = m_pParent->m_pInternal->m_arDownloadedFiles.find(sUrlWithoutProtocol);
+            std::map<std::wstring, CDownloadFileItem>::iterator findDownloadFile = m_pParent->m_pInternal->m_arDownloadedFiles.find(sUrlOriginalWithoutProtocol);
             if (findDownloadFile != m_pParent->m_pInternal->m_arDownloadedFiles.end())
             {
                 if (download_item->IsComplete() || download_item->IsCanceled())
