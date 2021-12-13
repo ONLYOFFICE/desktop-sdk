@@ -1305,8 +1305,11 @@ public:
         if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_DOCUMENT)
         {
             arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX);
+
+#ifndef DISABLE_OFORM_SUPPORT
             arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF);
             arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM);
+#endif
 
             if (!bEncryption)
             {
