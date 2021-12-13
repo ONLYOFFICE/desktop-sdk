@@ -4052,6 +4052,8 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
             
             if (((nMods & EVENTFLAG_CONTROL_DOWN) != 0) && event.windows_key_code == 9)
                 return true; // tab!!!
+            if (((nMods & EVENTFLAG_ALT_DOWN) != 0) && event.windows_key_code == 115)
+                return true; // alt + f4!!!
         }
 
         return false;
