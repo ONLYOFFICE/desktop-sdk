@@ -966,6 +966,10 @@ int CAscApplicationManager::GetFileFormatByExtentionForSave(const std::wstring& 
         nFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_FB2;
     else if (sName == L"epub")
         nFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_EPUB;
+    else if (sName == L"png")
+        nFormat = AVS_OFFICESTUDIO_FILE_IMAGE_PNG;
+    else if (sName == L"jpg" || sName == L"jpeg")
+        nFormat = AVS_OFFICESTUDIO_FILE_IMAGE_JPG;
 #ifdef FILE_SAVE_ADDONS
     FILE_SAVE_ADDONS
 #endif

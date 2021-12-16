@@ -1356,7 +1356,7 @@ public:
 
             if (!bEncryption)
             {
-                arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA);
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA);                
             }
         }
         else if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_PRESENTATION)
@@ -1380,6 +1380,9 @@ public:
             if (!bEncryption)
             {
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA);
+
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_IMAGE_PNG);
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_IMAGE_JPG);
             }
         }
         else if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
@@ -1415,6 +1418,8 @@ public:
     bool LocalFile_IsSupportEditFormat(int nFormat)
     {
         if ((nFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM) != 0)
+            return false;
+        if ((nFormat & AVS_OFFICESTUDIO_FILE_IMAGE) != 0)
             return false;
 
         return true;

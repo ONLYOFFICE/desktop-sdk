@@ -1039,12 +1039,31 @@ public:
     virtual DWORD ThreadProc()
     {
         std::wstring sLocalFilePath = m_oInfo.m_sFileSrc;
+
+        // если true - то делаем архив 123.png.zip
+        // если false - то делаем папку 123.png
+        bool bIsAddZipToRasterFormats = false;
+        std::wstring sRasterDictionaryExtract = L"";
+
 #ifdef WIN32
         if (0 == sLocalFilePath.find(L"//"))
         {
             sLocalFilePath = L"\\\\" + sLocalFilePath.substr(2);
         }
 #endif
+
+        if (m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_IMAGE)
+        {
+            if (bIsAddZipToRasterFormats)
+                sLocalFilePath += L".zip";
+            else
+            {
+                sRasterDictionaryExtract = sLocalFilePath;
+                sLocalFilePath = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"OL");
+                if (NSFile::CFileBinary::Exists(sLocalFilePath))
+                    NSFile::CFileBinary::Remove(sLocalFilePath);
+            }
+        }
 
         std::wstring sLockerSavedPath;
         if (m_pLocker)
@@ -1157,6 +1176,11 @@ public:
         oBuilder.WriteEncodeXmlString(sDstTmpDir);
         oBuilder.WriteString(L"</m_sTempDir>");
 
+        if (m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_IMAGE)
+        {
+            oBuilder.WriteString(L"<m_oThumbnail><first>false</first></m_oThumbnail>");
+        }
+
         oBuilder.WriteString(L"</TaskQueueDataConvert>");
 
         std::wstring sXmlConvert = oBuilder.GetData();
@@ -1197,6 +1221,19 @@ public:
 
             if (NSFile::CFileBinary::Exists(sLockerSavedPath))
                 NSFile::CFileBinary::Remove(sLockerSavedPath);
+        }
+        else
+        {
+            if ((m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_IMAGE) != 0)
+            {
+                if (!bIsAddZipToRasterFormats)
+                {
+                    NSDirectory::CreateDirectory(sRasterDictionaryExtract);
+                    COfficeUtils oUtils;
+                    oUtils.ExtractToDirectory(sLocalFilePath, sRasterDictionaryExtract, NULL, 0);
+                    NSFile::CFileBinary::Remove(sLocalFilePath);
+                }
+            }
         }
 
         m_bIsWorking = false;
