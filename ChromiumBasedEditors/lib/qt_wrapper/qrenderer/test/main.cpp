@@ -11,7 +11,7 @@
 #include <QImage>
 #include <QVBoxLayout>
 #include <QScreen>
-#include <fstream>
+#include <iostream>
 #include <map>
 
 #ifdef GetTempPath

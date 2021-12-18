@@ -1,11 +1,13 @@
 CORE_ROOT_DIR = $$PWD/../../../../../../core
 PWD_ROOT_DIR = $$PWD
 
+TEMPLATE = app
+TARGET = test
+CONFIG -= app_bundle
+
 include($$CORE_ROOT_DIR/Common/base.pri)
 
 DESTDIR = $$PWD/build
-TEMPLATE = app
-TARGET = test
 
 QT += printsupport widgets gui core
 
