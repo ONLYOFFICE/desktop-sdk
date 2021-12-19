@@ -1,228 +1,289 @@
 #include "./../include/qrenderer.h"
 #include "./../src/painting_conversions.h" // internal things to qt
-#include <QPagedPaintDevice> //
-
+#include <QPagedPaintDevice>
 
 // DEBUG THINGS
 #include <algorithm>
 #include <iostream>
-#include <fstream>
 #include <QDebug>
-#include <QFile>
 #define TELL qDebug() << __func__
-namespace {
-template<typename T>
-QString toBin(T int_value)
+namespace
 {
-    QString result;
-    for (std::size_t i = 0; i < sizeof(T) * 8; ++i) {
-        if (i && 0 == i % 8) {
-            result += ' ';
+    template<typename T>
+    QString toBin(T int_value)
+    {
+        QString result;
+        for (std::size_t i = 0; i < sizeof(T) * 8; ++i) {
+            if (i && 0 == i % 8) {
+                result += ' ';
+            }
+            result += ((int_value >> i) & (T)1) ? '1' : '0';
         }
-        result += ((int_value >> i) & (T)1) ? '1' : '0';
+        std::reverse(result.begin(), result.end());
+        return result;
     }
-    std::reverse(result.begin(), result.end());
-    return result;
-}
 
-// constants
-//// pen -----------------------------------------------------------
-//const long c_ag_LineCapFlat = 0;
-//const long c_ag_LineCapSquare = 1;
-//const long c_ag_LineCapTriangle = 3;
-//const long c_ag_LineCapNoAnchor = 16;
-//const long c_ag_LineCapSquareAnchor = 17;
-//const long c_ag_LineCapRoundAnchor = 18;
-//const long c_ag_LineCapDiamondAnchor = 19;
-//const long c_ag_LineCapArrowAnchor = 20;
-//const long c_ag_LineCapAnchorMask = 240;
-//const long c_ag_LineCapCustom = 255;
-QString getLineCap(long val)
-{
-    switch (val)
+    // constants
+    //// pen -----------------------------------------------------------
+    //const long c_ag_LineCapFlat = 0;
+    //const long c_ag_LineCapSquare = 1;
+    //const long c_ag_LineCapTriangle = 3;
+    //const long c_ag_LineCapNoAnchor = 16;
+    //const long c_ag_LineCapSquareAnchor = 17;
+    //const long c_ag_LineCapRoundAnchor = 18;
+    //const long c_ag_LineCapDiamondAnchor = 19;
+    //const long c_ag_LineCapArrowAnchor = 20;
+    //const long c_ag_LineCapAnchorMask = 240;
+    //const long c_ag_LineCapCustom = 255;
+    QString getLineCap(long val)
     {
-    case 0: return "c_ag_LineCapFlat";
-    case 1: return "c_ag_LineCapSquare";
-    case 3: return "c_ag_LineCapTriangle";
-    case 16: return "c_ag_LineCapNoAnchor";
-    case 17: return "c_ag_LineCapSquareAnchor";
-    case 18: return "c_ag_LineCapRoundAnchor";
-    case 19: return "c_ag_LineCapDiamondAnchor";
-    case 20: return "c_ag_LineCapArrowAnchor";
-    case 240: return "c_ag_LineCapAnchorMask";
-    case 255: return "c_ag_LineCapCustom";
-    default: return "unknown line cap";
+        switch (val)
+        {
+        case 0: return "c_ag_LineCapFlat";
+        case 1: return "c_ag_LineCapSquare";
+        case 3: return "c_ag_LineCapTriangle";
+        case 16: return "c_ag_LineCapNoAnchor";
+        case 17: return "c_ag_LineCapSquareAnchor";
+        case 18: return "c_ag_LineCapRoundAnchor";
+        case 19: return "c_ag_LineCapDiamondAnchor";
+        case 20: return "c_ag_LineCapArrowAnchor";
+        case 240: return "c_ag_LineCapAnchorMask";
+        case 255: return "c_ag_LineCapCustom";
+        default: return "unknown line cap";
+        }
     }
-}
 
-//const long c_ag_DashCapFlat = 0;
-//const long c_ag_DashCapRound = 2;
-//const long c_ag_DashCapTriangle = 3;
-QString getDashCap(long val) // UNUSED
-{
-    switch (val)
+    //const long c_ag_DashCapFlat = 0;
+    //const long c_ag_DashCapRound = 2;
+    //const long c_ag_DashCapTriangle = 3;
+    QString getDashCap(long val) // UNUSED
     {
-    case 0: return "c_ag_DashCapFlat";
-    case 2: return "c_ag_DashCapRound";
-    case 3: return "c_ag_DashCapTriangle";
-    default: return "unknown dash cap";
+        switch (val)
+        {
+        case 0: return "c_ag_DashCapFlat";
+        case 2: return "c_ag_DashCapRound";
+        case 3: return "c_ag_DashCapTriangle";
+        default: return "unknown dash cap";
+        }
     }
-}
 
-//const long c_ag_LineJoinMiter = 0;
-//const long c_ag_LineJoinBevel = 1;
-//const long c_ag_LineJoinRound = 2;
-//const long c_ag_LineJoinMiterClipped = 3;
-QString getLineJoin(long val)
-{
-    switch (val)
+    //const long c_ag_LineJoinMiter = 0;
+    //const long c_ag_LineJoinBevel = 1;
+    //const long c_ag_LineJoinRound = 2;
+    //const long c_ag_LineJoinMiterClipped = 3;
+    QString getLineJoin(long val)
     {
-    case 0: return "c_ag_LineJoinMiter";
-    case 1: return "c_ag_LineJoinBevel";
-    case 2: return "c_ag_LineJoinRound";
-    case 3: return "c_ag_LineJoinMiterClipped";
-    default: return "unknown line join";
+        switch (val)
+        {
+        case 0: return "c_ag_LineJoinMiter";
+        case 1: return "c_ag_LineJoinBevel";
+        case 2: return "c_ag_LineJoinRound";
+        case 3: return "c_ag_LineJoinMiterClipped";
+        default: return "unknown line join";
+        }
     }
-}
 
-//const long c_ag_PenAlignmentCenter = 0;
-//const long c_ag_PenAlignmentInset = 1;
-//const long c_ag_PenAlignmentOutset = 2;
-//const long c_ag_PenAlignmentLeft = 3;
-//const long c_ag_PenAlignmentRight = 4;
-QString getPenAlignment(long val) // UNUSED
-{
-    switch (val)
+    //const long c_ag_PenAlignmentCenter = 0;
+    //const long c_ag_PenAlignmentInset = 1;
+    //const long c_ag_PenAlignmentOutset = 2;
+    //const long c_ag_PenAlignmentLeft = 3;
+    //const long c_ag_PenAlignmentRight = 4;
+    QString getPenAlignment(long val) // UNUSED
     {
-    case 0: return "c_ag_PenAlignmentCenter";
-    case 1: return "c_ag_PenAlignmentInset";
-    case 2: return "c_ag_PenAlignmentOutset";
-    case 3: return "c_ag_PenAlignmentLeft";
-    case 4: return "c_ag_PenAlignmentRight";
-    default: return "unknown alignment";
+        switch (val)
+        {
+        case 0: return "c_ag_PenAlignmentCenter";
+        case 1: return "c_ag_PenAlignmentInset";
+        case 2: return "c_ag_PenAlignmentOutset";
+        case 3: return "c_ag_PenAlignmentLeft";
+        case 4: return "c_ag_PenAlignmentRight";
+        default: return "unknown alignment";
+        }
     }
-}
-//// --------------------------------------------------------------
-//// brush --------------------------------------------------------
-//// old constants for brush type
-//const long c_BrushTypeSolid_ = 0;
-//const long c_BrushTypeHorizontal_ = 1;
-//const long c_BrushTypeVertical_ = 2;
-//const long c_BrushTypeDiagonal1_ = 3;
-//const long c_BrushTypeDiagonal2_ = 4;
-//const long c_BrushTypeCenter_ = 5;
-//const long c_BrushTypePathGradient1_ = 6;
-//const long c_BrushTypePathGradient2_ = 7;
-//const long c_BrushTypeTexture_ = 8;
-//const long c_BrushTypeHatch1_ = 9;
-//const long c_BrushTypeHatch53_ = 61;
-//const long c_BrushTypeGradient1_ = 62;
-//const long c_BrushTypeGradient6_ = 70;
+    //// --------------------------------------------------------------
+    //// brush --------------------------------------------------------
+    //// old constants for brush type
+    //const long c_BrushTypeSolid_ = 0;
+    //const long c_BrushTypeHorizontal_ = 1;
+    //const long c_BrushTypeVertical_ = 2;
+    //const long c_BrushTypeDiagonal1_ = 3;
+    //const long c_BrushTypeDiagonal2_ = 4;
+    //const long c_BrushTypeCenter_ = 5;
+    //const long c_BrushTypePathGradient1_ = 6;
+    //const long c_BrushTypePathGradient2_ = 7;
+    //const long c_BrushTypeTexture_ = 8;
+    //const long c_BrushTypeHatch1_ = 9;
+    //const long c_BrushTypeHatch53_ = 61;
+    //const long c_BrushTypeGradient1_ = 62;
+    //const long c_BrushTypeGradient6_ = 70;
 
-//const long c_BrushTypeSolid = 1000;
-//const long c_BrushTypeHorizontal = 2001;
-//const long c_BrushTypeVertical = 2002;
-//const long c_BrushTypeDiagonal1 = 2003;
-//const long c_BrushTypeDiagonal2 = 2004;
-//const long c_BrushTypeCenter = 2005;
-//const long c_BrushTypePathGradient1 = 2006; // left for comparability
-//const long c_BrushTypePathGradient2 = 2007; // left for comparability
-//const long c_BrushTypeCylinderHor = 2008;
-//const long c_BrushTypeCylinderVer = 2009;
-//const long c_BrushTypeTexture = 3008;
-//const long c_BrushTypePattern = 3009;
-//const long c_BrushTypeHatch1 = 4009;
-//const long c_BrushTypeHatch53 = 4061;
-//const long c_BrushTypeNoFill = 5000;
-//const long c_BrushTypeNotSet = 5001;
+    //const long c_BrushTypeSolid = 1000;
+    //const long c_BrushTypeHorizontal = 2001;
+    //const long c_BrushTypeVertical = 2002;
+    //const long c_BrushTypeDiagonal1 = 2003;
+    //const long c_BrushTypeDiagonal2 = 2004;
+    //const long c_BrushTypeCenter = 2005;
+    //const long c_BrushTypePathGradient1 = 2006; // left for comparability
+    //const long c_BrushTypePathGradient2 = 2007; // left for comparability
+    //const long c_BrushTypeCylinderHor = 2008;
+    //const long c_BrushTypeCylinderVer = 2009;
+    //const long c_BrushTypeTexture = 3008;
+    //const long c_BrushTypePattern = 3009;
+    //const long c_BrushTypeHatch1 = 4009;
+    //const long c_BrushTypeHatch53 = 4061;
+    //const long c_BrushTypeNoFill = 5000;
+    //const long c_BrushTypeNotSet = 5001;
 
-//const long c_BrushTypeMyTestGradient = 6000;
-//const long c_BrushTypePathRadialGradient = 6001;
-//const long c_BrushTypePathConicalGradient = 6002;
-//const long c_BrushTypePathDiamondGradient = 6003;
-//const long c_BrushTypePathNewLinearGradient = 6004;
-//const long c_BrushTypeTriagnleMeshGradient = 6005;
-//const long c_BrushTypeCurveGradient     = 6006;
-//const long c_BrushTypeTensorCurveGradient = 6007;
-QString getBrushType(long val)
-{
-    switch (val)
+    //const long c_BrushTypeMyTestGradient = 6000;
+    //const long c_BrushTypePathRadialGradient = 6001;
+    //const long c_BrushTypePathConicalGradient = 6002;
+    //const long c_BrushTypePathDiamondGradient = 6003;
+    //const long c_BrushTypePathNewLinearGradient = 6004;
+    //const long c_BrushTypeTriagnleMeshGradient = 6005;
+    //const long c_BrushTypeCurveGradient     = 6006;
+    //const long c_BrushTypeTensorCurveGradient = 6007;
+    QString getBrushType(long val)
     {
-    case 0: return "c_BrushTypeSolid_ (old)";
-    case 1: return "c_BrushTypeHorizontal_ (old)";
-    case 2: return "c_BrushTypeVertical_ (old)";
-    case 3: return "c_BrushTypeDiagonal1_ (old)";
-    case 4: return "c_BrushTypeDiagonal2_ (old)";
-    case 5: return "c_BrushTypeCenter_ (old)";
-    case 6: return "c_BrushTypePathGradient1_ (old)";
-    case 7: return "c_BrushTypePathGradient2_ (old)";
-    case 8: return "c_BrushTypeTexture_ (old)";
-    case 9: return "c_BrushTypeHatch1_ (old)";
-    case 61: return "c_BrushTypeHatch53_ (old)";
-    case 62: return "c_BrushTypeGradient1_ (old)";
-    case 70: return "c_BrushTypeGradient6_ (old)";
+        switch (val)
+        {
+        case 0: return "c_BrushTypeSolid_ (old)";
+        case 1: return "c_BrushTypeHorizontal_ (old)";
+        case 2: return "c_BrushTypeVertical_ (old)";
+        case 3: return "c_BrushTypeDiagonal1_ (old)";
+        case 4: return "c_BrushTypeDiagonal2_ (old)";
+        case 5: return "c_BrushTypeCenter_ (old)";
+        case 6: return "c_BrushTypePathGradient1_ (old)";
+        case 7: return "c_BrushTypePathGradient2_ (old)";
+        case 8: return "c_BrushTypeTexture_ (old)";
+        case 9: return "c_BrushTypeHatch1_ (old)";
+        case 61: return "c_BrushTypeHatch53_ (old)";
+        case 62: return "c_BrushTypeGradient1_ (old)";
+        case 70: return "c_BrushTypeGradient6_ (old)";
 
-    case 1000: return "c_BrushTypeSolid";
-    case 2001: return "c_BrushTypeHorizontal";
-    case 2002: return "c_BrushTypeVertical";
-    case 2003: return "c_BrushTypeDiagonal1";
-    case 2004: return "c_BrushTypeDiagonal2";
-    case 2005: return "c_BrushTypeCenter";
-    case 2006: return "c_BrushTypePathGradient1";
-    case 2007: return "c_BrushTypePathGradient2";
-    case 2008: return "c_BrushTypeCylinderHor";
-    case 2009: return "c_BrushTypeCylinderVer";
+        case 1000: return "c_BrushTypeSolid";
+        case 2001: return "c_BrushTypeHorizontal";
+        case 2002: return "c_BrushTypeVertical";
+        case 2003: return "c_BrushTypeDiagonal1";
+        case 2004: return "c_BrushTypeDiagonal2";
+        case 2005: return "c_BrushTypeCenter";
+        case 2006: return "c_BrushTypePathGradient1";
+        case 2007: return "c_BrushTypePathGradient2";
+        case 2008: return "c_BrushTypeCylinderHor";
+        case 2009: return "c_BrushTypeCylinderVer";
 
-    case 3008: return "c_BrushTypeTexture";
-    case 3009: return "c_BrushTypePattern";
-    case 4009: return "c_BrushTypeHatch1";
-    case 4061: return "c_BrushTypeHatch53";
-    case 5000: return "c_BrushTypeNoFill";
-    case 5001: return "c_BrushTypeNotSet";
+        case 3008: return "c_BrushTypeTexture";
+        case 3009: return "c_BrushTypePattern";
+        case 4009: return "c_BrushTypeHatch1";
+        case 4061: return "c_BrushTypeHatch53";
+        case 5000: return "c_BrushTypeNoFill";
+        case 5001: return "c_BrushTypeNotSet";
 
-    case 6000: return "c_BrushTypeMyTestGradient";
-    case 6001: return "c_BrushTypePathRadialGradient";
-    case 6002: return "c_BrushTypePathConicalGradient";
-    case 6003: return "c_BrushTypePathDiamondGradient";
-    case 6004: return "c_BrushTypePathNewLinearGradient";
-    case 6005: return "c_BrushTypeTriagnleMeshGradient";
-    case 6006: return "c_BrushTypeCurveGradient";
-    case 6007: return "c_BrushTypeTensorCurveGradient";
-    default: return "unknown type";
+        case 6000: return "c_BrushTypeMyTestGradient";
+        case 6001: return "c_BrushTypePathRadialGradient";
+        case 6002: return "c_BrushTypePathConicalGradient";
+        case 6003: return "c_BrushTypePathDiamondGradient";
+        case 6004: return "c_BrushTypePathNewLinearGradient";
+        case 6005: return "c_BrushTypeTriagnleMeshGradient";
+        case 6006: return "c_BrushTypeCurveGradient";
+        case 6007: return "c_BrushTypeTensorCurveGradient";
+        default: return "unknown type";
+        }
     }
-}
 
 
-//const long c_BrushTextureModeStretch = 0;
-//const long c_BrushTextureModeTile = 1;
-//const long c_BrushTextureModeTileCenter = 2;
-QString getBrushTextureMode(long val)
-{
-    switch (val)
+    //const long c_BrushTextureModeStretch = 0;
+    //const long c_BrushTextureModeTile = 1;
+    //const long c_BrushTextureModeTileCenter = 2;
+    QString getBrushTextureMode(long val)
     {
-    case 0: return "c_BrushTextureModeStretch";
-    case 1: return "c_BrushTextureModeTile";
-    case 2: return "c_BrushTextureModeTileCenter";
-    default: return "unknown mode";
+        switch (val)
+        {
+        case 0: return "c_BrushTextureModeStretch";
+        case 1: return "c_BrushTextureModeTile";
+        case 2: return "c_BrushTextureModeTileCenter";
+        default: return "unknown mode";
+        }
     }
-}
 } // anonymous namespace
 // DEBUG THINGS
-
-
-
 
 
 NSQRenderer::CQRenderer::CQRenderer(QPaintDevice *pPaintDevice)
     : m_oPrinterContext{pPaintDevice}
 {
     TELL;
+    InitDefaults();
 }
 
 NSQRenderer::CQRenderer::CQRenderer(QPagedPaintDevice *pPaintDevice)
     : m_oPrinterContext{pPaintDevice}
 {
     TELL;
+    InitDefaults();
+}
+
+NSQRenderer::CQRenderer::~CQRenderer()
+{
+    RELEASEINTERFACE(m_pFontManager);
+    RELEASEINTERFACE(m_pAppFonts);
+}
+
+void NSQRenderer::CQRenderer::InitDefaults()
+{
+    m_pAppFonts = NULL;
+    m_pFontManager = NULL;
+    m_bIsUseTextAsPath = true;
+
+    m_lCurrentCommand = c_nNone;
+    m_oSimpleGraphicsConverter.SetRenderer(this);
+
+    m_oInstalledFont.Size = -1;
+}
+
+void NSQRenderer::CQRenderer::SetUseTextAsPath(const bool &bIsUseTextAsPath)
+{
+    m_bIsUseTextAsPath = bIsUseTextAsPath;
+}
+
+void NSQRenderer::CQRenderer::SetFont()
+{
+    double dDpiX = 0; get_DpiX(&dDpiX);
+    double dDpiY = 0; get_DpiY(&dDpiY);
+    double dPix = m_oFont.CharSpace * dDpiX / 25.4;
+
+    if (m_oInstalledFont.IsEqual(&m_oFont))
+    {
+        m_pFontManager->SetCharSpacing(dPix);
+        return;
+    }
+
+    m_pFontManager->SetStringGID(m_oFont.StringGID);
+    m_pFontManager->SetCharSpacing(dPix);
+
+    if (m_oFont.Path.empty())
+    {
+        m_pFontManager->LoadFontByName(m_oFont.Name, (float)m_oFont.Size, m_oFont.GetStyle(), dDpiX, dDpiY);
+    }
+    else
+    {
+        m_pFontManager->LoadFontFromFile(m_oFont.Path, m_oFont.FaceIndex, (float)m_oFont.Size, dDpiX, dDpiY);
+    }
+
+    m_oInstalledFont = m_oFont;
+}
+
+void NSQRenderer::CQRenderer::beginPainting(NSFonts::IApplicationFonts *pFonts)
+{
+    TELL;
+
+    RELEASEINTERFACE(m_pAppFonts);
+    m_pAppFonts = pFonts;
+    ADDREFINTERFACE(m_pAppFonts);
+
+    RELEASEINTERFACE(m_pFontManager);
+    m_pFontManager = m_pAppFonts->GenerateFontManager();
+
+    m_oPrinterContext.painter().setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
 }
 
 void NSQRenderer::CQRenderer::endPainting()
@@ -778,7 +839,6 @@ HRESULT NSQRenderer::CQRenderer::get_FontName(std::wstring *bsName)
 HRESULT NSQRenderer::CQRenderer::put_FontName(const std::wstring &bsName)
 {
     TELL;
-    m_bFontChanged = true;
     m_oFont.Name = bsName;
     return S_OK;
 }
@@ -797,7 +857,6 @@ HRESULT NSQRenderer::CQRenderer::get_FontPath(std::wstring *bsName)
 HRESULT NSQRenderer::CQRenderer::put_FontPath(const std::wstring &bsName)
 {
     TELL;
-    m_bFontChanged = true;
     m_oFont.Path = bsName;
     return S_OK;
 }
@@ -816,7 +875,6 @@ HRESULT NSQRenderer::CQRenderer::get_FontSize(double *dSize)
 HRESULT NSQRenderer::CQRenderer::put_FontSize(const double &dSize)
 {
     TELL;
-    m_bFontChanged = true;
     m_oFont.Size = dSize;
     return S_OK;
 }
@@ -835,7 +893,6 @@ HRESULT NSQRenderer::CQRenderer::get_FontStyle(LONG *lStyle)
 HRESULT NSQRenderer::CQRenderer::put_FontStyle(const LONG &lStyle)
 {
     TELL;
-    m_bFontChanged = true;
     m_oFont.SetStyle(lStyle);
     return S_OK;
 }
@@ -854,7 +911,6 @@ HRESULT NSQRenderer::CQRenderer::get_FontStringGID(INT *bGID)
 HRESULT NSQRenderer::CQRenderer::put_FontStringGID(const INT &bGID)
 {
     TELL;
-    m_bFontChanged = true;
     m_oFont.StringGID = bGID;
     return S_OK;
 }
@@ -873,7 +929,6 @@ HRESULT NSQRenderer::CQRenderer::get_FontCharSpace(double *dSpace)
 HRESULT NSQRenderer::CQRenderer::put_FontCharSpace(const double &dSpace)
 {
     TELL;
-    m_bFontChanged = true;
     m_oFont.CharSpace = dSpace;
     return S_OK;
 }
@@ -892,7 +947,6 @@ HRESULT NSQRenderer::CQRenderer::get_FontFaceIndex(int *lFaceIndex)
 HRESULT NSQRenderer::CQRenderer::put_FontFaceIndex(const int &lFaceIndex)
 {
     TELL;
-    m_bFontChanged = true;
     m_oFont.FaceIndex = lFaceIndex;
     return S_OK;
 }
@@ -904,8 +958,15 @@ HRESULT NSQRenderer::CQRenderer::CommandDrawTextCHAR(const LONG &c
                                                          , const double &h)
 {
     TELL;
-    // not used
-    setPaintingThings();
+    if (m_bIsUseTextAsPath)
+    {
+        PathCommandEnd();
+        PathCommandTextCHAR(c, x, y, w, h);
+        DrawPath(c_nWindingFillMode);
+        PathCommandEnd();
+        return S_OK;
+    }
+
     return S_OK;
 }
 
@@ -916,9 +977,15 @@ HRESULT NSQRenderer::CQRenderer::CommandDrawText(const std::wstring &bsText
                                                        , const double &h)
 {
     TELL;
-    setPaintingThings();
-    m_oPrinterContext.painter()
-            .drawText({x, y, w, h}, QString::fromStdWString(bsText));
+    if (m_bIsUseTextAsPath)
+    {
+        PathCommandEnd();
+        PathCommandText(bsText, x, y, w, h);
+        DrawPath(c_nWindingFillMode);
+        PathCommandEnd();
+        return S_OK;
+    }
+
     return S_OK;
 }
 
@@ -930,8 +997,15 @@ HRESULT NSQRenderer::CQRenderer::CommandDrawTextExCHAR(const LONG &c
                                                            , const double &h)
 {
     TELL;
-    // not used
-    setPaintingThings();
+    if (m_bIsUseTextAsPath)
+    {
+        PathCommandEnd();
+        PathCommandTextExCHAR(c, gid, x, y, w, h);
+        DrawPath(c_nWindingFillMode);
+        PathCommandEnd();
+        return S_OK;
+    }
+
     return S_OK;
 }
 
@@ -944,43 +1018,64 @@ HRESULT NSQRenderer::CQRenderer::CommandDrawTextEx(const std::wstring &bsUnicode
                                                        , const double &h)
 {
     TELL;
-    // not used
-    setPaintingThings();
+    if (m_bIsUseTextAsPath)
+    {
+        PathCommandEnd();
+        PathCommandTextEx(bsUnicodeText, pGids, nGidsCount, x, y, w, h);
+        DrawPath(c_nWindingFillMode);
+        PathCommandEnd();
+        return S_OK;
+    }
+
     return S_OK;
 }
 
 HRESULT NSQRenderer::CQRenderer::BeginCommand(const DWORD &lType)
 {
     TELL << lType;
-    m_oCurrentCommand = (long)lType;
+    m_lCurrentCommand = (long)lType;
     return S_OK;
 }
 
 HRESULT NSQRenderer::CQRenderer::EndCommand(const DWORD &lType)
 {
     TELL << lType;
-    m_oCurrentCommand = c_nNone;
+    m_lCurrentCommand = c_nNone;
     return S_FALSE;
 }
 
 HRESULT NSQRenderer::CQRenderer::PathCommandMoveTo(const double &x, const double &y)
 {
     TELL << QPointF{x, y};
-    m_oUntransformedPainterPath.moveTo((qreal)x, (qreal)y);
+    if (c_nSimpleGraphicType == m_lCurrentCommand)
+    {
+        m_oUntransformedPainterPath.moveTo((qreal)x, (qreal)y);
+    }
+    else
+    {
+        m_oSimpleGraphicsConverter.PathCommandMoveTo(x, y);
+    }
     return S_OK;
 }
 
 HRESULT NSQRenderer::CQRenderer::PathCommandLineTo(const double &x, const double &y)
 {
     TELL << QPointF{x, y};
-    m_oUntransformedPainterPath.lineTo((qreal)x, (qreal)y);
+    if (c_nSimpleGraphicType == m_lCurrentCommand)
+    {
+        m_oUntransformedPainterPath.lineTo((qreal)x, (qreal)y);
+    }
+    else
+    {
+        m_oSimpleGraphicsConverter.PathCommandLineTo(x, y);
+    }
     return S_OK;
 }
 
 HRESULT NSQRenderer::CQRenderer::PathCommandLinesTo(double *points, const int &count)
 {
     TELL;
-    // not used
+    m_oSimpleGraphicsConverter.PathCommandLinesTo(points, (LONG)count);
     return S_OK;
 }
 
@@ -992,16 +1087,23 @@ HRESULT NSQRenderer::CQRenderer::PathCommandCurveTo(const double &x1
                                                           , const double &y3)
 {
     TELL;
-    m_oUntransformedPainterPath.cubicTo({(qreal)x1, (qreal)y1}
+    if (c_nSimpleGraphicType == m_lCurrentCommand)
+    {
+        m_oUntransformedPainterPath.cubicTo({(qreal)x1, (qreal)y1}
                             , {(qreal)x2, (qreal)y2}
                             , {(qreal)x3, (qreal)y3});
+    }
+    else
+    {
+        m_oSimpleGraphicsConverter.PathCommandCurveTo(x1, y1, x2, y2, x3, y3);
+    }
     return S_OK;
 }
 
 HRESULT NSQRenderer::CQRenderer::PathCommandCurvesTo(double *points, const int &count)
 {
     TELL;
-    // not used
+    m_oSimpleGraphicsConverter.PathCommandCurvesTo(points, (LONG)count);
     return S_OK;
 }
 
@@ -1013,14 +1115,21 @@ HRESULT NSQRenderer::CQRenderer::PathCommandArcTo(const double &x
                                                       , const double &sweepAngle)
 {
     TELL;
-    // not used
+    m_oSimpleGraphicsConverter.PathCommandArcTo(x, y, w, h, startAngle, sweepAngle);
     return S_OK;
 }
 
 HRESULT NSQRenderer::CQRenderer::PathCommandClose()
 {
     TELL;
-    m_oUntransformedPainterPath.lineTo((QPointF)m_oUntransformedPainterPath.elementAt(0));
+    if (c_nSimpleGraphicType == m_lCurrentCommand)
+    {
+        m_oUntransformedPainterPath.closeSubpath();
+    }
+    else
+    {
+        m_oSimpleGraphicsConverter.PathCommandClose();
+    }
     return S_OK;
 }
 
@@ -1078,54 +1187,35 @@ HRESULT NSQRenderer::CQRenderer::PathCommandStart()
 HRESULT NSQRenderer::CQRenderer::PathCommandGetCurrentPoint(double *x, double *y)
 {
     TELL;
-    // not used
+    m_oSimpleGraphicsConverter.PathCommandGetCurrentPoint(x, y);
     return S_OK;
 }
 
-HRESULT NSQRenderer::CQRenderer::PathCommandTextCHAR(const LONG &c
-                                                         , const double &x
-                                                         , const double &y
-                                                         , const double &w
-                                                         , const double &h)
+HRESULT NSQRenderer::CQRenderer::PathCommandTextCHAR(const LONG& lUnicode, const double& dX, const double& dY, const double& dW, const double& dH)
 {
-    TELL;
-    // not used
+    SetFont();
+    int nCode = (int)lUnicode;
+    m_oSimpleGraphicsConverter.PathCommandText2(&nCode, NULL, 1, m_pFontManager, dX, dY, dW, dH);
     return S_OK;
 }
-
-HRESULT NSQRenderer::CQRenderer::PathCommandText(const std::wstring &bsText
-                                                     , const double &x
-                                                     , const double &y
-                                                     , const double &w
-                                                     , const double &h)
+HRESULT NSQRenderer::CQRenderer::PathCommandTextExCHAR(const LONG& lUnicode, const LONG& lGid, const double& dX, const double& dY, const double& dW, const double& dH)
 {
-    TELL;
-    // not used
+    SetFont();
+    int nCode = (int)lUnicode;
+    int nGid = (int)lGid;
+    m_oSimpleGraphicsConverter.PathCommandText2(&nCode, &nGid, 1, m_pFontManager, dX, dY, dW, dH);
     return S_OK;
 }
-
-HRESULT NSQRenderer::CQRenderer::PathCommandTextExCHAR(const LONG &c
-                                                           , const LONG &gid
-                                                           , const double &x
-                                                           , const double &y
-                                                           , const double &w
-                                                           , const double &h)
+HRESULT NSQRenderer::CQRenderer::PathCommandText(const std::wstring& wsUnicodeText, const double& dX, const double& dY, const double& dW, const double& dH)
 {
-    // not used
-    TELL;
+    SetFont();
+    m_oSimpleGraphicsConverter.PathCommandText(wsUnicodeText, m_pFontManager, dX, dY, dW, dH, 0);
     return S_OK;
 }
-
-HRESULT NSQRenderer::CQRenderer::PathCommandTextEx(const std::wstring &sText
-                                                       , const unsigned int *pGids
-                                                       , const unsigned int nGidsCount
-                                                       , const double &x
-                                                       , const double &y
-                                                       , const double &w
-                                                       , const double &h)
+HRESULT NSQRenderer::CQRenderer::PathCommandTextEx(const std::wstring& wsUnicodeText, const unsigned int* pGids, const unsigned int nGidsCount, const double& dX, const double& dY, const double& dW, const double& dH)
 {
-    TELL;
-    // not used
+    SetFont();
+    m_oSimpleGraphicsConverter.PathCommandText2(wsUnicodeText, (const int*)pGids, nGidsCount, m_pFontManager, dX, dY, dW, dH);
     return S_OK;
 }
 
@@ -1136,15 +1226,15 @@ HRESULT NSQRenderer::CQRenderer::DrawImage(IGrObject *pImage
                                                , const double &h)
 {
     TELL;
-    // not used
-    setPaintingThings();
+    Aggplus::CImage* pPixels = (Aggplus::CImage*)pImage;
+    // TODO:
     return S_OK;
 }
 
 HRESULT NSQRenderer::CQRenderer::PathCommandEnd()
 {
     TELL;
-    m_oUntransformedPainterPath = QPainterPath{};
+    m_oUntransformedPainterPath.clear();
     return S_OK;
 }
 
@@ -1352,10 +1442,6 @@ void NSQRenderer::CQRenderer::setPaintingThings()
     if (m_bBrushChanged) {
         m_bBrushChanged = false;
         m_oPrinterContext.painter().setBrush(brush());
-    }
-    if (m_bFontChanged) {
-        m_bFontChanged = false;
-        m_oPrinterContext.painter().setFont(font());
     }
 }
 

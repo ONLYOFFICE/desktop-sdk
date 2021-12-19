@@ -3,6 +3,8 @@
 
 #include "./../../../../../../core/DesktopEditor/graphics/IRenderer.h" // IRenderer
 #include "./../../../../../../core/DesktopEditor/graphics/structures.h" // CPen и CBrush
+#include "./../../../../../../core/DesktopEditor/graphics/GraphicsPath.h"
+#include "./../../../../../../core/DesktopEditor/graphics/Image.h"
 #include "./../../../include/base.h" // DESKTOP_DECL
 #include "qprintercontext.h" // CQPrinterContext
 #include <QPainter> // QPainter
@@ -18,176 +20,178 @@ namespace NSQRenderer
         CQRenderer(QPaintDevice *pPaintDevice);
         CQRenderer(QPagedPaintDevice *pPaintDevice);
 
+        virtual ~CQRenderer();
+
+        void beginPainting(NSFonts::IApplicationFonts* pFonts);
         void endPainting();
 
         // тип рендерера-----------------------------------------------------------------------------
-        virtual HRESULT get_Type(LONG* lType) override;// используется
+        virtual HRESULT get_Type(LONG* lType) override;
         //-------- Функции для работы со страницей --------------------------------------------------
-        virtual HRESULT NewPage() override;// используется
-        virtual HRESULT get_Height(double* dHeight) override;// используется
-        virtual HRESULT put_Height(const double& dHeight) override;// используется
-        virtual HRESULT get_Width(double* dWidth) override;// используется
-        virtual HRESULT put_Width(const double& dWidth) override;// используется
-        virtual HRESULT get_DpiX(double* dDpiX) override;// используется при другом рендерере
-        virtual HRESULT get_DpiY(double* dDpiY) override;// NOT USED
+        virtual HRESULT NewPage() override;
+        virtual HRESULT get_Height(double* dHeight) override;
+        virtual HRESULT put_Height(const double& dHeight) override;
+        virtual HRESULT get_Width(double* dWidth) override;
+        virtual HRESULT put_Width(const double& dWidth) override;
+        virtual HRESULT get_DpiX(double* dDpiX) override;
+        virtual HRESULT get_DpiY(double* dDpiY) override;
 
         // pen --------------------------------------------------------------------------------------
-        virtual HRESULT get_PenColor(LONG* lColor) override;// используется
-        virtual HRESULT put_PenColor(const LONG& lColor) override;// используется
-        virtual HRESULT get_PenAlpha(LONG* lAlpha) override;// используется
-        virtual HRESULT put_PenAlpha(const LONG& lAlpha) override;// используется
-        virtual HRESULT get_PenSize(double* dSize) override;// используется
-        virtual HRESULT put_PenSize(const double& dSize) override;// используется
-        virtual HRESULT get_PenDashStyle(BYTE* val) override;// используется
-        virtual HRESULT put_PenDashStyle(const BYTE& val) override;// используется
-        virtual HRESULT get_PenLineStartCap(BYTE* val) override;// используется с Aggplus::LineCapFlat
-        virtual HRESULT put_PenLineStartCap(const BYTE& val) override;// используется с Aggplus::LineCapFlat
-        virtual HRESULT get_PenLineEndCap(BYTE* val) override;// используется с Aggplus::LineCapFlat
-        virtual HRESULT put_PenLineEndCap(const BYTE& val) override;// используется с Aggplus::LineCapFlat
-        virtual HRESULT get_PenLineJoin(BYTE* val) override;// используется
-        virtual HRESULT put_PenLineJoin(const BYTE& val) override;// используется
-        virtual HRESULT get_PenDashOffset(double* dOffset) override;// NOT USED
-        virtual HRESULT put_PenDashOffset(const double& dOffset) override;// NOT USED
-        virtual HRESULT get_PenAlign(LONG* lAlign) override;// NOT USED
-        virtual HRESULT put_PenAlign(const LONG& lAlign) override;// NOT USED
-        virtual HRESULT get_PenMiterLimit(double* dOffset) override;// NOT USED
-        virtual HRESULT put_PenMiterLimit(const double& dOffset) override;// NOT USED
-        virtual HRESULT PenDashPattern(double* pPattern, LONG lCount) override;// используется
+        virtual HRESULT get_PenColor(LONG* lColor) override;
+        virtual HRESULT put_PenColor(const LONG& lColor) override;
+        virtual HRESULT get_PenAlpha(LONG* lAlpha) override;
+        virtual HRESULT put_PenAlpha(const LONG& lAlpha) override;
+        virtual HRESULT get_PenSize(double* dSize) override;
+        virtual HRESULT put_PenSize(const double& dSize) override;
+        virtual HRESULT get_PenDashStyle(BYTE* val) override;
+        virtual HRESULT put_PenDashStyle(const BYTE& val) override;
+        virtual HRESULT get_PenLineStartCap(BYTE* val) override; // Aggplus::LineCapFlat
+        virtual HRESULT put_PenLineStartCap(const BYTE& val) override; // Aggplus::LineCapFlat
+        virtual HRESULT get_PenLineEndCap(BYTE* val) override; // Aggplus::LineCapFlat
+        virtual HRESULT put_PenLineEndCap(const BYTE& val) override; // Aggplus::LineCapFlat
+        virtual HRESULT get_PenLineJoin(BYTE* val) override;
+        virtual HRESULT put_PenLineJoin(const BYTE& val) override;
+        virtual HRESULT get_PenDashOffset(double* dOffset) override;
+        virtual HRESULT put_PenDashOffset(const double& dOffset) override;
+        virtual HRESULT get_PenAlign(LONG* lAlign) override;
+        virtual HRESULT put_PenAlign(const LONG& lAlign) override;
+        virtual HRESULT get_PenMiterLimit(double* dOffset) override;
+        virtual HRESULT put_PenMiterLimit(const double& dOffset) override;
+        virtual HRESULT PenDashPattern(double* pPattern, LONG lCount) override;
 
         // brush ------------------------------------------------------------------------------------
-        virtual HRESULT get_BrushType(LONG* lType) override;// используется
-        virtual HRESULT put_BrushType(const LONG& lType) override;// используется
-        virtual HRESULT get_BrushColor1(LONG* lColor) override;// используется
-        virtual HRESULT put_BrushColor1(const LONG& lColor) override;// используется
-        virtual HRESULT get_BrushAlpha1(LONG* lAlpha) override;// используется
-        virtual HRESULT put_BrushAlpha1(const LONG& lAlpha) override;// используется
+        virtual HRESULT get_BrushType(LONG* lType) override;
+        virtual HRESULT put_BrushType(const LONG& lType) override;
+        virtual HRESULT get_BrushColor1(LONG* lColor) override;
+        virtual HRESULT put_BrushColor1(const LONG& lColor) override;
+        virtual HRESULT get_BrushAlpha1(LONG* lAlpha) override;
+        virtual HRESULT put_BrushAlpha1(const LONG& lAlpha) override;
 
         /////////////////////////////////////////////////////////////////
         // здесь только градиент, если таковой имеется. сеточку пока не делаем
-        virtual HRESULT get_BrushColor2(LONG* lColor) override;// используется
-        virtual HRESULT put_BrushColor2(const LONG& lColor) override;// используется
-        virtual HRESULT get_BrushAlpha2(LONG* lAlpha) override;// используется
-        virtual HRESULT put_BrushAlpha2(const LONG& lAlpha) override;// используется
+        virtual HRESULT get_BrushColor2(LONG* lColor) override;
+        virtual HRESULT put_BrushColor2(const LONG& lColor) override;
+        virtual HRESULT get_BrushAlpha2(LONG* lAlpha) override;
+        virtual HRESULT put_BrushAlpha2(const LONG& lAlpha) override;
         /////////////////////////////////////////////////////////////////
 
-
-        virtual HRESULT get_BrushTexturePath(std::wstring* bsPath) override;// используется
-        virtual HRESULT put_BrushTexturePath(const std::wstring& bsPath) override;// используется
-        virtual HRESULT get_BrushTextureMode(LONG* lMode) override;// используется
-        virtual HRESULT put_BrushTextureMode(const LONG& lMode) override;// используется
-        virtual HRESULT get_BrushTextureAlpha(LONG* lTxAlpha) override;// используется
-        virtual HRESULT put_BrushTextureAlpha(const LONG& lTxAlpha) override;// используется
-        virtual HRESULT get_BrushLinearAngle(double* dAngle) override;// NOT USED
-        virtual HRESULT put_BrushLinearAngle(const double& dAngle) override;// NOT USED
+        virtual HRESULT get_BrushTexturePath(std::wstring* bsPath) override;
+        virtual HRESULT put_BrushTexturePath(const std::wstring& bsPath) override;
+        virtual HRESULT get_BrushTextureMode(LONG* lMode) override;
+        virtual HRESULT put_BrushTextureMode(const LONG& lMode) override;
+        virtual HRESULT get_BrushTextureAlpha(LONG* lTxAlpha) override;
+        virtual HRESULT put_BrushTextureAlpha(const LONG& lTxAlpha) override;
+        virtual HRESULT get_BrushLinearAngle(double* dAngle) override;
+        virtual HRESULT put_BrushLinearAngle(const double& dAngle) override;
         virtual HRESULT BrushRect(const INT& val
                                   , const double& left
                                   , const double& top
                                   , const double& width
-                                  , const double& height) override;// используется
+                                  , const double& height) override;
         virtual HRESULT BrushBounds(const double& left
                                     , const double& top
                                     , const double& width
-                                    , const double& height) override;// NOT USED
+                                    , const double& height) override;
 
         virtual HRESULT put_BrushGradientColors(LONG* lColors // ПРОВЕРЯТЬ НА NULL
                                                 , double* pPositions // ПРОВЕРЯТЬ НА NULL
-                                                , LONG nCount) override;// используется
-            // есть дефолтная реализация
-//            virtual void put_BrushGradInfo(const NSStructures::GradientInfo &_ginfo) override;
+                                                , LONG nCount) override;
+        // есть дефолтная реализация
+        // virtual void put_BrushGradInfo(const NSStructures::GradientInfo &_ginfo) override;
 
         // font -------------------------------------------------------------------------------------
-        virtual HRESULT get_FontName(std::wstring* bsName) override;// используется
-        virtual HRESULT put_FontName(const std::wstring& bsName) override;// используется
-        virtual HRESULT get_FontPath(std::wstring* bsName) override;// NOT USED
-        virtual HRESULT put_FontPath(const std::wstring& bsName) override;// NOT USED
-        virtual HRESULT get_FontSize(double* dSize) override;// используется
-        virtual HRESULT put_FontSize(const double& dSize) override;// используется
-        virtual HRESULT get_FontStyle(LONG* lStyle) override;// используется
-        virtual HRESULT put_FontStyle(const LONG& lStyle) override;// используется
-        virtual HRESULT get_FontStringGID(INT* bGID) override;// NOT USED
-        virtual HRESULT put_FontStringGID(const INT& bGID) override;// NOT USED
-        virtual HRESULT get_FontCharSpace(double* dSpace) override;// NOT USED
-        virtual HRESULT put_FontCharSpace(const double& dSpace) override;// NOT USED
-        virtual HRESULT get_FontFaceIndex(int* lFaceIndex) override;// NOT USED
-        virtual HRESULT put_FontFaceIndex(const int& lFaceIndex) override;// NOT USED
+        virtual HRESULT get_FontName(std::wstring* bsName) override;
+        virtual HRESULT put_FontName(const std::wstring& bsName) override;
+        virtual HRESULT get_FontPath(std::wstring* bsName) override;
+        virtual HRESULT put_FontPath(const std::wstring& bsName) override;
+        virtual HRESULT get_FontSize(double* dSize) override;
+        virtual HRESULT put_FontSize(const double& dSize) override;
+        virtual HRESULT get_FontStyle(LONG* lStyle) override;
+        virtual HRESULT put_FontStyle(const LONG& lStyle) override;
+        virtual HRESULT get_FontStringGID(INT* bGID) override;
+        virtual HRESULT put_FontStringGID(const INT& bGID) override;
+        virtual HRESULT get_FontCharSpace(double* dSpace) override;
+        virtual HRESULT put_FontCharSpace(const double& dSpace) override;
+        virtual HRESULT get_FontFaceIndex(int* lFaceIndex) override;
+        virtual HRESULT put_FontFaceIndex(const int& lFaceIndex) override;
 
         //-------- Функции для вывода текста --------------------------------------------------------
         virtual HRESULT CommandDrawTextCHAR(const LONG& c
                                             , const double& x
                                             , const double& y
                                             , const double& w
-                                            , const double& h) override;// NOT USED
+                                            , const double& h) override;
         virtual HRESULT CommandDrawText(const std::wstring& bsText
                                         , const double& x
                                         , const double& y
                                         , const double& w
-                                        , const double& h) override;// используется
+                                        , const double& h) override;
 
         virtual HRESULT CommandDrawTextExCHAR(const LONG& c
                                               , const LONG& gid
                                               , const double& x
                                               , const double& y
                                               , const double& w
-                                              , const double& h) override;// NOT USED
+                                              , const double& h) override;
         virtual HRESULT CommandDrawTextEx(const std::wstring& bsUnicodeText
                                           , const unsigned int* pGids
                                           , const unsigned int nGidsCount
                                           , const double& x
                                           , const double& y
                                           , const double& w
-                                          , const double& h) override;// NOT USED
+                                          , const double& h) override;
 
         //-------- Маркеры для команд ---------------------------------------------------------------
-        virtual HRESULT BeginCommand(const DWORD& lType) override;// используется
-        virtual HRESULT EndCommand(const DWORD& lType) override;// используется
+        virtual HRESULT BeginCommand(const DWORD& lType) override;
+        virtual HRESULT EndCommand(const DWORD& lType) override;
 
         //-------- Функции для работы с Graphics Path -----------------------------------------------
-        virtual HRESULT PathCommandMoveTo(const double& x, const double& y) override;// используется
-        virtual HRESULT PathCommandLineTo(const double& x, const double& y) override;// используется
-        virtual HRESULT PathCommandLinesTo(double* points, const int& count) override;// NOT USED
+        virtual HRESULT PathCommandMoveTo(const double& x, const double& y) override;
+        virtual HRESULT PathCommandLineTo(const double& x, const double& y) override;
+        virtual HRESULT PathCommandLinesTo(double* points, const int& count) override;
         virtual HRESULT PathCommandCurveTo(const double& x1
                                            , const double& y1
                                            , const double& x2
                                            , const double& y2
                                            , const double& x3
-                                           , const double& y3) override;// используется
-        virtual HRESULT PathCommandCurvesTo(double* points, const int& count) override;// NOT USED
+                                           , const double& y3) override;
+        virtual HRESULT PathCommandCurvesTo(double* points, const int& count) override;
         virtual HRESULT PathCommandArcTo(const double& x
                                          , const double& y
                                          , const double& w
                                          , const double& h
                                          , const double& startAngle
-                                         , const double& sweepAngle) override;// NOT USED
-        virtual HRESULT PathCommandClose() override;// используется
-        virtual HRESULT PathCommandEnd() override;// используется
-        virtual HRESULT DrawPath(const LONG& nType) override;// используется
-        virtual HRESULT PathCommandStart() override;// используется
-        virtual HRESULT PathCommandGetCurrentPoint(double* x, double* y) override;// NOT USED
+                                         , const double& sweepAngle) override;
+        virtual HRESULT PathCommandClose() override;
+        virtual HRESULT PathCommandEnd() override;
+        virtual HRESULT DrawPath(const LONG& nType) override;
+        virtual HRESULT PathCommandStart() override;
+        virtual HRESULT PathCommandGetCurrentPoint(double* x, double* y) override;
 
         virtual HRESULT PathCommandTextCHAR(const LONG& c
                                             , const double& x
                                             , const double& y
                                             , const double& w
-                                            , const double& h) override;// NOT USED
+                                            , const double& h) override;
         virtual HRESULT PathCommandText(const std::wstring& bsText
                                         , const double& x
                                         , const double& y
                                         , const double& w
-                                        , const double& h) override;// NOT USED
+                                        , const double& h) override;
 
         virtual HRESULT PathCommandTextExCHAR(const LONG& c
                                               , const LONG& gid
                                               , const double& x
                                               , const double& y
                                               , const double& w
-                                              , const double& h) override;// NOT USED
+                                              , const double& h) override;
         virtual HRESULT PathCommandTextEx(const std::wstring& sText
                                           , const unsigned int* pGids
                                           , const unsigned int nGidsCount
                                           , const double& x
                                           , const double& y
                                           , const double& w
-                                          , const double& h) override;// NOT USED
+                                          , const double& h) override;
 
         //-------- Функции для вывода изображений ---------------------------------------------------
         virtual HRESULT DrawImage(IGrObject* pImage
@@ -240,26 +244,6 @@ namespace NSQRenderer
         virtual HRESULT CommandDouble(const LONG& lType, const double& dCommand) override;// NOT USED
         virtual HRESULT CommandString(const LONG& lType, const std::wstring& sCommand) override;// NOT USED
 
-        // есть дефолтная реализация
-//            virtual HRESULT StartConvertCoordsToIdentity() override;
-//            virtual HRESULT EndConvertCoordsToIdentity() override;
-
-            // используется, но есть дефолтная реализация
-//            virtual HRESULT AddHyperlink(const double& dX
-//                                         , const double& dY
-//                                         , const double& dW
-//                                         , const double& dH
-//                                         , const std::wstring& wsUrl
-//                                         , const std::wstring& wsTooltip) override;
-//            virtual HRESULT AddLink(const double& dX
-//                                    , const double& dY
-//                                    , const double& dW
-//                                    , const double& dH
-//                                    , const double& dDestX
-//                                    , const double& dDestY
-//                                    , const int& nPage) override;
-//            virtual HRESULT AddFormField(const CFormFieldInfo& oInfo) override;
-
     public:
         void SetBaseTransform(double m11
                                      , double m12
@@ -292,14 +276,20 @@ namespace NSQRenderer
         bool m_bPenChanged{true};
         NSStructures::CBrush m_oBrush{};
         bool m_bBrushChanged{true};
-        NSStructures::CFont m_oFont{};
-        bool m_bFontChanged{true};
 
         double m_dLogicalPageWidth{0.};
         double m_dLogicalPageHeight{0.};
 
-        long m_oCurrentCommand{c_nNone};
+        long m_lCurrentCommand{c_nNone};
 
+        NSFonts::IApplicationFonts* m_pAppFonts;
+        NSFonts::IFontManager* m_pFontManager;
+        bool m_bIsUseTextAsPath;
+
+        NSStructures::CFont	m_oFont;
+        NSStructures::CFont	m_oInstalledFont;
+
+        Aggplus::CGraphicsPathSimpleConverter m_oSimpleGraphicsConverter;
 
     private:
         //
@@ -320,6 +310,13 @@ namespace NSQRenderer
         //
         void setPaintingThings();
         void fillPath();
+
+    public:
+        void SetUseTextAsPath(const bool& bIsUseTextAsPath);
+
+    private:
+        void InitDefaults();
+        void SetFont();
     };
 }
 

@@ -1,6 +1,14 @@
 #include "./../../../../../../core/DesktopEditor/graphics/MetafileToRenderer.h" // ConvertBufferToRenderer
+#include "./../../../../../../core/DesktopEditor/fontengine/ApplicationFontsWorker.h"
 #include "./../../../../../../core/DesktopEditor/common/File.h"
+#include "./../../../../../../core/DesktopEditor/common/Directory.h"
 #include "./../include/qrenderer.h" // рендерер
+
+#ifdef SUPPORT_DRAWING_FILE
+#include "./../../../../../../core/PdfReader/PdfReader.h"
+#include "./../../../../../../core/DjVuFile/DjVu.h"
+#include "./../../../../../../core/XpsFile/XpsFile.h"
+#endif
 
 #include <QApplication>
 #include <QPrintDialog>
@@ -16,6 +24,9 @@
 
 #ifdef GetTempPath
 #undef GetTempPath
+#endif
+#ifdef CreateDirectory
+#undef CreateDirectory
 #endif
 
 #define TEST_ON_IMAGE
@@ -202,34 +213,94 @@ public:
     }
 };
 
+#ifdef SUPPORT_DRAWING_FILE
+void printFirstPageOfFile(const std::wstring& sFile, NSQRenderer::CQRenderer* pRenderer, NSFonts::IApplicationFonts* pFonts)
+{
+    std::wstring sTempDir = NSFile::GetProcessDirectory() + L"/temp";
+
+    if (!NSDirectory::Exists(sTempDir))
+        NSDirectory::CreateDirectory(sTempDir);
+
+    IOfficeDrawingFile* pReader = NULL;
+    std::wstring sExt = NSFile::GetFileExtention(sFile);
+
+    // чеккер по форматам не используем - чтобы не тащить зависимость.
+    // в тестовом примере хватит и расширения
+    if (L"pdf" == sExt)
+        pReader = new PdfReader::CPdfReader(pFonts);
+    else if (L"xps" == sExt)
+        pReader = new CXpsFile(pFonts);
+    else if (L"djvu" == sExt)
+        pReader = new CDjVuFile(pFonts);
+
+    if (pReader)
+    {
+        pReader->LoadFromFile(sFile);
+        pReader->DrawPageOnRenderer(pRenderer, 0, NULL);
+    }
+
+    NSDirectory::DeleteDirectory(sTempDir);
+}
+#endif
+
+void printJsBuffer(const std::wstring& sDirectory, NSQRenderer::CQRenderer* pRenderer)
+{
+    BYTE* pSampleBuffer = NULL;
+    DWORD nSampleBufferLen = 0;
+    NSFile::CFileBinary::ReadAllBytes(sDirectory + L"/sample.buffer", &pSampleBuffer, nSampleBufferLen);
+
+    std::cout << "sample buffer length: " << nSampleBufferLen << std::endl;
+
+    CMetafileToRenderer corrector(pRenderer, sDirectory + L"/");
+    NSOnlineOfficeBinToPdf::ConvertBufferToRenderer(pSampleBuffer, nSampleBufferLen, &corrector);
+
+    RELEASEARRAYOBJECTS(pSampleBuffer);
+}
+
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
 
-    std::wstring sExamplePath = NSFile::GetProcessDirectory() + L"/../examples/example1";
+    // смотрим, изменились ли шрифты в системе, или это первый запуск?
+    CApplicationFontsWorker oWorker;
+    oWorker.m_sDirectory = NSFile::GetProcessDirectory() + L"/fonts_cache";
+    oWorker.m_bIsNeedThumbnails = false;
 
-    BYTE* pSampleBuffer = NULL;
-    DWORD nSampleBufferLen = 0;
-    NSFile::CFileBinary::ReadAllBytes(sExamplePath + L"/source", &pSampleBuffer, nSampleBufferLen);
+    if (!NSDirectory::Exists(oWorker.m_sDirectory))
+        NSDirectory::CreateDirectory(oWorker.m_sDirectory);
 
-    std::cout << "sample buffer length: " << nSampleBufferLen << std::endl;
+    NSFonts::IApplicationFonts* pFonts = oWorker.Check();
 
+    // путь к примеру. считаем так - если там есть pdf/xps/djvu - то берем первую страницу из этих файлов
+    // иначе - команды на печать из редактора js
+    std::wstring sExamplePath = NSFile::GetProcessDirectory() + L"/../examples/example3";
 
 #ifdef TEST_ON_IMAGE
     QSize a4size = QPageSize::sizePixels(QPageSize::PageSizeId::A4, 96);
     QImage paintDevice{a4size, QImage::Format::Format_ARGB32_Premultiplied};
-    paintDevice.fill(Qt::GlobalColor::transparent);
+    paintDevice.fill(Qt::GlobalColor::white);
 #else
     QPrinterInfo info = QPrinterInfo::printerInfo("Microsoft XPS Document Writer");
     QPrinter paintDevice{info};
 #endif
 
-    NSQRenderer::CQRenderer renderer{&paintDevice};
-    CMetafileToRenderer corrector(&renderer, sExamplePath + L"/");
-    NSOnlineOfficeBinToPdf::ConvertBufferToRenderer(pSampleBuffer, nSampleBufferLen, &corrector);
+    NSQRenderer::CQRenderer renderer(&paintDevice);
+    renderer.beginPainting(pFonts);
+
+#ifdef SUPPORT_DRAWING_FILE
+    if (NSFile::CFileBinary::Exists(sExamplePath + L"/sample.pdf"))
+        printFirstPageOfFile(sExamplePath + L"/sample.pdf", &renderer, pFonts);
+    else if (NSFile::CFileBinary::Exists(sExamplePath + L"/sample.xps"))
+        printFirstPageOfFile(sExamplePath + L"/sample.xps", &renderer, pFonts);
+    else if (NSFile::CFileBinary::Exists(sExamplePath + L"/sample.djvu"))
+        printFirstPageOfFile(sExamplePath + L"/sample.djvu", &renderer, pFonts);
+    else
+#endif
+        printJsBuffer(sExamplePath, &renderer);
+
     renderer.endPainting();
 
-    RELEASEARRAYOBJECTS(pSampleBuffer);
+    RELEASEINTERFACE(pFonts);
 
 #ifdef TEST_ON_IMAGE
     QWidget w;
