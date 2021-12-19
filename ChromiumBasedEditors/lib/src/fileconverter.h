@@ -836,15 +836,36 @@ public:
             }
             else
             {
-                //std::wstring sUnzipDir = NSFile::GetDirectoryName(sFile) + L"/" + NSCommon::GetFileName(sFile) + L"_uncompress";
-                std::wstring sUnzipDir = NSDirectory::CreateDirectoryWithUniqueName(NSDirectory::GetTempPath());
-                NSDirectory::CreateDirectory(sUnzipDir);
+                ULONG nBufferSize = 0;
+                BYTE *pBuffer = NULL;
 
+                bool bIsNeedCheck = false;
                 COfficeUtils oCOfficeUtils(NULL);
-                if (S_OK == oCOfficeUtils.ExtractToDirectory(sFile, sUnzipDir, NULL, 0))
+                if (S_OK == oCOfficeUtils.LoadFileFromArchive(sFile, L"[Content_Types].xml", &pBuffer, nBufferSize))
                 {
-                    m_pVerifier = new COOXMLVerifier(sUnzipDir);
-                    NSDirectory::DeleteDirectory(sUnzipDir);
+                    const char *find1 = "application/vnd.openxmlformats-package.digital-signature-origin";
+                    const char *find2 = "application/vnd.openxmlformats-package.digital-signature-xmlsignature+xml";
+
+                    std::string strContentTypes((char*)pBuffer, nBufferSize);
+                    if (std::string::npos != strContentTypes.find(find1) && std::string::npos != strContentTypes.find(find2))
+                    {
+                        bIsNeedCheck = true;
+                    }
+                }
+                delete []pBuffer;
+                pBuffer = NULL;
+
+                if (bIsNeedCheck)
+                {
+                    std::wstring sUnzipDir = NSDirectory::CreateDirectoryWithUniqueName(NSDirectory::GetTempPath());
+                    NSDirectory::CreateDirectory(sUnzipDir);
+
+                    COfficeUtils oCOfficeUtils2(NULL);
+                    if (S_OK == oCOfficeUtils2.ExtractToDirectory(sFile, sUnzipDir, NULL, 0))
+                    {
+                        m_pVerifier = new COOXMLVerifier(sUnzipDir);
+                        NSDirectory::DeleteDirectory(sUnzipDir);
+                    }
                 }
             }
         }
@@ -1018,12 +1039,31 @@ public:
     virtual DWORD ThreadProc()
     {
         std::wstring sLocalFilePath = m_oInfo.m_sFileSrc;
+
+        // если true - то делаем архив 123.png.zip
+        // если false - то делаем папку 123.png
+        bool bIsAddZipToRasterFormats = false;
+        std::wstring sRasterDictionaryExtract = L"";
+
 #ifdef WIN32
         if (0 == sLocalFilePath.find(L"//"))
         {
             sLocalFilePath = L"\\\\" + sLocalFilePath.substr(2);
         }
 #endif
+
+        if (m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_IMAGE)
+        {
+            if (bIsAddZipToRasterFormats)
+                sLocalFilePath += L".zip";
+            else
+            {
+                sRasterDictionaryExtract = sLocalFilePath;
+                sLocalFilePath = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"OL");
+                if (NSFile::CFileBinary::Exists(sLocalFilePath))
+                    NSFile::CFileBinary::Remove(sLocalFilePath);
+            }
+        }
 
         std::wstring sLockerSavedPath;
         if (m_pLocker)
@@ -1136,6 +1176,11 @@ public:
         oBuilder.WriteEncodeXmlString(sDstTmpDir);
         oBuilder.WriteString(L"</m_sTempDir>");
 
+        if (m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_IMAGE)
+        {
+            oBuilder.WriteString(L"<m_oThumbnail><first>false</first></m_oThumbnail>");
+        }
+
         oBuilder.WriteString(L"</TaskQueueDataConvert>");
 
         std::wstring sXmlConvert = oBuilder.GetData();
@@ -1176,6 +1221,19 @@ public:
 
             if (NSFile::CFileBinary::Exists(sLockerSavedPath))
                 NSFile::CFileBinary::Remove(sLockerSavedPath);
+        }
+        else
+        {
+            if ((m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_IMAGE) != 0)
+            {
+                if (!bIsAddZipToRasterFormats)
+                {
+                    NSDirectory::CreateDirectory(sRasterDictionaryExtract);
+                    COfficeUtils oUtils;
+                    oUtils.ExtractToDirectory(sLocalFilePath, sRasterDictionaryExtract, NULL, 0);
+                    NSFile::CFileBinary::Remove(sLocalFilePath);
+                }
+            }
         }
 
         m_bIsWorking = false;

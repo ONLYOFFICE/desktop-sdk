@@ -60,6 +60,26 @@
 #include "../../../../../core/Common/3dParty/openssl/common/common_openssl.h"
 #include "../../../../../core/OfficeCryptReader/source/ECMACryptFile.h"
 
+#ifndef CEF_2623
+#define CEF_V8_SUPPORT_TYPED_ARRAYS
+
+class CAscCefV8ArrayBufferReleaseCallback : public CefV8ArrayBufferReleaseCallback
+{
+public:
+    virtual void ReleaseBuffer(void* buffer) OVERRIDE
+    {
+#if 0
+        FILE* f = fopen("release_log.txt", "a+");
+        fprintf(f, "release\n");
+        fclose(f);
+#endif
+        delete [] ((BYTE*)buffer);
+    }
+
+    IMPLEMENT_REFCOUNTING(CAscCefV8ArrayBufferReleaseCallback);
+};
+#endif
+
 namespace NSCommon
 {
     template <typename Type>
@@ -279,6 +299,33 @@ namespace NSCommon
         for (std::wstring::size_type pos = 0, len = sValue.length(); pos < len; ++pos)
             sRes.append(1, (char)sValue[pos]);
         return sRes;
+    }
+
+    std::string GetFilePathBase64(const std::wstring& sPath)
+    {
+        std::string sPathA = U_TO_UTF8(sPath);
+
+        char* pDataDst = NULL;
+        int nDataDst = 0;
+        NSFile::CBase64Converter::Encode((BYTE*)sPathA.c_str(), (int)sPathA.length(), pDataDst, nDataDst, NSBase64::B64_BASE64_FLAG_NOCRLF);
+
+        std::string sResult = "binary_content://" + std::string(pDataDst, (size_t)nDataDst);
+        RELEASEARRAYOBJECTS(pDataDst);
+        return sResult;
+    }
+
+    std::wstring GetFilePathFromBase64(const std::string& sPath)
+    {
+        int nPrefixLen = 17; // binary_content://
+
+        BYTE* pDataDst = NULL;
+        int nLenDst = 0;
+        NSFile::CBase64Converter::Decode(sPath.c_str() + nPrefixLen, (int)sPath.length() - nPrefixLen, pDataDst, nLenDst);
+
+        std::string sResultA((char*)pDataDst, (size_t)nLenDst);
+        RELEASEARRAYOBJECTS(pDataDst);
+
+        return UTF8_TO_U(sResultA);
     }
 }
 
@@ -1214,7 +1261,10 @@ DE.controllers.Main.DisableVersionHistory(); \
         else if (name == "Print_Start")
         {
             if (arguments.size() != 4)
+            {
+                m_bIsPrinting = true;
                 return true;
+            }
 
             std::vector<CefRefPtr<CefV8Value> >::const_iterator iter = arguments.begin();
 
@@ -2049,9 +2099,15 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
             int nPageStart = arguments[3]->GetIntValue();
             int nPageEnd = arguments[4]->GetIntValue();
 
+            if (arguments.size() > 5)
+            {
+                bool bIsDarkMode = arguments[5]->GetBoolValue();
+                m_oNativeViewer.CheckDarkMode(bIsDarkMode);
+            }
+
             std::wstring sUrl = m_oNativeViewer.GetPathPageImage(oInfo);
             if (NSFile::CFileBinary::Exists(sUrl))
-                retval = CefV8Value::CreateString(sUrl);
+                retval = CefV8Value::CreateString(sUrl + m_oNativeViewer.GetUrlAddon());
             else
             {
                 m_oNativeViewer.AddTask(oInfo, nPageStart, nPageEnd);
@@ -3330,6 +3386,8 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
                     case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX:
                     case AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX:
                     case AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX:
+                    case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF:
+                    case AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM:
                     {
                         isSupportCrypt = true;
                         break;
@@ -3540,6 +3598,32 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
         else if (name == "GetFontThumbnailHeight")
         {
             retval = CefV8Value::CreateInt(28);
+            return true;
+        }
+        else if (name == "GetOpenedFile")
+        {
+#ifndef CEF_V8_SUPPORT_TYPED_ARRAYS
+            retval = CefV8Value::CreateUndefined();
+#else
+            std::string sPath = arguments[0]->GetStringValue().ToString();
+            std::wstring sFilePath = NSCommon::GetFilePathFromBase64(sPath);
+
+            if (g_pLocalResolver->CheckNoFont(sFilePath))
+            {
+                BYTE* pData = NULL;
+                DWORD dwFileLen = 0;
+                NSFile::CFileBinary::ReadAllBytes(sFilePath, &pData, dwFileLen);
+
+                if (0 != dwFileLen)
+                    retval = CefV8Value::CreateArrayBuffer((void*)pData, (size_t)dwFileLen, new CAscCefV8ArrayBufferReleaseCallback());
+                else
+                    retval = CefV8Value::CreateUndefined();
+            }
+            else
+            {
+                retval = CefV8Value::CreateUndefined();
+            }
+#endif
             return true;
         }
 
@@ -3923,7 +4007,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
 
-    #define EXTEND_METHODS_COUNT 158
+    #define EXTEND_METHODS_COUNT 159
     const char* methods[EXTEND_METHODS_COUNT] = {
         "Copy",
         "Paste",
@@ -4138,6 +4222,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
         "GetSupportedScaleValues",
         "GetFontThumbnailHeight",
+
+        "GetOpenedFile",
 
         NULL
     };
@@ -4413,7 +4499,12 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
                 _frame->ExecuteJavaScript("window.AscDesktopEditor.LocalFileSetSaved(false);", _frame->GetURL(), 0);
 
             int nFileDataLen = 0;
+
+#ifdef CEF_V8_SUPPORT_TYPED_ARRAYS
+            std::string sFileData = GetFileData2(sFolder + L"/Editor.bin", nFileDataLen);
+#else
             std::string sFileData = GetFileData(sFolder + L"/Editor.bin", nFileDataLen);
+#endif
 
             std::string sCode = "window.AscDesktopEditor.LocalFileRecoverFolder(\"" + U_TO_UTF8(sFolderJS) +
                     "\");window.AscDesktopEditor.LocalFileSetSourcePath(\"" + U_TO_UTF8(sFileSrc) + "\");";
@@ -5269,6 +5360,15 @@ private:
     RELEASEARRAYOBJECTS(pData);
 
     return sFileData;
+  }
+
+  std::string GetFileData2(const std::wstring& sFile, int& nLen)
+  {
+    if (m_bIsNativeViewer)
+        return GetFileData(sFile, nLen);
+
+    nLen = 0;
+    return NSCommon::GetFilePathBase64(sFile);
   }
 
  private:

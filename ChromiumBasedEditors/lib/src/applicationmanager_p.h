@@ -258,7 +258,8 @@ namespace NSSystem
             Unlock();
 #ifdef _WIN32
             std::wstring sFileFull = CorrectPathW(m_sFile);
-            m_nDescriptor = CreateFileW(sFileFull.c_str(), GENERIC_READ/* | GENERIC_WRITE*/, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+            DWORD dwFileAttributes = 0;//GetFileAttributesW(sFileFull.c_str());
+            m_nDescriptor = CreateFileW(sFileFull.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, dwFileAttributes, NULL);
             if (m_nDescriptor != NULL && m_nDescriptor != INVALID_HANDLE_VALUE)
             {
                 //LARGE_INTEGER lFileSize;
@@ -771,6 +772,16 @@ public:
             default:
                 break;
         }
+
+#ifdef DISABLE_OFORM_SUPPORT
+        if (this->nFileType2 == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM ||
+            this->nFileType2 == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF)
+        {
+            this->nFileType2 = AVS_OFFICESTUDIO_FILE_UNKNOWN;
+            return false;
+        }
+#endif
+
         return isOfficeFileBase;
     }
 
@@ -1452,6 +1463,8 @@ public:
         m_oCS_Scripts.InitializeCriticalSection();
         m_oCS_LocalFiles.InitializeCriticalSection();
         m_oCS_SystemMessages.InitializeCriticalSection();
+
+        COfficeUtils::SetAddonFlag(ZLIB_ADDON_FLAG_WINDOWS_SHARED_WRITE);
     }
     virtual ~CAscApplicationManager_Private()
     {

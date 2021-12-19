@@ -830,6 +830,7 @@ public:
     bool m_bIsCloudCryptFile;
     std::wstring m_sCloudCryptSrc;
     std::wstring m_sCloudCryptName;
+    int m_nCloudCryptFileType;
 
     // скачка криптованного файла (в принципе можно просто качать что угодно)
     CCefView* m_pDownloadViewCallback;
@@ -951,6 +952,7 @@ public:
 
         m_bIsCloudCryptFile = false;
         m_bIsExternalCloud = false;
+        m_nCloudCryptFileType = 0;
 
         m_nCryptoDownloadAsFormat = -1;
 
@@ -1303,8 +1305,11 @@ public:
         if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_DOCUMENT)
         {
             arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX);
+
+#ifndef DISABLE_OFORM_SUPPORT
             arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF);
             arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM);
+#endif
 
             if (!bEncryption)
             {
@@ -1351,7 +1356,7 @@ public:
 
             if (!bEncryption)
             {
-                arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA);
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA);                
             }
         }
         else if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_PRESENTATION)
@@ -1375,6 +1380,9 @@ public:
             if (!bEncryption)
             {
                 arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA);
+
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_IMAGE_PNG);
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_IMAGE_JPG);
             }
         }
         else if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
@@ -1410,6 +1418,8 @@ public:
     bool LocalFile_IsSupportEditFormat(int nFormat)
     {
         if ((nFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM) != 0)
+            return false;
+        if ((nFormat & AVS_OFFICESTUDIO_FILE_IMAGE) != 0)
             return false;
 
         return true;
@@ -1490,6 +1500,7 @@ public:
     CefRefPtr<CefJSDialogHandler> m_pCefJSDialogHandler;
 
     CefRefPtr<CefFileDialogCallback> m_pFileDialogCallback;
+    CefRefPtr<CefFileDialogCallback> m_pDirectoryDialogCallback;
 
     enum client_menu_ids
     {
@@ -1549,7 +1560,7 @@ public:
             pListener = m_pParent->GetAppManager()->GetEventListener();
 
         int nMode = (mode & 0xFF);
-        if ((nMode == 0 || nMode == 1) && accept_filters.empty() && pListener)
+        if ((nMode == FILE_DIALOG_OPEN || nMode == FILE_DIALOG_OPEN_MULTIPLE) && accept_filters.empty() && pListener)
         {
             NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_OPENFILENAME_DIALOG);
             NSEditorApi::CAscLocalOpenFileDialog* pData = new NSEditorApi::CAscLocalOpenFileDialog();
@@ -1568,7 +1579,7 @@ public:
         std::string sFilterCheck = "";
         if (1 == accept_filters.size())
             sFilterCheck = accept_filters[0].ToString();
-        if ((nMode == 0 || nMode == 1) && ("image/*" == sFilterCheck) && pListener)
+        if ((nMode == FILE_DIALOG_OPEN || nMode == FILE_DIALOG_OPEN_MULTIPLE) && ("image/*" == sFilterCheck) && pListener)
         {
             NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_OPENFILENAME_DIALOG);
             NSEditorApi::CAscLocalOpenFileDialog* pData = new NSEditorApi::CAscLocalOpenFileDialog();
@@ -1622,6 +1633,17 @@ public:
             // save callback
             m_pFileDialogCallback = callback;
 
+            pListener->OnEvent(pEvent);
+            return true;
+        }
+
+        if (nMode == FILE_DIALOG_OPEN_FOLDER)
+        {
+            NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_OPENDIRECTORY_DIALOG);
+            NSEditorApi::CAscLocalOpenDirectoryDialog* pData = new NSEditorApi::CAscLocalOpenDirectoryDialog();
+            pEvent->m_pData = pData;
+
+            m_pDirectoryDialogCallback = callback;
             pListener->OnEvent(pEvent);
             return true;
         }
@@ -2648,6 +2670,8 @@ public:
             switch (nCurrentFormat)
             {
                 case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX:
+                case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF:
+                case AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM:
                 case AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX:
                 case AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX:
                 {
@@ -3098,6 +3122,9 @@ public:
                 nType = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX;
             else if  (1 ==m_pParent->m_pInternal->m_nEditorType)
                 nType = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
+
+            if (nType == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX && 0 != m_pParent->m_pInternal->m_nCloudCryptFileType)
+                nType = m_pParent->m_pInternal->m_nCloudCryptFileType;
 
             m_pParent->m_pInternal->m_oLocalInfo.SetupOptions(m_pParent->m_pInternal->m_oConverterFromEditor.m_oInfo);
             m_pParent->m_pInternal->m_oConverterFromEditor.m_bIsEditorWithChanges = true;
@@ -4030,6 +4057,8 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
             
             if (((nMods & EVENTFLAG_CONTROL_DOWN) != 0) && event.windows_key_code == 9)
                 return true; // tab!!!
+            if (((nMods & EVENTFLAG_ALT_DOWN) != 0) && event.windows_key_code == 115)
+                return true; // alt + f4!!!
         }
 
         return false;
@@ -4380,6 +4409,9 @@ require.load = function (context, moduleName, url) {\n\
     {
         CEF_REQUIRE_UI_THREAD();
 
+        std::wstring sUrlOriginal = download_item->GetOriginalUrl().ToWString();
+        std::wstring sUrlOriginalWithoutProtocol = GetUrlWithoutProtocol(sUrlOriginal);
+
         std::wstring sUrl = download_item->GetURL().ToWString();
         std::wstring sUrlWithoutProtocol = GetUrlWithoutProtocol(sUrl);
         //m_pParent->m_pInternal->m_oDownloaderAbortChecker.EndDownload(sUrl);
@@ -4396,7 +4428,7 @@ require.load = function (context, moduleName, url) {\n\
         {
             // если ссылка приватная (внутренняя) - то уже все готово. просто продолжаем
             std::wstring sPrivateDownloadUrl = m_pParent->GetAppManager()->m_pInternal->GetPrivateDownloadUrl();
-            if (sUrlWithoutProtocol == GetUrlWithoutProtocol(sPrivateDownloadUrl))
+            if (sUrlOriginalWithoutProtocol == GetUrlWithoutProtocol(sPrivateDownloadUrl))
             {
                 sDestPath = m_pParent->GetAppManager()->m_pInternal->GetPrivateDownloadPath();
             }
@@ -4405,7 +4437,7 @@ require.load = function (context, moduleName, url) {\n\
         if (sDestPath.empty())
         {
             // проверяем на зашифрованные картинки
-            std::map<std::wstring, std::wstring>::iterator findCryptoImage = m_pParent->m_pInternal->m_arCryptoImages.find(sUrl);
+            std::map<std::wstring, std::wstring>::iterator findCryptoImage = m_pParent->m_pInternal->m_arCryptoImages.find(sUrlOriginal);
             if (findCryptoImage != m_pParent->m_pInternal->m_arCryptoImages.end())
             {
                 sDestPath = findCryptoImage->second;
@@ -4415,7 +4447,7 @@ require.load = function (context, moduleName, url) {\n\
         if (sDestPath.empty())
         {
             // проверяем на файлы метода AscDesktopEditor.DownloadFiles
-            std::map<std::wstring, CDownloadFileItem>::iterator findDownloadFile = m_pParent->m_pInternal->m_arDownloadedFiles.find(sUrlWithoutProtocol);
+            std::map<std::wstring, CDownloadFileItem>::iterator findDownloadFile = m_pParent->m_pInternal->m_arDownloadedFiles.find(sUrlOriginalWithoutProtocol);
             if (findDownloadFile != m_pParent->m_pInternal->m_arDownloadedFiles.end())
             {
                 sDestPath = findDownloadFile->second.Path;
@@ -4524,8 +4556,12 @@ require.load = function (context, moduleName, url) {\n\
         if (!download_item->IsValid())
             return;
 
+        std::wstring sUrlOriginal = download_item->GetOriginalUrl().ToWString();
+        std::wstring sUrlOriginalWithoutProtocol = GetUrlWithoutProtocol(sUrlOriginal);
+
         std::wstring sUrl = download_item->GetURL().ToWString();
         std::wstring sUrlWithoutProtocol = GetUrlWithoutProtocol(sUrl);
+
         std::wstring sPath = download_item->GetFullPath().ToWString();
 
         if (download_item->IsInProgress() || download_item->IsCanceled() || download_item->IsComplete() || (0 != download_item->GetReceivedBytes()))
@@ -4553,13 +4589,13 @@ require.load = function (context, moduleName, url) {\n\
         // проверяем на зашифрованные картинки
         if (!m_pParent->m_pInternal->m_arCryptoImages.empty())
         {
-            std::map<std::wstring, std::wstring>::iterator findCryptoImage = m_pParent->m_pInternal->m_arCryptoImages.find(sUrl);
+            std::map<std::wstring, std::wstring>::iterator findCryptoImage = m_pParent->m_pInternal->m_arCryptoImages.find(sUrlOriginal);
             if (findCryptoImage != m_pParent->m_pInternal->m_arCryptoImages.end())
             {
                 if (download_item->IsComplete() || download_item->IsCanceled())
                 {
                     int_64_type nFrameID = 0;
-                    std::map<std::wstring, int_64_type>::iterator findCryptoImageFrameId = m_pParent->m_pInternal->m_arCryptoImagesFrameId.find(sUrl);
+                    std::map<std::wstring, int_64_type>::iterator findCryptoImageFrameId = m_pParent->m_pInternal->m_arCryptoImagesFrameId.find(sUrlOriginal);
                     if (findCryptoImageFrameId !=  m_pParent->m_pInternal->m_arCryptoImagesFrameId.end())
                     {
                         nFrameID = findCryptoImageFrameId->second;
@@ -4585,7 +4621,7 @@ require.load = function (context, moduleName, url) {\n\
         // проверяем на файлы метода AscDesktopEditor.DownloadFiles
         if (!m_pParent->m_pInternal->m_arDownloadedFiles.empty())
         {
-            std::map<std::wstring, CDownloadFileItem>::iterator findDownloadFile = m_pParent->m_pInternal->m_arDownloadedFiles.find(sUrlWithoutProtocol);
+            std::map<std::wstring, CDownloadFileItem>::iterator findDownloadFile = m_pParent->m_pInternal->m_arDownloadedFiles.find(sUrlOriginalWithoutProtocol);
             if (findDownloadFile != m_pParent->m_pInternal->m_arDownloadedFiles.end())
             {
                 if (download_item->IsComplete() || download_item->IsCanceled())
@@ -6020,6 +6056,24 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
             break;
         }
+        case ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_OPENDIRECTORY_DIALOG:
+        {
+            NSEditorApi::CAscLocalOpenDirectoryDialog* pData = (NSEditorApi::CAscLocalOpenDirectoryDialog*)pEvent->m_pData;
+            if (m_pInternal->m_handler->m_pDirectoryDialogCallback)
+            {
+                std::wstring sPath = pData->get_Path();
+                if (sPath.empty())
+                    m_pInternal->m_handler->m_pDirectoryDialogCallback->Cancel();
+                else
+                {
+                    std::vector<CefString> file_paths;
+                    file_paths.push_back(sPath);
+                    m_pInternal->m_handler->m_pDirectoryDialogCallback->Continue(0, file_paths);
+                }
+                m_pInternal->m_handler->m_pDirectoryDialogCallback = NULL;
+            }
+            break;
+        }
         case ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_SAVE_YES_NO:
         {
             NSEditorApi::CAscEditorSaveQuestion* pData = (NSEditorApi::CAscEditorSaveQuestion*)pEvent->m_pData;
@@ -6355,7 +6409,14 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
             }
 
             NSStringUtils::string_replace(sExtBase, L" ", L"");
-            m_pInternal->m_sDownloadViewPath += (L"." + NSFile::GetFileExtention(sExtBase));
+            std::wstring sExt = NSFile::GetFileExtention(sExtBase);
+            m_pInternal->m_sDownloadViewPath += (L"." + sExt);
+
+            m_pInternal->m_nCloudCryptFileType = 0;
+            if (sExt == L"docxf")
+                m_pInternal->m_nCloudCryptFileType = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF;
+            else if (sExt == L"oform")
+                m_pInternal->m_nCloudCryptFileType = AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM;
 
             // load preview...
             if (m_pInternal->m_oLocalInfo.m_oInfo.m_nCounterConvertion != 0)
@@ -6395,12 +6456,16 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
         }
         else if (nFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
         {
-            sParams = L"placement=desktop&mode=view";
+            sParams = L"placement=desktop&filetype=pdf&mode=view";
         }
 
         if (nFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
         {
             sParams += L"&filetype=oform";
+        }
+        else if (nFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF)
+        {
+            sParams += L"&filetype=docxf";
         }
 
         if (!GetAppManager()->m_pInternal->GetEditorPermission() && sParams.find(L"mode=view") == std::wstring::npos)
@@ -6538,6 +6603,7 @@ void CCefViewEditor::CreateLocalFile(const int& nFileFormat, const std::wstring&
     else if (nFileFormat == etDocumentMasterForm)
     {
         m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF;
+        sParams += L"&filetype=docxf";
     }
     
     if (!GetAppManager()->m_pInternal->GetEditorPermission())
