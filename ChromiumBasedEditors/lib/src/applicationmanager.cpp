@@ -502,6 +502,17 @@ void CAscApplicationManager::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             }
             break;
         }
+        case ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_OPENDIRECTORY_DIALOG:
+        {
+            CCefView* pView = GetViewById(((NSEditorApi::CAscCefMenuEvent*)pEvent)->get_SenderId());
+
+            if (NULL != pView)
+            {
+                ADDREFINTERFACE(pEvent);
+                pView->Apply(pEvent);
+            }
+            break;
+        }
         case ASC_MENU_EVENT_TYPE_UI_THREAD_MESSAGE:
         {
             int nId = ((NSEditorApi::CAscCefMenuEvent*)pEvent)->get_SenderId();
@@ -915,6 +926,10 @@ int CAscApplicationManager::GetFileFormatByExtentionForSave(const std::wstring& 
     int nFormat = -1;
     if (sName == L"docx")
         nFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX;
+    else if (sName == L"docxf")
+        nFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF;
+    else if (sName == L"oform")
+        nFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM;
     else if (sName == L"dotx")
         nFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOTX;
     else if (sName == L"odt")
@@ -951,6 +966,10 @@ int CAscApplicationManager::GetFileFormatByExtentionForSave(const std::wstring& 
         nFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_FB2;
     else if (sName == L"epub")
         nFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_EPUB;
+    else if (sName == L"png")
+        nFormat = AVS_OFFICESTUDIO_FILE_IMAGE_PNG;
+    else if (sName == L"jpg" || sName == L"jpeg")
+        nFormat = AVS_OFFICESTUDIO_FILE_IMAGE_JPG;
 #ifdef FILE_SAVE_ADDONS
     FILE_SAVE_ADDONS
 #endif
