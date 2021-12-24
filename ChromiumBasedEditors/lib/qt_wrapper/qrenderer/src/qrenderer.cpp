@@ -9,6 +9,32 @@
 #define TELL qDebug() << __func__
 namespace
 {
+    QImage getQImage(const Aggplus::CImage &internal)
+    {
+        int width = (int)internal.GetWidth();
+        int height = (int)internal.GetHeight();
+
+
+        QImage result{width, height, QImage::Format::Format_ARGB32};
+
+        DWORD size = internal.GetWidth()*internal.GetHeight();
+        const BYTE *data = internal.GetData();
+        data += 4*(size - 1);
+
+        for (int lineNo = 0; lineNo < height; ++lineNo) {
+            uchar *line = result.scanLine(lineNo);
+            for (int pxNo = 0; pxNo < width; ++pxNo) {
+                QRgb &px = *(QRgb*)line;
+                quint32 bgra = *(quint32*)data;
+                px = bgra;
+                line += 4;
+                data -= 4;
+            }
+        }
+
+        return result;
+    }
+
     template<typename T>
     QString toBin(T int_value)
     {
@@ -1227,14 +1253,26 @@ HRESULT NSQRenderer::CQRenderer::DrawImage(IGrObject *pImage
 {
     TELL;
     Aggplus::CImage* pPixels = (Aggplus::CImage*)pImage;
-    // TODO:
+    if (Aggplus::Status::Ok != pPixels->GetLastStatus()) {
+        return S_FALSE;
+    }
+
+    QImage image = getQImage(*pPixels)
+            .scaled(
+                (int)w
+                , (int)h
+                , Qt::AspectRatioMode::IgnoreAspectRatio
+                , Qt::TransformationMode::SmoothTransformation);
+    QPointF point{x, y};
+
+    m_oPrinterContext.painter().drawImage(point, image);
     return S_OK;
 }
 
 HRESULT NSQRenderer::CQRenderer::PathCommandEnd()
 {
     TELL;
-    m_oUntransformedPainterPath.clear();
+    m_oUntransformedPainterPath = QPainterPath{};
     return S_OK;
 }
 
@@ -1383,20 +1421,6 @@ void NSQRenderer::CQRenderer::applyTransform()
     m_oPrinterContext.painter().setTransform(m_oBaseTransform, true);
     m_oPrinterContext.painter().setTransform(m_oCurrentTransform, true);
 }
-
-//void NSQRenderer::CQRenderer::setBaseTransform(double scale_x
-//                                                   , double shear_y
-//                                                   , double shear_x
-//                                                   , double scale_y
-//                                                   , double translate_x
-//                                                   , double translate_y)
-//{
-//    TELL;
-//    m_oBaseTransform = {scale_x, shear_y
-//                       , shear_x, scale_y
-//                        , translate_x, translate_y};
-//    applyBaseTransform();
-//}
 
 void NSQRenderer::CQRenderer::scaleTransformSetX(double scale)
 {

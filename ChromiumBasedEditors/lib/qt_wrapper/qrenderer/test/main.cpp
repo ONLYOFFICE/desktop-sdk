@@ -31,7 +31,12 @@
 
 #define TEST_ON_IMAGE
 
-// для теста печати файлом из js редакторов - нужен класс, еоторый
+
+
+
+
+
+// для теста печати файлом из js редакторов - нужен класс, который
 // конвертирует локальные картинки в абсолютные.
 // ну и также base64
 // для теста просто реализуем что-то похожее из desktopeditor
@@ -298,6 +303,11 @@ int main(int argc, char *argv[])
 #endif
         printJsBuffer(sExamplePath, &renderer);
 
+    //
+    Aggplus::CImage pic{L"D:\\1.png"};
+    std::cout << pic.GetWidth() << ' ' << pic.GetHeight() << std::endl;
+    renderer.DrawImage(&pic, 0, 0, 100, 100);
+
     renderer.endPainting();
 
     RELEASEINTERFACE(pFonts);
@@ -312,6 +322,7 @@ int main(int argc, char *argv[])
     w.setLayout(&layout);
     w.show();
 #endif
+
 
     return a.exec();
 }
