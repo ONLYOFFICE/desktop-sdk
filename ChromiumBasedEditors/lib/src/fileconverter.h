@@ -821,7 +821,9 @@ public:
         RELEASEOBJECT(m_pVerifier);
         if (m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX ||
             m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX ||
-            m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX)
+            m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX ||
+            m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF ||
+            m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
         {
             COfficeFileFormatChecker oChecker;
             oChecker.isOfficeFile(sFile);
@@ -1178,7 +1180,12 @@ public:
 
         if (m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_IMAGE)
         {
-            oBuilder.WriteString(L"<m_oThumbnail><first>false</first></m_oThumbnail>");
+            oBuilder.WriteString(L"<m_oThumbnail><first>false</first>");
+
+            if (m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_IMAGE_JPG)
+                oBuilder.WriteString(L"<format>3</format>");
+
+            oBuilder.WriteString(L"</m_oThumbnail>");
         }
 
         oBuilder.WriteString(L"</TaskQueueDataConvert>");
