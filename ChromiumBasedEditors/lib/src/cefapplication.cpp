@@ -42,6 +42,7 @@
 #undef Success  // Definition conflicts with cef_message_router.h
 #undef RootWindow
 #undef None
+#undef Always
 
 #include "include/wrapper/cef_helpers.h"
 

@@ -54,6 +54,8 @@ static bool IsFormatSupportCrypto(const int& nFormat)
     switch (nFormat)
     {
         case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX:
+        case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF:
+        case AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM:
         case AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX:
         case AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX:
         case AVS_OFFICESTUDIO_FILE_DOCUMENT_ODT:
@@ -321,10 +323,14 @@ namespace NSOOXMLPassword
         CAscApplicationManager* m_pManager;
 
     public:
+        NSSystem::CLocalFileLocker* m_pLocker;
+
+    public:
 
         COOXMLZipDirectory(CAscApplicationManager* pManager)
         {
             m_pManager = pManager;
+            m_pLocker = NULL;
         }
 
         int Open(const std::wstring& sFile, const std::wstring& sPassword)
@@ -391,12 +397,31 @@ namespace NSOOXMLPassword
                 return 0;
             }
 
+            std::wstring sLockerSavedPath;
+            if (m_pLocker)
+            {
+                sLockerSavedPath = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"OL");
+                if (NSFile::CFileBinary::Exists(sLockerSavedPath))
+                    NSFile::CFileBinary::Remove(sLockerSavedPath);
+            }
+            else
+            {
+                sLockerSavedPath = m_sFile;
+            }
+
             if (m_sPassword.empty())
             {
                 NSFile::CFileBinary::Remove(m_sFile);
                 COfficeUtils oCOfficeUtils(NULL);
-                HRESULT hRes = oCOfficeUtils.CompressFileOrDirectory(m_sDirectory, m_sFile, true);
+                HRESULT hRes = oCOfficeUtils.CompressFileOrDirectory(m_sDirectory, sLockerSavedPath, true);
                 NSDirectory::DeleteDirectory(m_sDirectory);
+
+                if (m_pLocker && (hRes == S_OK))
+                {
+                    hRes = m_pLocker->SaveFile(sLockerSavedPath) ? S_OK : S_FALSE;
+                    NSFile::CFileBinary::Remove(sLockerSavedPath);
+                }
+
                 return (hRes == S_OK) ? 0 : 1;
             }
 
@@ -417,13 +442,14 @@ namespace NSOOXMLPassword
                 NSFile::CFileBinary::Remove(sTempFileXml);
             sTempFileXml += L".xml";
 
-            NSFile::CFileBinary::Remove(m_sFile);
+            if (!m_pLocker)
+                NSFile::CFileBinary::Remove(m_sFile);
 
             NSStringUtils::CStringBuilder oBuilder;
             oBuilder.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><TaskQueueDataConvert><m_sFileFrom>");
             oBuilder.WriteEncodeXmlString(sTempFile);
             oBuilder.WriteString(L"</m_sFileFrom><m_sFileTo>");
-            oBuilder.WriteEncodeXmlString(m_sFile);
+            oBuilder.WriteEncodeXmlString(sLockerSavedPath);
             oBuilder.WriteString(L"</m_sFileTo><m_nFormatTo>");
             oBuilder.WriteString(std::to_wstring(nFormatType));
             oBuilder.WriteString(L"</m_nFormatTo>");
@@ -443,6 +469,12 @@ namespace NSOOXMLPassword
 
             NSFile::CFileBinary::Remove(sTempFile);
             NSFile::CFileBinary::Remove(sTempFileXml);
+
+            if (0 == nReturnCode && m_pLocker)
+            {
+                nReturnCode = m_pLocker->SaveFile(sLockerSavedPath) ? 0 : 80;
+                NSFile::CFileBinary::Remove(sLockerSavedPath);
+            }
 
             return (0 == nReturnCode) ? 0 : 1;
         }
@@ -789,7 +821,9 @@ public:
         RELEASEOBJECT(m_pVerifier);
         if (m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX ||
             m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX ||
-            m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX)
+            m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX ||
+            m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF ||
+            m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
         {
             COfficeFileFormatChecker oChecker;
             oChecker.isOfficeFile(sFile);
@@ -804,15 +838,36 @@ public:
             }
             else
             {
-                //std::wstring sUnzipDir = NSFile::GetDirectoryName(sFile) + L"/" + NSCommon::GetFileName(sFile) + L"_uncompress";
-                std::wstring sUnzipDir = NSDirectory::CreateDirectoryWithUniqueName(NSDirectory::GetTempPath());
-                NSDirectory::CreateDirectory(sUnzipDir);
+                ULONG nBufferSize = 0;
+                BYTE *pBuffer = NULL;
 
+                bool bIsNeedCheck = false;
                 COfficeUtils oCOfficeUtils(NULL);
-                if (S_OK == oCOfficeUtils.ExtractToDirectory(sFile, sUnzipDir, NULL, 0))
+                if (S_OK == oCOfficeUtils.LoadFileFromArchive(sFile, L"[Content_Types].xml", &pBuffer, nBufferSize))
                 {
-                    m_pVerifier = new COOXMLVerifier(sUnzipDir);
-                    NSDirectory::DeleteDirectory(sUnzipDir);
+                    const char *find1 = "application/vnd.openxmlformats-package.digital-signature-origin";
+                    const char *find2 = "application/vnd.openxmlformats-package.digital-signature-xmlsignature+xml";
+
+                    std::string strContentTypes((char*)pBuffer, nBufferSize);
+                    if (std::string::npos != strContentTypes.find(find1) && std::string::npos != strContentTypes.find(find2))
+                    {
+                        bIsNeedCheck = true;
+                    }
+                }
+                delete []pBuffer;
+                pBuffer = NULL;
+
+                if (bIsNeedCheck)
+                {
+                    std::wstring sUnzipDir = NSDirectory::CreateDirectoryWithUniqueName(NSDirectory::GetTempPath());
+                    NSDirectory::CreateDirectory(sUnzipDir);
+
+                    COfficeUtils oCOfficeUtils2(NULL);
+                    if (S_OK == oCOfficeUtils2.ExtractToDirectory(sFile, sUnzipDir, NULL, 0))
+                    {
+                        m_pVerifier = new COOXMLVerifier(sUnzipDir);
+                        NSDirectory::DeleteDirectory(sUnzipDir);
+                    }
                 }
             }
         }
@@ -953,6 +1008,9 @@ public:
     bool m_bIsEditorWithChanges;
     bool m_bIsWorking; // not m_bIsRunned
 
+    // временный путь для сохранения (чтобы делать локфайл)
+    NSSystem::CLocalFileLocker* m_pLocker;
+
 public:
     CASCFileConverterFromEditor() : NSThreads::CBaseThread()
     {
@@ -960,6 +1018,7 @@ public:
         m_nTypeEditorFormat = -1;
         m_bIsEditorWithChanges = false;
         m_bIsWorking = false;
+        m_pLocker = NULL;
     }
     virtual void Start(int lPriority)
     {
@@ -982,6 +1041,12 @@ public:
     virtual DWORD ThreadProc()
     {
         std::wstring sLocalFilePath = m_oInfo.m_sFileSrc;
+
+        // если true - то делаем архив 123.png.zip
+        // если false - то делаем папку 123.png
+        bool bIsAddZipToRasterFormats = false;
+        std::wstring sRasterDictionaryExtract = L"";
+
 #ifdef WIN32
         if (0 == sLocalFilePath.find(L"//"))
         {
@@ -989,15 +1054,25 @@ public:
         }
 #endif
 
-        bool bIsUseTmpFileDst = false;
-        std::wstring sUseTmpFileDst = L"";
-        if (0 == sLocalFilePath.find(L"\\\\") || 0 == sLocalFilePath.find(L"//"))
+        if (m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_IMAGE)
         {
-            bIsUseTmpFileDst = true;
+            if (bIsAddZipToRasterFormats)
+                sLocalFilePath += L".zip";
+            else
+            {
+                sRasterDictionaryExtract = sLocalFilePath;
+                sLocalFilePath = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"OL");
+                if (NSFile::CFileBinary::Exists(sLocalFilePath))
+                    NSFile::CFileBinary::Remove(sLocalFilePath);
+            }
+        }
 
-            sUseTmpFileDst = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"OL");
-            if (NSFile::CFileBinary::Exists(sUseTmpFileDst))
-                NSFile::CFileBinary::Remove(sUseTmpFileDst);
+        std::wstring sLockerSavedPath;
+        if (m_pLocker)
+        {
+            sLockerSavedPath = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"OL");
+            if (NSFile::CFileBinary::Exists(sLockerSavedPath))
+                NSFile::CFileBinary::Remove(sLockerSavedPath);
         }
 
         std::wstring sThemesPath = m_pManager->m_oSettings.local_editors_path;
@@ -1039,9 +1114,9 @@ public:
             oBuilder.WriteEncodeXmlString(sPathTmp);
             oBuilder.WriteString(L"</m_sFileFrom><m_sFileTo>");
         }
-        
-        if (bIsUseTmpFileDst)
-            oBuilder.WriteEncodeXmlString(sUseTmpFileDst);
+
+        if (!sLockerSavedPath.empty())
+            oBuilder.WriteEncodeXmlString(sLockerSavedPath);
         else
             oBuilder.WriteEncodeXmlString(sLocalFilePath);
         
@@ -1103,6 +1178,16 @@ public:
         oBuilder.WriteEncodeXmlString(sDstTmpDir);
         oBuilder.WriteString(L"</m_sTempDir>");
 
+        if (m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_IMAGE)
+        {
+            oBuilder.WriteString(L"<m_oThumbnail><first>false</first>");
+
+            if (m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_IMAGE_JPG)
+                oBuilder.WriteString(L"<format>3</format>");
+
+            oBuilder.WriteString(L"</m_oThumbnail>");
+        }
+
         oBuilder.WriteString(L"</TaskQueueDataConvert>");
 
         std::wstring sXmlConvert = oBuilder.GetData();
@@ -1117,6 +1202,7 @@ public:
             // return!
             m_bIsWorking = false;
             m_pEvents->OnFileConvertFromEditor(ASC_CONSTANT_CANCEL_SAVE);
+            m_pLocker = NULL;
             m_bRunThread = FALSE;
             return 0;
         }
@@ -1125,13 +1211,6 @@ public:
             m_pManager->m_pInternal->m_pAdditional->CheckSaveStart(m_oInfo.m_sRecoveryDir, m_nTypeEditorFormat);
 
         int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileForParams, m_pManager, m_pManager->m_pInternal->m_bIsEnableConvertLogs);
-
-        if (bIsUseTmpFileDst)
-        {
-            NSFile::CFileBinary::Remove(sLocalFilePath);
-            NSFile::CFileBinary::Copy(sUseTmpFileDst, sLocalFilePath);
-            NSFile::CFileBinary::Remove(sUseTmpFileDst);
-        }
 
         m_sOriginalFileNameCrossPlatform = L"";
         m_bIsRetina = false;
@@ -1142,8 +1221,32 @@ public:
             NSDirectory::DeleteDirectory(sDstTmpDir);
         }
 
+        if (m_pLocker)
+        {
+            m_pLocker->SaveFile(sLockerSavedPath);
+            m_pLocker = NULL;
+
+            if (NSFile::CFileBinary::Exists(sLockerSavedPath))
+                NSFile::CFileBinary::Remove(sLockerSavedPath);
+        }
+        else
+        {
+            if ((m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_IMAGE) != 0)
+            {
+                if (!bIsAddZipToRasterFormats)
+                {
+                    NSDirectory::CreateDirectory(sRasterDictionaryExtract);
+                    COfficeUtils oUtils;
+                    oUtils.ExtractToDirectory(sLocalFilePath, sRasterDictionaryExtract, NULL, 0);
+                    NSFile::CFileBinary::Remove(sLocalFilePath);
+                }
+            }
+        }
+
         m_bIsWorking = false;
         m_pEvents->OnFileConvertFromEditor(nReturnCode, m_oInfo.m_sPassword);
+
+        m_pLocker = NULL;
 
         if (m_pManager->m_pInternal->m_pAdditional)
             m_pManager->m_pInternal->m_pAdditional->CheckSaveEnd();

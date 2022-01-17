@@ -117,6 +117,8 @@
 
 #define ASC_MENU_EVENT_TYPE_BINARY_FROM_RENDERER            7035
 
+#define ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_OPENDIRECTORY_DIALOG 7036
+
 #define ASC_MENU_EVENT_TYPE_PAGE_GOT_FOCUS                  7050
 
 #define ASC_MENU_EVENT_TYPE_CEF_DESTROYWINDOW               8000
@@ -655,6 +657,22 @@ namespace NSEditorApi
         {
             return m_arPaths;
         }
+    };
+
+    class CAscLocalOpenDirectoryDialog : public IMenuEventDataBase
+    {
+    private:
+        std::wstring m_sPath;
+
+    public:
+        CAscLocalOpenDirectoryDialog()
+        {
+        }
+        virtual ~CAscLocalOpenDirectoryDialog()
+        {
+        }
+
+        LINK_PROPERTY_STRING(Path)
     };
 
     class CAscLocalSaveFileNameDialog : public IMenuEventDataBase

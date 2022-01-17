@@ -25,7 +25,7 @@ DEFINES += DESKTOP_USE_DYNAMIC_LIBRARY_BUILDING
 
 core_mac:DEFINES += _XCODE
 
-ADD_DEPENDENCY(graphics, kernel, UnicodeConverter, PdfWriter, PdfReader, XpsFile, DjVuFile, HtmlRenderer, hunspell, ooxmlsignature)
+ADD_DEPENDENCY(graphics, kernel, UnicodeConverter, kernel_network, PdfWriter, PdfReader, XpsFile, DjVuFile, HtmlRenderer, hunspell, ooxmlsignature)
 !core_windows:DEFINES += DOCUMENTSCORE_OPENSSL_SUPPORT
 
 CEF_PROJECT_PRI=$$PWD/cef_pri
@@ -34,6 +34,7 @@ build_xp {
     include($$CEF_PROJECT_PRI/cef_client_xp.pri)
     DESTDIR=$$DESTDIR/xp
 } else {
+    DEFINES += ENABLE_CEF_EXTENSIONS
     !core_linux {
         DEFINES += CEF_VERSION_ABOVE_86
         CEF_PROJECT_PRI=$$PWD/cef_pri_87

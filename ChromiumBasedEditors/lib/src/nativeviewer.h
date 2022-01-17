@@ -54,6 +54,7 @@
 
 #include <list>
 #include <math.h>
+#include <algorithm>
 
 class INativeViewer_Events
 {
@@ -128,6 +129,9 @@ private:
     int m_nIntervalTimerDraw;
     int m_nIntervalTimer;
 
+    bool m_bIsDarkMode;
+    int m_nTimeCounter;
+
 public:
     CNativeViewer() : NSTimers::CTimer()
     {
@@ -152,6 +156,9 @@ public:
         SetInterval(m_nIntervalTimer);
 
         m_pFonts = NSFonts::NSApplication::Create();
+
+        m_bIsDarkMode = false;
+        m_nTimeCounter = 0;
     }
 
     virtual ~CNativeViewer()
@@ -422,6 +429,22 @@ public:
         return L"";
     }
 
+    inline void CheckDarkMode(const bool& bDarkMode)
+    {
+        if (m_bIsDarkMode == bDarkMode)
+            return;
+
+        ++m_nTimeCounter;
+        m_bIsDarkMode = bDarkMode;
+        NSDirectory::DeleteDirectory(m_sFileDir + L"/media");
+        NSDirectory::CreateDirectory(m_sFileDir + L"/media");
+    }
+
+    inline std::wstring GetUrlAddon()
+    {
+        return L"?asc_native_viewer=" + std::to_wstring(m_nTimeCounter);
+    }
+
     inline std::wstring GetPathPageImage(const CNativeViewerPageInfo& oInfo)
     {
         return m_sFileDir + L"/media/page" + std::to_wstring(oInfo.Page) + L"_" + std::to_wstring(oInfo.W) + L"x" + std::to_wstring(oInfo.H) + L".png";
@@ -519,7 +542,17 @@ protected:
         oFrame.put_Stride(4 * nRasterW);
 
         BYTE* pDataRaster = new BYTE[4 * nRasterW * nRasterH];
-        memset(pDataRaster, 0xFF, 4 * nRasterW * nRasterH);
+        if (!m_bIsDarkMode)
+            memset(pDataRaster, 0xFF, 4 * nRasterW * nRasterH);
+        else
+        {
+            long lSize = nRasterW * nRasterH;
+            memset(pDataRaster, 0x3A, 4 * lSize);
+
+            BYTE* pAlpha = pDataRaster + 3;
+            for (long i = 0; i < lSize; ++i, pAlpha += 4)
+                *pAlpha = 0xFF;
+        }
         oFrame.put_Data(pDataRaster);
 
         NSGraphics::IGraphicsRenderer* pRenderer = NSGraphics::Create();
@@ -530,6 +563,10 @@ protected:
         pRenderer->SetTileImageDpi(96.0);
 
         pRenderer->SetSwapRGB(false);
+
+        if (m_bIsDarkMode)
+            pRenderer->CommandLong(c_nDarkMode, 1);
+
         pRenderer->put_Width(m_pPageWidths[m_oCurrentTask.Page]);
         pRenderer->put_Height(m_pPageHeights[m_oCurrentTask.Page]);
 

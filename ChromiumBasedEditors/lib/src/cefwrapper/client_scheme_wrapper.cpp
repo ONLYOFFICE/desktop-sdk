@@ -219,6 +219,14 @@ public:
                     sFile = L"/" + sFile;
             }
 #endif
+
+            if (bIsCheck)
+            {
+                std::wstring::size_type posNativeViewer = sFile.rfind(L"?asc_native_viewer=");
+                if (std::wstring::npos != posNativeViewer)
+                    sFile = sFile.substr(0, posNativeViewer);
+            }
+
             if (bIsCheck && !m_bIsLocal && !m_pManager->IsResolveLocalFile(sFile))
                 return false;
 

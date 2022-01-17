@@ -48,7 +48,7 @@
 #endif
 
 #include "../../../../../core/DesktopEditor/common/File.h"
-#include "../../../../../core/Common/FileDownloader/FileDownloader.h"
+#include "../../../../../core/Common/Network/FileTransporter/include/FileTransporter.h"
 
 #include "../../include/applicationmanager.h"
 
@@ -231,7 +231,7 @@ public:
     CAscClientAppBrowser(std::map<std::string, std::string>& mapSettings, CAscApplicationManager* pManager = NULL) : client::ClientAppBrowser(), CAppSettings(mapSettings)
     {
 #ifdef _MAC
-        CFileDownloader::SetARCEnabled(true);
+        NSNetwork::NSFileTransport::SetARCEnabled(true);
 #endif
         m_manager = pManager;
     }
@@ -341,7 +341,7 @@ public:
     CAscClientAppOther(std::map<std::string, std::string>& mapSettings) : client::ClientAppOther(), CAppSettings(mapSettings)
     {
 #ifdef _MAC
-        CFileDownloader::SetARCEnabled(true);
+        NSNetwork::NSFileTransport::SetARCEnabled(true);
 #endif
     }
 
@@ -403,7 +403,7 @@ public:
     CAscClientAppRenderer(std::map<std::string, std::string>& mapSettings) : client::ClientAppRenderer(), CAppSettings(mapSettings)
     {
 #ifdef _MAC
-        CFileDownloader::SetARCEnabled(true);
+        NSNetwork::NSFileTransport::SetARCEnabled(true);
 #endif
     }
 
