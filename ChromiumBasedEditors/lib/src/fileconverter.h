@@ -525,7 +525,9 @@ public:
         m_pView = NULL;
 
         m_bIsNativeOpening = false;
-        m_bIsNativeSupport = true;
+
+        // перешли на новый вьюер => отключили старый
+        m_bIsNativeSupport = false;
 
         m_pVerifier = NULL;
 
@@ -739,12 +741,14 @@ public:
             return 0;
         }
 
-        if (m_bIsNativeSupport && m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
+        if (m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
         {
-            NSDirectory::CreateDirectory(m_oInfo.m_sRecoveryDir + L"/media");
-            this->NativeViewerOpen(true); // async. sleep!!!
+            if (m_bIsNativeSupport)
+            {
+                NSDirectory::CreateDirectory(m_oInfo.m_sRecoveryDir + L"/media");
+                this->NativeViewerOpen(true); // async. sleep!!!
+            }
             m_pEvents->OnFileConvertToEditor(0);
-
             m_bRunThread = FALSE;
             return 0;
         }

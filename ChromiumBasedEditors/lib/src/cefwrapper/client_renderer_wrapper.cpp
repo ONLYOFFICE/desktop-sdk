@@ -4500,10 +4500,18 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
 
             int nFileDataLen = 0;
 
+            std::wstring sBinaryFile = sFolder + L"/Editor.bin";
+            if (!NSFile::CFileBinary::Exists(sBinaryFile))
+            {
+                std::wstring sBinaryFileCrossPlatform = sFolder + L"/" + NSFile::GetFileName(sFileSrc);
+                if (NSFile::CFileBinary::Exists(sBinaryFileCrossPlatform))
+                    sBinaryFile = sBinaryFileCrossPlatform;
+            }
+
 #ifdef CEF_V8_SUPPORT_TYPED_ARRAYS
-            std::string sFileData = GetFileData2(sFolder + L"/Editor.bin", nFileDataLen);
+            std::string sFileData = GetFileData2(sBinaryFile, nFileDataLen);
 #else
-            std::string sFileData = GetFileData(sFolder + L"/Editor.bin", nFileDataLen);
+            std::string sFileData = GetFileData(sBinaryFile, nFileDataLen);
 #endif
 
             std::string sCode = "window.AscDesktopEditor.LocalFileRecoverFolder(\"" + U_TO_UTF8(sFolderJS) +
