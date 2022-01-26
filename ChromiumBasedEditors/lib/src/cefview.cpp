@@ -3749,7 +3749,7 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
             Core_GetMonitorRawDpi(hwnd, &_dx, &_dy);
             dDeviceScale = NSMonitor::GetRawMonitorScale(_dx, _dy);
         #else
-            int nDeviceScaleTmp = CAscApplicationManager::GetDpiChecker()->GetWidgetImplDpi(this->m_pCefView->GetWidgetImpl(), &_dx, &_dy);
+            int nDeviceScaleTmp = CAscApplicationManager::GetDpiChecker()->GetWidgetImplDpi(m_pParent->GetWidgetImpl(), &_dx, &_dy);
             dDeviceScale = CAscApplicationManager::GetDpiChecker()->GetScale(_dx, _dy);
         #endif
 
