@@ -35,10 +35,20 @@
 CAscKeyboardChecker::CAscKeyboardChecker()
 {
     m_nLanguage = -1;
+    m_bIsEnabled = true;
 }
 
 CAscKeyboardChecker::~CAscKeyboardChecker()
 {
+}
+
+void CAscKeyboardChecker::SetEnabled(const bool &bIsEnabled)
+{
+    if (m_bIsEnabled == bIsEnabled)
+        return;
+
+    m_bIsEnabled = bIsEnabled;
+    m_nLanguage = -1;
 }
 
 void CAscKeyboardChecker::Check(CAscApplicationManager* pManager, int nLangInput)
@@ -50,6 +60,9 @@ void CAscKeyboardChecker::Check(CAscApplicationManager* pManager, int nLangInput
     ::GetGUIThreadInfo(0,&Gti);
     m_dwThread = GetWindowThreadProcessId(Gti.hwndActive, 0);
 #endif
+
+    if (!m_bIsEnabled)
+        return;
 
     int nLang = nLangInput;
     if (nLang == -1)
