@@ -46,7 +46,10 @@ public:
     void Check(CAscApplicationManager* pManager, int nLangInput = -1);
     void Send(CAscApplicationManager* pManager);
 
+    void SetEnabled(const bool& bIsEnabled);
+
 protected:
+    bool m_bIsEnabled;
     int m_nLanguage;
 };
 
