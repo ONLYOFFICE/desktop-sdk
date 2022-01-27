@@ -319,42 +319,24 @@ std::map<std::string, CDetecterOldSystems::CMonitorInfo> CDetecterOldSystems::g_
 
 double NSMonitor::GetRawMonitorScale(const unsigned int& xDpi, const unsigned int& yDpi)
 {
-    if (xDpi > 180 && yDpi > 180)
-        return 2;
-
-    if (xDpi > 120 && yDpi > 120)
-        return 1.5;
-
-    return 1;
+    // допустимые значения: 1; 1.25; 1.5; 1.75; 2;
+    double dScale = (xDpi + yDpi) / (2 * 96.0);
+    int nCount = (int)((dScale + 0.125) / 0.25);
+    dScale = 0.25 * nCount;
+    if (dScale > 2) dScale = 2;
+    if (dScale < 1) dScale = 1;
+    return dScale;
 }
 double NSMonitor::GetRawMonitorDpi(WindowHandleId handle)
 {
-    if (true)
-    {
-        UINT iuW = 0;
-        UINT iuH = 0;
-        if (CDetecterOldSystems::GetDpi(handle, iuW, iuH))
-        {
-            return GetRawMonitorScale(iuW, iuH);
-        }
-    }
+    unsigned int uiX = 0;
+    unsigned int uiY = 0;
+    int nRes = Core_GetMonitorRawDpi(handle, &uiX, &uiY);
 
-    if (g_monitor_info.m_func_GetDpiForWindow)
-    {
-        UINT resDpi = g_monitor_info.m_func_GetDpiForWindow(handle);
-        return GetRawMonitorScale(resDpi, resDpi);
-    }
+    if (nRes == -1)
+        return 1;
 
-    if (g_monitor_info.m_func_GetDpiForMonitor)
-    {
-        HMONITOR hMonitor = MonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST);
-        UINT iuW = 0;
-        UINT iuH = 0;
-        g_monitor_info.m_func_GetDpiForMonitor(hMonitor, MDT_RAW_DPI, &iuW, &iuH);
-        return GetRawMonitorScale(iuW, iuH);
-    }
-
-    return 1;
+    return GetRawMonitorScale(uiX, uiY);
 }
 
 int Core_SetProcessDpiAwareness(void)
@@ -383,7 +365,7 @@ int Core_GetMonitorRawDpi(WindowHandleId handle, unsigned int* uiX, unsigned int
     *uiX = 0;
     *uiY = 0;
 
-    if (true)
+    if (!CAscApplicationManager::IsUseSystemScaling())
     {
         UINT iuW = 0;
         UINT iuH = 0;
@@ -443,7 +425,7 @@ int Core_GetMonitorRawDpiByIndex(int index, unsigned int* uiX, unsigned int* uiY
     EnumDisplayMonitors(NULL, NULL, GetMonitorByIndex, (LPARAM)&info);
     if (info.hMonitor != NULL)
     {
-        if (true)
+        if (!CAscApplicationManager::IsUseSystemScaling())
         {
             UINT iuW = 0;
             UINT iuH = 0;

@@ -33,6 +33,7 @@
 #include "./applicationmanager_p.h"
 #include "./plugins.h"
 #include "./cefwrapper/client_resource_handler_async.h"
+#include "./cefwrapper/monitor_info.h"
 
 #ifdef LINUX
 CApplicationCEF* CLinuxData::app_cef            = NULL;
@@ -1123,13 +1124,7 @@ int CAscDpiChecker::GetWidgetImplDpi(CCefViewWidgetImpl* wid, unsigned int* _dx,
 }
 double CAscDpiChecker::GetScale(unsigned int dpiX, unsigned int dpiY)
 {
-    // допустимые значения: 1; 1.5; 2;
-    double dScale = (dpiX + dpiY) / 96.0;
-    int nScale = (int)(dScale + 0.5);
-    double dRetValue = (double)nScale / 2.0;
-    if (dRetValue > 2) dRetValue = 2;
-    if (dRetValue < 1) dRetValue = 1;
-    return dRetValue;
+    return NSMonitor::GetRawMonitorScale(dpiX, dpiY);
 }
 
 double CAscDpiChecker::GetForceScale(unsigned int* dpix, unsigned int* dpiy)
@@ -1213,4 +1208,49 @@ void CAscApplicationManager::AddFileToLocalResolver(const std::wstring& sFile)
 void CAscApplicationManager::SetRendererProcessVariable(const std::wstring& sVariable)
 {
     m_pInternal->m_sRendererJSON = sVariable;
+}
+
+bool g_isUseSystemScalingInit = false;
+bool g_isUseSystemScaling = false;
+bool CAscApplicationManager::IsUseSystemScaling()
+{
+    if (g_isUseSystemScalingInit)
+        return g_isUseSystemScaling;
+
+    g_isUseSystemScalingInit = true;
+
+#ifdef _MAC
+    g_isUseSystemScaling = true;
+#else
+#ifdef _LINUX
+    g_isUseSystemScaling = false;
+#else
+    bool bIsCheckSystem = false; // uncomment for auto-system mode
+
+    if (!bIsCheckSystem)
+    {
+        g_isUseSystemScaling = false;
+        return g_isUseSystemScaling;
+    }
+
+    DWORD nOSVersion = 0;
+    NTSTATUS(WINAPI *RtlGetVersion)(LPOSVERSIONINFOEXW);
+    *(FARPROC*)&RtlGetVersion = GetProcAddress(GetModuleHandleA("ntdll"), "RtlGetVersion");
+
+    if (NULL != RtlGetVersion)
+    {
+        OSVERSIONINFOEXW osInfo;
+        osInfo.dwOSVersionInfoSize = sizeof(osInfo);
+        RtlGetVersion(&osInfo);
+        nOSVersion = osInfo.dwMajorVersion;
+    }
+
+    if (nOSVersion >= 10)
+        g_isUseSystemScaling = true;
+    else
+        g_isUseSystemScaling = false;
+#endif
+#endif
+
+    return g_isUseSystemScaling;
 }

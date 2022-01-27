@@ -5133,6 +5133,9 @@ void CCefView_Private::OnFileConvertToEditor(const int& nError)
 }
 void CCefView_Private::CheckZoom()
 {
+    if (CAscApplicationManager::IsUseSystemScaling())
+        return;
+
     if (NULL == CAscApplicationManager::GetDpiChecker())
         return;
 

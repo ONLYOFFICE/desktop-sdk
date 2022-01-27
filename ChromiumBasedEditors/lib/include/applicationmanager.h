@@ -287,6 +287,8 @@ public:
 
     void SetRendererProcessVariable(const std::wstring& sVariable);
 
+    static bool IsUseSystemScaling();
+
 protected:
     int GenerateNextViewId();
     virtual CAscDpiChecker* InitDpiChecker();
