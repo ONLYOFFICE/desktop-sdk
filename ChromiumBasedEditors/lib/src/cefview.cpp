@@ -1424,6 +1424,13 @@ public:
 
         return true;
     }
+    bool LocalFile_IsSupportOpenFormat(int nFormat)
+    {
+        if ((nFormat & AVS_OFFICESTUDIO_FILE_IMAGE) != 0)
+            return false;
+
+        return true;
+    }
 
     virtual void CTextDocxConverterCallback_OnConvert(std::wstring sData)
     {
@@ -4879,7 +4886,7 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
 
     if (!LocalFile_IsSupportEditFormat(m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat))
     {
-        if (0 == nError)
+        if (0 == nError && LocalFile_IsSupportOpenFormat(m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat))
             m_pManager->m_pInternal->Recents_Add(m_oConverterFromEditor.m_oInfo.m_sFileSrc, m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat, L"", L"", m_sParentUrl);
         nError = ASC_CONSTANT_CANCEL_SAVE;
 
