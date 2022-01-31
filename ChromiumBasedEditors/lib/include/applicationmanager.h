@@ -50,6 +50,8 @@ DESKTOP_DECL int Core_GetMonitorRawDpi(WindowHandleId, unsigned int*, unsigned i
 DESKTOP_DECL int Core_GetMonitorRawDpiByIndex(int, unsigned int*, unsigned int*);
 #endif
 
+DESKTOP_DECL double Core_GetMonitorScale(const unsigned int& x, const unsigned int& y);
+
 class DESKTOP_DECL CAscApplicationSettings
 {
 public:

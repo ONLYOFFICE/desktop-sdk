@@ -1124,7 +1124,7 @@ int CAscDpiChecker::GetWidgetImplDpi(CCefViewWidgetImpl* wid, unsigned int* _dx,
 }
 double CAscDpiChecker::GetScale(unsigned int dpiX, unsigned int dpiY)
 {
-    return NSMonitor::GetRawMonitorScale(dpiX, dpiY);
+    return Core_GetMonitorScale(dpiX, dpiY);
 }
 
 double CAscDpiChecker::GetForceScale(unsigned int* dpix, unsigned int* dpiy)
@@ -1253,4 +1253,15 @@ bool CAscApplicationManager::IsUseSystemScaling()
 #endif
 
     return g_isUseSystemScaling;
+}
+
+double Core_GetMonitorScale(const unsigned int& xDpi, const unsigned int& yDpi)
+{
+    // допустимые значения: 1; 1.25; 1.5; 1.75; 2;
+    double dScale = (xDpi + yDpi) / (2 * 96.0);
+    int nCount = (int)((dScale + 0.125) / 0.25);
+    dScale = 0.25 * nCount;
+    if (dScale > 2) dScale = 2;
+    if (dScale < 1) dScale = 1;
+    return dScale;
 }

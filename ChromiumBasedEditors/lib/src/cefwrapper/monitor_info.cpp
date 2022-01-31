@@ -317,16 +317,6 @@ private:
 
 std::map<std::string, CDetecterOldSystems::CMonitorInfo> CDetecterOldSystems::g_map_old;
 
-double NSMonitor::GetRawMonitorScale(const unsigned int& xDpi, const unsigned int& yDpi)
-{
-    // допустимые значения: 1; 1.25; 1.5; 1.75; 2;
-    double dScale = (xDpi + yDpi) / (2 * 96.0);
-    int nCount = (int)((dScale + 0.125) / 0.25);
-    dScale = 0.25 * nCount;
-    if (dScale > 2) dScale = 2;
-    if (dScale < 1) dScale = 1;
-    return dScale;
-}
 double NSMonitor::GetRawMonitorDpi(WindowHandleId handle)
 {
     unsigned int uiX = 0;
@@ -336,7 +326,7 @@ double NSMonitor::GetRawMonitorDpi(WindowHandleId handle)
     if (nRes == -1)
         return 1;
 
-    return GetRawMonitorScale(uiX, uiY);
+    return Core_GetMonitorScale(uiX, uiY);
 }
 
 int Core_SetProcessDpiAwareness(void)
