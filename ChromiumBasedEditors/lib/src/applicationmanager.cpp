@@ -1210,51 +1210,13 @@ void CAscApplicationManager::SetRendererProcessVariable(const std::wstring& sVar
     m_pInternal->m_sRendererJSON = sVariable;
 }
 
-bool g_isUseSystemScalingInit = false;
-bool g_isUseSystemScaling = false;
+bool NSCommon::CSystemWindowScale::g_isUseSystemScalingInit = false;
+bool NSCommon::CSystemWindowScale::g_isUseSystemScaling = false;
+
 bool CAscApplicationManager::IsUseSystemScaling()
 {
-    if (g_isUseSystemScalingInit)
-        return g_isUseSystemScaling;
-
-    g_isUseSystemScalingInit = true;
-
-#ifdef _MAC
-    g_isUseSystemScaling = true;
-#else
-#ifdef _LINUX
-    g_isUseSystemScaling = false;
-#else
-    bool bIsCheckSystem = false; // uncomment for auto-system mode
-
-    if (!bIsCheckSystem)
-    {
-        g_isUseSystemScaling = false;
-        return g_isUseSystemScaling;
-    }
-
-    DWORD nOSVersion = 0;
-    NTSTATUS(WINAPI *RtlGetVersion)(LPOSVERSIONINFOEXW);
-    *(FARPROC*)&RtlGetVersion = GetProcAddress(GetModuleHandleA("ntdll"), "RtlGetVersion");
-
-    if (NULL != RtlGetVersion)
-    {
-        OSVERSIONINFOEXW osInfo;
-        osInfo.dwOSVersionInfoSize = sizeof(osInfo);
-        RtlGetVersion(&osInfo);
-        nOSVersion = osInfo.dwMajorVersion;
-    }
-
-    if (nOSVersion >= 10)
-        g_isUseSystemScaling = true;
-    else
-        g_isUseSystemScaling = false;
-#endif
-#endif
-
-    return g_isUseSystemScaling;
+    return NSCommon::CSystemWindowScale::IsUseSystemScaling();
 }
-
 double Core_GetMonitorScale(const unsigned int& xDpi, const unsigned int& yDpi)
 {
     // допустимые значения: 1; 1.25; 1.5; 1.75; 2;
