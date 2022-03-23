@@ -1364,6 +1364,8 @@ public:
     // флаг для принудительной перегенерации шрифтов (используется при изменении настроек, какие шрифты использовать)
     bool m_bIsUpdateFontsAttack;
 
+    bool m_bIsUseSpellCheckKeyboardInput;
+
     // используется только для Linux snap.
     std::string m_sLD_LIBRARY_PATH;
 
@@ -1459,6 +1461,8 @@ public:
         m_bCryptoDisableForExternalCloud = false;
 
         m_bIsOnlyEditorWindowMode = false;
+
+        m_bIsUseSpellCheckKeyboardInput = true;
 
         m_oCS_Scripts.InitializeCriticalSection();
         m_oCS_LocalFiles.InitializeCriticalSection();
@@ -1662,6 +1666,14 @@ public:
         std::map<std::string, std::string>::iterator pairEML = _map->find("external-message-loop");
         if (pairEML != _map->end())
             m_bIsUseExternalMessageLoop = ("1" == pairEML->second) ? true : false;
+
+        std::map<std::string, std::string>::iterator pairSpell = _map->find("spell-check-input-mode");
+        if (pairSpell != _map->end())
+            m_bIsUseSpellCheckKeyboardInput = ("0" == pairSpell->second) ? false : true;
+        else
+            m_bIsUseSpellCheckKeyboardInput = true;
+
+        m_oKeyboardChecker.SetEnabled(m_bIsUseSpellCheckKeyboardInput);
     }
     void CheckSetting(const std::string& sName, const std::string& sValue)
     {
