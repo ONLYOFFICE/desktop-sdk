@@ -58,13 +58,16 @@
 
 static int IsForceDpiRound()
 {
-#ifndef MAC_NO_MAIN_PROCESS
+    if (CAscApplicationManager::IsUseSystemScaling())
+        return 0;
+
     if (NULL != CAscApplicationManager::GetDpiChecker())
     {
         // управляем зумом
         return 1;
     }
-#endif
+
+    return 0;
 
 #ifdef WIN32
     HWND hwnd = GetDesktopWindow();
@@ -212,8 +215,6 @@ public:
     }
 };
 
-#ifndef MAC_NO_MAIN_PROCESS
-
 #ifdef CEF_2623
 #include "cefclient/browser/client_app_browser.h"
 #else
@@ -323,9 +324,6 @@ public:
 public:
     IMPLEMENT_REFCOUNTING(CAscClientAppBrowser);
 };
-#endif
-
-#ifndef MAC_NO_SUB_PROCESS
 
 #ifdef CEF_2623
 #include "cefclient/renderer/client_app_renderer.h"
@@ -480,6 +478,5 @@ public:
     }
 #endif
 };
-#endif
 
 #endif

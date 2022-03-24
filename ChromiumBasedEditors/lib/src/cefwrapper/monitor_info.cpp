@@ -317,44 +317,16 @@ private:
 
 std::map<std::string, CDetecterOldSystems::CMonitorInfo> CDetecterOldSystems::g_map_old;
 
-double NSMonitor::GetRawMonitorScale(const unsigned int& xDpi, const unsigned int& yDpi)
-{
-    if (xDpi > 180 && yDpi > 180)
-        return 2;
-
-    if (xDpi > 120 && yDpi > 120)
-        return 1.5;
-
-    return 1;
-}
 double NSMonitor::GetRawMonitorDpi(WindowHandleId handle)
 {
-    if (true)
-    {
-        UINT iuW = 0;
-        UINT iuH = 0;
-        if (CDetecterOldSystems::GetDpi(handle, iuW, iuH))
-        {
-            return GetRawMonitorScale(iuW, iuH);
-        }
-    }
+    unsigned int uiX = 0;
+    unsigned int uiY = 0;
+    int nRes = Core_GetMonitorRawDpi(handle, &uiX, &uiY);
 
-    if (g_monitor_info.m_func_GetDpiForWindow)
-    {
-        UINT resDpi = g_monitor_info.m_func_GetDpiForWindow(handle);
-        return GetRawMonitorScale(resDpi, resDpi);
-    }
+    if (nRes == -1)
+        return 1;
 
-    if (g_monitor_info.m_func_GetDpiForMonitor)
-    {
-        HMONITOR hMonitor = MonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST);
-        UINT iuW = 0;
-        UINT iuH = 0;
-        g_monitor_info.m_func_GetDpiForMonitor(hMonitor, MDT_RAW_DPI, &iuW, &iuH);
-        return GetRawMonitorScale(iuW, iuH);
-    }
-
-    return 1;
+    return Core_GetMonitorScale(uiX, uiY);
 }
 
 int Core_SetProcessDpiAwareness(void)
@@ -383,7 +355,7 @@ int Core_GetMonitorRawDpi(WindowHandleId handle, unsigned int* uiX, unsigned int
     *uiX = 0;
     *uiY = 0;
 
-    if (true)
+    if (!CAscApplicationManager::IsUseSystemScaling())
     {
         UINT iuW = 0;
         UINT iuH = 0;
@@ -443,7 +415,7 @@ int Core_GetMonitorRawDpiByIndex(int index, unsigned int* uiX, unsigned int* uiY
     EnumDisplayMonitors(NULL, NULL, GetMonitorByIndex, (LPARAM)&info);
     if (info.hMonitor != NULL)
     {
-        if (true)
+        if (!CAscApplicationManager::IsUseSystemScaling())
         {
             UINT iuW = 0;
             UINT iuH = 0;
