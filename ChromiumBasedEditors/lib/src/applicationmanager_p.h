@@ -193,6 +193,68 @@ namespace NSCommon
         }
         return nFormat;
     }
+
+    class CSystemWindowScale
+    {
+    private:
+        static bool g_isUseSystemScalingInit;
+        static bool g_isUseSystemScaling;
+
+    public:
+        static bool IsInit()
+        {
+            return g_isUseSystemScalingInit;
+        }
+
+        static void SetUseSystemScaling(const bool& bIsUse)
+        {
+            g_isUseSystemScalingInit = true;
+            g_isUseSystemScaling = bIsUse;
+        }
+
+        static bool IsUseSystemScaling()
+        {
+            if (g_isUseSystemScalingInit)
+                return g_isUseSystemScaling;
+
+            g_isUseSystemScalingInit = true;
+
+        #ifdef _MAC
+            g_isUseSystemScaling = true;
+        #else
+        #ifdef _LINUX
+            g_isUseSystemScaling = false;
+        #else
+            bool bIsCheckSystem = true; // uncomment for auto-system mode
+
+            if (!bIsCheckSystem)
+            {
+                g_isUseSystemScaling = false;
+                return g_isUseSystemScaling;
+            }
+
+            DWORD nOSVersion = 0;
+            NTSTATUS(WINAPI *RtlGetVersion)(LPOSVERSIONINFOEXW);
+            *(FARPROC*)&RtlGetVersion = GetProcAddress(GetModuleHandleA("ntdll"), "RtlGetVersion");
+
+            if (NULL != RtlGetVersion)
+            {
+                OSVERSIONINFOEXW osInfo;
+                osInfo.dwOSVersionInfoSize = sizeof(osInfo);
+                RtlGetVersion(&osInfo);
+                nOSVersion = osInfo.dwMajorVersion;
+            }
+
+            if (nOSVersion >= 10)
+                g_isUseSystemScaling = true;
+            else
+                g_isUseSystemScaling = false;
+        #endif
+        #endif
+
+            return g_isUseSystemScaling;
+        }
+    };
 }
 
 class CAscReporterData
@@ -1364,6 +1426,8 @@ public:
     // флаг для принудительной перегенерации шрифтов (используется при изменении настроек, какие шрифты использовать)
     bool m_bIsUpdateFontsAttack;
 
+    bool m_bIsUseSpellCheckKeyboardInput;
+
     // используется только для Linux snap.
     std::string m_sLD_LIBRARY_PATH;
 
@@ -1459,6 +1523,8 @@ public:
         m_bCryptoDisableForExternalCloud = false;
 
         m_bIsOnlyEditorWindowMode = false;
+
+        m_bIsUseSpellCheckKeyboardInput = true;
 
         m_oCS_Scripts.InitializeCriticalSection();
         m_oCS_LocalFiles.InitializeCriticalSection();
@@ -1662,6 +1728,23 @@ public:
         std::map<std::string, std::string>::iterator pairEML = _map->find("external-message-loop");
         if (pairEML != _map->end())
             m_bIsUseExternalMessageLoop = ("1" == pairEML->second) ? true : false;
+
+        std::map<std::string, std::string>::iterator pairSpell = _map->find("spell-check-input-mode");
+        if (pairSpell != _map->end())
+            m_bIsUseSpellCheckKeyboardInput = ("0" == pairSpell->second) ? false : true;
+        else
+            m_bIsUseSpellCheckKeyboardInput = true;
+
+        if (!NSCommon::CSystemWindowScale::IsInit())
+        {
+            std::map<std::string, std::string>::iterator pairUseSystemScale = _map->find("system-scale");
+            if (pairUseSystemScale != _map->end() && (NSStringUtils::GetDouble(pairUseSystemScale->second) < 0.5))
+            {
+                NSCommon::CSystemWindowScale::SetUseSystemScaling(false);
+            }
+        }
+
+        m_oKeyboardChecker.SetEnabled(m_bIsUseSpellCheckKeyboardInput);
     }
     void CheckSetting(const std::string& sName, const std::string& sValue)
     {

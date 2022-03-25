@@ -525,7 +525,9 @@ public:
         m_pView = NULL;
 
         m_bIsNativeOpening = false;
-        m_bIsNativeSupport = true;
+
+        // перешли на новый вьюер => отключили старый
+        m_bIsNativeSupport = false;
 
         m_pVerifier = NULL;
 
@@ -739,12 +741,14 @@ public:
             return 0;
         }
 
-        if (m_bIsNativeSupport && m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
+        if (m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
         {
-            NSDirectory::CreateDirectory(m_oInfo.m_sRecoveryDir + L"/media");
-            this->NativeViewerOpen(true); // async. sleep!!!
+            if (m_bIsNativeSupport)
+            {
+                NSDirectory::CreateDirectory(m_oInfo.m_sRecoveryDir + L"/media");
+                this->NativeViewerOpen(true); // async. sleep!!!
+            }
             m_pEvents->OnFileConvertToEditor(0);
-
             m_bRunThread = FALSE;
             return 0;
         }
@@ -821,7 +825,9 @@ public:
         RELEASEOBJECT(m_pVerifier);
         if (m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX ||
             m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX ||
-            m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX)
+            m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX ||
+            m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF ||
+            m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
         {
             COfficeFileFormatChecker oChecker;
             oChecker.isOfficeFile(sFile);
@@ -1178,7 +1184,12 @@ public:
 
         if (m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_IMAGE)
         {
-            oBuilder.WriteString(L"<m_oThumbnail><first>false</first></m_oThumbnail>");
+            oBuilder.WriteString(L"<m_oThumbnail><first>false</first>");
+
+            if (m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_IMAGE_JPG)
+                oBuilder.WriteString(L"<format>3</format>");
+
+            oBuilder.WriteString(L"</m_oThumbnail>");
         }
 
         oBuilder.WriteString(L"</TaskQueueDataConvert>");

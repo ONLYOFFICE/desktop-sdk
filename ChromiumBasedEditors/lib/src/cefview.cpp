@@ -1424,6 +1424,13 @@ public:
 
         return true;
     }
+    bool LocalFile_IsSupportOpenFormat(int nFormat)
+    {
+        if ((nFormat & AVS_OFFICESTUDIO_FILE_IMAGE) != 0)
+            return false;
+
+        return true;
+    }
 
     virtual void CTextDocxConverterCallback_OnConvert(std::wstring sData)
     {
@@ -3737,6 +3744,30 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
             pListener->OnEvent(pEvent);
             return true;
         }
+        else if ("get_current_window_info" == message_name)
+        {
+            CefRefPtr<CefBrowserHost> _host = m_pParent->m_pInternal->GetBrowser()->GetHost();
+            CefWindowHandle hwnd = _host->GetWindowHandle();
+
+            unsigned int _dx = 0;
+            unsigned int _dy = 0;
+            double dDeviceScale = 1;
+        #ifdef WIN32
+            Core_GetMonitorRawDpi(hwnd, &_dx, &_dy);
+            dDeviceScale = Core_GetMonitorScale(_dx, _dy);
+        #else
+            int nDeviceScaleTmp = CAscApplicationManager::GetDpiChecker()->GetWidgetImplDpi(m_pParent->GetWidgetImpl(), &_dx, &_dy);
+            dDeviceScale = CAscApplicationManager::GetDpiChecker()->GetScale(_dx, _dy);
+        #endif
+
+            std::string sCode = "console.log(\"window [" + std::to_string(_dx) + ", " + std::to_string(_dx) + "]: " + std::to_string(dDeviceScale) + "\");";
+
+            CefRefPtr<CefFrame> frame = m_pParent->m_pInternal->GetBrowser()->GetMainFrame();
+            if (frame)
+                frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
+
+            return true;
+        }
 
         CAscApplicationManager_Private* pInternalMan = m_pParent->GetAppManager()->m_pInternal;
         if (pInternalMan->m_pAdditional && pInternalMan->m_pAdditional->OnProcessMessageReceived(browser, source_process, message, m_pParent))
@@ -4855,7 +4886,7 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
 
     if (!LocalFile_IsSupportEditFormat(m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat))
     {
-        if (0 == nError)
+        if (0 == nError && LocalFile_IsSupportOpenFormat(m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat))
             m_pManager->m_pInternal->Recents_Add(m_oConverterFromEditor.m_oInfo.m_sFileSrc, m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat, L"", L"", m_sParentUrl);
         nError = ASC_CONSTANT_CANCEL_SAVE;
 
@@ -5109,6 +5140,9 @@ void CCefView_Private::OnFileConvertToEditor(const int& nError)
 }
 void CCefView_Private::CheckZoom()
 {
+    if (CAscApplicationManager::IsUseSystemScaling())
+        return;
+
     if (NULL == CAscApplicationManager::GetDpiChecker())
         return;
 

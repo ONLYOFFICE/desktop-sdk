@@ -33,6 +33,7 @@
 #include "./applicationmanager_p.h"
 #include "./plugins.h"
 #include "./cefwrapper/client_resource_handler_async.h"
+#include "./cefwrapper/monitor_info.h"
 
 #ifdef LINUX
 CApplicationCEF* CLinuxData::app_cef            = NULL;
@@ -1123,13 +1124,7 @@ int CAscDpiChecker::GetWidgetImplDpi(CCefViewWidgetImpl* wid, unsigned int* _dx,
 }
 double CAscDpiChecker::GetScale(unsigned int dpiX, unsigned int dpiY)
 {
-    // допустимые значения: 1; 1.5; 2;
-    double dScale = (dpiX + dpiY) / 96.0;
-    int nScale = (int)(dScale + 0.5);
-    double dRetValue = (double)nScale / 2.0;
-    if (dRetValue > 2) dRetValue = 2;
-    if (dRetValue < 1) dRetValue = 1;
-    return dRetValue;
+    return Core_GetMonitorScale(dpiX, dpiY);
 }
 
 double CAscDpiChecker::GetForceScale(unsigned int* dpix, unsigned int* dpiy)
@@ -1213,4 +1208,22 @@ void CAscApplicationManager::AddFileToLocalResolver(const std::wstring& sFile)
 void CAscApplicationManager::SetRendererProcessVariable(const std::wstring& sVariable)
 {
     m_pInternal->m_sRendererJSON = sVariable;
+}
+
+bool NSCommon::CSystemWindowScale::g_isUseSystemScalingInit = false;
+bool NSCommon::CSystemWindowScale::g_isUseSystemScaling = false;
+
+bool CAscApplicationManager::IsUseSystemScaling()
+{
+    return NSCommon::CSystemWindowScale::IsUseSystemScaling();
+}
+double Core_GetMonitorScale(const unsigned int& xDpi, const unsigned int& yDpi)
+{
+    // допустимые значения: 1; 1.25; 1.5; 1.75; 2;
+    double dScale = (xDpi + yDpi) / (2 * 96.0);
+    int nCount = (int)((dScale + 0.125) / 0.25);
+    dScale = 0.25 * nCount;
+    if (dScale > 2) dScale = 2;
+    if (dScale < 1) dScale = 1;
+    return dScale;
 }
