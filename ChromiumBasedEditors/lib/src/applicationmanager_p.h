@@ -392,9 +392,9 @@ namespace NSSystem
             if (-1 == nDescriptor)
             {
                 std::string sFileA = U_TO_UTF8(m_sFile);
-                nDescriptor = open(sFileA.c_str(), O_CREAT | O_WRONLY | O_TRUNC);
+                nDescriptor = open(sFileA.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0666);
                 if (-1 == nDescriptor)
-                    nDescriptor = open(sFileA.c_str(), O_CREAT | O_WRONLY);
+                    nDescriptor = open(sFileA.c_str(), O_CREAT | O_WRONLY, 0666);
                 bIsNeedClose = true;
             }
 #endif
