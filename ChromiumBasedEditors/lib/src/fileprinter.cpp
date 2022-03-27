@@ -1060,6 +1060,7 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
             if (m_pAdditional)
                 m_pAdditional->Check_Print(pNativeRenderer, m_pFontManager, nRasterW, nRasterH, fPageWidth, fPageHeight);
 
+            RELEASEINTERFACE(pNativeRenderer);
             return;
         }
     }
@@ -1095,14 +1096,14 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
         m_pNativePrinter->Draw(pRenderer, nPageIndex);
     }
 
+    if (m_pAdditional)
+        m_pAdditional->Check_Print(pRenderer, m_pFontManager, nRasterW, nRasterH, fPageWidth, fPageHeight);
+
     RELEASEINTERFACE(pRenderer);
 
 #if 0
     oFrame.SaveFile(L"D:\\ttttt.png", 4);
 #endif
-
-    if (m_pAdditional)
-        m_pAdditional->Check_Print(pRenderer, m_pFontManager, nRasterW, nRasterH, fPageWidth, fPageHeight);
 
     pContext->BitBlt(oFrame.get_Data(), 0, 0, nRasterW, nRasterH,
                      dLeftPix, dTopPix, dWidthPix, dHeightPix, dAngle);
