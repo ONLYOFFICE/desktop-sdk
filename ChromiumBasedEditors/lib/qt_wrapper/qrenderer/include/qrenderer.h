@@ -6,24 +6,22 @@
 #include "./../../../../../../core/DesktopEditor/graphics/GraphicsPath.h"
 #include "./../../../../../../core/DesktopEditor/graphics/Image.h"
 #include "./../../../include/base.h" // DESKTOP_DECL
-#include "qprintercontext.h" // CQPrinterContext
 #include <QPainter> // QPainter
 #include <QPainterPath> // QPainterPath
 #include <QPaintDevice> // QPagedPaintDevice
 
+class QAscPrinterContext;
 namespace NSQRenderer
 {
     class DESKTOP_DECL CQRenderer : public IRenderer
     {
     public:
         // own functions
-        CQRenderer(QPaintDevice *pPaintDevice);
-        CQRenderer(QPagedPaintDevice *pPaintDevice);
+        CQRenderer(QAscPrinterContext* pContext);
 
         virtual ~CQRenderer();
 
-        void beginPainting(NSFonts::IApplicationFonts* pFonts);
-        void endPainting();
+        void InitFonts(NSFonts::IApplicationFonts* pFonts);
 
         // тип рендерера-----------------------------------------------------------------------------
         virtual HRESULT get_Type(LONG* lType) override;
@@ -265,7 +263,7 @@ namespace NSQRenderer
     private:
         static constexpr double defaultDouble = -1.;
 
-        CQPrinterContext m_oPrinterContext;
+        QAscPrinterContext* m_pContext;
         QPainterPath m_oUntransformedPainterPath{};
 
         QTransform m_oScaleTransform{};

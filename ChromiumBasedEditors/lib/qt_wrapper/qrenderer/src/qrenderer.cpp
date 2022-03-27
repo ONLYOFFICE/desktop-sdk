@@ -1,12 +1,18 @@
 #include "./../include/qrenderer.h"
 #include "./../src/painting_conversions.h" // internal things to qt
-#include <QPagedPaintDevice>
+#include "./../../include/qascprinter.h"
 
 // DEBUG THINGS
 #include <algorithm>
 #include <iostream>
+
+//#define ENABLE_LOGS
+
+#ifdef ENABLE_LOGS
 #include <QDebug>
 #define TELL qDebug() << __func__
+#endif
+
 namespace
 {
     QImage getQImage(const Aggplus::CImage &internal)
@@ -14,16 +20,17 @@ namespace
         int width = (int)internal.GetWidth();
         int height = (int)internal.GetHeight();
 
-
         QImage result{width, height, QImage::Format::Format_ARGB32};
 
         DWORD size = internal.GetWidth()*internal.GetHeight();
         const BYTE *data = internal.GetData();
         data += 4*(size - 1);
 
-        for (int lineNo = 0; lineNo < height; ++lineNo) {
+        for (int lineNo = 0; lineNo < height; ++lineNo)
+        {
             uchar *line = result.scanLine(lineNo);
-            for (int pxNo = 0; pxNo < width; ++pxNo) {
+            for (int pxNo = 0; pxNo < width; ++pxNo)
+            {
                 QRgb &px = *(QRgb*)line;
                 quint32 bgra = *(quint32*)data;
                 px = bgra;
@@ -39,10 +46,11 @@ namespace
     QString toBin(T int_value)
     {
         QString result;
-        for (std::size_t i = 0; i < sizeof(T) * 8; ++i) {
-            if (i && 0 == i % 8) {
+        for (std::size_t i = 0; i < sizeof(T) * 8; ++i)
+        {
+            if (i && 0 == i % 8)
                 result += ' ';
-            }
+
             result += ((int_value >> i) & (T)1) ? '1' : '0';
         }
         std::reverse(result.begin(), result.end());
@@ -233,19 +241,9 @@ namespace
 } // anonymous namespace
 // DEBUG THINGS
 
-
-NSQRenderer::CQRenderer::CQRenderer(QPaintDevice *pPaintDevice)
-    : m_oPrinterContext{pPaintDevice}
+NSQRenderer::CQRenderer::CQRenderer(QAscPrinterContext* pContext)
 {
-    TELL;
-    InitDefaults();
-}
-
-NSQRenderer::CQRenderer::CQRenderer(QPagedPaintDevice *pPaintDevice)
-    : m_oPrinterContext{pPaintDevice}
-{
-    TELL;
-    InitDefaults();
+    m_pContext = pContext;
 }
 
 NSQRenderer::CQRenderer::~CQRenderer()
@@ -298,9 +296,11 @@ void NSQRenderer::CQRenderer::SetFont()
     m_oInstalledFont = m_oFont;
 }
 
-void NSQRenderer::CQRenderer::beginPainting(NSFonts::IApplicationFonts *pFonts)
+void NSQRenderer::CQRenderer::InitFonts(NSFonts::IApplicationFonts *pFonts)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
 
     RELEASEINTERFACE(m_pAppFonts);
     m_pAppFonts = pFonts;
@@ -308,20 +308,15 @@ void NSQRenderer::CQRenderer::beginPainting(NSFonts::IApplicationFonts *pFonts)
 
     RELEASEINTERFACE(m_pFontManager);
     m_pFontManager = m_pAppFonts->GenerateFontManager();
-
-    m_oPrinterContext.painter().setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
-}
-
-void NSQRenderer::CQRenderer::endPainting()
-{
-    TELL;
-    m_oPrinterContext.endPainting();
 }
 
 HRESULT NSQRenderer::CQRenderer::get_Type(LONG *lType)
 {
+#ifdef ENABLE_LOGS
     TELL;
-    if (lType) {
+#endif
+    if (lType)
+    {
         *lType = c_nQRenderer;
         return S_OK;
     }
@@ -330,28 +325,31 @@ HRESULT NSQRenderer::CQRenderer::get_Type(LONG *lType)
 
 HRESULT NSQRenderer::CQRenderer::NewPage()
 {
+#ifdef ENABLE_LOGS
     TELL;
-    if (m_oPrinterContext.newPage()) {
-        return S_OK;
-    } else {
-        return S_FALSE;
-    }
+#endif
+    m_pContext->NewPage();
+    return S_OK;
 }
 
 HRESULT NSQRenderer::CQRenderer::get_Height(double *dHeight)
 {
+#ifdef ENABLE_LOGS
     TELL;
-    if (dHeight) {
+#endif
+    if (dHeight)
+    {
         *dHeight = m_dLogicalPageHeight;
         return S_OK;
-    } else {
-        return S_FALSE;
     }
+    return S_FALSE;
 }
 
 HRESULT NSQRenderer::CQRenderer::put_Height(const double &dHeight)
 {
+#ifdef ENABLE_LOGS
     TELL << dHeight;
+#endif
     m_dLogicalPageHeight = dHeight;
     double realHeight = (double)paperSize().height();
     double scale_Y = realHeight / m_dLogicalPageHeight;
@@ -361,18 +359,22 @@ HRESULT NSQRenderer::CQRenderer::put_Height(const double &dHeight)
 
 HRESULT NSQRenderer::CQRenderer::get_Width(double *dWidth)
 {
+#ifdef ENABLE_LOGS
     TELL;
-    if (dWidth) {
+#endif
+    if (dWidth)
+    {
         *dWidth = m_dLogicalPageWidth;
         return S_OK;
-    } else {
-        return S_FALSE;
     }
+    return S_FALSE;
 }
 
 HRESULT NSQRenderer::CQRenderer::put_Width(const double &dWidth)
 {
+#ifdef ENABLE_LOGS
     TELL << dWidth;
+#endif
     m_dLogicalPageWidth = dWidth;
     double realWidth = (double)paperSize().width();
     double scale_X = realWidth / m_dLogicalPageWidth;
@@ -382,44 +384,52 @@ HRESULT NSQRenderer::CQRenderer::put_Width(const double &dWidth)
 
 HRESULT NSQRenderer::CQRenderer::get_DpiX(double *dDpiX)
 {
+#ifdef ENABLE_LOGS
     TELL;
-    if (dDpiX) {
-        int result = m_oPrinterContext.dpiX();
-        if (result) {
-            *dDpiX = (double)result;
-            return S_OK;
-        }
-    }
-    return S_FALSE;
+#endif
+    if (!dDpiX)
+        return S_FALSE;
+
+    int nDpiX = 0;
+    int nDpiY = 0;
+    m_pContext->GetLogicalDPI(nDpiX, nDpiY);
+    *dDpiX = (double)nDpiX;
+    return S_OK;
 }
 
 HRESULT NSQRenderer::CQRenderer::get_DpiY(double *dDpiY)
 {
+#ifdef ENABLE_LOGS
     TELL;
-    if (dDpiY) {
-        int result = m_oPrinterContext.dpiY();
-        if (result) {
-            *dDpiY = (double)result;
-            return S_OK;
-        }
-    }
-    return S_FALSE;
+#endif
+    if (!dDpiY)
+        return S_FALSE;
+
+    int nDpiX = 0;
+    int nDpiY = 0;
+    m_pContext->GetLogicalDPI(nDpiX, nDpiY);
+    *dDpiY = (double)nDpiY;
+    return S_OK;
 }
 
 HRESULT NSQRenderer::CQRenderer::get_PenColor(LONG *lColor)
 {
+#ifdef ENABLE_LOGS
     TELL;
-    if (lColor) {
+#endif
+    if (lColor)
+    {
         *lColor = m_oPen.Color;
         return S_OK;
-    } else {
-        return S_FALSE;
     }
+    return S_FALSE;
 }
 
 HRESULT NSQRenderer::CQRenderer::put_PenColor(const LONG &lColor)
 {
+#ifdef ENABLE_LOGS
     TELL << toBin(lColor);
+#endif
     m_bPenChanged = true;
     m_oPen.Color = lColor;
     return S_OK;
@@ -427,18 +437,22 @@ HRESULT NSQRenderer::CQRenderer::put_PenColor(const LONG &lColor)
 
 HRESULT NSQRenderer::CQRenderer::get_PenAlpha(LONG *lAlpha)
 {
+#ifdef ENABLE_LOGS
     TELL;
-    if (lAlpha) {
+#endif
+    if (lAlpha)
+    {
         *lAlpha = m_oPen.Alpha;
         return S_OK;
-    } else {
-        return S_FALSE;
     }
+    return S_FALSE;
 }
 
 HRESULT NSQRenderer::CQRenderer::put_PenAlpha(const LONG &lAlpha)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     m_bPenChanged = true;
     m_oPen.Alpha = lAlpha;
     return S_OK;
@@ -446,18 +460,22 @@ HRESULT NSQRenderer::CQRenderer::put_PenAlpha(const LONG &lAlpha)
 
 HRESULT NSQRenderer::CQRenderer::get_PenSize(double *dSize)
 {
+#ifdef ENABLE_LOGS
     TELL;
-    if (dSize) {
+#endif
+    if (dSize)
+    {
         *dSize = m_oPen.Size;
         return S_OK;
-    } else {
-        return S_FALSE;
     }
+    return S_FALSE;
 }
 
 HRESULT NSQRenderer::CQRenderer::put_PenSize(const double &dSize)
 {
+#ifdef ENABLE_LOGS
     TELL << dSize;
+#endif
     m_bPenChanged = true;
     m_oPen.Size = dSize;
     return S_OK;
@@ -465,18 +483,22 @@ HRESULT NSQRenderer::CQRenderer::put_PenSize(const double &dSize)
 
 HRESULT NSQRenderer::CQRenderer::get_PenDashStyle(BYTE *val)
 {
+#ifdef ENABLE_LOGS
     TELL;
-    if (val) {
+#endif
+    if (val)
+    {
         *val = m_oPen.DashStyle;
         return S_OK;
-    } else {
-        return S_FALSE;
     }
+    return S_FALSE;
 }
 
 HRESULT NSQRenderer::CQRenderer::put_PenDashStyle(const BYTE &val)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     m_bPenChanged = true;
     m_oPen.DashStyle = val;
     return S_OK;
@@ -485,18 +507,22 @@ HRESULT NSQRenderer::CQRenderer::put_PenDashStyle(const BYTE &val)
 
 HRESULT NSQRenderer::CQRenderer::get_PenLineStartCap(BYTE *val)
 {
+#ifdef ENABLE_LOGS
     TELL;
-    if (val) {
+#endif
+    if (val)
+    {
         *val = m_oPen.LineStartCap;
         return S_OK;
-    } else {
-        return S_FALSE;
     }
+    return S_FALSE;
 }
 
 HRESULT NSQRenderer::CQRenderer::put_PenLineStartCap(const BYTE &val)
 {
+#ifdef ENABLE_LOGS
     TELL << getLineCap(val);
+#endif
     m_bPenChanged = true;
     m_oPen.LineStartCap = val;
     return S_OK;
@@ -504,18 +530,22 @@ HRESULT NSQRenderer::CQRenderer::put_PenLineStartCap(const BYTE &val)
 
 HRESULT NSQRenderer::CQRenderer::get_PenLineEndCap(BYTE *val)
 {
+#ifdef ENABLE_LOGS
     TELL;
-    if (val) {
+#endif
+    if (val)
+    {
         *val = m_oPen.LineEndCap;
         return S_OK;
-    } else {
-        return S_FALSE;
     }
+    return S_FALSE;
 }
 
 HRESULT NSQRenderer::CQRenderer::put_PenLineEndCap(const BYTE &val)
 {
+#ifdef ENABLE_LOGS
     TELL << getLineCap(val);
+#endif
     m_bPenChanged = true;
     m_oPen.LineEndCap = val;
     return S_OK;
@@ -523,18 +553,22 @@ HRESULT NSQRenderer::CQRenderer::put_PenLineEndCap(const BYTE &val)
 
 HRESULT NSQRenderer::CQRenderer::get_PenLineJoin(BYTE *val)
 {
+#ifdef ENABLE_LOGS
     TELL;
-    if (val) {
+#endif
+    if (val)
+    {
         *val = m_oPen.LineJoin;
         return S_OK;
-    } else {
-        return S_FALSE;
     }
+    return S_FALSE;
 }
 
 HRESULT NSQRenderer::CQRenderer::put_PenLineJoin(const BYTE &val)
 {
+#ifdef ENABLE_LOGS
     TELL << getLineJoin(val);
+#endif
     m_bPenChanged = true;
     m_oPen.LineJoin = val;
     return S_OK;
@@ -542,18 +576,22 @@ HRESULT NSQRenderer::CQRenderer::put_PenLineJoin(const BYTE &val)
 
 HRESULT NSQRenderer::CQRenderer::get_PenDashOffset(double *dOffset)
 {
+#ifdef ENABLE_LOGS
     TELL;
-    if (dOffset) {
+#endif
+    if (dOffset)
+    {
         *dOffset = m_oPen.DashOffset;
         return S_OK;
-    } else {
-        return S_FALSE;
     }
+    return S_FALSE;
 }
 
 HRESULT NSQRenderer::CQRenderer::put_PenDashOffset(const double &dOffset)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     m_bPenChanged = true;
     m_oPen.DashOffset = dOffset;
     return S_OK;
@@ -561,18 +599,22 @@ HRESULT NSQRenderer::CQRenderer::put_PenDashOffset(const double &dOffset)
 
 HRESULT NSQRenderer::CQRenderer::get_PenAlign(LONG *lAlign)
 {
+#ifdef ENABLE_LOGS
     TELL;
-    if (lAlign) {
+#endif
+    if (lAlign)
+    {
         *lAlign = m_oPen.Align;
         return S_OK;
-    } else {
-        return S_FALSE;
     }
+    return S_FALSE;
 }
 
 HRESULT NSQRenderer::CQRenderer::put_PenAlign(const LONG &lAlign)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     m_bPenChanged = true;
     m_oPen.Align = lAlign;
     return S_OK;
@@ -580,18 +622,22 @@ HRESULT NSQRenderer::CQRenderer::put_PenAlign(const LONG &lAlign)
 
 HRESULT NSQRenderer::CQRenderer::get_PenMiterLimit(double *dOffset)
 {
+#ifdef ENABLE_LOGS
     TELL;
-    if (dOffset) {
+#endif
+    if (dOffset)
+    {
         *dOffset = m_oPen.MiterLimit;
         return S_OK;
-    } else {
-        return S_FALSE;
     }
+    return S_FALSE;
 }
 
 HRESULT NSQRenderer::CQRenderer::put_PenMiterLimit(const double &dOffset)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     m_bPenChanged = true;
     m_oPen.MiterLimit = dOffset;
     return S_OK;
@@ -599,7 +645,9 @@ HRESULT NSQRenderer::CQRenderer::put_PenMiterLimit(const double &dOffset)
 
 HRESULT NSQRenderer::CQRenderer::PenDashPattern(double *pPattern, LONG lCount)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     m_bPenChanged = true;
     m_oPen.DashPattern = pPattern;
     m_oPen.Count = lCount;
@@ -608,18 +656,22 @@ HRESULT NSQRenderer::CQRenderer::PenDashPattern(double *pPattern, LONG lCount)
 
 HRESULT NSQRenderer::CQRenderer::get_BrushType(LONG *lType)
 {
+#ifdef ENABLE_LOGS
     TELL;
-    if (lType) {
+#endif
+    if (lType)
+    {
         *lType = m_oBrush.Type;
         return S_OK;
-    } else {
-        return S_FALSE;
     }
+    return S_FALSE;
 }
 
 HRESULT NSQRenderer::CQRenderer::put_BrushType(const LONG &lType)
 {
+#ifdef ENABLE_LOGS
     TELL << getBrushType(lType);
+#endif
     m_bBrushChanged = true;
     m_oBrush.Type = lType;
     return S_OK;
@@ -627,18 +679,22 @@ HRESULT NSQRenderer::CQRenderer::put_BrushType(const LONG &lType)
 
 HRESULT NSQRenderer::CQRenderer::get_BrushColor1(LONG *lColor)
 {
+#ifdef ENABLE_LOGS
     TELL;
-    if (lColor) {
+#endif
+    if (lColor)
+    {
         *lColor = m_oBrush.Color1;
         return S_OK;
-    } else {
-        return S_FALSE;
     }
+    return S_FALSE;
 }
 
 HRESULT NSQRenderer::CQRenderer::put_BrushColor1(const LONG &lColor)
 {
+#ifdef ENABLE_LOGS
     TELL << toBin(lColor);
+#endif
     m_bBrushChanged = true;
     m_oBrush.Color1 = lColor;
     return S_OK;
@@ -646,18 +702,22 @@ HRESULT NSQRenderer::CQRenderer::put_BrushColor1(const LONG &lColor)
 
 HRESULT NSQRenderer::CQRenderer::get_BrushAlpha1(LONG *lAlpha)
 {
+#ifdef ENABLE_LOGS
     TELL;
-    if (lAlpha) {
+#endif
+    if (lAlpha)
+    {
         *lAlpha = m_oBrush.Alpha1;
         return S_OK;
-    } else {
-        return S_FALSE;
     }
+    return S_FALSE;
 }
 
 HRESULT NSQRenderer::CQRenderer::put_BrushAlpha1(const LONG &lAlpha)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     m_bBrushChanged = true;
     m_oBrush.Alpha1 = lAlpha;
     return S_OK;
@@ -665,18 +725,22 @@ HRESULT NSQRenderer::CQRenderer::put_BrushAlpha1(const LONG &lAlpha)
 
 HRESULT NSQRenderer::CQRenderer::get_BrushColor2(LONG *lColor)
 {
+#ifdef ENABLE_LOGS
     TELL;
-    if (lColor) {
+#endif
+    if (lColor)
+    {
         *lColor = m_oBrush.Color2;
         return S_OK;
-    } else {
-        return S_FALSE;
     }
+    return S_FALSE;
 }
 
 HRESULT NSQRenderer::CQRenderer::put_BrushColor2(const LONG &lColor)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     m_bBrushChanged = true;
     m_oBrush.Color2 = lColor;
     return S_OK;
@@ -684,18 +748,22 @@ HRESULT NSQRenderer::CQRenderer::put_BrushColor2(const LONG &lColor)
 
 HRESULT NSQRenderer::CQRenderer::get_BrushAlpha2(LONG *lAlpha)
 {
+#ifdef ENABLE_LOGS
     TELL;
-    if (lAlpha) {
+#endif
+    if (lAlpha)
+    {
         *lAlpha = m_oBrush.Alpha2;
         return S_OK;
-    } else {
-        return S_FALSE;
     }
+    return S_FALSE;
 }
 
 HRESULT NSQRenderer::CQRenderer::put_BrushAlpha2(const LONG &lAlpha)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     m_bBrushChanged = true;
     m_oBrush.Alpha2 = lAlpha;
     return S_OK;
@@ -703,64 +771,45 @@ HRESULT NSQRenderer::CQRenderer::put_BrushAlpha2(const LONG &lAlpha)
 
 HRESULT NSQRenderer::CQRenderer::get_BrushTexturePath(std::wstring *bsPath)
 {
+#ifdef ENABLE_LOGS
     TELL;
-    if (bsPath) {
+#endif
+    if (bsPath)
+    {
         *bsPath = m_oBrush.TexturePath;
         return S_OK;
-    } else {
-        return S_FALSE;
     }
+    return S_FALSE;
 }
 
 HRESULT NSQRenderer::CQRenderer::put_BrushTexturePath(const std::wstring &bsPath)
 {
+#ifdef ENABLE_LOGS
     TELL << "path size = " << bsPath.size();
-
-//    QString path = QString::fromStdWString(bsPath);
-//    QFile tmpFile{"D:\\tmp1"};
-//    if (tmpFile.open(QIODevice::WriteOnly)){
-//        tmpFile.write(path.toLatin1());
-//    } else {
-//        qDebug() << "no file";
-
-//    }
-//    tmpFile.close();
-
-//    std::wfstream f{"D:/tmp1"};
-//    f.clear();
-//    if (f) {
-//        qDebug() << "file";
-////        f.write(bsPath.c_str(), bsPath.size());
-//        f << bsPath;
-//    } else {
-//        qDebug() << "no file";
-//    }
-//    f.close();
-
-
-//    std::wcout << bsPath << std::endl;
-
+#endif
     m_bBrushChanged = true;
-    m_oBrush.TexturePath =
-            bsPath
-            ;
+    m_oBrush.TexturePath = bsPath;
     return S_OK;
 }
 
 HRESULT NSQRenderer::CQRenderer::get_BrushTextureMode(LONG *lMode)
 {
+#ifdef ENABLE_LOGS
     TELL;
-    if (lMode) {
+#endif
+    if (lMode)
+    {
         *lMode = m_oBrush.TextureMode;
         return S_OK;
-    } else {
-        return S_FALSE;
     }
+    return S_FALSE;
 }
 
 HRESULT NSQRenderer::CQRenderer::put_BrushTextureMode(const LONG &lMode)
 {
+#ifdef ENABLE_LOGS
     TELL << getBrushTextureMode(lMode);
+#endif
     m_bBrushChanged = true;
     m_oBrush.TextureMode = lMode;
     return S_OK;
@@ -768,18 +817,22 @@ HRESULT NSQRenderer::CQRenderer::put_BrushTextureMode(const LONG &lMode)
 
 HRESULT NSQRenderer::CQRenderer::get_BrushTextureAlpha(LONG *lTxAlpha)
 {
+#ifdef ENABLE_LOGS
     TELL;
-    if (lTxAlpha) {
+#endif
+    if (lTxAlpha)
+    {
         *lTxAlpha = m_oBrush.TextureAlpha;
         return S_OK;
-    } else {
-        return S_FALSE;
     }
+    return S_FALSE;
 }
 
 HRESULT NSQRenderer::CQRenderer::put_BrushTextureAlpha(const LONG &lTxAlpha)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     m_bBrushChanged = true;
     m_oBrush.TextureAlpha = lTxAlpha;
     return S_OK;
@@ -787,18 +840,22 @@ HRESULT NSQRenderer::CQRenderer::put_BrushTextureAlpha(const LONG &lTxAlpha)
 
 HRESULT NSQRenderer::CQRenderer::get_BrushLinearAngle(double *dAngle)
 {
+#ifdef ENABLE_LOGS
     TELL;
-    if (dAngle) {
+#endif
+    if (dAngle)
+    {
         *dAngle = m_oBrush.LinearAngle;
         return S_OK;
-    } else {
-        return S_FALSE;
     }
+    return S_FALSE;
 }
 
 HRESULT NSQRenderer::CQRenderer::put_BrushLinearAngle(const double &dAngle)
 {
+#ifdef ENABLE_LOGS
     TELL << dAngle;
+#endif
     m_bBrushChanged = true;
     m_oBrush.LinearAngle = dAngle;
     return S_OK;
@@ -810,7 +867,9 @@ HRESULT NSQRenderer::CQRenderer::BrushRect(const INT &val
                                                  , const double &width
                                                  , const double &height)
 {
+#ifdef ENABLE_LOGS
     TELL << QRectF{left, top, width, height};
+#endif
     m_oBrush.Rect = {(float)left, (float)top, (float)width, (float)height};
     m_bBrushChanged = true;
     return S_OK;
@@ -821,7 +880,9 @@ HRESULT NSQRenderer::CQRenderer::BrushBounds(const double &left
                                                  , const double &width
                                                  , const double &height)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     m_bBrushChanged = true;
     double right = left + width;
     double bottom = top + height;
@@ -833,10 +894,11 @@ HRESULT NSQRenderer::CQRenderer::put_BrushGradientColors(LONG *lColors
                                                                , double *pPositions
                                                                , LONG nCount)
 {
+#ifdef ENABLE_LOGS
     TELL << nCount;
-    if (0 == nCount || nullptr == lColors || nullptr == pPositions) {
+#endif
+    if (0 == nCount || nullptr == lColors || nullptr == pPositions)
         return S_FALSE;
-    }
 
     m_bBrushChanged = true;
     m_oBrush.m_arrSubColors.clear();
@@ -845,7 +907,11 @@ HRESULT NSQRenderer::CQRenderer::put_BrushGradientColors(LONG *lColors
         NSStructures::CBrush::TSubColor color;
         color.color = lColors[i];
         color.position = (long)(pPositions[i] * 65536);
+
+#ifdef ENABLE_LOGS
         qDebug() << toBin(lColors[i]) << "at" << pPositions[i];
+#endif
+
         m_oBrush.m_arrSubColors.push_back(color);
     }
     return S_OK;
@@ -853,7 +919,9 @@ HRESULT NSQRenderer::CQRenderer::put_BrushGradientColors(LONG *lColors
 
 HRESULT NSQRenderer::CQRenderer::get_FontName(std::wstring *bsName)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     if (bsName) {
         *bsName = m_oFont.Name;
         return S_OK;
@@ -864,115 +932,141 @@ HRESULT NSQRenderer::CQRenderer::get_FontName(std::wstring *bsName)
 
 HRESULT NSQRenderer::CQRenderer::put_FontName(const std::wstring &bsName)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     m_oFont.Name = bsName;
     return S_OK;
 }
 
 HRESULT NSQRenderer::CQRenderer::get_FontPath(std::wstring *bsName)
 {
+#ifdef ENABLE_LOGS
     TELL;
-    if (bsName) {
+#endif
+    if (bsName)
+    {
         *bsName = m_oFont.Path;
         return S_OK;
-    } else {
-        return S_FALSE;
     }
+    return S_FALSE;
 }
 
 HRESULT NSQRenderer::CQRenderer::put_FontPath(const std::wstring &bsName)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     m_oFont.Path = bsName;
     return S_OK;
 }
 
 HRESULT NSQRenderer::CQRenderer::get_FontSize(double *dSize)
 {
+#ifdef ENABLE_LOGS
     TELL;
-    if (dSize) {
+#endif
+    if (dSize)
+    {
         *dSize = m_oFont.Size;
         return S_OK;
-    } else {
-        return S_FALSE;
     }
+    return S_FALSE;
 }
 
 HRESULT NSQRenderer::CQRenderer::put_FontSize(const double &dSize)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     m_oFont.Size = dSize;
     return S_OK;
 }
 
 HRESULT NSQRenderer::CQRenderer::get_FontStyle(LONG *lStyle)
 {
+#ifdef ENABLE_LOGS
     TELL;
-    if (lStyle) {
+#endif
+    if (lStyle)
+    {
         *lStyle = m_oFont.GetStyle();
         return S_OK;
-    } else {
-        return S_FALSE;
     }
+    return S_FALSE;
 }
 
 HRESULT NSQRenderer::CQRenderer::put_FontStyle(const LONG &lStyle)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     m_oFont.SetStyle(lStyle);
     return S_OK;
 }
 
 HRESULT NSQRenderer::CQRenderer::get_FontStringGID(INT *bGID)
 {
+#ifdef ENABLE_LOGS
     TELL;
-    if (bGID) {
+#endif
+    if (bGID)
+    {
         *bGID = m_oFont.StringGID;
         return S_OK;
-    } else {
-        return S_FALSE;
     }
+    return S_FALSE;
 }
 
 HRESULT NSQRenderer::CQRenderer::put_FontStringGID(const INT &bGID)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     m_oFont.StringGID = bGID;
     return S_OK;
 }
 
 HRESULT NSQRenderer::CQRenderer::get_FontCharSpace(double *dSpace)
 {
+#ifdef ENABLE_LOGS
     TELL;
-    if (dSpace) {
+#endif
+    if (dSpace)
+    {
         *dSpace = m_oFont.CharSpace;
         return S_OK;
-    } else {
-        return S_FALSE;
     }
+    return S_FALSE;
 }
 
 HRESULT NSQRenderer::CQRenderer::put_FontCharSpace(const double &dSpace)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     m_oFont.CharSpace = dSpace;
     return S_OK;
 }
 
 HRESULT NSQRenderer::CQRenderer::get_FontFaceIndex(int *lFaceIndex)
 {
+#ifdef ENABLE_LOGS
     TELL;
-    if (lFaceIndex) {
+#endif
+    if (lFaceIndex)
+    {
         *lFaceIndex = m_oFont.FaceIndex;
         return S_OK;
-    } else {
-        return S_FALSE;
     }
+    return S_FALSE;
 }
 
 HRESULT NSQRenderer::CQRenderer::put_FontFaceIndex(const int &lFaceIndex)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     m_oFont.FaceIndex = lFaceIndex;
     return S_OK;
 }
@@ -983,7 +1077,9 @@ HRESULT NSQRenderer::CQRenderer::CommandDrawTextCHAR(const LONG &c
                                                          , const double &w
                                                          , const double &h)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     if (m_bIsUseTextAsPath)
     {
         PathCommandEnd();
@@ -1002,7 +1098,9 @@ HRESULT NSQRenderer::CQRenderer::CommandDrawText(const std::wstring &bsText
                                                        , const double &w
                                                        , const double &h)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     if (m_bIsUseTextAsPath)
     {
         PathCommandEnd();
@@ -1022,7 +1120,9 @@ HRESULT NSQRenderer::CQRenderer::CommandDrawTextExCHAR(const LONG &c
                                                            , const double &w
                                                            , const double &h)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     if (m_bIsUseTextAsPath)
     {
         PathCommandEnd();
@@ -1043,7 +1143,9 @@ HRESULT NSQRenderer::CQRenderer::CommandDrawTextEx(const std::wstring &bsUnicode
                                                        , const double &w
                                                        , const double &h)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     if (m_bIsUseTextAsPath)
     {
         PathCommandEnd();
@@ -1058,21 +1160,27 @@ HRESULT NSQRenderer::CQRenderer::CommandDrawTextEx(const std::wstring &bsUnicode
 
 HRESULT NSQRenderer::CQRenderer::BeginCommand(const DWORD &lType)
 {
+#ifdef ENABLE_LOGS
     TELL << lType;
+#endif
     m_lCurrentCommand = (long)lType;
     return S_OK;
 }
 
 HRESULT NSQRenderer::CQRenderer::EndCommand(const DWORD &lType)
 {
+#ifdef ENABLE_LOGS
     TELL << lType;
+#endif
     m_lCurrentCommand = c_nNone;
     return S_FALSE;
 }
 
 HRESULT NSQRenderer::CQRenderer::PathCommandMoveTo(const double &x, const double &y)
 {
+#ifdef ENABLE_LOGS
     TELL << QPointF{x, y};
+#endif
     if (c_nSimpleGraphicType == m_lCurrentCommand)
     {
         m_oUntransformedPainterPath.moveTo((qreal)x, (qreal)y);
@@ -1086,7 +1194,9 @@ HRESULT NSQRenderer::CQRenderer::PathCommandMoveTo(const double &x, const double
 
 HRESULT NSQRenderer::CQRenderer::PathCommandLineTo(const double &x, const double &y)
 {
+#ifdef ENABLE_LOGS
     TELL << QPointF{x, y};
+#endif
     if (c_nSimpleGraphicType == m_lCurrentCommand)
     {
         m_oUntransformedPainterPath.lineTo((qreal)x, (qreal)y);
@@ -1100,7 +1210,9 @@ HRESULT NSQRenderer::CQRenderer::PathCommandLineTo(const double &x, const double
 
 HRESULT NSQRenderer::CQRenderer::PathCommandLinesTo(double *points, const int &count)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     m_oSimpleGraphicsConverter.PathCommandLinesTo(points, (LONG)count);
     return S_OK;
 }
@@ -1112,7 +1224,9 @@ HRESULT NSQRenderer::CQRenderer::PathCommandCurveTo(const double &x1
                                                           , const double &x3
                                                           , const double &y3)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     if (c_nSimpleGraphicType == m_lCurrentCommand)
     {
         m_oUntransformedPainterPath.cubicTo({(qreal)x1, (qreal)y1}
@@ -1128,7 +1242,9 @@ HRESULT NSQRenderer::CQRenderer::PathCommandCurveTo(const double &x1
 
 HRESULT NSQRenderer::CQRenderer::PathCommandCurvesTo(double *points, const int &count)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     m_oSimpleGraphicsConverter.PathCommandCurvesTo(points, (LONG)count);
     return S_OK;
 }
@@ -1140,14 +1256,18 @@ HRESULT NSQRenderer::CQRenderer::PathCommandArcTo(const double &x
                                                       , const double &startAngle
                                                       , const double &sweepAngle)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     m_oSimpleGraphicsConverter.PathCommandArcTo(x, y, w, h, startAngle, sweepAngle);
     return S_OK;
 }
 
 HRESULT NSQRenderer::CQRenderer::PathCommandClose()
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     if (c_nSimpleGraphicType == m_lCurrentCommand)
     {
         m_oUntransformedPainterPath.closeSubpath();
@@ -1161,7 +1281,8 @@ HRESULT NSQRenderer::CQRenderer::PathCommandClose()
 
 HRESULT NSQRenderer::CQRenderer::DrawPath(const LONG &nType)
 {
-    if (m_oUntransformedPainterPath.isEmpty()) {
+    if (m_oUntransformedPainterPath.isEmpty())
+    {
         return S_FALSE;
     }
 
@@ -1180,23 +1301,23 @@ HRESULT NSQRenderer::CQRenderer::DrawPath(const LONG &nType)
     if (evenOddFill) {
         mode += "odd-even fill ";
     }
+
+#ifdef ENABLE_LOGS
     TELL << mode;
+#endif
 
     // ставим fill mode (odd even by default)
-    if (windingFill) {
+    if (windingFill)
         m_oUntransformedPainterPath.setFillRule(Qt::FillRule::WindingFill);
-    }
-    if (evenOddFill) {
+    if (evenOddFill)
         m_oUntransformedPainterPath.setFillRule(Qt::FillRule::OddEvenFill);
-    }
 
-    if (stroke) {
-        m_oPrinterContext.painter().strokePath(
-                    m_oUntransformedPainterPath
-                    , pen()
-                    );
+    if (stroke)
+    {
+        m_pContext->GetPainter()->strokePath(m_oUntransformedPainterPath, pen());
     }
-    if (fill) {
+    if (fill)
+    {
         fillPath();
     }
 
@@ -1205,14 +1326,18 @@ HRESULT NSQRenderer::CQRenderer::DrawPath(const LONG &nType)
 
 HRESULT NSQRenderer::CQRenderer::PathCommandStart()
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     m_oUntransformedPainterPath = QPainterPath{};
     return S_OK;
 }
 
 HRESULT NSQRenderer::CQRenderer::PathCommandGetCurrentPoint(double *x, double *y)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     m_oSimpleGraphicsConverter.PathCommandGetCurrentPoint(x, y);
     return S_OK;
 }
@@ -1251,9 +1376,12 @@ HRESULT NSQRenderer::CQRenderer::DrawImage(IGrObject *pImage
                                                , const double &w
                                                , const double &h)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     Aggplus::CImage* pPixels = (Aggplus::CImage*)pImage;
-    if (Aggplus::Status::Ok != pPixels->GetLastStatus()) {
+    if (Aggplus::Status::Ok != pPixels->GetLastStatus())
+    {
         return S_FALSE;
     }
 
@@ -1265,13 +1393,15 @@ HRESULT NSQRenderer::CQRenderer::DrawImage(IGrObject *pImage
                 , Qt::TransformationMode::SmoothTransformation);
     QPointF point{x, y};
 
-    m_oPrinterContext.painter().drawImage(point, image);
+    m_pContext->GetPainter()->drawImage(point, image);
     return S_OK;
 }
 
 HRESULT NSQRenderer::CQRenderer::PathCommandEnd()
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     m_oUntransformedPainterPath = QPainterPath{};
     return S_OK;
 }
@@ -1283,7 +1413,9 @@ HRESULT NSQRenderer::CQRenderer::DrawImageFromFile(const std::wstring &filePath
                                                          , const double &h
                                                          , const BYTE &lAlpha)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     QRectF targetRect{x, y, w, h};
 
     QImage alphedImage = NSConversions::getTexture(filePath, lAlpha
@@ -1295,7 +1427,7 @@ HRESULT NSQRenderer::CQRenderer::DrawImageFromFile(const std::wstring &filePath
     QRectF imageRect{alphedImage.rect()};
 
     setPaintingThings();
-    m_oPrinterContext.painter().drawImage(targetRect, alphedImage, imageRect);
+    m_pContext->GetPainter()->drawImage(targetRect, alphedImage, imageRect);
     return S_OK;
 }
 
@@ -1308,7 +1440,9 @@ HRESULT NSQRenderer::CQRenderer::SetTransform(const double &m11
 {
     // combine with scale and base transforms which should be always set
     m_oCurrentTransform = QTransform{m11, m12, m21, m22, dx, dy};
+#ifdef ENABLE_LOGS
     TELL << m_oCurrentTransform;
+#endif
     applyTransform();
     return S_OK;
 }
@@ -1320,10 +1454,12 @@ HRESULT NSQRenderer::CQRenderer::GetTransform(double *m11
                                                     , double *dx
                                                     , double *dy)
 {
+#ifdef ENABLE_LOGS
     TELL;
-    if (!m11 || !m12 || !m21 || !m22 || !dx || !dy) {
+#endif
+    if (!m11 || !m12 || !m21 || !m22 || !dx || !dy)
         return S_FALSE;
-    }
+
     *m11 = (double)m_oCurrentTransform.m11();
     *m12 = (double)m_oCurrentTransform.m12();
     *m21 = (double)m_oCurrentTransform.m21();
@@ -1335,7 +1471,9 @@ HRESULT NSQRenderer::CQRenderer::GetTransform(double *m11
 
 HRESULT NSQRenderer::CQRenderer::ResetTransform()
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     m_oCurrentTransform = {};
     applyTransform();
     return S_OK;
@@ -1343,35 +1481,45 @@ HRESULT NSQRenderer::CQRenderer::ResetTransform()
 
 HRESULT NSQRenderer::CQRenderer::get_ClipMode(LONG *plMode)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     // not used
     return S_OK;
 }
 
 HRESULT NSQRenderer::CQRenderer::put_ClipMode(const LONG &lMode)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     // not used
     return S_OK;
 }
 
 HRESULT NSQRenderer::CQRenderer::CommandLong(const LONG &lType, const LONG &lCommand)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     // not used
     return S_OK;
 }
 
 HRESULT NSQRenderer::CQRenderer::CommandDouble(const LONG &lType, const double &dCommand)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     // not used
     return S_OK;
 }
 
 HRESULT NSQRenderer::CQRenderer::CommandString(const LONG &lType, const std::wstring &sCommand)
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     // not used
     return S_OK;
 }
@@ -1384,7 +1532,9 @@ void NSQRenderer::CQRenderer::SetBaseTransform(double m11
                                                , double dy)
 {
     m_oBaseTransform = QTransform{m11, m12, m21, m22, dx, dy};
+#ifdef ENABLE_LOGS
     TELL << m_oBaseTransform;
+#endif
     applyTransform();
 }
 
@@ -1405,26 +1555,28 @@ void NSQRenderer::CQRenderer::GetBaseTransform(double &m11
 
 void NSQRenderer::CQRenderer::ResetBaseTransform()
 {
+#ifdef ENABLE_LOGS
     TELL;
+#endif
     m_oBaseTransform = {};
     applyTransform();
 }
 
 void NSQRenderer::CQRenderer::applyTransform()
 {
+#ifdef ENABLE_LOGS
     TELL;
-    m_oPrinterContext.painter().setTransform(
-                NSConversions::scaledMMToPx(
-                    m_oScaleTransform
-                    )
-                );
-    m_oPrinterContext.painter().setTransform(m_oBaseTransform, true);
-    m_oPrinterContext.painter().setTransform(m_oCurrentTransform, true);
+#endif
+    m_pContext->GetPainter()->setTransform(NSConversions::scaledMMToPx(m_oScaleTransform));
+    m_pContext->GetPainter()->setTransform(m_oBaseTransform, true);
+    m_pContext->GetPainter()->setTransform(m_oCurrentTransform, true);
 }
 
 void NSQRenderer::CQRenderer::scaleTransformSetX(double scale)
 {
+#ifdef ENABLE_LOGS
     TELL << scale;
+#endif
     m_oScaleTransform = {scale, m_oScaleTransform.m12()
                        , m_oScaleTransform.m21(), m_oScaleTransform.m22()
                        , m_oScaleTransform.dx(), m_oScaleTransform.dy()};
@@ -1433,7 +1585,9 @@ void NSQRenderer::CQRenderer::scaleTransformSetX(double scale)
 
 void NSQRenderer::CQRenderer::scaleTransformSetY(double scale)
 {
+#ifdef ENABLE_LOGS
     TELL << scale;
+#endif
     m_oScaleTransform = {m_oScaleTransform.m11(), m_oScaleTransform.m12()
                        , m_oScaleTransform.m21(), scale
                         , m_oScaleTransform.dx(), m_oScaleTransform.dy()};
@@ -1442,55 +1596,61 @@ void NSQRenderer::CQRenderer::scaleTransformSetY(double scale)
 
 QRectF NSQRenderer::CQRenderer::pathRect() const
 {
-    return
-                m_oUntransformedPainterPath
-                .
-//            boundingRect() // этот точнее
-            controlPointRect() // этот быстрее
-            ;
+    //return m_oUntransformedPainterPath.boundingRect(); // этот точнее
+    return m_oUntransformedPainterPath.controlPointRect(); // этот быстрее
 }
 
 QSizeF NSQRenderer::CQRenderer::paperSize() const
 {
+#ifdef ENABLE_LOGS
     TELL;
-    return m_oPrinterContext.paperSize();
+#endif
+
+    // tmp
+    return m_pContext->paperSize();
+
+    int x, y, w, h;
+    m_pContext->GetPhysicalRect(x, y, w, h);
+
+    return QSizeF(w, h);
 }
 
 void NSQRenderer::CQRenderer::setPaintingThings()
 {
+#ifdef ENABLE_LOGS
     TELL;
-    if (m_bPenChanged) {
+#endif
+    if (m_bPenChanged)
+    {
         m_bPenChanged = false;
-        m_oPrinterContext.painter().setPen(pen());
+        m_pContext->GetPainter()->setPen(pen());
     }
-    if (m_bBrushChanged) {
+    if (m_bBrushChanged)
+    {
         m_bBrushChanged = false;
-        m_oPrinterContext.painter().setBrush(brush());
+        m_pContext->GetPainter()->setBrush(brush());
     }
 }
 
 void NSQRenderer::CQRenderer::fillPath()
 {
-    if (c_BrushTypeTexture == m_oBrush.Type) {
+    if (c_BrushTypeTexture == m_oBrush.Type)
+    {
         // суть в том, что текстура должна быть в исходном виде
         // а так painter её скейлит
         // поэтому снимаем трансформ с painter'а
         // и отдельно трансформим path
         // получение brush'а при этом не меняется
-        QTransform transform = m_oPrinterContext.painter().transform();
-        m_oPrinterContext.painter().resetTransform();
+        QTransform transform = m_pContext->GetPainter()->transform();
+        m_pContext->GetPainter()->resetTransform();
         QPainterPath transformedPath = transform.map(m_oUntransformedPainterPath);
-        m_oPrinterContext.painter().fillPath(
-                    transformedPath
-                    , brush()
-                    );
+        m_pContext->GetPainter()->fillPath(transformedPath, brush());
         // вешаем трансформ обратно
-        m_oPrinterContext.painter().setTransform(transform);
-    } else {
-        m_oPrinterContext.painter().fillPath(
-                    m_oUntransformedPainterPath
-                    , brush()
-                    );
+        m_pContext->GetPainter()->setTransform(transform);
+    }
+    else
+    {
+        m_pContext->GetPainter()->fillPath(m_oUntransformedPainterPath, brush());
     }
 }
 

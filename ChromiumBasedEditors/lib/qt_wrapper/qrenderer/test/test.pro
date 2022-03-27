@@ -13,7 +13,8 @@ QT += printsupport widgets gui core
 
 HEADERS += \
     $$PWD/../include/qrenderer.h \
-    $$PWD/../include/qprintercontext.h
+	$$PWD/../include/qprintercontext.h \
+	$$PWD/../../include/qascprinter.h
 
 HEADERS += \
     $$PWD/../src/painting_conversions.h
@@ -21,7 +22,8 @@ HEADERS += \
 SOURCES += \
     $$PWD/../src/painting_conversions.cpp \
     $$PWD/../src/qrenderer.cpp \
-    $$PWD/../src/qprintercontext.cpp
+	$$PWD/../src/qprintercontext.cpp \
+	$$PWD/../../src/qascprinter.cpp
 
 
 ADD_DEPENDENCY(UnicodeConverter, kernel, graphics)

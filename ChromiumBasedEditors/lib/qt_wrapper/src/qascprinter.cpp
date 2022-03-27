@@ -30,6 +30,7 @@
  *
  */
 #include "./../include/qascprinter.h"
+#include "./../qrenderer/include/qrenderer.h"
 #include <qmath.h>
 
 #ifdef WIN32
@@ -37,6 +38,8 @@
 #include <iostream>
 typedef void (*SignalHandlerPointer)(int);
 #endif
+
+#include "../../../../../core/DesktopEditor/graphics/MetafileToRenderer.h"
 
 QAscPrinterContext::QAscPrinterContext(QPrinter::PrinterMode eMode) : NSEditorApi::CAscPrinterContextBase(), m_oPrinter(eMode)
 {
@@ -63,7 +66,15 @@ bool QAscPrinterContext::BeginPaint()
 #endif
     try
     {
-        m_oPainter.begin(&m_oPrinter);
+        if (!m_pDevice)
+            m_oPainter.begin(&m_oPrinter);
+        else
+        {
+            m_oPainter.begin(m_pDevice);
+
+            if (pdtSimple == m_eDeviceType)
+                m_oPainter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
+        }
     }
     catch (...)
     {
@@ -89,6 +100,12 @@ QAscPrinterContext::~QAscPrinterContext()
 
 void QAscPrinterContext::GetLogicalDPI(int& nDpiX, int& nDpiY)
 {
+    if (m_pDevice)
+    {
+        nDpiX = m_pDevice->logicalDpiX();
+        nDpiY = m_pDevice->logicalDpiY();
+        return;
+    }
     nDpiX = m_oPrinter.logicalDpiX();
     nDpiY = m_oPrinter.logicalDpiY();
 }
@@ -248,4 +265,59 @@ void QAscPrinterContext::setDefaults()
     QPrinterInfo oInfo(m_oPrinter);
     m_oPrinter.setDuplex(oInfo.defaultDuplexMode());
     m_oPrinter.setPageSize(oInfo.defaultPageSize());
+
+    m_pDevice = NULL;
+    m_eDeviceType = pdtNone;
+}
+
+void* QAscPrinterContext::GetNativeRenderer()
+{
+    return new NSQRenderer::CQRenderer(this);
+}
+void* QAscPrinterContext::GetNativeRendererUnsupportChecker()
+{
+    return NULL;
+}
+
+// not desktop common
+QAscPrinterContext::QAscPrinterContext(QPaintDevice *pDevice)
+{
+    m_pDevice = pDevice;
+    m_eDeviceType = pdtSimple;
+}
+QAscPrinterContext::QAscPrinterContext(QPagedPaintDevice *pDevice)
+{
+    m_pDevice = pDevice;
+    m_eDeviceType = pdtPaged;
+}
+QPainter* QAscPrinterContext::GetPainter()
+{
+    return &m_oPainter;
+}
+
+QSizeF QAscPrinterContext::paperSize()
+{
+    if (!m_pDevice)
+        return {0, 0};
+
+    if (pdtPaged == m_eDeviceType)
+    {
+        QPagedPaintDevice* pDevice = (QPagedPaintDevice*)m_pDevice;
+        QRectF pageRect = pDevice->pageLayout().fullRect(QPageLayout::Unit::Millimeter);
+        QMarginsF pageMargins = pDevice->pageLayout().margins(QPageLayout::Unit::Millimeter);
+        return {
+            pageMargins.left() + pageRect.width() + pageMargins.right(),
+            pageMargins.bottom() + pageRect.height() + pageRect.top()
+        };
+    }
+    else
+    {
+        return {(qreal)m_pDevice->widthMM(), (qreal)m_pDevice->heightMM()};
+    }
+}
+
+void QAscPrinterContext::NewPage()
+{
+    if (m_pDevice && pdtPaged == m_eDeviceType)
+        ((QPagedPaintDevice*)m_pDevice)->newPage();
 }

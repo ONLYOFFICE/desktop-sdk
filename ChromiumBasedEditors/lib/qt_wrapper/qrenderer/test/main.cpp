@@ -3,6 +3,7 @@
 #include "./../../../../../../core/DesktopEditor/common/File.h"
 #include "./../../../../../../core/DesktopEditor/common/Directory.h"
 #include "./../include/qrenderer.h" // рендерер
+#include "./../../include/qascprinter.h" // контекст
 
 #ifdef SUPPORT_DRAWING_FILE
 #include "./../../../../../../core/PdfReader/PdfReader.h"
@@ -30,11 +31,6 @@
 #endif
 
 #define TEST_ON_IMAGE
-
-
-
-
-
 
 // для теста печати файлом из js редакторов - нужен класс, который
 // конвертирует локальные картинки в абсолютные.
@@ -289,8 +285,12 @@ int main(int argc, char *argv[])
     QPrinter paintDevice{info};
 #endif
 
-    NSQRenderer::CQRenderer renderer(&paintDevice);
-    renderer.beginPainting(pFonts);
+    QAscPrinterContext oContext(&paintDevice);
+
+    oContext.BeginPaint();
+
+    NSQRenderer::CQRenderer renderer(&oContext);
+    renderer.InitFonts(pFonts);
 
 #ifdef SUPPORT_DRAWING_FILE
     if (NSFile::CFileBinary::Exists(sExamplePath + L"/sample.pdf"))
@@ -303,12 +303,7 @@ int main(int argc, char *argv[])
 #endif
         printJsBuffer(sExamplePath, &renderer);
 
-    //
-    Aggplus::CImage pic{L"D:\\1.png"};
-    std::cout << pic.GetWidth() << ' ' << pic.GetHeight() << std::endl;
-    renderer.DrawImage(&pic, 0, 0, 100, 100);
-
-    renderer.endPainting();
+    oContext.EndPaint();
 
     RELEASEINTERFACE(pFonts);
 
