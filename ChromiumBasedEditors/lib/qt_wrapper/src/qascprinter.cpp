@@ -106,12 +106,22 @@ void QAscPrinterContext::GetLogicalDPI(int& nDpiX, int& nDpiY)
         nDpiY = m_pDevice->logicalDpiY();
         return;
     }
+
     nDpiX = m_oPrinter.logicalDpiX();
     nDpiY = m_oPrinter.logicalDpiY();
 }
 
 void QAscPrinterContext::GetPhysicalRect(int& nX, int& nY, int& nW, int& nH)
 {
+    if (m_pDevice)
+    {
+        nX = 0;
+        nY = 0;
+        nW = m_pDevice->width();
+        nH = m_pDevice->height();
+        return;
+    }
+
     QRect rect1 = m_oPrinter.pageRect();
     QRect rect2 = m_oPrinter.paperRect();
 
@@ -123,6 +133,13 @@ void QAscPrinterContext::GetPhysicalRect(int& nX, int& nY, int& nW, int& nH)
 
 void QAscPrinterContext::GetPrintAreaSize(int& nW, int& nH)
 {
+    if (m_pDevice)
+    {
+        nW = m_pDevice->width();
+        nH = m_pDevice->height();
+        return;
+    }
+
     QRect rect = m_oPrinter.pageRect();
     nW = rect.width();
     nH = rect.height();
@@ -280,12 +297,12 @@ void* QAscPrinterContext::GetNativeRendererUnsupportChecker()
 }
 
 // not desktop common
-QAscPrinterContext::QAscPrinterContext(QPaintDevice *pDevice)
+QAscPrinterContext::QAscPrinterContext(QPaintDevice *pDevice) : m_oPrinter(QPrinter::PrinterResolution)
 {
     m_pDevice = pDevice;
     m_eDeviceType = pdtSimple;
 }
-QAscPrinterContext::QAscPrinterContext(QPagedPaintDevice *pDevice)
+QAscPrinterContext::QAscPrinterContext(QPagedPaintDevice *pDevice) : m_oPrinter(QPrinter::PrinterResolution)
 {
     m_pDevice = pDevice;
     m_eDeviceType = pdtPaged;
@@ -295,29 +312,19 @@ QPainter* QAscPrinterContext::GetPainter()
     return &m_oPainter;
 }
 
-QSizeF QAscPrinterContext::paperSize()
-{
-    if (!m_pDevice)
-        return {0, 0};
-
-    if (pdtPaged == m_eDeviceType)
-    {
-        QPagedPaintDevice* pDevice = (QPagedPaintDevice*)m_pDevice;
-        QRectF pageRect = pDevice->pageLayout().fullRect(QPageLayout::Unit::Millimeter);
-        QMarginsF pageMargins = pDevice->pageLayout().margins(QPageLayout::Unit::Millimeter);
-        return {
-            pageMargins.left() + pageRect.width() + pageMargins.right(),
-            pageMargins.bottom() + pageRect.height() + pageRect.top()
-        };
-    }
-    else
-    {
-        return {(qreal)m_pDevice->widthMM(), (qreal)m_pDevice->heightMM()};
-    }
-}
-
 void QAscPrinterContext::NewPage()
 {
     if (m_pDevice && pdtPaged == m_eDeviceType)
         ((QPagedPaintDevice*)m_pDevice)->newPage();
+}
+
+void QAscPrinterContext::InitRenderer(void* pRenderer, void* pFontManager)
+{
+    if (NULL == pRenderer)
+        return;
+    NSQRenderer::CQRenderer* pQRenderer = (NSQRenderer::CQRenderer*)pRenderer;
+    if (NULL != pFontManager)
+    {
+        pQRenderer->SetFontsManager((NSFonts::IFontManager*)pFontManager);
+    }
 }

@@ -458,6 +458,8 @@ namespace NSEditorApi
         virtual void* GetNativeRenderer() { return NULL; }
         virtual void* GetNativeRendererUnsupportChecker() { return NULL; }
         virtual void NewPage() {}
+
+        virtual void InitRenderer(void* pRenderer, void* pFontManager) {}
     };
 
     class CAscPrintPage : public IMenuEventDataBase

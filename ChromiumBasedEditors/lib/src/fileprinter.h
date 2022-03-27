@@ -110,7 +110,7 @@ public:
 
     void Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAscPrintSettings& settings, const int& nPageIndex);
     bool CheckPrintRotate(NSEditorApi::CAscPrinterContextBase* pContext, const CAscPrintSettings& settings, const int& nPageIndex);
-    void DrawOnRenderer(NSGraphics::IGraphicsRenderer* pRenderer, int nPageIndex);
+    void DrawOnRenderer(IRenderer* pRenderer, int nPageIndex);
     void TestSaveToRasterFile(std::wstring sFile, int nWidth, int nHeight, int nPageIndex);
     std::wstring GetImagePath(const std::wstring& sPath);
     void FitToPage(float fSourceWidth, float  fSourceHeight, float  fTargetWidth, float fTargetHeight, float& fResX, float& fResY, float& fResWidth, float& fResHeight);

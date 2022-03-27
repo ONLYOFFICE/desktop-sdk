@@ -32,11 +32,6 @@
 
 #include "./fileprinter.h"
 
-namespace agg
-{
-    const double pi = 3.14159265358979323846;
-}
-
 CPrintData::CPrintData()
 {
     m_pApplicationFonts = NULL;
@@ -229,7 +224,7 @@ public:
 };
 
 
-void CPrintData::DrawOnRenderer(NSGraphics::IGraphicsRenderer* pRenderer, int nPageIndex)
+void CPrintData::DrawOnRenderer(IRenderer* pRenderer, int nPageIndex)
 {
     CMetafileToRenderterDesktop oCorrector(pRenderer);
     oCorrector.m_pPrintData = this;
@@ -1031,19 +1026,45 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
     dLeftPix -= nPrintOffsetX;
     dTopPix -= nPrintOffsetY;
 
-    CBgraFrame oFrame;
     int nRasterW = (int)(dWidthPix + 0.5);
     int nRasterH = (int)(dHeightPix + 0.5);
-    
 #ifdef _XCODE
     // 16 bit align pixPerRow
     nRasterW += 8;
     nRasterW = (nRasterW - (nRasterW & 0x0F));
-    
+
     nRasterH += 8;
     nRasterH = (nRasterH - (nRasterH & 0x0F));
 #endif
-    
+
+    IRenderer* pNativeRenderer = (IRenderer*)pContext->GetNativeRenderer();
+    if (NULL != pNativeRenderer)
+    {
+        // TODO: check commands support
+        bool bIsSupportCommands = true;
+
+        if (bIsSupportCommands)
+        {
+            pContext->InitRenderer(pNativeRenderer, m_pFontManager);
+
+            // set base transform
+            if (NULL == m_pNativePrinter)
+                this->DrawOnRenderer(pNativeRenderer, nPageIndex);
+            else
+            {
+                pNativeRenderer->put_Width(fPageWidth);
+                pNativeRenderer->put_Height(fPageHeight);
+                m_pNativePrinter->Draw(pNativeRenderer, nPageIndex);
+            }
+
+            if (m_pAdditional)
+                m_pAdditional->Check_Print(pNativeRenderer, m_pFontManager, nRasterW, nRasterH, fPageWidth, fPageHeight);
+
+            return;
+        }
+    }
+
+    CBgraFrame oFrame;
     oFrame.put_Width(nRasterW);
     oFrame.put_Height(nRasterH);
     oFrame.put_Stride(4 * nRasterW);

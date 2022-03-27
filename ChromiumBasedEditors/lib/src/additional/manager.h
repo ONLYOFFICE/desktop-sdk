@@ -71,7 +71,7 @@ public:
 
     virtual void Print_Start() {}
     virtual void Print_End() {}
-    virtual void Check_Print(NSGraphics::IGraphicsRenderer* pRenderer, NSFonts::IFontManager* pFontManager, int nRasterW, int nRasterH, double fPageWidth, double fPageHeight) {}
+    virtual void Check_Print(IRenderer* pRenderer, NSFonts::IFontManager* pFontManager, int nRasterW, int nRasterH, double fPageWidth, double fPageHeight) {}
 
     virtual void Local_Save_Start() {}
     virtual bool Local_Save_End(bool bIsNeedSaveDialog, int nId, CefRefPtr<CefBrowser> browser) { return false; }

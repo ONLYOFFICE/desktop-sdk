@@ -59,6 +59,7 @@ public:
     void EndPaint();
 
     QPrinter* getPrinter();
+    QPainter* GetPainter();
 
     virtual void GetLogicalDPI(int& nDpiX, int& nDpiY);
 
@@ -73,6 +74,8 @@ public:
     virtual void* GetNativeRendererUnsupportChecker();
     virtual void NewPage();
 
+    virtual void InitRenderer(void* pRenderer, void* pFontManager);
+
 private:
     void DrawImage(QPainter* painter, const QImage& image, const QRect& rect, const QRect& rectSrc);
     void setDefaults();
@@ -81,11 +84,6 @@ public:
     // not desktop commons
     QAscPrinterContext(QPaintDevice* pDevice);
     QAscPrinterContext(QPagedPaintDevice* pDevice);
-
-    QPainter* GetPainter();
-
-    // удалить этот метод, после рефаторинга
-    QSizeF paperSize();
 
     enum PrintDeviceType
     {

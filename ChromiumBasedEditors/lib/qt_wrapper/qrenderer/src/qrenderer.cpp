@@ -1,6 +1,9 @@
 #include "./../include/qrenderer.h"
-#include "./../src/painting_conversions.h" // internal things to qt
 #include "./../../include/qascprinter.h"
+#include <QFont> // font
+#include <QPen>
+#include <QBrush>
+#include <QTransform>
 
 // DEBUG THINGS
 #include <algorithm>
@@ -12,6 +15,324 @@
 #include <QDebug>
 #define TELL qDebug() << __func__
 #endif
+
+namespace NSConversions
+{
+    const qreal default_dots_per_inch = 96.;
+
+    // color
+    struct CInternalColor
+    {
+        LONG color;
+        LONG alpha;
+    };
+
+    QColor colorInternalToQt(CInternalColor internalColor)
+    {
+        int red = (int)(internalColor.color & 0xFF);
+        int green = (int)((internalColor.color >> 8) & 0xFF);
+        int blue = (int)((internalColor.color >> 16) & 0xFF);
+        QColor result{red, green, blue};
+        result.setAlpha(internalColor.alpha);
+        return result;
+    }
+
+    CInternalColor colorQtToInternal(const QColor &color)
+    {
+        int r = color.red();
+        int g = color.green();
+        int b = color.blue();
+        if (r < 0 || g < 0 || b < 0) {
+            return {0, 0};
+        }
+        LONG ret = 0;
+        ret |= b;
+        ret <<= 8;
+        ret |= g;
+        ret <<= 8;
+        ret |= r;
+        return {ret, (LONG)color.alpha()};
+    }
+
+    QColor colorInternalToQt(LONG internalColor)
+    {
+        return colorInternalToQt({internalColor, 255});
+    }
+
+    // image
+    QImage getTexture(const std::wstring &path, LONG alpha, LONG mode, const QSize &bounds)
+    {
+        // texture path
+        QString qtPath = QString::fromStdWString(path);
+        if (qtPath.isEmpty())
+            return QImage{};
+
+        QImage textureDraft_1{qtPath};
+
+        if (textureDraft_1.widthMM() == 0 || textureDraft_1.heightMM() == 0)
+            return QImage{};
+
+        // texture alpha
+        constexpr qreal maxAlpha = (qreal)100;
+        qreal dAlpha = (qreal)alpha / maxAlpha;
+
+        QImage textureDraft_2{textureDraft_1.size(), QImage::Format::Format_ARGB32_Premultiplied};
+        textureDraft_2.fill(Qt::GlobalColor::transparent);
+        QPainter painter{&textureDraft_2};
+        painter.setOpacity(dAlpha);
+        painter.drawImage(0, 0, textureDraft_1);
+        painter.end();
+
+        // texture mode
+        switch (mode)
+        {
+            // подгон по размеру path
+            case c_BrushTextureModeStretch:
+            {
+                if (bounds.isNull() || 0 == bounds.width() || 0 == bounds.height())
+                    return textureDraft_2;
+
+                QImage scaledTexture = textureDraft_2.scaled(
+                            bounds
+                            // расширяется, чтобы полностью заполнять path,
+                            // может вылезать за его пределы
+                            // можно сделать KeepAspectRatio -
+                            // чтобы расширялось, не вылезая, но заполняя не полностью
+                            // https://doc.qt.io/qt-5/qpixmap.html#scaled
+                            , Qt::AspectRatioMode::KeepAspectRatioByExpanding
+                            // ресайз медленно, но со сглаживанием
+                            // https://doc.qt.io/qt-5/qt.html#TransformationMode-enum
+                            , Qt::TransformationMode::SmoothTransformation
+                            );
+                return scaledTexture;
+            }
+            case c_BrushTextureModeTile: // обычное выравнивание по левому верхнему углу
+            case c_BrushTextureModeTileCenter: // пока не делаем
+            default:
+                return textureDraft_2;
+        } // switch (mode)
+    }
+
+    QPen penInternalToQt(const NSStructures::CPen &pen)
+    {
+        if (0. == pen.Size)
+            return QPen{Qt::PenStyle::NoPen};
+
+        // цвет и альфа
+        // размер в миллиметрах
+        // line cap
+        // line join
+        // dash offset
+        // miter limit
+        QPen result;
+
+        // цвет и альфа
+        result.setColor(colorInternalToQt({pen.Color, pen.Alpha}));
+
+        // размер
+        result.setWidthF(pen.Size);
+
+        // dash style
+        // DashStyleSolid,          // solid
+        // DashStyleDash,           // dash 3 space 1
+        // DashStyleDot,            // dash 1 space 1
+        // DashStyleDashDot,        // dash 3 space 1 dash 1 space 1
+        // DashStyleDashDotDot,     // dash 3 space 1 dash 1 space 1 dash 1 space 1
+        // DashStyleCustom          // из массива
+        switch (pen.DashStyle)
+        {
+            case (BYTE)Aggplus::DashStyle::DashStyleCustom:
+            {
+                int patternCount = (int)pen.Count;
+                if (patternCount < 1)
+                {
+                    break;
+                }
+                QVector<qreal> pattern(patternCount);
+                for (int i = 0; i < patternCount; ++i)
+                {
+                    pattern[i] = (qreal)pen.DashPattern[i];
+                }
+                result.setDashPattern(pattern);
+                break;
+            }
+            case (BYTE)Aggplus::DashStyle::DashStyleDash:
+            {
+                result.setDashPattern({3, 1});
+                break;
+            }
+            case (BYTE)Aggplus::DashStyle::DashStyleDashDot:
+            {
+                result.setDashPattern({3, 1, 1, 1});
+                break;
+            }
+            case (BYTE)Aggplus::DashStyle::DashStyleDashDotDot:
+            {
+                result.setDashPattern({3, 1, 1, 1, 1, 1});
+                break;
+            }
+            case (BYTE)Aggplus::DashStyle::DashStyleDot:
+            {
+                result.setDashPattern({1, 1});
+                break;
+            }
+            case (BYTE)Aggplus::DashStyle::DashStyleSolid:
+            {
+                result.setStyle(Qt::PenStyle::SolidLine);
+                break;
+            }
+            default:
+                break;
+        }
+
+        // line cap
+        switch (pen.LineStartCap)
+        {
+            case (BYTE)Aggplus::LineCap::LineCapFlat:
+            {
+                result.setCapStyle(Qt::PenCapStyle::FlatCap);
+                break;
+            }
+            case (BYTE)Aggplus::LineCap::LineCapRound:
+            {
+                result.setCapStyle(Qt::PenCapStyle::RoundCap);
+                break;
+            }
+            case (BYTE)Aggplus::LineCap::LineCapSquare:
+            {
+                result.setCapStyle(Qt::PenCapStyle::SquareCap);
+                break;
+            }
+            default:
+            {
+                // в Graphics.cpp по дефолту round_cap
+                result.setCapStyle(Qt::PenCapStyle::RoundCap);
+                break;
+            }
+        }
+
+        // line join
+        switch (pen.LineJoin)
+        {
+            case (BYTE)Aggplus::LineJoin::LineJoinMiter: // в Graphics.cpp MiterClipped то же самое, что Miter
+            case (BYTE)Aggplus::LineJoin::LineJoinMiterClipped:
+            {
+                result.setJoinStyle(Qt::PenJoinStyle::MiterJoin);
+                break;
+            }
+            case (BYTE)Aggplus::LineJoin::LineJoinBevel:
+            {
+                result.setJoinStyle(Qt::PenJoinStyle::BevelJoin);
+                break;
+            }
+            case (BYTE)Aggplus::LineJoin::LineJoinRound:
+            {
+                result.setJoinStyle(Qt::PenJoinStyle::RoundJoin);
+                break;
+            }
+            default:
+            { // в Graphics.cpp по дефолту round_join
+                result.setJoinStyle(Qt::PenJoinStyle::RoundJoin);
+                break;
+            }
+        }
+
+        // dash offset
+        result.setDashOffset(pen.DashOffset);
+
+        // miter limit
+        result.setMiterLimit(pen.MiterLimit);
+
+        return result;
+    }
+
+    QBrush brushInternalToQt(const NSStructures::CBrush &brush, const QRectF &pathRect)
+    {
+        // type
+        // color 1
+        // color 2 - только для градиента
+        // texture path
+        // texture mode
+        // texture alpha
+        // gradient colors
+
+        // type
+        switch (brush.Type)
+        {
+            case c_BrushTypeSolid:
+            {
+                QBrush result;
+                result.setStyle(Qt::BrushStyle::SolidPattern);
+
+                // color 1
+                QColor color1 = colorInternalToQt({brush.Color1, brush.Alpha1});
+                result.setColor(color1);
+
+                return result;
+            }
+            case c_BrushTypeTexture:
+            {
+                QBrush result;
+                QImage texture = getTexture(brush.TexturePath, brush.TextureAlpha, brush.TextureMode, pathRect.size().toSize());
+
+                if (texture.isNull())
+                    return result;
+
+                result.setTextureImage(texture);
+                return result;
+            }
+            case c_BrushTypePathGradient1: // linear
+            {
+                QLinearGradient gradient;
+
+                // color 1 and 2
+                gradient.setColorAt(0., colorInternalToQt({brush.Color1, brush.Alpha1}));
+                gradient.setColorAt(1., colorInternalToQt({brush.Color2, brush.Alpha2}));
+
+                // sub colors
+                for (const auto &subColor: brush.m_arrSubColors)
+                {
+                    qreal pos = (qreal)subColor.position / 65536.;
+                    QColor col = colorInternalToQt(subColor.color);
+                    gradient.setColorAt(pos, col);
+                }
+
+                // start & stop
+                QPointF startPoint = (pathRect.topLeft() + pathRect.bottomLeft()) / 2;
+                QPointF stopPoint = (pathRect.topRight() + pathRect.bottomRight()) / 2;
+
+
+                gradient.setStart(startPoint);
+                gradient.setFinalStop(stopPoint);
+                return {gradient};
+            }
+            case c_BrushTypePathGradient2: // radial
+            {
+                QPointF center = (pathRect.topLeft() + pathRect.bottomRight()) / 2;
+                qreal radius = (qMax(pathRect.width(), pathRect.height())) / 2;
+                QRadialGradient gradient{center, radius};
+
+                // color 1 and 2
+                gradient.setColorAt(0., colorInternalToQt({brush.Color1, brush.Alpha1}));
+                gradient.setColorAt(1., colorInternalToQt({brush.Color2, brush.Alpha2}));
+
+                // sub colors
+                for (const auto &subColor: brush.m_arrSubColors)
+                {
+                    qreal pos = (qreal)subColor.position / 65536.;
+                    QColor col = colorInternalToQt(subColor.color);
+                    gradient.setColorAt(pos, col);
+                }
+
+                return {gradient};
+            }
+            default:
+            {
+                return QBrush{};
+            }
+        }
+    }
+}
 
 namespace
 {
@@ -311,6 +632,13 @@ void NSQRenderer::CQRenderer::InitFonts(NSFonts::IApplicationFonts *pFonts)
     m_pFontManager = m_pAppFonts->GenerateFontManager();
 }
 
+void NSQRenderer::CQRenderer::SetFontsManager(NSFonts::IFontManager* pFontsManager)
+{
+    RELEASEINTERFACE(m_pFontManager);
+    m_pFontManager = pFontsManager;
+    ADDREFINTERFACE(m_pFontManager);
+}
+
 HRESULT NSQRenderer::CQRenderer::get_Type(LONG *lType)
 {
 #ifdef ENABLE_LOGS
@@ -353,8 +681,12 @@ HRESULT NSQRenderer::CQRenderer::put_Height(const double &dHeight)
 #endif
     m_dLogicalPageHeight = dHeight;
     double realHeight = (double)paperSize().height();
-    double scale_Y = realHeight / m_dLogicalPageHeight;
-    scaleTransformSetY(scale_Y);
+    m_oCoordTransform = {
+        m_oCoordTransform.m11(), m_oCoordTransform.m12(),
+        m_oCoordTransform.m21(), realHeight / m_dLogicalPageHeight,
+        m_oCoordTransform.dx(), m_oCoordTransform.dy()
+    };
+    applyTransform();
     return S_OK;
 }
 
@@ -378,8 +710,12 @@ HRESULT NSQRenderer::CQRenderer::put_Width(const double &dWidth)
 #endif
     m_dLogicalPageWidth = dWidth;
     double realWidth = (double)paperSize().width();
-    double scale_X = realWidth / m_dLogicalPageWidth;
-    scaleTransformSetX(scale_X);
+    m_oCoordTransform = {
+        realWidth / m_dLogicalPageWidth, m_oCoordTransform.m12(),
+        m_oCoordTransform.m21(), m_oCoordTransform.m22(),
+        m_oCoordTransform.dx(), m_oCoordTransform.dy()
+    };
+    applyTransform();
     return S_OK;
 }
 
@@ -1568,31 +1904,9 @@ void NSQRenderer::CQRenderer::applyTransform()
 #ifdef ENABLE_LOGS
     TELL;
 #endif
-    m_pContext->GetPainter()->setTransform(NSConversions::scaledMMToPx(m_oScaleTransform));
+    m_pContext->GetPainter()->setTransform(m_oCoordTransform);
     m_pContext->GetPainter()->setTransform(m_oBaseTransform, true);
     m_pContext->GetPainter()->setTransform(m_oCurrentTransform, true);
-}
-
-void NSQRenderer::CQRenderer::scaleTransformSetX(double scale)
-{
-#ifdef ENABLE_LOGS
-    TELL << scale;
-#endif
-    m_oScaleTransform = {scale, m_oScaleTransform.m12()
-                       , m_oScaleTransform.m21(), m_oScaleTransform.m22()
-                       , m_oScaleTransform.dx(), m_oScaleTransform.dy()};
-    applyTransform();
-}
-
-void NSQRenderer::CQRenderer::scaleTransformSetY(double scale)
-{
-#ifdef ENABLE_LOGS
-    TELL << scale;
-#endif
-    m_oScaleTransform = {m_oScaleTransform.m11(), m_oScaleTransform.m12()
-                       , m_oScaleTransform.m21(), scale
-                        , m_oScaleTransform.dx(), m_oScaleTransform.dy()};
-    applyTransform();
 }
 
 QRectF NSQRenderer::CQRenderer::pathRect() const
@@ -1606,10 +1920,6 @@ QSizeF NSQRenderer::CQRenderer::paperSize() const
 #ifdef ENABLE_LOGS
     TELL;
 #endif
-
-    // tmp
-    return m_pContext->paperSize();
-
     int x, y, w, h;
     m_pContext->GetPhysicalRect(x, y, w, h);
 
@@ -1662,12 +1972,10 @@ QPen NSQRenderer::CQRenderer::pen() const
 
 QBrush NSQRenderer::CQRenderer::brush() const
 {
-    return NSConversions::brushInternalToQt(m_oBrush
-                                            , pathRect()
-                                            );
+    return NSConversions::brushInternalToQt(m_oBrush, pathRect());
 }
 
 QFont NSQRenderer::CQRenderer::font() const
 {
-    return NSConversions::fontInternalToQt(m_oFont);
+    return QFont();
 }

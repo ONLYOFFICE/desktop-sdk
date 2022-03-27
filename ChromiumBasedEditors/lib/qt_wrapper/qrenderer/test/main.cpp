@@ -277,8 +277,11 @@ int main(int argc, char *argv[])
     std::wstring sExamplePath = NSFile::GetProcessDirectory() + L"/../examples/example3";
 
 #ifdef TEST_ON_IMAGE
-    QSize a4size = QPageSize::sizePixels(QPageSize::PageSizeId::A4, 96);
+    int nDpi = 96;
+    QSize a4size = QPageSize::sizePixels(QPageSize::PageSizeId::A4, nDpi);
     QImage paintDevice{a4size, QImage::Format::Format_ARGB32_Premultiplied};
+    paintDevice.setDotsPerMeterX(nDpi / 0.0254);
+    paintDevice.setDotsPerMeterY(nDpi / 0.0254);
     paintDevice.fill(Qt::GlobalColor::white);
 #else
     QPrinterInfo info = QPrinterInfo::printerInfo("Microsoft XPS Document Writer");

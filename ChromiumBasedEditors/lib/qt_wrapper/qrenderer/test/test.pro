@@ -16,11 +16,7 @@ HEADERS += \
 	$$PWD/../include/qprintercontext.h \
 	$$PWD/../../include/qascprinter.h
 
-HEADERS += \
-    $$PWD/../src/painting_conversions.h
-
 SOURCES += \
-    $$PWD/../src/painting_conversions.cpp \
     $$PWD/../src/qrenderer.cpp \
 	$$PWD/../src/qprintercontext.cpp \
 	$$PWD/../../src/qascprinter.cpp
@@ -37,9 +33,6 @@ pdf_xps_djvu {
 core_linux:include($$CORE_ROOT_DIR/Common/3dParty/icu/icu.pri)
 core_windows:LIBS += -lgdi32 -ladvapi32 -luser32 -lshell32
 core_linux:LIBS += -lz
-
-# пока добавил, чтобы иметь возможность не переключать бранч core
-DEFINES += "c_nQRenderer=0x0012"
 
 # в тестовом примере никакого импорта
 DEFINES += DESKTOP_NO_USE_DYNAMIC_LIBRARY

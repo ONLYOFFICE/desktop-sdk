@@ -22,6 +22,7 @@ namespace NSQRenderer
         virtual ~CQRenderer();
 
         void InitFonts(NSFonts::IApplicationFonts* pFonts);
+        void SetFontsManager(NSFonts::IFontManager* pFontsManager);
 
         // тип рендерера-----------------------------------------------------------------------------
         virtual HRESULT get_Type(LONG* lType) override;
@@ -266,7 +267,7 @@ namespace NSQRenderer
         QAscPrinterContext* m_pContext;
         QPainterPath m_oUntransformedPainterPath{};
 
-        QTransform m_oScaleTransform{};
+        QTransform m_oCoordTransform{};
         QTransform m_oBaseTransform{};
         QTransform m_oCurrentTransform{};
 
@@ -290,10 +291,6 @@ namespace NSQRenderer
         Aggplus::CGraphicsPathSimpleConverter m_oSimpleGraphicsConverter;
 
     private:
-        //
-        void scaleTransformSetX(double scale);
-        void scaleTransformSetY(double scale);
-
         //
         QRectF pathRect() const;
 
