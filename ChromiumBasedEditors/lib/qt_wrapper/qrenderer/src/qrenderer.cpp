@@ -244,6 +244,7 @@ namespace
 NSQRenderer::CQRenderer::CQRenderer(QAscPrinterContext* pContext)
 {
     m_pContext = pContext;
+    InitDefaults();
 }
 
 NSQRenderer::CQRenderer::~CQRenderer()
