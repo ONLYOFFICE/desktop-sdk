@@ -375,6 +375,7 @@ public:
 
     virtual void Check(std::vector<CPagePrintData>& arPages)
     {
+        arPages.clear();
         int nPagesCount = m_pReader->GetPagesCount();
         for (int i = 0; i < nPagesCount; ++i)
         {
@@ -1393,6 +1394,16 @@ public:
             {
                 if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat != AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF)
                     arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA);
+            }
+
+            arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX);
+            arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_ODT);
+
+            if (!bEncryption)
+            {
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_RTF);
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_FB2);
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_EPUB);
             }
         }
     }
@@ -4884,7 +4895,18 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
     std::wstring sNotEditableLocal;
     int nError_Old = nError;
 
+    bool bIsSavedFileCurrent = true;
+    int nOldFormat = m_oLocalInfo.m_oInfo.m_nCurrentFileFormat;
+    if (nOldFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
+    {
+        bIsSavedFileCurrent = false;
+    }
     if (!LocalFile_IsSupportEditFormat(m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat))
+    {
+        bIsSavedFileCurrent = false;
+    }
+
+    if (!bIsSavedFileCurrent)
     {
         if (0 == nError && LocalFile_IsSupportOpenFormat(m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat))
             m_pManager->m_pInternal->Recents_Add(m_oConverterFromEditor.m_oInfo.m_sFileSrc, m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat, L"", L"", m_sParentUrl);
