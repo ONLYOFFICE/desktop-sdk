@@ -5285,11 +5285,13 @@ void CCefView::load(const std::wstring& urlInputSrc)
     // заглушка, чтобы не проверять выше
     NSStringUtils::string_replace(urlInput, L"//?desktop=true", L"/?desktop=true");
 
+    std::wstring sExternalSchemeName = m_pInternal->m_pManager->GetExternalSchemeName() + L":";
+
     bool bIsScheme = false;
-    if (0 == urlInput.find(L"oo-office:"))
+    if (0 == urlInput.find(sExternalSchemeName))
     {
         bIsScheme = true;
-        if (0 == urlInput.find(L"oo-office://"))
+        if (0 == urlInput.find(sExternalSchemeName + L"//"))
             urlInput = urlInput.substr(12);
         else
             urlInput = urlInput.substr(10);

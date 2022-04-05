@@ -291,6 +291,8 @@ public:
 
     static bool IsUseSystemScaling();
 
+    std::wstring GetExternalSchemeName();
+
 protected:
     int GenerateNextViewId();
     virtual CAscDpiChecker* InitDpiChecker();

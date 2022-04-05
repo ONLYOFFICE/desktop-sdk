@@ -1210,6 +1210,13 @@ void CAscApplicationManager::SetRendererProcessVariable(const std::wstring& sVar
     m_pInternal->m_sRendererJSON = sVariable;
 }
 
+std::wstring CAscApplicationManager::GetExternalSchemeName()
+{
+    if (m_pInternal->m_pAdditional)
+        return m_pInternal->m_pAdditional->GetExternalSchemeName();
+    return L"oo-office";
+}
+
 bool NSCommon::CSystemWindowScale::g_isUseSystemScalingInit = false;
 bool NSCommon::CSystemWindowScale::g_isUseSystemScaling = false;
 

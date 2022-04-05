@@ -75,6 +75,8 @@ public:
 
     virtual void Local_Save_Start() {}
     virtual bool Local_Save_End(bool bIsNeedSaveDialog, int nId, CefRefPtr<CefBrowser> browser) { return false; }
+
+    virtual std::wstring GetExternalSchemeName() { return L"oo-office"; }
 };
 
 CApplicationManagerAdditionalBase* Create_ApplicationManagerAdditional(CAscApplicationManager* pManager);
