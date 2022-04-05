@@ -281,12 +281,12 @@ public:
 #define DISABLE_LOCK_FUNCTIONALITY
 #endif
 
-namespace NSSystem
-{
 #ifndef _WIN32
 #include <fcntl.h>
 #endif
 
+namespace NSSystem
+{
     class CLocalFileLocker
     {
     private:
@@ -347,6 +347,12 @@ namespace NSSystem
             _lock.l_pid    = getpid();
 
             fcntl(m_nDescriptor, F_SETLKW, &_lock);
+
+            if (!IsLocked(m_sFile))
+            {
+                close(m_nDescriptor);
+                m_nDescriptor = -1;
+            }
 #endif
             return true;
         }
@@ -441,6 +447,20 @@ namespace NSSystem
 
         bool SaveFile(const std::wstring& sFile)
         {
+            bool bIsNeedClose = false;
+
+#ifdef _LINUX
+            int nDescriptor = m_nDescriptor;
+            if (-1 == nDescriptor)
+            {
+                std::string sFileA = U_TO_UTF8(m_sFile);
+                nDescriptor = open(sFileA.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0666);
+                if (-1 == nDescriptor)
+                    nDescriptor = open(sFileA.c_str(), O_CREAT | O_WRONLY, 0666);
+                bIsNeedClose = true;
+            }
+#endif
+
             DWORD nSection = 10 * 1024 * 1024;
             DWORD nFileSize = 0;
 
@@ -467,7 +487,7 @@ namespace NSSystem
 #ifdef _WIN32
             SetFilePointer(m_nDescriptor, 0, 0, FILE_BEGIN);
 #else
-            lseek(m_nDescriptor, 0, SEEK_SET);
+            lseek(nDescriptor, 0, SEEK_SET);
 #endif
 
             DWORD dwRead = 0;
@@ -481,7 +501,7 @@ namespace NSSystem
 #ifdef _WIN32
                 WriteFile(m_nDescriptor, pMemoryBuffer, nChunkSize, &dwWrite, NULL);
 #else
-                dwWrite = (DWORD)write(m_nDescriptor, pMemoryBuffer, nChunkSize);
+                dwWrite = (DWORD)write(nDescriptor, pMemoryBuffer, nChunkSize);
 #endif
 
                 if (dwRead != nChunkSize || dwWrite != nChunkSize)
@@ -493,23 +513,30 @@ namespace NSSystem
                 nNeedWrite -= nChunkSize;
             }
 
+            oFile.CloseFile();
+            RELEASEARRAYOBJECTS(pMemoryBuffer);
+
 #ifdef _WIN32
             SetFilePointer(m_nDescriptor, (LONG)nFileSize, 0, FILE_BEGIN);
             SetEndOfFile(m_nDescriptor);
 #else
-            lseek(m_nDescriptor, (DWORD)nFileSize, SEEK_SET);
-            ftruncate(m_nDescriptor, (DWORD)nFileSize);
-#endif
+            lseek(nDescriptor, (DWORD)nFileSize, SEEK_SET);
+            ftruncate(nDescriptor, (DWORD)nFileSize);
 
-            oFile.CloseFile();
-            RELEASEARRAYOBJECTS(pMemoryBuffer);
+            if (bIsNeedClose)
+                close(nDescriptor);
+#endif
 
             if (!bRes)
             {
                 Unlock();
-                if (NSFile::CFileBinary::Exists(m_sFile))
-                    NSFile::CFileBinary::Remove(m_sFile);
-                bRes = NSFile::CFileBinary::Copy(sFile, m_sFile);
+
+#ifdef _WIN32
+                bRes = (0 != ::CopyFileW(sFile.c_str(), m_sFile.c_str(), 0)) ? true : false;
+#else
+                bRes = false;
+#endif
+
                 Lock();
             }
 
