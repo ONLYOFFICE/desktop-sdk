@@ -86,6 +86,7 @@ void QAscPrinterContext::EndPaint()
 {
     if (m_bIsUsePainter)
         m_oPainter.end();
+
     m_bIsUsePainter = false;
 }
 

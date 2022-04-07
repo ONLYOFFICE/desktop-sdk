@@ -34,7 +34,6 @@
 #define ASC_CEFCONVERTER_FILEPRINTER_H
 
 #include "./applicationmanager_p.h"
-#include "./additional/manager.h"
 
 class CPagePrintData
 {
@@ -116,6 +115,9 @@ public:
     void FitToPage(float fSourceWidth, float  fSourceHeight, float  fTargetWidth, float fTargetHeight, float& fResX, float& fResY, float& fResWidth, float& fResHeight);
     std::wstring DownloadImage(const std::wstring& strFile);
     void CalculateImagePaths(bool bIsOpenAsLocal = false);
+
+private:
+    static void rotateRender(IRenderer* pRender, const double& fileWidth, const double& fileHeight, const double& dAngle);
 };
 
 #endif // ASC_CEFCONVERTER_FILEPRINTER_H

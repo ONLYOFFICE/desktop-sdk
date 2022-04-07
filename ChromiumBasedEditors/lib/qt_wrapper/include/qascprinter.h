@@ -37,6 +37,7 @@
 #include <QtPrintSupport/QPrintDialog>
 #include <QtPrintSupport/QPrinterInfo>
 #include <QPainter>
+#include <QTransform>
 #include <QPaintEngine>
 #include <QPagedPaintDevice>
 
