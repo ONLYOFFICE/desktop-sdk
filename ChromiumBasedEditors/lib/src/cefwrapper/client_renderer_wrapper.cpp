@@ -4255,6 +4255,8 @@ return navigator.serviceWorker.register2.apply(this, arguments);\n\
 
         curFrame->ExecuteJavaScript("\
 window.addEventListener(\"DOMContentLoaded\", function(){\n\
+//if (window && window.AscCommon && window.AscCommon.checkDeviceScale) return;\n\
+if (window && window.Asc && window.Asc.plugin) return;\n\
 var _style = document.createElement(\"style\");\n\
 _style.type = \"text/css\";\n\
 _style.innerHTML = \"\
