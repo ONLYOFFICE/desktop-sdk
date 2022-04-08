@@ -35,6 +35,10 @@
 
 #include "./applicationmanager_p.h"
 
+// TODO remove it
+#include <unordered_set>
+#include "../../../../../../DesktopEditor/graphics/MetafileToRenderer.h"
+
 class CPagePrintData
 {
 public:
@@ -117,7 +121,10 @@ public:
     void CalculateImagePaths(bool bIsOpenAsLocal = false);
 
 private:
+    // TODO bad Tranform CommandType // the last brokes also presentations, as I understand
     static void rotateRender(IRenderer* pRender, const double& fileWidth, const double& fileHeight, const double& dAngle);
+    // TODO move it. // But shoud it be the kernel lib?
+    bool checkPageBlackList(int nPageIndex, const std::unordered_set<NSOnlineOfficeBinToPdf::CommandType>& oBlackList)const;
 };
 
 #endif // ASC_CEFCONVERTER_FILEPRINTER_H

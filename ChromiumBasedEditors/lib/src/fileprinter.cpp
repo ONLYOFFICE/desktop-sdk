@@ -221,6 +221,319 @@ void CPrintData::rotateRender(IRenderer *pRender, const double &fPrintWidthMM, c
     }
 }
 
+// TODO move it
+bool CPrintData::checkPageBlackList(int nPageIndex, const std::unordered_set<NSOnlineOfficeBinToPdf::CommandType> &oBlackList) const
+{
+    BYTE* pBuffer = NULL;
+    int lBufferLen = 0;
+    NSFile::CBase64Converter::Decode(m_arPages[nPageIndex].Base64.c_str(), m_arPages[nPageIndex].Base64.length(), pBuffer, lBufferLen);
+
+    using namespace NSOnlineOfficeBinToPdf;
+    CommandType eCommand = ctError;
+
+    bool bIsPathOpened = false;
+    int curindex = 0;
+
+    BYTE* current = pBuffer;
+    while (curindex < lBufferLen)
+    {
+        eCommand = (CommandType)(*current);
+        current++;
+        curindex++;
+        if (oBlackList.find(eCommand) != oBlackList.end())
+            return false;
+        break;
+
+//        switch (eCommand)
+//        {
+//        case ctPageWidth:
+//        {
+//            ReadInt(current, curindex);
+//            break;
+//        }
+//        case ctPageHeight:
+//        {
+//            ReadInt(current, curindex);
+//            break;
+//        }
+//        case ctPageStart:
+//        {
+
+//            break;
+//        }
+//        case ctPageEnd:
+//        {
+//            break;
+//        }
+//        case ctPenColor:
+//        {
+//            SkipInt(current, curindex);
+//            break;
+//        }
+//        case ctPenAlpha:
+//        {
+//            current++;
+//            curindex++;
+//            break;
+//        }
+//        case ctPenSize:
+//        {
+//            SkipInt(current, curindex);
+//            break;
+//        }
+//        case ctPenDashStyle:
+//        {
+//            BYTE nDashType = *current++;
+//            curindex++;
+//            switch (nDashType)
+//            {
+//            case Aggplus::DashStyleCustom:
+//            {
+//                int nCountDash = ReadInt(current, curindex);
+//                if (0 < nCountDash)
+//                {
+//                    SkipInt(current, curindex, nCountDash);
+//                }
+//            }
+//            default:
+//                break;
+//            }
+
+//            break;
+//        }
+//        case ctPenLineJoin:
+//        {
+//            current++;
+//            curindex++;
+//            break;
+//        }
+//        case ctBrushType:
+//        {
+//            SkipInt(current, curindex);
+//            break;
+//        }
+//        case ctBrushColor1:
+//        {
+//            SkipInt(current, curindex);
+//            break;
+//        }
+//        case ctBrushAlpha1:
+//        {
+//            current++;
+//            curindex++;
+//            break;
+//        }
+//        case ctBrushColor2:
+//        {
+//            SkipInt(current, curindex);
+//            break;
+//        }
+//        case ctBrushAlpha2:
+//        {
+//            current++;
+//            curindex++;
+//            break;
+//        }
+//        case ctBrushRectable:
+//        {
+//            SkipInt(current, curindex, 4);
+//            break;
+//        }
+//        case ctBrushRectableEnabled:
+//        {
+//            current += 1;
+//            curindex += 1;
+//            break;
+//        }
+//        case ctBrushTexturePath:
+//        {
+//            int nLen = 2 * ReadUSHORT(current, curindex);
+//            SkipString16(current, curindex, nLen);
+//            break;
+//        }
+//        case ctBrushGradient:
+//        {
+//            current++;
+//            curindex++;
+
+//            while (true)
+//            {
+//                BYTE _command = *current;
+//                current++;
+//                curindex++;
+
+//                if (251 == _command)
+//                    break;
+
+//                switch (_command)
+//                {
+//                case 0:
+//                {
+//                    current += 5;
+//                    curindex += 5;
+//                    SkipInt(current, curindex, 4);
+//                    break;
+//                }
+//                case 1:
+//                {
+//                    current++;
+//                    curindex++;
+//                    SkipInt(current, curindex, 6);
+//                    break;
+//                }
+//                case 2:
+//                {
+//                    LONG lColorsCount = (LONG)ReadInt(current, curindex);
+//                    if (0 <= lColorsCount)
+//                    {
+//                        SkipInt(current, curindex, 2 * lColorsCount);
+//                    }
+
+//                    break;
+//                }
+//                default:
+//                {
+//                    break;
+//                }
+//                };
+//            }
+
+//            break;
+//        }
+//        case ctBrushTextureMode:
+//        {
+//            current += 1;
+//            curindex += 1;
+//            break;
+//        }
+//        case ctBrushTextureAlpha:
+//        {
+//            current += 1;
+//            curindex += 1;
+//            break;
+//        }
+//        case ctSetTransform:
+//        {
+//            SkipInt(current, curindex, 6);
+//            break;
+//        }
+//        case ctPathCommandStart:
+//        {
+//            break;
+//        }
+//        case ctPathCommandMoveTo:
+//        {
+//            SkipInt(current, curindex, 2);
+//            break;
+//        }
+//        case ctPathCommandLineTo:
+//        {
+//            SkipInt(current, curindex, 2);
+//            break;
+//        }
+//        case ctPathCommandCurveTo:
+//        {
+//            SkipInt(current, curindex, 6);
+//            break;
+//        }
+//        case ctPathCommandClose:
+//        {
+//            break;
+//        }
+//        case ctPathCommandEnd:
+//        {
+//            break;
+//        }
+//        case ctDrawPath:
+//        {
+//            SkipInt(current, curindex);
+//            break;
+//        }
+//        case ctDrawImageFromFile:
+//        {
+//            int nLen = ReadInt(current, curindex);
+//            SkipString16(current, curindex, nLen);
+
+//            SkipInt(current, curindex, 4);
+//            break;
+//        }
+//        case ctFontName:
+//        {
+//            int nLen = 2 * (int)ReadUSHORT(current, curindex);
+//            SkipString16(current, curindex, nLen);
+//            break;
+//        }
+//        case ctFontSize:
+//        {
+//            SkipInt(current, curindex);
+//            break;
+//        }
+//        case ctFontStyle:
+//        {
+//            SkipInt(current, curindex);
+//            break;
+//        }
+//        case ctDrawText:
+//        {
+//            int nLen = 2 * (int)ReadUSHORT(current, curindex);
+//            SkipString16(current, curindex, nLen);
+
+//            SkipInt(current, curindex, 2);
+//            break;
+//        }
+//        case ctBeginCommand:
+//        {
+//            SkipInt(current, curindex);
+//            break;
+//        }
+//        case ctEndCommand:
+//        {
+//            SkipInt(current, curindex);
+//            break;
+//        }
+//        case ctGradientFill:
+//        case ctGradientFillXML:
+//        case ctGradientStroke:
+//        case ctGradientStrokeXML:
+//        {
+//            // TODO: Эта команда не должна приходить
+//            return;
+//        }
+//        case ctHyperlink:
+//        {
+//            SkipDouble(current, curindex, 4);
+//            SkipString(current, curindex);
+//            SkipString(current, curindex);
+//            break;
+//        }
+//        case ctLink:
+//        {
+//            SkipDouble(current, curindex, 6);
+//            SkipInt(current, curindex);
+//            break;
+//        }
+//        case ctFormField:
+//        {
+//            BYTE* nStartPos   = current;
+//            int   nStartIndex = curindex;
+
+//            int nLen = ReadInt(current, curindex);
+
+//            current  = nStartPos + nLen;
+//            curindex = nStartIndex + nLen;
+//            break;
+//        }
+//        default:
+//        {
+//            break;
+//        }
+//        }; // switch (eCommand)
+    } // while (curindex < len)
+
+    return true;
+}
+
+
 #include "../../../../core/DesktopEditor/graphics/MetafileToRenderer.h"
 class CMetafileToRenderterDesktop : public IMetafileToRenderter
 {
@@ -246,6 +559,7 @@ void CPrintData::DrawOnRenderer(IRenderer* pRenderer, int nPageIndex)
     CMetafileToRenderterDesktop oCorrector(pRenderer);
     oCorrector.m_pPrintData = this;
 
+    // maybe we should use boost::shared_array ?
     BYTE* dstArray = NULL;
     int len = 0;
     NSFile::CBase64Converter::Decode(m_arPages[nPageIndex].Base64.c_str(), m_arPages[nPageIndex].Base64.length(), dstArray, len);
@@ -1059,7 +1373,11 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
     if (NULL != pNativeRenderer/* && false*/)
     {
         // TODO: check commands support
-        bool bIsSupportCommands = true;
+        using namespace NSOnlineOfficeBinToPdf;
+        bool bIsSupportCommands = checkPageBlackList(nPageIndex, {
+                                                         ctSetTransform,
+                                                         ctResetTransform
+                                                     });
 
         if (bIsSupportCommands)
         {
