@@ -242,6 +242,7 @@ namespace NSQRenderer
         virtual HRESULT CommandLong(const LONG& lType, const LONG& lCommand) override;// NOT USED
         virtual HRESULT CommandDouble(const LONG& lType, const double& dCommand) override;// NOT USED
         virtual HRESULT CommandString(const LONG& lType, const std::wstring& sCommand) override;// NOT USED
+        bool IsCorrectRendered() const override;
 
     public:
         void SetBaseTransform(double m11
@@ -289,6 +290,8 @@ namespace NSQRenderer
         NSStructures::CFont	m_oInstalledFont;
 
         Aggplus::CGraphicsPathSimpleConverter m_oSimpleGraphicsConverter;
+
+        bool hasNotSupportetCommand{false};
 
     private:
         //

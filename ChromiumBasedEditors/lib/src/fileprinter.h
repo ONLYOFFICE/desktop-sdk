@@ -123,8 +123,6 @@ public:
 private:
     // TODO bad Tranform CommandType // the last brokes also presentations, as I understand
     static void rotateRender(IRenderer* pRender, const double& fileWidth, const double& fileHeight, const double& dAngle);
-    // TODO move it. // But shoud it be the kernel lib?
-    bool checkPageBlackList(int nPageIndex, const std::unordered_set<NSOnlineOfficeBinToPdf::CommandType>& oBlackList)const;
 };
 
 #endif // ASC_CEFCONVERTER_FILEPRINTER_H

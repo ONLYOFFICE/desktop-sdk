@@ -1251,6 +1251,8 @@ HRESULT NSQRenderer::CQRenderer::put_BrushGradientColors(LONG *lColors
 
         m_oBrush.m_arrSubColors.push_back(color);
     }
+
+    hasNotSupportetCommand = true;
     return S_OK;
 }
 
@@ -1859,6 +1861,11 @@ HRESULT NSQRenderer::CQRenderer::CommandString(const LONG &lType, const std::wst
 #endif
     // not used
     return S_OK;
+}
+
+bool NSQRenderer::CQRenderer::IsCorrectRendered() const
+{
+    return !hasNotSupportetCommand;
 }
 
 void NSQRenderer::CQRenderer::SetBaseTransform(double m11
