@@ -30,7 +30,7 @@
 #undef CreateDirectory
 #endif
 
-//#define TEST_ON_IMAGE
+#define TEST_ON_IMAGE
 
 // для теста печати файлом из js редакторов - нужен класс, который
 // конвертирует локальные картинки в абсолютные.
@@ -238,7 +238,6 @@ void printFirstPageOfFile(const std::wstring& sFile, NSQRenderer::CQRenderer* pR
     {
         pReader->LoadFromFile(sFile);
         pReader->DrawPageOnRenderer(pRenderer, 0, NULL);
-        pReader->
     }
 
     NSDirectory::DeleteDirectory(sTempDir);
@@ -285,12 +284,8 @@ int main(int argc, char *argv[])
     paintDevice.setDotsPerMeterY(nDpi / 0.0254);
     paintDevice.fill(Qt::GlobalColor::white);
 #else
-//    QPrinterInfo info = QPrinterInfo::printerInfo("Microsoft XPS Document Writer");
-    QPrinter paintDevice;
-//    paintDevice.setPageOrientation(QPageLayout::Landscape);
-    paintDevice.setOutputFileName("/home/ivaz28/Desktop/output.pdf");
-    QPrintDialog dialog(&paintDevice);
-    dialog.exec();
+    QPrinterInfo info = QPrinterInfo::printerInfo("Microsoft XPS Document Writer");
+    QPrinter paintDevice{info};
 #endif
 
     QAscPrinterContext oContext(&paintDevice);
@@ -301,8 +296,8 @@ int main(int argc, char *argv[])
     renderer.InitFonts(pFonts);
 
 #ifdef SUPPORT_DRAWING_FILE
-    if (NSFile::CFileBinary::Exists(L"/home/ivaz28/Desktop/albom.pdf"))
-        printFirstPageOfFile(L"/home/ivaz28/Desktop/albom.pdf", &renderer, pFonts);
+    if (NSFile::CFileBinary::Exists(sExamplePath + L"/sample.pdf"))
+        printFirstPageOfFile(sExamplePath + L"/sample.pdf", &renderer, pFonts);
     else if (NSFile::CFileBinary::Exists(sExamplePath + L"/sample.xps"))
         printFirstPageOfFile(sExamplePath + L"/sample.xps", &renderer, pFonts);
     else if (NSFile::CFileBinary::Exists(sExamplePath + L"/sample.djvu"))
@@ -312,7 +307,6 @@ int main(int argc, char *argv[])
         printJsBuffer(sExamplePath, &renderer);
 
     oContext.EndPaint();
-
 
     RELEASEINTERFACE(pFonts);
 
@@ -328,5 +322,5 @@ int main(int argc, char *argv[])
 #endif
 
 
-    return /*a.exec()*/0;
+    return a.exec();
 }

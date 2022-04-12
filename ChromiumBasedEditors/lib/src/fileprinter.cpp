@@ -204,23 +204,6 @@ void CPrintData::CalculateImagePaths(bool bIsOpenAsLocal)
     }
 }
 
-void CPrintData::rotateRender(IRenderer *pRender, const double &fPrintWidthMM, const double &fPrintHeightMM, const double &dAngle)
-{
-    double dAngleDeg = dAngle * 180.0 / M_PI;
-    if ((std::abs(dAngleDeg - 90) < 1.0) || (std::abs(dAngleDeg - 270) < 1.0))
-    {
-        double m11, m12, m21, m22, mdx, mdy;
-        const double fPrintSideRatio = fPrintHeightMM / fPrintWidthMM;
-        m11 = 0;
-        m12 = fPrintSideRatio/2;
-        m21 = -fPrintSideRatio;
-        m22 = 0;
-        mdx = fPrintHeightMM;
-        mdy = 0;
-        pRender->SetTransform(m11, m12, m21, m22, mdx, mdy);
-    }
-}
-
 #include "../../../../core/DesktopEditor/graphics/MetafileToRenderer.h"
 class CMetafileToRenderterDesktop : public IMetafileToRenderter
 {
@@ -1054,9 +1037,8 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
     nRasterH = (nRasterH - (nRasterH & 0x0F));
 #endif
 
-    IRenderer* pNativeRenderer(nullptr);
-    pNativeRenderer = (IRenderer*)pContext->GetNativeRenderer();
-    if (NULL != pNativeRenderer/* && false*/)
+    IRenderer* pNativeRenderer = (IRenderer*)pContext->GetNativeRenderer();
+    if (NULL != pNativeRenderer)
     {
         // TODO: check commands support
         bool bIsSupportCommands = true;
@@ -1065,16 +1047,9 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
         {
             pContext->InitRenderer(pNativeRenderer, m_pFontManager);
 
-//            m_oPainter.rotate(90);
-
-//            pNativeRenderer->SetTransform();
             // set base transform
-            rotateRender(pNativeRenderer, fPrintWidthMM, fPrintHeightMM, dAngle);
-
             if (NULL == m_pNativePrinter)
-            {
                 this->DrawOnRenderer(pNativeRenderer, nPageIndex);
-            }
             else
             {
                 pNativeRenderer->put_Width(fPageWidth);
@@ -1084,9 +1059,6 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
 
             if (m_pAdditional)
                 m_pAdditional->Check_Print(pNativeRenderer, m_pFontManager, nRasterW, nRasterH, fPageWidth, fPageHeight);
-
-//            mdx = -100; mdy = -150; m11 = 0; m12 = 0; m21 = 0; m22 = 0;
-//            pNativeRenderer->SetTransform(m11, m12, m21, m22, mdx, mdy);
 
             RELEASEINTERFACE(pNativeRenderer);
             return;
