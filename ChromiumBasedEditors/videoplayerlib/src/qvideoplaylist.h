@@ -124,6 +124,8 @@ public:
 
     void Next();
 
+    void PlayCurrent();
+
     void CheckStyles();
 
 public:

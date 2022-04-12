@@ -145,6 +145,13 @@ void QAscVideoWidget::mouseMoveEvent(QMouseEvent* e)
 
 void QAscVideoWidget::setPlay()
 {
+    if (m_sCurrentSource.isEmpty())
+    {
+        QAscVideoView* pView = (QAscVideoView*)(m_pParent->parentWidget());
+        pView->m_pInternal->m_pPlaylist->PlayCurrent();
+        return;
+    }
+
 #ifndef USE_VLC_LIBRARY
     m_pEngine->play();
 #else
@@ -187,6 +194,7 @@ void QAscVideoWidget::setSeek(int nPos)
 
 void QAscVideoWidget::open(QString& sFile)
 {
+    m_sCurrentSource = sFile;
 #ifndef USE_VLC_LIBRARY
     m_pEngine->setMedia(QMediaContent(QUrl::fromLocalFile(sFile)));
     m_pEngine->play();
