@@ -27,9 +27,9 @@ public:
     CVideoExt()
     {
         m_video_exts << "webm" << "mkv" << "flv" << "ogg" << "avi" << "mov" << "wmv" << "mp4" <<
-                        "m4v" << "mpg" << "mp2" << "mpeg" << "mpe" << "mpv" << "m2v" << "m4v" <<
+                        "mpg" << "mpeg" << "mpe" << "mpv" << "m2v" << "m4v" <<
                         "3gp" << "3g2" << "f4v" << "m2ts" << "mts";
-        m_audio_exts << "flac" << "mp3" << "ogg" << "wav" << "wma" << "ape";
+        m_audio_exts << "flac" << "mp3" << "ogg" << "wav" << "wma" << "ape" << "mp2";
     }
 
     QSet<QString> getQSet(bool isAddPoint = false)

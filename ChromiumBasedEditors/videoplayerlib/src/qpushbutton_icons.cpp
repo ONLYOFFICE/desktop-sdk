@@ -60,6 +60,7 @@ public:
         if (fabs(2.0 - m_dDpi) < 0.1)
             sPostfix = "-2x.png";
 
+        m_pButton->setIcon(QIcon());
         QString sStyle = "QPushButton {border-image:url(:/icons/" + m_sIconR + sPostfix + ") 0 0 0 0 stretch stretch;margin:0;padding:0;outline:none;}";
         sStyle += "QPushButton::hover {border-image:url(:/icons/" + m_sIconH + sPostfix + ") 0 0 0 0 stretch stretch;margin:0;padding:0;outline:none;}";
         sStyle += "QPushButton::pressed {border-image:url(:/icons/" + m_sIconP + sPostfix + ") 0 0 0 0 stretch stretch;margin:0;padding:0;outline:none;}";
