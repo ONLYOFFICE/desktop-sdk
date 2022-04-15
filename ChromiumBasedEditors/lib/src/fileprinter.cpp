@@ -197,7 +197,7 @@ void CPrintData::CalculateImagePaths(bool bIsOpenAsLocal)
             }
             //m_sPresentationThemesPath += (L"/" + m_sThemesUrl);
         }
-    }    
+    }
     else
     {
         m_sPresentationThemesPath = m_sThemesUrl;
@@ -295,7 +295,7 @@ std::wstring CPrintData::GetImagePath(const std::wstring& sPath)
             nPos += 6;
             sPath2 = L"media/" + sPath;
         }
-        
+
         std::wstring sUrl = m_sDocumentImagesPath + sPath2;
         std::wstring sUrl2 = L"";
         if (sExt == L"svg")
@@ -1038,6 +1038,8 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
 #endif
 
     // set base transform
+    RotateContext(pContext, fPageWidth, fPageHeight, fPrintWidthMM, fPrintHeightMM, dAngle);
+
     IRenderer* pNativeRenderer = (IRenderer*)pContext->GetNativeRenderer();
     if (NULL != pNativeRenderer)
     {
@@ -1048,7 +1050,6 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
         {
             pContext->InitRenderer(pNativeRenderer, m_pFontManager);
 
-            // set base transform
             if (NULL == m_pNativePrinter)
                 this->DrawOnRenderer(pNativeRenderer, nPageIndex);
             else
@@ -1108,11 +1109,30 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
 
     pContext->BitBlt(oFrame.get_Data(), 0, 0, nRasterW, nRasterH,
                      dLeftPix, dTopPix, dWidthPix, dHeightPix, dAngle);
-    
+
 #ifdef _XCODE
     oFrame.put_Data(NULL);
 #endif
 }
+
+void CPrintData::RotateContext(NSEditorApi::CAscPrinterContextBase *pContext, double fPageWidth, double fPageHeight, double fPrintWidthMM, double fPrintHeightMM, double dAngle)
+{
+    double dAngleDeg = dAngle * 180.0 / M_PI;
+
+    if ((std::abs(dAngleDeg - 90) < 1.0) || (std::abs(dAngleDeg - 270) < 1.0))
+    {
+        double m11, m12, m21, m22, dx, dy;
+
+        m11 = 0;
+        m12 =  fPageHeight / fPageWidth; // horizontal
+        m21 = -fPrintWidthMM / fPrintHeightMM; // vertival
+        m22 = 0;
+        dx = fPrintWidthMM;
+        dy = -2;
+        pContext->SetBaseTransform(m11, m12, m21, m22, dx, dy);
+    }
+}
+
 
 void CPrintData::FitToPage(float fSourceWidth, float  fSourceHeight, float  fTargetWidth, float fTargetHeight, float& fResX, float& fResY, float& fResWidth, float& fResHeight)
 {
