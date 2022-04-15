@@ -76,6 +76,8 @@ public:
 
     virtual void InitRenderer(void* pRenderer, void* pFontManager);
 
+    virtual void SetBaseTransform(double m11, double m12, double m21, double m22, double dx, double dy) override;
+
 private:
     void DrawImage(QPainter* painter, const QImage& image, const QRect& rect, const QRect& rectSrc);
     void setDefaults();
@@ -95,6 +97,9 @@ public:
 private:
     QPaintDevice* m_pDevice;
     PrintDeviceType m_eDeviceType;
+
+    bool m_hasBaseTransform=false;
+    double m_arrBaseTransformParameters[6];
 };
 
 #endif  // QASCPRINTER_H

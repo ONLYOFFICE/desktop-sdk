@@ -460,6 +460,13 @@ namespace NSEditorApi
         virtual void NewPage() {}
 
         virtual void InitRenderer(void* pRenderer, void* pFontManager) {}
+
+        virtual void SetBaseTransform(double m11
+                                      , double m12
+                                      , double m21
+                                      , double m22
+                                      , double dx
+                                      , double dy) {}
     };
 
     class CAscPrintPage : public IMenuEventDataBase

@@ -1037,6 +1037,7 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
     nRasterH = (nRasterH - (nRasterH & 0x0F));
 #endif
 
+    // set base transform
     IRenderer* pNativeRenderer = (IRenderer*)pContext->GetNativeRenderer();
     if (NULL != pNativeRenderer)
     {
