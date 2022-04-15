@@ -1122,6 +1122,8 @@ void CPrintData::RotateContext(NSEditorApi::CAscPrinterContextBase *pContext, do
     if ((std::abs(dAngleDeg - 90) < 1.0) || (std::abs(dAngleDeg - 270) < 1.0))
     {
         double m11, m12, m21, m22, dx, dy;
+        if (fPrintWidthMM < fPrintHeightMM)
+            std::swap(fPrintWidthMM, fPrintHeightMM);
 
         m11 = 0;
         m12 =  fPageHeight / fPageWidth; // horizontal
