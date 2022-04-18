@@ -92,6 +92,7 @@ void CPrintData::Print_End()
     m_mapImagesDelete.clear();
 
     m_nCurrentPage = -1;
+    m_arPages.clear();
 
     m_eEditorType = etDocument;
 }

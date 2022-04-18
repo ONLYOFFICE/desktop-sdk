@@ -4255,6 +4255,8 @@ return navigator.serviceWorker.register2.apply(this, arguments);\n\
 
         curFrame->ExecuteJavaScript("\
 window.addEventListener(\"DOMContentLoaded\", function(){\n\
+//if (window && window.AscCommon && window.AscCommon.checkDeviceScale) return;\n\
+if (window && window.Asc && window.Asc.plugin) return;\n\
 var _style = document.createElement(\"style\");\n\
 _style.type = \"text/css\";\n\
 _style.innerHTML = \"\
@@ -4274,6 +4276,17 @@ document.getElementsByTagName(\"head\")[0].appendChild(_style);\n\
 }, false);\n\
 \n\
 window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
+
+#ifndef CEF_VERSION_ABOVE_86
+        curFrame->ExecuteJavaScript("\
+if (!String.prototype.replaceAll) {\
+String.prototype.replaceAll = function (str, newStr) {\
+if (Object.prototype.toString.call(str).toLowerCase() === '[object regexp]')\
+    return this.replace(str, newStr);\
+return this.split(str).join(newStr);\
+};\
+}", curFrame->GetURL(), 0);
+#endif
 
         std::string sVar = pWrapper->m_sRendererProcessVariable.empty() ? "{}" : U_TO_UTF8(pWrapper->m_sRendererProcessVariable);
         NSStringUtils::string_replaceA(sVar, "\n", "");

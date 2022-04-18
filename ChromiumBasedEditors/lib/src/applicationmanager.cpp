@@ -92,7 +92,7 @@ CAscApplicationSettings::CAscApplicationSettings()
     user_providers_path             = L"";
 
     converter_application_name      = "ONLYOFFICE";
-    converter_application_company   = "Ascensio System SIA Copyright (c) 2018";
+    converter_application_company   = "Ascensio System SIA Copyright (c) 2022";
 }
 CAscApplicationSettings::~CAscApplicationSettings()
 {
@@ -1208,6 +1208,13 @@ void CAscApplicationManager::AddFileToLocalResolver(const std::wstring& sFile)
 void CAscApplicationManager::SetRendererProcessVariable(const std::wstring& sVariable)
 {
     m_pInternal->m_sRendererJSON = sVariable;
+}
+
+std::wstring CAscApplicationManager::GetExternalSchemeName()
+{
+    if (m_pInternal->m_pAdditional)
+        return m_pInternal->m_pAdditional->GetExternalSchemeName();
+    return L"oo-office";
 }
 
 bool NSCommon::CSystemWindowScale::g_isUseSystemScalingInit = false;
