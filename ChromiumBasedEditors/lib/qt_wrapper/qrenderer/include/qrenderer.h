@@ -300,6 +300,7 @@ namespace NSQRenderer
         //
         QPen pen() const;
         QBrush brush() const;
+        QBrush brush(const QRectF& rect) const;
         QFont font() const;
 
         //

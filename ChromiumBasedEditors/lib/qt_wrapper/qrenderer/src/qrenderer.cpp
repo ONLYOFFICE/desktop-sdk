@@ -1955,7 +1955,17 @@ void NSQRenderer::CQRenderer::fillPath()
         QTransform transform = m_pContext->GetPainter()->transform();
         m_pContext->GetPainter()->resetTransform();
         QPainterPath transformedPath = transform.map(m_oUntransformedPainterPath);
-        m_pContext->GetPainter()->fillPath(transformedPath, brush());
+        // Хотелось бы найти правильный масштаб для картинки, занести его в текстуру scaled картинкой
+        // Поворот занести в трансформ из старых m12 m21, смещая центр QPainter на центр фигуры.
+        // А смещение что-то не заносится никуда. И правильней бы сделать translate координат на верхний левый угол фигуры
+        QImage texture(QString::fromStdWString(m_oBrush.TexturePath));
+        QRectF rect(0,0, texture.width() * 1, texture.height() * 1);
+        QBrush qbrush = brush(rect);
+        m_pContext->GetPainter()->setTransform(QTransform(1, transform.m12(), transform.m21(), 1, 0,0));
+
+        // Через QImage нельзя так как бывают tile'ы (шаблон из картинки)
+//        m_pContext->GetPainter()->drawImage(0,0, QImage(QString::fromStdWString(m_oBrush.TexturePath)));
+        m_pContext->GetPainter()->fillPath(transformedPath, qbrush);
         // вешаем трансформ обратно
         m_pContext->GetPainter()->setTransform(transform);
     }
@@ -1973,6 +1983,11 @@ QPen NSQRenderer::CQRenderer::pen() const
 QBrush NSQRenderer::CQRenderer::brush() const
 {
     return NSConversions::brushInternalToQt(m_oBrush, pathRect());
+}
+
+QBrush NSQRenderer::CQRenderer::brush(const QRectF& rect) const
+{
+    return NSConversions::brushInternalToQt(m_oBrush, rect);
 }
 
 QFont NSQRenderer::CQRenderer::font() const
