@@ -1465,12 +1465,32 @@ public:
         }
         else
         {
+            // если true - то делаем архив 123.png.zip
+            // если false - то делаем папку 123.png
+            bool bIsAddZipToRasterFormats = false;
+            std::wstring sRasterDictionaryExtract = L"";
+
+            std::wstring sOutputFile = m_sOutputPath;
+
+            if (m_nOutputFormat & AVS_OFFICESTUDIO_FILE_IMAGE)
+            {
+                if (bIsAddZipToRasterFormats)
+                    sOutputFile += L".zip";
+                else
+                {
+                    sRasterDictionaryExtract = sOutputFile;
+                    sOutputFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"OL");
+                    if (NSFile::CFileBinary::Exists(sOutputFile))
+                        NSFile::CFileBinary::Remove(sOutputFile);
+                }
+            }
+
             std::wstring sAdditionXml = L"";
             NSStringUtils::CStringBuilder oBuilder;
             oBuilder.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><TaskQueueDataConvert><m_sFileFrom>");
             oBuilder.WriteEncodeXmlString(m_sRecoverFolder + L"/EditorWithChanges.bin");
             oBuilder.WriteString(L"</m_sFileFrom><m_sFileTo>");
-            oBuilder.WriteEncodeXmlString(m_sOutputPath);
+            oBuilder.WriteEncodeXmlString(sOutputFile);
             oBuilder.WriteString(L"</m_sFileTo><m_nFormatTo>");
 
             int nOutputFormat = NSCommon::CorrectSaveFormat(m_nOutputFormat);
@@ -1501,6 +1521,16 @@ public:
             if (!sAdditionXml.empty())
                 oBuilder.WriteString(sAdditionXml);
 
+            if (m_nOutputFormat & AVS_OFFICESTUDIO_FILE_IMAGE)
+            {
+                oBuilder.WriteString(L"<m_oThumbnail><first>false</first>");
+
+                if (m_nOutputFormat == AVS_OFFICESTUDIO_FILE_IMAGE_JPG)
+                    oBuilder.WriteString(L"<format>3</format>");
+
+                oBuilder.WriteString(L"</m_oThumbnail>");
+            }
+
             oBuilder.WriteString(L"</TaskQueueDataConvert>");
 
             std::wstring sTempFileForParams = m_sRecoverFolder + L"/params_simple_converter.xml";
@@ -1510,6 +1540,14 @@ public:
 
             NSFile::CFileBinary::Remove(sTempFileForParams);
             NSDirectory::DeleteDirectory(sDstTmpDir);
+
+            if (m_nOutputFormat & AVS_OFFICESTUDIO_FILE_IMAGE && !bIsAddZipToRasterFormats && 0 == nReturnCode)
+            {
+                NSDirectory::CreateDirectory(sRasterDictionaryExtract);
+                COfficeUtils oUtils;
+                oUtils.ExtractToDirectory(sOutputFile, sRasterDictionaryExtract, NULL, 0);
+                NSFile::CFileBinary::Remove(sOutputFile);
+            }
         }
 
         m_pEvents->OnFileConvertFromEditor(nReturnCode);
