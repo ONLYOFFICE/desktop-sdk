@@ -3564,7 +3564,7 @@ public:
             pData->put_W(dExtW);
             pData->put_H(dExtH);
 
-            double dKoef = (double)m_pParent->m_pInternal->m_dDeviceScale;
+            double dKoef = (double)m_pParent->GetDeviceScale();
             double dKoefToPix = 96 / 25.4;
             dKoefToPix *= dScale;
 
@@ -6405,7 +6405,26 @@ void CCefView::LoadReporter(void* reporter_data)
 
 double CCefView::GetDeviceScale()
 {
-    return m_pInternal->m_dDeviceScale;
+    if (m_pInternal->m_dDeviceScale >= 1)
+        return m_pInternal->m_dDeviceScale;
+
+    if (!m_pInternal->GetBrowser() || !m_pInternal->GetBrowser()->GetHost())
+        return 1;
+
+    CefWindowHandle hwnd = m_pInternal->GetBrowser()->GetHost()->GetWindowHandle();
+
+    unsigned int _dx = 0;
+    unsigned int _dy = 0;
+    double dDeviceScale = 1;
+#ifdef WIN32
+    Core_GetMonitorRawDpi(hwnd, &_dx, &_dy);
+    dDeviceScale = Core_GetMonitorScale(_dx, _dy);
+#else
+    int nDeviceScaleTmp = CAscApplicationManager::GetDpiChecker()->GetWidgetImplDpi(GetWidgetImpl(), &_dx, &_dy);
+    dDeviceScale = CAscApplicationManager::GetDpiChecker()->GetScale(_dx, _dy);
+#endif
+
+    return dDeviceScale;
 }
 
 CefRefPtr<CefFrame> CCefView_Private::CCloudCryptoUpload::GetFrame()
