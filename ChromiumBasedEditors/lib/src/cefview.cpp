@@ -194,7 +194,7 @@ public:
     {
         m_oCS.InitializeCriticalSection();
         m_bIsFromTimer = false;
-        m_dwIntervalCheck = 2000;
+        m_dwIntervalCheck = 5000;
         m_bIsSkipNextIteration = false;
         SetInterval(m_dwIntervalCheck);
     }
@@ -3565,13 +3565,11 @@ public:
             pData->put_H(dExtH);
 
             double dKoef = (double)m_pParent->GetDeviceScale();
-            double dKoefToPix = 96 / 25.4;
-            dKoefToPix *= dScale;
 
-            int nBoundsX = (int)(boundsX * dKoefToPix);
-            int nBoundsY = (int)(boundsY * dKoefToPix);
-            int nBoundsR = (int)(boundsR * dKoefToPix + 0.9);
-            int nBoundsB = (int)(boundsB * dKoefToPix + 0.9);
+            int nBoundsX = (int)(boundsX * dScale);
+            int nBoundsY = (int)(boundsY * dScale);
+            int nBoundsR = (int)(boundsR * dScale + 0.9);
+            int nBoundsB = (int)(boundsB * dScale + 0.9);
 
             pData->put_BoundsX((int)(dKoef * (nX + nBoundsX)));
             pData->put_BoundsY((int)(dKoef * (nY + nBoundsY)));
