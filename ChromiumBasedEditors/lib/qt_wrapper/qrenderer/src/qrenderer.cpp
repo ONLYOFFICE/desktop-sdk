@@ -1945,6 +1945,7 @@ void NSQRenderer::CQRenderer::setPaintingThings()
 
 void NSQRenderer::CQRenderer::fillPath()
 {
+    QPainter& painter = *(m_pContext->GetPainter());
     if (c_BrushTypeTexture == m_oBrush.Type)
     {
         // суть в том, что текстура должна быть в исходном виде
@@ -1952,26 +1953,48 @@ void NSQRenderer::CQRenderer::fillPath()
         // поэтому снимаем трансформ с painter'а
         // и отдельно трансформим path
         // получение brush'а при этом не меняется
-        QTransform transform = m_pContext->GetPainter()->transform();
-        m_pContext->GetPainter()->resetTransform();
+
+        QTransform transform = painter.transform();
+        painter.resetTransform();
+
         QPainterPath transformedPath = transform.map(m_oUntransformedPainterPath);
+        const qreal angle = std::atan2(transform.m12(), transform.m11()) / M_PI * 180.;
+        const qreal scaleX = std::sqrt(std::pow(transform.m11(),2) + std::pow(transform.m12(),2));
+        const qreal scaleY = std::sqrt(std::pow(transform.m21(),2) + std::pow(transform.m22(),2));
+        QTransform onlyScaledTransform = QTransform(scaleX, 0, 0, scaleY, 0, 0);
+        QPainterPath onlyScaledPath  = onlyScaledTransform.map(m_oUntransformedPainterPath);
         // Хотелось бы найти правильный масштаб для картинки, занести его в текстуру scaled картинкой
         // Поворот занести в трансформ из старых m12 m21, смещая центр QPainter на центр фигуры.
         // А смещение что-то не заносится никуда. И правильней бы сделать translate координат на верхний левый угол фигуры
-        QImage texture(QString::fromStdWString(m_oBrush.TexturePath));
-        QRectF rect(0,0, texture.width() * 1, texture.height() * 1);
-        QBrush qbrush = brush(rect);
-        m_pContext->GetPainter()->setTransform(QTransform(1, transform.m12(), transform.m21(), 1, 0,0));
+        const QRectF boundingRect = transformedPath.boundingRect();
+        const QRectF onlyScaledBoundingRect = onlyScaledPath.boundingRect();
+
+        const QPointF centerPoint = boundingRect.center();
+        const QPointF onlyScaledCenterPoint = onlyScaledBoundingRect.center();
+        const QPointF onlyScaledLTShapePoint = onlyScaledBoundingRect.topLeft();
+        const QPointF offsetPointBetweenCenterAndLT = onlyScaledCenterPoint - onlyScaledLTShapePoint;
+
+        painter.translate(centerPoint);
+        painter.rotate(angle);
+        painter.translate(-offsetPointBetweenCenterAndLT);
+        painter.scale(scaleX, scaleY);
+
+        QBrush qbrush = brush();
 
         // Через QImage нельзя так как бывают tile'ы (шаблон из картинки)
 //        m_pContext->GetPainter()->drawImage(0,0, QImage(QString::fromStdWString(m_oBrush.TexturePath)));
-        m_pContext->GetPainter()->fillPath(transformedPath, qbrush);
+        painter.fillPath(m_oUntransformedPainterPath, qbrush);
+
+        painter.scale(std::pow(scaleX, -1), std::pow(scaleY, -1));
+        painter.translate(offsetPointBetweenCenterAndLT);
+        painter.rotate(-angle);
+        painter.translate(-centerPoint);
         // вешаем трансформ обратно
-        m_pContext->GetPainter()->setTransform(transform);
+        painter.setTransform(transform);
     }
     else
     {
-        m_pContext->GetPainter()->fillPath(m_oUntransformedPainterPath, brush());
+        painter.fillPath(m_oUntransformedPainterPath, brush());
     }
 }
 
