@@ -1948,49 +1948,22 @@ void NSQRenderer::CQRenderer::fillPath()
     QPainter& painter = *(m_pContext->GetPainter());
     if (c_BrushTypeTexture == m_oBrush.Type)
     {
-        // суть в том, что текстура должна быть в исходном виде
-        // а так painter её скейлит
-        // поэтому снимаем трансформ с painter'а
-        // и отдельно трансформим path
-        // получение brush'а при этом не меняется
-
         QTransform transform = painter.transform();
-        painter.resetTransform();
 
-        QPainterPath transformedPath = transform.map(m_oUntransformedPainterPath);
-        const qreal angle = std::atan2(transform.m12(), transform.m11()) / M_PI * 180.;
         const qreal scaleX = std::sqrt(std::pow(transform.m11(),2) + std::pow(transform.m12(),2));
         const qreal scaleY = std::sqrt(std::pow(transform.m21(),2) + std::pow(transform.m22(),2));
-        QTransform onlyScaledTransform = QTransform(scaleX, 0, 0, scaleY, 0, 0);
-        QPainterPath onlyScaledPath  = onlyScaledTransform.map(m_oUntransformedPainterPath);
-        // Хотелось бы найти правильный масштаб для картинки, занести его в текстуру scaled картинкой
-        // Поворот занести в трансформ из старых m12 m21, смещая центр QPainter на центр фигуры.
-        // А смещение что-то не заносится никуда. И правильней бы сделать translate координат на верхний левый угол фигуры
-        const QRectF boundingRect = transformedPath.boundingRect();
-        const QRectF onlyScaledBoundingRect = onlyScaledPath.boundingRect();
+        const qreal unscaleX = 1./scaleX;
+        const qreal unscaleY = 1./scaleY;
 
-        const QPointF centerPoint = boundingRect.center();
-        const QPointF onlyScaledCenterPoint = onlyScaledBoundingRect.center();
-        const QPointF onlyScaledLTShapePoint = onlyScaledBoundingRect.topLeft();
-        const QPointF offsetPointBetweenCenterAndLT = onlyScaledCenterPoint - onlyScaledLTShapePoint;
+        painter.scale(unscaleX, unscaleY);
 
-        painter.translate(centerPoint);
-        painter.rotate(angle);
-        painter.translate(-offsetPointBetweenCenterAndLT);
+        QTransform scaledTransform(scaleX,0,0,scaleY,0,0);
+        QPainterPath scaledPath = scaledTransform.map(m_oUntransformedPainterPath);
+        QBrush qbrush = brush(scaledPath.boundingRect());
+        painter.fillPath(scaledPath, qbrush);
+
         painter.scale(scaleX, scaleY);
 
-        QBrush qbrush = brush();
-
-        // Через QImage нельзя так как бывают tile'ы (шаблон из картинки)
-//        m_pContext->GetPainter()->drawImage(0,0, QImage(QString::fromStdWString(m_oBrush.TexturePath)));
-        painter.fillPath(m_oUntransformedPainterPath, qbrush);
-
-        painter.scale(std::pow(scaleX, -1), std::pow(scaleY, -1));
-        painter.translate(offsetPointBetweenCenterAndLT);
-        painter.rotate(-angle);
-        painter.translate(-centerPoint);
-        // вешаем трансформ обратно
-        painter.setTransform(transform);
     }
     else
     {
