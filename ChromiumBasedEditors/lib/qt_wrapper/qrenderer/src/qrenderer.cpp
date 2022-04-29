@@ -95,12 +95,12 @@ namespace NSConversions
         case c_BrushTextureModeTile: // обычное выравнивание по левому верхнему углу
         case c_BrushTextureModeTileCenter: // пока не делаем
         {
-            textureBounds = QSize(std::roundl(textureDraft_1.size().width() * DPI_XY.width() / 100),
-                                  std::roundl(textureDraft_1.size().height() * DPI_XY.height() / 100));
+            textureBounds = QSize(std::roundl(textureDraft_1.size().width() * DPI_XY.width() / default_dots_per_inch),
+                                  std::roundl(textureDraft_1.size().height() * DPI_XY.height() / default_dots_per_inch));
             break;
         }
         default:
-            textureBounds = shapeBounds;
+            return textureDraft_2;
         } // switch (mode)
 
         if (textureBounds.isNull() || 0 == textureBounds.width() || 0 == textureBounds.height())
