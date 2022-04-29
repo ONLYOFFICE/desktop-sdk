@@ -60,7 +60,7 @@ namespace NSConversions
     }
 
     // image
-    QImage getTexture(const std::wstring &path, LONG alpha, LONG mode, const QSize &bounds)
+    QImage getTexture(const std::wstring &path, LONG alpha, LONG mode, const QSize &shapeBounds, const QSize &DPI_XY)
     {
         // texture path
         QString qtPath = QString::fromStdWString(path);
@@ -83,34 +83,43 @@ namespace NSConversions
         painter.drawImage(0, 0, textureDraft_1);
         painter.end();
 
+        QSize textureBounds;
         // texture mode
         switch (mode)
         {
-            // подгон по размеру path
-            case c_BrushTextureModeStretch:
-            {
-                if (bounds.isNull() || 0 == bounds.width() || 0 == bounds.height())
-                    return textureDraft_2;
-
-                QImage scaledTexture = textureDraft_2.scaled(
-                            bounds
-                            // расширяется, чтобы полностью заполнять path,
-                            // может вылезать за его пределы
-                            // можно сделать KeepAspectRatio -
-                            // чтобы расширялось, не вылезая, но заполняя не полностью
-                            // https://doc.qt.io/qt-5/qpixmap.html#scaled
-                            , Qt::AspectRatioMode::KeepAspectRatioByExpanding
-                            // ресайз медленно, но со сглаживанием
-                            // https://doc.qt.io/qt-5/qt.html#TransformationMode-enum
-                            , Qt::TransformationMode::SmoothTransformation
-                            );
-                return scaledTexture;
-            }
-            case c_BrushTextureModeTile: // обычное выравнивание по левому верхнему углу
-            case c_BrushTextureModeTileCenter: // пока не делаем
-            default:
-                return textureDraft_2;
+        case c_BrushTextureModeStretch: // подгон по размеру path
+        {
+            textureBounds = shapeBounds;
+            break;
+        }
+        case c_BrushTextureModeTile: // обычное выравнивание по левому верхнему углу
+        case c_BrushTextureModeTileCenter: // пока не делаем
+        {
+            textureBounds = QSize(std::roundl(textureDraft_1.size().width() * DPI_XY.width() / 100),
+                                  std::roundl(textureDraft_1.size().height() * DPI_XY.height() / 100));
+            break;
+        }
+        default:
+            textureBounds = shapeBounds;
         } // switch (mode)
+
+        if (textureBounds.isNull() || 0 == textureBounds.width() || 0 == textureBounds.height())
+            return textureDraft_2;
+
+        QImage scaledTexture = textureDraft_2.scaled(
+                    textureBounds
+                    // расширяется, чтобы полностью заполнять path,
+                    // может вылезать за его пределы
+                    // можно сделать KeepAspectRatio -
+                    // чтобы расширялось, не вылезая, но заполняя не полностью
+                    // https://doc.qt.io/qt-5/qpixmap.html#scaled
+                    , Qt::AspectRatioMode::KeepAspectRatioByExpanding
+                    // ресайз медленно, но со сглаживанием
+                    // https://doc.qt.io/qt-5/qt.html#TransformationMode-enum
+                    , Qt::TransformationMode::SmoothTransformation
+                    );
+
+        return scaledTexture;
     }
 
     QPen penInternalToQt(const NSStructures::CPen &pen)
@@ -246,7 +255,7 @@ namespace NSConversions
         return result;
     }
 
-    QBrush brushInternalToQt(const NSStructures::CBrush &brush, const QRectF &pathRect)
+    QBrush brushInternalToQt(const NSStructures::CBrush &brush, const QRectF &pathRect, const QSize &DPI_XY)
     {
         // type
         // color 1
@@ -273,7 +282,7 @@ namespace NSConversions
             case c_BrushTypeTexture:
             {
                 QBrush result;
-                QImage texture = getTexture(brush.TexturePath, brush.TextureAlpha, brush.TextureMode, pathRect.size().toSize());
+                QImage texture = getTexture(brush.TexturePath, brush.TextureAlpha, brush.TextureMode, pathRect.size().toSize(), DPI_XY);
 
                 if (texture.isNull())
                     return result;
@@ -1757,7 +1766,7 @@ HRESULT NSQRenderer::CQRenderer::DrawImageFromFile(const std::wstring &filePath
 
     QImage alphedImage = NSConversions::getTexture(filePath, lAlpha
                                                    // любое число, не являющееся c_BrushTextureMode
-                                                   , 42, {});
+                                                   , 42, {}, getDPI_XY());
     if (alphedImage.isNull()) {
         return S_FALSE;
     }
@@ -1976,14 +1985,22 @@ QPen NSQRenderer::CQRenderer::pen() const
     return NSConversions::penInternalToQt(m_oPen);
 }
 
-QBrush NSQRenderer::CQRenderer::brush() const
+QBrush NSQRenderer::CQRenderer::brush()
 {
-    return NSConversions::brushInternalToQt(m_oBrush, pathRect());
+    return NSConversions::brushInternalToQt(m_oBrush, pathRect(), getDPI_XY());
 }
 
-QBrush NSQRenderer::CQRenderer::brush(const QRectF& rect) const
+QBrush NSQRenderer::CQRenderer::brush(const QRectF& rect)
 {
-    return NSConversions::brushInternalToQt(m_oBrush, rect);
+    return NSConversions::brushInternalToQt(m_oBrush, rect, getDPI_XY());
+}
+
+QSize NSQRenderer::CQRenderer::getDPI_XY()
+{
+    int nDpiX, nDpiY;
+    m_pContext->GetLogicalDPI(nDpiX, nDpiY);
+
+    return QSize(nDpiX, nDpiY);
 }
 
 QFont NSQRenderer::CQRenderer::font() const
