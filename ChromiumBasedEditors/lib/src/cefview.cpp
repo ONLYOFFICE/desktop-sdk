@@ -2573,6 +2573,7 @@ public:
             std::string sParams     = args->GetString(0).ToString();
             std::wstring sPassword  = args->GetString(1).ToWString();
             std::wstring sDocInfo   = args->GetString(2).ToWString();
+            int nSaveFileType       = args->GetInt(3);
 
             bool bIsSaveAs = (sParams.find("saveas=true") != std::string::npos) ? true : false;
 
@@ -2605,7 +2606,10 @@ public:
                     pData->put_Path(NSFile::GetFileName(m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc));
 
                 pData->put_FileType(m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat);
-                m_pParent->m_pInternal->LocalFile_GetSupportSaveFormats(pData->get_SupportFormats());
+                if (nSaveFileType == 0)
+                    m_pParent->m_pInternal->LocalFile_GetSupportSaveFormats(pData->get_SupportFormats());
+                else
+                    pData->get_SupportFormats().push_back(nSaveFileType);
                 pEvent->m_pData = pData;
 
                 pListener->OnEvent(pEvent);
@@ -4910,6 +4914,12 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
     }
     if (!LocalFile_IsSupportEditFormat(m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat))
     {
+        bIsSavedFileCurrent = false;
+    }
+    if (m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM &&
+            nOldFormat != AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
+    {
+        // значит был saveAs. мы не можем переходить из интерфейса редактора в интерфейс заполнения
         bIsSavedFileCurrent = false;
     }
 
