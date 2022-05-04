@@ -1518,6 +1518,25 @@ HRESULT NSQRenderer::CQRenderer::EndCommand(const DWORD &lType)
 #ifdef ENABLE_LOGS
     TELL << lType;
 #endif
+    switch (lType)
+    {
+    case c_nClipType:
+    {
+        m_bIsSetupClip = true;
+        m_oUntransformedClipPath = m_oUntransformedPainterPath;
+        break;
+    }
+    case c_nResetClipType:
+    {
+        m_bIsSetupClip = false;
+        m_oUntransformedClipPath.clear();
+        m_pContext->GetPainter()->setClipping(false);
+        break;
+    }
+    default:
+        break;
+    };
+
     m_lCurrentCommand = c_nNone;
     return S_FALSE;
 }
@@ -1949,6 +1968,11 @@ void NSQRenderer::CQRenderer::setPaintingThings()
     {
         m_bBrushChanged = false;
         m_pContext->GetPainter()->setBrush(brush());
+    }
+    if (m_bIsSetupClip)
+    {
+        m_pContext->GetPainter()->setClipping(true);
+        m_pContext->GetPainter()->setClipPath(m_oUntransformedClipPath);
     }
 }
 

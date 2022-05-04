@@ -266,6 +266,8 @@ namespace NSQRenderer
 
         QAscPrinterContext* m_pContext;
         QPainterPath m_oUntransformedPainterPath{};
+        QPainterPath m_oUntransformedClipPath{};
+        bool m_bIsSetupClip{false};
 
         QTransform m_oCoordTransform{};
         QTransform m_oBaseTransform{};
