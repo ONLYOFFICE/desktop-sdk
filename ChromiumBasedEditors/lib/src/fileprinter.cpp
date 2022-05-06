@@ -1131,7 +1131,7 @@ void CPrintData::RotateContext(NSEditorApi::CAscPrinterContextBase *pContext, do
         m21 = -fPrintWidthMM / fPrintHeightMM; // vertival
         m22 = 0;
         dx = fPrintWidthMM;
-        dy = -2;
+        dy = 0;
         pContext->SetBaseTransform(m11, m12, m21, m22, dx, dy);
     }
 }
