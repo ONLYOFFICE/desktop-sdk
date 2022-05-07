@@ -1241,6 +1241,7 @@ public:
     void LocalFile_SaveStart(std::wstring sPath = L"", int nType = -1)
     {
         m_oLocalInfo.SetupOptions(m_oConverterFromEditor.m_oInfo);
+        m_oLocalInfo.m_oInfo.m_sSaveJsonParams = L"";
         m_oLocalInfo.m_oInfo.m_sDocumentInfo = L"";
 
         m_oConverterFromEditor.m_nTypeEditorFormat = m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat;
@@ -2574,6 +2575,7 @@ public:
             std::wstring sPassword  = args->GetString(1).ToWString();
             std::wstring sDocInfo   = args->GetString(2).ToWString();
             int nSaveFileType       = args->GetInt(3);
+            std::wstring sSaveParams = args->GetString(4);
 
             bool bIsSaveAs = (sParams.find("saveas=true") != std::string::npos) ? true : false;
 
@@ -2593,6 +2595,7 @@ public:
             m_pParent->m_pInternal->m_oLocalInfo.m_bIsRetina = (sParams.find("retina=true") != std::string::npos) ? true : false;
             m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sPassword = sPassword;
             m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sDocumentInfo = sDocInfo;
+            m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sSaveJsonParams = sSaveParams;
 
             if (bIsNeedSaveDialog)
             {

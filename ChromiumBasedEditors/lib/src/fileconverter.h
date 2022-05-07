@@ -94,6 +94,7 @@ public:
     bool m_bIsModified;
 
     std::wstring m_sPassword;
+    std::wstring m_sSaveJsonParams;
 
     std::wstring m_sDocumentInfo;
 
@@ -121,6 +122,7 @@ public:
 
         m_sPassword = oSrc.m_sPassword;
         m_sDocumentInfo = oSrc.m_sDocumentInfo;
+        m_sSaveJsonParams = oSrc.m_sSaveJsonParams;
         return *this;
     }
 };
@@ -1166,11 +1168,25 @@ public:
         }
         m_oInfo.m_sDocumentInfo = L"";
 
-        oBuilder.WriteString(L"<m_sJsonParams>{");
-        oBuilder.WriteEncodeXmlString(L"\"spreadsheetLayout\":{\"fitToWidth\":1,\"fitToHeight\":1}");
-        if (m_bIsRetina)
-            oBuilder.WriteEncodeXmlString(L",\"printOptions\":{\"retina\":1}");
-        oBuilder.WriteString(L"}</m_sJsonParams>");
+        oBuilder.WriteString(L"<m_sJsonParams>");
+
+        if (m_oInfo.m_sSaveJsonParams.empty())
+        {
+            oBuilder.WriteString(L"{");
+
+            oBuilder.WriteEncodeXmlString(L"\"spreadsheetLayout\":{\"fitToWidth\":1,\"fitToHeight\":1}");
+            if (m_bIsRetina)
+                oBuilder.WriteEncodeXmlString(L",\"printOptions\":{\"retina\":1}");
+
+            oBuilder.WriteString(L"}");
+        }
+        else
+        {
+            oBuilder.WriteEncodeXmlString(m_oInfo.m_sSaveJsonParams);
+            m_oInfo.m_sSaveJsonParams = L"";
+        }
+
+        oBuilder.WriteString(L"</m_sJsonParams>");
 
         // disable cache
         oBuilder.WriteString(L"<m_nDoctParams>1</m_nDoctParams>");
