@@ -104,6 +104,7 @@ public:
 
     void resizeEvent();
     void moveEvent();
+    bool isDoubleResizeEvent();
 
     void Apply(NSEditorApi::CAscMenuEvent* );
     NSEditorApi::CAscMenuEvent* ApplySync(NSEditorApi::CAscMenuEvent* );

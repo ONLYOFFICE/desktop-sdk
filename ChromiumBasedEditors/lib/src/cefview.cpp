@@ -1517,6 +1517,11 @@ public:
     CCefView* m_pParent;
     bool m_bIsLoaded;
 
+    // в виндоус есть баг с ресайзом. лечится "двойным" ресайзом.
+    // но на всяких loaded - его нужно отключать
+    bool m_bIsDisableResizeOnLoaded;
+    bool m_bIsDisableResizeOnLoadedOneCall;
+
     bool m_bIsEditorTypeSet;
     int m_nBeforeBrowserCounter;
 
@@ -1542,6 +1547,9 @@ public:
     {
         m_pParent = NULL;
         m_bIsLoaded = false;
+
+        m_bIsDisableResizeOnLoaded = false;
+        m_bIsDisableResizeOnLoadedOneCall = false;
 
         m_bIsEditorTypeSet = false;
         m_nBeforeBrowserCounter = 0;
@@ -2046,7 +2054,8 @@ public:
                                                  #endif
                                                          is_redirect);
         if (NULL != m_pParent)
-        {            
+        {
+            m_bIsDisableResizeOnLoadedOneCall = true;
             m_pParent->resizeEvent();
             m_pParent->focus();
 
@@ -3868,7 +3877,12 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
             // вот тут уже можно делать зум!!!
             m_pParent->m_pInternal->m_bIsWindowsCheckZoom = true;
             m_pParent->m_pInternal->m_dDeviceScale = -1;
+
+            m_bIsDisableResizeOnLoadedOneCall = true;
             m_pParent->resizeEvent();
+
+            if (CAscApplicationManager::IsUseSystemScaling())
+                m_bIsDisableResizeOnLoaded = true;
         }
     }
 
@@ -3882,6 +3896,7 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
         // вот тут уже можно делать зум!!!
         m_pParent->m_pInternal->m_bIsWindowsCheckZoom = true;
         m_pParent->m_pInternal->m_dDeviceScale = -1;
+        m_bIsDisableResizeOnLoadedOneCall = true;
         m_pParent->resizeEvent();
     }
 
@@ -5648,6 +5663,22 @@ void CCefView::moveEvent()
 
     if (m_pInternal->m_handler && m_pInternal->m_handler->GetBrowser() && m_pInternal->m_handler->GetBrowser()->GetHost())
         m_pInternal->m_handler->GetBrowser()->GetHost()->NotifyMoveOrResizeStarted();
+}
+
+bool CCefView::isDoubleResizeEvent()
+{
+#ifdef _WIN32
+    if (!m_pInternal->m_handler)
+        return true;
+
+    bool bOld = m_pInternal->m_handler->m_bIsDisableResizeOnLoadedOneCall;
+    m_pInternal->m_handler->m_bIsDisableResizeOnLoadedOneCall = false;
+    if (!m_pInternal->m_handler->m_bIsDisableResizeOnLoaded)
+        return true;
+    return !bOld;
+#endif
+
+    return false;
 }
 
 void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
