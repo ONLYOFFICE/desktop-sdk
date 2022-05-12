@@ -193,6 +193,68 @@ namespace NSCommon
         }
         return nFormat;
     }
+
+    class CSystemWindowScale
+    {
+    private:
+        static bool g_isUseSystemScalingInit;
+        static bool g_isUseSystemScaling;
+
+    public:
+        static bool IsInit()
+        {
+            return g_isUseSystemScalingInit;
+        }
+
+        static void SetUseSystemScaling(const bool& bIsUse)
+        {
+            g_isUseSystemScalingInit = true;
+            g_isUseSystemScaling = bIsUse;
+        }
+
+        static bool IsUseSystemScaling()
+        {
+            if (g_isUseSystemScalingInit)
+                return g_isUseSystemScaling;
+
+            g_isUseSystemScalingInit = true;
+
+        #ifdef _MAC
+            g_isUseSystemScaling = true;
+        #else
+        #ifdef _LINUX
+            g_isUseSystemScaling = false;
+        #else
+            bool bIsCheckSystem = true; // uncomment for auto-system mode
+
+            if (!bIsCheckSystem)
+            {
+                g_isUseSystemScaling = false;
+                return g_isUseSystemScaling;
+            }
+
+            DWORD nOSVersion = 0;
+            NTSTATUS(WINAPI *RtlGetVersion)(LPOSVERSIONINFOEXW);
+            *(FARPROC*)&RtlGetVersion = GetProcAddress(GetModuleHandleA("ntdll"), "RtlGetVersion");
+
+            if (NULL != RtlGetVersion)
+            {
+                OSVERSIONINFOEXW osInfo;
+                osInfo.dwOSVersionInfoSize = sizeof(osInfo);
+                RtlGetVersion(&osInfo);
+                nOSVersion = osInfo.dwMajorVersion;
+            }
+
+            if (nOSVersion >= 10)
+                g_isUseSystemScaling = true;
+            else
+                g_isUseSystemScaling = false;
+        #endif
+        #endif
+
+            return g_isUseSystemScaling;
+        }
+    };
 }
 
 class CAscReporterData
@@ -1699,6 +1761,19 @@ public:
             m_bIsUseSpellCheckKeyboardInput = ("0" == pairSpell->second) ? false : true;
         else
             m_bIsUseSpellCheckKeyboardInput = true;
+
+        std::map<std::string, std::string>::iterator pairDEBUG = _map->find("ascdesktop-support-debug-info-keep");
+        if (pairDEBUG != _map->end() && "1" == pairDEBUG->second)
+            m_bDebugInfoSupport = true;
+
+        if (!NSCommon::CSystemWindowScale::IsInit())
+        {
+            std::map<std::string, std::string>::iterator pairUseSystemScale = _map->find("system-scale");
+            if (pairUseSystemScale != _map->end() && (NSStringUtils::GetDouble(pairUseSystemScale->second) < 0.5))
+            {
+                NSCommon::CSystemWindowScale::SetUseSystemScaling(false);
+            }
+        }
 
         m_oKeyboardChecker.SetEnabled(m_bIsUseSpellCheckKeyboardInput);
     }

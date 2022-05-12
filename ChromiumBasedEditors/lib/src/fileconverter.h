@@ -94,6 +94,7 @@ public:
     bool m_bIsModified;
 
     std::wstring m_sPassword;
+    std::wstring m_sSaveJsonParams;
 
     std::wstring m_sDocumentInfo;
 
@@ -121,6 +122,7 @@ public:
 
         m_sPassword = oSrc.m_sPassword;
         m_sDocumentInfo = oSrc.m_sDocumentInfo;
+        m_sSaveJsonParams = oSrc.m_sSaveJsonParams;
         return *this;
     }
 };
@@ -525,7 +527,9 @@ public:
         m_pView = NULL;
 
         m_bIsNativeOpening = false;
-        m_bIsNativeSupport = true;
+
+        // перешли на новый вьюер => отключили старый
+        m_bIsNativeSupport = false;
 
         m_pVerifier = NULL;
 
@@ -739,12 +743,14 @@ public:
             return 0;
         }
 
-        if (m_bIsNativeSupport && m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
+        if (m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
         {
-            NSDirectory::CreateDirectory(m_oInfo.m_sRecoveryDir + L"/media");
-            this->NativeViewerOpen(true); // async. sleep!!!
+            if (m_bIsNativeSupport)
+            {
+                NSDirectory::CreateDirectory(m_oInfo.m_sRecoveryDir + L"/media");
+                this->NativeViewerOpen(true); // async. sleep!!!
+            }
             m_pEvents->OnFileConvertToEditor(0);
-
             m_bRunThread = FALSE;
             return 0;
         }
@@ -1162,11 +1168,25 @@ public:
         }
         m_oInfo.m_sDocumentInfo = L"";
 
-        oBuilder.WriteString(L"<m_sJsonParams>{");
-        oBuilder.WriteEncodeXmlString(L"\"spreadsheetLayout\":{\"fitToWidth\":1,\"fitToHeight\":1}");
-        if (m_bIsRetina)
-            oBuilder.WriteEncodeXmlString(L",\"printOptions\":{\"retina\":1}");
-        oBuilder.WriteString(L"}</m_sJsonParams>");
+        oBuilder.WriteString(L"<m_sJsonParams>");
+
+        if (m_oInfo.m_sSaveJsonParams.empty())
+        {
+            oBuilder.WriteString(L"{");
+
+            oBuilder.WriteEncodeXmlString(L"\"spreadsheetLayout\":{\"fitToWidth\":1,\"fitToHeight\":1}");
+            if (m_bIsRetina)
+                oBuilder.WriteEncodeXmlString(L",\"printOptions\":{\"retina\":1}");
+
+            oBuilder.WriteString(L"}");
+        }
+        else
+        {
+            oBuilder.WriteEncodeXmlString(m_oInfo.m_sSaveJsonParams);
+            m_oInfo.m_sSaveJsonParams = L"";
+        }
+
+        oBuilder.WriteString(L"</m_sJsonParams>");
 
         // disable cache
         oBuilder.WriteString(L"<m_nDoctParams>1</m_nDoctParams>");
@@ -1461,12 +1481,32 @@ public:
         }
         else
         {
+            // если true - то делаем архив 123.png.zip
+            // если false - то делаем папку 123.png
+            bool bIsAddZipToRasterFormats = false;
+            std::wstring sRasterDictionaryExtract = L"";
+
+            std::wstring sOutputFile = m_sOutputPath;
+
+            if (m_nOutputFormat & AVS_OFFICESTUDIO_FILE_IMAGE)
+            {
+                if (bIsAddZipToRasterFormats)
+                    sOutputFile += L".zip";
+                else
+                {
+                    sRasterDictionaryExtract = sOutputFile;
+                    sOutputFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"OL");
+                    if (NSFile::CFileBinary::Exists(sOutputFile))
+                        NSFile::CFileBinary::Remove(sOutputFile);
+                }
+            }
+
             std::wstring sAdditionXml = L"";
             NSStringUtils::CStringBuilder oBuilder;
             oBuilder.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><TaskQueueDataConvert><m_sFileFrom>");
             oBuilder.WriteEncodeXmlString(m_sRecoverFolder + L"/EditorWithChanges.bin");
             oBuilder.WriteString(L"</m_sFileFrom><m_sFileTo>");
-            oBuilder.WriteEncodeXmlString(m_sOutputPath);
+            oBuilder.WriteEncodeXmlString(sOutputFile);
             oBuilder.WriteString(L"</m_sFileTo><m_nFormatTo>");
 
             int nOutputFormat = NSCommon::CorrectSaveFormat(m_nOutputFormat);
@@ -1497,6 +1537,16 @@ public:
             if (!sAdditionXml.empty())
                 oBuilder.WriteString(sAdditionXml);
 
+            if (m_nOutputFormat & AVS_OFFICESTUDIO_FILE_IMAGE)
+            {
+                oBuilder.WriteString(L"<m_oThumbnail><first>false</first>");
+
+                if (m_nOutputFormat == AVS_OFFICESTUDIO_FILE_IMAGE_JPG)
+                    oBuilder.WriteString(L"<format>3</format>");
+
+                oBuilder.WriteString(L"</m_oThumbnail>");
+            }
+
             oBuilder.WriteString(L"</TaskQueueDataConvert>");
 
             std::wstring sTempFileForParams = m_sRecoverFolder + L"/params_simple_converter.xml";
@@ -1506,6 +1556,14 @@ public:
 
             NSFile::CFileBinary::Remove(sTempFileForParams);
             NSDirectory::DeleteDirectory(sDstTmpDir);
+
+            if (m_nOutputFormat & AVS_OFFICESTUDIO_FILE_IMAGE && !bIsAddZipToRasterFormats && 0 == nReturnCode)
+            {
+                NSDirectory::CreateDirectory(sRasterDictionaryExtract);
+                COfficeUtils oUtils;
+                oUtils.ExtractToDirectory(sOutputFile, sRasterDictionaryExtract, NULL, 0);
+                NSFile::CFileBinary::Remove(sOutputFile);
+            }
         }
 
         m_pEvents->OnFileConvertFromEditor(nReturnCode);

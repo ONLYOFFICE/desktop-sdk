@@ -44,6 +44,7 @@ class QAscVideoWidget : public QASCVIDEOBASE
     Q_OBJECT
 
     QMediaPlayer* m_pEngine;
+    QString m_sCurrentSource;
 
 #ifdef USE_VLC_LIBRARY
     VlcMediaPlayer* m_pVlcPlayer;

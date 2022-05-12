@@ -644,6 +644,42 @@ void QVideoPlaylist::_onThreadFunc()
     return;
 }
 
+void QVideoPlaylist::PlayCurrent()
+{
+    QStandardItemModel* pModel = (QStandardItemModel*)m_pListView->model();
+    int nRows = pModel->rowCount();
+    int nRow = -1;
+
+    if (0 == nRows)
+    {
+        // файлов нет - показыаем файл диалог
+        slotButtonAdd();
+        nRows = pModel->rowCount();
+    }
+    if (0 == nRows)
+        return;
+
+    for (int i = 0; i < nRows; i++)
+    {
+        QStandardItem* item1 = pModel->item(i, 0);
+
+        if (item1->font().bold())
+        {
+            nRow = i;
+            break;
+        }
+    }
+
+    if (-1 == nRow)
+        nRow = m_pListView->selectionModel()->currentIndex().row();
+
+    if (-1 == nRow)
+        nRow = 0;
+
+    m_pListView->setCurrentIndex(pModel->index(nRow, 0));
+    m_pListView->activated(pModel->index(nRow, 0));
+}
+
 void QVideoPlaylist::Next()
 {
     QStandardItemModel* pModel = (QStandardItemModel*)m_pListView->model();

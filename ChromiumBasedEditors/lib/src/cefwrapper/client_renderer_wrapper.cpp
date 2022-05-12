@@ -1576,6 +1576,8 @@ DE.controllers.Main.DisableVersionHistory(); \
             message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
             message->GetArgumentList()->SetString(1, ((arguments.size() > 1) && arguments[1]->IsString()) ? arguments[1]->GetStringValue() : "");
             message->GetArgumentList()->SetString(2, ((arguments.size() > 2) && arguments[2]->IsString()) ? arguments[2]->GetStringValue() : "");
+            message->GetArgumentList()->SetInt(3, (arguments.size() > 3) ? arguments[3]->GetIntValue() : 0);
+            message->GetArgumentList()->SetString(4, ((arguments.size() > 4) && arguments[4]->IsString()) ? arguments[4]->GetStringValue() : "");
             SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
@@ -3626,6 +3628,12 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
 #endif
             return true;
         }
+        else if (name == "GetCurrentWindowInfo")
+        {
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("get_current_window_info");
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+            return true;
+        }
 
         // Function does not exist.
         return false;
@@ -4007,7 +4015,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
 
-    #define EXTEND_METHODS_COUNT 159
+    #define EXTEND_METHODS_COUNT 160
     const char* methods[EXTEND_METHODS_COUNT] = {
         "Copy",
         "Paste",
@@ -4225,6 +4233,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
         "GetOpenedFile",
 
+        "GetCurrentWindowInfo",
+
         NULL
     };
 
@@ -4247,6 +4257,8 @@ return navigator.serviceWorker.register2.apply(this, arguments);\n\
 
         curFrame->ExecuteJavaScript("\
 window.addEventListener(\"DOMContentLoaded\", function(){\n\
+//if (window && window.AscCommon && window.AscCommon.checkDeviceScale) return;\n\
+if (window && window.Asc && window.Asc.plugin) return;\n\
 var _style = document.createElement(\"style\");\n\
 _style.type = \"text/css\";\n\
 _style.innerHTML = \"\
@@ -4266,6 +4278,17 @@ document.getElementsByTagName(\"head\")[0].appendChild(_style);\n\
 }, false);\n\
 \n\
 window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
+
+#ifndef CEF_VERSION_ABOVE_86
+        curFrame->ExecuteJavaScript("\
+if (!String.prototype.replaceAll) {\
+String.prototype.replaceAll = function (str, newStr) {\
+if (Object.prototype.toString.call(str).toLowerCase() === '[object regexp]')\
+    return this.replace(str, newStr);\
+return this.split(str).join(newStr);\
+};\
+}", curFrame->GetURL(), 0);
+#endif
 
         std::string sVar = pWrapper->m_sRendererProcessVariable.empty() ? "{}" : U_TO_UTF8(pWrapper->m_sRendererProcessVariable);
         NSStringUtils::string_replaceA(sVar, "\n", "");
@@ -4500,10 +4523,18 @@ window.AscDesktopEditor.InitJSContext();", curFrame->GetURL(), 0);
 
             int nFileDataLen = 0;
 
+            std::wstring sBinaryFile = sFolder + L"/Editor.bin";
+            if (!NSFile::CFileBinary::Exists(sBinaryFile))
+            {
+                std::wstring sBinaryFileCrossPlatform = sFolder + L"/" + NSFile::GetFileName(sFileSrc);
+                if (NSFile::CFileBinary::Exists(sBinaryFileCrossPlatform))
+                    sBinaryFile = sBinaryFileCrossPlatform;
+            }
+
 #ifdef CEF_V8_SUPPORT_TYPED_ARRAYS
-            std::string sFileData = GetFileData2(sFolder + L"/Editor.bin", nFileDataLen);
+            std::string sFileData = GetFileData2(sBinaryFile, nFileDataLen);
 #else
-            std::string sFileData = GetFileData(sFolder + L"/Editor.bin", nFileDataLen);
+            std::string sFileData = GetFileData(sBinaryFile, nFileDataLen);
 #endif
 
             std::string sCode = "window.AscDesktopEditor.LocalFileRecoverFolder(\"" + U_TO_UTF8(sFolderJS) +

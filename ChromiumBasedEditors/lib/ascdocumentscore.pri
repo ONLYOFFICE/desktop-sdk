@@ -35,7 +35,8 @@ build_xp {
     DESTDIR=$$DESTDIR/xp
 } else {
     DEFINES += ENABLE_CEF_EXTENSIONS
-    !core_linux {
+    core_linux:!cef_version_87:CONFIG += cef_disable_87
+    !cef_disable_87 {
         DEFINES += CEF_VERSION_ABOVE_86
         CEF_PROJECT_PRI=$$PWD/cef_pri_87
     }

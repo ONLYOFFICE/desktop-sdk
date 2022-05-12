@@ -58,13 +58,16 @@
 
 static int IsForceDpiRound()
 {
-#ifndef MAC_NO_MAIN_PROCESS
+    if (CAscApplicationManager::IsUseSystemScaling())
+        return 0;
+
     if (NULL != CAscApplicationManager::GetDpiChecker())
     {
         // управляем зумом
         return 1;
     }
-#endif
+
+    return 0;
 
 #ifdef WIN32
     HWND hwnd = GetDesktopWindow();
@@ -212,8 +215,6 @@ public:
     }
 };
 
-#ifndef MAC_NO_MAIN_PROCESS
-
 #ifdef CEF_2623
 #include "cefclient/browser/client_app_browser.h"
 #else
@@ -279,7 +280,11 @@ public:
 
             //command_line->AppendSwitch("--allow-running-insecure-content");
 
-            std::string sAppNavigator = "Chrome/" + std::to_string(CEF_VERSION_MAJOR) + " AscDesktopEditor/6.2.0";
+            std::string sAppNavigator = "Chrome/" + std::to_string(CEF_VERSION_MAJOR) + " AscDesktopEditor/7.1.0";
+#ifdef CEF_2623
+            sAppNavigator += " windowsXP";
+#endif
+
             command_line->AppendSwitchWithValue("--product-version", sAppNavigator);
 
             int forceDpi = IsForceDpiRound();
@@ -323,9 +328,6 @@ public:
 public:
     IMPLEMENT_REFCOUNTING(CAscClientAppBrowser);
 };
-#endif
-
-#ifndef MAC_NO_SUB_PROCESS
 
 #ifdef CEF_2623
 #include "cefclient/renderer/client_app_renderer.h"
@@ -480,6 +482,5 @@ public:
     }
 #endif
 };
-#endif
 
 #endif

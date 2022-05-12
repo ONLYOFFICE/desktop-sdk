@@ -194,7 +194,7 @@ public:
     {
         m_oCS.InitializeCriticalSection();
         m_bIsFromTimer = false;
-        m_dwIntervalCheck = 2000;
+        m_dwIntervalCheck = 5000;
         m_bIsSkipNextIteration = false;
         SetInterval(m_dwIntervalCheck);
     }
@@ -375,6 +375,7 @@ public:
 
     virtual void Check(std::vector<CPagePrintData>& arPages)
     {
+        arPages.clear();
         int nPagesCount = m_pReader->GetPagesCount();
         for (int i = 0; i < nPagesCount; ++i)
         {
@@ -1240,6 +1241,7 @@ public:
     void LocalFile_SaveStart(std::wstring sPath = L"", int nType = -1)
     {
         m_oLocalInfo.SetupOptions(m_oConverterFromEditor.m_oInfo);
+        m_oLocalInfo.m_oInfo.m_sSaveJsonParams = L"";
         m_oLocalInfo.m_oInfo.m_sDocumentInfo = L"";
 
         m_oConverterFromEditor.m_nTypeEditorFormat = m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat;
@@ -1394,6 +1396,25 @@ public:
                 if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat != AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF)
                     arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA);
             }
+
+            arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX);
+
+            if (!bEncryption)
+            {
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOTX);
+            }
+
+            arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_ODT);            
+
+            if (!bEncryption)
+            {
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_OTT);
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_RTF);
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_TXT);
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_HTML);
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_FB2);
+                arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_EPUB);
+            }
         }
     }
 
@@ -1496,6 +1517,11 @@ public:
     CCefView* m_pParent;
     bool m_bIsLoaded;
 
+    // в виндоус есть баг с ресайзом. лечится "двойным" ресайзом.
+    // но на всяких loaded - его нужно отключать
+    bool m_bIsDisableResizeOnLoaded;
+    bool m_bIsDisableResizeOnLoadedOneCall;
+
     bool m_bIsEditorTypeSet;
     int m_nBeforeBrowserCounter;
 
@@ -1521,6 +1547,9 @@ public:
     {
         m_pParent = NULL;
         m_bIsLoaded = false;
+
+        m_bIsDisableResizeOnLoaded = false;
+        m_bIsDisableResizeOnLoadedOneCall = false;
 
         m_bIsEditorTypeSet = false;
         m_nBeforeBrowserCounter = 0;
@@ -2025,7 +2054,8 @@ public:
                                                  #endif
                                                          is_redirect);
         if (NULL != m_pParent)
-        {            
+        {
+            m_bIsDisableResizeOnLoadedOneCall = true;
             m_pParent->resizeEvent();
             m_pParent->focus();
 
@@ -2553,6 +2583,8 @@ public:
             std::string sParams     = args->GetString(0).ToString();
             std::wstring sPassword  = args->GetString(1).ToWString();
             std::wstring sDocInfo   = args->GetString(2).ToWString();
+            int nSaveFileType       = args->GetInt(3);
+            std::wstring sSaveParams = args->GetString(4);
 
             bool bIsSaveAs = (sParams.find("saveas=true") != std::string::npos) ? true : false;
 
@@ -2572,6 +2604,7 @@ public:
             m_pParent->m_pInternal->m_oLocalInfo.m_bIsRetina = (sParams.find("retina=true") != std::string::npos) ? true : false;
             m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sPassword = sPassword;
             m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sDocumentInfo = sDocInfo;
+            m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sSaveJsonParams = sSaveParams;
 
             if (bIsNeedSaveDialog)
             {
@@ -2585,7 +2618,10 @@ public:
                     pData->put_Path(NSFile::GetFileName(m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc));
 
                 pData->put_FileType(m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat);
-                m_pParent->m_pInternal->LocalFile_GetSupportSaveFormats(pData->get_SupportFormats());
+                if (nSaveFileType == 0)
+                    m_pParent->m_pInternal->LocalFile_GetSupportSaveFormats(pData->get_SupportFormats());
+                else
+                    pData->get_SupportFormats().push_back(nSaveFileType);
                 pEvent->m_pData = pData;
 
                 pListener->OnEvent(pEvent);
@@ -3544,14 +3580,12 @@ public:
             pData->put_W(dExtW);
             pData->put_H(dExtH);
 
-            double dKoef = (double)m_pParent->m_pInternal->m_dDeviceScale;
-            double dKoefToPix = 96 / 25.4;
-            dKoefToPix *= dScale;
+            double dKoef = (double)m_pParent->GetDeviceScale();
 
-            int nBoundsX = (int)(boundsX * dKoefToPix);
-            int nBoundsY = (int)(boundsY * dKoefToPix);
-            int nBoundsR = (int)(boundsR * dKoefToPix + 0.9);
-            int nBoundsB = (int)(boundsB * dKoefToPix + 0.9);
+            int nBoundsX = (int)(boundsX * dScale);
+            int nBoundsY = (int)(boundsY * dScale);
+            int nBoundsR = (int)(boundsR * dScale + 0.9);
+            int nBoundsB = (int)(boundsB * dScale + 0.9);
 
             pData->put_BoundsX((int)(dKoef * (nX + nBoundsX)));
             pData->put_BoundsY((int)(dKoef * (nY + nBoundsY)));
@@ -3744,6 +3778,30 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
             pListener->OnEvent(pEvent);
             return true;
         }
+        else if ("get_current_window_info" == message_name)
+        {
+            CefRefPtr<CefBrowserHost> _host = m_pParent->m_pInternal->GetBrowser()->GetHost();
+            CefWindowHandle hwnd = _host->GetWindowHandle();
+
+            unsigned int _dx = 0;
+            unsigned int _dy = 0;
+            double dDeviceScale = 1;
+        #ifdef WIN32
+            Core_GetMonitorRawDpi(hwnd, &_dx, &_dy);
+            dDeviceScale = Core_GetMonitorScale(_dx, _dy);
+        #else
+            int nDeviceScaleTmp = CAscApplicationManager::GetDpiChecker()->GetWidgetImplDpi(m_pParent->GetWidgetImpl(), &_dx, &_dy);
+            dDeviceScale = CAscApplicationManager::GetDpiChecker()->GetScale(_dx, _dy);
+        #endif
+
+            std::string sCode = "console.log(\"window [" + std::to_string(_dx) + ", " + std::to_string(_dx) + "]: " + std::to_string(dDeviceScale) + "\");";
+
+            CefRefPtr<CefFrame> frame = m_pParent->m_pInternal->GetBrowser()->GetMainFrame();
+            if (frame)
+                frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
+
+            return true;
+        }
 
         CAscApplicationManager_Private* pInternalMan = m_pParent->GetAppManager()->m_pInternal;
         if (pInternalMan->m_pAdditional && pInternalMan->m_pAdditional->OnProcessMessageReceived(browser, source_process, message, m_pParent))
@@ -3819,7 +3877,12 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
             // вот тут уже можно делать зум!!!
             m_pParent->m_pInternal->m_bIsWindowsCheckZoom = true;
             m_pParent->m_pInternal->m_dDeviceScale = -1;
+
+            m_bIsDisableResizeOnLoadedOneCall = true;
             m_pParent->resizeEvent();
+
+            if (CAscApplicationManager::IsUseSystemScaling())
+                m_bIsDisableResizeOnLoaded = true;
         }
     }
 
@@ -3833,6 +3896,7 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
         // вот тут уже можно делать зум!!!
         m_pParent->m_pInternal->m_bIsWindowsCheckZoom = true;
         m_pParent->m_pInternal->m_dDeviceScale = -1;
+        m_bIsDisableResizeOnLoadedOneCall = true;
         m_pParent->resizeEvent();
     }
 
@@ -4860,7 +4924,24 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
     std::wstring sNotEditableLocal;
     int nError_Old = nError;
 
+    bool bIsSavedFileCurrent = true;
+    int nOldFormat = m_oLocalInfo.m_oInfo.m_nCurrentFileFormat;
+    if (nOldFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
+    {
+        bIsSavedFileCurrent = false;
+    }
     if (!LocalFile_IsSupportEditFormat(m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat))
+    {
+        bIsSavedFileCurrent = false;
+    }
+    if (m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM &&
+            nOldFormat != AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
+    {
+        // значит был saveAs. мы не можем переходить из интерфейса редактора в интерфейс заполнения
+        bIsSavedFileCurrent = false;
+    }
+
+    if (!bIsSavedFileCurrent)
     {
         if (0 == nError && LocalFile_IsSupportOpenFormat(m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat))
             m_pManager->m_pInternal->Recents_Add(m_oConverterFromEditor.m_oInfo.m_sFileSrc, m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat, L"", L"", m_sParentUrl);
@@ -5116,6 +5197,9 @@ void CCefView_Private::OnFileConvertToEditor(const int& nError)
 }
 void CCefView_Private::CheckZoom()
 {
+    if (CAscApplicationManager::IsUseSystemScaling())
+        return;
+
     if (NULL == CAscApplicationManager::GetDpiChecker())
         return;
 
@@ -5236,11 +5320,13 @@ void CCefView::load(const std::wstring& urlInputSrc)
     // заглушка, чтобы не проверять выше
     NSStringUtils::string_replace(urlInput, L"//?desktop=true", L"/?desktop=true");
 
+    std::wstring sExternalSchemeName = m_pInternal->m_pManager->GetExternalSchemeName() + L":";
+
     bool bIsScheme = false;
-    if (0 == urlInput.find(L"oo-office:"))
+    if (0 == urlInput.find(sExternalSchemeName))
     {
         bIsScheme = true;
-        if (0 == urlInput.find(L"oo-office://"))
+        if (0 == urlInput.find(sExternalSchemeName + L"//"))
             urlInput = urlInput.substr(12);
         else
             urlInput = urlInput.substr(10);
@@ -5577,6 +5663,22 @@ void CCefView::moveEvent()
 
     if (m_pInternal->m_handler && m_pInternal->m_handler->GetBrowser() && m_pInternal->m_handler->GetBrowser()->GetHost())
         m_pInternal->m_handler->GetBrowser()->GetHost()->NotifyMoveOrResizeStarted();
+}
+
+bool CCefView::isDoubleResizeEvent()
+{
+#ifdef _WIN32
+    if (!m_pInternal->m_handler)
+        return true;
+
+    bool bOld = m_pInternal->m_handler->m_bIsDisableResizeOnLoadedOneCall;
+    m_pInternal->m_handler->m_bIsDisableResizeOnLoadedOneCall = false;
+    if (!m_pInternal->m_handler->m_bIsDisableResizeOnLoaded)
+        return true;
+    return !bOld;
+#endif
+
+    return false;
 }
 
 void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
@@ -6345,7 +6447,26 @@ void CCefView::LoadReporter(void* reporter_data)
 
 double CCefView::GetDeviceScale()
 {
-    return m_pInternal->m_dDeviceScale;
+    if (m_pInternal->m_dDeviceScale >= 1)
+        return m_pInternal->m_dDeviceScale;
+
+    if (!m_pInternal->GetBrowser() || !m_pInternal->GetBrowser()->GetHost())
+        return 1;
+
+    CefWindowHandle hwnd = m_pInternal->GetBrowser()->GetHost()->GetWindowHandle();
+
+    unsigned int _dx = 0;
+    unsigned int _dy = 0;
+    double dDeviceScale = 1;
+#ifdef WIN32
+    Core_GetMonitorRawDpi(hwnd, &_dx, &_dy);
+    dDeviceScale = Core_GetMonitorScale(_dx, _dy);
+#else
+    int nDeviceScaleTmp = CAscApplicationManager::GetDpiChecker()->GetWidgetImplDpi(GetWidgetImpl(), &_dx, &_dy);
+    dDeviceScale = CAscApplicationManager::GetDpiChecker()->GetScale(_dx, _dy);
+#endif
+
+    return dDeviceScale;
 }
 
 CefRefPtr<CefFrame> CCefView_Private::CCloudCryptoUpload::GetFrame()
