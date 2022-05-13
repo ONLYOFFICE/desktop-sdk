@@ -206,6 +206,24 @@ void CPrintData::CalculateImagePaths(bool bIsOpenAsLocal)
 }
 
 #include "../../../../core/DesktopEditor/graphics/MetafileToRenderer.h"
+bool CPrintData::CheckQRendererCommands(int nPageIndex) const
+{
+    BYTE* dstArray = NULL;
+    int len = 0;
+    NSFile::CBase64Converter::Decode(m_arPages[nPageIndex].Base64.c_str(), m_arPages[nPageIndex].Base64.length(), dstArray, len);
+
+    bool isCorrectCommands =/* true;*/
+            NSOnlineOfficeBinToPdf::CheckBlackListBuffer(dstArray, len, {
+                                                             NSOnlineOfficeBinToPdf::ctError,
+                                                             NSOnlineOfficeBinToPdf::ctBrushGradient
+                                                         });
+
+
+    RELEASEARRAYOBJECTS(dstArray);
+
+    return isCorrectCommands;
+}
+
 class CMetafileToRenderterDesktop : public IMetafileToRenderter
 {
 public:
@@ -1045,7 +1063,7 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
     if (NULL != pNativeRenderer)
     {
         // TODO: check commands support
-        bool bIsSupportCommands = true;
+        bool bIsSupportCommands = CheckQRendererCommands(nPageIndex);
 
         if (bIsSupportCommands)
         {
@@ -1135,7 +1153,6 @@ void CPrintData::RotateContext(NSEditorApi::CAscPrinterContextBase *pContext, do
         pContext->SetBaseTransform(m11, m12, m21, m22, dx, dy);
     }
 }
-
 
 void CPrintData::FitToPage(float fSourceWidth, float  fSourceHeight, float  fTargetWidth, float fTargetHeight, float& fResX, float& fResY, float& fResWidth, float& fResHeight)
 {

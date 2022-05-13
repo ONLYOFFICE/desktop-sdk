@@ -117,6 +117,7 @@ public:
     void CalculateImagePaths(bool bIsOpenAsLocal = false);
 
 private:
+    bool CheckQRendererCommands(int nPageIndex)const;
     static void RotateContext(NSEditorApi::CAscPrinterContextBase *pContext, double fPageWidth, double fPageHeight, double fPrintWidthMM, double fPrintHeightMM, double dAngle);
 };
 
