@@ -281,6 +281,10 @@ public:
             //command_line->AppendSwitch("--allow-running-insecure-content");
 
             std::string sAppNavigator = "Chrome/" + std::to_string(CEF_VERSION_MAJOR) + " AscDesktopEditor/7.1.0";
+#ifdef CEF_2623
+            sAppNavigator += " windowsXP";
+#endif
+
             command_line->AppendSwitchWithValue("--product-version", sAppNavigator);
 
             int forceDpi = IsForceDpiRound();

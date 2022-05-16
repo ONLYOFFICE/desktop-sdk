@@ -243,7 +243,13 @@ void QCefView::UpdateSize()
 {
     HWND _parent = reinterpret_cast<HWND>(winId());
     HWND _child = GetWindow(_parent, GW_CHILD);
-    SetWindowPos(_child, _parent, 0, 0, width(), height(), SWP_NOZORDER);
+
+    int nW = width();
+    int nH = height();
+    if (CAscApplicationManager::IsUseSystemScaling() && nW > 2 && nH > 2 && m_pCefView && m_pCefView->isDoubleResizeEvent())
+        SetWindowPos(_child, _parent, 0, 0, nW - 1, nH - 1, SWP_NOZORDER);
+
+    SetWindowPos(_child, _parent, 0, 0, nW, nH, SWP_NOZORDER);
 }
 
 void QCefView::AfterCreate()
