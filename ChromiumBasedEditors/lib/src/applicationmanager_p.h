@@ -1762,6 +1762,10 @@ public:
         else
             m_bIsUseSpellCheckKeyboardInput = true;
 
+        std::map<std::string, std::string>::iterator pairDEBUG = _map->find("ascdesktop-support-debug-info-keep");
+        if (pairDEBUG != _map->end() && "1" == pairDEBUG->second)
+            m_bDebugInfoSupport = true;
+
         if (!NSCommon::CSystemWindowScale::IsInit())
         {
             std::map<std::string, std::string>::iterator pairUseSystemScale = _map->find("system-scale");
