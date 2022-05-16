@@ -218,7 +218,7 @@ namespace NSQRenderer
                                          , double dTop
                                          , double dWidth
                                          , double dHeight
-                                         , DWORD lFlags) override {return S_OK;};// tmp
+                                         , DWORD lFlags) override {return S_OK;}
 
         virtual HRESULT SetTransform(const double& m11
                                      , const double& m12
@@ -232,16 +232,16 @@ namespace NSQRenderer
                                      , double *m22
                                      , double *dx
                                      , double *dy)	override;// используется
-        virtual HRESULT ResetTransform() override;// NOT USED
+        virtual HRESULT ResetTransform() override;
 
         // -----------------------------------------------------------------------------------------
-        virtual HRESULT get_ClipMode(LONG* plMode) override;// NOT USED
-        virtual HRESULT put_ClipMode(const LONG& lMode) override;// NOT USED
+        virtual HRESULT get_ClipMode(LONG* plMode) override;
+        virtual HRESULT put_ClipMode(const LONG& lMode) override;
 
         // additiaonal params ----------------------------------------------------------------------
-        virtual HRESULT CommandLong(const LONG& lType, const LONG& lCommand) override;// NOT USED
-        virtual HRESULT CommandDouble(const LONG& lType, const double& dCommand) override;// NOT USED
-        virtual HRESULT CommandString(const LONG& lType, const std::wstring& sCommand) override;// NOT USED
+        virtual HRESULT CommandLong(const LONG& lType, const LONG& lCommand) override;
+        virtual HRESULT CommandDouble(const LONG& lType, const double& dCommand) override;
+        virtual HRESULT CommandString(const LONG& lType, const std::wstring& sCommand) override;
 
     public:
         void SetBaseTransform(double m11
@@ -258,30 +258,22 @@ namespace NSQRenderer
                                      , double &dy);
         void ResetBaseTransform();
 
+    public:
+        static bool CheckSupportCommands(BYTE* pBuffer, LONG lBufferLen);
+
     private:
         void applyTransform();
 
     private:
-        static constexpr double defaultDouble = -1.;
-
         QAscPrinterContext* m_pContext;
-        QPainterPath m_oUntransformedPainterPath{};
-        QPainterPath m_oUntransformedClipPath{};
-        bool m_bIsSetupClip{false};
+        QPainterPath m_oPath;
 
-        QTransform m_oCoordTransform{};
-        QTransform m_oBaseTransform{};
-        QTransform m_oCurrentTransform{};
+        QTransform m_oCoordTransform;
+        QTransform m_oBaseTransform;
+        QTransform m_oCurrentTransform;
 
-        NSStructures::CPen m_oPen{};
-        bool m_bPenChanged{true};
-        NSStructures::CBrush m_oBrush{};
-        bool m_bBrushChanged{true};
-
-        double m_dLogicalPageWidth{0.};
-        double m_dLogicalPageHeight{0.};
-
-        long m_lCurrentCommand{c_nNone};
+        NSStructures::CPen m_oPen;
+        NSStructures::CBrush m_oBrush;
 
         NSFonts::IApplicationFonts* m_pAppFonts;
         NSFonts::IFontManager* m_pFontManager;
@@ -292,23 +284,20 @@ namespace NSQRenderer
 
         Aggplus::CGraphicsPathSimpleConverter m_oSimpleGraphicsConverter;
 
-    private:
-        //
-        QRectF pathRect() const;
+        double m_dLogicalPageWidth;
+        double m_dLogicalPageHeight;
 
-        //
+        long m_lCurrentCommand;
+        long m_lCurrentClipMode;
+
+    private:
         QSizeF paperSize() const;
 
-        //
+    private:
         QPen pen() const;
-        QBrush brush();
-        QBrush brush(const QRectF& rect);
-        QSize getDPI_XY(); // TODO const
-        QFont font() const;
 
-        //
-        void setPaintingThings();
-        void fillPath();
+        void fillPath(QPainterPath* pPath);
+        void fillPath(QBrush* pBrush, QPainterPath* pPath);
 
     public:
         void SetUseTextAsPath(const bool& bIsUseTextAsPath);
