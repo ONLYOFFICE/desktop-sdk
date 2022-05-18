@@ -17,7 +17,8 @@ HEADERS += \
     $$PWD/src/qfooterpanel.h \
     $$PWD/src/qvideoslider.h \
     $$PWD/src/qvideoplaylist.h \
-    $$PWD/src/qascvideowidget.h
+	$$PWD/src/qascvideowidget.h \
+	$$PWD/src/qascmediaplayer.h
 
 SOURCES += \
     $$PWD/src/lib_base.cpp \

@@ -95,8 +95,13 @@ void QAscPrinterContext::GetLogicalDPI(int& nDpiX, int& nDpiY)
 
 void QAscPrinterContext::GetPhysicalRect(int& nX, int& nY, int& nW, int& nH)
 {
+#ifndef QT_VERSION_6
     QRect rect1 = m_oPrinter.pageRect();
     QRect rect2 = m_oPrinter.paperRect();
+#else
+    QRect rect1 = m_oPrinter.pageLayout().fullRectPixels(m_oPrinter.resolution());
+    QRect rect2 = m_oPrinter.pageLayout().paintRectPixels(m_oPrinter.resolution());
+#endif
 
     nX = rect1.x();
     nY = rect1.y();
@@ -106,7 +111,12 @@ void QAscPrinterContext::GetPhysicalRect(int& nX, int& nY, int& nW, int& nH)
 
 void QAscPrinterContext::GetPrintAreaSize(int& nW, int& nH)
 {
+#ifndef QT_VERSION_6
     QRect rect = m_oPrinter.pageRect();
+#else
+    QRect rect = m_oPrinter.pageLayout().fullRectPixels(m_oPrinter.resolution());
+#endif
+
     nW = rect.width();
     nH = rect.height();
 }
