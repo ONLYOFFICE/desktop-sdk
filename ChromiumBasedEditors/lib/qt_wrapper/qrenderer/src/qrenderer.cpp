@@ -222,8 +222,6 @@ namespace
 
 namespace NSConversions
 {
-    const qreal default_dots_per_inch = 96.;
-
     inline QColor toColor(const LONG& color, const LONG& alpha)
     {
         return QColor(color & 0xFF, (color >> 8) & 0xFF, (color >> 16) & 0xFF, alpha & 0xFF);
@@ -355,22 +353,13 @@ namespace NSConversions
                 pRenderer->get_DpiX(&dDpiX);
                 pRenderer->get_DpiY(&dDpiY);
 
-                double dImageDpiX = pBrush->textureImage().dotsPerMeterX() * 0.0254;
-                double dImageDpiY = pBrush->textureImage().dotsPerMeterY() * 0.0254;
-
-                dImageDpiX *= (dImageDpiX / dTileDpi);
-                dImageDpiY *= (dImageDpiY / dTileDpi);
-
-                // TODO: ???
-                dImageDpiX *= (72.0 / 96.0);
-                dImageDpiY *= (72.0 / 96.0);
-
-                double dScaleX = dImageDpiX / dDpiX;
-                double dScaleY = dImageDpiY / dDpiY;
+                double dScaleX = dDpiX / (dTileDpi * pRenderer->GetCoordTransform().m11());
+                double dScaleY = dDpiY / (dTileDpi * pRenderer->GetCoordTransform().m22());
 
                 if (pLogicBrush && pLogicBrush->Rectable)
                 {
-                    // TODO: offset
+                    oTransform.translate((oPathBounds.left() - pLogicBrush->Rect.X) / dScaleX,
+                                         (oPathBounds.top() - pLogicBrush->Rect.Y) / dScaleY);
                 }
 
                 oTransform.scale(dScaleX, dScaleY);
@@ -1761,6 +1750,11 @@ void NSQRenderer::CQRenderer::ResetBaseTransform()
 #endif
     m_oBaseTransform.reset();
     applyTransform();
+}
+
+QTransform& NSQRenderer::CQRenderer::GetCoordTransform()
+{
+    return m_oCoordTransform;
 }
 
 void NSQRenderer::CQRenderer::applyTransform()

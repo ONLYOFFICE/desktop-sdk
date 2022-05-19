@@ -242,6 +242,8 @@ namespace NSQRenderer
         void GetBaseTransform(double &m11, double &m12, double &m21, double &m22, double &dx, double &dy);
         void ResetBaseTransform();
 
+        QTransform& GetCoordTransform();
+
     public:
         static IMetafileToRenderter* GetChecker();
 
