@@ -292,24 +292,11 @@ void QAscPrinterContext::setDefaults()
 
 void* QAscPrinterContext::GetNativeRenderer()
 {
-    auto pQRenderer = new NSQRenderer::CQRenderer(this);
-    if (m_hasBaseTransform)
-        pQRenderer->SetBaseTransform
-                (
-                m_arrBaseTransformParameters[0],
-                m_arrBaseTransformParameters[1],
-                m_arrBaseTransformParameters[2],
-                m_arrBaseTransformParameters[3],
-                m_arrBaseTransformParameters[4],
-                m_arrBaseTransformParameters[5]
-                );
-
-    m_hasBaseTransform = false;
-    return pQRenderer;
+    return new NSQRenderer::CQRenderer(this);
 }
 void* QAscPrinterContext::GetNativeRendererUnsupportChecker()
 {
-    return NULL;
+    return NSQRenderer::CQRenderer::GetChecker();
 }
 
 // not desktop common
@@ -343,15 +330,4 @@ void QAscPrinterContext::InitRenderer(void* pRenderer, void* pFontManager)
     {
         pQRenderer->SetFontsManager((NSFonts::IFontManager*)pFontManager);
     }
-}
-
-void QAscPrinterContext::SetBaseTransform(double m11, double m12, double m21, double m22, double dx, double dy)
-{
-    m_hasBaseTransform = true;
-    m_arrBaseTransformParameters[0] = m11;
-    m_arrBaseTransformParameters[1] = m12;
-    m_arrBaseTransformParameters[2] = m21;
-    m_arrBaseTransformParameters[3] = m22;
-    m_arrBaseTransformParameters[4] = dx;
-    m_arrBaseTransformParameters[5] = dy;
 }

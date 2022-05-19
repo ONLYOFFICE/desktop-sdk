@@ -5904,7 +5904,8 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
             if (m_pInternal)
             {
                 NSEditorApi::CAscPrintPage* pData = (NSEditorApi::CAscPrintPage*)pEvent->m_pData;
-                bool bIsRotate = m_pInternal->m_oPrintData.CheckPrintRotate(pData->get_Context(), GetAppManager()->m_oPrintSettings, pData->get_Page());
+                CPrintData::CPrintContextPageData oPagePrintData = m_pInternal->m_oPrintData.CheckPrintRotate(pData->get_Context(), GetAppManager()->m_oPrintSettings, pData->get_Page());
+                bool bIsRotate = oPagePrintData.IsRotate();
                 pData->put_IsRotate(bIsRotate);
             }
             break;

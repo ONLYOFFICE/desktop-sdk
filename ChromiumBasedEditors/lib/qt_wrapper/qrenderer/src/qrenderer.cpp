@@ -235,15 +235,15 @@ namespace NSConversions
         RELEASEARRAYOBJECTS(pImage);
     }
 
-    QBrush* createTextureBrush(Aggplus::CImage* pImage, const bool& bIsDestroyImage)
+    QBrush* createTextureBrush(Aggplus::CImage* pImage, const bool& bIsDestroyImage, int& nWidth, int &nHeight)
     {
         if (!pImage || pImage->GetLastStatus() != Aggplus::Ok)
             return NULL;
 
         QBrush* pBrush = new QBrush();
 
-        int nWidth = (int)pImage->GetWidth();
-        int nHeight = (int)pImage->GetHeight();
+        nWidth = (int)pImage->GetWidth();
+        nHeight = (int)pImage->GetHeight();
         int nStride = (int)pImage->GetStride();
 
         int nCheckLE = 1;
@@ -262,6 +262,15 @@ namespace NSConversions
                 pBrush->setTextureImage(QImage(pImage->GetData(), nWidth, nHeight, nStride, QImage::Format_ARGB32, cleanupPixels, pImage));
             else
                 pBrush->setTextureImage(QImage(pImage->GetData(), nWidth, nHeight, nStride, QImage::Format_ARGB32));
+
+            if (nStride < 0)
+            {
+                // непонятное поведение QT. картинка интерпретируется как flip.
+                // при этом нельзя послать pImage->GetData() - nStride * (nHeight - 1)
+                // разобраться!!! а пока - сделаем flip
+
+                pBrush->setTransform(QTransform(1, 0, 0, -1, 0, nHeight));
+            }
         }
         else
         {
@@ -293,7 +302,7 @@ namespace NSConversions
         return pBrush;
     }
 
-    QBrush* createTextureBrush(const std::wstring &path)
+    QBrush* createTextureBrush(const std::wstring &path, int& nWidth, int &nHeight)
     {
         Aggplus::CImage* pImage = new Aggplus::CImage(path);
         if (pImage->GetLastStatus() != Aggplus::Ok)
@@ -302,7 +311,54 @@ namespace NSConversions
             return NULL;
         }
 
-        return createTextureBrush(pImage, true);
+        return createTextureBrush(pImage, true, nWidth, nHeight);
+    }
+
+    void correctBrushTextureTransform(NSStructures::CBrush* pLogicBrush, QBrush* pBrush, QPainterPath* pPath,
+                                      const int& nImageWidth, const int& nImageHeight,
+                                      NSQRenderer::CQRenderer* pRenderer)
+    {
+        int nTextureMode = c_BrushTextureModeStretch;
+        if (pLogicBrush)
+            nTextureMode = pLogicBrush->TextureMode;
+
+        QTransform oTransform;
+
+        QRectF oPathBounds = pPath->boundingRect();
+        if (pLogicBrush && pLogicBrush->Rectable)
+        {
+            oTransform.scale(pLogicBrush->Rect.Width / nImageWidth, pLogicBrush->Rect.Height / nImageHeight);
+            oTransform.translate(oPathBounds.left() - pLogicBrush->Rect.X, oPathBounds.top() - pLogicBrush->Rect.Y);
+        }
+        else
+        {
+            oTransform.scale(oPathBounds.width() / nImageWidth, oPathBounds.height() / nImageHeight);
+        }
+
+        switch (nTextureMode)
+        {
+            case c_BrushTextureModeStretch:
+            {
+                break;
+            }
+            case c_BrushTextureModeTile:
+            case c_BrushTextureModeTileCenter:
+            {
+                double dTileDpi = 96.0;
+                double dDpiX = dTileDpi;
+                double dDpiY = dTileDpi;
+                pRenderer->get_DpiX(&dDpiX);
+                pRenderer->get_DpiY(&dDpiY);
+                oTransform.scale(dTileDpi / dDpiX, dTileDpi / dDpiY);
+                break;
+            }
+            default:
+                break;
+        }
+
+        oTransform = oTransform * pBrush->transform();
+
+        pBrush->setTransform(oTransform);
     }
 }
 
@@ -1494,7 +1550,9 @@ HRESULT NSQRenderer::CQRenderer::DrawImage(IGrObject *pImage
 #endif
     Aggplus::CImage* pPixels = (Aggplus::CImage*)pImage;
 
-    QBrush* pBrush = NSConversions::createTextureBrush(pPixels, true);
+    int nWidth = 0;
+    int nHeight = 0;
+    QBrush* pBrush = NSConversions::createTextureBrush(pPixels, true, nWidth, nHeight);
     if (NULL == pBrush)
         return S_FALSE;
 
@@ -1505,7 +1563,8 @@ HRESULT NSQRenderer::CQRenderer::DrawImage(IGrObject *pImage
     oPath.lineTo((qreal)x, (qreal)(y + h));
     oPath.closeSubpath();
 
-    fillPath(pBrush, &oPath);
+    NSConversions::correctBrushTextureTransform(NULL, pBrush, &oPath, nWidth, nHeight, this);
+    m_pContext->GetPainter()->fillPath(oPath, *pBrush);
 
     RELEASEOBJECT(pBrush);
     return S_OK;
@@ -1522,7 +1581,9 @@ HRESULT NSQRenderer::CQRenderer::DrawImageFromFile(const std::wstring &filePath
     TELL;
 #endif
 
-    QBrush* pBrush = NSConversions::createTextureBrush(filePath);
+    int nWidth = 0;
+    int nHeight = 0;
+    QBrush* pBrush = NSConversions::createTextureBrush(filePath, nWidth, nHeight);
     if (NULL == pBrush)
         return S_FALSE;
 
@@ -1536,7 +1597,8 @@ HRESULT NSQRenderer::CQRenderer::DrawImageFromFile(const std::wstring &filePath
     if (255 != lAlpha)
         m_pContext->GetPainter()->setOpacity((qreal)lAlpha / 255.0f);
 
-    fillPath(pBrush, &oPath);
+    NSConversions::correctBrushTextureTransform(NULL, pBrush, &oPath, nWidth, nHeight, this);
+    m_pContext->GetPainter()->fillPath(oPath, *pBrush);
 
     if (255 != lAlpha)
         m_pContext->GetPainter()->setOpacity(1.0f);
@@ -1641,18 +1703,19 @@ HRESULT NSQRenderer::CQRenderer::CommandString(const LONG &lType, const std::wst
     return S_OK;
 }
 
-void NSQRenderer::CQRenderer::SetBaseTransform(double m11
-                                               , double m12
-                                               , double m21
-                                               , double m22
-                                               , double dx
-                                               , double dy)
+HRESULT NSQRenderer::CQRenderer::SetBaseTransform(const double& m11
+                                               , const double& m12
+                                               , const double& m21
+                                               , const double& m22
+                                               , const double& dx
+                                               , const double& dy)
 {
     m_oBaseTransform = QTransform(m11, m12, m21, m22, dx, dy);
 #ifdef ENABLE_LOGS
     TELL << m_oBaseTransform;
 #endif
     applyTransform();
+    return S_OK;
 }
 
 void NSQRenderer::CQRenderer::GetBaseTransform(double &m11
@@ -1687,6 +1750,8 @@ void NSQRenderer::CQRenderer::applyTransform()
     m_pContext->GetPainter()->setTransform(m_oCoordTransform);
     m_pContext->GetPainter()->setTransform(m_oBaseTransform, true);
     m_pContext->GetPainter()->setTransform(m_oCurrentTransform, true);
+
+    m_oFullTransform = m_pContext->GetPainter()->transform();
 }
 
 QSizeF NSQRenderer::CQRenderer::paperSize() const
@@ -1835,7 +1900,7 @@ void NSQRenderer::CQRenderer::fillPath(QPainterPath* pPath)
         {
             pBrush = new QBrush(Qt::SolidPattern);
             pBrush->setColor(NSConversions::toColor(m_oBrush.Color1, m_oBrush.Alpha1));
-            fillPath(pBrush, &m_oPath);
+            m_pContext->GetPainter()->fillPath(m_oPath, *pBrush);
             break;
         }
         case c_BrushTypeTexture:
@@ -1843,7 +1908,11 @@ void NSQRenderer::CQRenderer::fillPath(QPainterPath* pPath)
             if (255 != m_oBrush.TextureAlpha)
                 m_pContext->GetPainter()->setOpacity((qreal)m_oBrush.TextureAlpha / 255.0f);
 
-            fillPath(pBrush, &m_oPath);
+            int nImageWidth = 0;
+            int nImageHeight = 0;
+            pBrush = NSConversions::createTextureBrush(m_oBrush.TexturePath, nImageWidth, nImageHeight);
+            NSConversions::correctBrushTextureTransform(&m_oBrush, pBrush, pPath, nImageWidth, nImageHeight, this);
+            m_pContext->GetPainter()->fillPath(m_oPath, *pBrush);
 
             if (255 != m_oBrush.TextureAlpha)
                 m_pContext->GetPainter()->setOpacity(1.0f);
@@ -1853,10 +1922,6 @@ void NSQRenderer::CQRenderer::fillPath(QPainterPath* pPath)
     }
 
     RELEASEOBJECT(pBrush);
-}
-void NSQRenderer::CQRenderer::fillPath(QBrush* pBrush, QPainterPath* pPath)
-{
-    m_pContext->GetPainter()->fillPath(*pPath, *pBrush);
 }
 
 /*
@@ -2296,7 +2361,7 @@ class CQRenderterCorrector : public IMetafileToRenderter
 {
 public:
     CQRenderterCorrector(IRenderer* pRenderer) : IMetafileToRenderter(pRenderer) {}
-    virtual ~CQRenderterCorrector() {}
+    virtual ~CQRenderterCorrector() { RELEASEINTERFACE(m_pRenderer); }
 
 public:
     virtual std::wstring GetImagePath(const std::wstring& sPath) override { return L""; }
@@ -2306,19 +2371,8 @@ public:
     virtual void InitPicker(NSFonts::IApplicationFonts* pFonts) override {}
 };
 
-bool NSQRenderer::CQRenderer::CheckSupportCommands(BYTE* pBuffer, LONG lBufferLen)
+IMetafileToRenderter* NSQRenderer::CQRenderer::GetChecker()
 {
-    CQRendererChecker oChecker;
-    CQRenderterCorrector oCorrector(&oChecker);
-    bool bIsSupport = true;
-
-    try
-    {
-        NSOnlineOfficeBinToPdf::ConvertBufferToRenderer(pBuffer, lBufferLen, &oCorrector);
-    }
-    catch (int nError)
-    {
-        bIsSupport = false;
-    }
-    return bIsSupport;
+    CQRendererChecker* pChecker = new CQRendererChecker();
+    return new CQRenderterCorrector(pChecker);
 }

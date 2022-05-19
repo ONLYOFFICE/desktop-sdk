@@ -1,14 +1,15 @@
 #ifndef Q_RENDERER_H
 #define Q_RENDERER_H
 
-#include "./../../../../../../core/DesktopEditor/graphics/IRenderer.h" // IRenderer
-#include "./../../../../../../core/DesktopEditor/graphics/structures.h" // CPen и CBrush
+#include "./../../../../../../core/DesktopEditor/graphics/IRenderer.h"
+#include "./../../../../../../core/DesktopEditor/graphics/structures.h"
 #include "./../../../../../../core/DesktopEditor/graphics/GraphicsPath.h"
 #include "./../../../../../../core/DesktopEditor/graphics/Image.h"
-#include "./../../../include/base.h" // DESKTOP_DECL
-#include <QPainter> // QPainter
-#include <QPainterPath> // QPainterPath
-#include <QPaintDevice> // QPagedPaintDevice
+#include "./../../../../../../core/DesktopEditor/graphics/MetafileToRenderer.h"
+#include "./../../../include/base.h"
+#include <QPainter>
+#include <QPainterPath>
+#include <QPaintDevice>
 
 class QAscPrinterContext;
 namespace NSQRenderer
@@ -92,8 +93,8 @@ namespace NSQRenderer
                                     , const double& width
                                     , const double& height) override;
 
-        virtual HRESULT put_BrushGradientColors(LONG* lColors // ПРОВЕРЯТЬ НА NULL
-                                                , double* pPositions // ПРОВЕРЯТЬ НА NULL
+        virtual HRESULT put_BrushGradientColors(LONG* lColors
+                                                , double* pPositions
                                                 , LONG nCount) override;
         // есть дефолтная реализация
         // virtual void put_BrushGradInfo(const NSStructures::GradientInfo &_ginfo) override;
@@ -197,22 +198,15 @@ namespace NSQRenderer
                                   , const double& x
                                   , const double& y
                                   , const double& w
-                                  , const double& h) override;// NOT USED
+                                  , const double& h) override;
         virtual HRESULT DrawImageFromFile(const std::wstring&
                                           , const double& x
                                           , const double& y
                                           , const double& w
                                           , const double& h
-                                          , const BYTE& lAlpha = 255) override;// используется
+                                          , const BYTE& lAlpha = 255) override;
 
         // transform --------------------------------------------------------------------------------
-        // есть дефолтная реализация
-//            virtual HRESULT GetCommandParams(double* dAngle
-//                                             , double* dLeft
-//                                             , double* dTop
-//                                             , double* dWidth
-//                                             , double* dHeight
-//                                             , DWORD* lFlags) override;
         virtual HRESULT SetCommandParams(double dAngle
                                          , double dLeft
                                          , double dTop
@@ -225,13 +219,13 @@ namespace NSQRenderer
                                      , const double& m21
                                      , const double& m22
                                      , const double& dx
-                                     , const double& dy) override;// используется
+                                     , const double& dy) override;
         virtual HRESULT GetTransform(double *m11
                                      , double *m12
                                      , double *m21
                                      , double *m22
                                      , double *dx
-                                     , double *dy)	override;// используется
+                                     , double *dy)	override;
         virtual HRESULT ResetTransform() override;
 
         // -----------------------------------------------------------------------------------------
@@ -244,22 +238,12 @@ namespace NSQRenderer
         virtual HRESULT CommandString(const LONG& lType, const std::wstring& sCommand) override;
 
     public:
-        void SetBaseTransform(double m11
-                                     , double m12
-                                     , double m21
-                                     , double m22
-                                     , double dx
-                                     , double dy);
-        void GetBaseTransform(double &m11
-                                     , double &m12
-                                     , double &m21
-                                     , double &m22
-                                     , double &dx
-                                     , double &dy);
+        virtual HRESULT SetBaseTransform(const double& m11, const double& m12, const double& m21, const double& m22, const double& dx, const double& dy) override;
+        void GetBaseTransform(double &m11, double &m12, double &m21, double &m22, double &dx, double &dy);
         void ResetBaseTransform();
 
     public:
-        static bool CheckSupportCommands(BYTE* pBuffer, LONG lBufferLen);
+        static IMetafileToRenderter* GetChecker();
 
     private:
         void applyTransform();
@@ -271,6 +255,7 @@ namespace NSQRenderer
         QTransform m_oCoordTransform;
         QTransform m_oBaseTransform;
         QTransform m_oCurrentTransform;
+        QTransform m_oFullTransform;
 
         NSStructures::CPen m_oPen;
         NSStructures::CBrush m_oBrush;
@@ -297,7 +282,6 @@ namespace NSQRenderer
         QPen pen() const;
 
         void fillPath(QPainterPath* pPath);
-        void fillPath(QBrush* pBrush, QPainterPath* pPath);
 
     public:
         void SetUseTextAsPath(const bool& bIsUseTextAsPath);
