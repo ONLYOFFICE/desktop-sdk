@@ -258,19 +258,21 @@ namespace NSConversions
 
         if (bIsLE)
         {
+            if (nStride < 0)
+            {
+                // непонятное поведение QT. они неправильно работают с stride
+                // нельзя послать отрицательное значение. вернее можно - но эффекта 0
+                // при этом нельзя послать и pImage->GetData() - nStride * (nHeight - 1) с отрицательным stride
+                // поэтому делаем переворот трансформом. возможно в другой версии QT (не 5.15.2) - бага нет
+
+                nStride = -nStride;
+                pBrush->setTransform(QTransform(1, 0, 0, -1, 0, nHeight));
+            }
+
             if (bIsDestroyImage)
                 pBrush->setTextureImage(QImage(pImage->GetData(), nWidth, nHeight, nStride, QImage::Format_ARGB32, cleanupPixels, pImage));
             else
                 pBrush->setTextureImage(QImage(pImage->GetData(), nWidth, nHeight, nStride, QImage::Format_ARGB32));
-
-            if (nStride < 0)
-            {
-                // непонятное поведение QT. картинка интерпретируется как flip.
-                // при этом нельзя послать pImage->GetData() - nStride * (nHeight - 1)
-                // разобраться!!! а пока - сделаем flip
-
-                pBrush->setTransform(QTransform(1, 0, 0, -1, 0, nHeight));
-            }
         }
         else
         {
@@ -325,20 +327,23 @@ namespace NSConversions
         QTransform oTransform;
 
         QRectF oPathBounds = pPath->boundingRect();
-        if (pLogicBrush && pLogicBrush->Rectable)
-        {
-            oTransform.scale(pLogicBrush->Rect.Width / nImageWidth, pLogicBrush->Rect.Height / nImageHeight);
-            oTransform.translate(oPathBounds.left() - pLogicBrush->Rect.X, oPathBounds.top() - pLogicBrush->Rect.Y);
-        }
-        else
-        {
-            oTransform.scale(oPathBounds.width() / nImageWidth, oPathBounds.height() / nImageHeight);
-        }
-
         switch (nTextureMode)
         {
             case c_BrushTextureModeStretch:
             {
+                if (pLogicBrush && pLogicBrush->Rectable)
+                {
+                    oTransform.translate((oPathBounds.left() - pLogicBrush->Rect.X) / nImageWidth,
+                                         (oPathBounds.top() - pLogicBrush->Rect.Y) / nImageHeight);
+
+                    oTransform.scale(pLogicBrush->Rect.Width / nImageWidth,
+                                     pLogicBrush->Rect.Height / nImageHeight);
+                }
+                else
+                {
+                    oTransform.scale(oPathBounds.width() / nImageWidth,
+                                     oPathBounds.height() / nImageHeight);
+                }
                 break;
             }
             case c_BrushTextureModeTile:
@@ -349,14 +354,33 @@ namespace NSConversions
                 double dDpiY = dTileDpi;
                 pRenderer->get_DpiX(&dDpiX);
                 pRenderer->get_DpiY(&dDpiY);
-                oTransform.scale(dTileDpi / dDpiX, dTileDpi / dDpiY);
+
+                double dImageDpiX = pBrush->textureImage().dotsPerMeterX() * 0.0254;
+                double dImageDpiY = pBrush->textureImage().dotsPerMeterY() * 0.0254;
+
+                dImageDpiX *= (dImageDpiX / dTileDpi);
+                dImageDpiY *= (dImageDpiY / dTileDpi);
+
+                // TODO: ???
+                dImageDpiX *= (72.0 / 96.0);
+                dImageDpiY *= (72.0 / 96.0);
+
+                double dScaleX = dImageDpiX / dDpiX;
+                double dScaleY = dImageDpiY / dDpiY;
+
+                if (pLogicBrush && pLogicBrush->Rectable)
+                {
+                    // TODO: offset
+                }
+
+                oTransform.scale(dScaleX, dScaleY);
                 break;
             }
             default:
                 break;
         }
 
-        oTransform = oTransform * pBrush->transform();
+        oTransform = pBrush->transform() * oTransform;
 
         pBrush->setTransform(oTransform);
     }

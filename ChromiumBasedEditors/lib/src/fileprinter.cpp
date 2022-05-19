@@ -820,6 +820,10 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
     }
 
     IRenderer* pNativeRenderer = (IRenderer*)pContext->GetNativeRenderer();
+#if 0
+    // если хочется проверить печать в растр
+    RELEASEINTERFACE(pNativeRenderer);
+#endif
     if (NULL != pNativeRenderer)
     {
         IMetafileToRenderter* pNativeRendererChecker = (IMetafileToRenderter*)pContext->GetNativeRendererUnsupportChecker();
