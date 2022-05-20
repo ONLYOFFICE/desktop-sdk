@@ -454,6 +454,12 @@ namespace NSEditorApi
         virtual void GetPrintAreaSize(int& nW, int& nH) = 0;
         virtual void BitBlt(unsigned char* pBGRA, const int& nRasterX, const int& nRasterY, const int& nRasterW, const int& nRasterH,
                             const double& x, const double& y, const double& w, const double& h, const double& dAngle) = 0;
+
+        virtual void* GetNativeRenderer() { return NULL; }
+        virtual void* GetNativeRendererUnsupportChecker() { return NULL; }
+        virtual void NewPage() {}
+
+        virtual void InitRenderer(void* pRenderer, void* pFontManager) {}
     };
 
     class CAscPrintPage : public IMenuEventDataBase

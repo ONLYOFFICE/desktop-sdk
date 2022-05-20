@@ -38,6 +38,7 @@
 #include <QtPrintSupport/QPrinterInfo>
 #include <QPainter>
 #include <QPaintEngine>
+#include <QPagedPaintDevice>
 
 #include "./../../include/base.h"
 #include "./../../include/applicationmanager_events.h"
@@ -58,6 +59,7 @@ public:
     void EndPaint();
 
     QPrinter* getPrinter();
+    QPainter* GetPainter();
 
     virtual void GetLogicalDPI(int& nDpiX, int& nDpiY);
 
@@ -68,9 +70,31 @@ public:
     virtual void BitBlt(unsigned char* pBGRA, const int& nRasterX, const int& nRasterY, const int& nRasterW, const int& nRasterH,
                         const double& x, const double& y, const double& w, const double& h, const double& dAngle);
 
+    virtual void* GetNativeRenderer();
+    virtual void* GetNativeRendererUnsupportChecker();
+    virtual void NewPage();
+
+    virtual void InitRenderer(void* pRenderer, void* pFontManager);
+
 private:
     void DrawImage(QPainter* painter, const QImage& image, const QRect& rect, const QRect& rectSrc);
     void setDefaults();
+
+public:
+    // not desktop commons
+    QAscPrinterContext(QPaintDevice* pDevice);
+    QAscPrinterContext(QPagedPaintDevice* pDevice);
+
+    enum PrintDeviceType
+    {
+        pdtNone,
+        pdtSimple,
+        pdtPaged
+    };
+
+private:
+    QPaintDevice* m_pDevice;
+    PrintDeviceType m_eDeviceType;
 };
 
 #endif  // QASCPRINTER_H

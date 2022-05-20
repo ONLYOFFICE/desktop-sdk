@@ -31,6 +31,7 @@
  */
 
 #include "./fileprinter.h"
+#include "../../../../core/DesktopEditor/graphics/MetafileToRenderer.h"
 
 CPrintData::CPrintData()
 {
@@ -198,14 +199,13 @@ void CPrintData::CalculateImagePaths(bool bIsOpenAsLocal)
             }
             //m_sPresentationThemesPath += (L"/" + m_sThemesUrl);
         }
-    }    
+    }
     else
     {
         m_sPresentationThemesPath = m_sThemesUrl;
     }
 }
 
-#include "../../../../core/DesktopEditor/graphics/MetafileToRenderer.h"
 class CMetafileToRenderterDesktop : public IMetafileToRenderter
 {
 public:
@@ -223,21 +223,6 @@ public:
         return m_pPrintData->GetImagePath(sImagePath);
     }
 };
-
-
-void CPrintData::DrawOnRenderer(NSGraphics::IGraphicsRenderer* pRenderer, int nPageIndex)
-{
-    CMetafileToRenderterDesktop oCorrector(pRenderer);
-    oCorrector.m_pPrintData = this;
-
-    BYTE* dstArray = NULL;
-    int len = 0;
-    NSFile::CBase64Converter::Decode(m_arPages[nPageIndex].Base64.c_str(), m_arPages[nPageIndex].Base64.length(), dstArray, len);
-
-    NSOnlineOfficeBinToPdf::ConvertBufferToRenderer(dstArray, len, &oCorrector);
-
-    RELEASEARRAYOBJECTS(dstArray);
-}
 
 std::wstring CPrintData::GetImagePath(const std::wstring& sPath)
 {
@@ -296,7 +281,7 @@ std::wstring CPrintData::GetImagePath(const std::wstring& sPath)
             nPos += 6;
             sPath2 = L"media/" + sPath;
         }
-        
+
         std::wstring sUrl = m_sDocumentImagesPath + sPath2;
         std::wstring sUrl2 = L"";
         if (sExt == L"svg")
@@ -512,10 +497,31 @@ std::wstring CPrintData::GetImagePath(const std::wstring& sPath)
     return sPath;
 }
 
-bool CPrintData::CheckPrintRotate(NSEditorApi::CAscPrinterContextBase* pContext, const CAscPrintSettings& settingsConst, const int& nPageIndex)
+void CPrintData::FitToPage(float fSourceWidth, float fSourceHeight, float fTargetWidth, float fTargetHeight, float& fResX, float& fResY, float& fResWidth, float& fResHeight)
 {
+    if (fSourceWidth * fTargetHeight > fTargetWidth * fSourceHeight)
+    {
+        fResHeight = fTargetWidth * fSourceHeight / fSourceWidth;
+        fResWidth = fTargetWidth;
+
+        fResX = 0;
+        fResY = fTargetHeight / 2 - fResHeight / 2;
+    }
+    else
+    {
+        fResWidth = fTargetHeight * fSourceWidth / fSourceHeight;
+        fResHeight = fTargetHeight;
+        fResY = 0;
+        fResX = fTargetWidth / 2 - fResWidth / 2;
+    }
+}
+
+CPrintData::CPrintContextPageData CPrintData::CheckPrintRotate(NSEditorApi::CAscPrinterContextBase* pContext, const CAscPrintSettings& settingsConst, const int& nPageIndex)
+{
+    CPrintContextPageData oData;
+
     if (nPageIndex < 0 || nPageIndex >= (int)m_arPages.size())
-        return false;
+        return oData;
 
     CAscPrintSettings settings = settingsConst;
 
@@ -766,369 +772,165 @@ bool CPrintData::CheckPrintRotate(NSEditorApi::CAscPrinterContextBase* pContext,
         }
     }
 
-    if (dAngle < 0.01 && dAngle > -0.01)
-        return false;
-    return true;
+    dLeftPix -= nPrintOffsetX;
+    dTopPix -= nPrintOffsetY;
+
+    oData.Angle = dAngle;
+
+    oData.LeftPix = dLeftPix;
+    oData.TopPix = dTopPix;
+    oData.WidthPix = dWidthPix;
+    oData.HeightPix = dHeightPix;
+
+    oData.PrintWidthMM = fPrintWidthMM;
+    oData.PrintHeightMM = fPrintHeightMM;
+
+    oData.PageWidth = fPageWidth;
+    oData.PageHeight = fPageHeight;
+
+    oData.Valid = true;
+
+    return oData;
 }
 
 void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAscPrintSettings& settingsConst, const int& nPageIndex)
 {
-    if (nPageIndex < 0 || nPageIndex >= (int)m_arPages.size())
+    CPrintContextPageData oPagePrintData = CheckPrintRotate(pContext, settingsConst, nPageIndex);
+    if (!oPagePrintData.Valid)
         return;
 
-    CAscPrintSettings settings = settingsConst;
-
-    if (m_eEditorType == etPresentation)
-    {
-        settings.Mode = CAscPrintSettings::pmFit;
-        settings.ZoomEnable = true;
-    }
-
-    double dLeftPix;
-    double dTopPix;
-    double dWidthPix;
-    double dHeightPix;
-    double dAngle;
-    double fPrintWidthMM;
-    double fPrintHeightMM;
-
-    double fPageWidth = m_arPages[nPageIndex].Width;
-    double fPageHeight = m_arPages[nPageIndex].Height;
-
-    double tmp_ONE_INCH = 2.54;
-    double tmp_M_PI_2 = agg::pi / 2;
-
-    int nPrintDpiX;
-    int nPrintDpiY;
-    int nPrintOffsetX;
-    int nPrintOffsetY;
-    int nPrintWidthPix; // всей страницы
-    int nPrintHeightPix;
-    int nPrintPageWidthPix; // только области печати
-    int nPrintPageHeightPix;
-
-    pContext->GetLogicalDPI(nPrintDpiX, nPrintDpiY);
-    pContext->GetPhysicalRect(nPrintOffsetX, nPrintOffsetY, nPrintWidthPix, nPrintHeightPix);
-    pContext->GetPrintAreaSize(nPrintPageWidthPix, nPrintPageHeightPix);
-
-    if( -1 != settings.WidthPix && -1 != settings.HeightPix )
-    {
-        nPrintWidthPix      = settings.WidthPix;
-        nPrintHeightPix     = settings.HeightPix;
-        nPrintPageWidthPix  = settings.WidthPix;
-        nPrintPageHeightPix = settings.HeightPix;
-    }
-
-    if (settings.PrintableArea)
-    {
-        // печатать нужно только в области печати
-        // приравниваем высоту страницы к высоте области печати
-        nPrintWidthPix  = nPrintPageWidthPix;
-        nPrintHeightPix = nPrintPageHeightPix;
-        // обнуляем поправки на непечатаемую область
-        nPrintOffsetX = 0;
-        nPrintOffsetY = 0;
-    }
-
-    // подсчитываем размеры страницы в милиметрах
-    fPrintWidthMM   = 10 * tmp_ONE_INCH * nPrintWidthPix / nPrintDpiX;
-    fPrintHeightMM  = 10 * tmp_ONE_INCH * nPrintHeightPix / nPrintDpiX;
-
-    if (CAscPrintSettings::pm100  == settings.Mode)
-    {
-        dWidthPix   = nPrintDpiX * fPageWidth / ( 10 * tmp_ONE_INCH );
-        dHeightPix  = nPrintDpiX * fPageHeight / ( 10 * tmp_ONE_INCH );
-        if (true == settings.RotateEnable && ( nPrintWidthPix < dWidthPix || nPrintHeightPix < dHeightPix))
-        {
-            if (nPrintWidthPix < dHeightPix || nPrintHeightPix < dWidthPix)
-            {
-                // выбираем лучший вариант по площади
-                double dWidth1  = nPrintWidthPix < dWidthPix ? nPrintWidthPix : dWidthPix;
-                double dHeight1 = nPrintHeightPix < dHeightPix ? nPrintHeightPix : dHeightPix;
-
-                double dWidth2  = nPrintWidthPix < dHeightPix ? nPrintWidthPix : dHeightPix;
-                double dHeight2 = nPrintHeightPix < dWidthPix ? nPrintHeightPix : dWidthPix;
-
-                if (dWidth1 * dHeight1 >= dWidth2 * dHeight2)
-                {
-                    dLeftPix = 0;
-                    dTopPix = 0;
-                }
-                else
-                {
-                    dLeftPix = nPrintWidthPix - ( dHeightPix + dWidthPix ) / 2;
-                    dTopPix = dWidthPix / 2 - dHeightPix / 2;
-                    dAngle = tmp_M_PI_2;    // 90
-                }
-            }
-            else
-            {
-                //если не вписывается, но вписывается повернутое
-                dLeftPix    = nPrintWidthPix - (dHeightPix + dWidthPix ) / 2;
-                dTopPix     = nPrintHeightPix / 2 - dHeightPix / 2;
-                dAngle      = tmp_M_PI_2;   //90
-            }
-        }
-        else
-        {
-            if (dWidthPix < nPrintWidthPix) //если размеры позволяют, то распологаем по центру
-                dLeftPix = nPrintWidthPix / 2 - dWidthPix / 2;
-            else
-                dLeftPix = 0;
-            dTopPix = 0;
-        }
-    }
-    else if (CAscPrintSettings::pmStretch  == settings.Mode)
-    {
-        if (settings.RotateEnable && (fPageWidth / fPageHeight - 1) * (fPrintWidthMM / fPrintHeightMM - 1) < 0)
-        {
-            // переворачиваем
-            dWidthPix   = nPrintHeightPix;
-            dHeightPix  = nPrintWidthPix;
-            dLeftPix    = nPrintWidthPix / 2 - dWidthPix / 2;
-            dTopPix     = nPrintHeightPix / 2 - dHeightPix / 2;
-            dAngle      = tmp_M_PI_2;   // 90
-        }
-        else
-        {
-            dWidthPix = nPrintWidthPix;
-            dHeightPix = nPrintHeightPix;
-            dLeftPix = 0;
-            dTopPix = 0;
-        }
-    }
-    else
-    {
-        if (settings.ZoomEnable && settings.RotateEnable)
-        {
-            bool bRotate = false;
-            if ((fPageWidth / fPageHeight - 1) * ( fPrintWidthMM / fPrintHeightMM - 1) < 0)
-            {
-                // переворачиваем
-                double dTemp    = fPrintWidthMM;
-                fPrintWidthMM   = fPrintHeightMM;
-                fPrintHeightMM  = dTemp;
-                dAngle          = tmp_M_PI_2;   // 90
-                bRotate         = true;
-            }
-            float fFitX = 0;
-            float fFitY = 0;
-            float fFitWidth = 0;
-            float fFitHeight = 0;
-            FitToPage(fPageWidth, fPageHeight, fPrintWidthMM, fPrintHeightMM, fFitX, fFitY, fFitWidth, fFitHeight);
-
-            dWidthPix = nPrintDpiX * fFitWidth / (10 * tmp_ONE_INCH);
-            dHeightPix = nPrintDpiY * fFitHeight / (10 * tmp_ONE_INCH);
-            if (true == bRotate)
-            {
-                dLeftPix    = nPrintWidthPix / 2 - dWidthPix / 2;
-                dTopPix     = nPrintHeightPix / 2 - dHeightPix / 2;
-            }
-            else
-            {
-                dLeftPix    = nPrintDpiX * fFitX / (10 * tmp_ONE_INCH);
-                dTopPix     = nPrintDpiY * fFitY / (10 * tmp_ONE_INCH);
-            }
-        }
-        else if (settings.ZoomEnable)
-        {
-            float fFitX = 0;
-            float fFitY = 0;
-            float fFitWidth = 0;
-            float fFitHeight = 0;
-            FitToPage(fPageWidth, fPageHeight, fPrintWidthMM, fPrintHeightMM, fFitX, fFitY, fFitWidth, fFitHeight);
-            dWidthPix   = nPrintDpiX * fFitWidth / (10 * tmp_ONE_INCH);
-            dHeightPix  = nPrintDpiY * fFitHeight / (10 * tmp_ONE_INCH);
-            dLeftPix    = nPrintDpiX * fFitX / (10 * tmp_ONE_INCH);
-            dTopPix     = nPrintDpiY * fFitY / (10 * tmp_ONE_INCH);
-            dAngle      = 0;
-        }
-        else if (settings.RotateEnable)
-        {
-            // проверяем выходит ли картинка за габариты
-            if (fPrintWidthMM < fPageWidth || fPrintHeightMM < fPageHeight)
-            {
-                // проверяем выходит ли повернутая картинка за габариты
-                if (fPrintHeightMM < fPageWidth || fPrintWidthMM < fPageHeight)
-                {
-                    // выбираем, где больше площадь у повернутого или нет
-                    float fFitX1 = 0;
-                    float fFitY1 = 0;
-                    float fFitWidth1 = 0;
-                    float fFitHeight1 = 0;
-                    FitToPage( fPageWidth, fPageHeight, fPrintWidthMM, fPrintHeightMM, fFitX1, fFitY1, fFitWidth1, fFitHeight1 );
-
-                    float fFitX2 = 0;
-                    float fFitY2 = 0;
-                    float fFitWidth2 = 0;
-                    float fFitHeight2 = 0;
-                    FitToPage( fPageWidth, fPageHeight, fPrintHeightMM, fPrintWidthMM, fFitX2, fFitY2, fFitWidth2, fFitHeight2 );
-                    if (fFitWidth1 * fFitHeight1 < fFitWidth2 * fFitHeight2)
-                    {
-                        // поворачиваем
-                        dAngle      = tmp_M_PI_2;   // 90
-                        dWidthPix   = nPrintDpiX * fFitWidth2 / (10 * tmp_ONE_INCH);
-                        dHeightPix  = nPrintDpiY * fFitHeight2 / (10 * tmp_ONE_INCH);
-                        dLeftPix    = nPrintWidthPix / 2 - dWidthPix / 2;
-                        dTopPix     = nPrintHeightPix / 2 - dHeightPix / 2;
-                    }
-                    else
-                    {
-                        dAngle      = 0;
-                        dWidthPix   = nPrintDpiX * fFitWidth1 / (10 * tmp_ONE_INCH);
-                        dHeightPix  = nPrintDpiY * fFitHeight1 / (10 * tmp_ONE_INCH);
-                        dLeftPix    = nPrintDpiX * fFitX1 / (10 * tmp_ONE_INCH);
-                        dTopPix     = nPrintDpiY * fFitY1 / (10 * tmp_ONE_INCH);
-                    }
-                }
-                else
-                {
-                    // поворачиваем
-                    dWidthPix   = nPrintDpiX * fPageWidth / (10 * tmp_ONE_INCH);
-                    dHeightPix  = nPrintDpiY * fPageHeight / (10 * tmp_ONE_INCH);
-                    dLeftPix    = nPrintWidthPix - (dHeightPix + dWidthPix) / 2;
-                    dTopPix     = nPrintHeightPix / 2 - dHeightPix / 2;
-                    dAngle      = tmp_M_PI_2;   // 90
-                }
-            }
-            else
-            {
-                dWidthPix = nPrintDpiX * fPageWidth / ( 10 * tmp_ONE_INCH );
-                dHeightPix = nPrintDpiY * fPageHeight / ( 10 * tmp_ONE_INCH );
-                dLeftPix = nPrintWidthPix / 2 - dWidthPix / 2; // по центру по горизонтали
-                dTopPix = 0; // сверху по вертикали
-                dAngle = 0;
-            }
-        }
-        else
-        {
-            // проверяем выходит ли картинка за габариты
-            if (fPrintWidthMM < fPageWidth || fPrintHeightMM < fPageHeight)
-            {
-                float fFitX = 0;
-                float fFitY = 0;
-                float fFitWidth = 0;
-                float fFitHeight = 0;
-                FitToPage(fPageWidth, fPageHeight, fPrintWidthMM, fPrintHeightMM, fFitX, fFitY, fFitWidth, fFitHeight);
-                dWidthPix   = nPrintDpiX * fFitWidth / (10 * tmp_ONE_INCH);
-                dHeightPix  = nPrintDpiY * fFitHeight / (10 * tmp_ONE_INCH);
-                dLeftPix    = nPrintDpiX * fFitX / (10 * tmp_ONE_INCH);
-                dTopPix     = nPrintDpiY * fFitY / (10 * tmp_ONE_INCH);
-            }
-            else
-            {
-                dWidthPix   = nPrintDpiX * fPageWidth / (10 * tmp_ONE_INCH);
-                dHeightPix  = nPrintDpiY * fPageHeight / (10 * tmp_ONE_INCH);
-                dLeftPix    = nPrintWidthPix / 2 - dWidthPix / 2; // по центру по горизонтали
-                dTopPix     = 0; // сверху по вертикали
-            }
-        }
-    }
-    dLeftPix -= nPrintOffsetX;
-    dTopPix -= nPrintOffsetY;
-
-    CBgraFrame oFrame;
-    int nRasterW = (int)(dWidthPix + 0.5);
-    int nRasterH = (int)(dHeightPix + 0.5);
-    
+    int nRasterW = (int)(oPagePrintData.WidthPix + 0.5);
+    int nRasterH = (int)(oPagePrintData.HeightPix + 0.5);
 #ifdef _XCODE
     // 16 bit align pixPerRow
     nRasterW += 8;
     nRasterW = (nRasterW - (nRasterW & 0x0F));
-    
+
     nRasterH += 8;
     nRasterH = (nRasterH - (nRasterH & 0x0F));
 #endif
-    
-    oFrame.put_Width(nRasterW);
-    oFrame.put_Height(nRasterH);
-    oFrame.put_Stride(4 * nRasterW);
 
-    BYTE* pDataRaster = new BYTE[4 * nRasterW * nRasterH];
-    memset(pDataRaster, 0xFF, 4 * nRasterW * nRasterH);
-    oFrame.put_Data(pDataRaster);
-
-    NSGraphics::IGraphicsRenderer* pRenderer = NSGraphics::Create();
-    pRenderer->SetFontManager(m_pFontManager);
-    pRenderer->SetImageCache(m_pCache);
-
-    pRenderer->CreateFromBgraFrame(&oFrame);
-#ifndef _XCODE
-    pRenderer->SetSwapRGB(false);
-#else
-    pRenderer->SetSwapRGB(true);
-#endif
-
-    pRenderer->SetTileImageDpi(96.0);
+    // decoded base64 commands
+    BYTE* pPageCommands = NULL;
+    int nPageCommandsLen = 0;
 
     if (NULL == m_pNativePrinter)
-        this->DrawOnRenderer(pRenderer, nPageIndex);
-    else
     {
-        pRenderer->put_Width(fPageWidth);
-        pRenderer->put_Height(fPageHeight);
-        m_pNativePrinter->Draw(pRenderer, nPageIndex);
+        NSFile::CBase64Converter::Decode(m_arPages[nPageIndex].Base64.c_str(), m_arPages[nPageIndex].Base64.length(), pPageCommands, nPageCommandsLen);
     }
 
-    RELEASEINTERFACE(pRenderer);
-
+    IRenderer* pNativeRenderer = (IRenderer*)pContext->GetNativeRenderer();
 #if 0
-    oFrame.SaveFile(L"D:\\ttttt.png", 4);
+    // если хочется проверить печать в растр
+    RELEASEINTERFACE(pNativeRenderer);
 #endif
+    if (NULL != pNativeRenderer)
+    {
+        IMetafileToRenderter* pNativeRendererChecker = (IMetafileToRenderter*)pContext->GetNativeRendererUnsupportChecker();
+        if (NULL != pNativeRendererChecker)
+        {
+            // проверяем на поддержку. как только рендерер поддержит все команды - GetNativeRendererUnsupportChecker должен вернуть NULL
+            try
+            {
+                if (NULL == m_pNativePrinter)
+                    NSOnlineOfficeBinToPdf::ConvertBufferToRenderer(pPageCommands, nPageCommandsLen, pNativeRendererChecker);
+                else
+                    m_pNativePrinter->Draw(pNativeRendererChecker->m_pRenderer, nPageIndex);
+            }
+            catch (int nError)
+            {
+                RELEASEINTERFACE(pNativeRenderer);
+            }
+        }
+        RELEASEOBJECT(pNativeRendererChecker);
+    }
+
+    IRenderer* pDrawingRenderer = pNativeRenderer;
+    CBgraFrame* pBgraFrame = NULL;
+
+    if (NULL != pNativeRenderer)
+    {
+        // TODO: ---
+        double dAngleDeg = oPagePrintData.Angle * 180.0 / M_PI;
+        if ((std::abs(dAngleDeg - 90) < 1.0) || (std::abs(dAngleDeg - 270) < 1.0))
+        {
+            double dPrintWidthMM = oPagePrintData.PrintWidthMM;
+            double dPrintHeightMM = oPagePrintData.PrintHeightMM;
+
+            if (dPrintWidthMM < dPrintHeightMM)
+                std::swap(dPrintWidthMM, dPrintHeightMM);
+
+            double m11 = 0;
+            double m12 = oPagePrintData.PageHeight / oPagePrintData.PageWidth; // horizontal
+            double m21 = -dPrintWidthMM / dPrintHeightMM; // vertival
+            double m22 = 0;
+            double dx = dPrintWidthMM;
+            double dy = 0;
+            pNativeRenderer->SetBaseTransform(m11, m12, m21, m22, dx, dy);
+        }
+        // ---
+
+        pContext->InitRenderer(pNativeRenderer, m_pFontManager);
+    }
+    else
+    {
+        pBgraFrame = new CBgraFrame();
+        pBgraFrame->put_Width(nRasterW);
+        pBgraFrame->put_Height(nRasterH);
+        pBgraFrame->put_Stride(4 * nRasterW);
+
+        BYTE* pDataRaster = new BYTE[4 * nRasterW * nRasterH];
+        memset(pDataRaster, 0xFF, 4 * nRasterW * nRasterH);
+        pBgraFrame->put_Data(pDataRaster);
+
+        NSGraphics::IGraphicsRenderer* pGraphicsRenderer = NSGraphics::Create();
+        pGraphicsRenderer = NSGraphics::Create();
+        pGraphicsRenderer->SetFontManager(m_pFontManager);
+        pGraphicsRenderer->SetImageCache(m_pCache);
+
+        pGraphicsRenderer->CreateFromBgraFrame(pBgraFrame);
+    #ifndef _XCODE
+        pGraphicsRenderer->SetSwapRGB(false);
+    #else
+        pGraphicsRenderer->SetSwapRGB(true);
+    #endif
+
+        pGraphicsRenderer->SetTileImageDpi(96.0);
+
+        pDrawingRenderer = pGraphicsRenderer;
+    }
+
+    if (NULL == m_pNativePrinter)
+    {
+        CMetafileToRenderterDesktop oCorrector(pDrawingRenderer);
+        oCorrector.m_pPrintData = this;
+
+        NSOnlineOfficeBinToPdf::ConvertBufferToRenderer(pPageCommands, nPageCommandsLen, &oCorrector);
+    }
+    else
+    {
+        pDrawingRenderer->put_Width(oPagePrintData.PageWidth);
+        pDrawingRenderer->put_Height(oPagePrintData.PageHeight);
+        m_pNativePrinter->Draw(pDrawingRenderer, nPageIndex);
+    }
 
     if (m_pAdditional)
-        m_pAdditional->Check_Print(pRenderer, m_pFontManager, nRasterW, nRasterH, fPageWidth, fPageHeight);
+        m_pAdditional->Check_Print(pDrawingRenderer, m_pFontManager, nRasterW, nRasterH, oPagePrintData.PageWidth, oPagePrintData.PageHeight);
 
-    pContext->BitBlt(oFrame.get_Data(), 0, 0, nRasterW, nRasterH,
-                     dLeftPix, dTopPix, dWidthPix, dHeightPix, dAngle);
-    
-#ifdef _XCODE
-    oFrame.put_Data(NULL);
+    RELEASEINTERFACE(pDrawingRenderer);
+    RELEASEARRAYOBJECTS(pPageCommands);
+
+    if (pBgraFrame)
+    {
+#if 0
+        pBgraFrame->SaveFile(L"FILE", 4);
 #endif
-}
 
-void CPrintData::FitToPage(float fSourceWidth, float  fSourceHeight, float  fTargetWidth, float fTargetHeight, float& fResX, float& fResY, float& fResWidth, float& fResHeight)
-{
-    if (fSourceWidth * fTargetHeight > fTargetWidth * fSourceHeight)
-    {
-        fResHeight = fTargetWidth * fSourceHeight / fSourceWidth;
-        fResWidth = fTargetWidth;
+        pContext->BitBlt(pBgraFrame->get_Data(), 0, 0, nRasterW, nRasterH,
+                         oPagePrintData.LeftPix, oPagePrintData.TopPix, oPagePrintData.WidthPix, oPagePrintData.HeightPix, oPagePrintData.Angle);
 
-        fResX = 0;
-        fResY = fTargetHeight / 2 - fResHeight / 2;
+#ifdef _XCODE
+        pBgraFrame->put_Data(NULL);
+#endif
     }
-    else
-    {
-        fResWidth = fTargetHeight * fSourceWidth / fSourceHeight;
-        fResHeight = fTargetHeight;
-        fResY = 0;
-        fResX = fTargetWidth / 2 - fResWidth / 2;
-    }
-}
-
-void CPrintData::TestSaveToRasterFile(std::wstring sFile, int nWidth, int nHeight, int nPageIndex)
-{
-    CBgraFrame oFrame;
-    int nRasterW = nWidth;
-    int nRasterH = nHeight;
-    oFrame.put_Width(nRasterW);
-    oFrame.put_Height(nRasterH);
-    oFrame.put_Stride(-4 * nRasterW);
-
-    BYTE* pDataRaster = new BYTE[4 * nRasterW * nRasterH];
-    memset(pDataRaster, 0xFF, 4 * nRasterW * nRasterH);
-    oFrame.put_Data(pDataRaster);
-
-    NSGraphics::IGraphicsRenderer* pRenderer = NSGraphics::Create();
-    pRenderer->SetFontManager(m_pFontManager);
-    pRenderer->SetImageCache(m_pCache);
-
-    pRenderer->CreateFromBgraFrame(&oFrame);
-    pRenderer->SetSwapRGB(false);
-
-    this->DrawOnRenderer(pRenderer, nPageIndex);
-
-    RELEASEINTERFACE(pRenderer);
-
-    oFrame.SaveFile(sFile, 4);
 }
