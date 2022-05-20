@@ -358,8 +358,13 @@ namespace NSConversions
 
                 if (pLogicBrush && pLogicBrush->Rectable)
                 {
-                    oTransform.translate((oPathBounds.left() - pLogicBrush->Rect.X) / dScaleX,
-                                         (oPathBounds.top() - pLogicBrush->Rect.Y) / dScaleY);
+                    double dOffsetX = (oPathBounds.left() - pLogicBrush->Rect.X) / nImageWidth;
+                    double dOffsetY = (oPathBounds.top() - pLogicBrush->Rect.Y) / nImageHeight;
+
+                    //dOffsetX *= (dDpiX / dTileDpi);
+                    //dOffsetY *= (dDpiY / dTileDpi);
+
+                    oTransform.translate(dOffsetX, dOffsetY);
                 }
 
                 oTransform.scale(dScaleX, dScaleY);
