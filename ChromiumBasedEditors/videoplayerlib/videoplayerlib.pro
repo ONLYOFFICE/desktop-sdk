@@ -20,8 +20,6 @@ build_xp {
     }
 }
 
-message($$PRO_SUFFIX)
-
 !isEmpty(PRO_SUFFIX) {
     DESTDIR=$$DESTDIR/$$PRO_SUFFIX
     OBJECTS_DIR=$$OBJECTS_DIR/$$PRO_SUFFIX

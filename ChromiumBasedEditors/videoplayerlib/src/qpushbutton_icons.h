@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <QPushButton>
 #include <QResizeEvent>
+#include <QPalette>
 #include <math.h>
 
 static QString getButtonBackground(QString src, QString srcH, QString srcP, double dDpi = 0.0)
@@ -95,7 +96,7 @@ static void QWidget_setBackground(QWidget* widget, int r, int g, int b)
 #endif
 
     QPalette pal;
-    pal.setColor(QPalette::Background, QColor(r, g, b));
+    pal.setColor(QPalette::Window, QColor(r, g, b));
     widget->setAutoFillBackground(true);
     widget->setPalette(pal);
 }

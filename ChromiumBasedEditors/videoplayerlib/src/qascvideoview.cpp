@@ -103,7 +103,7 @@ QAscVideoView::QAscVideoView(QWidget *parent, int r, int g, int b) : QWidget(par
 
     QObject::connect(m_pInternal->m_pFooter->m_pSlider, SIGNAL(valueChanged(int)), this, SLOT(slotSeekChanged(int)));
 
-    QObject::connect(m_pInternal->m_pPlayer, SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(slotPlayerStateChanged(QMediaPlayer::State)));
+    QObject::connect(m_pInternal->m_pPlayer, SIGNAL(stateChanged(QMediaPlayer_State)), this, SLOT(slotPlayerStateChanged(QMediaPlayer_State)));
     QObject::connect(m_pInternal->m_pPlayer, SIGNAL(posChanged(int)), this, SLOT(slotPlayerPosChanged(int)));
 
 #ifndef USE_VLC_LIBRARY
@@ -193,7 +193,7 @@ void QAscVideoView::resizeEvent(QResizeEvent* e)
 void QAscVideoView::paintEvent(QPaintEvent *)
 {
      QStyleOption opt;
-     opt.init(this);
+     opt.initFrom(this);
      QPainter p(this);
      style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 }
@@ -460,7 +460,7 @@ void QAscVideoView::slotPlayerPosChanged(int nPos)
     m_pInternal->m_bIsSeekEnabled = true;
 }
 
-void QAscVideoView::slotPlayerStateChanged(QMediaPlayer::State state)
+void QAscVideoView::slotPlayerStateChanged(QMediaPlayer_State state)
 {
     m_pInternal->m_bIsPlay = (state == QMediaPlayer::PlayingState) ? false : true;
     UpdatePlayPause();

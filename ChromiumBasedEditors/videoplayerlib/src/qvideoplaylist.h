@@ -14,7 +14,7 @@
 #include "lib_base.h"
 
 #ifndef USE_VLC_LIBRARY
-#include <QMediaPlayer>
+#include "qascmediaplayer.h"
 #endif
 
 class CVideoExt

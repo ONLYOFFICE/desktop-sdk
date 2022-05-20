@@ -106,9 +106,16 @@ QVideoPlaylist::QVideoPlaylist(QWidget *parent) : QWidget(parent)
 #ifndef USE_VLC_LIBRARY
     m_pCheckPlayer = new QMediaPlayer();
     QObject::connect(m_pCheckPlayer, SIGNAL(durationChanged(qint64)), this, SLOT(_onSlotDurationChanged(qint64)));
+    QObject::connect(m_pCheckPlayer, SIGNAL(mediaStatusChanged(QMediaPlayer::MediaStatus)), this, SLOT(_onSlotMediaStatusChanged(QMediaPlayer::MediaStatus)));
+
+#ifndef QT_VERSION_6
     QObject::connect(m_pCheckPlayer, SIGNAL(mediaChanged(QMediaContent)), this, SLOT(_onSlotMediaChanged(QMediaContent)));
     QObject::connect(m_pCheckPlayer, SIGNAL(error(QMediaPlayer::Error)), this, SLOT(_onSlotError(QMediaPlayer::Error)));
-    QObject::connect(m_pCheckPlayer, SIGNAL(mediaStatusChanged(QMediaPlayer::MediaStatus)), this, SLOT(_onSlotMediaStatusChanged(QMediaPlayer::MediaStatus)));
+#else
+    QObject::connect(m_pCheckPlayer, SIGNAL(sourceChanged(QMediaContent)), this, SLOT(_onSlotMediaChanged(QMediaContent)));
+    //QObject::connect(m_pCheckPlayer, SIGNAL(error(QMediaPlayer::Error)), this, SLOT(_onSlotError(QMediaPlayer::Error)));
+#endif
+
 #endif
 }
 
@@ -564,12 +571,12 @@ void QVideoPlaylist::_onSlotDurationChanged(qint64 duration)
     emit _onCheckDuration(m_sCheckFile, sDur);
 
     m_pCheckPlayer->stop();
-    m_pCheckPlayer->setMedia(QMediaContent());
+    QMediaPlayer_setMedia(m_pCheckPlayer, "");
 }
 
 void QVideoPlaylist::_onSlotMediaChanged(QMediaContent content)
 {
-    if (content.isNull())
+    if (QMediaContent_isEmpty(content))
     {
         m_sCheckFile = "";
         return;
@@ -635,7 +642,7 @@ void QVideoPlaylist::_onThreadFunc()
     m_oCS.Leave();
 
 #ifndef USE_VLC_LIBRARY
-    m_pCheckPlayer->setMedia(QUrl::fromLocalFile(m_sCheckFile));
+    QMediaPlayer_setMedia(m_pCheckPlayer, m_sCheckFile);
 #else
     m_pCheckMedia = new VlcMedia(m_sCheckFile, true, (VlcInstance*)NSBaseVideoLibrary::GetLibrary());
     QObject::connect(m_pCheckMedia, SIGNAL(parsedChanged(bool)), this, SLOT(_onVlcMediaParseChanged(bool)));
