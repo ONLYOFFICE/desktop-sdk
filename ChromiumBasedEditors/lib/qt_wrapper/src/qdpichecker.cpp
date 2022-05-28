@@ -36,6 +36,10 @@
 #include <QApplication>
 #include "./../include/qcefview.h"
 
+#ifdef WIN_QT56
+#include <QDesktopWidget>
+#endif
+
 #ifdef _LINUX
 #include <QX11Info>
 #endif
@@ -120,6 +124,10 @@ int QDpiChecker::GetWidgetDpi(QWidget* w, unsigned int* dx, unsigned int* dy)
         *dy = 96;
         return 0;
     }
+#ifndef WIN_QT56
     int nScreenNumber = QApplication::screens().indexOf(w->screen());
+#else
+    int nScreenNumber = QApplication::desktop()->screenNumber(w);
+#endif
     return GetMonitorDpi(nScreenNumber, dx, dy);
 }
