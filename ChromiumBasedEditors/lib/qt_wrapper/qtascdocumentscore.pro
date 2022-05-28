@@ -33,8 +33,6 @@ SOURCES += \
 
 core_windows {
     LIBS += -luser32
-
-    build_xp:DEFINES+=WIN_QT56
 }
 
 core_linux {
