@@ -1769,7 +1769,7 @@ public:
         if (!NSCommon::CSystemWindowScale::IsInit())
         {
             std::map<std::string, std::string>::iterator pairUseSystemScale = _map->find("system-scale");
-            if (pairUseSystemScale != _map->end() && (NSStringUtils::GetDouble(pairUseSystemScale->second) < 0.5))
+            if ((m_dForceDisplayScale > 0) || (pairUseSystemScale != _map->end() && (NSStringUtils::GetDouble(pairUseSystemScale->second) < 0.5)))
             {
                 NSCommon::CSystemWindowScale::SetUseSystemScaling(false);
             }
