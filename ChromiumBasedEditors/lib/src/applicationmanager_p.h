@@ -60,7 +60,7 @@
 #include "providers.h"
 
 #include "utils.h"
-#include "../../../../core/DesktopEditor/xmlsec/src/include/XmlCertificate.h"
+#include "../../../../core/DesktopEditor/xmlsec/src/include/CertificateCommon.h"
 
 #ifdef CEF_2623
 #define MESSAGE_IN_BROWSER
@@ -954,7 +954,7 @@ public:
     void CheckVersion(const std::wstring& sDirectory)
     {
         std::string sHashLocal = "";
-        ICertificate* pCert = ICertificate::CreateInstance();
+        ICertificate* pCert = NSCertificate::CreateInstance();
 
         sHashLocal += pCert->GetHash(sDirectory + L"/word/sdk-all-min.js", OOXML_HASH_ALG_SHA256);
         sHashLocal += pCert->GetHash(sDirectory + L"/slide/sdk-all-min.js", OOXML_HASH_ALG_SHA256);
