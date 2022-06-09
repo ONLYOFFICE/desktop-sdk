@@ -664,7 +664,7 @@ public:
                 return;
             }
 
-            ICertificate* pCert = ICertificate::CreateInstance();
+            ICertificate* pCert = NSCertificate::CreateInstance();
             std::string sHash = pCert->GetHash(sFileDst, OOXML_HASH_ALG_SHA256);
             delete pCert;
 
@@ -1139,7 +1139,7 @@ public:
             std::wstring sTest = m_sDownloadViewPath.substr(posHash);
             if (sTest == L".asc_file_get_hash")
             {
-                ICertificate* pCert = ICertificate::CreateInstance();
+                ICertificate* pCert = NSCertificate::CreateInstance();
                 std::string sHash = pCert->GetHash(m_sDownloadViewPath, OOXML_HASH_ALG_SHA256);
                 delete pCert;
 
@@ -2734,7 +2734,7 @@ public:
 
             std::wstring sUnzipDir = oZIP.GetDirectory();
 
-            ICertificate* pCertificate = ICertificate::GetById(sId);
+            ICertificate* pCertificate = NSCertificate::GetById(sId);
             std::wstring sSignatures = L"";
             int nSignError = 0;
             if (pCertificate)
@@ -2887,15 +2887,15 @@ public:
         else if (message_name == "on_signature_defaultcertificate")
         {
             // данные сертификата по умолчанию
-            CCertificateInfo info = ICertificate::GetDefault();
+            CCertificateInfo info = NSCertificate::GetDefault();
 
             CJSONSimple serializer;
             serializer.Start();
-            serializer.Write(L"name", info.GetName());
+            serializer.Write(L"name", info.Name);
             serializer.Next();
-            serializer.Write(L"id", info.GetId());
+            serializer.Write(L"id", info.Id);
             serializer.Next();
-            serializer.Write(L"date", info.GetDate());
+            serializer.Write(L"date", info.Date);
             serializer.End();
 
             CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("on_signature_defaultcertificate_ret");
@@ -2906,7 +2906,7 @@ public:
         else if (message_name == "on_signature_selectsertificate")
         {
             // диалог выбора сертификата
-            ICertificate* pCert = ICertificate::CreateInstance();
+            ICertificate* pCert = NSCertificate::CreateInstance();
 
             WindowHandleId _handle = m_pParent->GetWidgetImpl()->cef_handle;
             int nShowDialogResult = pCert->ShowSelectDialog(&_handle);
@@ -2922,15 +2922,15 @@ public:
             CefRefPtr<CefProcessMessage> messageOut = CefProcessMessage::Create("on_signature_selectsertificate_ret");
             if (1 == nShowDialogResult)
             {
-                CCertificateInfo info = pCert->GetInfo();
+                CCertificateInfo info = NSCertificate::GetInfo(pCert);
 
                 CJSONSimple serializer;
                 serializer.Start();
-                serializer.Write(L"name", info.GetName());
+                serializer.Write(L"name", info.Name);
                 serializer.Next();
-                serializer.Write(L"id", info.GetId());
+                serializer.Write(L"id", info.Id);
                 serializer.Next();
-                serializer.Write(L"date", info.GetDate());
+                serializer.Write(L"date", info.Date);
                 serializer.End();
 
                 messageOut->GetArgumentList()->SetString(0, serializer.GetData());
@@ -4979,7 +4979,7 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
                 bIsPassAdd = true;
                 message->GetArgumentList()->SetString(2, sPass);
 
-                ICertificate* pCert = ICertificate::CreateInstance();
+                ICertificate* pCert = NSCertificate::CreateInstance();
                 std::string sHash = pCert->GetHash(sNotEditableLocal, OOXML_HASH_ALG_SHA256);
                 delete pCert;
 
@@ -5083,7 +5083,7 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
         bIsPassAdd = true;
         message->GetArgumentList()->SetString(2, sPass);
 
-        ICertificate* pCert = ICertificate::CreateInstance();
+        ICertificate* pCert = NSCertificate::CreateInstance();
         std::string sHash = pCert->GetHash(sFileSrc, OOXML_HASH_ALG_SHA256);
         delete pCert;
 
@@ -5117,7 +5117,7 @@ void CCefView_Private::LocalFile_IncrementCounter()
 
                 if (90 == m_nLocalFileOpenError || 91 == m_nLocalFileOpenError)
                 {
-                    ICertificate* pCert = ICertificate::CreateInstance();
+                    ICertificate* pCert = NSCertificate::CreateInstance();
                     std::string sHash = pCert->GetHash(m_oLocalInfo.m_oInfo.m_sFileSrc, OOXML_HASH_ALG_SHA256);
                     delete pCert;
 
@@ -5158,7 +5158,7 @@ void CCefView_Private::OnFileConvertToEditor(const int& nError)
 
                 if (90 == nError || 91 == nError)
                 {
-                    ICertificate* pCert = ICertificate::CreateInstance();
+                    ICertificate* pCert = NSCertificate::CreateInstance();
                     std::string sHash = pCert->GetHash(m_oConverterToEditor.m_sComparingFile, OOXML_HASH_ALG_SHA256);
                     delete pCert;
 
@@ -6236,34 +6236,33 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 
             if (pData)
             {
-                ICertificate* pCert = ICertificate::CreateInstance();
                 std::wstring sCertPass = pData->get_CertPassword();
                 std::wstring sKeyPass = pData->get_KeyPassword();
                 std::string sCertPassA = U_TO_UTF8(sCertPass);
                 std::string sKeyPassA = U_TO_UTF8(sKeyPass);
-                bool bFromFiles = pCert->FromFiles(pData->get_KeyPath(), sKeyPassA, pData->get_CertPath(), sCertPassA);
+                ICertificate* pCert = NSCertificate::FromFiles(pData->get_KeyPath(), sKeyPassA, pData->get_CertPath(), sCertPassA);
 
-                if (bFromFiles)
+                if (pCert)
                 {
-                    CCertificateInfo info = pCert->GetInfo();
+                    CCertificateInfo info = NSCertificate::GetInfo(pCert);
 
                     CJSONSimple serializer;
                     serializer.Start();
-                    serializer.Write(L"name", info.GetName());
+                    serializer.Write(L"name", info.Name);
                     serializer.Next();
-                    serializer.Write(L"id", info.GetId());
+                    serializer.Write(L"id", info.Id);
                     serializer.Next();
-                    serializer.Write(L"date", info.GetDate());
+                    serializer.Write(L"date", info.Date);
                     serializer.End();
 
                     message->GetArgumentList()->SetString(0, serializer.GetData());
+
+                    RELEASEOBJECT(pCert);
                 }
                 else
                 {
                     message->GetArgumentList()->SetString(0, "{}");
-                }
-
-                RELEASEOBJECT(pCert);
+                }                
             }
 
             SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
