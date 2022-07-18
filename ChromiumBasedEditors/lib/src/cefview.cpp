@@ -3964,10 +3964,21 @@ _e.sendEvent(\"asc_onError\", -452, 0);\n\
                      const CefString& errorText,
                      const CefString& failedUrl) OVERRIDE
     {
+        std::string s1 = frame->GetURL().ToString();
+        std::string s2 = failedUrl.ToString();
+        std::string s3 = errorText.ToString();
+
         if (m_pParent && errorCode != ERR_ABORTED)
         {
-            m_pParent->load(L"ascdesktop://loaderror.html");
-            m_pParent->m_pInternal->m_bIsLoadingError = true;
+            if (frame->IsMain())
+            {
+                m_pParent->load(L"ascdesktop://loaderror.html");
+                m_pParent->m_pInternal->m_bIsLoadingError = true;
+            }
+            else
+            {
+                //frame->LoadURL(L"ascdesktop://loaderror.html");
+            }
         }
     }
 
