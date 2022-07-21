@@ -1931,8 +1931,12 @@ void NSQRenderer::CQRenderer::fillPath(QPainterPath* pPath)
             int nImageWidth = 0;
             int nImageHeight = 0;
             pBrush = NSConversions::createTextureBrush(m_oBrush.TexturePath, nImageWidth, nImageHeight);
-            NSConversions::correctBrushTextureTransform(&m_oBrush, pBrush, pPath, nImageWidth, nImageHeight, this);
-            m_pContext->GetPainter()->fillPath(m_oPath, *pBrush);
+
+            if (pBrush)
+            {
+                NSConversions::correctBrushTextureTransform(&m_oBrush, pBrush, pPath, nImageWidth, nImageHeight, this);
+                m_pContext->GetPainter()->fillPath(m_oPath, *pBrush);
+            }
 
             if (255 != m_oBrush.TextureAlpha)
                 m_pContext->GetPainter()->setOpacity(1.0f);
