@@ -1766,6 +1766,18 @@ public:
                 if (0 == sUrl.find(L"about:blank"))
                     return true;
 
+                // заглушка для персонал (https://bugzilla.onlyoffice.com/show_bug.cgi?id=57638)
+                if (m_pParent->GetType() == cvwtSimple && !m_pParent->m_pInternal->m_bIsExternalCloud)
+                {
+                    std::wstring sFindEnd = L"products/files/doceditor";
+                    std::wstring::size_type pos = sUrlLower.rfind(sFindEnd);
+
+                    if (std::wstring::npos != pos && ((pos + sFindEnd.length()) == sUrlLower.length()))
+                    {
+                        return true;
+                    }
+                }
+
                 NSEditorApi::CAscOnOpenExternalLink* pData = new NSEditorApi::CAscOnOpenExternalLink();
                 pData->put_Id(m_pParent->GetId());
                 pData->put_Url(sUrl);
