@@ -1956,7 +1956,7 @@ private:
 
 public:
     // own functions
-    CQRendererChecker() { m_nBrushType = 0; }
+	CQRendererChecker() { m_nBrushType = c_BrushTypeSolid; }
     virtual ~CQRendererChecker() {}
 
     // тип рендерера-----------------------------------------------------------------------------
