@@ -2182,8 +2182,14 @@ public:
 
 public:
     virtual std::wstring GetImagePath(const std::wstring& sPath) override { return L""; }
-    virtual void SetLinearGradiant(const double& x0, const double& y0, const double& x1, const double& y1) override {}
-    virtual void SetRadialGradiant(const double& dX0, const double& dY0, const double& dR0, const double& dX1, const double& dY1, const double& dR1) override {}
+	virtual void SetLinearGradiant(const double& x0, const double& y0, const double& x1, const double& y1) override
+	{
+		m_pRenderer->put_BrushType(/*c_BrushTypePathGradient1*/2006);
+	}
+	virtual void SetRadialGradiant(const double& dX0, const double& dY0, const double& dR0, const double& dX1, const double& dY1, const double& dR1) override
+	{
+		m_pRenderer->put_BrushType(/*c_BrushTypePathGradient2*/2007);
+	}
     virtual void InitPicker(const std::wstring& sFontsFolder) override {}
     virtual void InitPicker(NSFonts::IApplicationFonts* pFonts) override {}
 };
