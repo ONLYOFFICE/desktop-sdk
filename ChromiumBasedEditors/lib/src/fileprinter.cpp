@@ -848,8 +848,12 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
     IRenderer* pDrawingRenderer = pNativeRenderer;
     CBgraFrame* pBgraFrame = NULL;
 
-    if (NULL != pNativeRenderer)
+	bool bIsNeedRestore = false;
+	if (NULL != pNativeRenderer)
     {
+		bIsNeedRestore = true;
+		pContext->SaveState();
+
         // TODO: ---
         double dAngleDeg = oPagePrintData.Angle * 180.0 / M_PI;
         if ((std::abs(dAngleDeg - 90) < 1.0) || (std::abs(dAngleDeg - 270) < 1.0))
@@ -933,4 +937,7 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
         pBgraFrame->put_Data(NULL);
 #endif
     }
+
+	if (bIsNeedRestore)
+		pContext->RestoreState();
 }

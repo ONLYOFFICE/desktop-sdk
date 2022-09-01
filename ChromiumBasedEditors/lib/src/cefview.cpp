@@ -6497,6 +6497,17 @@ double CCefView::GetDeviceScale()
 	return dDeviceScale;
 }
 
+int CCefView::GetPrintPageOrientation(const int& nPage)
+{
+	int nCount = (int)m_pInternal->m_oPrintData.m_arPages.size();
+	if (nPage < 0 || nPage >= nCount)
+		return 0;
+	CPagePrintData& oData = m_pInternal->m_oPrintData.m_arPages[nPage];
+	if (oData.Width > oData.Height)
+		return 1;
+	return 0;
+}
+
 CefRefPtr<CefFrame> CCefView_Private::CCloudCryptoUpload::GetFrame()
 {
 	if (!View->m_handler || !View->m_handler->GetBrowser())

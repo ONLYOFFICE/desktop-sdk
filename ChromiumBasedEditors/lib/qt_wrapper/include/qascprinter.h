@@ -76,6 +76,11 @@ public:
 
     virtual void InitRenderer(void* pRenderer, void* pFontManager);
 
+	virtual void SetPageOrientation(int nOrientaion);
+
+	virtual void SaveState();
+	virtual void RestoreState();
+
 private:
     void DrawImage(QPainter* painter, const QImage& image, const QRect& rect, const QRect& rectSrc);
     void setDefaults();

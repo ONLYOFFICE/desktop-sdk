@@ -341,3 +341,19 @@ void QAscPrinterContext::InitRenderer(void* pRenderer, void* pFontManager)
         pQRenderer->SetFontsManager((NSFonts::IFontManager*)pFontManager);
     }
 }
+
+void QAscPrinterContext::SetPageOrientation(int nOrientaion)
+{
+	m_oPrinter.setPageOrientation((0 == nOrientaion) ? QPageLayout::Portrait : QPageLayout::Landscape);
+}
+
+void QAscPrinterContext::SaveState()
+{
+	if (m_bIsUsePainter)
+		m_oPainter.save();
+}
+void QAscPrinterContext::RestoreState()
+{
+	if (m_bIsUsePainter)
+		m_oPainter.restore();
+}
