@@ -1531,9 +1531,9 @@ DE.controllers.Main.DisableVersionHistory(); \
         {
             std::vector<CefRefPtr<CefV8Value> >::const_iterator iter = arguments.begin();
 
-            std::string sParam = (*iter)->GetStringValue().ToString(); ++iter;
-            int nDeleteIndex = (*iter)->GetIntValue(); ++iter;
-            int nCount = (*iter)->GetIntValue();
+			CefRefPtr<CefV8Value> param = arguments[0];
+			int nDeleteIndex = arguments[1]->GetIntValue();
+			int nCount = arguments[2]->GetIntValue();
 
             if (nDeleteIndex < m_nCurrentChangesIndex)
             {
@@ -1547,10 +1547,22 @@ DE.controllers.Main.DisableVersionHistory(); \
                 FILE* _file = NSFile::CFileBinary::OpenFileNative(m_sLocalFileChanges, L"a+");
                 if (NULL != _file)
                 {
-                    fprintf(_file, "\"");
-                    fprintf(_file, sParam.c_str());
-                    fprintf(_file, "\",");
-                    fclose(_file);
+					if (!param->IsArray())
+					{
+						fprintf(_file, "\"");
+						fprintf(_file, param->GetStringValue().ToString().c_str());
+						fprintf(_file, "\",");
+					}
+					else
+					{
+						for (int i = 0; i < nCount; ++i)
+						{
+							fprintf(_file, "\"");
+							fprintf(_file, param->GetValue(i)->GetStringValue().ToString().c_str());
+							fprintf(_file, "\",");
+						}
+					}
+					fclose(_file);
                 }
             }
             return true;
