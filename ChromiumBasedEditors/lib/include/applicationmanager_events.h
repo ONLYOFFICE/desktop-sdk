@@ -460,6 +460,11 @@ namespace NSEditorApi
         virtual void NewPage() {}
 
         virtual void InitRenderer(void* pRenderer, void* pFontManager) {}
+
+		virtual void SetPageOrientation(int nOrientaion) {}
+
+		virtual void SaveState() {}
+		virtual void RestoreState() {}
     };
 
     class CAscPrintPage : public IMenuEventDataBase
