@@ -12,6 +12,7 @@
 #include <QPaintEvent>
 #include <QWheelEvent>
 #include <QMediaPlayer>
+#include "src/qascmediaplayer.h"
 
 #include <QtCore/QtGlobal>
 
@@ -92,7 +93,7 @@ public slots:
     void slotOpenFile(QString sFile);
 
     void slotPlayerPosChanged(int nPos);
-    void slotPlayerStateChanged(QMediaPlayer::State state);
+    void slotPlayerStateChanged(QMediaPlayer_State state);
     void slotVideoAvailableChanged(bool videoAvailable);
 
 protected:

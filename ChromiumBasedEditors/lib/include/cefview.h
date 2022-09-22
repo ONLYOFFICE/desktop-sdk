@@ -132,6 +132,8 @@ public:
 
     double GetDeviceScale();
 
+	int GetPrintPageOrientation(const int& nPage);
+
 protected:
     int m_nId;
     CefViewWrapperType m_eWrapperType;

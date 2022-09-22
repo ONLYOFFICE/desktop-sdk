@@ -48,7 +48,7 @@
 #include "../../../../core/XpsFile/XpsFile.h"
 #include "../../../../core/HtmlRenderer/include/HTMLRenderer3.h"
 
-#include "../../../../core/DesktopEditor/xmlsec/src/include/XmlCertificate.h"
+#include "../../../../core/DesktopEditor/xmlsec/src/include/CertificateCommon.h"
 
 #include "Logger.h"
 
@@ -367,7 +367,7 @@ public:
 
                     m_sDocInfo = U_TO_UTF8((oChecker.sDocumentID));
 
-                    ICertificate* pCert = ICertificate::CreateInstance();
+                    ICertificate* pCert = NSCertificate::CreateInstance();
                     m_sHashFile = pCert->GetHash(sFilePath, OOXML_HASH_ALG_SHA256);
                     delete pCert;
                 }

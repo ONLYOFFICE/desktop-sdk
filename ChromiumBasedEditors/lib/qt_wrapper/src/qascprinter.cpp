@@ -30,6 +30,7 @@
  *
  */
 #include "./../include/qascprinter.h"
+#include "./../qrenderer/include/qrenderer.h"
 #include <qmath.h>
 
 #ifdef WIN32
@@ -37,6 +38,8 @@
 #include <iostream>
 typedef void (*SignalHandlerPointer)(int);
 #endif
+
+#include "../../../../../core/DesktopEditor/graphics/MetafileToRenderer.h"
 
 QAscPrinterContext::QAscPrinterContext(QPrinter::PrinterMode eMode) : NSEditorApi::CAscPrinterContextBase(), m_oPrinter(eMode)
 {
@@ -63,7 +66,18 @@ bool QAscPrinterContext::BeginPaint()
 #endif
     try
     {
-        m_oPainter.begin(&m_oPrinter);
+        if (!m_pDevice)
+        {
+            m_oPrinter.setPageMargins(0,0,0,0,QPrinter::Millimeter);
+            m_oPainter.begin(&m_oPrinter);
+        }
+        else
+        {
+            m_oPainter.begin(m_pDevice);
+
+            if (pdtSimple == m_eDeviceType)
+                m_oPainter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
+        }
     }
     catch (...)
     {
@@ -89,14 +103,35 @@ QAscPrinterContext::~QAscPrinterContext()
 
 void QAscPrinterContext::GetLogicalDPI(int& nDpiX, int& nDpiY)
 {
+    if (m_pDevice)
+    {
+        nDpiX = m_pDevice->logicalDpiX();
+        nDpiY = m_pDevice->logicalDpiY();
+        return;
+    }
+
     nDpiX = m_oPrinter.logicalDpiX();
     nDpiY = m_oPrinter.logicalDpiY();
 }
 
 void QAscPrinterContext::GetPhysicalRect(int& nX, int& nY, int& nW, int& nH)
 {
+    if (m_pDevice)
+    {
+        nX = 0;
+        nY = 0;
+        nW = m_pDevice->width();
+        nH = m_pDevice->height();
+        return;
+    }
+
+#ifndef QT_VERSION_6
     QRect rect1 = m_oPrinter.pageRect();
     QRect rect2 = m_oPrinter.paperRect();
+#else
+    QRect rect1 = m_oPrinter.pageLayout().fullRectPixels(m_oPrinter.resolution());
+    QRect rect2 = m_oPrinter.pageLayout().paintRectPixels(m_oPrinter.resolution());
+#endif
 
     nX = rect1.x();
     nY = rect1.y();
@@ -106,7 +141,19 @@ void QAscPrinterContext::GetPhysicalRect(int& nX, int& nY, int& nW, int& nH)
 
 void QAscPrinterContext::GetPrintAreaSize(int& nW, int& nH)
 {
+    if (m_pDevice)
+    {
+        nW = m_pDevice->width();
+        nH = m_pDevice->height();
+        return;
+    }
+
+#ifndef QT_VERSION_6
     QRect rect = m_oPrinter.pageRect();
+#else
+    QRect rect = m_oPrinter.pageLayout().fullRectPixels(m_oPrinter.resolution());
+#endif
+
     nW = rect.width();
     nH = rect.height();
 }
@@ -248,4 +295,65 @@ void QAscPrinterContext::setDefaults()
     QPrinterInfo oInfo(m_oPrinter);
     m_oPrinter.setDuplex(oInfo.defaultDuplexMode());
     m_oPrinter.setPageSize(oInfo.defaultPageSize());
+
+    m_pDevice = NULL;
+    m_eDeviceType = pdtNone;
+}
+
+void* QAscPrinterContext::GetNativeRenderer()
+{
+    return new NSQRenderer::CQRenderer(this);
+}
+void* QAscPrinterContext::GetNativeRendererUnsupportChecker()
+{
+    return NSQRenderer::CQRenderer::GetChecker();
+}
+
+// not desktop common
+QAscPrinterContext::QAscPrinterContext(QPaintDevice *pDevice) : m_oPrinter(QPrinter::PrinterResolution)
+{
+    m_pDevice = pDevice;
+    m_eDeviceType = pdtSimple;
+}
+QAscPrinterContext::QAscPrinterContext(QPagedPaintDevice *pDevice) : m_oPrinter(QPrinter::PrinterResolution)
+{
+    m_pDevice = pDevice;
+    m_eDeviceType = pdtPaged;
+}
+QPainter* QAscPrinterContext::GetPainter()
+{
+    return &m_oPainter;
+}
+
+void QAscPrinterContext::NewPage()
+{
+    if (m_pDevice && pdtPaged == m_eDeviceType)
+        ((QPagedPaintDevice*)m_pDevice)->newPage();
+}
+
+void QAscPrinterContext::InitRenderer(void* pRenderer, void* pFontManager)
+{
+    if (NULL == pRenderer)
+        return;
+    NSQRenderer::CQRenderer* pQRenderer = (NSQRenderer::CQRenderer*)pRenderer;
+    if (NULL != pFontManager)
+    {
+        pQRenderer->SetFontsManager((NSFonts::IFontManager*)pFontManager);
+    }
+}
+
+void QAscPrinterContext::SetPageOrientation(int nOrientaion)
+{
+	m_oPrinter.setPageOrientation((0 == nOrientaion) ? QPageLayout::Portrait : QPageLayout::Landscape);
+}
+
+void QAscPrinterContext::SaveState()
+{
+	if (m_bIsUsePainter)
+		m_oPainter.save();
+}
+void QAscPrinterContext::RestoreState()
+{
+	if (m_bIsUsePainter)
+		m_oPainter.restore();
 }

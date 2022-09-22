@@ -44,7 +44,6 @@
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QApplication>
-#include <QDesktopWidget>
 #include <QWindow>
 #include <QScreen>
 
@@ -83,7 +82,7 @@ QAscVideoWidget::QAscVideoWidget(QWidget *parent)
     m_pEngine = new QMediaPlayer(parent);
     m_pEngine->setVideoOutput(this);
 
-    QObject::connect(m_pEngine, SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(slotChangeState(QMediaPlayer::State)));
+    QObject::connect(m_pEngine, SIGNAL(stateChanged(QMediaPlayer_State)), this, SLOT(slotChangeState(QMediaPlayer_State)));
     QObject::connect(m_pEngine, SIGNAL(positionChanged(qint64)), this, SLOT(slotPositionChange(qint64)));
 #else
     m_pVlcPlayer = new VlcMediaPlayer((VlcInstance*)NSBaseVideoLibrary::GetLibrary());
@@ -168,11 +167,12 @@ void QAscVideoWidget::setPause()
 #endif
 }
 
+#include <QAudioOutput>
 void QAscVideoWidget::setVolume(int nVolume)
 {
     m_nVolume = nVolume;
 #ifndef USE_VLC_LIBRARY
-    m_pEngine->setVolume(nVolume);
+    QMediaPlayer_setVolume(m_pEngine, nVolume);
 #else
     if (m_pVlcPlayer->audio())
         m_pVlcPlayer->audio()->setVolume(nVolume * 2);
@@ -196,7 +196,7 @@ void QAscVideoWidget::open(QString& sFile)
 {
     m_sCurrentSource = sFile;
 #ifndef USE_VLC_LIBRARY
-    m_pEngine->setMedia(QMediaContent(QUrl::fromLocalFile(sFile)));
+    QMediaPlayer_setMedia(m_pEngine, sFile);
     m_pEngine->play();
 #else
 
@@ -288,7 +288,7 @@ void QAscVideoWidget::setFullScreenOnCurrentScreen(bool isFullscreen)
     }
 }
 
-void QAscVideoWidget::slotChangeState(QMediaPlayer::State state)
+void QAscVideoWidget::slotChangeState(QMediaPlayer_State state)
 {
     if (QMediaPlayer::PlayingState == state)
         setVolume(m_nVolume);
@@ -315,7 +315,7 @@ void QAscVideoWidget::slotVlcStateChanged()
     if (stateQ < 0)
         return;
 
-    emit stateChanged((QMediaPlayer::State)stateQ);
+    emit stateChanged((QMediaPlayer_State)stateQ);
 }
 
 void QAscVideoWidget::slotVlcTimeChanged(int time)
@@ -349,7 +349,7 @@ bool QAscVideoWidget::isAudio()
 
     return false;
 #else
-    if (m_pEngine && m_pEngine->isVideoAvailable())
+    if (m_pEngine && !QMediaPlayer_isAudio(m_pEngine))
         return false;
     return true;
 #endif    

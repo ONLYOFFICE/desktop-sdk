@@ -32,10 +32,13 @@
 
 #include "./../include/qdpichecker.h"
 
-#include <QDesktopWidget>
 #include <QScreen>
 #include <QApplication>
 #include "./../include/qcefview.h"
+
+#ifdef QT_VERSION_LESS_5_15
+#include <QDesktopWidget>
+#endif
 
 #ifdef _LINUX
 #include <QX11Info>
@@ -115,13 +118,16 @@ int QDpiChecker::GetWidgetDpi(QWidget* w, unsigned int* dx, unsigned int* dy)
     if (dForceScale > 0)
         return 0;
 
-    QDesktopWidget* pDesktop = QApplication::desktop();
-    if (!pDesktop && (0 == pDesktop->screenCount()))
+    if (0 == QApplication::screens().count())
     {
         *dx = 96;
         *dy = 96;
         return 0;
     }
+#ifndef QT_VERSION_LESS_5_15
+    int nScreenNumber = QApplication::screens().indexOf(w->screen());
+#else
     int nScreenNumber = QApplication::desktop()->screenNumber(w);
+#endif
     return GetMonitorDpi(nScreenNumber, dx, dy);
 }

@@ -34,7 +34,6 @@
 #define ASC_CEFCONVERTER_FILEPRINTER_H
 
 #include "./applicationmanager_p.h"
-#include "./additional/manager.h"
 
 class CPagePrintData
 {
@@ -102,20 +101,63 @@ public:
     CApplicationManagerAdditionalBase* m_pAdditional;
 
 public:
+    class CPrintContextPageData
+    {
+    public:
+        double LeftPix;
+        double TopPix;
+        double WidthPix;
+        double HeightPix;
+        double Angle;
+        double PrintWidthMM;
+        double PrintHeightMM;
+
+        double PageWidth;
+        double PageHeight;
+
+        bool Valid;
+
+    public:
+        CPrintContextPageData()
+        {
+            LeftPix = 0;
+            TopPix = 0;
+            WidthPix = 0;
+            HeightPix = 0;
+            Angle = 0;
+            PrintWidthMM = 0;
+            PrintHeightMM = 0;
+
+            PageWidth = 0;
+            PageHeight = 0;
+
+            Valid = false;
+        }
+
+        inline bool IsRotate()
+        {
+            if (Angle < 0.01 && Angle > -0.01)
+                return false;
+            return true;
+        }
+    };
+
+public:
     CPrintData();
     ~CPrintData();
 
     void Print_Start(NSFonts::IApplicationFonts* pFonts);
     void Print_End();
 
+    void FitToPage(float fSourceWidth, float fSourceHeight, float fTargetWidth, float fTargetHeight, float& fResX, float& fResY, float& fResWidth, float& fResHeight);
+    CPrintContextPageData CheckPrintRotate(NSEditorApi::CAscPrinterContextBase* pContext, const CAscPrintSettings& settings, const int& nPageIndex);
     void Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAscPrintSettings& settings, const int& nPageIndex);
-    bool CheckPrintRotate(NSEditorApi::CAscPrinterContextBase* pContext, const CAscPrintSettings& settings, const int& nPageIndex);
-    void DrawOnRenderer(NSGraphics::IGraphicsRenderer* pRenderer, int nPageIndex);
-    void TestSaveToRasterFile(std::wstring sFile, int nWidth, int nHeight, int nPageIndex);
+
+    bool DrawOnRenderer(IRenderer* pRenderer, int nPageIndex, CPrintContextPageData* pPageData, IRenderer* pChecker = NULL);
+
     std::wstring GetImagePath(const std::wstring& sPath);
-    void FitToPage(float fSourceWidth, float  fSourceHeight, float  fTargetWidth, float fTargetHeight, float& fResX, float& fResY, float& fResWidth, float& fResHeight);
     std::wstring DownloadImage(const std::wstring& strFile);
-    void CalculateImagePaths(bool bIsOpenAsLocal = false);
+    void CalculateImagePaths(bool bIsOpenAsLocal = false);    
 };
 
 #endif // ASC_CEFCONVERTER_FILEPRINTER_H

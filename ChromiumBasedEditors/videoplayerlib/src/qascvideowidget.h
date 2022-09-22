@@ -7,6 +7,7 @@
 #include <QMediaPlayer>
 #include "qfooterpanel.h"
 #include "qvideoplaylist.h"
+#include "qascmediaplayer.h"
 
 #ifndef USE_VLC_LIBRARY
 #define QASCVIDEOBASE QVideoWidget
@@ -86,11 +87,11 @@ public:
     void stop();
 
 signals:
-    void stateChanged(QMediaPlayer::State);
+    void stateChanged(QMediaPlayer_State);
     void posChanged(int);
 
 public slots:
-    void slotChangeState(QMediaPlayer::State state);
+    void slotChangeState(QMediaPlayer_State state);
     void slotPositionChange(qint64 pos);    
 
 #ifdef USE_VLC_LIBRARY
