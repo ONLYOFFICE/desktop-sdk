@@ -2070,7 +2070,7 @@ void NSQRenderer::CQRenderer::fillPath(QPainterPath* pPath)
 		int nImageWidth = 0;
 		int nImageHeight = 0;
 
-		if (!sTempPath.empty())
+		if (sTempPath.empty())
 		{
 			pBrush = NSConversions::createTextureBrush(m_oBrush.TexturePath, nImageWidth, nImageHeight);
 		}
