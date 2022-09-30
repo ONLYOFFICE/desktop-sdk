@@ -441,6 +441,8 @@ namespace NSConversions
 			}
 			else
 			{
+				oTransform.translate(oPathBounds.left(), oPathBounds.top());
+
 				oTransform.scale(oPathBounds.width() / nImageWidth,
 								 oPathBounds.height() / nImageHeight);
 			}
@@ -499,6 +501,9 @@ void NSQRenderer::CQRenderer::InitDefaults()
 	m_pAppFonts = NULL;
 	m_pFontManager = NULL;
 	m_bIsUseTextAsPath = true;
+
+	m_nPixelWidth = 0;
+	m_nPixelHeight = 0;
 
 	m_lCurrentCommand = c_nNone;
 	m_oSimpleGraphicsConverter.SetRenderer(this);
@@ -619,7 +624,7 @@ HRESULT NSQRenderer::CQRenderer::put_Width(const double &dWidth)
 	TELL << dWidth;
 #endif
 	m_dLogicalPageWidth = dWidth;
-	double realWidth = (double)paperSize().width();
+	double realWidth = (0 == m_nPixelWidth) ? (double)paperSize().width() : (double)m_nPixelWidth;
 
 	m_oCoordTransform = {
 		realWidth / m_dLogicalPageWidth,
@@ -640,7 +645,7 @@ HRESULT NSQRenderer::CQRenderer::put_Height(const double &dHeight)
 	TELL << dHeight;
 #endif
 	m_dLogicalPageHeight = dHeight;
-	double realHeight = (double)paperSize().height();
+	double realHeight = (0 == m_nPixelHeight) ? (double)paperSize().height() : (double)m_nPixelHeight;
 
 	m_oCoordTransform = {
 		m_oCoordTransform.m11(),
@@ -1717,6 +1722,7 @@ HRESULT NSQRenderer::CQRenderer::DrawImageFromFile(const std::wstring &filePath
 		RELEASEINTERFACE(pMetafile);
 	}
 
+#if 1
 	QImage* pQImage = NULL;
 
 	if (sTempPath.empty())
@@ -1741,6 +1747,43 @@ HRESULT NSQRenderer::CQRenderer::DrawImageFromFile(const std::wstring &filePath
 		m_pContext->GetPainter()->setOpacity(1.0f);
 
 	RELEASEOBJECT(pQImage);
+#else
+	int nWidth = 0;
+	int nHeight = 0;
+
+	QBrush* pBrush = NULL;
+	if (sTempPath.empty())
+	{
+		pBrush = NSConversions::createTextureBrush(filePath, nWidth, nHeight);
+	}
+	else
+	{
+		pBrush = NSConversions::createTextureBrush(sTempPath, nWidth, nHeight);
+		NSFile::CFileBinary::Remove(sTempPath);
+	}
+
+	if (NULL == pBrush)
+		return S_FALSE;
+
+	QPainterPath oPath;
+	oPath.moveTo((qreal)x, (qreal)y);
+	oPath.lineTo((qreal)(x + w), (qreal)y);
+	oPath.lineTo((qreal)(x + w), (qreal)(y + h));
+	oPath.lineTo((qreal)x, (qreal)(y + h));
+	oPath.closeSubpath();
+
+	if (255 != lAlpha)
+		m_pContext->GetPainter()->setOpacity((qreal)lAlpha / 255.0f);
+
+	NSConversions::correctBrushTextureTransform(NULL, pBrush, &oPath, nWidth, nHeight, this);
+	m_pContext->GetPainter()->fillPath(oPath, *pBrush);
+
+	if (255 != lAlpha)
+		m_pContext->GetPainter()->setOpacity(1.0f);
+
+	RELEASEOBJECT(pBrush);
+#endif
+
 	return S_OK;
 }
 
@@ -1880,6 +1923,67 @@ void NSQRenderer::CQRenderer::ResetBaseTransform()
 	applyTransform();
 }
 
+void NSQRenderer::CQRenderer::PrepareBitBlt(const int& nRasterX, const int& nRasterY, const int& nRasterW, const int& nRasterH,
+											const double& x, const double& y, const double& w, const double& h, const double& dAngle)
+{
+	m_nPixelWidth = nRasterW;
+	m_nPixelHeight = nRasterH;
+
+	int nPhysicalX = 0;
+	int nPhysicalY = 0;
+	int nPhysicalW = 0;
+	int nPhysicalH = 0;
+	m_pContext->GetPhysicalRect(nPhysicalX, nPhysicalY, nPhysicalW, nPhysicalH);
+
+	bool bIsPrintToFile = (m_pContext->getPrinter()->outputFileName().length() != 0) ? true : false;
+
+	double dAngleDeg = dAngle * 180.0 / M_PI;
+	if ((std::abs(dAngleDeg - 90) < 1.0) || (std::abs(dAngleDeg - 270) < 1.0))
+	{
+		float fCenterX = (float)(x + w / 2.0);
+		float fCenterY = (float)(y + h / 2.0);
+
+		QTransform oBaseTransform;
+
+		oBaseTransform.translate(fCenterX, fCenterY);
+		oBaseTransform.rotate(90);
+		oBaseTransform.translate(-fCenterX, -fCenterY);
+
+		int nAreaW = 0;
+		int nAreaH = 0;
+		m_pContext->GetPrintAreaSize(nAreaW, nAreaH);
+
+		int nOldX = nPhysicalX;
+		nPhysicalX = nPhysicalY;
+		nPhysicalY = nPhysicalW - nAreaW - nOldX;
+
+		if (bIsPrintToFile)
+		{
+			// обнуляем сдвиги, напечатается и в отрицательных местах
+			nPhysicalX = 0;
+			nPhysicalY = 0;
+		}
+
+		oBaseTransform.translate(x, y);
+
+		m_oPositionTransform = oBaseTransform;
+		applyTransform();
+	}
+	else
+	{
+		if (bIsPrintToFile)
+		{
+			// обнуляем сдвиги, напечатается и в отрицательных местах
+			nPhysicalX = 0;
+			nPhysicalY = 0;
+		}
+
+		m_oPositionTransform.reset();
+		m_oPositionTransform.translate(x, y);
+		applyTransform();
+	}
+}
+
 QTransform& NSQRenderer::CQRenderer::GetCoordTransform()
 {
 	return m_oCoordTransform;
@@ -1890,7 +1994,8 @@ void NSQRenderer::CQRenderer::applyTransform()
 #ifdef ENABLE_LOGS
 	TELL;
 #endif
-	m_pContext->GetPainter()->setTransform(m_oCoordTransform);
+	m_pContext->GetPainter()->setTransform(m_oPositionTransform);
+	m_pContext->GetPainter()->setTransform(m_oCoordTransform, true);
 	m_pContext->GetPainter()->setTransform(m_oBaseTransform, true);
 	m_pContext->GetPainter()->setTransform(m_oCurrentTransform, true);
 
