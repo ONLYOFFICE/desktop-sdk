@@ -12,6 +12,14 @@
 
 //#define ENABLE_LOGS
 
+#ifdef _WIN32
+#define QRENDERER_SUPPORT_TEXTURE_BRUSH
+#endif
+
+#ifdef _WIN32
+#define QRENDERER_SUPPORT_TEXTURE_TILE_BRUSH
+#endif
+
 #ifdef ENABLE_LOGS
 #include <iostream>
 #include <QDebug>
@@ -2172,23 +2180,72 @@ void NSQRenderer::CQRenderer::fillPath(QPainterPath* pPath)
 			RELEASEINTERFACE(pMetafile);
 		}
 
-		int nImageWidth = 0;
-		int nImageHeight = 0;
-
-		if (sTempPath.empty())
+		bool bIsUseBrush = true;
+#ifndef QRENDERER_SUPPORT_TEXTURE_BRUSH
+		if (c_BrushTextureModeStretch == m_oBrush.TextureMode)
 		{
-			pBrush = NSConversions::createTextureBrush(m_oBrush.TexturePath, nImageWidth, nImageHeight);
+			bIsUseBrush = false;
+		}
+#endif
+
+		if (bIsUseBrush)
+		{
+			int nImageWidth = 0;
+			int nImageHeight = 0;
+			if (sTempPath.empty())
+			{
+				pBrush = NSConversions::createTextureBrush(m_oBrush.TexturePath, nImageWidth, nImageHeight);
+			}
+			else
+			{
+				pBrush = NSConversions::createTextureBrush(sTempPath, nImageWidth, nImageHeight);
+				NSFile::CFileBinary::Remove(sTempPath);
+			}
+
+			if (pBrush)
+			{
+				NSConversions::correctBrushTextureTransform(&m_oBrush, pBrush, pPath, nImageWidth, nImageHeight, this);
+				m_pContext->GetPainter()->fillPath(m_oPath, *pBrush);
+			}
 		}
 		else
 		{
-			pBrush = NSConversions::createTextureBrush(sTempPath, nImageWidth, nImageHeight);
-			NSFile::CFileBinary::Remove(sTempPath);
-		}
+			m_pContext->GetPainter()->save();
+			m_pContext->GetPainter()->setClipPath(m_oPath, Qt::IntersectClip);
 
-		if (pBrush)
-		{
-			NSConversions::correctBrushTextureTransform(&m_oBrush, pBrush, pPath, nImageWidth, nImageHeight, this);
-			m_pContext->GetPainter()->fillPath(m_oPath, *pBrush);
+			QRectF oDrawRect;
+			if (m_oBrush.Rectable)
+			{
+				oDrawRect.setLeft(m_oBrush.Rect.X);
+				oDrawRect.setTop(m_oBrush.Rect.Y);
+				oDrawRect.setWidth(m_oBrush.Rect.Width);
+				oDrawRect.setHeight(m_oBrush.Rect.Height);
+			}
+			else
+			{
+				oDrawRect = m_oPath.boundingRect();
+			}
+
+			QImage* pQImage = NULL;
+
+			if (sTempPath.empty())
+			{
+				pQImage = NSConversions::createTextureImage(m_oBrush.TexturePath);
+			}
+			else
+			{
+				pQImage = NSConversions::createTextureImage(sTempPath);
+				NSFile::CFileBinary::Remove(sTempPath);
+			}
+
+			if (pQImage != NULL)
+			{
+				m_pContext->GetPainter()->drawImage(oDrawRect, *pQImage);
+			}
+
+			RELEASEOBJECT(pQImage);
+
+			m_pContext->GetPainter()->restore();
 		}
 
 		if (255 != m_oBrush.TextureAlpha)
@@ -2206,10 +2263,15 @@ class CQRendererChecker : public IRenderer
 {
 private:
 	int m_nBrushType;
+	int m_nBrushTextureMode;
 
 public:
 	// own functions
-	CQRendererChecker() { m_nBrushType = c_BrushTypeSolid; }
+	CQRendererChecker()
+	{
+		m_nBrushType = c_BrushTypeSolid;
+		m_nBrushTextureMode = c_BrushTextureModeStretch;
+	}
 	virtual ~CQRendererChecker() {}
 
 	// тип рендерера-----------------------------------------------------------------------------
@@ -2260,7 +2322,7 @@ public:
 	virtual HRESULT get_BrushTexturePath(std::wstring* bsPath) override { return S_OK; }
 	virtual HRESULT put_BrushTexturePath(const std::wstring& bsPath) override { return S_OK; }
 	virtual HRESULT get_BrushTextureMode(LONG* lMode) override { return S_OK; }
-	virtual HRESULT put_BrushTextureMode(const LONG& lMode) override { return S_OK; }
+	virtual HRESULT put_BrushTextureMode(const LONG& lMode) override { m_nBrushTextureMode = lMode; return S_OK; }
 	virtual HRESULT get_BrushTextureAlpha(LONG* lTxAlpha) override { return S_OK; }
 	virtual HRESULT put_BrushTextureAlpha(const LONG& lTxAlpha) override { return S_OK; }
 	virtual HRESULT get_BrushLinearAngle(double* dAngle) override { return S_OK; }
@@ -2346,6 +2408,19 @@ public:
 			}
 			case c_BrushTypeTexture:
 			{
+				switch (m_nBrushTextureMode)
+				{
+				case c_BrushTextureModeTile:
+				case c_BrushTextureModeTileCenter:
+				{
+#ifndef QRENDERER_SUPPORT_TEXTURE_TILE_BRUSH
+					throw (int)NSOnlineOfficeBinToPdf::ctBrushType;
+#endif
+					break;
+				}
+				default:
+					break;
+				}
 				break;
 			}
 			default:
