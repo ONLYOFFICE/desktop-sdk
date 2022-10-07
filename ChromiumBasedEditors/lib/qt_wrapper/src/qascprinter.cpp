@@ -351,7 +351,13 @@ void QAscPrinterContext::InitRenderer(void* pRenderer, void* pFontManager)
 
 void QAscPrinterContext::SetPageOrientation(int nOrientaion)
 {
-	m_oPrinter.setPageOrientation((0 == nOrientaion) ? QPageLayout::Portrait : QPageLayout::Landscape);
+	// отключаем это, из-за бага
+	// https://bugzilla.onlyoffice.com/show_bug.cgi?id=59263
+	// в QT ориентрацию нужно создавать ДО newPage(), но так как картинки отправляются отложенно(?)
+	// то смена ориентации влияет на печать картинок (клиппируется по странице в новой ориентации).
+	// похоже на баг в  QT. При переходе на новую версию  QT - пересмотреть.
+
+	//m_oPrinter.setPageOrientation((0 == nOrientaion) ? QPageLayout::Portrait : QPageLayout::Landscape);
 }
 
 void QAscPrinterContext::SaveState()
