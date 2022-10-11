@@ -65,6 +65,8 @@ int XIOErrorHandlerImpl(Display *display)
 
 #endif
 
+#include <memory>
+
 #include "../../../../core/DesktopEditor/common/File.h"
 #include "../src/applicationmanager_p.h"
 
@@ -125,10 +127,17 @@ public:
         message_loop_->Execute(new int64(delay_ms));
     }
 
-    static scoped_ptr<client::MainMessageLoopExternalPump> Create(IExternalMessageLoop* native_loop)
+#ifdef CEF_VERSION_ABOVE_105
+	static std::unique_ptr<client::MainMessageLoopExternalPump> Create(IExternalMessageLoop* native_loop)
     {
-        return scoped_ptr<client::MainMessageLoopExternalPump>(new CMainMessageLoopExternalPumpBase(native_loop));
+		return std::make_unique<CMainMessageLoopExternalPumpBase>(native_loop);
     }
+#else
+	static scoped_ptr<client::MainMessageLoopExternalPump> Create(IExternalMessageLoop* native_loop)
+	{
+		return scoped_ptr<client::MainMessageLoopExternalPump>(new CMainMessageLoopExternalPumpBase(native_loop));
+	}
+#endif
 
 public:
     void OnExecute(void* message)
@@ -190,10 +199,15 @@ class CApplicationCEF_Private
 {
 public:
     CefRefPtr<client::ClientApp> m_app;
-    scoped_ptr<client::MainContextImpl> context;
 
-    bool m_bIsMessageLoopRunned;
-    scoped_ptr<client::MainMessageLoop> message_loop;
+	bool m_bIsMessageLoopRunned;
+#ifdef CEF_VERSION_ABOVE_105
+	std::unique_ptr<client::MainContextImpl> context;
+	std::unique_ptr<client::MainMessageLoop> message_loop;
+#else
+	scoped_ptr<client::MainContextImpl> context;
+	scoped_ptr<client::MainMessageLoop> message_loop;
+#endif
 
     CAscApplicationManager* m_pManager;
 
@@ -337,7 +351,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     {
         case client::ClientApp::BrowserProcess:
         {
-            m_pInternal->m_app = new CAscClientAppBrowser(pManager->m_pInternal->m_mapSettings, pManager);
+			m_pInternal->m_app = new CAscClientAppBrowser(pManager->m_pInternal->m_mapSettings, pManager);
             break;
         }
         case client::ClientApp::RendererProcess:
@@ -384,7 +398,11 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 #endif
 
     // Populate the settings based on command line arguments.
-    m_pInternal->context.reset(new client::MainContextImpl(command_line, false));
+#ifdef CEF_VERSION_ABOVE_105
+	m_pInternal->context = std::make_unique<client::MainContextImpl>(command_line, false);
+#else
+	m_pInternal->context = new client::MainContextImpl(command_line, false);
+#endif
     m_pInternal->context->PopulateSettings(&settings);
 
     bool isMultithreaded = false;
@@ -406,11 +424,19 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     else if (isMultithreaded)
     {
         settings.multi_threaded_message_loop = 1;
-        m_pInternal->message_loop.reset(new client::MainMessageLoopMultithreaded);
+#ifdef CEF_VERSION_ABOVE_105
+		m_pInternal->message_loop = std::make_unique<client::MainMessageLoopMultithreaded>();
+#else
+		m_pInternal->message_loop = new client::MainMessageLoopMultithreaded();
+#endif
     }
     else
     {
-        m_pInternal->message_loop.reset(new client::MainMessageLoopStd);
+#ifdef CEF_VERSION_ABOVE_105
+		m_pInternal->message_loop = std::make_unique<client::MainMessageLoopStd>();
+#else
+		m_pInternal->message_loop = new client::MainMessageLoopStd();
+#endif
     }
 
     std::wstring sCachePath = pManager->m_oSettings.cache_path;

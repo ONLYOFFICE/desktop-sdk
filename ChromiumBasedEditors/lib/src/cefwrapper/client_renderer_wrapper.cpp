@@ -2510,7 +2510,7 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
             int nCount = val->GetArrayLength();
 
             int nCount2 = 0;
-            CefRefPtr<CefV8Value> val2 = NULL;
+			CefRefPtr<CefV8Value> val2 = nullptr;
             if (arguments.size() > 1)
             {
                 val2 = arguments[1];
@@ -2614,7 +2614,7 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
 #ifdef CEF_2623
                 CefRefPtr<CefV8Value> val = CefV8Value::CreateObject(NULL);
 #else
-                CefRefPtr<CefV8Value> val = CefV8Value::CreateObject(NULL, NULL);
+				CefRefPtr<CefV8Value> val = CefV8Value::CreateObject(nullptr, nullptr);
 #endif
                 val->SetValue("type", CefV8Value::CreateInt(nMode), V8_PROPERTY_ATTRIBUTE_NONE);
                 val->SetValue("info_presented", CefV8Value::CreateBool(true), V8_PROPERTY_ATTRIBUTE_NONE);
@@ -2729,7 +2729,7 @@ window.AscDesktopEditor.cloudCryptoCommandMainFrame=function(a,b){window.cloudCr
 #ifdef CEF_2623
             retval = CefV8Value::CreateObject(NULL);
 #else
-            retval = CefV8Value::CreateObject(NULL, NULL);
+			retval = CefV8Value::CreateObject(nullptr, nullptr);
 #endif
             int nW = 0;
             int nH = 0;
@@ -3008,7 +3008,7 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
         else if (name == "_getMainUrl")
         {
             CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
-            CefRefPtr<CefFrame> frame = browser ? browser->GetMainFrame() : NULL;
+			CefRefPtr<CefFrame> frame = browser ? browser->GetMainFrame() : nullptr;
             retval = CefV8Value::CreateString(frame ? frame->GetURL() : "");
             return true;
         }
@@ -4016,7 +4016,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 #ifdef CEF_2623
     CefRefPtr<CefV8Value> obj = CefV8Value::CreateObject(NULL);
 #else
-    CefRefPtr<CefV8Value> obj = CefV8Value::CreateObject(NULL, NULL);
+	CefRefPtr<CefV8Value> obj = CefV8Value::CreateObject(nullptr, nullptr);
 #endif
 
     std::wstring sMainUrl = L"";

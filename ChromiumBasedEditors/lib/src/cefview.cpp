@@ -32,6 +32,7 @@
 
 #include "include/cef_browser.h"
 #include "include/base/cef_bind.h"
+#include "include/base/cef_callback.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "include/cef_parser.h"
 
@@ -153,8 +154,13 @@ protected:
 		virtual int GetPercentComplete() { return 0; }
 		virtual int64 GetTotalBytes() { return 0; }
 		virtual int64 GetReceivedBytes() { return 0; }
+#ifdef CEF_VERSION_ABOVE_105
+		virtual CefBaseTime GetStartTime() { return CefBaseTime(); }
+		virtual CefBaseTime GetEndTime() { return CefBaseTime(); }
+#else
 		virtual CefTime GetStartTime() { return CefTime(); }
 		virtual CefTime GetEndTime() { return CefTime(); }
+#endif
 		virtual CefString GetFullPath() { return ""; }
 		virtual uint32 GetId() { return 0; }
 		virtual CefString GetURL() { return m_sUrl; }
@@ -270,7 +276,7 @@ public:
 			{
 				m_bIsFromTimer = true;
 				CefDownloadItemAborted* item = new CefDownloadItemAborted(*iter);
-				m_pHandler->OnDownloadUpdated(NULL, item, NULL);
+				m_pHandler->OnDownloadUpdated(nullptr, item, nullptr);
 				item->Release();
 				m_bIsFromTimer = false;
 			}
@@ -464,7 +470,7 @@ public:
 };
 
 class CAscClientHandler;
-class CCefView_Private : public NSEditorApi::IMenuEventDataBase, public IASCFileConverterEvents, public CTextDocxConverterCallback
+class CCefView_Private : public NSEditorApi::IMenuEventDataBase, public IASCFileConverterEvents, public CTextDocxConverterCallback//, public virtual CefBaseRefCounted
 {
 public:
 	class CSystemMessage
@@ -899,6 +905,8 @@ public:
 
 	CTemporaryDocumentInfo* m_pTemporaryCloudFileInfo;
 
+	//IMPLEMENT_REFCOUNTING(CCefView_Private);
+
 public:
 	CCefView_Private()
 	{
@@ -921,8 +929,8 @@ public:
 
 		m_strUrl = L"";
 
-		m_before_callback = NULL;
-		m_before_callback_info = NULL;
+		m_before_callback = nullptr;
+		m_before_callback_info = nullptr;
 
 		m_oConverterToEditor.m_pEvents = this;
 		m_oConverterFromEditor.m_pEvents = this;
@@ -1543,7 +1551,11 @@ public:
 	};
 
 public:
-	CAscClientHandler() : client::ClientHandler(this, false, "https://onlyoffice.com/")
+	CAscClientHandler() : client::ClientHandler(this, false,
+											#ifdef CEF_VERSION_ABOVE_105
+												false,
+											#endif
+												"https://onlyoffice.com/")
 	{
 		m_pParent = NULL;
 		m_bIsLoaded = false;
@@ -1557,7 +1569,7 @@ public:
 		browser_id_ = 0;
 
 		m_pCefJSDialogHandler = new CAscCefJSDialogHandler();
-		m_pFileDialogCallback = NULL;
+		m_pFileDialogCallback = nullptr;
 	}
 
 	virtual ~CAscClientHandler()
@@ -2215,7 +2227,7 @@ public:
 			pVisitor->m_sDomain         = args->GetString(0).ToString();
 			pVisitor->m_sCookieSearch   = args->GetString(1).ToString();
 
-			pVisitor->CheckCookiePresent(CefCookieManager::GetGlobalManager(NULL));
+			pVisitor->CheckCookiePresent(CefCookieManager::GetGlobalManager(nullptr));
 			return true;
 		}
 		else if (message_name == "on_check_auth")
@@ -2228,7 +2240,7 @@ public:
 			for (int i = 0; i < nCount; i++)
 				pVisitor->m_arDomains.push_back(args->GetString(i + 1));
 
-			pVisitor->CheckCookiePresent(CefCookieManager::GetGlobalManager(NULL));
+			pVisitor->CheckCookiePresent(CefCookieManager::GetGlobalManager(nullptr));
 			return true;
 		}
 		else if (message_name == "set_cookie")
@@ -2243,7 +2255,7 @@ public:
 			pVisitor->m_sCookieValue    = args->GetString(4).ToString();
 
 			pVisitor->Correct();
-			pVisitor->SetCookie(CefCookieManager::GetGlobalManager(NULL));
+			pVisitor->SetCookie(CefCookieManager::GetGlobalManager(nullptr));
 			return true;
 		}
 		else if (message_name == "onDocumentModifiedChanged")
@@ -3859,7 +3871,7 @@ virtual void OnBeforeClose(CefRefPtr<CefBrowser> browser) OVERRIDE
 			delete *(it);
 		}
 		message_handler_set_.clear();
-		message_router_ = NULL;
+		message_router_ = nullptr;
 	}
 
 	NotifyBrowserClosed(browser);
@@ -4196,7 +4208,7 @@ virtual CefRefPtr<CefResourceHandler> GetResourceHandler(
 			}
 
 			if (bIsCheck && !m_pParent->GetAppManager()->IsResolveLocalFile(sBinaryFile))
-				return NULL;
+				return nullptr;
 
 			// check on recovery folder!!!
 			return GetLocalFileRequest2(sBinaryFile);
@@ -4360,7 +4372,7 @@ virtual CefRefPtr<CefResourceHandler> GetResourceHandler(
 	}
 #endif
 
-	return NULL;
+	return nullptr;
 }
 
 CefRefPtr<CefResourceHandler> GetLocalFileRequest2(std::wstring& strFileName)
@@ -4369,7 +4381,7 @@ CefRefPtr<CefResourceHandler> GetLocalFileRequest2(std::wstring& strFileName)
 	DWORD fileSize = (DWORD)asc_scheme::read_file_with_urls(strFileName, fileData);
 
 	if (!fileData)
-		return NULL;
+		return nullptr;
 
 	std::string  mime_type = asc_scheme::GetMimeTypeFromExt(strFileName);
 
@@ -4380,14 +4392,14 @@ CefRefPtr<CefResourceHandler> GetLocalFileRequest2(std::wstring& strFileName)
 
 	pCounter->data = NULL;
 	RELEASEARRAYOBJECTS(fileData);
-	return NULL;
+	return nullptr;
 
 }
 CefRefPtr<CefResourceHandler> GetLocalFileRequest(const std::wstring& strFileName, const std::string& sHeaderScript = "", const std::string& sFooter = "", const bool& isSchemeRequest = false)
 {
 	NSFile::CFileBinary oFileBinary;
 	if (!oFileBinary.OpenFile(strFileName))
-		return NULL;
+		return nullptr;
 
 	DWORD dwSize = (DWORD)oFileBinary.GetFileSize();
 	DWORD dwOffset = 0;
@@ -4411,7 +4423,7 @@ CefRefPtr<CefResourceHandler> GetLocalFileRequest(const std::wstring& strFileNam
 	if (dwSize2 != dwSize)
 	{
 		RELEASEARRAYOBJECTS(pBytes);
-		return NULL;
+		return nullptr;
 	}
 
 	if (!sFooter.empty())
@@ -4426,7 +4438,7 @@ CefRefPtr<CefResourceHandler> GetLocalFileRequest(const std::wstring& strFileNam
 	if (mime_type.empty())
 	{
 		RELEASEARRAYOBJECTS(pBytes);
-		return NULL;
+		return nullptr;
 	}
 
 	CCefBinaryFileReaderCounter* pCounter = new CCefBinaryFileReaderCounter(pBytes);
@@ -4441,7 +4453,7 @@ CefRefPtr<CefResourceHandler> GetLocalFileRequest(const std::wstring& strFileNam
 
 	pCounter->data = NULL;
 	RELEASEARRAYOBJECTS(pBytes);
-	return NULL;
+	return nullptr;
 }
 
 std::string GetMimeType(const std::wstring& sFile)
@@ -4891,8 +4903,11 @@ void CCefView_Private::CloseBrowser(bool _force_close)
 {
 	if (!CefCurrentlyOn(TID_UI))
 	{
-		CefPostTask(TID_UI,
-					base::Bind(&CCefView_Private::CloseBrowser, this, _force_close));
+#ifdef CEF_VERSION_ABOVE_105
+		CefPostTask(TID_UI, BASE_BIND(&CCefView_Private::CloseBrowser, base::Unretained(this), _force_close));
+#else
+		CefPostTask(TID_UI, BASE_BIND(&CCefView_Private::CloseBrowser, this, _force_close));
+#endif
 		return;
 	}
 
@@ -4902,7 +4917,7 @@ void CCefView_Private::CloseBrowser(bool _force_close)
 CefRefPtr<CefBrowser> CCefView_Private::GetBrowser() const
 {
 	if (!m_handler)
-		return NULL;
+		return nullptr;
 	return m_handler->GetBrowser();
 }
 void CCefView_Private::LocalFile_End()
@@ -5236,8 +5251,12 @@ void CCefView_Private::CheckZoom()
 
 	if (!CefCurrentlyOn(TID_UI))
 	{
-		// Execute on the UI thread.
-		CefPostTask(TID_UI, base::Bind(&CCefView_Private::CheckZoom, this));
+		// Execute on the UI thread.		
+#ifdef CEF_VERSION_ABOVE_105
+		CefPostTask(TID_UI, BASE_BIND(&CCefView_Private::CheckZoom, base::WrapRefCounted(this)));
+#else
+		CefPostTask(TID_UI, BASE_BIND(&CCefView_Private::CheckZoom, this));
+#endif
 		return;
 	}
 
@@ -5592,16 +5611,24 @@ void CCefView::load(const std::wstring& urlInputSrc)
 	//m_pInternal->m_handler->SetMainWindowHandle(hWnd);
 
 	CefBrowserSettings _settings;
+	_settings.javascript_access_clipboard = STATE_ENABLED;
+
+#ifndef CEF_VERSION_ABOVE_105
 	_settings.file_access_from_file_urls = STATE_ENABLED;
 	_settings.universal_access_from_file_urls = STATE_ENABLED;
-	_settings.javascript_access_clipboard = STATE_ENABLED;
 	_settings.plugins = STATE_DISABLED;
+#endif
+
 	_settings.background_color = (m_eWrapperType == cvwtEditor) ? 0xFFF4F4F4 : 0xFFFFFFFF;
 
 	CefWindowInfo info;
 	CefWindowHandle _handle = (CefWindowHandle)m_pInternal->m_pWidgetImpl->cef_handle;
 	int _w = m_pInternal->m_pWidgetImpl->cef_width;
 	int _h = m_pInternal->m_pWidgetImpl->cef_height;
+
+#ifdef CEF_VERSION_ABOVE_105
+	info.SetAsChild(_handle, CefRect(0, 0, _w, _h));
+#else
 
 #ifdef WIN32
 	info.SetAsChild(_handle, RECT { 0, 0, _w, _h });
@@ -5611,6 +5638,8 @@ void CCefView::load(const std::wstring& urlInputSrc)
 #endif
 #ifdef _MAC
 	info.SetAsChild(_handle, 0, 0, _w, _h);
+#endif
+
 #endif
 
 	CefString sUrl = url;
@@ -5640,7 +5669,7 @@ void CCefView::load(const std::wstring& urlInputSrc)
 				info, m_pInternal->m_handler.get(), sUrl, _settings, NULL);
 #else
 			#ifdef CEF_VERSION_ABOVE_86
-				info, m_pInternal->m_handler.get(), sUrl, _settings, extra_info, NULL);
+				info, m_pInternal->m_handler.get(), sUrl, _settings, extra_info, nullptr);
 #else
 				info, m_pInternal->m_handler.get(), sUrl, _settings, NULL, NULL);
 #endif
@@ -5730,7 +5759,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 
 		CApplicationManagerAdditionalBase* pAdditional = GetAppManager()->m_pInternal->m_pAdditional;
 		if (pAdditional)
-			pAdditional->ApplyView(this, pEvent, NULL);
+			pAdditional->ApplyView(this, pEvent, nullptr);
 
 		RELEASEINTERFACE(pEvent);
 		return;
@@ -5983,7 +6012,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 				m_pInternal->m_before_callback_info = NULL;
 			}
 			m_pInternal->m_before_callback->Release();
-			m_pInternal->m_before_callback = NULL;
+			m_pInternal->m_before_callback = nullptr;
 		}
 		else
 		{
@@ -6150,8 +6179,12 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 				}
 			}
 
-			m_pInternal->m_handler->m_pFileDialogCallback->Continue(0, file_paths);
-			m_pInternal->m_handler->m_pFileDialogCallback = NULL;
+			m_pInternal->m_handler->m_pFileDialogCallback->Continue(
+				#ifndef CEF_VERSION_ABOVE_105
+						0,
+				#endif
+						file_paths);
+			m_pInternal->m_handler->m_pFileDialogCallback = nullptr;
 
 			break;
 		}
@@ -6206,9 +6239,13 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 			{
 				std::vector<CefString> file_paths;
 				file_paths.push_back(sPath);
-				m_pInternal->m_handler->m_pDirectoryDialogCallback->Continue(0, file_paths);
+				m_pInternal->m_handler->m_pDirectoryDialogCallback->Continue(
+					#ifndef CEF_VERSION_ABOVE_105
+							0,
+					#endif
+							file_paths);
 			}
-			m_pInternal->m_handler->m_pDirectoryDialogCallback = NULL;
+			m_pInternal->m_handler->m_pDirectoryDialogCallback = nullptr;
 		}
 		break;
 	}
@@ -6511,7 +6548,7 @@ int CCefView::GetPrintPageOrientation(const int& nPage)
 CefRefPtr<CefFrame> CCefView_Private::CCloudCryptoUpload::GetFrame()
 {
 	if (!View->m_handler || !View->m_handler->GetBrowser())
-		return NULL;
+		return nullptr;
 	return View->m_handler->GetBrowser()->GetFrame(FrameID);
 }
 

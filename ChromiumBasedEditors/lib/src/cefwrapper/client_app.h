@@ -275,6 +275,10 @@ public:
             command_line->AppendSwitch("--disable-site-isolation-trials");
 #endif
 
+#ifdef CEF_VERSION_ABOVE_105
+			command_line->AppendSwitch("--allow-file-access-from-files");
+#endif
+
             //command_line->AppendSwitch("--allow-file-access-from-files");
             //command_line->AppendSwitch("--allow-file-access");
 
@@ -285,7 +289,11 @@ public:
             sAppNavigator += " windowsXP";
 #endif
 
-            command_line->AppendSwitchWithValue("--product-version", sAppNavigator);
+			command_line->AppendSwitchWithValue("--product-version", sAppNavigator);
+
+#ifdef CEF_VERSION_ABOVE_105
+			command_line->AppendSwitchWithValue("--user-agent-product", sAppNavigator);
+#endif
 
             int forceDpi = IsForceDpiRound();
             if (0 != forceDpi)

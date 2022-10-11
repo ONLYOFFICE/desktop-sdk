@@ -783,7 +783,7 @@ void CAscApplicationManager::DestroyCefView(int nId, bool bIsSafe)
 
 void CAscApplicationManager::Logout(std::wstring strUrl)
 {
-    m_pInternal->Logout(strUrl, CefCookieManager::GetGlobalManager(NULL));
+	m_pInternal->Logout(strUrl, CefCookieManager::GetGlobalManager(nullptr));
 }
 
 void CAscApplicationManager::LockCS(int nId)
@@ -909,7 +909,7 @@ void CAscApplicationManager::OnDestroyWindow()
     m_pInternal->m_nWindowCounter--;
     if (0 == m_pInternal->m_nWindowCounter)
     {
-        CefCookieManager::GetGlobalManager(NULL)->FlushStore(NULL);
+		CefCookieManager::GetGlobalManager(nullptr)->FlushStore(nullptr);
         m_pInternal->m_pApplication->ExitMessageLoop();
     }
 }

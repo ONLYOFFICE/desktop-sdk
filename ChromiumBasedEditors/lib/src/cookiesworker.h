@@ -33,10 +33,18 @@
 #ifndef CEF_COOKIES_WORKER_H
 #define CEF_COOKIES_WORKER_H
 
-#include "include/base/cef_bind.h"
+#include "include/cef_base.h"
+#include "include/base/cef_callback.h"
 #include "include/cef_cookie.h"
 #include "include/wrapper/cef_closure_task.h"
+#include "include/internal/cef_time.h"
 #include <map>
+
+#ifdef CEF_VERSION_ABOVE_105
+#define BASE_BIND base::BindOnce
+#else
+#define BASE_BIND base::Bind
+#endif
 
 class CCookieFoundCallback
 {
@@ -112,7 +120,7 @@ public:
             }
         }
 
-        CefCookieManager::GetGlobalManager(NULL)->FlushStore(NULL);
+		CefCookieManager::GetGlobalManager(nullptr)->FlushStore(nullptr);
     }
 
     virtual bool Visit(const CefCookie& cookie, int count, int total, bool& deleteCookie)
@@ -170,8 +178,11 @@ public:
     {
         if (!CefCurrentlyOn(TID_IO))
         {
-            CefPostTask(TID_IO,
-                base::Bind(&CCefCookieVisitor::CheckCookiePresent, this, manager));
+#ifdef CEF_VERSION_ABOVE_105
+			CefPostTask(TID_IO, BASE_BIND(&CCefCookieVisitor::CheckCookiePresent, base::WrapRefCounted(this), manager));
+#else
+			CefPostTask(TID_IO, BASE_BIND(&CCefCookieVisitor::CheckCookiePresent, this, manager));
+#endif
             return;
         }
 
@@ -205,7 +216,7 @@ public:
     }
     ~CCefCookieSetter()
     {
-        CefCookieManager::GetGlobalManager(NULL)->FlushStore(NULL);
+		CefCookieManager::GetGlobalManager(nullptr)->FlushStore(nullptr);
     }
     
     void Correct()
@@ -227,8 +238,11 @@ public:
     {
         if (!CefCurrentlyOn(TID_IO))
         {
-            CefPostTask(TID_IO,
-                base::Bind(&CCefCookieSetter::SetCookie, this, manager));
+#ifdef CEF_VERSION_ABOVE_105
+			CefPostTask(TID_IO, BASE_BIND(&CCefCookieSetter::SetCookie, base::WrapRefCounted(this), manager));
+#else
+			CefPostTask(TID_IO, BASE_BIND(&CCefCookieSetter::SetCookie, this, manager));
+#endif
             return;
         }
 
@@ -244,12 +258,30 @@ public:
         authorization.secure = 0;
 
         authorization.has_expires = true;
+
+#ifdef CEF_VERSION_ABOVE_105
+		cef_time_t cef_time;
+		cef_time.year = 2200;
+		cef_time.month = 4;
+		cef_time.day_of_week = 5;
+		cef_time.day_of_month = 11;
+
+		cef_time.hour = 0;
+		cef_time.minute = 0;
+		cef_time.second = 0;
+		cef_time.millisecond = 0;
+
+		time_t time_utc;
+		cef_time_to_timet(&cef_time, &time_utc);
+		authorization.expires.val = time_utc;
+#else
         authorization.expires.year = 2200;
         authorization.expires.month = 4;
         authorization.expires.day_of_week = 5;
         authorization.expires.day_of_month = 11;
+#endif
 
-        manager->SetCookie(m_sUrl, authorization, NULL);
+		manager->SetCookie(m_sUrl, authorization, nullptr);
 
         m_pCallback->OnSetCookie();
 
