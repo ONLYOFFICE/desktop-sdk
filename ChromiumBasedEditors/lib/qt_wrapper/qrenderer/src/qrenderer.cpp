@@ -230,7 +230,12 @@ namespace NSConversions
 	void cleanupPixels(void* info)
 	{
 		Aggplus::CImage* pImage = (Aggplus::CImage*)info;
-		RELEASEARRAYOBJECTS(pImage);
+		RELEASEOBJECT(pImage);
+	}
+	void cleanupPixels2(void* info)
+	{
+		unsigned char* data = (unsigned char*)info;
+		RELEASEARRAYOBJECTS(data);
 	}
 
 	QBrush* createTextureBrush(Aggplus::CImage* pImage, const bool& bIsDestroyImage, int& nWidth, int &nHeight)
@@ -270,7 +275,15 @@ namespace NSConversions
 			if (bIsDestroyImage)
 				pBrush->setTextureImage(QImage(pImage->GetData(), nWidth, nHeight, nStride, QImage::Format_ARGB32, cleanupPixels, pImage));
 			else
-				pBrush->setTextureImage(QImage(pImage->GetData(), nWidth, nHeight, nStride, QImage::Format_ARGB32));
+			{
+				size_t nDataSize = 4 * nWidth * nHeight;
+				unsigned char* data = new unsigned char[nDataSize];
+				memcpy(data, pImage->GetData(), nDataSize);
+				pBrush->setTextureImage(QImage(data, nWidth, nHeight, nStride, QImage::Format_ARGB32, cleanupPixels2, data));
+
+				// отложенно печатается, а pImage мы уже удалим - поэтому копируем память.
+				//pBrush->setTextureImage(QImage(pImage->GetData(), nWidth, nHeight, nStride, QImage::Format_ARGB32));
+			}
 		}
 		else
 		{
@@ -1568,7 +1581,7 @@ HRESULT NSQRenderer::CQRenderer::DrawImage(IGrObject *pImage
 
 	int nWidth = 0;
 	int nHeight = 0;
-	QBrush* pBrush = NSConversions::createTextureBrush(pPixels, true, nWidth, nHeight);
+	QBrush* pBrush = NSConversions::createTextureBrush(pPixels, false, nWidth, nHeight);
 	if (NULL == pBrush)
 		return S_FALSE;
 

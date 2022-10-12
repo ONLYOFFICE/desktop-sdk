@@ -848,6 +848,9 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
     IRenderer* pDrawingRenderer = pNativeRenderer;
     CBgraFrame* pBgraFrame = NULL;
 
+	// это необходимо, когда страницы чередуются （NativeRenderer/Raster)
+	m_pFontManager->SetTextMatrix(1, 0, 0, 1, 0, 0);
+
 	bool bIsNeedRestore = false;
 	if (NULL != pNativeRenderer)
     {
