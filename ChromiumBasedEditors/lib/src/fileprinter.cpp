@@ -922,6 +922,8 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
 #ifdef _XCODE
         pBgraFrame->put_Data(NULL);
 #endif
+
+		RELEASEOBJECT(pBgraFrame);
     }
 
 	if (bIsNeedRestore)
