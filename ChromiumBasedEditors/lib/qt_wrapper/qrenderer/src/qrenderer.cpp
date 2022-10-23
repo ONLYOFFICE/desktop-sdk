@@ -547,6 +547,10 @@ void NSQRenderer::CQRenderer::SetFont()
 	{
 		m_pFontManager->LoadFontFromFile(m_oFont.Path, m_oFont.FaceIndex, (float)m_oFont.Size, dDpiX, dDpiY);
 	}
+	// в этом рендерере транчформ всегда в гарфике. в текстовом всегда единичная.
+	// но это менеджер мог быть использован вне рендерера. наверное стоит завести отдельный
+	// менеджер для печати через qrenderer
+	m_pFontManager->SetTextMatrix(1, 0, 0, 1, 0, 0);
 
 	m_oInstalledFont = m_oFont;
 }
