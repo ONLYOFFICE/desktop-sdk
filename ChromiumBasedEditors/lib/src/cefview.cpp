@@ -4495,7 +4495,12 @@ virtual void OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser,
 	frame->LoadURL("ascdesktop://crash.html");
 
 	if (m_pParent && m_pParent->m_pInternal)
+	{
 		m_pParent->m_pInternal->m_bIsCrashed = true;
+
+		NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_PAGE_CRASH);
+		m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+	}
 }
 
 virtual void OnBeforeDownload(CefRefPtr<CefBrowser> browser,
