@@ -308,7 +308,8 @@ protected:
     friend class CASCFileConverterToEditor;
     friend class CApplicationCEF;
     friend class CUserSettings;
-    friend class CAscDpiChecker;
+	friend class CAscDpiChecker;
+	friend class ClientSchemeHandler;
 };
 
 #endif // APPLICATION_MANAGER_H
