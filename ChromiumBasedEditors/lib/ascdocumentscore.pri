@@ -105,6 +105,7 @@ SOURCES += \
     $$CORE_ROOT_DIR/HtmlRenderer/src/ASCSVGWriter.cpp
 
 # crypto ----------------------------------
+LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lCompoundFileLib
 LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lCryptoPPLib
 DEFINES += CRYPTOPP_DISABLE_ASM
 HEADERS += \
