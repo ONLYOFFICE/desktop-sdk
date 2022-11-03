@@ -7,8 +7,18 @@
 
 #include <algorithm>
 #include "../../../../../../core/DesktopEditor/graphics/MetafileToRenderer.h"
+#include "../../../../../../core/DesktopEditor/raster/ImageFileFormatChecker.h"
+#include "../../../../../../core/DesktopEditor/common/File.h"
 
 //#define ENABLE_LOGS
+
+#ifdef _WIN32
+#define QRENDERER_SUPPORT_TEXTURE_BRUSH
+#endif
+
+#ifdef _WIN32
+#define QRENDERER_SUPPORT_TEXTURE_TILE_BRUSH
+#endif
 
 #ifdef ENABLE_LOGS
 #include <iostream>
@@ -238,6 +248,93 @@ namespace NSConversions
 		RELEASEARRAYOBJECTS(data);
 	}
 
+	QImage* createTextureImage(Aggplus::CImage* pImage)
+	{
+		if (!pImage || pImage->GetLastStatus() != Aggplus::Ok)
+			return NULL;
+
+		int nWidth = (int)pImage->GetWidth();
+		int nHeight = (int)pImage->GetHeight();
+		int nStride = (int)pImage->GetStride();
+
+		int nCheckLE = 1;
+		bool bIsLE = true;
+		if (*(char *)&nCheckLE != 1)
+			bIsLE = false;
+
+		// Little Endian
+		// QImage::Format_ARGB32 the bytes are ordered: B G R A
+		// Big Endian
+		// QImage::Format_ARGB32 the bytes are ordered: A R G B
+
+		if (bIsLE)
+		{
+			size_t nDataSize = 4 * nWidth * nHeight;
+			unsigned char* data = new unsigned char[nDataSize];
+
+			if (pImage->GetStride() > 0)
+			{
+				memcpy(data, pImage->GetData(), nDataSize);
+			}
+			else
+			{
+				int stride = 4 * nWidth;
+				unsigned char* dataTmp = data;
+				unsigned char* dataSrc = pImage->GetData() + stride * (nHeight - 1);
+				for (int i = 0; i < nHeight; ++i)
+				{
+					memcpy(dataTmp, dataSrc, stride);
+					dataTmp += stride;
+					dataSrc -= stride;
+				}
+			}
+
+			return new QImage(data, nWidth, nHeight, nStride, QImage::Format_ARGB32, cleanupPixels2, data);
+		}
+
+		// copy image
+		QImage* pQImage = new QImage(nWidth, nHeight, QImage::Format_ARGB32);
+		const uchar* pSrc = pImage->GetData();
+
+		for (int nY = 0; nY < nHeight; ++nY)
+		{
+			// If you are accessing 32-bpp image data, cast the returned pointer to QRgb*
+			// (QRgb has a 32-bit size) and use it to read/write the pixel value
+			uchar* line = pQImage->scanLine(nY);
+			const uchar* pSrcTmp = pImage->GetData();
+
+			if (nStride < 0)
+				pSrcTmp -= ((nHeight - nY - 1) * nStride);
+			else
+				pSrcTmp += (nY * nStride);
+
+			for (int nX = 0; nX < nWidth; ++nX)
+			{
+				*line++ = pSrcTmp[3];
+				*line++ = pSrcTmp[2];
+				*line++ = pSrcTmp[1];
+				*line++ = pSrcTmp[0];
+				pSrcTmp += 4;
+			}
+		}
+
+		return pQImage;
+	}
+
+	QImage* createTextureImage(const std::wstring& path)
+	{
+		Aggplus::CImage* pImage = new Aggplus::CImage(path);
+		if (pImage->GetLastStatus() != Aggplus::Ok)
+		{
+			RELEASEOBJECT(pImage);
+			return NULL;
+		}
+
+		QImage* pQImage = createTextureImage(pImage);
+		RELEASEOBJECT(pImage);
+		return pQImage;
+	}
+
 	QBrush* createTextureBrush(Aggplus::CImage* pImage, const bool& bIsDestroyImage, int& nWidth, int &nHeight)
 	{
 		if (!pImage || pImage->GetLastStatus() != Aggplus::Ok)
@@ -352,6 +449,8 @@ namespace NSConversions
 			}
 			else
 			{
+				oTransform.translate(oPathBounds.left(), oPathBounds.top());
+
 				oTransform.scale(oPathBounds.width() / nImageWidth,
 								 oPathBounds.height() / nImageHeight);
 			}
@@ -411,6 +510,9 @@ void NSQRenderer::CQRenderer::InitDefaults()
 	m_pFontManager = NULL;
 	m_bIsUseTextAsPath = true;
 
+	m_nPixelWidth = 0;
+	m_nPixelHeight = 0;
+
 	m_lCurrentCommand = c_nNone;
 	m_oSimpleGraphicsConverter.SetRenderer(this);
 
@@ -445,6 +547,10 @@ void NSQRenderer::CQRenderer::SetFont()
 	{
 		m_pFontManager->LoadFontFromFile(m_oFont.Path, m_oFont.FaceIndex, (float)m_oFont.Size, dDpiX, dDpiY);
 	}
+	// в этом рендерере транчформ всегда в гарфике. в текстовом всегда единичная.
+	// но это менеджер мог быть использован вне рендерера. наверное стоит завести отдельный
+	// менеджер для печати через qrenderer
+	m_pFontManager->SetTextMatrix(1, 0, 0, 1, 0, 0);
 
 	m_oInstalledFont = m_oFont;
 }
@@ -465,6 +571,12 @@ void NSQRenderer::CQRenderer::InitFonts(NSFonts::IApplicationFonts *pFonts)
 
 void NSQRenderer::CQRenderer::SetFontsManager(NSFonts::IFontManager* pFontsManager)
 {
+	if (NULL == m_pAppFonts)
+	{
+		m_pAppFonts = pFontsManager->GetApplication();
+		ADDREFINTERFACE(m_pAppFonts);
+	}
+
 	RELEASEINTERFACE(m_pFontManager);
 	m_pFontManager = pFontsManager;
 	ADDREFINTERFACE(m_pFontManager);
@@ -524,7 +636,7 @@ HRESULT NSQRenderer::CQRenderer::put_Width(const double &dWidth)
 	TELL << dWidth;
 #endif
 	m_dLogicalPageWidth = dWidth;
-	double realWidth = (double)paperSize().width();
+	double realWidth = (0 == m_nPixelWidth) ? (double)paperSize().width() : (double)m_nPixelWidth;
 
 	m_oCoordTransform = {
 		realWidth / m_dLogicalPageWidth,
@@ -545,7 +657,7 @@ HRESULT NSQRenderer::CQRenderer::put_Height(const double &dHeight)
 	TELL << dHeight;
 #endif
 	m_dLogicalPageHeight = dHeight;
-	double realHeight = (double)paperSize().height();
+	double realHeight = (0 == m_nPixelHeight) ? (double)paperSize().height() : (double)m_nPixelHeight;
 
 	m_oCoordTransform = {
 		m_oCoordTransform.m11(),
@@ -1563,8 +1675,15 @@ HRESULT NSQRenderer::CQRenderer::PathCommandEnd()
 	TELL;
 #endif
 	// clear - only since 5.13
-	//m_oPath.clear();
-	m_oPath = QPainterPath();
+	if (c_nSimpleGraphicType == m_lCurrentCommand)
+	{
+		//m_oPath.clear();
+		m_oPath = QPainterPath();
+	}
+	else
+	{
+		m_oSimpleGraphicsConverter.PathCommandEnd();
+	}
 	return S_OK;
 }
 
@@ -1577,25 +1696,14 @@ HRESULT NSQRenderer::CQRenderer::DrawImage(IGrObject *pImage
 #ifdef ENABLE_LOGS
 	TELL;
 #endif
-	Aggplus::CImage* pPixels = (Aggplus::CImage*)pImage;
+	QImage* pQImage = NSConversions::createTextureImage((Aggplus::CImage*)pImage);
 
-	int nWidth = 0;
-	int nHeight = 0;
-	QBrush* pBrush = NSConversions::createTextureBrush(pPixels, false, nWidth, nHeight);
-	if (NULL == pBrush)
+	if (pQImage == NULL)
 		return S_FALSE;
 
-	QPainterPath oPath;
-	oPath.moveTo((qreal)x, (qreal)y);
-	oPath.lineTo((qreal)(x + w), (qreal)y);
-	oPath.lineTo((qreal)(x + w), (qreal)(y + h));
-	oPath.lineTo((qreal)x, (qreal)(y + h));
-	oPath.closeSubpath();
+	m_pContext->GetPainter()->drawImage(QRectF(x, y, w, h), *pQImage);
 
-	NSConversions::correctBrushTextureTransform(NULL, pBrush, &oPath, nWidth, nHeight, this);
-	m_pContext->GetPainter()->fillPath(oPath, *pBrush);
-
-	RELEASEOBJECT(pBrush);
+	RELEASEOBJECT(pQImage);
 	return S_OK;
 }
 
@@ -1610,9 +1718,62 @@ HRESULT NSQRenderer::CQRenderer::DrawImageFromFile(const std::wstring &filePath
 	TELL;
 #endif
 
+	std::wstring sTempPath = L"";
+	CImageFileFormatChecker oImageFormat(filePath);
+	if (_CXIMAGE_FORMAT_WMF == oImageFormat.eFileType ||
+		_CXIMAGE_FORMAT_EMF == oImageFormat.eFileType ||
+		_CXIMAGE_FORMAT_SVM == oImageFormat.eFileType ||
+		_CXIMAGE_FORMAT_SVG == oImageFormat.eFileType)
+	{
+		MetaFile::IMetaFile* pMetafile = MetaFile::Create(m_pAppFonts);
+		if (pMetafile->LoadFromFile(filePath.c_str()))
+		{
+			sTempPath = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"AscMetafile_");
+			pMetafile->ConvertToRaster(sTempPath.c_str(), 4, 1000, -1);
+		}
+		RELEASEINTERFACE(pMetafile);
+	}
+
+#if 1
+	QImage* pQImage = NULL;
+
+	if (sTempPath.empty())
+	{
+		pQImage = NSConversions::createTextureImage(filePath);
+	}
+	else
+	{
+		pQImage = NSConversions::createTextureImage(sTempPath);
+		NSFile::CFileBinary::Remove(sTempPath);
+	}
+
+	if (pQImage == NULL)
+		return S_FALSE;
+
+	if (255 != lAlpha)
+		m_pContext->GetPainter()->setOpacity((qreal)lAlpha / 255.0f);
+
+	m_pContext->GetPainter()->drawImage(QRectF(x, y, w, h), *pQImage);
+
+	if (255 != lAlpha)
+		m_pContext->GetPainter()->setOpacity(1.0f);
+
+	RELEASEOBJECT(pQImage);
+#else
 	int nWidth = 0;
 	int nHeight = 0;
-	QBrush* pBrush = NSConversions::createTextureBrush(filePath, nWidth, nHeight);
+
+	QBrush* pBrush = NULL;
+	if (sTempPath.empty())
+	{
+		pBrush = NSConversions::createTextureBrush(filePath, nWidth, nHeight);
+	}
+	else
+	{
+		pBrush = NSConversions::createTextureBrush(sTempPath, nWidth, nHeight);
+		NSFile::CFileBinary::Remove(sTempPath);
+	}
+
 	if (NULL == pBrush)
 		return S_FALSE;
 
@@ -1633,6 +1794,8 @@ HRESULT NSQRenderer::CQRenderer::DrawImageFromFile(const std::wstring &filePath
 		m_pContext->GetPainter()->setOpacity(1.0f);
 
 	RELEASEOBJECT(pBrush);
+#endif
+
 	return S_OK;
 }
 
@@ -1772,6 +1935,67 @@ void NSQRenderer::CQRenderer::ResetBaseTransform()
 	applyTransform();
 }
 
+void NSQRenderer::CQRenderer::PrepareBitBlt(const int& nRasterX, const int& nRasterY, const int& nRasterW, const int& nRasterH,
+											const double& x, const double& y, const double& w, const double& h, const double& dAngle)
+{
+	m_nPixelWidth = nRasterW;
+	m_nPixelHeight = nRasterH;
+
+	int nPhysicalX = 0;
+	int nPhysicalY = 0;
+	int nPhysicalW = 0;
+	int nPhysicalH = 0;
+	m_pContext->GetPhysicalRect(nPhysicalX, nPhysicalY, nPhysicalW, nPhysicalH);
+
+	bool bIsPrintToFile = (m_pContext->getPrinter()->outputFileName().length() != 0) ? true : false;
+
+	double dAngleDeg = dAngle * 180.0 / M_PI;
+	if ((std::abs(dAngleDeg - 90) < 1.0) || (std::abs(dAngleDeg - 270) < 1.0))
+	{
+		float fCenterX = (float)(x + w / 2.0);
+		float fCenterY = (float)(y + h / 2.0);
+
+		QTransform oBaseTransform;
+
+		oBaseTransform.translate(fCenterX, fCenterY);
+		oBaseTransform.rotate(90);
+		oBaseTransform.translate(-fCenterX, -fCenterY);
+
+		int nAreaW = 0;
+		int nAreaH = 0;
+		m_pContext->GetPrintAreaSize(nAreaW, nAreaH);
+
+		int nOldX = nPhysicalX;
+		nPhysicalX = nPhysicalY;
+		nPhysicalY = nPhysicalW - nAreaW - nOldX;
+
+		if (bIsPrintToFile)
+		{
+			// обнуляем сдвиги, напечатается и в отрицательных местах
+			nPhysicalX = 0;
+			nPhysicalY = 0;
+		}
+
+		oBaseTransform.translate(x, y);
+
+		m_oPositionTransform = oBaseTransform;
+		applyTransform();
+	}
+	else
+	{
+		if (bIsPrintToFile)
+		{
+			// обнуляем сдвиги, напечатается и в отрицательных местах
+			nPhysicalX = 0;
+			nPhysicalY = 0;
+		}
+
+		m_oPositionTransform.reset();
+		m_oPositionTransform.translate(x, y);
+		applyTransform();
+	}
+}
+
 QTransform& NSQRenderer::CQRenderer::GetCoordTransform()
 {
 	return m_oCoordTransform;
@@ -1782,7 +2006,8 @@ void NSQRenderer::CQRenderer::applyTransform()
 #ifdef ENABLE_LOGS
 	TELL;
 #endif
-	m_pContext->GetPainter()->setTransform(m_oCoordTransform);
+	m_pContext->GetPainter()->setTransform(m_oPositionTransform);
+	m_pContext->GetPainter()->setTransform(m_oCoordTransform, true);
 	m_pContext->GetPainter()->setTransform(m_oBaseTransform, true);
 	m_pContext->GetPainter()->setTransform(m_oCurrentTransform, true);
 
@@ -1943,14 +2168,88 @@ void NSQRenderer::CQRenderer::fillPath(QPainterPath* pPath)
 		if (255 != m_oBrush.TextureAlpha)
 			m_pContext->GetPainter()->setOpacity((qreal)m_oBrush.TextureAlpha / 255.0f);
 
-		int nImageWidth = 0;
-		int nImageHeight = 0;
-		pBrush = NSConversions::createTextureBrush(m_oBrush.TexturePath, nImageWidth, nImageHeight);
-
-		if (pBrush)
+		std::wstring sTempPath = L"";
+		CImageFileFormatChecker oImageFormat(m_oBrush.TexturePath);
+		if (_CXIMAGE_FORMAT_WMF == oImageFormat.eFileType ||
+			_CXIMAGE_FORMAT_EMF == oImageFormat.eFileType ||
+			_CXIMAGE_FORMAT_SVM == oImageFormat.eFileType ||
+			_CXIMAGE_FORMAT_SVG == oImageFormat.eFileType)
 		{
-			NSConversions::correctBrushTextureTransform(&m_oBrush, pBrush, pPath, nImageWidth, nImageHeight, this);
-			m_pContext->GetPainter()->fillPath(m_oPath, *pBrush);
+			MetaFile::IMetaFile* pMetafile = MetaFile::Create(m_pAppFonts);
+			if (pMetafile->LoadFromFile(m_oBrush.TexturePath.c_str()))
+			{
+				sTempPath = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"AscMetafile_");
+				pMetafile->ConvertToRaster(sTempPath.c_str(), 4, 1000, -1);
+			}
+			RELEASEINTERFACE(pMetafile);
+		}
+
+		bool bIsUseBrush = true;
+#ifndef QRENDERER_SUPPORT_TEXTURE_BRUSH
+		if (c_BrushTextureModeStretch == m_oBrush.TextureMode)
+		{
+			bIsUseBrush = false;
+		}
+#endif
+
+		if (bIsUseBrush)
+		{
+			int nImageWidth = 0;
+			int nImageHeight = 0;
+			if (sTempPath.empty())
+			{
+				pBrush = NSConversions::createTextureBrush(m_oBrush.TexturePath, nImageWidth, nImageHeight);
+			}
+			else
+			{
+				pBrush = NSConversions::createTextureBrush(sTempPath, nImageWidth, nImageHeight);
+				NSFile::CFileBinary::Remove(sTempPath);
+			}
+
+			if (pBrush)
+			{
+				NSConversions::correctBrushTextureTransform(&m_oBrush, pBrush, pPath, nImageWidth, nImageHeight, this);
+				m_pContext->GetPainter()->fillPath(m_oPath, *pBrush);
+			}
+		}
+		else
+		{
+			m_pContext->GetPainter()->save();
+			m_pContext->GetPainter()->setClipPath(m_oPath, Qt::IntersectClip);
+
+			QRectF oDrawRect;
+			if (m_oBrush.Rectable)
+			{
+				oDrawRect.setLeft(m_oBrush.Rect.X);
+				oDrawRect.setTop(m_oBrush.Rect.Y);
+				oDrawRect.setWidth(m_oBrush.Rect.Width);
+				oDrawRect.setHeight(m_oBrush.Rect.Height);
+			}
+			else
+			{
+				oDrawRect = m_oPath.boundingRect();
+			}
+
+			QImage* pQImage = NULL;
+
+			if (sTempPath.empty())
+			{
+				pQImage = NSConversions::createTextureImage(m_oBrush.TexturePath);
+			}
+			else
+			{
+				pQImage = NSConversions::createTextureImage(sTempPath);
+				NSFile::CFileBinary::Remove(sTempPath);
+			}
+
+			if (pQImage != NULL)
+			{
+				m_pContext->GetPainter()->drawImage(oDrawRect, *pQImage);
+			}
+
+			RELEASEOBJECT(pQImage);
+
+			m_pContext->GetPainter()->restore();
 		}
 
 		if (255 != m_oBrush.TextureAlpha)
@@ -1968,10 +2267,15 @@ class CQRendererChecker : public IRenderer
 {
 private:
 	int m_nBrushType;
+	int m_nBrushTextureMode;
 
 public:
 	// own functions
-	CQRendererChecker() { m_nBrushType = c_BrushTypeSolid; }
+	CQRendererChecker()
+	{
+		m_nBrushType = c_BrushTypeSolid;
+		m_nBrushTextureMode = c_BrushTextureModeStretch;
+	}
 	virtual ~CQRendererChecker() {}
 
 	// тип рендерера-----------------------------------------------------------------------------
@@ -2022,7 +2326,7 @@ public:
 	virtual HRESULT get_BrushTexturePath(std::wstring* bsPath) override { return S_OK; }
 	virtual HRESULT put_BrushTexturePath(const std::wstring& bsPath) override { return S_OK; }
 	virtual HRESULT get_BrushTextureMode(LONG* lMode) override { return S_OK; }
-	virtual HRESULT put_BrushTextureMode(const LONG& lMode) override { return S_OK; }
+	virtual HRESULT put_BrushTextureMode(const LONG& lMode) override { m_nBrushTextureMode = lMode; return S_OK; }
 	virtual HRESULT get_BrushTextureAlpha(LONG* lTxAlpha) override { return S_OK; }
 	virtual HRESULT put_BrushTextureAlpha(const LONG& lTxAlpha) override { return S_OK; }
 	virtual HRESULT get_BrushLinearAngle(double* dAngle) override { return S_OK; }
@@ -2103,8 +2407,24 @@ public:
 			switch (m_nBrushType)
 			{
 			case c_BrushTypeSolid:
+			{
+				break;
+			}
 			case c_BrushTypeTexture:
 			{
+				switch (m_nBrushTextureMode)
+				{
+				case c_BrushTextureModeTile:
+				case c_BrushTextureModeTileCenter:
+				{
+#ifndef QRENDERER_SUPPORT_TEXTURE_TILE_BRUSH
+					throw (int)NSOnlineOfficeBinToPdf::ctBrushType;
+#endif
+					break;
+				}
+				default:
+					break;
+				}
 				break;
 			}
 			default:
