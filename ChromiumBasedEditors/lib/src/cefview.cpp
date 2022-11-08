@@ -54,7 +54,7 @@
 #include "./fileconverter.h"
 #include "./fileprinter.h"
 
-#include "../../../../core/PdfReader/PdfReader.h"
+#include "../../../../core/PdfFile/PdfFile.h"
 #include "../../../../core/DjVuFile/DjVu.h"
 #include "../../../../core/XpsFile/XpsFile.h"
 
@@ -340,7 +340,7 @@ public:
 		case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF:
 		case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA:
 		{
-			m_pReader = new PdfReader::CPdfReader(m_pApplicationFonts);
+			m_pReader = new CPdfFile(m_pApplicationFonts, 1);
 			break;
 		}
 		case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_XPS:
