@@ -6513,6 +6513,13 @@ int CCefView::GetPrintPageOrientation(const int& nPage)
 	return 0;
 }
 
+bool CCefView::IsDestroy()
+{
+	if (m_pInternal->m_bIsDestroying || m_pInternal->m_bIsDestroy)
+		return true;
+	return false;
+}
+
 CefRefPtr<CefFrame> CCefView_Private::CCloudCryptoUpload::GetFrame()
 {
 	if (!View->m_handler || !View->m_handler->GetBrowser())
