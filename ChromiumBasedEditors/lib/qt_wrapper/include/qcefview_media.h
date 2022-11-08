@@ -38,17 +38,17 @@
 
 class DESKTOP_DECL QCefView_Media : public QCefView
 {
-    Q_OBJECT
+	Q_OBJECT
 
 public:
-    QCefView_Media(QWidget* parent);
-    virtual ~QCefView_Media();
+	QCefView_Media(QWidget* parent);
+	virtual ~QCefView_Media();
 
-    virtual void OnMediaStart(NSEditorApi::CAscExternalMedia* data);
-    virtual void OnMediaEnd(bool isFromResize = false);
+	virtual void OnMediaStart(NSEditorApi::CAscExternalMedia* data);
+	virtual void OnMediaEnd(bool isFromResize = false);
 
 protected:
-    QAscVideoView* m_pMediaView;
+	QAscVideoView* m_pMediaView;
 };
 
 #endif  // QCEFWEBVIEW_MEDIA_H
