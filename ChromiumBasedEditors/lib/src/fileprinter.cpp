@@ -857,27 +857,10 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
 		bIsNeedRestore = true;
 		pContext->SaveState();
 
-        // TODO: ---
-        double dAngleDeg = oPagePrintData.Angle * 180.0 / M_PI;
-        if ((std::abs(dAngleDeg - 90) < 1.0) || (std::abs(dAngleDeg - 270) < 1.0))
-        {
-            double dPrintWidthMM = oPagePrintData.PrintWidthMM;
-            double dPrintHeightMM = oPagePrintData.PrintHeightMM;
+		pContext->PrepareBitBlt(pNativeRenderer, 0, 0, nRasterW, nRasterH,
+								oPagePrintData.LeftPix, oPagePrintData.TopPix, oPagePrintData.WidthPix, oPagePrintData.HeightPix, oPagePrintData.Angle);
 
-            if (dPrintWidthMM < dPrintHeightMM)
-                std::swap(dPrintWidthMM, dPrintHeightMM);
-
-            double m11 = 0;
-            double m12 = oPagePrintData.PageHeight / oPagePrintData.PageWidth; // horizontal
-            double m21 = -dPrintWidthMM / dPrintHeightMM; // vertival
-            double m22 = 0;
-            double dx = dPrintWidthMM;
-            double dy = 0;
-            pNativeRenderer->SetBaseTransform(m11, m12, m21, m22, dx, dy);
-        }
-        // ---
-
-        pContext->InitRenderer(pNativeRenderer, m_pFontManager);
+		pContext->InitRenderer(pNativeRenderer, m_pFontManager);
     }
     else
     {
@@ -939,6 +922,8 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
 #ifdef _XCODE
         pBgraFrame->put_Data(NULL);
 #endif
+
+		RELEASEOBJECT(pBgraFrame);
     }
 
 	if (bIsNeedRestore)

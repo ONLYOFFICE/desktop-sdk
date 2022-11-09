@@ -46,95 +46,95 @@
 class QCefViewProps;
 class DESKTOP_DECL QCefView : public QWidget, public CCefViewWidgetImpl
 {
-    Q_OBJECT
+	Q_OBJECT
 
 Q_SIGNALS:
-    void onDropFiles(QList<QString> files);
+	void onDropFiles(QList<QString> files);
 
 public:
-    QCefView(QWidget* parent, const QSize& initial_size = QSize());
-    virtual ~QCefView();
+	QCefView(QWidget* parent, const QSize& initial_size = QSize());
+	virtual ~QCefView();
 
-    // focus
-    virtual void focusInEvent(QFocusEvent* e);
-    virtual void focusOutEvent(QFocusEvent* e);
+	// focus
+	virtual void focusInEvent(QFocusEvent* e);
+	virtual void focusOutEvent(QFocusEvent* e);
 
-    // move/resize
-    virtual void resizeEvent(QResizeEvent* e);
-    virtual void moveEvent(QMoveEvent* e);
-    virtual void UpdateSize();
+	// move/resize
+	virtual void resizeEvent(QResizeEvent* e);
+	virtual void moveEvent(QMoveEvent* e);
+	virtual void UpdateSize();
 
-    // After create
-    virtual void AfterCreate();
+	// After create
+	virtual void AfterCreate();
 
-    // close
-    virtual void closeEvent(QCloseEvent *e);
+	// close
+	virtual void closeEvent(QCloseEvent *e);
 
-    // work with cefview
-    CCefView* GetCefView();
-    void Create(CAscApplicationManager* pManager, CefViewWrapperType eType);
-    void CreateReporter(CAscApplicationManager* pManager, CAscReporterData* data);
+	// work with cefview
+	CCefView* GetCefView();
+	void Create(CAscApplicationManager* pManager, CefViewWrapperType eType);
+	void CreateReporter(CAscApplicationManager* pManager, CAscReporterData* data);
 
-    // multimedia
-    virtual void OnMediaStart(NSEditorApi::CAscExternalMedia* data);
-    virtual void OnMediaEnd(bool isFromResize = false);
+	// multimedia
+	virtual void OnMediaStart(NSEditorApi::CAscExternalMedia* data);
+	virtual void OnMediaEnd(bool isFromResize = false);
 
-    // events
-    virtual void OnLoaded();
-    virtual void OnRelease();
+	// events
+	virtual void OnLoaded();
+	virtual void OnRelease();
 
-    // get natural view
-    QWidget* GetViewWidget();
+	// get natural view
+	QWidget* GetViewWidget();
 
-    // background color
-    void SetBackgroundCefColor(unsigned char r, unsigned char g, unsigned char b);
-    void paintEvent(QPaintEvent *event);
+	// background color
+	void SetBackgroundCefColor(unsigned char r, unsigned char g, unsigned char b);
+	void paintEvent(QPaintEvent *event);
 
-    // check support z-index
-    static bool IsSupportLayers();
-    void SetCaptionMaskSize(int);
+	// check support z-index
+	static bool IsSupportLayers();
+	void SetCaptionMaskSize(int);
 
-    virtual bool eventFilter(QObject *watched, QEvent *event);
+	virtual bool eventFilter(QObject *watched, QEvent *event);
 
-    bool setFocusToCef();
+	bool setFocusToCef();
 
 protected:
-    CCefView* m_pCefView;
-    QPointer<QWidget> m_pOverride;
-    QCefViewProps* m_pProperties;
+	CCefView* m_pCefView;
+	QPointer<QWidget> m_pOverride;
+	QCefViewProps* m_pProperties;
 
-    void Init();
+	void Init();
 
 signals:
-    void closeWidget(QCloseEvent *);
-    void _loaded();
-    void _closed();
+	void closeWidget(QCloseEvent *);
+	void _loaded();
+	void _closed();
 
 protected slots:
-    void _loadedSlot();
-    void _closedSlot();
+	void _loadedSlot();
+	void _closedSlot();
 };
 
 #if defined (_LINUX) && !defined(_MAC)
 
 class DESKTOP_DECL QCefEmbedWindow : public QWindow
 {
-    Q_OBJECT
+	Q_OBJECT
 
 private:
-    int m_nCaptionSize;
+	int m_nCaptionSize;
 
 public:
-    explicit QCefEmbedWindow(QPointer<QCefView> _qcef_parent, QWindow* _parent = NULL);
-    void SetCaptionMaskSize(int);
+	explicit QCefEmbedWindow(QPointer<QCefView> _qcef_parent, QWindow* _parent = NULL);
+	void SetCaptionMaskSize(int);
 
 protected:
-    virtual void moveEvent(QMoveEvent*);
-    virtual void resizeEvent(QResizeEvent*);
-    virtual bool eventFilter(QObject *watched, QEvent *event);   
+	virtual void moveEvent(QMoveEvent*);
+	virtual void resizeEvent(QResizeEvent*);
+	virtual bool eventFilter(QObject *watched, QEvent *event);
 
- private:
-    QPointer<QCefView> qcef_parent;
+private:
+	QPointer<QCefView> qcef_parent;
 };
 
 #endif

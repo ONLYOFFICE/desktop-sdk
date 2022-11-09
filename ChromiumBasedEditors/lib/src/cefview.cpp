@@ -4495,7 +4495,12 @@ virtual void OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser,
 	frame->LoadURL("ascdesktop://crash.html");
 
 	if (m_pParent && m_pParent->m_pInternal)
+	{
 		m_pParent->m_pInternal->m_bIsCrashed = true;
+
+		NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_PAGE_CRASH);
+		m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+	}
 }
 
 virtual void OnBeforeDownload(CefRefPtr<CefBrowser> browser,
@@ -6506,6 +6511,13 @@ int CCefView::GetPrintPageOrientation(const int& nPage)
 	if (oData.Width > oData.Height)
 		return 1;
 	return 0;
+}
+
+bool CCefView::IsDestroy()
+{
+	if (m_pInternal->m_bIsDestroying || m_pInternal->m_bIsDestroy)
+		return true;
+	return false;
 }
 
 CefRefPtr<CefFrame> CCefView_Private::CCloudCryptoUpload::GetFrame()
