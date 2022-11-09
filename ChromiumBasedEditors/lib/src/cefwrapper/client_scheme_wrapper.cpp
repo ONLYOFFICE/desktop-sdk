@@ -43,6 +43,22 @@
 #include "include/cef_parser.h"
 #include "./client_resource_handler_async.h"
 #include "../utils.h"
+
+#if defined(_LINUX) && !defined(_MAC)
+#ifdef Status
+#undef Status
+#endif
+#ifdef Success
+#undef Success
+#endif
+#ifdef None
+#undef None
+#endif
+#ifdef Always
+#undef Always
+#endif
+#endif
+
 #include "../applicationmanager_p.h"
 
 namespace asc_scheme
