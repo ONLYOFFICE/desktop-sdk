@@ -4933,16 +4933,16 @@ void CCefView_Private::LocalFile_End()
 	message->GetArgumentList()->SetBool(2, m_oLocalInfo.m_oInfo.m_bIsSaved);
 	message->GetArgumentList()->SetString(3, m_oConverterToEditor.GetSignaturesJSON());
 
-	bool isLocked = false;
+	int isLocked = NSSystem::CLocalFileLocker::ltNone;
 	if (m_oLocalInfo.m_oInfo.m_bIsSaved)
 		isLocked = NSSystem::CLocalFileLocker::IsLocked(m_oLocalInfo.m_oInfo.m_sFileSrc);
 
-	if (!isLocked)
+	if (NSSystem::CLocalFileLocker::ltNone == isLocked)
 		CheckLockLocalFile();
 
-	message->GetArgumentList()->SetBool(4, isLocked);
+	message->GetArgumentList()->SetInt(4, isLocked);
 
-	if (isLocked)
+	if (NSSystem::CLocalFileLocker::ltNone != isLocked)
 		m_oLocalInfo.m_oInfo.m_bIsSaved = false;
 
 	SEND_MESSAGE_TO_RENDERER_PROCESS(m_handler->GetBrowser(), message);
@@ -7072,7 +7072,7 @@ int CCefViewEditor::GetFileFormat(const std::wstring& sFilePath)
 {
 	if (!NSFile::CFileBinary::Exists(sFilePath))
 	{
-		if (NSSystem::CLocalFileLocker::IsLocked(sFilePath))
+		if (NSSystem::CLocalFileLocker::ltNone != NSSystem::CLocalFileLocker::IsLocked(sFilePath))
 		{
 			std::wstring sTmpFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"TMP");
 			if (NSFile::CFileBinary::Exists(sTmpFile))
