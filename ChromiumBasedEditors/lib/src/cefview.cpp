@@ -1720,7 +1720,7 @@ public:
 		return false;
 	}
 
-	bool CheckPopup(std::wstring sUrl, bool bIsBeforeBrowse = false, bool bIsBackground = false, bool bIsNotOpenLinks = false)
+	bool CheckPopup(std::wstring sUrl, bool bIsBeforeBrowse = false, bool bIsBackground = false, bool bIsNotOpenLinks = false, const std::wstring& sFrameUrl = L"")
 	{
 		NSEditorApi::CAscCefMenuEventListener* pListener = NULL;
 		if (NULL != m_pParent && NULL != m_pParent->GetAppManager())
@@ -1782,6 +1782,47 @@ public:
 
 				NSEditorApi::CAscOnOpenExternalLink* pData = new NSEditorApi::CAscOnOpenExternalLink();
 				pData->put_Id(m_pParent->GetId());
+
+				// check for relative local files
+				if ((m_pParent->GetType() == cvwtEditor) && (0 == sUrl.find(L"file://")))
+				{
+					std::wstring::size_type posIndex = sUrl.find(L"/editors/web-apps/apps/");
+					if (std::wstring::npos != posIndex)
+					{
+						posIndex = sUrl.find(L"/main", posIndex);
+						if (std::wstring::npos != posIndex)
+						{
+							if (m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_bIsSaved)
+							{
+								std::wstring sFilePath = sUrl.substr(posIndex + 6);
+
+								int nFlag = UU_SPACES | UU_REPLACE_PLUS_WITH_SPACE;
+					#if defined (_LINUX) && !defined(_MAC)
+								nFlag |= UU_URL_SPECIAL_CHARS_EXCEPT_PATH_SEPARATORS;
+					#else
+					#ifndef CEF_2623
+								nFlag |= UU_URL_SPECIAL_CHARS_EXCEPT_PATH_SEPARATORS;
+					#endif
+					#endif
+								CefString cefFilePath = CefURIDecode(sFilePath, false, static_cast<cef_uri_unescape_rule_t>(nFlag));
+								sFilePath = cefFilePath.ToWString();
+
+								std::wstring sDirectory = NSFile::GetDirectoryName(m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc);
+
+								if (NSFile::CFileBinary::Exists(sDirectory + L"/" + sFilePath))
+									sUrl = sDirectory + L"/" + sFilePath;
+
+								//sUrl = CefURIEncode(sUrl, false).ToWString();
+								NSStringUtils::string_replace(sUrl, L" ", L"%20");
+
+					#ifdef _WIN32
+								if ((std::wstring::npos == sUrl.find(L"//")) && (std::wstring::npos == sUrl.find(L"\\\\")))
+									sUrl = L"file:///" + sUrl;
+					#endif
+							}
+						}
+					}
+				}
 				pData->put_Url(sUrl);
 
 				NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONOPENLINK);
@@ -1865,7 +1906,10 @@ public:
 			bool* no_javascript_access) OVERRIDE
 	{
 		CEF_REQUIRE_IO_THREAD();
-		CheckPopup(target_url.ToWString(), false, (WOD_NEW_BACKGROUND_TAB == target_disposition) ? true : false);
+		std::wstring sFrameUrl = L"";
+		if (frame)
+			sFrameUrl = frame->GetURL().ToWString();
+		CheckPopup(target_url.ToWString(), false, (WOD_NEW_BACKGROUND_TAB == target_disposition) ? true : false, false, sFrameUrl);
 		return true;
 	}
 
@@ -1877,7 +1921,10 @@ public:
 			bool user_gesture) OVERRIDE
 	{
 		CEF_REQUIRE_IO_THREAD();
-		CheckPopup(target_url.ToWString(), false, (WOD_NEW_BACKGROUND_TAB == target_disposition) ? true : false, true);
+		std::wstring sFrameUrl = L"";
+		if (frame)
+			sFrameUrl = frame->GetURL().ToWString();
+		CheckPopup(target_url.ToWString(), false, (WOD_NEW_BACKGROUND_TAB == target_disposition) ? true : false, true, sFrameUrl);
 		return true;
 	}
 
@@ -2450,6 +2497,7 @@ public:
 			pData->put_Id(m_pParent->GetId());
 			pData->put_PagesCount((int)m_pParent->m_pInternal->m_oPrintData.m_arPages.size());
 			pData->put_CurrentPage(m_pParent->m_pInternal->m_oPrintData.m_nCurrentPage);
+			pData->put_Options(m_pParent->m_pInternal->m_sPrintParameters);
 			pEvent->m_pData = pData;
 
 			pListener->OnEvent(pEvent);
@@ -5906,6 +5954,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 				pData->put_Id(GetId());
 				pData->put_PagesCount((int)m_pInternal->m_oPrintData.m_arPages.size());
 				pData->put_CurrentPage(0);
+				pData->put_Options(m_pInternal->m_sPrintParameters);
 				pEvent->m_pData = pData;
 
 				m_pInternal->m_pManager->GetEventListener()->OnEvent(pEvent);
