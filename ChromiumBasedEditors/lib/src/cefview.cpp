@@ -5890,7 +5890,6 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 	case ASC_MENU_EVENT_TYPE_CEF_PRINT_START:
 	{
 		std::string sPrintParameters = m_pInternal->m_sPrintParameters;
-		m_pInternal->m_sPrintParameters = "";
 		if (m_pInternal)
 		{
 			if (this->GetType() == cvwtEditor)
