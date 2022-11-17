@@ -2497,7 +2497,7 @@ public:
 			pData->put_Id(m_pParent->GetId());
 			pData->put_PagesCount((int)m_pParent->m_pInternal->m_oPrintData.m_arPages.size());
 			pData->put_CurrentPage(m_pParent->m_pInternal->m_oPrintData.m_nCurrentPage);
-			pData->put_Options(m_pParent->m_pInternal->m_sPrintParameters);
+			pData->put_Options(UTF8_TO_U(m_pParent->m_pInternal->m_sPrintParameters));
 			pEvent->m_pData = pData;
 
 			pListener->OnEvent(pEvent);
@@ -5954,7 +5954,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 				pData->put_Id(GetId());
 				pData->put_PagesCount((int)m_pInternal->m_oPrintData.m_arPages.size());
 				pData->put_CurrentPage(0);
-				pData->put_Options(m_pInternal->m_sPrintParameters);
+				pData->put_Options(UTF8_TO_U(m_pInternal->m_sPrintParameters));
 				pEvent->m_pData = pData;
 
 				m_pInternal->m_pManager->GetEventListener()->OnEvent(pEvent);
