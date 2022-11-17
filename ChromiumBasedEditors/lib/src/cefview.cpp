@@ -1810,15 +1810,20 @@ public:
 								std::wstring sDirectory = NSFile::GetDirectoryName(m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc);
 
 								if (NSFile::CFileBinary::Exists(sDirectory + L"/" + sFilePath))
+								{
 									sUrl = sDirectory + L"/" + sFilePath;
+									std::string sUrlA = NSCommon::url_encode(sUrl);
+									sUrl = NSFile::CUtf8Converter::GetUnicodeFromCharPtr(sUrlA);
 
-								//sUrl = CefURIEncode(sUrl, false).ToWString();
-								NSStringUtils::string_replace(sUrl, L" ", L"%20");
-
-					#ifdef _WIN32
-								if ((std::wstring::npos == sUrl.find(L"//")) && (std::wstring::npos == sUrl.find(L"\\\\")))
-									sUrl = L"file:///" + sUrl;
-					#endif
+									if ((std::wstring::npos == sUrl.find(L"//")) && (std::wstring::npos == sUrl.find(L"\\\\")))
+									{
+								#ifdef _WIN32
+										sUrl = L"file:///" + sUrl;
+								#else
+										sUrl = L"file://" + sUrl;
+								#endif
+									}
+								}
 							}
 						}
 					}
