@@ -255,7 +255,7 @@ public:
         case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF:
         case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA:
         {
-            m_pReader = new CPdfFile(m_pFonts, 1);
+            m_pReader = new CPdfFile(m_pFonts);
             nFileTypeOpen = AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF;
             break;
         }
