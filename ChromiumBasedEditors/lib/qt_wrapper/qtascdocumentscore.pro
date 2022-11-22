@@ -42,7 +42,7 @@ core_linux {
 
     LIBS += -L$$CORE_ROOT_DIR/Common/3dParty/cef/$$CORE_BUILDS_PLATFORM_PREFIX/build -lcef
     include($$CORE_ROOT_DIR/Common/3dParty/icu/icu.pri)
-    ADD_DEPENDENCY(graphics, kernel, UnicodeConverter, PdfWriter, PdfReader, XpsFile, DjVuFile, HtmlRenderer, hunspell, ooxmlsignature)
+    ADD_DEPENDENCY(graphics, kernel, UnicodeConverter, PdfFile, XpsFile, DjVuFile, HtmlRenderer, hunspell, ooxmlsignature)
     LIBS += -lX11
 
 }
