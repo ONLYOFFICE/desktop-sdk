@@ -39,15 +39,15 @@
 class DESKTOP_DECL QAscApplicationManager : public CAscApplicationManager
 {
 public:
-    QAscApplicationManager();
-    virtual ~QAscApplicationManager();
+	QAscApplicationManager();
+	virtual ~QAscApplicationManager();
 
 public:
 
-    virtual CAscDpiChecker* InitDpiChecker();
-    virtual IExternalMessageLoop* GetExternalMessageLoop();
-    virtual int GetPlatformKeyboardLayout();
-    virtual void OnNeedCheckKeyboard();
+	virtual CAscDpiChecker* InitDpiChecker();
+	virtual IExternalMessageLoop* GetExternalMessageLoop();
+	virtual int GetPlatformKeyboardLayout();
+	virtual void OnNeedCheckKeyboard();
 };
 
 #endif  // Q_ASC_APPLICATION_MANAGER_H

@@ -46,35 +46,38 @@
 class DESKTOP_DECL QAscPrinterContext : public NSEditorApi::CAscPrinterContextBase
 {
 private:
-    QPrinter m_oPrinter;
-    QPainter m_oPainter;
-    bool m_bIsUsePainter;
+	QPrinter m_oPrinter;
+	QPainter m_oPainter;
+	bool m_bIsUsePainter;
 
 public:
-    QAscPrinterContext(QPrinter::PrinterMode eMode = QPrinter::HighResolution);
-    QAscPrinterContext(const QPrinterInfo& pi, QPrinter::PrinterMode eMode = QPrinter::HighResolution);
-    virtual ~QAscPrinterContext();
+	QAscPrinterContext(QPrinter::PrinterMode eMode = QPrinter::HighResolution);
+	QAscPrinterContext(const QPrinterInfo& pi, QPrinter::PrinterMode eMode = QPrinter::HighResolution);
+	virtual ~QAscPrinterContext();
 
-    bool BeginPaint();
-    void EndPaint();
+	bool BeginPaint();
+	void EndPaint();
 
-    QPrinter* getPrinter();
-    QPainter* GetPainter();
+	QPrinter* getPrinter();
+	QPainter* GetPainter();
 
-    virtual void GetLogicalDPI(int& nDpiX, int& nDpiY);
+	virtual void GetLogicalDPI(int& nDpiX, int& nDpiY);
 
-    virtual void GetPhysicalRect(int& nX, int& nY, int& nW, int& nH);
+	virtual void GetPhysicalRect(int& nX, int& nY, int& nW, int& nH);
 
-    virtual void GetPrintAreaSize(int& nW, int& nH);
+	virtual void GetPrintAreaSize(int& nW, int& nH);
 
-    virtual void BitBlt(unsigned char* pBGRA, const int& nRasterX, const int& nRasterY, const int& nRasterW, const int& nRasterH,
-                        const double& x, const double& y, const double& w, const double& h, const double& dAngle);
+	virtual void BitBlt(unsigned char* pBGRA, const int& nRasterX, const int& nRasterY, const int& nRasterW, const int& nRasterH,
+						const double& x, const double& y, const double& w, const double& h, const double& dAngle);
 
-    virtual void* GetNativeRenderer();
-    virtual void* GetNativeRendererUnsupportChecker();
-    virtual void NewPage();
+	virtual void* GetNativeRenderer();
+	virtual void* GetNativeRendererUnsupportChecker();
+	virtual void NewPage();
 
-    virtual void InitRenderer(void* pRenderer, void* pFontManager);
+	virtual void InitRenderer(void* pRenderer, void* pFontManager);
+
+	virtual void PrepareBitBlt(void* pRenderer, const int& nRasterX, const int& nRasterY, const int& nRasterW, const int& nRasterH,
+							   const double& x, const double& y, const double& w, const double& h, const double& dAngle);
 
 	virtual void SetPageOrientation(int nOrientaion);
 
@@ -82,24 +85,24 @@ public:
 	virtual void RestoreState();
 
 private:
-    void DrawImage(QPainter* painter, const QImage& image, const QRect& rect, const QRect& rectSrc);
-    void setDefaults();
+	void DrawImage(QPainter* painter, const QImage& image, const QRect& rect, const QRect& rectSrc);
+	void setDefaults();
 
 public:
-    // not desktop commons
-    QAscPrinterContext(QPaintDevice* pDevice);
-    QAscPrinterContext(QPagedPaintDevice* pDevice);
+	// not desktop commons
+	QAscPrinterContext(QPaintDevice* pDevice);
+	QAscPrinterContext(QPagedPaintDevice* pDevice);
 
-    enum PrintDeviceType
-    {
-        pdtNone,
-        pdtSimple,
-        pdtPaged
-    };
+	enum PrintDeviceType
+	{
+		pdtNone,
+		pdtSimple,
+		pdtPaged
+	};
 
 private:
-    QPaintDevice* m_pDevice;
-    PrintDeviceType m_eDeviceType;
+	QPaintDevice* m_pDevice;
+	PrintDeviceType m_eDeviceType;
 };
 
 #endif  // QASCPRINTER_H

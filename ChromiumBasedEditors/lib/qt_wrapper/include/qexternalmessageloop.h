@@ -39,29 +39,29 @@
 
 class DESKTOP_DECL QExternalMessageLoop : public QObject, public IExternalMessageLoop
 {
-    Q_OBJECT
+	Q_OBJECT
 
 public:
-    QExternalMessageLoop(CAscApplicationManager* manager);
-    virtual ~QExternalMessageLoop();
+	QExternalMessageLoop(CAscApplicationManager* manager);
+	virtual ~QExternalMessageLoop();
 
 public:
-    virtual void Run();
-    virtual void Execute(void* message);
-    virtual void SetTimer(long delay);
-    virtual void KillTimer();
-    virtual void Exit();
+	virtual void Run();
+	virtual void Execute(void* message);
+	virtual void SetTimer(long delay);
+	virtual void KillTimer();
+	virtual void Exit();
 
 Q_SIGNALS:
-    void onExecuteCommand(void*);
+	void onExecuteCommand(void*);
 
 public Q_SLOTS:
-    void slot_onExecuteCommand(void*);
-    void slot_onTimeout();
+	void slot_onExecuteCommand(void*);
+	void slot_onTimeout();
 
 private:
-    QTimer m_timer;
-    CAscApplicationManager* m_manager;
+	QTimer m_timer;
+	CAscApplicationManager* m_manager;
 };
 
 #endif  // QEXTERNAL_MESSAGE_LOOP_H
