@@ -1741,14 +1741,22 @@ public:
 			bIsEditor = (sUrlLower.find(L"files/httphandlers/filehandler?action=") == std::wstring::npos) ? false : true;
 		}
 
-		if (!bIsEditor && m_pParent->m_pInternal->m_bIsExternalCloud)
+		if (!bIsEditor)
 		{
-			bIsEditor = IsExternalCloudEditor(sUrlLower, m_pParent->m_pInternal->m_oExternalCloud.test_editor);
-
-			if (bIsEditor)
+			if (m_pParent->m_pInternal->m_bIsExternalCloud)
 			{
-				// прокидываем во view информацию
-				sUrl += (L"desktop_editor_cloud_type_external=" + m_pParent->m_pInternal->m_oExternalCloud.id + L"_ext_id");
+				bIsEditor = IsExternalCloudEditor(sUrlLower, m_pParent->m_pInternal->m_oExternalCloud.test_editor);
+
+				if (bIsEditor)
+				{
+					// прокидываем во view информацию
+					sUrl += (L"desktop_editor_cloud_type_external=" + m_pParent->m_pInternal->m_oExternalCloud.id + L"_ext_id");
+				}
+			}
+			else if (!m_pParent->m_pInternal->m_oExternalCloud.test_editor.empty())
+			{
+				// проверяем и на своих облаках
+				bIsEditor = IsExternalCloudEditor(sUrlLower, m_pParent->m_pInternal->m_oExternalCloud.test_editor);
 			}
 		}
 
@@ -6377,6 +6385,8 @@ void CCefView::SetExternalCloud(const std::wstring& sProviderId)
 	if (L"asc" == sProviderId || L"onlyoffice" == sProviderId)
 	{
 		m_pInternal->m_bIsSSO = true;
+		// все равно заполним - и для наших облаков могут быть регулярки на editorPage
+		GetAppManager()->m_pInternal->TestExternal(sProviderId, m_pInternal->m_oExternalCloud);
 		return;
 	}
 	m_pInternal->m_bIsExternalCloud = GetAppManager()->m_pInternal->TestExternal(sProviderId, m_pInternal->m_oExternalCloud);
