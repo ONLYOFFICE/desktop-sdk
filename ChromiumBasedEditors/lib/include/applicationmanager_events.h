@@ -430,6 +430,7 @@ namespace NSEditorApi
 		int m_nId;
 		int m_nPagesCount;
 		int m_nCurrentPage;
+		std::wstring m_sOptions;
 
 	public:
 		CAscPrintEnd()
@@ -442,6 +443,7 @@ namespace NSEditorApi
 		LINK_PROPERTY_INT(Id)
 		LINK_PROPERTY_INT(PagesCount)
 		LINK_PROPERTY_INT(CurrentPage)
+		LINK_PROPERTY_STRING(Options)
 	};
 
 	class CAscPrinterContextBase : public IMenuEventDataBase
