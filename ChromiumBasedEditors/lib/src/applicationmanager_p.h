@@ -81,6 +81,7 @@
 
 #ifdef LINUX
 #include "signal.h"
+#include <unistd.h>
 void posix_death_signal(int signum);
 
 class CLinuxData
@@ -431,6 +432,13 @@ namespace NSSystem
 			CloseHandle(hFile);
 #else
 			std::string sFileA = U_TO_UTF8(sFile);
+
+			if (0 != access(sFileA.c_str(), W_OK) && 0 == access(sFileA.c_str(), R_OK))
+			{
+				isLocked = ltReadOnly;
+				return isLocked;
+			}
+
 			int nDescriptor = open(sFileA.c_str(), O_RDWR | O_EXCL);
 			if (-1 == nDescriptor)
 				return ltNone;
