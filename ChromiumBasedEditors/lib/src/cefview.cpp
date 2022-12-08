@@ -1820,7 +1820,13 @@ public:
 								if (NSFile::CFileBinary::Exists(sDirectory + L"/" + sFilePath))
 								{
 									sUrl = sDirectory + L"/" + sFilePath;
+
+								#if defined (_LINUX) && !defined(_MAC)
+									std::string sUrlA = NSCommon::url_encode_xdg(sUrl);
+								#else
 									std::string sUrlA = NSCommon::url_encode(sUrl);
+								#endif
+
 									sUrl = NSFile::CUtf8Converter::GetUnicodeFromCharPtr(sUrlA);
 
 									if ((std::wstring::npos == sUrl.find(L"//")) && (std::wstring::npos == sUrl.find(L"\\\\")))
@@ -1831,9 +1837,34 @@ public:
 										sUrl = L"file://" + sUrl;
 								#endif
 									}
+
+								#if defined (_LINUX) && !defined(_MAC)
+									sUrl = L"xdg:" + sUrl;
+								#endif
 								}
 							}
 						}
+					}
+					else
+					{
+				#if defined (_LINUX) && !defined(_MAC)
+						std::wstring sFilePath = sUrl.substr(7);
+						int nFlag = UU_SPACES | UU_REPLACE_PLUS_WITH_SPACE;
+						nFlag |= UU_URL_SPECIAL_CHARS_EXCEPT_PATH_SEPARATORS;
+
+						CefString cefFilePath = CefURIDecode(sFilePath, false, static_cast<cef_uri_unescape_rule_t>(nFlag));
+						sFilePath = cefFilePath.ToWString();
+
+						if (NSFile::CFileBinary::Exists(sFilePath))
+						{
+							std::string sUrlA = NSCommon::url_encode_xdg(sFilePath);
+							sUrl = NSFile::CUtf8Converter::GetUnicodeFromCharPtr(sUrlA);
+
+							if (std::wstring::npos == sUrl.find(L"//"))
+								sUrl = L"file://" + sUrl;
+							sUrl = L"xdg:" + sUrl;
+						}
+				#endif
 					}
 				}
 				pData->put_Url(sUrl);
