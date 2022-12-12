@@ -114,7 +114,8 @@ HEADERS += \
 
 SOURCES += \
     $$CORE_ROOT_DIR/OfficeCryptReader/source/ECMACryptFile.cpp \
-    $$CORE_ROOT_DIR/OfficeCryptReader/source/CryptTransform.cpp
+    $$CORE_ROOT_DIR/OfficeCryptReader/source/CryptTransform.cpp \
+    $$CORE_ROOT_DIR/MsBinaryFile/DocFile/MemoryStream.cpp
 # -----------------------------------------
 
 

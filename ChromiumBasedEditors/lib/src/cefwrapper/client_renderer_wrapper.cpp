@@ -4526,7 +4526,7 @@ return this.split(str).join(newStr);\
             bool bIsSaved = message->GetArgumentList()->GetBool(2);
 
             std::wstring sSignatures = message->GetArgumentList()->GetString(3).ToWString();
-            bool bIsLockedFile = message->GetArgumentList()->GetBool(4);
+			bool bIsLockedFile = message->GetArgumentList()->GetInt(4);
             NSStringUtils::string_replace(sSignatures, L"\"", L"\\\"");
 
             if (bIsSaved)
@@ -4580,7 +4580,7 @@ return this.split(str).join(newStr);\
 
             if (bIsLockedFile)
             {
-                _frame->ExecuteJavaScript("(function(){var _editor = window[\"editor\"]; if (!_editor && window[\"Asc\"]) _editor = window[\"Asc\"][\"editor\"]; if (_editor && _editor.asc_setIsReadOnly) _editor.asc_setIsReadOnly(true, true);})();",
+                _frame->ExecuteJavaScript("(function(){var _editor = window[\"editor\"]; if (!_editor && window[\"Asc\"]) _editor = window[\"Asc\"][\"editor\"]; if (_editor && _editor.asc_setLocalRestrictions) _editor.asc_setLocalRestrictions(" + std::to_string(bIsLockedFile) + ", true);})();",
                                           _frame->GetURL(), 0);
             }
 
