@@ -38,17 +38,17 @@
 
 enum CefViewWrapperType
 {
-    cvwtSimple      = 0,
-    cvwtEditor      = 1
+	cvwtSimple      = 0,
+	cvwtEditor      = 1
 };
 
 enum AscEditorType
 {
-    etDocument              = 0,
-    etPresentation          = 1,
-    etSpreadsheet           = 2,
-    etDocumentMasterForm    = 3,
-    etUndefined             = 255
+	etDocument              = 0,
+	etPresentation          = 1,
+	etSpreadsheet           = 2,
+	etDocumentMasterForm    = 3,
+	etUndefined             = 255
 };
 
 class CCefView_Private;
@@ -57,124 +57,126 @@ class CAscApplicationManager;
 class CCefViewWidgetImpl
 {
 public:
-    WindowHandleId cef_handle;
-    unsigned int cef_ex_style;
-    unsigned int cef_style;
+	WindowHandleId cef_handle;
+	unsigned int cef_ex_style;
+	unsigned int cef_style;
 
-    unsigned int cef_x;
-    unsigned int cef_y;
-    unsigned int cef_width;
-    unsigned int cef_height;
-
-public:
-    CCefViewWidgetImpl()
-    {
-        cef_handle = 0;
-        cef_ex_style = 0;
-        cef_style = 0;
-
-        cef_x = 0;
-        cef_y = 0;
-        cef_width = 0;
-        cef_height = 0;
-    }
+	unsigned int cef_x;
+	unsigned int cef_y;
+	unsigned int cef_width;
+	unsigned int cef_height;
 
 public:
-    virtual void UpdateSize() {}
-    virtual void AfterCreate() {}
-    virtual void OnLoaded() {}
-    virtual void OnRelease() {}    
+	CCefViewWidgetImpl()
+	{
+		cef_handle = 0;
+		cef_ex_style = 0;
+		cef_style = 0;
 
-    static void SetParentNull(WindowHandleId handle);
+		cef_x = 0;
+		cef_y = 0;
+		cef_width = 0;
+		cef_height = 0;
+	}
+
+public:
+	virtual void UpdateSize() {}
+	virtual void AfterCreate() {}
+	virtual void OnLoaded() {}
+	virtual void OnRelease() {}
+
+	static void SetParentNull(WindowHandleId handle);
 };
 
 class DESKTOP_DECL CCefView
 {
 public:
-    CCefView(CCefViewWidgetImpl* parent, int nId);
-    virtual ~CCefView();
+	CCefView(CCefViewWidgetImpl* parent, int nId);
+	virtual ~CCefView();
 
-    void load(const std::wstring& url);
-    void reload();
-    std::wstring GetUrl();
-    std::wstring GetOriginalUrl();
-    std::wstring GetUrlAsLocal();
+	void load(const std::wstring& url);
+	void reload();
+	std::wstring GetUrl();
+	std::wstring GetOriginalUrl();
+	std::wstring GetUrlAsLocal();
 
-    void focus(bool value = true);
+	void focus(bool value = true);
 
-    void resizeEvent();
-    void moveEvent();
-    bool isDoubleResizeEvent();
+	void resizeEvent();
+	void moveEvent();
+	bool isDoubleResizeEvent();
 
-    void Apply(NSEditorApi::CAscMenuEvent* );
-    NSEditorApi::CAscMenuEvent* ApplySync(NSEditorApi::CAscMenuEvent* );
+	void Apply(NSEditorApi::CAscMenuEvent* );
+	NSEditorApi::CAscMenuEvent* ApplySync(NSEditorApi::CAscMenuEvent* );
 
-    NSEditorApi::CAscCefMenuEvent* CreateCefEvent(int nType);
-    
-    bool StartDownload(const std::wstring& sUrl);
+	NSEditorApi::CAscCefMenuEvent* CreateCefEvent(int nType);
 
-    void SetExternalCloud(const std::wstring& sProviderId);
+	bool StartDownload(const std::wstring& sUrl);
 
-    CAscApplicationManager* GetAppManager();
-    void SetAppManager(CAscApplicationManager* );
+	void SetExternalCloud(const std::wstring& sProviderId);
 
-    CCefViewWidgetImpl* GetWidgetImpl();
-    void OnDestroyWidgetImpl();
+	CAscApplicationManager* GetAppManager();
+	void SetAppManager(CAscApplicationManager* );
 
-    int GetId();
-    CefViewWrapperType GetType();
+	CCefViewWidgetImpl* GetWidgetImpl();
+	void OnDestroyWidgetImpl();
 
-    void SetModified(bool bIsModified);
-    bool GetModified();
+	int GetId();
+	CefViewWrapperType GetType();
 
-    bool IsPresentationReporter();
-    void LoadReporter(void* reporter_data);
+	void SetModified(bool bIsModified);
+	bool GetModified();
 
-    double GetDeviceScale();
+	bool IsPresentationReporter();
+	void LoadReporter(void* reporter_data);
+
+	double GetDeviceScale();
 
 	int GetPrintPageOrientation(const int& nPage);
 
+	bool IsDestroy();
+
 protected:
-    int m_nId;
-    CefViewWrapperType m_eWrapperType;
-    CCefView_Private* m_pInternal;
+	int m_nId;
+	CefViewWrapperType m_eWrapperType;
+	CCefView_Private* m_pInternal;
 
 public:
 
-    friend class CCefView_Private;
-    friend class CAscClientHandler;
-    friend class CAscApplicationManager;
-    friend class CAscApplicationManager_Private;
-    friend class CASCFileConverterToEditor;
-    friend class CCefViewEditor;
+	friend class CCefView_Private;
+	friend class CAscClientHandler;
+	friend class CAscApplicationManager;
+	friend class CAscApplicationManager_Private;
+	friend class CASCFileConverterToEditor;
+	friend class CCefViewEditor;
 };
 
 class DESKTOP_DECL CCefViewEditor : public CCefView
 {
 protected:
-    AscEditorType m_eType;
+	AscEditorType m_eType;
 
 public:
-    CCefViewEditor(CCefViewWidgetImpl* parent, int nId);
-    virtual ~CCefViewEditor();
+	CCefViewEditor(CCefViewWidgetImpl* parent, int nId);
+	virtual ~CCefViewEditor();
 
-    void SetEditorType(AscEditorType eType);
-    AscEditorType GetEditorType();
+	void SetEditorType(AscEditorType eType);
+	AscEditorType GetEditorType();
 
-    void OpenLocalFile(const std::wstring& sFilePath, const int& nFileFormat, const std::wstring& params = L"");
-    void CreateLocalFile(const int& nFileFormat, const std::wstring& sName = L"");
-    bool OpenCopyAsRecoverFile(const int& nIdSrc);
-    bool OpenRecoverFile(const int& nId);
-    bool OpenRecentFile(const int& nId);
-    bool OpenReporter(const std::wstring& sFolder);
+	void OpenLocalFile(const std::wstring& sFilePath, const int& nFileFormat, const std::wstring& params = L"");
+	void CreateLocalFile(const int& nFileFormat, const std::wstring& sName = L"");
+	bool OpenCopyAsRecoverFile(const int& nIdSrc);
+	bool OpenRecoverFile(const int& nId);
+	bool OpenRecentFile(const int& nId);
+	bool OpenReporter(const std::wstring& sFolder);
 
-    bool CheckCloudCryptoNeedBuild();
-    bool IsBuilding();
+	bool CheckCloudCryptoNeedBuild();
+	bool IsBuilding();
 
-    std::wstring GetLocalFilePath();
-    std::wstring GetRecoveryDir();
+	std::wstring GetLocalFilePath();
+	std::wstring GetRecoveryDir();
 
-    static int GetFileFormat(const std::wstring& sFilePath);
+	static int GetFileFormat(const std::wstring& sFilePath);
 };
 
 #if defined(_LINUX) && !defined(_MAC)

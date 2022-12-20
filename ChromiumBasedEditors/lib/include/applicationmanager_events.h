@@ -120,6 +120,7 @@
 #define ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_OPENDIRECTORY_DIALOG 7036
 
 #define ASC_MENU_EVENT_TYPE_PAGE_GOT_FOCUS                  7050
+#define ASC_MENU_EVENT_TYPE_PAGE_CRASH                      7051
 
 #define ASC_MENU_EVENT_TYPE_CEF_DESTROYWINDOW               8000
 
@@ -429,6 +430,7 @@ namespace NSEditorApi
 		int m_nId;
 		int m_nPagesCount;
 		int m_nCurrentPage;
+		std::wstring m_sOptions;
 
 	public:
 		CAscPrintEnd()
@@ -441,6 +443,7 @@ namespace NSEditorApi
 		LINK_PROPERTY_INT(Id)
 		LINK_PROPERTY_INT(PagesCount)
 		LINK_PROPERTY_INT(CurrentPage)
+		LINK_PROPERTY_STRING(Options)
 	};
 
 	class CAscPrinterContextBase : public IMenuEventDataBase

@@ -34,42 +34,42 @@
 
 QExternalMessageLoop::QExternalMessageLoop(CAscApplicationManager* manager)
 {
-    m_manager = manager;
-    m_timer.setSingleShot(true);
-    QObject::connect(&m_timer, SIGNAL(timeout()), this, SLOT(slot_onTimeout()), Qt::QueuedConnection);
-    QObject::connect(this, SIGNAL(onExecuteCommand(void*)), this, SLOT(slot_onExecuteCommand(void*)), Qt::QueuedConnection);
+	m_manager = manager;
+	m_timer.setSingleShot(true);
+	QObject::connect(&m_timer, SIGNAL(timeout()), this, SLOT(slot_onTimeout()), Qt::QueuedConnection);
+	QObject::connect(this, SIGNAL(onExecuteCommand(void*)), this, SLOT(slot_onExecuteCommand(void*)), Qt::QueuedConnection);
 }
 QExternalMessageLoop::~QExternalMessageLoop()
 {
-    m_timer.stop();
+	m_timer.stop();
 }
 
 void QExternalMessageLoop::Run()
 {
-    QApplication::instance()->exec();
+	QApplication::instance()->exec();
 }
 void QExternalMessageLoop::Execute(void* message)
 {
-    emit onExecuteCommand(message);
+	emit onExecuteCommand(message);
 }
 void QExternalMessageLoop::SetTimer(long delay)
 {
-    m_timer.start((int)delay);
+	m_timer.start((int)delay);
 }
 void QExternalMessageLoop::KillTimer()
 {
-    m_timer.stop();
+	m_timer.stop();
 }
 void QExternalMessageLoop::Exit()
 {
-    QApplication::instance()->quit();
+	QApplication::instance()->quit();
 }
 
 void QExternalMessageLoop::slot_onExecuteCommand(void* message)
 {
-    m_manager->ExternalMessageLoop_OnExecute(message);
+	m_manager->ExternalMessageLoop_OnExecute(message);
 }
 void QExternalMessageLoop::slot_onTimeout()
 {
-    m_manager->ExternalMessageLoop_OnTimeout();
+	m_manager->ExternalMessageLoop_OnTimeout();
 }

@@ -140,6 +140,109 @@ namespace NSCommon
             url.replace(0, 6, L"file:///");
         }
     }
+
+	static std::string url_encode(const std::wstring& url)
+	{
+		const char lookup[]= "0123456789ABCDEF";
+		std::string urlA = U_TO_UTF8(url);
+		std::string result;
+
+		for (size_t i = 0, len = urlA.length(); i < len; i++)
+		{
+			char c = urlA[i];
+
+			if ((c >= 'a' && c <= 'z') ||
+				(c >= 'A' && c <= 'Z') ||
+				(c >= '0' && c <= '9') ||
+				(c == ';') ||
+				(c == ',') ||
+				(c == '/') ||
+				(c == '?') ||
+				(c == ':') ||
+				(c == '@') ||
+				(c == '&') ||
+				(c == '=') ||
+				(c == '+') ||
+				(c == '$') ||
+				(c == '-') ||
+				(c == '_') ||
+				(c == '.') ||
+				(c == '!') ||
+				(c == '~') ||
+				(c == '*') ||
+				(c == '\'') ||
+				(c == '(') ||
+				(c == ')') ||
+				(c == '#'))
+			{
+				result += c;
+			}
+			else
+			{
+				result += '%';
+				result += lookup[(c & 0xF0) >> 4];
+				result += lookup[(c & 0x0F)];
+			}
+		}
+		return result;
+	}
+
+	static std::string url_encode_xdg(const std::wstring& url)
+	{
+		const char lookup[]= "0123456789ABCDEF";
+		std::string urlA = U_TO_UTF8(url);
+		std::string result;
+
+		for (size_t i = 0, len = urlA.length(); i < len; i++)
+		{
+			char c = urlA[i];
+
+			if ((c >= 'a' && c <= 'z') ||
+				(c >= 'A' && c <= 'Z') ||
+				(c >= '0' && c <= '9') ||
+				(c == '/') ||
+				(c == '@') ||
+				(c == '+') ||
+				(c == '-') ||
+				(c == '_') ||
+				(c == '.') ||
+				(c == '~'))
+			{
+				result += c;
+			}
+			else if ((c == ';') ||
+					 (c == ',') ||
+					 (c == '?') ||
+					 (c == ':') ||
+					 (c == '&') ||
+					 (c == '=') ||
+					 (c == '$') ||
+					 (c == '!') ||
+					 (c == '*') ||
+					 (c == '\'') ||
+					 (c == '(') ||
+					 (c == ')') ||
+					 (c == '{') ||
+					 (c == '}') ||
+					 (c == '[') ||
+					 (c == ']') ||
+					 (c == '#'))
+			{
+				//result += '\\';
+				//result += c;
+				result += '%';
+				result += lookup[(c & 0xF0) >> 4];
+				result += lookup[(c & 0x0F)];
+			}
+			else
+			{
+				result += '%';
+				result += lookup[(c & 0xF0) >> 4];
+				result += lookup[(c & 0x0F)];
+			}
+		}
+		return result;
+	}
 }
 
 class CFileDownloaderWrapper
