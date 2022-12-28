@@ -3647,6 +3647,20 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
             SEND_MESSAGE_TO_BROWSER_PROCESS(message);
             return true;
         }
+		else if (name == "openTemplate")
+		{
+			if (arguments.empty())
+				return true;
+
+			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("open_template");
+			message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
+
+			if (arguments.size() > 1)
+				message->GetArgumentList()->SetString(1, arguments[1]->GetStringValue());
+
+			SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+			return true;
+		}
 
         // Function does not exist.
         return false;
@@ -4028,7 +4042,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
     CefRefPtr<CefV8Handler> handler = pWrapper;
 
-    #define EXTEND_METHODS_COUNT 160
+	#define EXTEND_METHODS_COUNT 161
     const char* methods[EXTEND_METHODS_COUNT] = {
         "Copy",
         "Paste",
@@ -4247,6 +4261,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
         "GetOpenedFile",
 
         "GetCurrentWindowInfo",
+
+		"openTemplate",
 
         NULL
     };

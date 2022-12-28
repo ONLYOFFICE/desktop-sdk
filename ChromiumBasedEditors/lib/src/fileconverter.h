@@ -83,6 +83,8 @@ public:
     std::wstring m_sFileSrc;
     std::wstring m_sRecoveryDir;
 
+	std::wstring m_sTemplateUrl;
+
     // чтобы не ждать лишнего времени - грузим страницу и скрипты
     // ОДНОВРЕМЕННО с конвертацией. поэтому нужен счетчик, чтобы запускать открытие
     // после и конвертации и после вызова OfflineStart (js)
@@ -112,8 +114,10 @@ public:
 
     CAscLocalFileInfo& operator=(const CAscLocalFileInfo& oSrc)
     {
-        m_sFileSrc = oSrc.m_sFileSrc;
+		m_sFileSrc = oSrc.m_sFileSrc;
         m_sRecoveryDir = oSrc.m_sRecoveryDir;
+
+		m_sTemplateUrl = oSrc.m_sTemplateUrl;
 
         m_nCounterConvertion = oSrc.m_nCounterConvertion;
 
@@ -629,6 +633,28 @@ public:
         }
 
         std::wstring sLocalFilePath = m_oInfo.m_sFileSrc;
+		std::wstring sDestinationPath = m_oInfo.m_sRecoveryDir + L"/" + (m_sName.empty() ? NSFile::GetFileName(sLocalFilePath) : m_sName);
+
+		if (!m_oInfo.m_sTemplateUrl.empty())
+		{
+			if (NSFileDownloader::IsNeedDownload(m_oInfo.m_sTemplateUrl))
+			{
+				NSNetwork::NSFileTransport::CFileDownloader oDownloader(m_oInfo.m_sTemplateUrl, false);
+				oDownloader.SetFilePath(sDestinationPath);
+
+				oDownloader.Start( 0 );
+				while ( oDownloader.IsRunned() )
+				{
+					NSThreads::Sleep( 10 );
+				}
+
+				sLocalFilePath = sDestinationPath;
+			}
+			else
+			{
+				sLocalFilePath = m_oInfo.m_sTemplateUrl;
+			}
+		}
 
 #ifdef WIN32
         if (0 == sLocalFilePath.find(L"//"))
@@ -656,8 +682,7 @@ public:
             pListener->OnEvent(pEvent);
         }
 
-        std::wstring sDestinationPath = m_oInfo.m_sRecoveryDir + L"/" + (m_sName.empty() ? NSFile::GetFileName(sLocalFilePath) : m_sName);
-        m_sNativeSrcPath = sDestinationPath;
+		m_sNativeSrcPath = sDestinationPath;
         if (m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_HTML)
         {
             std::wstring sExt = NSFile::GetFileExtention(sDestinationPath);
@@ -719,7 +744,8 @@ public:
             }            
         }
 
-        NSFile::CFileBinary::Copy(sLocalFilePath, sDestinationPath);
+		if (sLocalFilePath != sDestinationPath)
+			NSFile::CFileBinary::Copy(sLocalFilePath, sDestinationPath);
 
         bool bIsTestFile = true;
         if (!NSFile::CFileBinary::Exists(sDestinationPath))

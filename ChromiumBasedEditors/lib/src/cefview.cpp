@@ -890,6 +890,10 @@ public:
 	std::wstring m_sComparingFile;
 	int m_nComparingFileType; // 0 - file, 1 - url
 
+	// path template (may be cloud)
+	std::wstring m_sTemplateUrl;
+	std::wstring m_sTemplateName;
+
 	bool m_bIsLocalFileLocked; // залочен ли файл?
 	NSSystem::CLocalFileLocker* m_pLocalFileLocker; // класс для лока открытых файлов
 
@@ -3908,6 +3912,22 @@ public:
 
 		return true;
 	}
+	else if ("open_template" == message_name)
+	{
+		std::wstring sUrl = args->GetString(0).ToWString();
+		std::wstring sName = NSFile::GetFileName(sUrl);
+
+		if (1 < args->GetSize())
+			sName = args->GetString(1).ToWString();
+
+		NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_CREATETAB);
+		NSEditorApi::CAscCreateTab* pData = new NSEditorApi::CAscCreateTab();
+		pData->put_Url(L"ascdesktop://template/" + sName + L"/template/" + sUrl);
+		pData->put_Name(sName);
+		pEvent->m_pData = pData;
+		pListener->OnEvent(pEvent);
+		return true;
+	}
 
 	CAscApplicationManager_Private* pInternalMan = m_pParent->GetAppManager()->m_pInternal;
 	if (pInternalMan->m_pAdditional && pInternalMan->m_pAdditional->OnProcessMessageReceived(browser, source_process, message, m_pParent))
@@ -5574,6 +5594,30 @@ void CCefView::load(const std::wstring& urlInputSrc)
 		((CCefViewEditor*)this)->OpenCopyAsRecoverFile(std::stoi(strId));
 		return;
 	}
+	if (0 == urlInput.find(L"ascdesktop://template/"))
+	{
+		if (this->GetType() == cvwtEditor)
+		{
+			std::wstring::size_type nPosName = urlInput.find(L"/template/", 15);
+			m_pInternal->m_sTemplateName = urlInput.substr(22, nPosName - 22);
+			m_pInternal->m_sTemplateUrl = urlInput.substr(nPosName + 10);
+
+			int nFormat = CAscApplicationManager::GetFileFormatByExtentionForSave(m_pInternal->m_sTemplateUrl);
+
+			int nEditorFormat = etDocument;
+			if (nFormat & AVS_OFFICESTUDIO_FILE_PRESENTATION)
+				nEditorFormat = etPresentation;
+			else if (nFormat & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
+				nEditorFormat = etSpreadsheet;
+			else if (nFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF ||
+					 nFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
+				nEditorFormat = etDocumentMasterForm;
+
+			((CCefViewEditor*)this)->CreateLocalFile(nEditorFormat, m_pInternal->m_sTemplateName);
+		}
+
+		return;
+	}
 
 	// check openaslocal
 	std::wstring::size_type pos1 = urlInput.find(L"<openaslocal>");
@@ -6908,6 +6952,9 @@ void CCefViewEditor::CreateLocalFile(const int& nFileFormat, const std::wstring&
 	m_pInternal->m_oConverterToEditor.m_sName = sName;
 
 	m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc = sFilePath;
+	if (!m_pInternal->m_sTemplateUrl.empty())
+		m_pInternal->m_oLocalInfo.m_oInfo.m_sTemplateUrl = m_pInternal->m_sTemplateUrl;
+
 	NSStringUtils::string_replace(m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc, L"\\", L"/");
 
 	m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir = NSFile::CFileBinary::CreateTempFileWithUniqueName(m_pInternal->m_pManager->m_oSettings.recover_path, L"DE_");
