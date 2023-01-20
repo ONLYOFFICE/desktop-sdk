@@ -903,6 +903,8 @@ public:
 
 	CTemporaryDocumentInfo* m_pTemporaryCloudFileInfo;
 
+	CConvertFileInEditor* m_pLocalFileConverter;
+
 public:
 	CCefView_Private()
 	{
@@ -974,6 +976,8 @@ public:
 
 		m_pLockRecover = NULL;
 		m_pTemporaryCloudFileInfo = NULL;
+
+		m_pLocalFileConverter = NULL;
 	}
 
 	void Destroy()
@@ -986,6 +990,11 @@ public:
 		m_oConverterToEditor.Stop();
 		m_oConverterFromEditor.Stop();
 		m_oTxtToDocx.Stop();
+		if (m_pLocalFileConverter)
+		{
+			m_pLocalFileConverter->Stop();
+			delete m_pLocalFileConverter;
+		}
 
 		// разлочиваем файл
 		RELEASEOBJECT(m_pLocalFileLocker);
@@ -1295,6 +1304,22 @@ public:
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("crypto_download_as_end");
 				SEND_MESSAGE_TO_RENDERER_PROCESS(GetBrowser(), message);
 			}
+			return;
+		}
+
+		if (m_pLocalFileConverter)
+		{
+			if (this->GetBrowser())
+			{
+				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_convert_local_file");
+				message->GetArgumentList()->SetString(0, (0 == nError) ? m_pLocalFileConverter->m_sFileFolder : L"");
+				NSArgumentList::SetInt64(message->GetArgumentList(), 1, m_pLocalFileConverter->m_nFrameId);
+				SEND_MESSAGE_TO_RENDERER_PROCESS(GetBrowser(), message);
+			}
+
+			m_pLocalFileConverter->DestroyOnFinish();
+			m_pLocalFileConverter = NULL;
+
 			return;
 		}
 
@@ -3926,6 +3951,68 @@ public:
 		pData->put_Name(sName);
 		pEvent->m_pData = pData;
 		pListener->OnEvent(pEvent);
+		return true;
+	}
+	else if ("convert_file" == message_name)
+	{
+		if (3 > args->GetSize())
+			return true;
+		if (m_pParent->m_pInternal->m_pLocalFileConverter)
+			return true;
+
+		std::wstring sFilePath = args->GetString(0).ToWString();
+		int nFileType = args->GetInt(1);
+		int_64_type nFrameId = NSArgumentList::GetInt64(args, 2);
+
+		std::wstring sFileOpened = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc;
+		if (!m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_bIsSaved)
+			sFileOpened = L"";
+
+		std::wstring sFullPath = L"";
+		if (!sFileOpened.empty())
+		{
+			std::wstring sDirectory = NSFile::GetDirectoryName(sFileOpened);
+			if (NSFile::CFileBinary::Exists(sDirectory + L"/" + sFilePath))
+				sFullPath = sDirectory + L"/" + sFilePath;
+			else if (NSFile::CFileBinary::Exists(sDirectory + sFilePath))
+				sFullPath = sDirectory + sFilePath;
+		}
+		if (sFullPath.empty())
+		{
+			if (NSFile::CFileBinary::Exists(sFilePath))
+				sFullPath = sFilePath;
+		}
+
+		if (sFullPath.empty())
+		{
+			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_convert_local_file");
+			message->GetArgumentList()->SetString(0, L"");
+			SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
+			return true;
+		}
+
+		m_pParent->m_pInternal->m_pLocalFileConverter = new CConvertFileInEditor();
+		CConvertFileInEditor* pConv = m_pParent->m_pInternal->m_pLocalFileConverter;
+		pConv->m_pEvents = m_pParent->m_pInternal;
+		pConv->m_pManager = m_pParent->m_pInternal->m_pManager;
+
+		std::wstring sOutDirectory;
+		if (sFileOpened.empty())
+			sOutDirectory = NSDirectory::GetTempPath();
+		else
+			sOutDirectory = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir;
+
+		pConv->m_sFileFolder = NSFile::CFileBinary::CreateTempFileWithUniqueName(sOutDirectory, L"FC_");
+		if (NSFile::CFileBinary::Exists(pConv->m_sFileFolder))
+			NSFile::CFileBinary::Remove(pConv->m_sFileFolder);
+		NSDirectory::CreateDirectory(pConv->m_sFileFolder);
+
+		pConv->m_sSrcFilePath = sFullPath;
+		pConv->m_nOutputFormat = nFileType;
+		pConv->m_nFrameId = nFrameId;
+
+		pConv->Start(0);
+
 		return true;
 	}
 
