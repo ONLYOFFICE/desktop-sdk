@@ -993,7 +993,7 @@ public:
 		if (m_pLocalFileConverter)
 		{
 			m_pLocalFileConverter->Stop();
-			delete m_pLocalFileConverter;
+			m_pLocalFileConverter = NULL;
 		}
 
 		// разлочиваем файл
@@ -3993,6 +3993,7 @@ public:
 
 		m_pParent->m_pInternal->m_pLocalFileConverter = new CConvertFileInEditor();
 		CConvertFileInEditor* pConv = m_pParent->m_pInternal->m_pLocalFileConverter;
+		pConv->DestroyOnFinish();
 		pConv->m_pEvents = m_pParent->m_pInternal;
 		pConv->m_pManager = m_pParent->m_pInternal->m_pManager;
 
