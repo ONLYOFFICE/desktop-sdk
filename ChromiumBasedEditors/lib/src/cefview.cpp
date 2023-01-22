@@ -3987,6 +3987,7 @@ public:
 		{
 			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_convert_local_file");
 			message->GetArgumentList()->SetString(0, L"");
+			NSArgumentList::SetInt64(message->GetArgumentList(), 1, nFrameId);
 			SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
 			return true;
 		}
