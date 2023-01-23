@@ -1627,7 +1627,20 @@ public:
 
 		NSStringUtils::CStringBuilder oBuilder;
 		oBuilder.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><TaskQueueDataConvert><m_sFileFrom>");
-		oBuilder.WriteEncodeXmlString(m_sSrcFilePath);
+
+		if (!NSSystem::CLocalFileLocker::IsLocked(m_sSrcFilePath))
+		{
+			oBuilder.WriteEncodeXmlString(m_sSrcFilePath);
+		}
+		else
+		{
+			std::wstring sFileSrc = m_sFileFolder + L"/" + NSFile::GetFileName(m_sSrcFilePath);
+			if (NSFile::CFileBinary::Copy(m_sSrcFilePath, sFileSrc))
+				oBuilder.WriteEncodeXmlString(sFileSrc);
+			else
+				oBuilder.WriteEncodeXmlString(m_sSrcFilePath);
+		}
+
 		oBuilder.WriteString(L"</m_sFileFrom><m_sFileTo>");
 		oBuilder.WriteEncodeXmlString(m_sFileFolder + L"/Editor.bin");
 		oBuilder.WriteString(L"</m_sFileTo><m_nFormatTo>");
