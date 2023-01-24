@@ -1396,6 +1396,7 @@ public:
 
 			if (!bEncryption)
 			{
+				arFormats.push_back(AVS_OFFICESTUDIO_FILE_PRESENTATION_PPSX);
 				arFormats.push_back(AVS_OFFICESTUDIO_FILE_PRESENTATION_POTX);
 			}
 
