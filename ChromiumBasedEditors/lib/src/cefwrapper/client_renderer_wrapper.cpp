@@ -424,9 +424,9 @@ public:
 
 			std::wstring sFullPath = m_sDirectory + L"/" + sPath;
 
-#ifndef CEF_V8_SUPPORT_TYPED_ARRAYS
-			retval = CefV8Value::CreateUndefined();
-#else
+//#ifndef CEF_V8_SUPPORT_TYPED_ARRAYS
+//			retval = CefV8Value::CreateUndefined();
+//#else
 			if (g_pLocalResolver->CheckNoFont(sFullPath))
 			{
 				BYTE* pData = NULL;
@@ -434,7 +434,15 @@ public:
 				NSFile::CFileBinary::ReadAllBytes(sFullPath, &pData, dwFileLen);
 
 				if (0 != dwFileLen)
+				{
+#ifndef CEF_V8_SUPPORT_TYPED_ARRAYS
+					retval = CefV8Value::CreateArray(dwFileLen);
+					for (DWORD i = 0; i < dwFileLen; ++i)
+						retval->SetValue(i, CefV8Value::CreateInt(pData[i]));
+#else
 					retval = CefV8Value::CreateArrayBuffer((void*)pData, (size_t)dwFileLen, new CAscCefV8ArrayBufferReleaseCallback());
+#endif
+				}
 				else
 					retval = CefV8Value::CreateUndefined();
 			}
@@ -442,7 +450,7 @@ public:
 			{
 				retval = CefV8Value::CreateUndefined();
 			}
-#endif
+//#endif
 			return true;
 		}
 
