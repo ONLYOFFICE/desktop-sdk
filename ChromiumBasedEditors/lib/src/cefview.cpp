@@ -3965,6 +3965,15 @@ public:
 		int nFileType = args->GetInt(1);
 		int_64_type nFrameId = NSArgumentList::GetInt64(args, 2);
 
+		if (0 == sFilePath.find(L"file:///"))
+		{
+#ifdef _WIN32
+			sFilePath = sFilePath.substr(8);
+#else
+			sFilePath = sFilePath.substr(7);
+#endif
+		}
+
 		std::wstring sFileOpened = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc;
 		if (!m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_bIsSaved)
 			sFileOpened = L"";
