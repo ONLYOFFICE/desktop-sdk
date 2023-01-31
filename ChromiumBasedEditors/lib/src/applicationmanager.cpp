@@ -955,6 +955,8 @@ int CAscApplicationManager::GetFileFormatByExtentionForSave(const std::wstring& 
         nFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_CSV;
     else if (sName == L"pptx")
         nFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
+	else if (sName == L"ppsx")
+		nFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPSX;
     else if (sName == L"potx")
         nFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_POTX;
     else if (sName == L"odp")

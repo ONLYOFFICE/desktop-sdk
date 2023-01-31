@@ -154,6 +154,7 @@ namespace NSEditorApi
 	{
 	private:
 		std::wstring m_sUrl;
+		std::wstring m_sName;
 		bool m_bActive;
 		int m_nIdEqual;
 
@@ -170,6 +171,7 @@ namespace NSEditorApi
 		LINK_PROPERTY_STRING(Url)
 		LINK_PROPERTY_BOOL(Active)
 		LINK_PROPERTY_INT(IdEqual)
+		LINK_PROPERTY_STRING(Name)
 	};
 
 	class CAscDownloadFileInfo : public IMenuEventDataBase

@@ -43,7 +43,7 @@
 #include "../../../../core/DesktopEditor/raster/BgraFrame.h"
 
 #include "../../../../core/Common/OfficeFileFormatChecker.h"
-#include "../../../../core/PdfReader/PdfReader.h"
+#include "../../../../core/PdfFile/PdfFile.h"
 #include "../../../../core/DjVuFile/DjVu.h"
 #include "../../../../core/XpsFile/XpsFile.h"
 #include "../../../../core/HtmlRenderer/include/HTMLRenderer3.h"
@@ -255,7 +255,7 @@ public:
         case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF:
         case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA:
         {
-            m_pReader = new PdfReader::CPdfReader(m_pFonts);
+            m_pReader = new CPdfFile(m_pFonts);
             nFileTypeOpen = AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF;
             break;
         }
@@ -357,8 +357,8 @@ public:
         {
             if (nFileTypeOpen == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF)
             {
-                PdfReader::CPdfReader* pPdfReader = static_cast<PdfReader::CPdfReader*>(m_pReader);
-                if (PdfReader::errorEncrypted == pPdfReader->GetError())
+                CPdfFile* pPdfReader = static_cast<CPdfFile*>(m_pReader);
+                if (PdfFile::errorEncrypted == pPdfReader->GetError())
                 {
                     sBase64Info = "password";
 
