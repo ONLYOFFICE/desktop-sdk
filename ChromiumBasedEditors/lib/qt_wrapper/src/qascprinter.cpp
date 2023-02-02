@@ -56,6 +56,7 @@ bool QAscPrinterContext::BeginPaint()
 {
 	m_bIsUsePainter = true;
 	//m_oPrinter.setFullPage(true);
+	bool bResult = true;
 
 #ifdef WIN32
 	SignalHandlerPointer previousHandler;
@@ -69,11 +70,11 @@ bool QAscPrinterContext::BeginPaint()
 		if (!m_pDevice)
 		{
 			m_oPrinter.setPageMargins(0,0,0,0,QPrinter::Millimeter);
-			m_oPainter.begin(&m_oPrinter);
+			bResult = m_oPainter.begin(&m_oPrinter);
 		}
 		else
 		{
-			m_oPainter.begin(m_pDevice);
+			bResult = m_oPainter.begin(m_pDevice);
 
 			if (pdtSimple == m_eDeviceType)
 				m_oPainter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
@@ -83,7 +84,7 @@ bool QAscPrinterContext::BeginPaint()
 	{
 		return false;
 	}
-	return true;
+	return bResult;
 }
 void QAscPrinterContext::EndPaint()
 {

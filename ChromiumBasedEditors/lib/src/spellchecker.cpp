@@ -41,319 +41,319 @@
 class CJsonTextItem
 {
 protected:
-    char*	m_pData;
-    size_t	m_lSize;
+	char*	m_pData;
+	size_t	m_lSize;
 
-    char*	m_pDataCur;
-    size_t	m_lSizeCur;
-
-public:
-    CJsonTextItem()
-    {
-        m_pData = NULL;
-        m_lSize = 0;
-
-        m_pDataCur	= m_pData;
-        m_lSizeCur	= m_lSize;
-    }
-    CJsonTextItem(const CJsonTextItem& oSrc)
-    {
-        m_pData = NULL;
-        *this = oSrc;
-    }
-    CJsonTextItem& operator=(const CJsonTextItem& oSrc)
-    {
-        RELEASEMEM(m_pData);
-
-        m_lSize		= oSrc.m_lSize;
-        m_lSizeCur	= oSrc.m_lSizeCur;
-        m_pData		= (char*)malloc(m_lSize * sizeof(char));
-
-        memcpy(m_pData, oSrc.m_pData, m_lSizeCur * sizeof(char));
-
-        m_pDataCur = m_pData + m_lSizeCur;
-
-        return *this;
-    }
-
-    CJsonTextItem(const size_t& nLen)
-    {
-        m_lSize = nLen;
-        m_pData = (char*)malloc(m_lSize * sizeof(char));
-
-        m_lSizeCur = 0;
-        m_pDataCur = m_pData;
-    }
-    virtual ~CJsonTextItem()
-    {
-        RELEASEMEM(m_pData);
-    }
-
-    inline void AddSize(const size_t& nSize)
-    {
-        if (NULL == m_pData)
-        {
-            m_lSize = 1000;
-            if (nSize > m_lSize)
-                m_lSize = nSize;
-
-            m_pData = (char*)malloc(m_lSize * sizeof(char));
-
-            m_lSizeCur = 0;
-            m_pDataCur = m_pData;
-            return;
-        }
-
-        if ((m_lSizeCur + nSize) > m_lSize)
-        {
-            while ((m_lSizeCur + nSize) > m_lSize)
-            {
-                m_lSize *= 2;
-            }
-
-            char* pRealloc = (char*)realloc(m_pData, m_lSize * sizeof(char));
-            if (NULL != pRealloc)
-            {
-                // реаллок сработал
-                m_pData		= pRealloc;
-                m_pDataCur	= m_pData + m_lSizeCur;
-            }
-            else
-            {
-                char* pMalloc = (char*)malloc(m_lSize * sizeof(char));
-                memcpy(pMalloc, m_pData, m_lSizeCur * sizeof(char));
-
-                free(m_pData);
-                m_pData		= pMalloc;
-                m_pDataCur	= m_pData + m_lSizeCur;
-            }
-        }
-    }
+	char*	m_pDataCur;
+	size_t	m_lSizeCur;
 
 public:
+	CJsonTextItem()
+	{
+		m_pData = NULL;
+		m_lSize = 0;
 
-    inline void operator+=(const std::string& oTemp)
-    {
-        WriteString(oTemp.c_str(), oTemp.length());
-    }
-    inline char operator[](const size_t& nIndex)
-    {
-        if (nIndex < m_lSizeCur)
-            return m_pData[nIndex];
+		m_pDataCur	= m_pData;
+		m_lSizeCur	= m_lSize;
+	}
+	CJsonTextItem(const CJsonTextItem& oSrc)
+	{
+		m_pData = NULL;
+		*this = oSrc;
+	}
+	CJsonTextItem& operator=(const CJsonTextItem& oSrc)
+	{
+		RELEASEMEM(m_pData);
 
-        return 0;
-    }
+		m_lSize		= oSrc.m_lSize;
+		m_lSizeCur	= oSrc.m_lSizeCur;
+		m_pData		= (char*)malloc(m_lSize * sizeof(char));
 
-    inline void AddChar(const char& c)
-    {
-        AddSize(1);
-        *m_pDataCur = c;
+		memcpy(m_pData, oSrc.m_pData, m_lSizeCur * sizeof(char));
 
-        ++m_lSizeCur;
-        ++m_pDataCur;
-    }
+		m_pDataCur = m_pData + m_lSizeCur;
 
-    inline void AddBool(const bool& val)
-    {
-        if (val)
-            WriteString("true", 4);
-        else
-            WriteString("false", 5);
-    }
+		return *this;
+	}
+
+	CJsonTextItem(const size_t& nLen)
+	{
+		m_lSize = nLen;
+		m_pData = (char*)malloc(m_lSize * sizeof(char));
+
+		m_lSizeCur = 0;
+		m_pDataCur = m_pData;
+	}
+	virtual ~CJsonTextItem()
+	{
+		RELEASEMEM(m_pData);
+	}
+
+	inline void AddSize(const size_t& nSize)
+	{
+		if (NULL == m_pData)
+		{
+			m_lSize = 1000;
+			if (nSize > m_lSize)
+				m_lSize = nSize;
+
+			m_pData = (char*)malloc(m_lSize * sizeof(char));
+
+			m_lSizeCur = 0;
+			m_pDataCur = m_pData;
+			return;
+		}
+
+		if ((m_lSizeCur + nSize) > m_lSize)
+		{
+			while ((m_lSizeCur + nSize) > m_lSize)
+			{
+				m_lSize *= 2;
+			}
+
+			char* pRealloc = (char*)realloc(m_pData, m_lSize * sizeof(char));
+			if (NULL != pRealloc)
+			{
+				// реаллок сработал
+				m_pData		= pRealloc;
+				m_pDataCur	= m_pData + m_lSizeCur;
+			}
+			else
+			{
+				char* pMalloc = (char*)malloc(m_lSize * sizeof(char));
+				memcpy(pMalloc, m_pData, m_lSizeCur * sizeof(char));
+
+				free(m_pData);
+				m_pData		= pMalloc;
+				m_pDataCur	= m_pData + m_lSizeCur;
+			}
+		}
+	}
 
 public:
-    inline void WriteString(const char* pString, const size_t& nLen)
-    {
-        AddSize(nLen);
-        memcpy(m_pDataCur, pString, nLen * sizeof(char));
-        m_pDataCur += nLen;
-        m_lSizeCur += nLen;
-    }
-    inline size_t GetCurSize()
-    {
-        return m_lSizeCur;
-    }
-    inline size_t GetSize()
-    {
-        return m_lSize;
-    }
-    inline void Clear()
-    {
-        RELEASEMEM(m_pData);
 
-        m_pData = NULL;
-        m_lSize = 0;
+	inline void operator+=(const std::string& oTemp)
+	{
+		WriteString(oTemp.c_str(), oTemp.length());
+	}
+	inline char operator[](const size_t& nIndex)
+	{
+		if (nIndex < m_lSizeCur)
+			return m_pData[nIndex];
 
-        m_pDataCur	= m_pData;
-        m_lSizeCur	= 0;
-    }
-    inline void ClearNoAttack()
-    {
-        m_pDataCur	= m_pData;
-        m_lSizeCur	= 0;
-    }
+		return 0;
+	}
 
-    inline size_t GetStringLen(wchar_t* pData)
-    {
-        wchar_t* s = pData;
-        for (; *s != 0; ++s);
-        return (size_t)(s - pData);
-    }
+	inline void AddChar(const char& c)
+	{
+		AddSize(1);
+		*m_pDataCur = c;
 
-    inline std::string GetCString()
-    {
-        std::string str(m_pData, (int)m_lSizeCur);
-        return str;
-    }
-    inline char* GetBuffer()
-    {
-        return m_pData;
-    }
+		++m_lSizeCur;
+		++m_pDataCur;
+	}
+
+	inline void AddBool(const bool& val)
+	{
+		if (val)
+			WriteString("true", 4);
+		else
+			WriteString("false", 5);
+	}
+
+public:
+	inline void WriteString(const char* pString, const size_t& nLen)
+	{
+		AddSize(nLen);
+		memcpy(m_pDataCur, pString, nLen * sizeof(char));
+		m_pDataCur += nLen;
+		m_lSizeCur += nLen;
+	}
+	inline size_t GetCurSize()
+	{
+		return m_lSizeCur;
+	}
+	inline size_t GetSize()
+	{
+		return m_lSize;
+	}
+	inline void Clear()
+	{
+		RELEASEMEM(m_pData);
+
+		m_pData = NULL;
+		m_lSize = 0;
+
+		m_pDataCur	= m_pData;
+		m_lSizeCur	= 0;
+	}
+	inline void ClearNoAttack()
+	{
+		m_pDataCur	= m_pData;
+		m_lSizeCur	= 0;
+	}
+
+	inline size_t GetStringLen(wchar_t* pData)
+	{
+		wchar_t* s = pData;
+		for (; *s != 0; ++s);
+		return (size_t)(s - pData);
+	}
+
+	inline std::string GetCString()
+	{
+		std::string str(m_pData, (int)m_lSizeCur);
+		return str;
+	}
+	inline char* GetBuffer()
+	{
+		return m_pData;
+	}
 };
 
 class CJsonSpellParser
 {
 public:
-    enum SpellTaskType
-    {
-        sttSpell        = 0,
-        sttSuggest      = 1,
-        sttAdd          = 2,
-        sttClear        = 3
-    };
+	enum SpellTaskType
+	{
+		sttSpell        = 0,
+		sttSuggest      = 1,
+		sttAdd          = 2,
+		sttClear        = 3
+	};
 
 public:
-    std::string                 Task;
+	std::string                 Task;
 
-    SpellTaskType               m_eType;
-    std::list<std::string>      m_arWords;
-    std::list<int>              m_arLanguages;
+	SpellTaskType               m_eType;
+	std::list<std::string>      m_arWords;
+	std::list<int>              m_arLanguages;
 
 public:
-    void Parse(const std::string& sTask)
-    {
-        // убираем }
-        Task = sTask.substr(0, sTask.length() - 1);
+	void Parse(const std::string& sTask)
+	{
+		// убираем }
+		Task = sTask.substr(0, sTask.length() - 1);
 
-        m_eType = sttSuggest;
-        std::string sTaskType = CPluginsManager::GetStringValue(sTask, "type");
-        if (!sTaskType.empty())
-        {
-            if ("spell" == sTaskType)
-                m_eType = sttSpell;
-            else if ("suggest" == sTaskType)
-                m_eType = sttSuggest;
-            else if ("add" == sTaskType)
-                m_eType = sttAdd;
-            else if ("clear" == sTaskType)
-                m_eType = sttClear;
-        }
+		m_eType = sttSuggest;
+		std::string sTaskType = CPluginsManager::GetStringValue(sTask, "type");
+		if (!sTaskType.empty())
+		{
+			if ("spell" == sTaskType)
+				m_eType = sttSpell;
+			else if ("suggest" == sTaskType)
+				m_eType = sttSuggest;
+			else if ("add" == sTaskType)
+				m_eType = sttAdd;
+			else if ("clear" == sTaskType)
+				m_eType = sttClear;
+		}
 
-        ParseWords();
+		ParseWords();
 
-        if (sttAdd != m_eType && sttClear != m_eType)
-            ParseLanguages();
-    }
+		if (sttAdd != m_eType && sttClear != m_eType)
+			ParseLanguages();
+	}
 
-    int ParseWords()
-    {
-        std::string sWords = CPluginsManager::GetArrayValue(Task, "usrWords");
-        // в этом алгоритме все прокатывает, так как символы -" -[ -] имеют старший байт ноль.
-        // т.е. не мешаются в utf8
-        const char* pData = sWords.c_str();
-        const char* pCur = pData;
+	int ParseWords()
+	{
+		std::string sWords = CPluginsManager::GetArrayValue(Task, "usrWords");
+		// в этом алгоритме все прокатывает, так как символы -" -[ -] имеют старший байт ноль.
+		// т.е. не мешаются в utf8
+		const char* pData = sWords.c_str();
+		const char* pCur = pData;
 
-        // ищем [
-        while (*pCur != 0 && *pCur != '[')
-        {
-            ++pCur;
-        }
+		// ищем [
+		while (*pCur != 0 && *pCur != '[')
+		{
+			++pCur;
+		}
 
-        if (*pCur == 0)
-            return (int)(pCur - pData);
+		if (*pCur == 0)
+			return (int)(pCur - pData);
 
-        while (*pCur != 0 && *pCur != ']')
-        {
-            // 1) ищем первый "
-            while (*pCur != 0 && *pCur != '\"')
-                ++pCur;
+		while (*pCur != 0 && *pCur != ']')
+		{
+			// 1) ищем первый "
+			while (*pCur != 0 && *pCur != '\"')
+				++pCur;
 
-            if (*pCur == 0)
-                return (int)(pCur - pData);
+			if (*pCur == 0)
+				return (int)(pCur - pData);
 
-            ++pCur;
+			++pCur;
 
-            const char* pStart = pCur;
+			const char* pStart = pCur;
 
-            // 2) ищем второй "
-            while (*pCur != 0 && *pCur != '\"')
-                ++pCur;
+			// 2) ищем второй "
+			while (*pCur != 0 && *pCur != '\"')
+				++pCur;
 
-            if (*pCur == 0)
-                return (int)(pCur - pData);
+			if (*pCur == 0)
+				return (int)(pCur - pData);
 
-            m_arWords.push_back(std::string(pStart, (int)(pCur - pStart)));
-            ++pCur;
-        }
+			m_arWords.push_back(std::string(pStart, (int)(pCur - pStart)));
+			++pCur;
+		}
 
-        return (int)(pCur - pData);
-    }
+		return (int)(pCur - pData);
+	}
 
-    int ParseLanguages()
-    {
-        std::string sLangs = CPluginsManager::GetArrayValue(Task, "usrLang");
-        // в этом алгоритме все прокатывает, так как символы -" -[ -] имеют старший байт ноль.
-        // т.е. не мешаются в utf8
-        const char* pData = sLangs.c_str();
-        const char* pCur = pData;
+	int ParseLanguages()
+	{
+		std::string sLangs = CPluginsManager::GetArrayValue(Task, "usrLang");
+		// в этом алгоритме все прокатывает, так как символы -" -[ -] имеют старший байт ноль.
+		// т.е. не мешаются в utf8
+		const char* pData = sLangs.c_str();
+		const char* pCur = pData;
 
-        // ищем [
-        while (*pCur != 0 && *pCur != '[')
-        {
-            ++pCur;
-        }
+		// ищем [
+		while (*pCur != 0 && *pCur != '[')
+		{
+			++pCur;
+		}
 
-        if (*pCur == 0)
-            return (int)(pCur - pData);
+		if (*pCur == 0)
+			return (int)(pCur - pData);
 
-        while (*pCur != 0)
-        {
-            // 1) ищем первую цифру
-            while (*pCur != 0 && !is_digit(*pCur))
-                ++pCur;
+		while (*pCur != 0)
+		{
+			// 1) ищем первую цифру
+			while (*pCur != 0 && !is_digit(*pCur))
+				++pCur;
 
-            if (*pCur == 0)
-                return (int)(pCur - pData);
+			if (*pCur == 0)
+				return (int)(pCur - pData);
 
-            const char* pStart = pCur;
+			const char* pStart = pCur;
 
-            // 2) ищем первую не цифру
-            while (*pCur != 0 && is_digit(*pCur))
-                ++pCur;
+			// 2) ищем первую не цифру
+			while (*pCur != 0 && is_digit(*pCur))
+				++pCur;
 
-            if (*pCur == 0)
-                return (int)(pCur - pData);
+			if (*pCur == 0)
+				return (int)(pCur - pData);
 
-            int nValue = 0;
-            while (pStart != pCur)
-            {
-                nValue *= 10;
-                nValue += (*pStart - '0');
-                ++pStart;
-            }
+			int nValue = 0;
+			while (pStart != pCur)
+			{
+				nValue *= 10;
+				nValue += (*pStart - '0');
+				++pStart;
+			}
 
-            m_arLanguages.push_back(nValue);
-        }
+			m_arLanguages.push_back(nValue);
+		}
 
-        return (int)(pCur - pData);
-    }
+		return (int)(pCur - pData);
+	}
 
-    inline bool is_digit(const char& c)
-    {
-        if (c >= '0' && c <= '9')
-            return true;
-        return false;
-    }
+	inline bool is_digit(const char& c)
+	{
+		if (c >= '0' && c <= '9')
+			return true;
+		return false;
+	}
 };
 
 #if 0
@@ -364,562 +364,564 @@ public:
 class CAscSpellChecker_Private : public NSTimers::CTimer
 {
 public:
-    class CDictionaryFiles
-    {
-    public:
-        std::string path_aff;
-        std::string path_dic;
-    };
+	class CDictionaryFiles
+	{
+	public:
+		std::string path_aff;
+		std::string path_dic;
+	};
 
-    typedef struct DictionaryRec_
-    {
-        const char*		m_name;
-        int             m_lang;
-    } DictionaryRec;
-
-public:
-    CAscApplicationManager*         m_pManager;
-    std::map<int, Hunhandle*>       m_map_dictionaries;
-    std::map<int, CDictionaryFiles> m_map_dictionaries_files;
-
-    NSCriticalSection::CRITICAL_SECTION m_oCS;
-
-    std::list<std::string>      m_arTask;
-    std::list<int>              m_arTaskParent;
-    std::list<int_64_type>      m_arTaskParentFrameId;
-
-    std::wstring                m_sUserDictionaries;
-    Hunhandle*                  m_pUserAllDict;
-
-    // tmp buffer
-    CJsonTextItem               m_oItem;
-
-#ifdef DEBUG_SPELL_CHECKER
-    int m_nAddTaskCounter;
-    int m_nCheckTastCounter;
-#endif
+	typedef struct DictionaryRec_
+	{
+		const char*		m_name;
+		int             m_lang;
+	} DictionaryRec;
 
 public:
-    CAscSpellChecker_Private()
-    {
-        m_pManager = NULL;
-        m_oCS.InitializeCriticalSection();
-        m_pUserAllDict = NULL;
+	CAscApplicationManager*         m_pManager;
+	std::map<int, Hunhandle*>       m_map_dictionaries;
+	std::map<int, CDictionaryFiles> m_map_dictionaries_files;
+
+	NSCriticalSection::CRITICAL_SECTION m_oCS;
+
+	std::list<std::string>      m_arTask;
+	std::list<int>              m_arTaskParent;
+	std::list<int_64_type>      m_arTaskParentFrameId;
+
+	std::wstring                m_sUserDictionaries;
+	Hunhandle*                  m_pUserAllDict;
+
+	// tmp buffer
+	CJsonTextItem               m_oItem;
 
 #ifdef DEBUG_SPELL_CHECKER
-        m_nAddTaskCounter = 0;
-        m_nCheckTastCounter = 0;
+	int m_nAddTaskCounter;
+	int m_nCheckTastCounter;
 #endif
-    }
-    ~CAscSpellChecker_Private()
-    {
-        Stop();
 
-        for (std::map<int, Hunhandle*>::iterator i = m_map_dictionaries.begin(); i != m_map_dictionaries.end(); i++)
-        {
-            Hunhandle* pDictionary = i->second;
-            Hunspell_destroy(pDictionary);
-        }
-
-        if (m_pUserAllDict)
-            Hunspell_destroy(m_pUserAllDict);
-
-        m_oCS.DeleteCriticalSection();
-    }
-
-    void AddTask(const int& nParentId, const std::string& sTask, int_64_type nId)
-    {
-        CTemporaryCS oCS(&m_oCS);
-
-        if (sTask == "clear")
-        {
-            // нужно удалить все задачи для этого редактора
-            std::list<std::string>::iterator iterTask = m_arTask.begin();
-            std::list<int>::iterator iterTaskParent = m_arTaskParent.begin();
-            std::list<int_64_type>::iterator iterTaskParentFrame = m_arTaskParentFrameId.begin();
-
-            while (iterTaskParent != m_arTaskParent.end())
-            {
-                if (*iterTaskParent == nParentId)
-                {
-                    iterTask = m_arTask.erase(iterTask);
-                    iterTaskParent = m_arTaskParent.erase(iterTaskParent);
-                    iterTaskParentFrame = m_arTaskParentFrameId.erase(iterTaskParentFrame);
-                }
-                else
-                {
-                    iterTask++;
-                    iterTaskParent++;
-                    iterTaskParentFrame++;
-                }
-            }
-        }
-
-        m_arTask.push_back(sTask);
-        m_arTaskParent.push_back(nParentId);
-        m_arTaskParentFrameId.push_back(nId);
+public:
+	CAscSpellChecker_Private()
+	{
+		m_pManager = NULL;
+		m_oCS.InitializeCriticalSection();
+		m_pUserAllDict = NULL;
 
 #ifdef DEBUG_SPELL_CHECKER
-        FILE* ff = fopen(DEBUG_SPELL_CHECKER_PATH, "a+");
-        fprintf(ff, "add_task: %d, task: ", m_nAddTaskCounter++);
-        fprintf(ff, sTask.c_str());
-        fprintf(ff, ", parent_id: %d, id: %d\n", nParentId, nId);
-        fclose(ff);
+		m_nAddTaskCounter = 0;
+		m_nCheckTastCounter = 0;
 #endif
-    }
+	}
+	~CAscSpellChecker_Private()
+	{
+		Stop();
 
-    virtual void OnTimer()
-    {
-        m_oCS.Enter();
+		for (std::map<int, Hunhandle*>::iterator i = m_map_dictionaries.begin(); i != m_map_dictionaries.end(); i++)
+		{
+			Hunhandle* pDictionary = i->second;
+			Hunspell_destroy(pDictionary);
+		}
 
-        if (0 == m_arTask.size())
-        {
-            m_oCS.Leave();
-            return;
-        }
+		if (m_pUserAllDict)
+			Hunspell_destroy(m_pUserAllDict);
 
-        std::string sTask = *m_arTask.begin();
-        m_arTask.pop_front();
+		m_oCS.DeleteCriticalSection();
+	}
 
-        int nParentId = *m_arTaskParent.begin();
-        m_arTaskParent.pop_front();
+	void AddTask(const int& nParentId, const std::string& sTask, int_64_type nId)
+	{
+		CTemporaryCS oCS(&m_oCS);
 
-        int_64_type nFrameId = *m_arTaskParentFrameId.begin();
-        m_arTaskParentFrameId.pop_front();
+		if (sTask == "clear")
+		{
+			// нужно удалить все задачи для этого редактора
+			std::list<std::string>::iterator iterTask = m_arTask.begin();
+			std::list<int>::iterator iterTaskParent = m_arTaskParent.begin();
+			std::list<int_64_type>::iterator iterTaskParentFrame = m_arTaskParentFrameId.begin();
 
-        m_oCS.Leave();
+			while (iterTaskParent != m_arTaskParent.end())
+			{
+				if (*iterTaskParent == nParentId)
+				{
+					iterTask = m_arTask.erase(iterTask);
+					iterTaskParent = m_arTaskParent.erase(iterTaskParent);
+					iterTaskParentFrame = m_arTaskParentFrameId.erase(iterTaskParentFrame);
+				}
+				else
+				{
+					iterTask++;
+					iterTaskParent++;
+					iterTaskParentFrame++;
+				}
+			}
+		}
+
+		m_arTask.push_back(sTask);
+		m_arTaskParent.push_back(nParentId);
+		m_arTaskParentFrameId.push_back(nId);
 
 #ifdef DEBUG_SPELL_CHECKER
-        FILE* ff = fopen(DEBUG_SPELL_CHECKER_PATH, "a+");
-        fprintf(ff, "start_check_task: %d, task: ", m_nCheckTastCounter++);
-        fprintf(ff, sTask.c_str());
-        fprintf(ff, "\n");
-        fclose(ff);
+		FILE* ff = fopen(DEBUG_SPELL_CHECKER_PATH, "a+");
+		fprintf(ff, "add_task: %d, task: ", m_nAddTaskCounter++);
+		fprintf(ff, sTask.c_str());
+		fprintf(ff, ", parent_id: %d, id: %d\n", nParentId, nId);
+		fclose(ff);
 #endif
+	}
 
-        if ("clear" == sTask)
-        {
-            NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
-            NSEditorApi::CAscSpellCheckType* pData = new NSEditorApi::CAscSpellCheckType();
-            pData->put_EditorId(nParentId);
-            pData->put_FrameId(nFrameId);
-            pData->put_Result("\"clear\"");
-            pEvent->m_pData = pData;
-            pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_SPELLCHECK;
-            m_pManager->Apply(pEvent);
-            return;
-        }
+	virtual void OnTimer()
+	{
+		m_oCS.Enter();
 
-        CJsonSpellParser oParser;
-        oParser.Parse(sTask);
+		if (0 == m_arTask.size())
+		{
+			m_oCS.Leave();
+			return;
+		}
 
-        int nCountWords = oParser.m_arWords.size();
-        int nCountLangs = oParser.m_arLanguages.size();
+		std::string sTask = *m_arTask.begin();
+		m_arTask.pop_front();
 
-        if (nCountWords != nCountLangs && nCountWords > 0)
-        {
-            if (oParser.m_eType != CJsonSpellParser::sttAdd && oParser.m_eType != CJsonSpellParser::sttClear)
-                return;
-        }
+		int nParentId = *m_arTaskParent.begin();
+		m_arTaskParent.pop_front();
 
-        m_oItem.ClearNoAttack();
+		int_64_type nFrameId = *m_arTaskParentFrameId.begin();
+		m_arTaskParentFrameId.pop_front();
 
-        if (oParser.m_eType == CJsonSpellParser::sttSpell)
-        {
-            m_oItem += oParser.Task;
-
-            m_oItem += ",\"usrCorrect\":[";
-
-            std::list<std::string>::iterator iWords = oParser.m_arWords.begin();
-            std::list<int>::iterator iLangs = oParser.m_arLanguages.begin();
-            bool bIsFirst = true;
-
-            Hunhandle* pCurrent = NULL;
-            int nCurrentLang = -1;
-            for ( ; iWords != oParser.m_arWords.end(); iWords++, iLangs++)
-            {
-                if (!bIsFirst)
-                {
-                    m_oItem.AddChar(',');
-                }
-
-                bIsFirst = false;
-
-                int nNewLang = *iLangs;
-                if (nNewLang != nCurrentLang)
-                {
-                    pCurrent = SetLanguage(nNewLang);
-                    nCurrentLang = nNewLang;
-                }
-                if (NULL == pCurrent)
-                {
-                    m_oItem.AddBool(true);
-                }
-                else
-                {
-                    int nSpellResult = Hunspell_spell(pCurrent, iWords->c_str());
-                    if (0 == nSpellResult)
-                    {
-                        if (m_pUserAllDict && 0 != Hunspell_spell(m_pUserAllDict, iWords->c_str()))
-                            m_oItem.AddBool(true);
-                        else
-                            m_oItem.AddBool(false);
-                    }
-                    else
-                    {
-                        m_oItem.AddBool(true);
-                    }
-                }
-            }
-
-            m_oItem += "],\"usrSuggest\":[]}";
-        }
-        else if (oParser.m_eType == CJsonSpellParser::sttSuggest)
-        {
-            m_oItem += oParser.Task;
-
-            m_oItem += ",\"usrCorrect\":[],\"usrSuggest\":[";
-
-            std::list<std::string>::iterator iWords = oParser.m_arWords.begin();
-            std::list<int>::iterator iLangs = oParser.m_arLanguages.begin();
-            bool bIsFirst = true;
-
-            Hunhandle* pCurrent = NULL;
-            int nCurrentLang = -1;
-            for ( ; iWords != oParser.m_arWords.end(); iWords++, iLangs++)
-            {
-                if (!bIsFirst)
-                {
-                    m_oItem.AddChar(',');
-                }
-
-                bIsFirst = false;
-
-                int nNewLang = *iLangs;
-                if (nNewLang != nCurrentLang)
-                {
-                    pCurrent = SetLanguage(nNewLang);
-                    nCurrentLang = nNewLang;
-                }
-                if (NULL == pCurrent)
-                {
-                    m_oItem.WriteString("[]", 2);
-                }
-                else
-                {
-                    char** pSuggest;
-                    int nSuggestCount = Hunspell_suggest(pCurrent, &pSuggest, iWords->c_str());
-
-                    m_oItem.AddChar('[');
-
-                    for (int i = 0; i < nSuggestCount; ++i)
-                    {
-                        if (i != 0)
-                            m_oItem.AddChar(',');
-
-                        m_oItem.AddChar('\"');
-
-                        m_oItem.WriteString(pSuggest[i], strlen(pSuggest[i]));
-
-                        m_oItem.AddChar('\"');
-                    }
-
-                    if (0 < nSuggestCount)
-                        Hunspell_free_list(pCurrent, &pSuggest, nSuggestCount);
-
-                    m_oItem.AddChar(']');
-                }
-            }
-
-            m_oItem += "]}";
-        }
-        else if (oParser.m_eType == CJsonSpellParser::sttAdd)
-        {
-            CreateUserDictionary_All();
-
-            if (m_pUserAllDict)
-                AddUserWords_All(oParser.m_arWords);
-
-            m_oItem += "{\"type\":\"add\"}";
-        }
-        else if (oParser.m_eType == CJsonSpellParser::sttClear)
-        {
-            CreateUserDictionary_All(true);
-            m_oItem += "{\"type\":\"clear\"}";
-        }
+		m_oCS.Leave();
 
 #ifdef DEBUG_SPELL_CHECKER
-        FILE* fff = fopen(DEBUG_SPELL_CHECKER_PATH, "a+");
-        fprintf(fff, "end_check_task\n");
-        fclose(fff);
+		FILE* ff = fopen(DEBUG_SPELL_CHECKER_PATH, "a+");
+		fprintf(ff, "start_check_task: %d, task: ", m_nCheckTastCounter++);
+		fprintf(ff, sTask.c_str());
+		fprintf(ff, "\n");
+		fclose(ff);
 #endif
 
-        NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
-        NSEditorApi::CAscSpellCheckType* pData = new NSEditorApi::CAscSpellCheckType();
-        pData->put_EditorId(nParentId);
-        pData->put_FrameId(nFrameId);
-        pData->put_Result(m_oItem.GetCString());
-        pEvent->m_pData = pData;
-        pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_SPELLCHECK;
-        m_pManager->Apply(pEvent);
+		if ("clear" == sTask)
+		{
+			NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
+			NSEditorApi::CAscSpellCheckType* pData = new NSEditorApi::CAscSpellCheckType();
+			pData->put_EditorId(nParentId);
+			pData->put_FrameId(nFrameId);
+			pData->put_Result("\"clear\"");
+			pEvent->m_pData = pData;
+			pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_SPELLCHECK;
+			m_pManager->Apply(pEvent);
+			return;
+		}
 
-        // вдруг придет мега запрос
-        if (m_oItem.GetSize() > 100000)
-            m_oItem.Clear();
-    }
+		CJsonSpellParser oParser;
+		oParser.Parse(sTask);
 
-    Hunhandle* SetLanguage(const int& nLang)
-    {
-        std::map<int, Hunhandle*>::iterator i = m_map_dictionaries.find(nLang);
-        if (i != m_map_dictionaries.end())
-            return i->second;
+		int nCountWords = oParser.m_arWords.size();
+		int nCountLangs = oParser.m_arLanguages.size();
 
-        std::map<int, CDictionaryFiles>::iterator i2 = m_map_dictionaries_files.find(nLang);
-        if (i2 == m_map_dictionaries_files.end())
-            return NULL;
+		if (nCountWords != nCountLangs && nCountWords > 0)
+		{
+			if (oParser.m_eType != CJsonSpellParser::sttAdd && oParser.m_eType != CJsonSpellParser::sttClear)
+				return;
+		}
 
-        Hunhandle* pDictionary = Hunspell_create(i2->second.path_aff.c_str(), i2->second.path_dic.c_str());
-        m_map_dictionaries.insert(std::pair<int, Hunhandle*>(nLang, pDictionary));
-        return pDictionary;
-    }
+		m_oItem.ClearNoAttack();
 
-    void Init(const std::wstring& sDirectory, const std::wstring& sUserDirectory)
-    {        
-        #define DictionaryRec_count 47
-        static const DictionaryRec Dictionaries[DictionaryRec_count] =
-        {
-            {"az_Latn_AZ", 1068},
-            {"bg_BG", 1026},
-            {"ca_ES", 1027},
-            {"ca_ES_valencia", 2051},
-            {"cs_CZ", 1029},
-            {"da_DK", 1030},
-            {"de_AT", 3079},
-            {"de_CH", 2055},
-            {"de_DE", 1031},
-            {"el_GR", 1032},
-            {"en_AU", 3081},
-            {"en_CA", 4105},
-            {"en_GB", 2057},
-            {"en_US", 1033},
-            {"en_ZA", 7177},
-            {"es_ES", 3082},
-            {"eu_ES", 1069},
-            {"fr_FR", 1036},
-            {"gl_ES", 1110},
-            {"hr_HR", 1050},
-            {"hu_HU", 1038},
-            {"id_ID", 1057},
-            {"it_IT", 1040},
-            {"kk_KZ", 1087},
-            {"ko_KR", 1042},
-            {"lb_LU", 1134},
-            {"lt_LT", 1063},
-            {"lv_LV", 1062},
-            {"mn_MN", 1104},
-            {"nb_NO", 1044},
-            {"nl_NL", 1043},
-            {"nn_NO", 2068},
-            {"oc_FR", 1154},
-            {"pl_PL", 1045},
-            {"pt_BR", 1046},
-            {"pt_PT", 2070},
-            {"ro_RO", 1048},
-            {"ru_RU", 1049},
-            {"sk_SK", 1051},
-            {"sl_SI", 1060},
-            {"sr_Cyrl_RS", 10266},
-            {"sr_Latn_RS", 9242},
-            {"sv_SE", 1053},
-            {"tr_TR", 1055},
-            {"uk_UA", 1058},
-            {"vi_VN", 1066},
-            {"nl_NL", 2067} // nl_BE
-        };
+		if (oParser.m_eType == CJsonSpellParser::sttSpell)
+		{
+			m_oItem += oParser.Task;
 
-        for (int i = 0; i < DictionaryRec_count; ++i)
-        {
-            std::string s = std::string(Dictionaries[i].m_name);
+			m_oItem += ",\"usrCorrect\":[";
 
-            std::string s1 = "/" + s + "/" + s + ".aff";
-            std::string s2 = "/" + s + "/" + s + ".dic";
+			std::list<std::string>::iterator iWords = oParser.m_arWords.begin();
+			std::list<int>::iterator iLangs = oParser.m_arLanguages.begin();
+			bool bIsFirst = true;
 
-            std::wstring ws1 = sDirectory + NSFile::CUtf8Converter::GetUnicodeStringFromUTF8((BYTE*)s1.c_str(), (LONG)s1.length());
-            std::wstring ws2 = sDirectory + NSFile::CUtf8Converter::GetUnicodeStringFromUTF8((BYTE*)s2.c_str(), (LONG)s2.length());
+			Hunhandle* pCurrent = NULL;
+			int nCurrentLang = -1;
+			for ( ; iWords != oParser.m_arWords.end(); iWords++, iLangs++)
+			{
+				if (!bIsFirst)
+				{
+					m_oItem.AddChar(',');
+				}
 
-            NSFile::CFileBinary oFile1;
-            bool b1 = oFile1.OpenFile(ws1);
-            oFile1.CloseFile();
+				bIsFirst = false;
 
-            NSFile::CFileBinary oFile2;
-            oFile2.OpenFile(ws2);
-            bool b2 = oFile2.OpenFile(ws2);
+				int nNewLang = *iLangs;
+				if (nNewLang != nCurrentLang)
+				{
+					pCurrent = SetLanguage(nNewLang);
+					nCurrentLang = nNewLang;
+				}
+				if (NULL == pCurrent)
+				{
+					m_oItem.AddBool(true);
+				}
+				else
+				{
+					int nSpellResult = Hunspell_spell(pCurrent, iWords->c_str());
+					if (0 == nSpellResult)
+					{
+						if (m_pUserAllDict && 0 != Hunspell_spell(m_pUserAllDict, iWords->c_str()))
+							m_oItem.AddBool(true);
+						else
+							m_oItem.AddBool(false);
+					}
+					else
+					{
+						m_oItem.AddBool(true);
+					}
+				}
+			}
 
-            if (b1 && b2)
-            {
-                CDictionaryFiles files;
-                files.path_aff = NSFile::CUtf8Converter::GetUtf8StringFromUnicode2(ws1.c_str(), (LONG)ws1.length());
-                files.path_dic = NSFile::CUtf8Converter::GetUtf8StringFromUnicode2(ws2.c_str(), (LONG)ws2.length());
+			m_oItem += "],\"usrSuggest\":[]}";
+		}
+		else if (oParser.m_eType == CJsonSpellParser::sttSuggest)
+		{
+			m_oItem += oParser.Task;
 
-                m_map_dictionaries_files.insert(std::pair<int, CDictionaryFiles>(Dictionaries[i].m_lang, files));
-            }
-        }
+			m_oItem += ",\"usrCorrect\":[],\"usrSuggest\":[";
 
-        m_sUserDictionaries = sUserDirectory;
-        if (!NSDirectory::Exists(m_sUserDictionaries))
-            NSDirectory::CreateDirectory(m_sUserDictionaries);
+			std::list<std::string>::iterator iWords = oParser.m_arWords.begin();
+			std::list<int>::iterator iLangs = oParser.m_arLanguages.begin();
+			bool bIsFirst = true;
 
-        CreateUserDictionary_All();
-    }
+			Hunhandle* pCurrent = NULL;
+			int nCurrentLang = -1;
+			for ( ; iWords != oParser.m_arWords.end(); iWords++, iLangs++)
+			{
+				if (!bIsFirst)
+				{
+					m_oItem.AddChar(',');
+				}
 
-    void CreateUserDictionary_All(bool bIsRecreate = false)
-    {
-        if (m_pUserAllDict)
-        {
-            if (bIsRecreate)
-            {
-                Hunspell_destroy(m_pUserAllDict);
-                m_pUserAllDict = NULL;
-            }
-            return;
-        }
+				bIsFirst = false;
 
-        if (!NSDirectory::Exists(m_sUserDictionaries + L"/all"))
-            NSDirectory::CreateDirectory(m_sUserDictionaries + L"/all");
+				int nNewLang = *iLangs;
+				if (nNewLang != nCurrentLang)
+				{
+					pCurrent = SetLanguage(nNewLang);
+					nCurrentLang = nNewLang;
+				}
+				if (NULL == pCurrent)
+				{
+					m_oItem.WriteString("[]", 2);
+				}
+				else
+				{
+					char** pSuggest;
+					int nSuggestCount = Hunspell_suggest(pCurrent, &pSuggest, iWords->c_str());
 
-        std::wstring sAll_aff = m_sUserDictionaries + L"/all/all.aff";
-        std::wstring sAll_dic = m_sUserDictionaries + L"/all/all.dic";
+					m_oItem.AddChar('[');
 
-        if (bIsRecreate)
-        {
-            NSFile::CFileBinary::Remove(sAll_aff);
-            NSFile::CFileBinary::Remove(sAll_dic);
-        }
+					for (int i = 0; i < nSuggestCount; ++i)
+					{
+						if (i != 0)
+							m_oItem.AddChar(',');
 
-        if (!NSFile::CFileBinary::Exists(sAll_aff))
-            NSFile::CFileBinary::SaveToFile(sAll_aff, L"SET UTF-8", true);
+						m_oItem.AddChar('\"');
 
-        // check empty files
-        NSFile::CFileBinary oFileDic;
-        if (oFileDic.OpenFile(sAll_dic))
-        {
-            long lFileSize = oFileDic.GetFileSize();
-            oFileDic.CloseFile();
+						m_oItem.WriteString(pSuggest[i], strlen(pSuggest[i]));
 
-            if (lFileSize < 10)
-                NSFile::CFileBinary::Remove(sAll_dic);
-        }
+						m_oItem.AddChar('\"');
+					}
 
-        if (!NSFile::CFileBinary::Exists(sAll_dic))
-            NSFile::CFileBinary::SaveToFile(sAll_dic, L"2\nonlyoffice\nONLYOFFICE", true);
+					if (0 < nSuggestCount)
+						Hunspell_free_list(pCurrent, &pSuggest, nSuggestCount);
 
-        std::string sAff = U_TO_UTF8(sAll_aff);
-        std::string sDic = U_TO_UTF8(sAll_dic);
-        m_pUserAllDict = Hunspell_create(sAff.c_str(), sDic.c_str());
-    }
+					m_oItem.AddChar(']');
+				}
+			}
 
-    void AddUserWords_All(const std::list<std::string>& words)
-    {
-        std::wstring sAll_aff = m_sUserDictionaries + L"/all/all.aff";
-        std::wstring sAll_dic = m_sUserDictionaries + L"/all/all.dic";
+			m_oItem += "]}";
+		}
+		else if (oParser.m_eType == CJsonSpellParser::sttAdd)
+		{
+			CreateUserDictionary_All();
 
-        BYTE* pFileData = NULL;
-        DWORD nFileSize = 0;
+			if (m_pUserAllDict)
+				AddUserWords_All(oParser.m_arWords);
 
-        if (!NSFile::CFileBinary::ReadAllBytes(sAll_dic, &pFileData, nFileSize))
-            return;
+			m_oItem += "{\"type\":\"add\"}";
+		}
+		else if (oParser.m_eType == CJsonSpellParser::sttClear)
+		{
+			CreateUserDictionary_All(true);
+			m_oItem += "{\"type\":\"clear\"}";
+		}
 
-        DWORD nStart = 3;
-        DWORD nNewLine = nStart;
-        DWORD nCountMax = nNewLine + 100;
-        if (nCountMax > nFileSize)
-            nCountMax = nFileSize;
+#ifdef DEBUG_SPELL_CHECKER
+		FILE* fff = fopen(DEBUG_SPELL_CHECKER_PATH, "a+");
+		fprintf(fff, "end_check_task\n");
+		fclose(fff);
+#endif
 
-        while (nNewLine < nCountMax)
-        {
-            if ('\n' == pFileData[nNewLine])
-                break;
-            ++nNewLine;
-        }
+		NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
+		NSEditorApi::CAscSpellCheckType* pData = new NSEditorApi::CAscSpellCheckType();
+		pData->put_EditorId(nParentId);
+		pData->put_FrameId(nFrameId);
+		pData->put_Result(m_oItem.GetCString());
+		pEvent->m_pData = pData;
+		pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_SPELLCHECK;
+		m_pManager->Apply(pEvent);
 
-        if (nNewLine == nCountMax)
-            return;
+		// вдруг придет мега запрос
+		if (m_oItem.GetSize() > 100000)
+			m_oItem.Clear();
+	}
 
-        if (m_pUserAllDict)
-        {
-            Hunspell_destroy(m_pUserAllDict);
-            m_pUserAllDict = NULL;
-        }
+	Hunhandle* SetLanguage(const int& nLang)
+	{
+		std::map<int, Hunhandle*>::iterator i = m_map_dictionaries.find(nLang);
+		if (i != m_map_dictionaries.end())
+			return i->second;
 
-        std::string sCountData((char*)pFileData + nStart, nNewLine - nStart);
-        int nCountLine = std::stoi(sCountData);
-        nCountLine += (int)words.size();
-        sCountData = std::to_string(nCountLine);
+		std::map<int, CDictionaryFiles>::iterator i2 = m_map_dictionaries_files.find(nLang);
+		if (i2 == m_map_dictionaries_files.end())
+			return NULL;
 
-        NSFile::CFileBinary::Remove(sAll_dic);
+		Hunhandle* pDictionary = Hunspell_create(i2->second.path_aff.c_str(), i2->second.path_dic.c_str());
+		m_map_dictionaries.insert(std::pair<int, Hunhandle*>(nLang, pDictionary));
+		return pDictionary;
+	}
 
-        NSFile::CFileBinary oFile;
-        if (!oFile.CreateFileW(sAll_dic))
-            return;
+	void Init(const std::wstring& sDirectory, const std::wstring& sUserDirectory)
+	{
+#define DictionaryRec_count 49
+		static const DictionaryRec Dictionaries[DictionaryRec_count] =
+		{
+			{"az_Latn_AZ", 1068},
+			{"bg_BG", 1026},
+			{"ca_ES", 1027},
+			{"ca_ES_valencia", 2051},
+			{"cs_CZ", 1029},
+			{"da_DK", 1030},
+			{"de_AT", 3079},
+			{"de_CH", 2055},
+			{"de_DE", 1031},
+			{"el_GR", 1032},
+			{"en_AU", 3081},
+			{"en_CA", 4105},
+			{"en_GB", 2057},
+			{"en_US", 1033},
+			{"en_ZA", 7177},
+			{"es_ES", 3082},
+			{"eu_ES", 1069},
+			{"fr_FR", 1036},
+			{"gl_ES", 1110},
+			{"hr_HR", 1050},
+			{"hu_HU", 1038},
+			{"id_ID", 1057},
+			{"it_IT", 1040},
+			{"kk_KZ", 1087},
+			{"ko_KR", 1042},
+			{"lb_LU", 1134},
+			{"lt_LT", 1063},
+			{"lv_LV", 1062},
+			{"mn_MN", 1104},
+			{"nb_NO", 1044},
+			{"nl_NL", 1043},
+			{"nn_NO", 2068},
+			{"oc_FR", 1154},
+			{"pl_PL", 1045},
+			{"pt_BR", 1046},
+			{"pt_PT", 2070},
+			{"ro_RO", 1048},
+			{"ru_RU", 1049},
+			{"sk_SK", 1051},
+			{"sl_SI", 1060},
+			{"sr_Cyrl_RS", 10266},
+			{"sr_Latn_RS", 9242},
+			{"sv_SE", 1053},
+			{"tr_TR", 1055},
+			{"uk_UA", 1058},
+			{"uz_Cyrl_UZ", 2115},
+			{"uz_Latn_UZ", 1091},
+			{"vi_VN", 1066},
+			{"nl_NL", 2067} // nl_BE
+		};
 
-        BYTE utf8[3];
-        utf8[0] = 0xEF;
-        utf8[1] = 0xBB;
-        utf8[2] = 0xBF;
+		for (int i = 0; i < DictionaryRec_count; ++i)
+		{
+			std::string s = std::string(Dictionaries[i].m_name);
 
-        oFile.WriteFile(utf8, 3);
-        oFile.WriteFile((BYTE*)sCountData.c_str(), (DWORD)sCountData.length());
-        oFile.WriteFile(pFileData + nNewLine, nFileSize - nNewLine);
+			std::string s1 = "/" + s + "/" + s + ".aff";
+			std::string s2 = "/" + s + "/" + s + ".dic";
 
-        utf8[0] = '\n';
-        for (std::list<std::string>::const_iterator iter = words.begin(); iter != words.end(); iter++)
-        {
-            oFile.WriteFile(utf8, 1);
-            oFile.WriteFile((BYTE*)iter->c_str(), (DWORD)iter->length());
-        }
+			std::wstring ws1 = sDirectory + NSFile::CUtf8Converter::GetUnicodeStringFromUTF8((BYTE*)s1.c_str(), (LONG)s1.length());
+			std::wstring ws2 = sDirectory + NSFile::CUtf8Converter::GetUnicodeStringFromUTF8((BYTE*)s2.c_str(), (LONG)s2.length());
 
-        oFile.CloseFile();
+			NSFile::CFileBinary oFile1;
+			bool b1 = oFile1.OpenFile(ws1);
+			oFile1.CloseFile();
 
-        RELEASEARRAYOBJECTS(pFileData);
+			NSFile::CFileBinary oFile2;
+			oFile2.OpenFile(ws2);
+			bool b2 = oFile2.OpenFile(ws2);
 
-        std::string sAff = U_TO_UTF8(sAll_aff);
-        std::string sDic = U_TO_UTF8(sAll_dic);
-        m_pUserAllDict = Hunspell_create(sAff.c_str(), sDic.c_str());
-    }
+			if (b1 && b2)
+			{
+				CDictionaryFiles files;
+				files.path_aff = NSFile::CUtf8Converter::GetUtf8StringFromUnicode2(ws1.c_str(), (LONG)ws1.length());
+				files.path_dic = NSFile::CUtf8Converter::GetUtf8StringFromUnicode2(ws2.c_str(), (LONG)ws2.length());
+
+				m_map_dictionaries_files.insert(std::pair<int, CDictionaryFiles>(Dictionaries[i].m_lang, files));
+			}
+		}
+
+		m_sUserDictionaries = sUserDirectory;
+		if (!NSDirectory::Exists(m_sUserDictionaries))
+			NSDirectory::CreateDirectory(m_sUserDictionaries);
+
+		CreateUserDictionary_All();
+	}
+
+	void CreateUserDictionary_All(bool bIsRecreate = false)
+	{
+		if (m_pUserAllDict)
+		{
+			if (bIsRecreate)
+			{
+				Hunspell_destroy(m_pUserAllDict);
+				m_pUserAllDict = NULL;
+			}
+			return;
+		}
+
+		if (!NSDirectory::Exists(m_sUserDictionaries + L"/all"))
+			NSDirectory::CreateDirectory(m_sUserDictionaries + L"/all");
+
+		std::wstring sAll_aff = m_sUserDictionaries + L"/all/all.aff";
+		std::wstring sAll_dic = m_sUserDictionaries + L"/all/all.dic";
+
+		if (bIsRecreate)
+		{
+			NSFile::CFileBinary::Remove(sAll_aff);
+			NSFile::CFileBinary::Remove(sAll_dic);
+		}
+
+		if (!NSFile::CFileBinary::Exists(sAll_aff))
+			NSFile::CFileBinary::SaveToFile(sAll_aff, L"SET UTF-8", true);
+
+		// check empty files
+		NSFile::CFileBinary oFileDic;
+		if (oFileDic.OpenFile(sAll_dic))
+		{
+			long lFileSize = oFileDic.GetFileSize();
+			oFileDic.CloseFile();
+
+			if (lFileSize < 10)
+				NSFile::CFileBinary::Remove(sAll_dic);
+		}
+
+		if (!NSFile::CFileBinary::Exists(sAll_dic))
+			NSFile::CFileBinary::SaveToFile(sAll_dic, L"2\nonlyoffice\nONLYOFFICE", true);
+
+		std::string sAff = U_TO_UTF8(sAll_aff);
+		std::string sDic = U_TO_UTF8(sAll_dic);
+		m_pUserAllDict = Hunspell_create(sAff.c_str(), sDic.c_str());
+	}
+
+	void AddUserWords_All(const std::list<std::string>& words)
+	{
+		std::wstring sAll_aff = m_sUserDictionaries + L"/all/all.aff";
+		std::wstring sAll_dic = m_sUserDictionaries + L"/all/all.dic";
+
+		BYTE* pFileData = NULL;
+		DWORD nFileSize = 0;
+
+		if (!NSFile::CFileBinary::ReadAllBytes(sAll_dic, &pFileData, nFileSize))
+			return;
+
+		DWORD nStart = 3;
+		DWORD nNewLine = nStart;
+		DWORD nCountMax = nNewLine + 100;
+		if (nCountMax > nFileSize)
+			nCountMax = nFileSize;
+
+		while (nNewLine < nCountMax)
+		{
+			if ('\n' == pFileData[nNewLine])
+				break;
+			++nNewLine;
+		}
+
+		if (nNewLine == nCountMax)
+			return;
+
+		if (m_pUserAllDict)
+		{
+			Hunspell_destroy(m_pUserAllDict);
+			m_pUserAllDict = NULL;
+		}
+
+		std::string sCountData((char*)pFileData + nStart, nNewLine - nStart);
+		int nCountLine = std::stoi(sCountData);
+		nCountLine += (int)words.size();
+		sCountData = std::to_string(nCountLine);
+
+		NSFile::CFileBinary::Remove(sAll_dic);
+
+		NSFile::CFileBinary oFile;
+		if (!oFile.CreateFileW(sAll_dic))
+			return;
+
+		BYTE utf8[3];
+		utf8[0] = 0xEF;
+		utf8[1] = 0xBB;
+		utf8[2] = 0xBF;
+
+		oFile.WriteFile(utf8, 3);
+		oFile.WriteFile((BYTE*)sCountData.c_str(), (DWORD)sCountData.length());
+		oFile.WriteFile(pFileData + nNewLine, nFileSize - nNewLine);
+
+		utf8[0] = '\n';
+		for (std::list<std::string>::const_iterator iter = words.begin(); iter != words.end(); iter++)
+		{
+			oFile.WriteFile(utf8, 1);
+			oFile.WriteFile((BYTE*)iter->c_str(), (DWORD)iter->length());
+		}
+
+		oFile.CloseFile();
+
+		RELEASEARRAYOBJECTS(pFileData);
+
+		std::string sAff = U_TO_UTF8(sAll_aff);
+		std::string sDic = U_TO_UTF8(sAll_dic);
+		m_pUserAllDict = Hunspell_create(sAff.c_str(), sDic.c_str());
+	}
 };
 
 CAscSpellChecker::CAscSpellChecker()
 {
-    m_pInternal = new CAscSpellChecker_Private();
+	m_pInternal = new CAscSpellChecker_Private();
 }
 
 CAscSpellChecker::~CAscSpellChecker()
 {
-    RELEASEOBJECT(m_pInternal);
+	RELEASEOBJECT(m_pInternal);
 }
 
 void CAscSpellChecker::SetApplicationManager(CAscApplicationManager* pManager)
 {
-    m_pInternal->m_pManager = pManager;
+	m_pInternal->m_pManager = pManager;
 }
 
 void CAscSpellChecker::AddTask(const int& nEditorId, const std::string& sTask, int_64_type nId)
 {
-    if (m_pInternal->IsRunned())
-        m_pInternal->AddTask(nEditorId, sTask, nId);
+	if (m_pInternal->IsRunned())
+		m_pInternal->AddTask(nEditorId, sTask, nId);
 }
 
 void CAscSpellChecker::Start()
 {
-    m_pInternal->Start(-2);
+	m_pInternal->Start(-2);
 }
 
 void CAscSpellChecker::End()
 {
-    m_pInternal->Stop();
+	m_pInternal->Stop();
 }
 
 void CAscSpellChecker::Init(const std::wstring& sDirectory, const std::wstring& sUserDirectory)
 {
-    m_pInternal->Init(sDirectory, sUserDirectory);
+	m_pInternal->Init(sDirectory, sUserDirectory);
 }
