@@ -35,57 +35,57 @@
 
 void QCefView_SetProperty(QObject* w, const QVariant& p)
 {
-    w->setProperty("native_dpi", p);
-    QObjectList childs = w->children();
-    for (int i = childs.count() - 1; i >= 0; --i)
-    {
-        QCefView_SetProperty(childs.at(i), p);
-    }
+	w->setProperty("native_dpi", p);
+	QObjectList childs = w->children();
+	for (int i = childs.count() - 1; i >= 0; --i)
+	{
+		QCefView_SetProperty(childs.at(i), p);
+	}
 }
 
 void QCefView_SetDPI(QWidget* w, const double& v)
 {
-    QVariant p(v);
-    QCefView_SetProperty(w, p);
+	QVariant p(v);
+	QCefView_SetProperty(w, p);
 }
 
 QCefView_Media::QCefView_Media(QWidget* parent) : QCefView(parent)
 {
-    m_pMediaView = NULL;
+	m_pMediaView = NULL;
 }
 
 QCefView_Media::~QCefView_Media()
 {
-    OnMediaEnd();
+	OnMediaEnd();
 }
 
 void QCefView_Media::OnMediaStart(NSEditorApi::CAscExternalMedia* data)
 {
-    if (m_pMediaView)
-        return;
+	if (m_pMediaView)
+		return;
 
-    m_pMediaView = new QAscVideoView(this, 49, 52, 55);
-    m_pMediaView->setPlayListUsed(false);
-    m_pMediaView->setFullScreenUsed(false);
-    m_pMediaView->setPresentationMode(true);
-    QCefView_SetDPI(this, m_pCefView->GetDeviceScale());
-    m_pMediaView->setGeometry(data->get_BoundsX(), data->get_BoundsY(), data->get_BoundsW(), data->get_BoundsH());
-    m_pMediaView->setMedia(QString::fromStdWString(data->get_Url()));
-    //m_pMediaView->show();
+	m_pMediaView = new QAscVideoView(this, 49, 52, 55);
+	m_pMediaView->setPlayListUsed(false);
+	m_pMediaView->setFullScreenUsed(false);
+	m_pMediaView->setPresentationMode(true);
+	QCefView_SetDPI(this, m_pCefView->GetDeviceScale());
+	m_pMediaView->setGeometry(data->get_BoundsX(), data->get_BoundsY(), data->get_BoundsW(), data->get_BoundsH());
+	m_pMediaView->setMedia(QString::fromStdWString(data->get_Url()));
+	//m_pMediaView->show();
 }
 void QCefView_Media::OnMediaEnd(bool isFromResize)
 {
-    if (!m_pMediaView)
-        return;
+	if (!m_pMediaView)
+		return;
 
-    m_pMediaView->hide();
-    m_pMediaView->Stop();    
-    m_pMediaView->deleteLater();
-    m_pMediaView = NULL;
+	m_pMediaView->hide();
+	m_pMediaView->Stop();
+	m_pMediaView->deleteLater();
+	m_pMediaView = NULL;
 
-    if (isFromResize)
-    {
-        // под виндоус проблемы с ресайзом.
-        QTimer::singleShot(100, [=]{ this->resizeEvent(NULL); });
-    }
+	if (isFromResize)
+	{
+		// под виндоус проблемы с ресайзом.
+		QTimer::singleShot(100, [=]{ this->resizeEvent(NULL); });
+	}
 }

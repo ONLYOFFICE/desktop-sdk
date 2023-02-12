@@ -16,7 +16,7 @@ CORE_ROOT_DIR = $$PWD/../../../core
 include($$CORE_ROOT_DIR/Common/base.pri)
 
 DEFINES += \
-    PDFREADER_USE_DYNAMIC_LIBRARY \
+    PDFFILE_USE_DYNAMIC_LIBRARY \
     DJVU_USE_DYNAMIC_LIBRARY \
     XPS_USE_DYNAMIC_LIBRARY \
     HTMLRENDERER_USE_DYNAMIC_LIBRARY
@@ -25,7 +25,7 @@ DEFINES += DESKTOP_USE_DYNAMIC_LIBRARY_BUILDING
 
 core_mac:DEFINES += _XCODE
 
-ADD_DEPENDENCY(graphics, kernel, UnicodeConverter, kernel_network, PdfWriter, PdfReader, XpsFile, DjVuFile, HtmlRenderer, hunspell, ooxmlsignature)
+ADD_DEPENDENCY(graphics, kernel, UnicodeConverter, kernel_network, PdfFile, XpsFile, DjVuFile, HtmlRenderer, hunspell, ooxmlsignature)
 !core_windows:DEFINES += DOCUMENTSCORE_OPENSSL_SUPPORT
 
 CONFIG += cef_version_106
@@ -111,10 +111,11 @@ SOURCES += \
 SOURCES += \
     $$CORE_ROOT_DIR/Common/OfficeFileFormatChecker2.cpp \
     $$CORE_ROOT_DIR/Common/3dParty/pole/pole.cpp \
-    $$CORE_ROOT_DIR/Common/DocxFormat/Source/Base/unicode_util.cpp \
+    $$CORE_ROOT_DIR/OOXML/Base/unicode_util.cpp \
     $$CORE_ROOT_DIR/HtmlRenderer/src/ASCSVGWriter.cpp
 
 # crypto ----------------------------------
+LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lCompoundFileLib
 LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lCryptoPPLib
 DEFINES += CRYPTOPP_DISABLE_ASM
 HEADERS += \
@@ -123,7 +124,8 @@ HEADERS += \
 
 SOURCES += \
     $$CORE_ROOT_DIR/OfficeCryptReader/source/ECMACryptFile.cpp \
-    $$CORE_ROOT_DIR/OfficeCryptReader/source/CryptTransform.cpp
+    $$CORE_ROOT_DIR/OfficeCryptReader/source/CryptTransform.cpp \
+    $$CORE_ROOT_DIR/MsBinaryFile/DocFile/MemoryStream.cpp
 # -----------------------------------------
 
 

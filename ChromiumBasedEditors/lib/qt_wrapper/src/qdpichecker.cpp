@@ -50,84 +50,85 @@ QDpiChecker::QDpiChecker(CAscApplicationManager* pManager) : CAscDpiChecker(pMan
 
 int QDpiChecker::GetWindowDpi(WindowHandleId wid, unsigned int* dx, unsigned int* dy)
 {
-    double dForceScale = GetForceScale(dx, dy);
-    if (dForceScale > 0)
-        return 0;
-    return CAscDpiChecker::GetWindowDpi(wid, dx, dy);
+	double dForceScale = GetForceScale(dx, dy);
+	if (dForceScale > 0)
+		return 0;
+	return CAscDpiChecker::GetWindowDpi(wid, dx, dy);
 }
 
 int QDpiChecker::GetMonitorDpi(int nScreenNumber, unsigned int* dx, unsigned int* dy)
 {
-    double dForceScale = GetForceScale(dx, dy);
-    if (dForceScale > 0)
-        return 0;
+	double dForceScale = GetForceScale(dx, dy);
+	if (dForceScale > 0)
+		return 0;
 
-    int nBaseRet = CAscDpiChecker::GetMonitorDpi(nScreenNumber, dx, dy);
-    if (-1 != nBaseRet)
-        return nBaseRet;
+	int nBaseRet = CAscDpiChecker::GetMonitorDpi(nScreenNumber, dx, dy);
+	if (-1 != nBaseRet)
+		return nBaseRet;
 
-    QScreen * _screen;
-    if (nScreenNumber >=  0 && nScreenNumber < QApplication::screens().count())
-        _screen = QApplication::screens().at(nScreenNumber);
-    else {
-        nScreenNumber = 0;
-        _screen = QApplication::primaryScreen();
-    }
+	QScreen * _screen;
+	if (nScreenNumber >=  0 && nScreenNumber < QApplication::screens().count())
+		_screen = QApplication::screens().at(nScreenNumber);
+	else {
+		nScreenNumber = 0;
+		_screen = QApplication::primaryScreen();
+	}
 
-    int nDpiX = _screen->physicalDotsPerInchX();
-    int nDpiY = _screen->physicalDotsPerInchY();
+	int nDpiX = _screen->physicalDotsPerInchX();
+	int nDpiY = _screen->physicalDotsPerInchY();
 
 #ifdef _LINUX
-    if ( QX11Info::isPlatformX11() ) {
-        int _x11_dpix = QX11Info::appDpiX(nScreenNumber),
-            _x11_dpiy = QX11Info::appDpiY(nScreenNumber);
+	if ( QX11Info::isPlatformX11() )
+	{
+		int _x11_dpix = QX11Info::appDpiX(nScreenNumber),
+				_x11_dpiy = QX11Info::appDpiY(nScreenNumber);
 
-        if ( nDpiX < _x11_dpix ) nDpiX = _x11_dpix;
-        if ( nDpiY < _x11_dpiy ) nDpiY = _x11_dpiy;
-    }
+		if ( nDpiX < _x11_dpix ) nDpiX = _x11_dpix;
+		if ( nDpiY < _x11_dpiy ) nDpiY = _x11_dpiy;
+	}
 #endif
 
-    QSize size = _screen->size();
-    if (size.width() <= 1600 && size.height() <= 900)
-    {
-        nDpiX = 96;
-        nDpiY = 96;
-    }
+	QSize size = _screen->size();
+	if (size.width() <= 1600 && size.height() <= 900)
+	{
+		nDpiX = 96;
+		nDpiY = 96;
+	}
 
-    if (nDpiX > 150 && nDpiX < 180 && nDpiY > 150 && nDpiY < 180 && size.width() >= 3840 && size.height() >= 2160)
-    {
-        nDpiX = 192;
-        nDpiY = 192;
-    }
+	if (nDpiX > 150 && nDpiX < 180 && nDpiY > 150 && nDpiY < 180 && size.width() >= 3840 && size.height() >= 2160)
+	{
+		nDpiX = 192;
+		nDpiY = 192;
+	}
 
-    *dx = nDpiX;
-    *dy = nDpiY;
+	*dx = nDpiX;
+	*dy = nDpiY;
 
-    return 0;
+	return 0;
 }
 
 // app realize
 int QDpiChecker::GetWidgetImplDpi(CCefViewWidgetImpl* w, unsigned int* dx, unsigned int* dy)
 {
-    return GetWidgetDpi((QCefView*)w, dx, dy);
+	return GetWidgetDpi((QCefView*)w, dx, dy);
 }
 
 int QDpiChecker::GetWidgetDpi(QWidget* w, unsigned int* dx, unsigned int* dy)
 {
-    double dForceScale = GetForceScale(dx, dy);
-    if (dForceScale > 0)
-        return 0;
+	double dForceScale = GetForceScale(dx, dy);
+	if (dForceScale > 0)
+		return 0;
 
-    if (0 == QApplication::screens().count())
-    {
-        *dx = 96;
-        *dy = 96;
-        return 0;
-    }
+	if (0 == QApplication::screens().count())
+	{
+		*dx = 96;
+		*dy = 96;
+		return 0;
+	}
 #ifndef QT_VERSION_LESS_5_15
-    int nScreenNumber = QApplication::screens().indexOf(w->screen());
+	int nScreenNumber = QApplication::screens().indexOf(w->screen());
 #else
-    int nScreenNumber = QApplication::desktop()->screenNumber(w);
+	int nScreenNumber = QApplication::desktop()->screenNumber(w);
 #endif
-    return GetMonitorDpi(nScreenNumber, dx, dy);
+	return GetMonitorDpi(nScreenNumber, dx, dy);
 }

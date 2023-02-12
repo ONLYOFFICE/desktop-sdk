@@ -39,21 +39,21 @@ QAscApplicationManager::~QAscApplicationManager() {}
 
 CAscDpiChecker* QAscApplicationManager::InitDpiChecker()
 {
-    return new QDpiChecker(this);
+	return new QDpiChecker(this);
 }
 IExternalMessageLoop* QAscApplicationManager::GetExternalMessageLoop()
 {
-    return new QExternalMessageLoop(this);
+	return new QExternalMessageLoop(this);
 }
 int QAscApplicationManager::GetPlatformKeyboardLayout()
 {
-    if (this->IsPlatformKeyboardSupport())
-        return CAscApplicationManager::GetPlatformKeyboardLayout();
+	if (this->IsPlatformKeyboardSupport())
+		return CAscApplicationManager::GetPlatformKeyboardLayout();
 
-    return -1;
+	return -1;
 }
 void QAscApplicationManager::OnNeedCheckKeyboard()
 {
-    if (GetEventListener())
-        GetEventListener()->OnEvent(new NSEditorApi::CAscCefMenuEvent(ASC_MENU_EVENT_TYPE_CEF_CHECK_KEYBOARD));
+	if (GetEventListener())
+		GetEventListener()->OnEvent(new NSEditorApi::CAscCefMenuEvent(ASC_MENU_EVENT_TYPE_CEF_CHECK_KEYBOARD));
 }

@@ -83,6 +83,8 @@ public:
     std::wstring m_sFileSrc;
     std::wstring m_sRecoveryDir;
 
+	std::wstring m_sTemplateUrl;
+
     // чтобы не ждать лишнего времени - грузим страницу и скрипты
     // ОДНОВРЕМЕННО с конвертацией. поэтому нужен счетчик, чтобы запускать открытие
     // после и конвертации и после вызова OfflineStart (js)
@@ -112,8 +114,10 @@ public:
 
     CAscLocalFileInfo& operator=(const CAscLocalFileInfo& oSrc)
     {
-        m_sFileSrc = oSrc.m_sFileSrc;
+		m_sFileSrc = oSrc.m_sFileSrc;
         m_sRecoveryDir = oSrc.m_sRecoveryDir;
+
+		m_sTemplateUrl = oSrc.m_sTemplateUrl;
 
         m_nCounterConvertion = oSrc.m_nCounterConvertion;
 
@@ -629,6 +633,28 @@ public:
         }
 
         std::wstring sLocalFilePath = m_oInfo.m_sFileSrc;
+		std::wstring sDestinationPath = m_oInfo.m_sRecoveryDir + L"/" + (m_sName.empty() ? NSFile::GetFileName(sLocalFilePath) : m_sName);
+
+		if (!m_oInfo.m_sTemplateUrl.empty())
+		{
+			if (NSFileDownloader::IsNeedDownload(m_oInfo.m_sTemplateUrl))
+			{
+				NSNetwork::NSFileTransport::CFileDownloader oDownloader(m_oInfo.m_sTemplateUrl, false);
+				oDownloader.SetFilePath(sDestinationPath);
+
+				oDownloader.Start( 0 );
+				while ( oDownloader.IsRunned() )
+				{
+					NSThreads::Sleep( 10 );
+				}
+
+				sLocalFilePath = sDestinationPath;
+			}
+			else
+			{
+				sLocalFilePath = m_oInfo.m_sTemplateUrl;
+			}
+		}
 
 #ifdef WIN32
         if (0 == sLocalFilePath.find(L"//"))
@@ -656,8 +682,7 @@ public:
             pListener->OnEvent(pEvent);
         }
 
-        std::wstring sDestinationPath = m_oInfo.m_sRecoveryDir + L"/" + (m_sName.empty() ? NSFile::GetFileName(sLocalFilePath) : m_sName);
-        m_sNativeSrcPath = sDestinationPath;
+		m_sNativeSrcPath = sDestinationPath;
         if (m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_HTML)
         {
             std::wstring sExt = NSFile::GetFileExtention(sDestinationPath);
@@ -719,7 +744,8 @@ public:
             }            
         }
 
-        NSFile::CFileBinary::Copy(sLocalFilePath, sDestinationPath);
+		if (sLocalFilePath != sDestinationPath)
+			NSFile::CFileBinary::Copy(sLocalFilePath, sDestinationPath);
 
         bool bIsTestFile = true;
         if (!NSFile::CFileBinary::Exists(sDestinationPath))
@@ -1572,6 +1598,88 @@ public:
         m_bRunThread = FALSE;
         return 0;
     }
+};
+
+class CConvertFileInEditor : public NSThreads::CBaseThread
+{
+public:
+	std::wstring m_sFileFolder;
+	std::wstring m_sSrcFilePath;
+	int m_nOutputFormat;
+	std::string m_sOutputParams;
+	int_64_type m_nFrameId;
+
+	IASCFileConverterEvents* m_pEvents;
+	CAscApplicationManager* m_pManager;
+
+public:
+	CConvertFileInEditor()
+	{
+		m_nOutputFormat = -1;
+		m_pEvents = NULL;
+		m_pManager = NULL;
+		m_nFrameId = 0;
+	}
+
+	virtual DWORD ThreadProc()
+	{
+		int nReturnCode = 0;
+
+		NSStringUtils::CStringBuilder oBuilder;
+		oBuilder.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><TaskQueueDataConvert><m_sFileFrom>");
+
+		if (!NSSystem::CLocalFileLocker::IsLocked(m_sSrcFilePath))
+		{
+			oBuilder.WriteEncodeXmlString(m_sSrcFilePath);
+		}
+		else
+		{
+			std::wstring sFileSrc = m_sFileFolder + L"/" + NSFile::GetFileName(m_sSrcFilePath);
+			if (NSFile::CFileBinary::Copy(m_sSrcFilePath, sFileSrc))
+				oBuilder.WriteEncodeXmlString(sFileSrc);
+			else
+				oBuilder.WriteEncodeXmlString(m_sSrcFilePath);
+		}
+
+		oBuilder.WriteString(L"</m_sFileFrom><m_sFileTo>");
+		oBuilder.WriteEncodeXmlString(m_sFileFolder + L"/Editor.bin");
+		oBuilder.WriteString(L"</m_sFileTo><m_nFormatTo>");
+
+		oBuilder.WriteString(std::to_wstring(m_nOutputFormat));
+		oBuilder.WriteString(L"</m_nFormatTo><m_sFontDir>");
+		oBuilder.WriteEncodeXmlString(m_pManager->m_oSettings.fonts_cache_info_path);
+		oBuilder.WriteString(L"</m_sFontDir>");
+		oBuilder.WriteString(UTF8_TO_U(m_sOutputParams));
+		oBuilder.WriteString(L"<m_bIsNoBase64>false</m_bIsNoBase64>");
+
+		oBuilder.WriteString(L"<m_sAllFontsPath>");
+		oBuilder.WriteEncodeXmlString(m_pManager->m_oSettings.fonts_cache_info_path);
+		oBuilder.WriteString(L"/AllFonts.js</m_sAllFontsPath>");
+
+		std::wstring sDstTmpDir = NSFile::CFileBinary::CreateTempFileWithUniqueName(m_sFileFolder, L"FC_");
+		if (NSFile::CFileBinary::Exists(sDstTmpDir))
+			NSFile::CFileBinary::Remove(sDstTmpDir);
+		NSDirectory::CreateDirectory(sDstTmpDir);
+
+		oBuilder.WriteString(L"<m_sTempDir>");
+		oBuilder.WriteEncodeXmlString(sDstTmpDir);
+		oBuilder.WriteString(L"</m_sTempDir>");
+
+		oBuilder.WriteString(L"</TaskQueueDataConvert>");
+
+		std::wstring sTempFileForParams = m_sFileFolder + L"/params.xml";
+		NSFile::CFileBinary::SaveToFile(sTempFileForParams, oBuilder.GetData(), true);
+
+		nReturnCode = NSX2T::Convert(m_pManager->m_oSettings.file_converter_path + L"/x2t", sTempFileForParams, m_pManager);
+
+		NSFile::CFileBinary::Remove(sTempFileForParams);
+		NSDirectory::DeleteDirectory(sDstTmpDir);
+
+		m_pEvents->OnFileConvertFromEditor(nReturnCode);
+
+		m_bRunThread = FALSE;
+		return 0;
+	}
 };
 
 #endif // ASC_CEFCONVERTER_FILECONVERTER_H

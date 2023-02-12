@@ -39,12 +39,12 @@
 class DESKTOP_DECL QDpiChecker : public CAscDpiChecker
 {
 public:
-    QDpiChecker(CAscApplicationManager*);
+	QDpiChecker(CAscApplicationManager*);
 public:
-    virtual int GetWindowDpi(WindowHandleId wid, unsigned int* dx, unsigned int* dy);
-    virtual int GetMonitorDpi(int nScreenNumber, unsigned int* dx, unsigned int* dy);
-    virtual int GetWidgetImplDpi(CCefViewWidgetImpl* w, unsigned int* dx, unsigned int* dy);
-    virtual int GetWidgetDpi(QWidget* w, unsigned int* dx, unsigned int* dy);
+	virtual int GetWindowDpi(WindowHandleId wid, unsigned int* dx, unsigned int* dy);
+	virtual int GetMonitorDpi(int nScreenNumber, unsigned int* dx, unsigned int* dy);
+	virtual int GetWidgetImplDpi(CCefViewWidgetImpl* w, unsigned int* dx, unsigned int* dy);
+	virtual int GetWidgetDpi(QWidget* w, unsigned int* dx, unsigned int* dy);
 };
 
 #endif  // Q_ASC_DPICHECKER_H
