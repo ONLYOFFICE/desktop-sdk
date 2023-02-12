@@ -2,8 +2,8 @@
 // 2012 The Chromium Authors. All rights reserved. Use of this source code is
 // governed by a BSD-style license that can be found in the LICENSE file.
 
-#ifndef CEF_TESTS_UNITTESTS_TEST_SUITE_H_
-#define CEF_TESTS_UNITTESTS_TEST_SUITE_H_
+#ifndef CEF_TESTS_CEFTESTS_TEST_SUITE_H_
+#define CEF_TESTS_CEFTESTS_TEST_SUITE_H_
 #pragma once
 
 #include <string>
@@ -25,7 +25,6 @@ class CefTestSuite {
   int Run();
 
   void GetSettings(CefSettings& settings) const;
-  bool GetCachePath(std::string& path) const;
 
   // Register a temp directory that should be deleted on shutdown.
   void RegisterTempDirectory(const CefString& directory);
@@ -34,6 +33,7 @@ class CefTestSuite {
   void DeleteTempDirectories();
 
   CefRefPtr<CefCommandLine> command_line() const { return command_line_; }
+  CefString root_cache_path() const { return root_cache_path_; }
 
   // The return value from Run().
   int retval() const { return retval_; }
@@ -50,9 +50,11 @@ class CefTestSuite {
   std::vector<CefString> temp_directories_;
   base::Lock temp_directories_lock_;
 
+  CefString root_cache_path_;
+
   int retval_;
 };
 
 #define CEF_SETTINGS_ACCEPT_LANGUAGE "en-GB"
 
-#endif  // CEF_TESTS_UNITTESTS_TEST_SUITE_H_
+#endif  // CEF_TESTS_CEFTESTS_TEST_SUITE_H_

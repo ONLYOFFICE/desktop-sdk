@@ -69,6 +69,20 @@ TEST(ParserTest, CreateURLSchemeHostPathQuery) {
                url.ToString().c_str());
 }
 
+// Create the URL using scheme, host, path, query and Fragment
+TEST(ParserTest, CreateURLSchemeHostPathQueryFragment) {
+  CefURLParts parts;
+  CefString url;
+  CefString(&parts.scheme).FromASCII("http");
+  CefString(&parts.host).FromASCII("www.example.com");
+  CefString(&parts.path).FromASCII("/path/to.html");
+  CefString(&parts.query).FromASCII("foo=test&bar=test2");
+  CefString(&parts.fragment).FromASCII("ref");
+  EXPECT_TRUE(CefCreateURL(parts, url));
+  EXPECT_STREQ("http://www.example.com/path/to.html?foo=test&bar=test2#ref",
+               url.ToString().c_str());
+}
+
 // Create the URL using all the various components.
 TEST(ParserTest, CreateURLAll) {
   CefURLParts parts;
@@ -80,9 +94,10 @@ TEST(ParserTest, CreateURLAll) {
   CefString(&parts.port).FromASCII("88");
   CefString(&parts.path).FromASCII("/path/to.html");
   CefString(&parts.query).FromASCII("foo=test&bar=test2");
+  CefString(&parts.fragment).FromASCII("ref");
   EXPECT_TRUE(CefCreateURL(parts, url));
   EXPECT_STREQ(
-      "http://user:pass@www.example.com:88/path/to.html?foo=test&bar=test2",
+      "http://user:pass@www.example.com:88/path/to.html?foo=test&bar=test2#ref",
       url.ToString().c_str());
 }
 
@@ -157,17 +172,45 @@ TEST(ParserTest, ParseURLSchemeHostPathQuery) {
   EXPECT_STREQ("foo=test&bar=test2", query.ToString().c_str());
 }
 
+// Parse the URL using scheme, host, path, query and fragment.
+TEST(ParserTest, ParseURLSchemeHostPathQueryFragment) {
+  CefURLParts parts;
+  CefString url;
+  url.FromASCII("http://www.example.com/path/to.html?foo=test&bar=test2#ref");
+  EXPECT_TRUE(CefParseURL(url, parts));
+
+  CefString spec(&parts.spec);
+  EXPECT_STREQ("http://www.example.com/path/to.html?foo=test&bar=test2#ref",
+               spec.ToString().c_str());
+  EXPECT_EQ(0U, parts.username.length);
+  EXPECT_EQ(0U, parts.password.length);
+  CefString scheme(&parts.scheme);
+  EXPECT_STREQ("http", scheme.ToString().c_str());
+  CefString host(&parts.host);
+  EXPECT_STREQ("www.example.com", host.ToString().c_str());
+  EXPECT_EQ(0U, parts.port.length);
+  CefString origin(&parts.origin);
+  EXPECT_STREQ(origin.ToString().c_str(), "http://www.example.com/");
+  CefString path(&parts.path);
+  EXPECT_STREQ("/path/to.html", path.ToString().c_str());
+  CefString query(&parts.query);
+  EXPECT_STREQ("foo=test&bar=test2", query.ToString().c_str());
+  CefString ref(&parts.fragment);
+  EXPECT_STREQ("ref", ref.ToString().c_str());
+}
+
 // Parse the URL using all the various components.
 TEST(ParserTest, ParseURLAll) {
   CefURLParts parts;
   CefString url;
   url.FromASCII(
-      "http://user:pass@www.example.com:88/path/to.html?foo=test&bar=test2");
+      "http://user:pass@www.example.com:88/path/"
+      "to.html?foo=test&bar=test2#ref");
   EXPECT_TRUE(CefParseURL(url, parts));
 
   CefString spec(&parts.spec);
   EXPECT_STREQ(
-      "http://user:pass@www.example.com:88/path/to.html?foo=test&bar=test2",
+      "http://user:pass@www.example.com:88/path/to.html?foo=test&bar=test2#ref",
       spec.ToString().c_str());
   CefString scheme(&parts.scheme);
   EXPECT_STREQ("http", scheme.ToString().c_str());
@@ -185,6 +228,8 @@ TEST(ParserTest, ParseURLAll) {
   EXPECT_STREQ("/path/to.html", path.ToString().c_str());
   CefString query(&parts.query);
   EXPECT_STREQ("foo=test&bar=test2", query.ToString().c_str());
+  CefString ref(&parts.fragment);
+  EXPECT_STREQ("ref", ref.ToString().c_str());
 }
 
 // Parse an invalid URL.
@@ -199,11 +244,11 @@ TEST(ParserTest, ParseURLInvalid) {
 TEST(ParserTest, ParseURLNonStandard) {
   CefURLParts parts;
   CefString url;
-  url.FromASCII("custom:something%20else?foo");
+  url.FromASCII("custom:something%20else?foo#ref");
   EXPECT_TRUE(CefParseURL(url, parts));
 
   CefString spec(&parts.spec);
-  EXPECT_STREQ("custom:something%20else?foo", spec.ToString().c_str());
+  EXPECT_STREQ("custom:something%20else?foo#ref", spec.ToString().c_str());
   EXPECT_EQ(0U, parts.username.length);
   EXPECT_EQ(0U, parts.password.length);
   CefString scheme(&parts.scheme);
@@ -215,6 +260,20 @@ TEST(ParserTest, ParseURLNonStandard) {
   EXPECT_STREQ("something%20else", path.ToString().c_str());
   CefString query(&parts.query);
   EXPECT_STREQ("foo", query.ToString().c_str());
+  CefString ref(&parts.fragment);
+  EXPECT_STREQ("ref", ref.ToString().c_str());
+}
+
+// Combine and parse an absolute and relative URL.
+TEST(ParserTest, ParseAbsoluteAndRelativeURL) {
+  CefString base_url;
+  base_url.FromASCII("https://www.example.com");
+  CefString relative_url;
+  relative_url.FromASCII("/example");
+  CefString resolved_url;
+  EXPECT_TRUE(CefResolveURL(base_url, relative_url, resolved_url));
+  EXPECT_STREQ("https://www.example.com/example",
+               resolved_url.ToString().c_str());
 }
 
 TEST(ParserTest, FormatUrlForSecurityDisplay) {
@@ -282,6 +341,13 @@ TEST(ParserTest, URIEncode) {
   EXPECT_STREQ(test_str_encoded.c_str(), encoded_value.ToString().c_str());
 }
 
+TEST(ParserTest, URIEncodeWithPlusSpace) {
+  const std::string& test_str_decoded = "A test string=";
+  const std::string& test_str_encoded = "A+test+string%3D";
+  const CefString& encoded_value = CefURIEncode(test_str_decoded, true);
+  EXPECT_STREQ(test_str_encoded.c_str(), encoded_value.ToString().c_str());
+}
+
 TEST(ParserTest, URIDecode) {
   const std::string& test_str_decoded = "A test string=";
   const std::string& test_str_encoded = "A%20test%20string%3D";
@@ -289,6 +355,17 @@ TEST(ParserTest, URIDecode) {
       test_str_encoded, false,
       static_cast<cef_uri_unescape_rule_t>(
           UU_SPACES | UU_URL_SPECIAL_CHARS_EXCEPT_PATH_SEPARATORS));
+  EXPECT_STREQ(test_str_decoded.c_str(), decoded_value.ToString().c_str());
+}
+
+TEST(ParserTest, URIDecodeWithPlusSpace) {
+  const std::string& test_str_decoded = "A test string=";
+  const std::string& test_str_encoded = "A+test+string%3D";
+  const CefString& decoded_value =
+      CefURIDecode(test_str_encoded, false,
+                   static_cast<cef_uri_unescape_rule_t>(
+                       UU_SPACES | UU_URL_SPECIAL_CHARS_EXCEPT_PATH_SEPARATORS |
+                       UU_REPLACE_PLUS_WITH_SPACE));
   EXPECT_STREQ(test_str_decoded.c_str(), decoded_value.ToString().c_str());
 }
 
@@ -351,7 +428,7 @@ TEST(ParserTest, ParseJSONDictionary) {
   EXPECT_EQ(123, dict->GetInt("key2"));
   EXPECT_EQ(VTYPE_LIST, dict->GetType("key3"));
   CefRefPtr<CefListValue> key3 = dict->GetList("key3");
-  EXPECT_TRUE(NULL != key3);
+  EXPECT_TRUE(nullptr != key3);
   EXPECT_TRUE(key3->IsValid());
   EXPECT_EQ(3U, key3->GetSize());
   EXPECT_EQ(1, key3->GetInt(0));
@@ -372,7 +449,7 @@ TEST(ParserTest, ParseJSONList) {
   EXPECT_TRUE(value->GetType() == VTYPE_LIST);
   EXPECT_FALSE(value->IsOwned());
   CefRefPtr<CefListValue> list = value->GetList();
-  EXPECT_TRUE(NULL != list);
+  EXPECT_TRUE(nullptr != list);
   EXPECT_TRUE(list->IsValid());
   EXPECT_EQ(3U, list->GetSize());
 
@@ -399,25 +476,21 @@ TEST(ParserTest, ParseJSONList) {
 
 TEST(ParserTest, ParseJSONAndReturnErrorInvalid) {
   const char data[] = "This is my test data";
-  cef_json_parser_error_t error_code;
   CefString error_msg;
   CefRefPtr<CefValue> value =
-      CefParseJSONAndReturnError(data, JSON_PARSER_RFC, error_code, error_msg);
+      CefParseJSONAndReturnError(data, JSON_PARSER_RFC, error_msg);
   CefString expect_error_msg = "Line: 1, column: 1, Unexpected token.";
   EXPECT_FALSE(value.get());
-  EXPECT_EQ(JSON_UNEXPECTED_TOKEN, error_code);
   EXPECT_EQ(expect_error_msg, error_msg);
 }
 
 TEST(ParserTest, ParseJSONAndReturnErrorTrailingComma) {
   const char data[] = "{\"key1\":123,}";
-  cef_json_parser_error_t error_code;
   CefString error_msg;
   CefRefPtr<CefValue> value =
-      CefParseJSONAndReturnError(data, JSON_PARSER_RFC, error_code, error_msg);
+      CefParseJSONAndReturnError(data, JSON_PARSER_RFC, error_msg);
   CefString expect_error_msg =
       "Line: 1, column: 13, Trailing comma not allowed.";
   EXPECT_FALSE(value.get());
-  EXPECT_EQ(JSON_TRAILING_COMMA, error_code);
   EXPECT_EQ(expect_error_msg, error_msg);
 }

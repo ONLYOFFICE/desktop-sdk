@@ -3,7 +3,6 @@
 // can be found in the LICENSE file.
 
 #include <gtk/gtk.h>
-#include <gtk/gtkgl.h>
 
 #include <X11/Xlib.h>
 #undef Success     // Definition conflicts with cef_message_router.h
@@ -11,10 +10,10 @@
 
 #include <stdlib.h>
 #include <unistd.h>
+#include <memory>
 #include <string>
 
 #include "include/base/cef_logging.h"
-#include "include/base/cef_scoped_ptr.h"
 #include "include/cef_app.h"
 #include "include/cef_command_line.h"
 #include "include/wrapper/cef_helpers.h"
@@ -79,12 +78,12 @@ int RunMain(int argc, char* argv[]) {
   }
 
   // Execute the secondary process, if any.
-  int exit_code = CefExecuteProcess(main_args, app, NULL);
+  int exit_code = CefExecuteProcess(main_args, app, nullptr);
   if (exit_code >= 0)
     return exit_code;
 
   // Create the main context object.
-  scoped_ptr<MainContextImpl> context(new MainContextImpl(command_line, true));
+  auto context = std::make_unique<MainContextImpl>(command_line, true);
 
   CefSettings settings;
 
@@ -98,8 +97,15 @@ int RunMain(int argc, char* argv[]) {
   // Populate the settings based on command line arguments.
   context->PopulateSettings(&settings);
 
+  if (settings.windowless_rendering_enabled) {
+    // Force the app to use OpenGL <= 3.1 when off-screen rendering is enabled.
+    // TODO(cefclient): Rewrite OSRRenderer to use shaders instead of the
+    // fixed-function pipeline which was removed in OpenGL 3.2 (back in 2009).
+    setenv("MESA_GL_VERSION_OVERRIDE", "3.1", /*overwrite=*/0);
+  }
+
   // Create the main message loop object.
-  scoped_ptr<MainMessageLoop> message_loop;
+  std::unique_ptr<MainMessageLoop> message_loop;
   if (settings.multi_threaded_message_loop)
     message_loop.reset(new MainMessageLoopMultithreadedGtk);
   else if (settings.external_message_pump)
@@ -108,14 +114,14 @@ int RunMain(int argc, char* argv[]) {
     message_loop.reset(new MainMessageLoopStd);
 
   // Initialize CEF.
-  context->Initialize(main_args, settings, app, NULL);
+  context->Initialize(main_args, settings, app, nullptr);
+
+  // Force Gtk to use Xwayland (in case a Wayland compositor is being used).
+  gdk_set_allowed_backends("x11");
 
   // The Chromium sandbox requires that there only be a single thread during
   // initialization. Therefore initialize GTK after CEF.
   gtk_init(&argc, &argv_copy);
-
-  // Perform gtkglext initialization required by the OSR example.
-  gtk_gl_init(&argc, &argv_copy);
 
   // Install xlib error handlers so that the application won't be terminated
   // on non-fatal errors. Must be done after initializing GTK.
@@ -129,14 +135,16 @@ int RunMain(int argc, char* argv[]) {
   // Register scheme handlers.
   test_runner::RegisterSchemeHandlers();
 
-  RootWindowConfig window_config;
-  window_config.always_on_top = command_line->HasSwitch(switches::kAlwaysOnTop);
-  window_config.with_controls =
+  auto window_config = std::make_unique<RootWindowConfig>();
+  window_config->always_on_top =
+      command_line->HasSwitch(switches::kAlwaysOnTop);
+  window_config->with_controls =
       !command_line->HasSwitch(switches::kHideControls);
-  window_config.with_osr = settings.windowless_rendering_enabled ? true : false;
+  window_config->with_osr =
+      settings.windowless_rendering_enabled ? true : false;
 
   // Create the first window.
-  context->GetRootWindowManager()->CreateRootWindow(window_config);
+  context->GetRootWindowManager()->CreateRootWindow(std::move(window_config));
 
   // Run the message loop. This will block until Quit() is called.
   int result = message_loop->Run();

@@ -2,7 +2,7 @@
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 
-#include "include/base/cef_bind.h"
+#include "include/base/cef_callback.h"
 #include "include/base/cef_logging.h"
 #include "include/cef_parser.h"
 #include "include/cef_v8.h"
@@ -13,40 +13,42 @@
 #include "tests/shared/browser/geometry_util.h"
 #include "tests/shared/browser/resource_util.h"
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 #include <Carbon/Carbon.h>  // For character codes.
 #include "tests/ceftests/os_rendering_unittest_mac.h"
 #elif defined(OS_LINUX)
 #include <X11/keysym.h>
 #elif defined(OS_WIN)
 // Required for resource_util_win, which uses this as an extern
-HINSTANCE hInst = ::GetModuleHandle(NULL);
+HINSTANCE hInst = ::GetModuleHandle(nullptr);
 #endif
 
 namespace {
 
 const char kTestUrl[] = "http://tests/osrtest";
 
-// this html should render on a 600 x 400 window with a little vertical
-// offset with scrollbar.
-
-// default osr widget size
+// Must be both large enough for the drag/drop region to be visible and small
+// enough for a little vertical offset with scrollbar.
 const int kOsrWidth = 600;
-const int kOsrHeight = 400;
+const int kOsrHeight = 450;
 
 // bounding client rects for edit box and navigate button
 #if defined(OS_WIN)
-const CefRect kExpandedSelectRect(463, 42, 81, 334);
-#elif defined(OS_MACOSX)
-const CefRect kExpandedSelectRect(463, 42, 75, 286);
+const CefRect kExpandedSelectRect(462, 42, 81, 334);
+#elif defined(OS_MAC)
+const CefRect kExpandedSelectRect(462, 42, 75, 334);
 #elif defined(OS_LINUX)
-const CefRect kExpandedSelectRect(463, 42, 79, 334);
+const CefRect kExpandedSelectRect(462, 42, 79, 334);
 #else
 #error "Unsupported platform"
 #endif  // defined(OS_WIN)
 
 // word to be written into edit box
 const char kKeyTestWord[] = "done";
+
+constexpr uint32_t kAllTouchHandleFlags =
+    (CEF_THS_FLAG_ENABLED | CEF_THS_FLAG_ORIENTATION | CEF_THS_FLAG_ORIGIN |
+     CEF_THS_FLAG_ALPHA);
 
 #if defined(OS_LINUX)
 
@@ -63,7 +65,7 @@ const unsigned int kNativeKeyTestCodes[] = {XK_d, XK_o, XK_n, XK_e};
 const unsigned int kNativeKeyEscape = XK_Escape;
 const unsigned int kNativeKeyTab = XK_Tab;
 
-#elif defined(OS_MACOSX)
+#elif defined(OS_MAC)
 
 // See kKeyCodesMap in ui/events/keycodes/keyboard_code_conversion_mac.mm
 #define VKEY_D 'd'
@@ -81,7 +83,7 @@ const unsigned int kNativeKeyTab = kVK_Tab;
 
 #endif
 
-#if defined(OS_MACOSX) || defined(OS_LINUX)
+#if defined(OS_MAC) || defined(OS_LINUX)
 
 const unsigned int kKeyTestCodes[] = {VKEY_D, VKEY_O, VKEY_N, VKEY_E};
 
@@ -126,6 +128,9 @@ enum OSRTestType {
   // Right click will trigger a context menu, and on destroying the test, it
   // should not crash
   OSR_TEST_CONTEXT_MENU,
+  // In certain scenarios, the quick menu should be shown instead of the context
+  // menu
+  OSR_TEST_QUICK_MENU,
   // clicking on dropdown box, PET_POPUP OnPaint is triggered
   OSR_TEST_POPUP_PAINT,
   // clicking on dropdown box, a popup will show up
@@ -400,7 +405,7 @@ class OSRTestHandler : public RoutingTestHandler,
       return new CefStreamResourceHandler("text/html", stream);
     }
 
-    return NULL;
+    return nullptr;
   }
 
   // CefRenderHandler methods
@@ -483,8 +488,8 @@ class OSRTestHandler : public RoutingTestHandler,
             EXPECT_EQ(kExpandedSelectRect.width, rect.width);
             EXPECT_EQ(kExpandedSelectRect.height, rect.height);
           } else {
-            EXPECT_GT(rect.width, kExpandedSelectRect.width);
-            EXPECT_GT(rect.height, kExpandedSelectRect.height);
+            EXPECT_GE(rect.width, kExpandedSelectRect.width);
+            EXPECT_GE(rect.height, kExpandedSelectRect.height);
           }
           DestroySucceededTestSoon();
           break;
@@ -548,7 +553,7 @@ class OSRTestHandler : public RoutingTestHandler,
       case OSR_TEST_FOCUS:
         if (StartTest()) {
           // body.onfocus will make LI00 red
-          browser->GetHost()->SendFocusEvent(true);
+          browser->GetHost()->SetFocus(true);
         }
         break;
       case OSR_TEST_TAKE_FOCUS:
@@ -557,7 +562,7 @@ class OSRTestHandler : public RoutingTestHandler,
 
 #if defined(OS_WIN)
           SendKeyEvent(browser, VK_TAB);
-#elif defined(OS_MACOSX) || defined(OS_LINUX)
+#elif defined(OS_MAC) || defined(OS_LINUX)
           SendKeyEvent(browser, kNativeKeyTab, VKEY_TAB);
 #else
 #error "Unsupported platform"
@@ -566,7 +571,7 @@ class OSRTestHandler : public RoutingTestHandler,
         break;
       case OSR_TEST_GOT_FOCUS:
         if (StartTest()) {
-          browser->GetHost()->SendFocusEvent(true);
+          browser->GetHost()->SetFocus(true);
         }
         break;
       case OSR_TEST_CURSOR:
@@ -609,6 +614,16 @@ class OSRTestHandler : public RoutingTestHandler,
                                                   1);
         }
         break;
+      case OSR_TEST_QUICK_MENU:
+        if (StartTest()) {
+          CefTouchEvent touch_event_pressed;
+          touch_event_pressed.type = CEF_TET_PRESSED;
+          const CefRect& expected_rect = GetElementBounds("quickmenu");
+          touch_event_pressed.x = MiddleX(expected_rect);
+          touch_event_pressed.y = MiddleY(expected_rect);
+          browser->GetHost()->SendTouchEvent(touch_event_pressed);
+        }
+        break;
       case OSR_TEST_CLICK_LEFT:
         if (StartTest()) {
           CefMouseEvent mouse_event;
@@ -626,12 +641,17 @@ class OSRTestHandler : public RoutingTestHandler,
       case OSR_TEST_RESIZE:
         if (StartTest()) {
           browser->GetHost()->WasResized();
-          // There may be some partial repaints before the full repaint.
-        } else if (IsFullRepaint(dirtyRects[0], width, height)) {
-          EXPECT_EQ(GetScaledInt(kOsrWidth) * 2, width);
-          EXPECT_EQ(GetScaledInt(kOsrHeight) * 2, height);
+        } else {
+          // There may be some partial repaints before the full repaint at the
+          // desired size.
+          const int desired_width = GetScaledInt(kOsrWidth) * 2;
+          const int desired_height = GetScaledInt(kOsrHeight) * 2;
+
           EXPECT_EQ(dirtyRects.size(), 1U);
-          DestroySucceededTestSoon();
+          if (width == desired_width && height == desired_height &&
+              IsFullRepaint(dirtyRects[0], width, height)) {
+            DestroySucceededTestSoon();
+          }
         }
         break;
       case OSR_TEST_INVALIDATE: {
@@ -669,7 +689,7 @@ class OSRTestHandler : public RoutingTestHandler,
           for (size_t i = 0; i < word_length; ++i) {
 #if defined(OS_WIN)
             SendKeyEvent(browser, kKeyTestWord[i]);
-#elif defined(OS_MACOSX) || defined(OS_LINUX)
+#elif defined(OS_MAC) || defined(OS_LINUX)
             SendKeyEvent(browser, kNativeKeyTestCodes[i], kKeyTestCodes[i]);
 #else
 #error "Unsupported platform"
@@ -745,7 +765,7 @@ class OSRTestHandler : public RoutingTestHandler,
           ExpandDropDown();
           // Wait for the first popup paint to occur
         } else if (type == PET_POPUP) {
-          browser->GetHost()->SendFocusEvent(false);
+          browser->GetHost()->SetFocus(false);
         }
         break;
       case OSR_TEST_POPUP_HIDE_ON_ESC:
@@ -755,7 +775,7 @@ class OSRTestHandler : public RoutingTestHandler,
         } else if (type == PET_POPUP) {
 #if defined(OS_WIN)
           SendKeyEvent(browser, VK_ESCAPE);
-#elif defined(OS_MACOSX) || defined(OS_LINUX)
+#elif defined(OS_MAC) || defined(OS_LINUX)
           SendKeyEvent(browser, kNativeKeyEscape, VKEY_ESCAPE);
 #else
 #error "Unsupported platform"
@@ -785,13 +805,13 @@ class OSRTestHandler : public RoutingTestHandler,
             EXPECT_GT(dirtyRects[0].height, kExpandedSelectRect.height);
           }
 
-          // first pixel of border
+          // Unselected option background color is cyan.
+          // Go down 100 pixels to skip the selected option and over 5 pixels to
+          // avoid hitting the border.
+          const uint32 offset = dirtyRects[0].width * 100 + 5;
+          EXPECT_EQ(0xff00ffff,
+                    *(reinterpret_cast<const uint32*>(buffer) + offset));
 
-#if defined(OS_MACOSX)
-          EXPECT_EQ(0xff3979d1U, *(reinterpret_cast<const uint32*>(buffer)));
-#else
-          EXPECT_EQ(0xff6497eaU, *(reinterpret_cast<const uint32*>(buffer)));
-#endif
           if (ExpectComputedPopupSize()) {
             EXPECT_EQ(expanded_select_rect.width, width);
             EXPECT_EQ(expanded_select_rect.height, height);
@@ -823,11 +843,15 @@ class OSRTestHandler : public RoutingTestHandler,
             const CefRect& expanded_select_rect =
                 GetScaledRect(kExpandedSelectRect);
             EXPECT_EQ(dirtyRects.size(), 1U);
-            EXPECT_EQ(0, dirtyRects[0].x);
-            EXPECT_EQ(0, dirtyRects[0].y);
+
+            const int scaled_int_1 = GetScaledInt(1);
+            EXPECT_NEAR(0, dirtyRects[0].x, scaled_int_1);
+            EXPECT_NEAR(0, dirtyRects[0].y, scaled_int_1);
             if (ExpectComputedPopupSize()) {
-              EXPECT_EQ(expanded_select_rect.width, dirtyRects[0].width);
-              EXPECT_EQ(expanded_select_rect.height, dirtyRects[0].height);
+              EXPECT_NEAR(expanded_select_rect.width, dirtyRects[0].width,
+                          scaled_int_1 * 2);
+              EXPECT_NEAR(expanded_select_rect.height, dirtyRects[0].height,
+                          scaled_int_1 * 2);
             } else {
               EXPECT_GT(dirtyRects[0].width, kExpandedSelectRect.width);
               EXPECT_GT(dirtyRects[0].height, kExpandedSelectRect.height);
@@ -847,6 +871,10 @@ class OSRTestHandler : public RoutingTestHandler,
           mouse_event.x = MiddleX(dragdiv);
           mouse_event.y = MiddleY(dragdiv);
           mouse_event.modifiers = 0;
+
+          // The div drag point must be visible.
+          EXPECT_LT(mouse_event.y, kOsrHeight);
+
           browser->GetHost()->SendMouseMoveEvent(mouse_event, false);
           // click on the element to drag
           mouse_event.modifiers = EVENTFLAG_LEFT_MOUSE_BUTTON;
@@ -877,7 +905,7 @@ class OSRTestHandler : public RoutingTestHandler,
           for (size_t i = 0; i < word_length; ++i) {
 #if defined(OS_WIN)
             SendKeyEvent(browser, kKeyTestWord[i]);
-#elif defined(OS_MACOSX) || defined(OS_LINUX)
+#elif defined(OS_MAC) || defined(OS_LINUX)
             SendKeyEvent(browser, kNativeKeyTestCodes[i], kKeyTestCodes[i]);
 #else
 #error "Unsupported platform"
@@ -918,7 +946,7 @@ class OSRTestHandler : public RoutingTestHandler,
           for (size_t i = 0; i < word_length; ++i) {
 #if defined(OS_WIN)
             SendKeyEvent(browser, kKeyTestWord[i]);
-#elif defined(OS_MACOSX) || defined(OS_LINUX)
+#elif defined(OS_MAC) || defined(OS_LINUX)
             SendKeyEvent(browser, kNativeKeyTestCodes[i], kKeyTestCodes[i]);
 #else
 #error "Unsupported platform"
@@ -952,7 +980,7 @@ class OSRTestHandler : public RoutingTestHandler,
           browser->GetHost()->SendMouseClickEvent(mouse_event, MBT_LEFT, true,
                                                   1);
           // Add some input keys to edit box
-          CefString markedText("か");
+          CefString markedText(L"\u304B");
           std::vector<CefCompositionUnderline> underlines;
 
           // Use a thin black underline by default.
@@ -995,7 +1023,7 @@ class OSRTestHandler : public RoutingTestHandler,
                                                   1);
 
           // Now set some intermediate text composition
-          CefString markedText("か");
+          CefString markedText(L"\u304B");
           std::vector<CefCompositionUnderline> underlines;
 
           // Use a thin black underline by default.
@@ -1140,15 +1168,16 @@ class OSRTestHandler : public RoutingTestHandler,
     }
   }
 
-  void OnCursorChange(CefRefPtr<CefBrowser> browser,
+  bool OnCursorChange(CefRefPtr<CefBrowser> browser,
                       CefCursorHandle cursor,
-                      CursorType type,
+                      cef_cursor_type_t type,
                       const CefCursorInfo& custom_cursor_info) override {
     if (test_type_ == OSR_TEST_CURSOR && started()) {
       EXPECT_EQ(CT_HAND, type);
-      EXPECT_EQ(NULL, custom_cursor_info.buffer);
+      EXPECT_EQ(nullptr, custom_cursor_info.buffer);
       DestroySucceededTestSoon();
     }
+    return true;
   }
 
   void OnImeCompositionRangeChanged(
@@ -1173,7 +1202,7 @@ class OSRTestHandler : public RoutingTestHandler,
       const CefRect& dragdiv = GetElementBounds("dragdiv");
       EXPECT_TRUE(drag_data->HasImage());
       CefRefPtr<CefImage> image = drag_data->GetImage();
-      EXPECT_TRUE(image.get() != NULL);
+      EXPECT_TRUE(image.get() != nullptr);
       if (image.get()) {
         // Drag image height seems to always be + 1px greater than the drag rect
         // on Linux. Therefore allow it to be +/- 1px.
@@ -1185,9 +1214,9 @@ class OSRTestHandler : public RoutingTestHandler,
       // test only that it falls within the rect boundaries.
       CefPoint hotspot = drag_data->GetImageHotspot();
       EXPECT_GT(hotspot.x, 0);
-      EXPECT_LT(hotspot.x, GetScaledInt(dragdiv.width));
+      EXPECT_LE(hotspot.x, GetScaledInt(dragdiv.width));
       EXPECT_GT(hotspot.y, 0);
-      EXPECT_LT(hotspot.y, GetScaledInt(dragdiv.height));
+      EXPECT_LE(hotspot.y, GetScaledInt(dragdiv.height));
 
       DestroySucceededTestSoon();
       return false;
@@ -1307,6 +1336,211 @@ class OSRTestHandler : public RoutingTestHandler,
     }
   }
 
+  bool RunContextMenu(CefRefPtr<CefBrowser> browser,
+                      CefRefPtr<CefFrame> frame,
+                      CefRefPtr<CefContextMenuParams> params,
+                      CefRefPtr<CefMenuModel> model,
+                      CefRefPtr<CefRunContextMenuCallback> callback) override {
+    if (!started())
+      return false;
+
+    EXPECT_UI_THREAD();
+
+    auto current_browser = GetBrowser();
+    EXPECT_TRUE(current_browser->IsSame(browser));
+    EXPECT_EQ(current_browser->GetFocusedFrame()->GetIdentifier(),
+              frame->GetIdentifier());
+
+    if (test_type_ == OSR_TEST_QUICK_MENU) {
+      EXPECT_EQ(2U, got_touch_handle_enabled_ct_);
+      EXPECT_EQ(2U, got_touch_handle_size_ct_);
+      EXPECT_TRUE(got_quick_menu_);
+      EXPECT_TRUE(got_quick_menu_command_);
+      EXPECT_TRUE(got_quick_menu_dismissed_);
+      EXPECT_EQ(2U, got_touch_handle_disabled_ct_);
+      EXPECT_FALSE(got_context_menu_);
+
+      got_context_menu_.yes();
+
+      // Got all expected callbacks.
+      DestroySucceededTestSoon();
+
+      // Cancel the menu immediately.
+      callback->Cancel();
+      return true;
+    }
+
+    return false;
+  }
+
+  bool RunQuickMenu(CefRefPtr<CefBrowser> browser,
+                    CefRefPtr<CefFrame> frame,
+                    const CefPoint& location,
+                    const CefSize& size,
+                    QuickMenuEditStateFlags edit_state_flags,
+                    CefRefPtr<CefRunQuickMenuCallback> callback) override {
+    if (!started())
+      return false;
+
+    EXPECT_UI_THREAD();
+
+    auto current_browser = GetBrowser();
+    EXPECT_TRUE(current_browser->IsSame(browser));
+    EXPECT_EQ(current_browser->GetFocusedFrame()->GetIdentifier(),
+              frame->GetIdentifier());
+
+    EXPECT_EQ(OSR_TEST_QUICK_MENU, test_type_);
+
+    EXPECT_GT(location.x, 0);
+    EXPECT_GT(location.y, 0);
+    EXPECT_GT(size.width, 0);
+    EXPECT_GT(size.height, 0);
+    EXPECT_EQ(static_cast<QuickMenuEditStateFlags>(QM_EDITFLAG_CAN_ELLIPSIS |
+                                                   QM_EDITFLAG_CAN_COPY),
+              edit_state_flags);
+    EXPECT_TRUE(callback.get());
+
+    EXPECT_EQ(2U, got_touch_handle_enabled_ct_);
+    EXPECT_EQ(2U, got_touch_handle_size_ct_);
+    EXPECT_FALSE(got_quick_menu_);
+    EXPECT_FALSE(got_quick_menu_command_);
+    EXPECT_FALSE(got_quick_menu_dismissed_);
+    EXPECT_EQ(0U, got_touch_handle_disabled_ct_);
+    EXPECT_FALSE(got_context_menu_);
+
+    got_quick_menu_.yes();
+
+    // Proceed to OnQuickMenuCommand.
+    callback->Continue(QM_EDITFLAG_CAN_ELLIPSIS,
+                       static_cast<cef_event_flags_t>(EVENTFLAG_SHIFT_DOWN));
+    return true;
+  }
+
+  bool OnQuickMenuCommand(CefRefPtr<CefBrowser> browser,
+                          CefRefPtr<CefFrame> frame,
+                          int command_id,
+                          EventFlags event_flags) override {
+    EXPECT_UI_THREAD();
+
+    auto current_browser = GetBrowser();
+    EXPECT_TRUE(current_browser->IsSame(browser));
+    EXPECT_EQ(current_browser->GetFocusedFrame()->GetIdentifier(),
+              frame->GetIdentifier());
+
+    EXPECT_EQ(OSR_TEST_QUICK_MENU, test_type_);
+
+    // Values passed to Continue() in RunQuickMenu.
+    EXPECT_EQ(QM_EDITFLAG_CAN_ELLIPSIS, command_id);
+    EXPECT_EQ(EVENTFLAG_SHIFT_DOWN, event_flags);
+
+    EXPECT_EQ(2U, got_touch_handle_enabled_ct_);
+    EXPECT_EQ(2U, got_touch_handle_size_ct_);
+    EXPECT_TRUE(got_quick_menu_);
+    EXPECT_FALSE(got_quick_menu_command_);
+    EXPECT_FALSE(got_quick_menu_dismissed_);
+    EXPECT_EQ(0U, got_touch_handle_disabled_ct_);
+    EXPECT_FALSE(got_context_menu_);
+
+    got_quick_menu_command_.yes();
+
+    // Proceed to OnQuickMenuDismissed and RunContextMenu.
+    return false;
+  }
+
+  void OnQuickMenuDismissed(CefRefPtr<CefBrowser> browser,
+                            CefRefPtr<CefFrame> frame) override {
+    EXPECT_UI_THREAD();
+
+    auto current_browser = GetBrowser();
+    EXPECT_TRUE(current_browser->IsSame(browser));
+    EXPECT_EQ(current_browser->GetFocusedFrame()->GetIdentifier(),
+              frame->GetIdentifier());
+
+    EXPECT_EQ(OSR_TEST_QUICK_MENU, test_type_);
+
+    EXPECT_EQ(2U, got_touch_handle_enabled_ct_);
+    EXPECT_EQ(2U, got_touch_handle_size_ct_);
+    EXPECT_TRUE(got_quick_menu_);
+    EXPECT_TRUE(got_quick_menu_command_);
+    EXPECT_FALSE(got_quick_menu_dismissed_);
+    EXPECT_EQ(0U, got_touch_handle_disabled_ct_);
+    EXPECT_FALSE(got_context_menu_);
+
+    EXPECT_EQ(kAllTouchHandleFlags, touch_handle_flags_);
+
+    got_quick_menu_dismissed_.yes();
+  }
+
+  void GetTouchHandleSize(CefRefPtr<CefBrowser> browser,
+                          cef_horizontal_alignment_t orientation,
+                          CefSize& size) override {
+    size = CefSize(24, 24);
+    got_touch_handle_size_ct_++;
+  }
+
+  void OnTouchHandleStateChanged(CefRefPtr<CefBrowser> browser,
+                                 const CefTouchHandleState& state) override {
+    if (!started())
+      return;
+
+    EXPECT_UI_THREAD();
+
+    auto current_browser = GetBrowser();
+    EXPECT_TRUE(current_browser->IsSame(browser));
+
+    if (test_type_ == OSR_TEST_QUICK_MENU) {
+      if (state.flags & CEF_THS_FLAG_ENABLED) {
+        EXPECT_EQ(state.orientation, 0);
+        EXPECT_EQ(state.origin.x, 0);
+        EXPECT_EQ(state.origin.y, 0);
+        EXPECT_EQ(state.alpha, 0);
+
+        if (state.enabled) {
+          got_touch_handle_enabled_ct_++;
+          EXPECT_FALSE(got_quick_menu_);
+          EXPECT_FALSE(got_quick_menu_command_);
+          EXPECT_FALSE(got_quick_menu_dismissed_);
+          EXPECT_EQ(0U, got_touch_handle_disabled_ct_);
+          EXPECT_FALSE(got_context_menu_);
+
+          touch_handle_flags_ |= CEF_THS_FLAG_ENABLED;
+        } else {
+          got_touch_handle_disabled_ct_++;
+          EXPECT_EQ(2U, got_touch_handle_enabled_ct_);
+          EXPECT_EQ(2U, got_touch_handle_size_ct_);
+          EXPECT_TRUE(got_quick_menu_);
+          EXPECT_TRUE(got_quick_menu_command_);
+          EXPECT_TRUE(got_quick_menu_dismissed_);
+          EXPECT_FALSE(got_context_menu_);
+        }
+      }
+      if (state.flags & CEF_THS_FLAG_ORIENTATION) {
+        EXPECT_EQ(state.enabled, false);
+        EXPECT_GE(state.orientation, 0);
+        EXPECT_EQ(state.origin.x, 0);
+        EXPECT_EQ(state.origin.y, 0);
+        EXPECT_EQ(state.alpha, 0);
+        touch_handle_flags_ |= CEF_THS_FLAG_ORIENTATION;
+      }
+      if (state.flags & CEF_THS_FLAG_ORIGIN) {
+        EXPECT_EQ(state.enabled, false);
+        EXPECT_EQ(state.orientation, 0);
+        EXPECT_GT(state.origin.x, 0);
+        EXPECT_GT(state.origin.y, 0);
+        EXPECT_EQ(state.alpha, 0);
+        touch_handle_flags_ |= CEF_THS_FLAG_ORIGIN;
+      }
+      if (state.flags & CEF_THS_FLAG_ALPHA) {
+        EXPECT_EQ(state.enabled, false);
+        EXPECT_EQ(state.orientation, 0);
+        EXPECT_EQ(state.origin.x, 0);
+        EXPECT_EQ(state.origin.y, 0);
+        EXPECT_GE(state.alpha, 0);
+        touch_handle_flags_ |= CEF_THS_FLAG_ALPHA;
+      }
+    }
+  }
+
   // OSRTestHandler functions
   void CreateOSRBrowser(const CefString& url) {
     CefWindowInfo windowInfo;
@@ -1319,7 +1553,7 @@ class OSRTestHandler : public RoutingTestHandler,
 
 #if defined(OS_WIN)
     windowInfo.SetAsWindowless(GetDesktopWindow());
-#elif defined(OS_MACOSX)
+#elif defined(OS_MAC)
     // An actual vies is needed only for the ContextMenu test. The menu runner
     // checks if the view is not nil before showing the context menu.
     if (test_type_ == OSR_TEST_CONTEXT_MENU)
@@ -1331,7 +1565,8 @@ class OSRTestHandler : public RoutingTestHandler,
 #else
 #error "Unsupported platform"
 #endif
-    CefBrowserHost::CreateBrowser(windowInfo, this, url, settings, NULL, NULL);
+    CefBrowserHost::CreateBrowser(windowInfo, this, url, settings, nullptr,
+                                  nullptr);
   }
 
   CefRect GetScaledRect(const CefRect& rect) const {
@@ -1374,25 +1609,22 @@ class OSRTestHandler : public RoutingTestHandler,
   }
 
   bool ExpectComputedPopupSize() const {
-#if defined(OS_WIN) || (defined(OS_POSIX) && !defined(OS_MACOSX))
-    // On Windows the device scale factor is ignored in Blink when computing
+    // The device scale factor is ignored in Blink when computing
     // the default form control font size (see https://crbug.com/674663#c11).
     // This results in better font size display but also means that we won't
     // get the expected (scaled) width/height value for non-1.0 scale factor
     // select popups.
-    // On both Windows and Linux the non-1.0 scale factor size is off by a few
-    // pixels so we can't perform an exact comparison.
+    // The non-1.0 scale factor size is off by a few pixels so we can't perform
+    // an exact comparison.
     return scale_factor_ == 1.0;
-#else
-    return true;
-#endif
   }
 
   void DestroySucceededTestSoon() {
     if (succeeded())
       return;
-    if (++event_count_ == event_total_)
-      CefPostTask(TID_UI, base::Bind(&OSRTestHandler::DestroyTest, this));
+    if (++event_count_ == event_total_) {
+      CefPostTask(TID_UI, base::BindOnce(&OSRTestHandler::DestroyTest, this));
+    }
   }
 
   void DestroyTest() override {
@@ -1410,11 +1642,22 @@ class OSRTestHandler : public RoutingTestHandler,
       EXPECT_FALSE(got_system_focus_event_);
     }
 
+    if (test_type_ == OSR_TEST_QUICK_MENU) {
+      EXPECT_EQ(2U, got_touch_handle_enabled_ct_);
+      EXPECT_EQ(2U, got_touch_handle_size_ct_);
+      EXPECT_TRUE(got_quick_menu_);
+      EXPECT_TRUE(got_quick_menu_command_);
+      EXPECT_TRUE(got_quick_menu_dismissed_);
+      EXPECT_EQ(2U, got_touch_handle_disabled_ct_);
+      EXPECT_TRUE(got_context_menu_);
+      EXPECT_EQ(kAllTouchHandleFlags, touch_handle_flags_);
+    }
+
     RoutingTestHandler::DestroyTest();
   }
 
   void ExpandDropDown() {
-    GetBrowser()->GetHost()->SendFocusEvent(true);
+    GetBrowser()->GetHost()->SetFocus(true);
     CefMouseEvent mouse_event;
 
     const CefRect& LI11select = GetElementBounds("LI11select");
@@ -1426,7 +1669,7 @@ class OSRTestHandler : public RoutingTestHandler,
   }
 
   void SendKeyEvent(CefRefPtr<CefBrowser> browser,
-#if defined(OS_LINUX) || defined(OS_MACOSX)
+#if defined(OS_LINUX) || defined(OS_MAC)
                     unsigned int native_key_code,
 #endif
                     int key_code) {
@@ -1440,7 +1683,7 @@ class OSRTestHandler : public RoutingTestHandler,
     event.native_key_code = (scanCode << 16) |  // key scan code
                             1;                  // key repeat count
     event.windows_key_code = VkCode;
-#elif defined(OS_MACOSX)
+#elif defined(OS_MAC)
     event.native_key_code = native_key_code;
     // Note that this is only correct for lower-case characters. If |key_code|
     // was an upper-case character then |event.character| would be the upper-
@@ -1501,6 +1744,15 @@ class OSRTestHandler : public RoutingTestHandler,
   TrackCallback got_initial_text_selection_event_;
   TrackCallback got_virtual_keyboard_event_;
 
+  uint32_t touch_handle_flags_ = 0U;
+  size_t got_touch_handle_enabled_ct_ = 0U;
+  size_t got_touch_handle_size_ct_ = 0U;
+  TrackCallback got_quick_menu_;
+  TrackCallback got_quick_menu_command_;
+  TrackCallback got_quick_menu_dismissed_;
+  size_t got_touch_handle_disabled_ct_ = 0U;
+  TrackCallback got_context_menu_;
+
   typedef std::map<std::string, CefRect> ElementBoundsMap;
   ElementBoundsMap element_bounds_;
 
@@ -1554,6 +1806,8 @@ OSR_TEST(Scrolling, OSR_TEST_SCROLLING, 1.0f)
 OSR_TEST(Scrolling2x, OSR_TEST_SCROLLING, 2.0f)
 OSR_TEST(ContextMenu, OSR_TEST_CONTEXT_MENU, 1.0f)
 OSR_TEST(ContextMenu2x, OSR_TEST_CONTEXT_MENU, 2.0f)
+OSR_TEST(QuickMenu, OSR_TEST_QUICK_MENU, 1.0f)
+OSR_TEST(QuickMenu2x, OSR_TEST_CONTEXT_MENU, 2.0f)
 OSR_TEST(PopupPaint, OSR_TEST_POPUP_PAINT, 1.0f)
 OSR_TEST(PopupPaint2x, OSR_TEST_POPUP_PAINT, 2.0f)
 OSR_TEST(PopupShow, OSR_TEST_POPUP_SHOW, 1.0f)

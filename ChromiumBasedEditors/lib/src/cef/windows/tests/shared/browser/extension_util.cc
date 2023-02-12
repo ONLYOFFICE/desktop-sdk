@@ -4,12 +4,16 @@
 
 #include "tests/shared/browser/extension_util.h"
 
-#include "include/base/cef_bind.h"
+#include <algorithm>
+#include <memory>
+
+#include "include/base/cef_callback.h"
 #include "include/cef_parser.h"
 #include "include/cef_path_util.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "tests/shared/browser/file_util.h"
 #include "tests/shared/browser/resource_util.h"
+#include "tests/shared/common/string_util.h"
 
 namespace client {
 namespace extension_util {
@@ -32,15 +36,13 @@ std::string GetInternalPath(const std::string& extension_path) {
 
 #if defined(OS_WIN)
   // Convert to lower-case, since Windows paths are case-insensitive.
-  std::transform(resources_path_lower.begin(), resources_path_lower.end(),
-                 resources_path_lower.begin(), ::tolower);
-  std::transform(extension_path_lower.begin(), extension_path_lower.end(),
-                 extension_path_lower.begin(), ::tolower);
+  resources_path_lower = AsciiStrToLower(resources_path_lower);
+  extension_path_lower = AsciiStrToLower(extension_path_lower);
 #endif
 
   std::string internal_path;
   if (!resources_path_lower.empty() &&
-      extension_path_lower.find(extension_path_lower) == 0U) {
+      extension_path_lower.find(resources_path_lower) == 0U) {
     internal_path = extension_path.substr(resources_path_lower.size());
   } else {
     internal_path = extension_path;
@@ -54,26 +56,27 @@ std::string GetInternalPath(const std::string& extension_path) {
   return internal_path;
 }
 
-typedef base::Callback<void(CefRefPtr<CefDictionaryValue> /*manifest*/)>
-    ManifestCallback;
+using ManifestCallback =
+    base::OnceCallback<void(CefRefPtr<CefDictionaryValue> /*manifest*/)>;
 
-void RunManifestCallback(const ManifestCallback& callback,
+void RunManifestCallback(ManifestCallback callback,
                          CefRefPtr<CefDictionaryValue> manifest) {
   if (!CefCurrentlyOn(TID_UI)) {
     // Execute on the browser UI thread.
-    CefPostTask(TID_UI, base::Bind(RunManifestCallback, callback, manifest));
+    CefPostTask(TID_UI, base::BindOnce(std::move(callback), manifest));
     return;
   }
-  callback.Run(manifest);
+  std::move(callback).Run(manifest);
 }
 
 // Asynchronously reads the manifest and executes |callback| on the UI thread.
 void GetInternalManifest(const std::string& extension_path,
-                         const ManifestCallback& callback) {
-  if (!CefCurrentlyOn(TID_FILE)) {
+                         ManifestCallback callback) {
+  if (!CefCurrentlyOn(TID_FILE_USER_BLOCKING)) {
     // Execute on the browser FILE thread.
-    CefPostTask(TID_FILE,
-                base::Bind(GetInternalManifest, extension_path, callback));
+    CefPostTask(TID_FILE_USER_BLOCKING,
+                base::BindOnce(GetInternalManifest, extension_path,
+                               std::move(callback)));
     return;
   }
 
@@ -83,24 +86,23 @@ void GetInternalManifest(const std::string& extension_path,
   if (!LoadBinaryResource(manifest_path.c_str(), manifest_contents) ||
       manifest_contents.empty()) {
     LOG(ERROR) << "Failed to load manifest from " << manifest_path;
-    RunManifestCallback(callback, NULL);
+    RunManifestCallback(std::move(callback), nullptr);
     return;
   }
 
-  cef_json_parser_error_t error_code;
   CefString error_msg;
-  CefRefPtr<CefValue> value = CefParseJSONAndReturnError(
-      manifest_contents, JSON_PARSER_RFC, error_code, error_msg);
+  CefRefPtr<CefValue> value =
+      CefParseJSONAndReturnError(manifest_contents, JSON_PARSER_RFC, error_msg);
   if (!value || value->GetType() != VTYPE_DICTIONARY) {
     if (error_msg.empty())
       error_msg = "Incorrectly formatted dictionary contents.";
     LOG(ERROR) << "Failed to parse manifest from " << manifest_path << "; "
                << error_msg.ToString();
-    RunManifestCallback(callback, NULL);
+    RunManifestCallback(std::move(callback), nullptr);
     return;
   }
 
-  RunManifestCallback(callback, value->GetDictionary());
+  RunManifestCallback(std::move(callback), value->GetDictionary());
 }
 
 void LoadExtensionWithManifest(CefRefPtr<CefRequestContext> request_context,
@@ -121,7 +123,7 @@ bool IsInternalExtension(const std::string& extension_path) {
   static const char* extensions[] = {"set_page_color"};
 
   const std::string& internal_path = GetInternalPath(extension_path);
-  for (size_t i = 0; i < arraysize(extensions); ++i) {
+  for (size_t i = 0; i < std::size(extensions); ++i) {
     // Exact match or first directory component.
     const std::string& extension = extensions[i];
     if (internal_path == extension ||
@@ -150,7 +152,7 @@ std::string GetExtensionResourcePath(const std::string& extension_path,
 
 bool GetExtensionResourceContents(const std::string& extension_path,
                                   std::string& contents) {
-  CEF_REQUIRE_FILE_THREAD();
+  CEF_REQUIRE_FILE_USER_BLOCKING_THREAD();
 
   if (IsInternalExtension(extension_path)) {
     const std::string& contents_path =
@@ -166,19 +168,20 @@ void LoadExtension(CefRefPtr<CefRequestContext> request_context,
                    CefRefPtr<CefExtensionHandler> handler) {
   if (!CefCurrentlyOn(TID_UI)) {
     // Execute on the browser UI thread.
-    CefPostTask(TID_UI, base::Bind(LoadExtension, request_context,
-                                   extension_path, handler));
+    CefPostTask(TID_UI, base::BindOnce(LoadExtension, request_context,
+                                       extension_path, handler));
     return;
   }
 
   if (IsInternalExtension(extension_path)) {
     // Read the extension manifest and load asynchronously.
-    GetInternalManifest(extension_path,
-                        base::Bind(LoadExtensionWithManifest, request_context,
-                                   extension_path, handler));
+    GetInternalManifest(
+        extension_path,
+        base::BindOnce(LoadExtensionWithManifest, request_context,
+                       extension_path, handler));
   } else {
     // Load the extension from disk.
-    request_context->LoadExtension(extension_path, NULL, handler);
+    request_context->LoadExtension(extension_path, nullptr, handler);
   }
 }
 
@@ -189,8 +192,8 @@ void AddInternalExtensionToResourceManager(
 
   if (!CefCurrentlyOn(TID_IO)) {
     // Execute on the browser IO thread.
-    CefPostTask(TID_IO, base::Bind(AddInternalExtensionToResourceManager,
-                                   extension, resource_manager));
+    CefPostTask(TID_IO, base::BindOnce(AddInternalExtensionToResourceManager,
+                                       extension, resource_manager));
     return;
   }
 

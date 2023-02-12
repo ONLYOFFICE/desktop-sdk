@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=957f55c65387757a411f9b898827bdef95531c45$
+// $hash=aaa54f4812e2631da71b5a2ef384ead506fdb0fb$
 //
 
 #include "libcef_dll/ctocpp/frame_ctocpp.h"
@@ -221,30 +221,6 @@ NO_SANITIZE("cfi-icall") void CefFrameCToCpp::LoadURL(const CefString& url) {
 }
 
 NO_SANITIZE("cfi-icall")
-void CefFrameCToCpp::LoadString(const CefString& string_val,
-                                const CefString& url) {
-  shutdown_checker::AssertNotShutdown();
-
-  cef_frame_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, load_string))
-    return;
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Verify param: string_val; type: string_byref_const
-  DCHECK(!string_val.empty());
-  if (string_val.empty())
-    return;
-  // Verify param: url; type: string_byref_const
-  DCHECK(!url.empty());
-  if (url.empty())
-    return;
-
-  // Execute
-  _struct->load_string(_struct, string_val.GetStruct(), url.GetStruct());
-}
-
-NO_SANITIZE("cfi-icall")
 void CefFrameCToCpp::ExecuteJavaScript(const CefString& code,
                                        const CefString& script_url,
                                        int start_line) {
@@ -338,7 +314,7 @@ NO_SANITIZE("cfi-icall") CefRefPtr<CefFrame> CefFrameCToCpp::GetParent() {
 
   cef_frame_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_parent))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -372,7 +348,7 @@ NO_SANITIZE("cfi-icall") CefRefPtr<CefBrowser> CefFrameCToCpp::GetBrowser() {
 
   cef_frame_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_browser))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -389,7 +365,7 @@ CefRefPtr<CefV8Context> CefFrameCToCpp::GetV8Context() {
 
   cef_frame_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_v8context))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -427,18 +403,18 @@ CefRefPtr<CefURLRequest> CefFrameCToCpp::CreateURLRequest(
 
   cef_frame_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, create_urlrequest))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: request; type: refptr_same
   DCHECK(request.get());
   if (!request.get())
-    return NULL;
+    return nullptr;
   // Verify param: client; type: refptr_diff
   DCHECK(client.get());
   if (!client.get())
-    return NULL;
+    return nullptr;
 
   // Execute
   cef_urlrequest_t* _retval =
@@ -486,7 +462,7 @@ CefCToCppRefCounted<CefFrameCToCpp, CefFrame, cef_frame_t>::UnwrapDerived(
     CefWrapperType type,
     CefFrame* c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

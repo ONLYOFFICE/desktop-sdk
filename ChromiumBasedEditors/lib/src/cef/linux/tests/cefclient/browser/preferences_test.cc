@@ -49,7 +49,7 @@ class Handler : public CefMessageRouterBrowserSide::Handler {
                int64 query_id,
                const CefString& request,
                bool persistent,
-               CefRefPtr<Callback> callback) OVERRIDE {
+               CefRefPtr<Callback> callback) override {
     CEF_REQUIRE_UI_THREAD();
 
     // Only handle messages from the test URL.
@@ -208,7 +208,7 @@ class Handler : public CefMessageRouterBrowserSide::Handler {
     CefRefPtr<CefValue> value = CefParseJSON(string, JSON_PARSER_RFC);
     if (value.get() && value->GetType() == VTYPE_DICTIONARY)
       return value->GetDictionary();
-    return NULL;
+    return nullptr;
   }
 
   // Convert a dictionary value to a JSON string.

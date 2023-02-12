@@ -58,12 +58,12 @@ class ViewLoadUnloadTestHandler : public ExtensionTestHandler {
     if (request_context() && !request_context_same_loader())
       VerifyExtensionInContext(extension, request_context(), false, false);
 
-    extension_ = NULL;
+    extension_ = nullptr;
 
     // Execute asynchronously so call stacks have a chance to unwind.
     // Will close the browser windows.
     CefPostTask(TID_UI,
-                base::Bind(&ViewLoadUnloadTestHandler::DestroyTest, this));
+                base::BindOnce(&ViewLoadUnloadTestHandler::DestroyTest, this));
   }
 
   // CefLoadHandler methods:
@@ -139,7 +139,7 @@ class ViewLoadUnloadTestHandler : public ExtensionTestHandler {
   }
 
   void OnDestroyTest() override {
-    extension_browser_ = NULL;
+    extension_browser_ = nullptr;
 
     EXPECT_TRUE(got_loaded_);
     EXPECT_TRUE(got_url_request_);
@@ -194,8 +194,9 @@ class ViewLoadUnloadTestHandler : public ExtensionTestHandler {
 
   virtual void TriggerDestroyTest() {
     // Execute asynchronously so call stacks have a chance to unwind.
-    CefPostTask(TID_UI, base::Bind(&ViewLoadUnloadTestHandler::UnloadExtension,
-                                   this, extension_));
+    CefPostTask(TID_UI,
+                base::BindOnce(&ViewLoadUnloadTestHandler::UnloadExtension,
+                               this, extension_));
   }
 
   CefRefPtr<CefExtension> extension_;
@@ -230,7 +231,7 @@ class ViewLoadNoUnloadTestHandler : public ViewLoadUnloadTestHandler {
     // Release everything that references the request context. This should
     // trigger unload of the extension.
     CloseBrowser(extension_browser_, false);
-    extension_browser_ = NULL;
+    extension_browser_ = nullptr;
     ReleaseRequestContexts();
   }
 };

@@ -7,10 +7,8 @@
 #pragma once
 
 #include "include/base/cef_logging.h"
-#include "include/base/cef_macros.h"
 #include "include/capi/cef_base_capi.h"
 #include "include/cef_base.h"
-#include "libcef_dll/ptr_util.h"
 #include "libcef_dll/wrapper_types.h"
 
 // Wrap a C++ class with a C structure. This is used when the class
@@ -19,6 +17,9 @@
 template <class ClassName, class BaseName, class StructName>
 class CefCppToCScoped : public CefBaseScoped {
  public:
+  CefCppToCScoped(const CefCppToCScoped&) = delete;
+  CefCppToCScoped& operator=(const CefCppToCScoped&) = delete;
+
   // Create a new wrapper instance and associated structure reference for
   // passing an object instance the other side. The wrapper object will be
   // deleted when |del| is called on the associated structure. The wrapped
@@ -34,7 +35,7 @@ class CefCppToCScoped : public CefBaseScoped {
   // }
   static StructName* WrapOwn(CefOwnPtr<BaseName> c) {
     if (!c)
-      return NULL;
+      return nullptr;
 
     // Wrap our object with the CefCppToC class.
     ClassName* wrapper = new ClassName();
@@ -97,7 +98,7 @@ class CefCppToCScoped : public CefBaseScoped {
     // We're giving up ownership of the underlying object. Clear the pointer so
     // it doesn't get deleted.
     BaseName* object = wrapperStruct->object_;
-    wrapperStruct->object_ = NULL;
+    wrapperStruct->object_ = nullptr;
 
     delete wrapperStruct->wrapper_;
 
@@ -114,7 +115,7 @@ class CefCppToCScoped : public CefBaseScoped {
   // }
   static CefRawPtr<BaseName> UnwrapRaw(StructName* s) {
     if (!s)
-      return NULL;
+      return nullptr;
 
     // Cast our structure to the wrapper structure type.
     WrapperStruct* wrapperStruct = GetWrapperStruct(s);
@@ -221,8 +222,6 @@ class CefCppToCScoped : public CefBaseScoped {
   bool owned_;
 
   static CefWrapperType kWrapperType;
-
-  DISALLOW_COPY_AND_ASSIGN(CefCppToCScoped);
 };
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_CPPTOC_SCOPED_H_

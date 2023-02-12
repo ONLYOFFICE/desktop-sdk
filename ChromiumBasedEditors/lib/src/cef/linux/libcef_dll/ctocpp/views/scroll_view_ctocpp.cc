@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=10f4012c567e4a54ad80d6d63f516b9640db0861$
+// $hash=0d4d7202f3053150bfee7380d3dbc9ef596683f9$
 //
 
 #include "libcef_dll/ctocpp/views/scroll_view_ctocpp.h"
@@ -68,7 +68,7 @@ CefRefPtr<CefView> CefScrollViewCToCpp::GetContentView() {
 
   cef_scroll_view_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_content_view))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -166,7 +166,7 @@ CefRefPtr<CefBrowserView> CefScrollViewCToCpp::AsBrowserView() {
 
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, as_browser_view))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -182,7 +182,7 @@ NO_SANITIZE("cfi-icall") CefRefPtr<CefButton> CefScrollViewCToCpp::AsButton() {
 
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, as_button))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -198,7 +198,7 @@ NO_SANITIZE("cfi-icall") CefRefPtr<CefPanel> CefScrollViewCToCpp::AsPanel() {
 
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, as_panel))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -215,7 +215,7 @@ CefRefPtr<CefScrollView> CefScrollViewCToCpp::AsScrollView() {
 
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, as_scroll_view))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -232,7 +232,7 @@ CefRefPtr<CefTextfield> CefScrollViewCToCpp::AsTextfield() {
 
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, as_textfield))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -340,7 +340,7 @@ CefRefPtr<CefViewDelegate> CefScrollViewCToCpp::GetDelegate() {
 
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, get_delegate))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -356,7 +356,7 @@ NO_SANITIZE("cfi-icall") CefRefPtr<CefWindow> CefScrollViewCToCpp::GetWindow() {
 
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, get_window))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -431,7 +431,7 @@ CefRefPtr<CefView> CefScrollViewCToCpp::GetParentView() {
 
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, get_parent_view))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -448,7 +448,7 @@ CefRefPtr<CefView> CefScrollViewCToCpp::GetViewForID(int id) {
 
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, get_view_for_id))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -560,6 +560,36 @@ NO_SANITIZE("cfi-icall") CefPoint CefScrollViewCToCpp::GetPosition() {
 
   // Execute
   cef_point_t _retval = _struct->get_position(_struct);
+
+  // Return type: simple
+  return _retval;
+}
+
+NO_SANITIZE("cfi-icall")
+void CefScrollViewCToCpp::SetInsets(const CefInsets& insets) {
+  shutdown_checker::AssertNotShutdown();
+
+  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (CEF_MEMBER_MISSING(_struct, set_insets))
+    return;
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  _struct->set_insets(_struct, &insets);
+}
+
+NO_SANITIZE("cfi-icall") CefInsets CefScrollViewCToCpp::GetInsets() {
+  shutdown_checker::AssertNotShutdown();
+
+  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (CEF_MEMBER_MISSING(_struct, get_insets))
+    return CefInsets();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  cef_insets_t _retval = _struct->get_insets(_struct);
 
   // Return type: simple
   return _retval;
@@ -949,7 +979,7 @@ cef_scroll_view_t*
 CefCToCppRefCounted<CefScrollViewCToCpp, CefScrollView, cef_scroll_view_t>::
     UnwrapDerived(CefWrapperType type, CefScrollView* c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

@@ -4,7 +4,7 @@
 
 #include "tests/cefclient/browser/osr_render_handler_win_gl.h"
 
-#include "include/base/cef_bind.h"
+#include "include/base/cef_callback.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "include/wrapper/cef_helpers.h"
 #include "tests/shared/browser/util_win.h"
@@ -18,12 +18,11 @@ class ScopedGLContext {
  public:
   ScopedGLContext(HDC hdc, HGLRC hglrc, bool swap_buffers)
       : hdc_(hdc), swap_buffers_(swap_buffers) {
-    BOOL result = wglMakeCurrent(hdc, hglrc);
-    ALLOW_UNUSED_LOCAL(result);
+    [[maybe_unused]] BOOL result = wglMakeCurrent(hdc, hglrc);
     DCHECK(result);
   }
   ~ScopedGLContext() {
-    BOOL result = wglMakeCurrent(NULL, NULL);
+    BOOL result = wglMakeCurrent(nullptr, nullptr);
     DCHECK(result);
     if (swap_buffers_) {
       result = SwapBuffers(hdc_);
@@ -43,8 +42,8 @@ OsrRenderHandlerWinGL::OsrRenderHandlerWinGL(
     HWND hwnd)
     : OsrRenderHandlerWin(settings, hwnd),
       renderer_(settings),
-      hdc_(NULL),
-      hrc_(NULL),
+      hdc_(nullptr),
+      hrc_(nullptr),
       painting_popup_(false) {}
 
 void OsrRenderHandlerWinGL::Initialize(CefRefPtr<CefBrowser> browser) {
@@ -188,14 +187,13 @@ void OsrRenderHandlerWinGL::DisableGL() {
 
   if (IsWindow(hwnd())) {
     // wglDeleteContext will make the context not current before deleting it.
-    BOOL result = wglDeleteContext(hrc_);
-    ALLOW_UNUSED_LOCAL(result);
+    [[maybe_unused]] BOOL result = wglDeleteContext(hrc_);
     DCHECK(result);
     ReleaseDC(hwnd(), hdc_);
   }
 
-  hdc_ = NULL;
-  hrc_ = NULL;
+  hdc_ = nullptr;
+  hrc_ = nullptr;
 }
 
 }  // namespace client

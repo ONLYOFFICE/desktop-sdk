@@ -17,7 +17,9 @@ class BrowserWindowStdGtk : public BrowserWindow {
  public:
   // Constructor may be called on any thread.
   // |delegate| must outlive this object.
-  BrowserWindowStdGtk(Delegate* delegate, const std::string& startup_url);
+  BrowserWindowStdGtk(Delegate* delegate,
+                      bool with_controls,
+                      const std::string& startup_url);
 
   // Called from RootWindowGtk::CreateRootWindow before CreateBrowser.
   void set_xdisplay(XDisplay* xdisplay);
@@ -27,21 +29,21 @@ class BrowserWindowStdGtk : public BrowserWindow {
                      const CefRect& rect,
                      const CefBrowserSettings& settings,
                      CefRefPtr<CefDictionaryValue> extra_info,
-                     CefRefPtr<CefRequestContext> request_context) OVERRIDE;
+                     CefRefPtr<CefRequestContext> request_context) override;
   void GetPopupConfig(CefWindowHandle temp_handle,
                       CefWindowInfo& windowInfo,
                       CefRefPtr<CefClient>& client,
-                      CefBrowserSettings& settings) OVERRIDE;
+                      CefBrowserSettings& settings) override;
   void ShowPopup(ClientWindowHandle parent_handle,
                  int x,
                  int y,
                  size_t width,
-                 size_t height) OVERRIDE;
-  void Show() OVERRIDE;
-  void Hide() OVERRIDE;
-  void SetBounds(int x, int y, size_t width, size_t height) OVERRIDE;
-  void SetFocus(bool focus) OVERRIDE;
-  ClientWindowHandle GetWindowHandle() const OVERRIDE;
+                 size_t height) override;
+  void Show() override;
+  void Hide() override;
+  void SetBounds(int x, int y, size_t width, size_t height) override;
+  void SetFocus(bool focus) override;
+  ClientWindowHandle GetWindowHandle() const override;
 
  private:
   XDisplay* xdisplay_;

@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=4ed35f53453bbd97c0207bccf014cc2769341a23$
+// $hash=af4061bbf8813e143420ebc4a45b81e43acc6803$
 //
 
 #include "libcef_dll/ctocpp/views/box_layout_ctocpp.h"
@@ -63,7 +63,7 @@ CefRefPtr<CefBoxLayout> CefBoxLayoutCToCpp::AsBoxLayout() {
 
   cef_layout_t* _struct = reinterpret_cast<cef_layout_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, as_box_layout))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -80,7 +80,7 @@ CefRefPtr<CefFillLayout> CefBoxLayoutCToCpp::AsFillLayout() {
 
   cef_layout_t* _struct = reinterpret_cast<cef_layout_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, as_fill_layout))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -122,7 +122,7 @@ cef_box_layout_t*
 CefCToCppRefCounted<CefBoxLayoutCToCpp, CefBoxLayout, cef_box_layout_t>::
     UnwrapDerived(CefWrapperType type, CefBoxLayout* c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

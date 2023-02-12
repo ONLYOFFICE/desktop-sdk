@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=86c8103564d3acb6cc76510c7c0b015fc0605d80$
+// $hash=007bfc91ebd5f366649cbca2b6f1e6850befd6aa$
 //
 
 #include "libcef_dll/cpptoc/cookie_access_filter_cpptoc.h"
@@ -17,6 +17,7 @@
 #include "libcef_dll/ctocpp/frame_ctocpp.h"
 #include "libcef_dll/ctocpp/request_ctocpp.h"
 #include "libcef_dll/ctocpp/response_ctocpp.h"
+#include "libcef_dll/template_util.h"
 
 namespace {
 
@@ -41,6 +42,10 @@ cookie_access_filter_can_send_cookie(struct _cef_cookie_access_filter_t* self,
   DCHECK(cookie);
   if (!cookie)
     return 0;
+  if (!template_util::has_valid_size(cookie)) {
+    NOTREACHED() << "invalid cookie->[base.]size";
+    return 0;
+  }
   // Unverified params: browser, frame
 
   // Translate param: cookie; type: struct_byref_const
@@ -81,6 +86,10 @@ cookie_access_filter_can_save_cookie(struct _cef_cookie_access_filter_t* self,
   DCHECK(cookie);
   if (!cookie)
     return 0;
+  if (!template_util::has_valid_size(cookie)) {
+    NOTREACHED() << "invalid cookie->[base.]size";
+    return 0;
+  }
   // Unverified params: browser, frame
 
   // Translate param: cookie; type: struct_byref_const
@@ -118,7 +127,7 @@ CefRefPtr<CefCookieAccessFilter> CefCppToCRefCounted<
     cef_cookie_access_filter_t>::UnwrapDerived(CefWrapperType type,
                                                cef_cookie_access_filter_t* s) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

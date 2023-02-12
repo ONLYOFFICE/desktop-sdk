@@ -7,10 +7,8 @@
 #pragma once
 
 #include "include/base/cef_logging.h"
-#include "include/base/cef_macros.h"
 #include "include/capi/cef_base_capi.h"
 #include "include/cef_base.h"
-#include "libcef_dll/ptr_util.h"
 #include "libcef_dll/wrapper_types.h"
 
 // Wrap a C structure with a C++ class. This is used when the implementation
@@ -19,6 +17,9 @@
 template <class ClassName, class BaseName, class StructName>
 class CefCToCppScoped : public BaseName {
  public:
+  CefCToCppScoped(const CefCToCppScoped&) = delete;
+  CefCToCppScoped& operator=(const CefCToCppScoped&) = delete;
+
   // Create a new wrapper instance for a structure reference received from the
   // other side. The caller owns the CToCpp wrapper instance but not necessarily
   // the underling object on the CppToC side (depends if s->del is non-NULL).
@@ -49,7 +50,7 @@ class CefCToCppScoped : public BaseName {
   //
   // void MyMethod(CefOwnPtr<MyType> obj) {
   //   // Ownership of the underlying MyType object is passed to my_method().
-  //   my_method(MyTypeCToCpp::UnwrapOwn(obj.Pass()));
+  //   my_method(MyTypeCToCpp::UnwrapOwn(std::move(obj)));
   //   // |obj| is now NULL.
   // }
   static StructName* UnwrapOwn(CefOwnPtr<BaseName> c);
@@ -68,8 +69,8 @@ class CefCToCppScoped : public BaseName {
   static void operator delete(void* ptr);
 
  protected:
-  CefCToCppScoped() {}
-  virtual ~CefCToCppScoped() {}
+  CefCToCppScoped() = default;
+  virtual ~CefCToCppScoped() = default;
 
   // If returning the structure across the DLL boundary use Unwrap() instead.
   StructName* GetStruct() const {
@@ -93,8 +94,6 @@ class CefCToCppScoped : public BaseName {
                                       CefRawPtr<BaseName> c);
 
   static CefWrapperType kWrapperType;
-
-  DISALLOW_COPY_AND_ASSIGN(CefCToCppScoped);
 };
 
 template <class ClassName, class BaseName, class StructName>
@@ -122,14 +121,14 @@ template <class ClassName, class BaseName, class StructName>
 StructName* CefCToCppScoped<ClassName, BaseName, StructName>::UnwrapOwn(
     CefOwnPtr<BaseName> c) {
   if (!c.get())
-    return NULL;
+    return nullptr;
 
   WrapperStruct* wrapperStruct = GetWrapperStruct(c.get());
 
   // If the type does not match this object then we need to unwrap as the
   // derived type.
   if (wrapperStruct->type_ != kWrapperType)
-    return UnwrapDerivedOwn(wrapperStruct->type_, OWN_PASS(c));
+    return UnwrapDerivedOwn(wrapperStruct->type_, std::move(c));
 
   StructName* orig_struct = wrapperStruct->struct_;
 
@@ -140,7 +139,7 @@ StructName* CefCToCppScoped<ClassName, BaseName, StructName>::UnwrapOwn(
 #endif
 
   // Don't delete the original object when the wrapper is deleted.
-  wrapperStruct->struct_ = NULL;
+  wrapperStruct->struct_ = nullptr;
 
   // Return the original structure.
   return orig_struct;
@@ -151,7 +150,7 @@ template <class ClassName, class BaseName, class StructName>
 StructName* CefCToCppScoped<ClassName, BaseName, StructName>::UnwrapRaw(
     CefRawPtr<BaseName> c) {
   if (!c)
-    return NULL;
+    return nullptr;
 
   WrapperStruct* wrapperStruct = GetWrapperStruct(c);
 

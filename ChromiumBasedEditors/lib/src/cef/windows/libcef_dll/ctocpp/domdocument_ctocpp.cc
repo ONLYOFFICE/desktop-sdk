@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=c100acc618062d69682dc07dcb6bc570108ac850$
+// $hash=4dddf3528abafd3fce06482308a76df0a056cd3c$
 //
 
 #include "libcef_dll/ctocpp/domdocument_ctocpp.h"
@@ -40,7 +40,7 @@ CefRefPtr<CefDOMNode> CefDOMDocumentCToCpp::GetDocument() {
 
   cef_domdocument_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_document))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -56,7 +56,7 @@ NO_SANITIZE("cfi-icall") CefRefPtr<CefDOMNode> CefDOMDocumentCToCpp::GetBody() {
 
   cef_domdocument_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_body))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -72,7 +72,7 @@ NO_SANITIZE("cfi-icall") CefRefPtr<CefDOMNode> CefDOMDocumentCToCpp::GetHead() {
 
   cef_domdocument_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_head))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -108,14 +108,14 @@ CefRefPtr<CefDOMNode> CefDOMDocumentCToCpp::GetElementById(
 
   cef_domdocument_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_element_by_id))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: id; type: string_byref_const
   DCHECK(!id.empty());
   if (id.empty())
-    return NULL;
+    return nullptr;
 
   // Execute
   cef_domnode_t* _retval = _struct->get_element_by_id(_struct, id.GetStruct());
@@ -130,7 +130,7 @@ CefRefPtr<CefDOMNode> CefDOMDocumentCToCpp::GetFocusedNode() {
 
   cef_domdocument_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_focused_node))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -284,7 +284,7 @@ cef_domdocument_t*
 CefCToCppRefCounted<CefDOMDocumentCToCpp, CefDOMDocument, cef_domdocument_t>::
     UnwrapDerived(CefWrapperType type, CefDOMDocument* c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

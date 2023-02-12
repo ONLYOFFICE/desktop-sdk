@@ -14,8 +14,8 @@ std::string MainContextImpl::GetDownloadPath(const std::string& file_name) {
   std::string path;
 
   // Save the file in the user's "My Documents" folder.
-  if (SUCCEEDED(SHGetFolderPath(NULL, CSIDL_PERSONAL | CSIDL_FLAG_CREATE, NULL,
-                                0, szFolderPath))) {
+  if (SUCCEEDED(SHGetFolderPath(nullptr, CSIDL_PERSONAL | CSIDL_FLAG_CREATE,
+                                nullptr, 0, szFolderPath))) {
     path = CefString(szFolderPath);
     path += "\\" + file_name;
   }
@@ -25,7 +25,7 @@ std::string MainContextImpl::GetDownloadPath(const std::string& file_name) {
 
 std::string MainContextImpl::GetAppWorkingDirectory() {
   char szWorkingDir[MAX_PATH + 1];
-  if (_getcwd(szWorkingDir, MAX_PATH) == NULL) {
+  if (_getcwd(szWorkingDir, MAX_PATH) == nullptr) {
     szWorkingDir[0] = 0;
   } else {
     // Add trailing path separator.

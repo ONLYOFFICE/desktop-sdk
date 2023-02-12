@@ -54,7 +54,8 @@ void SetPosImpl(CefRefPtr<CefBrowser> browser,
   CefRect window_rect(x, y, width, height);
   WindowTestRunner::ModifyBounds(display_rect, window_rect);
 
-  if (placement.showCmd == SW_MINIMIZE || placement.showCmd == SW_MAXIMIZE) {
+  if (placement.showCmd == SW_SHOWMINIMIZED ||
+      placement.showCmd == SW_SHOWMAXIMIZED) {
     // The window is currently minimized or maximized. Restore it to the desired
     // position.
     placement.rcNormalPosition.left = window_rect.x;
@@ -65,7 +66,7 @@ void SetPosImpl(CefRefPtr<CefBrowser> browser,
     ::ShowWindow(root_hwnd, SW_RESTORE);
   } else {
     // Set the window position.
-    ::SetWindowPos(root_hwnd, NULL, window_rect.x, window_rect.y,
+    ::SetWindowPos(root_hwnd, nullptr, window_rect.x, window_rect.y,
                    window_rect.width, window_rect.height, SWP_NOZORDER);
   }
 }
@@ -104,7 +105,7 @@ void WindowTestRunnerWin::SetPos(CefRefPtr<CefBrowser> browser,
     SetPosImpl(browser, x, y, width, height);
   } else {
     // Execute on the main application thread.
-    MAIN_POST_CLOSURE(base::Bind(SetPosImpl, browser, x, y, width, height));
+    MAIN_POST_CLOSURE(base::BindOnce(SetPosImpl, browser, x, y, width, height));
   }
 }
 
@@ -113,7 +114,7 @@ void WindowTestRunnerWin::Minimize(CefRefPtr<CefBrowser> browser) {
     MinimizeImpl(browser);
   } else {
     // Execute on the main application thread.
-    MAIN_POST_CLOSURE(base::Bind(MinimizeImpl, browser));
+    MAIN_POST_CLOSURE(base::BindOnce(MinimizeImpl, browser));
   }
 }
 
@@ -122,7 +123,7 @@ void WindowTestRunnerWin::Maximize(CefRefPtr<CefBrowser> browser) {
     MaximizeImpl(browser);
   } else {
     // Execute on the main application thread.
-    MAIN_POST_CLOSURE(base::Bind(MaximizeImpl, browser));
+    MAIN_POST_CLOSURE(base::BindOnce(MaximizeImpl, browser));
   }
 }
 
@@ -131,7 +132,7 @@ void WindowTestRunnerWin::Restore(CefRefPtr<CefBrowser> browser) {
     RestoreImpl(browser);
   } else {
     // Execute on the main application thread.
-    MAIN_POST_CLOSURE(base::Bind(RestoreImpl, browser));
+    MAIN_POST_CLOSURE(base::BindOnce(RestoreImpl, browser));
   }
 }
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=31b30ec0fc431a4d7dd9d2e1c3025065b2001987$
+// $hash=013ef6edbf734cdf4e6d00ba5b8be6c46284e2ca$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_DOWNLOAD_ITEM_CALLBACK_CTOCPP_H_
@@ -35,9 +35,9 @@ class CefDownloadItemCallbackCToCpp
   virtual ~CefDownloadItemCallbackCToCpp();
 
   // CefDownloadItemCallback methods.
-  void Cancel() OVERRIDE;
-  void Pause() OVERRIDE;
-  void Resume() OVERRIDE;
+  void Cancel() override;
+  void Pause() override;
+  void Resume() override;
 };
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_DOWNLOAD_ITEM_CALLBACK_CTOCPP_H_

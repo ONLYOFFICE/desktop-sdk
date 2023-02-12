@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,10 +9,11 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=d08dd55fbd32bdc2fe5e3623d9526af11fa7ada0$
+// $hash=8ac944f0c572916a56506165359595f4c607a66c$
 //
 
 #include "libcef_dll/ctocpp/resource_bundle_ctocpp.h"
+#include "libcef_dll/ctocpp/binary_value_ctocpp.h"
 
 // STATIC METHODS - Body may be edited by hand.
 
@@ -48,40 +49,38 @@ CefString CefResourceBundleCToCpp::GetLocalizedString(int string_id) {
 }
 
 NO_SANITIZE("cfi-icall")
-bool CefResourceBundleCToCpp::GetDataResource(int resource_id,
-                                              void*& data,
-                                              size_t& data_size) {
+CefRefPtr<CefBinaryValue> CefResourceBundleCToCpp::GetDataResource(
+    int resource_id) {
   cef_resource_bundle_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_data_resource))
-    return false;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  int _retval =
-      _struct->get_data_resource(_struct, resource_id, &data, &data_size);
+  cef_binary_value_t* _retval =
+      _struct->get_data_resource(_struct, resource_id);
 
-  // Return type: bool
-  return _retval ? true : false;
+  // Return type: refptr_same
+  return CefBinaryValueCToCpp::Wrap(_retval);
 }
 
 NO_SANITIZE("cfi-icall")
-bool CefResourceBundleCToCpp::GetDataResourceForScale(int resource_id,
-                                                      ScaleFactor scale_factor,
-                                                      void*& data,
-                                                      size_t& data_size) {
+CefRefPtr<CefBinaryValue> CefResourceBundleCToCpp::GetDataResourceForScale(
+    int resource_id,
+    ScaleFactor scale_factor) {
   cef_resource_bundle_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_data_resource_for_scale))
-    return false;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  int _retval = _struct->get_data_resource_for_scale(
-      _struct, resource_id, scale_factor, &data, &data_size);
+  cef_binary_value_t* _retval =
+      _struct->get_data_resource_for_scale(_struct, resource_id, scale_factor);
 
-  // Return type: bool
-  return _retval ? true : false;
+  // Return type: refptr_same
+  return CefBinaryValueCToCpp::Wrap(_retval);
 }
 
 // CONSTRUCTOR - Do not edit by hand.
@@ -99,7 +98,7 @@ cef_resource_bundle_t* CefCToCppRefCounted<
     cef_resource_bundle_t>::UnwrapDerived(CefWrapperType type,
                                           CefResourceBundle* c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

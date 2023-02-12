@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=a24e37a1b0fbff6c8489c8a054bba14c99907cd3$
+// $hash=953bf2909c532598f70a4f7ad09c16d774dad5f8$
 //
 
 #include "libcef_dll/ctocpp/print_settings_ctocpp.h"
@@ -63,23 +63,6 @@ NO_SANITIZE("cfi-icall") bool CefPrintSettingsCToCpp::IsReadOnly() {
 
   // Return type: bool
   return _retval ? true : false;
-}
-
-NO_SANITIZE("cfi-icall")
-CefRefPtr<CefPrintSettings> CefPrintSettingsCToCpp::Copy() {
-  shutdown_checker::AssertNotShutdown();
-
-  cef_print_settings_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, copy))
-    return NULL;
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Execute
-  cef_print_settings_t* _retval = _struct->copy(_struct);
-
-  // Return type: refptr_same
-  return CefPrintSettingsCToCpp::Wrap(_retval);
 }
 
 NO_SANITIZE("cfi-icall")
@@ -448,7 +431,7 @@ CefCToCppRefCounted<CefPrintSettingsCToCpp,
                     cef_print_settings_t>::UnwrapDerived(CefWrapperType type,
                                                          CefPrintSettings* c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

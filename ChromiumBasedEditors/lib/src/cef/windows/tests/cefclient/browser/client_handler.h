@@ -14,9 +14,11 @@
 #include "include/wrapper/cef_message_router.h"
 #include "include/wrapper/cef_resource_manager.h"
 #include "tests/cefclient/browser/client_types.h"
+#include "tests/cefclient/browser/test_runner.h"
 
 #if defined(OS_LINUX)
 #include "tests/cefclient/browser/dialog_handler_gtk.h"
+#include "tests/cefclient/browser/print_handler_gtk.h"
 #endif
 
 namespace client {
@@ -26,6 +28,7 @@ class ClientDownloadImageCallback;
 // Client handler abstract base class. Provides common functionality shared by
 // all concrete client handler implementations.
 class ClientHandler : public CefClient,
+                      public CefCommandHandler,
                       public CefContextMenuHandler,
                       public CefDisplayHandler,
                       public CefDownloadHandler,
@@ -34,6 +37,7 @@ class ClientHandler : public CefClient,
                       public CefKeyboardHandler,
                       public CefLifeSpanHandler,
                       public CefLoadHandler,
+                      public CefPermissionHandler,
                       public CefRequestHandler,
                       public CefResourceRequestHandler {
  public:
@@ -91,6 +95,7 @@ class ClientHandler : public CefClient,
   // |delegate| must outlive this object or DetachDelegate() must be called.
   ClientHandler(Delegate* delegate,
                 bool is_osr,
+                bool with_controls,
                 const std::string& startup_url);
 
   // This object may outlive the Delegate object so it's necessary for the
@@ -98,87 +103,106 @@ class ClientHandler : public CefClient,
   void DetachDelegate();
 
   // CefClient methods
-  CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() OVERRIDE {
+  CefRefPtr<CefCommandHandler> GetCommandHandler() override { return this; }
+  CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() override {
     return this;
   }
-  CefRefPtr<CefDisplayHandler> GetDisplayHandler() OVERRIDE { return this; }
-  CefRefPtr<CefDownloadHandler> GetDownloadHandler() OVERRIDE { return this; }
-  CefRefPtr<CefDragHandler> GetDragHandler() OVERRIDE { return this; }
-  CefRefPtr<CefFocusHandler> GetFocusHandler() OVERRIDE { return this; }
-  CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() OVERRIDE { return this; }
-  CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() OVERRIDE { return this; }
-  CefRefPtr<CefLoadHandler> GetLoadHandler() OVERRIDE { return this; }
-  CefRefPtr<CefRequestHandler> GetRequestHandler() OVERRIDE { return this; }
+  CefRefPtr<CefDisplayHandler> GetDisplayHandler() override { return this; }
+  CefRefPtr<CefDownloadHandler> GetDownloadHandler() override { return this; }
+  CefRefPtr<CefDragHandler> GetDragHandler() override { return this; }
+  CefRefPtr<CefFocusHandler> GetFocusHandler() override { return this; }
+  CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() override { return this; }
+  CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override { return this; }
+  CefRefPtr<CefLoadHandler> GetLoadHandler() override { return this; }
+  CefRefPtr<CefRequestHandler> GetRequestHandler() override { return this; }
+  CefRefPtr<CefPermissionHandler> GetPermissionHandler() override {
+    return this;
+  }
   bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
                                 CefRefPtr<CefFrame> frame,
                                 CefProcessId source_process,
-                                CefRefPtr<CefProcessMessage> message) OVERRIDE;
+                                CefRefPtr<CefProcessMessage> message) override;
 
 #if defined(OS_LINUX)
-  CefRefPtr<CefDialogHandler> GetDialogHandler() OVERRIDE {
-    return dialog_handler_;
+  CefRefPtr<CefDialogHandler> GetDialogHandler() override {
+    return file_dialog_handler_;
   }
-  CefRefPtr<CefJSDialogHandler> GetJSDialogHandler() OVERRIDE {
-    return dialog_handler_;
+  CefRefPtr<CefJSDialogHandler> GetJSDialogHandler() override {
+    return js_dialog_handler_;
+  }
+  CefRefPtr<CefPrintHandler> GetPrintHandler() override {
+    return print_handler_;
   }
 #endif
+
+  // CefCommandHandler methods
+  bool OnChromeCommand(CefRefPtr<CefBrowser> browser,
+                       int command_id,
+                       cef_window_open_disposition_t disposition) override;
 
   // CefContextMenuHandler methods
   void OnBeforeContextMenu(CefRefPtr<CefBrowser> browser,
                            CefRefPtr<CefFrame> frame,
                            CefRefPtr<CefContextMenuParams> params,
-                           CefRefPtr<CefMenuModel> model) OVERRIDE;
+                           CefRefPtr<CefMenuModel> model) override;
   bool OnContextMenuCommand(CefRefPtr<CefBrowser> browser,
                             CefRefPtr<CefFrame> frame,
                             CefRefPtr<CefContextMenuParams> params,
                             int command_id,
-                            EventFlags event_flags) OVERRIDE;
+                            EventFlags event_flags) override;
 
   // CefDisplayHandler methods
   void OnAddressChange(CefRefPtr<CefBrowser> browser,
                        CefRefPtr<CefFrame> frame,
-                       const CefString& url) OVERRIDE;
+                       const CefString& url) override;
   void OnTitleChange(CefRefPtr<CefBrowser> browser,
-                     const CefString& title) OVERRIDE;
+                     const CefString& title) override;
   void OnFaviconURLChange(CefRefPtr<CefBrowser> browser,
-                          const std::vector<CefString>& icon_urls) OVERRIDE;
+                          const std::vector<CefString>& icon_urls) override;
   void OnFullscreenModeChange(CefRefPtr<CefBrowser> browser,
-                              bool fullscreen) OVERRIDE;
+                              bool fullscreen) override;
   bool OnConsoleMessage(CefRefPtr<CefBrowser> browser,
                         cef_log_severity_t level,
                         const CefString& message,
                         const CefString& source,
-                        int line) OVERRIDE;
+                        int line) override;
   bool OnAutoResize(CefRefPtr<CefBrowser> browser,
-                    const CefSize& new_size) OVERRIDE;
+                    const CefSize& new_size) override;
+  bool OnCursorChange(CefRefPtr<CefBrowser> browser,
+                      CefCursorHandle cursor,
+                      cef_cursor_type_t type,
+                      const CefCursorInfo& custom_cursor_info) override;
 
   // CefDownloadHandler methods
+  bool CanDownload(CefRefPtr<CefBrowser> browser,
+                   const CefString& url,
+                   const CefString& request_method) override;
   void OnBeforeDownload(CefRefPtr<CefBrowser> browser,
                         CefRefPtr<CefDownloadItem> download_item,
                         const CefString& suggested_name,
-                        CefRefPtr<CefBeforeDownloadCallback> callback) OVERRIDE;
+                        CefRefPtr<CefBeforeDownloadCallback> callback) override;
   void OnDownloadUpdated(CefRefPtr<CefBrowser> browser,
                          CefRefPtr<CefDownloadItem> download_item,
-                         CefRefPtr<CefDownloadItemCallback> callback) OVERRIDE;
+                         CefRefPtr<CefDownloadItemCallback> callback) override;
 
   // CefDragHandler methods
   bool OnDragEnter(CefRefPtr<CefBrowser> browser,
                    CefRefPtr<CefDragData> dragData,
-                   CefDragHandler::DragOperationsMask mask) OVERRIDE;
+                   CefDragHandler::DragOperationsMask mask) override;
   void OnDraggableRegionsChanged(
       CefRefPtr<CefBrowser> browser,
       CefRefPtr<CefFrame> frame,
-      const std::vector<CefDraggableRegion>& regions) OVERRIDE;
+      const std::vector<CefDraggableRegion>& regions) override;
 
   // CefFocusHandler methods
-  void OnTakeFocus(CefRefPtr<CefBrowser> browser, bool next) OVERRIDE;
-  bool OnSetFocus(CefRefPtr<CefBrowser> browser, FocusSource source) OVERRIDE;
+  void OnTakeFocus(CefRefPtr<CefBrowser> browser, bool next) override;
+  bool OnSetFocus(CefRefPtr<CefBrowser> browser, FocusSource source) override;
 
   // CefKeyboardHandler methods
   bool OnPreKeyEvent(CefRefPtr<CefBrowser> browser,
                      const CefKeyEvent& event,
                      CefEventHandle os_event,
-                     bool* is_keyboard_shortcut) OVERRIDE;
+                     bool* is_keyboard_shortcut) override;
 
   // CefLifeSpanHandler methods
   bool OnBeforePopup(
@@ -193,34 +217,42 @@ class ClientHandler : public CefClient,
       CefRefPtr<CefClient>& client,
       CefBrowserSettings& settings,
       CefRefPtr<CefDictionaryValue>& extra_info,
-      bool* no_javascript_access) OVERRIDE;
-  void OnAfterCreated(CefRefPtr<CefBrowser> browser) OVERRIDE;
-  bool DoClose(CefRefPtr<CefBrowser> browser) OVERRIDE;
-  void OnBeforeClose(CefRefPtr<CefBrowser> browser) OVERRIDE;
+      bool* no_javascript_access) override;
+  void OnAfterCreated(CefRefPtr<CefBrowser> browser) override;
+  bool DoClose(CefRefPtr<CefBrowser> browser) override;
+  void OnBeforeClose(CefRefPtr<CefBrowser> browser) override;
 
   // CefLoadHandler methods
   void OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
                             bool isLoading,
                             bool canGoBack,
-                            bool canGoForward) OVERRIDE;
+                            bool canGoForward) override;
   void OnLoadError(CefRefPtr<CefBrowser> browser,
                    CefRefPtr<CefFrame> frame,
                    ErrorCode errorCode,
                    const CefString& errorText,
-                   const CefString& failedUrl) OVERRIDE;
+                   const CefString& failedUrl) override;
+
+  // CefPermissionHandler methods
+  bool OnRequestMediaAccessPermission(
+      CefRefPtr<CefBrowser> browser,
+      CefRefPtr<CefFrame> frame,
+      const CefString& requesting_origin,
+      uint32 requested_permissions,
+      CefRefPtr<CefMediaAccessCallback> callback) override;
 
   // CefRequestHandler methods
   bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
                       CefRefPtr<CefFrame> frame,
                       CefRefPtr<CefRequest> request,
                       bool user_gesture,
-                      bool is_redirect) OVERRIDE;
+                      bool is_redirect) override;
   bool OnOpenURLFromTab(
       CefRefPtr<CefBrowser> browser,
       CefRefPtr<CefFrame> frame,
       const CefString& target_url,
       CefRequestHandler::WindowOpenDisposition target_disposition,
-      bool user_gesture) OVERRIDE;
+      bool user_gesture) override;
   CefRefPtr<CefResourceRequestHandler> GetResourceRequestHandler(
       CefRefPtr<CefBrowser> browser,
       CefRefPtr<CefFrame> frame,
@@ -228,7 +260,7 @@ class ClientHandler : public CefClient,
       bool is_navigation,
       bool is_download,
       const CefString& request_initiator,
-      bool& disable_default_handling) OVERRIDE;
+      bool& disable_default_handling) override;
   bool GetAuthCredentials(CefRefPtr<CefBrowser> browser,
                           const CefString& origin_url,
                           bool isProxy,
@@ -236,45 +268,42 @@ class ClientHandler : public CefClient,
                           int port,
                           const CefString& realm,
                           const CefString& scheme,
-                          CefRefPtr<CefAuthCallback> callback) OVERRIDE;
-  bool OnQuotaRequest(CefRefPtr<CefBrowser> browser,
-                      const CefString& origin_url,
-                      int64 new_size,
-                      CefRefPtr<CefRequestCallback> callback) OVERRIDE;
+                          CefRefPtr<CefAuthCallback> callback) override;
   bool OnCertificateError(CefRefPtr<CefBrowser> browser,
                           ErrorCode cert_error,
                           const CefString& request_url,
                           CefRefPtr<CefSSLInfo> ssl_info,
-                          CefRefPtr<CefRequestCallback> callback) OVERRIDE;
+                          CefRefPtr<CefCallback> callback) override;
   bool OnSelectClientCertificate(
       CefRefPtr<CefBrowser> browser,
       bool isProxy,
       const CefString& host,
       int port,
       const X509CertificateList& certificates,
-      CefRefPtr<CefSelectClientCertificateCallback> callback) OVERRIDE;
+      CefRefPtr<CefSelectClientCertificateCallback> callback) override;
   void OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser,
-                                 TerminationStatus status) OVERRIDE;
+                                 TerminationStatus status) override;
+  void OnDocumentAvailableInMainFrame(CefRefPtr<CefBrowser> browser) override;
 
   // CefResourceRequestHandler methods
   cef_return_value_t OnBeforeResourceLoad(
       CefRefPtr<CefBrowser> browser,
       CefRefPtr<CefFrame> frame,
       CefRefPtr<CefRequest> request,
-      CefRefPtr<CefRequestCallback> callback) OVERRIDE;
+      CefRefPtr<CefCallback> callback) override;
   CefRefPtr<CefResourceHandler> GetResourceHandler(
       CefRefPtr<CefBrowser> browser,
       CefRefPtr<CefFrame> frame,
-      CefRefPtr<CefRequest> request) OVERRIDE;
+      CefRefPtr<CefRequest> request) override;
   CefRefPtr<CefResponseFilter> GetResourceResponseFilter(
       CefRefPtr<CefBrowser> browser,
       CefRefPtr<CefFrame> frame,
       CefRefPtr<CefRequest> request,
-      CefRefPtr<CefResponse> response) OVERRIDE;
+      CefRefPtr<CefResponse> response) override;
   void OnProtocolExecution(CefRefPtr<CefBrowser> browser,
                            CefRefPtr<CefFrame> frame,
                            CefRefPtr<CefRequest> request,
-                           bool& allow_os_execution) OVERRIDE;
+                           bool& allow_os_execution) override;
 
   // Returns the number of browsers currently using this handler. Can only be
   // called on the CEF UI thread.
@@ -293,14 +322,14 @@ class ClientHandler : public CefClient,
   // Show SSL information for the current site.
   void ShowSSLInformation(CefRefPtr<CefBrowser> browser);
 
+  // Set a string resource for loading via StringResourceProvider.
+  void SetStringResource(const std::string& page, const std::string& data);
+
   // Returns the Delegate.
   Delegate* delegate() const { return delegate_; }
 
   // Returns the startup URL.
   std::string startup_url() const { return startup_url_; }
-
-  // Returns true if this handler uses off-screen rendering.
-  bool is_osr() const { return is_osr_; }
 
   // Set/get whether the client should download favicon images. Only safe to
   // call immediately after client creation or on the browser process UI thread.
@@ -340,11 +369,20 @@ class ClientHandler : public CefClient,
   void BuildTestMenu(CefRefPtr<CefMenuModel> model);
   bool ExecuteTestMenu(int command_id);
 
+  void SetOfflineState(CefRefPtr<CefBrowser> browser, bool offline);
+
+  // Filter menu and keyboard shortcut commands.
+  void FilterMenuModel(CefRefPtr<CefMenuModel> model);
+  bool IsAllowedCommandId(int command_id);
+
   // THREAD SAFE MEMBERS
   // The following members may be accessed from any thread.
 
   // True if this handler uses off-screen rendering.
   const bool is_osr_;
+
+  // True if this handler shows controls.
+  const bool with_controls_;
 
   // The startup URL.
   const std::string startup_url_;
@@ -352,12 +390,20 @@ class ClientHandler : public CefClient,
   // True if mouse cursor change is disabled.
   bool mouse_cursor_change_disabled_;
 
+  // True if media handling is disabled.
+  bool media_handling_disabled_ = true;
+
+  // True if the browser is currently offline.
+  bool offline_;
+
   // True if Favicon images should be downloaded.
-  bool download_favicon_images_;
+  bool download_favicon_images_ = false;
 
 #if defined(OS_LINUX)
-  // Custom dialog handler for GTK.
-  CefRefPtr<ClientDialogHandlerGtk> dialog_handler_;
+  // Custom dialog handlers for GTK.
+  CefRefPtr<ClientDialogHandlerGtk> file_dialog_handler_;
+  CefRefPtr<ClientDialogHandlerGtk> js_dialog_handler_;
+  CefRefPtr<ClientPrintHandlerGtk> print_handler_;
 #endif
 
   // Handles the browser side of query routing. The renderer side is handled
@@ -366,6 +412,10 @@ class ClientHandler : public CefClient,
 
   // Manages the registration and delivery of resources.
   CefRefPtr<CefResourceManager> resource_manager_;
+
+  // Used to manage string resources in combination with StringResourceProvider.
+  // Only accessed on the IO thread.
+  test_runner::StringResourceMap string_resource_map_;
 
   // MAIN THREAD MEMBERS
   // The following members will only be accessed on the main thread. This will
@@ -385,17 +435,16 @@ class ClientHandler : public CefClient,
   } test_menu_state_;
 
   // The current number of browsers using this handler.
-  int browser_count_;
+  int browser_count_ = 0;
 
   // Console logging state.
   const std::string console_log_file_;
-  bool first_console_message_;
 
   // True if an editable field currently has focus.
-  bool focus_on_editable_field_;
+  bool focus_on_editable_field_ = false;
 
   // True for the initial navigation after browser creation.
-  bool initial_navigation_;
+  bool initial_navigation_ = true;
 
   // Set of Handlers registered with the message router.
   MessageHandlerSet message_handler_set_;

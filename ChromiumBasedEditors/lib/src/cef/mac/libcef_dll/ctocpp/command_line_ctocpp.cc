@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=0e24c6b07a7377337132b09396d9e5f3e4eca517$
+// $hash=2f7f88a79dc5c9bb4c7af27e6abac4b4e7ba3d76$
 //
 
 #include "libcef_dll/ctocpp/command_line_ctocpp.h"
@@ -24,7 +24,7 @@ CefRefPtr<CefCommandLine> CefCommandLine::CreateCommandLine() {
   if (strcmp(api_hash, CEF_API_HASH_PLATFORM)) {
     // The libcef API hash does not match the current header API hash.
     NOTREACHED();
-    return NULL;
+    return nullptr;
   }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
@@ -42,7 +42,7 @@ CefRefPtr<CefCommandLine> CefCommandLine::GetGlobalCommandLine() {
   if (strcmp(api_hash, CEF_API_HASH_PLATFORM)) {
     // The libcef API hash does not match the current header API hash.
     NOTREACHED();
-    return NULL;
+    return nullptr;
   }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
@@ -88,7 +88,7 @@ NO_SANITIZE("cfi-icall")
 CefRefPtr<CefCommandLine> CefCommandLineCToCpp::Copy() {
   cef_command_line_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, copy))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -427,7 +427,7 @@ cef_command_line_t*
 CefCToCppRefCounted<CefCommandLineCToCpp, CefCommandLine, cef_command_line_t>::
     UnwrapDerived(CefWrapperType type, CefCommandLine* c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

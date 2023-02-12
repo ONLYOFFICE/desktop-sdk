@@ -2,7 +2,7 @@
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 
-#include "include/base/cef_bind.h"
+#include "include/base/cef_callback.h"
 #include "include/cef_request_context.h"
 #include "include/cef_request_context_handler.h"
 #include "include/wrapper/cef_closure_task.h"
@@ -80,7 +80,7 @@ TEST(RequestContextTest, BasicCreateNoHandler) {
   CefRequestContextSettings settings;
 
   CefRefPtr<CefRequestContext> context1 =
-      CefRequestContext::CreateContext(settings, NULL);
+      CefRequestContext::CreateContext(settings, nullptr);
   EXPECT_TRUE(context1.get());
   EXPECT_FALSE(context1->IsGlobal());
   EXPECT_TRUE(context1->IsSame(context1));
@@ -88,7 +88,7 @@ TEST(RequestContextTest, BasicCreateNoHandler) {
   EXPECT_FALSE(context1->GetHandler().get());
 
   CefRefPtr<CefRequestContext> context2 =
-      CefRequestContext::CreateContext(settings, NULL);
+      CefRequestContext::CreateContext(settings, nullptr);
   EXPECT_TRUE(context2.get());
   EXPECT_FALSE(context2->IsGlobal());
   EXPECT_TRUE(context2->IsSame(context2));
@@ -123,7 +123,7 @@ TEST(RequestContextTest, BasicCreateSharedGlobal) {
 
   // Returns the same global context.
   CefRefPtr<CefRequestContext> context2 =
-      CefRequestContext::CreateContext(context1, NULL);
+      CefRequestContext::CreateContext(context1, nullptr);
   EXPECT_TRUE(context2.get());
   EXPECT_TRUE(context2->IsGlobal());
   EXPECT_TRUE(context2->IsSame(context2));
@@ -136,20 +136,21 @@ TEST(RequestContextTest, BasicCreateSharedGlobal) {
 
 TEST(RequestContextTest, BasicCreateSharedOnDisk) {
   CefScopedTempDir tempdir;
-  EXPECT_TRUE(tempdir.CreateUniqueTempDir());
+  EXPECT_TRUE(tempdir.CreateUniqueTempDirUnderPath(
+      CefTestSuite::GetInstance()->root_cache_path()));
 
   CefRequestContextSettings settings;
   CefString(&settings.cache_path) = tempdir.GetPath();
 
   CefRefPtr<CefRequestContext> context1 =
-      CefRequestContext::CreateContext(settings, NULL);
+      CefRequestContext::CreateContext(settings, nullptr);
   EXPECT_TRUE(context1.get());
   EXPECT_FALSE(context1->IsGlobal());
   EXPECT_TRUE(context1->IsSame(context1));
   EXPECT_TRUE(context1->IsSharingWith(context1));
 
   CefRefPtr<CefRequestContext> context2 =
-      CefRequestContext::CreateContext(context1, NULL);
+      CefRequestContext::CreateContext(context1, nullptr);
   EXPECT_TRUE(context2.get());
   EXPECT_FALSE(context2->IsGlobal());
   EXPECT_TRUE(context2->IsSame(context2));
@@ -160,7 +161,7 @@ TEST(RequestContextTest, BasicCreateSharedOnDisk) {
   EXPECT_TRUE(context1->IsSharingWith(context2));
 
   CefRefPtr<CefRequestContext> context3 =
-      CefRequestContext::CreateContext(context2, NULL);
+      CefRequestContext::CreateContext(context2, nullptr);
   EXPECT_TRUE(context3.get());
   EXPECT_FALSE(context3->IsGlobal());
   EXPECT_TRUE(context3->IsSame(context3));
@@ -175,7 +176,7 @@ TEST(RequestContextTest, BasicCreateSharedOnDisk) {
   EXPECT_TRUE(context2->IsSharingWith(context3));
 
   CefRefPtr<CefRequestContext> context4 =
-      CefRequestContext::CreateContext(context1, NULL);
+      CefRequestContext::CreateContext(context1, nullptr);
   EXPECT_TRUE(context4.get());
   EXPECT_FALSE(context4->IsGlobal());
   EXPECT_TRUE(context4->IsSame(context4));
@@ -244,8 +245,8 @@ class PopupTestHandler : public TestHandler {
 
     CefRequestContextSettings settings;
 
-    context_ = CefRequestContext::CreateContext(settings, NULL);
-    cookie_manager_ = context_->GetCookieManager(NULL);
+    context_ = CefRequestContext::CreateContext(settings, nullptr);
+    cookie_manager_ = context_->GetCookieManager(nullptr);
 
     // Create browser that loads the 1st URL.
     CreateBrowser(url_, context_);
@@ -320,10 +321,20 @@ class PopupTestHandler : public TestHandler {
       mouse_event.x = 20;
       mouse_event.y = 20;
       mouse_event.modifiers = 0;
-      browser->GetHost()->SendMouseClickEvent(mouse_event, MBT_LEFT, false, 1);
-      browser->GetHost()->SendMouseClickEvent(mouse_event, MBT_LEFT, true, 1);
+
+      // Add some delay to avoid having events dropped or rate limited.
+      CefPostDelayedTask(
+          TID_UI,
+          base::BindOnce(&CefBrowserHost::SendMouseClickEvent,
+                         browser->GetHost(), mouse_event, MBT_LEFT, false, 1),
+          50);
+      CefPostDelayedTask(
+          TID_UI,
+          base::BindOnce(&CefBrowserHost::SendMouseClickEvent,
+                         browser->GetHost(), mouse_event, MBT_LEFT, true, 1),
+          100);
     } else {
-      EXPECT_TRUE(false);  // Not reached.
+      ADD_FAILURE();  // Not reached.
     }
   }
 
@@ -335,7 +346,7 @@ class PopupTestHandler : public TestHandler {
       ~TestVisitor() override {
         // Destroy the test.
         CefPostTask(TID_UI,
-                    base::Bind(&PopupTestHandler::DestroyTest, handler_));
+                    base::BindOnce(&PopupTestHandler::DestroyTest, handler_));
       }
 
       bool Visit(const CefCookie& cookie,
@@ -369,7 +380,7 @@ class PopupTestHandler : public TestHandler {
     EXPECT_TRUE(got_load_end2_);
     EXPECT_TRUE(got_cookie1_);
     EXPECT_TRUE(got_cookie2_);
-    context_ = NULL;
+    context_ = nullptr;
 
     TestHandler::DestroyTest();
   }
@@ -592,7 +603,8 @@ class PopupNavTestHandler : public TestHandler {
       if (mode_ == DENY) {
         // Wait a bit to make sure the popup window isn't created.
         CefPostDelayedTask(
-            TID_UI, base::Bind(&PopupNavTestHandler::DestroyTest, this), 200);
+            TID_UI, base::BindOnce(&PopupNavTestHandler::DestroyTest, this),
+            200);
       }
     } else if (url == kPopupNavPopupUrl) {
       EXPECT_FALSE(got_popup_load_end_);
@@ -643,7 +655,8 @@ class PopupNavTestHandler : public TestHandler {
     }
 
     if (destroy_test) {
-      CefPostTask(TID_UI, base::Bind(&PopupNavTestHandler::DestroyTest, this));
+      CefPostTask(TID_UI,
+                  base::BindOnce(&PopupNavTestHandler::DestroyTest, this));
     }
   }
 

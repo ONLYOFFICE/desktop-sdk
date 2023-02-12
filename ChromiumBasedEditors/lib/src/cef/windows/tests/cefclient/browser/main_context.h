@@ -8,6 +8,7 @@
 
 #include <string>
 
+#include "include/base/cef_macros.h"
 #include "include/base/cef_ref_counted.h"
 #include "include/internal/cef_types_wrappers.h"
 #include "tests/cefclient/browser/osr_renderer_settings.h"
@@ -38,6 +39,9 @@ class MainContext {
   // Returns the background color.
   virtual cef_color_t GetBackgroundColor() = 0;
 
+  // Returns true if the Chrome runtime will be used.
+  virtual bool UseChromeRuntime() = 0;
+
   // Returns true if the Views framework will be used.
   virtual bool UseViews() = 0;
 
@@ -46,6 +50,9 @@ class MainContext {
 
   // Returns true if touch events are enabled.
   virtual bool TouchEventsEnabled() = 0;
+
+  // Returns true if the default popup implementation should be used.
+  virtual bool UseDefaultPopup() = 0;
 
   // Populate |settings| based on command-line arguments.
   virtual void PopulateSettings(CefSettings* settings) = 0;

@@ -9,6 +9,7 @@
 #endif
 
 #include "include/base/cef_logging.h"
+#include "include/cef_command_line.h"
 
 #if defined(CEF_X11)
 namespace {
@@ -36,10 +37,10 @@ int main(int argc, char* argv[]) {
   // Provide CEF with command-line arguments.
   CefMainArgs main_args(argc, argv);
 
-  // CEF applications have multiple sub-processes (render, plugin, GPU, etc)
-  // that share the same executable. This function checks the command-line and,
-  // if this is a sub-process, executes the appropriate logic.
-  int exit_code = CefExecuteProcess(main_args, NULL, NULL);
+  // CEF applications have multiple sub-processes (render, GPU, etc) that share
+  // the same executable. This function checks the command-line and, if this is
+  // a sub-process, executes the appropriate logic.
+  int exit_code = CefExecuteProcess(main_args, nullptr, nullptr);
   if (exit_code >= 0) {
     // The sub-process has completed so return here.
     return exit_code;
@@ -52,8 +53,17 @@ int main(int argc, char* argv[]) {
   XSetIOErrorHandler(XIOErrorHandlerImpl);
 #endif
 
+  // Parse command-line arguments for use in this method.
+  CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
+  command_line->InitFromArgv(argc, argv);
+
   // Specify CEF global settings here.
   CefSettings settings;
+
+  if (command_line->HasSwitch("enable-chrome-runtime")) {
+    // Enable experimental Chrome runtime. See issue #2969 for details.
+    settings.chrome_runtime = true;
+  }
 
 // When generating projects with CMake the CEF_USE_SANDBOX value will be defined
 // automatically. Pass -DUSE_SANDBOX=OFF to the CMake command-line to disable
@@ -68,7 +78,7 @@ int main(int argc, char* argv[]) {
   CefRefPtr<SimpleApp> app(new SimpleApp);
 
   // Initialize CEF for the browser process.
-  CefInitialize(main_args, settings, app.get(), NULL);
+  CefInitialize(main_args, settings, app.get(), nullptr);
 
   // Run the CEF message loop. This will block until CefQuitMessageLoop() is
   // called.

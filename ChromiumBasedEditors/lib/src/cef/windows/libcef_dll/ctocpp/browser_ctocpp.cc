@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=cfc1a36565ce6b7c8db6a26532319da2fbef9f2a$
+// $hash=fa86ce57b091ab9e9af9cca0119e7f19fd932498$
 //
 
 #include "libcef_dll/ctocpp/browser_ctocpp.h"
@@ -21,12 +21,28 @@
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
+NO_SANITIZE("cfi-icall") bool CefBrowserCToCpp::IsValid() {
+  shutdown_checker::AssertNotShutdown();
+
+  cef_browser_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, is_valid))
+    return false;
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  int _retval = _struct->is_valid(_struct);
+
+  // Return type: bool
+  return _retval ? true : false;
+}
+
 NO_SANITIZE("cfi-icall") CefRefPtr<CefBrowserHost> CefBrowserCToCpp::GetHost() {
   shutdown_checker::AssertNotShutdown();
 
   cef_browser_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_host))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -225,7 +241,7 @@ NO_SANITIZE("cfi-icall") CefRefPtr<CefFrame> CefBrowserCToCpp::GetMainFrame() {
 
   cef_browser_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_main_frame))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -242,7 +258,7 @@ CefRefPtr<CefFrame> CefBrowserCToCpp::GetFocusedFrame() {
 
   cef_browser_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_focused_frame))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -259,7 +275,7 @@ CefRefPtr<CefFrame> CefBrowserCToCpp::GetFrame(int64 identifier) {
 
   cef_browser_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_frame_byident))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -276,7 +292,7 @@ CefRefPtr<CefFrame> CefBrowserCToCpp::GetFrame(const CefString& name) {
 
   cef_browser_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_frame))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -388,7 +404,7 @@ CefCToCppRefCounted<CefBrowserCToCpp, CefBrowser, cef_browser_t>::UnwrapDerived(
     CefWrapperType type,
     CefBrowser* c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

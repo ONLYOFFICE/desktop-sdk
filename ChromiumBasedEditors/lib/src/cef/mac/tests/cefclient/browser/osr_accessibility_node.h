@@ -10,7 +10,7 @@
 
 #include "include/cef_browser.h"
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 typedef void CefNativeAccessible;
 #if __OBJC__
 #if __has_feature(objc_arc)
@@ -40,7 +40,7 @@ class OsrAccessibilityHelper;
 class OsrAXNode {
  public:
   // Create and return the platform specific OsrAXNode Object.
-  static OsrAXNode* CreateNode(int treeId,
+  static OsrAXNode* CreateNode(const CefString& treeId,
                                int nodeId,
                                CefRefPtr<CefDictionaryValue> value,
                                OsrAccessibilityHelper* helper);
@@ -63,7 +63,7 @@ class OsrAXNode {
   CefNativeAccessible* GetNativeAccessibleObject(OsrAXNode* parent);
 
   CefNativeAccessible* GetParentAccessibleObject() const {
-    return parent_ ? parent_->platform_accessibility_ : NULL;
+    return parent_ ? parent_->platform_accessibility_ : nullptr;
   }
 
   OsrAccessibilityHelper* GetAccessibilityHelper() const {
@@ -77,7 +77,7 @@ class OsrAXNode {
 
   const CefString& AxRole() const { return role_; }
 
-  int OsrAXTreeId() const { return tree_id_; }
+  const CefString& OsrAXTreeId() const { return tree_id_; }
 
   int OsrAXNodeId() const { return node_id_; }
 
@@ -96,14 +96,14 @@ class OsrAXNode {
   void SetParent(OsrAXNode* parent);
 
  protected:
-  OsrAXNode(int treeId,
+  OsrAXNode(const CefString& treeId,
             int nodeId,
             CefRefPtr<CefDictionaryValue> value,
             OsrAccessibilityHelper* helper);
 
-  int tree_id_;
+  CefString tree_id_;
   int node_id_;
-  int child_tree_id_;
+  CefString child_tree_id_;
   CefString role_;
   CefString value_;
   CefString name_;

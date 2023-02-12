@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=604ea9cb663e5f2824f9928ed2f885e3c0a99482$
+// $hash=31e56774368e5a843a41c99e9446d8d97d6fc9da$
 //
 
 #include "libcef_dll/ctocpp/server_ctocpp.h"
@@ -51,7 +51,7 @@ CefRefPtr<CefTaskRunner> CefServerCToCpp::GetTaskRunner() {
 
   cef_server_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_task_runner))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -312,7 +312,7 @@ CefCToCppRefCounted<CefServerCToCpp, CefServer, cef_server_t>::UnwrapDerived(
     CefWrapperType type,
     CefServer* c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

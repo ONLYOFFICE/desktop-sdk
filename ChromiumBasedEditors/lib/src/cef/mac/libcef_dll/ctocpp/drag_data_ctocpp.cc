@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=ad280a9a8136fdc32d0a017bb91a9506ecabacf3$
+// $hash=534e899f94d04db4b44deecc71ab9c95f6729f22$
 //
 
 #include "libcef_dll/ctocpp/drag_data_ctocpp.h"
@@ -39,7 +39,7 @@ NO_SANITIZE("cfi-icall") CefRefPtr<CefDragData> CefDragDataCToCpp::Clone() {
 
   cef_drag_data_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, clone))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -420,12 +420,25 @@ void CefDragDataCToCpp::AddFile(const CefString& path,
   _struct->add_file(_struct, path.GetStruct(), display_name.GetStruct());
 }
 
+NO_SANITIZE("cfi-icall") void CefDragDataCToCpp::ClearFilenames() {
+  shutdown_checker::AssertNotShutdown();
+
+  cef_drag_data_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, clear_filenames))
+    return;
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  _struct->clear_filenames(_struct);
+}
+
 NO_SANITIZE("cfi-icall") CefRefPtr<CefImage> CefDragDataCToCpp::GetImage() {
   shutdown_checker::AssertNotShutdown();
 
   cef_drag_data_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_image))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -483,7 +496,7 @@ cef_drag_data_t*
 CefCToCppRefCounted<CefDragDataCToCpp, CefDragData, cef_drag_data_t>::
     UnwrapDerived(CefWrapperType type, CefDragData* c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

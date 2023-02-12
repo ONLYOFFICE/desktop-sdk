@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=76b8765bc1a94b95fdac5bbdf27f3f93dc9b1b37$
+// $hash=39cb5dd7488f7035a1b52e50b48e3bffee27dba6$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_X509CERTIFICATE_CTOCPP_H_
@@ -35,16 +35,16 @@ class CefX509CertificateCToCpp
   virtual ~CefX509CertificateCToCpp();
 
   // CefX509Certificate methods.
-  CefRefPtr<CefX509CertPrincipal> GetSubject() OVERRIDE;
-  CefRefPtr<CefX509CertPrincipal> GetIssuer() OVERRIDE;
-  CefRefPtr<CefBinaryValue> GetSerialNumber() OVERRIDE;
-  CefTime GetValidStart() OVERRIDE;
-  CefTime GetValidExpiry() OVERRIDE;
-  CefRefPtr<CefBinaryValue> GetDEREncoded() OVERRIDE;
-  CefRefPtr<CefBinaryValue> GetPEMEncoded() OVERRIDE;
-  size_t GetIssuerChainSize() OVERRIDE;
-  void GetDEREncodedIssuerChain(IssuerChainBinaryList& chain) OVERRIDE;
-  void GetPEMEncodedIssuerChain(IssuerChainBinaryList& chain) OVERRIDE;
+  CefRefPtr<CefX509CertPrincipal> GetSubject() override;
+  CefRefPtr<CefX509CertPrincipal> GetIssuer() override;
+  CefRefPtr<CefBinaryValue> GetSerialNumber() override;
+  CefBaseTime GetValidStart() override;
+  CefBaseTime GetValidExpiry() override;
+  CefRefPtr<CefBinaryValue> GetDEREncoded() override;
+  CefRefPtr<CefBinaryValue> GetPEMEncoded() override;
+  size_t GetIssuerChainSize() override;
+  void GetDEREncodedIssuerChain(IssuerChainBinaryList& chain) override;
+  void GetPEMEncodedIssuerChain(IssuerChainBinaryList& chain) override;
 };
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_X509CERTIFICATE_CTOCPP_H_

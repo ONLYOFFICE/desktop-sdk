@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=70457d6e92ff60ee9955d451f5d3d78b70535510$
+// $hash=477291aae432b368ed8195975c5d93b5e19da36e$
 //
 
 #include "libcef_dll/cpptoc/resource_request_handler_cpptoc.h"
@@ -17,8 +17,8 @@
 #include "libcef_dll/cpptoc/resource_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/response_filter_cpptoc.h"
 #include "libcef_dll/ctocpp/browser_ctocpp.h"
+#include "libcef_dll/ctocpp/callback_ctocpp.h"
 #include "libcef_dll/ctocpp/frame_ctocpp.h"
-#include "libcef_dll/ctocpp/request_callback_ctocpp.h"
 #include "libcef_dll/ctocpp/request_ctocpp.h"
 #include "libcef_dll/ctocpp/response_ctocpp.h"
 
@@ -59,7 +59,7 @@ resource_request_handler_on_before_resource_load(
     cef_browser_t* browser,
     cef_frame_t* frame,
     cef_request_t* request,
-    cef_request_callback_t* callback) {
+    cef_callback_t* callback) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -79,8 +79,7 @@ resource_request_handler_on_before_resource_load(
   cef_return_value_t _retval =
       CefResourceRequestHandlerCppToC::Get(self)->OnBeforeResourceLoad(
           CefBrowserCToCpp::Wrap(browser), CefFrameCToCpp::Wrap(frame),
-          CefRequestCToCpp::Wrap(request),
-          CefRequestCallbackCToCpp::Wrap(callback));
+          CefRequestCToCpp::Wrap(request), CefCallbackCToCpp::Wrap(callback));
 
   // Return type: simple
   return _retval;
@@ -310,7 +309,7 @@ CefCppToCRefCounted<CefResourceRequestHandlerCppToC,
                     cef_resource_request_handler_t>::
     UnwrapDerived(CefWrapperType type, cef_resource_request_handler_t* s) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

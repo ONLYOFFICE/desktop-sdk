@@ -4,6 +4,7 @@
 
 #include <windows.h>
 
+#include "include/cef_command_line.h"
 #include "include/cef_sandbox_win.h"
 #include "tests/cefsimple/simple_app.h"
 
@@ -27,10 +28,28 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
   UNREFERENCED_PARAMETER(hPrevInstance);
   UNREFERENCED_PARAMETER(lpCmdLine);
 
+  int exit_code;
+
+#if defined(ARCH_CPU_32_BITS)
+  // Run the main thread on 32-bit Windows using a fiber with the preferred 4MiB
+  // stack size. This function must be called at the top of the executable entry
+  // point function (`main()` or `wWinMain()`). It is used in combination with
+  // the initial stack size of 0.5MiB configured via the `/STACK:0x80000` linker
+  // flag on executable targets. This saves significant memory on threads (like
+  // those in the Windows thread pool, and others) whose stack size can only be
+  // controlled via the linker flag.
+  exit_code = CefRunWinMainWithPreferredStackSize(wWinMain, hInstance,
+                                                  lpCmdLine, nCmdShow);
+  if (exit_code >= 0) {
+    // The fiber has completed so return here.
+    return exit_code;
+  }
+#endif
+
   // Enable High-DPI support on Windows 7 or newer.
   CefEnableHighDPISupport();
 
-  void* sandbox_info = NULL;
+  void* sandbox_info = nullptr;
 
 #if defined(CEF_USE_SANDBOX)
   // Manage the life span of the sandbox information object. This is necessary
@@ -42,17 +61,26 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
   // Provide CEF with command-line arguments.
   CefMainArgs main_args(hInstance);
 
-  // CEF applications have multiple sub-processes (render, plugin, GPU, etc)
-  // that share the same executable. This function checks the command-line and,
-  // if this is a sub-process, executes the appropriate logic.
-  int exit_code = CefExecuteProcess(main_args, NULL, sandbox_info);
+  // CEF applications have multiple sub-processes (render, GPU, etc) that share
+  // the same executable. This function checks the command-line and, if this is
+  // a sub-process, executes the appropriate logic.
+  exit_code = CefExecuteProcess(main_args, nullptr, sandbox_info);
   if (exit_code >= 0) {
     // The sub-process has completed so return here.
     return exit_code;
   }
 
+  // Parse command-line arguments for use in this method.
+  CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
+  command_line->InitFromString(::GetCommandLineW());
+
   // Specify CEF global settings here.
   CefSettings settings;
+
+  if (command_line->HasSwitch("enable-chrome-runtime")) {
+    // Enable experimental Chrome runtime. See issue #2969 for details.
+    settings.chrome_runtime = true;
+  }
 
 #if !defined(CEF_USE_SANDBOX)
   settings.no_sandbox = true;

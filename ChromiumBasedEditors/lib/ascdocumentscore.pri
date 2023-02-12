@@ -28,28 +28,28 @@ core_mac:DEFINES += _XCODE
 ADD_DEPENDENCY(graphics, kernel, UnicodeConverter, kernel_network, PdfFile, XpsFile, DjVuFile, HtmlRenderer, hunspell, ooxmlsignature)
 !core_windows:DEFINES += DOCUMENTSCORE_OPENSSL_SUPPORT
 
-CONFIG += cef_version_106
-
 CEF_PROJECT_PRI=$$PWD/cef_pri
 build_xp {
     include($$CEF_PROJECT_PRI/cef_base_xp.pri)
     include($$CEF_PROJECT_PRI/cef_client_xp.pri)
     DESTDIR=$$DESTDIR/xp
 } else {
-    cef_version_106 {
-	    DEFINES += ENABLE_CEF_EXTENSIONS
-		DEFINES += CEF_VERSION_ABOVE_86
-		DEFINES += CEF_VERSION_ABOVE_105
-		DEFINES += "OVERRIDE=override"
-		CEF_PROJECT_PRI=$$PWD/cef_pri_106
-	} else {
-	    DEFINES += ENABLE_CEF_EXTENSIONS
-		core_linux:!cef_version_87:CONFIG += cef_disable_87
-		!cef_disable_87 {
-		    DEFINES += CEF_VERSION_ABOVE_86
-			CEF_PROJECT_PRI=$$PWD/cef_pri_87
+    DEFINES += ENABLE_CEF_EXTENSIONS
+	DEFINES += CEF_VERSION_ABOVE_86
+	DEFINES += CEF_VERSION_ABOVE_105
+	DEFINES += "OVERRIDE=override"
+
+    CONFIG += c++17
+	core_windows {
+	    QMAKE_CXXFLAGS += /std:c++17
+	}
+
+    core_linux {
+	    cef_version_107 {
+		    CEF_PROJECT_PRI=$$PWD/cef_pri_107
 		}
 	}
+
 	include($$CEF_PROJECT_PRI/cef_base.pri)
 	include($$CEF_PROJECT_PRI/cef_client.pri)
 }

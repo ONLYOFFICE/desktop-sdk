@@ -2,7 +2,7 @@
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 
-#include "include/base/cef_bind.h"
+#include "include/base/cef_callback.h"
 #include "include/cef_process_message.h"
 #include "include/cef_task.h"
 #include "include/wrapper/cef_closure_task.h"
@@ -23,9 +23,13 @@ const char kSendRecvMsg[] = "ProcessMessageTest.SendRecv";
 CefRefPtr<CefProcessMessage> CreateTestMessage() {
   CefRefPtr<CefProcessMessage> msg = CefProcessMessage::Create(kSendRecvMsg);
   EXPECT_TRUE(msg.get());
+  EXPECT_TRUE(msg->IsValid());
+  EXPECT_FALSE(msg->IsReadOnly());
 
   CefRefPtr<CefListValue> args = msg->GetArgumentList();
   EXPECT_TRUE(args.get());
+  EXPECT_TRUE(args->IsValid());
+  EXPECT_FALSE(args->IsReadOnly());
 
   size_t index = 0;
   args->SetNull(index++);
@@ -55,11 +59,14 @@ class SendRecvRendererTest : public ClientAppRenderer::Delegate {
       EXPECT_TRUE(frame.get());
       EXPECT_EQ(PID_BROWSER, source_process);
       EXPECT_TRUE(message.get());
+      EXPECT_TRUE(message->IsValid());
+      EXPECT_TRUE(message->IsReadOnly());
 
       const std::string& url = frame->GetURL();
       if (url == kSendRecvUrl) {
         // Echo the message back to the sender natively.
         frame->SendProcessMessage(PID_BROWSER, message);
+        EXPECT_FALSE(message->IsValid());
         return true;
       }
     }
@@ -78,8 +85,6 @@ class SendRecvTestHandler : public TestHandler {
       : send_thread_(send_thread) {}
 
   void RunTest() override {
-    message_ = CreateTestMessage();
-
     AddResource(kSendRecvUrl, "<html><body>TEST</body></html>", "text/html");
     CreateBrowser(kSendRecvUrl);
 
@@ -94,8 +99,9 @@ class SendRecvTestHandler : public TestHandler {
 
     // Send the message to the renderer process.
     if (!CefCurrentlyOn(send_thread_)) {
-      CefPostTask(send_thread_, base::Bind(&SendRecvTestHandler::SendMessage,
-                                           this, browser, frame));
+      CefPostTask(send_thread_,
+                  base::BindOnce(&SendRecvTestHandler::SendMessage, this,
+                                 browser, frame));
     } else {
       SendMessage(browser, frame);
     }
@@ -110,10 +116,11 @@ class SendRecvTestHandler : public TestHandler {
     EXPECT_TRUE(frame.get());
     EXPECT_EQ(PID_RENDERER, source_process);
     EXPECT_TRUE(message.get());
+    EXPECT_TRUE(message->IsValid());
     EXPECT_TRUE(message->IsReadOnly());
 
     // Verify that the recieved message is the same as the sent message.
-    TestProcessMessageEqual(message_, message);
+    TestProcessMessageEqual(CreateTestMessage(), message);
 
     got_message_.yes();
 
@@ -132,12 +139,15 @@ class SendRecvTestHandler : public TestHandler {
  private:
   void SendMessage(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame) {
     EXPECT_TRUE(CefCurrentlyOn(send_thread_));
-    frame->SendProcessMessage(PID_RENDERER, message_);
+    auto message = CreateTestMessage();
+    frame->SendProcessMessage(PID_RENDERER, message);
+
+    // The message will be invalidated immediately, no matter what thread we
+    // send from.
+    EXPECT_FALSE(message->IsValid());
   }
 
   cef_thread_id_t send_thread_;
-
-  CefRefPtr<CefProcessMessage> message_;
   TrackCallback got_message_;
 
   IMPLEMENT_REFCOUNTING(SendRecvTestHandler);
@@ -171,7 +181,7 @@ TEST(ProcessMessageTest, Create) {
   CefRefPtr<CefListValue> args = message->GetArgumentList();
   EXPECT_TRUE(args.get());
   EXPECT_TRUE(args->IsValid());
-  EXPECT_TRUE(args->IsOwned());
+  EXPECT_FALSE(args->IsOwned());
   EXPECT_FALSE(args->IsReadOnly());
 }
 

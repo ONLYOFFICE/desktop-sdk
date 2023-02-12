@@ -15,6 +15,32 @@ ClientAppBrowser::ClientAppBrowser() {
   CreateDelegates(delegates_);
 }
 
+// static
+void ClientAppBrowser::PopulateSettings(CefRefPtr<CefCommandLine> command_line,
+                                        CefSettings& settings) {
+#if (defined(OS_WIN) || defined(OS_LINUX))
+  settings.multi_threaded_message_loop =
+      command_line->HasSwitch(client::switches::kMultiThreadedMessageLoop);
+#endif
+
+  if (!settings.multi_threaded_message_loop) {
+    settings.external_message_pump =
+        command_line->HasSwitch(client::switches::kExternalMessagePump);
+  }
+
+  std::vector<std::string> cookieable_schemes;
+  RegisterCookieableSchemes(cookieable_schemes);
+  if (!cookieable_schemes.empty()) {
+    std::string list_str;
+    for (const auto& scheme : cookieable_schemes) {
+      if (!list_str.empty())
+        list_str += ",";
+      list_str += scheme;
+    }
+    CefString(&settings.cookieable_schemes_list) = list_str;
+  }
+}
+
 void ClientAppBrowser::OnBeforeCommandLineProcessing(
     const CefString& process_type,
     CefRefPtr<CefCommandLine> command_line) {
@@ -47,23 +73,29 @@ void ClientAppBrowser::OnBeforeCommandLineProcessing(
       command_line->AppendSwitch("disable-gpu-shader-disk-cache");
     }
 
+    // Disable popup blocking for the chrome runtime.
+    command_line->AppendSwitch("disable-popup-blocking");
+
+#if defined(OS_MAC)
+    // Disable the toolchain prompt on macOS.
+    command_line->AppendSwitch("use-mock-keychain");
+#endif
+
     DelegateSet::iterator it = delegates_.begin();
     for (; it != delegates_.end(); ++it)
       (*it)->OnBeforeCommandLineProcessing(this, command_line);
   }
 }
 
+void ClientAppBrowser::OnRegisterCustomPreferences(
+    cef_preferences_type_t type,
+    CefRawPtr<CefPreferenceRegistrar> registrar) {
+  DelegateSet::iterator it = delegates_.begin();
+  for (; it != delegates_.end(); ++it)
+    (*it)->OnRegisterCustomPreferences(this, type, registrar);
+}
+
 void ClientAppBrowser::OnContextInitialized() {
-  if (!cookieable_schemes_.empty()) {
-    // Register cookieable schemes with the global cookie manager.
-    CefRefPtr<CefCookieManager> manager =
-        CefCookieManager::GetGlobalManager(NULL);
-    DCHECK(manager.get());
-    manager->SetSupportedSchemes(cookieable_schemes_, true, NULL);
-  }
-
-  print_handler_ = CreatePrintHandler();
-
   DelegateSet::iterator it = delegates_.begin();
   for (; it != delegates_.end(); ++it)
     (*it)->OnContextInitialized(this);
@@ -74,13 +106,6 @@ void ClientAppBrowser::OnBeforeChildProcessLaunch(
   DelegateSet::iterator it = delegates_.begin();
   for (; it != delegates_.end(); ++it)
     (*it)->OnBeforeChildProcessLaunch(this, command_line);
-}
-
-void ClientAppBrowser::OnRenderProcessThreadCreated(
-    CefRefPtr<CefListValue> extra_info) {
-  DelegateSet::iterator it = delegates_.begin();
-  for (; it != delegates_.end(); ++it)
-    (*it)->OnRenderProcessThreadCreated(this, extra_info);
 }
 
 void ClientAppBrowser::OnScheduleMessagePumpWork(int64 delay) {

@@ -4,7 +4,8 @@
 
 #include <windows.h>
 
-#include "include/base/cef_scoped_ptr.h"
+#include <memory>
+
 #include "include/cef_command_line.h"
 #include "include/cef_sandbox_win.h"
 #include "tests/cefclient/browser/main_context_impl.h"
@@ -39,7 +40,7 @@ int RunMain(HINSTANCE hInstance, int nCmdShow) {
 
   CefMainArgs main_args(hInstance);
 
-  void* sandbox_info = NULL;
+  void* sandbox_info = nullptr;
 
 #if defined(CEF_USE_SANDBOX)
   // Manage the life span of the sandbox information object. This is necessary
@@ -68,7 +69,7 @@ int RunMain(HINSTANCE hInstance, int nCmdShow) {
     return exit_code;
 
   // Create the main context object.
-  scoped_ptr<MainContextImpl> context(new MainContextImpl(command_line, true));
+  auto context = std::make_unique<MainContextImpl>(command_line, true);
 
   CefSettings settings;
 
@@ -76,15 +77,11 @@ int RunMain(HINSTANCE hInstance, int nCmdShow) {
   settings.no_sandbox = true;
 #endif
 
-  // Applications should specify a unique GUID here to enable trusted downloads.
-  CefString(&settings.application_client_id_for_file_scanning)
-      .FromString("9A8DE24D-B822-4C6C-8259-5A848FEA1E68");
-
   // Populate the settings based on command line arguments.
   context->PopulateSettings(&settings);
 
   // Create the main message loop object.
-  scoped_ptr<MainMessageLoop> message_loop;
+  std::unique_ptr<MainMessageLoop> message_loop;
   if (settings.multi_threaded_message_loop)
     message_loop.reset(new MainMessageLoopMultithreadedWin);
   else if (settings.external_message_pump)
@@ -98,14 +95,16 @@ int RunMain(HINSTANCE hInstance, int nCmdShow) {
   // Register scheme handlers.
   test_runner::RegisterSchemeHandlers();
 
-  RootWindowConfig window_config;
-  window_config.always_on_top = command_line->HasSwitch(switches::kAlwaysOnTop);
-  window_config.with_controls =
+  auto window_config = std::make_unique<RootWindowConfig>();
+  window_config->always_on_top =
+      command_line->HasSwitch(switches::kAlwaysOnTop);
+  window_config->with_controls =
       !command_line->HasSwitch(switches::kHideControls);
-  window_config.with_osr = settings.windowless_rendering_enabled ? true : false;
+  window_config->with_osr =
+      settings.windowless_rendering_enabled ? true : false;
 
   // Create the first window.
-  context->GetRootWindowManager()->CreateRootWindow(window_config);
+  context->GetRootWindowManager()->CreateRootWindow(std::move(window_config));
 
   // Run the message loop. This will block until Quit() is called by the
   // RootWindowManager after all windows have been destroyed.
@@ -131,5 +130,22 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
                       int nCmdShow) {
   UNREFERENCED_PARAMETER(hPrevInstance);
   UNREFERENCED_PARAMETER(lpCmdLine);
+
+#if defined(ARCH_CPU_32_BITS)
+  // Run the main thread on 32-bit Windows using a fiber with the preferred 4MiB
+  // stack size. This function must be called at the top of the executable entry
+  // point function (`main()` or `wWinMain()`). It is used in combination with
+  // the initial stack size of 0.5MiB configured via the `/STACK:0x80000` linker
+  // flag on executable targets. This saves significant memory on threads (like
+  // those in the Windows thread pool, and others) whose stack size can only be
+  // controlled via the linker flag.
+  int exit_code = CefRunWinMainWithPreferredStackSize(wWinMain, hInstance,
+                                                      lpCmdLine, nCmdShow);
+  if (exit_code >= 0) {
+    // The fiber has completed so return here.
+    return exit_code;
+  }
+#endif
+
   return client::RunMain(hInstance, nCmdShow);
 }

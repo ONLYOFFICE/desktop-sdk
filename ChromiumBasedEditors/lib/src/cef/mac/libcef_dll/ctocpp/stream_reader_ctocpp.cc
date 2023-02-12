@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=d0ceaaf01cbd0d23d7e5762fa01d8a73d218620a$
+// $hash=7a5ee0caa0def472edae4f8fee336bf1db392071$
 //
 
 #include "libcef_dll/ctocpp/stream_reader_ctocpp.h"
@@ -28,7 +28,7 @@ CefRefPtr<CefStreamReader> CefStreamReader::CreateForFile(
   // Verify param: fileName; type: string_byref_const
   DCHECK(!fileName.empty());
   if (fileName.empty())
-    return NULL;
+    return nullptr;
 
   // Execute
   cef_stream_reader_t* _retval =
@@ -48,7 +48,7 @@ CefRefPtr<CefStreamReader> CefStreamReader::CreateForData(void* data,
   // Verify param: data; type: simple_byaddr
   DCHECK(data);
   if (!data)
-    return NULL;
+    return nullptr;
 
   // Execute
   cef_stream_reader_t* _retval = cef_stream_reader_create_for_data(data, size);
@@ -67,7 +67,7 @@ CefRefPtr<CefStreamReader> CefStreamReader::CreateForHandler(
   // Verify param: handler; type: refptr_diff
   DCHECK(handler.get());
   if (!handler.get())
-    return NULL;
+    return nullptr;
 
   // Execute
   cef_stream_reader_t* _retval =
@@ -183,7 +183,7 @@ CefCToCppRefCounted<CefStreamReaderCToCpp,
                     cef_stream_reader_t>::UnwrapDerived(CefWrapperType type,
                                                         CefStreamReader* c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

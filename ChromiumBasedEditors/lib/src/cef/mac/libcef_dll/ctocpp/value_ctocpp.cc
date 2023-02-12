@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=508f93be9a503484355f90305c69416ffde029d9$
+// $hash=8ef5da831e8fef358361365f434a5719a0829c08$
 //
 
 #include "libcef_dll/ctocpp/value_ctocpp.h"
@@ -130,7 +130,7 @@ NO_SANITIZE("cfi-icall") CefRefPtr<CefValue> CefValueCToCpp::Copy() {
 
   cef_value_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, copy))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -228,7 +228,7 @@ NO_SANITIZE("cfi-icall") CefRefPtr<CefBinaryValue> CefValueCToCpp::GetBinary() {
 
   cef_value_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_binary))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -245,7 +245,7 @@ CefRefPtr<CefDictionaryValue> CefValueCToCpp::GetDictionary() {
 
   cef_value_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_dictionary))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -261,7 +261,7 @@ NO_SANITIZE("cfi-icall") CefRefPtr<CefListValue> CefValueCToCpp::GetList() {
 
   cef_value_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_list))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -439,7 +439,7 @@ CefCToCppRefCounted<CefValueCToCpp, CefValue, cef_value_t>::UnwrapDerived(
     CefWrapperType type,
     CefValue* c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

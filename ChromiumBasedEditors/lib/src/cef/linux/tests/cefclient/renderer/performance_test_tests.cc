@@ -44,7 +44,11 @@ PERF_TEST_FUNC(V8DoubleCreate) {
 }
 
 PERF_TEST_FUNC(V8DateCreate) {
-  static cef_time_t time = {2012, 1, 0, 1};
+  static cef_time_t time_exploded = {2012, 1, 0, 1};
+
+  cef_basetime_t basetime;
+  cef_time_to_basetime(&time_exploded, &basetime);
+  CefBaseTime time(basetime);
 
   PERF_ITERATIONS_START()
   CefRefPtr<CefV8Value> value = CefV8Value::CreateDate(time);
@@ -93,7 +97,7 @@ PERF_TEST_FUNC(V8FunctionCreate) {
                          CefRefPtr<CefV8Value> object,
                          const CefV8ValueList& arguments,
                          CefRefPtr<CefV8Value>& retval,
-                         CefString& exception) OVERRIDE {
+                         CefString& exception) override {
       return false;
     }
     IMPLEMENT_REFCOUNTING(Handler);
@@ -115,7 +119,7 @@ PERF_TEST_FUNC(V8FunctionExecute) {
                          CefRefPtr<CefV8Value> object,
                          const CefV8ValueList& arguments,
                          CefRefPtr<CefV8Value>& retval,
-                         CefString& exception) OVERRIDE {
+                         CefString& exception) override {
       return true;
     }
     IMPLEMENT_REFCOUNTING(Handler);
@@ -140,7 +144,7 @@ PERF_TEST_FUNC(V8FunctionExecuteWithContext) {
                          CefRefPtr<CefV8Value> object,
                          const CefV8ValueList& arguments,
                          CefRefPtr<CefV8Value>& retval,
-                         CefString& exception) OVERRIDE {
+                         CefString& exception) override {
       return true;
     }
     IMPLEMENT_REFCOUNTING(Handler);
@@ -160,7 +164,7 @@ PERF_TEST_FUNC(V8FunctionExecuteWithContext) {
 
 PERF_TEST_FUNC(V8ObjectCreate) {
   PERF_ITERATIONS_START()
-  CefRefPtr<CefV8Value> value = CefV8Value::CreateObject(NULL, NULL);
+  CefRefPtr<CefV8Value> value = CefV8Value::CreateObject(nullptr, nullptr);
   PERF_ITERATIONS_END()
 }
 
@@ -171,13 +175,13 @@ PERF_TEST_FUNC(V8ObjectCreateWithAccessor) {
     virtual bool Get(const CefString& name,
                      const CefRefPtr<CefV8Value> object,
                      CefRefPtr<CefV8Value>& retval,
-                     CefString& exception) OVERRIDE {
+                     CefString& exception) override {
       return true;
     }
     virtual bool Set(const CefString& name,
                      const CefRefPtr<CefV8Value> object,
                      const CefRefPtr<CefV8Value> value,
-                     CefString& exception) OVERRIDE {
+                     CefString& exception) override {
       return true;
     }
     IMPLEMENT_REFCOUNTING(Accessor);
@@ -186,7 +190,7 @@ PERF_TEST_FUNC(V8ObjectCreateWithAccessor) {
   CefRefPtr<CefV8Accessor> accessor = new Accessor();
 
   PERF_ITERATIONS_START()
-  CefRefPtr<CefV8Value> value = CefV8Value::CreateObject(accessor, NULL);
+  CefRefPtr<CefV8Value> value = CefV8Value::CreateObject(accessor, nullptr);
   PERF_ITERATIONS_END()
 }
 
@@ -197,25 +201,25 @@ PERF_TEST_FUNC(V8ObjectCreateWithInterceptor) {
     virtual bool Get(const CefString& name,
                      const CefRefPtr<CefV8Value> object,
                      CefRefPtr<CefV8Value>& retval,
-                     CefString& exception) OVERRIDE {
+                     CefString& exception) override {
       return true;
     }
     virtual bool Get(int index,
                      const CefRefPtr<CefV8Value> object,
                      CefRefPtr<CefV8Value>& retval,
-                     CefString& exception) OVERRIDE {
+                     CefString& exception) override {
       return true;
     }
     virtual bool Set(const CefString& name,
                      const CefRefPtr<CefV8Value> object,
                      const CefRefPtr<CefV8Value> value,
-                     CefString& exception) OVERRIDE {
+                     CefString& exception) override {
       return true;
     }
     virtual bool Set(int index,
                      const CefRefPtr<CefV8Value> object,
                      const CefRefPtr<CefV8Value> value,
-                     CefString& exception) OVERRIDE {
+                     CefString& exception) override {
       return true;
     }
     IMPLEMENT_REFCOUNTING(Interceptor);
@@ -224,14 +228,14 @@ PERF_TEST_FUNC(V8ObjectCreateWithInterceptor) {
   CefRefPtr<CefV8Interceptor> interceptor = new Interceptor();
 
   PERF_ITERATIONS_START()
-  CefRefPtr<CefV8Value> value = CefV8Value::CreateObject(NULL, interceptor);
+  CefRefPtr<CefV8Value> value = CefV8Value::CreateObject(nullptr, interceptor);
   PERF_ITERATIONS_END()
 }
 
 PERF_TEST_FUNC(V8ObjectSetValue) {
   CefString name = "name";
   CefRefPtr<CefV8Value> val = CefV8Value::CreateBool(true);
-  CefRefPtr<CefV8Value> obj = CefV8Value::CreateObject(NULL, NULL);
+  CefRefPtr<CefV8Value> obj = CefV8Value::CreateObject(nullptr, nullptr);
   obj->SetValue(name, val, V8_PROPERTY_ATTRIBUTE_NONE);
 
   PERF_ITERATIONS_START()
@@ -242,7 +246,7 @@ PERF_TEST_FUNC(V8ObjectSetValue) {
 PERF_TEST_FUNC(V8ObjectGetValue) {
   CefString name = "name";
   CefRefPtr<CefV8Value> val = CefV8Value::CreateBool(true);
-  CefRefPtr<CefV8Value> obj = CefV8Value::CreateObject(NULL, NULL);
+  CefRefPtr<CefV8Value> obj = CefV8Value::CreateObject(nullptr, nullptr);
   obj->SetValue(name, val, V8_PROPERTY_ATTRIBUTE_NONE);
 
   PERF_ITERATIONS_START()
@@ -257,13 +261,13 @@ PERF_TEST_FUNC(V8ObjectSetValueWithAccessor) {
     virtual bool Get(const CefString& name,
                      const CefRefPtr<CefV8Value> object,
                      CefRefPtr<CefV8Value>& retval,
-                     CefString& exception) OVERRIDE {
+                     CefString& exception) override {
       return true;
     }
     virtual bool Set(const CefString& name,
                      const CefRefPtr<CefV8Value> object,
                      const CefRefPtr<CefV8Value> value,
-                     CefString& exception) OVERRIDE {
+                     CefString& exception) override {
       val_ = value;
       return true;
     }
@@ -275,7 +279,7 @@ PERF_TEST_FUNC(V8ObjectSetValueWithAccessor) {
 
   CefString name = "name";
   CefRefPtr<CefV8Value> val = CefV8Value::CreateBool(true);
-  CefRefPtr<CefV8Value> obj = CefV8Value::CreateObject(accessor, NULL);
+  CefRefPtr<CefV8Value> obj = CefV8Value::CreateObject(accessor, nullptr);
   obj->SetValue(name, V8_ACCESS_CONTROL_DEFAULT, V8_PROPERTY_ATTRIBUTE_NONE);
   obj->SetValue(name, val, V8_PROPERTY_ATTRIBUTE_NONE);
 
@@ -291,14 +295,14 @@ PERF_TEST_FUNC(V8ObjectGetValueWithAccessor) {
     virtual bool Get(const CefString& name,
                      const CefRefPtr<CefV8Value> object,
                      CefRefPtr<CefV8Value>& retval,
-                     CefString& exception) OVERRIDE {
+                     CefString& exception) override {
       retval = val_;
       return true;
     }
     virtual bool Set(const CefString& name,
                      const CefRefPtr<CefV8Value> object,
                      const CefRefPtr<CefV8Value> value,
-                     CefString& exception) OVERRIDE {
+                     CefString& exception) override {
       return true;
     }
     CefRefPtr<CefV8Value> val_;
@@ -309,7 +313,7 @@ PERF_TEST_FUNC(V8ObjectGetValueWithAccessor) {
 
   CefString name = "name";
   CefRefPtr<CefV8Value> val = CefV8Value::CreateBool(true);
-  CefRefPtr<CefV8Value> obj = CefV8Value::CreateObject(accessor, NULL);
+  CefRefPtr<CefV8Value> obj = CefV8Value::CreateObject(accessor, nullptr);
   obj->SetValue(name, V8_ACCESS_CONTROL_DEFAULT, V8_PROPERTY_ATTRIBUTE_NONE);
   obj->SetValue(name, val, V8_PROPERTY_ATTRIBUTE_NONE);
 

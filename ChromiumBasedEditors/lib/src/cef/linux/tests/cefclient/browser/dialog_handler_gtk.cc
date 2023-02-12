@@ -56,8 +56,8 @@ void AddFilters(GtkFileChooser* chooser,
                 std::vector<GtkFileFilter*>* filters) {
   bool has_filter = false;
 
-  for (size_t i = 0; i < accept_filters.size(); ++i) {
-    const std::string& filter = accept_filters[i];
+  for (size_t j = 0; j < accept_filters.size(); ++j) {
+    const std::string& filter = accept_filters[j];
     if (filter.empty())
       continue;
 
@@ -135,21 +135,18 @@ GtkWindow* GetWindow(CefRefPtr<CefBrowser> browser) {
   scoped_refptr<RootWindow> root_window =
       RootWindow::GetForBrowser(browser->GetIdentifier());
   if (root_window) {
-    GtkWindow* window = GTK_WINDOW(root_window->GetWindowHandle());
+    GtkWidget* window = root_window->GetWindowHandle();
+    DCHECK(window);
     if (!window)
       LOG(ERROR) << "No GtkWindow for browser";
-    return window;
+    return GTK_WINDOW(window);
   }
-  return NULL;
-}
-
-void RunCallback(base::Callback<void(GtkWindow*)> callback, GtkWindow* window) {
-  callback.Run(window);
+  return nullptr;
 }
 
 }  // namespace
 
-ClientDialogHandlerGtk::ClientDialogHandlerGtk() : gtk_dialog_(NULL) {}
+ClientDialogHandlerGtk::ClientDialogHandlerGtk() : gtk_dialog_(nullptr) {}
 
 bool ClientDialogHandlerGtk::OnFileDialog(
     CefRefPtr<CefBrowser> browser,
@@ -157,7 +154,6 @@ bool ClientDialogHandlerGtk::OnFileDialog(
     const CefString& title,
     const CefString& default_file_path,
     const std::vector<CefString>& accept_filters,
-    int selected_accept_filter,
     CefRefPtr<CefFileDialogCallback> callback) {
   CEF_REQUIRE_UI_THREAD();
 
@@ -167,12 +163,11 @@ bool ClientDialogHandlerGtk::OnFileDialog(
   params.title = title;
   params.default_file_path = default_file_path;
   params.accept_filters = accept_filters;
-  params.selected_accept_filter = selected_accept_filter;
   params.callback = callback;
 
   GetWindowAndContinue(
-      browser,
-      base::Bind(&ClientDialogHandlerGtk::OnFileDialogContinue, this, params));
+      browser, base::BindOnce(&ClientDialogHandlerGtk::OnFileDialogContinue,
+                              this, params));
   return true;
 }
 
@@ -194,8 +189,8 @@ bool ClientDialogHandlerGtk::OnJSDialog(CefRefPtr<CefBrowser> browser,
   params.callback = callback;
 
   GetWindowAndContinue(
-      browser,
-      base::Bind(&ClientDialogHandlerGtk::OnJSDialogContinue, this, params));
+      browser, base::BindOnce(&ClientDialogHandlerGtk::OnJSDialogContinue, this,
+                              params));
   return true;
 }
 
@@ -221,13 +216,14 @@ void ClientDialogHandlerGtk::OnResetDialogState(CefRefPtr<CefBrowser> browser) {
     return;
 
   gtk_widget_destroy(gtk_dialog_);
-  gtk_dialog_ = NULL;
-  js_dialog_callback_ = NULL;
+  gtk_dialog_ = nullptr;
+  js_dialog_callback_ = nullptr;
 }
 
-void ClientDialogHandlerGtk::OnFileDialogContinue(OnFileDialogParams params,
-                                                  GtkWindow* window) {
-  CEF_REQUIRE_UI_THREAD();
+void ClientDialogHandlerGtk::OnFileDialogContinue(
+    const OnFileDialogParams& params,
+    GtkWindow* window) {
+  REQUIRE_MAIN_THREAD();
 
   ScopedGdkThreadsEnter scoped_gdk_threads;
 
@@ -236,19 +232,16 @@ void ClientDialogHandlerGtk::OnFileDialogContinue(OnFileDialogParams params,
   GtkFileChooserAction action;
   const gchar* accept_button;
 
-  // Remove any modifier flags.
-  FileDialogMode mode_type =
-      static_cast<FileDialogMode>(params.mode & FILE_DIALOG_TYPE_MASK);
-
-  if (mode_type == FILE_DIALOG_OPEN || mode_type == FILE_DIALOG_OPEN_MULTIPLE) {
+  if (params.mode == FILE_DIALOG_OPEN ||
+      params.mode == FILE_DIALOG_OPEN_MULTIPLE) {
     action = GTK_FILE_CHOOSER_ACTION_OPEN;
-    accept_button = GTK_STOCK_OPEN;
-  } else if (mode_type == FILE_DIALOG_OPEN_FOLDER) {
+    accept_button = "_Open";
+  } else if (params.mode == FILE_DIALOG_OPEN_FOLDER) {
     action = GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER;
-    accept_button = GTK_STOCK_OPEN;
-  } else if (mode_type == FILE_DIALOG_SAVE) {
+    accept_button = "_Open";
+  } else if (params.mode == FILE_DIALOG_SAVE) {
     action = GTK_FILE_CHOOSER_ACTION_SAVE;
-    accept_button = GTK_STOCK_SAVE;
+    accept_button = "_Save";
   } else {
     NOTREACHED();
     params.callback->Cancel();
@@ -259,7 +252,7 @@ void ClientDialogHandlerGtk::OnFileDialogContinue(OnFileDialogParams params,
   if (!params.title.empty()) {
     title_str = params.title;
   } else {
-    switch (mode_type) {
+    switch (params.mode) {
       case FILE_DIALOG_OPEN:
         title_str = "Open File";
         break;
@@ -278,22 +271,13 @@ void ClientDialogHandlerGtk::OnFileDialogContinue(OnFileDialogParams params,
   }
 
   GtkWidget* dialog = gtk_file_chooser_dialog_new(
-      title_str.c_str(), GTK_WINDOW(window), action, GTK_STOCK_CANCEL,
-      GTK_RESPONSE_CANCEL, accept_button, GTK_RESPONSE_ACCEPT, NULL);
+      title_str.c_str(), GTK_WINDOW(window), action, "_Cancel",
+      GTK_RESPONSE_CANCEL, accept_button, GTK_RESPONSE_ACCEPT, nullptr);
 
-  if (mode_type == FILE_DIALOG_OPEN_MULTIPLE)
+  if (params.mode == FILE_DIALOG_OPEN_MULTIPLE)
     gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(dialog), TRUE);
 
-  if (mode_type == FILE_DIALOG_SAVE) {
-    gtk_file_chooser_set_do_overwrite_confirmation(
-        GTK_FILE_CHOOSER(dialog),
-        !!(params.mode & FILE_DIALOG_OVERWRITEPROMPT_FLAG));
-  }
-
-  gtk_file_chooser_set_show_hidden(
-      GTK_FILE_CHOOSER(dialog), !(params.mode & FILE_DIALOG_HIDEREADONLY_FLAG));
-
-  if (!params.default_file_path.empty() && mode_type == FILE_DIALOG_SAVE) {
+  if (!params.default_file_path.empty() && params.mode == FILE_DIALOG_SAVE) {
     const std::string& file_path = params.default_file_path;
     bool exists = false;
 
@@ -314,24 +298,21 @@ void ClientDialogHandlerGtk::OnFileDialogContinue(OnFileDialogParams params,
 
   std::vector<GtkFileFilter*> filters;
   AddFilters(GTK_FILE_CHOOSER(dialog), params.accept_filters, true, &filters);
-  if (params.selected_accept_filter < static_cast<int>(filters.size())) {
-    gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dialog),
-                                filters[params.selected_accept_filter]);
-  }
 
   bool success = false;
 
   if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
-    if (mode_type == FILE_DIALOG_OPEN || mode_type == FILE_DIALOG_OPEN_FOLDER ||
-        mode_type == FILE_DIALOG_SAVE) {
+    if (params.mode == FILE_DIALOG_OPEN ||
+        params.mode == FILE_DIALOG_OPEN_FOLDER ||
+        params.mode == FILE_DIALOG_SAVE) {
       char* filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
       files.push_back(std::string(filename));
       success = true;
-    } else if (mode_type == FILE_DIALOG_OPEN_MULTIPLE) {
+    } else if (params.mode == FILE_DIALOG_OPEN_MULTIPLE) {
       GSList* filenames =
           gtk_file_chooser_get_filenames(GTK_FILE_CHOOSER(dialog));
       if (filenames) {
-        for (GSList* iter = filenames; iter != NULL;
+        for (GSList* iter = filenames; iter != nullptr;
              iter = g_slist_next(iter)) {
           std::string path(static_cast<char*>(iter->data));
           g_free(iter->data);
@@ -343,31 +324,17 @@ void ClientDialogHandlerGtk::OnFileDialogContinue(OnFileDialogParams params,
     }
   }
 
-  int filter_index = params.selected_accept_filter;
-  if (success) {
-    GtkFileFilter* selected_filter =
-        gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(dialog));
-    if (selected_filter != NULL) {
-      for (size_t x = 0; x < filters.size(); ++x) {
-        if (filters[x] == selected_filter) {
-          filter_index = x;
-          break;
-        }
-      }
-    }
-  }
-
   gtk_widget_destroy(dialog);
 
   if (success)
-    params.callback->Continue(filter_index, files);
+    params.callback->Continue(files);
   else
     params.callback->Cancel();
 }
 
-void ClientDialogHandlerGtk::OnJSDialogContinue(OnJSDialogParams params,
+void ClientDialogHandlerGtk::OnJSDialogContinue(const OnJSDialogParams& params,
                                                 GtkWindow* window) {
-  CEF_REQUIRE_UI_THREAD();
+  REQUIRE_MAIN_THREAD();
 
   ScopedGdkThreadsEnter scoped_gdk_threads;
 
@@ -406,12 +373,12 @@ void ClientDialogHandlerGtk::OnJSDialogContinue(OnJSDialogParams params,
                                        gtk_message_type, buttons, "%s",
                                        params.message_text.ToString().c_str());
   g_signal_connect(gtk_dialog_, "delete-event",
-                   G_CALLBACK(gtk_widget_hide_on_delete), NULL);
+                   G_CALLBACK(gtk_widget_hide_on_delete), nullptr);
 
   gtk_window_set_title(GTK_WINDOW(gtk_dialog_), title.c_str());
 
-  GtkWidget* ok_button = gtk_dialog_add_button(GTK_DIALOG(gtk_dialog_),
-                                               GTK_STOCK_OK, GTK_RESPONSE_OK);
+  GtkWidget* ok_button =
+      gtk_dialog_add_button(GTK_DIALOG(gtk_dialog_), "_OK", GTK_RESPONSE_OK);
 
   if (params.dialog_type != JSDIALOGTYPE_PROMPT)
     gtk_widget_grab_focus(ok_button);
@@ -434,16 +401,17 @@ void ClientDialogHandlerGtk::OnJSDialogContinue(OnJSDialogParams params,
 
 void ClientDialogHandlerGtk::GetWindowAndContinue(
     CefRefPtr<CefBrowser> browser,
-    base::Callback<void(GtkWindow*)> callback) {
+    base::OnceCallback<void(GtkWindow*)> callback) {
   if (!CURRENTLY_ON_MAIN_THREAD()) {
-    MAIN_POST_CLOSURE(base::Bind(&ClientDialogHandlerGtk::GetWindowAndContinue,
-                                 this, browser, callback));
+    MAIN_POST_CLOSURE(
+        base::BindOnce(&ClientDialogHandlerGtk::GetWindowAndContinue, this,
+                       browser, std::move(callback)));
     return;
   }
 
   GtkWindow* window = GetWindow(browser);
   if (window) {
-    CefPostTask(TID_UI, base::Bind(RunCallback, callback, window));
+    std::move(callback).Run(window);
   }
 }
 
@@ -451,7 +419,7 @@ void ClientDialogHandlerGtk::GetWindowAndContinue(
 void ClientDialogHandlerGtk::OnDialogResponse(GtkDialog* dialog,
                                               gint response_id,
                                               ClientDialogHandlerGtk* handler) {
-  CEF_REQUIRE_UI_THREAD();
+  REQUIRE_MAIN_THREAD();
 
   DCHECK_EQ(dialog, GTK_DIALOG(handler->gtk_dialog_));
   switch (response_id) {
@@ -466,7 +434,9 @@ void ClientDialogHandlerGtk::OnDialogResponse(GtkDialog* dialog,
       NOTREACHED();
   }
 
-  handler->OnResetDialogState(NULL);
+  CefPostTask(TID_UI,
+              base::BindOnce(&ClientDialogHandlerGtk::OnResetDialogState,
+                             handler, nullptr));
 }
 
 }  // namespace client

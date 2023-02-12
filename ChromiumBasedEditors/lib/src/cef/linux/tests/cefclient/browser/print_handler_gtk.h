@@ -7,7 +7,7 @@
 #define CEF_TESTS_CEFCLIENT_BROWSER_PRINT_HANDLER_GTK_H_
 #pragma once
 
-#include <map>
+#include <memory>
 
 #include "include/cef_print_handler.h"
 
@@ -19,28 +19,25 @@ class ClientPrintHandlerGtk : public CefPrintHandler {
   virtual ~ClientPrintHandlerGtk();
 
   // CefPrintHandler methods.
-  void OnPrintStart(CefRefPtr<CefBrowser> browser) OVERRIDE;
+  void OnPrintStart(CefRefPtr<CefBrowser> browser) override;
   void OnPrintSettings(CefRefPtr<CefBrowser> browser,
                        CefRefPtr<CefPrintSettings> settings,
-                       bool get_defaults) OVERRIDE;
+                       bool get_defaults) override;
   bool OnPrintDialog(CefRefPtr<CefBrowser> browser,
                      bool has_selection,
-                     CefRefPtr<CefPrintDialogCallback> callback) OVERRIDE;
+                     CefRefPtr<CefPrintDialogCallback> callback) override;
   bool OnPrintJob(CefRefPtr<CefBrowser> browser,
                   const CefString& document_name,
                   const CefString& pdf_file_path,
-                  CefRefPtr<CefPrintJobCallback> callback) OVERRIDE;
-  void OnPrintReset(CefRefPtr<CefBrowser> browser) OVERRIDE;
-  CefSize GetPdfPaperSize(int device_units_per_inch) OVERRIDE;
+                  CefRefPtr<CefPrintJobCallback> callback) override;
+  void OnPrintReset(CefRefPtr<CefBrowser> browser) override;
+  CefSize GetPdfPaperSize(CefRefPtr<CefBrowser> browser,
+                          int device_units_per_inch) override;
 
  private:
   // Print handler.
   struct PrintHandler;
-  PrintHandler* GetPrintHandler(CefRefPtr<CefBrowser> browser);
-
-  // Map of browser ID to print handler.
-  typedef std::map<int, PrintHandler*> PrintHandlerMap;
-  PrintHandlerMap print_handler_map_;
+  std::unique_ptr<PrintHandler> print_handler_;
 
   IMPLEMENT_REFCOUNTING(ClientPrintHandlerGtk);
   DISALLOW_COPY_AND_ASSIGN(ClientPrintHandlerGtk);

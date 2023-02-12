@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=55db4ae27a914d2a9ba931e7fc8de888a19e6630$
+// $hash=af95b6ab0679c220a35569ae4dc4c11907d30084$
 //
 
 #include "libcef_dll/ctocpp/stream_writer_ctocpp.h"
@@ -28,7 +28,7 @@ CefRefPtr<CefStreamWriter> CefStreamWriter::CreateForFile(
   // Verify param: fileName; type: string_byref_const
   DCHECK(!fileName.empty());
   if (fileName.empty())
-    return NULL;
+    return nullptr;
 
   // Execute
   cef_stream_writer_t* _retval =
@@ -48,7 +48,7 @@ CefRefPtr<CefStreamWriter> CefStreamWriter::CreateForHandler(
   // Verify param: handler; type: refptr_diff
   DCHECK(handler.get());
   if (!handler.get())
-    return NULL;
+    return nullptr;
 
   // Execute
   cef_stream_writer_t* _retval = cef_stream_writer_create_for_handler(
@@ -164,7 +164,7 @@ CefCToCppRefCounted<CefStreamWriterCToCpp,
                     cef_stream_writer_t>::UnwrapDerived(CefWrapperType type,
                                                         CefStreamWriter* c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

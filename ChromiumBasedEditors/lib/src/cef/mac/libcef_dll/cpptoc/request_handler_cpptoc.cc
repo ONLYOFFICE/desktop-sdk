@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,15 +9,15 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=ab373b720fe3c700867f86ad29ffc8b3e518a92c$
+// $hash=d8188baecddc69aae0e6f833325a46ae6a83a4ac$
 //
 
 #include "libcef_dll/cpptoc/request_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/resource_request_handler_cpptoc.h"
 #include "libcef_dll/ctocpp/auth_callback_ctocpp.h"
 #include "libcef_dll/ctocpp/browser_ctocpp.h"
+#include "libcef_dll/ctocpp/callback_ctocpp.h"
 #include "libcef_dll/ctocpp/frame_ctocpp.h"
-#include "libcef_dll/ctocpp/request_callback_ctocpp.h"
 #include "libcef_dll/ctocpp/request_ctocpp.h"
 #include "libcef_dll/ctocpp/select_client_certificate_callback_ctocpp.h"
 #include "libcef_dll/ctocpp/sslinfo_ctocpp.h"
@@ -202,47 +202,12 @@ request_handler_get_auth_credentials(struct _cef_request_handler_t* self,
 }
 
 int CEF_CALLBACK
-request_handler_on_quota_request(struct _cef_request_handler_t* self,
-                                 cef_browser_t* browser,
-                                 const cef_string_t* origin_url,
-                                 int64 new_size,
-                                 cef_request_callback_t* callback) {
-  shutdown_checker::AssertNotShutdown();
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  DCHECK(self);
-  if (!self)
-    return 0;
-  // Verify param: browser; type: refptr_diff
-  DCHECK(browser);
-  if (!browser)
-    return 0;
-  // Verify param: origin_url; type: string_byref_const
-  DCHECK(origin_url);
-  if (!origin_url)
-    return 0;
-  // Verify param: callback; type: refptr_diff
-  DCHECK(callback);
-  if (!callback)
-    return 0;
-
-  // Execute
-  bool _retval = CefRequestHandlerCppToC::Get(self)->OnQuotaRequest(
-      CefBrowserCToCpp::Wrap(browser), CefString(origin_url), new_size,
-      CefRequestCallbackCToCpp::Wrap(callback));
-
-  // Return type: bool
-  return _retval;
-}
-
-int CEF_CALLBACK
 request_handler_on_certificate_error(struct _cef_request_handler_t* self,
                                      cef_browser_t* browser,
                                      cef_errorcode_t cert_error,
                                      const cef_string_t* request_url,
                                      struct _cef_sslinfo_t* ssl_info,
-                                     cef_request_callback_t* callback) {
+                                     cef_callback_t* callback) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
@@ -270,8 +235,7 @@ request_handler_on_certificate_error(struct _cef_request_handler_t* self,
   // Execute
   bool _retval = CefRequestHandlerCppToC::Get(self)->OnCertificateError(
       CefBrowserCToCpp::Wrap(browser), cert_error, CefString(request_url),
-      CefSSLInfoCToCpp::Wrap(ssl_info),
-      CefRequestCallbackCToCpp::Wrap(callback));
+      CefSSLInfoCToCpp::Wrap(ssl_info), CefCallbackCToCpp::Wrap(callback));
 
   // Return type: bool
   return _retval;
@@ -331,31 +295,6 @@ int CEF_CALLBACK request_handler_on_select_client_certificate(
 }
 
 void CEF_CALLBACK
-request_handler_on_plugin_crashed(struct _cef_request_handler_t* self,
-                                  cef_browser_t* browser,
-                                  const cef_string_t* plugin_path) {
-  shutdown_checker::AssertNotShutdown();
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  DCHECK(self);
-  if (!self)
-    return;
-  // Verify param: browser; type: refptr_diff
-  DCHECK(browser);
-  if (!browser)
-    return;
-  // Verify param: plugin_path; type: string_byref_const
-  DCHECK(plugin_path);
-  if (!plugin_path)
-    return;
-
-  // Execute
-  CefRequestHandlerCppToC::Get(self)->OnPluginCrashed(
-      CefBrowserCToCpp::Wrap(browser), CefString(plugin_path));
-}
-
-void CEF_CALLBACK
 request_handler_on_render_view_ready(struct _cef_request_handler_t* self,
                                      cef_browser_t* browser) {
   shutdown_checker::AssertNotShutdown();
@@ -396,6 +335,26 @@ void CEF_CALLBACK request_handler_on_render_process_terminated(
       CefBrowserCToCpp::Wrap(browser), status);
 }
 
+void CEF_CALLBACK request_handler_on_document_available_in_main_frame(
+    struct _cef_request_handler_t* self,
+    cef_browser_t* browser) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self)
+    return;
+  // Verify param: browser; type: refptr_diff
+  DCHECK(browser);
+  if (!browser)
+    return;
+
+  // Execute
+  CefRequestHandlerCppToC::Get(self)->OnDocumentAvailableInMainFrame(
+      CefBrowserCToCpp::Wrap(browser));
+}
+
 }  // namespace
 
 // CONSTRUCTOR - Do not edit by hand.
@@ -406,14 +365,14 @@ CefRequestHandlerCppToC::CefRequestHandlerCppToC() {
   GetStruct()->get_resource_request_handler =
       request_handler_get_resource_request_handler;
   GetStruct()->get_auth_credentials = request_handler_get_auth_credentials;
-  GetStruct()->on_quota_request = request_handler_on_quota_request;
   GetStruct()->on_certificate_error = request_handler_on_certificate_error;
   GetStruct()->on_select_client_certificate =
       request_handler_on_select_client_certificate;
-  GetStruct()->on_plugin_crashed = request_handler_on_plugin_crashed;
   GetStruct()->on_render_view_ready = request_handler_on_render_view_ready;
   GetStruct()->on_render_process_terminated =
       request_handler_on_render_process_terminated;
+  GetStruct()->on_document_available_in_main_frame =
+      request_handler_on_document_available_in_main_frame;
 }
 
 // DESTRUCTOR - Do not edit by hand.
@@ -429,7 +388,7 @@ CefRefPtr<CefRequestHandler> CefCppToCRefCounted<
     cef_request_handler_t>::UnwrapDerived(CefWrapperType type,
                                           cef_request_handler_t* s) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

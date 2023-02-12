@@ -43,7 +43,7 @@ void SetXWindowVisible(XDisplay* xdisplay, ::Window xwindow, bool visible) {
 
   if (!visible) {
     // Set the hidden property state value.
-    scoped_ptr<Atom[]> data(new Atom[1]);
+    std::unique_ptr<Atom[]> data(new Atom[1]);
     data[0] = atoms[2];
 
     XChangeProperty(xdisplay, xwindow,
@@ -59,7 +59,7 @@ void SetXWindowVisible(XDisplay* xdisplay, ::Window xwindow, bool visible) {
                     atoms[0],  // name
                     atoms[1],  // type
                     32,        // size in bits of items in 'value'
-                    PropModeReplace, NULL,
+                    PropModeReplace, nullptr,
                     0);  // num items
   }
 }
@@ -82,9 +82,10 @@ void SetXWindowBounds(XDisplay* xdisplay,
 }  // namespace
 
 BrowserWindowStdGtk::BrowserWindowStdGtk(Delegate* delegate,
+                                         bool with_controls,
                                          const std::string& startup_url)
     : BrowserWindow(delegate), xdisplay_(nullptr) {
-  client_handler_ = new ClientHandlerStd(this, startup_url);
+  client_handler_ = new ClientHandlerStd(this, with_controls, startup_url);
 }
 
 void BrowserWindowStdGtk::set_xdisplay(XDisplay* xdisplay) {
@@ -182,7 +183,7 @@ ClientWindowHandle BrowserWindowStdGtk::GetWindowHandle() const {
 
   // There is no GtkWidget* representation of this object.
   NOTREACHED();
-  return NULL;
+  return nullptr;
 }
 
 }  // namespace client

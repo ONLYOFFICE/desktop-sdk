@@ -6,24 +6,15 @@
 
 #include "tests/cefclient/browser/client_browser.h"
 
-#if defined(OS_LINUX)
-#include "tests/cefclient/browser/print_handler_gtk.h"
-#endif
-
 namespace client {
+
+// static
+void ClientAppBrowser::RegisterCookieableSchemes(
+    std::vector<std::string>& cookieable_schemes) {}
 
 // static
 void ClientAppBrowser::CreateDelegates(DelegateSet& delegates) {
   browser::CreateDelegates(delegates);
-}
-
-// static
-CefRefPtr<CefPrintHandler> ClientAppBrowser::CreatePrintHandler() {
-#if defined(OS_LINUX)
-  return new ClientPrintHandlerGtk();
-#else
-  return NULL;
-#endif
 }
 
 }  // namespace client

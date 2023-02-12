@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=1e95e2b890c30225c17f7052950a5e30285827e9$
+// $hash=531f5719300934d7a039855559835715de9c765a$
 //
 
 #include "libcef_dll/ctocpp/list_value_ctocpp.h"
@@ -131,7 +131,7 @@ NO_SANITIZE("cfi-icall") CefRefPtr<CefListValue> CefListValueCToCpp::Copy() {
 
   cef_list_value_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, copy))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -229,7 +229,7 @@ CefRefPtr<CefValue> CefListValueCToCpp::GetValue(size_t index) {
 
   cef_list_value_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_value))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -312,7 +312,7 @@ CefRefPtr<CefBinaryValue> CefListValueCToCpp::GetBinary(size_t index) {
 
   cef_list_value_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_binary))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -329,7 +329,7 @@ CefRefPtr<CefDictionaryValue> CefListValueCToCpp::GetDictionary(size_t index) {
 
   cef_list_value_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_dictionary))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -346,7 +346,7 @@ CefRefPtr<CefListValue> CefListValueCToCpp::GetList(size_t index) {
 
   cef_list_value_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_list))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -552,7 +552,7 @@ cef_list_value_t*
 CefCToCppRefCounted<CefListValueCToCpp, CefListValue, cef_list_value_t>::
     UnwrapDerived(CefWrapperType type, CefListValue* c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

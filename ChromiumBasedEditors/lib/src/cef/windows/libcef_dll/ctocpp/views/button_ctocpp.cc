@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=cac075ea53c263078dc31f941cd61f3cd6b4525b$
+// $hash=b36bf494f49f9a3e0af4388a2c9121c6647b847e$
 //
 
 #include "libcef_dll/ctocpp/views/button_ctocpp.h"
@@ -32,7 +32,7 @@ CefRefPtr<CefLabelButton> CefButtonCToCpp::AsLabelButton() {
 
   cef_button_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, as_label_button))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -130,7 +130,7 @@ CefRefPtr<CefBrowserView> CefButtonCToCpp::AsBrowserView() {
 
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, as_browser_view))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -146,7 +146,7 @@ NO_SANITIZE("cfi-icall") CefRefPtr<CefButton> CefButtonCToCpp::AsButton() {
 
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, as_button))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -162,7 +162,7 @@ NO_SANITIZE("cfi-icall") CefRefPtr<CefPanel> CefButtonCToCpp::AsPanel() {
 
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, as_panel))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -179,7 +179,7 @@ CefRefPtr<CefScrollView> CefButtonCToCpp::AsScrollView() {
 
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, as_scroll_view))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -196,7 +196,7 @@ CefRefPtr<CefTextfield> CefButtonCToCpp::AsTextfield() {
 
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, as_textfield))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -303,7 +303,7 @@ CefRefPtr<CefViewDelegate> CefButtonCToCpp::GetDelegate() {
 
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, get_delegate))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -319,7 +319,7 @@ NO_SANITIZE("cfi-icall") CefRefPtr<CefWindow> CefButtonCToCpp::GetWindow() {
 
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, get_window))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -393,7 +393,7 @@ NO_SANITIZE("cfi-icall") CefRefPtr<CefView> CefButtonCToCpp::GetParentView() {
 
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, get_parent_view))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -410,7 +410,7 @@ CefRefPtr<CefView> CefButtonCToCpp::GetViewForID(int id) {
 
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, get_view_for_id))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -521,6 +521,36 @@ NO_SANITIZE("cfi-icall") CefPoint CefButtonCToCpp::GetPosition() {
 
   // Execute
   cef_point_t _retval = _struct->get_position(_struct);
+
+  // Return type: simple
+  return _retval;
+}
+
+NO_SANITIZE("cfi-icall")
+void CefButtonCToCpp::SetInsets(const CefInsets& insets) {
+  shutdown_checker::AssertNotShutdown();
+
+  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (CEF_MEMBER_MISSING(_struct, set_insets))
+    return;
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  _struct->set_insets(_struct, &insets);
+}
+
+NO_SANITIZE("cfi-icall") CefInsets CefButtonCToCpp::GetInsets() {
+  shutdown_checker::AssertNotShutdown();
+
+  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (CEF_MEMBER_MISSING(_struct, get_insets))
+    return CefInsets();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  cef_insets_t _retval = _struct->get_insets(_struct);
 
   // Return type: simple
   return _retval;
@@ -918,7 +948,7 @@ CefCToCppRefCounted<CefButtonCToCpp, CefButton, cef_button_t>::UnwrapDerived(
         CefMenuButtonCToCpp::Unwrap(reinterpret_cast<CefMenuButton*>(c)));
   }
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

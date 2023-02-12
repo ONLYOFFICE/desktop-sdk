@@ -11,7 +11,7 @@
 #undef Success     // Definition conflicts with cef_message_router.h
 #undef RootWindow  // Definition conflicts with root_window.h
 
-#include "include/base/cef_bind.h"
+#include "include/base/cef_callback.h"
 #include "include/cef_app.h"
 //#include "tests/cefclient/browser/browser_window_osr_gtk.h"
 #include "tests/cefclient/browser/browser_window_std_gtk.h"
@@ -28,6 +28,36 @@ namespace client {
 namespace {
 
 const char kMenuIdKey[] = "menu_id";
+
+void UseDefaultX11VisualForGtk(GtkWidget* widget) {
+#if GTK_CHECK_VERSION(3, 15, 1)
+  // GTK+ > 3.15.1 uses an X11 visual optimized for GTK+'s OpenGL stuff
+  // since revid dae447728d: https://github.com/GNOME/gtk/commit/dae447728d
+  // However, it breaks CEF: https://github.com/cztomczak/cefcapi/issues/9
+  // Let's use the default X11 visual instead of the GTK's blessed one.
+  // Copied from: https://github.com/cztomczak/cefcapi.
+  GdkScreen* screen = gdk_screen_get_default();
+  GList* visuals = gdk_screen_list_visuals(screen);
+
+  GdkX11Screen* x11_screen = GDK_X11_SCREEN(screen);
+  if (x11_screen == nullptr)
+    return;
+
+  Visual* default_xvisual = DefaultVisual(GDK_SCREEN_XDISPLAY(x11_screen),
+                                          GDK_SCREEN_XNUMBER(x11_screen));
+  GList* cursor = visuals;
+  while (cursor != nullptr) {
+    GdkVisual* visual = GDK_X11_VISUAL(cursor->data);
+    if (default_xvisual->visualid ==
+        gdk_x11_visual_get_xvisual(visual)->visualid) {
+      gtk_widget_set_visual(widget, visual);
+      break;
+    }
+    cursor = cursor->next;
+  }
+  g_list_free(visuals);
+#endif
+}
 
 bool IsWindowMaximized(GtkWindow* window) {
   GdkWindow* gdk_window = gtk_widget_get_window(GTK_WIDGET(window));
@@ -56,12 +86,12 @@ RootWindowGtk::RootWindowGtk()
       with_extension_(false),
       is_popup_(false),
       initialized_(false),
-      window_(NULL),
-      back_button_(NULL),
-      forward_button_(NULL),
-      reload_button_(NULL),
-      stop_button_(NULL),
-      url_entry_(NULL),
+      window_(nullptr),
+      back_button_(nullptr),
+      forward_button_(nullptr),
+      reload_button_(nullptr),
+      stop_button_(nullptr),
+      url_entry_(nullptr),
       toolbar_height_(0),
       menubar_height_(0),
       window_destroyed_(false),
@@ -78,29 +108,25 @@ RootWindowGtk::~RootWindowGtk() {
 }
 
 void RootWindowGtk::Init(RootWindow::Delegate* delegate,
-                         const RootWindowConfig& config,
+                         std::unique_ptr<RootWindowConfig> config,
                          const CefBrowserSettings& settings) {
   DCHECK(delegate);
   DCHECK(!initialized_);
 
   delegate_ = delegate;
-  with_controls_ = config.with_controls;
-  always_on_top_ = config.always_on_top;
-  with_osr_ = config.with_osr;
-  with_extension_ = config.with_extension;
-  start_rect_ = config.bounds;
+  with_controls_ = config->with_controls;
+  always_on_top_ = config->always_on_top;
+  with_osr_ = config->with_osr;
+  with_extension_ = config->with_extension;
+  start_rect_ = config->bounds;
 
-  CreateBrowserWindow(config.url);
+  CreateBrowserWindow(config->url);
 
   initialized_ = true;
 
-  // Create the native root window on the main thread.
-  if (CURRENTLY_ON_MAIN_THREAD()) {
-    CreateRootWindow(settings, config.initially_hidden);
-  } else {
-    MAIN_POST_CLOSURE(base::Bind(&RootWindowGtk::CreateRootWindow, this,
-                                 settings, config.initially_hidden));
-  }
+  // Always post asynchronously to avoid reentrancy of the GDK lock.
+  MAIN_POST_CLOSURE(base::BindOnce(&RootWindowGtk::CreateRootWindow, this,
+                                   settings, config->initially_hidden));
 }
 
 void RootWindowGtk::InitAsPopup(RootWindow::Delegate* delegate,
@@ -147,6 +173,7 @@ void RootWindowGtk::Show(ShowMode mode) {
   ScopedGdkThreadsEnter scoped_gdk_threads;
 
   // Show the GTK window.
+  UseDefaultX11VisualForGtk(GTK_WIDGET(window_));
   gtk_widget_show_all(window_);
 #ifdef ASC_HIDE_WINDOW
   gtk_widget_hide(window_);
@@ -228,7 +255,7 @@ CefRefPtr<CefBrowser> RootWindowGtk::GetBrowser() const {
 
   if (browser_window_)
     return browser_window_->GetBrowser();
-  return NULL;
+  return nullptr;
 }
 
 ClientWindowHandle RootWindowGtk::GetWindowHandle() const {
@@ -250,9 +277,11 @@ void RootWindowGtk::CreateBrowserWindow(const std::string& startup_url) {
   if (with_osr_) {
     OsrRendererSettings settings = {};
     MainContext::Get()->PopulateOsrSettings(&settings);
-    //browser_window_.reset(new BrowserWindowOsrGtk(this, startup_url, settings));
+    browser_window_.reset(
+        new BrowserWindowOsrGtk(this, with_controls_, startup_url, settings));
   } else {
-    browser_window_.reset(new BrowserWindowStdGtk(this, startup_url));
+    browser_window_.reset(
+        new BrowserWindowStdGtk(this, with_controls_, startup_url));
   }
 }
 
@@ -297,23 +326,34 @@ void RootWindowGtk::CreateRootWindow(const CefBrowserSettings& settings,
                    G_CALLBACK(&RootWindowGtk::WindowDelete), this);
 
   const cef_color_t background_color = MainContext::Get()->GetBackgroundColor();
-  GdkColor color = {0};
-  color.red = CefColorGetR(background_color) * 65535 / 255;
-  color.green = CefColorGetG(background_color) * 65535 / 255;
-  color.blue = CefColorGetB(background_color) * 65535 / 255;
-  gtk_widget_modify_bg(window_, GTK_STATE_NORMAL, &color);
+  GdkRGBA rgba = {0};
+  rgba.red = CefColorGetR(background_color) * 65535 / 255;
+  rgba.green = CefColorGetG(background_color) * 65535 / 255;
+  rgba.blue = CefColorGetB(background_color) * 65535 / 255;
+  rgba.alpha = 1;
 
-  GtkWidget* vbox = gtk_vbox_new(FALSE, 0);
-  g_signal_connect(vbox, "size-allocate",
-                   G_CALLBACK(&RootWindowGtk::VboxSizeAllocated), this);
-  gtk_container_add(GTK_CONTAINER(window_), vbox);
+  gchar* css = g_strdup_printf("#* { background-color: %s; }",
+                               gdk_rgba_to_string(&rgba));
+  GtkCssProvider* provider = gtk_css_provider_new();
+  gtk_css_provider_load_from_data(provider, css, -1, nullptr);
+  g_free(css);
+  gtk_style_context_add_provider(gtk_widget_get_style_context(window_),
+                                 GTK_STYLE_PROVIDER(provider),
+                                 GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+  g_object_unref(provider);
+
+  GtkWidget* grid = gtk_grid_new();
+  gtk_grid_set_column_homogeneous(GTK_GRID(grid), TRUE);
+  g_signal_connect(grid, "size-allocate",
+                   G_CALLBACK(&RootWindowGtk::GridSizeAllocated), this);
+  gtk_container_add(GTK_CONTAINER(window_), grid);
 
   if (with_controls_) {
     GtkWidget* menu_bar = CreateMenuBar();
     g_signal_connect(menu_bar, "size-allocate",
                      G_CALLBACK(&RootWindowGtk::MenubarSizeAllocated), this);
 
-    gtk_box_pack_start(GTK_BOX(vbox), menu_bar, FALSE, FALSE, 0);
+    gtk_grid_attach(GTK_GRID(grid), menu_bar, 0, 0, 1, 1);
 
     GtkWidget* toolbar = gtk_toolbar_new();
     // Turn off the labels on the toolbar buttons.
@@ -321,22 +361,29 @@ void RootWindowGtk::CreateRootWindow(const CefBrowserSettings& settings,
     g_signal_connect(toolbar, "size-allocate",
                      G_CALLBACK(&RootWindowGtk::ToolbarSizeAllocated), this);
 
-    back_button_ = gtk_tool_button_new_from_stock(GTK_STOCK_GO_BACK);
+    back_button_ = gtk_tool_button_new(
+        gtk_image_new_from_icon_name("go-previous", GTK_ICON_SIZE_MENU),
+        nullptr);
     g_signal_connect(back_button_, "clicked",
                      G_CALLBACK(&RootWindowGtk::BackButtonClicked), this);
     gtk_toolbar_insert(GTK_TOOLBAR(toolbar), back_button_, -1 /* append */);
 
-    forward_button_ = gtk_tool_button_new_from_stock(GTK_STOCK_GO_FORWARD);
+    forward_button_ = gtk_tool_button_new(
+        gtk_image_new_from_icon_name("go-next", GTK_ICON_SIZE_MENU), nullptr);
     g_signal_connect(forward_button_, "clicked",
                      G_CALLBACK(&RootWindowGtk::ForwardButtonClicked), this);
     gtk_toolbar_insert(GTK_TOOLBAR(toolbar), forward_button_, -1 /* append */);
 
-    reload_button_ = gtk_tool_button_new_from_stock(GTK_STOCK_REFRESH);
+    reload_button_ = gtk_tool_button_new(
+        gtk_image_new_from_icon_name("view-refresh", GTK_ICON_SIZE_MENU),
+        nullptr);
     g_signal_connect(reload_button_, "clicked",
                      G_CALLBACK(&RootWindowGtk::ReloadButtonClicked), this);
     gtk_toolbar_insert(GTK_TOOLBAR(toolbar), reload_button_, -1 /* append */);
 
-    stop_button_ = gtk_tool_button_new_from_stock(GTK_STOCK_STOP);
+    stop_button_ = gtk_tool_button_new(
+        gtk_image_new_from_icon_name("process-stop", GTK_ICON_SIZE_MENU),
+        nullptr);
     g_signal_connect(stop_button_, "clicked",
                      G_CALLBACK(&RootWindowGtk::StopButtonClicked), this);
     gtk_toolbar_insert(GTK_TOOLBAR(toolbar), stop_button_, -1 /* append */);
@@ -352,7 +399,8 @@ void RootWindowGtk::CreateRootWindow(const CefBrowserSettings& settings,
     gtk_tool_item_set_expand(tool_item, TRUE);
     gtk_toolbar_insert(GTK_TOOLBAR(toolbar), tool_item, -1);  // append
 
-    gtk_box_pack_start(GTK_BOX(vbox), toolbar, FALSE, FALSE, 0);
+    gtk_grid_attach_next_to(GTK_GRID(grid), toolbar, menu_bar, GTK_POS_BOTTOM,
+                            1, 1);
   }
 
   // Realize (show) the GTK widget. This must be done before the browser is
@@ -367,8 +415,8 @@ void RootWindowGtk::CreateRootWindow(const CefBrowserSettings& settings,
 
   // Windowed browsers are parented to the X11 Window underlying the GtkWindow*
   // and must be sized manually. The OSR GTK widget, on the other hand, can be
-  // added to the Vbox container for automatic layout-based sizing.
-  GtkWidget* parent = with_osr_ ? vbox : window_;
+  // added to the grid container for automatic layout-based sizing.
+  GtkWidget* parent = with_osr_ ? grid : window_;
 
   // Set the Display associated with the browser.
   ::Display* xdisplay = GDK_WINDOW_XDISPLAY(gtk_widget_get_window(window_));
@@ -382,7 +430,7 @@ void RootWindowGtk::CreateRootWindow(const CefBrowserSettings& settings,
 
   if (!is_popup_) {
     // Create the browser window.
-    browser_window_->CreateBrowser(parent, browser_bounds_, settings, NULL,
+    browser_window_->CreateBrowser(parent, browser_bounds_, settings, nullptr,
                                    delegate_->GetRequestContext(this));
   } else {
     // With popups we already have a browser window. Parent the browser window
@@ -406,7 +454,7 @@ void RootWindowGtk::OnBrowserCreated(CefRefPtr<CefBrowser> browser) {
 void RootWindowGtk::OnBrowserWindowClosing() {
   if (!CefCurrentlyOn(TID_UI)) {
     CefPostTask(TID_UI,
-                base::Bind(&RootWindowGtk::OnBrowserWindowClosing, this));
+                base::BindOnce(&RootWindowGtk::OnBrowserWindowClosing, this));
     return;
   }
 
@@ -455,7 +503,7 @@ void RootWindowGtk::OnSetFullscreen(bool fullscreen) {
 
   CefRefPtr<CefBrowser> browser = GetBrowser();
   if (browser) {
-    scoped_ptr<window_test::WindowTestRunnerGtk> test_runner(
+    std::unique_ptr<window_test::WindowTestRunnerGtk> test_runner(
         new window_test::WindowTestRunnerGtk());
     if (fullscreen)
       test_runner->Maximize(browser);
@@ -508,7 +556,7 @@ void RootWindowGtk::OnSetDraggableRegions(
 void RootWindowGtk::NotifyMoveOrResizeStarted() {
   if (!CURRENTLY_ON_MAIN_THREAD()) {
     MAIN_POST_CLOSURE(
-        base::Bind(&RootWindowGtk::NotifyMoveOrResizeStarted, this));
+        base::BindOnce(&RootWindowGtk::NotifyMoveOrResizeStarted, this));
     return;
   }
 
@@ -525,7 +573,7 @@ void RootWindowGtk::NotifyMoveOrResizeStarted() {
 
 void RootWindowGtk::NotifySetFocus() {
   if (!CURRENTLY_ON_MAIN_THREAD()) {
-    MAIN_POST_CLOSURE(base::Bind(&RootWindowGtk::NotifySetFocus, this));
+    MAIN_POST_CLOSURE(base::BindOnce(&RootWindowGtk::NotifySetFocus, this));
     return;
   }
 
@@ -539,7 +587,7 @@ void RootWindowGtk::NotifySetFocus() {
 void RootWindowGtk::NotifyVisibilityChange(bool show) {
   if (!CURRENTLY_ON_MAIN_THREAD()) {
     MAIN_POST_CLOSURE(
-        base::Bind(&RootWindowGtk::NotifyVisibilityChange, this, show));
+        base::BindOnce(&RootWindowGtk::NotifyVisibilityChange, this, show));
     return;
   }
 
@@ -555,7 +603,7 @@ void RootWindowGtk::NotifyVisibilityChange(bool show) {
 void RootWindowGtk::NotifyMenuBarHeight(int height) {
   if (!CURRENTLY_ON_MAIN_THREAD()) {
     MAIN_POST_CLOSURE(
-        base::Bind(&RootWindowGtk::NotifyMenuBarHeight, this, height));
+        base::BindOnce(&RootWindowGtk::NotifyMenuBarHeight, this, height));
     return;
   }
 
@@ -564,8 +612,8 @@ void RootWindowGtk::NotifyMenuBarHeight(int height) {
 
 void RootWindowGtk::NotifyContentBounds(int x, int y, int width, int height) {
   if (!CURRENTLY_ON_MAIN_THREAD()) {
-    MAIN_POST_CLOSURE(base::Bind(&RootWindowGtk::NotifyContentBounds, this, x,
-                                 y, width, height));
+    MAIN_POST_CLOSURE(base::BindOnce(&RootWindowGtk::NotifyContentBounds, this,
+                                     x, y, width, height));
     return;
   }
 
@@ -588,7 +636,7 @@ void RootWindowGtk::NotifyContentBounds(int x, int y, int width, int height) {
 
 void RootWindowGtk::NotifyLoadURL(const std::string& url) {
   if (!CURRENTLY_ON_MAIN_THREAD()) {
-    MAIN_POST_CLOSURE(base::Bind(&RootWindowGtk::NotifyLoadURL, this, url));
+    MAIN_POST_CLOSURE(base::BindOnce(&RootWindowGtk::NotifyLoadURL, this, url));
     return;
   }
 
@@ -601,7 +649,7 @@ void RootWindowGtk::NotifyLoadURL(const std::string& url) {
 void RootWindowGtk::NotifyButtonClicked(int id) {
   if (!CURRENTLY_ON_MAIN_THREAD()) {
     MAIN_POST_CLOSURE(
-        base::Bind(&RootWindowGtk::NotifyButtonClicked, this, id));
+        base::BindOnce(&RootWindowGtk::NotifyButtonClicked, this, id));
     return;
   }
 
@@ -629,7 +677,7 @@ void RootWindowGtk::NotifyButtonClicked(int id) {
 
 void RootWindowGtk::NotifyMenuItem(int id) {
   if (!CURRENTLY_ON_MAIN_THREAD()) {
-    MAIN_POST_CLOSURE(base::Bind(&RootWindowGtk::NotifyMenuItem, this, id));
+    MAIN_POST_CLOSURE(base::BindOnce(&RootWindowGtk::NotifyMenuItem, this, id));
     return;
   }
 
@@ -640,7 +688,7 @@ void RootWindowGtk::NotifyMenuItem(int id) {
 
 void RootWindowGtk::NotifyForceClose() {
   if (!CefCurrentlyOn(TID_UI)) {
-    CefPostTask(TID_UI, base::Bind(&RootWindowGtk::NotifyForceClose, this));
+    CefPostTask(TID_UI, base::BindOnce(&RootWindowGtk::NotifyForceClose, this));
     return;
   }
 
@@ -649,7 +697,7 @@ void RootWindowGtk::NotifyForceClose() {
 
 void RootWindowGtk::NotifyCloseBrowser() {
   if (!CURRENTLY_ON_MAIN_THREAD()) {
-    MAIN_POST_CLOSURE(base::Bind(&RootWindowGtk::NotifyCloseBrowser, this));
+    MAIN_POST_CLOSURE(base::BindOnce(&RootWindowGtk::NotifyCloseBrowser, this));
     return;
   }
 
@@ -665,8 +713,9 @@ void RootWindowGtk::NotifyDestroyedIfDone(bool window_destroyed,
   DCHECK_EQ(1, window_destroyed + browser_destroyed);
 
   if (!CURRENTLY_ON_MAIN_THREAD()) {
-    MAIN_POST_CLOSURE(base::Bind(&RootWindowGtk::NotifyDestroyedIfDone, this,
-                                 window_destroyed, browser_destroyed));
+    MAIN_POST_CLOSURE(base::BindOnce(&RootWindowGtk::NotifyDestroyedIfDone,
+                                     this, window_destroyed,
+                                     browser_destroyed));
     return;
   }
 
@@ -684,7 +733,7 @@ void RootWindowGtk::NotifyDestroyedIfDone(bool window_destroyed,
 gboolean RootWindowGtk::WindowFocusIn(GtkWidget* widget,
                                       GdkEventFocus* event,
                                       RootWindowGtk* self) {
-  CEF_REQUIRE_UI_THREAD();
+  REQUIRE_MAIN_THREAD();
 
   if (event->in) {
     self->NotifySetFocus();
@@ -700,7 +749,7 @@ gboolean RootWindowGtk::WindowFocusIn(GtkWidget* widget,
 gboolean RootWindowGtk::WindowState(GtkWidget* widget,
                                     GdkEventWindowState* event,
                                     RootWindowGtk* self) {
-  CEF_REQUIRE_UI_THREAD();
+  REQUIRE_MAIN_THREAD();
 
   // Called when the root window is iconified or restored. Hide the browser
   // window when the root window is iconified to reduce resource usage.
@@ -716,7 +765,7 @@ gboolean RootWindowGtk::WindowState(GtkWidget* widget,
 gboolean RootWindowGtk::WindowConfigure(GtkWindow* window,
                                         GdkEvent* event,
                                         RootWindowGtk* self) {
-  CEF_REQUIRE_UI_THREAD();
+  REQUIRE_MAIN_THREAD();
   self->NotifyMoveOrResizeStarted();
   return FALSE;  // Don't stop this message.
 }
@@ -731,7 +780,7 @@ void RootWindowGtk::WindowDestroy(GtkWidget* widget, RootWindowGtk* self) {
 gboolean RootWindowGtk::WindowDelete(GtkWidget* widget,
                                      GdkEvent* event,
                                      RootWindowGtk* self) {
-  CEF_REQUIRE_UI_THREAD();
+  REQUIRE_MAIN_THREAD();
 
   // Called to query whether the root window should be closed.
   if (self->force_close_)
@@ -752,7 +801,7 @@ gboolean RootWindowGtk::WindowDelete(GtkWidget* widget,
 }
 
 // static
-void RootWindowGtk::VboxSizeAllocated(GtkWidget* widget,
+void RootWindowGtk::GridSizeAllocated(GtkWidget* widget,
                                       GtkAllocation* allocation,
                                       RootWindowGtk* self) {
   // May be called on the main thread and the UI thread.
@@ -771,7 +820,7 @@ void RootWindowGtk::MenubarSizeAllocated(GtkWidget* widget,
 // static
 gboolean RootWindowGtk::MenuItemActivated(GtkWidget* widget,
                                           RootWindowGtk* self) {
-  CEF_REQUIRE_UI_THREAD();
+  REQUIRE_MAIN_THREAD();
 
   // Retrieve the menu ID set in AddMenuEntry.
   int id = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(widget), kMenuIdKey));
@@ -789,33 +838,33 @@ void RootWindowGtk::ToolbarSizeAllocated(GtkWidget* widget,
 
 // static
 void RootWindowGtk::BackButtonClicked(GtkButton* button, RootWindowGtk* self) {
-  CEF_REQUIRE_UI_THREAD();
+  REQUIRE_MAIN_THREAD();
   self->NotifyButtonClicked(IDC_NAV_BACK);
 }
 
 // static
 void RootWindowGtk::ForwardButtonClicked(GtkButton* button,
                                          RootWindowGtk* self) {
-  CEF_REQUIRE_UI_THREAD();
+  REQUIRE_MAIN_THREAD();
   self->NotifyButtonClicked(IDC_NAV_FORWARD);
 }
 
 // static
 void RootWindowGtk::StopButtonClicked(GtkButton* button, RootWindowGtk* self) {
-  CEF_REQUIRE_UI_THREAD();
+  REQUIRE_MAIN_THREAD();
   self->NotifyButtonClicked(IDC_NAV_STOP);
 }
 
 // static
 void RootWindowGtk::ReloadButtonClicked(GtkButton* button,
                                         RootWindowGtk* self) {
-  CEF_REQUIRE_UI_THREAD();
+  REQUIRE_MAIN_THREAD();
   self->NotifyButtonClicked(IDC_NAV_RELOAD);
 }
 
 // static
 void RootWindowGtk::URLEntryActivate(GtkEntry* entry, RootWindowGtk* self) {
-  CEF_REQUIRE_UI_THREAD();
+  REQUIRE_MAIN_THREAD();
   const gchar* url = gtk_entry_get_text(entry);
   self->NotifyLoadURL(std::string(url));
 }
@@ -824,7 +873,7 @@ void RootWindowGtk::URLEntryActivate(GtkEntry* entry, RootWindowGtk* self) {
 gboolean RootWindowGtk::URLEntryButtonPress(GtkWidget* widget,
                                             GdkEventButton* event,
                                             RootWindowGtk* self) {
-  CEF_REQUIRE_UI_THREAD();
+  REQUIRE_MAIN_THREAD();
 
   // Give focus to the GTK window. This is a work-around for bad focus-related
   // interaction between the root window managed by GTK and the browser managed
@@ -869,7 +918,6 @@ GtkWidget* RootWindowGtk::CreateMenuBar() {
   AddMenuEntry(test_menu, "New Window", ID_TESTS_WINDOW_NEW);
   AddMenuEntry(test_menu, "Popup Window", ID_TESTS_WINDOW_POPUP);
   AddMenuEntry(test_menu, "Request", ID_TESTS_REQUEST);
-  AddMenuEntry(test_menu, "Plugin Info", ID_TESTS_PLUGIN_INFO);
   AddMenuEntry(test_menu, "Zoom In", ID_TESTS_ZOOM_IN);
   AddMenuEntry(test_menu, "Zoom Out", ID_TESTS_ZOOM_OUT);
   AddMenuEntry(test_menu, "Zoom Reset", ID_TESTS_ZOOM_RESET);

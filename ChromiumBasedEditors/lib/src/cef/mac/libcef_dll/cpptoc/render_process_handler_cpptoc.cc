@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=1abf9303cc2c0f6d86b9e84b4edddcb294330294$
+// $hash=05c223f2568d1c7deb34613ae3838bdcf6fdb0ee$
 //
 
 #include "libcef_dll/cpptoc/render_process_handler_cpptoc.h"
@@ -18,7 +18,6 @@
 #include "libcef_dll/ctocpp/dictionary_value_ctocpp.h"
 #include "libcef_dll/ctocpp/domnode_ctocpp.h"
 #include "libcef_dll/ctocpp/frame_ctocpp.h"
-#include "libcef_dll/ctocpp/list_value_ctocpp.h"
 #include "libcef_dll/ctocpp/process_message_ctocpp.h"
 #include "libcef_dll/ctocpp/v8context_ctocpp.h"
 #include "libcef_dll/ctocpp/v8exception_ctocpp.h"
@@ -27,24 +26,6 @@
 namespace {
 
 // MEMBER FUNCTIONS - Body may be edited by hand.
-
-void CEF_CALLBACK render_process_handler_on_render_thread_created(
-    struct _cef_render_process_handler_t* self,
-    struct _cef_list_value_t* extra_info) {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  DCHECK(self);
-  if (!self)
-    return;
-  // Verify param: extra_info; type: refptr_diff
-  DCHECK(extra_info);
-  if (!extra_info)
-    return;
-
-  // Execute
-  CefRenderProcessHandlerCppToC::Get(self)->OnRenderThreadCreated(
-      CefListValueCToCpp::Wrap(extra_info));
-}
 
 void CEF_CALLBACK render_process_handler_on_web_kit_initialized(
     struct _cef_render_process_handler_t* self) {
@@ -71,10 +52,7 @@ void CEF_CALLBACK render_process_handler_on_browser_created(
   DCHECK(browser);
   if (!browser)
     return;
-  // Verify param: extra_info; type: refptr_diff
-  DCHECK(extra_info);
-  if (!extra_info)
-    return;
+  // Unverified params: extra_info
 
   // Execute
   CefRenderProcessHandlerCppToC::Get(self)->OnBrowserCreated(
@@ -275,8 +253,6 @@ int CEF_CALLBACK render_process_handler_on_process_message_received(
 // CONSTRUCTOR - Do not edit by hand.
 
 CefRenderProcessHandlerCppToC::CefRenderProcessHandlerCppToC() {
-  GetStruct()->on_render_thread_created =
-      render_process_handler_on_render_thread_created;
   GetStruct()->on_web_kit_initialized =
       render_process_handler_on_web_kit_initialized;
   GetStruct()->on_browser_created = render_process_handler_on_browser_created;
@@ -305,7 +281,7 @@ CefRefPtr<CefRenderProcessHandler> CefCppToCRefCounted<
                                                  cef_render_process_handler_t*
                                                      s) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

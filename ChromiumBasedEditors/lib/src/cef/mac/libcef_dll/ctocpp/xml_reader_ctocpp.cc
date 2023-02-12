@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=a2c9ba189a4b77f4ad94eef43e05866df435c0ef$
+// $hash=e5e2325d96c340e29a99e622df97eb792a5dd776$
 //
 
 #include "libcef_dll/ctocpp/xml_reader_ctocpp.h"
@@ -29,11 +29,11 @@ CefRefPtr<CefXmlReader> CefXmlReader::Create(CefRefPtr<CefStreamReader> stream,
   // Verify param: stream; type: refptr_same
   DCHECK(stream.get());
   if (!stream.get())
-    return NULL;
+    return nullptr;
   // Verify param: URI; type: string_byref_const
   DCHECK(!URI.empty());
   if (URI.empty())
-    return NULL;
+    return nullptr;
 
   // Execute
   cef_xml_reader_t* _retval = cef_xml_reader_create(
@@ -599,7 +599,7 @@ cef_xml_reader_t*
 CefCToCppRefCounted<CefXmlReaderCToCpp, CefXmlReader, cef_xml_reader_t>::
     UnwrapDerived(CefWrapperType type, CefXmlReader* c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

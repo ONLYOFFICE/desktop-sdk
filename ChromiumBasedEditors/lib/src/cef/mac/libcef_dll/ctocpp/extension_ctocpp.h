@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=87fdfab045038e939a688294888138220b99f012$
+// $hash=07a08b9dd260059e77dfb433f43686cbc5569bea$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_EXTENSION_CTOCPP_H_
@@ -38,14 +38,14 @@ class CefExtensionCToCpp : public CefCToCppRefCounted<CefExtensionCToCpp,
   virtual ~CefExtensionCToCpp();
 
   // CefExtension methods.
-  CefString GetIdentifier() OVERRIDE;
-  CefString GetPath() OVERRIDE;
-  CefRefPtr<CefDictionaryValue> GetManifest() OVERRIDE;
-  bool IsSame(CefRefPtr<CefExtension> that) OVERRIDE;
-  CefRefPtr<CefExtensionHandler> GetHandler() OVERRIDE;
-  CefRefPtr<CefRequestContext> GetLoaderContext() OVERRIDE;
-  bool IsLoaded() OVERRIDE;
-  void Unload() OVERRIDE;
+  CefString GetIdentifier() override;
+  CefString GetPath() override;
+  CefRefPtr<CefDictionaryValue> GetManifest() override;
+  bool IsSame(CefRefPtr<CefExtension> that) override;
+  CefRefPtr<CefExtensionHandler> GetHandler() override;
+  CefRefPtr<CefRequestContext> GetLoaderContext() override;
+  bool IsLoaded() override;
+  void Unload() override;
 };
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_EXTENSION_CTOCPP_H_

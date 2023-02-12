@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=2f78b59f643dd717a3ce18b9d4ddb1c7c49d2e5e$
+// $hash=de3ebaabf9a63c53433469d01241fd97197d7c60$
 //
 
 #include "libcef_dll/ctocpp/get_extension_resource_callback_ctocpp.h"
@@ -67,7 +67,7 @@ CefCToCppRefCounted<CefGetExtensionResourceCallbackCToCpp,
                     cef_get_extension_resource_callback_t>::
     UnwrapDerived(CefWrapperType type, CefGetExtensionResourceCallback* c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>
