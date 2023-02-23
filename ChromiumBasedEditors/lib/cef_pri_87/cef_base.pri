@@ -693,7 +693,7 @@ PKGCONFIG += glib-2.0 gtk+-3.0 atk
 LIBS += -lX11
 
 QMAKE_CXXFLAGS += -fPIC
-QMAKE_LFLAGS += -Wl,--rpath=./
+QMAKE_LFLAGS += "-Wl,-rpath,\'\$$ORIGIN\'"
 
 }
 
