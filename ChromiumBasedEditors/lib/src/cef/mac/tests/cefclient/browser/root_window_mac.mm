@@ -460,8 +460,7 @@ void RootWindowMacImpl::CreateBrowserWindow(const std::string& startup_url) {
   if (with_osr_) {
     OsrRendererSettings settings = {};
     MainContext::Get()->PopulateOsrSettings(&settings);
-    browser_window_.reset(new BrowserWindowOsrMac(&root_window_, with_controls_,
-                                                  startup_url, settings));
+    browser_window_.reset();
   } else {
     browser_window_.reset(
         new BrowserWindowStdMac(&root_window_, with_controls_, startup_url));
