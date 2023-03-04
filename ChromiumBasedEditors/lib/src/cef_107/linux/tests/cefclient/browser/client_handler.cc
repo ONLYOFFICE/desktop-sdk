@@ -379,7 +379,7 @@ ClientHandler::ClientHandler(Delegate* delegate,
     if (use_client_dialogs || require_client_dialogs) {
       file_dialog_handler_ = js_dialog_handler_ ? js_dialog_handler_
                                                 : new ClientDialogHandlerGtk();
-      print_handler_ = new ClientPrintHandlerGtk();
+//      print_handler_ = new ClientPrintHandlerGtk();
     }
   }
 #endif  // defined(OS_LINUX)
