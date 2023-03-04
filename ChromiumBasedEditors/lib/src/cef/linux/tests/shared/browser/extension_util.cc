@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <optional>
 
 #include "include/base/cef_callback.h"
 #include "include/cef_parser.h"

@@ -282,8 +282,10 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 
     m_pInternal->m_pManager = pManager;
 
+#ifdef WIN32
     // Enable High-DPI support on Windows 7 or newer.
     CefEnableHighDPISupport();
+#endif
 
 #if defined(_LINUX) && !defined(_MAC)
     // Create a copy of |argv| on Linux because Chromium mangles the value
