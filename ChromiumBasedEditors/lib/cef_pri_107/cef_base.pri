@@ -707,7 +707,7 @@ LIBS += \
 
 core_linux {
 
-LIBS += -L$$PWD/../../../../core/Common/3dParty/cef/$$CORE_BUILDS_PLATFORM_PREFIX/build -lcef
+LIBS += -L$$PWD/../../../../core/Common/3dParty/cef/$$CORE_BUILDS_PLATFORM_PREFIX/build_107 -lcef
 
 CONFIG += link_pkgconfig
 PKGCONFIG += glib-2.0 gtk+-3.0 atk
