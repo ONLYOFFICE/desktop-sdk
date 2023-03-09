@@ -45,7 +45,7 @@ build_xp {
     }
 
     core_linux {
-        INCLUDEPATH += $$PWD/src/polyfill
+        system( g++ --version | grep -e "\<6.[0-9]" ):INCLUDEPATH += $$PWD/src/polyfill
         cef_version_107 {
             CEF_PROJECT_PRI=$$PWD/cef_pri_107
         }
