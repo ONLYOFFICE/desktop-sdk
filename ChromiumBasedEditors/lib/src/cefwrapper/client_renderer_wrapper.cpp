@@ -586,6 +586,10 @@ public:
 	std::wstring m_sEditorPageDomain;
 	std::wstring m_sInternalEditorPageDomain;
 
+	// для печати облачных файлов (pdf/xps/djvu)
+	std::wstring m_sCloudNativePrintPassword;
+	std::wstring m_sCloudNativePrintFile;
+
 	CAscEditorNativeV8Handler(const std::wstring& sUrl)
 	{
 		m_etType = etUndefined;
@@ -1396,6 +1400,13 @@ DE.controllers.Main.DisableVersionHistory(); \
 			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("print");
 			if (arguments.size() == 1)
 				message->GetArgumentList()->SetString(0, (*arguments.begin())->GetStringValue());
+
+			if (!m_sCloudNativePrintFile.empty())
+			{
+				message->GetArgumentList()->SetString(1, m_sCloudNativePrintFile);
+				message->GetArgumentList()->SetString(2, m_sCloudNativePrintPassword);
+			}
+
 			SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 			return true;
 		}
@@ -3788,6 +3799,40 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
 
 			return true;
 		}
+		else if (name == "SetPdfCloudPrintFileInfo")
+		{
+			m_sCloudNativePrintPassword = arguments[1]->GetStringValue().ToWString();
+			std::string sBase64File = arguments[0]->GetStringValue().ToString();
+
+			BYTE* pData = NULL;
+			int nDataLen = 0;
+			NSFile::CBase64Converter::Decode(sBase64File.c_str(), (int)sBase64File.length(), pData, nDataLen);
+
+			std::wstring sDirTmp = m_sAppTmpFolder;
+			if (sDirTmp.empty())
+				sDirTmp = NSFile::CFileBinary::GetTempPath();
+
+			std::wstring sFileTmp = NSFile::CFileBinary::CreateTempFileWithUniqueName(sDirTmp, L"IMG");
+			if (NSFile::CFileBinary::Exists(sFileTmp))
+				NSFile::CFileBinary::Remove(sFileTmp);
+
+			NSFile::CFileBinary oFile;
+			if (oFile.CreateFile(sFileTmp))
+			{
+				oFile.WriteFile(pData, (DWORD)nDataLen);
+				oFile.CloseFile();
+
+				m_sCloudNativePrintFile = sFileTmp;
+			}
+
+			RELEASEARRAYOBJECTS(pData);
+			return true;
+		}
+		else if (name == "IsCachedPdfCloudPrintFileInfo")
+		{
+			retval = CefV8Value::CreateBool(!m_sCloudNativePrintFile.empty());
+			return true;
+		}
 
 		// Function does not exist.
 		return false;
@@ -4169,7 +4214,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
 	CefRefPtr<CefV8Handler> handler = pWrapper;
 
-	#define EXTEND_METHODS_COUNT 163
+	#define EXTEND_METHODS_COUNT 165
 	const char* methods[EXTEND_METHODS_COUNT] = {
 		"Copy",
 		"Paste",
@@ -4393,6 +4438,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
 		"_convertFile",
 		"_onConvertFile",
+
+		"SetPdfCloudPrintFileInfo",
+		"IsCachedPdfCloudPrintFileInfo",
 
 		NULL
 	};
