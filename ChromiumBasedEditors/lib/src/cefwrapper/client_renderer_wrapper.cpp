@@ -587,7 +587,6 @@ public:
 	std::wstring m_sInternalEditorPageDomain;
 
 	// для печати облачных файлов (pdf/xps/djvu)
-	std::wstring m_sCloudNativePrintPassword;
 	std::wstring m_sCloudNativePrintFile;
 
 	CAscEditorNativeV8Handler(const std::wstring& sUrl)
@@ -1398,14 +1397,20 @@ DE.controllers.Main.DisableVersionHistory(); \
 		else if (name == "Print")
 		{
 			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("print");
-			if (arguments.size() == 1)
-				message->GetArgumentList()->SetString(0, (*arguments.begin())->GetStringValue());
+
+			CefString params = "";
+			CefString password = "";
+
+			if (arguments.size() > 0)
+				params = arguments[0]->GetStringValue();
+			if (arguments.size() > 1)
+				password = arguments[1]->GetStringValue();
+
+			message->GetArgumentList()->SetString(0, params);
+			message->GetArgumentList()->SetString(1, password);
 
 			if (!m_sCloudNativePrintFile.empty())
-			{
-				message->GetArgumentList()->SetString(1, m_sCloudNativePrintFile);
-				message->GetArgumentList()->SetString(2, m_sCloudNativePrintPassword);
-			}
+				message->GetArgumentList()->SetString(2, m_sCloudNativePrintFile);
 
 			SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 			return true;
@@ -3801,7 +3806,6 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
 		}
 		else if (name == "SetPdfCloudPrintFileInfo")
 		{
-			m_sCloudNativePrintPassword = arguments[1]->GetStringValue().ToWString();
 			std::string sBase64File = arguments[0]->GetStringValue().ToString();
 
 			BYTE* pData = NULL;

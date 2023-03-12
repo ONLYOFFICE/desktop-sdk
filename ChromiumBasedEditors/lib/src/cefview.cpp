@@ -2615,15 +2615,12 @@ public:
 			// для редакторов - вызывает asc_nativePrint
 			NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
 			pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_PRINT_START;
-			m_pParent->m_pInternal->m_sPrintParameters = "";
-			if (args->GetSize() > 0)
-				m_pParent->m_pInternal->m_sPrintParameters = args->GetString(0);
 
-			if (args->GetSize() == 3)
-			{
-				m_pParent->m_pInternal->m_sCloudNativePrintFile = args->GetString(1);
-				m_pParent->m_pInternal->m_sNativeFilePassword = args->GetString(2);
-			}
+			m_pParent->m_pInternal->m_sPrintParameters = args->GetString(0);
+			m_pParent->m_pInternal->m_sNativeFilePassword = args->GetString(1);
+
+			if (args->GetSize() > 2)
+				m_pParent->m_pInternal->m_sCloudNativePrintFile = args->GetString(2);
 
 			m_pParent->Apply(pEvent);
 			return true;
