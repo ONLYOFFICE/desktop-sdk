@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <sstream>
 #include <string>
+#include <optional>
 
 #include "include/base/cef_callback.h"
 #include "include/cef_browser.h"

@@ -11,6 +11,7 @@
 #include "include/cef_app.h"
 #include "include/wrapper/cef_helpers.h"
 #include "tests/cefclient/browser/client_handler_std.h"
+#include <optional>
 
 namespace client {
 
