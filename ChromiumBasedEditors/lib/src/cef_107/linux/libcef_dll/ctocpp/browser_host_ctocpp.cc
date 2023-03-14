@@ -29,6 +29,8 @@
 #include "libcef_dll/shutdown_checker.h"
 #include "libcef_dll/transfer_util.h"
 
+#include <X11/Xlib.h>
+
 // STATIC METHODS - Body may be edited by hand.
 
 NO_SANITIZE("cfi-icall")
@@ -429,6 +431,9 @@ void CefBrowserHostCToCpp::ShowDevTools(const CefWindowInfo& windowInfo,
   // Unverified params: windowInfo, client, settings, inspect_element_at
 
   // Execute
+  Display* pDisplay = (Display*)cef_get_xdisplay();
+  XSync(pDisplay, false);
+
   _struct->show_dev_tools(_struct, &windowInfo, CefClientCppToC::Wrap(client),
                           &settings, &inspect_element_at);
 }
