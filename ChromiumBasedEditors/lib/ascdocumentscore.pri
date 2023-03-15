@@ -45,6 +45,7 @@ build_xp {
     }
 
     core_linux {
+	    CONFIG += c++1z
         build_gcc_less_6:INCLUDEPATH += $$PWD/src/polyfill
         cef_version_107 {
             CEF_PROJECT_PRI=$$PWD/cef_pri_107
