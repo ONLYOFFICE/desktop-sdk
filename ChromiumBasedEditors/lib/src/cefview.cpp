@@ -313,12 +313,14 @@ class CAscNativePrintDocument : public IAscNativePrintDocument
 protected:
 	IOfficeDrawingFile* m_pReader;
 	std::wstring m_sPassword;
+	int m_nFileType;
 
 public:
 	CAscNativePrintDocument(const std::wstring& sPassword) : IAscNativePrintDocument()
 	{
 		m_pReader = NULL;
 		m_sPassword = sPassword;
+		m_nFileType = 0;
 	}
 	virtual ~CAscNativePrintDocument()
 	{
@@ -334,6 +336,7 @@ public:
 
 	virtual void PreOpen(int nFileType)
 	{
+		m_nFileType = nFileType;
 		m_pReader = NULL;
 		switch (nFileType)
 		{
@@ -366,6 +369,18 @@ public:
 
 		m_pReader->SetTempDirectory(m_sTempFolder.c_str());
 		m_pReader->LoadFromFile(m_sFilePath, L"", m_sPassword, m_sPassword);
+
+		switch (m_nFileType)
+		{
+		case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF:
+		case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA:
+		{
+			((CPdfFile*)m_pReader)->SetCMapFolder(m_sCMapFolder);
+			break;
+		}
+		default:
+			break;
+		};
 	}
 
 	virtual void Close()
@@ -753,6 +768,8 @@ public:
 	// данные для печати
 	CPrintData m_oPrintData;
 	std::string m_sPrintParameters;
+
+	std::wstring m_sCloudNativePrintFile;
 
 	// ссылка для view
 	std::wstring m_strUrl;
@@ -2598,9 +2615,13 @@ public:
 			// для редакторов - вызывает asc_nativePrint
 			NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
 			pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_PRINT_START;
-			m_pParent->m_pInternal->m_sPrintParameters = "";
-			if (args->GetSize() == 1)
-				m_pParent->m_pInternal->m_sPrintParameters = args->GetString(0);
+
+			m_pParent->m_pInternal->m_sPrintParameters = args->GetString(0);
+			m_pParent->m_pInternal->m_sNativeFilePassword = args->GetString(1);
+
+			if (args->GetSize() > 2)
+				m_pParent->m_pInternal->m_sCloudNativePrintFile = args->GetString(2);
+
 			m_pParent->Apply(pEvent);
 			return true;
 		}
@@ -6088,10 +6109,22 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 		}
 
 		bool bIsNativePrint = false;
-		if (!m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc.empty())
+
+		std::wstring sLocalFileSrc = m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc;
+		int nLocalFileSrcFormat = m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat;
+		if (!m_pInternal->m_sCloudNativePrintFile.empty())
+		{
+			sLocalFileSrc = m_pInternal->m_sCloudNativePrintFile;
+
+			COfficeFileFormatChecker oChecker;
+			if (oChecker.isOfficeFile(sLocalFileSrc))
+				nLocalFileSrcFormat = oChecker.nFileType;
+		}
+
+		if (!sLocalFileSrc.empty())
 		{
 			// локальные файлы
-			switch (m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat)
+			switch (nLocalFileSrcFormat)
 			{
 			case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF:
 			case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA:
@@ -6112,11 +6145,25 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 				if (NULL == m_pInternal->m_oPrintData.m_pNativePrinter->m_pApplicationFonts)
 					m_pInternal->m_oPrintData.m_pNativePrinter->m_pApplicationFonts = m_pInternal->m_pManager->m_pInternal->m_pApplicationFonts;
 
+				std::wstring sCMapFolder = m_pInternal->m_pManager->m_oSettings.local_editors_path;
+				std::wstring::size_type nPosCMap = sCMapFolder.rfind(L"web-apps/apps/api/documents/index.html");
+				if (nPosCMap != std::wstring::npos)
+					sCMapFolder = sCMapFolder.substr(0, nPosCMap);
+				sCMapFolder += L"sdkjs/pdf/src/engine";
 
-				m_pInternal->m_oPrintData.m_pNativePrinter->PreOpen(m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat);
+				m_pInternal->m_oPrintData.m_pNativePrinter->m_sCMapFolder = sCMapFolder;
+				m_pInternal->m_oPrintData.m_pNativePrinter->PreOpen(nLocalFileSrcFormat);
 
-				m_pInternal->m_oPrintData.m_pNativePrinter->Open(m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc,
-																 m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir);
+				std::wstring sTempDirRecover = m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir;
+				if (!m_pInternal->m_sCloudNativePrintFile.empty())
+				{
+					sTempDirRecover = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"PR_");
+					if (NSFile::CFileBinary::Exists(sTempDirRecover))
+						NSFile::CFileBinary::Remove(sTempDirRecover);
+					NSDirectory::CreateDirectory(sTempDirRecover);
+				}
+
+				m_pInternal->m_oPrintData.m_pNativePrinter->Open(sLocalFileSrc, sTempDirRecover);
 				m_pInternal->m_oPrintData.m_pNativePrinter->Check(m_pInternal->m_oPrintData.m_arPages);
 				bIsNativePrint = true;
 			}
