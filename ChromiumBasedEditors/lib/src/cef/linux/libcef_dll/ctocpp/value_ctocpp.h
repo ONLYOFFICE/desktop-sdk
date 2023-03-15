@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=14b514e55f58dff0d1c611f684e05890c9f246ef$
+// $hash=80621c9fcd1e112984ddb490da40034e9731d530$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_VALUE_CTOCPP_H_
@@ -33,28 +33,28 @@ class CefValueCToCpp
   virtual ~CefValueCToCpp();
 
   // CefValue methods.
-  bool IsValid() OVERRIDE;
-  bool IsOwned() OVERRIDE;
-  bool IsReadOnly() OVERRIDE;
-  bool IsSame(CefRefPtr<CefValue> that) OVERRIDE;
-  bool IsEqual(CefRefPtr<CefValue> that) OVERRIDE;
-  CefRefPtr<CefValue> Copy() OVERRIDE;
-  CefValueType GetType() OVERRIDE;
-  bool GetBool() OVERRIDE;
-  int GetInt() OVERRIDE;
-  double GetDouble() OVERRIDE;
-  CefString GetString() OVERRIDE;
-  CefRefPtr<CefBinaryValue> GetBinary() OVERRIDE;
-  CefRefPtr<CefDictionaryValue> GetDictionary() OVERRIDE;
-  CefRefPtr<CefListValue> GetList() OVERRIDE;
-  bool SetNull() OVERRIDE;
-  bool SetBool(bool value) OVERRIDE;
-  bool SetInt(int value) OVERRIDE;
-  bool SetDouble(double value) OVERRIDE;
-  bool SetString(const CefString& value) OVERRIDE;
-  bool SetBinary(CefRefPtr<CefBinaryValue> value) OVERRIDE;
-  bool SetDictionary(CefRefPtr<CefDictionaryValue> value) OVERRIDE;
-  bool SetList(CefRefPtr<CefListValue> value) OVERRIDE;
+  bool IsValid() override;
+  bool IsOwned() override;
+  bool IsReadOnly() override;
+  bool IsSame(CefRefPtr<CefValue> that) override;
+  bool IsEqual(CefRefPtr<CefValue> that) override;
+  CefRefPtr<CefValue> Copy() override;
+  CefValueType GetType() override;
+  bool GetBool() override;
+  int GetInt() override;
+  double GetDouble() override;
+  CefString GetString() override;
+  CefRefPtr<CefBinaryValue> GetBinary() override;
+  CefRefPtr<CefDictionaryValue> GetDictionary() override;
+  CefRefPtr<CefListValue> GetList() override;
+  bool SetNull() override;
+  bool SetBool(bool value) override;
+  bool SetInt(int value) override;
+  bool SetDouble(double value) override;
+  bool SetString(const CefString& value) override;
+  bool SetBinary(CefRefPtr<CefBinaryValue> value) override;
+  bool SetDictionary(CefRefPtr<CefDictionaryValue> value) override;
+  bool SetList(CefRefPtr<CefListValue> value) override;
 };
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_VALUE_CTOCPP_H_

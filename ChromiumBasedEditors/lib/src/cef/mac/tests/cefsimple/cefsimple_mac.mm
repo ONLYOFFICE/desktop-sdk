@@ -6,6 +6,7 @@
 #import <Cocoa/Cocoa.h>
 
 #include "include/cef_application_mac.h"
+#include "include/cef_command_line.h"
 #include "include/wrapper/cef_helpers.h"
 #include "include/wrapper/cef_library_loader.h"
 #include "tests/cefsimple/simple_app.h"
@@ -13,6 +14,7 @@
 
 // Receives notifications from the application.
 @interface SimpleAppDelegate : NSObject <NSApplicationDelegate>
+
 - (void)createApplication:(id)object;
 - (void)tryToTerminateApplication:(NSApplication*)app;
 @end
@@ -87,7 +89,6 @@
 
 // Create the application on the UI thread.
 - (void)createApplication:(id)object {
-  [NSApplication sharedApplication];
   [[NSBundle mainBundle] loadNibNamed:@"MainMenu"
                                 owner:NSApp
                       topLevelObjects:nil];
@@ -123,8 +124,26 @@ int main(int argc, char* argv[]) {
     // Initialize the SimpleApplication instance.
     [SimpleApplication sharedApplication];
 
+    // If there was an invocation to NSApp prior to this method, then the NSApp
+    // will not be a SimpleApplication, but will instead be an NSApplication.
+    // This is undesirable and we must enforce that this doesn't happen.
+    CHECK([NSApp isKindOfClass:[SimpleApplication class]]);
+
+    // Parse command-line arguments for use in this method.
+    CefRefPtr<CefCommandLine> command_line =
+        CefCommandLine::CreateCommandLine();
+    command_line->InitFromArgv(argc, argv);
+
     // Specify CEF global settings here.
     CefSettings settings;
+
+    const bool with_chrome_runtime =
+        command_line->HasSwitch("enable-chrome-runtime");
+
+    if (with_chrome_runtime) {
+      // Enable experimental Chrome runtime. See issue #2969 for details.
+      settings.chrome_runtime = true;
+    }
 
     // When generating projects with CMake the CEF_USE_SANDBOX value will be
     // defined automatically. Pass -DUSE_SANDBOX=OFF to the CMake command-line
@@ -139,7 +158,7 @@ int main(int argc, char* argv[]) {
     CefRefPtr<SimpleApp> app(new SimpleApp);
 
     // Initialize CEF for the browser process.
-    CefInitialize(main_args, settings, app.get(), NULL);
+    CefInitialize(main_args, settings, app.get(), nullptr);
 
     // Create the application delegate.
     NSObject* delegate = [[SimpleAppDelegate alloc] init];

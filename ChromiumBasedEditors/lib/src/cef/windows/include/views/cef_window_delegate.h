@@ -43,78 +43,120 @@
 class CefWindow;
 
 ///
-// Implement this interface to handle window events. The methods of this class
-// will be called on the browser process UI thread unless otherwise indicated.
+/// Implement this interface to handle window events. The methods of this class
+/// will be called on the browser process UI thread unless otherwise indicated.
 ///
 /*--cef(source=client)--*/
 class CefWindowDelegate : public CefPanelDelegate {
  public:
   ///
-  // Called when |window| is created.
+  /// Called when |window| is created.
   ///
   /*--cef()--*/
   virtual void OnWindowCreated(CefRefPtr<CefWindow> window) {}
 
   ///
-  // Called when |window| is destroyed. Release all references to |window| and
-  // do not attempt to execute any methods on |window| after this callback
-  // returns.
+  /// Called when |window| is closing.
+  ///
+  /*--cef()--*/
+  virtual void OnWindowClosing(CefRefPtr<CefWindow> window) {}
+
+  ///
+  /// Called when |window| is destroyed. Release all references to |window| and
+  /// do not attempt to execute any methods on |window| after this callback
+  /// returns.
   ///
   /*--cef()--*/
   virtual void OnWindowDestroyed(CefRefPtr<CefWindow> window) {}
 
   ///
-  // Return the parent for |window| or NULL if the |window| does not have a
-  // parent. Windows with parents will not get a taskbar button. Set |is_menu|
-  // to true if |window| will be displayed as a menu, in which case it will not
-  // be clipped to the parent window bounds. Set |can_activate_menu| to false
-  // if |is_menu| is true and |window| should not be activated (given keyboard
-  // focus) when displayed.
+  /// Called when |window| is activated or deactivated.
+  ///
+  /*--cef()--*/
+  virtual void OnWindowActivationChanged(CefRefPtr<CefWindow> window,
+                                         bool active) {}
+
+  ///
+  /// Called when |window| bounds have changed. |new_bounds| will be in DIP
+  /// screen coordinates.
+  ///
+  /*--cef()--*/
+  virtual void OnWindowBoundsChanged(CefRefPtr<CefWindow> window,
+                                     const CefRect& new_bounds) {}
+
+  ///
+  /// Return the parent for |window| or NULL if the |window| does not have a
+  /// parent. Windows with parents will not get a taskbar button. Set |is_menu|
+  /// to true if |window| will be displayed as a menu, in which case it will not
+  /// be clipped to the parent window bounds. Set |can_activate_menu| to false
+  /// if |is_menu| is true and |window| should not be activated (given keyboard
+  /// focus) when displayed.
   ///
   /*--cef()--*/
   virtual CefRefPtr<CefWindow> GetParentWindow(CefRefPtr<CefWindow> window,
                                                bool* is_menu,
                                                bool* can_activate_menu) {
-    return NULL;
+    return nullptr;
   }
 
   ///
-  // Return true if |window| should be created without a frame or title bar. The
-  // window will be resizable if CanResize() returns true. Use
-  // CefWindow::SetDraggableRegions() to specify draggable regions.
+  /// Return the initial bounds for |window| in density independent pixel (DIP)
+  /// coordinates. If this method returns an empty CefRect then
+  /// GetPreferredSize() will be called to retrieve the size, and the window
+  /// will be placed on the screen with origin (0,0). This method can be used in
+  /// combination with CefView::GetBoundsInScreen() to restore the previous
+  /// window bounds.
+  ///
+  /*--cef()--*/
+  virtual CefRect GetInitialBounds(CefRefPtr<CefWindow> window) {
+    return CefRect();
+  }
+
+  ///
+  /// Return the initial show state for |window|.
+  ///
+  /*--cef(default_retval=CEF_SHOW_STATE_NORMAL)--*/
+  virtual cef_show_state_t GetInitialShowState(CefRefPtr<CefWindow> window) {
+    return CEF_SHOW_STATE_NORMAL;
+  }
+
+  ///
+  /// Return true if |window| should be created without a frame or title bar.
+  /// The window will be resizable if CanResize() returns true. Use
+  /// CefWindow::SetDraggableRegions() to specify draggable regions.
   ///
   /*--cef()--*/
   virtual bool IsFrameless(CefRefPtr<CefWindow> window) { return false; }
 
   ///
-  // Return true if |window| can be resized.
+  /// Return true if |window| can be resized.
   ///
   /*--cef()--*/
   virtual bool CanResize(CefRefPtr<CefWindow> window) { return true; }
 
   ///
-  // Return true if |window| can be maximized.
+  /// Return true if |window| can be maximized.
   ///
   /*--cef()--*/
   virtual bool CanMaximize(CefRefPtr<CefWindow> window) { return true; }
 
   ///
-  // Return true if |window| can be minimized.
+  /// Return true if |window| can be minimized.
   ///
   /*--cef()--*/
   virtual bool CanMinimize(CefRefPtr<CefWindow> window) { return true; }
 
   ///
-  // Return true if |window| can be closed. This will be called for user-
-  // initiated window close actions and when CefWindow::Close() is called.
+  /// Return true if |window| can be closed. This will be called for user-
+  /// initiated window close actions and when CefWindow::Close() is called.
   ///
   /*--cef()--*/
   virtual bool CanClose(CefRefPtr<CefWindow> window) { return true; }
 
   ///
-  // Called when a keyboard accelerator registered with
-  // CefWindow::SetAccelerator is triggered. Return true if the accelerator was
-  // handled or false otherwise.
+  /// Called when a keyboard accelerator registered with
+  /// CefWindow::SetAccelerator is triggered. Return true if the accelerator was
+  /// handled or false otherwise.
   ///
   /*--cef()--*/
   virtual bool OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
@@ -122,9 +164,9 @@ class CefWindowDelegate : public CefPanelDelegate {
   }
 
   ///
-  // Called after all other controls in the window have had a chance to
-  // handle the event. |event| contains information about the keyboard event.
-  // Return true if the keyboard event was handled or false otherwise.
+  /// Called after all other controls in the window have had a chance to
+  /// handle the event. |event| contains information about the keyboard event.
+  /// Return true if the keyboard event was handled or false otherwise.
   ///
   /*--cef()--*/
   virtual bool OnKeyEvent(CefRefPtr<CefWindow> window,

@@ -3,9 +3,14 @@
 // can be found in the LICENSE file.
 
 #include "tests/ceftests/test_util.h"
+
+#include <algorithm>
+
+#include "include/cef_base.h"
 #include "include/cef_command_line.h"
 #include "include/cef_request_context_handler.h"
 #include "tests/gtest/include/gtest/gtest.h"
+#include "tests/shared/common/string_util.h"
 
 void TestMapEqual(const CefRequest::HeaderMap& map1,
                   const CefRequest::HeaderMap& map2,
@@ -21,8 +26,10 @@ void TestMapEqual(const CefRequest::HeaderMap& map1,
 
   for (it1 = map1.begin(); it1 != map1.end(); ++it1) {
     bool found = false;
+    std::string name1 = client::AsciiStrToLower(it1->first);
     for (it2 = map2.begin(); it2 != map2.end(); ++it2) {
-      if (it1->first == it2->first && it1->second == it2->second) {
+      std::string name2 = client::AsciiStrToLower(it2->first);
+      if (name1 == name2 && it1->second == it2->second) {
         found = true;
         break;
       }
@@ -267,15 +274,51 @@ void TestStringVectorEqual(const std::vector<CefString>& val1,
     EXPECT_STREQ(val1[i].ToString().c_str(), val2[i].ToString().c_str());
 }
 
-bool IsNetworkServiceEnabled() {
+bool TestOldResourceAPI() {
+  static int state = -1;
+  if (state == -1) {
+    CefRefPtr<CefCommandLine> command_line =
+        CefCommandLine::GetGlobalCommandLine();
+    state = command_line->HasSwitch("test-old-resource-api") ? 1 : 0;
+  }
+  return state ? true : false;
+}
+
+bool IsChromeRuntimeEnabled() {
+  static int state = -1;
+  if (state == -1) {
+    CefRefPtr<CefCommandLine> command_line =
+        CefCommandLine::GetGlobalCommandLine();
+    state = command_line->HasSwitch("enable-chrome-runtime") ? 1 : 0;
+  }
+  return state ? true : false;
+}
+
+bool IsBFCacheEnabled() {
+  // Supported by the Chrome runtime only, see issue #3237.
+  if (!IsChromeRuntimeEnabled())
+    return false;
+
+  // Enabled by default starting in M96.
   static int state = -1;
   if (state == -1) {
     CefRefPtr<CefCommandLine> command_line =
         CefCommandLine::GetGlobalCommandLine();
     const std::string& value = command_line->GetSwitchValue("disable-features");
-    state = value.find("NetworkService") == std::string::npos ? 1 : 0;
+    state = value.find("BackForwardCache") == std::string::npos ? 1 : 0;
   }
   return state ? true : false;
+}
+
+bool IsSameSiteBFCacheEnabled() {
+  // Same-site BFCache is enabled by default starting in M101 and does not have
+  // a separate configuration flag.
+  return IsBFCacheEnabled();
+}
+
+bool IgnoreURL(const std::string& url) {
+  return IsChromeRuntimeEnabled() &&
+         url.find("/favicon.ico") != std::string::npos;
 }
 
 CefRefPtr<CefRequestContext> CreateTestRequestContext(
@@ -312,4 +355,16 @@ CefRefPtr<CefRequestContext> CreateTestRequestContext(
   EXPECT_EQ(mode, TEST_RC_MODE_GLOBAL_WITH_HANDLER);
   return CefRequestContext::CreateContext(CefRequestContext::GetGlobalContext(),
                                           rc_handler);
+}
+
+CefTime CefTimeFrom(CefBaseTime value) {
+  CefTime time;
+  cef_time_from_basetime(value, &time);
+  return time;
+}
+
+CefBaseTime CefBaseTimeFrom(const CefTime& value) {
+  cef_basetime_t temp;
+  cef_time_to_basetime(&value, &temp);
+  return CefBaseTime(temp);
 }

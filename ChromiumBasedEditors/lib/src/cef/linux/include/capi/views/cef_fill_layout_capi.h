@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,7 +33,7 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=eddaab99fd0b1eedbc43417515e2e9cd2b3724e6$
+// $hash=fdb3457ac8b18ad3cf0144af5886586dd675c8f8$
 //
 
 #ifndef CEF_INCLUDE_CAPI_VIEWS_CEF_FILL_LAYOUT_CAPI_H_
@@ -47,13 +47,13 @@ extern "C" {
 #endif
 
 ///
-// A simple Layout that causes the associated Panel's one child to be sized to
-// match the bounds of its parent. Methods must be called on the browser process
-// UI thread unless otherwise indicated.
+/// A simple Layout that causes the associated Panel's one child to be sized to
+/// match the bounds of its parent. Methods must be called on the browser
+/// process UI thread unless otherwise indicated.
 ///
 typedef struct _cef_fill_layout_t {
   ///
-  // Base structure.
+  /// Base structure.
   ///
   cef_layout_t base;
 } cef_fill_layout_t;

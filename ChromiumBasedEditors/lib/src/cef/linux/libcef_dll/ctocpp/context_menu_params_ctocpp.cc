@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=b06e1d2178705706697480ac9bf699f429ab2ab7$
+// $hash=fcaaaa6226f370716672939f3846d3361929d5ef$
 //
 
 #include "libcef_dll/ctocpp/context_menu_params_ctocpp.h"
@@ -384,22 +384,6 @@ NO_SANITIZE("cfi-icall") bool CefContextMenuParamsCToCpp::IsCustomMenu() {
   return _retval ? true : false;
 }
 
-NO_SANITIZE("cfi-icall") bool CefContextMenuParamsCToCpp::IsPepperMenu() {
-  shutdown_checker::AssertNotShutdown();
-
-  cef_context_menu_params_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, is_pepper_menu))
-    return false;
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Execute
-  int _retval = _struct->is_pepper_menu(_struct);
-
-  // Return type: bool
-  return _retval ? true : false;
-}
-
 // CONSTRUCTOR - Do not edit by hand.
 
 CefContextMenuParamsCToCpp::CefContextMenuParamsCToCpp() {}
@@ -417,7 +401,7 @@ cef_context_menu_params_t* CefCToCppRefCounted<
     cef_context_menu_params_t>::UnwrapDerived(CefWrapperType type,
                                               CefContextMenuParams* c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

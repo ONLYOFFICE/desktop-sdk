@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,11 +9,12 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=64b2576447d3776b829e06007036acf579b2c47c$
+// $hash=38506c58f563553f9c81c653da90c2057c705106$
 //
 
 #include "libcef_dll/cpptoc/client_cpptoc.h"
 #include "libcef_dll/cpptoc/audio_handler_cpptoc.h"
+#include "libcef_dll/cpptoc/command_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/context_menu_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/dialog_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/display_handler_cpptoc.h"
@@ -21,10 +22,13 @@
 #include "libcef_dll/cpptoc/drag_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/find_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/focus_handler_cpptoc.h"
+#include "libcef_dll/cpptoc/frame_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/jsdialog_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/keyboard_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/life_span_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/load_handler_cpptoc.h"
+#include "libcef_dll/cpptoc/permission_handler_cpptoc.h"
+#include "libcef_dll/cpptoc/print_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/render_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/request_handler_cpptoc.h"
 #include "libcef_dll/ctocpp/browser_ctocpp.h"
@@ -49,6 +53,22 @@ client_get_audio_handler(struct _cef_client_t* self) {
 
   // Return type: refptr_same
   return CefAudioHandlerCppToC::Wrap(_retval);
+}
+
+struct _cef_command_handler_t* CEF_CALLBACK
+client_get_command_handler(struct _cef_client_t* self) {
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self)
+    return NULL;
+
+  // Execute
+  CefRefPtr<CefCommandHandler> _retval =
+      CefClientCppToC::Get(self)->GetCommandHandler();
+
+  // Return type: refptr_same
+  return CefCommandHandlerCppToC::Wrap(_retval);
 }
 
 struct _cef_context_menu_handler_t* CEF_CALLBACK
@@ -163,6 +183,38 @@ client_get_focus_handler(struct _cef_client_t* self) {
   return CefFocusHandlerCppToC::Wrap(_retval);
 }
 
+struct _cef_frame_handler_t* CEF_CALLBACK
+client_get_frame_handler(struct _cef_client_t* self) {
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self)
+    return NULL;
+
+  // Execute
+  CefRefPtr<CefFrameHandler> _retval =
+      CefClientCppToC::Get(self)->GetFrameHandler();
+
+  // Return type: refptr_same
+  return CefFrameHandlerCppToC::Wrap(_retval);
+}
+
+struct _cef_permission_handler_t* CEF_CALLBACK
+client_get_permission_handler(struct _cef_client_t* self) {
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self)
+    return NULL;
+
+  // Execute
+  CefRefPtr<CefPermissionHandler> _retval =
+      CefClientCppToC::Get(self)->GetPermissionHandler();
+
+  // Return type: refptr_same
+  return CefPermissionHandlerCppToC::Wrap(_retval);
+}
+
 struct _cef_jsdialog_handler_t* CEF_CALLBACK
 client_get_jsdialog_handler(struct _cef_client_t* self) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
@@ -225,6 +277,22 @@ client_get_load_handler(struct _cef_client_t* self) {
 
   // Return type: refptr_same
   return CefLoadHandlerCppToC::Wrap(_retval);
+}
+
+struct _cef_print_handler_t* CEF_CALLBACK
+client_get_print_handler(struct _cef_client_t* self) {
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self)
+    return NULL;
+
+  // Execute
+  CefRefPtr<CefPrintHandler> _retval =
+      CefClientCppToC::Get(self)->GetPrintHandler();
+
+  // Return type: refptr_same
+  return CefPrintHandlerCppToC::Wrap(_retval);
 }
 
 struct _cef_render_handler_t* CEF_CALLBACK
@@ -298,6 +366,7 @@ client_on_process_message_received(struct _cef_client_t* self,
 
 CefClientCppToC::CefClientCppToC() {
   GetStruct()->get_audio_handler = client_get_audio_handler;
+  GetStruct()->get_command_handler = client_get_command_handler;
   GetStruct()->get_context_menu_handler = client_get_context_menu_handler;
   GetStruct()->get_dialog_handler = client_get_dialog_handler;
   GetStruct()->get_display_handler = client_get_display_handler;
@@ -305,10 +374,13 @@ CefClientCppToC::CefClientCppToC() {
   GetStruct()->get_drag_handler = client_get_drag_handler;
   GetStruct()->get_find_handler = client_get_find_handler;
   GetStruct()->get_focus_handler = client_get_focus_handler;
+  GetStruct()->get_frame_handler = client_get_frame_handler;
+  GetStruct()->get_permission_handler = client_get_permission_handler;
   GetStruct()->get_jsdialog_handler = client_get_jsdialog_handler;
   GetStruct()->get_keyboard_handler = client_get_keyboard_handler;
   GetStruct()->get_life_span_handler = client_get_life_span_handler;
   GetStruct()->get_load_handler = client_get_load_handler;
+  GetStruct()->get_print_handler = client_get_print_handler;
   GetStruct()->get_render_handler = client_get_render_handler;
   GetStruct()->get_request_handler = client_get_request_handler;
   GetStruct()->on_process_message_received = client_on_process_message_received;
@@ -324,7 +396,7 @@ CefCppToCRefCounted<CefClientCppToC, CefClient, cef_client_t>::UnwrapDerived(
     CefWrapperType type,
     cef_client_t* s) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

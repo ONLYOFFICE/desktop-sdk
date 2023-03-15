@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=d3e3ac31099d907a471d495d1888896d6643a623$
+// $hash=efb9652f9e2a17079ff20457264e8b0ecfd19499$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_SERVER_CTOCPP_H_
@@ -33,31 +33,31 @@ class CefServerCToCpp
   virtual ~CefServerCToCpp();
 
   // CefServer methods.
-  CefRefPtr<CefTaskRunner> GetTaskRunner() OVERRIDE;
-  void Shutdown() OVERRIDE;
-  bool IsRunning() OVERRIDE;
-  CefString GetAddress() OVERRIDE;
-  bool HasConnection() OVERRIDE;
-  bool IsValidConnection(int connection_id) OVERRIDE;
+  CefRefPtr<CefTaskRunner> GetTaskRunner() override;
+  void Shutdown() override;
+  bool IsRunning() override;
+  CefString GetAddress() override;
+  bool HasConnection() override;
+  bool IsValidConnection(int connection_id) override;
   void SendHttp200Response(int connection_id,
                            const CefString& content_type,
                            const void* data,
-                           size_t data_size) OVERRIDE;
-  void SendHttp404Response(int connection_id) OVERRIDE;
+                           size_t data_size) override;
+  void SendHttp404Response(int connection_id) override;
   void SendHttp500Response(int connection_id,
-                           const CefString& error_message) OVERRIDE;
+                           const CefString& error_message) override;
   void SendHttpResponse(int connection_id,
                         int response_code,
                         const CefString& content_type,
                         int64 content_length,
-                        const HeaderMap& extra_headers) OVERRIDE;
+                        const HeaderMap& extra_headers) override;
   void SendRawData(int connection_id,
                    const void* data,
-                   size_t data_size) OVERRIDE;
-  void CloseConnection(int connection_id) OVERRIDE;
+                   size_t data_size) override;
+  void CloseConnection(int connection_id) override;
   void SendWebSocketMessage(int connection_id,
                             const void* data,
-                            size_t data_size) OVERRIDE;
+                            size_t data_size) override;
 };
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_SERVER_CTOCPP_H_

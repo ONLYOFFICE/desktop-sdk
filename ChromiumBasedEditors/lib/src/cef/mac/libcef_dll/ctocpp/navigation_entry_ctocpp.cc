@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=bfe3f661182f981ee18cc7a3209805b83f138a9d$
+// $hash=27474e0a89ff6c062439ff93bc5b88fd82f8bb65$
 //
 
 #include "libcef_dll/ctocpp/navigation_entry_ctocpp.h"
@@ -140,17 +140,18 @@ NO_SANITIZE("cfi-icall") bool CefNavigationEntryCToCpp::HasPostData() {
   return _retval ? true : false;
 }
 
-NO_SANITIZE("cfi-icall") CefTime CefNavigationEntryCToCpp::GetCompletionTime() {
+NO_SANITIZE("cfi-icall")
+CefBaseTime CefNavigationEntryCToCpp::GetCompletionTime() {
   shutdown_checker::AssertNotShutdown();
 
   cef_navigation_entry_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_completion_time))
-    return CefTime();
+    return CefBaseTime();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_time_t _retval = _struct->get_completion_time(_struct);
+  cef_basetime_t _retval = _struct->get_completion_time(_struct);
 
   // Return type: simple
   return _retval;
@@ -178,7 +179,7 @@ CefRefPtr<CefSSLStatus> CefNavigationEntryCToCpp::GetSSLStatus() {
 
   cef_navigation_entry_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_sslstatus))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -206,7 +207,7 @@ cef_navigation_entry_t* CefCToCppRefCounted<
     cef_navigation_entry_t>::UnwrapDerived(CefWrapperType type,
                                            CefNavigationEntry* c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

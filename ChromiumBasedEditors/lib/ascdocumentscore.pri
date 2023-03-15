@@ -35,11 +35,22 @@ build_xp {
     DESTDIR=$$DESTDIR/xp
 } else {
     DEFINES += ENABLE_CEF_EXTENSIONS
-    core_linux:!cef_version_87:CONFIG += cef_disable_87
-    !cef_disable_87 {
-        DEFINES += CEF_VERSION_ABOVE_86
-        CEF_PROJECT_PRI=$$PWD/cef_pri_87
+    DEFINES += CEF_VERSION_ABOVE_86
+    DEFINES += CEF_VERSION_ABOVE_105
+    DEFINES += "OVERRIDE=override"
+
+    CONFIG += c++17
+    core_windows {
+        QMAKE_CXXFLAGS += /std:c++17
     }
+
+    core_linux {
+        build_gcc_less_6:INCLUDEPATH += $$PWD/src/polyfill
+        cef_version_107 {
+            CEF_PROJECT_PRI=$$PWD/cef_pri_107
+        }
+    }
+
     include($$CEF_PROJECT_PRI/cef_base.pri)
     include($$CEF_PROJECT_PRI/cef_client.pri)
 }

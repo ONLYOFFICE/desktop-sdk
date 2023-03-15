@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=04cad6705f114b1e2fbe51bb04bca7e6bd5f7168$
+// $hash=bc1d300ce01b57d299dff3b67d54508fa827489e$
 //
 
 #include "libcef_dll/ctocpp/domnode_ctocpp.h"
@@ -223,7 +223,7 @@ CefRefPtr<CefDOMDocument> CefDOMNodeCToCpp::GetDocument() {
 
   cef_domnode_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_document))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -239,7 +239,7 @@ NO_SANITIZE("cfi-icall") CefRefPtr<CefDOMNode> CefDOMNodeCToCpp::GetParent() {
 
   cef_domnode_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_parent))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -256,7 +256,7 @@ CefRefPtr<CefDOMNode> CefDOMNodeCToCpp::GetPreviousSibling() {
 
   cef_domnode_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_previous_sibling))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -273,7 +273,7 @@ CefRefPtr<CefDOMNode> CefDOMNodeCToCpp::GetNextSibling() {
 
   cef_domnode_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_next_sibling))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -306,7 +306,7 @@ CefRefPtr<CefDOMNode> CefDOMNodeCToCpp::GetFirstChild() {
 
   cef_domnode_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_first_child))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -323,7 +323,7 @@ CefRefPtr<CefDOMNode> CefDOMNodeCToCpp::GetLastChild() {
 
   cef_domnode_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_last_child))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -520,7 +520,7 @@ CefCToCppRefCounted<CefDOMNodeCToCpp, CefDOMNode, cef_domnode_t>::UnwrapDerived(
     CefWrapperType type,
     CefDOMNode* c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

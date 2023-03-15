@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=87514afa0e3c09b267ff81c8ac6041e31a35412f$
+// $hash=52df98f1359e9a8e231ec9e2555bc883e1fa84b5$
 //
 
 #include "libcef_dll/ctocpp/views/menu_button_pressed_lock_ctocpp.h"
@@ -33,7 +33,7 @@ cef_menu_button_pressed_lock_t* CefCToCppRefCounted<
                                                    CefMenuButtonPressedLock*
                                                        c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

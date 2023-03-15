@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=8a94baf95e6bccc99f16019de55097f8fa675cfc$
+// $hash=50f74bf4eaafce6b10c91af2a9bf516fac113cf5$
 //
 
 #include "libcef_dll/ctocpp/binary_value_ctocpp.h"
@@ -27,7 +27,7 @@ CefRefPtr<CefBinaryValue> CefBinaryValue::Create(const void* data,
   // Verify param: data; type: simple_byaddr
   DCHECK(data);
   if (!data)
-    return NULL;
+    return nullptr;
 
   // Execute
   cef_binary_value_t* _retval = cef_binary_value_create(data, data_size);
@@ -120,7 +120,7 @@ CefRefPtr<CefBinaryValue> CefBinaryValueCToCpp::Copy() {
 
   cef_binary_value_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, copy))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -186,7 +186,7 @@ cef_binary_value_t*
 CefCToCppRefCounted<CefBinaryValueCToCpp, CefBinaryValue, cef_binary_value_t>::
     UnwrapDerived(CefWrapperType type, CefBinaryValue* c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

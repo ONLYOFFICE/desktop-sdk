@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=71b2ee7a873d327800d3e959d94f8e01fb4efd81$
+// $hash=869a0291457438cf60cb7464dcc63dd0ac7a8cfc$
 //
 
 #include "libcef_dll/cpptoc/views/menu_button_delegate_cpptoc.h"
@@ -253,6 +253,57 @@ menu_button_delegate_on_child_view_changed(struct _cef_view_delegate_t* self,
 }
 
 void CEF_CALLBACK
+menu_button_delegate_on_window_changed(struct _cef_view_delegate_t* self,
+                                       cef_view_t* view,
+                                       int added) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self)
+    return;
+  // Verify param: view; type: refptr_diff
+  DCHECK(view);
+  if (!view)
+    return;
+
+  // Execute
+  CefMenuButtonDelegateCppToC::Get(
+      reinterpret_cast<cef_menu_button_delegate_t*>(self))
+      ->OnWindowChanged(CefViewCToCpp::Wrap(view), added ? true : false);
+}
+
+void CEF_CALLBACK
+menu_button_delegate_on_layout_changed(struct _cef_view_delegate_t* self,
+                                       cef_view_t* view,
+                                       const cef_rect_t* new_bounds) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self)
+    return;
+  // Verify param: view; type: refptr_diff
+  DCHECK(view);
+  if (!view)
+    return;
+  // Verify param: new_bounds; type: simple_byref_const
+  DCHECK(new_bounds);
+  if (!new_bounds)
+    return;
+
+  // Translate param: new_bounds; type: simple_byref_const
+  CefRect new_boundsVal = new_bounds ? *new_bounds : CefRect();
+
+  // Execute
+  CefMenuButtonDelegateCppToC::Get(
+      reinterpret_cast<cef_menu_button_delegate_t*>(self))
+      ->OnLayoutChanged(CefViewCToCpp::Wrap(view), new_boundsVal);
+}
+
+void CEF_CALLBACK
 menu_button_delegate_on_focus(struct _cef_view_delegate_t* self,
                               cef_view_t* view) {
   shutdown_checker::AssertNotShutdown();
@@ -316,6 +367,10 @@ CefMenuButtonDelegateCppToC::CefMenuButtonDelegateCppToC() {
       menu_button_delegate_on_parent_view_changed;
   GetStruct()->base.base.on_child_view_changed =
       menu_button_delegate_on_child_view_changed;
+  GetStruct()->base.base.on_window_changed =
+      menu_button_delegate_on_window_changed;
+  GetStruct()->base.base.on_layout_changed =
+      menu_button_delegate_on_layout_changed;
   GetStruct()->base.base.on_focus = menu_button_delegate_on_focus;
   GetStruct()->base.base.on_blur = menu_button_delegate_on_blur;
 }
@@ -333,7 +388,7 @@ CefRefPtr<CefMenuButtonDelegate> CefCppToCRefCounted<
     cef_menu_button_delegate_t>::UnwrapDerived(CefWrapperType type,
                                                cef_menu_button_delegate_t* s) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=5c7db7eeb6702e6654ef290cbac7eb38aaac7f1c$
+// $hash=d3a5834490a381e43d7e56469d850a0dd83b0876$
 //
 
 #include "libcef_dll/ctocpp/v8exception_ctocpp.h"
@@ -148,7 +148,7 @@ cef_v8exception_t*
 CefCToCppRefCounted<CefV8ExceptionCToCpp, CefV8Exception, cef_v8exception_t>::
     UnwrapDerived(CefWrapperType type, CefV8Exception* c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

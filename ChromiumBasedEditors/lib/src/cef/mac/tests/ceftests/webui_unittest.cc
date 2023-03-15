@@ -2,7 +2,10 @@
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 
-#include "include/base/cef_bind.h"
+#include <algorithm>
+#include <memory>
+
+#include "include/base/cef_callback.h"
 #include "include/cef_callback.h"
 #include "include/cef_parser.h"
 #include "include/wrapper/cef_closure_task.h"
@@ -37,18 +40,18 @@ class WebUITestHandler : public TestHandler {
   }
 
   void NextNav() {
-    base::Closure next_action;
+    base::OnceClosure next_action;
 
-    if (++url_index_ == url_list_.size()) {
-      next_action = base::Bind(&WebUITestHandler::DestroyTest, this);
+    if (++url_index_ < url_list_.size()) {
+      next_action = base::BindOnce(&WebUITestHandler::LoadURL, this,
+                                   url_list_[url_index_]);
     } else {
-      next_action =
-          base::Bind(&WebUITestHandler::LoadURL, this, url_list_[url_index_]);
+      next_action = base::BindOnce(&WebUITestHandler::DestroyTest, this);
     }
 
     // Wait a bit for the WebUI content to finish loading before performing the
     // next action.
-    CefPostDelayedTask(TID_UI, next_action, 200);
+    CefPostDelayedTask(TID_UI, std::move(next_action), 200);
   }
 
   void LoadURL(const std::string& url) {
@@ -99,7 +102,7 @@ class WebUITestHandler : public TestHandler {
     if (done) {
       // Verify that we navigated to the expected URL.
       std::string expected_url = expected_url_;
-      if (expected_url.empty())
+      if (expected_url.empty() && url_index_ < url_list_.size())
         expected_url = url_list_[url_index_];
       EXPECT_STREQ(expected_url.c_str(), url.c_str());
 
@@ -169,10 +172,8 @@ void RunWebUITest(const std::string& url) {
     RunWebUITest("chrome://" + name_str + "/");               \
   }
 
-WEBUI_TEST(appcache_internals)
 WEBUI_TEST(accessibility)
 WEBUI_TEST(blob_internals)
-WEBUI_TEST(credits)
 WEBUI_TEST(extensions_support)
 WEBUI_TEST(gpu)
 WEBUI_TEST(histograms)

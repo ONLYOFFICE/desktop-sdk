@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=ce6e43f2c38373f4b46ed57bdfb7d81f84261206$
+// $hash=1e883ac6774fba04ad2aac2ba3119190555ca47a$
 //
 
 #include "libcef_dll/ctocpp/zip_reader_ctocpp.h"
@@ -28,7 +28,7 @@ CefRefPtr<CefZipReader> CefZipReader::Create(
   // Verify param: stream; type: refptr_same
   DCHECK(stream.get());
   if (!stream.get())
-    return NULL;
+    return nullptr;
 
   // Execute
   cef_zip_reader_t* _retval =
@@ -146,17 +146,17 @@ NO_SANITIZE("cfi-icall") int64 CefZipReaderCToCpp::GetFileSize() {
   return _retval;
 }
 
-NO_SANITIZE("cfi-icall") CefTime CefZipReaderCToCpp::GetFileLastModified() {
+NO_SANITIZE("cfi-icall") CefBaseTime CefZipReaderCToCpp::GetFileLastModified() {
   shutdown_checker::AssertNotShutdown();
 
   cef_zip_reader_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_file_last_modified))
-    return CefTime();
+    return CefBaseTime();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_time_t _retval = _struct->get_file_last_modified(_struct);
+  cef_basetime_t _retval = _struct->get_file_last_modified(_struct);
 
   // Return type: simple
   return _retval;
@@ -266,7 +266,7 @@ cef_zip_reader_t*
 CefCToCppRefCounted<CefZipReaderCToCpp, CefZipReader, cef_zip_reader_t>::
     UnwrapDerived(CefWrapperType type, CefZipReader* c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

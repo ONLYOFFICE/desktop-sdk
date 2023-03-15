@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=0668a14276f9304b318a8048860e4d4427816402$
+// $hash=ad895bb923f6cafe08126e21b204acf6c336d956$
 //
 
 #include "libcef_dll/cpptoc/display_handler_cpptoc.h"
@@ -252,6 +252,63 @@ display_handler_on_loading_progress_change(struct _cef_display_handler_t* self,
       CefBrowserCToCpp::Wrap(browser), progress);
 }
 
+int CEF_CALLBACK
+display_handler_on_cursor_change(struct _cef_display_handler_t* self,
+                                 cef_browser_t* browser,
+                                 cef_cursor_handle_t cursor,
+                                 cef_cursor_type_t type,
+                                 const cef_cursor_info_t* custom_cursor_info) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self)
+    return 0;
+  // Verify param: browser; type: refptr_diff
+  DCHECK(browser);
+  if (!browser)
+    return 0;
+  // Verify param: custom_cursor_info; type: simple_byref_const
+  DCHECK(custom_cursor_info);
+  if (!custom_cursor_info)
+    return 0;
+
+  // Translate param: custom_cursor_info; type: simple_byref_const
+  CefCursorInfo custom_cursor_infoVal =
+      custom_cursor_info ? *custom_cursor_info : CefCursorInfo();
+
+  // Execute
+  bool _retval = CefDisplayHandlerCppToC::Get(self)->OnCursorChange(
+      CefBrowserCToCpp::Wrap(browser), cursor, type, custom_cursor_infoVal);
+
+  // Return type: bool
+  return _retval;
+}
+
+void CEF_CALLBACK
+display_handler_on_media_access_change(struct _cef_display_handler_t* self,
+                                       cef_browser_t* browser,
+                                       int has_video_access,
+                                       int has_audio_access) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self)
+    return;
+  // Verify param: browser; type: refptr_diff
+  DCHECK(browser);
+  if (!browser)
+    return;
+
+  // Execute
+  CefDisplayHandlerCppToC::Get(self)->OnMediaAccessChange(
+      CefBrowserCToCpp::Wrap(browser), has_video_access ? true : false,
+      has_audio_access ? true : false);
+}
+
 }  // namespace
 
 // CONSTRUCTOR - Do not edit by hand.
@@ -268,6 +325,8 @@ CefDisplayHandlerCppToC::CefDisplayHandlerCppToC() {
   GetStruct()->on_auto_resize = display_handler_on_auto_resize;
   GetStruct()->on_loading_progress_change =
       display_handler_on_loading_progress_change;
+  GetStruct()->on_cursor_change = display_handler_on_cursor_change;
+  GetStruct()->on_media_access_change = display_handler_on_media_access_change;
 }
 
 // DESTRUCTOR - Do not edit by hand.
@@ -283,7 +342,7 @@ CefRefPtr<CefDisplayHandler> CefCppToCRefCounted<
     cef_display_handler_t>::UnwrapDerived(CefWrapperType type,
                                           cef_display_handler_t* s) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

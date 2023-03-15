@@ -7,14 +7,14 @@
 
 namespace client {
 
-OsrAXTree::OsrAXTree() : parent_tree_id_(-1), root_node_id_(-1) {}
+OsrAXTree::OsrAXTree() : root_node_id_(-1) {}
 
 OsrAXNode* OsrAXTree::GetNode(int nodeId) const {
   auto result = node_map_.find(nodeId);
   if (result != node_map_.end()) {
     return result->second;
   }
-  return NULL;
+  return nullptr;
 }
 
 void OsrAXTree::EraseNode(int nodeId) {
@@ -27,10 +27,9 @@ void OsrAXTree::AddNode(OsrAXNode* node) {
 
 void OsrAXTree::UpdateTreeData(CefRefPtr<CefDictionaryValue> value) {
   if (value->HasKey("parent_tree_id")) {
-    parent_tree_id_ =
-        OsrAccessibilityHelper::CastToInt(value->GetValue("parent_tree_id"));
+    parent_tree_id_ = value->GetString("parent_tree_id");
   } else {
-    parent_tree_id_ = -1;
+    parent_tree_id_ = "";
   }
 
   // may also update following:
@@ -39,9 +38,7 @@ void OsrAXTree::UpdateTreeData(CefRefPtr<CefDictionaryValue> value) {
 
 OsrAccessibilityHelper::OsrAccessibilityHelper(CefRefPtr<CefValue> value,
                                                CefRefPtr<CefBrowser> browser)
-    : root_tree_id_(-1),
-      focused_tree_id_(-1),
-      focused_node_id_(-1),
+    : focused_node_id_(-1),
       browser_(browser) {
   UpdateAccessibilityTree(value);
 }
@@ -75,7 +72,7 @@ void OsrAccessibilityHelper::UpdateAccessibilityLocation(
         !locationChangeDict->HasKey("id")) {
       continue;
     }
-    int treeId = CastToInt(locationChangeDict->GetValue("ax_tree_id"));
+    CefString treeId = locationChangeDict->GetString("ax_tree_id");
     int nodeId = CastToInt(locationChangeDict->GetValue("id"));
 
     CefRefPtr<CefDictionaryValue> newLocationDict =
@@ -103,7 +100,7 @@ void OsrAccessibilityHelper::UpdateAccessibilityTree(
     return;
   }
 
-  int treeId = CastToInt(mainDict->GetValue("ax_tree_id"));
+  CefString treeId = mainDict->GetString("ax_tree_id");
   CefRefPtr<CefListValue> updatesList = mainDict->GetList("updates");
 
   size_t updatesCount = updatesList->GetSize();
@@ -127,20 +124,21 @@ OsrAXNode* OsrAccessibilityHelper::GetFocusedNode() const {
     return tree->second.GetNode(focused_node_id_);
   }
 
-  return NULL;
+  return nullptr;
 }
 
-OsrAXNode* OsrAccessibilityHelper::GetTreeRootNode(int treeId) const {
+OsrAXNode* OsrAccessibilityHelper::GetTreeRootNode(
+    const CefString& treeId) const {
   auto tree = accessibility_node_map_.find(treeId);
   if (tree != accessibility_node_map_.end()) {
     return tree->second.GetNode(tree->second.GetRootNodeId());
   }
 
-  return NULL;
+  return nullptr;
 }
 
 void OsrAccessibilityHelper::UpdateLayout(
-    int treeId,
+    const CefString& treeId,
     CefRefPtr<CefDictionaryValue> update) {
   if (!update) {
     return;
@@ -154,12 +152,12 @@ void OsrAccessibilityHelper::UpdateLayout(
     auto tree = accessibility_node_map_.find(treeId);
     if (tree != accessibility_node_map_.end()) {
       if (tree->second.GetRootNodeId() == nodeId) {
-        root_tree_id_ = -1;
+        root_tree_id_ = "";
         tree->second.SetRootNodeId(-1);
       }
     }
     if ((focused_tree_id_ == treeId) && (focused_node_id_ == nodeId)) {
-      UpdateFocusedNode(-1, -1);
+      UpdateFocusedNode("", -1);
     }
     OsrAXNode* node = GetNode(treeId, nodeId);
     DestroyNode(node);
@@ -172,11 +170,11 @@ void OsrAccessibilityHelper::UpdateLayout(
         update->GetDictionary("tree_data");
     auto& tree = accessibility_node_map_[treeId];
     tree.UpdateTreeData(tree_data);
-    if (tree.GetParentTreeId() == -1) {
+    if (tree.GetParentTreeId().empty()) {
       root_tree_id_ = treeId;
     }
     if (tree_data->HasKey("focus_id") && tree_data->HasKey("focused_tree_id")) {
-      UpdateFocusedNode(CastToInt(tree_data->GetValue("focused_tree_id")),
+      UpdateFocusedNode(tree_data->GetString("focused_tree_id"),
                         CastToInt(tree_data->GetValue("focus_id")));
     }
   }
@@ -205,14 +203,15 @@ void OsrAccessibilityHelper::UpdateLayout(
   if (update->HasKey("root_id")) {
     int nodeId = CastToInt(update->GetValue("root_id"));
     OsrAXNode* node = GetNode(treeId, nodeId);
-    if (node != NULL) {
+    if (node != nullptr) {
       auto& tree = accessibility_node_map_[treeId];
       tree.SetRootNodeId(nodeId);
     }
   }
 }
 
-void OsrAccessibilityHelper::UpdateFocusedNode(int treeId, int nodeId) {
+void OsrAccessibilityHelper::UpdateFocusedNode(const CefString& treeId,
+                                               int nodeId) {
   if ((focused_tree_id_ == treeId) && (focused_node_id_ == nodeId)) {
     return;
   }
@@ -228,13 +227,14 @@ void OsrAccessibilityHelper::UpdateFocusedNode(int treeId, int nodeId) {
 
 void OsrAccessibilityHelper::Reset() {
   accessibility_node_map_.clear();
-  root_tree_id_ = -1;
-  focused_tree_id_ = focused_node_id_ = -1;
+  root_tree_id_ = "";
+  focused_tree_id_ = "";
+  focused_node_id_ = -1;
 }
 
 void OsrAccessibilityHelper::DestroyNode(OsrAXNode* node) {
   if (node) {
-    int treeId = node->OsrAXTreeId();
+    CefString treeId = node->OsrAXTreeId();
     int numChilds = node->GetChildCount();
     if (numChilds > 0) {
       for (int i = 0; i < numChilds; i++) {
@@ -242,7 +242,7 @@ void OsrAccessibilityHelper::DestroyNode(OsrAXNode* node) {
         if (!childNode) {
           continue;
         }
-        childNode->SetParent(NULL);
+        childNode->SetParent(nullptr);
         if (childNode->OsrAXTreeId() == treeId) {
           DestroyNode(childNode);
         }
@@ -257,13 +257,14 @@ void OsrAccessibilityHelper::DestroyNode(OsrAXNode* node) {
   }
 }
 
-OsrAXNode* OsrAccessibilityHelper::GetNode(int treeId, int nodeId) const {
+OsrAXNode* OsrAccessibilityHelper::GetNode(const CefString& treeId,
+                                           int nodeId) const {
   auto tree = accessibility_node_map_.find(treeId);
   if (tree != accessibility_node_map_.end()) {
     return tree->second.GetNode(nodeId);
   }
 
-  return NULL;
+  return nullptr;
 }
 
 }  // namespace client

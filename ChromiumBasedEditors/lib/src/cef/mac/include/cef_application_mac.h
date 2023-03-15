@@ -35,7 +35,7 @@
 #include "include/cef_base.h"
 #endif  // __cplusplus
 
-#if defined(OS_MACOSX) && defined(__OBJC__)
+#if defined(OS_MAC) && defined(__OBJC__)
 
 #ifdef USING_CHROMIUM_INCLUDES
 
@@ -66,7 +66,7 @@
 @end
 
 // Copy of definition from base/mac/scoped_sending_event.h.
-@protocol CrAppControlProtocol<CrAppProtocol>
+@protocol CrAppControlProtocol <CrAppProtocol>
 - (void)setHandlingSendEvent:(BOOL)handlingSendEvent;
 @end
 
@@ -81,7 +81,7 @@
 
 // All CEF client applications must subclass NSApplication and implement this
 // protocol.
-@protocol CefAppProtocol<CrAppControlProtocol>
+@protocol CefAppProtocol <CrAppControlProtocol>
 @end
 
 #ifdef __cplusplus
@@ -105,6 +105,6 @@ class CefScopedSendingEvent {
 
 #endif  // __cplusplus
 
-#endif  // defined(OS_MACOSX) && defined(__OBJC__)
+#endif  // defined(OS_MAC) && defined(__OBJC__)
 
 #endif  // CEF_INCLUDE_CEF_APPLICATION_MAC_H_

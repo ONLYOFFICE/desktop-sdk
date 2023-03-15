@@ -24,8 +24,7 @@ class ClientRenderDelegate : public ClientAppRenderer::Delegate {
  public:
   ClientRenderDelegate() : last_node_is_editable_(false) {}
 
-  void OnRenderThreadCreated(CefRefPtr<ClientAppRenderer> app,
-                             CefRefPtr<CefListValue> extra_info) OVERRIDE {
+  void OnWebKitInitialized(CefRefPtr<ClientAppRenderer> app) override {
     if (CefCrashReportingEnabled()) {
       // Set some crash keys for testing purposes. Keys must be defined in the
       // "crash_reporter.cfg" file. See cef_crash_util.h for details.
@@ -36,9 +35,7 @@ class ClientRenderDelegate : public ClientAppRenderer::Delegate {
       CefSetCrashKeyValue("testkey_large1", "value1_large_renderer");
       CefSetCrashKeyValue("testkey_large2", "value2_large_renderer");
     }
-  }
 
-  void OnWebKitInitialized(CefRefPtr<ClientAppRenderer> app) OVERRIDE {
     // Create the renderer-side router for query handling.
     CefMessageRouterConfig config;
     message_router_ = CefMessageRouterRendererSide::Create(config);
@@ -47,21 +44,21 @@ class ClientRenderDelegate : public ClientAppRenderer::Delegate {
   void OnContextCreated(CefRefPtr<ClientAppRenderer> app,
                         CefRefPtr<CefBrowser> browser,
                         CefRefPtr<CefFrame> frame,
-                        CefRefPtr<CefV8Context> context) OVERRIDE {
+                        CefRefPtr<CefV8Context> context) override {
     message_router_->OnContextCreated(browser, frame, context);
   }
 
   void OnContextReleased(CefRefPtr<ClientAppRenderer> app,
                          CefRefPtr<CefBrowser> browser,
                          CefRefPtr<CefFrame> frame,
-                         CefRefPtr<CefV8Context> context) OVERRIDE {
+                         CefRefPtr<CefV8Context> context) override {
     message_router_->OnContextReleased(browser, frame, context);
   }
 
   void OnFocusedNodeChanged(CefRefPtr<ClientAppRenderer> app,
                             CefRefPtr<CefBrowser> browser,
                             CefRefPtr<CefFrame> frame,
-                            CefRefPtr<CefDOMNode> node) OVERRIDE {
+                            CefRefPtr<CefDOMNode> node) override {
     bool is_editable = (node.get() && node->IsEditable());
     if (is_editable != last_node_is_editable_) {
       // Notify the browser of the change in focused element type.
@@ -77,7 +74,7 @@ class ClientRenderDelegate : public ClientAppRenderer::Delegate {
                                 CefRefPtr<CefBrowser> browser,
                                 CefRefPtr<CefFrame> frame,
                                 CefProcessId source_process,
-                                CefRefPtr<CefProcessMessage> message) OVERRIDE {
+                                CefRefPtr<CefProcessMessage> message) override {
     return message_router_->OnProcessMessageReceived(browser, frame,
                                                      source_process, message);
   }

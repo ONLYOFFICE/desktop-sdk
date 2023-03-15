@@ -5,7 +5,6 @@
 #include <map>
 #include <vector>
 
-#include "include/base/cef_string16.h"
 #include "include/internal/cef_string.h"
 #include "include/internal/cef_string_list.h"
 #include "include/internal/cef_string_map.h"
@@ -43,7 +42,7 @@ TEST(StringTest, UTF8) {
 
   // Test userfree assignment.
   cef_string_userfree_utf8_t uf = str2.DetachToUserFree();
-  EXPECT_TRUE(uf != NULL);
+  EXPECT_TRUE(uf != nullptr);
   EXPECT_TRUE(str2.empty());
   str2.AttachToUserFree(uf);
   EXPECT_FALSE(str2.empty());
@@ -81,7 +80,7 @@ TEST(StringTest, UTF16) {
 
   // Test userfree assignment.
   cef_string_userfree_utf16_t uf = str2.DetachToUserFree();
-  EXPECT_TRUE(uf != NULL);
+  EXPECT_TRUE(uf != nullptr);
   EXPECT_TRUE(str2.empty());
   str2.AttachToUserFree(uf);
   EXPECT_FALSE(str2.empty());
@@ -119,19 +118,19 @@ TEST(StringTest, Wide) {
 
   // Test userfree assignment.
   cef_string_userfree_wide_t uf = str2.DetachToUserFree();
-  EXPECT_TRUE(uf != NULL);
+  EXPECT_TRUE(uf != nullptr);
   EXPECT_TRUE(str2.empty());
   str2.AttachToUserFree(uf);
   EXPECT_FALSE(str2.empty());
   EXPECT_EQ(str1, str2);
 }
 
-// Test base::string16 convertion to/from CefString types.
+// Test std::u16string convertion to/from CefString types.
 TEST(StringTest, string16) {
   CefStringUTF8 str8("Test String 1"), str8b;
   CefStringUTF16 str16("Test String 2"), str16b;
   CefStringWide strwide("Test String 3"), strwideb;
-  base::string16 base_str;
+  std::u16string base_str;
 
   base_str = str8;
   str8b = base_str;
@@ -162,7 +161,7 @@ TEST(StringTest, List) {
   EXPECT_EQ(list[2], "String 3");
 
   cef_string_list_t listPtr = cef_string_list_alloc();
-  EXPECT_TRUE(listPtr != NULL);
+  EXPECT_TRUE(listPtr != nullptr);
   ListType::const_iterator it = list.begin();
   for (; it != list.end(); ++it)
     cef_string_list_append(listPtr, it->GetStruct());
@@ -362,4 +361,124 @@ TEST(StringTest, Multimap) {
   EXPECT_EQ(cef_string_multimap_size(mapPtr), 0U);
 
   cef_string_multimap_free(mapPtr);
+}
+
+// Test that CefString ownership behaves as expected.
+TEST(StringTest, Ownership) {
+  const char* test_cstr = "Test string";
+
+  // Initial owner makes a copy of |test_cstr|.
+  CefStringUTF8 str(test_cstr);
+  EXPECT_TRUE(str.IsOwner());
+  EXPECT_STREQ(test_cstr, str.c_str());
+  const char* str_str = str.c_str();
+  const auto str_struct = str.GetStruct();
+  EXPECT_NE(test_cstr, str_str);
+
+  // REFERENCE CREATION
+
+  // Take a reference (requires explicit use of GetStruct).
+  CefStringUTF8 str_ref(str.GetStruct());
+
+  // Nothing changes with |str|.
+  EXPECT_TRUE(str.IsOwner());
+  EXPECT_STREQ(test_cstr, str.c_str());
+  EXPECT_EQ(str.GetStruct(), str_struct);
+  EXPECT_EQ(str.c_str(), str_str);
+
+  // |str_ref| has the same value.
+  EXPECT_FALSE(str_ref.IsOwner());
+  EXPECT_STREQ(test_cstr, str_ref.c_str());
+  // Referencing the same structure and string.
+  EXPECT_EQ(str.GetStruct(), str_ref.GetStruct());
+  EXPECT_EQ(str.c_str(), str_ref.c_str());
+
+  // REFERENCE DETACH/ATTACH
+
+  // DetachToUserFree. |str_ref| loses its reference.
+  auto userfree = str_ref.DetachToUserFree();
+
+  // Nothing changes with |str|.
+  EXPECT_TRUE(str.IsOwner());
+  EXPECT_STREQ(test_cstr, str.c_str());
+  EXPECT_EQ(str.GetStruct(), str_struct);
+  EXPECT_EQ(str.c_str(), str_str);
+
+  // |str_ref| is now empty.
+  EXPECT_FALSE(str_ref.IsOwner());
+  EXPECT_TRUE(str_ref.empty());
+  EXPECT_EQ(nullptr, str_ref.GetStruct());
+
+  // AttachToUserFree. |str2| becomes an owner of the copy.
+  CefStringUTF8 str2;
+  str2.AttachToUserFree(userfree);
+
+  // Nothing changes with |str|.
+  EXPECT_TRUE(str.IsOwner());
+  EXPECT_STREQ(test_cstr, str.c_str());
+  EXPECT_EQ(str.GetStruct(), str_struct);
+  EXPECT_EQ(str.c_str(), str_str);
+
+  // |str2| is now an owner of a copy.
+  EXPECT_TRUE(str2.IsOwner());
+  EXPECT_STREQ(test_cstr, str2.c_str());
+  // Not referencing the same structure or string.
+  EXPECT_NE(str.GetStruct(), str2.GetStruct());
+  EXPECT_NE(str.c_str(), str2.c_str());
+
+  // |str_ref| is still empty.
+  EXPECT_FALSE(str_ref.IsOwner());
+  EXPECT_TRUE(str_ref.empty());
+  EXPECT_EQ(nullptr, str_ref.GetStruct());
+
+  // OWNER COPY CREATION
+
+  // Making a copy (default copy constructor behavior).
+  CefStringUTF8 str3(str);
+
+  // Nothing changes with |str|.
+  EXPECT_TRUE(str.IsOwner());
+  EXPECT_STREQ(test_cstr, str.c_str());
+  EXPECT_EQ(str.GetStruct(), str_struct);
+  EXPECT_EQ(str.c_str(), str_str);
+
+  // |str3| is now an owner of a copy.
+  EXPECT_TRUE(str3.IsOwner());
+  EXPECT_STREQ(test_cstr, str3.c_str());
+  // Not referencing the same structure or string.
+  EXPECT_NE(str.GetStruct(), str3.GetStruct());
+  EXPECT_NE(str.c_str(), str3.c_str());
+
+  // OWNER DETACH/ATTACH
+
+  // DetachToUserFree. |str3| loses its ownership.
+  const char* str3_str = str3.c_str();
+  auto userfree3 = str3.DetachToUserFree();
+
+  // Nothing changes with |str|.
+  EXPECT_TRUE(str.IsOwner());
+  EXPECT_STREQ(test_cstr, str.c_str());
+  EXPECT_EQ(str.GetStruct(), str_struct);
+  EXPECT_EQ(str.c_str(), str_str);
+
+  // |str3| is now empty.
+  EXPECT_FALSE(str3.IsOwner());
+  EXPECT_TRUE(str3.empty());
+  EXPECT_EQ(nullptr, str3.GetStruct());
+
+  // AttachToUserFree. |str3| regains its ownership.
+  str3.AttachToUserFree(userfree3);
+
+  // Nothing changes with |str|.
+  EXPECT_TRUE(str.IsOwner());
+  EXPECT_STREQ(test_cstr, str.c_str());
+  EXPECT_EQ(str.GetStruct(), str_struct);
+  EXPECT_EQ(str.c_str(), str_str);
+
+  // |str3| is now an owner of the same string that it had previously.
+  // The structure will also be re-allocated, but we don't test that because
+  // the same address might be reused.
+  EXPECT_TRUE(str3.IsOwner());
+  EXPECT_STREQ(test_cstr, str3.c_str());
+  EXPECT_EQ(str3_str, str3.c_str());
 }

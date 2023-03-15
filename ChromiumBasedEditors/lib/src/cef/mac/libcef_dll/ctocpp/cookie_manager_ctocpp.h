@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=c08c701ad13790067983a7b5eb964975bc1f186b$
+// $hash=47bcf17fac9734852100b8e44bbead84b4ef78dc$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_COOKIE_MANAGER_CTOCPP_H_
@@ -20,7 +20,6 @@
 #error This file can be included wrapper-side only
 #endif
 
-#include <vector>
 #include "include/capi/cef_cookie_capi.h"
 #include "include/cef_cookie.h"
 #include "libcef_dll/ctocpp/ctocpp_ref_counted.h"
@@ -36,20 +35,17 @@ class CefCookieManagerCToCpp
   virtual ~CefCookieManagerCToCpp();
 
   // CefCookieManager methods.
-  void SetSupportedSchemes(const std::vector<CefString>& schemes,
-                           bool include_defaults,
-                           CefRefPtr<CefCompletionCallback> callback) OVERRIDE;
-  bool VisitAllCookies(CefRefPtr<CefCookieVisitor> visitor) OVERRIDE;
+  bool VisitAllCookies(CefRefPtr<CefCookieVisitor> visitor) override;
   bool VisitUrlCookies(const CefString& url,
                        bool includeHttpOnly,
-                       CefRefPtr<CefCookieVisitor> visitor) OVERRIDE;
+                       CefRefPtr<CefCookieVisitor> visitor) override;
   bool SetCookie(const CefString& url,
                  const CefCookie& cookie,
-                 CefRefPtr<CefSetCookieCallback> callback) OVERRIDE;
+                 CefRefPtr<CefSetCookieCallback> callback) override;
   bool DeleteCookies(const CefString& url,
                      const CefString& cookie_name,
-                     CefRefPtr<CefDeleteCookiesCallback> callback) OVERRIDE;
-  bool FlushStore(CefRefPtr<CefCompletionCallback> callback) OVERRIDE;
+                     CefRefPtr<CefDeleteCookiesCallback> callback) override;
+  bool FlushStore(CefRefPtr<CefCompletionCallback> callback) override;
 };
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_COOKIE_MANAGER_CTOCPP_H_

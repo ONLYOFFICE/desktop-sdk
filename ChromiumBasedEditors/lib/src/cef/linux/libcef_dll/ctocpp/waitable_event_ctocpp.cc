@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=4dce8770f2da88016aa43e925ba7d9b59dc6715f$
+// $hash=f090fd5026cecf6e847f27909418f1dd76fec64f$
 //
 
 #include "libcef_dll/ctocpp/waitable_event_ctocpp.h"
@@ -123,7 +123,7 @@ CefCToCppRefCounted<CefWaitableEventCToCpp,
                     cef_waitable_event_t>::UnwrapDerived(CefWrapperType type,
                                                          CefWaitableEvent* c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=416b4a4468d0c9f68ab9f470b8d384716bd94cbc$
+// $hash=c9c5242edd0c702bac4f0a1a1a45803e388564fe$
 //
 
 #include "libcef_dll/ctocpp/views/display_ctocpp.h"
@@ -108,6 +108,58 @@ void CefDisplay::GetAllDisplays(std::vector<CefRefPtr<CefDisplay>>& displays) {
     }
     delete[] displaysList;
   }
+}
+
+NO_SANITIZE("cfi-icall")
+CefPoint CefDisplay::ConvertScreenPointToPixels(const CefPoint& point) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  cef_point_t _retval = cef_display_convert_screen_point_to_pixels(&point);
+
+  // Return type: simple
+  return _retval;
+}
+
+NO_SANITIZE("cfi-icall")
+CefPoint CefDisplay::ConvertScreenPointFromPixels(const CefPoint& point) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  cef_point_t _retval = cef_display_convert_screen_point_from_pixels(&point);
+
+  // Return type: simple
+  return _retval;
+}
+
+NO_SANITIZE("cfi-icall")
+CefRect CefDisplay::ConvertScreenRectToPixels(const CefRect& rect) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  cef_rect_t _retval = cef_display_convert_screen_rect_to_pixels(&rect);
+
+  // Return type: simple
+  return _retval;
+}
+
+NO_SANITIZE("cfi-icall")
+CefRect CefDisplay::ConvertScreenRectFromPixels(const CefRect& rect) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  cef_rect_t _retval = cef_display_convert_screen_rect_from_pixels(&rect);
+
+  // Return type: simple
+  return _retval;
 }
 
 // VIRTUAL METHODS - Body may be edited by hand.
@@ -236,7 +288,7 @@ CefCToCppRefCounted<CefDisplayCToCpp, CefDisplay, cef_display_t>::UnwrapDerived(
     CefWrapperType type,
     CefDisplay* c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

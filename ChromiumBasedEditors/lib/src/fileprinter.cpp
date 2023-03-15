@@ -188,7 +188,7 @@ void CPrintData::CalculateImagePaths(bool bIsOpenAsLocal)
         else
         {
             // брать место урла
-            int nPos = m_sFrameUrl.find_last_of(wchar_t('/'));
+			int nPos = m_sFrameUrl.find(L"/index.html");
             if (std::wstring::npos != nPos)
             {
                 m_sPresentationThemesPath = m_sFrameUrl.substr(0, nPos + 1);

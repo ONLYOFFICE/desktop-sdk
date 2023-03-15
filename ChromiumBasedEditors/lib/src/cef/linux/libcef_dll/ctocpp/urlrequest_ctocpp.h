@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=1be39ca2ec3320f959828149da332c8ffaf311d1$
+// $hash=8c953a3dd5cdec5cba6160e848884c2f7c9b3ac6$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_URLREQUEST_CTOCPP_H_
@@ -34,13 +34,13 @@ class CefURLRequestCToCpp : public CefCToCppRefCounted<CefURLRequestCToCpp,
   virtual ~CefURLRequestCToCpp();
 
   // CefURLRequest methods.
-  CefRefPtr<CefRequest> GetRequest() OVERRIDE;
-  CefRefPtr<CefURLRequestClient> GetClient() OVERRIDE;
-  Status GetRequestStatus() OVERRIDE;
-  ErrorCode GetRequestError() OVERRIDE;
-  CefRefPtr<CefResponse> GetResponse() OVERRIDE;
-  bool ResponseWasCached() OVERRIDE;
-  void Cancel() OVERRIDE;
+  CefRefPtr<CefRequest> GetRequest() override;
+  CefRefPtr<CefURLRequestClient> GetClient() override;
+  Status GetRequestStatus() override;
+  ErrorCode GetRequestError() override;
+  CefRefPtr<CefResponse> GetResponse() override;
+  bool ResponseWasCached() override;
+  void Cancel() override;
 };
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_URLREQUEST_CTOCPP_H_

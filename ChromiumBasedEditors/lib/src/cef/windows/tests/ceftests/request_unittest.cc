@@ -4,7 +4,7 @@
 
 #include <map>
 
-#include "include/base/cef_bind.h"
+#include "include/base/cef_callback.h"
 #include "include/cef_request.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "tests/ceftests/test_handler.h"
@@ -18,10 +18,10 @@ using client::ClientAppRenderer;
 TEST(RequestTest, SetGet) {
   // CefRequest CreateRequest
   CefRefPtr<CefRequest> request(CefRequest::Create());
-  EXPECT_TRUE(request.get() != NULL);
+  EXPECT_TRUE(request.get() != nullptr);
   EXPECT_EQ(0U, request->GetIdentifier());
 
-  CefString url = "http://tests/run.html";
+  CefString url = "http://tests.com/run.html";
   CefString method = "POST";
   CefRequest::HeaderMap setHeaders, getHeaders;
   setHeaders.insert(std::make_pair("HeaderA", "ValueA"));
@@ -29,13 +29,13 @@ TEST(RequestTest, SetGet) {
 
   // CefPostData CreatePostData
   CefRefPtr<CefPostData> postData(CefPostData::Create());
-  EXPECT_TRUE(postData.get() != NULL);
+  EXPECT_TRUE(postData.get() != nullptr);
 
   // CefPostDataElement CreatePostDataElement
   CefRefPtr<CefPostDataElement> element1(CefPostDataElement::Create());
-  EXPECT_TRUE(element1.get() != NULL);
+  EXPECT_TRUE(element1.get() != nullptr);
   CefRefPtr<CefPostDataElement> element2(CefPostDataElement::Create());
-  EXPECT_TRUE(element2.get() != NULL);
+  EXPECT_TRUE(element2.get() != nullptr);
 
   // CefPostDataElement SetToFile
   CefString file = "c:\\path\\to\\file.ext";
@@ -90,7 +90,8 @@ TEST(RequestTest, SetGet) {
   CefString referrer = "http://tests.com/referrer.html";
   CefRequest::ReferrerPolicy policy = REFERRER_POLICY_ORIGIN;
   request->SetReferrer(referrer, policy);
-  EXPECT_EQ(referrer, request->GetReferrerURL());
+  EXPECT_STREQ("http://tests.com/",
+               request->GetReferrerURL().ToString().c_str());
   EXPECT_EQ(policy, request->GetReferrerPolicy());
 
   // CefRequest SetHeaderMap
@@ -106,7 +107,7 @@ TEST(RequestTest, SetGet) {
   EXPECT_EQ(0U, request->GetIdentifier());
 
   request = CefRequest::Create();
-  EXPECT_TRUE(request.get() != NULL);
+  EXPECT_TRUE(request.get() != nullptr);
   EXPECT_EQ(0U, request->GetIdentifier());
 
   // CefRequest Set
@@ -122,7 +123,7 @@ TEST(RequestTest, SetGet) {
 
 TEST(RequestTest, SetGetHeaderByName) {
   CefRefPtr<CefRequest> request(CefRequest::Create());
-  EXPECT_TRUE(request.get() != NULL);
+  EXPECT_TRUE(request.get() != nullptr);
 
   CefRequest::HeaderMap headers, expectedHeaders;
 
@@ -190,7 +191,7 @@ const char kTestUrl[] = "http://tests.com/run.html";
 
 void CreateRequest(CefRefPtr<CefRequest>& request) {
   request = CefRequest::Create();
-  EXPECT_TRUE(request.get() != NULL);
+  EXPECT_TRUE(request.get() != nullptr);
 
   request->SetURL(kTestUrl);
   request->SetMethod("POST");
@@ -203,10 +204,10 @@ void CreateRequest(CefRefPtr<CefRequest>& request) {
   request->SetHeaderMap(headers);
 
   CefRefPtr<CefPostData> postData(CefPostData::Create());
-  EXPECT_TRUE(postData.get() != NULL);
+  EXPECT_TRUE(postData.get() != nullptr);
 
   CefRefPtr<CefPostDataElement> element1(CefPostDataElement::Create());
-  EXPECT_TRUE(element1.get() != NULL);
+  EXPECT_TRUE(element1.get() != nullptr);
   char bytes[] = "Test Bytes";
   element1->SetToBytes(sizeof(bytes), bytes);
   postData->AddElement(element1);
@@ -244,7 +245,7 @@ class RequestSendRecvTestHandler : public TestHandler {
       CefRefPtr<CefBrowser> browser,
       CefRefPtr<CefFrame> frame,
       CefRefPtr<CefRequest> request,
-      CefRefPtr<CefRequestCallback> callback) override {
+      CefRefPtr<CefCallback> callback) override {
     EXPECT_IO_THREAD();
 
     request_id_ = request->GetIdentifier();
@@ -301,7 +302,7 @@ class RequestSendRecvTestHandler : public TestHandler {
     EXPECT_TRUE(response->IsReadOnly());
 
     got_resource_response_filter_.yes();
-    return NULL;
+    return nullptr;
   }
 
   void OnResourceLoadComplete(CefRefPtr<CefBrowser> browser,
@@ -311,6 +312,11 @@ class RequestSendRecvTestHandler : public TestHandler {
                               URLRequestStatus status,
                               int64 received_content_length) override {
     EXPECT_IO_THREAD();
+
+    if (IsChromeRuntimeEnabled() && request->GetResourceType() == RT_FAVICON) {
+      // Ignore favicon requests.
+      return;
+    }
 
     TestRequest(request);
     EXPECT_TRUE(request->IsReadOnly());
@@ -374,6 +380,8 @@ TEST(RequestTest, SendRecv) {
 namespace {
 
 const char kTypeTestOrigin[] = "http://tests-requesttt.com/";
+const cef_transition_type_t kTransitionExplicitLoad =
+    static_cast<cef_transition_type_t>(TT_EXPLICIT | TT_DIRECT_LOAD_FLAG);
 
 static struct TypeExpected {
   const char* file;
@@ -383,7 +391,7 @@ static struct TypeExpected {
   int expected_count;
 } g_type_expected[] = {
     // Initial main frame load due to browser creation.
-    {"main.html", true, TT_EXPLICIT, RT_MAIN_FRAME, 1},
+    {"main.html", true, kTransitionExplicitLoad, RT_MAIN_FRAME, 1},
 
     // Sub frame load.
     {"sub.html", true, TT_AUTO_SUBFRAME, RT_SUB_FRAME, 1},
@@ -564,7 +572,7 @@ class TypeTestHandler : public TestHandler {
       CefRefPtr<CefBrowser> browser,
       CefRefPtr<CefFrame> frame,
       CefRefPtr<CefRequest> request,
-      CefRefPtr<CefRequestCallback> callback) override {
+      CefRefPtr<CefCallback> callback) override {
     load_expectations_.GotRequest(request);
 
     return RV_CONTINUE;
@@ -578,7 +586,7 @@ class TypeTestHandler : public TestHandler {
         get_expectations_.IsDone(false)) {
       completed_browser_side_ = true;
       // Destroy the test on the UI thread.
-      CefPostTask(TID_UI, base::Bind(&TypeTestHandler::DestroyTest, this));
+      CefPostTask(TID_UI, base::BindOnce(&TypeTestHandler::DestroyTest, this));
     }
 
     return TestHandler::GetResourceHandler(browser, frame, request);

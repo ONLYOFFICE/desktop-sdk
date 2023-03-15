@@ -1679,7 +1679,7 @@ public:
 				pVisitor->m_sDomain = pVisitor->m_sDomain.substr(0, pos);
 		}
 
-		pVisitor->CheckCookiePresent(CefCookieManager::GetGlobalManager(NULL));
+		pVisitor->CheckCookiePresent(CefCookieManager::GetGlobalManager(nullptr));
 	}
 	virtual void OnFoundCookie(bool bIsPresent, std::string sValue)
 	{
@@ -2457,7 +2457,7 @@ public:
 		m_pKeyChain = m_pMain->GetKeychainEngine();
 		m_pKeyChain->Check(m_pMain->m_oSettings.cookie_path + L"/user.data");
 	}
-	void SendCryptoData(CefRefPtr<CefFrame> frame = NULL)
+	void SendCryptoData(CefRefPtr<CefFrame> frame = nullptr)
 	{
 		std::wstring sPass = L"";
 		if (0 != m_nCurrentCryptoMode)

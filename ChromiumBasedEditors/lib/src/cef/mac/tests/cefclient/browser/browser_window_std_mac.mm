@@ -13,9 +13,10 @@
 namespace client {
 
 BrowserWindowStdMac::BrowserWindowStdMac(Delegate* delegate,
+                                         bool with_controls,
                                          const std::string& startup_url)
     : BrowserWindow(delegate) {
-  client_handler_ = new ClientHandlerStd(this, startup_url);
+  client_handler_ = new ClientHandlerStd(this, with_controls, startup_url);
 }
 
 void BrowserWindowStdMac::CreateBrowser(
@@ -27,8 +28,7 @@ void BrowserWindowStdMac::CreateBrowser(
   REQUIRE_MAIN_THREAD();
 
   CefWindowInfo window_info;
-  window_info.SetAsChild(parent_handle, rect.x, rect.y, rect.width,
-                         rect.height);
+  window_info.SetAsChild(parent_handle, rect);
 
   CefBrowserHost::CreateBrowser(window_info, client_handler_,
                                 client_handler_->startup_url(), settings,
@@ -42,7 +42,7 @@ void BrowserWindowStdMac::GetPopupConfig(CefWindowHandle temp_handle,
   CEF_REQUIRE_UI_THREAD();
 
   // The window will be properly sized after the browser is created.
-  windowInfo.SetAsChild(temp_handle, 0, 0, 0, 0);
+  windowInfo.SetAsChild(temp_handle, CefRect());
   client = client_handler_;
 }
 
@@ -88,7 +88,7 @@ ClientWindowHandle BrowserWindowStdMac::GetWindowHandle() const {
 
   if (browser_)
     return browser_->GetHost()->GetWindowHandle();
-  return NULL;
+  return nullptr;
 }
 
 }  // namespace client

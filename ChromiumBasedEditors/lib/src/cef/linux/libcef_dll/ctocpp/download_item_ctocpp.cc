@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=4842e7ac5aff006cdb2e4b774e6d5c62f7d33f4e$
+// $hash=bba72992a342daab9cca87e0f02ae553cabe6cfb$
 //
 
 #include "libcef_dll/ctocpp/download_item_ctocpp.h"
@@ -145,33 +145,33 @@ NO_SANITIZE("cfi-icall") int64 CefDownloadItemCToCpp::GetReceivedBytes() {
   return _retval;
 }
 
-NO_SANITIZE("cfi-icall") CefTime CefDownloadItemCToCpp::GetStartTime() {
+NO_SANITIZE("cfi-icall") CefBaseTime CefDownloadItemCToCpp::GetStartTime() {
   shutdown_checker::AssertNotShutdown();
 
   cef_download_item_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_start_time))
-    return CefTime();
+    return CefBaseTime();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_time_t _retval = _struct->get_start_time(_struct);
+  cef_basetime_t _retval = _struct->get_start_time(_struct);
 
   // Return type: simple
   return _retval;
 }
 
-NO_SANITIZE("cfi-icall") CefTime CefDownloadItemCToCpp::GetEndTime() {
+NO_SANITIZE("cfi-icall") CefBaseTime CefDownloadItemCToCpp::GetEndTime() {
   shutdown_checker::AssertNotShutdown();
 
   cef_download_item_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_end_time))
-    return CefTime();
+    return CefBaseTime();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_time_t _retval = _struct->get_end_time(_struct);
+  cef_basetime_t _retval = _struct->get_end_time(_struct);
 
   // Return type: simple
   return _retval;
@@ -320,7 +320,7 @@ CefCToCppRefCounted<CefDownloadItemCToCpp,
                     cef_download_item_t>::UnwrapDerived(CefWrapperType type,
                                                         CefDownloadItem* c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

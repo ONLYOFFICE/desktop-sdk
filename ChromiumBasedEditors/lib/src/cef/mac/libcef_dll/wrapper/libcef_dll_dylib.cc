@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,12 +9,13 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=436002ae114825124a9a52a24928a974fcf5408a$
+// $hash=c3d95d65039cab3684964b164afe772d8a614f82$
 //
 
 #include <dlfcn.h>
 #include <stdio.h>
 
+#include "include/base/cef_compiler_specific.h"
 #include "include/capi/cef_app_capi.h"
 #include "include/capi/cef_browser_capi.h"
 #include "include/capi/cef_command_line_capi.h"
@@ -22,11 +23,14 @@
 #include "include/capi/cef_crash_util_capi.h"
 #include "include/capi/cef_drag_data_capi.h"
 #include "include/capi/cef_file_util_capi.h"
+#include "include/capi/cef_i18n_util_capi.h"
 #include "include/capi/cef_image_capi.h"
+#include "include/capi/cef_media_router_capi.h"
 #include "include/capi/cef_menu_model_capi.h"
 #include "include/capi/cef_origin_whitelist_capi.h"
 #include "include/capi/cef_parser_capi.h"
 #include "include/capi/cef_path_util_capi.h"
+#include "include/capi/cef_preference_capi.h"
 #include "include/capi/cef_print_settings_capi.h"
 #include "include/capi/cef_process_message_capi.h"
 #include "include/capi/cef_process_util_capi.h"
@@ -36,6 +40,7 @@
 #include "include/capi/cef_response_capi.h"
 #include "include/capi/cef_scheme_capi.h"
 #include "include/capi/cef_server_capi.h"
+#include "include/capi/cef_shared_process_message_builder_capi.h"
 #include "include/capi/cef_ssl_info_capi.h"
 #include "include/capi/cef_stream_capi.h"
 #include "include/capi/cef_task_capi.h"
@@ -45,10 +50,10 @@
 #include "include/capi/cef_v8_capi.h"
 #include "include/capi/cef_values_capi.h"
 #include "include/capi/cef_waitable_event_capi.h"
-#include "include/capi/cef_web_plugin_capi.h"
 #include "include/capi/cef_xml_reader_capi.h"
 #include "include/capi/cef_zip_reader_capi.h"
 #include "include/capi/test/cef_test_helpers_capi.h"
+#include "include/capi/test/cef_test_server_capi.h"
 #include "include/capi/test/cef_translator_test_capi.h"
 #include "include/capi/views/cef_browser_view_capi.h"
 #include "include/capi/views/cef_display_capi.h"
@@ -74,7 +79,7 @@
 
 namespace {
 
-void* g_libcef_handle = NULL;
+void* g_libcef_handle = nullptr;
 
 void* libcef_get_ptr(const char* path, const char* name) {
   void* ptr = dlsym(g_libcef_handle, name);
@@ -84,652 +89,249 @@ void* libcef_get_ptr(const char* path, const char* name) {
   return ptr;
 }
 
-typedef int (*cef_execute_process_ptr)(const struct _cef_main_args_t*,
-                                       struct _cef_app_t*,
-                                       void*);
-typedef int (*cef_initialize_ptr)(const struct _cef_main_args_t*,
-                                  const struct _cef_settings_t*,
-                                  struct _cef_app_t*,
-                                  void*);
-typedef void (*cef_shutdown_ptr)();
-typedef void (*cef_do_message_loop_work_ptr)();
-typedef void (*cef_run_message_loop_ptr)();
-typedef void (*cef_quit_message_loop_ptr)();
-typedef void (*cef_set_osmodal_loop_ptr)(int);
-typedef void (*cef_enable_highdpi_support_ptr)();
-typedef int (*cef_crash_reporting_enabled_ptr)();
-typedef void (*cef_set_crash_key_value_ptr)(const cef_string_t*,
-                                            const cef_string_t*);
-typedef int (*cef_create_directory_ptr)(const cef_string_t*);
-typedef int (*cef_get_temp_directory_ptr)(cef_string_t*);
-typedef int (*cef_create_new_temp_directory_ptr)(const cef_string_t*,
-                                                 cef_string_t*);
-typedef int (*cef_create_temp_directory_in_directory_ptr)(const cef_string_t*,
-                                                          const cef_string_t*,
-                                                          cef_string_t*);
-typedef int (*cef_directory_exists_ptr)(const cef_string_t*);
-typedef int (*cef_delete_file_ptr)(const cef_string_t*, int);
-typedef int (*cef_zip_directory_ptr)(const cef_string_t*,
-                                     const cef_string_t*,
-                                     int);
-typedef void (*cef_load_crlsets_file_ptr)(const cef_string_t*);
-typedef int (*cef_add_cross_origin_whitelist_entry_ptr)(const cef_string_t*,
-                                                        const cef_string_t*,
-                                                        const cef_string_t*,
-                                                        int);
-typedef int (*cef_remove_cross_origin_whitelist_entry_ptr)(const cef_string_t*,
-                                                           const cef_string_t*,
-                                                           const cef_string_t*,
-                                                           int);
-typedef int (*cef_clear_cross_origin_whitelist_ptr)();
-typedef int (*cef_parse_url_ptr)(const cef_string_t*, struct _cef_urlparts_t*);
-typedef int (*cef_create_url_ptr)(const struct _cef_urlparts_t*, cef_string_t*);
-typedef cef_string_userfree_t (*cef_format_url_for_security_display_ptr)(
-    const cef_string_t*);
-typedef cef_string_userfree_t (*cef_get_mime_type_ptr)(const cef_string_t*);
-typedef void (*cef_get_extensions_for_mime_type_ptr)(const cef_string_t*,
-                                                     cef_string_list_t);
-typedef cef_string_userfree_t (*cef_base64encode_ptr)(const void*, size_t);
-typedef struct _cef_binary_value_t* (*cef_base64decode_ptr)(
-    const cef_string_t*);
-typedef cef_string_userfree_t (*cef_uriencode_ptr)(const cef_string_t*, int);
-typedef cef_string_userfree_t (*cef_uridecode_ptr)(const cef_string_t*,
-                                                   int,
-                                                   cef_uri_unescape_rule_t);
-typedef struct _cef_value_t* (*cef_parse_json_ptr)(const cef_string_t*,
-                                                   cef_json_parser_options_t);
-typedef struct _cef_value_t* (*cef_parse_jsonand_return_error_ptr)(
-    const cef_string_t*,
-    cef_json_parser_options_t,
-    cef_json_parser_error_t*,
-    cef_string_t*);
-typedef cef_string_userfree_t (*cef_write_json_ptr)(struct _cef_value_t*,
-                                                    cef_json_writer_options_t);
-typedef int (*cef_get_path_ptr)(cef_path_key_t, cef_string_t*);
-typedef int (*cef_launch_process_ptr)(struct _cef_command_line_t*);
-typedef int (*cef_register_scheme_handler_factory_ptr)(
-    const cef_string_t*,
-    const cef_string_t*,
-    struct _cef_scheme_handler_factory_t*);
-typedef int (*cef_clear_scheme_handler_factories_ptr)();
-typedef int (*cef_is_cert_status_error_ptr)(cef_cert_status_t);
-typedef int (*cef_is_cert_status_minor_error_ptr)(cef_cert_status_t);
-typedef int (*cef_currently_on_ptr)(cef_thread_id_t);
-typedef int (*cef_post_task_ptr)(cef_thread_id_t, struct _cef_task_t*);
-typedef int (*cef_post_delayed_task_ptr)(cef_thread_id_t,
-                                         struct _cef_task_t*,
-                                         int64);
-typedef int (*cef_begin_tracing_ptr)(const cef_string_t*,
-                                     struct _cef_completion_callback_t*);
-typedef int (*cef_end_tracing_ptr)(const cef_string_t*,
-                                   struct _cef_end_tracing_callback_t*);
-typedef int64 (*cef_now_from_system_trace_time_ptr)();
-typedef int (*cef_register_extension_ptr)(const cef_string_t*,
-                                          const cef_string_t*,
-                                          struct _cef_v8handler_t*);
-typedef void (*cef_visit_web_plugin_info_ptr)(
-    struct _cef_web_plugin_info_visitor_t*);
-typedef void (*cef_refresh_web_plugins_ptr)();
-typedef void (*cef_unregister_internal_web_plugin_ptr)(const cef_string_t*);
-typedef void (*cef_register_web_plugin_crash_ptr)(const cef_string_t*);
-typedef void (*cef_is_web_plugin_unstable_ptr)(
-    const cef_string_t*,
-    struct _cef_web_plugin_unstable_callback_t*);
-typedef void (*cef_register_widevine_cdm_ptr)(
-    const cef_string_t*,
-    struct _cef_register_cdm_callback_t*);
-typedef void (*cef_execute_java_script_with_user_gesture_for_tests_ptr)(
-    struct _cef_frame_t*,
-    const cef_string_t*);
-typedef int (*cef_browser_host_create_browser_ptr)(
-    const struct _cef_window_info_t*,
-    struct _cef_client_t*,
-    const cef_string_t*,
-    const struct _cef_browser_settings_t*,
-    struct _cef_dictionary_value_t*,
-    struct _cef_request_context_t*);
-typedef struct _cef_browser_t* (*cef_browser_host_create_browser_sync_ptr)(
-    const struct _cef_window_info_t*,
-    struct _cef_client_t*,
-    const cef_string_t*,
-    const struct _cef_browser_settings_t*,
-    struct _cef_dictionary_value_t*,
-    struct _cef_request_context_t*);
-typedef struct _cef_command_line_t* (*cef_command_line_create_ptr)();
-typedef struct _cef_command_line_t* (*cef_command_line_get_global_ptr)();
-typedef struct _cef_cookie_manager_t* (
-    *cef_cookie_manager_get_global_manager_ptr)(
-    struct _cef_completion_callback_t*);
-typedef struct _cef_drag_data_t* (*cef_drag_data_create_ptr)();
-typedef struct _cef_image_t* (*cef_image_create_ptr)();
-typedef struct _cef_menu_model_t* (*cef_menu_model_create_ptr)(
-    struct _cef_menu_model_delegate_t*);
-typedef struct _cef_print_settings_t* (*cef_print_settings_create_ptr)();
-typedef struct _cef_process_message_t* (*cef_process_message_create_ptr)(
-    const cef_string_t*);
-typedef struct _cef_request_t* (*cef_request_create_ptr)();
-typedef struct _cef_post_data_t* (*cef_post_data_create_ptr)();
-typedef struct _cef_post_data_element_t* (*cef_post_data_element_create_ptr)();
-typedef struct _cef_request_context_t* (
-    *cef_request_context_get_global_context_ptr)();
-typedef struct _cef_request_context_t* (
-    *cef_request_context_create_context_ptr)(
-    const struct _cef_request_context_settings_t*,
-    struct _cef_request_context_handler_t*);
-typedef struct _cef_request_context_t* (*cef_create_context_shared_ptr)(
-    struct _cef_request_context_t*,
-    struct _cef_request_context_handler_t*);
-typedef struct _cef_resource_bundle_t* (*cef_resource_bundle_get_global_ptr)();
-typedef struct _cef_response_t* (*cef_response_create_ptr)();
-typedef void (*cef_server_create_ptr)(const cef_string_t*,
-                                      uint16,
-                                      int,
-                                      struct _cef_server_handler_t*);
-typedef struct _cef_stream_reader_t* (*cef_stream_reader_create_for_file_ptr)(
-    const cef_string_t*);
-typedef struct _cef_stream_reader_t* (
-    *cef_stream_reader_create_for_data_ptr)(void*, size_t);
-typedef struct _cef_stream_reader_t* (
-    *cef_stream_reader_create_for_handler_ptr)(struct _cef_read_handler_t*);
-typedef struct _cef_stream_writer_t* (*cef_stream_writer_create_for_file_ptr)(
-    const cef_string_t*);
-typedef struct _cef_stream_writer_t* (
-    *cef_stream_writer_create_for_handler_ptr)(struct _cef_write_handler_t*);
-typedef struct _cef_task_runner_t* (
-    *cef_task_runner_get_for_current_thread_ptr)();
-typedef struct _cef_task_runner_t* (*cef_task_runner_get_for_thread_ptr)(
-    cef_thread_id_t);
-typedef struct _cef_thread_t* (*cef_thread_create_ptr)(const cef_string_t*,
-                                                       cef_thread_priority_t,
-                                                       cef_message_loop_type_t,
-                                                       int,
-                                                       cef_com_init_mode_t);
-typedef struct _cef_urlrequest_t* (*cef_urlrequest_create_ptr)(
-    struct _cef_request_t*,
-    struct _cef_urlrequest_client_t*,
-    struct _cef_request_context_t*);
-typedef struct _cef_v8context_t* (*cef_v8context_get_current_context_ptr)();
-typedef struct _cef_v8context_t* (*cef_v8context_get_entered_context_ptr)();
-typedef int (*cef_v8context_in_context_ptr)();
-typedef struct _cef_v8value_t* (*cef_v8value_create_undefined_ptr)();
-typedef struct _cef_v8value_t* (*cef_v8value_create_null_ptr)();
-typedef struct _cef_v8value_t* (*cef_v8value_create_bool_ptr)(int);
-typedef struct _cef_v8value_t* (*cef_v8value_create_int_ptr)(int32);
-typedef struct _cef_v8value_t* (*cef_v8value_create_uint_ptr)(uint32);
-typedef struct _cef_v8value_t* (*cef_v8value_create_double_ptr)(double);
-typedef struct _cef_v8value_t* (*cef_v8value_create_date_ptr)(
-    const cef_time_t*);
-typedef struct _cef_v8value_t* (*cef_v8value_create_string_ptr)(
-    const cef_string_t*);
-typedef struct _cef_v8value_t* (*cef_v8value_create_object_ptr)(
-    struct _cef_v8accessor_t*,
-    struct _cef_v8interceptor_t*);
-typedef struct _cef_v8value_t* (*cef_v8value_create_array_ptr)(int);
-typedef struct _cef_v8value_t* (*cef_v8value_create_array_buffer_ptr)(
-    void*,
-    size_t,
-    struct _cef_v8array_buffer_release_callback_t*);
-typedef struct _cef_v8value_t* (*cef_v8value_create_function_ptr)(
-    const cef_string_t*,
-    struct _cef_v8handler_t*);
-typedef struct _cef_v8stack_trace_t* (*cef_v8stack_trace_get_current_ptr)(int);
-typedef struct _cef_value_t* (*cef_value_create_ptr)();
-typedef struct _cef_binary_value_t* (*cef_binary_value_create_ptr)(const void*,
-                                                                   size_t);
-typedef struct _cef_dictionary_value_t* (*cef_dictionary_value_create_ptr)();
-typedef struct _cef_list_value_t* (*cef_list_value_create_ptr)();
-typedef struct _cef_waitable_event_t* (*cef_waitable_event_create_ptr)(int,
-                                                                       int);
-typedef struct _cef_xml_reader_t* (*cef_xml_reader_create_ptr)(
-    struct _cef_stream_reader_t*,
-    cef_xml_encoding_type_t,
-    const cef_string_t*);
-typedef struct _cef_zip_reader_t* (*cef_zip_reader_create_ptr)(
-    struct _cef_stream_reader_t*);
-typedef struct _cef_translator_test_t* (*cef_translator_test_create_ptr)();
-typedef struct _cef_translator_test_ref_ptr_library_t* (
-    *cef_translator_test_ref_ptr_library_create_ptr)(int);
-typedef struct _cef_translator_test_ref_ptr_library_child_t* (
-    *cef_translator_test_ref_ptr_library_child_create_ptr)(int, int);
-typedef struct _cef_translator_test_ref_ptr_library_child_child_t* (
-    *cef_translator_test_ref_ptr_library_child_child_create_ptr)(int, int, int);
-typedef struct _cef_translator_test_scoped_library_t* (
-    *cef_translator_test_scoped_library_create_ptr)(int);
-typedef struct _cef_translator_test_scoped_library_child_t* (
-    *cef_translator_test_scoped_library_child_create_ptr)(int, int);
-typedef struct _cef_translator_test_scoped_library_child_child_t* (
-    *cef_translator_test_scoped_library_child_child_create_ptr)(int, int, int);
-typedef struct _cef_browser_view_t* (*cef_browser_view_create_ptr)(
-    struct _cef_client_t*,
-    const cef_string_t*,
-    const struct _cef_browser_settings_t*,
-    struct _cef_dictionary_value_t*,
-    struct _cef_request_context_t*,
-    struct _cef_browser_view_delegate_t*);
-typedef struct _cef_browser_view_t* (*cef_browser_view_get_for_browser_ptr)(
-    struct _cef_browser_t*);
-typedef struct _cef_display_t* (*cef_display_get_primary_ptr)();
-typedef struct _cef_display_t* (
-    *cef_display_get_nearest_point_ptr)(const cef_point_t*, int);
-typedef struct _cef_display_t* (
-    *cef_display_get_matching_bounds_ptr)(const cef_rect_t*, int);
-typedef size_t (*cef_display_get_count_ptr)();
-typedef void (*cef_display_get_alls_ptr)(size_t*, struct _cef_display_t**);
-typedef struct _cef_label_button_t* (*cef_label_button_create_ptr)(
-    struct _cef_button_delegate_t*,
-    const cef_string_t*,
-    int);
-typedef struct _cef_menu_button_t* (*cef_menu_button_create_ptr)(
-    struct _cef_menu_button_delegate_t*,
-    const cef_string_t*,
-    int);
-typedef struct _cef_panel_t* (*cef_panel_create_ptr)(
-    struct _cef_panel_delegate_t*);
-typedef struct _cef_scroll_view_t* (*cef_scroll_view_create_ptr)(
-    struct _cef_view_delegate_t*);
-typedef struct _cef_textfield_t* (*cef_textfield_create_ptr)(
-    struct _cef_textfield_delegate_t*);
-typedef struct _cef_window_t* (*cef_window_create_top_level_ptr)(
-    struct _cef_window_delegate_t*);
-typedef const char* (*cef_api_hash_ptr)(int);
-typedef int (*cef_version_info_ptr)(int);
-typedef int (*cef_get_min_log_level_ptr)();
-typedef int (*cef_get_vlog_level_ptr)(const char*, size_t);
-typedef void (*cef_log_ptr)(const char*, int, int, const char*);
-typedef cef_string_list_t (*cef_string_list_alloc_ptr)();
-typedef size_t (*cef_string_list_size_ptr)(cef_string_list_t);
-typedef int (*cef_string_list_value_ptr)(cef_string_list_t,
-                                         size_t,
-                                         cef_string_t*);
-typedef void (*cef_string_list_append_ptr)(cef_string_list_t,
-                                           const cef_string_t*);
-typedef void (*cef_string_list_clear_ptr)(cef_string_list_t);
-typedef void (*cef_string_list_free_ptr)(cef_string_list_t);
-typedef cef_string_list_t (*cef_string_list_copy_ptr)(cef_string_list_t);
-typedef cef_string_map_t (*cef_string_map_alloc_ptr)();
-typedef size_t (*cef_string_map_size_ptr)(cef_string_map_t);
-typedef int (*cef_string_map_find_ptr)(cef_string_map_t,
-                                       const cef_string_t*,
-                                       cef_string_t*);
-typedef int (*cef_string_map_key_ptr)(cef_string_map_t, size_t, cef_string_t*);
-typedef int (*cef_string_map_value_ptr)(cef_string_map_t,
-                                        size_t,
-                                        cef_string_t*);
-typedef int (*cef_string_map_append_ptr)(cef_string_map_t,
-                                         const cef_string_t*,
-                                         const cef_string_t*);
-typedef void (*cef_string_map_clear_ptr)(cef_string_map_t);
-typedef void (*cef_string_map_free_ptr)(cef_string_map_t);
-typedef cef_string_multimap_t (*cef_string_multimap_alloc_ptr)();
-typedef size_t (*cef_string_multimap_size_ptr)(cef_string_multimap_t);
-typedef size_t (*cef_string_multimap_find_count_ptr)(cef_string_multimap_t,
-                                                     const cef_string_t*);
-typedef int (*cef_string_multimap_enumerate_ptr)(cef_string_multimap_t,
-                                                 const cef_string_t*,
-                                                 size_t,
-                                                 cef_string_t*);
-typedef int (*cef_string_multimap_key_ptr)(cef_string_multimap_t,
-                                           size_t,
-                                           cef_string_t*);
-typedef int (*cef_string_multimap_value_ptr)(cef_string_multimap_t,
-                                             size_t,
-                                             cef_string_t*);
-typedef int (*cef_string_multimap_append_ptr)(cef_string_multimap_t,
-                                              const cef_string_t*,
-                                              const cef_string_t*);
-typedef void (*cef_string_multimap_clear_ptr)(cef_string_multimap_t);
-typedef void (*cef_string_multimap_free_ptr)(cef_string_multimap_t);
-typedef int (*cef_string_wide_set_ptr)(const wchar_t*,
-                                       size_t,
-                                       cef_string_wide_t*,
-                                       int);
-typedef int (*cef_string_utf8_set_ptr)(const char*,
-                                       size_t,
-                                       cef_string_utf8_t*,
-                                       int);
-typedef int (*cef_string_utf16_set_ptr)(const char16*,
-                                        size_t,
-                                        cef_string_utf16_t*,
-                                        int);
-typedef void (*cef_string_wide_clear_ptr)(cef_string_wide_t*);
-typedef void (*cef_string_utf8_clear_ptr)(cef_string_utf8_t*);
-typedef void (*cef_string_utf16_clear_ptr)(cef_string_utf16_t*);
-typedef int (*cef_string_wide_cmp_ptr)(const cef_string_wide_t*,
-                                       const cef_string_wide_t*);
-typedef int (*cef_string_utf8_cmp_ptr)(const cef_string_utf8_t*,
-                                       const cef_string_utf8_t*);
-typedef int (*cef_string_utf16_cmp_ptr)(const cef_string_utf16_t*,
-                                        const cef_string_utf16_t*);
-typedef int (*cef_string_wide_to_utf8_ptr)(const wchar_t*,
-                                           size_t,
-                                           cef_string_utf8_t*);
-typedef int (*cef_string_utf8_to_wide_ptr)(const char*,
-                                           size_t,
-                                           cef_string_wide_t*);
-typedef int (*cef_string_wide_to_utf16_ptr)(const wchar_t*,
-                                            size_t,
-                                            cef_string_utf16_t*);
-typedef int (*cef_string_utf16_to_wide_ptr)(const char16*,
-                                            size_t,
-                                            cef_string_wide_t*);
-typedef int (*cef_string_utf8_to_utf16_ptr)(const char*,
-                                            size_t,
-                                            cef_string_utf16_t*);
-typedef int (*cef_string_utf16_to_utf8_ptr)(const char16*,
-                                            size_t,
-                                            cef_string_utf8_t*);
-typedef int (*cef_string_ascii_to_wide_ptr)(const char*,
-                                            size_t,
-                                            cef_string_wide_t*);
-typedef int (*cef_string_ascii_to_utf16_ptr)(const char*,
-                                             size_t,
-                                             cef_string_utf16_t*);
-typedef cef_string_userfree_wide_t (*cef_string_userfree_wide_alloc_ptr)();
-typedef cef_string_userfree_utf8_t (*cef_string_userfree_utf8_alloc_ptr)();
-typedef cef_string_userfree_utf16_t (*cef_string_userfree_utf16_alloc_ptr)();
-typedef void (*cef_string_userfree_wide_free_ptr)(cef_string_userfree_wide_t);
-typedef void (*cef_string_userfree_utf8_free_ptr)(cef_string_userfree_utf8_t);
-typedef void (*cef_string_userfree_utf16_free_ptr)(cef_string_userfree_utf16_t);
-typedef int (*cef_string_utf16_to_lower_ptr)(const char16*,
-                                             size_t,
-                                             cef_string_utf16_t*);
-typedef int (*cef_string_utf16_to_upper_ptr)(const char16*,
-                                             size_t,
-                                             cef_string_utf16_t*);
-typedef cef_platform_thread_id_t (*cef_get_current_platform_thread_id_ptr)();
-typedef cef_platform_thread_handle_t (
-    *cef_get_current_platform_thread_handle_ptr)();
-typedef int (*cef_time_to_timet_ptr)(const cef_time_t*, time_t*);
-typedef int (*cef_time_from_timet_ptr)(time_t, cef_time_t*);
-typedef int (*cef_time_to_doublet_ptr)(const cef_time_t*, double*);
-typedef int (*cef_time_from_doublet_ptr)(double, cef_time_t*);
-typedef int (*cef_time_now_ptr)(cef_time_t*);
-typedef int (*cef_time_delta_ptr)(const cef_time_t*,
-                                  const cef_time_t*,
-                                  long long*);
-typedef void (*cef_trace_event_instant_ptr)(const char*,
-                                            const char*,
-                                            const char*,
-                                            uint64,
-                                            const char*,
-                                            uint64,
-                                            int);
-typedef void (*cef_trace_event_begin_ptr)(const char*,
-                                          const char*,
-                                          const char*,
-                                          uint64,
-                                          const char*,
-                                          uint64,
-                                          int);
-typedef void (*cef_trace_event_end_ptr)(const char*,
-                                        const char*,
-                                        const char*,
-                                        uint64,
-                                        const char*,
-                                        uint64,
-                                        int);
-typedef void (*cef_trace_counter_ptr)(const char*,
-                                      const char*,
-                                      const char*,
-                                      uint64,
-                                      const char*,
-                                      uint64,
-                                      int);
-typedef void (*cef_trace_counter_id_ptr)(const char*,
-                                         const char*,
-                                         uint64,
-                                         const char*,
-                                         uint64,
-                                         const char*,
-                                         uint64,
-                                         int);
-typedef void (*cef_trace_event_async_begin_ptr)(const char*,
-                                                const char*,
-                                                uint64,
-                                                const char*,
-                                                uint64,
-                                                const char*,
-                                                uint64,
-                                                int);
-typedef void (*cef_trace_event_async_step_into_ptr)(const char*,
-                                                    const char*,
-                                                    uint64,
-                                                    uint64,
-                                                    const char*,
-                                                    uint64,
-                                                    int);
-typedef void (*cef_trace_event_async_step_past_ptr)(const char*,
-                                                    const char*,
-                                                    uint64,
-                                                    uint64,
-                                                    const char*,
-                                                    uint64,
-                                                    int);
-typedef void (*cef_trace_event_async_end_ptr)(const char*,
-                                              const char*,
-                                              uint64,
-                                              const char*,
-                                              uint64,
-                                              const char*,
-                                              uint64,
-                                              int);
-
 struct libcef_pointers {
-  cef_execute_process_ptr cef_execute_process;
-  cef_initialize_ptr cef_initialize;
-  cef_shutdown_ptr cef_shutdown;
-  cef_do_message_loop_work_ptr cef_do_message_loop_work;
-  cef_run_message_loop_ptr cef_run_message_loop;
-  cef_quit_message_loop_ptr cef_quit_message_loop;
-  cef_set_osmodal_loop_ptr cef_set_osmodal_loop;
-  cef_enable_highdpi_support_ptr cef_enable_highdpi_support;
-  cef_crash_reporting_enabled_ptr cef_crash_reporting_enabled;
-  cef_set_crash_key_value_ptr cef_set_crash_key_value;
-  cef_create_directory_ptr cef_create_directory;
-  cef_get_temp_directory_ptr cef_get_temp_directory;
-  cef_create_new_temp_directory_ptr cef_create_new_temp_directory;
-  cef_create_temp_directory_in_directory_ptr
+  decltype(&cef_execute_process) cef_execute_process;
+  decltype(&cef_initialize) cef_initialize;
+  decltype(&cef_shutdown) cef_shutdown;
+  decltype(&cef_do_message_loop_work) cef_do_message_loop_work;
+  decltype(&cef_run_message_loop) cef_run_message_loop;
+  decltype(&cef_quit_message_loop) cef_quit_message_loop;
+  decltype(&cef_crash_reporting_enabled) cef_crash_reporting_enabled;
+  decltype(&cef_set_crash_key_value) cef_set_crash_key_value;
+  decltype(&cef_create_directory) cef_create_directory;
+  decltype(&cef_get_temp_directory) cef_get_temp_directory;
+  decltype(&cef_create_new_temp_directory) cef_create_new_temp_directory;
+  decltype(&cef_create_temp_directory_in_directory)
       cef_create_temp_directory_in_directory;
-  cef_directory_exists_ptr cef_directory_exists;
-  cef_delete_file_ptr cef_delete_file;
-  cef_zip_directory_ptr cef_zip_directory;
-  cef_load_crlsets_file_ptr cef_load_crlsets_file;
-  cef_add_cross_origin_whitelist_entry_ptr cef_add_cross_origin_whitelist_entry;
-  cef_remove_cross_origin_whitelist_entry_ptr
+  decltype(&cef_directory_exists) cef_directory_exists;
+  decltype(&cef_delete_file) cef_delete_file;
+  decltype(&cef_zip_directory) cef_zip_directory;
+  decltype(&cef_load_crlsets_file) cef_load_crlsets_file;
+  decltype(&cef_is_rtl) cef_is_rtl;
+  decltype(&cef_add_cross_origin_whitelist_entry)
+      cef_add_cross_origin_whitelist_entry;
+  decltype(&cef_remove_cross_origin_whitelist_entry)
       cef_remove_cross_origin_whitelist_entry;
-  cef_clear_cross_origin_whitelist_ptr cef_clear_cross_origin_whitelist;
-  cef_parse_url_ptr cef_parse_url;
-  cef_create_url_ptr cef_create_url;
-  cef_format_url_for_security_display_ptr cef_format_url_for_security_display;
-  cef_get_mime_type_ptr cef_get_mime_type;
-  cef_get_extensions_for_mime_type_ptr cef_get_extensions_for_mime_type;
-  cef_base64encode_ptr cef_base64encode;
-  cef_base64decode_ptr cef_base64decode;
-  cef_uriencode_ptr cef_uriencode;
-  cef_uridecode_ptr cef_uridecode;
-  cef_parse_json_ptr cef_parse_json;
-  cef_parse_jsonand_return_error_ptr cef_parse_jsonand_return_error;
-  cef_write_json_ptr cef_write_json;
-  cef_get_path_ptr cef_get_path;
-  cef_launch_process_ptr cef_launch_process;
-  cef_register_scheme_handler_factory_ptr cef_register_scheme_handler_factory;
-  cef_clear_scheme_handler_factories_ptr cef_clear_scheme_handler_factories;
-  cef_is_cert_status_error_ptr cef_is_cert_status_error;
-  cef_is_cert_status_minor_error_ptr cef_is_cert_status_minor_error;
-  cef_currently_on_ptr cef_currently_on;
-  cef_post_task_ptr cef_post_task;
-  cef_post_delayed_task_ptr cef_post_delayed_task;
-  cef_begin_tracing_ptr cef_begin_tracing;
-  cef_end_tracing_ptr cef_end_tracing;
-  cef_now_from_system_trace_time_ptr cef_now_from_system_trace_time;
-  cef_register_extension_ptr cef_register_extension;
-  cef_visit_web_plugin_info_ptr cef_visit_web_plugin_info;
-  cef_refresh_web_plugins_ptr cef_refresh_web_plugins;
-  cef_unregister_internal_web_plugin_ptr cef_unregister_internal_web_plugin;
-  cef_register_web_plugin_crash_ptr cef_register_web_plugin_crash;
-  cef_is_web_plugin_unstable_ptr cef_is_web_plugin_unstable;
-  cef_register_widevine_cdm_ptr cef_register_widevine_cdm;
-  cef_execute_java_script_with_user_gesture_for_tests_ptr
+  decltype(&cef_clear_cross_origin_whitelist) cef_clear_cross_origin_whitelist;
+  decltype(&cef_resolve_url) cef_resolve_url;
+  decltype(&cef_parse_url) cef_parse_url;
+  decltype(&cef_create_url) cef_create_url;
+  decltype(&cef_format_url_for_security_display)
+      cef_format_url_for_security_display;
+  decltype(&cef_get_mime_type) cef_get_mime_type;
+  decltype(&cef_get_extensions_for_mime_type) cef_get_extensions_for_mime_type;
+  decltype(&cef_base64encode) cef_base64encode;
+  decltype(&cef_base64decode) cef_base64decode;
+  decltype(&cef_uriencode) cef_uriencode;
+  decltype(&cef_uridecode) cef_uridecode;
+  decltype(&cef_parse_json) cef_parse_json;
+  decltype(&cef_parse_json_buffer) cef_parse_json_buffer;
+  decltype(&cef_parse_jsonand_return_error) cef_parse_jsonand_return_error;
+  decltype(&cef_write_json) cef_write_json;
+  decltype(&cef_get_path) cef_get_path;
+  decltype(&cef_launch_process) cef_launch_process;
+  decltype(&cef_register_scheme_handler_factory)
+      cef_register_scheme_handler_factory;
+  decltype(&cef_clear_scheme_handler_factories)
+      cef_clear_scheme_handler_factories;
+  decltype(&cef_is_cert_status_error) cef_is_cert_status_error;
+  decltype(&cef_currently_on) cef_currently_on;
+  decltype(&cef_post_task) cef_post_task;
+  decltype(&cef_post_delayed_task) cef_post_delayed_task;
+  decltype(&cef_begin_tracing) cef_begin_tracing;
+  decltype(&cef_end_tracing) cef_end_tracing;
+  decltype(&cef_now_from_system_trace_time) cef_now_from_system_trace_time;
+  decltype(&cef_register_extension) cef_register_extension;
+  decltype(&cef_execute_java_script_with_user_gesture_for_tests)
       cef_execute_java_script_with_user_gesture_for_tests;
-  cef_browser_host_create_browser_ptr cef_browser_host_create_browser;
-  cef_browser_host_create_browser_sync_ptr cef_browser_host_create_browser_sync;
-  cef_command_line_create_ptr cef_command_line_create;
-  cef_command_line_get_global_ptr cef_command_line_get_global;
-  cef_cookie_manager_get_global_manager_ptr
+  decltype(&cef_set_data_directory_for_tests) cef_set_data_directory_for_tests;
+  decltype(&cef_browser_host_create_browser) cef_browser_host_create_browser;
+  decltype(&cef_browser_host_create_browser_sync)
+      cef_browser_host_create_browser_sync;
+  decltype(&cef_command_line_create) cef_command_line_create;
+  decltype(&cef_command_line_get_global) cef_command_line_get_global;
+  decltype(&cef_cookie_manager_get_global_manager)
       cef_cookie_manager_get_global_manager;
-  cef_drag_data_create_ptr cef_drag_data_create;
-  cef_image_create_ptr cef_image_create;
-  cef_menu_model_create_ptr cef_menu_model_create;
-  cef_print_settings_create_ptr cef_print_settings_create;
-  cef_process_message_create_ptr cef_process_message_create;
-  cef_request_create_ptr cef_request_create;
-  cef_post_data_create_ptr cef_post_data_create;
-  cef_post_data_element_create_ptr cef_post_data_element_create;
-  cef_request_context_get_global_context_ptr
+  decltype(&cef_drag_data_create) cef_drag_data_create;
+  decltype(&cef_image_create) cef_image_create;
+  decltype(&cef_media_router_get_global) cef_media_router_get_global;
+  decltype(&cef_menu_model_create) cef_menu_model_create;
+  decltype(&cef_preference_manager_get_global)
+      cef_preference_manager_get_global;
+  decltype(&cef_print_settings_create) cef_print_settings_create;
+  decltype(&cef_process_message_create) cef_process_message_create;
+  decltype(&cef_request_create) cef_request_create;
+  decltype(&cef_post_data_create) cef_post_data_create;
+  decltype(&cef_post_data_element_create) cef_post_data_element_create;
+  decltype(&cef_request_context_get_global_context)
       cef_request_context_get_global_context;
-  cef_request_context_create_context_ptr cef_request_context_create_context;
-  cef_create_context_shared_ptr cef_create_context_shared;
-  cef_resource_bundle_get_global_ptr cef_resource_bundle_get_global;
-  cef_response_create_ptr cef_response_create;
-  cef_server_create_ptr cef_server_create;
-  cef_stream_reader_create_for_file_ptr cef_stream_reader_create_for_file;
-  cef_stream_reader_create_for_data_ptr cef_stream_reader_create_for_data;
-  cef_stream_reader_create_for_handler_ptr cef_stream_reader_create_for_handler;
-  cef_stream_writer_create_for_file_ptr cef_stream_writer_create_for_file;
-  cef_stream_writer_create_for_handler_ptr cef_stream_writer_create_for_handler;
-  cef_task_runner_get_for_current_thread_ptr
+  decltype(&cef_request_context_create_context)
+      cef_request_context_create_context;
+  decltype(&cef_create_context_shared) cef_create_context_shared;
+  decltype(&cef_resource_bundle_get_global) cef_resource_bundle_get_global;
+  decltype(&cef_response_create) cef_response_create;
+  decltype(&cef_server_create) cef_server_create;
+  decltype(&cef_shared_process_message_builder_create)
+      cef_shared_process_message_builder_create;
+  decltype(&cef_stream_reader_create_for_file)
+      cef_stream_reader_create_for_file;
+  decltype(&cef_stream_reader_create_for_data)
+      cef_stream_reader_create_for_data;
+  decltype(&cef_stream_reader_create_for_handler)
+      cef_stream_reader_create_for_handler;
+  decltype(&cef_stream_writer_create_for_file)
+      cef_stream_writer_create_for_file;
+  decltype(&cef_stream_writer_create_for_handler)
+      cef_stream_writer_create_for_handler;
+  decltype(&cef_task_runner_get_for_current_thread)
       cef_task_runner_get_for_current_thread;
-  cef_task_runner_get_for_thread_ptr cef_task_runner_get_for_thread;
-  cef_thread_create_ptr cef_thread_create;
-  cef_urlrequest_create_ptr cef_urlrequest_create;
-  cef_v8context_get_current_context_ptr cef_v8context_get_current_context;
-  cef_v8context_get_entered_context_ptr cef_v8context_get_entered_context;
-  cef_v8context_in_context_ptr cef_v8context_in_context;
-  cef_v8value_create_undefined_ptr cef_v8value_create_undefined;
-  cef_v8value_create_null_ptr cef_v8value_create_null;
-  cef_v8value_create_bool_ptr cef_v8value_create_bool;
-  cef_v8value_create_int_ptr cef_v8value_create_int;
-  cef_v8value_create_uint_ptr cef_v8value_create_uint;
-  cef_v8value_create_double_ptr cef_v8value_create_double;
-  cef_v8value_create_date_ptr cef_v8value_create_date;
-  cef_v8value_create_string_ptr cef_v8value_create_string;
-  cef_v8value_create_object_ptr cef_v8value_create_object;
-  cef_v8value_create_array_ptr cef_v8value_create_array;
-  cef_v8value_create_array_buffer_ptr cef_v8value_create_array_buffer;
-  cef_v8value_create_function_ptr cef_v8value_create_function;
-  cef_v8stack_trace_get_current_ptr cef_v8stack_trace_get_current;
-  cef_value_create_ptr cef_value_create;
-  cef_binary_value_create_ptr cef_binary_value_create;
-  cef_dictionary_value_create_ptr cef_dictionary_value_create;
-  cef_list_value_create_ptr cef_list_value_create;
-  cef_waitable_event_create_ptr cef_waitable_event_create;
-  cef_xml_reader_create_ptr cef_xml_reader_create;
-  cef_zip_reader_create_ptr cef_zip_reader_create;
-  cef_translator_test_create_ptr cef_translator_test_create;
-  cef_translator_test_ref_ptr_library_create_ptr
+  decltype(&cef_task_runner_get_for_thread) cef_task_runner_get_for_thread;
+  decltype(&cef_thread_create) cef_thread_create;
+  decltype(&cef_urlrequest_create) cef_urlrequest_create;
+  decltype(&cef_v8context_get_current_context)
+      cef_v8context_get_current_context;
+  decltype(&cef_v8context_get_entered_context)
+      cef_v8context_get_entered_context;
+  decltype(&cef_v8context_in_context) cef_v8context_in_context;
+  decltype(&cef_v8value_create_undefined) cef_v8value_create_undefined;
+  decltype(&cef_v8value_create_null) cef_v8value_create_null;
+  decltype(&cef_v8value_create_bool) cef_v8value_create_bool;
+  decltype(&cef_v8value_create_int) cef_v8value_create_int;
+  decltype(&cef_v8value_create_uint) cef_v8value_create_uint;
+  decltype(&cef_v8value_create_double) cef_v8value_create_double;
+  decltype(&cef_v8value_create_date) cef_v8value_create_date;
+  decltype(&cef_v8value_create_string) cef_v8value_create_string;
+  decltype(&cef_v8value_create_object) cef_v8value_create_object;
+  decltype(&cef_v8value_create_array) cef_v8value_create_array;
+  decltype(&cef_v8value_create_array_buffer) cef_v8value_create_array_buffer;
+  decltype(&cef_v8value_create_function) cef_v8value_create_function;
+  decltype(&cef_v8value_create_promise) cef_v8value_create_promise;
+  decltype(&cef_v8stack_trace_get_current) cef_v8stack_trace_get_current;
+  decltype(&cef_value_create) cef_value_create;
+  decltype(&cef_binary_value_create) cef_binary_value_create;
+  decltype(&cef_dictionary_value_create) cef_dictionary_value_create;
+  decltype(&cef_list_value_create) cef_list_value_create;
+  decltype(&cef_waitable_event_create) cef_waitable_event_create;
+  decltype(&cef_xml_reader_create) cef_xml_reader_create;
+  decltype(&cef_zip_reader_create) cef_zip_reader_create;
+  decltype(&cef_test_server_create_and_start) cef_test_server_create_and_start;
+  decltype(&cef_translator_test_create) cef_translator_test_create;
+  decltype(&cef_translator_test_ref_ptr_library_create)
       cef_translator_test_ref_ptr_library_create;
-  cef_translator_test_ref_ptr_library_child_create_ptr
+  decltype(&cef_translator_test_ref_ptr_library_child_create)
       cef_translator_test_ref_ptr_library_child_create;
-  cef_translator_test_ref_ptr_library_child_child_create_ptr
+  decltype(&cef_translator_test_ref_ptr_library_child_child_create)
       cef_translator_test_ref_ptr_library_child_child_create;
-  cef_translator_test_scoped_library_create_ptr
+  decltype(&cef_translator_test_scoped_library_create)
       cef_translator_test_scoped_library_create;
-  cef_translator_test_scoped_library_child_create_ptr
+  decltype(&cef_translator_test_scoped_library_child_create)
       cef_translator_test_scoped_library_child_create;
-  cef_translator_test_scoped_library_child_child_create_ptr
+  decltype(&cef_translator_test_scoped_library_child_child_create)
       cef_translator_test_scoped_library_child_child_create;
-  cef_browser_view_create_ptr cef_browser_view_create;
-  cef_browser_view_get_for_browser_ptr cef_browser_view_get_for_browser;
-  cef_display_get_primary_ptr cef_display_get_primary;
-  cef_display_get_nearest_point_ptr cef_display_get_nearest_point;
-  cef_display_get_matching_bounds_ptr cef_display_get_matching_bounds;
-  cef_display_get_count_ptr cef_display_get_count;
-  cef_display_get_alls_ptr cef_display_get_alls;
-  cef_label_button_create_ptr cef_label_button_create;
-  cef_menu_button_create_ptr cef_menu_button_create;
-  cef_panel_create_ptr cef_panel_create;
-  cef_scroll_view_create_ptr cef_scroll_view_create;
-  cef_textfield_create_ptr cef_textfield_create;
-  cef_window_create_top_level_ptr cef_window_create_top_level;
-  cef_api_hash_ptr cef_api_hash;
-  cef_version_info_ptr cef_version_info;
-  cef_get_min_log_level_ptr cef_get_min_log_level;
-  cef_get_vlog_level_ptr cef_get_vlog_level;
-  cef_log_ptr cef_log;
-  cef_string_list_alloc_ptr cef_string_list_alloc;
-  cef_string_list_size_ptr cef_string_list_size;
-  cef_string_list_value_ptr cef_string_list_value;
-  cef_string_list_append_ptr cef_string_list_append;
-  cef_string_list_clear_ptr cef_string_list_clear;
-  cef_string_list_free_ptr cef_string_list_free;
-  cef_string_list_copy_ptr cef_string_list_copy;
-  cef_string_map_alloc_ptr cef_string_map_alloc;
-  cef_string_map_size_ptr cef_string_map_size;
-  cef_string_map_find_ptr cef_string_map_find;
-  cef_string_map_key_ptr cef_string_map_key;
-  cef_string_map_value_ptr cef_string_map_value;
-  cef_string_map_append_ptr cef_string_map_append;
-  cef_string_map_clear_ptr cef_string_map_clear;
-  cef_string_map_free_ptr cef_string_map_free;
-  cef_string_multimap_alloc_ptr cef_string_multimap_alloc;
-  cef_string_multimap_size_ptr cef_string_multimap_size;
-  cef_string_multimap_find_count_ptr cef_string_multimap_find_count;
-  cef_string_multimap_enumerate_ptr cef_string_multimap_enumerate;
-  cef_string_multimap_key_ptr cef_string_multimap_key;
-  cef_string_multimap_value_ptr cef_string_multimap_value;
-  cef_string_multimap_append_ptr cef_string_multimap_append;
-  cef_string_multimap_clear_ptr cef_string_multimap_clear;
-  cef_string_multimap_free_ptr cef_string_multimap_free;
-  cef_string_wide_set_ptr cef_string_wide_set;
-  cef_string_utf8_set_ptr cef_string_utf8_set;
-  cef_string_utf16_set_ptr cef_string_utf16_set;
-  cef_string_wide_clear_ptr cef_string_wide_clear;
-  cef_string_utf8_clear_ptr cef_string_utf8_clear;
-  cef_string_utf16_clear_ptr cef_string_utf16_clear;
-  cef_string_wide_cmp_ptr cef_string_wide_cmp;
-  cef_string_utf8_cmp_ptr cef_string_utf8_cmp;
-  cef_string_utf16_cmp_ptr cef_string_utf16_cmp;
-  cef_string_wide_to_utf8_ptr cef_string_wide_to_utf8;
-  cef_string_utf8_to_wide_ptr cef_string_utf8_to_wide;
-  cef_string_wide_to_utf16_ptr cef_string_wide_to_utf16;
-  cef_string_utf16_to_wide_ptr cef_string_utf16_to_wide;
-  cef_string_utf8_to_utf16_ptr cef_string_utf8_to_utf16;
-  cef_string_utf16_to_utf8_ptr cef_string_utf16_to_utf8;
-  cef_string_ascii_to_wide_ptr cef_string_ascii_to_wide;
-  cef_string_ascii_to_utf16_ptr cef_string_ascii_to_utf16;
-  cef_string_userfree_wide_alloc_ptr cef_string_userfree_wide_alloc;
-  cef_string_userfree_utf8_alloc_ptr cef_string_userfree_utf8_alloc;
-  cef_string_userfree_utf16_alloc_ptr cef_string_userfree_utf16_alloc;
-  cef_string_userfree_wide_free_ptr cef_string_userfree_wide_free;
-  cef_string_userfree_utf8_free_ptr cef_string_userfree_utf8_free;
-  cef_string_userfree_utf16_free_ptr cef_string_userfree_utf16_free;
-  cef_string_utf16_to_lower_ptr cef_string_utf16_to_lower;
-  cef_string_utf16_to_upper_ptr cef_string_utf16_to_upper;
-  cef_get_current_platform_thread_id_ptr cef_get_current_platform_thread_id;
-  cef_get_current_platform_thread_handle_ptr
+  decltype(&cef_browser_view_create) cef_browser_view_create;
+  decltype(&cef_browser_view_get_for_browser) cef_browser_view_get_for_browser;
+  decltype(&cef_display_get_primary) cef_display_get_primary;
+  decltype(&cef_display_get_nearest_point) cef_display_get_nearest_point;
+  decltype(&cef_display_get_matching_bounds) cef_display_get_matching_bounds;
+  decltype(&cef_display_get_count) cef_display_get_count;
+  decltype(&cef_display_get_alls) cef_display_get_alls;
+  decltype(&cef_display_convert_screen_point_to_pixels)
+      cef_display_convert_screen_point_to_pixels;
+  decltype(&cef_display_convert_screen_point_from_pixels)
+      cef_display_convert_screen_point_from_pixels;
+  decltype(&cef_display_convert_screen_rect_to_pixels)
+      cef_display_convert_screen_rect_to_pixels;
+  decltype(&cef_display_convert_screen_rect_from_pixels)
+      cef_display_convert_screen_rect_from_pixels;
+  decltype(&cef_label_button_create) cef_label_button_create;
+  decltype(&cef_menu_button_create) cef_menu_button_create;
+  decltype(&cef_panel_create) cef_panel_create;
+  decltype(&cef_scroll_view_create) cef_scroll_view_create;
+  decltype(&cef_textfield_create) cef_textfield_create;
+  decltype(&cef_window_create_top_level) cef_window_create_top_level;
+  decltype(&cef_api_hash) cef_api_hash;
+  decltype(&cef_version_info) cef_version_info;
+  decltype(&cef_get_min_log_level) cef_get_min_log_level;
+  decltype(&cef_get_vlog_level) cef_get_vlog_level;
+  decltype(&cef_log) cef_log;
+  decltype(&cef_string_list_alloc) cef_string_list_alloc;
+  decltype(&cef_string_list_size) cef_string_list_size;
+  decltype(&cef_string_list_value) cef_string_list_value;
+  decltype(&cef_string_list_append) cef_string_list_append;
+  decltype(&cef_string_list_clear) cef_string_list_clear;
+  decltype(&cef_string_list_free) cef_string_list_free;
+  decltype(&cef_string_list_copy) cef_string_list_copy;
+  decltype(&cef_string_map_alloc) cef_string_map_alloc;
+  decltype(&cef_string_map_size) cef_string_map_size;
+  decltype(&cef_string_map_find) cef_string_map_find;
+  decltype(&cef_string_map_key) cef_string_map_key;
+  decltype(&cef_string_map_value) cef_string_map_value;
+  decltype(&cef_string_map_append) cef_string_map_append;
+  decltype(&cef_string_map_clear) cef_string_map_clear;
+  decltype(&cef_string_map_free) cef_string_map_free;
+  decltype(&cef_string_multimap_alloc) cef_string_multimap_alloc;
+  decltype(&cef_string_multimap_size) cef_string_multimap_size;
+  decltype(&cef_string_multimap_find_count) cef_string_multimap_find_count;
+  decltype(&cef_string_multimap_enumerate) cef_string_multimap_enumerate;
+  decltype(&cef_string_multimap_key) cef_string_multimap_key;
+  decltype(&cef_string_multimap_value) cef_string_multimap_value;
+  decltype(&cef_string_multimap_append) cef_string_multimap_append;
+  decltype(&cef_string_multimap_clear) cef_string_multimap_clear;
+  decltype(&cef_string_multimap_free) cef_string_multimap_free;
+  decltype(&cef_string_wide_set) cef_string_wide_set;
+  decltype(&cef_string_utf8_set) cef_string_utf8_set;
+  decltype(&cef_string_utf16_set) cef_string_utf16_set;
+  decltype(&cef_string_wide_clear) cef_string_wide_clear;
+  decltype(&cef_string_utf8_clear) cef_string_utf8_clear;
+  decltype(&cef_string_utf16_clear) cef_string_utf16_clear;
+  decltype(&cef_string_wide_cmp) cef_string_wide_cmp;
+  decltype(&cef_string_utf8_cmp) cef_string_utf8_cmp;
+  decltype(&cef_string_utf16_cmp) cef_string_utf16_cmp;
+  decltype(&cef_string_wide_to_utf8) cef_string_wide_to_utf8;
+  decltype(&cef_string_utf8_to_wide) cef_string_utf8_to_wide;
+  decltype(&cef_string_wide_to_utf16) cef_string_wide_to_utf16;
+  decltype(&cef_string_utf16_to_wide) cef_string_utf16_to_wide;
+  decltype(&cef_string_utf8_to_utf16) cef_string_utf8_to_utf16;
+  decltype(&cef_string_utf16_to_utf8) cef_string_utf16_to_utf8;
+  decltype(&cef_string_ascii_to_wide) cef_string_ascii_to_wide;
+  decltype(&cef_string_ascii_to_utf16) cef_string_ascii_to_utf16;
+  decltype(&cef_string_userfree_wide_alloc) cef_string_userfree_wide_alloc;
+  decltype(&cef_string_userfree_utf8_alloc) cef_string_userfree_utf8_alloc;
+  decltype(&cef_string_userfree_utf16_alloc) cef_string_userfree_utf16_alloc;
+  decltype(&cef_string_userfree_wide_free) cef_string_userfree_wide_free;
+  decltype(&cef_string_userfree_utf8_free) cef_string_userfree_utf8_free;
+  decltype(&cef_string_userfree_utf16_free) cef_string_userfree_utf16_free;
+  decltype(&cef_string_utf16_to_lower) cef_string_utf16_to_lower;
+  decltype(&cef_string_utf16_to_upper) cef_string_utf16_to_upper;
+  decltype(&cef_get_current_platform_thread_id)
+      cef_get_current_platform_thread_id;
+  decltype(&cef_get_current_platform_thread_handle)
       cef_get_current_platform_thread_handle;
-  cef_time_to_timet_ptr cef_time_to_timet;
-  cef_time_from_timet_ptr cef_time_from_timet;
-  cef_time_to_doublet_ptr cef_time_to_doublet;
-  cef_time_from_doublet_ptr cef_time_from_doublet;
-  cef_time_now_ptr cef_time_now;
-  cef_time_delta_ptr cef_time_delta;
-  cef_trace_event_instant_ptr cef_trace_event_instant;
-  cef_trace_event_begin_ptr cef_trace_event_begin;
-  cef_trace_event_end_ptr cef_trace_event_end;
-  cef_trace_counter_ptr cef_trace_counter;
-  cef_trace_counter_id_ptr cef_trace_counter_id;
-  cef_trace_event_async_begin_ptr cef_trace_event_async_begin;
-  cef_trace_event_async_step_into_ptr cef_trace_event_async_step_into;
-  cef_trace_event_async_step_past_ptr cef_trace_event_async_step_past;
-  cef_trace_event_async_end_ptr cef_trace_event_async_end;
+  decltype(&cef_time_to_timet) cef_time_to_timet;
+  decltype(&cef_time_from_timet) cef_time_from_timet;
+  decltype(&cef_time_to_doublet) cef_time_to_doublet;
+  decltype(&cef_time_from_doublet) cef_time_from_doublet;
+  decltype(&cef_time_now) cef_time_now;
+  decltype(&cef_basetime_now) cef_basetime_now;
+  decltype(&cef_time_delta) cef_time_delta;
+  decltype(&cef_time_to_basetime) cef_time_to_basetime;
+  decltype(&cef_time_from_basetime) cef_time_from_basetime;
+  decltype(&cef_trace_event_instant) cef_trace_event_instant;
+  decltype(&cef_trace_event_begin) cef_trace_event_begin;
+  decltype(&cef_trace_event_end) cef_trace_event_end;
+  decltype(&cef_trace_counter) cef_trace_counter;
+  decltype(&cef_trace_counter_id) cef_trace_counter_id;
+  decltype(&cef_trace_event_async_begin) cef_trace_event_async_begin;
+  decltype(&cef_trace_event_async_step_into) cef_trace_event_async_step_into;
+  decltype(&cef_trace_event_async_step_past) cef_trace_event_async_step_past;
+  decltype(&cef_trace_event_async_end) cef_trace_event_async_end;
 
 } g_libcef_pointers = {0};
 
-#define INIT_ENTRY(name)                                            \
-  g_libcef_pointers.name = (name##_ptr)libcef_get_ptr(path, #name); \
-  if (!g_libcef_pointers.name) {                                    \
-    return 0;                                                       \
+#define INIT_ENTRY(name)                                                 \
+  g_libcef_pointers.name = (decltype(&name))libcef_get_ptr(path, #name); \
+  if (!g_libcef_pointers.name) {                                         \
+    return 0;                                                            \
   }
 
 int libcef_init_pointers(const char* path) {
@@ -739,8 +341,6 @@ int libcef_init_pointers(const char* path) {
   INIT_ENTRY(cef_do_message_loop_work);
   INIT_ENTRY(cef_run_message_loop);
   INIT_ENTRY(cef_quit_message_loop);
-  INIT_ENTRY(cef_set_osmodal_loop);
-  INIT_ENTRY(cef_enable_highdpi_support);
   INIT_ENTRY(cef_crash_reporting_enabled);
   INIT_ENTRY(cef_set_crash_key_value);
   INIT_ENTRY(cef_create_directory);
@@ -751,9 +351,11 @@ int libcef_init_pointers(const char* path) {
   INIT_ENTRY(cef_delete_file);
   INIT_ENTRY(cef_zip_directory);
   INIT_ENTRY(cef_load_crlsets_file);
+  INIT_ENTRY(cef_is_rtl);
   INIT_ENTRY(cef_add_cross_origin_whitelist_entry);
   INIT_ENTRY(cef_remove_cross_origin_whitelist_entry);
   INIT_ENTRY(cef_clear_cross_origin_whitelist);
+  INIT_ENTRY(cef_resolve_url);
   INIT_ENTRY(cef_parse_url);
   INIT_ENTRY(cef_create_url);
   INIT_ENTRY(cef_format_url_for_security_display);
@@ -764,6 +366,7 @@ int libcef_init_pointers(const char* path) {
   INIT_ENTRY(cef_uriencode);
   INIT_ENTRY(cef_uridecode);
   INIT_ENTRY(cef_parse_json);
+  INIT_ENTRY(cef_parse_json_buffer);
   INIT_ENTRY(cef_parse_jsonand_return_error);
   INIT_ENTRY(cef_write_json);
   INIT_ENTRY(cef_get_path);
@@ -771,7 +374,6 @@ int libcef_init_pointers(const char* path) {
   INIT_ENTRY(cef_register_scheme_handler_factory);
   INIT_ENTRY(cef_clear_scheme_handler_factories);
   INIT_ENTRY(cef_is_cert_status_error);
-  INIT_ENTRY(cef_is_cert_status_minor_error);
   INIT_ENTRY(cef_currently_on);
   INIT_ENTRY(cef_post_task);
   INIT_ENTRY(cef_post_delayed_task);
@@ -779,13 +381,8 @@ int libcef_init_pointers(const char* path) {
   INIT_ENTRY(cef_end_tracing);
   INIT_ENTRY(cef_now_from_system_trace_time);
   INIT_ENTRY(cef_register_extension);
-  INIT_ENTRY(cef_visit_web_plugin_info);
-  INIT_ENTRY(cef_refresh_web_plugins);
-  INIT_ENTRY(cef_unregister_internal_web_plugin);
-  INIT_ENTRY(cef_register_web_plugin_crash);
-  INIT_ENTRY(cef_is_web_plugin_unstable);
-  INIT_ENTRY(cef_register_widevine_cdm);
   INIT_ENTRY(cef_execute_java_script_with_user_gesture_for_tests);
+  INIT_ENTRY(cef_set_data_directory_for_tests);
   INIT_ENTRY(cef_browser_host_create_browser);
   INIT_ENTRY(cef_browser_host_create_browser_sync);
   INIT_ENTRY(cef_command_line_create);
@@ -793,7 +390,9 @@ int libcef_init_pointers(const char* path) {
   INIT_ENTRY(cef_cookie_manager_get_global_manager);
   INIT_ENTRY(cef_drag_data_create);
   INIT_ENTRY(cef_image_create);
+  INIT_ENTRY(cef_media_router_get_global);
   INIT_ENTRY(cef_menu_model_create);
+  INIT_ENTRY(cef_preference_manager_get_global);
   INIT_ENTRY(cef_print_settings_create);
   INIT_ENTRY(cef_process_message_create);
   INIT_ENTRY(cef_request_create);
@@ -805,6 +404,7 @@ int libcef_init_pointers(const char* path) {
   INIT_ENTRY(cef_resource_bundle_get_global);
   INIT_ENTRY(cef_response_create);
   INIT_ENTRY(cef_server_create);
+  INIT_ENTRY(cef_shared_process_message_builder_create);
   INIT_ENTRY(cef_stream_reader_create_for_file);
   INIT_ENTRY(cef_stream_reader_create_for_data);
   INIT_ENTRY(cef_stream_reader_create_for_handler);
@@ -829,6 +429,7 @@ int libcef_init_pointers(const char* path) {
   INIT_ENTRY(cef_v8value_create_array);
   INIT_ENTRY(cef_v8value_create_array_buffer);
   INIT_ENTRY(cef_v8value_create_function);
+  INIT_ENTRY(cef_v8value_create_promise);
   INIT_ENTRY(cef_v8stack_trace_get_current);
   INIT_ENTRY(cef_value_create);
   INIT_ENTRY(cef_binary_value_create);
@@ -837,6 +438,7 @@ int libcef_init_pointers(const char* path) {
   INIT_ENTRY(cef_waitable_event_create);
   INIT_ENTRY(cef_xml_reader_create);
   INIT_ENTRY(cef_zip_reader_create);
+  INIT_ENTRY(cef_test_server_create_and_start);
   INIT_ENTRY(cef_translator_test_create);
   INIT_ENTRY(cef_translator_test_ref_ptr_library_create);
   INIT_ENTRY(cef_translator_test_ref_ptr_library_child_create);
@@ -851,6 +453,10 @@ int libcef_init_pointers(const char* path) {
   INIT_ENTRY(cef_display_get_matching_bounds);
   INIT_ENTRY(cef_display_get_count);
   INIT_ENTRY(cef_display_get_alls);
+  INIT_ENTRY(cef_display_convert_screen_point_to_pixels);
+  INIT_ENTRY(cef_display_convert_screen_point_from_pixels);
+  INIT_ENTRY(cef_display_convert_screen_rect_to_pixels);
+  INIT_ENTRY(cef_display_convert_screen_rect_from_pixels);
   INIT_ENTRY(cef_label_button_create);
   INIT_ENTRY(cef_menu_button_create);
   INIT_ENTRY(cef_panel_create);
@@ -918,7 +524,10 @@ int libcef_init_pointers(const char* path) {
   INIT_ENTRY(cef_time_to_doublet);
   INIT_ENTRY(cef_time_from_doublet);
   INIT_ENTRY(cef_time_now);
+  INIT_ENTRY(cef_basetime_now);
   INIT_ENTRY(cef_time_delta);
+  INIT_ENTRY(cef_time_to_basetime);
+  INIT_ENTRY(cef_time_from_basetime);
   INIT_ENTRY(cef_trace_event_instant);
   INIT_ENTRY(cef_trace_event_begin);
   INIT_ENTRY(cef_trace_event_end);
@@ -958,13 +567,13 @@ int cef_unload_library() {
     if (!result) {
       fprintf(stderr, "dlclose: %s\n", dlerror());
     }
-    g_libcef_handle = NULL;
+    g_libcef_handle = nullptr;
   }
   return result;
 }
 
 NO_SANITIZE("cfi-icall")
-int cef_execute_process(const struct _cef_main_args_t* args,
+int cef_execute_process(const cef_main_args_t* args,
                         struct _cef_app_t* application,
                         void* windows_sandbox_info) {
   return g_libcef_pointers.cef_execute_process(args, application,
@@ -972,7 +581,7 @@ int cef_execute_process(const struct _cef_main_args_t* args,
 }
 
 NO_SANITIZE("cfi-icall")
-int cef_initialize(const struct _cef_main_args_t* args,
+int cef_initialize(const cef_main_args_t* args,
                    const struct _cef_settings_t* settings,
                    struct _cef_app_t* application,
                    void* windows_sandbox_info) {
@@ -994,14 +603,6 @@ NO_SANITIZE("cfi-icall") void cef_run_message_loop() {
 
 NO_SANITIZE("cfi-icall") void cef_quit_message_loop() {
   g_libcef_pointers.cef_quit_message_loop();
-}
-
-NO_SANITIZE("cfi-icall") void cef_set_osmodal_loop(int osModalLoop) {
-  g_libcef_pointers.cef_set_osmodal_loop(osModalLoop);
-}
-
-NO_SANITIZE("cfi-icall") void cef_enable_highdpi_support() {
-  g_libcef_pointers.cef_enable_highdpi_support();
 }
 
 NO_SANITIZE("cfi-icall") int cef_crash_reporting_enabled() {
@@ -1058,6 +659,10 @@ NO_SANITIZE("cfi-icall") void cef_load_crlsets_file(const cef_string_t* path) {
   g_libcef_pointers.cef_load_crlsets_file(path);
 }
 
+NO_SANITIZE("cfi-icall") int cef_is_rtl() {
+  return g_libcef_pointers.cef_is_rtl();
+}
+
 NO_SANITIZE("cfi-icall")
 int cef_add_cross_origin_whitelist_entry(const cef_string_t* source_origin,
                                          const cef_string_t* target_protocol,
@@ -1078,6 +683,14 @@ int cef_remove_cross_origin_whitelist_entry(const cef_string_t* source_origin,
 
 NO_SANITIZE("cfi-icall") int cef_clear_cross_origin_whitelist() {
   return g_libcef_pointers.cef_clear_cross_origin_whitelist();
+}
+
+NO_SANITIZE("cfi-icall")
+int cef_resolve_url(const cef_string_t* base_url,
+                    const cef_string_t* relative_url,
+                    cef_string_t* resolved_url) {
+  return g_libcef_pointers.cef_resolve_url(base_url, relative_url,
+                                           resolved_url);
 }
 
 NO_SANITIZE("cfi-icall")
@@ -1136,13 +749,19 @@ struct _cef_value_t* cef_parse_json(const cef_string_t* json_string,
 }
 
 NO_SANITIZE("cfi-icall")
+struct _cef_value_t* cef_parse_json_buffer(const void* json,
+                                           size_t json_size,
+                                           cef_json_parser_options_t options) {
+  return g_libcef_pointers.cef_parse_json_buffer(json, json_size, options);
+}
+
+NO_SANITIZE("cfi-icall")
 struct _cef_value_t* cef_parse_jsonand_return_error(
     const cef_string_t* json_string,
     cef_json_parser_options_t options,
-    cef_json_parser_error_t* error_code_out,
     cef_string_t* error_msg_out) {
-  return g_libcef_pointers.cef_parse_jsonand_return_error(
-      json_string, options, error_code_out, error_msg_out);
+  return g_libcef_pointers.cef_parse_jsonand_return_error(json_string, options,
+                                                          error_msg_out);
 }
 
 NO_SANITIZE("cfi-icall")
@@ -1177,11 +796,6 @@ NO_SANITIZE("cfi-icall") int cef_clear_scheme_handler_factories() {
 NO_SANITIZE("cfi-icall")
 int cef_is_cert_status_error(cef_cert_status_t status) {
   return g_libcef_pointers.cef_is_cert_status_error(status);
-}
-
-NO_SANITIZE("cfi-icall")
-int cef_is_cert_status_minor_error(cef_cert_status_t status) {
-  return g_libcef_pointers.cef_is_cert_status_minor_error(status);
 }
 
 NO_SANITIZE("cfi-icall") int cef_currently_on(cef_thread_id_t threadId) {
@@ -1225,43 +839,16 @@ int cef_register_extension(const cef_string_t* extension_name,
 }
 
 NO_SANITIZE("cfi-icall")
-void cef_visit_web_plugin_info(struct _cef_web_plugin_info_visitor_t* visitor) {
-  g_libcef_pointers.cef_visit_web_plugin_info(visitor);
-}
-
-NO_SANITIZE("cfi-icall") void cef_refresh_web_plugins() {
-  g_libcef_pointers.cef_refresh_web_plugins();
-}
-
-NO_SANITIZE("cfi-icall")
-void cef_unregister_internal_web_plugin(const cef_string_t* path) {
-  g_libcef_pointers.cef_unregister_internal_web_plugin(path);
-}
-
-NO_SANITIZE("cfi-icall")
-void cef_register_web_plugin_crash(const cef_string_t* path) {
-  g_libcef_pointers.cef_register_web_plugin_crash(path);
-}
-
-NO_SANITIZE("cfi-icall")
-void cef_is_web_plugin_unstable(
-    const cef_string_t* path,
-    struct _cef_web_plugin_unstable_callback_t* callback) {
-  g_libcef_pointers.cef_is_web_plugin_unstable(path, callback);
-}
-
-NO_SANITIZE("cfi-icall")
-void cef_register_widevine_cdm(const cef_string_t* path,
-                               struct _cef_register_cdm_callback_t* callback) {
-  g_libcef_pointers.cef_register_widevine_cdm(path, callback);
-}
-
-NO_SANITIZE("cfi-icall")
 void cef_execute_java_script_with_user_gesture_for_tests(
     struct _cef_frame_t* frame,
     const cef_string_t* javascript) {
   g_libcef_pointers.cef_execute_java_script_with_user_gesture_for_tests(
       frame, javascript);
+}
+
+NO_SANITIZE("cfi-icall")
+void cef_set_data_directory_for_tests(const cef_string_t* dir) {
+  g_libcef_pointers.cef_set_data_directory_for_tests(dir);
 }
 
 NO_SANITIZE("cfi-icall")
@@ -1312,9 +899,20 @@ NO_SANITIZE("cfi-icall") struct _cef_image_t* cef_image_create() {
 }
 
 NO_SANITIZE("cfi-icall")
+struct _cef_media_router_t* cef_media_router_get_global(
+    struct _cef_completion_callback_t* callback) {
+  return g_libcef_pointers.cef_media_router_get_global(callback);
+}
+
+NO_SANITIZE("cfi-icall")
 struct _cef_menu_model_t* cef_menu_model_create(
     struct _cef_menu_model_delegate_t* delegate) {
   return g_libcef_pointers.cef_menu_model_create(delegate);
+}
+
+NO_SANITIZE("cfi-icall")
+struct _cef_preference_manager_t* cef_preference_manager_get_global() {
+  return g_libcef_pointers.cef_preference_manager_get_global();
 }
 
 NO_SANITIZE("cfi-icall")
@@ -1376,6 +974,14 @@ void cef_server_create(const cef_string_t* address,
                        int backlog,
                        struct _cef_server_handler_t* handler) {
   g_libcef_pointers.cef_server_create(address, port, backlog, handler);
+}
+
+NO_SANITIZE("cfi-icall")
+struct _cef_shared_process_message_builder_t*
+cef_shared_process_message_builder_create(const cef_string_t* name,
+                                          size_t byte_size) {
+  return g_libcef_pointers.cef_shared_process_message_builder_create(name,
+                                                                     byte_size);
 }
 
 NO_SANITIZE("cfi-icall")
@@ -1482,7 +1088,7 @@ struct _cef_v8value_t* cef_v8value_create_double(double value) {
 }
 
 NO_SANITIZE("cfi-icall")
-struct _cef_v8value_t* cef_v8value_create_date(const cef_time_t* date) {
+struct _cef_v8value_t* cef_v8value_create_date(cef_basetime_t date) {
   return g_libcef_pointers.cef_v8value_create_date(date);
 }
 
@@ -1517,6 +1123,10 @@ struct _cef_v8value_t* cef_v8value_create_function(
     const cef_string_t* name,
     struct _cef_v8handler_t* handler) {
   return g_libcef_pointers.cef_v8value_create_function(name, handler);
+}
+
+NO_SANITIZE("cfi-icall") struct _cef_v8value_t* cef_v8value_create_promise() {
+  return g_libcef_pointers.cef_v8value_create_promise();
 }
 
 NO_SANITIZE("cfi-icall")
@@ -1563,6 +1173,16 @@ NO_SANITIZE("cfi-icall")
 struct _cef_zip_reader_t* cef_zip_reader_create(
     struct _cef_stream_reader_t* stream) {
   return g_libcef_pointers.cef_zip_reader_create(stream);
+}
+
+NO_SANITIZE("cfi-icall")
+struct _cef_test_server_t* cef_test_server_create_and_start(
+    uint16 port,
+    int https_server,
+    cef_test_cert_type_t https_cert_type,
+    struct _cef_test_server_handler_t* handler) {
+  return g_libcef_pointers.cef_test_server_create_and_start(
+      port, https_server, https_cert_type, handler);
 }
 
 NO_SANITIZE("cfi-icall")
@@ -1663,19 +1283,39 @@ void cef_display_get_alls(size_t* displaysCount,
 }
 
 NO_SANITIZE("cfi-icall")
+cef_point_t cef_display_convert_screen_point_to_pixels(
+    const cef_point_t* point) {
+  return g_libcef_pointers.cef_display_convert_screen_point_to_pixels(point);
+}
+
+NO_SANITIZE("cfi-icall")
+cef_point_t cef_display_convert_screen_point_from_pixels(
+    const cef_point_t* point) {
+  return g_libcef_pointers.cef_display_convert_screen_point_from_pixels(point);
+}
+
+NO_SANITIZE("cfi-icall")
+cef_rect_t cef_display_convert_screen_rect_to_pixels(const cef_rect_t* rect) {
+  return g_libcef_pointers.cef_display_convert_screen_rect_to_pixels(rect);
+}
+
+NO_SANITIZE("cfi-icall")
+cef_rect_t cef_display_convert_screen_rect_from_pixels(const cef_rect_t* rect) {
+  return g_libcef_pointers.cef_display_convert_screen_rect_from_pixels(rect);
+}
+
+NO_SANITIZE("cfi-icall")
 struct _cef_label_button_t* cef_label_button_create(
     struct _cef_button_delegate_t* delegate,
-    const cef_string_t* text,
-    int with_frame) {
-  return g_libcef_pointers.cef_label_button_create(delegate, text, with_frame);
+    const cef_string_t* text) {
+  return g_libcef_pointers.cef_label_button_create(delegate, text);
 }
 
 NO_SANITIZE("cfi-icall")
 struct _cef_menu_button_t* cef_menu_button_create(
     struct _cef_menu_button_delegate_t* delegate,
-    const cef_string_t* text,
-    int with_frame) {
-  return g_libcef_pointers.cef_menu_button_create(delegate, text, with_frame);
+    const cef_string_t* text) {
+  return g_libcef_pointers.cef_menu_button_create(delegate, text);
 }
 
 NO_SANITIZE("cfi-icall")
@@ -2041,11 +1681,25 @@ NO_SANITIZE("cfi-icall") int cef_time_now(cef_time_t* cef_time) {
   return g_libcef_pointers.cef_time_now(cef_time);
 }
 
+NO_SANITIZE("cfi-icall") cef_basetime_t cef_basetime_now() {
+  return g_libcef_pointers.cef_basetime_now();
+}
+
 NO_SANITIZE("cfi-icall")
 int cef_time_delta(const cef_time_t* cef_time1,
                    const cef_time_t* cef_time2,
                    long long* delta) {
   return g_libcef_pointers.cef_time_delta(cef_time1, cef_time2, delta);
+}
+
+NO_SANITIZE("cfi-icall")
+int cef_time_to_basetime(const cef_time_t* from, cef_basetime_t* to) {
+  return g_libcef_pointers.cef_time_to_basetime(from, to);
+}
+
+NO_SANITIZE("cfi-icall")
+int cef_time_from_basetime(const cef_basetime_t from, cef_time_t* to) {
+  return g_libcef_pointers.cef_time_from_basetime(from, to);
 }
 
 NO_SANITIZE("cfi-icall")

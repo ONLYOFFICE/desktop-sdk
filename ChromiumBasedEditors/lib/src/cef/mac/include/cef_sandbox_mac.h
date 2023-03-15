@@ -34,33 +34,36 @@
 #include "include/base/cef_build.h"
 #include "include/internal/cef_export.h"
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// The sandbox is used to restrict sub-processes (renderer, plugin, GPU, etc)
-// from directly accessing system resources. This helps to protect the user
-// from untrusted and potentially malicious Web content.
-// See http://www.chromium.org/developers/design-documents/sandbox for
-// complete details.
-//
-// To enable the sandbox on macOS the following requirements must be met:
-// 1. Link the helper process executable with the cef_sandbox static library.
-// 2. Call the cef_sandbox_initialize() function at the beginning of the
-//    helper executable main() function and before loading the CEF framework
-//    library. See include/wrapper/cef_library_loader.h for example usage.
+///
+/// \file
+/// The sandbox is used to restrict sub-processes (renderer, GPU, etc) from
+/// directly accessing system resources. This helps to protect the user from
+/// untrusted and potentially malicious Web content. See
+/// http://www.chromium.org/developers/design-documents/sandbox for complete
+/// details.
+///
+/// To enable the sandbox on macOS the following requirements must be met:
+/// 1. Link the helper process executable with the cef_sandbox static library.
+/// 2. Call the cef_sandbox_initialize() function at the beginning of the
+///    helper executable main() function and before loading the CEF framework
+///    library. See include/wrapper/cef_library_loader.h for example usage.
+///
 
 ///
-// Initialize the sandbox for this process. Returns the sandbox context
-// handle on success or NULL on failure. The returned handle should be
-// passed to cef_sandbox_destroy() immediately before process termination.
+/// Initialize the sandbox for this process. Returns the sandbox context
+/// handle on success or NULL on failure. The returned handle should be
+/// passed to cef_sandbox_destroy() immediately before process termination.
 ///
 CEF_EXPORT void* cef_sandbox_initialize(int argc, char** argv);
 
 ///
-// Destroy the specified sandbox context handle.
+/// Destroy the specified sandbox context handle.
 ///
 CEF_EXPORT void cef_sandbox_destroy(void* sandbox_context);
 
@@ -68,14 +71,16 @@ CEF_EXPORT void cef_sandbox_destroy(void* sandbox_context);
 }
 
 ///
-// Scoped helper for managing the life span of a sandbox context handle.
+/// Scoped helper for managing the life span of a sandbox context handle.
 ///
 class CEF_EXPORT CefScopedSandboxContext {
  public:
   CefScopedSandboxContext();
   ~CefScopedSandboxContext();
 
-  // Load the sandbox for this process. Returns true on success.
+  ///
+  /// Load the sandbox for this process. Returns true on success.
+  ///
   bool Initialize(int argc, char** argv);
 
  private:
@@ -83,6 +88,6 @@ class CEF_EXPORT CefScopedSandboxContext {
 };
 #endif  // __cplusplus
 
-#endif  // defined(OS_MACOSX)
+#endif  // defined(OS_MAC)
 
 #endif  // CEF_INCLUDE_CEF_SANDBOX_MAC_H_

@@ -2601,13 +2601,13 @@ window.AscDesktopEditor._convertFile(path, format);\n\
 			CefRefPtr<CefV8Value> val = arguments[0];
 			int nCount = val->GetArrayLength();
 
-			int nCount2 = 0;
-			CefRefPtr<CefV8Value> val2 = NULL;
-			if (arguments.size() > 1)
-			{
-				val2 = arguments[1];
-				nCount2 = val2->GetArrayLength();
-			}
+            int nCount2 = 0;
+			CefRefPtr<CefV8Value> val2 = nullptr;
+            if (arguments.size() > 1)
+            {
+                val2 = arguments[1];
+                nCount2 = val2->GetArrayLength();
+            }
 
 			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("download_files");
 
@@ -2706,7 +2706,7 @@ window.AscDesktopEditor._convertFile(path, format);\n\
 #ifdef CEF_2623
 				CefRefPtr<CefV8Value> val = CefV8Value::CreateObject(NULL);
 #else
-				CefRefPtr<CefV8Value> val = CefV8Value::CreateObject(NULL, NULL);
+				CefRefPtr<CefV8Value> val = CefV8Value::CreateObject(nullptr, nullptr);
 #endif
 				val->SetValue("type", CefV8Value::CreateInt(nMode), V8_PROPERTY_ATTRIBUTE_NONE);
 				val->SetValue("info_presented", CefV8Value::CreateBool(true), V8_PROPERTY_ATTRIBUTE_NONE);
@@ -2821,7 +2821,7 @@ window.AscDesktopEditor._convertFile(path, format);\n\
 #ifdef CEF_2623
 			retval = CefV8Value::CreateObject(NULL);
 #else
-			retval = CefV8Value::CreateObject(NULL, NULL);
+			retval = CefV8Value::CreateObject(nullptr, nullptr);
 #endif
 			int nW = 0;
 			int nH = 0;
@@ -3094,33 +3094,33 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
 			if (oFile.OpenFile(sFile))
 				lSize = oFile.GetFileSize();
 
-			retval = CefV8Value::CreateInt((int)lSize);
-			return true;
-		}
-		else if (name == "_getMainUrl")
-		{
-			CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
-			CefRefPtr<CefFrame> frame = browser ? browser->GetMainFrame() : NULL;
-			retval = CefV8Value::CreateString(frame ? frame->GetURL() : "");
-			return true;
-		}
-		else if (name == "_getCurrentUrl")
-		{
-			CefRefPtr<CefFrame> frame = CefV8Context::GetCurrentContext()->GetFrame();
-			retval = CefV8Value::CreateString(frame ? frame->GetURL() : "");
-			return true;
-		}
-		else if (name == "_SaveFilenameDialog")
-		{
-			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_save_filename_dialog");
-			message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
-			message->GetArgumentList()->SetString(1, std::to_string(CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier()));
-			SEND_MESSAGE_TO_BROWSER_PROCESS(message);
-			return true;
-		}
-		else if (name == "_ImportAdvancedEncryptedData")
-		{
-			std::wstring sFile = arguments[0]->GetStringValue().ToWString();
+            retval = CefV8Value::CreateInt((int)lSize);
+            return true;
+        }
+        else if (name == "_getMainUrl")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+			CefRefPtr<CefFrame> frame = browser ? browser->GetMainFrame() : nullptr;
+            retval = CefV8Value::CreateString(frame ? frame->GetURL() : "");
+            return true;
+        }
+        else if (name == "_getCurrentUrl")
+        {
+            CefRefPtr<CefFrame> frame = CefV8Context::GetCurrentContext()->GetFrame();
+            retval = CefV8Value::CreateString(frame ? frame->GetURL() : "");
+            return true;
+        }
+        else if (name == "_SaveFilenameDialog")
+        {
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_save_filename_dialog");
+            message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
+            message->GetArgumentList()->SetString(1, std::to_string(CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier()));
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+            return true;
+        }
+        else if (name == "_ImportAdvancedEncryptedData")
+        {
+            std::wstring sFile = arguments[0]->GetStringValue().ToWString();
 
 			COfficeFileFormatChecker oChecker;
 			bool bIsOfficeFile = oChecker.isOfficeFile(sFile);
@@ -3779,7 +3779,7 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
 #ifdef CEF_2623
 			retval = CefV8Value::CreateObject(NULL);
 #else
-			retval = CefV8Value::CreateObject(NULL, NULL);
+			retval = CefV8Value::CreateObject(nullptr, nullptr);
 #endif
 
 			CefRefPtr<CefV8Handler> handler = new CLocalFileConvertV8Handler(sFolder);
@@ -4157,7 +4157,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 #ifdef CEF_2623
 	CefRefPtr<CefV8Value> obj = CefV8Value::CreateObject(NULL);
 #else
-	CefRefPtr<CefV8Value> obj = CefV8Value::CreateObject(NULL, NULL);
+	CefRefPtr<CefV8Value> obj = CefV8Value::CreateObject(nullptr, nullptr);
 #endif
 
 	std::wstring sMainUrl = L"";

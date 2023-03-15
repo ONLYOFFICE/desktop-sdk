@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=5dcf22a90a9ba43c10917c041f546652df4bc360$
+// $hash=be5f51e38820266a08248e602443902b3e2e3d78$
 //
 
 #include "libcef_dll/ctocpp/views/textfield_ctocpp.h"
@@ -427,7 +427,8 @@ void CefTextfieldCToCpp::ApplyTextStyle(cef_text_style_t style,
 }
 
 NO_SANITIZE("cfi-icall")
-bool CefTextfieldCToCpp::IsCommandEnabled(int command_id) {
+bool CefTextfieldCToCpp::IsCommandEnabled(
+    cef_text_field_commands_t command_id) {
   shutdown_checker::AssertNotShutdown();
 
   cef_textfield_t* _struct = GetStruct();
@@ -444,7 +445,7 @@ bool CefTextfieldCToCpp::IsCommandEnabled(int command_id) {
 }
 
 NO_SANITIZE("cfi-icall")
-void CefTextfieldCToCpp::ExecuteCommand(int command_id) {
+void CefTextfieldCToCpp::ExecuteCommand(cef_text_field_commands_t command_id) {
   shutdown_checker::AssertNotShutdown();
 
   cef_textfield_t* _struct = GetStruct();
@@ -546,7 +547,7 @@ CefRefPtr<CefBrowserView> CefTextfieldCToCpp::AsBrowserView() {
 
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, as_browser_view))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -562,7 +563,7 @@ NO_SANITIZE("cfi-icall") CefRefPtr<CefButton> CefTextfieldCToCpp::AsButton() {
 
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, as_button))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -578,7 +579,7 @@ NO_SANITIZE("cfi-icall") CefRefPtr<CefPanel> CefTextfieldCToCpp::AsPanel() {
 
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, as_panel))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -595,7 +596,7 @@ CefRefPtr<CefScrollView> CefTextfieldCToCpp::AsScrollView() {
 
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, as_scroll_view))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -612,7 +613,7 @@ CefRefPtr<CefTextfield> CefTextfieldCToCpp::AsTextfield() {
 
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, as_textfield))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -720,7 +721,7 @@ CefRefPtr<CefViewDelegate> CefTextfieldCToCpp::GetDelegate() {
 
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, get_delegate))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -736,7 +737,7 @@ NO_SANITIZE("cfi-icall") CefRefPtr<CefWindow> CefTextfieldCToCpp::GetWindow() {
 
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, get_window))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -811,7 +812,7 @@ CefRefPtr<CefView> CefTextfieldCToCpp::GetParentView() {
 
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, get_parent_view))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -828,7 +829,7 @@ CefRefPtr<CefView> CefTextfieldCToCpp::GetViewForID(int id) {
 
   cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
   if (CEF_MEMBER_MISSING(_struct, get_view_for_id))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -939,6 +940,36 @@ NO_SANITIZE("cfi-icall") CefPoint CefTextfieldCToCpp::GetPosition() {
 
   // Execute
   cef_point_t _retval = _struct->get_position(_struct);
+
+  // Return type: simple
+  return _retval;
+}
+
+NO_SANITIZE("cfi-icall")
+void CefTextfieldCToCpp::SetInsets(const CefInsets& insets) {
+  shutdown_checker::AssertNotShutdown();
+
+  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (CEF_MEMBER_MISSING(_struct, set_insets))
+    return;
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  _struct->set_insets(_struct, &insets);
+}
+
+NO_SANITIZE("cfi-icall") CefInsets CefTextfieldCToCpp::GetInsets() {
+  shutdown_checker::AssertNotShutdown();
+
+  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (CEF_MEMBER_MISSING(_struct, get_insets))
+    return CefInsets();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  cef_insets_t _retval = _struct->get_insets(_struct);
 
   // Return type: simple
   return _retval;
@@ -1327,7 +1358,7 @@ cef_textfield_t*
 CefCToCppRefCounted<CefTextfieldCToCpp, CefTextfield, cef_textfield_t>::
     UnwrapDerived(CefWrapperType type, CefTextfield* c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

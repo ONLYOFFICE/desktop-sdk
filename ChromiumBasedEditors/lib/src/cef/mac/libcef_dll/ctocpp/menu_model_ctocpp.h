@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=f2b1e20d398edfe2ab1caf79af86163b992e14e0$
+// $hash=1b1c5e3e3cca0da704d30c6577a0c083c3fb389b$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_MENU_MODEL_CTOCPP_H_
@@ -34,96 +34,98 @@ class CefMenuModelCToCpp : public CefCToCppRefCounted<CefMenuModelCToCpp,
   virtual ~CefMenuModelCToCpp();
 
   // CefMenuModel methods.
-  bool IsSubMenu() OVERRIDE;
-  bool Clear() OVERRIDE;
-  int GetCount() OVERRIDE;
-  bool AddSeparator() OVERRIDE;
-  bool AddItem(int command_id, const CefString& label) OVERRIDE;
-  bool AddCheckItem(int command_id, const CefString& label) OVERRIDE;
+  bool IsSubMenu() override;
+  bool Clear() override;
+  size_t GetCount() override;
+  bool AddSeparator() override;
+  bool AddItem(int command_id, const CefString& label) override;
+  bool AddCheckItem(int command_id, const CefString& label) override;
   bool AddRadioItem(int command_id,
                     const CefString& label,
-                    int group_id) OVERRIDE;
+                    int group_id) override;
   CefRefPtr<CefMenuModel> AddSubMenu(int command_id,
-                                     const CefString& label) OVERRIDE;
-  bool InsertSeparatorAt(int index) OVERRIDE;
-  bool InsertItemAt(int index, int command_id, const CefString& label) OVERRIDE;
-  bool InsertCheckItemAt(int index,
+                                     const CefString& label) override;
+  bool InsertSeparatorAt(size_t index) override;
+  bool InsertItemAt(size_t index,
+                    int command_id,
+                    const CefString& label) override;
+  bool InsertCheckItemAt(size_t index,
                          int command_id,
-                         const CefString& label) OVERRIDE;
-  bool InsertRadioItemAt(int index,
+                         const CefString& label) override;
+  bool InsertRadioItemAt(size_t index,
                          int command_id,
                          const CefString& label,
-                         int group_id) OVERRIDE;
-  CefRefPtr<CefMenuModel> InsertSubMenuAt(int index,
+                         int group_id) override;
+  CefRefPtr<CefMenuModel> InsertSubMenuAt(size_t index,
                                           int command_id,
-                                          const CefString& label) OVERRIDE;
-  bool Remove(int command_id) OVERRIDE;
-  bool RemoveAt(int index) OVERRIDE;
-  int GetIndexOf(int command_id) OVERRIDE;
-  int GetCommandIdAt(int index) OVERRIDE;
-  bool SetCommandIdAt(int index, int command_id) OVERRIDE;
-  CefString GetLabel(int command_id) OVERRIDE;
-  CefString GetLabelAt(int index) OVERRIDE;
-  bool SetLabel(int command_id, const CefString& label) OVERRIDE;
-  bool SetLabelAt(int index, const CefString& label) OVERRIDE;
-  MenuItemType GetType(int command_id) OVERRIDE;
-  MenuItemType GetTypeAt(int index) OVERRIDE;
-  int GetGroupId(int command_id) OVERRIDE;
-  int GetGroupIdAt(int index) OVERRIDE;
-  bool SetGroupId(int command_id, int group_id) OVERRIDE;
-  bool SetGroupIdAt(int index, int group_id) OVERRIDE;
-  CefRefPtr<CefMenuModel> GetSubMenu(int command_id) OVERRIDE;
-  CefRefPtr<CefMenuModel> GetSubMenuAt(int index) OVERRIDE;
-  bool IsVisible(int command_id) OVERRIDE;
-  bool IsVisibleAt(int index) OVERRIDE;
-  bool SetVisible(int command_id, bool visible) OVERRIDE;
-  bool SetVisibleAt(int index, bool visible) OVERRIDE;
-  bool IsEnabled(int command_id) OVERRIDE;
-  bool IsEnabledAt(int index) OVERRIDE;
-  bool SetEnabled(int command_id, bool enabled) OVERRIDE;
-  bool SetEnabledAt(int index, bool enabled) OVERRIDE;
-  bool IsChecked(int command_id) OVERRIDE;
-  bool IsCheckedAt(int index) OVERRIDE;
-  bool SetChecked(int command_id, bool checked) OVERRIDE;
-  bool SetCheckedAt(int index, bool checked) OVERRIDE;
-  bool HasAccelerator(int command_id) OVERRIDE;
-  bool HasAcceleratorAt(int index) OVERRIDE;
+                                          const CefString& label) override;
+  bool Remove(int command_id) override;
+  bool RemoveAt(size_t index) override;
+  int GetIndexOf(int command_id) override;
+  int GetCommandIdAt(size_t index) override;
+  bool SetCommandIdAt(size_t index, int command_id) override;
+  CefString GetLabel(int command_id) override;
+  CefString GetLabelAt(size_t index) override;
+  bool SetLabel(int command_id, const CefString& label) override;
+  bool SetLabelAt(size_t index, const CefString& label) override;
+  MenuItemType GetType(int command_id) override;
+  MenuItemType GetTypeAt(size_t index) override;
+  int GetGroupId(int command_id) override;
+  int GetGroupIdAt(size_t index) override;
+  bool SetGroupId(int command_id, int group_id) override;
+  bool SetGroupIdAt(size_t index, int group_id) override;
+  CefRefPtr<CefMenuModel> GetSubMenu(int command_id) override;
+  CefRefPtr<CefMenuModel> GetSubMenuAt(size_t index) override;
+  bool IsVisible(int command_id) override;
+  bool IsVisibleAt(size_t index) override;
+  bool SetVisible(int command_id, bool visible) override;
+  bool SetVisibleAt(size_t index, bool visible) override;
+  bool IsEnabled(int command_id) override;
+  bool IsEnabledAt(size_t index) override;
+  bool SetEnabled(int command_id, bool enabled) override;
+  bool SetEnabledAt(size_t index, bool enabled) override;
+  bool IsChecked(int command_id) override;
+  bool IsCheckedAt(size_t index) override;
+  bool SetChecked(int command_id, bool checked) override;
+  bool SetCheckedAt(size_t index, bool checked) override;
+  bool HasAccelerator(int command_id) override;
+  bool HasAcceleratorAt(size_t index) override;
   bool SetAccelerator(int command_id,
                       int key_code,
                       bool shift_pressed,
                       bool ctrl_pressed,
-                      bool alt_pressed) OVERRIDE;
-  bool SetAcceleratorAt(int index,
+                      bool alt_pressed) override;
+  bool SetAcceleratorAt(size_t index,
                         int key_code,
                         bool shift_pressed,
                         bool ctrl_pressed,
-                        bool alt_pressed) OVERRIDE;
-  bool RemoveAccelerator(int command_id) OVERRIDE;
-  bool RemoveAcceleratorAt(int index) OVERRIDE;
+                        bool alt_pressed) override;
+  bool RemoveAccelerator(int command_id) override;
+  bool RemoveAcceleratorAt(size_t index) override;
   bool GetAccelerator(int command_id,
                       int& key_code,
                       bool& shift_pressed,
                       bool& ctrl_pressed,
-                      bool& alt_pressed) OVERRIDE;
-  bool GetAcceleratorAt(int index,
+                      bool& alt_pressed) override;
+  bool GetAcceleratorAt(size_t index,
                         int& key_code,
                         bool& shift_pressed,
                         bool& ctrl_pressed,
-                        bool& alt_pressed) OVERRIDE;
+                        bool& alt_pressed) override;
   bool SetColor(int command_id,
                 cef_menu_color_type_t color_type,
-                cef_color_t color) OVERRIDE;
+                cef_color_t color) override;
   bool SetColorAt(int index,
                   cef_menu_color_type_t color_type,
-                  cef_color_t color) OVERRIDE;
+                  cef_color_t color) override;
   bool GetColor(int command_id,
                 cef_menu_color_type_t color_type,
-                cef_color_t& color) OVERRIDE;
+                cef_color_t& color) override;
   bool GetColorAt(int index,
                   cef_menu_color_type_t color_type,
-                  cef_color_t& color) OVERRIDE;
-  bool SetFontList(int command_id, const CefString& font_list) OVERRIDE;
-  bool SetFontListAt(int index, const CefString& font_list) OVERRIDE;
+                  cef_color_t& color) override;
+  bool SetFontList(int command_id, const CefString& font_list) override;
+  bool SetFontListAt(int index, const CefString& font_list) override;
 };
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_MENU_MODEL_CTOCPP_H_

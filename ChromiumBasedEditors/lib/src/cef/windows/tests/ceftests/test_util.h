@@ -2,8 +2,8 @@
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 
-#ifndef CEF_TESTS_UNITTESTS_TEST_UTIL_H_
-#define CEF_TESTS_UNITTESTS_TEST_UTIL_H_
+#ifndef CEF_TESTS_CEFTESTS_TEST_UTIL_H_
+#define CEF_TESTS_CEFTESTS_TEST_UTIL_H_
 #pragma once
 
 #include "include/cef_process_message.h"
@@ -12,6 +12,9 @@
 #include "include/cef_response.h"
 #include "include/cef_values.h"
 #include "tests/ceftests/test_suite.h"
+
+CefTime CefTimeFrom(CefBaseTime value);
+CefBaseTime CefBaseTimeFrom(const CefTime& value);
 
 // Test that CefRequest::HeaderMap objects are equal. Multiple values with the
 // same key are allowed, but not duplicate entries with the same key/value. If
@@ -65,9 +68,6 @@ void TestProcessMessageEqual(CefRefPtr<CefProcessMessage> val1,
 void TestStringVectorEqual(const std::vector<CefString>& val1,
                            const std::vector<CefString>& val2);
 
-// Returns true if the NetworkService is enabled.
-bool IsNetworkServiceEnabled();
-
 enum TestRequestContextMode {
   TEST_RC_MODE_NONE,
   TEST_RC_MODE_GLOBAL,
@@ -80,6 +80,21 @@ inline bool IsTestRequestContextModeCustom(TestRequestContextMode mode) {
   return mode == TEST_RC_MODE_CUSTOM ||
          mode == TEST_RC_MODE_CUSTOM_WITH_HANDLER;
 }
+
+// Returns true if the old CefResourceHandler API should be tested.
+bool TestOldResourceAPI();
+
+// Returns true if the Chrome runtime is enabled.
+bool IsChromeRuntimeEnabled();
+
+// Returns true if BFCache is enabled.
+bool IsBFCacheEnabled();
+
+// Returns true if same-site BFCache is enabled.
+bool IsSameSiteBFCacheEnabled();
+
+// Returns true if requests for |url| should be ignored by tests.
+bool IgnoreURL(const std::string& url);
 
 // Return a RequestContext object matching the specified |mode|.
 // |cache_path| may be specified for CUSTOM modes.
@@ -96,7 +111,8 @@ CefRefPtr<CefRequestContext> CreateTestRequestContext(
     CefScopedTempDir scoped_temp_dir;                                  \
     std::string cache_path;                                            \
     if (with_cache_path) {                                             \
-      EXPECT_TRUE(scoped_temp_dir.CreateUniqueTempDir());              \
+      EXPECT_TRUE(scoped_temp_dir.CreateUniqueTempDirUnderPath(        \
+          CefTestSuite::GetInstance()->root_cache_path()));            \
       cache_path = scoped_temp_dir.GetPath();                          \
     }                                                                  \
     CefRefPtr<test_class> handler =                                    \
@@ -104,8 +120,7 @@ CefRefPtr<CefRequestContext> CreateTestRequestContext(
     handler->ExecuteTest();                                            \
     ReleaseAndWaitForDestructor(handler);                              \
     if (!scoped_temp_dir.IsEmpty()) {                                  \
-      CefTestSuite::GetInstance()->RegisterTempDirectory(              \
-          scoped_temp_dir.Take());                                     \
+      scoped_temp_dir.Take();                                          \
     }                                                                  \
   }
 
@@ -179,4 +194,4 @@ CefRefPtr<CefRequestContext> CreateTestRequestContext(
   RC_TEST_GROUP_IN_MEMORY(test_case_name, test_name, test_class, test_mode) \
   RC_TEST_GROUP_ON_DISK(test_case_name, test_name, test_class, test_mode)
 
-#endif  // CEF_TESTS_UNITTESTS_TEST_UTIL_H_
+#endif  // CEF_TESTS_CEFTESTS_TEST_UTIL_H_

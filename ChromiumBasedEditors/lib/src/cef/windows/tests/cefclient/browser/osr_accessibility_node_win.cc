@@ -123,9 +123,9 @@ static inline int MiddleY(const CefRect& rect) {
 struct CefIAccessible : public IAccessible {
  public:
   // Implement IUnknown
-  STDMETHODIMP QueryInterface(REFIID riid, void** ppvObject);
-  STDMETHODIMP_(ULONG) AddRef();
-  STDMETHODIMP_(ULONG) Release();
+  STDMETHODIMP QueryInterface(REFIID riid, void** ppvObject) override;
+  STDMETHODIMP_(ULONG) AddRef() override;
+  STDMETHODIMP_(ULONG) Release() override;
 
   //
   // IAccessible methods.
@@ -196,15 +196,15 @@ struct CefIAccessible : public IAccessible {
   STDMETHODIMP put_accName(VARIANT var_id, BSTR put_name) override;
 
   // Implement IDispatch
-  STDMETHODIMP GetTypeInfoCount(unsigned int FAR* pctinfo);
+  STDMETHODIMP GetTypeInfoCount(unsigned int FAR* pctinfo) override;
   STDMETHODIMP GetTypeInfo(unsigned int iTInfo,
                            LCID lcid,
-                           ITypeInfo FAR* FAR* ppTInfo);
+                           ITypeInfo FAR* FAR* ppTInfo) override;
   STDMETHODIMP GetIDsOfNames(REFIID riid,
                              OLECHAR FAR* FAR* rgszNames,
                              unsigned int cNames,
                              LCID lcid,
-                             DISPID FAR* rgDispId);
+                             DISPID FAR* rgDispId) override;
   STDMETHODIMP Invoke(DISPID dispIdMember,
                       REFIID riid,
                       LCID lcid,
@@ -212,13 +212,13 @@ struct CefIAccessible : public IAccessible {
                       DISPPARAMS FAR* pDispParams,
                       VARIANT FAR* pVarResult,
                       EXCEPINFO FAR* pExcepInfo,
-                      unsigned int FAR* puArgErr);
+                      unsigned int FAR* puArgErr) override;
 
   CefIAccessible(OsrAXNode* node) : ref_count_(0), node_(node) {}
 
   // Remove the node reference when OsrAXNode is destroyed, so that
   // MSAA clients get  CO_E_OBJNOTCONNECTED
-  void MarkDestroyed() { node_ = NULL; }
+  void MarkDestroyed() { node_ = nullptr; }
 
  protected:
   virtual ~CefIAccessible() {}
@@ -242,7 +242,7 @@ STDMETHODIMP CefIAccessible::QueryInterface(REFIID riid, void** ppvObject) {
   else if (riid == IID_IUnknown)
     *ppvObject = static_cast<IUnknown*>(this);
   else
-    *ppvObject = NULL;
+    *ppvObject = nullptr;
 
   if (*ppvObject)
     reinterpret_cast<IUnknown*>(*ppvObject)->AddRef();
@@ -317,7 +317,7 @@ STDMETHODIMP CefIAccessible::get_accChild(VARIANT varChild,
     int numChilds = node_->GetChildCount();
     // Mark Leaf node if there are no child
     if (numChilds <= 0) {
-      *ppdispChild = NULL;
+      *ppdispChild = nullptr;
       return S_FALSE;
     } else {
       if (ppdispChild && VALID_CHILDID(varChild)) {
@@ -332,7 +332,7 @@ STDMETHODIMP CefIAccessible::get_accChild(VARIANT varChild,
 
           *ppdispChild = child->GetNativeAccessibleObject(node_);
         }
-        if (*ppdispChild == NULL)
+        if (*ppdispChild == nullptr)
           retCode = S_FALSE;
         else
           (*ppdispChild)->AddRef();
@@ -449,9 +449,9 @@ STDMETHODIMP CefIAccessible::get_accFocus(VARIANT* pFocusChild) {
   HRESULT retCode = DATACHECK(node_);
   if (SUCCEEDED(retCode)) {
     OsrAXNode* focusedNode = node_->GetAccessibilityHelper()->GetFocusedNode();
-    CefNativeAccessible* nativeObj = NULL;
+    CefNativeAccessible* nativeObj = nullptr;
     if (focusedNode)
-      nativeObj = focusedNode->GetNativeAccessibleObject(NULL);
+      nativeObj = focusedNode->GetNativeAccessibleObject(nullptr);
 
     if (nativeObj) {
       if (nativeObj == this) {
@@ -663,7 +663,7 @@ void OsrAXNode::Destroy() {
   CefIAccessible* ptr = static_cast<CefIAccessible*>(platform_accessibility_);
   if (ptr)
     ptr->MarkDestroyed();
-  platform_accessibility_ = NULL;
+  platform_accessibility_ = nullptr;
 }
 
 // Create and return NSAccessibility Implementation Object for Window
@@ -687,7 +687,7 @@ void OsrAXNode::NotifyAccessibilityEvent(std::string event_type) const {}
 void OsrAXNode::Destroy() {}
 
 CefNativeAccessible* OsrAXNode::GetNativeAccessibleObject(OsrAXNode* parent) {
-  return NULL;
+  return nullptr;
 }
 
 }  // namespace client

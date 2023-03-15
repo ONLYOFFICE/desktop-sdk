@@ -4,7 +4,7 @@
 
 #include <list>
 
-#include "include/base/cef_bind.h"
+#include "include/base/cef_callback.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "tests/ceftests/routing_test_handler.h"
 #include "tests/ceftests/test_handler.h"
@@ -90,7 +90,7 @@ class TitleTestHandler : public TestHandler {
     // NextIfReady.
     got_loading_state_change_ = true;
     CefPostTask(TID_UI,
-                base::Bind(&TitleTestHandler::NextIfReady, this, browser));
+                base::BindOnce(&TitleTestHandler::NextIfReady, this, browser));
   }
 
  private:
@@ -190,7 +190,7 @@ class AutoResizeTestHandler : public RoutingTestHandler {
     } else if (!got_auto_resize2_) {
       got_auto_resize2_.yes();
       EXPECT_EQ(50, new_size.width);
-      EXPECT_EQ(36, new_size.height);
+      EXPECT_EQ(37, new_size.height);
 
       // Disable resize notifications.
       browser->GetHost()->SetAutoResizeEnabled(false, CefSize(), CefSize());

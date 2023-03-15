@@ -16,13 +16,15 @@
 #include <unistd.h>
 #endif
 
-#include "include/base/cef_bind.h"
+#include "include/base/cef_callback.h"
 #include "include/cef_app.h"
 #include "include/cef_task.h"
 #include "include/cef_thread.h"
+#include "include/cef_waitable_event.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "include/wrapper/cef_helpers.h"
 #include "tests/ceftests/test_handler.h"
+#include "tests/ceftests/test_server.h"
 #include "tests/ceftests/test_suite.h"
 #include "tests/shared/browser/client_app_browser.h"
 #include "tests/shared/browser/main_message_loop_external_pump.h"
@@ -30,7 +32,7 @@
 #include "tests/shared/common/client_app_other.h"
 #include "tests/shared/renderer/client_app_renderer.h"
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 #include "include/wrapper/cef_library_loader.h"
 #endif
 
@@ -48,6 +50,7 @@
 namespace {
 
 void QuitMessageLoop() {
+  CEF_REQUIRE_UI_THREAD();
   client::MainMessageLoop* message_loop = client::MainMessageLoop::Get();
   if (message_loop)
     message_loop->Quit();
@@ -59,7 +62,7 @@ void sleep(int64 ms) {
 #if defined(OS_WIN)
   Sleep(ms);
 #elif defined(OS_POSIX)
-  usleep(ms * 1000);
+  usleep(static_cast<useconds_t>(ms * 1000));
 #else
 #error Unsupported platform
 #endif
@@ -74,15 +77,15 @@ void RunTestsOnTestThread() {
   while (TestHandler::HasBrowser())
     sleep(100);
 
-  // Quit the CEF message loop.
-  CefPostTask(TID_UI, base::Bind(&QuitMessageLoop));
+  // Wait for the test server to stop, and then quit the CEF message loop.
+  test_server::Stop(base::BindOnce(QuitMessageLoop));
 }
 
 // Called on the UI thread.
 void ContinueOnUIThread(CefRefPtr<CefTaskRunner> test_task_runner) {
   // Run the test suite on the test thread.
   test_task_runner->PostTask(
-      CefCreateClosureTask(base::Bind(&RunTestsOnTestThread)));
+      CefCreateClosureTask(base::BindOnce(&RunTestsOnTestThread)));
 }
 
 #if defined(OS_LINUX) && defined(CEF_X11)
@@ -105,7 +108,26 @@ int XIOErrorHandlerImpl(Display* display) {
 }  // namespace
 
 int main(int argc, char* argv[]) {
-#if defined(OS_MACOSX)
+#if !defined(OS_MAC)
+  int exit_code;
+#endif
+
+#if defined(OS_WIN) && defined(ARCH_CPU_32_BITS)
+  // Run the main thread on 32-bit Windows using a fiber with the preferred 4MiB
+  // stack size. This function must be called at the top of the executable entry
+  // point function (`main()` or `wWinMain()`). It is used in combination with
+  // the initial stack size of 0.5MiB configured via the `/STACK:0x80000` linker
+  // flag on executable targets. This saves significant memory on threads (like
+  // those in the Windows thread pool, and others) whose stack size can only be
+  // controlled via the linker flag.
+  exit_code = CefRunMainWithPreferredStackSize(main, argc, argv);
+  if (exit_code >= 0) {
+    // The fiber has completed so return here.
+    return exit_code;
+  }
+#endif
+
+#if defined(OS_MAC)
   // Load the CEF framework library at runtime instead of linking directly
   // as required by the macOS sandbox implementation.
   CefScopedLibraryLoader library_loader;
@@ -122,12 +144,12 @@ int main(int argc, char* argv[]) {
     CefEnableHighDPISupport();
   }
 
-  CefMainArgs main_args(::GetModuleHandle(NULL));
+  CefMainArgs main_args(::GetModuleHandle(nullptr));
 #else
   CefMainArgs main_args(argc, argv);
 #endif
 
-  void* windows_sandbox_info = NULL;
+  void* windows_sandbox_info = nullptr;
 
 #if defined(OS_WIN) && defined(CEF_USE_SANDBOX)
   // Manages the life span of the sandbox information object.
@@ -141,7 +163,7 @@ int main(int argc, char* argv[]) {
       client::ClientApp::GetProcessType(test_suite.command_line());
   if (process_type == client::ClientApp::BrowserProcess) {
     app = new client::ClientAppBrowser();
-#if !defined(OS_MACOSX)
+#if !defined(OS_MAC)
   } else if (process_type == client::ClientApp::RendererProcess ||
              process_type == client::ClientApp::ZygoteProcess) {
     app = new client::ClientAppRenderer();
@@ -150,7 +172,7 @@ int main(int argc, char* argv[]) {
   }
 
   // Execute the secondary process, if any.
-  int exit_code = CefExecuteProcess(main_args, app, windows_sandbox_info);
+  exit_code = CefExecuteProcess(main_args, app, windows_sandbox_info);
   if (exit_code >= 0)
     return exit_code;
 #else
@@ -166,9 +188,11 @@ int main(int argc, char* argv[]) {
   settings.no_sandbox = true;
 #endif
 
+  client::ClientAppBrowser::PopulateSettings(test_suite.command_line(),
+                                             settings);
   test_suite.GetSettings(settings);
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   // Platform-specific initialization.
   extern void PlatformInit();
   PlatformInit();
@@ -182,7 +206,7 @@ int main(int argc, char* argv[]) {
 #endif
 
   // Create the MessageLoop.
-  scoped_ptr<client::MainMessageLoop> message_loop;
+  std::unique_ptr<client::MainMessageLoop> message_loop;
   if (!settings.multi_threaded_message_loop) {
     if (settings.external_message_pump)
       message_loop = client::MainMessageLoopExternalPump::Create();
@@ -201,6 +225,12 @@ int main(int argc, char* argv[]) {
   if (settings.multi_threaded_message_loop) {
     // Run the test suite on the main thread.
     retval = test_suite.Run();
+
+    // Wait for the test server to stop.
+    CefRefPtr<CefWaitableEvent> event =
+        CefWaitableEvent::CreateWaitableEvent(true, false);
+    test_server::Stop(base::BindOnce(&CefWaitableEvent::Signal, event));
+    event->Wait();
   } else {
     // Create and start the test thread.
     CefRefPtr<CefThread> thread = CefThread::CreateThread("test_thread");
@@ -210,7 +240,7 @@ int main(int argc, char* argv[]) {
     // Start the tests from the UI thread so that any pending UI tasks get a
     // chance to execute first.
     CefPostTask(TID_UI,
-                base::Bind(&ContinueOnUIThread, thread->GetTaskRunner()));
+                base::BindOnce(&ContinueOnUIThread, thread->GetTaskRunner()));
 
     // Run the CEF message loop.
     message_loop->Run();
@@ -231,7 +261,7 @@ int main(int argc, char* argv[]) {
   // Destroy the MessageLoop.
   message_loop.reset(nullptr);
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   // Platform-specific cleanup.
   extern void PlatformCleanup();
   PlatformCleanup();

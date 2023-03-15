@@ -7,7 +7,6 @@
 #pragma once
 
 #include "include/base/cef_logging.h"
-#include "include/base/cef_macros.h"
 #include "include/capi/cef_base_capi.h"
 #include "include/cef_base.h"
 #include "libcef_dll/wrapper_types.h"
@@ -18,6 +17,9 @@
 template <class ClassName, class BaseName, class StructName>
 class CefCToCppRefCounted : public BaseName {
  public:
+  CefCToCppRefCounted(const CefCToCppRefCounted&) = delete;
+  CefCToCppRefCounted& operator=(const CefCToCppRefCounted&) = delete;
+
   // Create a new wrapper instance for a structure reference received from the
   // other side.
   static CefRefPtr<BaseName> Wrap(StructName* s);
@@ -37,8 +39,8 @@ class CefCToCppRefCounted : public BaseName {
   bool HasAtLeastOneRef() const { return UnderlyingHasAtLeastOneRef(); }
 
  protected:
-  CefCToCppRefCounted() {}
-  virtual ~CefCToCppRefCounted() {}
+  CefCToCppRefCounted() = default;
+  virtual ~CefCToCppRefCounted() = default;
 
   // If returning the structure across the DLL boundary use Unwrap() instead.
   StructName* GetStruct() const {
@@ -89,7 +91,7 @@ class CefCToCppRefCounted : public BaseName {
   bool UnderlyingHasAtLeastOneRef() const {
     cef_base_ref_counted_t* base =
         reinterpret_cast<cef_base_ref_counted_t*>(GetStruct());
-    if (!base->has_one_ref)
+    if (!base->has_at_least_one_ref)
       return false;
     return base->has_at_least_one_ref(base) ? true : false;
   }
@@ -97,8 +99,6 @@ class CefCToCppRefCounted : public BaseName {
   CefRefCount ref_count_;
 
   static CefWrapperType kWrapperType;
-
-  DISALLOW_COPY_AND_ASSIGN(CefCToCppRefCounted);
 };
 
 template <class ClassName, class BaseName, class StructName>
@@ -112,7 +112,7 @@ template <class ClassName, class BaseName, class StructName>
 CefRefPtr<BaseName> CefCToCppRefCounted<ClassName, BaseName, StructName>::Wrap(
     StructName* s) {
   if (!s)
-    return NULL;
+    return nullptr;
 
   // Wrap their structure with the CefCToCppRefCounted object.
   WrapperStruct* wrapperStruct = new WrapperStruct;
@@ -132,7 +132,7 @@ template <class ClassName, class BaseName, class StructName>
 StructName* CefCToCppRefCounted<ClassName, BaseName, StructName>::Unwrap(
     CefRefPtr<BaseName> c) {
   if (!c.get())
-    return NULL;
+    return nullptr;
 
   WrapperStruct* wrapperStruct = GetWrapperStruct(c.get());
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=c1602f75b4d86db8428931e60b0622a95d159106$
+// $hash=a36ffa56b60291c4fb99a00413950d2315ddfc13$
 //
 
 #include "libcef_dll/ctocpp/image_ctocpp.h"
@@ -247,7 +247,7 @@ CefRefPtr<CefBinaryValue> CefImageCToCpp::GetAsBitmap(
 
   cef_image_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_as_bitmap))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -269,7 +269,7 @@ CefRefPtr<CefBinaryValue> CefImageCToCpp::GetAsPNG(float scale_factor,
 
   cef_image_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_as_png))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -290,7 +290,7 @@ CefRefPtr<CefBinaryValue> CefImageCToCpp::GetAsJPEG(float scale_factor,
 
   cef_image_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_as_jpeg))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -318,7 +318,7 @@ CefCToCppRefCounted<CefImageCToCpp, CefImage, cef_image_t>::UnwrapDerived(
     CefWrapperType type,
     CefImage* c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>
