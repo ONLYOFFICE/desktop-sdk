@@ -40,6 +40,10 @@
 #include "include/internal/cef_time.h"
 #include <map>
 
+#ifdef CEF_2623
+#include "include/base/cef_bind.h"
+#endif
+
 #ifdef CEF_VERSION_ABOVE_105
 #define BASE_BIND base::BindOnce
 #else

@@ -400,11 +400,14 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 #endif
 
     // Populate the settings based on command line arguments.
-#ifdef CEF_VERSION_ABOVE_105
+#if defined(CEF_VERSION_ABOVE_105)
 	m_pInternal->context = std::make_unique<client::MainContextImpl>(command_line, false);
+#elif defined(CEF_2623)
+	m_pInternal->context.reset(new client::MainContextImpl(command_line, false));
 #else
 	m_pInternal->context = new client::MainContextImpl(command_line, false);
 #endif
+
     m_pInternal->context->PopulateSettings(&settings);
 
     bool isMultithreaded = false;
@@ -426,16 +429,20 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     else if (isMultithreaded)
     {
         settings.multi_threaded_message_loop = 1;
-#ifdef CEF_VERSION_ABOVE_105
+#if defined(CEF_VERSION_ABOVE_105)
 		m_pInternal->message_loop = std::make_unique<client::MainMessageLoopMultithreaded>();
+#elif defined(CEF_2623)
+		m_pInternal->message_loop.reset(new client::MainMessageLoopStd);
 #else
 		m_pInternal->message_loop = new client::MainMessageLoopMultithreaded();
 #endif
     }
     else
     {
-#ifdef CEF_VERSION_ABOVE_105
+#if defined(CEF_VERSION_ABOVE_105)
 		m_pInternal->message_loop = std::make_unique<client::MainMessageLoopStd>();
+#elif defined(CEF_2623)
+		m_pInternal->message_loop.reset(new client::MainMessageLoopStd);
 #else
 		m_pInternal->message_loop = new client::MainMessageLoopStd();
 #endif
