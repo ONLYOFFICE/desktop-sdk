@@ -286,7 +286,7 @@ public:
 
 			//command_line->AppendSwitch("--allow-running-insecure-content");
 
-			std::string sAppNavigator = "Chrome/" + std::to_string(CEF_VERSION_MAJOR) + " AscDesktopEditor/7.1.0";
+			std::string sAppNavigator = "Chrome/" + std::to_string(CEF_VERSION_MAJOR) + " AscDesktopEditor/7.3.4";
 #ifdef CEF_2623
 			sAppNavigator += " windowsXP";
 #endif
