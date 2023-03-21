@@ -485,6 +485,9 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     // on non-fatal errors. Must be done after initializing GTK.
     XSetErrorHandler(XErrorHandlerImpl);
     XSetIOErrorHandler(XIOErrorHandlerImpl);
+
+	Display* pDisplay = (Display*)CefGetXDisplay();
+	XSynchronize(pDisplay, True);
 #endif
 
     CPluginsManager oPlugins;

@@ -415,7 +415,6 @@ void QCefView::Init()
 										  (m_pCefView && m_pCefView->GetType() != cvwtEditor) ? 0xFFFFFFFF : 0xFFF4F4F4);
 		XReparentWindow(display, x11w, this->winId(), 0, 0);
 		XMapWindow(display, x11w);
-		XSync(display, False);
 		XDestroyWindow(display, x11root);
 		cef_handle = x11w;
 	}
