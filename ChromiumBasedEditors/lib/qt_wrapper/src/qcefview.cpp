@@ -476,10 +476,15 @@ void SetWindowSize(Window window, QWidget* parent)
 		changes.y = 0;
 		changes.width = parent->width();
 		changes.height = parent->height();
-		XConfigureWindow(xdisplay,
-						 window,
-						 CWX | CWY | CWHeight | CWWidth,
-						 &changes);
+
+		// XErrorHandlerImpl: BadValue error occurs
+		if (changes.width && changes.height)
+		{
+			XConfigureWindow(xdisplay,
+							 window,
+							 CWX | CWY | CWHeight | CWWidth,
+							 &changes);
+		}
 	}
 }
 
@@ -489,10 +494,12 @@ void QCefView::UpdateSize()
 		SetWindowSize(cef_handle, this);
 
 	Window child = GetChild(cef_handle);
-	SetWindowSize(child, this);
+	if (child)
+		SetWindowSize(child, this);
 
 	Window child_ = GetChild(child);
-	SetWindowSize(child_, this);
+	if (child_)
+		SetWindowSize(child_, this);
 }
 
 #endif
