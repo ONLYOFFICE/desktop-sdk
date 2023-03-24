@@ -415,7 +415,6 @@ void QCefView::Init()
 										  (m_pCefView && m_pCefView->GetType() != cvwtEditor) ? 0xFFFFFFFF : 0xFFF4F4F4);
 		XReparentWindow(display, x11w, this->winId(), 0, 0);
 		XMapWindow(display, x11w);
-		XSync(display, False);
 		XDestroyWindow(display, x11root);
 		cef_handle = x11w;
 	}
@@ -477,10 +476,15 @@ void SetWindowSize(Window window, QWidget* parent)
 		changes.y = 0;
 		changes.width = parent->width();
 		changes.height = parent->height();
-		XConfigureWindow(xdisplay,
-						 window,
-						 CWX | CWY | CWHeight | CWWidth,
-						 &changes);
+
+		// XErrorHandlerImpl: BadValue error occurs
+		if (changes.width && changes.height)
+		{
+			XConfigureWindow(xdisplay,
+							 window,
+							 CWX | CWY | CWHeight | CWWidth,
+							 &changes);
+		}
 	}
 }
 
@@ -488,7 +492,14 @@ void QCefView::UpdateSize()
 {
 	if (IsSupportLayers())
 		SetWindowSize(cef_handle, this);
-	SetWindowSize(GetChild(cef_handle), this);
+
+	Window child = GetChild(cef_handle);
+	if (child)
+		SetWindowSize(child, this);
+
+	Window child_ = GetChild(child);
+	if (child_)
+		SetWindowSize(child_, this);
 }
 
 #endif
