@@ -487,7 +487,12 @@ void QCefView::UpdateSize()
 {
 	if (IsSupportLayers())
 		SetWindowSize(cef_handle, this);
-	SetWindowSize(GetChild(cef_handle), this);
+
+	Window child = GetChild(cef_handle);
+	SetWindowSize(child, this);
+
+	Window child_ = GetChild(child);
+	SetWindowSize(child_, this);
 }
 
 #endif
