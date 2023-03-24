@@ -120,14 +120,7 @@ SOURCES += \
 LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lCompoundFileLib
 LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lCryptoPPLib
 DEFINES += CRYPTOPP_DISABLE_ASM
-HEADERS += \
-    $$CORE_ROOT_DIR/OfficeCryptReader/source/ECMACryptFile.h \
-    $$CORE_ROOT_DIR/OfficeCryptReader/source/CryptTransform.h
-
-SOURCES += \
-    $$CORE_ROOT_DIR/OfficeCryptReader/source/ECMACryptFile.cpp \
-    $$CORE_ROOT_DIR/OfficeCryptReader/source/CryptTransform.cpp \
-    $$CORE_ROOT_DIR/MsBinaryFile/DocFile/MemoryStream.cpp
+SOURCES += $$CORE_ROOT_DIR/MsBinaryFile/DocFile/MemoryStream.cpp
 # -----------------------------------------
 
 
