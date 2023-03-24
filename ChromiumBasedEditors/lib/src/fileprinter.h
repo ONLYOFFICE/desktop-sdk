@@ -54,7 +54,8 @@ class IAscNativePrintDocument
 public:
     std::wstring            m_sFilePath;
     NSFonts::IApplicationFonts*  m_pApplicationFonts;
-    std::wstring            m_sTempFolder;
+	std::wstring            m_sTempFolder;
+	std::wstring            m_sCMapFolder;
 
 public:
 
