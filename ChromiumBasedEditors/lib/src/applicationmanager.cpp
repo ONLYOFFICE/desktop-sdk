@@ -807,7 +807,8 @@ std::string CAscApplicationManager::GetLibraryPathVariable()
     if (m_pInternal->m_sLD_LIBRARY_PATH.empty())
     {
         char* pEnv = getenv("LD_LIBRARY_PATH");
-        m_pInternal->m_sLD_LIBRARY_PATH = std::string(pEnv);
+        if (pEnv)
+            m_pInternal->m_sLD_LIBRARY_PATH = std::string(pEnv);
     }
     return m_pInternal->m_sLD_LIBRARY_PATH;
 #endif
