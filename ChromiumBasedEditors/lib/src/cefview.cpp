@@ -5147,7 +5147,11 @@ void CCefView_Private::CloseBrowser(bool _force_close)
 	}
 
 	if (m_handler && m_handler->GetBrowser() && m_handler->GetBrowser()->GetHost())
+	{
+		if (m_pManager->GetDebugInfoSupport())
+			m_handler->GetBrowser()->GetHost()->CloseDevTools();
 		m_handler->GetBrowser()->GetHost()->CloseBrowser(_force_close);
+	}
 }
 CefRefPtr<CefBrowser> CCefView_Private::GetBrowser() const
 {
