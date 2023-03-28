@@ -53,149 +53,149 @@
 class CCookieFoundCallback
 {
 public:
-    virtual void OnFoundCookie(bool bIsPresent, std::string sValue)     = 0;
-    virtual void OnSetCookie()                                          = 0;
-    virtual void OnDeleteCookie(bool bIsPresent)                        = 0;
+	virtual void OnFoundCookie(bool bIsPresent, std::string sValue)     = 0;
+	virtual void OnSetCookie()                                          = 0;
+	virtual void OnDeleteCookie(bool bIsPresent)                        = 0;
 
-    virtual void OnFoundCookies(std::map<std::string, std::string>& mapValues)     = 0;
+	virtual void OnFoundCookies(std::map<std::string, std::string>& mapValues)     = 0;
 };
 
 class CCefCookieVisitor : public CefCookieVisitor
 {
 public:
-    std::map<std::string, std::string>  m_cookies;
+	std::map<std::string, std::string>  m_cookies;
 
-    std::string                         m_sDomain;
-    std::string                         m_sCookieSearch;
+	std::string                         m_sDomain;
+	std::string                         m_sCookieSearch;
 
-    CCookieFoundCallback*               m_pCallback;
+	CCookieFoundCallback*               m_pCallback;
 
-    bool                                m_bIsDelete;
-    bool                                m_bIsDeleted;
+	bool                                m_bIsDelete;
+	bool                                m_bIsDeleted;
 
-    std::vector<std::string>            m_arDomains;
-    std::map<std::string, std::string>  m_mapFinds;
+	std::vector<std::string>            m_arDomains;
+	std::map<std::string, std::string>  m_mapFinds;
 
-    CCefCookieVisitor()
-    {
-        this->AddRef();
-        m_pCallback = NULL;
-        m_bIsDelete = false;
-        m_bIsDeleted = false;
-    }
-    ~CCefCookieVisitor()
-    {
-        if (m_pCallback)
-        {
-            if (!m_bIsDelete)
-            {
-                if (m_arDomains.size() > 0)
-                {
-                    for (std::vector<std::string>::const_iterator i = m_arDomains.begin(); i != m_arDomains.end(); i++)
-                    {
-                        std::string sDomain = *i;
-                        std::map<std::string, std::string>::const_iterator _find = m_mapFinds.find(sDomain);
-                        if (_find == m_mapFinds.end())
-                        {
-                            m_mapFinds.insert(std::pair<std::string, std::string>(sDomain, ""));
-                        }
-                    }
+	CCefCookieVisitor()
+	{
+		this->AddRef();
+		m_pCallback = NULL;
+		m_bIsDelete = false;
+		m_bIsDeleted = false;
+	}
+	~CCefCookieVisitor()
+	{
+		if (m_pCallback)
+		{
+			if (!m_bIsDelete)
+			{
+				if (m_arDomains.size() > 0)
+				{
+					for (std::vector<std::string>::const_iterator i = m_arDomains.begin(); i != m_arDomains.end(); i++)
+					{
+						std::string sDomain = *i;
+						std::map<std::string, std::string>::const_iterator _find = m_mapFinds.find(sDomain);
+						if (_find == m_mapFinds.end())
+						{
+							m_mapFinds.insert(std::pair<std::string, std::string>(sDomain, ""));
+						}
+					}
 
-                    m_pCallback->OnFoundCookies(m_mapFinds);
-                    return;
-                }
-                else
-                {
-                    std::map<std::string, std::string>::iterator i = m_cookies.find(m_sCookieSearch);
+					m_pCallback->OnFoundCookies(m_mapFinds);
+					return;
+				}
+				else
+				{
+					std::map<std::string, std::string>::iterator i = m_cookies.find(m_sCookieSearch);
 
-                    if (i != m_cookies.end())
-                    {
-                        m_pCallback->OnFoundCookie(true, i->second);
-                    }
-                    else
-                    {
-                        m_pCallback->OnFoundCookie(false, "");
-                    }
-                }
-            }
-            else
-            {
-                m_pCallback->OnDeleteCookie(m_bIsDeleted);
-            }
-        }
+					if (i != m_cookies.end())
+					{
+						m_pCallback->OnFoundCookie(true, i->second);
+					}
+					else
+					{
+						m_pCallback->OnFoundCookie(false, "");
+					}
+				}
+			}
+			else
+			{
+				m_pCallback->OnDeleteCookie(m_bIsDeleted);
+			}
+		}
 
 		CefCookieManager::GetGlobalManager(nullptr)->FlushStore(nullptr);
-    }
+	}
 
-    virtual bool Visit(const CefCookie& cookie, int count, int total, bool& deleteCookie)
-    {
-        std::string sDomain = CefString(&cookie.domain).ToString();
-        std::string sDomainPath = CefString(&cookie.path).ToString();
-        std::string sDomainWithPath = sDomain + sDomainPath;
+	virtual bool Visit(const CefCookie& cookie, int count, int total, bool& deleteCookie)
+	{
+		std::string sDomain = CefString(&cookie.domain).ToString();
+		std::string sDomainPath = CefString(&cookie.path).ToString();
+		std::string sDomainWithPath = sDomain + sDomainPath;
 
-        if (m_arDomains.size() == 0)
-        {
-            if (sDomain.find(m_sDomain) != std::string::npos ||
-                sDomainWithPath.find(m_sDomain) != std::string::npos)
-            {
-                std::string sName = CefString(&cookie.name).ToString();
-                std::string sValue = CefString(&cookie.value).ToString();
+		if (m_arDomains.size() == 0)
+		{
+			if (sDomain.find(m_sDomain) != std::string::npos ||
+					sDomainWithPath.find(m_sDomain) != std::string::npos)
+			{
+				std::string sName = CefString(&cookie.name).ToString();
+				std::string sValue = CefString(&cookie.value).ToString();
 
-                m_cookies.insert(std::pair<std::string, std::string>(sName, sValue));
+				m_cookies.insert(std::pair<std::string, std::string>(sName, sValue));
 
-                if (m_bIsDelete)
-                {
-                    m_bIsDeleted = true;
-                    deleteCookie = true;
-                }
-            }
-        }
-        else
-        {
-            std::string sName = CefString(&cookie.name).ToString();
+				if (m_bIsDelete)
+				{
+					m_bIsDeleted = true;
+					deleteCookie = true;
+				}
+			}
+		}
+		else
+		{
+			std::string sName = CefString(&cookie.name).ToString();
 
-            if (sName == m_sCookieSearch)
-            {
-                std::string sValue = CefString(&cookie.value).ToString();
+			if (sName == m_sCookieSearch)
+			{
+				std::string sValue = CefString(&cookie.value).ToString();
 
-                for (std::vector<std::string>::iterator i = m_arDomains.begin(); i != m_arDomains.end(); i++)
-                {
-                    std::string sDomainFind = *i;
-                    if (sDomain.find(sDomainFind) != std::string::npos ||
-                        sDomainWithPath.find(sDomainFind) != std::string::npos)
-                    {
-                        m_mapFinds.insert(std::pair<std::string, std::string>(sDomainFind, sValue));
+				for (std::vector<std::string>::iterator i = m_arDomains.begin(); i != m_arDomains.end(); i++)
+				{
+					std::string sDomainFind = *i;
+					if (sDomain.find(sDomainFind) != std::string::npos ||
+							sDomainWithPath.find(sDomainFind) != std::string::npos)
+					{
+						m_mapFinds.insert(std::pair<std::string, std::string>(sDomainFind, sValue));
 
-                        std::string sName = CefString(&cookie.name).ToString();
-                        std::string sValue = CefString(&cookie.value).ToString();
+						std::string sName = CefString(&cookie.name).ToString();
+						std::string sValue = CefString(&cookie.value).ToString();
 
-                        m_cookies.insert(std::pair<std::string, std::string>(sName, sValue));
-                    }
-                }
-            }
-        }
+						m_cookies.insert(std::pair<std::string, std::string>(sName, sValue));
+					}
+				}
+			}
+		}
 
-        return true;
-    }
+		return true;
+	}
 
-    void CheckCookiePresent(CefRefPtr<CefCookieManager> manager)
-    {
-        if (!CefCurrentlyOn(TID_IO))
-        {
+	void CheckCookiePresent(CefRefPtr<CefCookieManager> manager)
+	{
+		if (!CefCurrentlyOn(TID_IO))
+		{
 #ifdef CEF_VERSION_ABOVE_105
 			CefPostTask(TID_IO, BASE_BIND(&CCefCookieVisitor::CheckCookiePresent, base::WrapRefCounted(this), manager));
 #else
 			CefPostTask(TID_IO, BASE_BIND(&CCefCookieVisitor::CheckCookiePresent, this, manager));
 #endif
-            return;
-        }
+			return;
+		}
 
-        manager->VisitAllCookies(this);
-        this->Release();
-    }
+		manager->VisitAllCookies(this);
+		this->Release();
+	}
 
 public:
-    IMPLEMENT_REFCOUNTING(CCefCookieVisitor);
+	IMPLEMENT_REFCOUNTING(CCefCookieVisitor);
 };
 
 #ifdef CEF_2623
@@ -206,62 +206,62 @@ public:
 class CCefCookieSetter : public CefBase_Class
 {
 public:
-    std::string                         m_sUrl;
-    std::string                         m_sDomain;
-    std::string                         m_sPath;
-    std::string                         m_sCookieKey;
-    std::string                         m_sCookieValue;
+	std::string                         m_sUrl;
+	std::string                         m_sDomain;
+	std::string                         m_sPath;
+	std::string                         m_sCookieKey;
+	std::string                         m_sCookieValue;
 
-    CCookieFoundCallback*               m_pCallback;
+	CCookieFoundCallback*               m_pCallback;
 
-    CCefCookieSetter()
-    {
-        this->AddRef();
-    }
-    ~CCefCookieSetter()
-    {
+	CCefCookieSetter()
+	{
+		this->AddRef();
+	}
+	~CCefCookieSetter()
+	{
 		CefCookieManager::GetGlobalManager(nullptr)->FlushStore(nullptr);
-    }
-    
-    void Correct()
-    {
-        std::string::size_type pos = m_sUrl.find("?");
-        if (pos != std::string::npos)
-            m_sUrl = m_sUrl.substr(0, pos);
-        
-        pos = m_sDomain.find("?");
-        if (pos != std::string::npos)
-            m_sDomain = m_sDomain.substr(0, pos);
-        
-        pos = m_sPath.find("?");
-        if (pos != std::string::npos)
-            m_sPath = m_sPath.substr(0, pos);
-    }
+	}
 
-    void SetCookie(CefRefPtr<CefCookieManager> manager)
-    {
-        if (!CefCurrentlyOn(TID_IO))
-        {
+	void Correct()
+	{
+		std::string::size_type pos = m_sUrl.find("?");
+		if (pos != std::string::npos)
+			m_sUrl = m_sUrl.substr(0, pos);
+
+		pos = m_sDomain.find("?");
+		if (pos != std::string::npos)
+			m_sDomain = m_sDomain.substr(0, pos);
+
+		pos = m_sPath.find("?");
+		if (pos != std::string::npos)
+			m_sPath = m_sPath.substr(0, pos);
+	}
+
+	void SetCookie(CefRefPtr<CefCookieManager> manager)
+	{
+		if (!CefCurrentlyOn(TID_IO))
+		{
 #ifdef CEF_VERSION_ABOVE_105
 			CefPostTask(TID_IO, BASE_BIND(&CCefCookieSetter::SetCookie, base::WrapRefCounted(this), manager));
 #else
 			CefPostTask(TID_IO, BASE_BIND(&CCefCookieSetter::SetCookie, this, manager));
 #endif
-            return;
-        }
+			return;
+		}
 
-        CefCookie authorization;
+		CefCookie authorization;
 
-        CefString(&authorization.name).FromString(m_sCookieKey);
-        CefString(&authorization.value).FromString(m_sCookieValue);
+		CefString(&authorization.name).FromString(m_sCookieKey);
+		CefString(&authorization.value).FromString(m_sCookieValue);
 
-        CefString(&authorization.domain).FromString(m_sDomain);
-        CefString(&authorization.path).FromString(m_sPath);
+		CefString(&authorization.domain).FromString(m_sDomain);
+		CefString(&authorization.path).FromString(m_sPath);
 
-        authorization.httponly = 0;
-        authorization.secure = 0;
+		authorization.httponly = 0;
+		authorization.secure = 0;
 
-        authorization.has_expires = true;
+		authorization.has_expires = true;
 
 #ifdef CEF_VERSION_ABOVE_105
 		cef_time_t cef_time;
@@ -275,9 +275,8 @@ public:
 		cef_time.second = 0;
 		cef_time.millisecond = 0;
 
-		time_t time_utc;
-		cef_time_to_timet(&cef_time, &time_utc);
-		authorization.expires.val = time_utc;
+		// since chromium 104 maximum 400 days!!!
+		cef_time_to_basetime(&cef_time, &authorization.expires);
 #else
         authorization.expires.year = 2200;
         authorization.expires.month = 4;
@@ -287,13 +286,13 @@ public:
 
 		manager->SetCookie(m_sUrl, authorization, nullptr);
 
-        m_pCallback->OnSetCookie();
+		m_pCallback->OnSetCookie();
 
-        this->Release();
-    }
+		this->Release();
+	}
 
 public:
-    IMPLEMENT_REFCOUNTING(CCefCookieSetter);
+	IMPLEMENT_REFCOUNTING(CCefCookieSetter);
 };
 
 #endif // CEF_COOKIES_WORKER_H
