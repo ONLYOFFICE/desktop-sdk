@@ -103,7 +103,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
         if (!oNode.FromXmlFile(sXml.substr(6)))
             return 1;
 
-        XmlUtils::CXmlNodes oNodesSdkPath;
+        std::vector<XmlUtils::CXmlNode> oNodesSdkPath;
         if (!oNode.GetNodes(L"sdk", oNodesSdkPath))
             return 1;
 
@@ -111,26 +111,25 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
         if (!oNode.GetNode(L"destination", oNodeDstPath))
             return 1;
 
-        int nCountSdks = oNodesSdkPath.GetCount();
-        for (int i = 0; i < nCountSdks; ++i)
+        size_t nCountSdks = oNodesSdkPath.size();
+        for (size_t i = 0; i < nCountSdks; ++i)
         {
-            XmlUtils::CXmlNode _node;
-            oNodesSdkPath.GetAt(i, _node);
+            XmlUtils::CXmlNode & _node = oNodesSdkPath[i];
 
             g_globalParams->sSdkPath.push_back(_node.GetText());
         }
 
         g_globalParams->sDstPath = oNodeDstPath.GetText();
 
-        XmlUtils::CXmlNodes oNodesFiles;
+        td::vector<XmlUtils::CXmlNode> oNodesFiles;
         if (!oNode.GetNodes(L"file", oNodesFiles))
             return 1;
 
-        int nCountFiles = oNodesFiles.GetCount();
-        for (int i = 0; i < nCountFiles; ++i)
+        size_t nCountFiles = oNodesFiles.size();
+        for (size_t i = 0; i < nCountFiles; ++i)
         {
-            XmlUtils::CXmlNode oNodeF;
-            if (oNodesFiles.GetAt(i, oNodeF))
+            XmlUtils::CXmlNode & oNodeF = oNodesFiles[i];
+            if (oNodeF.IsValid())
             {
                 g_globalParams->arFiles.push_back(oNodeF.GetText());
             }

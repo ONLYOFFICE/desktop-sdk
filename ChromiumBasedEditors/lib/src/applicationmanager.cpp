@@ -136,15 +136,14 @@ public:
         if (!oNode.FromXmlFile(sFile))
             return;
 
-        XmlUtils::CXmlNodes oNodes;
+        std::vector<XmlUtils::CXmlNode> oNodes;
         if (!oNode.GetChilds(oNodes))
             return;
 
-        int nCount = oNodes.GetCount();
-        for (int i = 0; i < nCount; ++i)
+        size_t nCount = oNodes.size();
+        for (size_t i = 0; i < nCount; ++i)
         {
-            XmlUtils::CXmlNode oSetting;
-            oNodes.GetAt(i, oSetting);
+            XmlUtils::CXmlNode & oSetting = oNodes[i];
 
             std::wstring nameW = oSetting.GetName();
             std::string name = U_TO_UTF8(nameW);
