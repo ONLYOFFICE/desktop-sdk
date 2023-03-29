@@ -121,7 +121,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
 
         g_globalParams->sDstPath = oNodeDstPath.GetText();
 
-        td::vector<XmlUtils::CXmlNode> oNodesFiles;
+        std::vector<XmlUtils::CXmlNode> oNodesFiles;
         if (!oNode.GetNodes(L"file", oNodesFiles))
             return 1;
 
