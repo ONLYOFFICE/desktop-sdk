@@ -1715,7 +1715,7 @@ public:
 		if (!oNode.GetChilds(oNodes))
 			return;
 
-		size_t nCount = oNodes.GetCount();
+		size_t nCount = oNodes.size();
 		for (size_t i = 0; i < nCount; ++i)
 		{
 			XmlUtils::CXmlNode& oSetting = oNodes[i];
