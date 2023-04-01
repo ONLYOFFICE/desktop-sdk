@@ -46,6 +46,14 @@ void posix_death_signal(int signum)
     signal(signum, SIG_DFL);
     exit(3);
 }
+
+#if !defined(_MAC) && !defined(CEF_VERSION_107)
+void __attribute__((constructor)) preload_engine()
+{
+    setenv("LD_PRELOAD", "libcef.so", 1);
+}
+#endif
+
 #endif
 
 #ifdef FILE_SAVE_ADDONS
