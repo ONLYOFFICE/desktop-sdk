@@ -4745,6 +4745,16 @@ virtual void OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser,
 	}
 }
 
+#ifdef CEF_VERSION_ABOVE_105
+virtual bool CanDownload(CefRefPtr<CefBrowser> browser,
+						 const CefString& url,
+						 const CefString& request_method) OVERRIDE
+{
+	CEF_REQUIRE_UI_THREAD();
+	return true;
+}
+#endif
+
 virtual void OnBeforeDownload(CefRefPtr<CefBrowser> browser,
 							  CefRefPtr<CefDownloadItem> download_item,
 							  const CefString& suggested_name,
