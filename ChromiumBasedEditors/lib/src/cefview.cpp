@@ -4060,8 +4060,10 @@ public:
 	}
 	else if ("send_simple_request" == message_name)
 	{
+#ifdef CEF_SIMPLE_URL_REQUEST
 		CefRefPtr<NSRequest::CSimpleRequestClient> client = new NSRequest::CSimpleRequestClient(args);
 		client->Start(m_pParent->m_pInternal);
+#endif
 		return true;
 	}
 
@@ -7560,6 +7562,7 @@ void CAscApplicationManager_Private::ChangeEditorViewsCount()
 	}
 }
 
+#ifdef CEF_SIMPLE_URL_REQUEST
 namespace NSRequest
 {
 	void CSimpleRequestClient::StartInternal()
@@ -7576,6 +7579,7 @@ namespace NSRequest
 		}
 	}
 }
+#endif
 
 #if defined(_LINUX) && !defined(_MAC)
 void* CefGetXDisplay(void)

@@ -69,6 +69,10 @@
 //#define MESSAGE_IN_BROWSER
 #endif
 
+#ifdef CEF_VERSION_ABOVE_105
+#define CEF_SIMPLE_URL_REQUEST
+#endif
+
 #ifdef MESSAGE_IN_BROWSER
 #define SEND_MESSAGE_TO_BROWSER_PROCESS(message) CefV8Context::GetCurrentContext()->GetBrowser()->SendProcessMessage(PID_BROWSER, message)
 #define SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message) browser->SendProcessMessage(PID_RENDERER, message)
@@ -272,6 +276,7 @@ namespace NSArgumentList
 	}
 }
 
+#ifdef CEF_SIMPLE_URL_REQUEST
 #include "include/cef_urlrequest.h"
 
 class CCefView_Private;
@@ -403,6 +408,7 @@ namespace NSRequest
 		IMPLEMENT_REFCOUNTING(CSimpleRequestClient);
 	};
 }
+#endif
 
 class CAscReporterData
 {
