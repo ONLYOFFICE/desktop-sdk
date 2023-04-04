@@ -46,6 +46,14 @@ void posix_death_signal(int signum)
     signal(signum, SIG_DFL);
     exit(3);
 }
+
+#if !defined(_MAC) && !defined(CEF_VERSION_107)
+void __attribute__((constructor)) preload_engine()
+{
+    setenv("LD_PRELOAD", "libcef.so", 1);
+}
+#endif
+
 #endif
 
 #ifdef FILE_SAVE_ADDONS
@@ -806,7 +814,8 @@ std::string CAscApplicationManager::GetLibraryPathVariable()
     if (m_pInternal->m_sLD_LIBRARY_PATH.empty())
     {
         char* pEnv = getenv("LD_LIBRARY_PATH");
-        m_pInternal->m_sLD_LIBRARY_PATH = std::string(pEnv);
+        if (pEnv)
+            m_pInternal->m_sLD_LIBRARY_PATH = std::string(pEnv);
     }
     return m_pInternal->m_sLD_LIBRARY_PATH;
 #endif

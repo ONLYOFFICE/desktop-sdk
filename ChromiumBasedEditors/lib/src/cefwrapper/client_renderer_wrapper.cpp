@@ -1978,7 +1978,7 @@ retval, exception);
 			CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetFrame();
 			if (_frame)
 			{
-				_frame->ExecuteJavaScript("\
+				std::string sCodeInitJS = "\
 window.AscDesktopEditor.CreateEditorApi = function(api) {\n\
 api && api.asc_registerCallback('asc_onGetEditorPermissions', function(e) { window.AscDesktopEditor.CheckCloudFeatures(e.asc_getLicenseType()); });\n\
 window.AscDesktopEditor._CreateEditorApi();\n\
@@ -2118,7 +2118,12 @@ window.AscDesktopEditor._convertFile((files && files[0]) ? files[0] : '', format
 window.AscDesktopEditor._convertFile(path, format);\n\
 }\n\
 };\n\
-", _frame->GetURL(), 0);
+";
+#ifdef CEF_VERSION_ABOVE_105
+				sCodeInitJS += "!function(){window.AscSimpleRequest=window.AscSimpleRequest||{};var r=0,o={};window.AscSimpleRequest.createRequest=function(e){var t;o[++r]={id:r,complete:e.complete,error:e.error},e.timeout&&(o[t=r].timer=setTimeout(function(){o[t]&&(o[t].error&&o[t].error({status:\"error\",statusCode:404},\"error\"),delete o[t])},e.timeout)),window.AscDesktopEditor.sendSimpleRequest(r,e)},window.AscSimpleRequest._onSuccess=function(e,t){let r=o[e];r&&(r.timer&&clearTimeout(r.timer),r.complete&&r.complete(t,t.status),delete o[e])},window.AscSimpleRequest._onError=function(e,t){let r=o[e];r&&(r.timer&&clearTimeout(r.timer),r.error&&r.error(t,t.status),delete o[e])}}();\n";
+#endif
+
+				_frame->ExecuteJavaScript(sCodeInitJS, _frame->GetURL(), 0);
 			}
 
 			return true;
@@ -3837,6 +3842,49 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
 			retval = CefV8Value::CreateBool(!m_sCloudNativePrintFile.empty());
 			return true;
 		}
+		else if (name == "sendSimpleRequest")
+		{
+			if (2 != arguments.size())
+				return true;
+
+			int nCounter = arguments[0]->GetIntValue();
+			std::wstring sUrl = L"";
+
+			if (arguments[1]->GetValue("url") && arguments[1]->GetValue("url")->IsString())
+				sUrl = arguments[1]->GetValue("url")->GetStringValue().ToWString();
+
+			if (nCounter < 0 || sUrl.empty())
+				return true;
+
+			std::string sMethod = "GET";
+			if (arguments[1]->GetValue("method") && arguments[1]->GetValue("method")->IsString())
+				sMethod = arguments[1]->GetValue("method")->GetStringValue().ToString();
+
+			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("send_simple_request");
+
+			NSArgumentList::SetInt64(message->GetArgumentList(), 0, CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
+			message->GetArgumentList()->SetInt(1, nCounter);
+			message->GetArgumentList()->SetString(2, sUrl);
+			message->GetArgumentList()->SetString(3, sMethod);
+
+			CefRefPtr<CefV8Value> headers = arguments[1]->GetValue("headers");
+			if (headers && headers->IsObject())
+			{
+				std::vector<CefString> arKeys;
+				int nArgIndex = 4;
+				if (headers->GetKeys(arKeys))
+				{
+					for (int i = 0, len = arKeys.size(); i < len; ++i)
+					{
+						message->GetArgumentList()->SetString(nArgIndex++, arKeys[i]);
+						message->GetArgumentList()->SetString(nArgIndex++, headers->GetValue(arKeys[i])->GetStringValue());
+					}
+				}
+			}
+
+			SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+			return true;
+		}
 
 		// Function does not exist.
 		return false;
@@ -4218,7 +4266,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
 	CefRefPtr<CefV8Handler> handler = pWrapper;
 
-	#define EXTEND_METHODS_COUNT 165
+	#define EXTEND_METHODS_COUNT 166
 	const char* methods[EXTEND_METHODS_COUNT] = {
 		"Copy",
 		"Paste",
@@ -4445,6 +4493,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
 		"SetPdfCloudPrintFileInfo",
 		"IsCachedPdfCloudPrintFileInfo",
+
+		"sendSimpleRequest",
 
 		NULL
 	};

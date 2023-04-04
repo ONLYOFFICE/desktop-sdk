@@ -69,6 +69,10 @@
 //#define MESSAGE_IN_BROWSER
 #endif
 
+#ifdef CEF_VERSION_ABOVE_105
+#define CEF_SIMPLE_URL_REQUEST
+#endif
+
 #ifdef MESSAGE_IN_BROWSER
 #define SEND_MESSAGE_TO_BROWSER_PROCESS(message) CefV8Context::GetCurrentContext()->GetBrowser()->SendProcessMessage(PID_BROWSER, message)
 #define SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message) browser->SendProcessMessage(PID_RENDERER, message)
@@ -257,6 +261,154 @@ namespace NSCommon
 		}
 	};
 }
+
+namespace NSArgumentList
+{
+	static int64 GetInt64(CefRefPtr<CefListValue> args, const int& index)
+	{
+		std::string tmp = args->GetString(index).ToString();
+		return (int64)std::stoll(tmp);
+	}
+	static bool SetInt64(CefRefPtr<CefListValue> args, const int& index, const int64& value)
+	{
+		std::string tmp = std::to_string(value);
+		return args->SetString(index, tmp);
+	}
+}
+
+#ifdef CEF_SIMPLE_URL_REQUEST
+#include "include/cef_urlrequest.h"
+
+class CCefView_Private;
+namespace NSRequest
+{
+	class CSimpleRequestClient : public CefURLRequestClient
+	{
+	private:
+		CefRefPtr<CefRequest> m_request;
+		int m_requestId;
+		int_64_type m_frameId;
+
+		CCefView_Private* m_view;
+
+	public:
+		CSimpleRequestClient(CefRefPtr<CefListValue>& args)
+		{
+			m_request = CefRequest::Create();
+			m_frameId = NSArgumentList::GetInt64(args, 0);
+			m_requestId = args->GetInt(1);
+			m_request->SetURL(args->GetString(2));
+			m_request->SetMethod(args->GetString(3));
+
+			m_request->SetHeaderByName("Accept", "*/*", true);
+			int nHeadersCount = args->GetSize();
+			for (int i = 4; i < nHeadersCount; i += 2)
+			{
+				m_request->SetHeaderByName(args->GetString(i), args->GetString(i + 1), true);
+			}
+
+			m_upload_total = 0;
+			m_download_total = 0;
+
+			m_request->SetFlags(UR_FLAG_STOP_ON_REDIRECT);
+		}
+
+		~CSimpleRequestClient()
+		{
+		}
+
+		void Start(CCefView_Private* view)
+		{
+			m_view = view;
+			StartInternal();
+		}
+
+		void StartInternal();
+		void SendToRenderer(const int_64_type& frameId, const std::string& sCode);
+
+		void OnRequestComplete(CefRefPtr<CefURLRequest> request) override
+		{
+			CefURLRequest::Status status = request->GetRequestStatus();
+			CefURLRequest::ErrorCode error_code = request->GetRequestError();
+			CefRefPtr<CefResponse> response = request->GetResponse();
+
+			int responseStatus = response->GetStatus();
+			std::string sStatusText = response->GetStatusText().ToString();
+
+			std::string sReturnObject = "{ status: ";
+			if (UR_SUCCESS == status)
+				sReturnObject += "\"success\"";
+			else
+				sReturnObject += "\"error\"";
+
+			sReturnObject += (", statusCode: " + std::to_string(error_code) + ", responseText : \"");
+
+			std::string sData = m_download_data;
+			NSStringUtils::string_replaceA(sData, "\\", "\\\\");
+			NSStringUtils::string_replaceA(sData, "\"", "\\\"");
+
+			sReturnObject += sData;
+
+			sReturnObject += "\"}";
+
+			std::string sCode = "try { window.AscSimpleRequest.";
+			if (UR_SUCCESS == status)
+				sCode += "_onSuccess";
+			else
+				sCode += "_onError";
+
+			sCode += "(";
+			sCode += std::to_string(m_requestId);
+			sCode += ", ";
+			sCode += sReturnObject;
+			sCode += "); } catch (err) { window.AscSimpleRequest._onError(" + std::to_string(m_requestId) + ", { status : \"error\", statusCode : 404, responseText : \"\" }); }";
+
+			NSFile::CFileBinary::SaveToFile(L"D:/111.txt", UTF8_TO_U(m_download_data));
+
+			this->SendToRenderer(m_frameId, sCode);
+		}
+
+		void OnUploadProgress(CefRefPtr<CefURLRequest> request,
+							  int64 current,
+							  int64 total) override
+		{
+			m_upload_total = total;
+		}
+
+		void OnDownloadProgress(CefRefPtr<CefURLRequest> request,
+								int64 current,
+								int64 total) override
+		{
+			m_download_total = total;
+		}
+
+		void OnDownloadData(CefRefPtr<CefURLRequest> request,
+							const void* data,
+							size_t data_length) override
+		{
+			m_download_data += std::string(static_cast<const char*>(data), data_length);
+		}
+
+		bool GetAuthCredentials(bool isProxy,
+								const CefString& host,
+								int port,
+								const CefString& realm,
+								const CefString& scheme,
+								CefRefPtr<CefAuthCallback> callback) override
+		{
+			return false;  // Not handled.
+		}
+
+	private:
+		int64 m_upload_total;
+		int64 m_download_total;
+		std::string m_download_data;
+
+	private:
+		IMPLEMENT_REFCOUNTING(CSimpleRequestClient);
+	};
+}
+#endif
 
 class CAscReporterData
 {
@@ -1388,20 +1540,6 @@ public:
 	std::wstring Url;
 	std::wstring Parent;
 };
-
-namespace NSArgumentList
-{
-	static int64 GetInt64(CefRefPtr<CefListValue> args, const int& index)
-	{
-		std::string tmp = args->GetString(index).ToString();
-		return (int64)std::stoll(tmp);
-	}
-	static bool SetInt64(CefRefPtr<CefListValue> args, const int& index, const int64& value)
-	{
-		std::string tmp = std::to_string(value);
-		return args->SetString(index, tmp);
-	}
-}
 
 class CAscApplicationManager_Private : public CefBase_Class,
 		public CCookieFoundCallback,

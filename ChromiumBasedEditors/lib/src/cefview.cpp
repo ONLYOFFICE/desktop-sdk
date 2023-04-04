@@ -4058,6 +4058,14 @@ public:
 
 		return true;
 	}
+	else if ("send_simple_request" == message_name)
+	{
+#ifdef CEF_SIMPLE_URL_REQUEST
+		CefRefPtr<NSRequest::CSimpleRequestClient> client = new NSRequest::CSimpleRequestClient(args);
+		client->Start(m_pParent->m_pInternal);
+#endif
+		return true;
+	}
 
 	CAscApplicationManager_Private* pInternalMan = m_pParent->GetAppManager()->m_pInternal;
 	if (pInternalMan->m_pAdditional && pInternalMan->m_pAdditional->OnProcessMessageReceived(browser, source_process, message, m_pParent))
@@ -4745,10 +4753,20 @@ virtual void OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser,
 	}
 }
 
+#ifdef CEF_VERSION_ABOVE_105
+virtual bool CanDownload(CefRefPtr<CefBrowser> browser,
+						 const CefString& url,
+						 const CefString& request_method) OVERRIDE
+{
+	CEF_REQUIRE_UI_THREAD();
+	return true;
+}
+#endif
+
 virtual void OnBeforeDownload(CefRefPtr<CefBrowser> browser,
 							  CefRefPtr<CefDownloadItem> download_item,
 							  const CefString& suggested_name,
-							  CefRefPtr<CefBeforeDownloadCallback> callback)
+							  CefRefPtr<CefBeforeDownloadCallback> callback) OVERRIDE
 {
 	CEF_REQUIRE_UI_THREAD();
 
@@ -5147,7 +5165,11 @@ void CCefView_Private::CloseBrowser(bool _force_close)
 	}
 
 	if (m_handler && m_handler->GetBrowser() && m_handler->GetBrowser()->GetHost())
+	{
+		if (m_pManager->GetDebugInfoSupport())
+			m_handler->GetBrowser()->GetHost()->CloseDevTools();
 		m_handler->GetBrowser()->GetHost()->CloseBrowser(_force_close);
+	}
 }
 CefRefPtr<CefBrowser> CCefView_Private::GetBrowser() const
 {
@@ -5486,7 +5508,7 @@ void CCefView_Private::CheckZoom()
 
 	if (!CefCurrentlyOn(TID_UI))
 	{
-		// Execute on the UI thread.		
+		// Execute on the UI thread.
 #ifdef CEF_VERSION_ABOVE_105
 		CefPostTask(TID_UI, BASE_BIND(&CCefView_Private::CheckZoom, base::WrapRefCounted(this)));
 #else
@@ -6465,9 +6487,9 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 			}
 
 			m_pInternal->m_handler->m_pFileDialogCallback->Continue(
-				#ifndef CEF_VERSION_ABOVE_105
+			#ifndef CEF_VERSION_ABOVE_105
 						0,
-				#endif
+			#endif
 						file_paths);
 			m_pInternal->m_handler->m_pFileDialogCallback = nullptr;
 
@@ -6525,9 +6547,9 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 				std::vector<CefString> file_paths;
 				file_paths.push_back(sPath);
 				m_pInternal->m_handler->m_pDirectoryDialogCallback->Continue(
-					#ifndef CEF_VERSION_ABOVE_105
+			#ifndef CEF_VERSION_ABOVE_105
 							0,
-					#endif
+			#endif
 							file_paths);
 			}
 			m_pInternal->m_handler->m_pDirectoryDialogCallback = nullptr;
@@ -7539,6 +7561,25 @@ void CAscApplicationManager_Private::ChangeEditorViewsCount()
 		}
 	}
 }
+
+#ifdef CEF_SIMPLE_URL_REQUEST
+namespace NSRequest
+{
+	void CSimpleRequestClient::StartInternal()
+	{
+		m_view->GetBrowser()->GetMainFrame()->CreateURLRequest(m_request, this);
+	}
+
+	void CSimpleRequestClient::SendToRenderer(const int_64_type& frameId, const std::string& sCode)
+	{
+		if (m_view->GetBrowser())
+		{
+			CefRefPtr<CefFrame> frame = m_view->GetBrowser()->GetFrame(frameId);
+			frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
+		}
+	}
+}
+#endif
 
 #if defined(_LINUX) && !defined(_MAC)
 void* CefGetXDisplay(void)
