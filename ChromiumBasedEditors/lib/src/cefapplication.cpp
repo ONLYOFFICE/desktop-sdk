@@ -432,7 +432,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 #if defined(CEF_VERSION_ABOVE_105)
 		m_pInternal->message_loop = std::make_unique<client::MainMessageLoopMultithreaded>();
 #elif defined(CEF_2623)
-		m_pInternal->message_loop.reset(new client::MainMessageLoopStd);
+		m_pInternal->message_loop.reset(new client::MainMessageLoopMultithreaded);
 #else
 		m_pInternal->message_loop = new client::MainMessageLoopMultithreaded();
 #endif
