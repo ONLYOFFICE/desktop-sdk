@@ -363,8 +363,6 @@ namespace NSRequest
 			sCode += sReturnObject;
 			sCode += "); } catch (err) { window.AscSimpleRequest._onError(" + std::to_string(m_requestId) + ", { status : \"error\", statusCode : 404, responseText : \"\" }); }";
 
-			NSFile::CFileBinary::SaveToFile(L"D:/111.txt", UTF8_TO_U(m_download_data));
-
 			this->SendToRenderer(m_frameId, sCode);
 		}
 
