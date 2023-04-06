@@ -33,6 +33,7 @@
 #include "./client_renderer.h"
 
 #include <sstream>
+#include <algorithm>
 #include <string>
 
 #include "include/cef_dom.h"
@@ -2296,8 +2297,47 @@ window.AscDesktopEditor._convertFile(path, format);\n\
 			oPlugins.m_strDirectory = m_sSystemPlugins;
 			oPlugins.m_strUserDirectory = m_sUserPlugins;
 
-			std::wstring sFile = ((*arguments.begin())->GetStringValue()).ToWString();
-			oPlugins.AddPlugin(sFile);
+			std::wstring sData = ((*arguments.begin())->GetStringValue()).ToWString();
+
+			if (NSFile::CFileBinary::Exists(sData))
+			{
+				oPlugins.AddPlugin(sData);
+			}
+			else
+			{
+				// Parse json data
+				std::wstring sBaseUrl, sPluginName;
+				std::wstring sBaseUrlStart = L"baseUrl\":\"";
+				std::wstring sBaseUrlEnd = L"\"";
+
+				auto pos1 = sData.find(sBaseUrlStart);
+				auto pos2 = sData.find(sBaseUrlEnd, pos1 + sBaseUrlStart.length());
+
+				if (pos1 != std::string::npos && pos2 != std::string::npos && pos2 > pos1)
+				{
+					sBaseUrl = sData.substr(pos1 + sBaseUrlStart.length(),
+											pos2 - pos1 - sBaseUrlStart.length());
+
+					auto pos = sBaseUrl.rfind(L"/", sBaseUrl.length() - 2);
+					sPluginName = sBaseUrl.substr(pos);
+					sPluginName.erase(std::remove(sPluginName.begin(), sPluginName.end(), L'/'), sPluginName.end());
+
+					std::wstring sPackageUrl = sBaseUrl + L"/deploy/" + sPluginName + L".plugin";
+
+					std::wstring sTmpFile = NSFile::CFileBinary::GetTempPath() + L"/temp_asc_plugin.plugin";
+					if (NSFile::CFileBinary::Exists(sTmpFile))
+						NSFile::CFileBinary::Remove(sTmpFile);
+
+					CFileDownloaderWrapper oDownloader(sPackageUrl, sTmpFile);
+					oDownloader.DownloadSync();
+
+					if (NSFile::CFileBinary::Exists(sTmpFile))
+					{
+						oPlugins.AddPlugin(sTmpFile);
+						NSFile::CFileBinary::Remove(sTmpFile);
+					}
+				}
+			}
 
 			// send to editor
 			CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();

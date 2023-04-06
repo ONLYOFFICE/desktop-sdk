@@ -186,14 +186,28 @@ public:
             NSDirectory::CreateDirectory(m_strUserDirectory);
 
         std::wstring sTemp = m_strUserDirectory + L"/temp_asc_plugin_directory";
-        NSDirectory::CreateDirectory(sTemp);
+		std::wstring sTempExt = sTemp;
+		std::wstring sPluginName = L"";
 
-        std::wstring sPluginName = L"";
+		if (NSDirectory::Exists(sTemp))
+			NSDirectory::DeleteDirectory(sTemp);
+        NSDirectory::CreateDirectory(sTemp);        
 
         COfficeUtils oOfficeUtils(NULL);
-        if (S_OK == oOfficeUtils.ExtractToDirectory(sFilePlugin, sTemp, NULL, 0))
+		if (S_OK == oOfficeUtils.ExtractToDirectory(sFilePlugin, sTempExt, NULL, 0))
         {
-            std::wstring sConfig = sTemp + L"/config.json";
+			std::wstring sConfig = sTempExt + L"/config.json";
+
+			// zip with subfolder
+			if (!NSFile::CFileBinary::Exists(sConfig))
+			{
+				std::vector<std::wstring> aDirs = NSDirectory::GetDirectories(sTempExt);
+				if (aDirs.size() == 1)
+				{
+					sTempExt = aDirs[0];
+					sConfig = sTempExt + L"/config.json";
+				}
+			}
 
             std::string sJson = "";
             if (NSFile::CFileBinary::ReadAllTextUtf8A(sConfig, sJson))
@@ -212,18 +226,19 @@ public:
                         sPluginName = NSFile::CUtf8Converter::GetUnicodeStringFromUTF8((BYTE*)sPluginNameA.c_str(), (LONG)sPluginNameA.length());
                     }
                 }
-            }
-        }
+			}
+		}
 
-        NSDirectory::DeleteDirectory(sTemp);
         if (sPluginName.empty())
             return false;
 
         std::wstring sNew = m_strUserDirectory + L"/" + sPluginName;
         NSDirectory::DeleteDirectory(sNew);
-        NSDirectory::CreateDirectory(sNew);
+		NSDirectory::CreateDirectory(sNew);
 
-        oOfficeUtils.ExtractToDirectory(sFilePlugin, sNew, NULL, 0);
+		NSDirectory::CopyDirectory(sTempExt, sNew);
+		NSDirectory::DeleteDirectory(sTemp);
+
         return true;
     }
 
