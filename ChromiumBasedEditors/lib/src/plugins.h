@@ -180,22 +180,22 @@ public:
         return arCongigs;
     }
 
-    bool AddPlugin(std::wstring sFilePlugin)
-    {
-        if (!NSDirectory::Exists(m_strUserDirectory))
-            NSDirectory::CreateDirectory(m_strUserDirectory);
+	bool AddPlugin(std::wstring sFilePlugin)
+	{
+		if (!NSDirectory::Exists(m_strUserDirectory))
+			NSDirectory::CreateDirectory(m_strUserDirectory);
 
-        std::wstring sTemp = m_strUserDirectory + L"/temp_asc_plugin_directory";
+		std::wstring sTemp = m_strUserDirectory + L"/temp_asc_plugin_directory";
 		std::wstring sTempExt = sTemp;
 		std::wstring sPluginName = L"";
 
 		if (NSDirectory::Exists(sTemp))
 			NSDirectory::DeleteDirectory(sTemp);
-        NSDirectory::CreateDirectory(sTemp);        
+		NSDirectory::CreateDirectory(sTemp);
 
-        COfficeUtils oOfficeUtils(NULL);
+		COfficeUtils oOfficeUtils(NULL);
 		if (S_OK == oOfficeUtils.ExtractToDirectory(sFilePlugin, sTempExt, NULL, 0))
-        {
+		{
 			std::wstring sConfig = sTempExt + L"/config.json";
 
 			// zip with subfolder
@@ -209,47 +209,57 @@ public:
 				}
 			}
 
-            std::string sJson = "";
-            if (NSFile::CFileBinary::ReadAllTextUtf8A(sConfig, sJson))
-            {
-                std::string::size_type pos1 = sJson.find("\"name\"");
-                std::string::size_type pos2 = sJson.find("\"guid\"");
-                std::string::size_type pos3 = sJson.find("\"variations\"");
+			std::string sJson = "";
+			if (NSFile::CFileBinary::ReadAllTextUtf8A(sConfig, sJson))
+			{
+				std::string::size_type pos1 = sJson.find("\"name\"");
+				std::string::size_type pos2 = sJson.find("\"guid\"");
+				std::string::size_type pos3 = sJson.find("\"variations\"");
 
-                if (pos1 != std::string::npos && pos2 != std::string::npos && pos3 != std::string::npos)
-                {
-                    std::string::size_type pos4 = sJson.find('{', pos2);
-                    std::string::size_type pos5 = sJson.find('}', pos2);
-                    if (pos4 != std::string::npos && pos5 != std::string::npos)
-                    {
-                        std::string sPluginNameA = sJson.substr(pos4, pos5 - pos4 + 1);
-                        sPluginName = NSFile::CUtf8Converter::GetUnicodeStringFromUTF8((BYTE*)sPluginNameA.c_str(), (LONG)sPluginNameA.length());
-                    }
-                }
+				if (pos1 != std::string::npos && pos2 != std::string::npos && pos3 != std::string::npos)
+				{
+					std::string::size_type pos4 = sJson.find('{', pos2);
+					std::string::size_type pos5 = sJson.find('}', pos2);
+					if (pos4 != std::string::npos && pos5 != std::string::npos)
+					{
+						std::string sPluginNameA = sJson.substr(pos4, pos5 - pos4 + 1);
+						sPluginName = NSFile::CUtf8Converter::GetUnicodeStringFromUTF8((BYTE*)sPluginNameA.c_str(), (LONG)sPluginNameA.length());
+					}
+				}
 			}
 		}
 
-        if (sPluginName.empty())
-            return false;
+		if (sPluginName.empty())
+			return false;
 
-        std::wstring sNew = m_strUserDirectory + L"/" + sPluginName;
-        NSDirectory::DeleteDirectory(sNew);
+		std::wstring sNew = m_strUserDirectory + L"/" + sPluginName;
+		NSDirectory::DeleteDirectory(sNew);
 		NSDirectory::CreateDirectory(sNew);
 
 		NSDirectory::CopyDirectory(sTempExt, sNew);
 		NSDirectory::DeleteDirectory(sTemp);
 
-        return true;
-    }
+		return true;
+	}
 
-    void RemovePlugin(const std::wstring& sGuid)
+	bool RemovePlugin(const std::wstring& sGuid)
     {
+		bool bResult = false;
+
         std::wstring sAdd = sGuid;
         std::wstring::size_type pos = sGuid.find(L"{");
         if (pos != std::wstring::npos && pos != 0)
             sAdd = sGuid.substr(pos);
 
-        NSDirectory::DeleteDirectory(m_strUserDirectory + L"/" + sAdd);
+		std::wstring sDir = m_strUserDirectory + L"/" + sAdd;
+
+		if (NSDirectory::Exists(sDir))
+		{
+			NSDirectory::DeleteDirectory(sDir);
+			bResult = true;
+		}
+
+		return bResult;
     }
 
     void string_replaceA(std::string& text, const std::string& replaceFrom, const std::string& replaceTo)

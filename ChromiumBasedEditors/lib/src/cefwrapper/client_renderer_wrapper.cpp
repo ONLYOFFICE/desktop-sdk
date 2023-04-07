@@ -2293,6 +2293,8 @@ window.AscDesktopEditor._convertFile(path, format);\n\
 		}
 		else if (name == "PluginInstall")
 		{
+			bool bResult = false;
+
 			CPluginsManager oPlugins;
 			oPlugins.m_strDirectory = m_sSystemPlugins;
 			oPlugins.m_strUserDirectory = m_sUserPlugins;
@@ -2333,7 +2335,7 @@ window.AscDesktopEditor._convertFile(path, format);\n\
 
 					if (NSFile::CFileBinary::Exists(sTmpFile))
 					{
-						oPlugins.AddPlugin(sTmpFile);
+						bResult = oPlugins.AddPlugin(sTmpFile);
 						NSFile::CFileBinary::Remove(sTmpFile);
 					}
 				}
@@ -2348,16 +2350,20 @@ window.AscDesktopEditor._convertFile(path, format);\n\
 			std::string sCode = "if (window.UpdateInstallPlugins) window.UpdateInstallPlugins();";
 			_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
 
+			retval = CefV8Value::CreateBool(bResult);
+
 			return true;
 		}
 		else if (name == "PluginUninstall")
 		{
+			bool bResult = false;
+
 			CPluginsManager oPlugins;
 			oPlugins.m_strDirectory = m_sSystemPlugins;
 			oPlugins.m_strUserDirectory = m_sUserPlugins;
 
 			std::wstring sGuid = ((*arguments.begin())->GetStringValue()).ToWString();
-			oPlugins.RemovePlugin(sGuid);
+			bResult = oPlugins.RemovePlugin(sGuid);
 
 			// send to editor
 			CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
@@ -2367,6 +2373,8 @@ window.AscDesktopEditor._convertFile(path, format);\n\
 
 			std::string sCode = "if (window.UpdateInstallPlugins) window.UpdateInstallPlugins();";
 			_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+
+			retval = CefV8Value::CreateBool(bResult);
 
 			return true;
 		}
