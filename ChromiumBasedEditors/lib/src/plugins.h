@@ -43,144 +43,115 @@
 class CExternalPluginInfo
 {
 public:
-    std::string sGuid;
-    std::string sName;
-    std::string sNameObject;
-    bool isUser;
+	std::string sGuid;
+	std::string sName;
+	std::string sNameObject;
+	bool isUser;
 };
 
 class CPluginsManager
 {
 public:
-    std::wstring m_strDirectory;
-    std::wstring m_strUserDirectory;
+	std::wstring m_strDirectory;
+	std::wstring m_strUserDirectory;
 
-    int m_nCryptoMode;
-    std::map<int, std::string> m_arCryptoModes;
+	int m_nCryptoMode;
+	std::map<int, std::string> m_arCryptoModes;
 
-    bool m_bCryptoDisabledOnStart;
-    bool m_bCryptoDisableForLocal;
-    bool m_bCryptoDisableForInternalCloud;
-    bool m_bCryptoDisableForExternalCloud;
+	bool m_bCryptoDisabledOnStart;
+	bool m_bCryptoDisableForLocal;
+	bool m_bCryptoDisableForInternalCloud;
+	bool m_bCryptoDisableForExternalCloud;
 
-    std::string m_strCryptoPluginAttack;
+	std::string m_strCryptoPluginAttack;
 
-    // плагин не для редактора, а для главной страницы (для системных сообщенией)
-    std::vector<CExternalPluginInfo> m_arExternals;
+	// плагин не для редактора, а для главной страницы (для системных сообщенией)
+	std::vector<CExternalPluginInfo> m_arExternals;
 
 public:
-    CPluginsManager()
-    {
-        m_nCryptoMode = 0;
+	CPluginsManager()
+	{
+		m_nCryptoMode = 0;
 
-        m_bCryptoDisabledOnStart = false;
-        m_bCryptoDisableForLocal = false;
-        m_bCryptoDisableForInternalCloud = false;
-        m_bCryptoDisableForExternalCloud = false;
-    }
+		m_bCryptoDisabledOnStart = false;
+		m_bCryptoDisableForLocal = false;
+		m_bCryptoDisableForInternalCloud = false;
+		m_bCryptoDisableForExternalCloud = false;
+	}
 
-    std::string GetPluginsJson(const bool& checkCrypto = false)
-    {
-        if (!NSDirectory::Exists(m_strUserDirectory))
-            NSDirectory::CreateDirectory(m_strUserDirectory);
+	std::string GetPluginsJson(const bool& bActivePlugins = true, const bool& bCheckCrypto = false)
+	{
+		if (!NSDirectory::Exists(m_strUserDirectory))
+			NSDirectory::CreateDirectory(m_strUserDirectory);
 
-        std::string sPluginsJSON = "[";
+		std::string sPluginsJSON = "[";
 
-        for (int i = 0; i < 2; i++)
-        {
-            std::wstring sDir = (i == 0) ? m_strDirectory : m_strUserDirectory;
+		if (bActivePlugins)
+		{
+			for (int i = 0; i < 2; i++)
+			{
+				std::wstring sDir = (i == 0) ? m_strDirectory : m_strUserDirectory;
 
-            std::wstring sParam = sDir + L"/";
-            if (0 == sParam.find('/'))
-                sParam = L"file://" + sParam;
-            else
-                sParam = L"file:///" + sParam;
+				std::string sPlugins = ParsePluginDir(sDir, bCheckCrypto, false);
 
-            std::string sPlugins = "{ \"url\" : \"" + U_TO_UTF8(sParam) + "\", \"pluginsData\" : [";
-            std::string sData = "";
-            int nCountPlugins = 0;
+				sPluginsJSON += sPlugins;
 
-            std::vector<std::wstring> _arPlugins = NSDirectory::GetDirectories(sDir);
-            int nCount = (int)_arPlugins.size();
-            for (int i = 0; i < nCount; ++i)
-            {
-                std::string sJson = "";
-                if (NSFile::CFileBinary::ReadAllTextUtf8A(_arPlugins[i] + L"/config.json", sJson))
-                {
-                    if (!CheckEncryption(sJson, checkCrypto))
-                        continue;
+				if (i == 0)
+					sPluginsJSON += ", ";
+			}
+		}
+		else
+		{
+			// поиск плагинов в папке пользователя для возможного восстановления
+			std::wstring sBackupDir = m_strUserDirectory + L"/backup";
+			if (NSDirectory::Exists(sBackupDir))
+			{
+				std::string sPlugins = ParsePluginDir(sBackupDir, bCheckCrypto, true);
 
-                    if (CheckExternal(sJson, i == 0))
-                        continue;
+				sPluginsJSON += sPlugins;
+			}
+		}
 
-                    std::string::size_type pos1 = sJson.find('{');
-                    std::string::size_type pos2 = sJson.find_last_of('}');
+		sPluginsJSON += "]";
 
-                    if (pos1 != std::string::npos &&
-                        pos2 != std::string::npos &&
-                        pos2 > pos1)
-                    {
-                        if (nCountPlugins > 0)
-                            sData += ",";
-                        nCountPlugins++;
-                        sData += sJson.substr(pos1, pos2 - pos1 + 1);
-                    }
-                }
-            }
+		return sPluginsJSON;
+	}
 
-            sPlugins += sData;
+	std::vector<std::string> GetInstalledPlugins()
+	{
+		std::vector<std::string> arCongigs;
 
-            sPlugins += "] }";
+		for (int i = 0; i < 2; i++)
+		{
+			std::wstring sDir = (i == 0) ? m_strDirectory : m_strUserDirectory;
 
-            string_replaceA(sPlugins, "\r\n", "");
-            string_replaceA(sPlugins, "\n", "");
+			std::vector<std::wstring> _arPlugins = NSDirectory::GetDirectories(sDir);
+			int nCount = (int)_arPlugins.size();
+			for (int i = 0; i < nCount; ++i)
+			{
+				std::string sJson;
+				if (NSFile::CFileBinary::ReadAllTextUtf8A(_arPlugins[i] + L"/config.json", sJson))
+				{
+					CheckEncryption(sJson, false);
+					CheckExternal(sJson, i == 0);
 
-            sPluginsJSON += sPlugins;
+					std::string::size_type pos1 = sJson.find("asc.{");
+					std::string::size_type pos2 = sJson.find('}', pos1);
 
-            if (i == 0)
-                sPluginsJSON += ", ";
-        }
+					if (pos1 != std::string::npos &&
+							pos2 != std::string::npos &&
+							pos2 > pos1)
+					{
+						arCongigs.push_back(sJson.substr(pos1, pos2 - pos1 + 1));
+					}
+				}
+			}
+		}
 
-        sPluginsJSON += "]";
+		return arCongigs;
+	}
 
-        return sPluginsJSON;
-    }
-
-    std::vector<std::string> GetInstalledPlugins()
-    {
-        std::vector<std::string> arCongigs;
-
-        for (int i = 0; i < 2; i++)
-        {
-            std::wstring sDir = (i == 0) ? m_strDirectory : m_strUserDirectory;
-
-            std::vector<std::wstring> _arPlugins = NSDirectory::GetDirectories(sDir);
-            int nCount = (int)_arPlugins.size();
-            for (int i = 0; i < nCount; ++i)
-            {
-                std::string sJson;
-                if (NSFile::CFileBinary::ReadAllTextUtf8A(_arPlugins[i] + L"/config.json", sJson))
-                {                    
-                    CheckEncryption(sJson, false);
-                    CheckExternal(sJson, i == 0);
-
-                    std::string::size_type pos1 = sJson.find("asc.{");
-                    std::string::size_type pos2 = sJson.find('}', pos1);
-
-                    if (pos1 != std::string::npos &&
-                        pos2 != std::string::npos &&
-                        pos2 > pos1)
-                    {
-                        arCongigs.push_back(sJson.substr(pos1, pos2 - pos1 + 1));
-                    }
-                }
-            }
-        }
-
-        return arCongigs;
-    }
-
-	bool AddPlugin(std::wstring sFilePlugin)
+	bool AddPlugin(const std::wstring& sFilePlugin)
 	{
 		if (!NSDirectory::Exists(m_strUserDirectory))
 			NSDirectory::CreateDirectory(m_strUserDirectory);
@@ -242,181 +213,256 @@ public:
 		return true;
 	}
 
-	bool RemovePlugin(const std::wstring& sGuid)
-    {
+	bool RemovePlugin(const std::wstring& sGuid, const bool& bBackup)
+	{
 		bool bResult = false;
 
-        std::wstring sAdd = sGuid;
-        std::wstring::size_type pos = sGuid.find(L"{");
-        if (pos != std::wstring::npos && pos != 0)
-            sAdd = sGuid.substr(pos);
+		std::wstring sAdd = sGuid;
+		std::wstring::size_type pos = sGuid.find(L"{");
+		if (pos != std::wstring::npos && pos != 0)
+			sAdd = sGuid.substr(pos);
 
-		std::wstring sDir = m_strUserDirectory + L"/" + sAdd;
+		std::wstring sPluginDir = m_strUserDirectory + L"/" + sAdd;
 
-		if (NSDirectory::Exists(sDir))
+		if (NSDirectory::Exists(sPluginDir))
 		{
-			NSDirectory::DeleteDirectory(sDir);
+			if (bBackup)
+			{
+				std::wstring sBackupDir = m_strUserDirectory + L"/backup";
+				std::wstring sPluginBackupDir = sBackupDir + L"/" + sAdd;
+
+				if (!NSDirectory::Exists(sBackupDir))
+					NSDirectory::CreateDirectory(sBackupDir);
+
+				if (!NSDirectory::Exists(sPluginBackupDir))
+					NSDirectory::DeleteDirectory(sPluginBackupDir);
+
+				NSDirectory::CopyDirectory(sPluginDir, sPluginBackupDir);
+			}
+
+			NSDirectory::DeleteDirectory(sPluginDir);
+
 			bResult = true;
 		}
 
 		return bResult;
-    }
+	}
 
-    void string_replaceA(std::string& text, const std::string& replaceFrom, const std::string& replaceTo)
-    {
-        size_t posn = 0;
-        while (std::string::npos != (posn = text.find(replaceFrom, posn)))
-        {
-            text.replace(posn, replaceFrom.length(), replaceTo);
-            posn += replaceTo.length();
-        }
-    }
+	void string_replaceA(std::string& text, const std::string& replaceFrom, const std::string& replaceTo)
+	{
+		size_t posn = 0;
+		while (std::string::npos != (posn = text.find(replaceFrom, posn)))
+		{
+			text.replace(posn, replaceFrom.length(), replaceTo);
+			posn += replaceTo.length();
+		}
+	}
 
 private:
-    bool CheckEncryption(const std::string& strJson, const bool& checkCrypto)
-    {
-        if ("desktop" == GetStringValue(strJson, "initDataType") && "encryption" == GetStringValue(strJson, "initData"))
-        {
-            int nMode = 1;
-            std::string sMode = GetStringValue(strJson, "cryptoMode");
-            std::string sModeExt = GetStringValue(strJson, "cryptoModeExt");
-            if (!sMode.empty())
-                nMode = std::stoi(sMode);
+	std::string ParsePluginDir(const std::wstring& sDir, const bool& bCheckCrypto = false, const bool& bIsBackup = false)
+	{
+		std::wstring sParam = sDir + L"/";
+		if (0 == sParam.find('/'))
+			sParam = L"file://" + sParam;
+		else
+			sParam = L"file:///" + sParam;
 
-            if (checkCrypto && sModeExt == "disable" && m_strCryptoPluginAttack.empty())
-                return false;
+		std::string sPlugins = "{ \"url\" : \"" + U_TO_UTF8(sParam) + "\", \"pluginsData\" : [";
+		std::string sData = "";
+		int nCountPlugins = 0;
 
-            std::string sGuid = GetStringValue(strJson, "guid");
+		std::vector<std::wstring> _arPlugins = NSDirectory::GetDirectories(sDir);
 
-            if (checkCrypto)
-            {
-                if (!m_strCryptoPluginAttack.empty() )
-                {
-                    std::string s1 = sGuid;
-                    string_replaceA(s1, "asc.", "");
-                    std::string s2 = m_strCryptoPluginAttack;
-                    string_replaceA(s2, "asc.", "");
+		size_t nCount = _arPlugins.size();
+		for (size_t i = 0; i < nCount; ++i)
+		{
+			std::string sJson = "";
+			if (NSFile::CFileBinary::ReadAllTextUtf8A(_arPlugins[i] + L"/config.json", sJson))
+			{
+				if (!CheckEncryption(sJson, bCheckCrypto))
+					continue;
 
-                    if (s1 == s2)
-                        return true;
+				if (CheckExternal(sJson, i == 0))
+					continue;
 
-                    return false;
-                }
+				std::string::size_type pos1 = sJson.find('{');
+				std::string::size_type pos2 = sJson.find_last_of('}');
 
-                if (m_nCryptoMode != nMode)
-                {
-                    return false;
-                }
-            }
+				if (pos1 != std::string::npos &&
+						pos2 != std::string::npos &&
+						pos2 > pos1)
+				{
+					if (nCountPlugins > 0)
+						sData += ",";
 
-            if (m_arCryptoModes.find(nMode) == m_arCryptoModes.end())
-                m_arCryptoModes.insert(std::pair<int, std::string>(nMode, sGuid));
-            else if (checkCrypto)
-                return false;
+					nCountPlugins++;
+					std::string sConfigContent = sJson.substr(pos1, pos2 - pos1 + 1);
 
-        }
-        return true;
-    }
+					if (bIsBackup)
+					{
+						// выставляем признак
+						pos2 = sConfigContent.find_last_of('}');
+						sConfigContent = sConfigContent.substr(0, pos2) + ", \"backup\": true }";
+					}
 
-    bool CheckExternal(const std::string& sJson, bool isSystem)
-    {
-        if ("desktop-external" == GetStringValue(sJson, "initDataType"))
-        {
-            std::string sStartMode = GetStringValue(sJson, "cryptoDisabledOnStart");
-            if (sStartMode == "true" || sStartMode == "1")
-                m_bCryptoDisabledOnStart = true;
+					sData += sConfigContent;
+				}
+			}
+		}
 
-            std::string sCryptoDisableForLocal = GetStringValue(sJson, "cryptoDisabledForLocal");
-            if (sCryptoDisableForLocal == "true" || sCryptoDisableForLocal == "1") m_bCryptoDisableForLocal = true;
+		sPlugins += sData;
+		sPlugins += "] }";
 
-            std::string sCryptoDisableForInternalCloud = GetStringValue(sJson, "cryptoDisabledForInternalCloud");
-            if (sCryptoDisableForInternalCloud == "true" || sCryptoDisableForInternalCloud == "1") m_bCryptoDisableForInternalCloud = true;
+		string_replaceA(sPlugins, "\r\n", "");
+		string_replaceA(sPlugins, "\n", "");
 
-            std::string sCryptoDisableForExternalCloud = GetStringValue(sJson, "cryptoDisabledForExternalCloud");
-            if (sCryptoDisableForExternalCloud == "true" || sCryptoDisableForExternalCloud == "1") m_bCryptoDisableForExternalCloud = true;
+		return sPlugins;
+	}
 
-            std::string::size_type pos1 = sJson.find("asc.{");
-            std::string::size_type pos2 = sJson.find('}', pos1);
+	bool CheckEncryption(const std::string& strJson, const bool& checkCrypto)
+	{
+		if ("desktop" == GetStringValue(strJson, "initDataType") && "encryption" == GetStringValue(strJson, "initData"))
+		{
+			int nMode = 1;
+			std::string sMode = GetStringValue(strJson, "cryptoMode");
+			std::string sModeExt = GetStringValue(strJson, "cryptoModeExt");
+			if (!sMode.empty())
+				nMode = std::stoi(sMode);
 
-            if (pos1 != std::string::npos &&
-                pos2 != std::string::npos &&
-                pos2 > pos1)
-            {
-                CExternalPluginInfo info;
-                info.sGuid = sJson.substr(pos1, pos2 - pos1 + 1);
-                info.sName = GetStringValue(sJson, "name");
-                info.sNameObject = GetObjectValue(sJson, "nameLocale");
-                info.isUser = isSystem ? false : true;
+			if (checkCrypto && sModeExt == "disable" && m_strCryptoPluginAttack.empty())
+				return false;
 
-                m_arExternals.push_back(info);
-            }
-            return true;
-        }
-        return false;
-    }
+			std::string sGuid = GetStringValue(strJson, "guid");
+
+			if (checkCrypto)
+			{
+				if (!m_strCryptoPluginAttack.empty() )
+				{
+					std::string s1 = sGuid;
+					string_replaceA(s1, "asc.", "");
+					std::string s2 = m_strCryptoPluginAttack;
+					string_replaceA(s2, "asc.", "");
+
+					if (s1 == s2)
+						return true;
+
+					return false;
+				}
+
+				if (m_nCryptoMode != nMode)
+				{
+					return false;
+				}
+			}
+
+			if (m_arCryptoModes.find(nMode) == m_arCryptoModes.end())
+				m_arCryptoModes.insert(std::pair<int, std::string>(nMode, sGuid));
+			else if (checkCrypto)
+				return false;
+
+		}
+		return true;
+	}
+
+	bool CheckExternal(const std::string& sJson, bool isSystem)
+	{
+		if ("desktop-external" == GetStringValue(sJson, "initDataType"))
+		{
+			std::string sStartMode = GetStringValue(sJson, "cryptoDisabledOnStart");
+			if (sStartMode == "true" || sStartMode == "1")
+				m_bCryptoDisabledOnStart = true;
+
+			std::string sCryptoDisableForLocal = GetStringValue(sJson, "cryptoDisabledForLocal");
+			if (sCryptoDisableForLocal == "true" || sCryptoDisableForLocal == "1") m_bCryptoDisableForLocal = true;
+
+			std::string sCryptoDisableForInternalCloud = GetStringValue(sJson, "cryptoDisabledForInternalCloud");
+			if (sCryptoDisableForInternalCloud == "true" || sCryptoDisableForInternalCloud == "1") m_bCryptoDisableForInternalCloud = true;
+
+			std::string sCryptoDisableForExternalCloud = GetStringValue(sJson, "cryptoDisabledForExternalCloud");
+			if (sCryptoDisableForExternalCloud == "true" || sCryptoDisableForExternalCloud == "1") m_bCryptoDisableForExternalCloud = true;
+
+			std::string::size_type pos1 = sJson.find("asc.{");
+			std::string::size_type pos2 = sJson.find('}', pos1);
+
+			if (pos1 != std::string::npos &&
+					pos2 != std::string::npos &&
+					pos2 > pos1)
+			{
+				CExternalPluginInfo info;
+				info.sGuid = sJson.substr(pos1, pos2 - pos1 + 1);
+				info.sName = GetStringValue(sJson, "name");
+				info.sNameObject = GetObjectValue(sJson, "nameLocale");
+				info.isUser = isSystem ? false : true;
+
+				m_arExternals.push_back(info);
+			}
+			return true;
+		}
+		return false;
+	}
 
 public:
-    static std::string GetStringValue(const std::string& strJson, const std::string& strName)
-    {
-        std::string::size_type nPosStartName = strJson.find("\"" + strName + "\"");
-        if (nPosStartName == std::string::npos)
-            return "";
+	static std::string GetStringValue(const std::string& strJson, const std::string& strName)
+	{
+		std::string::size_type nPosStartName = strJson.find("\"" + strName + "\"");
+		if (nPosStartName == std::string::npos)
+			return "";
 
-        nPosStartName += (strName.length() + 2);
-        std::string::size_type pos1 = strJson.find("\"", nPosStartName);
-        if (pos1 == std::string::npos)
-            return "";
+		nPosStartName += (strName.length() + 2);
+		std::string::size_type pos1 = strJson.find("\"", nPosStartName);
+		if (pos1 == std::string::npos)
+			return "";
 
-        std::string::size_type pos2 = strJson.find("\"", pos1 + 1);
-        if (pos2 == std::string::npos)
-            return "";
+		std::string::size_type pos2 = strJson.find("\"", pos1 + 1);
+		if (pos2 == std::string::npos)
+			return "";
 
-        return strJson.substr(pos1 + 1, pos2 - pos1 - 1);
-    }
-    static std::string GetArrayValue(const std::string& strJson, const std::string& strName)
-    {
-        std::string::size_type nPosStartName = strJson.find("\"" + strName + "\"");
-        if (nPosStartName == std::string::npos)
-            return "";
+		return strJson.substr(pos1 + 1, pos2 - pos1 - 1);
+	}
+	static std::string GetArrayValue(const std::string& strJson, const std::string& strName)
+	{
+		std::string::size_type nPosStartName = strJson.find("\"" + strName + "\"");
+		if (nPosStartName == std::string::npos)
+			return "";
 
-        nPosStartName += (strName.length() + 2);
-        std::string::size_type pos1 = strJson.find("[", nPosStartName);
-        if (pos1 == std::string::npos)
-            return "";
+		nPosStartName += (strName.length() + 2);
+		std::string::size_type pos1 = strJson.find("[", nPosStartName);
+		if (pos1 == std::string::npos)
+			return "";
 
-        std::string::size_type pos2 = strJson.find("]", pos1 + 1);
-        if (pos2 == std::string::npos)
-            return "";
+		std::string::size_type pos2 = strJson.find("]", pos1 + 1);
+		if (pos2 == std::string::npos)
+			return "";
 
-        return strJson.substr(pos1, pos2 - pos1 + 1);
-    }
-    static std::string GetObjectValue(const std::string& strJson, const std::string& strName)
-    {
-        std::string::size_type nPosStartName = strJson.find("\"" + strName + "\"");
-        if (nPosStartName == std::string::npos)
-            return "";
+		return strJson.substr(pos1, pos2 - pos1 + 1);
+	}
+	static std::string GetObjectValue(const std::string& strJson, const std::string& strName)
+	{
+		std::string::size_type nPosStartName = strJson.find("\"" + strName + "\"");
+		if (nPosStartName == std::string::npos)
+			return "";
 
-        nPosStartName += (strName.length() + 2);
-        std::string::size_type pos1 = strJson.find("{", nPosStartName);
-        if (pos1 == std::string::npos)
-            return "";
+		nPosStartName += (strName.length() + 2);
+		std::string::size_type pos1 = strJson.find("{", nPosStartName);
+		if (pos1 == std::string::npos)
+			return "";
 
-        std::string::size_type pos2 = strJson.find("}", pos1 + 1);
-        if (pos2 == std::string::npos)
-            return "";
+		std::string::size_type pos2 = strJson.find("}", pos1 + 1);
+		if (pos2 == std::string::npos)
+			return "";
 
-        return strJson.substr(pos1, pos2 - pos1 + 1);
-    }
-    static std::wstring GetStringValueW(const std::string& strJson, const std::string& strName)
-    {
-        std::string sRet = GetStringValue(strJson, strName);
-        return UTF8_TO_U(sRet);
-    }
-    static std::wstring GetObjectValueW(const std::string& strJson, const std::string& strName)
-    {
-        std::string sRet = GetObjectValue(strJson, strName);
-        return UTF8_TO_U(sRet);
-    }
+		return strJson.substr(pos1, pos2 - pos1 + 1);
+	}
+	static std::wstring GetStringValueW(const std::string& strJson, const std::string& strName)
+	{
+		std::string sRet = GetStringValue(strJson, strName);
+		return UTF8_TO_U(sRet);
+	}
+	static std::wstring GetObjectValueW(const std::string& strJson, const std::string& strName)
+	{
+		std::string sRet = GetObjectValue(strJson, strName);
+		return UTF8_TO_U(sRet);
+	}
 };
 
 #endif // APPLICATION_PLUGINS_H

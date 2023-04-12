@@ -2287,7 +2287,20 @@ window.AscDesktopEditor._convertFile(path, format);\n\
 			//    oPlugins.m_strCryptoPluginAttack = CAscRendererProcessParams::getInstance().GetProperty("cryptoEngineId");
 			oPlugins.m_strCryptoPluginAttack = CAscRendererProcessParams::getInstance().GetProperty("cryptoEngineId");
 
-			std::string sData = oPlugins.GetPluginsJson(true);
+			std::string sData = oPlugins.GetPluginsJson(true, true);
+			retval = CefV8Value::CreateString(sData);
+			return true;
+		}
+		else if (name == "GetBackupPlugins")
+		{
+			CPluginsManager oPlugins;
+			oPlugins.m_strDirectory = m_sSystemPlugins;
+			oPlugins.m_strUserDirectory = m_sUserPlugins;
+			oPlugins.m_nCryptoMode = m_nCryptoMode;
+
+			oPlugins.m_strCryptoPluginAttack = CAscRendererProcessParams::getInstance().GetProperty("cryptoEngineId");
+
+			std::string sData = oPlugins.GetPluginsJson(false, true);
 			retval = CefV8Value::CreateString(sData);
 			return true;
 		}
@@ -2303,7 +2316,7 @@ window.AscDesktopEditor._convertFile(path, format);\n\
 
 			if (NSFile::CFileBinary::Exists(sData))
 			{
-				oPlugins.AddPlugin(sData);
+				bResult = oPlugins.AddPlugin(sData);
 			}
 			else
 			{
@@ -2362,8 +2375,12 @@ window.AscDesktopEditor._convertFile(path, format);\n\
 			oPlugins.m_strDirectory = m_sSystemPlugins;
 			oPlugins.m_strUserDirectory = m_sUserPlugins;
 
-			std::wstring sGuid = ((*arguments.begin())->GetStringValue()).ToWString();
-			bResult = oPlugins.RemovePlugin(sGuid);
+			std::wstring sGuid = arguments[0]->GetStringValue().ToWString();
+			bool bBackup = arguments[1]->GetBoolValue();
+
+			//std::wstring sGuid = ((*arguments.begin())->GetStringValue()).ToWString();
+
+			bResult = oPlugins.RemovePlugin(sGuid, bBackup);
 
 			// send to editor
 			CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
@@ -4266,7 +4283,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
 	CefRefPtr<CefV8Handler> handler = pWrapper;
 
-	#define EXTEND_METHODS_COUNT 165
+	#define EXTEND_METHODS_COUNT 166
 	const char* methods[EXTEND_METHODS_COUNT] = {
 		"Copy",
 		"Paste",
@@ -4366,6 +4383,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 		"NativeViewerGetCompleteTasks",
 
 		"GetInstallPlugins",
+		"GetBackupPlugins",
 
 		"IsLocalFile",
 		"IsFilePrinting",
