@@ -2320,15 +2320,32 @@ window.AscDesktopEditor._convertFile(path, format);\n\
 			}
 			else
 			{
-				// Parse json data
+				// Парсим json конфиг
 				std::wstring sBaseUrl, sPluginName;
+				std::wstring sBackupStart = L"backup\":true";
 				std::wstring sBaseUrlStart = L"baseUrl\":\"";
 				std::wstring sBaseUrlEnd = L"\"";
 
-				auto pos1 = sData.find(sBaseUrlStart);
-				auto pos2 = sData.find(sBaseUrlEnd, pos1 + sBaseUrlStart.length());
+				std::string::size_type pos = sData.find(sBackupStart);
+				std::string::size_type pos1 = sData.find(sBaseUrlStart);
+				std::string::size_type pos2 = sData.find(sBaseUrlEnd, pos1 + sBaseUrlStart.length());
 
-				if (pos1 != std::string::npos && pos2 != std::string::npos && pos2 > pos1)
+				// Нужно восстановить плагин из папки backup
+				if (pos != std::string::npos)
+				{
+					pos1 = sData.find(L"asc.{");
+					pos2 = sData.find(L'}', pos1);
+
+					if (pos1 != std::string::npos &&
+						pos2 != std::string::npos &&
+						pos2 > pos1)
+					{
+						std::wstring sGuid = sData.substr(pos1, pos2 - pos1 + 1);
+						bResult = oPlugins.RestorePlugin(sGuid);
+					}
+				}
+				// Установка из стора по ссылке
+				else if (pos1 != std::string::npos && pos2 != std::string::npos && pos2 > pos1)
 				{
 					sBaseUrl = sData.substr(pos1 + sBaseUrlStart.length(),
 											pos2 - pos1 - sBaseUrlStart.length());

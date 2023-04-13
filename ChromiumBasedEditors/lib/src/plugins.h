@@ -213,6 +213,28 @@ public:
 		return true;
 	}
 
+	bool RestorePlugin(const std::wstring& sGuid)
+	{
+		bool bResult = false;
+
+		std::wstring sAdd = sGuid;
+		std::wstring::size_type pos = sGuid.find(L"{");
+		if (pos != std::wstring::npos && pos != 0)
+			sAdd = sGuid.substr(pos);
+
+		std::wstring sPluginDir = m_strUserDirectory + L"/" + sAdd;
+		std::wstring sPluginBackupDir = m_strUserDirectory + L"/backup/" + sAdd;
+
+		if (NSDirectory::Exists(sPluginBackupDir))
+		{
+			NSDirectory::CopyDirectory(sPluginBackupDir, sPluginDir);
+			NSDirectory::DeleteDirectory(sPluginBackupDir);
+			bResult = true;
+		}
+
+		return bResult;
+	}
+
 	bool RemovePlugin(const std::wstring& sGuid, const bool& bBackup)
 	{
 		bool bResult = false;
@@ -241,7 +263,6 @@ public:
 			}
 
 			NSDirectory::DeleteDirectory(sPluginDir);
-
 			bResult = true;
 		}
 
@@ -300,7 +321,7 @@ private:
 
 					if (bIsBackup)
 					{
-						// выставляем признак
+						// устанавливаем свойство для дальнейших действий
 						pos2 = sConfigContent.find_last_of('}');
 						sConfigContent = sConfigContent.substr(0, pos2) + ", \"backup\": true }";
 					}
