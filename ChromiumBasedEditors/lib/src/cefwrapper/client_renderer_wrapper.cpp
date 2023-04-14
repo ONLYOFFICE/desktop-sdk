@@ -33,6 +33,7 @@
 #include "./client_renderer.h"
 
 #include <sstream>
+#include <algorithm>
 #include <string>
 
 #include "include/cef_dom.h"
@@ -2291,18 +2292,89 @@ window.AscDesktopEditor._convertFile(path, format);\n\
 			//    oPlugins.m_strCryptoPluginAttack = CAscRendererProcessParams::getInstance().GetProperty("cryptoEngineId");
 			oPlugins.m_strCryptoPluginAttack = CAscRendererProcessParams::getInstance().GetProperty("cryptoEngineId");
 
-			std::string sData = oPlugins.GetPluginsJson(true);
+			std::string sData = oPlugins.GetPluginsJson(true, true);
+			retval = CefV8Value::CreateString(sData);
+			return true;
+		}
+		else if (name == "GetBackupPlugins")
+		{
+			CPluginsManager oPlugins;
+			oPlugins.m_strDirectory = m_sSystemPlugins;
+			oPlugins.m_strUserDirectory = m_sUserPlugins;
+			oPlugins.m_nCryptoMode = m_nCryptoMode;
+
+			oPlugins.m_strCryptoPluginAttack = CAscRendererProcessParams::getInstance().GetProperty("cryptoEngineId");
+
+			std::string sData = oPlugins.GetPluginsJson(false, true);
 			retval = CefV8Value::CreateString(sData);
 			return true;
 		}
 		else if (name == "PluginInstall")
 		{
+			bool bResult = false;
+
 			CPluginsManager oPlugins;
 			oPlugins.m_strDirectory = m_sSystemPlugins;
 			oPlugins.m_strUserDirectory = m_sUserPlugins;
 
-			std::wstring sFile = ((*arguments.begin())->GetStringValue()).ToWString();
-			oPlugins.AddPlugin(sFile);
+			std::wstring sData = ((*arguments.begin())->GetStringValue()).ToWString();
+
+			if (NSFile::CFileBinary::Exists(sData))
+			{
+				bResult = oPlugins.AddPlugin(sData);
+			}
+			else
+			{
+				// Парсим json конфиг
+				std::wstring sBaseUrl, sPluginName;
+				std::wstring sBackupStart = L"backup\":true";
+				std::wstring sBaseUrlStart = L"baseUrl\":\"";
+				std::wstring sBaseUrlEnd = L"\"";
+
+				std::string::size_type pos = sData.find(sBackupStart);
+				std::string::size_type pos1 = sData.find(sBaseUrlStart);
+				std::string::size_type pos2 = sData.find(sBaseUrlEnd, pos1 + sBaseUrlStart.length());
+
+				// Нужно восстановить плагин из папки backup
+				if (pos != std::string::npos)
+				{
+					pos1 = sData.find(L"asc.{");
+					pos2 = sData.find(L'}', pos1);
+
+					if (pos1 != std::string::npos &&
+						pos2 != std::string::npos &&
+						pos2 > pos1)
+					{
+						std::wstring sGuid = sData.substr(pos1, pos2 - pos1 + 1);
+						bResult = oPlugins.RestorePlugin(sGuid);
+					}
+				}
+				// Установка из стора по ссылке
+				else if (pos1 != std::string::npos && pos2 != std::string::npos && pos2 > pos1)
+				{
+					sBaseUrl = sData.substr(pos1 + sBaseUrlStart.length(),
+											pos2 - pos1 - sBaseUrlStart.length());
+
+					auto pos = sBaseUrl.rfind(L"/", sBaseUrl.length() - 2);
+					sPluginName = sBaseUrl.substr(pos);
+					sPluginName.erase(std::remove(sPluginName.begin(), sPluginName.end(), L'/'), sPluginName.end());
+
+					std::wstring sPackageUrl = sBaseUrl + L"/deploy/" + sPluginName + L".plugin";
+
+					std::wstring sTmpFile = NSFile::CFileBinary::GetTempPath() + L"/temp_asc_plugin.plugin";
+					if (NSFile::CFileBinary::Exists(sTmpFile))
+						NSFile::CFileBinary::Remove(sTmpFile);
+
+					CFileDownloaderWrapper oDownloader(sPackageUrl, sTmpFile);
+					oDownloader.DownloadSync();
+
+					if (NSFile::CFileBinary::Exists(sTmpFile))
+					{
+						bResult = oPlugins.AddPlugin(sTmpFile);
+						NSFile::CFileBinary::Remove(sTmpFile);
+					}
+				}
+			}
 
 			// send to editor
 			CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
@@ -2312,17 +2384,25 @@ window.AscDesktopEditor._convertFile(path, format);\n\
 
 			std::string sCode = "if (window.UpdateInstallPlugins) window.UpdateInstallPlugins();";
 			_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+
+			retval = CefV8Value::CreateBool(bResult);
 
 			return true;
 		}
 		else if (name == "PluginUninstall")
 		{
+			bool bResult = false;
+
 			CPluginsManager oPlugins;
 			oPlugins.m_strDirectory = m_sSystemPlugins;
 			oPlugins.m_strUserDirectory = m_sUserPlugins;
 
-			std::wstring sGuid = ((*arguments.begin())->GetStringValue()).ToWString();
-			oPlugins.RemovePlugin(sGuid);
+			std::wstring sGuid = arguments[0]->GetStringValue().ToWString();
+			bool bBackup = arguments[1]->GetBoolValue();
+
+			//std::wstring sGuid = ((*arguments.begin())->GetStringValue()).ToWString();
+
+			bResult = oPlugins.RemovePlugin(sGuid, bBackup);
 
 			// send to editor
 			CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
@@ -2332,6 +2412,8 @@ window.AscDesktopEditor._convertFile(path, format);\n\
 
 			std::string sCode = "if (window.UpdateInstallPlugins) window.UpdateInstallPlugins();";
 			_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+
+			retval = CefV8Value::CreateBool(bResult);
 
 			return true;
 		}
@@ -4366,6 +4448,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 		"NativeViewerGetCompleteTasks",
 
 		"GetInstallPlugins",
+		"GetBackupPlugins",
 
 		"IsLocalFile",
 		"IsFilePrinting",
