@@ -33,9 +33,9 @@
 #ifndef APPLICATION_PLUGINS_H
 #define APPLICATION_PLUGINS_H
 
-#include "../../../../core/DesktopEditor/common/File.h"
 #include "../../../../core/DesktopEditor/common/Directory.h"
 #include "../../../../core/OfficeUtils/src/OfficeUtils.h"
+#include "../../../../core/DesktopEditor/common/StringBuilder.h"
 
 //#include "./plugins_resources.h"
 #include <map>
@@ -269,16 +269,6 @@ public:
 		return bResult;
 	}
 
-	void string_replaceA(std::string& text, const std::string& replaceFrom, const std::string& replaceTo)
-	{
-		size_t posn = 0;
-		while (std::string::npos != (posn = text.find(replaceFrom, posn)))
-		{
-			text.replace(posn, replaceFrom.length(), replaceTo);
-			posn += replaceTo.length();
-		}
-	}
-
 private:
 	std::string ParsePluginDir(const std::wstring& sDir, const bool& bCheckCrypto = false, const bool& bIsBackup = false)
 	{
@@ -334,8 +324,8 @@ private:
 		sPlugins += sData;
 		sPlugins += "] }";
 
-		string_replaceA(sPlugins, "\r\n", "");
-		string_replaceA(sPlugins, "\n", "");
+		NSStringUtils::string_replaceA(sPlugins, "\r\n", "");
+		NSStringUtils::string_replaceA(sPlugins, "\n", "");
 
 		return sPlugins;
 	}
@@ -360,9 +350,9 @@ private:
 				if (!m_strCryptoPluginAttack.empty() )
 				{
 					std::string s1 = sGuid;
-					string_replaceA(s1, "asc.", "");
+					NSStringUtils::string_replaceA(s1, "asc.", "");
 					std::string s2 = m_strCryptoPluginAttack;
-					string_replaceA(s2, "asc.", "");
+					NSStringUtils::string_replaceA(s2, "asc.", "");
 
 					if (s1 == s2)
 						return true;
