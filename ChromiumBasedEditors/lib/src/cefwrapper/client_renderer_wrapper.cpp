@@ -2398,7 +2398,7 @@ window.AscDesktopEditor._convertFile(path, format);\n\
 			oPlugins.m_strUserDirectory = m_sUserPlugins;
 
 			std::wstring sGuid = arguments[0]->GetStringValue().ToWString();
-			bool bBackup = (arguments.size() > 1) ? arguments[1]->GetBoolValue() : false;
+			bool bBackup = (arguments.size() > 1 && arguments[1]->IsBool()) ? arguments[1]->GetBoolValue() : false;
 
 			bResult = oPlugins.RemovePlugin(sGuid, bBackup);
 
