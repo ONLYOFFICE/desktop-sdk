@@ -335,13 +335,21 @@ namespace NSRequest
 			int responseStatus = response->GetStatus();
 			std::string sStatusText = response->GetStatusText().ToString();
 
+			if (307 == responseStatus)
+			{
+				status = UR_SUCCESS;
+				error_code = ERR_NONE;
+
+				m_download_data = "{}";
+			}
+
 			std::string sReturnObject = "{ status: ";
 			if (UR_SUCCESS == status)
 				sReturnObject += "\"success\"";
 			else
 				sReturnObject += "\"error\"";
 
-			sReturnObject += (", statusCode: " + std::to_string(error_code) + ", responseText : \"");
+			sReturnObject += (", responseStatus: " + std::to_string(responseStatus) + ", statusCode: " + std::to_string(error_code) + ", responseText : \"");
 
 			std::string sData = m_download_data;
 			NSStringUtils::string_replaceA(sData, "\\", "\\\\");
