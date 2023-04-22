@@ -79,7 +79,8 @@ public:
 		m_bCryptoDisableForExternalCloud = false;
 	}
 
-	std::string GetPluginsJson(const bool& bActivePlugins = true, const bool& bCheckCrypto = false)
+	std::string GetPluginsJson(const bool& bActivePlugins = true, const bool& bCheckCrypto = false,
+							   const bool& bIsSupportMacroses = true, const bool& bIsSupportPlugins = true)
 	{
 		if (!NSDirectory::Exists(m_strUserDirectory))
 			NSDirectory::CreateDirectory(m_strUserDirectory);
@@ -92,7 +93,7 @@ public:
 			{
 				std::wstring sDir = (i == 0) ? m_strDirectory : m_strUserDirectory;
 
-				std::string sPlugins = ParsePluginDir(sDir, bCheckCrypto, false);
+				std::string sPlugins = ParsePluginDir(sDir, bCheckCrypto, false, bIsSupportMacroses, bIsSupportPlugins);
 
 				sPluginsJSON += sPlugins;
 
@@ -270,7 +271,8 @@ public:
 	}
 
 private:
-	std::string ParsePluginDir(const std::wstring& sDir, const bool& bCheckCrypto = false, const bool& bIsBackup = false)
+	std::string ParsePluginDir(const std::wstring& sDir, const bool& bCheckCrypto = false, const bool& bIsBackup = false,
+							   const bool& bIsSupportMacroses = true, const bool& bIsSupportPlugins = true)
 	{
 		std::wstring sParam = sDir + L"/";
 		if (0 == sParam.find('/'))
@@ -282,11 +284,16 @@ private:
 		std::string sData = "";
 		int nCountPlugins = 0;
 
-		std::vector<std::wstring> _arPlugins = NSDirectory::GetDirectories(sDir);
+		std::vector<std::wstring> _arPlugins;
+		if (bIsSupportPlugins)
+			_arPlugins = NSDirectory::GetDirectories(sDir);
 
 		size_t nCount = _arPlugins.size();
 		for (size_t i = 0; i < nCount; ++i)
 		{
+			if (!bIsSupportMacroses && (std::wstring::npos != _arPlugins[i].find(L"{E6978D28-0441-4BD7-8346-82FAD68BCA3B}")))
+				continue;
+
 			std::string sJson = "";
 			if (NSFile::CFileBinary::ReadAllTextUtf8A(_arPlugins[i] + L"/config.json", sJson))
 			{

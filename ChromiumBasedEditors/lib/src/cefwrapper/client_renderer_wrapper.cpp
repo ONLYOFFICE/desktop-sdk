@@ -590,6 +590,9 @@ public:
 	// для печати облачных файлов (pdf/xps/djvu)
 	std::wstring m_sCloudNativePrintFile;
 
+	bool m_bIsMacrosesSupport;
+	bool m_bIsPluginsSupport;
+
 	CAscEditorNativeV8Handler(const std::wstring& sUrl)
 	{
 		m_etType = etUndefined;
@@ -622,6 +625,9 @@ public:
 		m_oCompleteTasksCS.InitializeCriticalSection();
 
 		m_sRendererProcessVariable = L"";
+
+		m_bIsMacrosesSupport = true;
+		m_bIsPluginsSupport = true;
 
 		CheckDefaults();
 
@@ -666,6 +672,12 @@ public:
 
 		m_sRecoversFolder = default_params.GetValueW("recovers_folder");
 		m_sRendererProcessVariable = default_params.GetValueW("renderer_process_variable");
+
+		if ("false" == default_params.GetValue("macroses_support"))
+			m_bIsMacrosesSupport = false;
+		if ("false" == default_params.GetValue("plugins_support"))
+			m_bIsPluginsSupport = false;
+
 #if 0
 		default_params.Print();
 #endif
@@ -2292,7 +2304,7 @@ window.AscDesktopEditor._convertFile(path, format);\n\
 			//    oPlugins.m_strCryptoPluginAttack = CAscRendererProcessParams::getInstance().GetProperty("cryptoEngineId");
 			oPlugins.m_strCryptoPluginAttack = CAscRendererProcessParams::getInstance().GetProperty("cryptoEngineId");
 
-			std::string sData = oPlugins.GetPluginsJson(true, true);
+			std::string sData = oPlugins.GetPluginsJson(true, true, m_bIsMacrosesSupport, m_bIsPluginsSupport);
 			retval = CefV8Value::CreateString(sData);
 			return true;
 		}
@@ -3965,6 +3977,16 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
 			SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 			return true;
 		}
+		else if (name == "isSupportMacroses")
+		{
+			retval = CefV8Value::CreateBool(m_bIsMacrosesSupport);
+			return true;
+		}
+		else if (name == "isSupportPlugins")
+		{
+			retval = CefV8Value::CreateBool(m_bIsPluginsSupport);
+			return true;
+		}
 
 		// Function does not exist.
 		return false;
@@ -4346,7 +4368,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
 	CefRefPtr<CefV8Handler> handler = pWrapper;
 
-	#define EXTEND_METHODS_COUNT 167
+	#define EXTEND_METHODS_COUNT 169
 	const char* methods[EXTEND_METHODS_COUNT] = {
 		"Copy",
 		"Paste",
@@ -4576,6 +4598,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 		"IsCachedPdfCloudPrintFileInfo",
 
 		"sendSimpleRequest",
+
+		"isSupportMacroses",
+		"isSupportPlugins",
 
 		NULL
 	};
