@@ -161,8 +161,28 @@ public:
 				for (std::vector<std::string>::iterator i = m_arDomains.begin(); i != m_arDomains.end(); i++)
 				{
 					std::string sDomainFind = *i;
+					bool bIsFind = false;
+
 					if (sDomain.find(sDomainFind) != std::string::npos ||
-							sDomainWithPath.find(sDomainFind) != std::string::npos)
+						sDomainWithPath.find(sDomainFind) != std::string::npos)
+					{
+						bIsFind = true;
+					}
+					else
+					{
+						std::string::size_type posPort = sDomainFind.rfind(':');
+						if (std::string::npos != posPort && posPort > 7)
+						{
+							std::string sDomainPathWithoutPort = sDomainFind.substr(0, posPort);
+							if (sDomain.find(sDomainPathWithoutPort) != std::string::npos ||
+								sDomainWithPath.find(sDomainPathWithoutPort) != std::string::npos)
+							{
+								bIsFind = true;
+							}
+						}
+					}
+
+					if (bIsFind)
 					{
 						m_mapFinds.insert(std::pair<std::string, std::string>(sDomainFind, sValue));
 
