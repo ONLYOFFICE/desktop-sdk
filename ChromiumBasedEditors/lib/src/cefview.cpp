@@ -7572,6 +7572,9 @@ namespace NSRequest
 
 	void CSimpleRequestClient::SendToRenderer(const int_64_type& frameId, const std::string& sCode)
 	{
+		if (m_view->m_bIsDestroying || m_view->m_bIsDestroy)
+			return;
+
 		if (m_view->GetBrowser())
 		{
 			CefRefPtr<CefFrame> frame = m_view->GetBrowser()->GetFrame(frameId);
