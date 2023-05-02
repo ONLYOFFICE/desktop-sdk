@@ -279,7 +279,7 @@ public:
 			command_line->AppendSwitch("--disable-site-isolation-trials");
 #endif
 
-#ifdef CEF_VERSION_ABOVE_105
+#ifdef CEF_VERSION_ABOVE_102
 			command_line->AppendSwitch("--allow-file-access-from-files");
 #endif
 
@@ -294,7 +294,7 @@ public:
 
 			command_line->AppendSwitchWithValue("--product-version", sAppNavigator);
 
-#ifdef CEF_VERSION_ABOVE_105
+#ifdef CEF_VERSION_ABOVE_102
 			command_line->AppendSwitchWithValue("--user-agent-product", sAppNavigator);
 #endif
 

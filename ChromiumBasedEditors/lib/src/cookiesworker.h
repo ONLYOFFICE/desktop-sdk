@@ -44,7 +44,7 @@
 #include "include/base/cef_bind.h"
 #endif
 
-#ifdef CEF_VERSION_ABOVE_105
+#ifdef CEF_VERSION_ABOVE_102
 #define BASE_BIND base::BindOnce
 #else
 #define BASE_BIND base::Bind
@@ -202,7 +202,7 @@ public:
 	{
 		if (!CefCurrentlyOn(TID_IO))
 		{
-#ifdef CEF_VERSION_ABOVE_105
+#ifdef CEF_VERSION_ABOVE_102
 			CefPostTask(TID_IO, BASE_BIND(&CCefCookieVisitor::CheckCookiePresent, base::WrapRefCounted(this), manager));
 #else
 			CefPostTask(TID_IO, BASE_BIND(&CCefCookieVisitor::CheckCookiePresent, this, manager));
@@ -262,7 +262,7 @@ public:
 	{
 		if (!CefCurrentlyOn(TID_IO))
 		{
-#ifdef CEF_VERSION_ABOVE_105
+#ifdef CEF_VERSION_ABOVE_102
 			CefPostTask(TID_IO, BASE_BIND(&CCefCookieSetter::SetCookie, base::WrapRefCounted(this), manager));
 #else
 			CefPostTask(TID_IO, BASE_BIND(&CCefCookieSetter::SetCookie, this, manager));
@@ -283,7 +283,7 @@ public:
 
 		authorization.has_expires = true;
 
-#ifdef CEF_VERSION_ABOVE_105
+#if defined(CEF_VERSION_ABOVE_102) && !defined(CEF_VERSION_103)
 		cef_time_t cef_time;
 		cef_time.year = 2200;
 		cef_time.month = 4;

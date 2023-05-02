@@ -5,9 +5,9 @@ DEFINES += \
     WRAPPING_CEF_SHARED \
     NO_CSR
 
-core_windows:CEF_SRC_PATH=$$PWD/../src/cef/windows
-core_linux:CEF_SRC_PATH=$$PWD/../src/cef/linux
-core_mac:CEF_SRC_PATH=$$PWD/../src/cef/mac
+core_windows:CEF_SRC_PATH=$$PWD/../src/cef_103/windows
+core_linux:CEF_SRC_PATH=$$PWD/../src/cef_103/linux
+core_mac:CEF_SRC_PATH=$$PWD/../src/cef_103/mac
 INCLUDEPATH += $$CEF_SRC_PATH
 
 HEADERS += \

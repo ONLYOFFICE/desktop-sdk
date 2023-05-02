@@ -154,7 +154,7 @@ protected:
 		virtual int GetPercentComplete() { return 0; }
 		virtual int64 GetTotalBytes() { return 0; }
 		virtual int64 GetReceivedBytes() { return 0; }
-#ifdef CEF_VERSION_ABOVE_105
+#if defined(CEF_VERSION_ABOVE_102) && !defined(CEF_VERSION_103)
 		virtual CefBaseTime GetStartTime() { return CefBaseTime(); }
 		virtual CefBaseTime GetEndTime() { return CefBaseTime(); }
 #else
@@ -1597,7 +1597,7 @@ public:
 
 public:
 	CAscClientHandler() : client::ClientHandler(this, false,
-											#ifdef CEF_VERSION_ABOVE_105
+                                            #ifdef CEF_VERSION_ABOVE_102
 												false,
 											#endif
 												"https://onlyoffice.com/")
@@ -4753,7 +4753,7 @@ virtual void OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser,
 	}
 }
 
-#ifdef CEF_VERSION_ABOVE_105
+#ifdef CEF_VERSION_ABOVE_102
 virtual bool CanDownload(CefRefPtr<CefBrowser> browser,
 						 const CefString& url,
 						 const CefString& request_method) OVERRIDE
@@ -5156,7 +5156,7 @@ void CCefView_Private::CloseBrowser(bool _force_close)
 {
 	if (!CefCurrentlyOn(TID_UI))
 	{
-#ifdef CEF_VERSION_ABOVE_105
+#ifdef CEF_VERSION_ABOVE_102
 		CefPostTask(TID_UI, BASE_BIND(&CCefView_Private::CloseBrowser, base::Unretained(this), _force_close));
 #else
 		CefPostTask(TID_UI, BASE_BIND(&CCefView_Private::CloseBrowser, this, _force_close));
@@ -5509,7 +5509,7 @@ void CCefView_Private::CheckZoom()
 	if (!CefCurrentlyOn(TID_UI))
 	{
 		// Execute on the UI thread.
-#ifdef CEF_VERSION_ABOVE_105
+#ifdef CEF_VERSION_ABOVE_102
 		CefPostTask(TID_UI, BASE_BIND(&CCefView_Private::CheckZoom, base::WrapRefCounted(this)));
 #else
 		CefPostTask(TID_UI, BASE_BIND(&CCefView_Private::CheckZoom, this));
@@ -5894,7 +5894,7 @@ void CCefView::load(const std::wstring& urlInputSrc)
 	CefBrowserSettings _settings;
 	_settings.javascript_access_clipboard = STATE_ENABLED;
 
-#ifndef CEF_VERSION_ABOVE_105
+#ifndef CEF_VERSION_ABOVE_102
 	_settings.file_access_from_file_urls = STATE_ENABLED;
 	_settings.universal_access_from_file_urls = STATE_ENABLED;
 	_settings.plugins = STATE_DISABLED;
@@ -5907,7 +5907,7 @@ void CCefView::load(const std::wstring& urlInputSrc)
 	int _w = m_pInternal->m_pWidgetImpl->cef_width;
 	int _h = m_pInternal->m_pWidgetImpl->cef_height;
 
-#ifdef CEF_VERSION_ABOVE_105
+#ifdef CEF_VERSION_ABOVE_102
 	info.SetAsChild(_handle, CefRect(0, 0, _w, _h));
 #else
 
@@ -6487,7 +6487,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 			}
 
 			m_pInternal->m_handler->m_pFileDialogCallback->Continue(
-			#ifndef CEF_VERSION_ABOVE_105
+            #ifndef CEF_VERSION_ABOVE_102
 						0,
 			#endif
 						file_paths);
@@ -6547,7 +6547,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 				std::vector<CefString> file_paths;
 				file_paths.push_back(sPath);
 				m_pInternal->m_handler->m_pDirectoryDialogCallback->Continue(
-			#ifndef CEF_VERSION_ABOVE_105
+            #ifndef CEF_VERSION_ABOVE_102
 							0,
 			#endif
 							file_paths);

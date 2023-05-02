@@ -69,7 +69,7 @@
 //#define MESSAGE_IN_BROWSER
 #endif
 
-#ifdef CEF_VERSION_ABOVE_105
+#ifdef CEF_VERSION_ABOVE_102
 #define CEF_SIMPLE_URL_REQUEST
 #endif
 
