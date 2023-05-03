@@ -3254,11 +3254,25 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
 			NSFile::CFileBinary::Copy(m_sUserPlugins + L"/advanced_crypto_data.docx", sFile);
 			return true;
 		}
-		else if (name == "CompareDocumentUrl")
+		else if (name == "CompareDocumentUrl" ||
+				 name == "CompareDocumentFile" ||
+				 name == "MergeDocumentUrl" ||
+				 name == "MergeDocumentFile")
 		{
 			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_compare_document");
-			message->GetArgumentList()->SetString(0, "url");
+
+			std::string sFileOrUrlType = "url";
+			if (name == "CompareDocumentFile" || name == "MergeDocumentFile")
+				sFileOrUrlType = "file";
+
+			message->GetArgumentList()->SetString(0, sFileOrUrlType);
 			message->GetArgumentList()->SetString(1, arguments[0]->GetStringValue());
+
+			std::string sType = "compare";
+			if (name == "MergeDocumentUrl" || name == "MergeDocumentFile")
+				sType = "merge";
+
+			message->GetArgumentList()->SetString(2, sType);
 
 			if (arguments.size() == 4)
 			{
@@ -3282,36 +3296,7 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
 
 			SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 			return true;
-		}
-		else if (name == "CompareDocumentFile")
-		{
-			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_compare_document");
-			message->GetArgumentList()->SetString(0, "file");
-			message->GetArgumentList()->SetString(1, arguments[0]->GetStringValue());
-
-			if (arguments.size() == 4)
-			{
-				std::wstring sLocalDir = m_sCryptDocumentFolder;
-				if (!sLocalDir.empty())
-				{
-					std::string sContent = arguments[2]->GetStringValue().ToString();
-					BYTE* pDataDst = NULL;
-					int nLenDst = 0;
-
-					NSFile::CBase64Converter::Decode(sContent.c_str(), sContent.length(), pDataDst, nLenDst);
-
-					NSFile::CFileBinary oFileWithChanges;
-					oFileWithChanges.CreateFileW(sLocalDir + L"/EditorForCompare.bin");
-					oFileWithChanges.WriteFile(pDataDst, nLenDst);
-					oFileWithChanges.CloseFile();
-
-					RELEASEARRAYOBJECTS(pDataDst);
-				}
-			}
-
-			SEND_MESSAGE_TO_BROWSER_PROCESS(message);
-			return true;
-		}
+		}		
 		else if (name == "onDocumentContentReady")
 		{
 			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_document_content_ready");
@@ -4368,7 +4353,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
 	CefRefPtr<CefV8Handler> handler = pWrapper;
 
-	#define EXTEND_METHODS_COUNT 169
+	#define EXTEND_METHODS_COUNT 171
 	const char* methods[EXTEND_METHODS_COUNT] = {
 		"Copy",
 		"Paste",
@@ -4546,6 +4531,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
 		"CompareDocumentUrl",
 		"CompareDocumentFile",
+
+		"MergeDocumentUrl",
+		"MergeDocumentFile",
 
 		"IsSupportMedia",
 
@@ -4947,7 +4935,8 @@ return this.split(str).join(newStr);\
 		}
 		return true;
 	}
-	else if (sMessageName == "oncompare_loadend")
+	else if (sMessageName == "oncompare_loadend" ||
+			 sMessageName == "onmerge_loadend")
 	{
 		CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
 		if (!_frame)
@@ -4980,7 +4969,13 @@ return this.split(str).join(newStr);\
 		else
 			sImageMap += "}";
 
-		std::string sCode = "window.onDocumentCompare && window.onDocumentCompare(\"" + U_TO_UTF8(sFolder) + "\", \"" + sFileData + "\", " + std::to_string(nFileDataLen) + ", " + sImageMap + ");";
+		std::string sCodeFunc;
+		if (sMessageName == "oncompare_loadend")
+			sCodeFunc = "window.onDocumentCompare && window.onDocumentCompare(\"";
+		else if (sMessageName == "onmerge_loadend")
+			sCodeFunc = "window.onDocumentMerge && window.onDocumentMerge(\"";
+
+		std::string sCode = sCodeFunc + U_TO_UTF8(sFolder) + "\", \"" + sFileData + "\", " + std::to_string(nFileDataLen) + ", " + sImageMap + ");";
 		_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
 		return true;
 	}

@@ -913,6 +913,9 @@ public:
 	std::wstring m_sComparingFile;
 	int m_nComparingFileType; // 0 - file, 1 - url
 
+	// поведение в мерже - как и в compare. тип для возможных таких же режимов.
+	int m_nComparingMode; // -1 - default, 0 - compare, 1 - merge
+
 	// path template (may be cloud)
 	std::wstring m_sTemplateUrl;
 	std::wstring m_sTemplateName;
@@ -991,6 +994,7 @@ public:
 		m_pUploadFiles = NULL;
 
 		m_nComparingFileType = -1;
+		m_nComparingMode = -1;
 
 		m_bIsLocalFileLocked = false;
 		m_pLocalFileLocker = NULL;
@@ -3907,7 +3911,8 @@ public:
 	{
 		std::wstring sType = args->GetString(0).ToWString();
 		std::wstring sFile_Url = args->GetString(1).ToWString();
-		std::wstring sUrl = L"ascdesktop://compare/" + std::to_wstring(m_pParent->GetId()) + L"/" + sType + L"/" + sFile_Url;
+		std::wstring sCompareType = args->GetString(2).ToWString();
+		std::wstring sUrl = L"ascdesktop://" + sCompareType + L"/" + std::to_wstring(m_pParent->GetId()) + L"/" + sType + L"/" + sFile_Url;
 
 		NSEditorApi::CAscCreateTab* pData = new NSEditorApi::CAscCreateTab();
 		pData->put_Url(sUrl);
@@ -5475,7 +5480,7 @@ void CCefView_Private::OnFileConvertToEditor(const int& nError)
 		}
 		else
 		{
-			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("oncompare_loadend");
+			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create(m_nComparingMode == 0 ? "oncompare_loadend" : "onmerge_loadend");
 			message->GetArgumentList()->SetInt(0, nError);
 			message->GetArgumentList()->SetString(1, m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/compare");
 			SEND_MESSAGE_TO_RENDERER_PROCESS(m_handler->GetBrowser(), message);
@@ -5738,18 +5743,31 @@ void CCefView::load(const std::wstring& urlInputSrc)
 
 	m_pInternal->m_sOriginalUrl = urlInput;
 
-	// check compare
+	int nComparingMode = -1;
 	if (0 == urlInput.find(L"ascdesktop://compare/"))
+		nComparingMode = 0;
+	else if (0 == urlInput.find(L"ascdesktop://merge/"))
+		nComparingMode = 1;
+
+	// check compare
+	if (-1 != nComparingMode)
 	{
-		std::wstring::size_type pos1 = urlInput.find('/', 21);
+		std::wstring::size_type offset = 0;
+		if (0 == nComparingMode)
+			offset = 21;
+		else if (1 == nComparingMode)
+			offset = 19;
+
+		std::wstring::size_type pos1 = urlInput.find('/', offset);
 		std::wstring::size_type pos2 = urlInput.find('/', pos1 + 1);
 
-		std::wstring strId = urlInput.substr(21, pos1 - 21);
+		std::wstring strId = urlInput.substr(offset, pos1 - offset);
 		std::wstring strType = urlInput.substr(pos1 + 1, pos2 - pos1 - 1);
 		std::wstring strFile = urlInput.substr(pos2 + 1);
 
 		m_pInternal->m_sComparingFile = strFile;
 		m_pInternal->m_nComparingFileType = (strType == L"file") ? 0 : 1;
+		m_pInternal->m_nComparingMode = nComparingMode;
 		((CCefViewEditor*)this)->OpenCopyAsRecoverFile(std::stoi(strId));
 		return;
 	}
