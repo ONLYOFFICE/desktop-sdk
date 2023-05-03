@@ -5763,14 +5763,19 @@ void CCefView::load(const std::wstring& urlInputSrc)
 
 			int nFormat = CAscApplicationManager::GetFileFormatByExtentionForSave(m_pInternal->m_sTemplateUrl);
 
-			int nEditorFormat = etDocument;
-			if (nFormat & AVS_OFFICESTUDIO_FILE_PRESENTATION)
-				nEditorFormat = etPresentation;
-			else if (nFormat & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
-				nEditorFormat = etSpreadsheet;
-			else if (nFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF ||
-					 nFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
-				nEditorFormat = etDocumentMasterForm;
+			int nEditorFormat = etDocumentViewer;
+			if (-1 != nFormat)
+			{
+				nEditorFormat = etDocument;
+				if (nFormat & AVS_OFFICESTUDIO_FILE_PRESENTATION)
+					nEditorFormat = etPresentation;
+				else if (nFormat & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
+					nEditorFormat = etSpreadsheet;
+				else if (nFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF)
+					nEditorFormat = etDocumentMasterForm;
+				else if (nFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
+					nEditorFormat = etDocumentMasterOForm;
+			}
 
 			((CCefViewEditor*)this)->CreateLocalFile(nEditorFormat, m_pInternal->m_sTemplateName);
 		}
@@ -7124,6 +7129,16 @@ void CCefViewEditor::CreateLocalFile(const int& nFileFormat, const std::wstring&
 	{
 		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF;
 		sParams += L"&filetype=docxf";
+	}
+	else if (nFileFormat == etDocumentMasterOForm)
+	{
+		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM;
+		sParams += L"&filetype=oform";
+	}
+	else if (nFileFormat == etDocumentViewer)
+	{
+		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF;
+		sParams += L"&filetype=pdf&mode=view";
 	}
 
 	if (!GetAppManager()->m_pInternal->GetEditorPermission())

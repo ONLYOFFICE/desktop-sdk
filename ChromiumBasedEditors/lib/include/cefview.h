@@ -48,6 +48,8 @@ enum AscEditorType
 	etPresentation          = 1,
 	etSpreadsheet           = 2,
 	etDocumentMasterForm    = 3,
+	etDocumentMasterOForm   = 4,
+	etDocumentViewer        = 5,
 	etUndefined             = 255
 };
 
