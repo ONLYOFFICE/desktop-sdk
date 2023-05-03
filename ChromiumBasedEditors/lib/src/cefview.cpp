@@ -1391,6 +1391,9 @@ public:
 			if (!bEncryption)
 			{
 				arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA);
+
+				arFormats.push_back(AVS_OFFICESTUDIO_FILE_IMAGE_PNG);
+				arFormats.push_back(AVS_OFFICESTUDIO_FILE_IMAGE_JPG);
 			}
 		}
 		else if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
@@ -1415,6 +1418,9 @@ public:
 			if (!bEncryption)
 			{
 				arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA);
+
+				arFormats.push_back(AVS_OFFICESTUDIO_FILE_IMAGE_PNG);
+				arFormats.push_back(AVS_OFFICESTUDIO_FILE_IMAGE_JPG);
 			}
 		}
 		else if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_PRESENTATION)
@@ -1471,6 +1477,9 @@ public:
 				arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_HTML);
 				arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_FB2);
 				arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_EPUB);
+
+				arFormats.push_back(AVS_OFFICESTUDIO_FILE_IMAGE_PNG);
+				arFormats.push_back(AVS_OFFICESTUDIO_FILE_IMAGE_JPG);
 			}
 		}
 	}
