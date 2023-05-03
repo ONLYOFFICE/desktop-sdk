@@ -1409,6 +1409,7 @@ public:
 
 			if (!bEncryption)
 			{
+				arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLTM);
 				arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_OTS);
 				arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_CSV);
 			}
@@ -1431,6 +1432,7 @@ public:
 			{
 				arFormats.push_back(AVS_OFFICESTUDIO_FILE_PRESENTATION_PPSX);
 				arFormats.push_back(AVS_OFFICESTUDIO_FILE_PRESENTATION_POTX);
+				arFormats.push_back(AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTM);
 			}
 
 			arFormats.push_back(AVS_OFFICESTUDIO_FILE_PRESENTATION_ODP);
