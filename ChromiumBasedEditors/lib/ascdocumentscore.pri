@@ -147,6 +147,8 @@ core_mac {
     OBJECTIVE_SOURCES += \
         $$PWD/src/widget_impl.mm \
         $$PWD/src/mac_application.mm
+
+    use_v8:DEFINES += OLD_MACOS_SYSTEM
 }
 
 core_linux {

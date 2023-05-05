@@ -3999,6 +3999,15 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
 			m_bIsPrinting = arguments[0]->GetBoolValue();
 			return true;
 		}
+		else if (name == "isSupportNetworkFunctionality")
+		{
+#ifdef OLD_MACOS_SYSTEM
+			retval = CefV8Value::CreateBool(false);
+#else
+			retval = CefV8Value::CreateBool(true);
+#endif
+			return true;
+		}
 
 		// Function does not exist.
 		return false;
@@ -4380,7 +4389,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
 	CefRefPtr<CefV8Handler> handler = pWrapper;
 
-	#define EXTEND_METHODS_COUNT 174
+	#define EXTEND_METHODS_COUNT 175
 	const char* methods[EXTEND_METHODS_COUNT] = {
 		"Copy",
 		"Paste",
@@ -4620,6 +4629,8 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 		"setPortalsList",
 		"localSaveToDrawingFormat",
 		"emulateCloudPrinting",
+
+		"isSupportNetworkFunctionality",
 
 		NULL
 	};
