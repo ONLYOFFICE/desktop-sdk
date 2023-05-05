@@ -444,6 +444,13 @@ public:
 #include <fcntl.h>
 #endif
 
+class IASCFileConverterEvents
+{
+public:
+	virtual void OnFileConvertToEditor(const int& nError) = 0;
+	virtual void OnFileConvertFromEditor(const int& nError, const std::wstring& sPass = L"") = 0;
+};
+
 namespace NSSystem
 {
 	class CLocalFileLocker
@@ -1547,6 +1554,41 @@ public:
 	std::wstring Parent;
 };
 
+class CLocalStorageClouds
+{
+private:
+	NSCriticalSection::CRITICAL_SECTION m_oCS;
+
+public:
+	std::vector<std::wstring> arPortals;
+	std::vector<std::wstring> arProviders;
+
+public:
+	CLocalStorageClouds()
+	{
+		m_oCS.InitializeCriticalSection();
+	}
+	~CLocalStorageClouds()
+	{
+		m_oCS.DeleteCriticalSection();
+	}
+
+	void Read(CefRefPtr<CefListValue>& args)
+	{
+		CTemporaryCS oCS(&m_oCS);
+
+		arPortals.clear();
+		arProviders.clear();
+
+		size_t nCount = args->GetSize();
+		for (size_t i = 0; i < nCount; i += 2)
+		{
+			arPortals.push_back(args->GetString(i).ToWString());
+			arProviders.push_back(args->GetString(i + 1).ToWString());
+		}
+	}
+};
+
 class CAscApplicationManager_Private : public CefBase_Class,
 		public CCookieFoundCallback,
 		public NSThreads::CBaseThread,
@@ -1674,6 +1716,9 @@ public:
 
 	// json, отправляемый в процесс рендерера
 	std::wstring m_sRendererJSON;
+
+	// информация о порталах. открытие файлы из рисентов, из редактора - теряется информация о externalclouds
+	CLocalStorageClouds m_oPortalsList;
 
 public:
 	IMPLEMENT_REFCOUNTING(CAscApplicationManager_Private);

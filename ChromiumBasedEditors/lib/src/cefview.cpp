@@ -930,6 +930,7 @@ public:
 	CTemporaryDocumentInfo* m_pTemporaryCloudFileInfo;
 
 	CConvertFileInEditor* m_pLocalFileConverter;
+	CCloudPDFSaver* m_pCloudSaveToDrawing;
 
 public:
 	CCefView_Private()
@@ -1005,6 +1006,7 @@ public:
 		m_pTemporaryCloudFileInfo = NULL;
 
 		m_pLocalFileConverter = NULL;
+		m_pCloudSaveToDrawing = NULL;
 	}
 
 	void Destroy()
@@ -1022,6 +1024,8 @@ public:
 			m_pLocalFileConverter->Stop();
 			m_pLocalFileConverter = NULL;
 		}
+
+		RELEASEOBJECT(m_pCloudSaveToDrawing);
 
 		// разлочиваем файл
 		RELEASEOBJECT(m_pLocalFileLocker);
@@ -1321,6 +1325,22 @@ public:
 
 	virtual void OnFileConvertFromEditor(const int& nError, const std::wstring& sPass = L"")
 	{
+		if (m_pCloudSaveToDrawing)
+		{
+			m_pCloudSaveToDrawing = NULL;
+
+			if (this->GetBrowser())
+			{
+				CefRefPtr<CefFrame> _frame = this->GetBrowser()->GetFrame("frameEditor");
+				if (_frame)
+				{
+					std::string sCode = "window.Asc.editor.onLocalSaveToDrawingFormat(" + std::to_string(nError) + ");";
+					_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+				}
+			}
+			return;
+		}
+
 		if (m_nCryptoDownloadAsFormat != -1)
 		{
 			m_nCryptoDownloadAsFormat = -1;
@@ -1829,6 +1849,24 @@ public:
 			{
 				// проверяем и на своих облаках
 				bIsEditor = IsExternalCloudEditor(sUrlLower, m_pParent->m_pInternal->m_oExternalCloud.test_editor);
+			}
+			else if (NSFileDownloader::IsNeedDownload(m_pParent->m_pInternal->m_strUrl))
+			{
+				CLocalStorageClouds& oClouds = m_pParent->m_pInternal->m_pManager->m_pInternal->m_oPortalsList;
+				size_t nPortalsCount = oClouds.arPortals.size();
+				for (size_t i = 0; i < nPortalsCount; ++i)
+				{
+					if (0 == m_pParent->m_pInternal->m_strUrl.find(oClouds.arPortals[i]))
+					{
+						m_pParent->SetExternalCloud(oClouds.arProviders[i]);
+					}
+				}
+
+				if (!m_pParent->m_pInternal->m_oExternalCloud.test_editor.empty())
+				{
+					// проверяем и на своих облаках
+					bIsEditor = IsExternalCloudEditor(sUrlLower, m_pParent->m_pInternal->m_oExternalCloud.test_editor);
+				}
 			}
 		}
 
@@ -4082,6 +4120,56 @@ public:
 #endif
 		return true;
 	}
+	else if ("set_portals_list" == message_name)
+	{
+		m_pParent->GetAppManager()->m_pInternal->m_oPortalsList.Read(args);
+		return true;
+	}
+	else if ("local_save_to_drawing" == message_name)
+	{
+		CCloudPDFSaver* pSaver = new CCloudPDFSaver();
+		pSaver->m_pEvents = m_pParent->m_pInternal;
+		pSaver->m_oPrintData.m_pApplicationFonts = m_pParent->GetAppManager()->GetApplicationFonts();
+
+		std::wstring sFileName = args->GetString(0).ToWString();
+
+		pSaver->m_oPrintData.m_sDocumentUrl = args->GetString(1).ToWString();
+		pSaver->m_oPrintData.m_sFrameUrl = args->GetString(2).ToWString();
+		pSaver->m_oPrintData.m_sThemesUrl = args->GetString(3).ToWString();
+		pSaver->m_oPrintData.CalculateImagePaths(false);
+		pSaver->m_nOutputFormat = args->GetInt(5);
+		pSaver->LoadData(args->GetString(4).ToString());
+
+		m_pParent->m_pInternal->m_pCloudSaveToDrawing = pSaver;
+		m_pParent->m_pInternal->m_pCloudSaveToDrawing->DestroyOnFinish();
+
+		COfficeFileFormatChecker oChecker;
+		int nFileType = pSaver->m_nOutputFormat;
+		if (nFileType == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA)
+			nFileType = AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF;
+
+		std::wstring sNeedExt = oChecker.GetExtensionByType(nFileType);
+		if (!sNeedExt.empty())
+		{
+			std::wstring::size_type posOldExt = sFileName.rfind('.');
+			if (posOldExt != std::wstring::npos && 7 > (sFileName.length() - posOldExt))
+			{
+				sFileName = sFileName.substr(0, posOldExt);
+				sFileName += sNeedExt;
+			}
+		}
+
+		// save dialog
+		NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent(ASC_MENU_EVENT_TYPE_CEF_SAVEFILEDIALOG);
+		NSEditorApi::CAscSaveDialog* pData = new NSEditorApi::CAscSaveDialog();
+		pData->put_Id(m_pParent->GetId());
+		pData->put_FilePath(sFileName);
+		pData->put_IdDownload(0);
+		pEvent->m_pData = pData;
+
+		m_pParent->GetAppManager()->Apply(pEvent);
+		return true;
+	}
 
 	CAscApplicationManager_Private* pInternalMan = m_pParent->GetAppManager()->m_pInternal;
 	if (pInternalMan->m_pAdditional && pInternalMan->m_pAdditional->OnProcessMessageReceived(browser, source_process, message, m_pParent))
@@ -5993,6 +6081,17 @@ void CCefView::load(const std::wstring& urlInputSrc)
 	GetWidgetImpl()->AfterCreate();
 
 	focus();
+
+	if (NSFileDownloader::IsNeedDownload(url))
+	{
+		CCefView* pMainView = m_pInternal->m_pManager->m_pInternal->GetViewForSystemMessages();
+		if (pMainView && pMainView->m_pInternal && pMainView->m_pInternal->GetBrowser())
+		{
+			CefRefPtr<CefFrame> pFrame = pMainView->m_pInternal->GetBrowser()->GetMainFrame();
+			if (pFrame)
+				pFrame->ExecuteJavaScript("window.AscDesktopEditor.getPortalsList();", pFrame->GetURL(), 0);
+		}
+	}
 }
 void CCefView::reload()
 {
@@ -6322,6 +6421,29 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 	case ASC_MENU_EVENT_TYPE_CEF_SAVEFILEDIALOG:
 	{
 		NSEditorApi::CAscSaveDialog* pData = (NSEditorApi::CAscSaveDialog*)pEvent->m_pData;
+
+		if (m_pInternal->m_pCloudSaveToDrawing)
+		{
+			std::wstring strPath = pData->get_FilePath();
+			if (strPath.empty())
+			{
+				if (this->m_pInternal->GetBrowser())
+				{
+					CefRefPtr<CefFrame> _frame = this->m_pInternal->GetBrowser()->GetFrame("frameEditor");
+					if (_frame)
+					{
+						std::string sCode = "window.Asc.editor.onLocalSaveToDrawingFormat(0);";
+						_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+					}
+				}
+			}
+			else
+			{
+				m_pInternal->m_pCloudSaveToDrawing->m_sOutputFileName = strPath;
+				m_pInternal->m_pCloudSaveToDrawing->Start(0);
+			}
+			break;
+		}
 
 		if (m_pInternal->m_sIFrameIDMethod.empty())
 		{

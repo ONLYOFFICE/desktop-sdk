@@ -2131,6 +2131,7 @@ window.AscDesktopEditor._convertFile((files && files[0]) ? files[0] : '', format
 window.AscDesktopEditor._convertFile(path, format);\n\
 }\n\
 };\n\
+window.AscDesktopEditor.getPortalsList = function() { debugger;var ret = []; try { var portals = JSON.parse(localStorage.getItem(\"portals\")); for (var i = 0, len = portals.length; i < len; i++) { ret.push(portals[i].portal); ret.push(portals[i].provider); } } catch(err) { ret = []; } console.log(ret);window.AscDesktopEditor.setPortalsList(ret); };\n\
 ";
 #ifdef CEF_VERSION_ABOVE_102
 				sCodeInitJS += "!function(){window.AscSimpleRequest=window.AscSimpleRequest||{};var r=0,o={};window.AscSimpleRequest.createRequest=function(e){var t;o[++r]={id:r,complete:e.complete,error:e.error},e.timeout&&(o[t=r].timer=setTimeout(function(){o[t]&&(o[t].error&&o[t].error({status:\"error\",statusCode:404},\"error\"),delete o[t])},e.timeout)),window.AscDesktopEditor.sendSimpleRequest(r,e)},window.AscSimpleRequest._onSuccess=function(e,t){let r=o[e];r&&(r.timer&&clearTimeout(r.timer),r.complete&&r.complete(t,t.status),delete o[e])},window.AscSimpleRequest._onError=function(e,t){let r=o[e];r&&(r.timer&&clearTimeout(r.timer),r.error&&r.error(t,t.status),delete o[e])}}();\n";
@@ -3972,6 +3973,32 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
 			retval = CefV8Value::CreateBool(m_bIsPluginsSupport);
 			return true;
 		}
+		else if (name == "setPortalsList")
+		{
+			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("set_portals_list");
+			int nCount = arguments[0]->GetArrayLength();
+			for (int i = 0; i < nCount; ++i)
+				message->GetArgumentList()->SetString(i, arguments[0]->GetValue(i)->GetStringValue());
+			SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+			return true;
+		}
+		else if (name == "localSaveToDrawingFormat")
+		{
+			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("local_save_to_drawing");
+			message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
+			message->GetArgumentList()->SetString(1, arguments[1]->GetStringValue());
+			message->GetArgumentList()->SetString(2, CefV8Context::GetCurrentContext()->GetBrowser()->GetFocusedFrame()->GetURL());
+			message->GetArgumentList()->SetString(3, arguments[2]->GetStringValue());
+			message->GetArgumentList()->SetString(4, arguments[3]->GetStringValue());
+			message->GetArgumentList()->SetInt(5, arguments[4]->GetIntValue());
+			SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+			return true;
+		}
+		else if (name == "emulateCloudPrinting")
+		{
+			m_bIsPrinting = arguments[0]->GetBoolValue();
+			return true;
+		}
 
 		// Function does not exist.
 		return false;
@@ -4353,7 +4380,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
 	CefRefPtr<CefV8Handler> handler = pWrapper;
 
-	#define EXTEND_METHODS_COUNT 171
+	#define EXTEND_METHODS_COUNT 174
 	const char* methods[EXTEND_METHODS_COUNT] = {
 		"Copy",
 		"Paste",
@@ -4589,6 +4616,10 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
 		"isSupportMacroses",
 		"isSupportPlugins",
+
+		"setPortalsList",
+		"localSaveToDrawingFormat",
+		"emulateCloudPrinting",
 
 		NULL
 	};
