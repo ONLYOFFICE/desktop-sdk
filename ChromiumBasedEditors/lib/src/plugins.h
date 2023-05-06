@@ -52,6 +52,8 @@ public:
 class CPluginsManager
 {
 public:
+	bool m_isSupportSystemUpdate;
+
 	std::wstring m_strDirectory;
 	std::wstring m_strUserDirectory;
 
@@ -77,6 +79,10 @@ public:
 		m_bCryptoDisableForLocal = false;
 		m_bCryptoDisableForInternalCloud = false;
 		m_bCryptoDisableForExternalCloud = false;
+
+		// Возможность псевдо-обновления системных плагинов
+		// По факту подмена системного на более новый из папки пользователя
+		m_isSupportSystemUpdate = true;
 	}
 
 	std::string GetPluginsJson(const bool& bActivePlugins = true, const bool& bCheckCrypto = false,
@@ -103,7 +109,7 @@ public:
 		}
 		else
 		{
-			// поиск плагинов в папке пользователя для возможного восстановления
+			// Поиск плагинов в папке пользователя для возможного восстановления
 			std::wstring sBackupDir = m_strUserDirectory + L"/backup";
 			if (NSDirectory::Exists(sBackupDir))
 			{
@@ -121,29 +127,36 @@ public:
 	std::vector<std::string> GetInstalledPlugins()
 	{
 		std::vector<std::string> arCongigs;
+		std::vector<std::string> arUserPlugins = GetDirPlugins(m_strUserDirectory);
 
 		for (int i = 0; i < 2; i++)
 		{
 			std::wstring sDir = (i == 0) ? m_strDirectory : m_strUserDirectory;
-
 			std::vector<std::wstring> _arPlugins = NSDirectory::GetDirectories(sDir);
-			int nCount = (int)_arPlugins.size();
-			for (int i = 0; i < nCount; ++i)
+
+			for (size_t j = 0; j < _arPlugins.size(); j++)
 			{
 				std::string sJson;
-				if (NSFile::CFileBinary::ReadAllTextUtf8A(_arPlugins[i] + L"/config.json", sJson))
+				if (NSFile::CFileBinary::ReadAllTextUtf8A(_arPlugins[j] + L"/config.json", sJson))
 				{
 					CheckEncryption(sJson, false);
+
+					// !!! это надо обсудить, т.к. возможны такие плагины в папке пользователя
 					CheckExternal(sJson, i == 0);
 
 					std::string::size_type pos1 = sJson.find("asc.{");
 					std::string::size_type pos2 = sJson.find('}', pos1);
 
-					if (pos1 != std::string::npos &&
-							pos2 != std::string::npos &&
-							pos2 > pos1)
+					if (pos1 != std::string::npos && pos2 != std::string::npos && pos2 > pos1)
 					{
-						arCongigs.push_back(sJson.substr(pos1, pos2 - pos1 + 1));
+						std::string sGuid = sJson.substr(pos1, pos2 - pos1 + 1);
+
+						// Пропускаем обновлённые системные плагины
+						if ( m_isSupportSystemUpdate && sDir == m_strDirectory &&
+							 std::find(arUserPlugins.begin(), arUserPlugins.end(), sGuid) == arUserPlugins.end() )
+						{
+							arCongigs.push_back(sGuid);
+						}
 					}
 				}
 			}
@@ -271,6 +284,33 @@ public:
 	}
 
 private:
+	std::vector<std::string> GetDirPlugins(std::wstring sDir)
+	{
+		// Системные плагины могут быть тоже обновлены, они будут в папке пользователя
+		// Нужно найти пересечения и удалить старые из списка системных
+		// TODO: пока тест, но надо отрефакторить этот класс, получать списки плагинов в конструкторе, после задания папок
+
+		std::vector<std::string> arPlugins;
+		std::vector<std::wstring> arDir = NSDirectory::GetDirectories(sDir);
+
+		for (size_t i = 0; i < arDir.size(); ++i)
+		{
+			std::string sJson;
+			if (NSFile::CFileBinary::ReadAllTextUtf8A(arDir[i] + L"/config.json", sJson))
+			{
+				std::string::size_type pos1 = sJson.find("asc.{");
+				std::string::size_type pos2 = sJson.find('}', pos1);
+
+				if (pos1 != std::string::npos && pos2 != std::string::npos && pos2 > pos1)
+				{
+					arPlugins.push_back(sJson.substr(pos1, pos2 - pos1 + 1));
+				}
+			}
+		}
+
+		return arPlugins;
+	}
+
 	std::string ParsePluginDir(const std::wstring& sDir, const bool& bCheckCrypto = false, const bool& bIsBackup = false,
 							   const bool& bIsSupportMacroses = true, const bool& bIsSupportPlugins = true)
 	{
@@ -288,8 +328,10 @@ private:
 		if (bIsSupportPlugins)
 			_arPlugins = NSDirectory::GetDirectories(sDir);
 
-		size_t nCount = _arPlugins.size();
-		for (size_t i = 0; i < nCount; ++i)
+		std::vector<std::string> arSysPlugins = GetDirPlugins(m_strDirectory);
+		std::vector<std::string> arUserPlugins = GetDirPlugins(m_strUserDirectory);
+
+		for (size_t i = 0; i < _arPlugins.size(); ++i)
 		{
 			if (!bIsSupportMacroses && (std::wstring::npos != _arPlugins[i].find(L"{E6978D28-0441-4BD7-8346-82FAD68BCA3B}")))
 				continue;
@@ -297,24 +339,52 @@ private:
 			std::string sJson = "";
 			if (NSFile::CFileBinary::ReadAllTextUtf8A(_arPlugins[i] + L"/config.json", sJson))
 			{
+				// Получаем GUID
+				std::string sGuid = "";
+				std::string::size_type pos1 = sJson.find("asc.{");
+				std::string::size_type pos2 = sJson.find('}', pos1);
+
+				if (pos1 != std::string::npos && pos2 != std::string::npos && pos2 > pos1)
+				{
+					sGuid = sJson.substr(pos1, pos2 - pos1 + 1);
+
+					// Пропускаем обновлённые системные плагины
+					if ( m_isSupportSystemUpdate && sDir == m_strDirectory )
+					{
+						if ( std::find(arUserPlugins.begin(), arUserPlugins.end(), sGuid) != arUserPlugins.end() )
+							continue;
+					}
+				}
+
 				if (!CheckEncryption(sJson, bCheckCrypto))
 					continue;
 
+				// !!! это надо обсудить, т.к. возможны такие плагины в папке пользователя
 				if (CheckExternal(sJson, i == 0))
 					continue;
 
-				std::string::size_type pos1 = sJson.find('{');
-				std::string::size_type pos2 = sJson.find_last_of('}');
+				pos1 = sJson.find('{');
+				pos2 = sJson.find_last_of('}');
 
-				if (pos1 != std::string::npos &&
-						pos2 != std::string::npos &&
-						pos2 > pos1)
+				if (pos1 != std::string::npos && pos2 != std::string::npos && pos2 > pos1)
 				{
 					if (nCountPlugins > 0)
 						sData += ",";
 
 					nCountPlugins++;
 					std::string sConfigContent = sJson.substr(pos1, pos2 - pos1 + 1);
+
+					// Если это обновленный системный плагин в папке пользователя,
+					// то нужно запретить его удаление как и было до обновления,
+					// выставляем свойство и парсим в pluginMethod_GetInstalledPlugins
+					if ( m_isSupportSystemUpdate && sDir == m_strUserDirectory )
+					{
+						if ( std::find(arSysPlugins.begin(), arSysPlugins.end(), sGuid) != arSysPlugins.end() )
+						{
+							pos2 = sConfigContent.find_last_of('}');
+							sConfigContent = sConfigContent.substr(0, pos2) + ", \"canRemoved\": false }";
+						}
+					}
 
 					if (bIsBackup)
 					{
