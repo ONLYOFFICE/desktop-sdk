@@ -69,7 +69,7 @@
 //#define MESSAGE_IN_BROWSER
 #endif
 
-#ifdef CEF_VERSION_ABOVE_105
+#ifdef CEF_VERSION_ABOVE_102
 #define CEF_SIMPLE_URL_REQUEST
 #endif
 
@@ -335,13 +335,21 @@ namespace NSRequest
 			int responseStatus = response->GetStatus();
 			std::string sStatusText = response->GetStatusText().ToString();
 
+			if (307 == responseStatus)
+			{
+				status = UR_SUCCESS;
+				error_code = ERR_NONE;
+
+				m_download_data = "{}";
+			}
+
 			std::string sReturnObject = "{ status: ";
 			if (UR_SUCCESS == status)
 				sReturnObject += "\"success\"";
 			else
 				sReturnObject += "\"error\"";
 
-			sReturnObject += (", statusCode: " + std::to_string(error_code) + ", responseText : \"");
+			sReturnObject += (", responseStatus: " + std::to_string(responseStatus) + ", statusCode: " + std::to_string(error_code) + ", responseText : \"");
 
 			std::string sData = m_download_data;
 			NSStringUtils::string_replaceA(sData, "\\", "\\\\");
@@ -362,8 +370,6 @@ namespace NSRequest
 			sCode += ", ";
 			sCode += sReturnObject;
 			sCode += "); } catch (err) { window.AscSimpleRequest._onError(" + std::to_string(m_requestId) + ", { status : \"error\", statusCode : 404, responseText : \"\" }); }";
-
-			NSFile::CFileBinary::SaveToFile(L"D:/111.txt", UTF8_TO_U(m_download_data));
 
 			this->SendToRenderer(m_frameId, sCode);
 		}
@@ -437,6 +443,13 @@ public:
 #ifndef _WIN32
 #include <fcntl.h>
 #endif
+
+class IASCFileConverterEvents
+{
+public:
+	virtual void OnFileConvertToEditor(const int& nError) = 0;
+	virtual void OnFileConvertFromEditor(const int& nError, const std::wstring& sPass = L"") = 0;
+};
 
 namespace NSSystem
 {
@@ -1541,6 +1554,41 @@ public:
 	std::wstring Parent;
 };
 
+class CLocalStorageClouds
+{
+private:
+	NSCriticalSection::CRITICAL_SECTION m_oCS;
+
+public:
+	std::vector<std::wstring> arPortals;
+	std::vector<std::wstring> arProviders;
+
+public:
+	CLocalStorageClouds()
+	{
+		m_oCS.InitializeCriticalSection();
+	}
+	~CLocalStorageClouds()
+	{
+		m_oCS.DeleteCriticalSection();
+	}
+
+	void Read(CefRefPtr<CefListValue>& args)
+	{
+		CTemporaryCS oCS(&m_oCS);
+
+		arPortals.clear();
+		arProviders.clear();
+
+		size_t nCount = args->GetSize();
+		for (size_t i = 0; i < nCount; i += 2)
+		{
+			arPortals.push_back(args->GetString(i).ToWString());
+			arProviders.push_back(args->GetString(i + 1).ToWString());
+		}
+	}
+};
+
 class CAscApplicationManager_Private : public CefBase_Class,
 		public CCookieFoundCallback,
 		public NSThreads::CBaseThread,
@@ -1668,6 +1716,9 @@ public:
 
 	// json, отправляемый в процесс рендерера
 	std::wstring m_sRendererJSON;
+
+	// информация о порталах. открытие файлы из рисентов, из редактора - теряется информация о externalclouds
+	CLocalStorageClouds m_oPortalsList;
 
 public:
 	IMPLEMENT_REFCOUNTING(CAscApplicationManager_Private);

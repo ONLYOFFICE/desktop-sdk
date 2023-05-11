@@ -44,7 +44,7 @@
 #include "include/base/cef_bind.h"
 #endif
 
-#ifdef CEF_VERSION_ABOVE_105
+#ifdef CEF_VERSION_ABOVE_102
 #define BASE_BIND base::BindOnce
 #else
 #define BASE_BIND base::Bind
@@ -161,8 +161,28 @@ public:
 				for (std::vector<std::string>::iterator i = m_arDomains.begin(); i != m_arDomains.end(); i++)
 				{
 					std::string sDomainFind = *i;
+					bool bIsFind = false;
+
 					if (sDomain.find(sDomainFind) != std::string::npos ||
-							sDomainWithPath.find(sDomainFind) != std::string::npos)
+						sDomainWithPath.find(sDomainFind) != std::string::npos)
+					{
+						bIsFind = true;
+					}
+					else
+					{
+						std::string::size_type posPort = sDomainFind.rfind(':');
+						if (std::string::npos != posPort && posPort > 7)
+						{
+							std::string sDomainPathWithoutPort = sDomainFind.substr(0, posPort);
+							if (sDomain.find(sDomainPathWithoutPort) != std::string::npos ||
+								sDomainWithPath.find(sDomainPathWithoutPort) != std::string::npos)
+							{
+								bIsFind = true;
+							}
+						}
+					}
+
+					if (bIsFind)
 					{
 						m_mapFinds.insert(std::pair<std::string, std::string>(sDomainFind, sValue));
 
@@ -182,7 +202,7 @@ public:
 	{
 		if (!CefCurrentlyOn(TID_IO))
 		{
-#ifdef CEF_VERSION_ABOVE_105
+#ifdef CEF_VERSION_ABOVE_102
 			CefPostTask(TID_IO, BASE_BIND(&CCefCookieVisitor::CheckCookiePresent, base::WrapRefCounted(this), manager));
 #else
 			CefPostTask(TID_IO, BASE_BIND(&CCefCookieVisitor::CheckCookiePresent, this, manager));
@@ -242,7 +262,7 @@ public:
 	{
 		if (!CefCurrentlyOn(TID_IO))
 		{
-#ifdef CEF_VERSION_ABOVE_105
+#ifdef CEF_VERSION_ABOVE_102
 			CefPostTask(TID_IO, BASE_BIND(&CCefCookieSetter::SetCookie, base::WrapRefCounted(this), manager));
 #else
 			CefPostTask(TID_IO, BASE_BIND(&CCefCookieSetter::SetCookie, this, manager));
@@ -263,7 +283,7 @@ public:
 
 		authorization.has_expires = true;
 
-#ifdef CEF_VERSION_ABOVE_105
+#if defined(CEF_VERSION_ABOVE_102) && !defined(CEF_VERSION_103)
 		cef_time_t cef_time;
 		cef_time.year = 2200;
 		cef_time.month = 4;

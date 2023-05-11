@@ -434,7 +434,7 @@ namespace asc_scheme
 	}
 #else
 	void RegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar
-							   #ifndef CEF_VERSION_ABOVE_105
+                               #ifndef CEF_VERSION_ABOVE_102
 							   , std::vector<CefString>& cookiable_schemes
 							   #endif
 							   )
@@ -451,13 +451,13 @@ namespace asc_scheme
 }  // namespace asc_scheme
 
 void client::ClientApp::RegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar
-											  #ifndef CEF_VERSION_ABOVE_105
+                                              #ifndef CEF_VERSION_ABOVE_102
 											  , std::vector<CefString>& cookiable_schemes
 											  #endif
 											  )
 {
 	return asc_scheme::RegisterCustomSchemes(registrar
-										 #ifndef CEF_VERSION_ABOVE_105
+                                         #ifndef CEF_VERSION_ABOVE_102
 										 , cookiable_schemes
 										 #endif
 											 );

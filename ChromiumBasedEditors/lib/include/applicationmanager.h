@@ -82,6 +82,9 @@ public:
 
 	std::wstring                    user_providers_path;
 
+	bool                            macroses_support;
+	bool                            plugins_support;
+
 	std::map<std::string, std::string> converter_environments;
 
 public:

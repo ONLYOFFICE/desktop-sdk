@@ -36,7 +36,7 @@ build_xp {
 } else {
     DEFINES += ENABLE_CEF_EXTENSIONS
     DEFINES += CEF_VERSION_ABOVE_86
-    DEFINES += CEF_VERSION_ABOVE_105
+    DEFINES += CEF_VERSION_ABOVE_102
     DEFINES += "OVERRIDE=override"
 
     CONFIG += c++17
@@ -50,6 +50,13 @@ build_xp {
         cef_version_107 {
             DEFINES += CEF_VERSION_107
             CEF_PROJECT_PRI=$$PWD/cef_pri_107
+        }
+    }
+
+    core_mac {
+        use_v8 {
+            DEFINES += CEF_VERSION_103
+            CEF_PROJECT_PRI=$$PWD/cef_pri_103
         }
     }
 
@@ -140,6 +147,8 @@ core_mac {
     OBJECTIVE_SOURCES += \
         $$PWD/src/widget_impl.mm \
         $$PWD/src/mac_application.mm
+
+    use_v8:DEFINES += OLD_MACOS_SYSTEM
 }
 
 core_linux {
