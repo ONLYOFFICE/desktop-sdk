@@ -935,6 +935,25 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
 }
 
 // Cloud save to drawing formats
+class CMetafileToRenderterPDF : public CMetafileToRenderterDesktop
+{
+public:
+	CMetafileToRenderterPDF(IRenderer* pRenderer) : CMetafileToRenderterDesktop(pRenderer)
+	{
+	}
+
+public:
+	virtual void SetLinearGradiant(const double& x0, const double& y0, const double& x1, const double& y1)
+	{
+		((CPdfFile*)m_pRenderer)->SetLinearGradient(x0, y0, x1, y1);
+	}
+
+	virtual void SetRadialGradiant(const double& dX0, const double& dY0, const double& dR0, const double& dX1, const double& dY1, const double& dR1)
+	{
+		((CPdfFile*)m_pRenderer)->SetRadialGradient(dX0, dY0, dR0, dX1, dY1, dR1);
+	}
+};
+
 CCloudPDFSaver::CCloudPDFSaver()
 {
 	m_pData = NULL;
@@ -962,7 +981,7 @@ DWORD CCloudPDFSaver::ThreadProc()
 		CPdfFile oPdfFile(m_oPrintData.m_pApplicationFonts);
 		oPdfFile.CreatePdf((m_nOutputFormat == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA) ? true : false);
 
-		CMetafileToRenderterDesktop oCorrector(&oPdfFile);
+		CMetafileToRenderterPDF oCorrector(&oPdfFile);
 		oCorrector.m_pPrintData = &m_oPrintData;
 
 		NSOnlineOfficeBinToPdf::ConvertBufferToRenderer(m_pData, m_nDataLen, &oCorrector);
