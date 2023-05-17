@@ -24,8 +24,6 @@ DEFINES += \
 DEFINES += DESKTOP_USE_DYNAMIC_LIBRARY_BUILDING
 
 core_mac:DEFINES += _XCODE
-
-ADD_DEPENDENCY(graphics, kernel, UnicodeConverter, kernel_network, PdfFile, XpsFile, DjVuFile, HtmlRenderer, hunspell, ooxmlsignature)
 !core_windows:DEFINES += DOCUMENTSCORE_OPENSSL_SUPPORT
 
 CEF_PROJECT_PRI=$$PWD/cef_pri
@@ -125,8 +123,9 @@ SOURCES += \
     $$CORE_ROOT_DIR/HtmlRenderer/src/ASCSVGWriter.cpp
 
 # crypto ----------------------------------
-LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lCompoundFileLib
 LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lCryptoPPLib
+LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lCompoundFileLib
+
 DEFINES += CRYPTOPP_DISABLE_ASM
 SOURCES += $$CORE_ROOT_DIR/MsBinaryFile/DocFile/MemoryStream.cpp
 # -----------------------------------------
@@ -156,3 +155,5 @@ core_linux {
     QMAKE_LFLAGS += "-Wl,-rpath,\'\$$ORIGIN/converter\'"
     QMAKE_LFLAGS += -Wl,--disable-new-dtags
 }
+
+ADD_DEPENDENCY(graphics, kernel, UnicodeConverter, kernel_network, PdfFile, XpsFile, DjVuFile, HtmlRenderer, hunspell, ooxmlsignature)
