@@ -7,9 +7,9 @@
 	
     "variations" : [
         {
-            "description" : "Send",
+            "description" : "Send your documents via email using the default desktop mail client.",
             "descriptionLocale": {
-                "ru": "Отправить"
+                "ru": "Отправить ваш документ через email используя стандартный почтовый клиент."
             },
             "url"         : "index.html",
 
@@ -66,7 +66,23 @@
 
             "isUpdateOleOnResize" : false,
 
-            "buttons"        : []
+            "buttons"        : [],
+
+            "store": {
+                "background": {
+                    "light" : "#D9F4FF",
+                    "dark" : "#9ADAF3;"
+                },
+                "screenshots" : [
+                    "resources/store/screenshots/screen_1.png",
+                    "resources/store/screenshots/screen_2.png"
+                ],
+                "icons"       : {
+                    "light" : "resources/store/icons",
+                    "dark"  : "resources/store/icons"
+                },
+                "categories": ["work", "specAbilities"]
+            }
         }
     ]
 }
