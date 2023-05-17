@@ -22,7 +22,19 @@
 
             "isUpdateOleOnResize" : false,
 
-            "buttons"         : []
+            "buttons"         : [],
+
+            "store": {
+                "background": {
+                    "light" : "#7D858C",
+                    "dark" : "#7D858C;"
+                },
+                "icons"       : {
+                    "light" : "resources/store/icons",
+                    "dark"  : "resources/store/icons"
+                },
+                "categories": ["work", "specAbilities"]
+            }
         }
     ]
 }
