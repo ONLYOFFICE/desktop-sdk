@@ -987,9 +987,9 @@ int CAscApplicationManager::GetFileFormatByExtentionForSave(const std::wstring& 
 		nFormat = AVS_OFFICESTUDIO_FILE_IMAGE_JPG;
 #ifdef FILE_SAVE_ADDONS
 	FILE_SAVE_ADDONS
-		#endif
+#endif
 
-			return nFormat;
+	return nFormat;
 }
 
 void CAscApplicationManager::InitAdditionalEditorParams(std::wstring& sParams)
