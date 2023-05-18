@@ -354,6 +354,7 @@ namespace NSRequest
 			std::string sData = m_download_data;
 			NSStringUtils::string_replaceA(sData, "\\", "\\\\");
 			NSStringUtils::string_replaceA(sData, "\"", "\\\"");
+			NSStringUtils::string_replaceA(sData, "\n", "\\\n");
 
 			sReturnObject += sData;
 
