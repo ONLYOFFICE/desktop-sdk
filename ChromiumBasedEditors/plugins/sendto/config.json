@@ -1,15 +1,21 @@
 {
     "name" : "Send",
     "nameLocale": {
-        "ru": "Отправить"
+        "ru": "Отправить",
+        "fr": "Envoyer",
+        "es": "Enviar",
+        "de": "Senden"
     },
     "guid" : "asc.{B509123E-6335-40BD-B965-91EB799346E3}",
 	
     "variations" : [
         {
-            "description" : "Send your documents via email using the default desktop mail client.",
+            "description" : "Send your documents via email as attachments using the default desktop mail client.",
             "descriptionLocale": {
-                "ru": "Отправить ваш документ через email используя стандартный почтовый клиент."
+                "ru": "Отправляйте документы по электронной почте в виде вложений, используя стандартный почтовый клиент.",
+				"fr": "Envoyez vos documents par e-mail en pièces jointes à l'aide du client de messagerie par défaut.",
+                "es": "Enviar sus documentos por correo electrónico como archivos adjuntos utilizando el cliente de correo de escritorio predeterminado.",
+                "de": "Senden Sie Ihre Dokumente per E-Mail als Anhang mit dem Standard-Desktop-Mail-Client."
             },
             "url"         : "index.html",
 
