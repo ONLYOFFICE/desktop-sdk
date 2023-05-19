@@ -425,6 +425,24 @@ public:
 #else
 #define CefBase_Class CefBaseRefCounted
 #endif
+
+class CCefResizeTask : public CefTask
+{
+// SetWindowPos must be called from the UI thread of CEF. Post a task to the correct thread
+public:
+	CCefResizeTask(CCefView* pCefView) : m_pCefView(pCefView) {}
+	virtual ~CCefResizeTask() {}
+	virtual void Execute() OVERRIDE
+	{
+		if ( m_pCefView )
+			m_pCefView->moveEventEx();
+	}
+private:
+	CCefView* m_pCefView;
+
+	IMPLEMENT_REFCOUNTING(CCefResizeTask);
+};
+
 class CCefBinaryFileReaderCounter : public CefBase_Class
 {
 public:
@@ -6124,8 +6142,24 @@ void CCefView::resizeEvent()
 {
 	this->moveEvent();
 }
+
 void CCefView::moveEvent()
 {
+	if ( CefCurrentlyOn(TID_UI) )
+	{
+		this->moveEventEx();
+	}
+	else
+	{
+		CefRefPtr<CCefResizeTask> pTask = new CCefResizeTask(this);
+		CefPostTask(TID_UI, pTask);
+	}
+}
+
+void CCefView::moveEventEx()
+{
+	CEF_REQUIRE_UI_THREAD();
+
 	if (!m_pInternal->m_pWidgetImpl || m_pInternal->m_bIsClosing)
 		return;
 
