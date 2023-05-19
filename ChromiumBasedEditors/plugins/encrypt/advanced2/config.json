@@ -1,10 +1,22 @@
 {
-    "name" : "Onlyoffice: CloudCrypto",
+    "name" : "Encryption",
+	"nameLocale": {
+        "ru": "Шифрование",
+        "fr": "Chiffrement",
+        "es": "Codificación",
+        "de": "Verschlüsselung"
+    },
     "guid" : "asc.{FFF0E1EB-13DB-4678-B67D-FF0A41DBBCEF}",
 
     "variations" : [
         {
-            "description" : "CloudCrypto",
+            "description" : "Work with documents in the end-to-end encrypted mode.",
+			"descriptionLocale": {
+                "ru": "Работайте с документами в режиме сквозного шифрования.",
+				"fr": "Travaillez avec des documents en mode chiffré de bout en bout.",
+                "es": "Trabajar con documentos en modo cifrado de extremo a extremo.",
+                "de": "Arbeiten Sie mit Dokumenten im Ende-zu-Ende-Verschlüsselungsmodus."
+            },
             "url"         : "index.html",
 
             "icons"           : [],
@@ -22,7 +34,19 @@
 
             "isUpdateOleOnResize" : false,
 
-            "buttons"         : []
+            "buttons"         : [],
+
+            "store": {
+                "background": {
+                    "light" : "#7D858C",
+                    "dark" : "#7D858C;"
+                },
+                "icons"       : {
+                    "light" : "resources/store/icons",
+                    "dark"  : "resources/store/icons"
+                },
+                "categories": ["work", "specAbilities"]
+            }
         }
     ]
 }

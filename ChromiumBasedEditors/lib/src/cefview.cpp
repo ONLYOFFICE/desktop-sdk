@@ -5910,6 +5910,8 @@ void CCefView::load(const std::wstring& urlInputSrc)
 					nEditorFormat = etDocumentMasterForm;
 				else if (nFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
 					nEditorFormat = etDocumentMasterOForm;
+				else if (nFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
+					nEditorFormat = etDocumentViewer;
 			}
 
 			((CCefViewEditor*)this)->CreateLocalFile(nEditorFormat, m_pInternal->m_sTemplateName);
