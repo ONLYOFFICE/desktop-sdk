@@ -426,23 +426,6 @@ public:
 #define CefBase_Class CefBaseRefCounted
 #endif
 
-class CCefResizeTask : public CefTask
-{
-// SetWindowPos must be called from the UI thread of CEF. Post a task to the correct thread
-public:
-	CCefResizeTask(CCefView* pCefView) : m_pCefView(pCefView) {}
-	virtual ~CCefResizeTask() {}
-	virtual void Execute() OVERRIDE
-	{
-		if ( m_pCefView )
-			m_pCefView->moveEventEx();
-	}
-private:
-	CCefView* m_pCefView;
-
-	IMPLEMENT_REFCOUNTING(CCefResizeTask);
-};
-
 class CCefBinaryFileReaderCounter : public CefBase_Class
 {
 public:
@@ -1107,6 +1090,8 @@ public:
 
 	void CheckZoom();
 
+	void UpdateSize();
+
 	void CloseBrowser(bool _force_close);
 
 	CefRefPtr<CefBrowser> GetBrowser() const;
@@ -1568,6 +1553,23 @@ public:
 	}
 
 	void SendProcessMessage(CefProcessId target_process, CefRefPtr<CefProcessMessage> message);
+};
+
+class CCefResizeTask : public CefTask
+{
+// SetWindowPos must be called from the UI thread of CEF. Post a task to the correct thread
+public:
+	CCefResizeTask(CCefView_Private* pInternal) : m_pInternal(pInternal) {}
+	virtual ~CCefResizeTask() {}
+	virtual void Execute() OVERRIDE
+	{
+		if ( m_pInternal )
+			m_pInternal->UpdateSize();
+	}
+private:
+	CCefView_Private* m_pInternal;
+
+	IMPLEMENT_REFCOUNTING(CCefResizeTask);
 };
 
 class CAscClientHandler : public client::ClientHandler, public CCookieFoundCallback, public client::ClientHandler::Delegate, public CefDialogHandler
@@ -5675,6 +5677,20 @@ void CCefView_Private::CheckZoom()
 	}
 }
 
+void CCefView_Private::UpdateSize()
+{
+	CEF_REQUIRE_UI_THREAD();
+
+	if (!m_pWidgetImpl || m_bIsClosing)
+		return;
+
+	m_pWidgetImpl->UpdateSize();
+	CheckZoom();
+
+	if (m_handler && m_handler->GetBrowser() && m_handler->GetBrowser()->GetHost())
+		m_handler->GetBrowser()->GetHost()->NotifyMoveOrResizeStarted();
+}
+
 void CCefView_Private::SendProcessMessage(CefProcessId target_process, CefRefPtr<CefProcessMessage> message)
 {
 	if (m_handler && m_handler->GetBrowser())
@@ -6149,27 +6165,13 @@ void CCefView::moveEvent()
 {
 	if ( CefCurrentlyOn(TID_UI) )
 	{
-		this->moveEventEx();
+		m_pInternal->UpdateSize();
 	}
 	else
 	{
-		CefRefPtr<CCefResizeTask> pTask = new CCefResizeTask(this);
+		CefRefPtr<CCefResizeTask> pTask = new CCefResizeTask(m_pInternal);
 		CefPostTask(TID_UI, pTask);
 	}
-}
-
-void CCefView::moveEventEx()
-{
-	CEF_REQUIRE_UI_THREAD();
-
-	if (!m_pInternal->m_pWidgetImpl || m_pInternal->m_bIsClosing)
-		return;
-
-	this->GetWidgetImpl()->UpdateSize();
-	m_pInternal->CheckZoom();
-
-	if (m_pInternal->m_handler && m_pInternal->m_handler->GetBrowser() && m_pInternal->m_handler->GetBrowser()->GetHost())
-		m_pInternal->m_handler->GetBrowser()->GetHost()->NotifyMoveOrResizeStarted();
 }
 
 bool CCefView::isDoubleResizeEvent()
