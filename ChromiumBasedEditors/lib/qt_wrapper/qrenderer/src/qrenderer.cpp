@@ -425,8 +425,8 @@ namespace NSConversions
 	}
 
 	void correctBrushTextureTransform(NSStructures::CBrush* pLogicBrush, QBrush* pBrush, QPainterPath* pPath,
-									  const int& nImageWidth, const int& nImageHeight,
-									  NSQRenderer::CQRenderer* pRenderer)
+	                                  const int& nImageWidth, const int& nImageHeight,
+	                                  NSQRenderer::CQRenderer* pRenderer)
 	{
 		int nTextureMode = c_BrushTextureModeStretch;
 		if (pLogicBrush)
@@ -442,17 +442,17 @@ namespace NSConversions
 			if (pLogicBrush && pLogicBrush->Rectable)
 			{
 				oTransform.translate((oPathBounds.left() - pLogicBrush->Rect.X) / nImageWidth,
-									 (oPathBounds.top() - pLogicBrush->Rect.Y) / nImageHeight);
+				                     (oPathBounds.top() - pLogicBrush->Rect.Y) / nImageHeight);
 
 				oTransform.scale(pLogicBrush->Rect.Width / nImageWidth,
-								 pLogicBrush->Rect.Height / nImageHeight);
+				                 pLogicBrush->Rect.Height / nImageHeight);
 			}
 			else
 			{
 				oTransform.translate(oPathBounds.left(), oPathBounds.top());
 
 				oTransform.scale(oPathBounds.width() / nImageWidth,
-								 oPathBounds.height() / nImageHeight);
+				                 oPathBounds.height() / nImageHeight);
 			}
 			break;
 		}
@@ -639,12 +639,12 @@ HRESULT NSQRenderer::CQRenderer::put_Width(const double &dWidth)
 	double realWidth = (0 == m_nPixelWidth) ? (double)paperSize().width() : (double)m_nPixelWidth;
 
 	m_oCoordTransform = {
-		realWidth / m_dLogicalPageWidth,
-		m_oCoordTransform.m12(),
-		m_oCoordTransform.m21(),
-		m_oCoordTransform.m22(),
-		m_oCoordTransform.dx(),
-		m_oCoordTransform.dy()
+	    realWidth / m_dLogicalPageWidth,
+	    m_oCoordTransform.m12(),
+	    m_oCoordTransform.m21(),
+	    m_oCoordTransform.m22(),
+	    m_oCoordTransform.dx(),
+	    m_oCoordTransform.dy()
 	};
 
 	applyTransform();
@@ -660,12 +660,12 @@ HRESULT NSQRenderer::CQRenderer::put_Height(const double &dHeight)
 	double realHeight = (0 == m_nPixelHeight) ? (double)paperSize().height() : (double)m_nPixelHeight;
 
 	m_oCoordTransform = {
-		m_oCoordTransform.m11(),
-		m_oCoordTransform.m12(),
-		m_oCoordTransform.m21(),
-		realHeight / m_dLogicalPageHeight,
-		m_oCoordTransform.dx(),
-		m_oCoordTransform.dy()
+	    m_oCoordTransform.m11(),
+	    m_oCoordTransform.m12(),
+	    m_oCoordTransform.m21(),
+	    realHeight / m_dLogicalPageHeight,
+	    m_oCoordTransform.dx(),
+	    m_oCoordTransform.dy()
 	};
 
 	applyTransform();
@@ -1134,10 +1134,10 @@ HRESULT NSQRenderer::CQRenderer::put_BrushLinearAngle(const double &dAngle)
 }
 
 HRESULT NSQRenderer::CQRenderer::BrushRect(const INT &val
-										   , const double &left
-										   , const double &top
-										   , const double &width
-										   , const double &height)
+                                           , const double &left
+                                           , const double &top
+                                           , const double &width
+                                           , const double &height)
 {
 #ifdef ENABLE_LOGS
 	TELL << QRectF{left, top, width, height};
@@ -1151,9 +1151,9 @@ HRESULT NSQRenderer::CQRenderer::BrushRect(const INT &val
 }
 
 HRESULT NSQRenderer::CQRenderer::BrushBounds(const double &left
-											 , const double &top
-											 , const double &width
-											 , const double &height)
+                                             , const double &top
+                                             , const double &width
+                                             , const double &height)
 {
 #ifdef ENABLE_LOGS
 	TELL;
@@ -1343,10 +1343,10 @@ HRESULT NSQRenderer::CQRenderer::put_FontFaceIndex(const int &lFaceIndex)
 }
 
 HRESULT NSQRenderer::CQRenderer::CommandDrawTextCHAR(const LONG &c
-													 , const double &x
-													 , const double &y
-													 , const double &w
-													 , const double &h)
+                                                     , const double &x
+                                                     , const double &y
+                                                     , const double &w
+                                                     , const double &h)
 {
 #ifdef ENABLE_LOGS
 	TELL;
@@ -1365,10 +1365,10 @@ HRESULT NSQRenderer::CQRenderer::CommandDrawTextCHAR(const LONG &c
 }
 
 HRESULT NSQRenderer::CQRenderer::CommandDrawText(const std::wstring &bsText
-												 , const double &x
-												 , const double &y
-												 , const double &w
-												 , const double &h)
+                                                 , const double &x
+                                                 , const double &y
+                                                 , const double &w
+                                                 , const double &h)
 {
 #ifdef ENABLE_LOGS
 	TELL;
@@ -1387,11 +1387,11 @@ HRESULT NSQRenderer::CQRenderer::CommandDrawText(const std::wstring &bsText
 }
 
 HRESULT NSQRenderer::CQRenderer::CommandDrawTextExCHAR(const LONG &c
-													   , const LONG &gid
-													   , const double &x
-													   , const double &y
-													   , const double &w
-													   , const double &h)
+                                                       , const LONG &gid
+                                                       , const double &x
+                                                       , const double &y
+                                                       , const double &w
+                                                       , const double &h)
 {
 #ifdef ENABLE_LOGS
 	TELL;
@@ -1410,12 +1410,12 @@ HRESULT NSQRenderer::CQRenderer::CommandDrawTextExCHAR(const LONG &c
 }
 
 HRESULT NSQRenderer::CQRenderer::CommandDrawTextEx(const std::wstring &bsUnicodeText
-												   , const unsigned int *pGids
-												   , const unsigned int nGidsCount
-												   , const double &x
-												   , const double &y
-												   , const double &w
-												   , const double &h)
+                                                   , const unsigned int *pGids
+                                                   , const unsigned int nGidsCount
+                                                   , const double &x
+                                                   , const double &y
+                                                   , const double &w
+                                                   , const double &h)
 {
 #ifdef ENABLE_LOGS
 	TELL;
@@ -1519,11 +1519,11 @@ HRESULT NSQRenderer::CQRenderer::PathCommandLinesTo(double *points, const int &c
 }
 
 HRESULT NSQRenderer::CQRenderer::PathCommandCurveTo(const double &x1
-													, const double &y1
-													, const double &x2
-													, const double &y2
-													, const double &x3
-													, const double &y3)
+                                                    , const double &y1
+                                                    , const double &x2
+                                                    , const double &y2
+                                                    , const double &x3
+                                                    , const double &y3)
 {
 #ifdef ENABLE_LOGS
 	TELL;
@@ -1549,11 +1549,11 @@ HRESULT NSQRenderer::CQRenderer::PathCommandCurvesTo(double *points, const int &
 }
 
 HRESULT NSQRenderer::CQRenderer::PathCommandArcTo(const double &x
-												  , const double &y
-												  , const double &w
-												  , const double &h
-												  , const double &startAngle
-												  , const double &sweepAngle)
+                                                  , const double &y
+                                                  , const double &w
+                                                  , const double &h
+                                                  , const double &startAngle
+                                                  , const double &sweepAngle)
 {
 #ifdef ENABLE_LOGS
 	TELL;
@@ -1688,10 +1688,10 @@ HRESULT NSQRenderer::CQRenderer::PathCommandEnd()
 }
 
 HRESULT NSQRenderer::CQRenderer::DrawImage(IGrObject *pImage
-										   , const double &x
-										   , const double &y
-										   , const double &w
-										   , const double &h)
+                                           , const double &x
+                                           , const double &y
+                                           , const double &w
+                                           , const double &h)
 {
 #ifdef ENABLE_LOGS
 	TELL;
@@ -1708,11 +1708,11 @@ HRESULT NSQRenderer::CQRenderer::DrawImage(IGrObject *pImage
 }
 
 HRESULT NSQRenderer::CQRenderer::DrawImageFromFile(const std::wstring &filePath
-												   , const double &x
-												   , const double &y
-												   , const double &w
-												   , const double &h
-												   , const BYTE &lAlpha)
+                                                   , const double &x
+                                                   , const double &y
+                                                   , const double &w
+                                                   , const double &h
+                                                   , const BYTE &lAlpha)
 {
 #ifdef ENABLE_LOGS
 	TELL;
@@ -1721,9 +1721,9 @@ HRESULT NSQRenderer::CQRenderer::DrawImageFromFile(const std::wstring &filePath
 	std::wstring sTempPath = L"";
 	CImageFileFormatChecker oImageFormat(filePath);
 	if (_CXIMAGE_FORMAT_WMF == oImageFormat.eFileType ||
-		_CXIMAGE_FORMAT_EMF == oImageFormat.eFileType ||
-		_CXIMAGE_FORMAT_SVM == oImageFormat.eFileType ||
-		_CXIMAGE_FORMAT_SVG == oImageFormat.eFileType)
+	    _CXIMAGE_FORMAT_EMF == oImageFormat.eFileType ||
+	    _CXIMAGE_FORMAT_SVM == oImageFormat.eFileType ||
+	    _CXIMAGE_FORMAT_SVG == oImageFormat.eFileType)
 	{
 		MetaFile::IMetaFile* pMetafile = MetaFile::Create(m_pAppFonts);
 		if (pMetafile->LoadFromFile(filePath.c_str()))
@@ -1800,11 +1800,11 @@ HRESULT NSQRenderer::CQRenderer::DrawImageFromFile(const std::wstring &filePath
 }
 
 HRESULT NSQRenderer::CQRenderer::SetTransform(const double &m11
-											  , const double &m12
-											  , const double &m21
-											  , const double &m22
-											  , const double &dx
-											  , const double &dy)
+                                              , const double &m12
+                                              , const double &m21
+                                              , const double &m22
+                                              , const double &dx
+                                              , const double &dy)
 {
 	m_oCurrentTransform = QTransform{m11, m12, m21, m22, dx, dy};
 #ifdef ENABLE_LOGS
@@ -1815,11 +1815,11 @@ HRESULT NSQRenderer::CQRenderer::SetTransform(const double &m11
 }
 
 HRESULT NSQRenderer::CQRenderer::GetTransform(double *m11
-											  , double *m12
-											  , double *m21
-											  , double *m22
-											  , double *dx
-											  , double *dy)
+                                              , double *m12
+                                              , double *m21
+                                              , double *m22
+                                              , double *dx
+                                              , double *dy)
 {
 #ifdef ENABLE_LOGS
 	TELL;
@@ -1897,11 +1897,11 @@ HRESULT NSQRenderer::CQRenderer::CommandString(const LONG &lType, const std::wst
 }
 
 HRESULT NSQRenderer::CQRenderer::SetBaseTransform(const double& m11
-												  , const double& m12
-												  , const double& m21
-												  , const double& m22
-												  , const double& dx
-												  , const double& dy)
+                                                  , const double& m12
+                                                  , const double& m21
+                                                  , const double& m22
+                                                  , const double& dx
+                                                  , const double& dy)
 {
 	m_oBaseTransform = QTransform(m11, m12, m21, m22, dx, dy);
 #ifdef ENABLE_LOGS
@@ -1912,11 +1912,11 @@ HRESULT NSQRenderer::CQRenderer::SetBaseTransform(const double& m11
 }
 
 void NSQRenderer::CQRenderer::GetBaseTransform(double &m11
-											   , double &m12
-											   , double &m21
-											   , double &m22
-											   , double &dx
-											   , double &dy)
+                                               , double &m12
+                                               , double &m21
+                                               , double &m22
+                                               , double &dx
+                                               , double &dy)
 {
 	m11 = m_oBaseTransform.m11();
 	m12 = m_oBaseTransform.m12();
@@ -1936,7 +1936,7 @@ void NSQRenderer::CQRenderer::ResetBaseTransform()
 }
 
 void NSQRenderer::CQRenderer::PrepareBitBlt(const int& nRasterX, const int& nRasterY, const int& nRasterW, const int& nRasterH,
-											const double& x, const double& y, const double& w, const double& h, const double& dAngle)
+                                            const double& x, const double& y, const double& w, const double& h, const double& dAngle)
 {
 	m_nPixelWidth = nRasterW;
 	m_nPixelHeight = nRasterH;
@@ -2171,9 +2171,9 @@ void NSQRenderer::CQRenderer::fillPath(QPainterPath* pPath)
 		std::wstring sTempPath = L"";
 		CImageFileFormatChecker oImageFormat(m_oBrush.TexturePath);
 		if (_CXIMAGE_FORMAT_WMF == oImageFormat.eFileType ||
-			_CXIMAGE_FORMAT_EMF == oImageFormat.eFileType ||
-			_CXIMAGE_FORMAT_SVM == oImageFormat.eFileType ||
-			_CXIMAGE_FORMAT_SVG == oImageFormat.eFileType)
+		    _CXIMAGE_FORMAT_EMF == oImageFormat.eFileType ||
+		    _CXIMAGE_FORMAT_SVM == oImageFormat.eFileType ||
+		    _CXIMAGE_FORMAT_SVG == oImageFormat.eFileType)
 		{
 			MetaFile::IMetaFile* pMetafile = MetaFile::Create(m_pAppFonts);
 			if (pMetafile->LoadFromFile(m_oBrush.TexturePath.c_str()))
@@ -2268,6 +2268,7 @@ class CQRendererChecker : public IRenderer
 private:
 	int m_nBrushType;
 	int m_nBrushTextureMode;
+	bool m_bIsBreak;
 
 public:
 	// own functions
@@ -2275,6 +2276,7 @@ public:
 	{
 		m_nBrushType = c_BrushTypeSolid;
 		m_nBrushTextureMode = c_BrushTextureModeStretch;
+		m_bIsBreak = false;
 	}
 	virtual ~CQRendererChecker() {}
 
@@ -2353,29 +2355,29 @@ public:
 
 	//-------- Функции для вывода текста --------------------------------------------------------
 	virtual HRESULT CommandDrawTextCHAR(const LONG& c
-										, const double& x
-										, const double& y
-										, const double& w
-										, const double& h) override { return S_OK; }
+	                                    , const double& x
+	                                    , const double& y
+	                                    , const double& w
+	                                    , const double& h) override { return S_OK; }
 	virtual HRESULT CommandDrawText(const std::wstring& bsText
-									, const double& x
-									, const double& y
-									, const double& w
-									, const double& h) override { return S_OK; }
+	                                , const double& x
+	                                , const double& y
+	                                , const double& w
+	                                , const double& h) override { return S_OK; }
 
 	virtual HRESULT CommandDrawTextExCHAR(const LONG& c
-										  , const LONG& gid
-										  , const double& x
-										  , const double& y
-										  , const double& w
-										  , const double& h) override { return S_OK; }
+	                                      , const LONG& gid
+	                                      , const double& x
+	                                      , const double& y
+	                                      , const double& w
+	                                      , const double& h) override { return S_OK; }
 	virtual HRESULT CommandDrawTextEx(const std::wstring& bsUnicodeText
-									  , const unsigned int* pGids
-									  , const unsigned int nGidsCount
-									  , const double& x
-									  , const double& y
-									  , const double& w
-									  , const double& h) override { return S_OK; }
+	                                  , const unsigned int* pGids
+	                                  , const unsigned int nGidsCount
+	                                  , const double& x
+	                                  , const double& y
+	                                  , const double& w
+	                                  , const double& h) override { return S_OK; }
 
 	//-------- Маркеры для команд ---------------------------------------------------------------
 	virtual HRESULT BeginCommand(const DWORD& lType) override { return S_OK; }
@@ -2386,18 +2388,18 @@ public:
 	virtual HRESULT PathCommandLineTo(const double& x, const double& y) override { return S_OK; }
 	virtual HRESULT PathCommandLinesTo(double* points, const int& count) override { return S_OK; }
 	virtual HRESULT PathCommandCurveTo(const double& x1
-									   , const double& y1
-									   , const double& x2
-									   , const double& y2
-									   , const double& x3
-									   , const double& y3) override { return S_OK; }
+	                                   , const double& y1
+	                                   , const double& x2
+	                                   , const double& y2
+	                                   , const double& x3
+	                                   , const double& y3) override { return S_OK; }
 	virtual HRESULT PathCommandCurvesTo(double* points, const int& count) override { return S_OK; }
 	virtual HRESULT PathCommandArcTo(const double& x
-									 , const double& y
-									 , const double& w
-									 , const double& h
-									 , const double& startAngle
-									 , const double& sweepAngle) override { return S_OK; }
+	                                 , const double& y
+	                                 , const double& w
+	                                 , const double& h
+	                                 , const double& startAngle
+	                                 , const double& sweepAngle) override { return S_OK; }
 	virtual HRESULT PathCommandClose() override { return S_OK; }
 	virtual HRESULT PathCommandEnd() override { return S_OK; }
 	virtual HRESULT DrawPath(const LONG& nType) override
@@ -2418,7 +2420,7 @@ public:
 				case c_BrushTextureModeTileCenter:
 				{
 #ifndef QRENDERER_SUPPORT_TEXTURE_TILE_BRUSH
-					throw (int)NSOnlineOfficeBinToPdf::ctBrushType;
+					m_bIsBreak = true;
 #endif
 					break;
 				}
@@ -2429,7 +2431,7 @@ public:
 			}
 			default:
 			{
-				throw (int)NSOnlineOfficeBinToPdf::ctBrushType;
+				m_bIsBreak = true;
 				break;
 			}
 			}
@@ -2440,63 +2442,63 @@ public:
 	virtual HRESULT PathCommandGetCurrentPoint(double* x, double* y) override { return S_OK; }
 
 	virtual HRESULT PathCommandTextCHAR(const LONG& c
-										, const double& x
-										, const double& y
-										, const double& w
-										, const double& h) override { return S_OK; }
+	                                    , const double& x
+	                                    , const double& y
+	                                    , const double& w
+	                                    , const double& h) override { return S_OK; }
 	virtual HRESULT PathCommandText(const std::wstring& bsText
-									, const double& x
-									, const double& y
-									, const double& w
-									, const double& h) override { return S_OK; }
+	                                , const double& x
+	                                , const double& y
+	                                , const double& w
+	                                , const double& h) override { return S_OK; }
 
 	virtual HRESULT PathCommandTextExCHAR(const LONG& c
-										  , const LONG& gid
-										  , const double& x
-										  , const double& y
-										  , const double& w
-										  , const double& h) override { return S_OK; }
+	                                      , const LONG& gid
+	                                      , const double& x
+	                                      , const double& y
+	                                      , const double& w
+	                                      , const double& h) override { return S_OK; }
 	virtual HRESULT PathCommandTextEx(const std::wstring& sText
-									  , const unsigned int* pGids
-									  , const unsigned int nGidsCount
-									  , const double& x
-									  , const double& y
-									  , const double& w
-									  , const double& h) override { return S_OK; }
+	                                  , const unsigned int* pGids
+	                                  , const unsigned int nGidsCount
+	                                  , const double& x
+	                                  , const double& y
+	                                  , const double& w
+	                                  , const double& h) override { return S_OK; }
 
 	//-------- Функции для вывода изображений ---------------------------------------------------
 	virtual HRESULT DrawImage(IGrObject* pImage
-							  , const double& x
-							  , const double& y
-							  , const double& w
-							  , const double& h) override { return S_OK; }
+	                          , const double& x
+	                          , const double& y
+	                          , const double& w
+	                          , const double& h) override { return S_OK; }
 	virtual HRESULT DrawImageFromFile(const std::wstring&
-									  , const double& x
-									  , const double& y
-									  , const double& w
-									  , const double& h
-									  , const BYTE& lAlpha = 255) override { return S_OK; }
+	                                  , const double& x
+	                                  , const double& y
+	                                  , const double& w
+	                                  , const double& h
+	                                  , const BYTE& lAlpha = 255) override { return S_OK; }
 
 	// transform --------------------------------------------------------------------------------
 	virtual HRESULT SetCommandParams(double dAngle
-									 , double dLeft
-									 , double dTop
-									 , double dWidth
-									 , double dHeight
-									 , DWORD lFlags) override { return S_OK; }
+	                                 , double dLeft
+	                                 , double dTop
+	                                 , double dWidth
+	                                 , double dHeight
+	                                 , DWORD lFlags) override { return S_OK; }
 
 	virtual HRESULT SetTransform(const double& m11
-								 , const double& m12
-								 , const double& m21
-								 , const double& m22
-								 , const double& dx
-								 , const double& dy) override { return S_OK; }
+	                             , const double& m12
+	                             , const double& m21
+	                             , const double& m22
+	                             , const double& dx
+	                             , const double& dy) override { return S_OK; }
 	virtual HRESULT GetTransform(double *m11
-								 , double *m12
-								 , double *m21
-								 , double *m22
-								 , double *dx
-								 , double *dy)	override { return S_OK; }
+	                             , double *m12
+	                             , double *m21
+	                             , double *m22
+	                             , double *dx
+	                             , double *dy)	override { return S_OK; }
 	virtual HRESULT ResetTransform() override { return S_OK; }
 
 	// -----------------------------------------------------------------------------------------
@@ -2507,6 +2509,13 @@ public:
 	virtual HRESULT CommandLong(const LONG& lType, const LONG& lCommand) override { return S_OK; }
 	virtual HRESULT CommandDouble(const LONG& lType, const double& dCommand) override { return S_OK; }
 	virtual HRESULT CommandString(const LONG& lType, const std::wstring& sCommand) override { return S_OK; }
+
+	virtual HRESULT IsExistAdditionalParam(const int& type)
+	{
+		if (c_nAdditionalParamBreak == type)
+			return m_bIsBreak ? S_OK : S_FALSE;
+		return S_FALSE;
+	}
 };
 
 class CQRenderterCorrector : public IMetafileToRenderter
