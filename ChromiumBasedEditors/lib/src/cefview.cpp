@@ -5688,7 +5688,14 @@ void CCefView_Private::UpdateSize()
 	CheckZoom();
 
 	if (m_handler && m_handler->GetBrowser() && m_handler->GetBrowser()->GetHost())
+	{
 		m_handler->GetBrowser()->GetHost()->NotifyMoveOrResizeStarted();
+
+		// Fix bug #62086
+		CefRefPtr<CefFrame> pFrame = m_handler->GetBrowser()->GetMainFrame();
+		if (pFrame)
+			pFrame->ExecuteJavaScript("window.dispatchEvent(new Event('resize'));", pFrame->GetURL(), 0);
+	}
 }
 
 void CCefView_Private::SendProcessMessage(CefProcessId target_process, CefRefPtr<CefProcessMessage> message)
