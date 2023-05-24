@@ -834,15 +834,14 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
 		if (NULL != pNativeRendererChecker)
 		{
 			// проверяем на поддержку. как только рендерер поддержит все команды - GetNativeRendererUnsupportChecker должен вернуть NULL
-			try
+			if (NULL == m_pNativePrinter)
+				NSOnlineOfficeBinToPdf::ConvertBufferToRenderer(pPageCommands, nPageCommandsLen, pNativeRendererChecker);
+			else
+				m_pNativePrinter->Draw(pNativeRendererChecker->m_pRenderer, nPageIndex);
+
+			if (S_OK == pNativeRendererChecker->m_pRenderer->IsExistAdditionalParam(c_nAdditionalParamBreak))
 			{
-				if (NULL == m_pNativePrinter)
-					NSOnlineOfficeBinToPdf::ConvertBufferToRenderer(pPageCommands, nPageCommandsLen, pNativeRendererChecker);
-				else
-					m_pNativePrinter->Draw(pNativeRendererChecker->m_pRenderer, nPageIndex);
-			}
-			catch (int nError)
-			{
+				// убрал throw/catch, так как есть проблемы с исключениями между динамическими библиотеками при статической линковке libstd/libgcc
 				RELEASEINTERFACE(pNativeRenderer);
 			}
 		}
