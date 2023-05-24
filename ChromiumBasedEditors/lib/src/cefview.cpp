@@ -7789,7 +7789,8 @@ namespace NSRequest
 		if (m_view->GetBrowser())
 		{
 			CefRefPtr<CefFrame> frame = m_view->GetBrowser()->GetFrame(frameId);
-			frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
+            if (frame)
+                frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
 		}
 	}
 }
