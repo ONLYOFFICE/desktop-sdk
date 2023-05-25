@@ -1627,6 +1627,7 @@ public:
 
 	// в виндоус есть баг с ресайзом. лечится "двойным" ресайзом.
 	// но на всяких loaded - его нужно отключать
+	// TODO: удалить, после релиза 7.4
 	bool m_bIsDisableResizeOnLoaded;
 	bool m_bIsDisableResizeOnLoadedOneCall;
 
@@ -7789,8 +7790,8 @@ namespace NSRequest
 		if (m_view->GetBrowser())
 		{
 			CefRefPtr<CefFrame> frame = m_view->GetBrowser()->GetFrame(frameId);
-            if (frame)
-                frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
+			if (frame)
+				frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
 		}
 	}
 }
