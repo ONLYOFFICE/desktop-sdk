@@ -1627,6 +1627,7 @@ public:
 
 	// в виндоус есть баг с ресайзом. лечится "двойным" ресайзом.
 	// но на всяких loaded - его нужно отключать
+	// TODO: удалить, после релиза 7.4
 	bool m_bIsDisableResizeOnLoaded;
 	bool m_bIsDisableResizeOnLoadedOneCall;
 
@@ -5688,7 +5689,14 @@ void CCefView_Private::UpdateSize()
 	CheckZoom();
 
 	if (m_handler && m_handler->GetBrowser() && m_handler->GetBrowser()->GetHost())
+	{
 		m_handler->GetBrowser()->GetHost()->NotifyMoveOrResizeStarted();
+
+		// Fix bug #62086
+		CefRefPtr<CefFrame> pFrame = m_handler->GetBrowser()->GetMainFrame();
+		if (pFrame)
+			pFrame->ExecuteJavaScript("window.dispatchEvent(new Event('resize'));", pFrame->GetURL(), 0);
+	}
 }
 
 void CCefView_Private::SendProcessMessage(CefProcessId target_process, CefRefPtr<CefProcessMessage> message)
@@ -7782,7 +7790,8 @@ namespace NSRequest
 		if (m_view->GetBrowser())
 		{
 			CefRefPtr<CefFrame> frame = m_view->GetBrowser()->GetFrame(frameId);
-			frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
+			if (frame)
+				frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
 		}
 	}
 }
