@@ -477,6 +477,9 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
     LOGGER_STRING("CApplicationCEF::Init_CEF::initialize");
 
 #if defined(_LINUX) && !defined(_MAC)
+	// delete LD_PRELOAD
+	setenv("LD_PRELOAD", "", 1);
+
     // The Chromium sandbox requires that there only be a single thread during
     // initialization. Therefore initialize GTK after CEF.
     gtk_init(&argc, &argv);
