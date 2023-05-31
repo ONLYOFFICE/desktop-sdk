@@ -5263,6 +5263,8 @@ virtual void OnSetLoadingState(bool isLoading,
 	{
 		NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_PAGE_LOAD_END);
 		m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+
+		m_pParent->GetAppManager()->m_pInternal->CheckPreload();
 	}
 }
 

@@ -1721,6 +1721,9 @@ public:
 	// информация о порталах. открытие файлы из рисентов, из редактора - теряется информация о externalclouds
 	CLocalStorageClouds m_oPortalsList;
 
+	// сброс LD_PRELOAD
+	bool m_bIsPreloadDiscard;
+
 public:
 	IMPLEMENT_REFCOUNTING(CAscApplicationManager_Private);
 
@@ -1770,6 +1773,8 @@ public:
 		m_oCS_LocalFiles.InitializeCriticalSection();
 		m_oCS_SystemMessages.InitializeCriticalSection();
 
+		m_bIsPreloadDiscard = false;
+
 		COfficeUtils::SetAddonFlag(ZLIB_ADDON_FLAG_WINDOWS_SHARED_WRITE);
 	}
 	virtual ~CAscApplicationManager_Private()
@@ -1796,6 +1801,15 @@ public:
 		std::wstring sTmp = m_pMain->m_oSettings.cache_path + L"/work_temp";
 		if (NSDirectory::Exists(sTmp))
 			NSDirectory::DeleteDirectory(sTmp);
+	}
+
+	void CheckPreload()
+	{
+		if (!m_bIsPreloadDiscard)
+		{
+			m_bIsPreloadDiscard = true;
+			setenv("LD_PRELOAD", "", 1);
+		}
 	}
 
 	bool GetEditorPermission()
