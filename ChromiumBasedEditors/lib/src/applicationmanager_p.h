@@ -1808,7 +1808,10 @@ public:
 		if (!m_bIsPreloadDiscard)
 		{
 			m_bIsPreloadDiscard = true;
+
+#if defined(LINUX) && !defined(_MAC) && !defined(CEF_VERSION_107)
 			setenv("LD_PRELOAD", "", 1);
+#endif
 		}
 	}
 
