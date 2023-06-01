@@ -1612,7 +1612,10 @@ public:
 	// id <=> view
 	std::map<int, CCefView*> m_mapViews;
 
-	// показывать ли консоль для дебага
+    // проверка корректного запуска приложения
+    bool m_bCheckMode;
+
+    // показывать ли консоль для дебага
 	bool m_bDebugInfoSupport;
 
 	// экспериментальные возможности
@@ -1740,6 +1743,7 @@ public:
 		m_pApplicationFonts = NULL;
 		m_pApplication = NULL;
 
+        m_bCheckMode = false;
 		m_bDebugInfoSupport = false;
 		m_bExperimentalFeatures = false;
 
@@ -2007,8 +2011,13 @@ public:
 
 		m_oKeyboardChecker.SetEnabled(m_bIsUseSpellCheckKeyboardInput);
 	}
-	void CheckSetting(const std::string& sName, const std::string& sValue)
-	{
+    void CheckSetting(const std::string& sName, const std::string& sValue)
+    {
+        if ("--ascdesktop-check-mode" == sName)
+        {
+            m_bCheckMode = true;
+            return;
+        }
 		if ("--ascdesktop-support-debug-info" == sName)
 		{
 			m_bDebugInfoSupport = true;
