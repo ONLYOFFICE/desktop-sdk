@@ -1612,6 +1612,9 @@ public:
 	// id <=> view
 	std::map<int, CCefView*> m_mapViews;
 
+	// проверка корректного запуска приложения через stdout или лог-файл
+	std::string m_sLogFile;
+
 	// показывать ли консоль для дебага
 	bool m_bDebugInfoSupport;
 
@@ -1740,6 +1743,7 @@ public:
 		m_pApplicationFonts = NULL;
 		m_pApplication = NULL;
 
+		m_sLogFile = "";
 		m_bDebugInfoSupport = false;
 		m_bExperimentalFeatures = false;
 
@@ -2009,6 +2013,12 @@ public:
 	}
 	void CheckSetting(const std::string& sName, const std::string& sValue)
 	{
+		if ("--ascdesktop-log-file" == sName)
+		{
+			// stdout для Linux, путь к файлу для Windows
+			m_sLogFile = sValue;
+			return;
+		}
 		if ("--ascdesktop-support-debug-info" == sName)
 		{
 			m_bDebugInfoSupport = true;
