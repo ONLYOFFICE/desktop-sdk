@@ -4285,7 +4285,14 @@ virtual void OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
 			{
 				std::wstring sFolder = NSDirectory::GetFolderPath(sLogFile);
 				if ( sFolder.length() && !NSDirectory::Exists(sFolder) )
-					NSDirectory::CreateDirectories(sFolder);
+				{
+					if ( !NSDirectory::CreateDirectories(sFolder) )
+					{
+						// относительный путь
+						sFolder = NSFile::GetProcessDirectory() + L"/" + sFolder;
+						NSDirectory::CreateDirectories(sFolder);
+					}
+				}
 
 				NSFile::CFileBinary oFile;
 				if ( oFile.CreateFileW(sLogFile) )
