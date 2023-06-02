@@ -2111,17 +2111,6 @@ public:
 							#endif
 								bool is_redirect) OVERRIDE
 	{
-        // полагаем, что это корректный запуск приложения
-        if ( m_pParent->m_pInternal->m_pManager->m_pInternal->m_bCheckMode && m_pParent->m_nId == 1 )
-        {
-            NSFile::CFileBinary oFile;
-            if ( oFile.CreateFileW(L"check.txt") )
-            {
-                oFile.WriteStringUTF8(L"1");
-                oFile.CloseFile();
-            }
-        }
-
 		std::wstring sUrl = request->GetURL().ToWString();
 
 		if (0 == sUrl.find(L"mailto"))
