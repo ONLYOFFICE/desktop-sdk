@@ -4272,6 +4272,29 @@ virtual void OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
 
 		if (CAscApplicationManager::IsUseSystemScaling())
 			m_bIsDisableResizeOnLoaded = true;
+
+		// полагаем, что это корректный запуск приложения
+		if ( m_pParent->m_pInternal->m_pManager->m_pInternal->m_sLogFile.length() && m_pParent->m_nId == 1 )
+		{
+			std::wstring sOutput = L"[DesktopEditors]: start page loaded";
+			std::wstring sLogFile = UTF8_TO_U(m_pParent->m_pInternal->m_pManager->m_pInternal->m_sLogFile);
+
+			if ( sLogFile == L"stdout" )
+				std::wcout << sOutput << std::endl;
+			else
+			{
+				std::wstring sFolder = NSDirectory::GetFolderPath(sLogFile);
+				if ( sFolder.length() && !NSDirectory::Exists(sFolder) )
+					NSDirectory::CreateDirectories(sFolder);
+
+				NSFile::CFileBinary oFile;
+				if ( oFile.CreateFileW(sLogFile) )
+				{
+					oFile.WriteStringUTF8(sOutput);
+					oFile.CloseFile();
+				}
+			}
+		}
 	}
 }
 
