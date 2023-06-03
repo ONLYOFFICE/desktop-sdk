@@ -1653,7 +1653,7 @@ public:
 
 public:
 	CAscClientHandler() : client::ClientHandler(this, false,
-                                            #ifdef CEF_VERSION_ABOVE_102
+											#ifdef CEF_VERSION_ABOVE_102
 												false,
 											#endif
 												"https://onlyoffice.com/")
@@ -4562,6 +4562,34 @@ virtual bool OnPreKeyEvent(CefRefPtr<CefBrowser> browser,
 			return true; // alt + f4!!!
 	}
 
+#ifdef _MAC
+	if (event.type == KEYEVENT_RAWKEYDOWN)
+	{
+		if (m_pParent->m_pInternal->m_bIsClosing ||
+			m_pParent->m_pInternal->m_bIsDestroy ||
+			m_pParent->m_pInternal->m_bIsDestroying)
+			return false;
+
+		int nMods = event.modifiers;
+		if (86 == event.windows_key_code &&
+			((nMods & EVENTFLAG_COMMAND_DOWN) != 0) &&
+			((nMods & EVENTFLAG_SHIFT_DOWN) != 0))
+		{
+			if (GetBrowser())
+			{
+				CefRefPtr<CefFrame> pFrame = GetBrowser()->GetFocusedFrame();
+				if (pFrame)
+				{
+					GetBrowser()->GetFocusedFrame()->ExecuteJavaScript("(function(){if (window.Asc && window.Asc.editor && window.AscCommon) { window.AscCommon.isDisableRawPaste = true; window.AscDesktopEditor.Paste(); window.setTimeout(function(){ if (true === window.AscCommon.isDisableRawPaste) delete window.AscCommon.isDisableRawPaste; }, 50); }})();",
+																	   pFrame->GetURL(), 0);
+				}
+			}
+
+			return true;
+		}
+	}
+#endif
+
 	return false;
 }
 
@@ -5783,7 +5811,7 @@ void CAscClientHandler::OnDeleteCookie(bool bIsPresent)
 
 // CefView --------------------------------------------------------------------------------
 CCefView::CCefView(CCefViewWidgetImpl* parent, int nId)
-{    
+{
 	m_pInternal = new CCefView_Private();
 	m_pInternal->m_pWidgetImpl = parent;
 	m_nId = nId;
@@ -6721,7 +6749,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 			}
 
 			m_pInternal->m_handler->m_pFileDialogCallback->Continue(
-            #ifndef CEF_VERSION_ABOVE_102
+			#ifndef CEF_VERSION_ABOVE_102
 						0,
 			#endif
 						file_paths);
@@ -6781,7 +6809,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 				std::vector<CefString> file_paths;
 				file_paths.push_back(sPath);
 				m_pInternal->m_handler->m_pDirectoryDialogCallback->Continue(
-            #ifndef CEF_VERSION_ABOVE_102
+			#ifndef CEF_VERSION_ABOVE_102
 							0,
 			#endif
 							file_paths);
