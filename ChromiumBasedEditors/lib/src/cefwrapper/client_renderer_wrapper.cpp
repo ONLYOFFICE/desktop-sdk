@@ -4859,8 +4859,7 @@ return this.split(str).join(newStr);\
 		CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
 		if (_frame)
 		{
-			std::string sCode = "if (window[\"Asc\"] && window[\"Asc\"][\"editor\"]) { window[\"Asc\"][\"editor\"][\"asc_nativePrint\"](undefined, undefined); }";
-			sCode += "else if (window[\"editor\"]) { window[\"editor\"][\"asc_nativePrint\"](undefined, undefined";
+			std::string sCode = "if (window.Asc && window.Asc.editor) { window.Asc.editor.asc_nativePrint(undefined, undefined";
 
 			if (message->GetArgumentList()->GetSize() == 1)
 				sCode += (", " + (message->GetArgumentList()->GetString(0).ToString()));
