@@ -4166,6 +4166,31 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
 			return sUrl;
 		return L"error";
 	}
+
+	bool CheckAnotherLocalFile(const std::wstring& sUrl)
+	{
+		// проверяем - может картинка из соседнего файла?
+		std::wstring sLocalFile = sUrl;
+		if (sLocalFile.find(L"file://") == 0)
+		{
+#ifdef _WIN32
+			sLocalFile = sLocalFile.substr(8);
+#else
+			sLocalFile = sLocalFile.substr(7);
+#endif
+		}
+
+		std::wstring sLocaDirRecover = NSFile::GetDirectoryName(m_sLocalFileFolderWithoutFile);
+		NSStringUtils::string_replace(sLocaDirRecover, L"\\", L"/");
+
+		NSStringUtils::string_replace(sLocalFile, L"\\", L"/");
+
+		if (0 != sLocalFile.find(sLocaDirRecover))
+			return false;
+
+		return true;
+	}
+
 	std::wstring GetLocalImageUrlLocal(const std::wstring& sUrl, const std::wstring& sUrlMap, unsigned int nCRC32 = 0)
 	{
 		std::wstring sUrlTmp = sUrl;
@@ -4214,51 +4239,143 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
 
 		if (pMetafile->GetType() == MetaFile::c_lMetaEmf || pMetafile->GetType() == MetaFile::c_lMetaWmf)
 		{
-			std::wstring sRet = L"image" + std::to_wstring(m_nLocalImagesNextIndex) + L".svg";
-			std::wstring sRet1 = L"image" + std::to_wstring(m_nLocalImagesNextIndex++) + ((pMetafile->GetType() == MetaFile::c_lMetaEmf) ? L".emf" : L".wmf");
+			std::wstring sMeta = L"";
+			std::wstring sSvg = L"";
+			std::wstring sIndex = std::to_wstring(m_nLocalImagesNextIndex++);
+			std::wstring sOutDir = m_sLocalFileFolderWithoutFile + L"/media/";
 
-			double x = 0, y = 0, w = 0, h = 0;
-			pMetafile->GetBounds(&x, &y, &w, &h);
+			// копируем метафайл и генерируем путь для svg
+			if (pMetafile->GetType() == MetaFile::c_lMetaWmf)
+			{
+				sMeta = L"display1image" + sIndex + L".wmf";
+				sSvg  = L"display1image" + sIndex + L".svg";
+				NSFile::CFileBinary::Copy(sUrl, sOutDir + sMeta);
+			}
+			else
+			{
+				sMeta = L"display2image" + sIndex + L".emf";
+				sSvg  = L"display2image" + sIndex + L".svg";
+				NSFile::CFileBinary::Copy(sUrl, sOutDir + sMeta);
+			}
 
-			double _max = (w >= h) ? w : h;
-			double dKoef = 100000.0 / _max;
+			bool bIsLocalAnother = CheckAnotherLocalFile(sUrl);
+			if (bIsLocalAnother)
+			{
+				std::wstring sUrlFileName = NSFile::GetFileName(sUrl);
+				if (0 == sUrlFileName.find(L"display"))
+				{
+					std::wstring::size_type nLen = sUrlFileName.length();
+					if (nLen > 4 && '.' == sUrlFileName[nLen - 4])
+					{
+						std::wstring sSvgSrc = sUrl.substr(0, nLen - 3) + L"svg";
+						if (NSFile::CFileBinary::Exists(sSvgSrc))
+						{
+							NSFile::CFileBinary::Copy(sSvgSrc, sOutDir + sSvg);
+						}
+					}
+				}
+			}
 
-			int WW = (int)(dKoef * w + 0.5);
-			int HH = (int)(dKoef * h + 0.5);
+			// не из соседнего файла или нет свг - надо ее сделать!
+			if (!NSFile::CFileBinary::Exists(sOutDir + sSvg))
+			{
+				std::wstring sInternalSvg = pMetafile->ConvertToSvg();
+				if (!sInternalSvg.empty())
+				{
+					NSFile::CFileBinary::SaveToFile(sOutDir + sSvg, sInternalSvg);
+				}
+				else
+				{
+					double x = 0, y = 0, w = 0, h = 0;
+					pMetafile->GetBounds(&x, &y, &w, &h);
 
-			NSHtmlRenderer::CASCSVGWriter oWriterSVG(false);
-			oWriterSVG.SetFontManager(m_pLocalApplicationFonts->GenerateFontManager());
-			oWriterSVG.put_Width(WW);
-			oWriterSVG.put_Height(HH);
-			pMetafile->DrawOnRenderer(&oWriterSVG, 0, 0, WW, HH);
+					double _max = (w >= h) ? w : h;
+					double dKoef = 100000.0 / _max;
 
-			oWriterSVG.SaveFile(m_sLocalFileFolderWithoutFile + L"/media/" + sRet);
+					int WW = (int)(dKoef * w + 0.5);
+					int HH = (int)(dKoef * h + 0.5);
 
-			m_mapLocalAddImages.insert(std::pair<std::wstring, std::wstring>(sUrlMap, sRet));
+					// TODO: заменить на новую конвертацию
+					NSHtmlRenderer::CASCSVGWriter oWriterSVG(false);
+					oWriterSVG.SetFontManager(m_pLocalApplicationFonts->GenerateFontManager());
+					oWriterSVG.put_Width(WW);
+					oWriterSVG.put_Height(HH);
+					pMetafile->DrawOnRenderer(&oWriterSVG, 0, 0, WW, HH);
+
+					oWriterSVG.SaveFile(sOutDir + sSvg);
+				}
+			}
+
+			m_mapLocalAddImages.insert(std::pair<std::wstring, std::wstring>(sUrlMap, sSvg));
 			if (0 != nCRC32)
-				m_mapLocalAddImagesCRC.insert(std::pair<unsigned int, std::wstring>(nCRC32, sRet));
-			return sRet;
+				m_mapLocalAddImagesCRC.insert(std::pair<unsigned int, std::wstring>(nCRC32, sSvg));
+
+			RELEASEINTERFACE(pMetafile);
+			return sSvg;
 		}
 		if (pMetafile->GetType() == MetaFile::c_lMetaSvg || pMetafile->GetType() == MetaFile::c_lMetaSvm)
 		{
-			std::wstring sRet = L"image" + std::to_wstring(m_nLocalImagesNextIndex++) + L".png";
+			std::wstring sMeta = L"";
+			std::wstring sSvg = L"";
+			std::wstring sIndex = std::to_wstring(m_nLocalImagesNextIndex++);
+			std::wstring sOutDir = m_sLocalFileFolderWithoutFile + L"/media/";
 
-			double x = 0, y = 0, w = 0, h = 0;
-			pMetafile->GetBounds(&x, &y, &w, &h);
+			// нужно проверить - не лежит ли рядом метафайл
+			bool bIsLocalAnother = CheckAnotherLocalFile(sUrl);
+			if (bIsLocalAnother)
+			{
+				std::wstring sUrlFileName = NSFile::GetFileName(sUrl);
+				if (0 == sUrlFileName.find(L"display"))
+				{
+					std::wstring::size_type nLen = sUrlFileName.length();
+					if (nLen > 4 && '.' == sUrlFileName[nLen - 4])
+					{
+						std::wstring sUrlFileNameWithoutExt = sUrl.substr(0, sUrl.length() - 3);
+						std::wstring sWmf = sUrlFileNameWithoutExt + L"wmf";
+						std::wstring sEmf = sUrlFileNameWithoutExt + L"emf";
 
-			double _max = (w >= h) ? w : h;
-			double dKoef = 1000.0 / _max;
+						if (NSFile::CFileBinary::Exists(sWmf))
+						{
+							sMeta = L"display1image" + sIndex + L".wmf";
+							sSvg  = L"display1image" + sIndex + L".svg";
+							NSFile::CFileBinary::Copy(sWmf, sOutDir + sMeta);
+							NSFile::CFileBinary::Copy(sUrl, sOutDir + sSvg);
+						}
+						else if (NSFile::CFileBinary::Exists(sEmf))
+						{
+							sMeta = L"display2image" + sIndex + L".emf";
+							sSvg  = L"display2image" + sIndex + L".svg";
+							NSFile::CFileBinary::Copy(sEmf, sOutDir + sMeta);
+							NSFile::CFileBinary::Copy(sUrl, sOutDir + sSvg);
+						}
+					}
+				}
+			}
 
-			int WW = (int)(dKoef * w + 0.5);
-			int HH = (int)(dKoef * h + 0.5);
+			if (sSvg.empty())
+			{
+				// метафайла нет. свг пока не поддерживаем - конвертируем в растр
+				sSvg = L"image" + sIndex + L".png";
 
-			std::wstring sSaveRet = m_sLocalFileFolderWithoutFile + L"/media/" + sRet;
-			pMetafile->ConvertToRaster(sSaveRet.c_str(), _CXIMAGE_FORMAT_PNG, WW, HH);
+				double x = 0, y = 0, w = 0, h = 0;
+				pMetafile->GetBounds(&x, &y, &w, &h);
 
-			m_mapLocalAddImages.insert(std::pair<std::wstring, std::wstring>(sUrlMap, sRet));
+				double _max = (w >= h) ? w : h;
+				double dKoef = 1000.0 / _max;
+
+				int WW = (int)(dKoef * w + 0.5);
+				int HH = (int)(dKoef * h + 0.5);
+
+				std::wstring sOutFile = sOutDir + sSvg;
+				pMetafile->ConvertToRaster(sOutFile.c_str(), _CXIMAGE_FORMAT_PNG, WW, HH);
+			}
+
+			m_mapLocalAddImages.insert(std::pair<std::wstring, std::wstring>(sUrlMap, sSvg));
 			if (0 != nCRC32)
-				m_mapLocalAddImagesCRC.insert(std::pair<unsigned int, std::wstring>(nCRC32, sRet));
-			return sRet;
+				m_mapLocalAddImagesCRC.insert(std::pair<unsigned int, std::wstring>(nCRC32, sSvg));
+
+			RELEASEINTERFACE(pMetafile);
+			return sSvg;
 		}
 
 		RELEASEINTERFACE(pMetafile);
