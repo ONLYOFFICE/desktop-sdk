@@ -4976,12 +4976,14 @@ return this.split(str).join(newStr);\
 		CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
 		if (_frame)
 		{
-			std::string sCode = "if (window.Asc && window.Asc.editor) { window.Asc.editor.asc_nativePrint(undefined, undefined";
+			std::string sCode = "(function(){\
+if (window.Asc && window.Asc.editor && !window.editor) window.Asc.editor.asc_nativePrint(undefined, undefined);\
+else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 
 			if (message->GetArgumentList()->GetSize() == 1)
 				sCode += (", " + (message->GetArgumentList()->GetString(0).ToString()));
 
-			sCode += "); }";
+			sCode += "); })();";
 			_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
 		}
 		return true;
