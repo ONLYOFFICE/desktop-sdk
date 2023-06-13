@@ -430,6 +430,10 @@ void QVideoPlaylist::Load()
     QString sSettings = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
     sSettings += m_sSavePlayListAddon;
 
+#ifdef WIN32
+	sSettings = sSettings.replace('/', '\\');
+#endif
+
     std::wstring sDir = sSettings.toStdWString();
     NSDirectory::CreateDirectories(sDir);
 

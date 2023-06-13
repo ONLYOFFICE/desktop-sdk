@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=af9ed3cfda9c94f046f4f9b5c9c94b1b38ff2e64$
+// $hash=675d288fbd8077e1a702308dd4a57e63aea00ba8$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_BROWSER_CTOCPP_H_
@@ -36,26 +36,27 @@ class CefBrowserCToCpp
   virtual ~CefBrowserCToCpp();
 
   // CefBrowser methods.
-  CefRefPtr<CefBrowserHost> GetHost() OVERRIDE;
-  bool CanGoBack() OVERRIDE;
-  void GoBack() OVERRIDE;
-  bool CanGoForward() OVERRIDE;
-  void GoForward() OVERRIDE;
-  bool IsLoading() OVERRIDE;
-  void Reload() OVERRIDE;
-  void ReloadIgnoreCache() OVERRIDE;
-  void StopLoad() OVERRIDE;
-  int GetIdentifier() OVERRIDE;
-  bool IsSame(CefRefPtr<CefBrowser> that) OVERRIDE;
-  bool IsPopup() OVERRIDE;
-  bool HasDocument() OVERRIDE;
-  CefRefPtr<CefFrame> GetMainFrame() OVERRIDE;
-  CefRefPtr<CefFrame> GetFocusedFrame() OVERRIDE;
-  CefRefPtr<CefFrame> GetFrame(int64 identifier) OVERRIDE;
-  CefRefPtr<CefFrame> GetFrame(const CefString& name) OVERRIDE;
-  size_t GetFrameCount() OVERRIDE;
-  void GetFrameIdentifiers(std::vector<int64>& identifiers) OVERRIDE;
-  void GetFrameNames(std::vector<CefString>& names) OVERRIDE;
+  bool IsValid() override;
+  CefRefPtr<CefBrowserHost> GetHost() override;
+  bool CanGoBack() override;
+  void GoBack() override;
+  bool CanGoForward() override;
+  void GoForward() override;
+  bool IsLoading() override;
+  void Reload() override;
+  void ReloadIgnoreCache() override;
+  void StopLoad() override;
+  int GetIdentifier() override;
+  bool IsSame(CefRefPtr<CefBrowser> that) override;
+  bool IsPopup() override;
+  bool HasDocument() override;
+  CefRefPtr<CefFrame> GetMainFrame() override;
+  CefRefPtr<CefFrame> GetFocusedFrame() override;
+  CefRefPtr<CefFrame> GetFrame(int64 identifier) override;
+  CefRefPtr<CefFrame> GetFrame(const CefString& name) override;
+  size_t GetFrameCount() override;
+  void GetFrameIdentifiers(std::vector<int64>& identifiers) override;
+  void GetFrameNames(std::vector<CefString>& names) override;
 };
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_BROWSER_CTOCPP_H_

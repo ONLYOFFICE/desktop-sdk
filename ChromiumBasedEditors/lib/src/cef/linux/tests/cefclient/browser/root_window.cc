@@ -4,20 +4,16 @@
 
 #include "tests/cefclient/browser/root_window.h"
 
+#include "include/base/cef_callback_helpers.h"
+
 #include "tests/cefclient/browser/main_context.h"
 #include "tests/cefclient/browser/root_window_manager.h"
 
 namespace client {
 
-RootWindowConfig::RootWindowConfig()
-    : always_on_top(false),
-      with_controls(true),
-      with_osr(false),
-      with_extension(false),
-      initially_hidden(false),
-      url(MainContext::Get()->GetMainURL()) {}
+RootWindowConfig::RootWindowConfig() : url(MainContext::Get()->GetMainURL()) {}
 
-RootWindow::RootWindow() : delegate_(NULL) {}
+RootWindow::RootWindow() : delegate_(nullptr) {}
 
 RootWindow::~RootWindow() {}
 
@@ -37,7 +33,7 @@ void RootWindow::OnExtensionsChanged(const ExtensionSet& extensions) {
 
   ExtensionSet::const_iterator it = extensions.begin();
   for (; it != extensions.end(); ++it) {
-    delegate_->CreateExtensionWindow(*it, CefRect(), NULL, base::Closure(),
+    delegate_->CreateExtensionWindow(*it, CefRect(), nullptr, base::DoNothing(),
                                      WithWindowlessRendering());
   }
 }

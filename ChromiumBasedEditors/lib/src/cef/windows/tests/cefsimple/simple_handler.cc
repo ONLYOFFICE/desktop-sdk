@@ -7,8 +7,9 @@
 #include <sstream>
 #include <string>
 
-#include "include/base/cef_bind.h"
+#include "include/base/cef_callback.h"
 #include "include/cef_app.h"
+#include "include/cef_parser.h"
 #include "include/views/cef_browser_view.h"
 #include "include/views/cef_window.h"
 #include "include/wrapper/cef_closure_task.h"
@@ -16,7 +17,14 @@
 
 namespace {
 
-SimpleHandler* g_instance = NULL;
+SimpleHandler* g_instance = nullptr;
+
+// Returns a data: URI with the specified contents.
+std::string GetDataURI(const std::string& data, const std::string& mime_type) {
+  return "data:" + mime_type + ";base64," +
+         CefURIEncode(CefBase64Encode(data.data(), data.size()), false)
+             .ToString();
+}
 
 }  // namespace
 
@@ -27,7 +35,7 @@ SimpleHandler::SimpleHandler(bool use_views)
 }
 
 SimpleHandler::~SimpleHandler() {
-  g_instance = NULL;
+  g_instance = nullptr;
 }
 
 // static
@@ -48,7 +56,7 @@ void SimpleHandler::OnTitleChange(CefRefPtr<CefBrowser> browser,
       if (window)
         window->SetTitle(title);
     }
-  } else {
+  } else if (!IsChromeRuntimeEnabled()) {
     // Set the title of the window using platform APIs.
     PlatformTitleChange(browser, title);
   }
@@ -102,24 +110,29 @@ void SimpleHandler::OnLoadError(CefRefPtr<CefBrowser> browser,
                                 const CefString& failedUrl) {
   CEF_REQUIRE_UI_THREAD();
 
+  // Allow Chrome to show the error page.
+  if (IsChromeRuntimeEnabled())
+    return;
+
   // Don't display an error for downloaded files.
   if (errorCode == ERR_ABORTED)
     return;
 
-  // Display a load error message.
+  // Display a load error message using a data: URI.
   std::stringstream ss;
   ss << "<html><body bgcolor=\"white\">"
         "<h2>Failed to load URL "
      << std::string(failedUrl) << " with error " << std::string(errorText)
      << " (" << errorCode << ").</h2></body></html>";
-  frame->LoadString(ss.str(), failedUrl);
+
+  frame->LoadURL(GetDataURI(ss.str(), "text/html"));
 }
 
 void SimpleHandler::CloseAllBrowsers(bool force_close) {
   if (!CefCurrentlyOn(TID_UI)) {
     // Execute on the UI thread.
-    CefPostTask(TID_UI, base::Bind(&SimpleHandler::CloseAllBrowsers, this,
-                                   force_close));
+    CefPostTask(TID_UI, base::BindOnce(&SimpleHandler::CloseAllBrowsers, this,
+                                       force_close));
     return;
   }
 
@@ -129,4 +142,15 @@ void SimpleHandler::CloseAllBrowsers(bool force_close) {
   BrowserList::const_iterator it = browser_list_.begin();
   for (; it != browser_list_.end(); ++it)
     (*it)->GetHost()->CloseBrowser(force_close);
+}
+
+// static
+bool SimpleHandler::IsChromeRuntimeEnabled() {
+  static int value = -1;
+  if (value == -1) {
+    CefRefPtr<CefCommandLine> command_line =
+        CefCommandLine::GetGlobalCommandLine();
+    value = command_line->HasSwitch("enable-chrome-runtime") ? 1 : 0;
+  }
+  return value == 1;
 }

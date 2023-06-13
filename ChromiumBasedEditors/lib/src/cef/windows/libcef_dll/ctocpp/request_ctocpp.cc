@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=30da50026aa5654b04de874040b194dcc87a7e30$
+// $hash=0cd351db644cd18b1cde6adf5355d2ceff949827$
 //
 
 #include "libcef_dll/ctocpp/request_ctocpp.h"
@@ -159,7 +159,7 @@ NO_SANITIZE("cfi-icall")
 CefRefPtr<CefPostData> CefRequestCToCpp::GetPostData() {
   cef_request_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_post_data))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -427,7 +427,7 @@ CefCToCppRefCounted<CefRequestCToCpp, CefRequest, cef_request_t>::UnwrapDerived(
     CefWrapperType type,
     CefRequest* c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

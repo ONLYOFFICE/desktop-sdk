@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=b720082955a366e530d9bf5ee3515f532d226acf$
+// $hash=43754e6fc947d6f008c9471a7a86218fafa84c82$
 //
 
 #include "libcef_dll/ctocpp/x509cert_principal_ctocpp.h"
@@ -241,7 +241,7 @@ cef_x509cert_principal_t* CefCToCppRefCounted<
     cef_x509cert_principal_t>::UnwrapDerived(CefWrapperType type,
                                              CefX509CertPrincipal* c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

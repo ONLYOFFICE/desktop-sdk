@@ -142,8 +142,8 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
 }
 
 - (void)detach {
-  renderer_ = NULL;
-  browser_window_ = NULL;
+  renderer_ = nullptr;
+  browser_window_ = nullptr;
   if (text_input_client_)
     [text_input_client_ detach];
 }
@@ -151,7 +151,7 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
 - (CefRefPtr<CefBrowser>)getBrowser {
   if (browser_window_)
     return browser_window_->GetBrowser();
-  return NULL;
+  return nullptr;
 }
 
 - (void)setFrame:(NSRect)frameRect {
@@ -189,7 +189,7 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
   }
 
   browser->GetHost()->SendMouseClickEvent(mouseEvent, type, isUp,
-                                          [event clickCount]);
+                                          static_cast<int>([event clickCount]));
 }
 
 - (void)mouseDown:(NSEvent*)event {
@@ -197,7 +197,7 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
 }
 
 - (void)rightMouseDown:(NSEvent*)event {
-  if ([event modifierFlags] & NSShiftKeyMask) {
+  if ([event modifierFlags] & NSEventModifierFlagShift) {
     // Start rotation effect.
     last_mouse_pos_ = cur_mouse_pos_ = [self getClickPointForEvent:event];
     rotating_ = true;
@@ -284,7 +284,7 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
   if (!browser.get() || !text_input_context_osr_mac_)
     return;
 
-  if ([event type] != NSFlagsChanged) {
+  if ([event type] != NSEventTypeFlagsChanged) {
     if (text_input_client_) {
       [text_input_client_ HandleKeyEventBeforeTextInputClient:event];
 
@@ -309,10 +309,13 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
 // interfere with other Trackpad events, this mapping is only enabled if
 // touch-events=enabled commandline is passed and caps lock key is on.
 - (void)toggleTouchEmulation:(NSEvent*)event {
-  if ([event type] == NSFlagsChanged && [event keyCode] == 0x39) {
+  if ([event type] == NSEventTypeFlagsChanged && [event keyCode] == 0x39) {
     NSUInteger flags = [event modifierFlags];
-    BOOL touch_enabled = flags & NSAlphaShiftKeyMask ? YES : NO;
-    [self setAcceptsTouchEvents:touch_enabled];
+    BOOL touch_enabled = flags & NSEventModifierFlagCapsLock ? YES : NO;
+    if (touch_enabled)
+      self.allowedTouchTypes |= NSTouchTypeMaskDirect;
+    else
+      self.allowedTouchTypes &= ~NSTouchTypeMaskDirect;
   }
 }
 
@@ -349,7 +352,7 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
     CefTouchEvent touch_event;
 
     // NSTouch.identity is unique during the life of the touch
-    touch_event.id = touch.identity.hash;
+    touch_event.id = static_cast<int>(touch.identity.hash);
     touch_event.type = [self getTouchPhase:phase];
 
     NSPoint scaled_pos = [touch normalizedPosition];
@@ -443,7 +446,7 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
   // events to the renderer.
   if ([event phase] == NSEventPhaseBegan && !endWheelMonitor_) {
     endWheelMonitor_ = [NSEvent
-        addLocalMonitorForEventsMatchingMask:NSScrollWheelMask
+        addLocalMonitorForEventsMatchingMask:NSEventMaskScrollWheel
                                      handler:^(NSEvent* blockEvent) {
                                        [self shortCircuitScrollWheelEvent:
                                                  blockEvent];
@@ -462,10 +465,10 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
   CGEventRef cgEvent = [event CGEvent];
   DCHECK(cgEvent);
 
-  int deltaX =
-      CGEventGetIntegerValueField(cgEvent, kCGScrollWheelEventPointDeltaAxis2);
-  int deltaY =
-      CGEventGetIntegerValueField(cgEvent, kCGScrollWheelEventPointDeltaAxis1);
+  int deltaX = static_cast<int>(
+      CGEventGetIntegerValueField(cgEvent, kCGScrollWheelEventPointDeltaAxis2));
+  int deltaY = static_cast<int>(
+      CGEventGetIntegerValueField(cgEvent, kCGScrollWheelEventPointDeltaAxis1));
 
   CefMouseEvent mouseEvent;
   [self getMouseEvent:mouseEvent forEvent:event];
@@ -475,18 +478,18 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
 
 - (BOOL)canBecomeKeyView {
   CefRefPtr<CefBrowser> browser = [self getBrowser];
-  return (browser.get() != NULL);
+  return (browser.get() != nullptr);
 }
 
 - (BOOL)acceptsFirstResponder {
   CefRefPtr<CefBrowser> browser = [self getBrowser];
-  return (browser.get() != NULL);
+  return (browser.get() != nullptr);
 }
 
 - (BOOL)becomeFirstResponder {
   CefRefPtr<CefBrowser> browser = [self getBrowser];
   if (browser.get()) {
-    browser->GetHost()->SendFocusEvent(true);
+    browser->GetHost()->SetFocus(true);
     return [super becomeFirstResponder];
   }
 
@@ -496,7 +499,7 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
 - (BOOL)resignFirstResponder {
   CefRefPtr<CefBrowser> browser = [self getBrowser];
   if (browser.get()) {
-    browser->GetHost()->SendFocusEvent(false);
+    browser->GetHost()->SetFocus(false);
     return [super resignFirstResponder];
   }
 
@@ -556,7 +559,7 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
 }
 
 - (void)getKeyEvent:(CefKeyEvent&)keyEvent forEvent:(NSEvent*)event {
-  if ([event type] == NSKeyDown || [event type] == NSKeyUp) {
+  if ([event type] == NSEventTypeKeyDown || [event type] == NSEventTypeKeyUp) {
     NSString* s = [event characters];
     if ([s length] > 0)
       keyEvent.character = [s characterAtIndex:0];
@@ -566,7 +569,7 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
       keyEvent.unmodified_character = [s characterAtIndex:0];
   }
 
-  if ([event type] == NSFlagsChanged) {
+  if ([event type] == NSEventTypeFlagsChanged) {
     keyEvent.character = 0;
     keyEvent.unmodified_character = 0;
   }
@@ -627,25 +630,25 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
   mouseEvent.x = client::DeviceToLogical(point.x, device_scale_factor);
   mouseEvent.y = client::DeviceToLogical(point.y, device_scale_factor);
 
-  mouseEvent.modifiers = [NSEvent modifierFlags];
+  mouseEvent.modifiers = static_cast<uint32>([NSEvent modifierFlags]);
 }
 
 - (int)getModifiersForEvent:(NSEvent*)event {
   int modifiers = 0;
 
-  if ([event modifierFlags] & NSControlKeyMask)
+  if ([event modifierFlags] & NSEventModifierFlagControl)
     modifiers |= EVENTFLAG_CONTROL_DOWN;
-  if ([event modifierFlags] & NSShiftKeyMask)
+  if ([event modifierFlags] & NSEventModifierFlagShift)
     modifiers |= EVENTFLAG_SHIFT_DOWN;
-  if ([event modifierFlags] & NSAlternateKeyMask)
+  if ([event modifierFlags] & NSEventModifierFlagOption)
     modifiers |= EVENTFLAG_ALT_DOWN;
-  if ([event modifierFlags] & NSCommandKeyMask)
+  if ([event modifierFlags] & NSEventModifierFlagCommand)
     modifiers |= EVENTFLAG_COMMAND_DOWN;
-  if ([event modifierFlags] & NSAlphaShiftKeyMask)
+  if ([event modifierFlags] & NSEventModifierFlagCapsLock)
     modifiers |= EVENTFLAG_CAPS_LOCK_ON;
 
-  if ([event type] == NSKeyUp || [event type] == NSKeyDown ||
-      [event type] == NSFlagsChanged) {
+  if ([event type] == NSEventTypeKeyUp || [event type] == NSEventTypeKeyDown ||
+      [event type] == NSEventTypeFlagsChanged) {
     // Only perform this check for key events
     if ([self isKeyPadEvent:event])
       modifiers |= EVENTFLAG_IS_KEY_PAD;
@@ -658,19 +661,19 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
 
   // Mouse buttons
   switch ([event type]) {
-    case NSLeftMouseDragged:
-    case NSLeftMouseDown:
-    case NSLeftMouseUp:
+    case NSEventTypeLeftMouseDragged:
+    case NSEventTypeLeftMouseDown:
+    case NSEventTypeLeftMouseUp:
       modifiers |= EVENTFLAG_LEFT_MOUSE_BUTTON;
       break;
-    case NSRightMouseDragged:
-    case NSRightMouseDown:
-    case NSRightMouseUp:
+    case NSEventTypeRightMouseDragged:
+    case NSEventTypeRightMouseDown:
+    case NSEventTypeRightMouseUp:
       modifiers |= EVENTFLAG_RIGHT_MOUSE_BUTTON;
       break;
-    case NSOtherMouseDragged:
-    case NSOtherMouseDown:
-    case NSOtherMouseUp:
+    case NSEventTypeOtherMouseDragged:
+    case NSEventTypeOtherMouseDown:
+    case NSEventTypeOtherMouseUp:
       modifiers |= EVENTFLAG_MIDDLE_MOUSE_BUTTON;
       break;
     default:
@@ -681,39 +684,39 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
 }
 
 - (BOOL)isKeyUpEvent:(NSEvent*)event {
-  if ([event type] != NSFlagsChanged)
-    return [event type] == NSKeyUp;
+  if ([event type] != NSEventTypeFlagsChanged)
+    return [event type] == NSEventTypeKeyUp;
 
   // FIXME: This logic fails if the user presses both Shift keys at once, for
   // example: we treat releasing one of them as keyDown.
   switch ([event keyCode]) {
     case 54:  // Right Command
     case 55:  // Left Command
-      return ([event modifierFlags] & NSCommandKeyMask) == 0;
+      return ([event modifierFlags] & NSEventModifierFlagCommand) == 0;
 
     case 57:  // Capslock
-      return ([event modifierFlags] & NSAlphaShiftKeyMask) == 0;
+      return ([event modifierFlags] & NSEventModifierFlagCapsLock) == 0;
 
     case 56:  // Left Shift
     case 60:  // Right Shift
-      return ([event modifierFlags] & NSShiftKeyMask) == 0;
+      return ([event modifierFlags] & NSEventModifierFlagShift) == 0;
 
     case 58:  // Left Alt
     case 61:  // Right Alt
-      return ([event modifierFlags] & NSAlternateKeyMask) == 0;
+      return ([event modifierFlags] & NSEventModifierFlagOption) == 0;
 
     case 59:  // Left Ctrl
     case 62:  // Right Ctrl
-      return ([event modifierFlags] & NSControlKeyMask) == 0;
+      return ([event modifierFlags] & NSEventModifierFlagControl) == 0;
 
     case 63:  // Function
-      return ([event modifierFlags] & NSFunctionKeyMask) == 0;
+      return ([event modifierFlags] & NSEventModifierFlagFunction) == 0;
   }
   return false;
 }
 
 - (BOOL)isKeyPadEvent:(NSEvent*)event {
-  if ([event modifierFlags] & NSNumericPadKeyMask)
+  if ([event modifierFlags] & NSEventModifierFlagNumericPad)
     return true;
 
   switch ([event keyCode]) {
@@ -787,9 +790,9 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
   NSWindow* window = [self window];
   NSTimeInterval eventTime = [currentEvent timestamp];
 
-  NSEvent* dragEvent = [NSEvent mouseEventWithType:NSLeftMouseDragged
+  NSEvent* dragEvent = [NSEvent mouseEventWithType:NSEventTypeLeftMouseDragged
                                           location:position
-                                     modifierFlags:NSLeftMouseDraggedMask
+                                     modifierFlags:NSEventMaskLeftMouseDragged
                                          timestamp:eventTime
                                       windowNumber:[window windowNumber]
                                            context:nil
@@ -836,7 +839,7 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
   if (!current_drag_data_)
     return nil;
 
-  size_t expected_size = current_drag_data_->GetFileContents(NULL);
+  size_t expected_size = current_drag_data_->GetFileContents(nullptr);
   if (expected_size == 0)
     return nil;
 
@@ -969,7 +972,7 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
 
     // File contents.
   } else if ([type isEqualToString:fileUTI_]) {
-    size_t size = current_drag_data_->GetFileContents(NULL);
+    size_t size = current_drag_data_->GetFileContents(nullptr);
     DCHECK_GT(size, 0U);
     CefRefPtr<client::BytesWriteHandler> handler =
         new client::BytesWriteHandler(size);
@@ -1025,7 +1028,7 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
     // Add Root as first Kid
     NSMutableArray* kids = [NSMutableArray arrayWithCapacity:1];
     NSObject* child = CAST_CEF_NATIVE_ACCESSIBLE_TO_NSOBJECT(
-        node->GetNativeAccessibleObject(NULL));
+        node->GetNativeAccessibleObject(nullptr));
     [kids addObject:child];
     return NSAccessibilityUnignoredChildren(kids);
   } else {
@@ -1037,7 +1040,7 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
   if (accessibility_helper_) {
     client::OsrAXNode* node = accessibility_helper_->GetFocusedNode();
     return node ? CAST_CEF_NATIVE_ACCESSIBLE_TO_NSOBJECT(
-                      node->GetNativeAccessibleObject(NULL))
+                      node->GetNativeAccessibleObject(nullptr))
                 : nil;
   }
   return nil;
@@ -1047,7 +1050,7 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
 - (void)resetDragDrop {
   current_drag_op_ = NSDragOperationNone;
   current_allowed_ops_ = NSDragOperationNone;
-  current_drag_data_ = NULL;
+  current_drag_data_ = nullptr;
   if (fileUTI_) {
 #if !__has_feature(objc_arc)
     [fileUTI_ release];
@@ -1064,7 +1067,7 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
 
 - (void)fillPasteboard {
   DCHECK(!pasteboard_);
-  pasteboard_ = [NSPasteboard pasteboardWithName:NSDragPboard];
+  pasteboard_ = [NSPasteboard pasteboardWithName:NSPasteboardNameDrag];
 #if !__has_feature(objc_arc)
   [pasteboard_ retain];
 #endif  // !__has_feature(objc_arc)
@@ -1079,9 +1082,8 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
 
   // MIME type.
   CefString mimeType;
-  size_t contents_size = current_drag_data_->GetFileContents(NULL);
+  size_t contents_size = current_drag_data_->GetFileContents(nullptr);
   CefString download_metadata = current_drag_data_->GetLinkMetadata();
-  CefString file_name = current_drag_data_->GetFileName();
 
   // File.
   if (contents_size > 0) {
@@ -1097,7 +1099,7 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
                                              mimeType.ToString().c_str(),
                                              kCFStringEncodingUTF8);
       fileUTI_ = (__bridge NSString*)UTTypeCreatePreferredIdentifierForTag(
-          kUTTagClassMIMEType, mimeTypeCF, NULL);
+          kUTTagClassMIMEType, mimeTypeCF, nullptr);
       CFRelease(mimeTypeCF);
       // File (HFS) promise.
       NSArray* fileUTIList = @[ fileUTI_ ];
@@ -1181,6 +1183,7 @@ NSPoint ConvertPointFromWindowToScreen(NSWindow* window, NSPoint point) {
 }
 
 - (void)viewDidChangeBackingProperties {
+  [super viewDidChangeBackingProperties];
   const CGFloat device_scale_factor = [self getDeviceScaleFactor];
 
   if (device_scale_factor == device_scale_factor_)
@@ -1323,7 +1326,7 @@ class BrowserWindowOsrMacImpl {
                int height);
   void OnCursorChange(CefRefPtr<CefBrowser> browser,
                       CefCursorHandle cursor,
-                      CefRenderHandler::CursorType type,
+                      cef_cursor_type_t type,
                       const CefCursorInfo& custom_cursor_info);
   bool StartDragging(CefRefPtr<CefBrowser> browser,
                      CefRefPtr<CefDragData> drag_data,
@@ -1431,7 +1434,7 @@ void BrowserWindowOsrMacImpl::Show() {
   }
 
   // Give focus to the browser.
-  browser_window_.browser_->GetHost()->SendFocusEvent(true);
+  browser_window_.browser_->GetHost()->SetFocus(true);
 }
 
 void BrowserWindowOsrMacImpl::Hide() {
@@ -1441,7 +1444,7 @@ void BrowserWindowOsrMacImpl::Hide() {
     return;
 
   // Remove focus from the browser.
-  browser_window_.browser_->GetHost()->SendFocusEvent(false);
+  browser_window_.browser_->GetHost()->SetFocus(false);
 
   if (!hidden_) {
     // Set the browser as hidden.
@@ -1655,7 +1658,7 @@ void BrowserWindowOsrMacImpl::OnPaint(
 void BrowserWindowOsrMacImpl::OnCursorChange(
     CefRefPtr<CefBrowser> browser,
     CefCursorHandle cursor,
-    CefRenderHandler::CursorType type,
+    cef_cursor_type_t type,
     const CefCursorInfo& custom_cursor_info) {
   CEF_REQUIRE_UI_THREAD();
   REQUIRE_MAIN_THREAD();
@@ -1761,10 +1764,12 @@ void BrowserWindowOsrMacImpl::Create(ClientWindowHandle parent_handle,
 }
 
 BrowserWindowOsrMac::BrowserWindowOsrMac(BrowserWindow::Delegate* delegate,
+                                         bool with_controls,
                                          const std::string& startup_url,
                                          const OsrRendererSettings& settings)
     : BrowserWindow(delegate) {
-  client_handler_ = new ClientHandlerOsr(this, this, startup_url);
+  client_handler_ =
+      new ClientHandlerOsr(this, this, with_controls, startup_url);
   impl_.reset(
       new BrowserWindowOsrMacImpl(delegate, startup_url, settings, *this));
 }
@@ -1877,7 +1882,7 @@ void BrowserWindowOsrMac::OnPaint(CefRefPtr<CefBrowser> browser,
 void BrowserWindowOsrMac::OnCursorChange(
     CefRefPtr<CefBrowser> browser,
     CefCursorHandle cursor,
-    CefRenderHandler::CursorType type,
+    cef_cursor_type_t type,
     const CefCursorInfo& custom_cursor_info) {
   impl_->OnCursorChange(browser, cursor, type, custom_cursor_info);
 }

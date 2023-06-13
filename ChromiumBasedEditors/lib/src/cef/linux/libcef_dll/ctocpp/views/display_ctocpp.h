@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=66db828db84ce2b0eecba5dabca17001f6bda98e$
+// $hash=a05d5f989630c0c031cbe9cc04150a6e1e54c4d4$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_VIEWS_DISPLAY_CTOCPP_H_
@@ -33,13 +33,13 @@ class CefDisplayCToCpp
   virtual ~CefDisplayCToCpp();
 
   // CefDisplay methods.
-  int64 GetID() OVERRIDE;
-  float GetDeviceScaleFactor() OVERRIDE;
-  void ConvertPointToPixels(CefPoint& point) OVERRIDE;
-  void ConvertPointFromPixels(CefPoint& point) OVERRIDE;
-  CefRect GetBounds() OVERRIDE;
-  CefRect GetWorkArea() OVERRIDE;
-  int GetRotation() OVERRIDE;
+  int64 GetID() override;
+  float GetDeviceScaleFactor() override;
+  void ConvertPointToPixels(CefPoint& point) override;
+  void ConvertPointFromPixels(CefPoint& point) override;
+  CefRect GetBounds() override;
+  CefRect GetWorkArea() override;
+  int GetRotation() override;
 };
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_VIEWS_DISPLAY_CTOCPP_H_

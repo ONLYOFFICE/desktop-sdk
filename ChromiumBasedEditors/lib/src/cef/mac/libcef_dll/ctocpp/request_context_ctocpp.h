@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=dd07d0157b7e9128b240ed2b059f2358ebf9fc09$
+// $hash=4a05f4583cacc076519f6505f8f8952c5e471a49$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_REQUEST_CONTEXT_CTOCPP_H_
@@ -40,41 +40,44 @@ class CefRequestContextCToCpp
   virtual ~CefRequestContextCToCpp();
 
   // CefRequestContext methods.
-  bool IsSame(CefRefPtr<CefRequestContext> other) OVERRIDE;
-  bool IsSharingWith(CefRefPtr<CefRequestContext> other) OVERRIDE;
-  bool IsGlobal() OVERRIDE;
-  CefRefPtr<CefRequestContextHandler> GetHandler() OVERRIDE;
-  CefString GetCachePath() OVERRIDE;
+  bool IsSame(CefRefPtr<CefRequestContext> other) override;
+  bool IsSharingWith(CefRefPtr<CefRequestContext> other) override;
+  bool IsGlobal() override;
+  CefRefPtr<CefRequestContextHandler> GetHandler() override;
+  CefString GetCachePath() override;
   CefRefPtr<CefCookieManager> GetCookieManager(
-      CefRefPtr<CefCompletionCallback> callback) OVERRIDE;
+      CefRefPtr<CefCompletionCallback> callback) override;
   bool RegisterSchemeHandlerFactory(
       const CefString& scheme_name,
       const CefString& domain_name,
-      CefRefPtr<CefSchemeHandlerFactory> factory) OVERRIDE;
-  bool ClearSchemeHandlerFactories() OVERRIDE;
-  void PurgePluginListCache(bool reload_pages) OVERRIDE;
-  bool HasPreference(const CefString& name) OVERRIDE;
-  CefRefPtr<CefValue> GetPreference(const CefString& name) OVERRIDE;
-  CefRefPtr<CefDictionaryValue> GetAllPreferences(
-      bool include_defaults) OVERRIDE;
-  bool CanSetPreference(const CefString& name) OVERRIDE;
-  bool SetPreference(const CefString& name,
-                     CefRefPtr<CefValue> value,
-                     CefString& error) OVERRIDE;
+      CefRefPtr<CefSchemeHandlerFactory> factory) override;
+  bool ClearSchemeHandlerFactories() override;
   void ClearCertificateExceptions(
-      CefRefPtr<CefCompletionCallback> callback) OVERRIDE;
+      CefRefPtr<CefCompletionCallback> callback) override;
   void ClearHttpAuthCredentials(
-      CefRefPtr<CefCompletionCallback> callback) OVERRIDE;
-  void CloseAllConnections(CefRefPtr<CefCompletionCallback> callback) OVERRIDE;
+      CefRefPtr<CefCompletionCallback> callback) override;
+  void CloseAllConnections(CefRefPtr<CefCompletionCallback> callback) override;
   void ResolveHost(const CefString& origin,
-                   CefRefPtr<CefResolveCallback> callback) OVERRIDE;
+                   CefRefPtr<CefResolveCallback> callback) override;
   void LoadExtension(const CefString& root_directory,
                      CefRefPtr<CefDictionaryValue> manifest,
-                     CefRefPtr<CefExtensionHandler> handler) OVERRIDE;
-  bool DidLoadExtension(const CefString& extension_id) OVERRIDE;
-  bool HasExtension(const CefString& extension_id) OVERRIDE;
-  bool GetExtensions(std::vector<CefString>& extension_ids) OVERRIDE;
-  CefRefPtr<CefExtension> GetExtension(const CefString& extension_id) OVERRIDE;
+                     CefRefPtr<CefExtensionHandler> handler) override;
+  bool DidLoadExtension(const CefString& extension_id) override;
+  bool HasExtension(const CefString& extension_id) override;
+  bool GetExtensions(std::vector<CefString>& extension_ids) override;
+  CefRefPtr<CefExtension> GetExtension(const CefString& extension_id) override;
+  CefRefPtr<CefMediaRouter> GetMediaRouter(
+      CefRefPtr<CefCompletionCallback> callback) override;
+
+  // CefPreferenceManager methods.
+  bool HasPreference(const CefString& name) override;
+  CefRefPtr<CefValue> GetPreference(const CefString& name) override;
+  CefRefPtr<CefDictionaryValue> GetAllPreferences(
+      bool include_defaults) override;
+  bool CanSetPreference(const CefString& name) override;
+  bool SetPreference(const CefString& name,
+                     CefRefPtr<CefValue> value,
+                     CefString& error) override;
 };
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_REQUEST_CONTEXT_CTOCPP_H_

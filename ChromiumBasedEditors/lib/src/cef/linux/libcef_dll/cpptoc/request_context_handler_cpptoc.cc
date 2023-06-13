@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=16c737f9006a13e5a445d2402c04bc833d68961a$
+// $hash=43bd770ac450f9f61d50ddebd85b209953c2fce0$
 //
 
 #include "libcef_dll/cpptoc/request_context_handler_cpptoc.h"
@@ -18,7 +18,6 @@
 #include "libcef_dll/ctocpp/frame_ctocpp.h"
 #include "libcef_dll/ctocpp/request_context_ctocpp.h"
 #include "libcef_dll/ctocpp/request_ctocpp.h"
-#include "libcef_dll/ctocpp/web_plugin_info_ctocpp.h"
 
 namespace {
 
@@ -40,43 +39,6 @@ void CEF_CALLBACK request_context_handler_on_request_context_initialized(
   // Execute
   CefRequestContextHandlerCppToC::Get(self)->OnRequestContextInitialized(
       CefRequestContextCToCpp::Wrap(request_context));
-}
-
-int CEF_CALLBACK request_context_handler_on_before_plugin_load(
-    struct _cef_request_context_handler_t* self,
-    const cef_string_t* mime_type,
-    const cef_string_t* plugin_url,
-    int is_main_frame,
-    const cef_string_t* top_origin_url,
-    struct _cef_web_plugin_info_t* plugin_info,
-    cef_plugin_policy_t* plugin_policy) {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  DCHECK(self);
-  if (!self)
-    return 0;
-  // Verify param: mime_type; type: string_byref_const
-  DCHECK(mime_type);
-  if (!mime_type)
-    return 0;
-  // Verify param: plugin_info; type: refptr_diff
-  DCHECK(plugin_info);
-  if (!plugin_info)
-    return 0;
-  // Verify param: plugin_policy; type: simple_byaddr
-  DCHECK(plugin_policy);
-  if (!plugin_policy)
-    return 0;
-  // Unverified params: plugin_url, top_origin_url
-
-  // Execute
-  bool _retval = CefRequestContextHandlerCppToC::Get(self)->OnBeforePluginLoad(
-      CefString(mime_type), CefString(plugin_url), is_main_frame ? true : false,
-      CefString(top_origin_url), CefWebPluginInfoCToCpp::Wrap(plugin_info),
-      plugin_policy);
-
-  // Return type: bool
-  return _retval;
 }
 
 struct _cef_resource_request_handler_t* CEF_CALLBACK
@@ -131,8 +93,6 @@ request_context_handler_get_resource_request_handler(
 CefRequestContextHandlerCppToC::CefRequestContextHandlerCppToC() {
   GetStruct()->on_request_context_initialized =
       request_context_handler_on_request_context_initialized;
-  GetStruct()->on_before_plugin_load =
-      request_context_handler_on_before_plugin_load;
   GetStruct()->get_resource_request_handler =
       request_context_handler_get_resource_request_handler;
 }
@@ -149,7 +109,7 @@ CefRefPtr<CefRequestContextHandler> CefCppToCRefCounted<
                                                   cef_request_context_handler_t*
                                                       s) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

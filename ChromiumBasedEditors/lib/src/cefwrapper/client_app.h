@@ -279,19 +279,24 @@ public:
 			command_line->AppendSwitch("--disable-site-isolation-trials");
 #endif
 
+#ifdef CEF_VERSION_ABOVE_102
+			command_line->AppendSwitch("--allow-file-access-from-files");
+#endif
 
-
-			//command_line->AppendSwitch("--allow-file-access-from-files");
-			//command_line->AppendSwitch("--allow-file-access");
-
+            //command_line->AppendSwitch("--allow-file-access-from-files");
+            //command_line->AppendSwitch("--allow-file-access");
 			//command_line->AppendSwitch("--allow-running-insecure-content");
 
-			std::string sAppNavigator = "Chrome/" + std::to_string(CEF_VERSION_MAJOR) + " AscDesktopEditor/7.1.0";
+			std::string sAppNavigator = "Chrome/" + std::to_string(CHROME_VERSION_MAJOR) + ".0.0.0 AscDesktopEditor/7.4.0";
 #ifdef CEF_2623
 			sAppNavigator += " windowsXP";
 #endif
 
 			command_line->AppendSwitchWithValue("--product-version", sAppNavigator);
+
+#ifdef CEF_VERSION_ABOVE_102
+			command_line->AppendSwitchWithValue("--user-agent-product", sAppNavigator);
+#endif
 
 			int forceDpi = IsForceDpiRound();
 			if (0 != forceDpi)

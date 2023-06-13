@@ -4,7 +4,7 @@
 
 #include "tests/cefclient/browser/client_handler_osr.h"
 
-#include "include/base/cef_bind.h"
+#include "include/base/cef_callback.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "include/wrapper/cef_helpers.h"
 
@@ -12,20 +12,23 @@ namespace client {
 
 ClientHandlerOsr::ClientHandlerOsr(Delegate* delegate,
                                    OsrDelegate* osr_delegate,
+                                   bool with_controls,
                                    const std::string& startup_url)
-    : ClientHandler(delegate, true, startup_url), osr_delegate_(osr_delegate) {
+    : ClientHandler(delegate, /*is_osr=*/true, with_controls, startup_url),
+      osr_delegate_(osr_delegate) {
   DCHECK(osr_delegate_);
 }
 
 void ClientHandlerOsr::DetachOsrDelegate() {
   if (!CefCurrentlyOn(TID_UI)) {
     // Execute this method on the UI thread.
-    CefPostTask(TID_UI, base::Bind(&ClientHandlerOsr::DetachOsrDelegate, this));
+    CefPostTask(TID_UI,
+                base::BindOnce(&ClientHandlerOsr::DetachOsrDelegate, this));
     return;
   }
 
   DCHECK(osr_delegate_);
-  osr_delegate_ = NULL;
+  osr_delegate_ = nullptr;
 }
 
 void ClientHandlerOsr::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
@@ -118,16 +121,6 @@ void ClientHandlerOsr::OnAcceleratedPaint(
   osr_delegate_->OnAcceleratedPaint(browser, type, dirtyRects, share_handle);
 }
 
-void ClientHandlerOsr::OnCursorChange(CefRefPtr<CefBrowser> browser,
-                                      CefCursorHandle cursor,
-                                      CursorType type,
-                                      const CefCursorInfo& custom_cursor_info) {
-  CEF_REQUIRE_UI_THREAD();
-  if (!osr_delegate_)
-    return;
-  osr_delegate_->OnCursorChange(browser, cursor, type, custom_cursor_info);
-}
-
 bool ClientHandlerOsr::StartDragging(
     CefRefPtr<CefBrowser> browser,
     CefRefPtr<CefDragData> drag_data,
@@ -165,6 +158,21 @@ void ClientHandlerOsr::OnAccessibilityTreeChange(CefRefPtr<CefValue> value) {
   if (!osr_delegate_)
     return;
   osr_delegate_->UpdateAccessibilityTree(value);
+}
+
+bool ClientHandlerOsr::OnCursorChange(CefRefPtr<CefBrowser> browser,
+                                      CefCursorHandle cursor,
+                                      cef_cursor_type_t type,
+                                      const CefCursorInfo& custom_cursor_info) {
+  CEF_REQUIRE_UI_THREAD();
+  if (ClientHandler::OnCursorChange(browser, cursor, type,
+                                    custom_cursor_info)) {
+    return true;
+  }
+  if (osr_delegate_) {
+    osr_delegate_->OnCursorChange(browser, cursor, type, custom_cursor_info);
+  }
+  return true;
 }
 
 void ClientHandlerOsr::OnAccessibilityLocationChange(

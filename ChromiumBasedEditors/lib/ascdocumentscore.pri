@@ -24,8 +24,6 @@ DEFINES += \
 DEFINES += DESKTOP_USE_DYNAMIC_LIBRARY_BUILDING
 
 core_mac:DEFINES += _XCODE
-
-ADD_DEPENDENCY(graphics, kernel, UnicodeConverter, kernel_network, PdfFile, XpsFile, DjVuFile, HtmlRenderer, hunspell, ooxmlsignature)
 !core_windows:DEFINES += DOCUMENTSCORE_OPENSSL_SUPPORT
 
 CEF_PROJECT_PRI=$$PWD/cef_pri
@@ -35,11 +33,31 @@ build_xp {
     DESTDIR=$$DESTDIR/xp
 } else {
     DEFINES += ENABLE_CEF_EXTENSIONS
-    core_linux:!cef_version_87:CONFIG += cef_disable_87
-    !cef_disable_87 {
-        DEFINES += CEF_VERSION_ABOVE_86
-        CEF_PROJECT_PRI=$$PWD/cef_pri_87
+    DEFINES += CEF_VERSION_ABOVE_86
+    DEFINES += CEF_VERSION_ABOVE_102
+    DEFINES += "OVERRIDE=override"
+
+    CONFIG += c++17
+    core_windows {
+        QMAKE_CXXFLAGS += /std:c++17
     }
+
+    core_linux {
+        CONFIG += c++1z
+        build_gcc_less_6:INCLUDEPATH += $$PWD/src/polyfill
+        cef_version_107 {
+            DEFINES += CEF_VERSION_107
+            CEF_PROJECT_PRI=$$PWD/cef_pri_107
+        }
+    }
+
+    core_mac {
+        use_v8 {
+            DEFINES += CEF_VERSION_103
+            CEF_PROJECT_PRI=$$PWD/cef_pri_103
+        }
+    }
+
     include($$CEF_PROJECT_PRI/cef_base.pri)
     include($$CEF_PROJECT_PRI/cef_client.pri)
 }
@@ -105,17 +123,11 @@ SOURCES += \
     $$CORE_ROOT_DIR/HtmlRenderer/src/ASCSVGWriter.cpp
 
 # crypto ----------------------------------
-LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lCompoundFileLib
 LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lCryptoPPLib
-DEFINES += CRYPTOPP_DISABLE_ASM
-HEADERS += \
-    $$CORE_ROOT_DIR/OfficeCryptReader/source/ECMACryptFile.h \
-    $$CORE_ROOT_DIR/OfficeCryptReader/source/CryptTransform.h
+LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lCompoundFileLib
 
-SOURCES += \
-    $$CORE_ROOT_DIR/OfficeCryptReader/source/ECMACryptFile.cpp \
-    $$CORE_ROOT_DIR/OfficeCryptReader/source/CryptTransform.cpp \
-    $$CORE_ROOT_DIR/MsBinaryFile/DocFile/MemoryStream.cpp
+DEFINES += CRYPTOPP_DISABLE_ASM
+SOURCES += $$CORE_ROOT_DIR/MsBinaryFile/DocFile/MemoryStream.cpp
 # -----------------------------------------
 
 
@@ -134,6 +146,8 @@ core_mac {
     OBJECTIVE_SOURCES += \
         $$PWD/src/widget_impl.mm \
         $$PWD/src/mac_application.mm
+
+    use_v8:DEFINES += OLD_MACOS_SYSTEM
 }
 
 core_linux {
@@ -141,3 +155,5 @@ core_linux {
     QMAKE_LFLAGS += "-Wl,-rpath,\'\$$ORIGIN/converter\'"
     QMAKE_LFLAGS += -Wl,--disable-new-dtags
 }
+
+ADD_DEPENDENCY(graphics, kernel, UnicodeConverter, kernel_network, PdfFile, XpsFile, DjVuFile, HtmlRenderer, hunspell, ooxmlsignature)

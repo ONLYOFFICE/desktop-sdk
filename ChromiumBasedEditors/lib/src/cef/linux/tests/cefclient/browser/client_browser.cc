@@ -8,6 +8,7 @@
 #include "include/cef_command_line.h"
 #include "include/cef_crash_util.h"
 #include "include/cef_file_util.h"
+#include "tests/cefclient/browser/client_prefs.h"
 #include "tests/shared/common/client_switches.h"
 
 namespace client {
@@ -19,7 +20,17 @@ class ClientBrowserDelegate : public ClientAppBrowser::Delegate {
  public:
   ClientBrowserDelegate() {}
 
-  void OnContextInitialized(CefRefPtr<ClientAppBrowser> app) OVERRIDE {
+  void OnRegisterCustomPreferences(
+      CefRefPtr<client::ClientAppBrowser> app,
+      cef_preferences_type_t type,
+      CefRawPtr<CefPreferenceRegistrar> registrar) override {
+    if (type == CEF_PREFERENCES_TYPE_GLOBAL) {
+      // Register global preferences with default values.
+      prefs::RegisterGlobalPreferences(registrar);
+    }
+  }
+
+  void OnContextInitialized(CefRefPtr<ClientAppBrowser> app) override {
     if (CefCrashReportingEnabled()) {
       // Set some crash keys for testing purposes. Keys must be defined in the
       // "crash_reporter.cfg" file. See cef_crash_util.h for details.
@@ -42,7 +53,7 @@ class ClientBrowserDelegate : public ClientAppBrowser::Delegate {
 
   void OnBeforeCommandLineProcessing(
       CefRefPtr<ClientAppBrowser> app,
-      CefRefPtr<CefCommandLine> command_line) OVERRIDE {
+      CefRefPtr<CefCommandLine> command_line) override {
     // Append Chromium command line parameters if touch events are enabled
     if (client::MainContext::Get()->TouchEventsEnabled())
       command_line->AppendSwitchWithValue("touch-events", "enabled");

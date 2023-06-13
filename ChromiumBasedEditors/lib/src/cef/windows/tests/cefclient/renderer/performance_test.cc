@@ -35,7 +35,7 @@ class V8Handler : public CefV8Handler {
                        CefRefPtr<CefV8Value> object,
                        const CefV8ValueList& arguments,
                        CefRefPtr<CefV8Value>& retval,
-                       CefString& exception) OVERRIDE {
+                       CefString& exception) override {
     if (name == kRunPerfTest) {
       if (arguments.size() == 1 && arguments[0]->IsString()) {
         // Run the specified perf test.
@@ -47,7 +47,7 @@ class V8Handler : public CefV8Handler {
             // Execute the test.
             int64 delta = kPerfTests[i].test(kPerfTests[i].iterations);
 
-            retval = CefV8Value::CreateInt(delta);
+            retval = CefV8Value::CreateInt(static_cast<int32>(delta));
             found = true;
             break;
           }
@@ -75,7 +75,6 @@ class V8Handler : public CefV8Handler {
         retval = CefV8Value::CreateInt(1);
       } else if (arguments.size() == 1 && arguments[0]->IsInt()) {
         int32 type = arguments[0]->GetIntValue();
-        CefTime date;
         switch (type) {
           case 0:
             retval = CefV8Value::CreateUndefined();
@@ -96,14 +95,13 @@ class V8Handler : public CefV8Handler {
             retval = CefV8Value::CreateDouble(1.234);
             break;
           case 6:
-            date.Now();
-            retval = CefV8Value::CreateDate(date);
+            retval = CefV8Value::CreateDate(CefBaseTime::Now());
             break;
           case 7:
             retval = CefV8Value::CreateString("Hello, world!");
             break;
           case 8:
-            retval = CefV8Value::CreateObject(NULL, NULL);
+            retval = CefV8Value::CreateObject(nullptr, nullptr);
             break;
           case 9:
             retval = CefV8Value::CreateArray(8);
@@ -133,7 +131,7 @@ class RenderDelegate : public ClientAppRenderer::Delegate {
   virtual void OnContextCreated(CefRefPtr<ClientAppRenderer> app,
                                 CefRefPtr<CefBrowser> browser,
                                 CefRefPtr<CefFrame> frame,
-                                CefRefPtr<CefV8Context> context) OVERRIDE {
+                                CefRefPtr<CefV8Context> context) override {
     CefRefPtr<CefV8Value> object = context->GetGlobal();
 
     CefRefPtr<CefV8Handler> handler = new V8Handler();

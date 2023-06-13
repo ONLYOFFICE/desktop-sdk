@@ -6,11 +6,15 @@
 
 #include <shellscalingapi.h>
 
-#include "include/base/cef_bind.h"
+#include <optional>
+
 #include "include/base/cef_build.h"
+#include "include/base/cef_callback.h"
 #include "include/cef_app.h"
+#include "include/views/cef_display.h"
 //#include "tests/cefclient/browser/browser_window_osr_win.h"
 #include "tests/cefclient/browser/browser_window_std_win.h"
+#include "tests/cefclient/browser/client_prefs.h"
 #include "tests/cefclient/browser/main_context.h"
 #include "tests/cefclient/browser/resource.h"
 #include "tests/cefclient/browser/temp_window.h"
@@ -101,35 +105,7 @@ int GetURLBarHeight(HWND hwnd) {
 
 }  // namespace
 
-RootWindowWin::RootWindowWin()
-    : with_controls_(false),
-      always_on_top_(false),
-      with_osr_(false),
-      with_extension_(false),
-      is_popup_(false),
-      start_rect_(),
-      initialized_(false),
-      hwnd_(NULL),
-      draggable_region_(NULL),
-      font_(NULL),
-      font_height_(0),
-      back_hwnd_(NULL),
-      forward_hwnd_(NULL),
-      reload_hwnd_(NULL),
-      stop_hwnd_(NULL),
-      edit_hwnd_(NULL),
-      edit_wndproc_old_(NULL),
-      find_hwnd_(NULL),
-      find_message_id_(0),
-      find_wndproc_old_(NULL),
-      find_state_(),
-      find_next_(false),
-      find_match_case_last_(false),
-      window_destroyed_(false),
-      browser_destroyed_(false),
-      called_enable_non_client_dpi_scaling_(false) {
-  find_buff_[0] = 0;
-
+RootWindowWin::RootWindowWin() {
   // Create a HRGN representing the draggable window area.
   draggable_region_ = ::CreateRectRgn(0, 0, 0, 0);
 }
@@ -146,33 +122,58 @@ RootWindowWin::~RootWindowWin() {
 }
 
 void RootWindowWin::Init(RootWindow::Delegate* delegate,
-                         const RootWindowConfig& config,
+                         std::unique_ptr<RootWindowConfig> config,
                          const CefBrowserSettings& settings) {
   DCHECK(delegate);
   DCHECK(!initialized_);
 
   delegate_ = delegate;
-  with_controls_ = config.with_controls;
-  always_on_top_ = config.always_on_top;
-  with_osr_ = config.with_osr;
-  with_extension_ = config.with_extension;
+  with_controls_ = config->with_controls;
+  always_on_top_ = config->always_on_top;
+  with_osr_ = config->with_osr;
+  with_extension_ = config->with_extension;
 
-  start_rect_.left = config.bounds.x;
-  start_rect_.top = config.bounds.y;
-  start_rect_.right = config.bounds.x + config.bounds.width;
-  start_rect_.bottom = config.bounds.y + config.bounds.height;
+  CreateBrowserWindow(config->url);
 
-  CreateBrowserWindow(config.url);
+  if (CefCurrentlyOn(TID_UI)) {
+    ContinueInitOnUIThread(std::move(config), settings);
+  } else {
+    CefPostTask(TID_UI, base::BindOnce(&RootWindowWin::ContinueInitOnUIThread,
+                                       this, std::move(config), settings));
+  }
+}
+
+void RootWindowWin::ContinueInitOnUIThread(
+    std::unique_ptr<RootWindowConfig> config,
+    const CefBrowserSettings& settings) {
+  CEF_REQUIRE_UI_THREAD();
+
+  if (!config->bounds.IsEmpty()) {
+    // Initial state was specified via the config object.
+    initial_bounds_ = config->bounds;
+    initial_show_state_ = config->show_state;
+  } else {
+    // Initial state may be specified via the command-line or global
+    // preferences.
+    std::optional<CefRect> bounds;
+    if (prefs::LoadWindowRestorePreferences(initial_show_state_, bounds) &&
+        bounds) {
+      initial_bounds_ = CefDisplay::ConvertScreenRectToPixels(*bounds);
+    }
+  }
+
+  MAIN_POST_CLOSURE(base::BindOnce(&RootWindowWin::ContinueInitOnMainThread,
+                                   this, std::move(config), settings));
+}
+
+void RootWindowWin::ContinueInitOnMainThread(
+    std::unique_ptr<RootWindowConfig> config,
+    const CefBrowserSettings& settings) {
+  REQUIRE_MAIN_THREAD();
 
   initialized_ = true;
 
-  // Create the native root window on the main thread.
-  if (CURRENTLY_ON_MAIN_THREAD()) {
-    CreateRootWindow(settings, config.initially_hidden);
-  } else {
-    MAIN_POST_CLOSURE(base::Bind(&RootWindowWin::CreateRootWindow, this,
-                                 settings, config.initially_hidden));
-  }
+  CreateRootWindow(settings, config->initially_hidden);
 }
 
 void RootWindowWin::InitAsPopup(RootWindow::Delegate* delegate,
@@ -193,13 +194,13 @@ void RootWindowWin::InitAsPopup(RootWindow::Delegate* delegate,
   is_popup_ = true;
 
   if (popupFeatures.xSet)
-    start_rect_.left = popupFeatures.x;
+    initial_bounds_.x = popupFeatures.x;
   if (popupFeatures.ySet)
-    start_rect_.top = popupFeatures.y;
+    initial_bounds_.y = popupFeatures.y;
   if (popupFeatures.widthSet)
-    start_rect_.right = start_rect_.left + popupFeatures.width;
+    initial_bounds_.width = popupFeatures.width;
   if (popupFeatures.heightSet)
-    start_rect_.bottom = start_rect_.top + popupFeatures.height;
+    initial_bounds_.height = popupFeatures.height;
 
   CreateBrowserWindow(std::string());
 
@@ -233,10 +234,9 @@ void RootWindowWin::Show(ShowMode mode) {
       break;
   }
 
-#ifndef ASC_HIDE_WINDOW
   ShowWindow(hwnd_, nCmdShow);
-  UpdateWindow(hwnd_);
-#endif
+  if (mode != ShowMinimized)
+    UpdateWindow(hwnd_);
 }
 
 void RootWindowWin::Hide() {
@@ -250,7 +250,7 @@ void RootWindowWin::SetBounds(int x, int y, size_t width, size_t height) {
   REQUIRE_MAIN_THREAD();
 
   if (hwnd_) {
-    SetWindowPos(hwnd_, NULL, x, y, static_cast<int>(width),
+    SetWindowPos(hwnd_, nullptr, x, y, static_cast<int>(width),
                  static_cast<int>(height), SWP_NOZORDER);
   }
 }
@@ -288,7 +288,7 @@ CefRefPtr<CefBrowser> RootWindowWin::GetBrowser() const {
 
   if (browser_window_)
     return browser_window_->GetBrowser();
-  return NULL;
+  return nullptr;
 }
 
 ClientWindowHandle RootWindowWin::GetWindowHandle() const {
@@ -310,9 +310,11 @@ void RootWindowWin::CreateBrowserWindow(const std::string& startup_url) {
   if (with_osr_) {
     OsrRendererSettings settings = {};
     MainContext::Get()->PopulateOsrSettings(&settings);
-    //browser_window_.reset(new BrowserWindowOsrWin(this, startup_url, settings));
+    browser_window_.reset(
+        );
   } else {
-    browser_window_.reset(new BrowserWindowStdWin(this, startup_url));
+    browser_window_.reset(
+        new BrowserWindowStdWin(this, with_controls_, startup_url));
   }
 }
 
@@ -321,7 +323,7 @@ void RootWindowWin::CreateRootWindow(const CefBrowserSettings& settings,
   REQUIRE_MAIN_THREAD();
   DCHECK(!hwnd_);
 
-  HINSTANCE hInstance = GetModuleHandle(NULL);
+  HINSTANCE hInstance = GetModuleHandle(nullptr);
 
   // Load strings from the resource file.
   const std::wstring& window_title = L"ASCDocumentEditor_debug";//GetResourceString(IDS_APP_TITLE);
@@ -343,33 +345,44 @@ void RootWindowWin::CreateRootWindow(const CefBrowserSettings& settings,
       CefCommandLine::GetGlobalCommandLine();
   const bool no_activate = command_line->HasSwitch(switches::kNoActivate);
 
-  const DWORD dwStyle = WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN;
+  DWORD dwStyle = WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN;
   DWORD dwExStyle = always_on_top_ ? WS_EX_TOPMOST : 0;
   if (no_activate) {
     // Don't activate the browser window on creation.
     dwExStyle |= WS_EX_NOACTIVATE;
   }
 
+  if (initial_show_state_ == CEF_SHOW_STATE_MAXIMIZED) {
+    dwStyle |= WS_MAXIMIZE;
+  } else if (initial_show_state_ == CEF_SHOW_STATE_MINIMIZED) {
+    dwStyle |= WS_MINIMIZE;
+  }
+
   int x, y, width, height;
-  if (::IsRectEmpty(&start_rect_)) {
+  if (initial_bounds_.IsEmpty()) {
     // Use the default window position/size.
     x = y = width = height = CW_USEDEFAULT;
   } else {
-    // Adjust the window size to account for window frame and controls.
-    RECT window_rect = start_rect_;
-    ::AdjustWindowRectEx(&window_rect, dwStyle, with_controls_, dwExStyle);
+    x = initial_bounds_.x;
+    y = initial_bounds_.y;
+    width = initial_bounds_.width;
+    height = initial_bounds_.height;
 
-    x = start_rect_.left;
-    y = start_rect_.top;
-    width = window_rect.right - window_rect.left;
-    height = window_rect.bottom - window_rect.top;
+    if (is_popup_) {
+      // Adjust the window size to account for window frame and controls. Keep
+      // the origin unchanged.
+      RECT window_rect = {x, y, x + width, y + height};
+      ::AdjustWindowRectEx(&window_rect, dwStyle, with_controls_, dwExStyle);
+      width = window_rect.right - window_rect.left;
+      height = window_rect.bottom - window_rect.top;
+    }
   }
 
   browser_settings_ = settings;
 
   // Create the main window initially hidden.
   CreateWindowEx(dwExStyle, window_class.c_str(), window_title.c_str(), dwStyle,
-                 x, y, width, height, NULL, NULL, hInstance, this);
+                 x, y, width, height, nullptr, nullptr, hInstance, this);
   CHECK(hwnd_);
 
   if (!called_enable_non_client_dpi_scaling_ && IsProcessPerMonitorDpiAware()) {
@@ -385,8 +398,17 @@ void RootWindowWin::CreateRootWindow(const CefBrowserSettings& settings,
   }
 
   if (!initially_hidden) {
+    ShowMode mode = ShowNormal;
+    if (no_activate) {
+      mode = ShowNoActivate;
+    } else if (initial_show_state_ == CEF_SHOW_STATE_MAXIMIZED) {
+      mode = ShowMaximized;
+    } else if (initial_show_state_ == CEF_SHOW_STATE_MINIMIZED) {
+      mode = ShowMinimized;
+    }
+
     // Show this window.
-    Show(no_activate ? ShowNoActivate : ShowNormal);
+    Show(mode);
   }
 }
 
@@ -410,7 +432,7 @@ void RootWindowWin::RegisterRootClass(HINSTANCE hInstance,
   wcex.cbWndExtra = 0;
   wcex.hInstance = hInstance;
   wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_CEFCLIENT));
-  wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
+  wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
   wcex.hbrBackground = background_brush;
   wcex.lpszMenuName = MAKEINTRESOURCE(IDC_CEFCLIENT);
   wcex.lpszClassName = window_class.c_str();
@@ -449,8 +471,8 @@ LRESULT CALLBACK RootWindowWin::EditWndProc(HWND hWnd,
       break;
     case WM_NCDESTROY:
       // Clear the reference to |self|.
-      SetUserDataPtr(hWnd, NULL);
-      self->edit_hwnd_ = NULL;
+      SetUserDataPtr(hWnd, nullptr);
+      self->edit_hwnd_ = nullptr;
       break;
   }
 
@@ -471,13 +493,13 @@ LRESULT CALLBACK RootWindowWin::FindWndProc(HWND hWnd,
   switch (message) {
     case WM_ACTIVATE:
       // Set this dialog as current when activated.
-      MainMessageLoop::Get()->SetCurrentModelessDialog(wParam == 0 ? NULL
+      MainMessageLoop::Get()->SetCurrentModelessDialog(wParam == 0 ? nullptr
                                                                    : hWnd);
       return FALSE;
     case WM_NCDESTROY:
       // Clear the reference to |self|.
-      SetUserDataPtr(hWnd, NULL);
-      self->find_hwnd_ = NULL;
+      SetUserDataPtr(hWnd, nullptr);
+      self->find_hwnd_ = nullptr;
       break;
   }
 
@@ -491,7 +513,7 @@ LRESULT CALLBACK RootWindowWin::RootWndProc(HWND hWnd,
                                             LPARAM lParam) {
   REQUIRE_MAIN_THREAD();
 
-  RootWindowWin* self = NULL;
+  RootWindowWin* self = nullptr;
   if (message != WM_NCCREATE) {
     self = GetUserDataPtr<RootWindowWin*>(hWnd);
     if (!self)
@@ -538,6 +560,15 @@ LRESULT CALLBACK RootWindowWin::RootWndProc(HWND hWnd,
     case WM_SETFOCUS:
       self->OnFocus();
       return 0;
+
+    case WM_ENABLE:
+      if (wParam == TRUE) {
+        // Give focus to the browser after EnableWindow enables this window
+        // (e.g. after a modal dialog is dismissed).
+        self->OnFocus();
+        return 0;
+      }
+      break;
 
     case WM_SIZE:
       self->OnSize(wParam == SIZE_MINIMIZED);
@@ -609,8 +640,8 @@ LRESULT CALLBACK RootWindowWin::RootWndProc(HWND hWnd,
 
     case WM_NCDESTROY:
       // Clear the reference to |self|.
-      SetUserDataPtr(hWnd, NULL);
-      self->hwnd_ = NULL;
+      SetUserDataPtr(hWnd, nullptr);
+      self->hwnd_ = nullptr;
       self->OnDestroyed();
       break;
   }
@@ -685,36 +716,35 @@ void RootWindowWin::OnSize(bool minimized) {
 
     int x_offset = rect.left;
 
-    // |browser_hwnd| may be NULL if the browser has not yet been created.
-    HWND browser_hwnd = NULL;
+    // |browser_hwnd| may be nullptr if the browser has not yet been created.
+    HWND browser_hwnd = nullptr;
     if (browser_window_)
       browser_hwnd = browser_window_->GetWindowHandle();
 
     // Resize all controls.
     HDWP hdwp = BeginDeferWindowPos(browser_hwnd ? 6 : 5);
-    hdwp = DeferWindowPos(hdwp, back_hwnd_, NULL, x_offset, 0, button_width,
+    hdwp = DeferWindowPos(hdwp, back_hwnd_, nullptr, x_offset, 0, button_width,
                           urlbar_height, SWP_NOZORDER);
     x_offset += button_width;
-    hdwp = DeferWindowPos(hdwp, forward_hwnd_, NULL, x_offset, 0, button_width,
+    hdwp = DeferWindowPos(hdwp, forward_hwnd_, nullptr, x_offset, 0,
+                          button_width, urlbar_height, SWP_NOZORDER);
+    x_offset += button_width;
+    hdwp = DeferWindowPos(hdwp, reload_hwnd_, nullptr, x_offset, 0,
+                          button_width, urlbar_height, SWP_NOZORDER);
+    x_offset += button_width;
+    hdwp = DeferWindowPos(hdwp, stop_hwnd_, nullptr, x_offset, 0, button_width,
                           urlbar_height, SWP_NOZORDER);
     x_offset += button_width;
-    hdwp = DeferWindowPos(hdwp, reload_hwnd_, NULL, x_offset, 0, button_width,
-                          urlbar_height, SWP_NOZORDER);
-    x_offset += button_width;
-    hdwp = DeferWindowPos(hdwp, stop_hwnd_, NULL, x_offset, 0, button_width,
-                          urlbar_height, SWP_NOZORDER);
-    x_offset += button_width;
-    hdwp = DeferWindowPos(hdwp, edit_hwnd_, NULL, x_offset, 0,
+    hdwp = DeferWindowPos(hdwp, edit_hwnd_, nullptr, x_offset, 0,
                           rect.right - x_offset, urlbar_height, SWP_NOZORDER);
 
     if (browser_hwnd) {
-      hdwp = DeferWindowPos(hdwp, browser_hwnd, NULL, rect.left, rect.top,
+      hdwp = DeferWindowPos(hdwp, browser_hwnd, nullptr, rect.left, rect.top,
                             rect.right - rect.left, rect.bottom - rect.top,
                             SWP_NOZORDER);
     }
 
-    BOOL result = EndDeferWindowPos(hdwp);
-    ALLOW_UNUSED_LOCAL(result);
+    [[maybe_unused]] BOOL result = EndDeferWindowPos(hdwp);
     DCHECK(result);
   } else if (browser_window_) {
     // Size the browser window to the whole client area.
@@ -751,7 +781,7 @@ void RootWindowWin::OnDpiChanged(WPARAM wParam, LPARAM lParam) {
 
 bool RootWindowWin::OnEraseBkgnd() {
   // Erase the background when the browser does not exist.
-  return (GetBrowser() == NULL);
+  return (GetBrowser() == nullptr);
 }
 
 bool RootWindowWin::OnCommand(UINT id) {
@@ -841,7 +871,7 @@ void RootWindowWin::OnFindEvent() {
       find_what_last_ = find_buff_;
     }
 
-    browser->GetHost()->Find(0, find_what,
+    browser->GetHost()->Find(find_what,
                              (find_state_.Flags & FR_DOWN) ? true : false,
                              match_case, find_next_);
     if (!find_next_)
@@ -851,7 +881,7 @@ void RootWindowWin::OnFindEvent() {
 
 void RootWindowWin::OnAbout() {
   // Show the about box.
-  DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_ABOUTBOX), hwnd_,
+  DialogBox(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDD_ABOUTBOX), hwnd_,
             AboutWndProc);
 }
 
@@ -938,7 +968,7 @@ void RootWindowWin::OnCreate(LPCREATESTRUCT lpCreateStruct) {
     }
   } else {
     // No controls so also remove the default menu.
-    ::SetMenu(hwnd_, NULL);
+    ::SetMenu(hwnd_, nullptr);
   }
 
   const float device_scale_factor = GetWindowScaleFactor(hwnd_);
@@ -951,7 +981,7 @@ void RootWindowWin::OnCreate(LPCREATESTRUCT lpCreateStruct) {
     // Create the browser window.
     CefRect cef_rect(rect.left, rect.top, rect.right - rect.left,
                      rect.bottom - rect.top);
-    browser_window_->CreateBrowser(hwnd_, cef_rect, browser_settings_, NULL,
+    browser_window_->CreateBrowser(hwnd_, cef_rect, browser_settings_, nullptr,
                                    delegate_->GetRequestContext(this));
   } else {
     // With popups we already have a browser window. Parent the browser window
@@ -973,6 +1003,18 @@ bool RootWindowWin::OnClose() {
       // Cancel the close.
       return true;
     }
+  }
+
+  // Retrieve current window placement information.
+  WINDOWPLACEMENT placement;
+  ::GetWindowPlacement(hwnd_, &placement);
+
+  if (CefCurrentlyOn(TID_UI)) {
+    SaveWindowRestoreOnUIThread(placement);
+  } else {
+    CefPostTask(
+        TID_UI,
+        base::BindOnce(&RootWindowWin::SaveWindowRestoreOnUIThread, placement));
   }
 
   // Allow the close.
@@ -1034,7 +1076,7 @@ void RootWindowWin::OnSetFullscreen(bool fullscreen) {
 
   CefRefPtr<CefBrowser> browser = GetBrowser();
   if (browser) {
-    scoped_ptr<window_test::WindowTestRunnerWin> test_runner(
+    std::unique_ptr<window_test::WindowTestRunnerWin> test_runner(
         new window_test::WindowTestRunnerWin());
     if (fullscreen)
       test_runner->Maximize(browser);
@@ -1060,7 +1102,7 @@ void RootWindowWin::OnAutoResize(const CefSize& new_size) {
                LogicalToDevice(new_size.height, device_scale_factor)};
   DWORD style = GetWindowLong(hwnd_, GWL_STYLE);
   DWORD ex_style = GetWindowLong(hwnd_, GWL_EXSTYLE);
-  bool has_menu = !(style & WS_CHILD) && (GetMenu(hwnd_) != NULL);
+  bool has_menu = !(style & WS_CHILD) && (GetMenu(hwnd_) != nullptr);
 
   // The size value is for the client area. Calculate the whole window size
   // based on the current style.
@@ -1068,7 +1110,7 @@ void RootWindowWin::OnAutoResize(const CefSize& new_size) {
 
   // Size the window. The left/top values may be negative.
   // Also show the window if it's not currently visible.
-  SetWindowPos(hwnd_, NULL, 0, 0, rect.right - rect.left,
+  SetWindowPos(hwnd_, nullptr, 0, 0, rect.right - rect.left,
                rect.bottom - rect.top,
                SWP_NOZORDER | SWP_NOMOVE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
 }
@@ -1155,9 +1197,8 @@ void UnSubclassWindow(HWND hWnd) {
   LONG_PTR hParentWndProc =
       reinterpret_cast<LONG_PTR>(::GetPropW(hWnd, kParentWndProc));
   if (hParentWndProc) {
-    LONG_PTR hPreviousWndProc =
+    [[maybe_unused]] LONG_PTR hPreviousWndProc =
         SetWindowLongPtr(hWnd, GWLP_WNDPROC, hParentWndProc);
-    ALLOW_UNUSED_LOCAL(hPreviousWndProc);
     DCHECK_EQ(hPreviousWndProc,
               reinterpret_cast<LONG_PTR>(SubclassedWindowProc));
   }
@@ -1210,6 +1251,27 @@ void RootWindowWin::NotifyDestroyedIfDone() {
   // Notify once both the window and the browser have been destroyed.
   if (window_destroyed_ && browser_destroyed_)
     delegate_->OnRootWindowDestroyed(this);
+}
+
+// static
+void RootWindowWin::SaveWindowRestoreOnUIThread(
+    const WINDOWPLACEMENT& placement) {
+  CEF_REQUIRE_UI_THREAD();
+
+  cef_show_state_t show_state = CEF_SHOW_STATE_NORMAL;
+  if (placement.showCmd == SW_SHOWMINIMIZED) {
+    show_state = CEF_SHOW_STATE_MINIMIZED;
+  } else if (placement.showCmd == SW_SHOWMAXIMIZED) {
+    show_state = CEF_SHOW_STATE_MAXIMIZED;
+  }
+
+  // Coordinates when the window is in the restored position.
+  const auto rect = placement.rcNormalPosition;
+  CefRect pixel_bounds(rect.left, rect.top, rect.right - rect.left,
+                       rect.bottom - rect.top);
+  const auto dip_bounds = CefDisplay::ConvertScreenRectFromPixels(pixel_bounds);
+
+  prefs::SaveWindowRestorePreferences(show_state, dip_bounds);
 }
 
 }  // namespace client

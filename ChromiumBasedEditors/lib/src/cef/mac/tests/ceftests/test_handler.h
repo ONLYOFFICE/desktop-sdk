@@ -2,36 +2,25 @@
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 
-#ifndef CEF_TESTS_UNITTESTS_TEST_HANDLER_H_
-#define CEF_TESTS_UNITTESTS_TEST_HANDLER_H_
+#ifndef CEF_TESTS_CEFTESTS_TEST_HANDLER_H_
+#define CEF_TESTS_CEFTESTS_TEST_HANDLER_H_
 #pragma once
 
 #include <list>
 #include <map>
+#include <memory>
 #include <string>
 #include <utility>
 
-#include "include/base/cef_bind.h"
-#include "include/base/cef_scoped_ptr.h"
+#include "include/base/cef_callback.h"
 #include "include/cef_browser.h"
 #include "include/cef_client.h"
 #include "include/cef_frame.h"
 #include "include/cef_task.h"
 #include "include/cef_waitable_event.h"
 #include "tests/ceftests/thread_helper.h"
+#include "tests/ceftests/track_callback.h"
 #include "tests/gtest/include/gtest/gtest.h"
-
-class TrackCallback {
- public:
-  TrackCallback() : gotit_(false) {}
-  void yes() { gotit_ = true; }
-  bool isSet() { return gotit_; }
-  void reset() { gotit_ = false; }
-  operator bool() const { return gotit_; }
-
- protected:
-  bool gotit_;
-};
 
 class ResourceContent {
  public:
@@ -127,19 +116,20 @@ class TestHandler : public CefClient,
     // be executed only if TestHandler::DestroyTest has not yet been called.
     // For example:
     //    GetUIThreadHelper()->PostTask(
-    //        base::Bind(&TestHandler::DoSomething, base::Unretained(this)));
-    void PostTask(const base::Closure& task);
-    void PostDelayedTask(const base::Closure& task, int delay_ms);
+    //        base::BindOnce(&TestHandler::DoSomething,
+    //        base::Unretained(this)));
+    void PostTask(base::OnceClosure task);
+    void PostDelayedTask(base::OnceClosure task, int delay_ms);
 
    private:
-    void TaskHelper(const base::Closure& task);
+    void TaskHelper(base::OnceClosure task);
 
     // Must be the last member.
     base::WeakPtrFactory<UIThreadHelper> weak_ptr_factory_;
   };
 
   // The |completion_state| object if specified must outlive this class.
-  explicit TestHandler(CompletionState* completion_state = NULL);
+  explicit TestHandler(CompletionState* completion_state = nullptr);
   ~TestHandler() override;
 
   // Implement this method to set up the test. Only used in combination with a
@@ -192,8 +182,8 @@ class TestHandler : public CefClient,
                                  TerminationStatus status) override;
 
   // These methods should only be used if at most one non-popup browser exists.
-  CefRefPtr<CefBrowser> GetBrowser();
-  int GetBrowserId();
+  CefRefPtr<CefBrowser> GetBrowser() const;
+  int GetBrowserId() const;
 
   // Copies the map of all the currently existing browsers into |map|. Must be
   // called on the UI thread.
@@ -239,18 +229,14 @@ class TestHandler : public CefClient,
   virtual void PopulateBrowserSettings(CefBrowserSettings* settings) {}
 
   void CreateBrowser(const CefString& url,
-                     CefRefPtr<CefRequestContext> request_context = NULL,
-                     CefRefPtr<CefDictionaryValue> extra_info = NULL);
+                     CefRefPtr<CefRequestContext> request_context = nullptr,
+                     CefRefPtr<CefDictionaryValue> extra_info = nullptr);
   static void CloseBrowser(CefRefPtr<CefBrowser> browser, bool force_close);
 
   void AddResource(const std::string& url,
                    const std::string& content,
-                   const std::string& mime_type);
-
-  void AddResource(const std::string& url,
-                   const std::string& content,
                    const std::string& mime_type,
-                   const ResourceContent::HeaderMap& header_map);
+                   const ResourceContent::HeaderMap& header_map = {});
 
   void AddResourceEx(const std::string& url, const ResourceContent& content);
 
@@ -304,7 +290,7 @@ class TestHandler : public CefClient,
   bool destroy_test_expected_;
   bool destroy_test_called_;
 
-  scoped_ptr<UIThreadHelper> ui_thread_helper_;
+  std::unique_ptr<UIThreadHelper> ui_thread_helper_;
 
   // Used to track the number of currently existing browser windows.
   static int browser_count_;
@@ -321,12 +307,12 @@ void ReleaseAndWaitForDestructor(CefRefPtr<T>& handler, int delay_ms = 2000) {
       CefWaitableEvent::CreateWaitableEvent(true, false);
   handler->SetDestroyEvent(event);
   T* _handler_ptr = handler.get();
-  handler = NULL;
+  handler = nullptr;
   bool handler_destructed = event->TimedWait(delay_ms);
   EXPECT_TRUE(handler_destructed);
   if (!handler_destructed) {
     // |event| is a stack variable so clear the reference before returning.
-    _handler_ptr->SetDestroyEvent(NULL);
+    _handler_ptr->SetDestroyEvent(nullptr);
   }
 }
 
@@ -363,4 +349,4 @@ bool TestFailed();
   GTEST_TEST_BOOLEAN_(!(__result), #condition, true, false, \
                       GTEST_NONFATAL_FAILURE_)
 
-#endif  // CEF_TESTS_UNITTESTS_TEST_HANDLER_H_
+#endif  // CEF_TESTS_CEFTESTS_TEST_HANDLER_H_

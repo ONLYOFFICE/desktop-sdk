@@ -33,6 +33,7 @@
 #include "./client_renderer.h"
 
 #include <sstream>
+#include <algorithm>
 #include <string>
 
 #include "include/cef_dom.h"
@@ -589,6 +590,9 @@ public:
 	// для печати облачных файлов (pdf/xps/djvu)
 	std::wstring m_sCloudNativePrintFile;
 
+	bool m_bIsMacrosesSupport;
+	bool m_bIsPluginsSupport;
+
 	CAscEditorNativeV8Handler(const std::wstring& sUrl)
 	{
 		m_etType = etUndefined;
@@ -621,6 +625,9 @@ public:
 		m_oCompleteTasksCS.InitializeCriticalSection();
 
 		m_sRendererProcessVariable = L"";
+
+		m_bIsMacrosesSupport = true;
+		m_bIsPluginsSupport = true;
 
 		CheckDefaults();
 
@@ -665,6 +672,12 @@ public:
 
 		m_sRecoversFolder = default_params.GetValueW("recovers_folder");
 		m_sRendererProcessVariable = default_params.GetValueW("renderer_process_variable");
+
+		if ("false" == default_params.GetValue("macroses_support"))
+			m_bIsMacrosesSupport = false;
+		if ("false" == default_params.GetValue("plugins_support"))
+			m_bIsPluginsSupport = false;
+
 #if 0
 		default_params.Print();
 #endif
@@ -1978,7 +1991,7 @@ retval, exception);
 			CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetFrame();
 			if (_frame)
 			{
-				_frame->ExecuteJavaScript("\
+				std::string sCodeInitJS = "\
 window.AscDesktopEditor.CreateEditorApi = function(api) {\n\
 api && api.asc_registerCallback('asc_onGetEditorPermissions', function(e) { window.AscDesktopEditor.CheckCloudFeatures(e.asc_getLicenseType()); });\n\
 window.AscDesktopEditor._CreateEditorApi();\n\
@@ -2118,7 +2131,13 @@ window.AscDesktopEditor._convertFile((files && files[0]) ? files[0] : '', format
 window.AscDesktopEditor._convertFile(path, format);\n\
 }\n\
 };\n\
-", _frame->GetURL(), 0);
+window.AscDesktopEditor.getPortalsList = function() { debugger;var ret = []; try { var portals = JSON.parse(localStorage.getItem(\"portals\")); for (var i = 0, len = portals.length; i < len; i++) { ret.push(portals[i].portal); ret.push(portals[i].provider); } } catch(err) { ret = []; } console.log(ret);window.AscDesktopEditor.setPortalsList(ret); };\n\
+";
+#ifdef CEF_VERSION_ABOVE_102
+				sCodeInitJS += "!function(){window.AscSimpleRequest=window.AscSimpleRequest||{};var r=0,o={};window.AscSimpleRequest.createRequest=function(e){var t;o[++r]={id:r,complete:e.complete,error:e.error},e.timeout&&(o[t=r].timer=setTimeout(function(){o[t]&&(o[t].error&&o[t].error({status:\"error\",statusCode:404},\"error\"),delete o[t])},e.timeout)),window.AscDesktopEditor.sendSimpleRequest(r,e)},window.AscSimpleRequest._onSuccess=function(e,t){let r=o[e];r&&(r.timer&&clearTimeout(r.timer),r.complete&&r.complete(t,t.status),delete o[e])},window.AscSimpleRequest._onError=function(e,t){let r=o[e];r&&(r.timer&&clearTimeout(r.timer),r.error&&r.error(t,t.status),delete o[e])}}();\n";
+#endif
+
+				_frame->ExecuteJavaScript(sCodeInitJS, _frame->GetURL(), 0);
 			}
 
 			return true;
@@ -2286,18 +2305,89 @@ window.AscDesktopEditor._convertFile(path, format);\n\
 			//    oPlugins.m_strCryptoPluginAttack = CAscRendererProcessParams::getInstance().GetProperty("cryptoEngineId");
 			oPlugins.m_strCryptoPluginAttack = CAscRendererProcessParams::getInstance().GetProperty("cryptoEngineId");
 
-			std::string sData = oPlugins.GetPluginsJson(true);
+			std::string sData = oPlugins.GetPluginsJson(true, true, m_bIsMacrosesSupport, m_bIsPluginsSupport);
+			retval = CefV8Value::CreateString(sData);
+			return true;
+		}
+		else if (name == "GetBackupPlugins")
+		{
+			CPluginsManager oPlugins;
+			oPlugins.m_strDirectory = m_sSystemPlugins;
+			oPlugins.m_strUserDirectory = m_sUserPlugins;
+			oPlugins.m_nCryptoMode = m_nCryptoMode;
+
+			oPlugins.m_strCryptoPluginAttack = CAscRendererProcessParams::getInstance().GetProperty("cryptoEngineId");
+
+			std::string sData = oPlugins.GetPluginsJson(false, true);
 			retval = CefV8Value::CreateString(sData);
 			return true;
 		}
 		else if (name == "PluginInstall")
 		{
+			bool bResult = false;
+
 			CPluginsManager oPlugins;
 			oPlugins.m_strDirectory = m_sSystemPlugins;
 			oPlugins.m_strUserDirectory = m_sUserPlugins;
 
-			std::wstring sFile = ((*arguments.begin())->GetStringValue()).ToWString();
-			oPlugins.AddPlugin(sFile);
+			std::wstring sData = ((*arguments.begin())->GetStringValue()).ToWString();
+
+			if (NSFile::CFileBinary::Exists(sData))
+			{
+				bResult = oPlugins.AddPlugin(sData);
+			}
+			else
+			{
+				// Парсим json конфиг
+				std::wstring sBaseUrl, sPluginName;
+				std::wstring sBackupStart = L"backup\":true";
+				std::wstring sBaseUrlStart = L"baseUrl\":\"";
+				std::wstring sBaseUrlEnd = L"\"";
+
+				std::string::size_type pos = sData.find(sBackupStart);
+				std::string::size_type pos1 = sData.find(sBaseUrlStart);
+				std::string::size_type pos2 = sData.find(sBaseUrlEnd, pos1 + sBaseUrlStart.length());
+
+				// Нужно восстановить плагин из папки backup
+				if (pos != std::string::npos)
+				{
+					pos1 = sData.find(L"asc.{");
+					pos2 = sData.find(L'}', pos1);
+
+					if (pos1 != std::string::npos &&
+						pos2 != std::string::npos &&
+						pos2 > pos1)
+					{
+						std::wstring sGuid = sData.substr(pos1, pos2 - pos1 + 1);
+						bResult = oPlugins.RestorePlugin(sGuid);
+					}
+				}
+				// Установка из стора по ссылке
+				else if (pos1 != std::string::npos && pos2 != std::string::npos && pos2 > pos1)
+				{
+					sBaseUrl = sData.substr(pos1 + sBaseUrlStart.length(),
+											pos2 - pos1 - sBaseUrlStart.length());
+
+					auto pos = sBaseUrl.rfind(L"/", sBaseUrl.length() - 2);
+					sPluginName = sBaseUrl.substr(pos);
+					sPluginName.erase(std::remove(sPluginName.begin(), sPluginName.end(), L'/'), sPluginName.end());
+
+					std::wstring sPackageUrl = sBaseUrl + L"/deploy/" + sPluginName + L".plugin";
+
+					std::wstring sTmpFile = NSFile::CFileBinary::GetTempPath() + L"/temp_asc_plugin.plugin";
+					if (NSFile::CFileBinary::Exists(sTmpFile))
+						NSFile::CFileBinary::Remove(sTmpFile);
+
+					CFileDownloaderWrapper oDownloader(sPackageUrl, sTmpFile);
+					oDownloader.DownloadSync();
+
+					if (NSFile::CFileBinary::Exists(sTmpFile))
+					{
+						bResult = oPlugins.AddPlugin(sTmpFile);
+						NSFile::CFileBinary::Remove(sTmpFile);
+					}
+				}
+			}
 
 			// send to editor
 			CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
@@ -2307,17 +2397,23 @@ window.AscDesktopEditor._convertFile(path, format);\n\
 
 			std::string sCode = "if (window.UpdateInstallPlugins) window.UpdateInstallPlugins();";
 			_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+
+			retval = CefV8Value::CreateBool(bResult);
 
 			return true;
 		}
 		else if (name == "PluginUninstall")
 		{
+			bool bResult = false;
+
 			CPluginsManager oPlugins;
 			oPlugins.m_strDirectory = m_sSystemPlugins;
 			oPlugins.m_strUserDirectory = m_sUserPlugins;
 
-			std::wstring sGuid = ((*arguments.begin())->GetStringValue()).ToWString();
-			oPlugins.RemovePlugin(sGuid);
+			std::wstring sGuid = arguments[0]->GetStringValue().ToWString();
+			bool bBackup = (arguments.size() > 1 && arguments[1]->IsBool()) ? arguments[1]->GetBoolValue() : false;
+
+			bResult = oPlugins.RemovePlugin(sGuid, bBackup);
 
 			// send to editor
 			CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
@@ -2327,6 +2423,8 @@ window.AscDesktopEditor._convertFile(path, format);\n\
 
 			std::string sCode = "if (window.UpdateInstallPlugins) window.UpdateInstallPlugins();";
 			_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+
+			retval = CefV8Value::CreateBool(bResult);
 
 			return true;
 		}
@@ -2617,13 +2715,13 @@ window.AscDesktopEditor._convertFile(path, format);\n\
 			CefRefPtr<CefV8Value> val = arguments[0];
 			int nCount = val->GetArrayLength();
 
-			int nCount2 = 0;
-			CefRefPtr<CefV8Value> val2 = NULL;
-			if (arguments.size() > 1)
-			{
-				val2 = arguments[1];
-				nCount2 = val2->GetArrayLength();
-			}
+            int nCount2 = 0;
+			CefRefPtr<CefV8Value> val2 = nullptr;
+            if (arguments.size() > 1)
+            {
+                val2 = arguments[1];
+                nCount2 = val2->GetArrayLength();
+            }
 
 			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("download_files");
 
@@ -2722,7 +2820,7 @@ window.AscDesktopEditor._convertFile(path, format);\n\
 #ifdef CEF_2623
 				CefRefPtr<CefV8Value> val = CefV8Value::CreateObject(NULL);
 #else
-				CefRefPtr<CefV8Value> val = CefV8Value::CreateObject(NULL, NULL);
+				CefRefPtr<CefV8Value> val = CefV8Value::CreateObject(nullptr, nullptr);
 #endif
 				val->SetValue("type", CefV8Value::CreateInt(nMode), V8_PROPERTY_ATTRIBUTE_NONE);
 				val->SetValue("info_presented", CefV8Value::CreateBool(true), V8_PROPERTY_ATTRIBUTE_NONE);
@@ -2837,7 +2935,7 @@ window.AscDesktopEditor._convertFile(path, format);\n\
 #ifdef CEF_2623
 			retval = CefV8Value::CreateObject(NULL);
 #else
-			retval = CefV8Value::CreateObject(NULL, NULL);
+			retval = CefV8Value::CreateObject(nullptr, nullptr);
 #endif
 			int nW = 0;
 			int nH = 0;
@@ -3110,33 +3208,33 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
 			if (oFile.OpenFile(sFile))
 				lSize = oFile.GetFileSize();
 
-			retval = CefV8Value::CreateInt((int)lSize);
-			return true;
-		}
-		else if (name == "_getMainUrl")
-		{
-			CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
-			CefRefPtr<CefFrame> frame = browser ? browser->GetMainFrame() : NULL;
-			retval = CefV8Value::CreateString(frame ? frame->GetURL() : "");
-			return true;
-		}
-		else if (name == "_getCurrentUrl")
-		{
-			CefRefPtr<CefFrame> frame = CefV8Context::GetCurrentContext()->GetFrame();
-			retval = CefV8Value::CreateString(frame ? frame->GetURL() : "");
-			return true;
-		}
-		else if (name == "_SaveFilenameDialog")
-		{
-			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_save_filename_dialog");
-			message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
-			message->GetArgumentList()->SetString(1, std::to_string(CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier()));
-			SEND_MESSAGE_TO_BROWSER_PROCESS(message);
-			return true;
-		}
-		else if (name == "_ImportAdvancedEncryptedData")
-		{
-			std::wstring sFile = arguments[0]->GetStringValue().ToWString();
+            retval = CefV8Value::CreateInt((int)lSize);
+            return true;
+        }
+        else if (name == "_getMainUrl")
+        {
+            CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
+			CefRefPtr<CefFrame> frame = browser ? browser->GetMainFrame() : nullptr;
+            retval = CefV8Value::CreateString(frame ? frame->GetURL() : "");
+            return true;
+        }
+        else if (name == "_getCurrentUrl")
+        {
+            CefRefPtr<CefFrame> frame = CefV8Context::GetCurrentContext()->GetFrame();
+            retval = CefV8Value::CreateString(frame ? frame->GetURL() : "");
+            return true;
+        }
+        else if (name == "_SaveFilenameDialog")
+        {
+            CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_save_filename_dialog");
+            message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
+            message->GetArgumentList()->SetString(1, std::to_string(CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier()));
+            SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+            return true;
+        }
+        else if (name == "_ImportAdvancedEncryptedData")
+        {
+            std::wstring sFile = arguments[0]->GetStringValue().ToWString();
 
 			COfficeFileFormatChecker oChecker;
 			bool bIsOfficeFile = oChecker.isOfficeFile(sFile);
@@ -3157,11 +3255,25 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
 			NSFile::CFileBinary::Copy(m_sUserPlugins + L"/advanced_crypto_data.docx", sFile);
 			return true;
 		}
-		else if (name == "CompareDocumentUrl")
+		else if (name == "CompareDocumentUrl" ||
+				 name == "CompareDocumentFile" ||
+				 name == "MergeDocumentUrl" ||
+				 name == "MergeDocumentFile")
 		{
 			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_compare_document");
-			message->GetArgumentList()->SetString(0, "url");
+
+			std::string sFileOrUrlType = "url";
+			if (name == "CompareDocumentFile" || name == "MergeDocumentFile")
+				sFileOrUrlType = "file";
+
+			message->GetArgumentList()->SetString(0, sFileOrUrlType);
 			message->GetArgumentList()->SetString(1, arguments[0]->GetStringValue());
+
+			std::string sType = "compare";
+			if (name == "MergeDocumentUrl" || name == "MergeDocumentFile")
+				sType = "merge";
+
+			message->GetArgumentList()->SetString(2, sType);
 
 			if (arguments.size() == 4)
 			{
@@ -3185,36 +3297,7 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
 
 			SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 			return true;
-		}
-		else if (name == "CompareDocumentFile")
-		{
-			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_compare_document");
-			message->GetArgumentList()->SetString(0, "file");
-			message->GetArgumentList()->SetString(1, arguments[0]->GetStringValue());
-
-			if (arguments.size() == 4)
-			{
-				std::wstring sLocalDir = m_sCryptDocumentFolder;
-				if (!sLocalDir.empty())
-				{
-					std::string sContent = arguments[2]->GetStringValue().ToString();
-					BYTE* pDataDst = NULL;
-					int nLenDst = 0;
-
-					NSFile::CBase64Converter::Decode(sContent.c_str(), sContent.length(), pDataDst, nLenDst);
-
-					NSFile::CFileBinary oFileWithChanges;
-					oFileWithChanges.CreateFileW(sLocalDir + L"/EditorForCompare.bin");
-					oFileWithChanges.WriteFile(pDataDst, nLenDst);
-					oFileWithChanges.CloseFile();
-
-					RELEASEARRAYOBJECTS(pDataDst);
-				}
-			}
-
-			SEND_MESSAGE_TO_BROWSER_PROCESS(message);
-			return true;
-		}
+		}		
 		else if (name == "onDocumentContentReady")
 		{
 			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_document_content_ready");
@@ -3710,12 +3793,12 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
 		}
 		else if (name == "GetSupportedScaleValues")
 		{
-			retval = CefV8Value::CreateArray(5);
-			retval->SetValue(0, CefV8Value::CreateDouble(1));
-			retval->SetValue(1, CefV8Value::CreateDouble(1.25));
-			retval->SetValue(2, CefV8Value::CreateDouble(1.5));
-			retval->SetValue(3, CefV8Value::CreateDouble(1.75));
-			retval->SetValue(4, CefV8Value::CreateDouble(2));
+			#define SCALES_COUNT 11
+			const double scales[SCALES_COUNT] = {1, 1.25, 1.5, 1.75, 2, 2.5, 3, 3.5, 4, 4.5, 5};
+			retval = CefV8Value::CreateArray(SCALES_COUNT);
+			for (int i = 0; i < SCALES_COUNT; ++i)
+				retval->SetValue(i, CefV8Value::CreateDouble(scales[i]));
+
 			return true;
 		}
 		else if (name == "GetFontThumbnailHeight")
@@ -3795,7 +3878,7 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
 #ifdef CEF_2623
 			retval = CefV8Value::CreateObject(NULL);
 #else
-			retval = CefV8Value::CreateObject(NULL, NULL);
+			retval = CefV8Value::CreateObject(nullptr, nullptr);
 #endif
 
 			CefRefPtr<CefV8Handler> handler = new CLocalFileConvertV8Handler(sFolder);
@@ -3835,6 +3918,94 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
 		else if (name == "IsCachedPdfCloudPrintFileInfo")
 		{
 			retval = CefV8Value::CreateBool(!m_sCloudNativePrintFile.empty());
+			return true;
+		}
+		else if (name == "sendSimpleRequest")
+		{
+			if (2 != arguments.size())
+				return true;
+
+			int nCounter = arguments[0]->GetIntValue();
+			std::wstring sUrl = L"";
+
+			if (arguments[1]->GetValue("url") && arguments[1]->GetValue("url")->IsString())
+				sUrl = arguments[1]->GetValue("url")->GetStringValue().ToWString();
+
+			if (nCounter < 0 || sUrl.empty())
+				return true;
+
+			std::string sMethod = "GET";
+			if (arguments[1]->GetValue("method") && arguments[1]->GetValue("method")->IsString())
+				sMethod = arguments[1]->GetValue("method")->GetStringValue().ToString();
+
+			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("send_simple_request");
+
+			NSArgumentList::SetInt64(message->GetArgumentList(), 0, CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
+			message->GetArgumentList()->SetInt(1, nCounter);
+			message->GetArgumentList()->SetString(2, sUrl);
+			message->GetArgumentList()->SetString(3, sMethod);
+
+			CefRefPtr<CefV8Value> headers = arguments[1]->GetValue("headers");
+			if (headers && headers->IsObject())
+			{
+				std::vector<CefString> arKeys;
+				int nArgIndex = 4;
+				if (headers->GetKeys(arKeys))
+				{
+					for (int i = 0, len = arKeys.size(); i < len; ++i)
+					{
+						message->GetArgumentList()->SetString(nArgIndex++, arKeys[i]);
+						message->GetArgumentList()->SetString(nArgIndex++, headers->GetValue(arKeys[i])->GetStringValue());
+					}
+				}
+			}
+
+			SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+			return true;
+		}
+		else if (name == "isSupportMacroses")
+		{
+			retval = CefV8Value::CreateBool(m_bIsMacrosesSupport);
+			return true;
+		}
+		else if (name == "isSupportPlugins")
+		{
+			retval = CefV8Value::CreateBool(m_bIsPluginsSupport);
+			return true;
+		}
+		else if (name == "setPortalsList")
+		{
+			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("set_portals_list");
+			int nCount = arguments[0]->GetArrayLength();
+			for (int i = 0; i < nCount; ++i)
+				message->GetArgumentList()->SetString(i, arguments[0]->GetValue(i)->GetStringValue());
+			SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+			return true;
+		}
+		else if (name == "localSaveToDrawingFormat")
+		{
+			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("local_save_to_drawing");
+			message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
+			message->GetArgumentList()->SetString(1, arguments[1]->GetStringValue());
+			message->GetArgumentList()->SetString(2, CefV8Context::GetCurrentContext()->GetBrowser()->GetFocusedFrame()->GetURL());
+			message->GetArgumentList()->SetString(3, arguments[2]->GetStringValue());
+			message->GetArgumentList()->SetString(4, arguments[3]->GetStringValue());
+			message->GetArgumentList()->SetInt(5, arguments[4]->GetIntValue());
+			SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+			return true;
+		}
+		else if (name == "emulateCloudPrinting")
+		{
+			m_bIsPrinting = arguments[0]->GetBoolValue();
+			return true;
+		}
+		else if (name == "isSupportNetworkFunctionality")
+		{
+#ifdef OLD_MACOS_SYSTEM
+			retval = CefV8Value::CreateBool(false);
+#else
+			retval = CefV8Value::CreateBool(true);
+#endif
 			return true;
 		}
 
@@ -3995,6 +4166,31 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
 			return sUrl;
 		return L"error";
 	}
+
+	bool CheckAnotherLocalFile(const std::wstring& sUrl)
+	{
+		// проверяем - может картинка из соседнего файла?
+		std::wstring sLocalFile = sUrl;
+		if (sLocalFile.find(L"file://") == 0)
+		{
+#ifdef _WIN32
+			sLocalFile = sLocalFile.substr(8);
+#else
+			sLocalFile = sLocalFile.substr(7);
+#endif
+		}
+
+		std::wstring sLocaDirRecover = NSFile::GetDirectoryName(m_sLocalFileFolderWithoutFile);
+		NSStringUtils::string_replace(sLocaDirRecover, L"\\", L"/");
+
+		NSStringUtils::string_replace(sLocalFile, L"\\", L"/");
+
+		if (0 != sLocalFile.find(sLocaDirRecover))
+			return false;
+
+		return true;
+	}
+
 	std::wstring GetLocalImageUrlLocal(const std::wstring& sUrl, const std::wstring& sUrlMap, unsigned int nCRC32 = 0)
 	{
 		std::wstring sUrlTmp = sUrl;
@@ -4043,51 +4239,143 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
 
 		if (pMetafile->GetType() == MetaFile::c_lMetaEmf || pMetafile->GetType() == MetaFile::c_lMetaWmf)
 		{
-			std::wstring sRet = L"image" + std::to_wstring(m_nLocalImagesNextIndex) + L".svg";
-			std::wstring sRet1 = L"image" + std::to_wstring(m_nLocalImagesNextIndex++) + ((pMetafile->GetType() == MetaFile::c_lMetaEmf) ? L".emf" : L".wmf");
+			std::wstring sMeta = L"";
+			std::wstring sSvg = L"";
+			std::wstring sIndex = std::to_wstring(m_nLocalImagesNextIndex++);
+			std::wstring sOutDir = m_sLocalFileFolderWithoutFile + L"/media/";
 
-			double x = 0, y = 0, w = 0, h = 0;
-			pMetafile->GetBounds(&x, &y, &w, &h);
+			// копируем метафайл и генерируем путь для svg
+			if (pMetafile->GetType() == MetaFile::c_lMetaWmf)
+			{
+				sMeta = L"display1image" + sIndex + L".wmf";
+				sSvg  = L"display1image" + sIndex + L".svg";
+				NSFile::CFileBinary::Copy(sUrl, sOutDir + sMeta);
+			}
+			else
+			{
+				sMeta = L"display2image" + sIndex + L".emf";
+				sSvg  = L"display2image" + sIndex + L".svg";
+				NSFile::CFileBinary::Copy(sUrl, sOutDir + sMeta);
+			}
 
-			double _max = (w >= h) ? w : h;
-			double dKoef = 100000.0 / _max;
+			bool bIsLocalAnother = CheckAnotherLocalFile(sUrl);
+			if (bIsLocalAnother)
+			{
+				std::wstring sUrlFileName = NSFile::GetFileName(sUrl);
+				if (0 == sUrlFileName.find(L"display"))
+				{
+					std::wstring::size_type nLen = sUrlFileName.length();
+					if (nLen > 4 && '.' == sUrlFileName[nLen - 4])
+					{
+						std::wstring sSvgSrc = sUrl.substr(0, nLen - 3) + L"svg";
+						if (NSFile::CFileBinary::Exists(sSvgSrc))
+						{
+							NSFile::CFileBinary::Copy(sSvgSrc, sOutDir + sSvg);
+						}
+					}
+				}
+			}
 
-			int WW = (int)(dKoef * w + 0.5);
-			int HH = (int)(dKoef * h + 0.5);
+			// не из соседнего файла или нет свг - надо ее сделать!
+			if (!NSFile::CFileBinary::Exists(sOutDir + sSvg))
+			{
+				std::wstring sInternalSvg = pMetafile->ConvertToSvg();
+				if (!sInternalSvg.empty())
+				{
+					NSFile::CFileBinary::SaveToFile(sOutDir + sSvg, sInternalSvg);
+				}
+				else
+				{
+					double x = 0, y = 0, w = 0, h = 0;
+					pMetafile->GetBounds(&x, &y, &w, &h);
 
-			NSHtmlRenderer::CASCSVGWriter oWriterSVG(false);
-			oWriterSVG.SetFontManager(m_pLocalApplicationFonts->GenerateFontManager());
-			oWriterSVG.put_Width(WW);
-			oWriterSVG.put_Height(HH);
-			pMetafile->DrawOnRenderer(&oWriterSVG, 0, 0, WW, HH);
+					double _max = (w >= h) ? w : h;
+					double dKoef = 100000.0 / _max;
 
-			oWriterSVG.SaveFile(m_sLocalFileFolderWithoutFile + L"/media/" + sRet);
+					int WW = (int)(dKoef * w + 0.5);
+					int HH = (int)(dKoef * h + 0.5);
 
-			m_mapLocalAddImages.insert(std::pair<std::wstring, std::wstring>(sUrlMap, sRet));
+					// TODO: заменить на новую конвертацию
+					NSHtmlRenderer::CASCSVGWriter oWriterSVG(false);
+					oWriterSVG.SetFontManager(m_pLocalApplicationFonts->GenerateFontManager());
+					oWriterSVG.put_Width(WW);
+					oWriterSVG.put_Height(HH);
+					pMetafile->DrawOnRenderer(&oWriterSVG, 0, 0, WW, HH);
+
+					oWriterSVG.SaveFile(sOutDir + sSvg);
+				}
+			}
+
+			m_mapLocalAddImages.insert(std::pair<std::wstring, std::wstring>(sUrlMap, sSvg));
 			if (0 != nCRC32)
-				m_mapLocalAddImagesCRC.insert(std::pair<unsigned int, std::wstring>(nCRC32, sRet));
-			return sRet;
+				m_mapLocalAddImagesCRC.insert(std::pair<unsigned int, std::wstring>(nCRC32, sSvg));
+
+			RELEASEINTERFACE(pMetafile);
+			return sSvg;
 		}
 		if (pMetafile->GetType() == MetaFile::c_lMetaSvg || pMetafile->GetType() == MetaFile::c_lMetaSvm)
 		{
-			std::wstring sRet = L"image" + std::to_wstring(m_nLocalImagesNextIndex++) + L".png";
+			std::wstring sMeta = L"";
+			std::wstring sSvg = L"";
+			std::wstring sIndex = std::to_wstring(m_nLocalImagesNextIndex++);
+			std::wstring sOutDir = m_sLocalFileFolderWithoutFile + L"/media/";
 
-			double x = 0, y = 0, w = 0, h = 0;
-			pMetafile->GetBounds(&x, &y, &w, &h);
+			// нужно проверить - не лежит ли рядом метафайл
+			bool bIsLocalAnother = CheckAnotherLocalFile(sUrl);
+			if (bIsLocalAnother)
+			{
+				std::wstring sUrlFileName = NSFile::GetFileName(sUrl);
+				if (0 == sUrlFileName.find(L"display"))
+				{
+					std::wstring::size_type nLen = sUrlFileName.length();
+					if (nLen > 4 && '.' == sUrlFileName[nLen - 4])
+					{
+						std::wstring sUrlFileNameWithoutExt = sUrl.substr(0, sUrl.length() - 3);
+						std::wstring sWmf = sUrlFileNameWithoutExt + L"wmf";
+						std::wstring sEmf = sUrlFileNameWithoutExt + L"emf";
 
-			double _max = (w >= h) ? w : h;
-			double dKoef = 1000.0 / _max;
+						if (NSFile::CFileBinary::Exists(sWmf))
+						{
+							sMeta = L"display1image" + sIndex + L".wmf";
+							sSvg  = L"display1image" + sIndex + L".svg";
+							NSFile::CFileBinary::Copy(sWmf, sOutDir + sMeta);
+							NSFile::CFileBinary::Copy(sUrl, sOutDir + sSvg);
+						}
+						else if (NSFile::CFileBinary::Exists(sEmf))
+						{
+							sMeta = L"display2image" + sIndex + L".emf";
+							sSvg  = L"display2image" + sIndex + L".svg";
+							NSFile::CFileBinary::Copy(sEmf, sOutDir + sMeta);
+							NSFile::CFileBinary::Copy(sUrl, sOutDir + sSvg);
+						}
+					}
+				}
+			}
 
-			int WW = (int)(dKoef * w + 0.5);
-			int HH = (int)(dKoef * h + 0.5);
+			if (sSvg.empty())
+			{
+				// метафайла нет. свг пока не поддерживаем - конвертируем в растр
+				sSvg = L"image" + sIndex + L".png";
 
-			std::wstring sSaveRet = m_sLocalFileFolderWithoutFile + L"/media/" + sRet;
-			pMetafile->ConvertToRaster(sSaveRet.c_str(), _CXIMAGE_FORMAT_PNG, WW, HH);
+				double x = 0, y = 0, w = 0, h = 0;
+				pMetafile->GetBounds(&x, &y, &w, &h);
 
-			m_mapLocalAddImages.insert(std::pair<std::wstring, std::wstring>(sUrlMap, sRet));
+				double _max = (w >= h) ? w : h;
+				double dKoef = 1000.0 / _max;
+
+				int WW = (int)(dKoef * w + 0.5);
+				int HH = (int)(dKoef * h + 0.5);
+
+				std::wstring sOutFile = sOutDir + sSvg;
+				pMetafile->ConvertToRaster(sOutFile.c_str(), _CXIMAGE_FORMAT_PNG, WW, HH);
+			}
+
+			m_mapLocalAddImages.insert(std::pair<std::wstring, std::wstring>(sUrlMap, sSvg));
 			if (0 != nCRC32)
-				m_mapLocalAddImagesCRC.insert(std::pair<unsigned int, std::wstring>(nCRC32, sRet));
-			return sRet;
+				m_mapLocalAddImagesCRC.insert(std::pair<unsigned int, std::wstring>(nCRC32, sSvg));
+
+			RELEASEINTERFACE(pMetafile);
+			return sSvg;
 		}
 
 		RELEASEINTERFACE(pMetafile);
@@ -4206,7 +4494,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 #ifdef CEF_2623
 	CefRefPtr<CefV8Value> obj = CefV8Value::CreateObject(NULL);
 #else
-	CefRefPtr<CefV8Value> obj = CefV8Value::CreateObject(NULL, NULL);
+	CefRefPtr<CefV8Value> obj = CefV8Value::CreateObject(nullptr, nullptr);
 #endif
 
 	std::wstring sMainUrl = L"";
@@ -4218,7 +4506,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
 	CefRefPtr<CefV8Handler> handler = pWrapper;
 
-	#define EXTEND_METHODS_COUNT 165
+	#define EXTEND_METHODS_COUNT 175
 	const char* methods[EXTEND_METHODS_COUNT] = {
 		"Copy",
 		"Paste",
@@ -4318,6 +4606,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 		"NativeViewerGetCompleteTasks",
 
 		"GetInstallPlugins",
+		"GetBackupPlugins",
 
 		"IsLocalFile",
 		"IsFilePrinting",
@@ -4396,6 +4685,9 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 		"CompareDocumentUrl",
 		"CompareDocumentFile",
 
+		"MergeDocumentUrl",
+		"MergeDocumentFile",
+
 		"IsSupportMedia",
 
 		"SetIsReadOnly",
@@ -4445,6 +4737,17 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
 		"SetPdfCloudPrintFileInfo",
 		"IsCachedPdfCloudPrintFileInfo",
+
+		"sendSimpleRequest",
+
+		"isSupportMacroses",
+		"isSupportPlugins",
+
+		"setPortalsList",
+		"localSaveToDrawingFormat",
+		"emulateCloudPrinting",
+
+		"isSupportNetworkFunctionality",
 
 		NULL
 	};
@@ -4673,13 +4976,14 @@ return this.split(str).join(newStr);\
 		CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
 		if (_frame)
 		{
-			std::string sCode = "if (window[\"Asc\"] && window[\"Asc\"][\"editor\"]) { window[\"Asc\"][\"editor\"][\"asc_nativePrint\"](undefined, undefined); }";
-			sCode += "else if (window[\"editor\"]) { window[\"editor\"][\"asc_nativePrint\"](undefined, undefined";
+			std::string sCode = "(function(){\
+if (window.Asc && window.Asc.editor && !window.editor) window.Asc.editor.asc_nativePrint(undefined, undefined);\
+else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 
 			if (message->GetArgumentList()->GetSize() == 1)
 				sCode += (", " + (message->GetArgumentList()->GetString(0).ToString()));
 
-			sCode += "); }";
+			sCode += "); })();";
 			_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
 		}
 		return true;
@@ -4791,7 +5095,8 @@ return this.split(str).join(newStr);\
 		}
 		return true;
 	}
-	else if (sMessageName == "oncompare_loadend")
+	else if (sMessageName == "oncompare_loadend" ||
+			 sMessageName == "onmerge_loadend")
 	{
 		CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
 		if (!_frame)
@@ -4824,7 +5129,13 @@ return this.split(str).join(newStr);\
 		else
 			sImageMap += "}";
 
-		std::string sCode = "window.onDocumentCompare && window.onDocumentCompare(\"" + U_TO_UTF8(sFolder) + "\", \"" + sFileData + "\", " + std::to_string(nFileDataLen) + ", " + sImageMap + ");";
+		std::string sCodeFunc;
+		if (sMessageName == "oncompare_loadend")
+			sCodeFunc = "window.onDocumentCompare && window.onDocumentCompare(\"";
+		else if (sMessageName == "onmerge_loadend")
+			sCodeFunc = "window.onDocumentMerge && window.onDocumentMerge(\"";
+
+		std::string sCode = sCodeFunc + U_TO_UTF8(sFolder) + "\", \"" + sFileData + "\", " + std::to_string(nFileDataLen) + ", " + sImageMap + ");";
 		_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
 		return true;
 	}

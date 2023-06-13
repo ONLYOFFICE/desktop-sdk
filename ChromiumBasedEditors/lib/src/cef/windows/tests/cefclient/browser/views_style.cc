@@ -49,6 +49,13 @@ bool IsSet() {
   return g_background_color != 0;
 }
 
+void ApplyBackgroundTo(CefRefPtr<CefView> view) {
+  if (!IsSet())
+    return;
+
+  view->SetBackgroundColor(g_background_color);
+}
+
 void ApplyTo(CefRefPtr<CefPanel> panel) {
   if (!IsSet())
     return;
@@ -93,7 +100,7 @@ void ApplyTo(CefRefPtr<CefMenuModel> menu_model) {
                          g_background_hover_color);
 
   // Recursively color sub-menus.
-  for (int i = 0; i < menu_model->GetCount(); ++i) {
+  for (size_t i = 0; i < menu_model->GetCount(); ++i) {
     if (menu_model->GetTypeAt(i) == MENUITEMTYPE_SUBMENU)
       ApplyTo(menu_model->GetSubMenuAt(i));
   }

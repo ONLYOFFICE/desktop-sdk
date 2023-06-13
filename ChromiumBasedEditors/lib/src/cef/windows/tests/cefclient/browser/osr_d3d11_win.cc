@@ -18,6 +18,9 @@
 
 #include <iomanip>  // For std::setw.
 
+#if OS_WIN && ARCH_CPU_ARM_FAMILY
+#define __prefetch(x) x
+#endif
 #include <d3dcompiler.h>
 #include <directxmath.h>
 
@@ -251,7 +254,7 @@ bool Texture2D::has_mutex() const {
 bool Texture2D::lock_key(uint64_t key, uint32_t timeout_ms) {
   if (keyed_mutex_) {
     const auto hr = keyed_mutex_->AcquireSync(key, timeout_ms);
-    return SUCCEEDED(hr);
+    return (hr == S_OK);
   }
   return true;
 }

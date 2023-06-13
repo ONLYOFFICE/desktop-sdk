@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=e158c4785c2d13208735dc22b5b638f7983df04e$
+// $hash=2bd6f8998f43d4212da6b28ac4863763087310ce$
 //
 
 #include "libcef_dll/ctocpp/v8stack_trace_ctocpp.h"
@@ -71,7 +71,7 @@ CefRefPtr<CefV8StackFrame> CefV8StackTraceCToCpp::GetFrame(int index) {
 
   cef_v8stack_trace_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_frame))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -99,7 +99,7 @@ CefCToCppRefCounted<CefV8StackTraceCToCpp,
                     cef_v8stack_trace_t>::UnwrapDerived(CefWrapperType type,
                                                         CefV8StackTrace* c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

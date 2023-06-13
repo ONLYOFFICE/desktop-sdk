@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=f7a5a803a603ac83adeb3d55f5dbd62769cd8727$
+// $hash=82f44b0f9739a59e0d9cfad14282998f281dd0a8$
 //
 
 #include "libcef_dll/ctocpp/sslstatus_ctocpp.h"
@@ -89,7 +89,7 @@ CefRefPtr<CefX509Certificate> CefSSLStatusCToCpp::GetX509Certificate() {
 
   cef_sslstatus_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_x509certificate))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -115,7 +115,7 @@ cef_sslstatus_t*
 CefCToCppRefCounted<CefSSLStatusCToCpp, CefSSLStatus, cef_sslstatus_t>::
     UnwrapDerived(CefWrapperType type, CefSSLStatus* c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

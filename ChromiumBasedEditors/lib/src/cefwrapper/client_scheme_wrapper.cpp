@@ -433,10 +433,13 @@ namespace asc_scheme
 		registrar->AddCustomScheme("ascdesktop", true, false, false);
 	}
 #else
-	void RegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar,
-							   std::vector<CefString>& cookiable_schemes)
+	void RegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar
+                               #ifndef CEF_VERSION_ABOVE_102
+							   , std::vector<CefString>& cookiable_schemes
+							   #endif
+							   )
 	{
-		registrar->AddCustomScheme("ascdesktop", CEF_SCHEME_OPTION_STANDARD | CEF_SCHEME_OPTION_SECURE | CEF_SCHEME_OPTION_CORS_ENABLED/* | CEF_SCHEME_OPTION_FETCH_ENABLED*/);
+		registrar->AddCustomScheme("ascdesktop", CEF_SCHEME_OPTION_STANDARD | CEF_SCHEME_OPTION_SECURE | CEF_SCHEME_OPTION_CORS_ENABLED/* | CEF_SCHEME_OPTION_FETCH_ENABLED*/);	
 	}
 #endif
 
@@ -447,8 +450,15 @@ namespace asc_scheme
 
 }  // namespace asc_scheme
 
-void client::ClientApp::RegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar,
-											  std::vector<CefString>& cookiable_schemes)
+void client::ClientApp::RegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar
+                                              #ifndef CEF_VERSION_ABOVE_102
+											  , std::vector<CefString>& cookiable_schemes
+											  #endif
+											  )
 {
-	return asc_scheme::RegisterCustomSchemes(registrar, cookiable_schemes);
+	return asc_scheme::RegisterCustomSchemes(registrar
+                                         #ifndef CEF_VERSION_ABOVE_102
+										 , cookiable_schemes
+										 #endif
+											 );
 }

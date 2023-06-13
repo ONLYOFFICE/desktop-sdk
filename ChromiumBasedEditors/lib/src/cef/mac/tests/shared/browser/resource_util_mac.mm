@@ -31,7 +31,7 @@ bool AmIBundled() {
 bool GetResourceDir(std::string& dir) {
   // Retrieve the executable directory.
   uint32_t pathSize = 0;
-  _NSGetExecutablePath(NULL, &pathSize);
+  _NSGetExecutablePath(nullptr, &pathSize);
   if (pathSize > 0) {
     dir.resize(pathSize);
     _NSGetExecutablePath(const_cast<char*>(dir.c_str()), &pathSize);
@@ -39,10 +39,11 @@ bool GetResourceDir(std::string& dir) {
 
   if (AmIBundled()) {
     // Trim executable name up to the last separator.
-    std::string::size_type last_separator = dir.find_last_of("/");
+    auto last_separator = dir.find_last_of("/");
     dir.resize(last_separator);
-    dir.append("/../Resources");
-    return true;
+    // Trim directory ("MacOS") up to the last separator.
+    last_separator = dir.find_last_of("/");
+    dir.resize(last_separator);
   }
 
   dir.append("/Resources");

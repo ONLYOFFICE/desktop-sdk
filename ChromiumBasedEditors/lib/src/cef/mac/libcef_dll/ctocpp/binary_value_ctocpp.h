@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=789a1cb3970193193b0e5216be27e4d0b989fd54$
+// $hash=b6f011a6c26b4264084eb68dae0d63032c07013c$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_BINARY_VALUE_CTOCPP_H_
@@ -34,13 +34,13 @@ class CefBinaryValueCToCpp : public CefCToCppRefCounted<CefBinaryValueCToCpp,
   virtual ~CefBinaryValueCToCpp();
 
   // CefBinaryValue methods.
-  bool IsValid() OVERRIDE;
-  bool IsOwned() OVERRIDE;
-  bool IsSame(CefRefPtr<CefBinaryValue> that) OVERRIDE;
-  bool IsEqual(CefRefPtr<CefBinaryValue> that) OVERRIDE;
-  CefRefPtr<CefBinaryValue> Copy() OVERRIDE;
-  size_t GetSize() OVERRIDE;
-  size_t GetData(void* buffer, size_t buffer_size, size_t data_offset) OVERRIDE;
+  bool IsValid() override;
+  bool IsOwned() override;
+  bool IsSame(CefRefPtr<CefBinaryValue> that) override;
+  bool IsEqual(CefRefPtr<CefBinaryValue> that) override;
+  CefRefPtr<CefBinaryValue> Copy() override;
+  size_t GetSize() override;
+  size_t GetData(void* buffer, size_t buffer_size, size_t data_offset) override;
 };
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_BINARY_VALUE_CTOCPP_H_

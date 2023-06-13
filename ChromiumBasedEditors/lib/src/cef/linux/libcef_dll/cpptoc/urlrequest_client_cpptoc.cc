@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=cf09527848811b098ae7a89b2bb1b68da2330454$
+// $hash=e5112f59f64307d7059920de8a59527494dad903$
 //
 
 #include "libcef_dll/cpptoc/urlrequest_client_cpptoc.h"
@@ -174,7 +174,7 @@ CefRefPtr<CefURLRequestClient> CefCppToCRefCounted<
     cef_urlrequest_client_t>::UnwrapDerived(CefWrapperType type,
                                             cef_urlrequest_client_t* s) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

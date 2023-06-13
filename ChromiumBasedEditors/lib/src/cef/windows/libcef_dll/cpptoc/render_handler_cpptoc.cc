@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=94f5afecaaa5c9c534438a1c97a4af27a97d148c$
+// $hash=b08fd89d6b6af02e0dac43896369120de58af3c2$
 //
 
 #include "libcef_dll/cpptoc/render_handler_cpptoc.h"
@@ -157,7 +157,7 @@ render_handler_get_screen_point(struct _cef_render_handler_t* self,
 int CEF_CALLBACK
 render_handler_get_screen_info(struct _cef_render_handler_t* self,
                                cef_browser_t* browser,
-                               struct _cef_screen_info_t* screen_info) {
+                               cef_screen_info_t* screen_info) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
@@ -169,23 +169,21 @@ render_handler_get_screen_info(struct _cef_render_handler_t* self,
   DCHECK(browser);
   if (!browser)
     return 0;
-  // Verify param: screen_info; type: struct_byref
+  // Verify param: screen_info; type: simple_byref
   DCHECK(screen_info);
   if (!screen_info)
     return 0;
 
-  // Translate param: screen_info; type: struct_byref
-  CefScreenInfo screen_infoObj;
-  if (screen_info)
-    screen_infoObj.AttachTo(*screen_info);
+  // Translate param: screen_info; type: simple_byref
+  CefScreenInfo screen_infoVal = screen_info ? *screen_info : CefScreenInfo();
 
   // Execute
   bool _retval = CefRenderHandlerCppToC::Get(self)->GetScreenInfo(
-      CefBrowserCToCpp::Wrap(browser), screen_infoObj);
+      CefBrowserCToCpp::Wrap(browser), screen_infoVal);
 
-  // Restore param: screen_info; type: struct_byref
+  // Restore param: screen_info; type: simple_byref
   if (screen_info)
-    screen_infoObj.DetachTo(*screen_info);
+    *screen_info = screen_infoVal;
 
   // Return type: bool
   return _retval;
@@ -324,12 +322,11 @@ render_handler_on_accelerated_paint(struct _cef_render_handler_t* self,
       CefBrowserCToCpp::Wrap(browser), type, dirtyRectsList, shared_handle);
 }
 
-void CEF_CALLBACK render_handler_on_cursor_change(
-    struct _cef_render_handler_t* self,
-    cef_browser_t* browser,
-    cef_cursor_handle_t cursor,
-    cef_cursor_type_t type,
-    const struct _cef_cursor_info_t* custom_cursor_info) {
+void CEF_CALLBACK
+render_handler_get_touch_handle_size(struct _cef_render_handler_t* self,
+                                     cef_browser_t* browser,
+                                     cef_horizontal_alignment_t orientation,
+                                     cef_size_t* size) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
@@ -341,19 +338,49 @@ void CEF_CALLBACK render_handler_on_cursor_change(
   DCHECK(browser);
   if (!browser)
     return;
-  // Verify param: custom_cursor_info; type: struct_byref_const
-  DCHECK(custom_cursor_info);
-  if (!custom_cursor_info)
+  // Verify param: size; type: simple_byref
+  DCHECK(size);
+  if (!size)
     return;
 
-  // Translate param: custom_cursor_info; type: struct_byref_const
-  CefCursorInfo custom_cursor_infoObj;
-  if (custom_cursor_info)
-    custom_cursor_infoObj.Set(*custom_cursor_info, false);
+  // Translate param: size; type: simple_byref
+  CefSize sizeVal = size ? *size : CefSize();
 
   // Execute
-  CefRenderHandlerCppToC::Get(self)->OnCursorChange(
-      CefBrowserCToCpp::Wrap(browser), cursor, type, custom_cursor_infoObj);
+  CefRenderHandlerCppToC::Get(self)->GetTouchHandleSize(
+      CefBrowserCToCpp::Wrap(browser), orientation, sizeVal);
+
+  // Restore param: size; type: simple_byref
+  if (size)
+    *size = sizeVal;
+}
+
+void CEF_CALLBACK render_handler_on_touch_handle_state_changed(
+    struct _cef_render_handler_t* self,
+    cef_browser_t* browser,
+    const cef_touch_handle_state_t* state) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self)
+    return;
+  // Verify param: browser; type: refptr_diff
+  DCHECK(browser);
+  if (!browser)
+    return;
+  // Verify param: state; type: simple_byref_const
+  DCHECK(state);
+  if (!state)
+    return;
+
+  // Translate param: state; type: simple_byref_const
+  CefTouchHandleState stateVal = state ? *state : CefTouchHandleState();
+
+  // Execute
+  CefRenderHandlerCppToC::Get(self)->OnTouchHandleStateChanged(
+      CefBrowserCToCpp::Wrap(browser), stateVal);
 }
 
 int CEF_CALLBACK
@@ -536,7 +563,9 @@ CefRenderHandlerCppToC::CefRenderHandlerCppToC() {
   GetStruct()->on_popup_size = render_handler_on_popup_size;
   GetStruct()->on_paint = render_handler_on_paint;
   GetStruct()->on_accelerated_paint = render_handler_on_accelerated_paint;
-  GetStruct()->on_cursor_change = render_handler_on_cursor_change;
+  GetStruct()->get_touch_handle_size = render_handler_get_touch_handle_size;
+  GetStruct()->on_touch_handle_state_changed =
+      render_handler_on_touch_handle_state_changed;
   GetStruct()->start_dragging = render_handler_start_dragging;
   GetStruct()->update_drag_cursor = render_handler_update_drag_cursor;
   GetStruct()->on_scroll_offset_changed =
@@ -562,7 +591,7 @@ CefRefPtr<CefRenderHandler> CefCppToCRefCounted<
     cef_render_handler_t>::UnwrapDerived(CefWrapperType type,
                                          cef_render_handler_t* s) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

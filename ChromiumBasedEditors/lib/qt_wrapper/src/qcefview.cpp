@@ -249,8 +249,16 @@ void QCefView::UpdateSize()
 
 	int nW = width();
 	int nH = height();
+
+#if 0
+	// TODO: удалить после релиза 7.4
 	if (CAscApplicationManager::IsUseSystemScaling() && nW > 2 && nH > 2 && m_pCefView && m_pCefView->isDoubleResizeEvent())
-		SetWindowPos(_child, _parent, 0, 0, nW - 1, nH - 1, SWP_NOZORDER);
+	{
+		// Resolved using window resize event. Fix bug #62086
+		//SetWindowPos(_child, _parent, 0, 0, nW - 1, nH - 1, SWP_NOZORDER);
+		//SetFocus(_parent);
+	}
+#endif
 
 	SetWindowPos(_child, _parent, 0, 0, nW, nH, SWP_NOZORDER);
 }
@@ -441,7 +449,7 @@ void QCefView::AfterCreate()
 
 bool QCefView::IsSupportLayers()
 {
-	return true;
+    return true;
 }
 void QCefView::SetCaptionMaskSize(int size)
 {
@@ -476,10 +484,15 @@ void SetWindowSize(Window window, QWidget* parent)
 		changes.y = 0;
 		changes.width = parent->width();
 		changes.height = parent->height();
-		XConfigureWindow(xdisplay,
-						 window,
-						 CWX | CWY | CWHeight | CWWidth,
-						 &changes);
+
+		// XErrorHandlerImpl: BadValue error occurs
+		if (changes.width && changes.height)
+		{
+			XConfigureWindow(xdisplay,
+							 window,
+							 CWX | CWY | CWHeight | CWWidth,
+							 &changes);
+		}
 	}
 }
 
@@ -487,7 +500,14 @@ void QCefView::UpdateSize()
 {
 	if (IsSupportLayers())
 		SetWindowSize(cef_handle, this);
-	SetWindowSize(GetChild(cef_handle), this);
+
+	Window child = GetChild(cef_handle);
+	if (child)
+		SetWindowSize(child, this);
+
+	Window child_ = GetChild(child);
+	if (child_)
+		SetWindowSize(child_, this);
 }
 
 #endif

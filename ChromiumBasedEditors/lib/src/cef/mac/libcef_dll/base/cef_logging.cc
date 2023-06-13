@@ -190,7 +190,7 @@ LogMessage::~LogMessage() {
 // This has already been defined in the header, but defining it again as DWORD
 // ensures that the type used in the header is equivalent to DWORD. If not,
 // the redefinition is a compile error.
-typedef DWORD SystemErrorCode;
+using SystemErrorCode = DWORD;
 #endif
 
 SystemErrorCode GetLastSystemErrorCode() {
@@ -209,7 +209,7 @@ std::string SystemErrorCodeToString(SystemErrorCode error_code) {
   char msgbuf[error_message_buffer_size];
   DWORD flags = FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS;
   DWORD len = FormatMessageA(flags, NULL, error_code, 0, msgbuf,
-                             arraysize(msgbuf), NULL);
+                             static_cast<DWORD>(std::size(msgbuf)), NULL);
   std::stringstream ss;
   if (len) {
     std::string s(msgbuf);
@@ -256,10 +256,12 @@ ErrnoLogMessage::~ErrnoLogMessage() {
 }  // namespace cef
 
 std::ostream& operator<<(std::ostream& out, const wchar_t* wstr) {
-  cef_string_utf8_t str = {0};
   std::wstring tmp_str(wstr);
-  cef_string_wide_to_utf8(wstr, tmp_str.size(), &str);
-  out << str.str;
-  cef_string_utf8_clear(&str);
+  if (!tmp_str.empty()) {
+    cef_string_utf8_t str = {0};
+    cef_string_wide_to_utf8(wstr, tmp_str.size(), &str);
+    out << str.str;
+    cef_string_utf8_clear(&str);
+  }
   return out;
 }

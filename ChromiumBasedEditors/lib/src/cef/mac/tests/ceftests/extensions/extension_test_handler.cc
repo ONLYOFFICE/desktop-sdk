@@ -26,9 +26,8 @@ ExtensionTestHandler::ExtensionTestHandler(
 
 ExtensionTestHandler::~ExtensionTestHandler() {
   if (!request_context_temp_dir_.IsEmpty()) {
-    // Delete temporary directories on shutdown.
-    CefTestSuite::GetInstance()->RegisterTempDirectory(
-        request_context_temp_dir_.Take());
+    // Temporary directory will be deleted on shutdown.
+    request_context_temp_dir_.Take();
   }
 }
 
@@ -65,7 +64,8 @@ void ExtensionTestHandler::RunTest() {
 
     if (request_context_on_disk()) {
       // Create a new temporary directory.
-      EXPECT_TRUE(request_context_temp_dir_.CreateUniqueTempDir());
+      EXPECT_TRUE(request_context_temp_dir_.CreateUniqueTempDirUnderPath(
+          CefTestSuite::GetInstance()->root_cache_path()));
       CefString(&settings.cache_path) = request_context_temp_dir_.GetPath();
     }
 
@@ -87,7 +87,7 @@ void ExtensionTestHandler::RunTest() {
         CefRequestContext::CreateContext(request_context_, new Handler());
   } else if (request_context_load_without_handler()) {
     loader_request_context_ =
-        CefRequestContext::CreateContext(request_context_, NULL);
+        CefRequestContext::CreateContext(request_context_, nullptr);
   } else {
     loader_request_context_ = request_context_;
   }
@@ -232,6 +232,6 @@ void ExtensionTestHandler::UnloadExtension(CefRefPtr<CefExtension> extension) {
 }
 
 void ExtensionTestHandler::ReleaseRequestContexts() {
-  request_context_ = NULL;
-  loader_request_context_ = NULL;
+  request_context_ = nullptr;
+  loader_request_context_ = nullptr;
 }

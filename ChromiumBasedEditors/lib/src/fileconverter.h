@@ -512,13 +512,6 @@ namespace NSOOXMLPassword
 	};
 }
 
-class IASCFileConverterEvents
-{
-public:
-	virtual void OnFileConvertToEditor(const int& nError) = 0;
-	virtual void OnFileConvertFromEditor(const int& nError, const std::wstring& sPass = L"") = 0;
-};
-
 class CASCFileConverterToEditor : public NSThreads::CBaseThread
 {
 public:

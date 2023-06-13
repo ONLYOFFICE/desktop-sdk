@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=e95db24c85f1c1880048b6319660133038f8b213$
+// $hash=19b5f403a0a77dfb38a0200046b35cf5d2053cfd$
 //
 
 #include "libcef_dll/cpptoc/resource_handler_cpptoc.h"
@@ -291,7 +291,7 @@ CefRefPtr<CefResourceHandler> CefCppToCRefCounted<
     cef_resource_handler_t>::UnwrapDerived(CefWrapperType type,
                                            cef_resource_handler_t* s) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

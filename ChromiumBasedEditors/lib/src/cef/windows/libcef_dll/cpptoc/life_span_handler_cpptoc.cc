@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=c6b5f1dca6503df7cb9de7b5351969ad008df340$
+// $hash=89f85339fcb275b39566ce06474786b7e7d275f5$
 //
 
 #include "libcef_dll/cpptoc/life_span_handler_cpptoc.h"
@@ -18,6 +18,7 @@
 #include "libcef_dll/ctocpp/dictionary_value_ctocpp.h"
 #include "libcef_dll/ctocpp/frame_ctocpp.h"
 #include "libcef_dll/shutdown_checker.h"
+#include "libcef_dll/template_util.h"
 
 namespace {
 
@@ -31,7 +32,7 @@ int CEF_CALLBACK life_span_handler_on_before_popup(
     const cef_string_t* target_frame_name,
     cef_window_open_disposition_t target_disposition,
     int user_gesture,
-    const struct _cef_popup_features_t* popupFeatures,
+    const cef_popup_features_t* popupFeatures,
     cef_window_info_t* windowInfo,
     cef_client_t** client,
     struct _cef_browser_settings_t* settings,
@@ -52,7 +53,7 @@ int CEF_CALLBACK life_span_handler_on_before_popup(
   DCHECK(frame);
   if (!frame)
     return 0;
-  // Verify param: popupFeatures; type: struct_byref_const
+  // Verify param: popupFeatures; type: simple_byref_const
   DCHECK(popupFeatures);
   if (!popupFeatures)
     return 0;
@@ -60,6 +61,10 @@ int CEF_CALLBACK life_span_handler_on_before_popup(
   DCHECK(windowInfo);
   if (!windowInfo)
     return 0;
+  if (!template_util::has_valid_size(windowInfo)) {
+    NOTREACHED() << "invalid windowInfo->[base.]size";
+    return 0;
+  }
   // Verify param: client; type: refptr_same_byref
   DCHECK(client);
   if (!client)
@@ -68,6 +73,10 @@ int CEF_CALLBACK life_span_handler_on_before_popup(
   DCHECK(settings);
   if (!settings)
     return 0;
+  if (!template_util::has_valid_size(settings)) {
+    NOTREACHED() << "invalid settings->[base.]size";
+    return 0;
+  }
   // Verify param: extra_info; type: refptr_diff_byref
   DCHECK(extra_info);
   if (!extra_info)
@@ -78,10 +87,9 @@ int CEF_CALLBACK life_span_handler_on_before_popup(
     return 0;
   // Unverified params: target_url, target_frame_name
 
-  // Translate param: popupFeatures; type: struct_byref_const
-  CefPopupFeatures popupFeaturesObj;
-  if (popupFeatures)
-    popupFeaturesObj.Set(*popupFeatures, false);
+  // Translate param: popupFeatures; type: simple_byref_const
+  CefPopupFeatures popupFeaturesVal =
+      popupFeatures ? *popupFeatures : CefPopupFeatures();
   // Translate param: windowInfo; type: struct_byref
   CefWindowInfo windowInfoObj;
   if (windowInfo)
@@ -108,7 +116,7 @@ int CEF_CALLBACK life_span_handler_on_before_popup(
   bool _retval = CefLifeSpanHandlerCppToC::Get(self)->OnBeforePopup(
       CefBrowserCToCpp::Wrap(browser), CefFrameCToCpp::Wrap(frame),
       CefString(target_url), CefString(target_frame_name), target_disposition,
-      user_gesture ? true : false, popupFeaturesObj, windowInfoObj, clientPtr,
+      user_gesture ? true : false, popupFeaturesVal, windowInfoObj, clientPtr,
       settingsObj, extra_infoPtr, &no_javascript_accessBool);
 
   // Restore param: windowInfo; type: struct_byref
@@ -121,7 +129,7 @@ int CEF_CALLBACK life_span_handler_on_before_popup(
         *client = CefClientCppToC::Wrap(clientPtr);
       }
     } else {
-      *client = NULL;
+      *client = nullptr;
     }
   }
   // Restore param: settings; type: struct_byref
@@ -134,7 +142,7 @@ int CEF_CALLBACK life_span_handler_on_before_popup(
         *extra_info = CefDictionaryValueCToCpp::Unwrap(extra_infoPtr);
       }
     } else {
-      *extra_info = NULL;
+      *extra_info = nullptr;
     }
   }
   // Restore param: no_javascript_access; type: bool_byaddr
@@ -232,7 +240,7 @@ CefRefPtr<CefLifeSpanHandler> CefCppToCRefCounted<
     cef_life_span_handler_t>::UnwrapDerived(CefWrapperType type,
                                             cef_life_span_handler_t* s) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

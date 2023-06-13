@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=6799b0f6bbe821eb7e71f8b1ebb11f88bf9b062a$
+// $hash=fd81a3bbebda49174033f19fe2eafd501b367837$
 //
 
 #include "libcef_dll/ctocpp/test/translator_test_ctocpp.h"
@@ -698,7 +698,7 @@ CefTranslatorTestCToCpp::GetRefPtrLibrary(int val) {
 
   cef_translator_test_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_ref_ptr_library))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -742,14 +742,14 @@ CefTranslatorTestCToCpp::SetRefPtrLibraryAndReturn(
 
   cef_translator_test_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, set_ref_ptr_library_and_return))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: val; type: refptr_same
   DCHECK(val.get());
   if (!val.get())
-    return NULL;
+    return nullptr;
 
   // Execute
   cef_translator_test_ref_ptr_library_t* _retval =
@@ -792,14 +792,14 @@ CefTranslatorTestCToCpp::SetChildRefPtrLibraryAndReturnParent(
 
   cef_translator_test_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, set_child_ref_ptr_library_and_return_parent))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: val; type: refptr_same
   DCHECK(val.get());
   if (!val.get())
-    return NULL;
+    return nullptr;
 
   // Execute
   cef_translator_test_ref_ptr_library_t* _retval =
@@ -944,14 +944,14 @@ CefTranslatorTestCToCpp::SetRefPtrClientAndReturn(
 
   cef_translator_test_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, set_ref_ptr_client_and_return))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: val; type: refptr_diff
   DCHECK(val.get());
   if (!val.get())
-    return NULL;
+    return nullptr;
 
   // Execute
   cef_translator_test_ref_ptr_client_t* _retval =
@@ -994,14 +994,14 @@ CefTranslatorTestCToCpp::SetChildRefPtrClientAndReturnParent(
 
   cef_translator_test_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, set_child_ref_ptr_client_and_return_parent))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: val; type: refptr_diff
   DCHECK(val.get());
   if (!val.get())
-    return NULL;
+    return nullptr;
 
   // Execute
   cef_translator_test_ref_ptr_client_t* _retval =
@@ -1163,7 +1163,7 @@ int CefTranslatorTestCToCpp::SetOwnPtrLibrary(
 
   // Execute
   int _retval = _struct->set_own_ptr_library(
-      _struct, CefTranslatorTestScopedLibraryCToCpp::UnwrapOwn(OWN_PASS(val)));
+      _struct, CefTranslatorTestScopedLibraryCToCpp::UnwrapOwn(std::move(val)));
 
   // Return type: simple
   return _retval;
@@ -1190,7 +1190,7 @@ CefTranslatorTestCToCpp::SetOwnPtrLibraryAndReturn(
   cef_translator_test_scoped_library_t* _retval =
       _struct->set_own_ptr_library_and_return(
           _struct,
-          CefTranslatorTestScopedLibraryCToCpp::UnwrapOwn(OWN_PASS(val)));
+          CefTranslatorTestScopedLibraryCToCpp::UnwrapOwn(std::move(val)));
 
   // Return type: ownptr_same
   return CefTranslatorTestScopedLibraryCToCpp::Wrap(_retval);
@@ -1215,7 +1215,7 @@ int CefTranslatorTestCToCpp::SetChildOwnPtrLibrary(
   // Execute
   int _retval = _struct->set_child_own_ptr_library(
       _struct,
-      CefTranslatorTestScopedLibraryChildCToCpp::UnwrapOwn(OWN_PASS(val)));
+      CefTranslatorTestScopedLibraryChildCToCpp::UnwrapOwn(std::move(val)));
 
   // Return type: simple
   return _retval;
@@ -1242,7 +1242,7 @@ CefTranslatorTestCToCpp::SetChildOwnPtrLibraryAndReturnParent(
   cef_translator_test_scoped_library_t* _retval =
       _struct->set_child_own_ptr_library_and_return_parent(
           _struct,
-          CefTranslatorTestScopedLibraryChildCToCpp::UnwrapOwn(OWN_PASS(val)));
+          CefTranslatorTestScopedLibraryChildCToCpp::UnwrapOwn(std::move(val)));
 
   // Return type: ownptr_same
   return CefTranslatorTestScopedLibraryCToCpp::Wrap(_retval);
@@ -1266,7 +1266,7 @@ int CefTranslatorTestCToCpp::SetOwnPtrClient(
 
   // Execute
   int _retval = _struct->set_own_ptr_client(
-      _struct, CefTranslatorTestScopedClientCppToC::WrapOwn(OWN_PASS(val)));
+      _struct, CefTranslatorTestScopedClientCppToC::WrapOwn(std::move(val)));
 
   // Return type: simple
   return _retval;
@@ -1292,7 +1292,8 @@ CefTranslatorTestCToCpp::SetOwnPtrClientAndReturn(
   // Execute
   cef_translator_test_scoped_client_t* _retval =
       _struct->set_own_ptr_client_and_return(
-          _struct, CefTranslatorTestScopedClientCppToC::WrapOwn(OWN_PASS(val)));
+          _struct,
+          CefTranslatorTestScopedClientCppToC::WrapOwn(std::move(val)));
 
   // Return type: ownptr_diff
   return CefTranslatorTestScopedClientCppToC::UnwrapOwn(_retval);
@@ -1317,7 +1318,7 @@ int CefTranslatorTestCToCpp::SetChildOwnPtrClient(
   // Execute
   int _retval = _struct->set_child_own_ptr_client(
       _struct,
-      CefTranslatorTestScopedClientChildCppToC::WrapOwn(OWN_PASS(val)));
+      CefTranslatorTestScopedClientChildCppToC::WrapOwn(std::move(val)));
 
   // Return type: simple
   return _retval;
@@ -1344,7 +1345,7 @@ CefTranslatorTestCToCpp::SetChildOwnPtrClientAndReturnParent(
   cef_translator_test_scoped_client_t* _retval =
       _struct->set_child_own_ptr_client_and_return_parent(
           _struct,
-          CefTranslatorTestScopedClientChildCppToC::WrapOwn(OWN_PASS(val)));
+          CefTranslatorTestScopedClientChildCppToC::WrapOwn(std::move(val)));
 
   // Return type: ownptr_diff
   return CefTranslatorTestScopedClientCppToC::UnwrapOwn(_retval);
@@ -1552,7 +1553,7 @@ cef_translator_test_t* CefCToCppRefCounted<
     cef_translator_test_t>::UnwrapDerived(CefWrapperType type,
                                           CefTranslatorTest* c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

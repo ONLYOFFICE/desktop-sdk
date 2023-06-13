@@ -69,6 +69,10 @@
 //#define MESSAGE_IN_BROWSER
 #endif
 
+#ifdef CEF_VERSION_ABOVE_102
+#define CEF_SIMPLE_URL_REQUEST
+#endif
+
 #ifdef MESSAGE_IN_BROWSER
 #define SEND_MESSAGE_TO_BROWSER_PROCESS(message) CefV8Context::GetCurrentContext()->GetBrowser()->SendProcessMessage(PID_BROWSER, message)
 #define SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message) browser->SendProcessMessage(PID_RENDERER, message)
@@ -258,6 +262,161 @@ namespace NSCommon
 	};
 }
 
+namespace NSArgumentList
+{
+	static int64 GetInt64(CefRefPtr<CefListValue> args, const int& index)
+	{
+		std::string tmp = args->GetString(index).ToString();
+		return (int64)std::stoll(tmp);
+	}
+	static bool SetInt64(CefRefPtr<CefListValue> args, const int& index, const int64& value)
+	{
+		std::string tmp = std::to_string(value);
+		return args->SetString(index, tmp);
+	}
+}
+
+#ifdef CEF_SIMPLE_URL_REQUEST
+#include "include/cef_urlrequest.h"
+
+class CCefView_Private;
+namespace NSRequest
+{
+	class CSimpleRequestClient : public CefURLRequestClient
+	{
+	private:
+		CefRefPtr<CefRequest> m_request;
+		int m_requestId;
+		int_64_type m_frameId;
+
+		CCefView_Private* m_view;
+
+	public:
+		CSimpleRequestClient(CefRefPtr<CefListValue>& args)
+		{
+			m_request = CefRequest::Create();
+			m_frameId = NSArgumentList::GetInt64(args, 0);
+			m_requestId = args->GetInt(1);
+			m_request->SetURL(args->GetString(2));
+			m_request->SetMethod(args->GetString(3));
+
+			m_request->SetHeaderByName("Accept", "*/*", true);
+			int nHeadersCount = args->GetSize();
+			for (int i = 4; i < nHeadersCount; i += 2)
+			{
+				m_request->SetHeaderByName(args->GetString(i), args->GetString(i + 1), true);
+			}
+
+			m_upload_total = 0;
+			m_download_total = 0;
+
+			m_request->SetFlags(UR_FLAG_STOP_ON_REDIRECT);
+		}
+
+		~CSimpleRequestClient()
+		{
+		}
+
+		void Start(CCefView_Private* view)
+		{
+			m_view = view;
+			StartInternal();
+		}
+
+		void StartInternal();
+		void SendToRenderer(const int_64_type& frameId, const std::string& sCode);
+
+		void OnRequestComplete(CefRefPtr<CefURLRequest> request) override
+		{
+			CefURLRequest::Status status = request->GetRequestStatus();
+			CefURLRequest::ErrorCode error_code = request->GetRequestError();
+			CefRefPtr<CefResponse> response = request->GetResponse();
+
+			int responseStatus = response->GetStatus();
+			std::string sStatusText = response->GetStatusText().ToString();
+
+			if (307 == responseStatus)
+			{
+				status = UR_SUCCESS;
+				error_code = ERR_NONE;
+
+				m_download_data = "{}";
+			}
+
+			std::string sReturnObject = "{ status: ";
+			if (UR_SUCCESS == status)
+				sReturnObject += "\"success\"";
+			else
+				sReturnObject += "\"error\"";
+
+			sReturnObject += (", responseStatus: " + std::to_string(responseStatus) + ", statusCode: " + std::to_string(error_code) + ", responseText : \"");
+
+			std::string sData = m_download_data;
+			NSStringUtils::string_replaceA(sData, "\\", "\\\\");
+			NSStringUtils::string_replaceA(sData, "\"", "\\\"");
+			NSStringUtils::string_replaceA(sData, "\n", "\\\n");
+
+			sReturnObject += sData;
+
+			sReturnObject += "\"}";
+
+			std::string sCode = "try { window.AscSimpleRequest.";
+			if (UR_SUCCESS == status)
+				sCode += "_onSuccess";
+			else
+				sCode += "_onError";
+
+			sCode += "(";
+			sCode += std::to_string(m_requestId);
+			sCode += ", ";
+			sCode += sReturnObject;
+			sCode += "); } catch (err) { window.AscSimpleRequest._onError(" + std::to_string(m_requestId) + ", { status : \"error\", statusCode : 404, responseText : \"\" }); }";
+
+			this->SendToRenderer(m_frameId, sCode);
+		}
+
+		void OnUploadProgress(CefRefPtr<CefURLRequest> request,
+							  int64 current,
+							  int64 total) override
+		{
+			m_upload_total = total;
+		}
+
+		void OnDownloadProgress(CefRefPtr<CefURLRequest> request,
+								int64 current,
+								int64 total) override
+		{
+			m_download_total = total;
+		}
+
+		void OnDownloadData(CefRefPtr<CefURLRequest> request,
+							const void* data,
+							size_t data_length) override
+		{
+			m_download_data += std::string(static_cast<const char*>(data), data_length);
+		}
+
+		bool GetAuthCredentials(bool isProxy,
+								const CefString& host,
+								int port,
+								const CefString& realm,
+								const CefString& scheme,
+								CefRefPtr<CefAuthCallback> callback) override
+		{
+			return false;  // Not handled.
+		}
+
+	private:
+		int64 m_upload_total;
+		int64 m_download_total;
+		std::string m_download_data;
+
+	private:
+		IMPLEMENT_REFCOUNTING(CSimpleRequestClient);
+	};
+}
+#endif
+
 class CAscReporterData
 {
 public:
@@ -285,6 +444,13 @@ public:
 #ifndef _WIN32
 #include <fcntl.h>
 #endif
+
+class IASCFileConverterEvents
+{
+public:
+	virtual void OnFileConvertToEditor(const int& nError) = 0;
+	virtual void OnFileConvertFromEditor(const int& nError, const std::wstring& sPass = L"") = 0;
+};
 
 namespace NSSystem
 {
@@ -1389,19 +1555,40 @@ public:
 	std::wstring Parent;
 };
 
-namespace NSArgumentList
+class CLocalStorageClouds
 {
-	static int64 GetInt64(CefRefPtr<CefListValue> args, const int& index)
+private:
+	NSCriticalSection::CRITICAL_SECTION m_oCS;
+
+public:
+	std::vector<std::wstring> arPortals;
+	std::vector<std::wstring> arProviders;
+
+public:
+	CLocalStorageClouds()
 	{
-		std::string tmp = args->GetString(index).ToString();
-		return (int64)std::stoll(tmp);
+		m_oCS.InitializeCriticalSection();
 	}
-	static bool SetInt64(CefRefPtr<CefListValue> args, const int& index, const int64& value)
+	~CLocalStorageClouds()
 	{
-		std::string tmp = std::to_string(value);
-		return args->SetString(index, tmp);
+		m_oCS.DeleteCriticalSection();
 	}
-}
+
+	void Read(CefRefPtr<CefListValue>& args)
+	{
+		CTemporaryCS oCS(&m_oCS);
+
+		arPortals.clear();
+		arProviders.clear();
+
+		size_t nCount = args->GetSize();
+		for (size_t i = 0; i < nCount; i += 2)
+		{
+			arPortals.push_back(args->GetString(i).ToWString());
+			arProviders.push_back(args->GetString(i + 1).ToWString());
+		}
+	}
+};
 
 class CAscApplicationManager_Private : public CefBase_Class,
 		public CCookieFoundCallback,
@@ -1424,6 +1611,9 @@ public:
 
 	// id <=> view
 	std::map<int, CCefView*> m_mapViews;
+
+	// проверка корректного запуска приложения через stdout или лог-файл
+	std::string m_sLogFile;
 
 	// показывать ли консоль для дебага
 	bool m_bDebugInfoSupport;
@@ -1531,6 +1721,12 @@ public:
 	// json, отправляемый в процесс рендерера
 	std::wstring m_sRendererJSON;
 
+	// информация о порталах. открытие файлы из рисентов, из редактора - теряется информация о externalclouds
+	CLocalStorageClouds m_oPortalsList;
+
+	// сброс LD_PRELOAD
+	bool m_bIsPreloadDiscard;
+
 public:
 	IMPLEMENT_REFCOUNTING(CAscApplicationManager_Private);
 
@@ -1547,6 +1743,7 @@ public:
 		m_pApplicationFonts = NULL;
 		m_pApplication = NULL;
 
+		m_sLogFile = "";
 		m_bDebugInfoSupport = false;
 		m_bExperimentalFeatures = false;
 
@@ -1580,6 +1777,8 @@ public:
 		m_oCS_LocalFiles.InitializeCriticalSection();
 		m_oCS_SystemMessages.InitializeCriticalSection();
 
+		m_bIsPreloadDiscard = false;
+
 		COfficeUtils::SetAddonFlag(ZLIB_ADDON_FLAG_WINDOWS_SHARED_WRITE);
 	}
 	virtual ~CAscApplicationManager_Private()
@@ -1606,6 +1805,18 @@ public:
 		std::wstring sTmp = m_pMain->m_oSettings.cache_path + L"/work_temp";
 		if (NSDirectory::Exists(sTmp))
 			NSDirectory::DeleteDirectory(sTmp);
+	}
+
+	void CheckPreload()
+	{
+		if (!m_bIsPreloadDiscard)
+		{
+			m_bIsPreloadDiscard = true;
+
+#if defined(LINUX) && !defined(_MAC) && !defined(CEF_VERSION_107)
+			setenv("LD_PRELOAD", "", 1);
+#endif
+		}
 	}
 
 	bool GetEditorPermission()
@@ -1679,7 +1890,7 @@ public:
 				pVisitor->m_sDomain = pVisitor->m_sDomain.substr(0, pos);
 		}
 
-		pVisitor->CheckCookiePresent(CefCookieManager::GetGlobalManager(NULL));
+		pVisitor->CheckCookiePresent(CefCookieManager::GetGlobalManager(nullptr));
 	}
 	virtual void OnFoundCookie(bool bIsPresent, std::string sValue)
 	{
@@ -1802,6 +2013,12 @@ public:
 	}
 	void CheckSetting(const std::string& sName, const std::string& sValue)
 	{
+		if ("--ascdesktop-log-file" == sName)
+		{
+			// stdout для Linux, путь к файлу для Windows
+			m_sLogFile = sValue;
+			return;
+		}
 		if ("--ascdesktop-support-debug-info" == sName)
 		{
 			m_bDebugInfoSupport = true;
@@ -2457,7 +2674,7 @@ public:
 		m_pKeyChain = m_pMain->GetKeychainEngine();
 		m_pKeyChain->Check(m_pMain->m_oSettings.cookie_path + L"/user.data");
 	}
-	void SendCryptoData(CefRefPtr<CefFrame> frame = NULL)
+	void SendCryptoData(CefRefPtr<CefFrame> frame = nullptr)
 	{
 		std::wstring sPass = L"";
 		if (0 != m_nCurrentCryptoMode)

@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=d5260efeb3be935bd7e7a064c91967d34214ac82$
+// $hash=ff70a3aece6add8f9947070688135e60258a1f9c$
 //
 
 #include "libcef_dll/ctocpp/v8context_ctocpp.h"
@@ -59,7 +59,7 @@ NO_SANITIZE("cfi-icall")
 CefRefPtr<CefTaskRunner> CefV8ContextCToCpp::GetTaskRunner() {
   cef_v8context_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_task_runner))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -88,7 +88,7 @@ NO_SANITIZE("cfi-icall")
 CefRefPtr<CefBrowser> CefV8ContextCToCpp::GetBrowser() {
   cef_v8context_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_browser))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -102,7 +102,7 @@ CefRefPtr<CefBrowser> CefV8ContextCToCpp::GetBrowser() {
 NO_SANITIZE("cfi-icall") CefRefPtr<CefFrame> CefV8ContextCToCpp::GetFrame() {
   cef_v8context_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_frame))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -116,7 +116,7 @@ NO_SANITIZE("cfi-icall") CefRefPtr<CefFrame> CefV8ContextCToCpp::GetFrame() {
 NO_SANITIZE("cfi-icall") CefRefPtr<CefV8Value> CefV8ContextCToCpp::GetGlobal() {
   cef_v8context_t* _struct = GetStruct();
   if (CEF_MEMBER_MISSING(_struct, get_global))
-    return NULL;
+    return nullptr;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -214,7 +214,7 @@ bool CefV8ContextCToCpp::Eval(const CefString& code,
       retval = CefV8ValueCToCpp::Wrap(retvalStruct);
     }
   } else {
-    retval = NULL;
+    retval = nullptr;
   }
   // Restore param:exception; type: refptr_same_byref
   if (exceptionStruct) {
@@ -222,7 +222,7 @@ bool CefV8ContextCToCpp::Eval(const CefString& code,
       exception = CefV8ExceptionCToCpp::Wrap(exceptionStruct);
     }
   } else {
-    exception = NULL;
+    exception = nullptr;
   }
 
   // Return type: bool
@@ -242,7 +242,7 @@ cef_v8context_t*
 CefCToCppRefCounted<CefV8ContextCToCpp, CefV8Context, cef_v8context_t>::
     UnwrapDerived(CefWrapperType type, CefV8Context* c) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

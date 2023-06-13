@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,17 +9,40 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=978ea00f17d5dc1053ce83f9077b04d5e37bc1f8$
+// $hash=42b9802104067e7474eab0fa842a7849b666bce2$
 //
 
 #include "libcef_dll/cpptoc/browser_process_handler_cpptoc.h"
-#include "libcef_dll/cpptoc/print_handler_cpptoc.h"
+#include "libcef_dll/cpptoc/client_cpptoc.h"
 #include "libcef_dll/ctocpp/command_line_ctocpp.h"
-#include "libcef_dll/ctocpp/list_value_ctocpp.h"
+#include "libcef_dll/ctocpp/preference_registrar_ctocpp.h"
 
 namespace {
 
 // MEMBER FUNCTIONS - Body may be edited by hand.
+
+void CEF_CALLBACK browser_process_handler_on_register_custom_preferences(
+    struct _cef_browser_process_handler_t* self,
+    cef_preferences_type_t type,
+    struct _cef_preference_registrar_t* registrar) {
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self)
+    return;
+  // Verify param: registrar; type: rawptr_diff
+  DCHECK(registrar);
+  if (!registrar)
+    return;
+
+  // Translate param: registrar; type: rawptr_diff
+  CefOwnPtr<CefPreferenceRegistrar> registrarPtr(
+      CefPreferenceRegistrarCToCpp::Wrap(registrar));
+
+  // Execute
+  CefBrowserProcessHandlerCppToC::Get(self)->OnRegisterCustomPreferences(
+      type, registrarPtr.get());
+}
 
 void CEF_CALLBACK browser_process_handler_on_context_initialized(
     struct _cef_browser_process_handler_t* self) {
@@ -51,41 +74,6 @@ void CEF_CALLBACK browser_process_handler_on_before_child_process_launch(
       CefCommandLineCToCpp::Wrap(command_line));
 }
 
-void CEF_CALLBACK browser_process_handler_on_render_process_thread_created(
-    struct _cef_browser_process_handler_t* self,
-    struct _cef_list_value_t* extra_info) {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  DCHECK(self);
-  if (!self)
-    return;
-  // Verify param: extra_info; type: refptr_diff
-  DCHECK(extra_info);
-  if (!extra_info)
-    return;
-
-  // Execute
-  CefBrowserProcessHandlerCppToC::Get(self)->OnRenderProcessThreadCreated(
-      CefListValueCToCpp::Wrap(extra_info));
-}
-
-struct _cef_print_handler_t* CEF_CALLBACK
-browser_process_handler_get_print_handler(
-    struct _cef_browser_process_handler_t* self) {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  DCHECK(self);
-  if (!self)
-    return NULL;
-
-  // Execute
-  CefRefPtr<CefPrintHandler> _retval =
-      CefBrowserProcessHandlerCppToC::Get(self)->GetPrintHandler();
-
-  // Return type: refptr_same
-  return CefPrintHandlerCppToC::Wrap(_retval);
-}
-
 void CEF_CALLBACK browser_process_handler_on_schedule_message_pump_work(
     struct _cef_browser_process_handler_t* self,
     int64 delay_ms) {
@@ -100,20 +88,36 @@ void CEF_CALLBACK browser_process_handler_on_schedule_message_pump_work(
       delay_ms);
 }
 
+struct _cef_client_t* CEF_CALLBACK browser_process_handler_get_default_client(
+    struct _cef_browser_process_handler_t* self) {
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self)
+    return NULL;
+
+  // Execute
+  CefRefPtr<CefClient> _retval =
+      CefBrowserProcessHandlerCppToC::Get(self)->GetDefaultClient();
+
+  // Return type: refptr_same
+  return CefClientCppToC::Wrap(_retval);
+}
+
 }  // namespace
 
 // CONSTRUCTOR - Do not edit by hand.
 
 CefBrowserProcessHandlerCppToC::CefBrowserProcessHandlerCppToC() {
+  GetStruct()->on_register_custom_preferences =
+      browser_process_handler_on_register_custom_preferences;
   GetStruct()->on_context_initialized =
       browser_process_handler_on_context_initialized;
   GetStruct()->on_before_child_process_launch =
       browser_process_handler_on_before_child_process_launch;
-  GetStruct()->on_render_process_thread_created =
-      browser_process_handler_on_render_process_thread_created;
-  GetStruct()->get_print_handler = browser_process_handler_get_print_handler;
   GetStruct()->on_schedule_message_pump_work =
       browser_process_handler_on_schedule_message_pump_work;
+  GetStruct()->get_default_client = browser_process_handler_get_default_client;
 }
 
 // DESTRUCTOR - Do not edit by hand.
@@ -128,7 +132,7 @@ CefRefPtr<CefBrowserProcessHandler> CefCppToCRefCounted<
                                                   cef_browser_process_handler_t*
                                                       s) {
   NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  return nullptr;
 }
 
 template <>

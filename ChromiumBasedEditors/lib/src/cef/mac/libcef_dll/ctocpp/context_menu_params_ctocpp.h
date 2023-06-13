@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=6f71ae783e4b56110ae2806c943c4492406674aa$
+// $hash=d4a3ee70f42b74bd849215f0f569d07164bf29a7$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_CONTEXT_MENU_PARAMS_CTOCPP_H_
@@ -36,27 +36,26 @@ class CefContextMenuParamsCToCpp
   virtual ~CefContextMenuParamsCToCpp();
 
   // CefContextMenuParams methods.
-  int GetXCoord() OVERRIDE;
-  int GetYCoord() OVERRIDE;
-  TypeFlags GetTypeFlags() OVERRIDE;
-  CefString GetLinkUrl() OVERRIDE;
-  CefString GetUnfilteredLinkUrl() OVERRIDE;
-  CefString GetSourceUrl() OVERRIDE;
-  bool HasImageContents() OVERRIDE;
-  CefString GetTitleText() OVERRIDE;
-  CefString GetPageUrl() OVERRIDE;
-  CefString GetFrameUrl() OVERRIDE;
-  CefString GetFrameCharset() OVERRIDE;
-  MediaType GetMediaType() OVERRIDE;
-  MediaStateFlags GetMediaStateFlags() OVERRIDE;
-  CefString GetSelectionText() OVERRIDE;
-  CefString GetMisspelledWord() OVERRIDE;
-  bool GetDictionarySuggestions(std::vector<CefString>& suggestions) OVERRIDE;
-  bool IsEditable() OVERRIDE;
-  bool IsSpellCheckEnabled() OVERRIDE;
-  EditStateFlags GetEditStateFlags() OVERRIDE;
-  bool IsCustomMenu() OVERRIDE;
-  bool IsPepperMenu() OVERRIDE;
+  int GetXCoord() override;
+  int GetYCoord() override;
+  TypeFlags GetTypeFlags() override;
+  CefString GetLinkUrl() override;
+  CefString GetUnfilteredLinkUrl() override;
+  CefString GetSourceUrl() override;
+  bool HasImageContents() override;
+  CefString GetTitleText() override;
+  CefString GetPageUrl() override;
+  CefString GetFrameUrl() override;
+  CefString GetFrameCharset() override;
+  MediaType GetMediaType() override;
+  MediaStateFlags GetMediaStateFlags() override;
+  CefString GetSelectionText() override;
+  CefString GetMisspelledWord() override;
+  bool GetDictionarySuggestions(std::vector<CefString>& suggestions) override;
+  bool IsEditable() override;
+  bool IsSpellCheckEnabled() override;
+  EditStateFlags GetEditStateFlags() override;
+  bool IsCustomMenu() override;
 };
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_CONTEXT_MENU_PARAMS_CTOCPP_H_

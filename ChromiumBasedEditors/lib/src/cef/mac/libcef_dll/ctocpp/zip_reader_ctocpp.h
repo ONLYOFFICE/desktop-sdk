@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=326b507d5065261a9cf824f4bf32e97099971e55$
+// $hash=607dfcaa8f19f7510fc4f87fc31a8754369fdc3a$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_ZIP_READER_CTOCPP_H_
@@ -34,18 +34,18 @@ class CefZipReaderCToCpp : public CefCToCppRefCounted<CefZipReaderCToCpp,
   virtual ~CefZipReaderCToCpp();
 
   // CefZipReader methods.
-  bool MoveToFirstFile() OVERRIDE;
-  bool MoveToNextFile() OVERRIDE;
-  bool MoveToFile(const CefString& fileName, bool caseSensitive) OVERRIDE;
-  bool Close() OVERRIDE;
-  CefString GetFileName() OVERRIDE;
-  int64 GetFileSize() OVERRIDE;
-  CefTime GetFileLastModified() OVERRIDE;
-  bool OpenFile(const CefString& password) OVERRIDE;
-  bool CloseFile() OVERRIDE;
-  int ReadFile(void* buffer, size_t bufferSize) OVERRIDE;
-  int64 Tell() OVERRIDE;
-  bool Eof() OVERRIDE;
+  bool MoveToFirstFile() override;
+  bool MoveToNextFile() override;
+  bool MoveToFile(const CefString& fileName, bool caseSensitive) override;
+  bool Close() override;
+  CefString GetFileName() override;
+  int64 GetFileSize() override;
+  CefBaseTime GetFileLastModified() override;
+  bool OpenFile(const CefString& password) override;
+  bool CloseFile() override;
+  int ReadFile(void* buffer, size_t bufferSize) override;
+  int64 Tell() override;
+  bool Eof() override;
 };
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_ZIP_READER_CTOCPP_H_
