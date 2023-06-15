@@ -44,6 +44,7 @@
 
 #include <iostream>
 #include <set>
+#include <gio/gio.h>
 
 #include "../../../../core/DesktopEditor/xml/include/xmlutils.h"
 #include "../../../../core/Common/OfficeFileFormatChecker.h"
@@ -454,6 +455,166 @@ public:
 
 namespace NSSystem
 {
+	class CFileGio
+	{
+	protected:
+		GFile* m_pFile;
+		GError* m_pError;
+		char* m_pFileUri;
+
+		GFileIOStream* m_pStream;
+
+		DWORD m_lFileSize;
+		DWORD m_lFilePosition;
+
+	public:
+		CFileGio()
+		{
+			m_pFile = NULL;
+			m_pError = NULL;
+			m_pFileUri = NULL;
+
+			m_pStream = NULL;
+
+			m_lFileSize = 0;
+			m_lFilePosition = 0;
+		}
+
+		bool OpenFile(const char* sFileName)
+		{
+			bool bResult = false;
+			g_assert_no_error(m_pError);
+
+			m_pFile = g_file_new_for_path(sFileName);
+
+			if ( m_pFile )
+			{
+				m_pFileUri = g_file_get_uri(m_pFile);
+
+				m_pStream = g_file_open_readwrite(m_pFile, NULL, &m_pError);
+				bResult = !m_pError;
+			}
+
+			return  bResult;
+		}
+
+		bool CreateFile(const char* sFileName)
+		{
+			bool bResult = false;
+			g_assert_no_error(m_pError);
+
+			m_pFile = g_file_new_for_path(sFileName);
+			if ( m_pFile )
+			{
+				m_pFileUri = g_file_get_uri(m_pFile);
+
+				if ( g_file_query_exists(m_pFile, NULL) )
+				{
+					g_file_delete(m_pFile, NULL, &m_pError);
+					g_assert_no_error(m_pError);
+				}
+
+				m_pStream = g_file_create_readwrite(m_pFile, G_FILE_CREATE_PRIVATE, NULL, &m_pError);
+				bResult = !m_pError;
+			}
+
+			return  bResult;
+		}
+
+		DWORD GetFileSize()
+		{
+			if ( m_pFile )
+			{
+				GFileInfo* pFileInfo = g_file_query_info(m_pFile, G_FILE_ATTRIBUTE_STANDARD_SIZE, G_FILE_QUERY_INFO_NONE, NULL, &m_pError);
+				if ( pFileInfo )
+				{
+					m_lFileSize = g_file_info_get_size(pFileInfo);
+					g_object_unref(pFileInfo);
+				}
+			}
+
+			return m_lFileSize;
+		}
+
+		long GetFilePosition()
+		{
+			return m_lFilePosition;
+		}
+
+		bool SeekFile(DWORD lFilePosition, GSeekType seekType = G_SEEK_SET)
+		{
+			bool bResult = false;
+			g_assert_no_error(m_pError);
+
+			if ( m_pFile )
+			{
+				if ( m_pStream )
+				{
+					if ( g_seekable_can_seek((GSeekable*)m_pStream) )
+					{
+						if ( g_seekable_seek((GSeekable*)m_pStream, lFilePosition, seekType, NULL, &m_pError) )
+						{
+							m_lFilePosition = lFilePosition;
+							bResult = !m_pError;
+						}
+					}
+				}
+			}
+
+			return  bResult;
+		}
+
+		bool ReadFile(BYTE* pData, DWORD nBytesToRead, DWORD& nSizeRead)
+		{
+			bool bResult = false;
+			g_assert_no_error(m_pError);
+
+			if ( m_pFile && m_pStream )
+			{
+				bResult = g_input_stream_read_all(g_io_stream_get_input_stream((GIOStream*)m_pStream), pData, nBytesToRead, &nSizeRead, NULL, &m_pError);
+			}
+
+			return  bResult;
+		}
+
+		bool WriteFile(const void* pData, DWORD nBytesToWrite, DWORD& nSizeWrite)
+		{
+			DWORD bResult = false;
+			g_assert_no_error(m_pError);
+
+			if ( m_pFile && pData && m_pStream )
+			{
+				bResult = g_output_stream_write_all(g_io_stream_get_output_stream((GIOStream*)m_pStream), pData, nBytesToWrite, &nSizeWrite, NULL, &m_pError);
+			}
+
+			return  bResult;
+		}
+
+		bool CloseFile()
+		{
+			bool bResult = false;
+			g_assert_no_error(m_pError);
+
+			if ( m_pFile )
+			{
+				if ( m_pStream )
+				{
+					g_io_stream_close((GIOStream*)m_pStream, NULL, &m_pError);
+					g_object_unref(m_pStream);
+				}
+
+				if ( m_pFileUri )
+					g_free(m_pFileUri);
+
+				if ( m_pFile )
+					g_object_unref(m_pFile);
+
+				bResult = true;
+			}
+
+			return  bResult;
+		}
+	};
 	class CLocalFileLocker
 	{
 	public:
@@ -469,7 +630,8 @@ namespace NSSystem
 #ifdef _WIN32
 		HANDLE m_nDescriptor;
 #else
-		int m_nDescriptor;
+		//int m_nDescriptor;
+		CFileGio* m_nDescriptor;
 #endif
 
 	public:
@@ -478,7 +640,8 @@ namespace NSSystem
 #ifdef _WIN32
 			m_nDescriptor = INVALID_HANDLE_VALUE;
 #else
-			m_nDescriptor = -1;
+			//m_nDescriptor = -1;
+			m_nDescriptor = NULL;
 #endif
 
 			if (sFile.empty())
@@ -509,7 +672,7 @@ namespace NSSystem
 			}
 #else
 			std::string sFileA = U_TO_UTF8(m_sFile);
-			m_nDescriptor = open(sFileA.c_str(), O_RDWR | O_EXCL);
+			/*m_nDescriptor = open(sFileA.c_str(), O_RDWR | O_EXCL);
 			if (-1 == m_nDescriptor)
 				return true;
 
@@ -527,7 +690,10 @@ namespace NSSystem
 			{
 				close(m_nDescriptor);
 				m_nDescriptor = -1;
-			}
+			}*/
+
+			m_nDescriptor = new CFileGio();
+			m_nDescriptor->OpenFile(sFileA.c_str());
 #endif
 			return true;
 		}
@@ -547,7 +713,7 @@ namespace NSSystem
 				m_nDescriptor = INVALID_HANDLE_VALUE;
 			}
 #else
-			if (-1 == m_nDescriptor)
+			/*if (-1 == m_nDescriptor)
 				return true;
 
 			struct flock _lock;
@@ -561,7 +727,15 @@ namespace NSSystem
 			fcntl(m_nDescriptor, F_SETLKW, &_lock);
 			close(m_nDescriptor);
 
-			m_nDescriptor = -1;
+			m_nDescriptor = -1;*/
+
+			if (NULL == m_nDescriptor)
+				return true;
+
+			m_nDescriptor->CloseFile();
+
+			delete m_nDescriptor;
+			m_nDescriptor = NULL;
 #endif
 			return true;
 		}
@@ -599,7 +773,7 @@ namespace NSSystem
 #else
 			std::string sFileA = U_TO_UTF8(sFile);
 
-			if (0 != access(sFileA.c_str(), W_OK) && 0 == access(sFileA.c_str(), R_OK))
+			/*if (0 != access(sFileA.c_str(), W_OK) && 0 == access(sFileA.c_str(), R_OK))
 			{
 				isLocked = ltReadOnly;
 				return isLocked;
@@ -614,7 +788,21 @@ namespace NSSystem
 			fcntl(nDescriptor, F_GETLK, &_lock);
 			if (F_WRLCK == (_lock.l_type & F_WRLCK))
 				isLocked = ltLocked;
-			close(nDescriptor);
+			close(nDescriptor);*/
+
+			CFileGio* nDescriptor = new CFileGio();
+			if ( !nDescriptor->OpenFile(sFileA.c_str()) )
+			{
+				isLocked = ltReadOnly;
+				return isLocked;
+			}
+			else
+			{
+				nDescriptor->CloseFile();
+				delete nDescriptor;
+				nDescriptor = NULL;
+			}
+
 #endif
 			return isLocked;
 		}
@@ -633,12 +821,13 @@ namespace NSSystem
 #endif
 		}
 
+		// из .local/share
 		bool SaveFile(const std::wstring& sFile)
 		{
 			bool bIsNeedClose = false;
 
 #ifdef _LINUX
-			int nDescriptor = m_nDescriptor;
+			/*int nDescriptor = m_nDescriptor;
 			if (-1 == nDescriptor)
 			{
 				std::string sFileA = U_TO_UTF8(m_sFile);
@@ -646,6 +835,15 @@ namespace NSSystem
 				if (-1 == nDescriptor)
 					nDescriptor = open(sFileA.c_str(), O_CREAT | O_WRONLY, 0666);
 				bIsNeedClose = true;
+			}*/
+
+			CFileGio* nDescriptor = m_nDescriptor;
+			if (NULL == nDescriptor)
+			{
+				std::string sFileA = U_TO_UTF8(m_sFile);
+
+				if ( nDescriptor->CreateFile(sFileA.c_str()) )
+					bIsNeedClose = true;
 			}
 #endif
 
@@ -675,7 +873,8 @@ namespace NSSystem
 #ifdef _WIN32
 			SetFilePointer(m_nDescriptor, 0, 0, FILE_BEGIN);
 #else
-			lseek(nDescriptor, 0, SEEK_SET);
+			//lseek(nDescriptor, 0, SEEK_SET);
+			nDescriptor->SeekFile(0);
 #endif
 
 			DWORD dwRead = 0;
@@ -684,12 +883,14 @@ namespace NSSystem
 			{
 				if (nNeedWrite < nChunkSize)
 					nChunkSize = nNeedWrite;
+
 				oFile.ReadFile(pMemoryBuffer, nChunkSize, dwRead);
 
 #ifdef _WIN32
 				WriteFile(m_nDescriptor, pMemoryBuffer, nChunkSize, &dwWrite, NULL);
 #else
-				dwWrite = (DWORD)write(nDescriptor, pMemoryBuffer, nChunkSize);
+				//dwWrite = (DWORD)write(nDescriptor, pMemoryBuffer, nChunkSize);
+				nDescriptor->WriteFile(pMemoryBuffer, nChunkSize, dwWrite);
 #endif
 
 				if (dwRead != nChunkSize || dwWrite != nChunkSize)
@@ -708,11 +909,15 @@ namespace NSSystem
 			SetFilePointer(m_nDescriptor, (LONG)nFileSize, 0, FILE_BEGIN);
 			SetEndOfFile(m_nDescriptor);
 #else
-			lseek(nDescriptor, (DWORD)nFileSize, SEEK_SET);
-			ftruncate(nDescriptor, (DWORD)nFileSize);
+			//lseek(nDescriptor, (DWORD)nFileSize, SEEK_SET);
+			//ftruncate(nDescriptor, (DWORD)nFileSize);
 
-			if (bIsNeedClose)
-				close(nDescriptor);
+			nDescriptor->CloseFile();
+			delete nDescriptor;
+			nDescriptor = NULL;
+
+			//if (bIsNeedClose)
+			//	close(nDescriptor);
 #endif
 
 			if (!bRes)
