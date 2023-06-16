@@ -1088,6 +1088,7 @@ public:
 		Destroy();
 	}
 
+	void LocalSendTo(const std::wstring& sFile);
 	void CheckZoom();
 
 	void UpdateSize();
@@ -1361,10 +1362,24 @@ public:
 		{
 			if (this->GetBrowser())
 			{
-				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_convert_local_file");
-				message->GetArgumentList()->SetString(0, (0 == nError) ? m_pLocalFileConverter->m_sFileFolder : L"");
-				NSArgumentList::SetInt64(message->GetArgumentList(), 1, m_pLocalFileConverter->m_nFrameId);
-				SEND_MESSAGE_TO_RENDERER_PROCESS(GetBrowser(), message);
+				if (!m_pLocalFileConverter->m_bIsApplyChanges)
+				{
+					CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_convert_local_file");
+					message->GetArgumentList()->SetString(0, (0 == nError) ? m_pLocalFileConverter->m_sFileFolder : L"");
+					NSArgumentList::SetInt64(message->GetArgumentList(), 1, m_pLocalFileConverter->m_nFrameId);
+					SEND_MESSAGE_TO_RENDERER_PROCESS(GetBrowser(), message);
+				}
+				else
+				{
+					CefRefPtr<CefFrame> _frame = this->GetBrowser()->GetFrame("frameEditor");
+					if (_frame)
+					{
+						std::wstring sCode = L"(function(){ if (window.Asc && window.Asc.editor) window.Asc.editor.endExternalConvertation(); })();";
+						_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+					}
+
+					this->LocalSendTo(m_pLocalFileConverter->m_sDstFilePath);
+				}
 			}
 
 			m_pLocalFileConverter->DestroyOnFinish();
@@ -3849,8 +3864,6 @@ public:
 				return true;
 
 			std::wstring sUrl = m_pParent->GetUrl();
-			std::wstring sMailApp = L"";
-			std::wstring sMailAppType = L"";
 			if (NSFileDownloader::IsNeedDownload(sUrl))
 			{
 				std::string sCode = "window.open(\"mailto:?subject=";
@@ -3869,79 +3882,55 @@ public:
 			}
 			else
 			{
-				std::wstring sUrlFile = L"";
-				if (m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_bIsSaved)
-					sUrlFile = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc;
-
-				sMailApp = CMailToCommandLine::GetMailApp(sMailAppType);
-
-				if (!sMailApp.empty())
+				if (m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_bIsSaved &&
+					!m_pParent->GetModified())
 				{
-					NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_SYSTEM_EXTERNAL_PROCESS);
-					NSEditorApi::CAscExternalProcess* pData = new NSEditorApi::CAscExternalProcess();
-					pEvent->m_pData = pData;
-
-					pData->put_Program(sMailApp);
-					pData->put_Detached(true);
-
-					CMailToCommandLine::GetArguments(pData->get_Arguments(), sMailAppType, sUrlFile);
-
-					pListener->OnEvent(pEvent);
+					m_pParent->m_pInternal->LocalSendTo(m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc);
 				}
 				else
 				{
-#ifdef _MAC
-					std::string sCodeApp = "open -a Mail";
-					if (!sUrlFile.empty())
-					{
-						sCodeApp += " ";
-
-						std::string sUrlFileA = U_TO_UTF8(sUrlFile);
-						NSStringUtils::string_replaceA(sUrlFileA, "\\", "\\\\");
-						NSStringUtils::string_replaceA(sUrlFileA, " ", "\\ ");
-						NSStringUtils::string_replaceA(sUrlFileA, "<", "\\<");
-						NSStringUtils::string_replaceA(sUrlFileA, ">", "\\>");
-						NSStringUtils::string_replaceA(sUrlFileA, "(", "\\(");
-						NSStringUtils::string_replaceA(sUrlFileA, ")", "\\)");
-						NSStringUtils::string_replaceA(sUrlFileA, "[", "\\[");
-						NSStringUtils::string_replaceA(sUrlFileA, "]", "\\]");
-						NSStringUtils::string_replaceA(sUrlFileA, "?", "\\?");
-						NSStringUtils::string_replaceA(sUrlFileA, "!", "\\!");
-						NSStringUtils::string_replaceA(sUrlFileA, "'", "\\'");
-						NSStringUtils::string_replaceA(sUrlFileA, "\"", "\\\"");
-						NSStringUtils::string_replaceA(sUrlFileA, "|", "\\|");
-						NSStringUtils::string_replaceA(sUrlFileA, "&", "\\&");
-
-						sCodeApp += sUrlFileA;
-						sCodeApp += "";
-					}
-					system(sCodeApp.c_str());
-					return true;
-#endif
 					CefRefPtr<CefFrame> _frame = browser->GetFrame("frameEditor");
 					if (_frame)
 					{
-						std::wstring sCode = L"(function(){ \n\
-								var _e = undefined;\n\
-								if (window[\"Asc\"] && window[\"Asc\"][\"editor\"]) \n\
-						{\n\
-									_e = window[\"Asc\"][\"editor\"];\n\
-						}\n\
-								else if (window[\"editor\"])\n\
-						{\n\
-									_e = window[\"editor\"];\n\
-						}\n\
-								if (!_e) return;\n\
-								_e.sendEvent(\"asc_onError\", -452, 0);\n\
-					})();";
-
-					_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+						std::wstring sCode = L"(function(){ if (window.Asc && window.Asc.editor) window.Asc.editor.startExternalConvertation('sendTo'); })();";
+						_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+					}
 				}
 			}
+			return true;
 		}
+		else if ("external_convertation" == message_name)
+		{
+			std::string sConvertationType = args->GetString(0).ToString();
+			if ("sendTo" == sConvertationType)
+			{
+				// сохраняем копию в tmp и прикрепляем ее
+				m_pParent->m_pInternal->m_pLocalFileConverter = new CConvertFileInEditor();
+				CConvertFileInEditor* pConv = m_pParent->m_pInternal->m_pLocalFileConverter;
+				pConv->DestroyOnFinish();
+				pConv->m_pEvents = m_pParent->m_pInternal;
+				pConv->m_pManager = m_pParent->m_pInternal->m_pManager;
 
-		return true;
-	}
+				pConv->m_sFileFolder = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir;
+				pConv->m_sSrcFilePath = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc;
+
+				int nFileFormat = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat;
+				if (!m_pParent->m_pInternal->LocalFile_IsSupportSaveCurrentFormat())
+				{
+					if (nFileFormat & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
+						nFileFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX;
+					else if (nFileFormat & AVS_OFFICESTUDIO_FILE_PRESENTATION)
+						nFileFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
+					else
+						nFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX;
+				}
+				pConv->m_nOutputFormat = nFileFormat;
+				pConv->SetModeApplyChanges();
+				pConv->m_sAdditionalParams = args->GetString(1).ToWString();
+				pConv->Start(0);
+			}
+			return true;
+		}
 	else if ("cloud_crypto_upload" == message_name)
 	{
 		if (m_pParent->m_pInternal->m_pUploadFiles)
@@ -5679,6 +5668,72 @@ void CCefView_Private::OnFileConvertToEditor(const int& nError)
 
 	m_nLocalFileOpenError = nError;
 	LocalFile_IncrementCounter();
+}
+void CCefView_Private::LocalSendTo(const std::wstring& sUrlFile)
+{
+	std::wstring sMailAppType = L"";
+	std::wstring sMailApp = CMailToCommandLine::GetMailApp(sMailAppType);
+
+	if (!sMailApp.empty())
+	{
+		NSEditorApi::CAscCefMenuEvent* pEvent = m_pCefView->CreateCefEvent(ASC_MENU_EVENT_TYPE_SYSTEM_EXTERNAL_PROCESS);
+		NSEditorApi::CAscExternalProcess* pData = new NSEditorApi::CAscExternalProcess();
+		pEvent->m_pData = pData;
+
+		pData->put_Program(sMailApp);
+		pData->put_Detached(true);
+
+		CMailToCommandLine::GetArguments(pData->get_Arguments(), sMailAppType, sUrlFile);
+
+		m_pManager->GetEventListener()->OnEvent(pEvent);
+	}
+	else
+	{
+#ifdef _MAC
+		std::string sCodeApp = "open -a Mail";
+		if (!sUrlFile.empty())
+		{
+			sCodeApp += " ";
+
+			std::string sUrlFileA = U_TO_UTF8(sUrlFile);
+			NSStringUtils::string_replaceA(sUrlFileA, "\\", "\\\\");
+			NSStringUtils::string_replaceA(sUrlFileA, " ", "\\ ");
+			NSStringUtils::string_replaceA(sUrlFileA, "<", "\\<");
+			NSStringUtils::string_replaceA(sUrlFileA, ">", "\\>");
+			NSStringUtils::string_replaceA(sUrlFileA, "(", "\\(");
+			NSStringUtils::string_replaceA(sUrlFileA, ")", "\\)");
+			NSStringUtils::string_replaceA(sUrlFileA, "[", "\\[");
+			NSStringUtils::string_replaceA(sUrlFileA, "]", "\\]");
+			NSStringUtils::string_replaceA(sUrlFileA, "?", "\\?");
+			NSStringUtils::string_replaceA(sUrlFileA, "!", "\\!");
+			NSStringUtils::string_replaceA(sUrlFileA, "'", "\\'");
+			NSStringUtils::string_replaceA(sUrlFileA, "\"", "\\\"");
+			NSStringUtils::string_replaceA(sUrlFileA, "|", "\\|");
+			NSStringUtils::string_replaceA(sUrlFileA, "&", "\\&");
+
+			sCodeApp += sUrlFileA;
+			sCodeApp += "";
+		}
+		system(sCodeApp.c_str());
+		return true;
+#endif
+		if (GetBrowser())
+		{
+			CefRefPtr<CefFrame> _frame = GetBrowser()->GetFrame("frameEditor");
+			if (_frame)
+			{
+				std::wstring sCode = L"(function(){ \n\
+var _e = undefined;\n\
+if (window.Asc && window.Asc.editor) _e = window.Asc.editor;\
+else if (window.editor) _e = window.editor;\
+if (!_e) return;\n\
+_e.sendEvent(\"asc_onError\", -452, 0);\n\
+})();";
+
+				_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+			}
+		}
+	}
 }
 void CCefView_Private::CheckZoom()
 {

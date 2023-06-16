@@ -4008,6 +4008,14 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
 #endif
 			return true;
 		}
+		else if (name == "startExternalConvertation")
+		{
+			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("external_convertation");
+			message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
+			message->GetArgumentList()->SetString(1, arguments[1]->GetStringValue());
+			SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+			return true;
+		}
 
 		// Function does not exist.
 		return false;
@@ -4506,7 +4514,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
 	CefRefPtr<CefV8Handler> handler = pWrapper;
 
-	#define EXTEND_METHODS_COUNT 175
+	#define EXTEND_METHODS_COUNT 176
 	const char* methods[EXTEND_METHODS_COUNT] = {
 		"Copy",
 		"Paste",
@@ -4748,6 +4756,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 		"emulateCloudPrinting",
 
 		"isSupportNetworkFunctionality",
+		"startExternalConvertation",
 
 		NULL
 	};
