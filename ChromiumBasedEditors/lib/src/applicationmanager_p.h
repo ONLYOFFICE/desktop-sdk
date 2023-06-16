@@ -462,7 +462,8 @@ namespace NSSystem
 		GError* m_pError;
 		char* m_pFileUri;
 
-		GFileIOStream* m_pStream;
+		GInputStream* m_pInputStream;
+		GOutputStream* m_pOutputStream;
 
 		DWORD m_lFileSize;
 		DWORD m_lFilePosition;
@@ -474,47 +475,34 @@ namespace NSSystem
 			m_pError = NULL;
 			m_pFileUri = NULL;
 
-			m_pStream = NULL;
+			m_pInputStream = NULL;
+			m_pOutputStream = NULL;
 
 			m_lFileSize = 0;
 			m_lFilePosition = 0;
 		}
 
-		bool OpenFile(const char* sFileName)
+		bool OpenFile(const char* sFileName, bool bReadOnly = true)
 		{
+			// Одна функция для открытия файла, типа open в C
+			// Если только чтение, то g_file_read
+			// Иначе g_file_append_to - в этом случае получаем поток для записи и не пересоздаём файл, что может быть критично.
+			// Указывая G_FILE_CREATE_PRIVATE, обеспечиваем блокировку файла текущим пользователем
+
 			bool bResult = false;
 			g_assert_no_error(m_pError);
 
-			m_pFile = g_file_new_for_path(sFileName);
+			m_pFile = g_file_new_for_commandline_arg(sFileName);
 
 			if ( m_pFile )
 			{
 				m_pFileUri = g_file_get_uri(m_pFile);
 
-				m_pStream = g_file_open_readwrite(m_pFile, NULL, &m_pError);
-				bResult = !m_pError;
-			}
+				if ( bReadOnly )
+					m_pInputStream = G_INPUT_STREAM(g_file_read(m_pFile, NULL, &m_pError));
+				else
+					m_pOutputStream = G_OUTPUT_STREAM(g_file_append_to(m_pFile, G_FILE_CREATE_PRIVATE, NULL, &m_pError));
 
-			return  bResult;
-		}
-
-		bool CreateFile(const char* sFileName)
-		{
-			bool bResult = false;
-			g_assert_no_error(m_pError);
-
-			m_pFile = g_file_new_for_path(sFileName);
-			if ( m_pFile )
-			{
-				m_pFileUri = g_file_get_uri(m_pFile);
-
-				if ( g_file_query_exists(m_pFile, NULL) )
-				{
-					g_file_delete(m_pFile, NULL, &m_pError);
-					g_assert_no_error(m_pError);
-				}
-
-				m_pStream = g_file_create_readwrite(m_pFile, G_FILE_CREATE_PRIVATE, NULL, &m_pError);
 				bResult = !m_pError;
 			}
 
@@ -541,20 +529,54 @@ namespace NSSystem
 			return m_lFilePosition;
 		}
 
-		bool SeekFile(DWORD lFilePosition, GSeekType seekType = G_SEEK_SET)
+		bool SeekFile(DWORD lPosition, GSeekType seekType = G_SEEK_SET)
 		{
 			bool bResult = false;
 			g_assert_no_error(m_pError);
 
 			if ( m_pFile )
 			{
-				if ( m_pStream )
+				if ( m_pInputStream )
 				{
-					if ( g_seekable_can_seek((GSeekable*)m_pStream) )
+					if ( g_seekable_can_seek((GSeekable*)m_pInputStream) )
 					{
-						if ( g_seekable_seek((GSeekable*)m_pStream, lFilePosition, seekType, NULL, &m_pError) )
+						if ( g_seekable_seek((GSeekable*)m_pInputStream, lPosition, seekType, NULL, &m_pError) )
 						{
-							m_lFilePosition = lFilePosition;
+							m_lFilePosition = lPosition;
+							bResult = !m_pError;
+						}
+					}
+				}
+				if ( m_pOutputStream )
+				{
+					if ( g_seekable_can_seek((GSeekable*)m_pOutputStream) )
+					{
+						if ( g_seekable_seek((GSeekable*)m_pOutputStream, lPosition, seekType, NULL, &m_pError) )
+						{
+							m_lFilePosition = lPosition;
+							bResult = !m_pError;
+						}
+					}
+				}
+			}
+
+			return  bResult;
+		}
+
+		bool Truncate(DWORD lPosition)
+		{
+			bool bResult = false;
+			g_assert_no_error(m_pError);
+
+			if ( m_pFile )
+			{
+				if ( m_pOutputStream )
+				{
+					if ( g_seekable_can_truncate((GSeekable*)m_pOutputStream) )
+					{
+						if ( g_seekable_truncate((GSeekable*)m_pOutputStream, lPosition, NULL, &m_pError) )
+						{
+							m_lFilePosition = lPosition;
 							bResult = !m_pError;
 						}
 					}
@@ -569,9 +591,9 @@ namespace NSSystem
 			bool bResult = false;
 			g_assert_no_error(m_pError);
 
-			if ( m_pFile && m_pStream )
+			if ( m_pFile && m_pInputStream )
 			{
-				bResult = g_input_stream_read_all(g_io_stream_get_input_stream((GIOStream*)m_pStream), pData, nBytesToRead, &nSizeRead, NULL, &m_pError);
+				bResult = g_input_stream_read_all(m_pInputStream, pData, nBytesToRead, &nSizeRead, NULL, &m_pError);
 			}
 
 			return  bResult;
@@ -582,32 +604,43 @@ namespace NSSystem
 			DWORD bResult = false;
 			g_assert_no_error(m_pError);
 
-			if ( m_pFile && pData && m_pStream )
+			if ( m_pFile && pData && m_pOutputStream )
 			{
-				bResult = g_output_stream_write_all(g_io_stream_get_output_stream((GIOStream*)m_pStream), pData, nBytesToWrite, &nSizeWrite, NULL, &m_pError);
+				bResult = g_output_stream_write_all(m_pOutputStream, pData, nBytesToWrite, &nSizeWrite, NULL, &m_pError);
 			}
 
 			return  bResult;
 		}
 
-		bool CloseFile()
+		bool Close()
 		{
 			bool bResult = false;
 			g_assert_no_error(m_pError);
 
 			if ( m_pFile )
 			{
-				if ( m_pStream )
+				if ( m_pInputStream )
 				{
-					g_io_stream_close((GIOStream*)m_pStream, NULL, &m_pError);
-					g_object_unref(m_pStream);
+					g_input_stream_close(m_pInputStream, NULL, &m_pError);
+					g_object_unref(m_pInputStream);
+				}
+				if ( m_pOutputStream )
+				{
+					g_output_stream_close(m_pOutputStream, NULL, &m_pError);
+					g_object_unref(m_pOutputStream);
 				}
 
 				if ( m_pFileUri )
+				{
 					g_free(m_pFileUri);
+					m_pFileUri = NULL;
+				}
 
 				if ( m_pFile )
+				{
 					g_object_unref(m_pFile);
+					m_pFile = NULL;
+				}
 
 				bResult = true;
 			}
@@ -615,6 +648,7 @@ namespace NSSystem
 			return  bResult;
 		}
 	};
+
 	class CLocalFileLocker
 	{
 	public:
@@ -650,6 +684,7 @@ namespace NSSystem
 			m_sFile = sFile;
 			Lock();
 		}
+
 		bool Lock()
 		{
 			if (!IsSupportFunctionality())
@@ -693,10 +728,16 @@ namespace NSSystem
 			}*/
 
 			m_nDescriptor = new CFileGio();
-			m_nDescriptor->OpenFile(sFileA.c_str());
+			if ( !m_nDescriptor->OpenFile(sFileA.c_str(), false) )
+			{
+				m_nDescriptor->Close();
+				delete m_nDescriptor;
+				m_nDescriptor = NULL;
+			}
 #endif
 			return true;
 		}
+
 		bool Unlock()
 		{
 			if (!IsSupportFunctionality())
@@ -732,13 +773,13 @@ namespace NSSystem
 			if (NULL == m_nDescriptor)
 				return true;
 
-			m_nDescriptor->CloseFile();
-
+			m_nDescriptor->Close();
 			delete m_nDescriptor;
 			m_nDescriptor = NULL;
 #endif
 			return true;
 		}
+
 		~CLocalFileLocker()
 		{
 			Unlock();
@@ -791,18 +832,12 @@ namespace NSSystem
 			close(nDescriptor);*/
 
 			CFileGio* nDescriptor = new CFileGio();
-			if ( !nDescriptor->OpenFile(sFileA.c_str()) )
-			{
+			if ( !nDescriptor->OpenFile(sFileA.c_str(), false) )
 				isLocked = ltReadOnly;
-				return isLocked;
-			}
-			else
-			{
-				nDescriptor->CloseFile();
-				delete nDescriptor;
-				nDescriptor = NULL;
-			}
 
+			nDescriptor->Close();
+			delete nDescriptor;
+			nDescriptor = NULL;
 #endif
 			return isLocked;
 		}
@@ -842,8 +877,9 @@ namespace NSSystem
 			{
 				std::string sFileA = U_TO_UTF8(m_sFile);
 
-				if ( nDescriptor->CreateFile(sFileA.c_str()) )
-					bIsNeedClose = true;
+				nDescriptor = new CFileGio();
+				nDescriptor->OpenFile(sFileA.c_str(), false);
+				bIsNeedClose = true;
 			}
 #endif
 
@@ -912,12 +948,18 @@ namespace NSSystem
 			//lseek(nDescriptor, (DWORD)nFileSize, SEEK_SET);
 			//ftruncate(nDescriptor, (DWORD)nFileSize);
 
-			nDescriptor->CloseFile();
-			delete nDescriptor;
-			nDescriptor = NULL;
+			nDescriptor->SeekFile((DWORD)nFileSize);
+			nDescriptor->Truncate((DWORD)nFileSize);
 
 			//if (bIsNeedClose)
 			//	close(nDescriptor);
+
+			if (bIsNeedClose)
+			{
+				nDescriptor->Close();
+				delete nDescriptor;
+				nDescriptor = NULL;
+			}
 #endif
 
 			if (!bRes)
