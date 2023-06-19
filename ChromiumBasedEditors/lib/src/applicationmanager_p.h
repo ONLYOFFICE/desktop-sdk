@@ -490,8 +490,6 @@ namespace NSSystem
 			// Указывая G_FILE_CREATE_PRIVATE, обеспечиваем блокировку файла текущим пользователем
 
 			bool bResult = false;
-			//g_assert_no_error(m_pError);
-
 			m_pFile = g_file_new_for_commandline_arg(sFileName);
 
 			if ( m_pFile )
@@ -532,7 +530,6 @@ namespace NSSystem
 		bool SeekFile(DWORD lPosition, GSeekType seekType = G_SEEK_SET)
 		{
 			bool bResult = false;
-			//g_assert_no_error(m_pError);
 
 			if ( m_pFile )
 			{
@@ -566,7 +563,6 @@ namespace NSSystem
 		bool Truncate(DWORD lPosition)
 		{
 			bool bResult = false;
-			//g_assert_no_error(m_pError);
 
 			if ( m_pFile )
 			{
@@ -589,7 +585,6 @@ namespace NSSystem
 		bool ReadFile(BYTE* pData, DWORD nBytesToRead, DWORD& nSizeRead)
 		{
 			bool bResult = false;
-			//g_assert_no_error(m_pError);
 
 			if ( m_pFile && m_pInputStream )
 			{
@@ -602,7 +597,6 @@ namespace NSSystem
 		bool WriteFile(const void* pData, DWORD nBytesToWrite, DWORD& nSizeWrite)
 		{
 			DWORD bResult = false;
-			//g_assert_no_error(m_pError);
 
 			if ( m_pFile && pData && m_pOutputStream )
 			{
@@ -615,7 +609,6 @@ namespace NSSystem
 		bool Close()
 		{
 			bool bResult = false;
-			//g_assert_no_error(m_pError);
 
 			if ( m_pFile )
 			{
@@ -664,7 +657,6 @@ namespace NSSystem
 #ifdef _WIN32
 		HANDLE m_nDescriptor;
 #else
-		//int m_nDescriptor;
 		CFileGio* m_nDescriptor;
 #endif
 
@@ -674,7 +666,6 @@ namespace NSSystem
 #ifdef _WIN32
 			m_nDescriptor = INVALID_HANDLE_VALUE;
 #else
-			//m_nDescriptor = -1;
 			m_nDescriptor = NULL;
 #endif
 
@@ -707,25 +698,6 @@ namespace NSSystem
 			}
 #else
 			std::string sFileA = U_TO_UTF8(m_sFile);
-			/*m_nDescriptor = open(sFileA.c_str(), O_RDWR | O_EXCL);
-			if (-1 == m_nDescriptor)
-				return true;
-
-			struct flock _lock;
-			memset(&_lock, 0, sizeof(_lock));
-			_lock.l_type   = F_WRLCK;
-			_lock.l_whence = SEEK_SET;
-			_lock.l_start  = 0;
-			_lock.l_len    = 0;
-			_lock.l_pid    = getpid();
-
-			fcntl(m_nDescriptor, F_SETLKW, &_lock);
-
-			if (ltNone == IsLocked(m_sFile))
-			{
-				close(m_nDescriptor);
-				m_nDescriptor = -1;
-			}*/
 
 			m_nDescriptor = new CFileGio();
 			if ( !m_nDescriptor->OpenFile(sFileA.c_str(), false) )
@@ -754,22 +726,6 @@ namespace NSSystem
 				m_nDescriptor = INVALID_HANDLE_VALUE;
 			}
 #else
-			/*if (-1 == m_nDescriptor)
-				return true;
-
-			struct flock _lock;
-			memset(&_lock, 0, sizeof(_lock));
-			_lock.l_type   = F_UNLCK;
-			_lock.l_whence = SEEK_SET;
-			_lock.l_start  = 0;
-			_lock.l_len    = 0;
-			_lock.l_pid    = getpid();
-
-			fcntl(m_nDescriptor, F_SETLKW, &_lock);
-			close(m_nDescriptor);
-
-			m_nDescriptor = -1;*/
-
 			if (NULL == m_nDescriptor)
 				return true;
 
@@ -814,26 +770,9 @@ namespace NSSystem
 #else
 			std::string sFileA = U_TO_UTF8(sFile);
 
-			/*if (0 != access(sFileA.c_str(), W_OK) && 0 == access(sFileA.c_str(), R_OK))
-			{
-				isLocked = ltReadOnly;
-				return isLocked;
-			}
-
-			int nDescriptor = open(sFileA.c_str(), O_RDWR | O_EXCL);
-			if (-1 == nDescriptor)
-				return ltNone;
-
-			struct flock _lock;
-			memset(&_lock, 0, sizeof(_lock));
-			fcntl(nDescriptor, F_GETLK, &_lock);
-			if (F_WRLCK == (_lock.l_type & F_WRLCK))
-				isLocked = ltLocked;
-			close(nDescriptor);*/
-
 			CFileGio* nDescriptor = new CFileGio();
 			if ( !nDescriptor->OpenFile(sFileA.c_str(), false) )
-				isLocked = ltReadOnly;
+				isLocked = ltReadOnly;	// ltLocked
 
 			nDescriptor->Close();
 			delete nDescriptor;
@@ -862,16 +801,6 @@ namespace NSSystem
 			bool bIsNeedClose = false;
 
 #ifdef _LINUX
-			/*int nDescriptor = m_nDescriptor;
-			if (-1 == nDescriptor)
-			{
-				std::string sFileA = U_TO_UTF8(m_sFile);
-				nDescriptor = open(sFileA.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0666);
-				if (-1 == nDescriptor)
-					nDescriptor = open(sFileA.c_str(), O_CREAT | O_WRONLY, 0666);
-				bIsNeedClose = true;
-			}*/
-
 			CFileGio* nDescriptor = m_nDescriptor;
 			if (NULL == nDescriptor)
 			{
@@ -909,7 +838,6 @@ namespace NSSystem
 #ifdef _WIN32
 			SetFilePointer(m_nDescriptor, 0, 0, FILE_BEGIN);
 #else
-			//lseek(nDescriptor, 0, SEEK_SET);
 			nDescriptor->SeekFile(0);
 #endif
 
@@ -925,7 +853,6 @@ namespace NSSystem
 #ifdef _WIN32
 				WriteFile(m_nDescriptor, pMemoryBuffer, nChunkSize, &dwWrite, NULL);
 #else
-				//dwWrite = (DWORD)write(nDescriptor, pMemoryBuffer, nChunkSize);
 				nDescriptor->WriteFile(pMemoryBuffer, nChunkSize, dwWrite);
 #endif
 
@@ -945,14 +872,8 @@ namespace NSSystem
 			SetFilePointer(m_nDescriptor, (LONG)nFileSize, 0, FILE_BEGIN);
 			SetEndOfFile(m_nDescriptor);
 #else
-			//lseek(nDescriptor, (DWORD)nFileSize, SEEK_SET);
-			//ftruncate(nDescriptor, (DWORD)nFileSize);
-
 			nDescriptor->SeekFile((DWORD)nFileSize);
 			nDescriptor->Truncate((DWORD)nFileSize);
-
-			//if (bIsNeedClose)
-			//	close(nDescriptor);
 
 			if (bIsNeedClose)
 			{
