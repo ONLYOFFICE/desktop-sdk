@@ -490,7 +490,7 @@ namespace NSSystem
 			// Указывая G_FILE_CREATE_PRIVATE, обеспечиваем блокировку файла текущим пользователем
 
 			bool bResult = false;
-			g_assert_no_error(m_pError);
+			//g_assert_no_error(m_pError);
 
 			m_pFile = g_file_new_for_commandline_arg(sFileName);
 
@@ -532,7 +532,7 @@ namespace NSSystem
 		bool SeekFile(DWORD lPosition, GSeekType seekType = G_SEEK_SET)
 		{
 			bool bResult = false;
-			g_assert_no_error(m_pError);
+			//g_assert_no_error(m_pError);
 
 			if ( m_pFile )
 			{
@@ -566,7 +566,7 @@ namespace NSSystem
 		bool Truncate(DWORD lPosition)
 		{
 			bool bResult = false;
-			g_assert_no_error(m_pError);
+			//g_assert_no_error(m_pError);
 
 			if ( m_pFile )
 			{
@@ -589,7 +589,7 @@ namespace NSSystem
 		bool ReadFile(BYTE* pData, DWORD nBytesToRead, DWORD& nSizeRead)
 		{
 			bool bResult = false;
-			g_assert_no_error(m_pError);
+			//g_assert_no_error(m_pError);
 
 			if ( m_pFile && m_pInputStream )
 			{
@@ -602,7 +602,7 @@ namespace NSSystem
 		bool WriteFile(const void* pData, DWORD nBytesToWrite, DWORD& nSizeWrite)
 		{
 			DWORD bResult = false;
-			g_assert_no_error(m_pError);
+			//g_assert_no_error(m_pError);
 
 			if ( m_pFile && pData && m_pOutputStream )
 			{
@@ -615,7 +615,7 @@ namespace NSSystem
 		bool Close()
 		{
 			bool bResult = false;
-			g_assert_no_error(m_pError);
+			//g_assert_no_error(m_pError);
 
 			if ( m_pFile )
 			{
