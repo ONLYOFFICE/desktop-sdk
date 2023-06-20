@@ -657,7 +657,7 @@ namespace NSSystem
 #ifdef _WIN32
 		HANDLE m_nDescriptor;
 #else
-		CFileGio* m_nDescriptor;
+		CFileGio* m_pDescriptor;
 #endif
 
 	public:
@@ -666,7 +666,7 @@ namespace NSSystem
 #ifdef _WIN32
 			m_nDescriptor = INVALID_HANDLE_VALUE;
 #else
-			m_nDescriptor = NULL;
+			m_pDescriptor = NULL;
 #endif
 
 			if (sFile.empty())
@@ -699,12 +699,12 @@ namespace NSSystem
 #else
 			std::string sFileA = U_TO_UTF8(m_sFile);
 
-			m_nDescriptor = new CFileGio();
-			if ( !m_nDescriptor->OpenFile(sFileA.c_str(), false) )
+			m_pDescriptor = new CFileGio();
+			if ( !m_pDescriptor->OpenFile(sFileA.c_str(), false) )
 			{
-				m_nDescriptor->Close();
-				delete m_nDescriptor;
-				m_nDescriptor = NULL;
+				m_pDescriptor->Close();
+				delete m_pDescriptor;
+				m_pDescriptor = NULL;
 			}
 #endif
 			return true;
@@ -726,12 +726,12 @@ namespace NSSystem
 				m_nDescriptor = INVALID_HANDLE_VALUE;
 			}
 #else
-			if (NULL == m_nDescriptor)
+			if (NULL == m_pDescriptor)
 				return true;
 
-			m_nDescriptor->Close();
-			delete m_nDescriptor;
-			m_nDescriptor = NULL;
+			m_pDescriptor->Close();
+			delete m_pDescriptor;
+			m_pDescriptor = NULL;
 #endif
 			return true;
 		}
@@ -801,13 +801,13 @@ namespace NSSystem
 			bool bIsNeedClose = false;
 
 #ifdef _LINUX
-			CFileGio* nDescriptor = m_nDescriptor;
-			if (NULL == nDescriptor)
+			CFileGio* pDescriptor = m_pDescriptor;
+			if (NULL == pDescriptor)
 			{
 				std::string sFileA = U_TO_UTF8(m_sFile);
 
-				nDescriptor = new CFileGio();
-				nDescriptor->OpenFile(sFileA.c_str(), false);
+				pDescriptor = new CFileGio();
+				pDescriptor->OpenFile(sFileA.c_str(), false);
 				bIsNeedClose = true;
 			}
 #endif
@@ -838,7 +838,7 @@ namespace NSSystem
 #ifdef _WIN32
 			SetFilePointer(m_nDescriptor, 0, 0, FILE_BEGIN);
 #else
-			nDescriptor->SeekFile(0);
+			pDescriptor->SeekFile(0);
 #endif
 
 			DWORD dwRead = 0;
@@ -853,7 +853,7 @@ namespace NSSystem
 #ifdef _WIN32
 				WriteFile(m_nDescriptor, pMemoryBuffer, nChunkSize, &dwWrite, NULL);
 #else
-				nDescriptor->WriteFile(pMemoryBuffer, nChunkSize, dwWrite);
+				pDescriptor->WriteFile(pMemoryBuffer, nChunkSize, dwWrite);
 #endif
 
 				if (dwRead != nChunkSize || dwWrite != nChunkSize)
@@ -872,14 +872,14 @@ namespace NSSystem
 			SetFilePointer(m_nDescriptor, (LONG)nFileSize, 0, FILE_BEGIN);
 			SetEndOfFile(m_nDescriptor);
 #else
-			nDescriptor->SeekFile((DWORD)nFileSize);
-			nDescriptor->Truncate((DWORD)nFileSize);
+			pDescriptor->SeekFile((DWORD)nFileSize);
+			pDescriptor->Truncate((DWORD)nFileSize);
 
 			if (bIsNeedClose)
 			{
-				nDescriptor->Close();
-				delete nDescriptor;
-				nDescriptor = NULL;
+				pDescriptor->Close();
+				delete pDescriptor;
+				pDescriptor = NULL;
 			}
 #endif
 
