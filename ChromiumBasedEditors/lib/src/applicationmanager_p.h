@@ -62,7 +62,8 @@
 #include "utils.h"
 #include "../../../../core/DesktopEditor/xmlsec/src/include/CertificateCommon.h"
 
-#ifdef LINUX
+#if defined(LINUX) && !defined(_MAC)
+#define USE_GIO_FILE
 #include <gio/gio.h>
 
 namespace NSSystem
@@ -660,18 +661,18 @@ namespace NSSystem
 
 	private:
 		std::wstring m_sFile;
-#ifdef _WIN32
+#if defined(_WIN32)
 		HANDLE m_nDescriptor;
-#else
+#elif defined(USE_GIO_FILE)
 		CFileGio* m_pDescriptor;
 #endif
 
 	public:
 		CLocalFileLocker(const std::wstring& sFile)
 		{
-#ifdef _WIN32
+#if defined(_WIN32)
 			m_nDescriptor = INVALID_HANDLE_VALUE;
-#else
+#elif defined(USE_GIO_FILE)
 			m_pDescriptor = NULL;
 #endif
 
@@ -688,7 +689,7 @@ namespace NSSystem
 				return true;
 
 			Unlock();
-#ifdef _WIN32
+#if defined(_WIN32)
 			std::wstring sFileFull = CorrectPathW(m_sFile);
 			DWORD dwFileAttributes = 0;//GetFileAttributesW(sFileFull.c_str());
 			m_nDescriptor = CreateFileW(sFileFull.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, dwFileAttributes, NULL);
@@ -702,7 +703,7 @@ namespace NSSystem
 			{
 				m_nDescriptor = INVALID_HANDLE_VALUE;
 			}
-#else
+#elif defined(USE_GIO_FILE)
 			std::string sFileA = U_TO_UTF8(m_sFile);
 
 			m_pDescriptor = new CFileGio();
@@ -721,7 +722,7 @@ namespace NSSystem
 			if (!IsSupportFunctionality())
 				return true;
 
-#ifdef _WIN32
+#if defined(_WIN32)
 			if (INVALID_HANDLE_VALUE != m_nDescriptor)
 			{
 				LARGE_INTEGER lFileSize;
@@ -731,7 +732,7 @@ namespace NSSystem
 				CloseHandle(m_nDescriptor);
 				m_nDescriptor = INVALID_HANDLE_VALUE;
 			}
-#else
+#elif defined(USE_GIO_FILE)
 			if (NULL == m_pDescriptor)
 				return true;
 
@@ -753,7 +754,7 @@ namespace NSSystem
 				return ltNone;
 
 			LockType isLocked = ltNone;
-#ifdef _WIN32
+#if defined(_WIN32)
 			HANDLE hFile = CreateFileW(sFile.c_str(),                   // открываемый файл
 									   GENERIC_READ | GENERIC_WRITE,   // открываем для чтения и записи
 									   0,                              // для совместного чтения
@@ -773,7 +774,7 @@ namespace NSSystem
 				}
 			}
 			CloseHandle(hFile);
-#else
+#elif defined(USE_GIO_FILE)
 			std::string sFileA = U_TO_UTF8(sFile);
 
 			CFileGio* nDescriptor = new CFileGio();
@@ -806,7 +807,7 @@ namespace NSSystem
 		{
 			bool bIsNeedClose = false;
 
-#ifdef _LINUX
+#ifdef USE_GIO_FILE
 			CFileGio* pDescriptor = m_pDescriptor;
 			if (NULL == pDescriptor)
 			{
@@ -841,9 +842,9 @@ namespace NSSystem
 			}
 
 			bool bRes = true;
-#ifdef _WIN32
+#if defined(_WIN32)
 			SetFilePointer(m_nDescriptor, 0, 0, FILE_BEGIN);
-#else
+#elif defined(USE_GIO_FILE)
 			pDescriptor->SeekFile(0);
 #endif
 
@@ -856,9 +857,9 @@ namespace NSSystem
 
 				oFile.ReadFile(pMemoryBuffer, nChunkSize, dwRead);
 
-#ifdef _WIN32
+#if defined(_WIN32)
 				WriteFile(m_nDescriptor, pMemoryBuffer, nChunkSize, &dwWrite, NULL);
-#else
+#elif defined(USE_GIO_FILE)
 				pDescriptor->WriteFile(pMemoryBuffer, nChunkSize, dwWrite);
 #endif
 
@@ -874,10 +875,10 @@ namespace NSSystem
 			oFile.CloseFile();
 			RELEASEARRAYOBJECTS(pMemoryBuffer);
 
-#ifdef _WIN32
+#if defined(_WIN32)
 			SetFilePointer(m_nDescriptor, (LONG)nFileSize, 0, FILE_BEGIN);
 			SetEndOfFile(m_nDescriptor);
-#else
+#elif defined(USE_GIO_FILE)
 			pDescriptor->SeekFile((DWORD)nFileSize);
 			pDescriptor->Truncate((DWORD)nFileSize);
 
@@ -893,7 +894,7 @@ namespace NSSystem
 			{
 				Unlock();
 
-#ifdef _WIN32
+#if defined(_WIN32)
 				bRes = (0 != ::CopyFileW(sFile.c_str(), m_sFile.c_str(), 0)) ? true : false;
 #else
 				bRes = false;
