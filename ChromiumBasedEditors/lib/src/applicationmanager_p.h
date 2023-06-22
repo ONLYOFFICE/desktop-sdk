@@ -44,7 +44,6 @@
 
 #include <iostream>
 #include <set>
-#include <gio/gio.h>
 
 #include "../../../../core/DesktopEditor/xml/include/xmlutils.h"
 #include "../../../../core/Common/OfficeFileFormatChecker.h"
@@ -62,6 +61,201 @@
 
 #include "utils.h"
 #include "../../../../core/DesktopEditor/xmlsec/src/include/CertificateCommon.h"
+
+#if defined(LINUX) && !defined(_MAC)
+#define USE_GIO_FILE
+#include <gio/gio.h>
+
+namespace NSSystem
+{
+	class CFileGio
+	{
+	protected:
+		GFile* m_pFile;
+		GError* m_pError;
+		char* m_pFileUri;
+
+		GInputStream* m_pInputStream;
+		GOutputStream* m_pOutputStream;
+
+		DWORD m_lFileSize;
+		DWORD m_lFilePosition;
+
+	public:
+		CFileGio()
+		{
+			m_pFile = NULL;
+			m_pError = NULL;
+			m_pFileUri = NULL;
+
+			m_pInputStream = NULL;
+			m_pOutputStream = NULL;
+
+			m_lFileSize = 0;
+			m_lFilePosition = 0;
+		}
+
+		bool OpenFile(const char* sFileName, bool bReadOnly = true)
+		{
+			// Одна функция для открытия файла, типа open в C
+			// Если только чтение, то g_file_read
+			// Иначе g_file_append_to - в этом случае получаем поток для записи и не пересоздаём файл, что может быть критично.
+			// Указывая G_FILE_CREATE_PRIVATE, обеспечиваем блокировку файла текущим пользователем
+
+			bool bResult = false;
+			m_pFile = g_file_new_for_commandline_arg(sFileName);
+
+			if ( m_pFile )
+			{
+				m_pFileUri = g_file_get_uri(m_pFile);
+
+				if ( bReadOnly )
+					m_pInputStream = G_INPUT_STREAM(g_file_read(m_pFile, NULL, &m_pError));
+				else
+					m_pOutputStream = G_OUTPUT_STREAM(g_file_append_to(m_pFile, G_FILE_CREATE_PRIVATE, NULL, &m_pError));
+
+				bResult = !m_pError;
+			}
+
+			return  bResult;
+		}
+
+		DWORD GetFileSize()
+		{
+			if ( m_pFile )
+			{
+				GFileInfo* pFileInfo = g_file_query_info(m_pFile, G_FILE_ATTRIBUTE_STANDARD_SIZE, G_FILE_QUERY_INFO_NONE, NULL, &m_pError);
+				if ( pFileInfo )
+				{
+					m_lFileSize = g_file_info_get_size(pFileInfo);
+					g_object_unref(pFileInfo);
+				}
+			}
+
+			return m_lFileSize;
+		}
+
+		long GetFilePosition()
+		{
+			return m_lFilePosition;
+		}
+
+		bool SeekFile(DWORD lPosition, GSeekType seekType = G_SEEK_SET)
+		{
+			bool bResult = false;
+
+			if ( m_pFile )
+			{
+				if ( m_pInputStream )
+				{
+					if ( g_seekable_can_seek((GSeekable*)m_pInputStream) )
+					{
+						if ( g_seekable_seek((GSeekable*)m_pInputStream, lPosition, seekType, NULL, &m_pError) )
+						{
+							m_lFilePosition = lPosition;
+							bResult = !m_pError;
+						}
+					}
+				}
+				if ( m_pOutputStream )
+				{
+					if ( g_seekable_can_seek((GSeekable*)m_pOutputStream) )
+					{
+						if ( g_seekable_seek((GSeekable*)m_pOutputStream, lPosition, seekType, NULL, &m_pError) )
+						{
+							m_lFilePosition = lPosition;
+							bResult = !m_pError;
+						}
+					}
+				}
+			}
+
+			return  bResult;
+		}
+
+		bool Truncate(DWORD lPosition)
+		{
+			bool bResult = false;
+
+			if ( m_pFile )
+			{
+				if ( m_pOutputStream )
+				{
+					if ( g_seekable_can_truncate((GSeekable*)m_pOutputStream) )
+					{
+						if ( g_seekable_truncate((GSeekable*)m_pOutputStream, lPosition, NULL, &m_pError) )
+						{
+							m_lFilePosition = lPosition;
+							bResult = !m_pError;
+						}
+					}
+				}
+			}
+
+			return  bResult;
+		}
+
+		bool ReadFile(BYTE* pData, DWORD nBytesToRead, DWORD& nSizeRead)
+		{
+			bool bResult = false;
+
+			if ( m_pFile && m_pInputStream )
+			{
+				bResult = g_input_stream_read_all(m_pInputStream, pData, nBytesToRead, &nSizeRead, NULL, &m_pError);
+			}
+
+			return  bResult;
+		}
+
+		bool WriteFile(const void* pData, DWORD nBytesToWrite, DWORD& nSizeWrite)
+		{
+			DWORD bResult = false;
+
+			if ( m_pFile && pData && m_pOutputStream )
+			{
+				bResult = g_output_stream_write_all(m_pOutputStream, pData, nBytesToWrite, &nSizeWrite, NULL, &m_pError);
+			}
+
+			return  bResult;
+		}
+
+		bool Close()
+		{
+			bool bResult = false;
+
+			if ( m_pFile )
+			{
+				if ( m_pInputStream )
+				{
+					g_input_stream_close(m_pInputStream, NULL, &m_pError);
+					g_object_unref(m_pInputStream);
+				}
+				if ( m_pOutputStream )
+				{
+					g_output_stream_close(m_pOutputStream, NULL, &m_pError);
+					g_object_unref(m_pOutputStream);
+				}
+
+				if ( m_pFileUri )
+				{
+					g_free(m_pFileUri);
+					m_pFileUri = NULL;
+				}
+
+				if ( m_pFile )
+				{
+					g_object_unref(m_pFile);
+					m_pFile = NULL;
+				}
+
+				bResult = true;
+			}
+
+			return  bResult;
+		}
+	};
+}
+#endif
 
 #ifdef CEF_2623
 #define MESSAGE_IN_BROWSER
@@ -455,193 +649,6 @@ public:
 
 namespace NSSystem
 {
-	class CFileGio
-	{
-	protected:
-		GFile* m_pFile;
-		GError* m_pError;
-		char* m_pFileUri;
-
-		GInputStream* m_pInputStream;
-		GOutputStream* m_pOutputStream;
-
-		DWORD m_lFileSize;
-		DWORD m_lFilePosition;
-
-	public:
-		CFileGio()
-		{
-			m_pFile = NULL;
-			m_pError = NULL;
-			m_pFileUri = NULL;
-
-			m_pInputStream = NULL;
-			m_pOutputStream = NULL;
-
-			m_lFileSize = 0;
-			m_lFilePosition = 0;
-		}
-
-		bool OpenFile(const char* sFileName, bool bReadOnly = true)
-		{
-			// Одна функция для открытия файла, типа open в C
-			// Если только чтение, то g_file_read
-			// Иначе g_file_append_to - в этом случае получаем поток для записи и не пересоздаём файл, что может быть критично.
-			// Указывая G_FILE_CREATE_PRIVATE, обеспечиваем блокировку файла текущим пользователем
-
-			bool bResult = false;
-			m_pFile = g_file_new_for_commandline_arg(sFileName);
-
-			if ( m_pFile )
-			{
-				m_pFileUri = g_file_get_uri(m_pFile);
-
-				if ( bReadOnly )
-					m_pInputStream = G_INPUT_STREAM(g_file_read(m_pFile, NULL, &m_pError));
-				else
-					m_pOutputStream = G_OUTPUT_STREAM(g_file_append_to(m_pFile, G_FILE_CREATE_PRIVATE, NULL, &m_pError));
-
-				bResult = !m_pError;
-			}
-
-			return  bResult;
-		}
-
-		DWORD GetFileSize()
-		{
-			if ( m_pFile )
-			{
-				GFileInfo* pFileInfo = g_file_query_info(m_pFile, G_FILE_ATTRIBUTE_STANDARD_SIZE, G_FILE_QUERY_INFO_NONE, NULL, &m_pError);
-				if ( pFileInfo )
-				{
-					m_lFileSize = g_file_info_get_size(pFileInfo);
-					g_object_unref(pFileInfo);
-				}
-			}
-
-			return m_lFileSize;
-		}
-
-		long GetFilePosition()
-		{
-			return m_lFilePosition;
-		}
-
-		bool SeekFile(DWORD lPosition, GSeekType seekType = G_SEEK_SET)
-		{
-			bool bResult = false;
-
-			if ( m_pFile )
-			{
-				if ( m_pInputStream )
-				{
-					if ( g_seekable_can_seek((GSeekable*)m_pInputStream) )
-					{
-						if ( g_seekable_seek((GSeekable*)m_pInputStream, lPosition, seekType, NULL, &m_pError) )
-						{
-							m_lFilePosition = lPosition;
-							bResult = !m_pError;
-						}
-					}
-				}
-				if ( m_pOutputStream )
-				{
-					if ( g_seekable_can_seek((GSeekable*)m_pOutputStream) )
-					{
-						if ( g_seekable_seek((GSeekable*)m_pOutputStream, lPosition, seekType, NULL, &m_pError) )
-						{
-							m_lFilePosition = lPosition;
-							bResult = !m_pError;
-						}
-					}
-				}
-			}
-
-			return  bResult;
-		}
-
-		bool Truncate(DWORD lPosition)
-		{
-			bool bResult = false;
-
-			if ( m_pFile )
-			{
-				if ( m_pOutputStream )
-				{
-					if ( g_seekable_can_truncate((GSeekable*)m_pOutputStream) )
-					{
-						if ( g_seekable_truncate((GSeekable*)m_pOutputStream, lPosition, NULL, &m_pError) )
-						{
-							m_lFilePosition = lPosition;
-							bResult = !m_pError;
-						}
-					}
-				}
-			}
-
-			return  bResult;
-		}
-
-		bool ReadFile(BYTE* pData, DWORD nBytesToRead, DWORD& nSizeRead)
-		{
-			bool bResult = false;
-
-			if ( m_pFile && m_pInputStream )
-			{
-				bResult = g_input_stream_read_all(m_pInputStream, pData, nBytesToRead, &nSizeRead, NULL, &m_pError);
-			}
-
-			return  bResult;
-		}
-
-		bool WriteFile(const void* pData, DWORD nBytesToWrite, DWORD& nSizeWrite)
-		{
-			DWORD bResult = false;
-
-			if ( m_pFile && pData && m_pOutputStream )
-			{
-				bResult = g_output_stream_write_all(m_pOutputStream, pData, nBytesToWrite, &nSizeWrite, NULL, &m_pError);
-			}
-
-			return  bResult;
-		}
-
-		bool Close()
-		{
-			bool bResult = false;
-
-			if ( m_pFile )
-			{
-				if ( m_pInputStream )
-				{
-					g_input_stream_close(m_pInputStream, NULL, &m_pError);
-					g_object_unref(m_pInputStream);
-				}
-				if ( m_pOutputStream )
-				{
-					g_output_stream_close(m_pOutputStream, NULL, &m_pError);
-					g_object_unref(m_pOutputStream);
-				}
-
-				if ( m_pFileUri )
-				{
-					g_free(m_pFileUri);
-					m_pFileUri = NULL;
-				}
-
-				if ( m_pFile )
-				{
-					g_object_unref(m_pFile);
-					m_pFile = NULL;
-				}
-
-				bResult = true;
-			}
-
-			return  bResult;
-		}
-	};
-
 	class CLocalFileLocker
 	{
 	public:
@@ -654,18 +661,18 @@ namespace NSSystem
 
 	private:
 		std::wstring m_sFile;
-#ifdef _WIN32
+#if defined(_WIN32)
 		HANDLE m_nDescriptor;
-#else
+#elif defined(USE_GIO_FILE)
 		CFileGio* m_pDescriptor;
 #endif
 
 	public:
 		CLocalFileLocker(const std::wstring& sFile)
 		{
-#ifdef _WIN32
+#if defined(_WIN32)
 			m_nDescriptor = INVALID_HANDLE_VALUE;
-#else
+#elif defined(USE_GIO_FILE)
 			m_pDescriptor = NULL;
 #endif
 
@@ -682,7 +689,7 @@ namespace NSSystem
 				return true;
 
 			Unlock();
-#ifdef _WIN32
+#if defined(_WIN32)
 			std::wstring sFileFull = CorrectPathW(m_sFile);
 			DWORD dwFileAttributes = 0;//GetFileAttributesW(sFileFull.c_str());
 			m_nDescriptor = CreateFileW(sFileFull.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, dwFileAttributes, NULL);
@@ -696,7 +703,7 @@ namespace NSSystem
 			{
 				m_nDescriptor = INVALID_HANDLE_VALUE;
 			}
-#else
+#elif defined(USE_GIO_FILE)
 			std::string sFileA = U_TO_UTF8(m_sFile);
 
 			m_pDescriptor = new CFileGio();
@@ -715,7 +722,7 @@ namespace NSSystem
 			if (!IsSupportFunctionality())
 				return true;
 
-#ifdef _WIN32
+#if defined(_WIN32)
 			if (INVALID_HANDLE_VALUE != m_nDescriptor)
 			{
 				LARGE_INTEGER lFileSize;
@@ -725,7 +732,7 @@ namespace NSSystem
 				CloseHandle(m_nDescriptor);
 				m_nDescriptor = INVALID_HANDLE_VALUE;
 			}
-#else
+#elif defined(USE_GIO_FILE)
 			if (NULL == m_pDescriptor)
 				return true;
 
@@ -747,7 +754,7 @@ namespace NSSystem
 				return ltNone;
 
 			LockType isLocked = ltNone;
-#ifdef _WIN32
+#if defined(_WIN32)
 			HANDLE hFile = CreateFileW(sFile.c_str(),                   // открываемый файл
 									   GENERIC_READ | GENERIC_WRITE,   // открываем для чтения и записи
 									   0,                              // для совместного чтения
@@ -767,7 +774,7 @@ namespace NSSystem
 				}
 			}
 			CloseHandle(hFile);
-#else
+#elif defined(USE_GIO_FILE)
 			std::string sFileA = U_TO_UTF8(sFile);
 
 			CFileGio* nDescriptor = new CFileGio();
@@ -800,7 +807,7 @@ namespace NSSystem
 		{
 			bool bIsNeedClose = false;
 
-#ifdef _LINUX
+#ifdef USE_GIO_FILE
 			CFileGio* pDescriptor = m_pDescriptor;
 			if (NULL == pDescriptor)
 			{
@@ -835,9 +842,9 @@ namespace NSSystem
 			}
 
 			bool bRes = true;
-#ifdef _WIN32
+#if defined(_WIN32)
 			SetFilePointer(m_nDescriptor, 0, 0, FILE_BEGIN);
-#else
+#elif defined(USE_GIO_FILE)
 			pDescriptor->SeekFile(0);
 #endif
 
@@ -850,9 +857,9 @@ namespace NSSystem
 
 				oFile.ReadFile(pMemoryBuffer, nChunkSize, dwRead);
 
-#ifdef _WIN32
+#if defined(_WIN32)
 				WriteFile(m_nDescriptor, pMemoryBuffer, nChunkSize, &dwWrite, NULL);
-#else
+#elif defined(USE_GIO_FILE)
 				pDescriptor->WriteFile(pMemoryBuffer, nChunkSize, dwWrite);
 #endif
 
@@ -868,10 +875,10 @@ namespace NSSystem
 			oFile.CloseFile();
 			RELEASEARRAYOBJECTS(pMemoryBuffer);
 
-#ifdef _WIN32
+#if defined(_WIN32)
 			SetFilePointer(m_nDescriptor, (LONG)nFileSize, 0, FILE_BEGIN);
 			SetEndOfFile(m_nDescriptor);
-#else
+#elif defined(USE_GIO_FILE)
 			pDescriptor->SeekFile((DWORD)nFileSize);
 			pDescriptor->Truncate((DWORD)nFileSize);
 
@@ -887,7 +894,7 @@ namespace NSSystem
 			{
 				Unlock();
 
-#ifdef _WIN32
+#if defined(_WIN32)
 				bRes = (0 != ::CopyFileW(sFile.c_str(), m_sFile.c_str(), 0)) ? true : false;
 #else
 				bRes = false;
