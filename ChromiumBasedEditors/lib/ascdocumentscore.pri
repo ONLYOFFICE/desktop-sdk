@@ -98,6 +98,7 @@ HEADERS += \
     $$PWD/include/cefview.h \
     $$PWD/include/applicationmanager_events.h \
     $$PWD/src/applicationmanager_p.h \
+    $$PWD/src/crossplatformfile.h \
     $$PWD/src/nativeviewer.h \
     $$PWD/src/plugins.h \
     $$PWD/src/providers.h \
