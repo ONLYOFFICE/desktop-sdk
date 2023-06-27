@@ -37,6 +37,7 @@
 #if defined(LINUX) && !defined(_MAC)
 #define USE_GIO_FILE
 #include <gio/gio.h>
+#include "../../../core/DesktopEditor/common/Types.h"
 
 namespace NSSystem
 {
