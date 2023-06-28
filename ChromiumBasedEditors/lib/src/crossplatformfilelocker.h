@@ -104,10 +104,11 @@ public:
 
 #if defined(_WIN32)
 		std::wstring sFileFull = CorrectPathW(m_sFile);
-		DWORD dwFileAttributes = 0;//GetFileAttributesW(sFileFull.c_str());
+		DWORD dwFileAttributes = 0; //GetFileAttributesW(sFileFull.c_str());
 		m_nDescriptor = CreateFileW(sFileFull.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, dwFileAttributes, NULL);
 		if (m_nDescriptor != NULL && m_nDescriptor != INVALID_HANDLE_VALUE)
 		{
+			// TODO: проверить/удалить этот код, лок файла работает
 			//LARGE_INTEGER lFileSize;
 			//GetFileSizeEx(m_nDescriptor, &lFileSize);
 			//LockFile(m_nDescriptor, 0, 0, lFileSize.LowPart, (DWORD)lFileSize.HighPart);
@@ -187,7 +188,6 @@ public:
 
 		fcntl(m_nDescriptor, F_SETLKW, &_lock);
 		close(m_nDescriptor);
-
 		m_nDescriptor = -1;
 		bResult = true;
 #endif
