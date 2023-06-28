@@ -270,7 +270,7 @@ public:
 #endif
 
 #if defined(USE_GIO_FILE)
-		CCrossPlatformFileLocker* pLocker = new CCrossPlatformFileLocker(sFile);
+		CFileLocker* pLocker = new CFileLocker(sFile);
 		if ( !pLocker->Lock() )
 			isLocked = ltReadOnly;	// ltLocked
 
