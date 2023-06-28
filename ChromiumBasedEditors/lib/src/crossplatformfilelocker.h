@@ -30,8 +30,8 @@
  *
  */
 
-#ifndef CROSSPLATFORMFILE_H
-#define CROSSPLATFORMFILE_H
+#ifndef CROSSPLATFORMFILELOCKER_H
+#define CROSSPLATFORMFILELOCKER_H
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -395,4 +395,4 @@ public:
 };
 }
 
-#endif // CROSSPLATFORMFILE_H
+#endif // CROSSPLATFORMFILELOCKER_H
