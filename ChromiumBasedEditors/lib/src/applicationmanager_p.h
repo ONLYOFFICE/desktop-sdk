@@ -58,7 +58,7 @@
 #include "crypto_mode.h"
 #include "plugins.h"
 #include "providers.h"
-#include "crossplatformfile.h"
+#include "crossplatformfilelocker.h"
 
 #include "utils.h"
 #include "../../../../core/DesktopEditor/xmlsec/src/include/CertificateCommon.h"
@@ -457,35 +457,19 @@ namespace NSSystem
 {
 	class CLocalFileLocker
 	{
-	public:
-		enum LockType {
-			ltNone     = 0x00,
-			ltReadOnly = 0x01,
-			ltLocked   = 0x02,
-			ltNosafe   = 0x04
-		};
-
 	private:
 		std::wstring m_sFile;
-#if defined(_WIN32)
-		HANDLE m_nDescriptor;
-#elif defined(USE_GIO_FILE)
-		CFileGio* m_pDescriptor;
-#endif
+		CCrossPlatformFileLocker* m_pLocker;
 
 	public:
 		CLocalFileLocker(const std::wstring& sFile)
 		{
-#if defined(_WIN32)
-			m_nDescriptor = INVALID_HANDLE_VALUE;
-#elif defined(USE_GIO_FILE)
-			m_pDescriptor = NULL;
-#endif
-
 			if (sFile.empty())
 				return;
 
 			m_sFile = sFile;
+			m_pLocker = new CCrossPlatformFileLocker(sFile);
+
 			Lock();
 		}
 
@@ -495,31 +479,8 @@ namespace NSSystem
 				return true;
 
 			Unlock();
-#if defined(_WIN32)
-			std::wstring sFileFull = CorrectPathW(m_sFile);
-			DWORD dwFileAttributes = 0;//GetFileAttributesW(sFileFull.c_str());
-			m_nDescriptor = CreateFileW(sFileFull.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, dwFileAttributes, NULL);
-			if (m_nDescriptor != NULL && m_nDescriptor != INVALID_HANDLE_VALUE)
-			{
-				//LARGE_INTEGER lFileSize;
-				//GetFileSizeEx(m_nDescriptor, &lFileSize);
-				//LockFile(m_nDescriptor, 0, 0, lFileSize.LowPart, (DWORD)lFileSize.HighPart);
-			}
-			else
-			{
-				m_nDescriptor = INVALID_HANDLE_VALUE;
-			}
-#elif defined(USE_GIO_FILE)
-			std::string sFileA = U_TO_UTF8(m_sFile);
+			m_pLocker->Lock();
 
-			m_pDescriptor = new CFileGio();
-			if ( !m_pDescriptor->OpenFile(sFileA.c_str(), false) )
-			{
-				m_pDescriptor->Close();
-				delete m_pDescriptor;
-				m_pDescriptor = NULL;
-			}
-#endif
 			return true;
 		}
 
@@ -528,69 +489,30 @@ namespace NSSystem
 			if (!IsSupportFunctionality())
 				return true;
 
-#if defined(_WIN32)
-			if (INVALID_HANDLE_VALUE != m_nDescriptor)
-			{
-				LARGE_INTEGER lFileSize;
-				GetFileSizeEx(m_nDescriptor, &lFileSize);
-				UnlockFile(m_nDescriptor, 0, 0, lFileSize.LowPart, (DWORD)lFileSize.HighPart);
+			m_pLocker->Unlock();
 
-				CloseHandle(m_nDescriptor);
-				m_nDescriptor = INVALID_HANDLE_VALUE;
-			}
-#elif defined(USE_GIO_FILE)
-			if (NULL == m_pDescriptor)
-				return true;
-
-			m_pDescriptor->Close();
-			delete m_pDescriptor;
-			m_pDescriptor = NULL;
-#endif
 			return true;
 		}
 
 		~CLocalFileLocker()
 		{
 			Unlock();
+
+			if ( m_pLocker )
+			{
+				delete m_pLocker;
+				m_pLocker = NULL;
+			}
 		}
 
-		static LockType IsLocked(const::std::wstring& sFile)
+		static CCrossPlatformFileLocker::LockType IsLocked(const::std::wstring& sFile)
 		{
 			if (!IsSupportFunctionality())
-				return ltNone;
+				return CCrossPlatformFileLocker::ltNone;
 
-			LockType isLocked = ltNone;
-#if defined(_WIN32)
-			HANDLE hFile = CreateFileW(sFile.c_str(),                   // открываемый файл
-									   GENERIC_READ | GENERIC_WRITE,   // открываем для чтения и записи
-									   0,                              // для совместного чтения
-									   NULL,                           // защита по умолчанию
-									   OPEN_EXISTING,                  // только существующий файл
-									   FILE_ATTRIBUTE_NORMAL,          // обычный файл
-									   NULL);                          // атрибутов шаблона нет
-			if (hFile == INVALID_HANDLE_VALUE)
-			{
-				DWORD fileAttr = GetFileAttributesW(sFile.c_str());
-				if (INVALID_FILE_ATTRIBUTES != fileAttr)
-				{
-					if (fileAttr & FILE_ATTRIBUTE_READONLY)
-						isLocked = ltReadOnly;
-					else
-						isLocked = ltLocked;
-				}
-			}
-			CloseHandle(hFile);
-#elif defined(USE_GIO_FILE)
-			std::string sFileA = U_TO_UTF8(sFile);
+			CCrossPlatformFileLocker::LockType isLocked = CCrossPlatformFileLocker::ltNone;
+			isLocked = CCrossPlatformFileLocker::IsLocked(sFile);
 
-			CFileGio* nDescriptor = new CFileGio();
-			if ( !nDescriptor->OpenFile(sFileA.c_str(), false) )
-				isLocked = ltReadOnly;	// ltLocked
-
-			nDescriptor->Close();
-			delete nDescriptor;
-			nDescriptor = NULL;
-#endif
 			return isLocked;
 		}
 
@@ -611,19 +533,7 @@ namespace NSSystem
 		// из .local/share
 		bool SaveFile(const std::wstring& sFile)
 		{
-			bool bIsNeedClose = false;
-
-#ifdef USE_GIO_FILE
-			CFileGio* pDescriptor = m_pDescriptor;
-			if (NULL == pDescriptor)
-			{
-				std::string sFileA = U_TO_UTF8(m_sFile);
-
-				pDescriptor = new CFileGio();
-				pDescriptor->OpenFile(sFileA.c_str(), false);
-				bIsNeedClose = true;
-			}
-#endif
+			m_pLocker->CheckDescriptor();
 
 			DWORD nSection = 10 * 1024 * 1024;
 			DWORD nFileSize = 0;
@@ -648,11 +558,8 @@ namespace NSSystem
 			}
 
 			bool bRes = true;
-#if defined(_WIN32)
-			SetFilePointer(m_nDescriptor, 0, 0, FILE_BEGIN);
-#elif defined(USE_GIO_FILE)
-			pDescriptor->SeekFile(0);
-#endif
+
+			m_pLocker->SeekFile(0);
 
 			DWORD dwRead = 0;
 			DWORD dwWrite = 0;
@@ -662,12 +569,7 @@ namespace NSSystem
 					nChunkSize = nNeedWrite;
 
 				oFile.ReadFile(pMemoryBuffer, nChunkSize, dwRead);
-
-#if defined(_WIN32)
-				WriteFile(m_nDescriptor, pMemoryBuffer, nChunkSize, &dwWrite, NULL);
-#elif defined(USE_GIO_FILE)
-				pDescriptor->WriteFile(pMemoryBuffer, nChunkSize, dwWrite);
-#endif
+				m_pLocker->WriteFile(pMemoryBuffer, nChunkSize, dwWrite);
 
 				if (dwRead != nChunkSize || dwWrite != nChunkSize)
 				{
@@ -681,20 +583,8 @@ namespace NSSystem
 			oFile.CloseFile();
 			RELEASEARRAYOBJECTS(pMemoryBuffer);
 
-#if defined(_WIN32)
-			SetFilePointer(m_nDescriptor, (LONG)nFileSize, 0, FILE_BEGIN);
-			SetEndOfFile(m_nDescriptor);
-#elif defined(USE_GIO_FILE)
-			pDescriptor->SeekFile((DWORD)nFileSize);
-			pDescriptor->Truncate((DWORD)nFileSize);
-
-			if (bIsNeedClose)
-			{
-				pDescriptor->Close();
-				delete pDescriptor;
-				pDescriptor = NULL;
-			}
-#endif
+			m_pLocker->SeekFile(nFileSize);
+			m_pLocker->Truncate(nFileSize);
 
 			if (!bRes)
 			{
@@ -987,7 +877,7 @@ public:
 			int nFormat = GetFormatByExtension(L"." + sFileExt);
 			if (nFormat != 0)
 			{
-				if (NSSystem::CLocalFileLocker::ltNone != NSSystem::CLocalFileLocker::IsLocked(fileName))
+				if (NSSystem::CCrossPlatformFileLocker::ltNone != NSSystem::CLocalFileLocker::IsLocked(fileName))
 				{
 					std::wstring sTmpFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"TMP");
 					if (NSFile::CFileBinary::Exists(sTmpFile))
@@ -2519,7 +2409,7 @@ public:
 			bool bIsViewer = false;
 
 			std::wstring sRecoveryLocker = arDirectories[i] + L"/rec.lock";
-			if (NSFile::CFileBinary::Exists(sRecoveryLocker) && (NSSystem::CLocalFileLocker::ltNone != NSSystem::CLocalFileLocker::IsLocked(sRecoveryLocker)))
+			if (NSFile::CFileBinary::Exists(sRecoveryLocker) && (NSSystem::CCrossPlatformFileLocker::ltNone != NSSystem::CLocalFileLocker::IsLocked(sRecoveryLocker)))
 				continue;
 
 			if (!NSFile::CFileBinary::Exists(arDirectories[i] + L"/changes/changes0.json"))
