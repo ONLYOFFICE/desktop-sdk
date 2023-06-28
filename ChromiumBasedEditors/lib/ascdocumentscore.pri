@@ -97,8 +97,8 @@ HEADERS += \
     $$PWD/include/cefapplication.h \
     $$PWD/include/cefview.h \
     $$PWD/include/applicationmanager_events.h \
-	$$PWD/src/applicationmanager_p.h \
-	$$PWD/src/crossplatformfilelocker.h \
+    $$PWD/src/applicationmanager_p.h \
+    $$PWD/src/crossplatformfilelocker.h \
     $$PWD/src/nativeviewer.h \
     $$PWD/src/plugins.h \
     $$PWD/src/providers.h \

@@ -33,6 +33,9 @@
 #ifndef CROSSPLATFORMFILE_H
 #define CROSSPLATFORMFILE_H
 
+#if defined(_WIN32)
+#include <windows.h>
+#endif
 
 #if defined(LINUX) && !defined(_MAC)
 #define USE_GIO_FILE
@@ -54,6 +57,7 @@ public:
 		ltLocked   = 0x02,
 		ltNosafe   = 0x04
 	};
+
 protected:
 	std::wstring m_sFile;
 
@@ -165,6 +169,7 @@ public:
 
 			CloseHandle(m_nDescriptor);
 			m_nDescriptor = INVALID_HANDLE_VALUE;
+			bResult = true;
 		}
 #endif
 
@@ -184,10 +189,11 @@ public:
 		close(m_nDescriptor);
 
 		m_nDescriptor = -1;
+		bResult = true;
 #endif
 
 #if defined(USE_GIO_FILE)
-		Close();
+		bResult = ReleaseGio();
 #endif
 
 		return  bResult;
@@ -264,7 +270,7 @@ public:
 		if ( !nDescriptor->Lock() )
 			isLocked = ltReadOnly;	// ltLocked
 
-		nDescriptor->Close();
+		nDescriptor->ReleaseGio();
 		delete nDescriptor;
 		nDescriptor = NULL;
 #endif
@@ -340,7 +346,7 @@ public:
 
 #if defined(_WIN32)
 		if ( m_nDescriptor != INVALID_HANDLE_VALUE )
-			bResult = WriteFile(m_nDescriptor, pData, dwBytesToWrite, &dwSizeWrite, NULL) == TRUE;
+			bResult = ::WriteFile(m_nDescriptor, pData, dwBytesToWrite, &dwSizeWrite, NULL) == TRUE;
 #endif
 
 #if defined(_MAC)
@@ -359,13 +365,9 @@ public:
 		return  bResult;
 	}
 
-	void Close()
+	bool ReleaseGio()
 	{
-#if defined(_WIN32)
-#endif
-
-#if defined(_MAC)
-#endif
+		bool bResult = false;
 
 #if defined(USE_GIO_FILE)
 		if ( m_pFile )
@@ -385,8 +387,10 @@ public:
 				g_object_unref(m_pFile);
 				m_pFile = NULL;
 			}
+			bResult = true;
 		}
 #endif
+		return bResult;
 	}
 };
 }
