@@ -442,10 +442,6 @@ public:
 #define DISABLE_LOCK_FUNCTIONALITY
 #endif
 
-#ifndef _WIN32
-#include <fcntl.h>
-#endif
-
 class IASCFileConverterEvents
 {
 public:

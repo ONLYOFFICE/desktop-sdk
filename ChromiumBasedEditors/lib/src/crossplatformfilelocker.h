@@ -35,7 +35,9 @@
 
 #if defined(_WIN32)
 #include <windows.h>
-#else
+#endif
+
+#if defined(_MAC)
 #include <fcntl.h>
 #endif
 
