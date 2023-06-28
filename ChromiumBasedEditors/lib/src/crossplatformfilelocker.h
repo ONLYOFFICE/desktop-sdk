@@ -266,13 +266,13 @@ public:
 #endif
 
 #if defined(USE_GIO_FILE)
-		CCrossPlatformFileLocker* nDescriptor = new CCrossPlatformFileLocker(sFile);
-		if ( !nDescriptor->Lock() )
+		CCrossPlatformFileLocker* pLocker = new CCrossPlatformFileLocker(sFile);
+		if ( !pLocker->Lock() )
 			isLocked = ltReadOnly;	// ltLocked
 
-		nDescriptor->ReleaseGio();
-		delete nDescriptor;
-		nDescriptor = NULL;
+		pLocker->ReleaseGio();
+		delete pLocker;
+		pLocker = NULL;
 #endif
 
 		return isLocked;
