@@ -1616,6 +1616,10 @@ public:
 	std::string m_sOutputParams;
 	int_64_type m_nFrameId;
 
+	bool m_bIsApplyChanges;
+	std::wstring m_sDstFilePath;
+	std::wstring m_sAdditionalParams;
+
 	IASCFileConverterEvents* m_pEvents;
 	CAscApplicationManager* m_pManager;
 
@@ -1626,30 +1630,54 @@ public:
 		m_pEvents = NULL;
 		m_pManager = NULL;
 		m_nFrameId = 0;
+		m_bIsApplyChanges = false;
 	}
 
 	virtual DWORD ThreadProc()
 	{
 		int nReturnCode = 0;
 
-		NSStringUtils::CStringBuilder oBuilder;
-		oBuilder.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><TaskQueueDataConvert><m_sFileFrom>");
+		std::wstring sSrcFile = L"";
+		std::wstring sDstFile = L"";
+		std::wstring sDstTmpDir = L"";
 
-		if (!NSSystem::CLocalFileLocker::IsLocked(m_sSrcFilePath))
+		if (!m_bIsApplyChanges)
 		{
-			oBuilder.WriteEncodeXmlString(m_sSrcFilePath);
+			if (!NSSystem::CLocalFileLocker::IsLocked(m_sSrcFilePath))
+			{
+				sSrcFile = m_sSrcFilePath;
+			}
+			else
+			{
+				std::wstring sFileSrc = m_sFileFolder + L"/" + NSFile::GetFileName(m_sSrcFilePath);
+				if (NSFile::CFileBinary::Copy(m_sSrcFilePath, sFileSrc))
+					sSrcFile = sFileSrc;
+				else
+					sSrcFile = m_sSrcFilePath;
+			}
+
+			sDstFile = m_sFileFolder + L"/Editor.bin";
+
+			sDstTmpDir = NSFile::CFileBinary::CreateTempFileWithUniqueName(m_sFileFolder, L"FC_");
+			if (NSFile::CFileBinary::Exists(sDstTmpDir))
+				NSFile::CFileBinary::Remove(sDstTmpDir);
 		}
 		else
 		{
-			std::wstring sFileSrc = m_sFileFolder + L"/" + NSFile::GetFileName(m_sSrcFilePath);
-			if (NSFile::CFileBinary::Copy(m_sSrcFilePath, sFileSrc))
-				oBuilder.WriteEncodeXmlString(sFileSrc);
-			else
-				oBuilder.WriteEncodeXmlString(m_sSrcFilePath);
+			sSrcFile = m_sFileFolder + L"/Editor.bin";
+			sDstFile = m_sDstFilePath;
+
+			sDstTmpDir = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"FC_");
+			if (NSFile::CFileBinary::Exists(sDstTmpDir))
+				NSFile::CFileBinary::Remove(sDstTmpDir);
 		}
 
+		NSStringUtils::CStringBuilder oBuilder;
+		oBuilder.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><TaskQueueDataConvert><m_sFileFrom>");
+		oBuilder.WriteEncodeXmlString(sSrcFile);
+
 		oBuilder.WriteString(L"</m_sFileFrom><m_sFileTo>");
-		oBuilder.WriteEncodeXmlString(m_sFileFolder + L"/Editor.bin");
+		oBuilder.WriteEncodeXmlString(sDstFile);
 		oBuilder.WriteString(L"</m_sFileTo><m_nFormatTo>");
 
 		oBuilder.WriteString(std::to_wstring(m_nOutputFormat));
@@ -1663,18 +1691,35 @@ public:
 		oBuilder.WriteEncodeXmlString(m_pManager->m_oSettings.fonts_cache_info_path);
 		oBuilder.WriteString(L"/AllFonts.js</m_sAllFontsPath>");
 
-		std::wstring sDstTmpDir = NSFile::CFileBinary::CreateTempFileWithUniqueName(m_sFileFolder, L"FC_");
-		if (NSFile::CFileBinary::Exists(sDstTmpDir))
-			NSFile::CFileBinary::Remove(sDstTmpDir);
 		NSDirectory::CreateDirectory(sDstTmpDir);
 
 		oBuilder.WriteString(L"<m_sTempDir>");
 		oBuilder.WriteEncodeXmlString(sDstTmpDir);
 		oBuilder.WriteString(L"</m_sTempDir>");
 
+		oBuilder.WriteString(L"<m_bDontSaveAdditional>true</m_bDontSaveAdditional>");
+
+		if (m_bIsApplyChanges)
+		{
+			if (NSFile::CFileBinary::Exists(m_sFileFolder + L"/changes/changes0.json"))
+				oBuilder.WriteString(L"<m_bFromChanges>true</m_bFromChanges>");
+			else
+				oBuilder.WriteString(L"<m_bFromChanges>false</m_bFromChanges>");
+		}
+
+		if (!m_sAdditionalParams.empty())
+		{
+			oBuilder.WriteString(L"<m_sJsonParams>");
+			oBuilder.WriteEncodeXmlString(m_sAdditionalParams);
+			oBuilder.WriteString(L"</m_sJsonParams>");
+		}
+
+		// disable cache
+		oBuilder.WriteString(L"<m_nDoctParams>1</m_nDoctParams>");
+
 		oBuilder.WriteString(L"</TaskQueueDataConvert>");
 
-		std::wstring sTempFileForParams = m_sFileFolder + L"/params.xml";
+		std::wstring sTempFileForParams = sDstTmpDir + L"/params.xml";
 		NSFile::CFileBinary::SaveToFile(sTempFileForParams, oBuilder.GetData(), true);
 
 		nReturnCode = NSX2T::Convert(m_pManager->m_oSettings.file_converter_path + L"/x2t", sTempFileForParams, m_pManager);
@@ -1686,6 +1731,20 @@ public:
 
 		m_bRunThread = FALSE;
 		return 0;
+	}
+
+	void SetModeApplyChanges()
+	{
+		m_bIsApplyChanges = true;
+		std::wstring sSrcFileName = NSFile::GetFileName(m_sSrcFilePath);
+		std::wstring::size_type posDot = sSrcFileName.rfind(L".");
+		if (std::wstring::npos != posDot && 0 != posDot)
+			sSrcFileName = sSrcFileName.substr(0, posDot);
+
+		COfficeFileFormatChecker oChecker;
+		sSrcFileName += oChecker.GetExtensionByType(m_nOutputFormat);
+
+		m_sDstFilePath = NSFile::CFileBinary::GetTempPath() + L"/" + sSrcFileName;
 	}
 };
 
