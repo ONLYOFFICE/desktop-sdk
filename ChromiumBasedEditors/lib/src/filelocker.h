@@ -30,8 +30,8 @@
  *
  */
 
-#ifndef CROSSPLATFORMFILELOCKER_H
-#define CROSSPLATFORMFILELOCKER_H
+#ifndef FILELOCKER_H
+#define FILELOCKER_H
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -52,7 +52,7 @@
 
 namespace NSSystem
 {
-class CCrossPlatformFileLocker
+class CFileLocker
 {
 public:
 	enum LockType {
@@ -81,7 +81,7 @@ protected:
 #endif
 
 public:
-	CCrossPlatformFileLocker(std::wstring sFile)
+	CFileLocker(std::wstring sFile)
 	{
 		m_sFile = sFile;
 
@@ -399,4 +399,4 @@ public:
 };
 }
 
-#endif // CROSSPLATFORMFILELOCKER_H
+#endif // FILELOCKER_H

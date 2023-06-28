@@ -58,7 +58,7 @@
 #include "crypto_mode.h"
 #include "plugins.h"
 #include "providers.h"
-#include "crossplatformfilelocker.h"
+#include "filelocker.h"
 
 #include "utils.h"
 #include "../../../../core/DesktopEditor/xmlsec/src/include/CertificateCommon.h"
@@ -455,7 +455,7 @@ namespace NSSystem
 	{
 	private:
 		std::wstring m_sFile;
-		CCrossPlatformFileLocker* m_pLocker;
+		CFileLocker* m_pLocker;
 
 	public:
 		CLocalFileLocker(const std::wstring& sFile)
@@ -464,7 +464,7 @@ namespace NSSystem
 				return;
 
 			m_sFile = sFile;
-			m_pLocker = new CCrossPlatformFileLocker(sFile);
+			m_pLocker = new CFileLocker(sFile);
 
 			Lock();
 		}
@@ -501,13 +501,13 @@ namespace NSSystem
 			}
 		}
 
-		static CCrossPlatformFileLocker::LockType IsLocked(const::std::wstring& sFile)
+		static CFileLocker::LockType IsLocked(const::std::wstring& sFile)
 		{
 			if (!IsSupportFunctionality())
-				return CCrossPlatformFileLocker::ltNone;
+				return CFileLocker::ltNone;
 
-			CCrossPlatformFileLocker::LockType isLocked = CCrossPlatformFileLocker::ltNone;
-			isLocked = CCrossPlatformFileLocker::IsLocked(sFile);
+			CFileLocker::LockType isLocked = CFileLocker::ltNone;
+			isLocked = CFileLocker::IsLocked(sFile);
 
 			return isLocked;
 		}
@@ -873,7 +873,7 @@ public:
 			int nFormat = GetFormatByExtension(L"." + sFileExt);
 			if (nFormat != 0)
 			{
-				if (NSSystem::CCrossPlatformFileLocker::ltNone != NSSystem::CLocalFileLocker::IsLocked(fileName))
+				if (NSSystem::CFileLocker::ltNone != NSSystem::CLocalFileLocker::IsLocked(fileName))
 				{
 					std::wstring sTmpFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"TMP");
 					if (NSFile::CFileBinary::Exists(sTmpFile))
@@ -2405,7 +2405,7 @@ public:
 			bool bIsViewer = false;
 
 			std::wstring sRecoveryLocker = arDirectories[i] + L"/rec.lock";
-			if (NSFile::CFileBinary::Exists(sRecoveryLocker) && (NSSystem::CCrossPlatformFileLocker::ltNone != NSSystem::CLocalFileLocker::IsLocked(sRecoveryLocker)))
+			if (NSFile::CFileBinary::Exists(sRecoveryLocker) && (NSSystem::CFileLocker::ltNone != NSSystem::CLocalFileLocker::IsLocked(sRecoveryLocker)))
 				continue;
 
 			if (!NSFile::CFileBinary::Exists(arDirectories[i] + L"/changes/changes0.json"))
