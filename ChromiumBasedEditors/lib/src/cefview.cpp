@@ -5715,7 +5715,7 @@ void CCefView_Private::LocalSendTo(const std::wstring& sUrlFile)
 			sCodeApp += "";
 		}
 		system(sCodeApp.c_str());
-		return true;
+		return;
 #endif
 		if (GetBrowser())
 		{
