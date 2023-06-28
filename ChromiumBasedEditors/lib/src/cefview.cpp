@@ -425,6 +425,7 @@ public:
 #else
 #define CefBase_Class CefBaseRefCounted
 #endif
+
 class CCefBinaryFileReaderCounter : public CefBase_Class
 {
 public:
@@ -1089,6 +1090,8 @@ public:
 
 	void CheckZoom();
 
+	void UpdateSize();
+
 	void CloseBrowser(bool _force_close);
 
 	CefRefPtr<CefBrowser> GetBrowser() const;
@@ -1552,6 +1555,23 @@ public:
 	void SendProcessMessage(CefProcessId target_process, CefRefPtr<CefProcessMessage> message);
 };
 
+class CCefResizeTask : public CefTask
+{
+// SetWindowPos must be called from the UI thread of CEF. Post a task to the correct thread
+public:
+	CCefResizeTask(CCefView_Private* pInternal) : m_pInternal(pInternal) {}
+	virtual ~CCefResizeTask() {}
+	virtual void Execute() OVERRIDE
+	{
+		if ( m_pInternal )
+			m_pInternal->UpdateSize();
+	}
+private:
+	CCefView_Private* m_pInternal;
+
+	IMPLEMENT_REFCOUNTING(CCefResizeTask);
+};
+
 class CAscClientHandler : public client::ClientHandler, public CCookieFoundCallback, public client::ClientHandler::Delegate, public CefDialogHandler
 {
 public:
@@ -1607,6 +1627,7 @@ public:
 
 	// в виндоус есть баг с ресайзом. лечится "двойным" ресайзом.
 	// но на всяких loaded - его нужно отключать
+	// TODO: удалить, после релиза 7.4
 	bool m_bIsDisableResizeOnLoaded;
 	bool m_bIsDisableResizeOnLoadedOneCall;
 
@@ -1632,7 +1653,7 @@ public:
 
 public:
 	CAscClientHandler() : client::ClientHandler(this, false,
-                                            #ifdef CEF_VERSION_ABOVE_102
+											#ifdef CEF_VERSION_ABOVE_102
 												false,
 											#endif
 												"https://onlyoffice.com/")
@@ -4251,6 +4272,36 @@ virtual void OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
 
 		if (CAscApplicationManager::IsUseSystemScaling())
 			m_bIsDisableResizeOnLoaded = true;
+
+		// полагаем, что это корректный запуск приложения
+		if ( m_pParent->m_pInternal->m_pManager->m_pInternal->m_sLogFile.length() && m_pParent->m_nId == 1 )
+		{
+			std::wstring sOutput = L"[DesktopEditors]: start page loaded";
+			std::wstring sLogFile = UTF8_TO_U(m_pParent->m_pInternal->m_pManager->m_pInternal->m_sLogFile);
+
+			if ( sLogFile == L"stdout" )
+				std::wcout << sOutput << std::endl;
+			else
+			{
+				std::wstring sFolder = NSDirectory::GetFolderPath(sLogFile);
+				if ( sFolder.length() && !NSDirectory::Exists(sFolder) )
+				{
+					if ( !NSDirectory::CreateDirectories(sFolder) )
+					{
+						// относительный путь
+						sFolder = NSFile::GetProcessDirectory() + L"/" + sFolder;
+						NSDirectory::CreateDirectories(sFolder);
+					}
+				}
+
+				NSFile::CFileBinary oFile;
+				if ( oFile.CreateFileW(sLogFile) )
+				{
+					oFile.WriteStringUTF8(sOutput);
+					oFile.CloseFile();
+				}
+			}
+		}
 	}
 }
 
@@ -4510,6 +4561,34 @@ virtual bool OnPreKeyEvent(CefRefPtr<CefBrowser> browser,
 		if (((nMods & EVENTFLAG_ALT_DOWN) != 0) && event.windows_key_code == 115)
 			return true; // alt + f4!!!
 	}
+
+#ifdef _MAC
+	if (event.type == KEYEVENT_RAWKEYDOWN)
+	{
+		if (m_pParent->m_pInternal->m_bIsClosing ||
+			m_pParent->m_pInternal->m_bIsDestroy ||
+			m_pParent->m_pInternal->m_bIsDestroying)
+			return false;
+
+		int nMods = event.modifiers;
+		if (86 == event.windows_key_code &&
+			((nMods & EVENTFLAG_COMMAND_DOWN) != 0) &&
+			((nMods & EVENTFLAG_SHIFT_DOWN) != 0))
+		{
+			if (GetBrowser())
+			{
+				CefRefPtr<CefFrame> pFrame = GetBrowser()->GetFocusedFrame();
+				if (pFrame)
+				{
+					GetBrowser()->GetFocusedFrame()->ExecuteJavaScript("(function(){if (window.Asc && window.Asc.editor && window.AscCommon) { window.AscCommon.isDisableRawPaste = true; window.AscDesktopEditor.Paste(); window.setTimeout(function(){ if (true === window.AscCommon.isDisableRawPaste) delete window.AscCommon.isDisableRawPaste; }, 50); }})();",
+																	   pFrame->GetURL(), 0);
+				}
+			}
+
+			return true;
+		}
+	}
+#endif
 
 	return false;
 }
@@ -5242,6 +5321,8 @@ virtual void OnSetLoadingState(bool isLoading,
 	{
 		NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_PAGE_LOAD_END);
 		m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+
+		m_pParent->GetAppManager()->m_pInternal->CheckPreload();
 	}
 }
 
@@ -5657,6 +5738,27 @@ void CCefView_Private::CheckZoom()
 	}
 }
 
+void CCefView_Private::UpdateSize()
+{
+	CEF_REQUIRE_UI_THREAD();
+
+	if (!m_pWidgetImpl || m_bIsClosing)
+		return;
+
+	m_pWidgetImpl->UpdateSize();
+	CheckZoom();
+
+	if (m_handler && m_handler->GetBrowser() && m_handler->GetBrowser()->GetHost())
+	{
+		m_handler->GetBrowser()->GetHost()->NotifyMoveOrResizeStarted();
+
+		// Fix bug #62086
+		CefRefPtr<CefFrame> pFrame = m_handler->GetBrowser()->GetMainFrame();
+		if (pFrame)
+			pFrame->ExecuteJavaScript("window.dispatchEvent(new Event('resize'));", pFrame->GetURL(), 0);
+	}
+}
+
 void CCefView_Private::SendProcessMessage(CefProcessId target_process, CefRefPtr<CefProcessMessage> message)
 {
 	if (m_handler && m_handler->GetBrowser())
@@ -5709,7 +5811,7 @@ void CAscClientHandler::OnDeleteCookie(bool bIsPresent)
 
 // CefView --------------------------------------------------------------------------------
 CCefView::CCefView(CCefViewWidgetImpl* parent, int nId)
-{    
+{
 	m_pInternal = new CCefView_Private();
 	m_pInternal->m_pWidgetImpl = parent;
 	m_nId = nId;
@@ -5892,6 +5994,8 @@ void CCefView::load(const std::wstring& urlInputSrc)
 					nEditorFormat = etDocumentMasterForm;
 				else if (nFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
 					nEditorFormat = etDocumentMasterOForm;
+				else if (nFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
+					nEditorFormat = etDocumentViewer;
 			}
 
 			((CCefViewEditor*)this)->CreateLocalFile(nEditorFormat, m_pInternal->m_sTemplateName);
@@ -6124,16 +6228,18 @@ void CCefView::resizeEvent()
 {
 	this->moveEvent();
 }
+
 void CCefView::moveEvent()
 {
-	if (!m_pInternal->m_pWidgetImpl || m_pInternal->m_bIsClosing)
-		return;
-
-	this->GetWidgetImpl()->UpdateSize();
-	m_pInternal->CheckZoom();
-
-	if (m_pInternal->m_handler && m_pInternal->m_handler->GetBrowser() && m_pInternal->m_handler->GetBrowser()->GetHost())
-		m_pInternal->m_handler->GetBrowser()->GetHost()->NotifyMoveOrResizeStarted();
+	if ( CefCurrentlyOn(TID_UI) )
+	{
+		m_pInternal->UpdateSize();
+	}
+	else
+	{
+		CefRefPtr<CCefResizeTask> pTask = new CCefResizeTask(m_pInternal);
+		CefPostTask(TID_UI, pTask);
+	}
 }
 
 bool CCefView::isDoubleResizeEvent()
@@ -6643,7 +6749,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 			}
 
 			m_pInternal->m_handler->m_pFileDialogCallback->Continue(
-            #ifndef CEF_VERSION_ABOVE_102
+			#ifndef CEF_VERSION_ABOVE_102
 						0,
 			#endif
 						file_paths);
@@ -6703,7 +6809,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 				std::vector<CefString> file_paths;
 				file_paths.push_back(sPath);
 				m_pInternal->m_handler->m_pDirectoryDialogCallback->Continue(
-            #ifndef CEF_VERSION_ABOVE_102
+			#ifndef CEF_VERSION_ABOVE_102
 							0,
 			#endif
 							file_paths);
@@ -7744,7 +7850,8 @@ namespace NSRequest
 		if (m_view->GetBrowser())
 		{
 			CefRefPtr<CefFrame> frame = m_view->GetBrowser()->GetFrame(frameId);
-			frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
+			if (frame)
+				frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
 		}
 	}
 }

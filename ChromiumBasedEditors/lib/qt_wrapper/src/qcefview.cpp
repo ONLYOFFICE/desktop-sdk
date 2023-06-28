@@ -249,8 +249,16 @@ void QCefView::UpdateSize()
 
 	int nW = width();
 	int nH = height();
+
+#if 0
+	// TODO: удалить после релиза 7.4
 	if (CAscApplicationManager::IsUseSystemScaling() && nW > 2 && nH > 2 && m_pCefView && m_pCefView->isDoubleResizeEvent())
-		SetWindowPos(_child, _parent, 0, 0, nW - 1, nH - 1, SWP_NOZORDER);
+	{
+		// Resolved using window resize event. Fix bug #62086
+		//SetWindowPos(_child, _parent, 0, 0, nW - 1, nH - 1, SWP_NOZORDER);
+		//SetFocus(_parent);
+	}
+#endif
 
 	SetWindowPos(_child, _parent, 0, 0, nW, nH, SWP_NOZORDER);
 }

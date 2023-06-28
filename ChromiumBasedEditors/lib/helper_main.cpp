@@ -36,11 +36,20 @@
 int main( int argc, char *argv[] )
 {
 #ifdef _WIN32
-    Core_SetProcessDpiAwareness();
+	Core_SetProcessDpiAwareness();
+
+	// Set non-browser processes up to be killed by the system after the
+	// browser goes away. The browser uses the default shutdown order, which
+	// is 0x280. Note that lower numbers here denote "kill later" and higher
+	// numbers mean "kill sooner". This gets rid of most of those unsightly
+	// sad tabs on logout and shutdown.
+	const int kNonBrowserShutdownPriority = 0x280;
+	::SetProcessShutdownParameters(kNonBrowserShutdownPriority - 1, SHUTDOWN_NORETRY);
+
 #endif
 
-    CApplicationCEF application;
-    CAscApplicationManager manager;
+	CApplicationCEF application;
+	CAscApplicationManager manager;
 
-    return application.Init_CEF(&manager, argc, argv);
+	return application.Init_CEF(&manager, argc, argv);
 }

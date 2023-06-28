@@ -354,6 +354,7 @@ namespace NSRequest
 			std::string sData = m_download_data;
 			NSStringUtils::string_replaceA(sData, "\\", "\\\\");
 			NSStringUtils::string_replaceA(sData, "\"", "\\\"");
+			NSStringUtils::string_replaceA(sData, "\n", "\\\n");
 
 			sReturnObject += sData;
 
@@ -1611,6 +1612,9 @@ public:
 	// id <=> view
 	std::map<int, CCefView*> m_mapViews;
 
+	// проверка корректного запуска приложения через stdout или лог-файл
+	std::string m_sLogFile;
+
 	// показывать ли консоль для дебага
 	bool m_bDebugInfoSupport;
 
@@ -1720,6 +1724,9 @@ public:
 	// информация о порталах. открытие файлы из рисентов, из редактора - теряется информация о externalclouds
 	CLocalStorageClouds m_oPortalsList;
 
+	// сброс LD_PRELOAD
+	bool m_bIsPreloadDiscard;
+
 public:
 	IMPLEMENT_REFCOUNTING(CAscApplicationManager_Private);
 
@@ -1736,6 +1743,7 @@ public:
 		m_pApplicationFonts = NULL;
 		m_pApplication = NULL;
 
+		m_sLogFile = "";
 		m_bDebugInfoSupport = false;
 		m_bExperimentalFeatures = false;
 
@@ -1769,6 +1777,8 @@ public:
 		m_oCS_LocalFiles.InitializeCriticalSection();
 		m_oCS_SystemMessages.InitializeCriticalSection();
 
+		m_bIsPreloadDiscard = false;
+
 		COfficeUtils::SetAddonFlag(ZLIB_ADDON_FLAG_WINDOWS_SHARED_WRITE);
 	}
 	virtual ~CAscApplicationManager_Private()
@@ -1795,6 +1805,18 @@ public:
 		std::wstring sTmp = m_pMain->m_oSettings.cache_path + L"/work_temp";
 		if (NSDirectory::Exists(sTmp))
 			NSDirectory::DeleteDirectory(sTmp);
+	}
+
+	void CheckPreload()
+	{
+		if (!m_bIsPreloadDiscard)
+		{
+			m_bIsPreloadDiscard = true;
+
+#if defined(LINUX) && !defined(_MAC) && !defined(CEF_VERSION_107)
+			setenv("LD_PRELOAD", "", 1);
+#endif
+		}
 	}
 
 	bool GetEditorPermission()
@@ -1990,6 +2012,12 @@ public:
 	}
 	void CheckSetting(const std::string& sName, const std::string& sValue)
 	{
+		if ("--ascdesktop-log-file" == sName)
+		{
+			// stdout для Linux, путь к файлу для Windows
+			m_sLogFile = sValue;
+			return;
+		}
 		if ("--ascdesktop-support-debug-info" == sName)
 		{
 			m_bDebugInfoSupport = true;
