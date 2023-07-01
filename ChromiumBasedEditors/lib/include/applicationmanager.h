@@ -259,6 +259,7 @@ public:
 
 	// send to all main pages
 	void SetEventToAllMainWindows(NSEditorApi::CAscMenuEvent* pEvent);
+	void SetEventToAllWindows(NSEditorApi::CAscMenuEvent* pEvent);
 
 	// crypto modes <0 - none, 1 - simple, 2 - advanced>
 	void SetCryptoMode(const std::string& sPassword, const int& nMode);

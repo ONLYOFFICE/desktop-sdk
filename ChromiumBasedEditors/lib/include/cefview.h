@@ -166,7 +166,7 @@ public:
 	AscEditorType GetEditorType();
 
 	void OpenLocalFile(const std::wstring& sFilePath, const int& nFileFormat, const std::wstring& params = L"");
-	void CreateLocalFile(const int& nFileFormat, const std::wstring& sName = L"");
+	void CreateLocalFile(const int& nFileFormat, const std::wstring& sName = L"", const std::wstring& sTemplatePath = L"");
 	bool OpenCopyAsRecoverFile(const int& nIdSrc);
 	bool OpenRecoverFile(const int& nId);
 	bool OpenRecentFile(const int& nId);

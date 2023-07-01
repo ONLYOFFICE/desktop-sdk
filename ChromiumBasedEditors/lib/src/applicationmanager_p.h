@@ -1997,6 +1997,17 @@ public:
 
 		pEvent->Release();
 	}
+	void SetEventToAllWindows(NSEditorApi::CAscMenuEvent* pEvent)
+	{
+		for (std::map<int, CCefView*>::iterator i = m_mapViews.begin(); i != m_mapViews.end(); i++)
+		{
+			CCefView* pView = i->second;
+			pEvent->AddRef();
+			pView->Apply(pEvent);
+		}
+
+		pEvent->Release();
+	}
 
 	// загрузка скриптов ----------------------------------------------------------------------
 	virtual void OnLoad(CCefScriptLoader* pLoader, bool error) OVERRIDE
@@ -2276,7 +2287,7 @@ public:
 
 		Recents_Dump();
 	}
-	void Recents_Dump(bool bIsSend = true)
+	void Recents_Dump(bool bIsSend = true, const int& nViewID = -1)
 	{
 		CTemporaryCS oCS(&m_oCS_LocalFiles);
 
@@ -2339,7 +2350,16 @@ public:
 			pData->put_JSON(Recents_GetJSON());
 			pEvent->m_pData = pData;
 
-			SetEventToAllMainWindows(pEvent);
+			if (-1 == nViewID)
+			{
+				SetEventToAllWindows(pEvent);
+			}
+			else
+			{
+				CCefView* pView = m_pMain->GetViewById(nViewID);
+				if (pView)
+					pView->Apply(pEvent);
+			}
 		}
 	}
 	std::wstring Recents_GetJSON()
@@ -2498,7 +2518,7 @@ public:
 		m_arRecovers.clear();
 		Recovers_Dump();
 	}
-	void Recovers_Dump()
+	void Recovers_Dump(const int& nViewID = -1)
 	{
 		CTemporaryCS oCS(&m_oCS_LocalFiles);
 
@@ -2531,7 +2551,16 @@ public:
 		pData->put_JSON(sJSON);
 		pEvent->m_pData = pData;
 
-		SetEventToAllMainWindows(pEvent);
+		if (-1 == nViewID)
+		{
+			SetEventToAllWindows(pEvent);
+		}
+		else
+		{
+			CCefView* pView = m_pMain->GetViewById(nViewID);
+			if (pView)
+				pView->Apply(pEvent);
+		}
 	}
 
 	// crypto ---------------------------------------------------------------------------------
