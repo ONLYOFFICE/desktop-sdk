@@ -69,7 +69,7 @@ bool QAscPrinterContext::BeginPaint()
 	{
 		if (!m_pDevice)
 		{
-            m_oPrinter.setPageMargins(QMarginsF(0,0,0,0), QPageLayout::Millimeter);
+			m_oPrinter.setPageMargins(QMarginsF(0,0,0,0), QPageLayout::Millimeter);
 			bResult = m_oPainter.begin(&m_oPrinter);
 		}
 		else
