@@ -37,8 +37,11 @@ core_windows {
 }
 
 core_linux {
-
-    QT += x11extras
+    !greaterThan(QT_MAJOR_VERSION, 5) {
+        QT += x11extras
+    } else {
+        QT += gui-private
+    }
 
     LIBS += -Wl,-unresolved-symbols=ignore-in-shared-libs
     ADD_DEPENDENCY(graphics, kernel, UnicodeConverter)
