@@ -142,14 +142,13 @@ public:
         XmlUtils::CXmlNode node;
         if (node.FromXmlFile(path))
         {
-            XmlUtils::CXmlNodes nodes;
+            std::vector<XmlUtils::CXmlNode> nodes;
             node.GetNodes(L"info", nodes);
 
-            int count = nodes.GetCount();
-            for (int i = 0; i < count; i++)
+            size_t count = nodes.size();
+            for (size_t i = 0; i < count; i++)
             {
-                XmlUtils::CXmlNode nodeInfo;
-                nodes.GetAt(i, nodeInfo);
+                XmlUtils::CXmlNode & nodeInfo = nodes[i];
 
                 CCloudCryptoDesktop userInfo;
                 userInfo.Read(nodeInfo);
@@ -255,14 +254,14 @@ public:
         XmlUtils::CXmlNode node;
         if (node.FromXmlFile(path))
         {
-            XmlUtils::CXmlNodes nodes;
+            std::vector<XmlUtils::CXmlNode> nodes;
             node.GetNodes(L"info", nodes);
 
-            int count = nodes.GetCount();
-            for (int i = 0; i < count; i++)
+            size_t count = nodes.size();
+            for (size_t i = 0; i < count; i++)
             {
-                XmlUtils::CXmlNode nodeInfo;
-                nodes.GetAt(i, nodeInfo);
+                XmlUtils::CXmlNode& nodeInfo = nodes[i];
+
                 addInfo(nodeInfo.ReadValueString(L"user"), nodeInfo.ReadValueString(L"email"), nodeInfo.ReadValueString(L"password"), nodeInfo.ReadValueString(L"domain"));
             }
         }

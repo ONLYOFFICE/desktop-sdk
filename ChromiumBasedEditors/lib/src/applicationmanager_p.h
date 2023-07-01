@@ -1789,15 +1789,14 @@ public:
 		if (!oNode.FromXmlFile(sFile))
 			return;
 
-		XmlUtils::CXmlNodes oNodes;
+		std::vector<XmlUtils::CXmlNode> oNodes;
 		if (!oNode.GetChilds(oNodes))
 			return;
 
-		int nCount = oNodes.GetCount();
-		for (int i = 0; i < nCount; ++i)
+		size_t nCount = oNodes.size();
+		for (size_t i = 0; i < nCount; ++i)
 		{
-			XmlUtils::CXmlNode oSetting;
-			oNodes.GetAt(i, oSetting);
+			XmlUtils::CXmlNode& oSetting = oNodes[i];
 
 			std::wstring nameW = oSetting.GetName();
 			std::string name = U_TO_UTF8(nameW);
@@ -2174,16 +2173,16 @@ public:
 		XmlUtils::CXmlNode oNodeRecents;
 		if (!oNodeRecents.FromXmlFile(sXmlPath))
 			return;
-		XmlUtils::CXmlNodes oNodes = oNodeRecents.GetNodes(L"file");
-		int nCount = oNodes.GetCount();
+		std::vector<XmlUtils::CXmlNode> oNodes = oNodeRecents.GetNodes(L"file");
+		size_t nCount = oNodes.size();
 		int nCountAdd = 0;
 
 		std::map<std::wstring, bool> map_files;
 
-		for (int i = 0; i < nCount; ++i)
+		for (size_t i = 0; i < nCount; ++i)
 		{
-			XmlUtils::CXmlNode oFile;
-			oNodes.GetAt(i, oFile);
+			XmlUtils::CXmlNode &oFile = oNodes[i];
+
 			std::wstring sPath = oFile.GetAttribute(L"path");
 
 			if (/*NSFile::CFileBinary::Exists(sPath) && */(map_files.find(sPath) == map_files.end()) && !sPath.empty())

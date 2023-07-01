@@ -441,15 +441,15 @@ void QVideoPlaylist::Load()
     if (!oNode.FromXmlFile(sDir + L"/settings.xml"))
         return;
 
-    XmlUtils::CXmlNodes oFiles;
+    std::vector<XmlUtils::CXmlNode> oFiles;
     if (oNode.GetNodes(L"file", oFiles))
     {
         QStringList list;
-        int nCount = oFiles.GetCount();
-        for (int i = 0; i < nCount; ++i)
+        size_t nCount = oFiles.size();
+        for (size_t i = 0; i < nCount; ++i)
         {
-            XmlUtils::CXmlNode nodeFile;
-            oFiles.GetAt(i, nodeFile);
+            XmlUtils::CXmlNode & nodeFile = oFiles[i];
+
             list.append(QString::fromStdWString(nodeFile.GetText()));
         }
 
