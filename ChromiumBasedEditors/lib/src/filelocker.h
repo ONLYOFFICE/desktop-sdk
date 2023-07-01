@@ -39,6 +39,7 @@
 
 #if defined(_MAC)
 #include <fcntl.h>
+#include <unistd.h>
 #endif
 
 #if defined(LINUX) && !defined(_MAC)
@@ -324,7 +325,7 @@ public:
 
 #if defined(_MAC)
 		if ( m_nDescriptor != -1 )
-			bResult = ftruncate(nDescriptor, nFileSize) != -1;
+			bResult = ftruncate(m_nDescriptor, (off_t)dwPosition) != -1;
 #endif
 
 #if defined(USE_GIO_FILE)
