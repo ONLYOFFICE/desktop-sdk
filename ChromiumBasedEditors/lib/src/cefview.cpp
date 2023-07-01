@@ -2781,7 +2781,7 @@ public:
 		}
 		else if (message_name == "onlocaldocument_sendrecents")
 		{
-			pManager->m_pInternal->Recents_Dump();
+			pManager->m_pInternal->Recents_Dump(true, m_pParent->GetId());
 			return true;
 		}
 		else if (message_name == "onlocaldocument_openrecents")
@@ -2808,7 +2808,7 @@ public:
 		}
 		else if (message_name == "onlocaldocument_sendrecovers")
 		{
-			pManager->m_pInternal->Recovers_Dump();
+			pManager->m_pInternal->Recovers_Dump(m_pParent->GetId());
 			return true;
 		}
 		else if (message_name == "onlocaldocument_openrecovers")
@@ -7418,8 +7418,14 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
 	// start convert file
 	this->load(sUrl + sParams);
 }
-void CCefViewEditor::CreateLocalFile(const int& nFileFormat, const std::wstring& sName)
+void CCefViewEditor::CreateLocalFile(const int& nFileFormat, const std::wstring& sName, const std::wstring& sTemplatePath)
 {
+	if (!sTemplatePath.empty())
+	{
+		m_pInternal->m_sTemplateName = sName;
+		m_pInternal->m_sTemplateUrl = sTemplatePath;
+	}
+
 	m_pInternal->m_oLocalInfo.m_oInfo.m_bIsSaved = false;
 
 	std::wstring sFilePath = this->GetAppManager()->GetNewFilePath(nFileFormat);

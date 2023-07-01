@@ -1046,6 +1046,11 @@ void CAscApplicationManager::SetEventToAllMainWindows(NSEditorApi::CAscMenuEvent
 	m_pInternal->SetEventToAllMainWindows(pEvent);
 }
 
+void CAscApplicationManager::SetEventToAllWindows(NSEditorApi::CAscMenuEvent* pEvent)
+{
+	m_pInternal->SetEventToAllWindows(pEvent);
+}
+
 void CAscApplicationManager::SetCryptoMode(const std::string& sPassword, const int& nMode)
 {
 	if (0 < nMode && !sPassword.empty())

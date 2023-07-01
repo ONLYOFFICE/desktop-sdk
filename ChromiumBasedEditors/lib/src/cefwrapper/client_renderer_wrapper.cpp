@@ -5205,7 +5205,7 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 	}
 	else if (sMessageName == "onlocaldocument_sendrecents")
 	{
-		CefRefPtr<CefFrame> _frame = browser->GetMainFrame();
+		CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
 		if (_frame)
 		{
 			std::wstring sJSON = message->GetArgumentList()->GetString(0).ToWString();
@@ -5218,7 +5218,7 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 	}
 	else if (sMessageName == "onlocaldocument_sendrecovers")
 	{
-		CefRefPtr<CefFrame> _frame = browser->GetMainFrame();
+		CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
 		if (_frame)
 		{
 			std::wstring sJSON = message->GetArgumentList()->GetString(0).ToWString();
