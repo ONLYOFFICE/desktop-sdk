@@ -5419,7 +5419,6 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
 	{
 		if (0 == nError && LocalFile_IsSupportOpenFormat(m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat))
 			m_pManager->m_pInternal->Recents_Add(m_oConverterFromEditor.m_oInfo.m_sFileSrc, m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat, L"", L"", m_sParentUrl);
-		nError = ASC_CONSTANT_CANCEL_SAVE;
 
 		sNotEditableLocal = m_oConverterFromEditor.m_oInfo.m_sFileSrc;
 	}
