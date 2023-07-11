@@ -5423,7 +5423,7 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
 		sNotEditableLocal = m_oConverterFromEditor.m_oInfo.m_sFileSrc;
 	}
 
-	if (ASC_CONSTANT_CANCEL_SAVE == nError)
+	if (ASC_CONSTANT_CANCEL_SAVE == nError || !bIsSavedFileCurrent)
 	{
 		if (m_pManager->GetEventListener() && m_pCefView != NULL)
 		{
