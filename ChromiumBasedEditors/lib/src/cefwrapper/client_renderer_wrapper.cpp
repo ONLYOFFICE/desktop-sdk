@@ -5067,6 +5067,8 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 
 			if (NSFile::CFileBinary::Exists(sFolder + L"/changes/changes0.json"))
 			{
+				int nCounter = 0;
+#if 1
 				std::string sChanges;
 				NSFile::CFileBinary::ReadAllTextUtf8A(sFolder + L"/changes/changes0.json", sChanges);
 				if (0 < sChanges.length())
@@ -5074,7 +5076,6 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 
 				const char* pDataCheck = (const char*)sChanges.c_str();
 				const char* pDataCheckLimit = pDataCheck + sChanges.length();
-				int nCounter = 0;
 				while (pDataCheck != pDataCheckLimit)
 				{
 					if (*pDataCheck == '\"')
@@ -5083,10 +5084,56 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 				}
 				nCounter >>= 1;
 
-				sChanges = "window.DesktopOfflineAppDocumentApplyChanges([" +
-						sChanges + ");window.AscDesktopEditor.LocalFileSetOpenChangesCount(" +
-						std::to_string(nCounter) + ");";
+				sChanges = "window.DesktopOfflineAppDocumentApplyChanges([" + sChanges + ");";
 				_frame->ExecuteJavaScript(sChanges, _frame->GetURL(), 0);
+#else
+				NSFile::CFileBinary oFile;
+				if (oFile.OpenFile(sFolder + L"/changes/changes0.json"))
+				{
+					BYTE* pChangesData = NULL;
+					long nChangesSize = oFile.GetFileSize();
+
+					int nStartOffset = 46;
+					int nEndOffset = 2;
+
+					nChangesSize += (nStartOffset + nEndOffset);
+					pChangesData = (BYTE*)malloc(nChangesSize);
+					bool bIsRead = false;
+
+					if (pChangesData)
+					{
+						if (oFile.ReadFile(pChangesData + nStartOffset, (DWORD)oFile.GetFileSize()))
+						{
+							bIsRead = true;
+							memcpy(pChangesData, "window.DesktopOfflineAppDocumentApplyChanges([", nStartOffset);
+							pChangesData[nChangesSize - 3] = ']';
+							pChangesData[nChangesSize - 2] = ')';
+							pChangesData[nChangesSize - 1] = ';';
+
+							const char* pDataCheck = (const char*)pChangesData + nStartOffset;
+							const char* pDataCheckLimit = (const char*)pChangesData + nChangesSize - 3;
+							while (pDataCheck != pDataCheckLimit)
+							{
+								if (*pDataCheck == '\"')
+									++nCounter;
+								++pDataCheck;
+							}
+							nCounter >>= 1;
+
+							CefString sCode;
+							sCode.FromString((char*)pChangesData, (size_t)nChangesSize);
+							free(pChangesData);
+							_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+						}
+					}
+
+					if (!bIsRead)
+						_frame->ExecuteJavaScript("window.DesktopOfflineAppDocumentApplyChanges([]);", _frame->GetURL(), 0);
+				}
+#endif
+
+				std::string sChangesCount = "window.AscDesktopEditor.LocalFileSetOpenChangesCount(" + std::to_string(nCounter) + ");";
+				_frame->ExecuteJavaScript(sChangesCount, _frame->GetURL(), 0);
 			}
 
 			if (bIsLockedFile)
