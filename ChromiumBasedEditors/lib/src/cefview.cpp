@@ -6258,6 +6258,30 @@ bool CCefView::isDoubleResizeEvent()
 	return false;
 }
 
+static CefRefPtr<CefDragData> ConvertDragDropData(NSEditorApi::CAscLocalDragDropData* pData)
+{
+	CefRefPtr<CefDragData> pCefDragData = CefDragData::Create();
+
+	std::wstring sText = pData->get_Text();
+	std::wstring sHtml = pData->get_Html();
+	std::vector<std::wstring> arFiles = pData->get_Files();
+
+	if (sText.length())
+		pCefDragData->SetFragmentText(sText);
+	if (sHtml.length())
+		pCefDragData->SetFragmentHtml(sHtml);
+	for (size_t i = 0; i < arFiles.size(); i++)
+	{
+		std::wstring::size_type pos = arFiles[i].find(L"file://");
+		if (pos == 0)
+			NSStringUtils::string_replace(arFiles[i], L"file://", L"");
+
+		pCefDragData->AddFile(arFiles[i], L"");
+	}
+
+	return pCefDragData;
+}
+
 void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 {
 	if (!m_pInternal || NULL == pEvent)
@@ -6675,6 +6699,71 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 		SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
 		break;
 	}
+	case ASC_MENU_EVENT_TYPE_CEF_DRAG_ENTER:
+	{
+		NSEditorApi::CAscLocalDragDropData* pData = (NSEditorApi::CAscLocalDragDropData*)pEvent->m_pData;
+
+		CefRefPtr<CefDragData> pCefDragData = ConvertDragDropData(pData);
+		if (m_pInternal && m_pInternal->m_handler)
+		{
+			CefMouseEvent cefMouseEvent;
+			cefMouseEvent.modifiers = EVENTFLAG_LEFT_MOUSE_BUTTON | EVENTFLAG_MIDDLE_MOUSE_BUTTON | EVENTFLAG_RIGHT_MOUSE_BUTTON;
+			cefMouseEvent.x = pData->get_X();
+			cefMouseEvent.y = pData->get_Y();
+
+			//m_pInternal->m_handler->GetBrowser()->GetHost()->DragTargetDragEnter(pCefDragData, cefMouseEvent, DRAG_OPERATION_COPY);
+
+			// pRenderHandler is NULL
+			//CefRefPtr<CefRenderHandler> pRenderHandler = m_pInternal->m_handler->GetRenderHandler();
+			//if (pRenderHandler)
+			//	pRenderHandler->StartDragging(browser, pCefDragData, DRAG_OPERATION_COPY, pData->get_X(), pData->get_Y());
+
+			// Send to resolver
+			CefRefPtr<CefDragHandler> pDragHandler = m_pInternal->m_handler->GetDragHandler();
+			if (pDragHandler)
+				pDragHandler->OnDragEnter(browser, pCefDragData, DRAG_OPERATION_COPY);
+		}
+
+		break;
+	}
+	case ASC_MENU_EVENT_TYPE_CEF_DROP:
+	{
+		NSEditorApi::CAscLocalDragDropData* pData = (NSEditorApi::CAscLocalDragDropData*)pEvent->m_pData;
+
+		std::vector<std::wstring> arrFiles = pData->get_Files();
+		std::wstring sFiles = L"[";
+		for (size_t i = 0; i < arrFiles.size(); i++)
+		{
+			sFiles += L"\\\"";
+			sFiles += arrFiles[i];
+			sFiles += L"\\\"";
+			if (i < arrFiles.size() - 1)
+				sFiles += L",";
+		}
+		sFiles += L"]";
+
+		CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_ondropdata");
+		message->GetArgumentList()->SetString(0, pData->get_Text());
+		message->GetArgumentList()->SetString(1, pData->get_Html());
+		message->GetArgumentList()->SetString(2, sFiles);
+
+		SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
+
+		/*CefRefPtr<CefDragData> pCefDragData = ConvertDragDropData(pData);
+
+		if (m_pInternal && m_pInternal->m_handler)
+		{
+			CefMouseEvent cefMouseEvent;
+			cefMouseEvent.modifiers = EVENTFLAG_LEFT_MOUSE_BUTTON | EVENTFLAG_MIDDLE_MOUSE_BUTTON | EVENTFLAG_RIGHT_MOUSE_BUTTON;
+			cefMouseEvent.x = pData->get_X();
+			cefMouseEvent.y = pData->get_Y();
+
+			m_pInternal->m_handler->GetBrowser()->GetHost()->DragTargetDragOver(cefMouseEvent, DRAG_OPERATION_COPY);
+			m_pInternal->m_handler->GetBrowser()->GetHost()->DragTargetDrop(cefMouseEvent);
+		}*/
+
+		break;
+	}
 	case ASC_MENU_EVENT_TYPE_CEF_EXECUTE_COMMAND_JS:
 	{
 		NSEditorApi::CAscExecCommandJS* pData = (NSEditorApi::CAscExecCommandJS*)pEvent->m_pData;
@@ -6951,6 +7040,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 
 	RELEASEINTERFACE(pEvent);
 }
+
 NSEditorApi::CAscMenuEvent* CCefView::ApplySync(NSEditorApi::CAscMenuEvent* pEvent)
 {
 	return NULL;

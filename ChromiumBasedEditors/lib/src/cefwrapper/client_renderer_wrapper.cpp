@@ -1956,6 +1956,9 @@ retval, exception);
 			for (std::vector<std::wstring>::iterator i = m_arDropFiles.begin(); i != m_arDropFiles.end(); i++)
 				retval->SetValue(nCurrent++, CefV8Value::CreateString(*i));
 
+			// Отдали список, чистим. Иначе всегда будем вставлять картинки при добавлении текста
+			m_arDropFiles.clear();
+
 			return true;
 		}
 		else if (name == "DropOfficeFiles")
@@ -5231,6 +5234,34 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 			NSStringUtils::string_replace(sPath, L"\\", L"\\\\");
 
 			std::wstring sCode = L"window.DesktopOfflineAppDocumentAddImageEnd(\"" + sPath + L"\");";
+			_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+		}
+		return true;
+	}
+	else if (sMessageName == "onlocaldocument_ondropdata")
+	{
+		CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
+
+		if (_frame)
+		{
+			CefRefPtr<CefListValue> list = message->GetArgumentList();
+
+			std::wstring sText = message->GetArgumentList()->GetString(0).ToWString();
+			std::wstring sHtml = message->GetArgumentList()->GetString(1).ToWString();
+			std::wstring sFiles = message->GetArgumentList()->GetString(2).ToWString();
+
+			std::vector<std::wstring> arParts;
+			arParts.push_back(sText);
+			arParts.push_back(sHtml);
+			for (size_t i = 0; i < arParts.size(); i++)
+			{
+				NSStringUtils::string_replace(arParts[i], L"\\", L"\\\\");
+				NSStringUtils::string_replace(arParts[i], L"\"", L"\\\"");
+				NSStringUtils::string_replace(arParts[i], L"\r", L"");
+				NSStringUtils::string_replace(arParts[i], L"\n", L"");
+			}
+
+			std::wstring sCode = L"if (window.ExternalDrop) {window.ExternalDrop(\"" + arParts[0] + L"\", \"" + arParts[1] + L"\", \"" + sFiles + L"\");}";
 			_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
 		}
 		return true;
