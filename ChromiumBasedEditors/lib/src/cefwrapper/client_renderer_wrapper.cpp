@@ -5261,7 +5261,11 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 				NSStringUtils::string_replace(arParts[i], L"\n", L"");
 			}
 
-			std::wstring sCode = L"if (window.ExternalDrop) {window.ExternalDrop(\"" + arParts[0] + L"\", \"" + arParts[1] + L"\", \"" + sFiles + L"\");}";
+			std::wstring sCode = L"(function(){var editor = window.Asc.editor ? window.Asc.editor : window.editor;\
+var event = document.createEvent('MouseEvents'); event.type = 'drop'; event.dataTransfer = new DataTransfer();\
+event.dataTransfer.setData('text/plain', \"" + arParts[0] + L"\"); event.dataTransfer.setData('text/html', \"" + arParts[1] + L"\");\
+editor.HtmlElement.ondrop(event);})();";
+
 			_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
 		}
 		return true;
