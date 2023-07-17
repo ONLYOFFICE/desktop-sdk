@@ -62,6 +62,11 @@ public:
 	// move/resize
 	virtual void resizeEvent(QResizeEvent* e);
 	virtual void moveEvent(QMoveEvent* e);
+
+	// drag'n'drop
+	virtual void dragEnterEvent(QDragEnterEvent *e);
+	virtual void dropEvent(QDropEvent *e);
+
 	virtual void UpdateSize();
 
 	// After create
@@ -97,6 +102,8 @@ public:
 	virtual bool eventFilter(QObject *watched, QEvent *event);
 
 	bool setFocusToCef();
+
+	NSEditorApi::CAscLocalDragDropData* convertMimeData(const QMimeData *pMimeData);
 
 protected:
 	CCefView* m_pCefView;

@@ -136,6 +136,34 @@ void QCefView::moveEvent(QMoveEvent* e)
 		m_pCefView->moveEvent();
 	QWidget::moveEvent(e);
 }
+void QCefView::dragEnterEvent(QDragEnterEvent *e)
+{
+	if (m_pCefView && m_pCefView->GetType() == cvwtEditor)
+	{
+		NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
+		pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_DRAG_ENTER;
+
+		NSEditorApi::CAscLocalDragDropData* pData = convertMimeData(e->mimeData());
+		pEvent->m_pData = pData;
+		m_pCefView->Apply(pEvent);
+
+		e->acceptProposedAction();
+	}
+}
+void QCefView::dropEvent(QDropEvent *e)
+{
+	if (m_pCefView && m_pCefView->GetType() == cvwtEditor)
+	{
+		NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
+		pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_DROP;
+
+		NSEditorApi::CAscLocalDragDropData* pData = convertMimeData(e->mimeData());
+		pEvent->m_pData = pData;
+		m_pCefView->Apply(pEvent);
+
+		e->acceptProposedAction();
+	}
+}
 
 // close
 void QCefView::closeEvent(QCloseEvent* e)
@@ -425,6 +453,8 @@ void QCefView::Init()
 		XMapWindow(display, x11w);
 		XDestroyWindow(display, x11root);
 		cef_handle = x11w;
+
+		setAcceptDrops(true);
 	}
 	else
 	{
@@ -508,6 +538,32 @@ void QCefView::UpdateSize()
 	Window child_ = GetChild(child);
 	if (child_)
 		SetWindowSize(child_, this);
+}
+
+NSEditorApi::CAscLocalDragDropData* QCefView::convertMimeData(const QMimeData *pMimeData)
+{
+	NSEditorApi::CAscLocalDragDropData* pData = NULL;
+
+	if (pMimeData)
+	{
+		pData = new NSEditorApi::CAscLocalDragDropData();
+
+		if (pMimeData->hasUrls())
+		{
+			QList<QUrl> list = pMimeData->urls();
+			for (int i = 0; i < list.size(); i++)
+			{
+				pData->add_File(list[i].toString().toStdWString());
+			}
+		}
+		if (pMimeData->hasText() && !pMimeData->hasUrls())
+			pData->put_Text(pMimeData->text().toStdWString());
+
+		if (pMimeData->hasHtml())
+			pData->put_Html(pMimeData->html().toStdWString());
+	}
+
+	return pData;
 }
 
 #endif
