@@ -6272,10 +6272,6 @@ static CefRefPtr<CefDragData> ConvertDragDropData(NSEditorApi::CAscLocalDragDrop
 		pCefDragData->SetFragmentHtml(sHtml);
 	for (size_t i = 0; i < arFiles.size(); i++)
 	{
-		std::wstring::size_type pos = arFiles[i].find(L"file://");
-		if (pos == 0)
-			NSStringUtils::string_replace(arFiles[i], L"file://", L"");
-
 		pCefDragData->AddFile(arFiles[i], L"");
 	}
 
