@@ -5442,7 +5442,7 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
 
 		CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_onsaveend");
 		message->GetArgumentList()->SetString(0, "");
-		message->GetArgumentList()->SetInt(1, 1);
+		message->GetArgumentList()->SetInt(1, (ASC_CONSTANT_CANCEL_SAVE == nError) ? 1 : 2);
 
 		if (0 == nError_Old && !sNotEditableLocal.empty())
 		{
