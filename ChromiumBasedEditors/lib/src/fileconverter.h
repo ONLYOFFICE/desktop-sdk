@@ -833,6 +833,13 @@ public:
 		X2T_AddThemesPath(oBuilder, m_pManager);
 		oBuilder.WriteString(L"<m_bDontSaveAdditional>true</m_bDontSaveAdditional>");
 		oBuilder.WriteString(sParams);
+
+		std::wstring sDstTmpDir = NSDirectory::CreateDirectoryWithUniqueName(m_oInfo.m_sRecoveryDir);
+
+		oBuilder.WriteString(L"<m_sTempDir>");
+		oBuilder.WriteEncodeXmlString(sDstTmpDir);
+		oBuilder.WriteString(L"</m_sTempDir>");
+
 		oBuilder.WriteString(L"</TaskQueueDataConvert>");
 
 		std::wstring sXmlConvert = oBuilder.GetData();
@@ -845,7 +852,10 @@ public:
 		int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileForParams, m_pManager, m_pManager->m_pInternal->m_bIsEnableConvertLogs);
 
 		if (!m_pManager->m_pInternal->m_bDebugInfoSupport)
+		{
 			NSFile::CFileBinary::Remove(sTempFileForParams);
+			NSDirectory::DeleteDirectory(sDstTmpDir);
+		}
 
 		if (0 == nReturnCode)
 			CheckSignatures(sDestinationPath);
