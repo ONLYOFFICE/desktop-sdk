@@ -646,7 +646,11 @@ public:
 		}
 
 		std::wstring sLocalFilePath = m_oInfo.m_sFileSrc;
-		std::wstring sDestinationPath = m_oInfo.m_sRecoveryDir + L"/" + (m_sName.empty() ? NSFile::GetFileName(sLocalFilePath) : m_sName);
+
+		std::wstring sNameCorrect = m_sName.empty() ? NSFile::GetFileName(sLocalFilePath) : m_sName;
+		NSStringUtils::string_replace(sNameCorrect, L"/", L"_");
+		NSStringUtils::string_replace(sNameCorrect, L"\\", L"_");
+		std::wstring sDestinationPath = m_oInfo.m_sRecoveryDir + L"/" + sNameCorrect;
 
 		if (!m_oInfo.m_sTemplateUrl.empty())
 		{
