@@ -48,8 +48,8 @@
 #endif
 
 #include <iostream>
-#include "../../../core/DesktopEditor/common/File.h"
-#include "../../../core/DesktopEditor/common/Types.h"
+#include "../../../../core/DesktopEditor/common/File.h"
+#include "../../../../core/DesktopEditor/common/Types.h"
 
 namespace NSSystem
 {
