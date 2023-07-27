@@ -58,6 +58,10 @@ namespace NSQRenderer
 		virtual HRESULT get_PenMiterLimit(double* dOffset) override;
 		virtual HRESULT put_PenMiterLimit(const double& dOffset) override;
 		virtual HRESULT PenDashPattern(double* pPattern, LONG lCount) override;
+		virtual HRESULT get_BrushTextureImage(Aggplus::CImage** pImage) override;
+		virtual HRESULT put_BrushTextureImage(Aggplus::CImage* pImage) override;
+		virtual HRESULT get_BrushTransform(Aggplus::CMatrix& oMatrix) override;
+		virtual HRESULT put_BrushTransform(const Aggplus::CMatrix& oMatrix) override;
 
 		// brush ------------------------------------------------------------------------------------
 		virtual HRESULT get_BrushType(LONG* lType) override;

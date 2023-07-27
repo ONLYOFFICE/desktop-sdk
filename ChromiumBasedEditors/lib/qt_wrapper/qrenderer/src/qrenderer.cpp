@@ -923,6 +923,23 @@ HRESULT NSQRenderer::CQRenderer::put_PenMiterLimit(const double &dOffset)
 	return S_OK;
 }
 
+HRESULT get_BrushTextureImage(Aggplus::CImage** pImage)
+{
+	return S_OK;
+}
+HRESULT put_BrushTextureImage(Aggplus::CImage* pImage)
+{
+	return S_OK;
+}
+HRESULT get_BrushTransform(Aggplus::CMatrix& oMatrix)
+{
+	return S_OK;
+}
+HRESULT put_BrushTransform(const Aggplus::CMatrix& oMatrix)
+{
+	return S_OK;
+}
+
 HRESULT NSQRenderer::CQRenderer::PenDashPattern(double *pPattern, LONG lCount)
 {
 #ifdef ENABLE_LOGS
@@ -1187,6 +1204,11 @@ HRESULT NSQRenderer::CQRenderer::put_BrushGradientColors(LONG *lColors, double *
 	}
 	return S_OK;
 }
+
+HRESULT NSQRenderer::CQRenderer::get_BrushTextureImage(Aggplus::CImage** pImage) { return S_OK; }
+HRESULT NSQRenderer::CQRenderer::put_BrushTextureImage(Aggplus::CImage* pImage) { return S_OK; }
+HRESULT NSQRenderer::CQRenderer::get_BrushTransform(Aggplus::CMatrix& oMatrix) { return S_OK; }
+HRESULT NSQRenderer::CQRenderer::put_BrushTransform(const Aggplus::CMatrix& oMatrix) { return S_OK; }
 
 HRESULT NSQRenderer::CQRenderer::get_FontName(std::wstring *bsName)
 {
@@ -2313,6 +2335,10 @@ public:
 	virtual HRESULT get_PenMiterLimit(double* dOffset) override { return S_OK; }
 	virtual HRESULT put_PenMiterLimit(const double& dOffset) override { return S_OK; }
 	virtual HRESULT PenDashPattern(double* pPattern, LONG lCount) override { return S_OK; }
+	virtual HRESULT get_BrushTextureImage(Aggplus::CImage** pImage) override { return S_OK; }
+	virtual HRESULT put_BrushTextureImage(Aggplus::CImage* pImage) override { m_bIsBreak = true; return S_OK; }
+	virtual HRESULT get_BrushTransform(Aggplus::CMatrix& oMatrix) override { return S_OK; }
+	virtual HRESULT put_BrushTransform(const Aggplus::CMatrix& oMatrix)	override { m_bIsBreak = true; return S_OK; }
 
 	// brush ------------------------------------------------------------------------------------
 	virtual HRESULT get_BrushType(LONG* lType) override { return S_OK; }
