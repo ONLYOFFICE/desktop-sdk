@@ -557,7 +557,6 @@ void QCefView::dropEvent(QDropEvent *e)
 			NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
 			pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_DROP;
 
-			NSEditorApi::CAscLocalDragDropData* pData = convertMimeData(e->mimeData());
 			pEvent->m_pData = pData;
 			m_pCefView->Apply(pEvent);
 		}
