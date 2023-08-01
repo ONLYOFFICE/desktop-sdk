@@ -336,6 +336,16 @@ namespace NSRequest
 			int responseStatus = response->GetStatus();
 			std::string sStatusText = response->GetStatusText().ToString();
 
+			// TODO: https://bugzilla.onlyoffice.com/show_bug.cgi?id=63094
+			if (404 == responseStatus)
+			{
+				if (std::string::npos != m_download_data.find("A runtime error has occurred") &&
+					std::string::npos != m_download_data.find("-- Web.Config Configuration File --"))
+				{
+					status = UR_FAILED;
+				}
+			}
+
 			if (307 == responseStatus)
 			{
 				status = UR_SUCCESS;
