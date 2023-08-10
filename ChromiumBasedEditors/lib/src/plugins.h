@@ -212,6 +212,9 @@ public:
 					}
 				}
 			}
+
+			// Изменить ссылки на v1
+			ReplaceHtmlUrls(sTempExt);
 		}
 
 		if (sPluginName.empty())
@@ -243,6 +246,10 @@ public:
 		{
 			NSDirectory::CopyDirectory(sPluginBackupDir, sPluginDir);
 			NSDirectory::DeleteDirectory(sPluginBackupDir);
+
+			// Изменить ссылки на v1
+			ReplaceHtmlUrls(sPluginDir);
+
 			bResult = true;
 		}
 
@@ -284,6 +291,34 @@ public:
 	}
 
 private:
+	void ReplaceInFile(const std::wstring& sFile, const std::wstring& sText, const std::wstring& sReplace)
+	{
+		std::wstring sContent;
+		if (NSFile::CFileBinary::ReadAllTextUtf8(sFile, sContent))
+		{
+			NSStringUtils::string_replace(sContent, sText, sReplace);
+			NSFile::CFileBinary::Remove(sFile);
+
+			NSFile::CFileBinary oFile;
+			oFile.CreateFileW(sFile);
+			oFile.WriteStringUTF8(sContent);
+			oFile.CloseFile();
+		}
+	}
+
+	void ReplaceHtmlUrls(const std::wstring& sPluginDir)
+	{
+		std::vector<std::wstring> arFiles = NSDirectory::GetFiles(sPluginDir, true);
+		for (size_t i = 0; i < arFiles.size(); i++)
+		{
+			std::wstring sPath = arFiles[i];
+			std::wstring sExt = NSFile::GetFileExtention(sPath);
+
+			if (sExt == L"html")
+				ReplaceInFile(sPath, L"https://onlyoffice.github.io/sdkjs-plugins/", L"../");
+		}
+	}
+
 	std::vector<std::string> GetDirPlugins(std::wstring sDir)
 	{
 		// Системные плагины могут быть тоже обновлены, они будут в папке пользователя
