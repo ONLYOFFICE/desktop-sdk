@@ -212,9 +212,6 @@ public:
 					}
 				}
 			}
-
-			// Изменить ссылки на v1
-			ReplaceHtmlUrls(sTempExt);
 		}
 
 		if (sPluginName.empty())
@@ -226,6 +223,9 @@ public:
 
 		NSDirectory::CopyDirectory(sTempExt, sNew);
 		NSDirectory::DeleteDirectory(sTemp);
+
+		// Изменить ссылки на v1
+		ReplaceHtmlUrls(sNew);
 
 		return true;
 	}
@@ -315,7 +315,20 @@ private:
 			std::wstring sExt = NSFile::GetFileExtention(sPath);
 
 			if (sExt == L"html")
-				ReplaceInFile(sPath, L"https://onlyoffice.github.io/sdkjs-plugins/", L"../");
+			{
+				// Считаем уровень папки относитьльно локальной v1 (UserDir / PluginName / N / *.html)
+				std::wstring _sPath = sPath;
+				NSStringUtils::string_replace(_sPath, m_strUserDirectory, L"");
+				NSStringUtils::string_replace(_sPath, L"\\", L"/");
+
+				std::wstring sLayers = L"";
+				for (size_t j = 1; j < _sPath.length(); j++)
+				{
+					if (_sPath[j] == L'/')
+						sLayers += L"../";
+				}
+				ReplaceInFile(sPath, L"https://onlyoffice.github.io/sdkjs-plugins/", sLayers);
+			}
 		}
 	}
 
