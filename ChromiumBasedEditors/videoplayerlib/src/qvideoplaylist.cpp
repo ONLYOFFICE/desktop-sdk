@@ -441,14 +441,15 @@ void QVideoPlaylist::Load()
     if (!oNode.FromXmlFile(sDir + L"/settings.xml"))
         return;
 
-    std::vector<XmlUtils::CXmlNode> oFiles;
+	XmlUtils::CXmlNodes oFiles;
     if (oNode.GetNodes(L"file", oFiles))
     {
         QStringList list;
-        size_t nCount = oFiles.size();
-        for (size_t i = 0; i < nCount; ++i)
+		int nCount = oFiles.GetCount();
+		for (int i = 0; i < nCount; ++i)
         {
-            XmlUtils::CXmlNode & nodeFile = oFiles[i];
+			XmlUtils::CXmlNode nodeFile;
+			oFiles.GetAt(i, nodeFile);
 
             list.append(QString::fromStdWString(nodeFile.GetText()));
         }
@@ -589,21 +590,21 @@ void QVideoPlaylist::_onSlotMediaChanged(QMediaContent content)
 #else
 void QVideoPlaylist::_onVlcMediaParseChanged(bool isparsed)
 {
-    if (m_sCheckFile.isEmpty())
-        return;
+	if (m_sCheckFile.isEmpty())
+		return;
 
-    qint64 duration = m_pCheckMedia->duration();
+	libvlc_time_t duration = m_pCheckMedia->duration();
 
     QString sCheckFile = m_sCheckFile;
 
     m_sCheckFile = "";
-    delete m_pCheckMedia;
+	delete m_pCheckMedia;
 
-    qint64 nH = (qint64)(duration / 3600000);
+	libvlc_time_t nH = (libvlc_time_t)(duration / 3600000);
     duration -= (nH * 3600000);
-    qint64 nM = (qint64)(duration / 60000);
+	libvlc_time_t nM = (libvlc_time_t)(duration / 60000);
     duration -= (nM * 60000);
-    qint64 nS = (qint64)(duration / 1000);
+	libvlc_time_t nS = (libvlc_time_t)(duration / 1000);
 
     QString sDur = "";
     if (nH > 0)
@@ -646,9 +647,9 @@ void QVideoPlaylist::_onThreadFunc()
     m_oCS.Leave();
 
 #ifndef USE_VLC_LIBRARY
-    QMediaPlayer_setMedia(m_pCheckPlayer, m_sCheckFile);
+	QMediaPlayer_setMedia(m_pCheckPlayer, m_sCheckFile);
 #else
-    m_pCheckMedia = new VlcMedia(m_sCheckFile, true, (VlcInstance*)NSBaseVideoLibrary::GetLibrary());
+	m_pCheckMedia = new CVlcMedia(reinterpret_cast<libvlc_instance_t*>(NSBaseVideoLibrary::GetLibrary()), m_sCheckFile);
     QObject::connect(m_pCheckMedia, SIGNAL(parsedChanged(bool)), this, SLOT(_onVlcMediaParseChanged(bool)));
     m_pCheckMedia->parse();
 #endif

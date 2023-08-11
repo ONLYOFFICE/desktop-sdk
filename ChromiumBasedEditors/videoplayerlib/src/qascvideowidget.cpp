@@ -74,24 +74,20 @@ QAscVideoWidget::QAscVideoWidget(QWidget *parent)
 
     m_pEngine = NULL;
 
-#ifdef USE_VLC_LIBRARY
-    m_pVlcPlayer = NULL;
-#endif
-
 #ifndef USE_VLC_LIBRARY
     m_pEngine = new QMediaPlayer(parent);
     m_pEngine->setVideoOutput(this);
 
-    QObject::connect(m_pEngine, SIGNAL(stateChanged(QMediaPlayer_State)), this, SLOT(slotChangeState(QMediaPlayer_State)));
+	QObject::connect(m_pEngine, SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(slotChangeState(QMediaPlayer::State)));
     QObject::connect(m_pEngine, SIGNAL(positionChanged(qint64)), this, SLOT(slotPositionChange(qint64)));
 #else
-    m_pVlcPlayer = new VlcMediaPlayer((VlcInstance*)NSBaseVideoLibrary::GetLibrary());
-    m_pVlcPlayer->setVideoWidget(this);
+	m_pVlcPlayer = new CVlcPlayer();
+	m_pVlcPlayer->integrateIntoWidget(this);
 
-    QObject::connect(m_pVlcPlayer, SIGNAL(stateChanged()), this, SLOT(slotVlcStateChanged()));
-    QObject::connect(m_pVlcPlayer, SIGNAL(timeChanged(int)), this, SLOT(slotVlcTimeChanged(int)));
+	QObject::connect(m_pVlcPlayer, SIGNAL(stateChanged(libvlc_state_t)), this, SLOT(slotVlcStateChanged(libvlc_state_t)));
+	QObject::connect(m_pVlcPlayer, SIGNAL(timeChanged(libvlc_time_t)), this, SLOT(slotVlcTimeChanged(libvlc_time_t)));
 
-    m_pMedia = NULL;
+	m_pMedia = nullptr;
 #endif
 }
 
@@ -100,6 +96,8 @@ QAscVideoWidget::~QAscVideoWidget()
 #ifdef USE_VLC_LIBRARY
     m_pVlcPlayer->stop();
     m_pVlcPlayer->deleteLater();
+	if (m_pMedia)
+		delete m_pMedia;
 #endif
 }
 
@@ -174,8 +172,7 @@ void QAscVideoWidget::setVolume(int nVolume)
 #ifndef USE_VLC_LIBRARY
     QMediaPlayer_setVolume(m_pEngine, nVolume);
 #else
-    if (m_pVlcPlayer->audio())
-        m_pVlcPlayer->audio()->setVolume(nVolume * 2);
+	m_pVlcPlayer->setVolume(nVolume * 2);
 #endif
 }
 
@@ -186,7 +183,7 @@ void QAscVideoWidget::setSeek(int nPos)
     double dProgress = (double)nPos / 100000.0;
     m_pEngine->setPosition((qint64)(dProgress * nDuration));
 #else
-    qint64 nDuration = m_pMedia ? m_pMedia->duration() : 0;
+	libvlc_time_t nDuration = m_pMedia ? m_pMedia->duration() : 0;
     double dProgress = (double)nPos / 100000.0;
     m_pVlcPlayer->setTime((int)(dProgress * nDuration));
 #endif
@@ -202,8 +199,8 @@ void QAscVideoWidget::open(QString& sFile)
 
     if (!m_pMedia && !sFile.isEmpty())
     {
-        delete m_pMedia;
-        m_pMedia = NULL;
+		delete m_pMedia;
+		m_pMedia = nullptr;
     }
 
     if (sFile.isEmpty())
@@ -212,7 +209,7 @@ void QAscVideoWidget::open(QString& sFile)
         return;
     }
 
-    m_pMedia = new VlcMedia(sFile, true, (VlcInstance*)NSBaseVideoLibrary::GetLibrary());
+	m_pMedia = new CVlcMedia(reinterpret_cast<libvlc_instance_t*>(NSBaseVideoLibrary::GetLibrary()), sFile);
     m_pVlcPlayer->open(m_pMedia);
 #endif
 }
@@ -297,20 +294,23 @@ void QAscVideoWidget::slotChangeState(QMediaPlayer_State state)
 }
 
 #ifdef USE_VLC_LIBRARY
-void QAscVideoWidget::slotVlcStateChanged()
+void QAscVideoWidget::slotVlcStateChanged(libvlc_state_t state)
 {
-    Vlc::State state = m_pVlcPlayer->state();
     int stateQ = -1;
 
-    if (state == Vlc::Playing)
+	if (state == libvlc_Playing)
     {
         stateQ = QMediaPlayer::PlayingState;
         setVolume(m_nVolume);
     }
-    else if (state == Vlc::Paused)
-        stateQ = QMediaPlayer::PausedState;
-    else if (state == Vlc::Ended)
-        stateQ = QMediaPlayer::StoppedState;
+	else if (state == libvlc_Paused)
+	{
+		stateQ = QMediaPlayer::PausedState;
+	}
+	else if (state == libvlc_Ended)
+	{
+		stateQ = QMediaPlayer::StoppedState;
+	}
 
     if (stateQ < 0)
         return;
@@ -320,7 +320,7 @@ void QAscVideoWidget::slotVlcStateChanged()
 
 void QAscVideoWidget::slotVlcTimeChanged(int time)
 {
-    qint64 nDuration = m_pMedia->duration();
+	libvlc_time_t nDuration = m_pMedia->duration();
     double dProgress = (double)time / nDuration;
     emit posChanged((int)(100000 * dProgress + 0.5));
 }
@@ -330,7 +330,7 @@ void QAscVideoWidget::slotPositionChange(qint64 pos)
 {
     qint64 nDuration = m_pEngine->duration();
     double dProgress = (double)pos / nDuration;
-    emit posChanged((int)(100000 * dProgress + 0.5));
+	emit posChanged((int)(100000 * dProgress + 0.5));
 }
 
 QMediaPlayer* QAscVideoWidget::getEngine()
@@ -341,13 +341,10 @@ QMediaPlayer* QAscVideoWidget::getEngine()
 bool QAscVideoWidget::isAudio()
 {
 #ifdef USE_VLC_LIBRARY
-    if (!m_pVlcPlayer || !m_pVlcPlayer->video())
-        return true;
+	if (!m_pVlcPlayer || !m_pMedia)
+		return true;
 
-    if (0 == m_pVlcPlayer->video()->trackCount())
-        return true;
-
-    return false;
+	return m_pVlcPlayer->isAudio();
 #else
     if (m_pEngine && !QMediaPlayer_isAudio(m_pEngine))
         return false;

@@ -147,7 +147,7 @@ private:
 #ifndef USE_VLC_LIBRARY
     QMediaPlayer* m_pCheckPlayer;
 #else
-    VlcMedia* m_pCheckMedia;
+	CVlcMedia* m_pCheckMedia;
 #endif
 
     QString m_sCheckFile;

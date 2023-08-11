@@ -9,7 +9,7 @@ core_linux {
     DEFINES += QFILEDIALOG_DONTUSENATIVEDIALOG
 }
 
-LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lkernel
+ADD_DEPENDENCY(kernel)
 
 HEADERS += \
     $$PWD/src/lib_base.h \
@@ -17,8 +17,8 @@ HEADERS += \
     $$PWD/src/qfooterpanel.h \
     $$PWD/src/qvideoslider.h \
     $$PWD/src/qvideoplaylist.h \
-	$$PWD/src/qascvideowidget.h \
-	$$PWD/src/qascmediaplayer.h
+    $$PWD/src/qascvideowidget.h \
+    $$PWD/src/qascmediaplayer.h
 
 SOURCES += \
     $$PWD/src/lib_base.cpp \
@@ -35,29 +35,13 @@ HEADERS += \
 RESOURCES += \
     $$PWD/IconsVideoPlayerLib.qrc
 
-VIDEO_PLAYER_VLC_DIR = $$(VIDEO_PLAYER_VLC_DIR)
+#VIDEO_PLAYER_VLC_DIR = $$(VIDEO_PLAYER_VLC_DIR)
+VIDEO_PLAYER_VLC_DIR = $$CORE_ROOT_DIR/Common/3dParty/libvlc
 !isEmpty(VIDEO_PLAYER_VLC_DIR){
     CONFIG += libvlc
 }
 
 libvlc {
-
-	DEFINES += USE_VLC_LIBRARY
-	INCLUDEPATH += $$VIDEO_PLAYER_VLC_DIR/$$CORE_BUILDS_PLATFORM_PREFIX/include
-
-    VLC_LIB_PREFIX=
-    core_windows {
-        core_debug {
-            VLC_LIB_PREFIX=d
-        }
-    }
-
-    core_windows {
-        LIBS += -L$$VIDEO_PLAYER_VLC_DIR/$$CORE_BUILDS_PLATFORM_PREFIX/lib -lVLCQtCore$$VLC_POSTFIX_LIB -lVLCQtWidgets$$VLC_POSTFIX_LIB
-        LIBS += -L$$VIDEO_PLAYER_VLC_DIR/$$CORE_BUILDS_PLATFORM_PREFIX/bin
-    } else {
-        LIBS += -L$$VIDEO_PLAYER_VLC_DIR/$$CORE_BUILDS_PLATFORM_PREFIX/bin -lVLCQtCore$$VLC_POSTFIX_LIB -lVLCQtWidgets$$VLC_POSTFIX_LIB
-        LIBS += -L$$VIDEO_PLAYER_VLC_DIR/$$CORE_BUILDS_PLATFORM_PREFIX/bin -lvlc -lvlccore
-    }
-
+    DEFINES += USE_VLC_LIBRARY
+    include($$CORE_ROOT_DIR/Common/3dParty/libvlc/libvlc.pri)
 }

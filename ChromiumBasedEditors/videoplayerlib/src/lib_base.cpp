@@ -38,7 +38,7 @@ static void CheckWindowsOld()
 #include "../../../../core/DesktopEditor/common/File.h"
 #include "../../../../core/DesktopEditor/common/Directory.h"
 
-static VlcInstance* g_vlc_instance = NULL;
+static libvlc_instance_t* g_vlc_instance = NULL;
 
 void NSBaseVideoLibrary::Init(QObject* parent)
 {
@@ -51,8 +51,6 @@ void NSBaseVideoLibrary::Init(QObject* parent)
 #ifdef _WIN32
     CheckWindowsOld();
 #endif
-
-    QCoreApplication::setAttribute(Qt::AA_X11InitThreads);
 
     std::wstring sProcessDir = NSFile::GetProcessDirectory();
     std::wstring sPluginsDir = sProcessDir + L"/plugins";
@@ -70,15 +68,15 @@ void NSBaseVideoLibrary::Init(QObject* parent)
         }
     }
 
-    VlcCommon::setPluginPath(QString::fromStdWString(sPluginsDir));
-    g_vlc_instance = new VlcInstance(VlcCommon::args(), NULL);
+	qputenv("VLC_PLUGIN_PATH", QString::fromStdWString(sPluginsDir).toLocal8Bit());
+	g_vlc_instance = libvlc_new(0, nullptr);
 }
 void NSBaseVideoLibrary::Destroy()
 {
     if (g_vlc_instance)
-    {
-        delete g_vlc_instance;
-        g_vlc_instance = NULL;
+	{
+		libvlc_release(g_vlc_instance);
+		g_vlc_instance = nullptr;
     }
 }
 void* NSBaseVideoLibrary::GetLibrary()

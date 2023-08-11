@@ -5,14 +5,8 @@
 
 #ifdef USE_VLC_LIBRARY
 
-#include <VLCQtCore/Common.h>
-#include <VLCQtCore/Instance.h>
-#include <VLCQtCore/Media.h>
-#include <VLCQtCore/MediaPlayer.h>
-#include <VLCQtCore/Audio.h>
-#include <VLCQtCore/Video.h>
-#include <VLCQtWidgets/WidgetSeek.h>
-#include <VLCQtWidgets/WidgetVideo.h>
+#include "libvlc_base.h"
+#include "vlcplayer.h"
 
 #endif
 

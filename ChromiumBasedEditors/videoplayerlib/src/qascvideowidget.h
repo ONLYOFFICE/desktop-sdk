@@ -12,7 +12,7 @@
 #ifndef USE_VLC_LIBRARY
 #define QASCVIDEOBASE QVideoWidget
 #else
-#define QASCVIDEOBASE VlcWidgetVideo
+#define QASCVIDEOBASE QWidget
 #endif
 
 class QAscVideoWidget;
@@ -48,8 +48,8 @@ class QAscVideoWidget : public QASCVIDEOBASE
     QString m_sCurrentSource;
 
 #ifdef USE_VLC_LIBRARY
-    VlcMediaPlayer* m_pVlcPlayer;
-    VlcMedia* m_pMedia;
+	CVlcPlayer* m_pVlcPlayer;
+	CVlcMedia* m_pMedia;
 #endif
 
     int m_nVolume;
@@ -91,11 +91,11 @@ signals:
     void posChanged(int);
 
 public slots:
-    void slotChangeState(QMediaPlayer_State state);
+	void slotChangeState(QMediaPlayer::State state);
     void slotPositionChange(qint64 pos);    
 
 #ifdef USE_VLC_LIBRARY
-    void slotVlcStateChanged();
+	void slotVlcStateChanged(libvlc_state_t state);
     void slotVlcTimeChanged(int time);
 #endif
 
