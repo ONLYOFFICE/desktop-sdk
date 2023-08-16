@@ -84,8 +84,8 @@ QAscVideoWidget::QAscVideoWidget(QWidget *parent)
 	m_pVlcPlayer = new CVlcPlayer();
 	m_pVlcPlayer->integrateIntoWidget(this);
 
-	QObject::connect(m_pVlcPlayer, SIGNAL(stateChanged(libvlc_state_t)), this, SLOT(slotVlcStateChanged(libvlc_state_t)));
-	QObject::connect(m_pVlcPlayer, SIGNAL(timeChanged(libvlc_time_t)), this, SLOT(slotVlcTimeChanged(libvlc_time_t)));
+	QObject::connect(m_pVlcPlayer, SIGNAL(stateChanged(int)), this, SLOT(slotVlcStateChanged(int)));
+	QObject::connect(m_pVlcPlayer, SIGNAL(timeChanged(qint64)), this, SLOT(slotVlcTimeChanged(qint64)));
 
 	m_pMedia = nullptr;
 #endif
@@ -294,7 +294,7 @@ void QAscVideoWidget::slotChangeState(QMediaPlayer_State state)
 }
 
 #ifdef USE_VLC_LIBRARY
-void QAscVideoWidget::slotVlcStateChanged(libvlc_state_t state)
+void QAscVideoWidget::slotVlcStateChanged(int state)
 {
     int stateQ = -1;
 
@@ -318,7 +318,7 @@ void QAscVideoWidget::slotVlcStateChanged(libvlc_state_t state)
     emit stateChanged((QMediaPlayer_State)stateQ);
 }
 
-void QAscVideoWidget::slotVlcTimeChanged(int time)
+void QAscVideoWidget::slotVlcTimeChanged(qint64 time)
 {
 	libvlc_time_t nDuration = m_pMedia->duration();
     double dProgress = (double)time / nDuration;

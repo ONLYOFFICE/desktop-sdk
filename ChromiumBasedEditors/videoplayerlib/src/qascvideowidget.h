@@ -95,8 +95,8 @@ public slots:
     void slotPositionChange(qint64 pos);    
 
 #ifdef USE_VLC_LIBRARY
-	void slotVlcStateChanged(libvlc_state_t state);
-    void slotVlcTimeChanged(int time);
+	void slotVlcStateChanged(int state);
+	void slotVlcTimeChanged(qint64 time);
 #endif
 
 public:

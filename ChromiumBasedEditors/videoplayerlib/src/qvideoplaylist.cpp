@@ -593,18 +593,18 @@ void QVideoPlaylist::_onVlcMediaParseChanged(bool isparsed)
 	if (m_sCheckFile.isEmpty())
 		return;
 
-	libvlc_time_t duration = m_pCheckMedia->duration();
+	qint64 duration = m_pCheckMedia->duration();
 
     QString sCheckFile = m_sCheckFile;
 
     m_sCheckFile = "";
 	delete m_pCheckMedia;
 
-	libvlc_time_t nH = (libvlc_time_t)(duration / 3600000);
+	qint64 nH = (qint64)(duration / 3600000);
     duration -= (nH * 3600000);
-	libvlc_time_t nM = (libvlc_time_t)(duration / 60000);
+	qint64 nM = (qint64)(duration / 60000);
     duration -= (nM * 60000);
-	libvlc_time_t nS = (libvlc_time_t)(duration / 1000);
+	qint64 nS = (qint64)(duration / 1000);
 
     QString sDur = "";
     if (nH > 0)
