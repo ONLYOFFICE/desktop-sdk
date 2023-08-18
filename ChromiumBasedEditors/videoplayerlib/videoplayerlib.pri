@@ -35,7 +35,5 @@ HEADERS += \
 RESOURCES += \
     $$PWD/IconsVideoPlayerLib.qrc
 
-libvlc {
-    DEFINES += USE_VLC_LIBRARY
-	include($$CORE_ROOT_DIR/Common/3dParty/libvlc/libvlc.pri)
-}
+CONFIG += building_videoplayer_lib
+include(videoplayerlib_deps.pri)
