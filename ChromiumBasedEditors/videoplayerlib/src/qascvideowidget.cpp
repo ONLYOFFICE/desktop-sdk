@@ -81,8 +81,10 @@ QAscVideoWidget::QAscVideoWidget(QWidget *parent)
 	QObject::connect(m_pEngine, SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(slotChangeState(QMediaPlayer::State)));
 	QObject::connect(m_pEngine, SIGNAL(positionChanged(qint64)), this, SLOT(slotPositionChange(qint64)));
 #else
-	m_pVlcPlayer = new CVlcPlayer();
+	m_pVlcPlayer = new CVlcPlayer(this);
 	m_pVlcPlayer->integrateIntoWidget(this);
+	m_pOverlay = new QWidget(this);
+	m_pVlcPlayer->stackUnder(m_pOverlay);
 
 	QObject::connect(m_pVlcPlayer, SIGNAL(stateChanged(int)), this, SLOT(slotVlcStateChanged(int)));
 	QObject::connect(m_pVlcPlayer, SIGNAL(timeChanged(qint64)), this, SLOT(slotVlcTimeChanged(qint64)));
@@ -95,7 +97,6 @@ QAscVideoWidget::~QAscVideoWidget()
 {
 #ifdef USE_VLC_LIBRARY
 	m_pVlcPlayer->stop();
-	m_pVlcPlayer->deleteLater();
 	if (m_pMedia)
 		delete m_pMedia;
 #endif

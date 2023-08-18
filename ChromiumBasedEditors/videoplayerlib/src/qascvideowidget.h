@@ -50,6 +50,7 @@ class QAscVideoWidget : public QASCVIDEOBASE
 #ifdef USE_VLC_LIBRARY
 	CVlcPlayer* m_pVlcPlayer;
 	CVlcMedia* m_pMedia;
+	QWidget* m_pOverlay;
 #endif
 
 	int m_nVolume;
