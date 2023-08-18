@@ -11,7 +11,9 @@ PWD_ROOT_DIR = $$PWD
 include($$CORE_ROOT_DIR/Common/base.pri)
 
 DEFINES += DESKTOP_USE_DYNAMIC_LIBRARY_BUILDING
-ADD_DEPENDENCY(kernel, graphics, ascdocumentscore, videoplayer)
+ADD_DEPENDENCY(kernel, graphics, ascdocumentscore)
+
+include($$CORE_ROOT_DIR/../desktop-sdk/ChromiumBasedEditors/videoplayerlib/videoplayerlib_deps.pri)
 
 HEADERS += \
     $$PWD/include/qcefview.h \
