@@ -35,12 +35,7 @@ HEADERS += \
 RESOURCES += \
     $$PWD/IconsVideoPlayerLib.qrc
 
-VIDEO_PLAYER_VLC_DIR = $$(VIDEO_PLAYER_VLC_DIR)
-!isEmpty(VIDEO_PLAYER_VLC_DIR){
-    CONFIG += libvlc
-}
-
 libvlc {
     DEFINES += USE_VLC_LIBRARY
-    include($$VIDEO_PLAYER_VLC_DIR/libvlc.pri)
+	include($$CORE_ROOT_DIR/Common/3dParty/libvlc/libvlc.pri)
 }
