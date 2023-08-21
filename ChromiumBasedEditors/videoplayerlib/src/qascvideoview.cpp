@@ -489,6 +489,9 @@ void QAscVideoView::slotPlayerStateChanged(QMediaPlayer_State state)
 			)
 
 	{
+		// force slider to be put to the end
+		m_pInternal->m_pFooter->m_pSlider->setValue(100000);
+		// play next video (if any)
 		m_pInternal->m_pPlaylist->Next();
 	}
 }
