@@ -131,6 +131,7 @@ QAscVideoView::QAscVideoView(QWidget *parent, int r, int g, int b) : QWidget(par
 	m_pInternal->m_bIsPresentationMode = false;
 	m_pInternal->m_bIsPresentationModeMediaTypeSended = false;
 	m_pInternal->m_bIsDestroy = false;
+	m_pInternal->m_bIsMuted = false;
 	UpdatePlayPause();
 
 	m_pInternal->m_bIsSeekEnabled = true;
@@ -292,6 +293,11 @@ void QAscVideoView::keyPressEvent(QKeyEvent *event)
 		PlayPause();
 		break;
 	}
+	case Qt::Key_M:
+	{
+		ToggleMute();
+		break;
+	}
 	default:
 		break;
 	}
@@ -313,6 +319,25 @@ void QAscVideoView::PlayPause()
 		m_pInternal->m_pPlayer->setPlay();
 	else
 		m_pInternal->m_pPlayer->setPause();
+}
+
+void QAscVideoView::ToggleMute()
+{
+	if (m_pInternal->m_bIsMuted)
+	{
+		// restore and apply old volume
+		m_pInternal->m_pPlayer->m_nVolume = m_pInternal->m_nMutedVolume;
+		m_pInternal->m_pVolumeControlV->setValue(m_pInternal->m_pPlayer->m_nVolume);
+	}
+	else
+	{
+		// save volume
+		m_pInternal->m_nMutedVolume = m_pInternal->m_pPlayer->m_nVolume;
+		// set current volume to 0
+		m_pInternal->m_pVolumeControlV->setValue(0);
+	}
+	// reverse mute flag
+	m_pInternal->m_bIsMuted = !m_pInternal->m_bIsMuted;
 }
 
 void QAscVideoView::Volume()

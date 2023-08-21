@@ -61,6 +61,7 @@ public:
 
 public:
 	void PlayPause();
+	void ToggleMute();
 	void Volume();
 	void Fullscreen();
 	void Playlist(double duration = 100);
