@@ -283,6 +283,11 @@ void QAscVideoView::keyPressEvent(QKeyEvent *event)
 		m_pInternal->m_pFooter->m_pSlider->event(event);
 		break;
 	}
+	case Qt::Key_Space:
+	{
+		PlayPause();
+		break;
+	}
 	default:
 		break;
 	}
@@ -314,6 +319,8 @@ void QAscVideoView::Volume()
 void QAscVideoView::Fullscreen()
 {
 	m_pInternal->m_pPlayer->setFullScreenOnCurrentScreen(true);
+	// to correctly handle key press events
+	this->setFocus();
 }
 
 void QAscVideoView::Playlist(double duration)
