@@ -81,8 +81,6 @@ QAscVideoWidget::QAscVideoWidget(QWidget *parent)
 #else
 	m_pVlcPlayer = new CVlcPlayer(this);
 	m_pVlcPlayer->integrateIntoWidget(this);
-	m_pOverlay = new QWidget(this);
-	m_pVlcPlayer->stackUnder(m_pOverlay);
 
 	QObject::connect(m_pVlcPlayer, SIGNAL(stateChanged(int)), this, SLOT(slotVlcStateChanged(int)));
 	QObject::connect(m_pVlcPlayer, SIGNAL(timeChanged(qint64)), this, SLOT(slotVlcTimeChanged(qint64)));
