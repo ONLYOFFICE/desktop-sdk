@@ -72,8 +72,6 @@ QAscVideoWidget::QAscVideoWidget(QWidget *parent)
 	setAttribute(Qt::WA_OpaquePaintEvent);
 	*/
 
-	m_pEngine = NULL;
-
 #ifndef USE_VLC_LIBRARY
 	m_pEngine = new QMediaPlayer(parent);
 	m_pEngine->setVideoOutput(this);
@@ -81,7 +79,7 @@ QAscVideoWidget::QAscVideoWidget(QWidget *parent)
 	QObject::connect(m_pEngine, SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(slotChangeState(QMediaPlayer::State)));
 	QObject::connect(m_pEngine, SIGNAL(positionChanged(qint64)), this, SLOT(slotPositionChange(qint64)));
 #else
-	m_pVlcPlayer = new CVlcPlayer();
+	m_pVlcPlayer = new CVlcPlayer(this);
 	m_pVlcPlayer->integrateIntoWidget(this);
 
 	QObject::connect(m_pVlcPlayer, SIGNAL(stateChanged(int)), this, SLOT(slotVlcStateChanged(int)));
@@ -95,7 +93,6 @@ QAscVideoWidget::~QAscVideoWidget()
 {
 #ifdef USE_VLC_LIBRARY
 	m_pVlcPlayer->stop();
-	m_pVlcPlayer->deleteLater();
 	if (m_pMedia)
 		delete m_pMedia;
 #endif
@@ -285,14 +282,6 @@ void QAscVideoWidget::setFullScreenOnCurrentScreen(bool isFullscreen)
 	}
 }
 
-void QAscVideoWidget::slotChangeState(QMediaPlayer_State state)
-{
-	if (QMediaPlayer::PlayingState == state)
-		setVolume(m_nVolume);
-
-	emit stateChanged(state);
-}
-
 #ifdef USE_VLC_LIBRARY
 void QAscVideoWidget::slotVlcStateChanged(int state)
 {
@@ -324,7 +313,15 @@ void QAscVideoWidget::slotVlcTimeChanged(qint64 time)
 	double dProgress = (double)time / nDuration;
 	emit posChanged((int)(100000 * dProgress + 0.5));
 }
-#endif
+#else
+
+void QAscVideoWidget::slotChangeState(QMediaPlayer_State state)
+{
+	if (QMediaPlayer::PlayingState == state)
+		setVolume(m_nVolume);
+
+	emit stateChanged(state);
+}
 
 void QAscVideoWidget::slotPositionChange(qint64 pos)
 {
@@ -337,6 +334,7 @@ QMediaPlayer* QAscVideoWidget::getEngine()
 {
 	return m_pEngine;
 }
+#endif
 
 bool QAscVideoWidget::isAudio()
 {
