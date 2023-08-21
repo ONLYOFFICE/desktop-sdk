@@ -44,13 +44,14 @@ class QAscVideoWidget : public QASCVIDEOBASE
 {
 	Q_OBJECT
 
-	QMediaPlayer* m_pEngine;
 	QString m_sCurrentSource;
 
 #ifdef USE_VLC_LIBRARY
 	CVlcPlayer* m_pVlcPlayer;
 	CVlcMedia* m_pMedia;
 	QWidget* m_pOverlay;
+#else
+	QMediaPlayer* m_pEngine;
 #endif
 
 	int m_nVolume;
@@ -82,7 +83,9 @@ public:
 	bool isVideoFullScreen();
 	void setFullScreenOnCurrentScreen(bool isFullscreen);
 
+#ifndef USE_VLC_LIBRARY
 	QMediaPlayer* getEngine();
+#endif
 
 	bool isAudio();
 	void stop();
@@ -92,12 +95,12 @@ signals:
 	void posChanged(int);
 
 public slots:
-	void slotChangeState(QMediaPlayer::State state);
-	void slotPositionChange(qint64 pos);
-
 #ifdef USE_VLC_LIBRARY
 	void slotVlcStateChanged(int state);
 	void slotVlcTimeChanged(qint64 time);
+#else
+	void slotChangeState(QMediaPlayer::State state);
+	void slotPositionChange(qint64 pos);
 #endif
 
 public:
