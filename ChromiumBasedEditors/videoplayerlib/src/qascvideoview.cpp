@@ -81,6 +81,10 @@ QAscVideoView::QAscVideoView(QWidget *parent, int r, int g, int b) : QWidget(par
 	m_pInternal->m_pPlaylist->setGeometry(width(), 0, 250, height());
 
 	QObject::connect(m_pInternal->m_pPlaylist, SIGNAL(fileChanged(QString)), this, SLOT(slotOpenFile(QString)));
+	m_pInternal->m_pPlaylist->installEventFilter(this);
+	m_pInternal->m_pPlaylist->m_pListView->installEventFilter(this);
+	m_pInternal->m_pPlaylist->m_pAdd->installEventFilter(this);
+	m_pInternal->m_pPlaylist->m_pClear->installEventFilter(this);
 
 	m_pInternal->m_pVolumeControl = new QWidget(this);
 	m_pInternal->m_pVolumeControl->setHidden(true);

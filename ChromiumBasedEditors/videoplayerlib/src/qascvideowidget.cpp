@@ -105,7 +105,8 @@ void QAscVideoWidget::keyPressEvent(QKeyEvent *event)
 		setFullScreenOnCurrentScreen(false);
 		event->accept();
 	}
-	else if (((event->key() == Qt::Key_Enter) || (event->key() == Qt::Key_Return)) && event->modifiers() & Qt::AltModifier)
+	else if ((((event->key() == Qt::Key_Enter) || (event->key() == Qt::Key_Return)) && event->modifiers() & Qt::AltModifier) ||
+			 (event->key() == Qt::Key_F))
 	{
 		setFullScreenOnCurrentScreen(!isVideoFullScreen());
 		event->accept();

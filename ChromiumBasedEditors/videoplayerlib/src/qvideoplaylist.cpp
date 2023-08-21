@@ -374,6 +374,7 @@ void QVideoPlaylist::slotButtonAdd()
 														  );
 
 	AddFiles(filenames);
+	this->setFocus();
 }
 
 void QVideoPlaylist::slotButtonClear()
