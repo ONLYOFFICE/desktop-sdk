@@ -12,93 +12,96 @@
 #ifndef USE_VLC_LIBRARY
 #define QASCVIDEOBASE QVideoWidget
 #else
-#define QASCVIDEOBASE VlcWidgetVideo
+#define QASCVIDEOBASE QWidget
 #endif
 
 class QAscVideoWidget;
 class QAscVideoView_Private
 {
 public:
-    QFooterPanel*   m_pFooter;
+	QFooterPanel*   m_pFooter;
 
-    QWidget*        m_pVolumeControl;
-    QVideoSlider*   m_pVolumeControlV;
+	QWidget*        m_pVolumeControl;
+	QVideoSlider*   m_pVolumeControlV;
 
-    QVideoPlaylist*     m_pPlaylist;
-    QAscVideoWidget*    m_pPlayer;
+	QVideoPlaylist*     m_pPlaylist;
+	QAscVideoWidget*    m_pPlayer;
 
-    bool m_bIsShowingPlaylist;
-    bool m_bIsPlay;
-    bool m_bIsSeekEnabled;
+	bool m_bIsShowingPlaylist;
+	bool m_bIsPlay;
+	bool m_bIsSeekEnabled;
 
-    bool m_bIsEnabledPlayList;
-    bool m_bIsEnabledFullscreen;
+	bool m_bIsEnabledPlayList;
+	bool m_bIsEnabledFullscreen;
 
-    bool m_bIsPresentationMode;
-    bool m_bIsPresentationModeMediaTypeSended;
+	bool m_bIsPresentationMode;
+	bool m_bIsPresentationModeMediaTypeSended;
 
-    bool m_bIsDestroy;
+	bool m_bIsDestroy;
 };
 
 class QAscVideoWidget : public QASCVIDEOBASE
 {
-    Q_OBJECT
+	Q_OBJECT
 
-    QMediaPlayer* m_pEngine;
-    QString m_sCurrentSource;
+	QString m_sCurrentSource;
 
 #ifdef USE_VLC_LIBRARY
-    VlcMediaPlayer* m_pVlcPlayer;
-    VlcMedia* m_pMedia;
+	CVlcPlayer* m_pVlcPlayer;
+	CVlcMedia* m_pMedia;
+#else
+	QMediaPlayer* m_pEngine;
 #endif
 
-    int m_nVolume;
+	int m_nVolume;
 
 public:
-    QWidget* m_pParent;
+	QWidget* m_pParent;
 
 public:
-    QAscVideoWidget(QWidget *parent = 0);
-    ~QAscVideoWidget();
+	QAscVideoWidget(QWidget *parent = 0);
+	~QAscVideoWidget();
 
 public:
-    void keyPressEvent(QKeyEvent *event);
-    void mouseDoubleClickEvent(QMouseEvent *event);
-    void mousePressEvent(QMouseEvent *event);
+	void keyPressEvent(QKeyEvent *event);
+	void mouseDoubleClickEvent(QMouseEvent *event);
+	void mousePressEvent(QMouseEvent *event);
 
 #if defined(_LINUX) && !defined(_MAC)
-    virtual void mouseMoveEvent(QMouseEvent* e);
+	virtual void mouseMoveEvent(QMouseEvent* e);
 #endif
 
 public:
-    void open(QString& sFile);
+	void open(QString& sFile);
 
-    void setPlay();
-    void setPause();
-    void setVolume(int nVolume);
-    void setSeek(int nPos);
+	void setPlay();
+	void setPause();
+	void setVolume(int nVolume);
+	void setSeek(int nPos);
 
-    bool isVideoFullScreen();
-    void setFullScreenOnCurrentScreen(bool isFullscreen);
+	bool isVideoFullScreen();
+	void setFullScreenOnCurrentScreen(bool isFullscreen);
 
-    QMediaPlayer* getEngine();
+#ifndef USE_VLC_LIBRARY
+	QMediaPlayer* getEngine();
+#endif
 
-    bool isAudio();
-    void stop();
+	bool isAudio();
+	void stop();
 
 signals:
-    void stateChanged(QMediaPlayer_State);
-    void posChanged(int);
+	void stateChanged(QMediaPlayer_State);
+	void posChanged(int);
 
 public slots:
-    void slotChangeState(QMediaPlayer_State state);
-    void slotPositionChange(qint64 pos);    
-
 #ifdef USE_VLC_LIBRARY
-    void slotVlcStateChanged();
-    void slotVlcTimeChanged(int time);
+	void slotVlcStateChanged(int state);
+	void slotVlcTimeChanged(qint64 time);
+#else
+	void slotChangeState(QMediaPlayer::State state);
+	void slotPositionChange(qint64 pos);
 #endif
 
 public:
-    QWidget* m_pView;
+	QWidget* m_pView;
 };
