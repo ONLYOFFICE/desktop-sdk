@@ -28,6 +28,7 @@ public:
 	QAscVideoWidget*    m_pPlayer;
 
 	bool m_bIsShowingPlaylist;
+	bool m_bIsShowingFooter;
 	bool m_bIsPlay;
 	bool m_bIsSeekEnabled;
 
