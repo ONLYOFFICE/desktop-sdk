@@ -320,6 +320,17 @@ void QAscVideoView::keyPressEvent(QKeyEvent *event)
 		ToggleMute();
 		break;
 	}
+	case Qt::Key_N:
+	{
+		m_pInternal->m_pFooter->m_pSlider->setValue(100000);
+		m_pInternal->m_pPlaylist->Next();
+		break;
+	}
+	case Qt::Key_P:
+	{
+		m_pInternal->m_pFooter->m_pSlider->setValue(0);
+		m_pInternal->m_pPlaylist->Prev();
+	}
 	default:
 		break;
 	}

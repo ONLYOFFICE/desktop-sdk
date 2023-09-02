@@ -720,3 +720,29 @@ void QVideoPlaylist::Next()
 	m_pListView->activated(pModel->index(nRow, 0));
 	//m_pListView->selectionModel()->select(pModel->index(nRow, 0), QItemSelectionModel::Toggle | QItemSelectionModel::Rows | QItemSelectionModel::ClearAndSelect);
 }
+
+void QVideoPlaylist::Prev()
+{
+	QStandardItemModel* pModel = (QStandardItemModel*)m_pListView->model();
+	int nRows = pModel->rowCount();
+	int nRow = -1;
+
+	for (int i = 0; i < nRows; i++)
+	{
+		QStandardItem* item1 = pModel->item(i, 0);
+
+		if (item1->font().bold())
+		{
+			nRow = i;
+			break;
+		}
+	}
+
+	if (nRow == 0)
+		return;
+
+	--nRow;
+
+	m_pListView->setCurrentIndex(pModel->index(nRow, 0));
+	m_pListView->activated(pModel->index(nRow, 0));
+}
