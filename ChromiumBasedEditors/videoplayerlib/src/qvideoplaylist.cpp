@@ -73,9 +73,6 @@ QVideoPlaylist::QVideoPlaylist(QWidget *parent) : QWidget(parent)
 	m_pListView->setDropIndicatorShown(false);
 
 	QObject::connect(m_pAdd, SIGNAL(clicked(bool)), this, SLOT(slotButtonAdd()));
-	// Shortcut for "Add" button
-	QShortcut* pAddShortcut = new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_O), this);
-	QObject::connect(pAddShortcut, SIGNAL(activated()), this, SLOT(slotButtonAdd()));
 
 	QObject::connect(m_pClear, SIGNAL(clicked(bool)), this, SLOT(slotButtonClear()));
 

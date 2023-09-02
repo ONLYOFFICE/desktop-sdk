@@ -306,6 +306,12 @@ void QAscVideoView::keyPressEvent(QKeyEvent *event)
 		m_pInternal->m_pFooter->m_pSlider->event(event);
 		break;
 	}
+	case Qt::Key_O:
+	{
+		if (static_cast<int>(ee) == Qt::ControlModifier)
+			m_pInternal->m_pPlaylist->slotButtonAdd();
+		break;
+	}
 	case Qt::Key_Space:
 	{
 		PlayPause();
