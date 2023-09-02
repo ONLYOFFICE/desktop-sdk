@@ -229,6 +229,7 @@ void QAscVideoWidget::setFullScreenOnCurrentScreen(bool isFullscreen)
 	if (isFullscreen == isVideoFullScreen())
 		return;
 
+	QAscVideoView* pView = static_cast<QAscVideoView*>(m_pParent->parentWidget());
 #ifndef USE_VLC_LIBRARY
 
 #ifdef USE_ASC_MAINWINDOW_FULLSCREEN
@@ -238,8 +239,6 @@ void QAscVideoWidget::setFullScreenOnCurrentScreen(bool isFullscreen)
 #endif
 
 #else
-	QAscVideoView* pView = static_cast<QAscVideoView*>(m_pParent->parentWidget());
-
 	if (pView->m_pInternal->m_bIsShowingPlaylist)
 		pView->Playlist(0);
 	if (!pView->m_pInternal->m_pVolumeControl->isHidden())
@@ -279,6 +278,7 @@ void QAscVideoWidget::setFullScreenOnCurrentScreen(bool isFullscreen)
 	}
 #endif
 
+	pView->UpdateFullscreenIcon();
 	if (!isFullscreen)
 	{
 		pView->resizeEvent(nullptr);

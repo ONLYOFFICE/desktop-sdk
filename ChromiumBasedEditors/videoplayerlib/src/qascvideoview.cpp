@@ -139,8 +139,6 @@ QAscVideoView::QAscVideoView(QWidget *parent, int r, int g, int b) : QWidget(par
 	m_pInternal->m_bIsDestroy = false;
 	m_pInternal->m_bIsMuted = false;
 
-	UpdatePlayPause();
-
 	m_pInternal->m_bIsSeekEnabled = true;
 
 	m_pInternal->m_pFooter->installEventFilter(this);
@@ -472,6 +470,16 @@ void QAscVideoView::Stop()
 	m_pInternal->m_pPlayer->stop();
 }
 
+void QAscVideoView::UpdatePlayPauseIcon()
+{
+	m_pInternal->m_pFooter->SetPlayPauseIcon(m_pInternal->m_bIsPlay);
+}
+
+void QAscVideoView::UpdateFullscreenIcon()
+{
+	m_pInternal->m_pFooter->SetFullscreenIcon(!getMainWindowFullScreen());
+}
+
 void QAscVideoView::setFooterVisible(bool isVisible)
 {
 	m_pInternal->m_pFooter->setHidden(!isVisible);
@@ -508,11 +516,6 @@ void QAscVideoView::slotSeekChanged(int nValue)
 		m_pInternal->m_pPlayer->setSeek(nValue);
 }
 
-void QAscVideoView::UpdatePlayPause()
-{
-	m_pInternal->m_pFooter->SetPlayPause(m_pInternal->m_bIsPlay);
-}
-
 void QAscVideoView::slotOpenFile(QString sFile)
 {
 	if (sFile.isEmpty() && m_pInternal->m_bIsPresentationMode)
@@ -540,7 +543,7 @@ void QAscVideoView::slotPlayerPosChanged(int nPos)
 void QAscVideoView::slotPlayerStateChanged(QMediaPlayer_State state)
 {
 	m_pInternal->m_bIsPlay = (state == QMediaPlayer::PlayingState) ? false : true;
-	UpdatePlayPause();
+	UpdatePlayPauseIcon();
 
 	if (!m_pInternal->m_bIsPlay)
 	{

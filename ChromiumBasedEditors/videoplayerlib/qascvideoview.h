@@ -82,6 +82,9 @@ public:
 
 	void Stop();
 
+	void UpdatePlayPauseIcon();
+	void UpdateFullscreenIcon();
+
 signals:
 	void OnTitleChanged(const QString& sTitle);
 
@@ -100,9 +103,6 @@ public slots:
 	void slotVideoAvailableChanged(bool videoAvailable);
 
 	void slotFooterAnimationFinished();
-
-protected:
-	void UpdatePlayPause();
 
 private:
 	QPropertyAnimation* m_pAnimationPlaylist;

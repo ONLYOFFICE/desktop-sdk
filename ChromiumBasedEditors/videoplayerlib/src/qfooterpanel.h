@@ -36,7 +36,8 @@ public:
 	bool m_bIsEnabledFullscreen;
 
 public:
-	void SetPlayPause(bool bIsPlay);
+	void SetPlayPauseIcon(bool bIsPlay);
+	void SetFullscreenIcon(bool bIsFullscreen);
 };
 
 #endif // QFOOTERPANEL_H
