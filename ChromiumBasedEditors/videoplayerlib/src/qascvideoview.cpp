@@ -334,6 +334,12 @@ bool QAscVideoView::eventFilter(QObject *watched, QEvent *event)
 		this->keyPressEvent((QKeyEvent*)event);
 		return true;
 	}
+
+	if (event->type() == QEvent::Wheel)
+	{
+		m_pInternal->m_pVolumeControlV->event(event);
+		return true;
+	}
 	return QWidget::eventFilter(watched, event);
 }
 
@@ -352,6 +358,7 @@ void QAscVideoView::ToggleMute()
 		// restore and apply old volume
 		m_pInternal->m_pPlayer->m_nVolume = m_pInternal->m_nMutedVolume;
 		m_pInternal->m_pVolumeControlV->setValue(m_pInternal->m_pPlayer->m_nVolume);
+		m_pInternal->m_bIsMuted = false;
 	}
 	else
 	{
@@ -359,9 +366,8 @@ void QAscVideoView::ToggleMute()
 		m_pInternal->m_nMutedVolume = m_pInternal->m_pPlayer->m_nVolume;
 		// set current volume to 0
 		m_pInternal->m_pVolumeControlV->setValue(0);
+		m_pInternal->m_bIsMuted = true;
 	}
-	// reverse mute flag
-	m_pInternal->m_bIsMuted = !m_pInternal->m_bIsMuted;
 }
 
 void QAscVideoView::Volume()
@@ -508,6 +514,8 @@ void QAscVideoView::slotPlaylist()
 void QAscVideoView::slotVolumeChanged(int nValue)
 {
 	m_pInternal->m_pPlayer->setVolume(nValue);
+	if (nValue)
+		m_pInternal->m_bIsMuted = false;
 }
 
 void QAscVideoView::slotSeekChanged(int nValue)
