@@ -12,6 +12,7 @@
 #include <QPaintEvent>
 #include <QWheelEvent>
 #include <QMediaPlayer>
+#include <QPropertyAnimation>
 #include "src/qascmediaplayer.h"
 
 #include <QtCore/QtGlobal>
@@ -61,9 +62,11 @@ public:
 
 public:
 	void PlayPause();
+	void ToggleMute();
 	void Volume();
 	void Fullscreen();
 	void Playlist(double duration = 100);
+	void Footer(double duration = 150);
 	void SavePlayListAddons(const QString& sAddon);
 
 	void AddFilesToPlaylist(QStringList& files, const bool isStart = false);
@@ -78,6 +81,9 @@ public:
 	void setMedia(QString sMedia);
 
 	void Stop();
+
+	void UpdatePlayPauseIcon();
+	void UpdateFullscreenIcon();
 
 signals:
 	void OnTitleChanged(const QString& sTitle);
@@ -96,8 +102,11 @@ public slots:
 	void slotPlayerStateChanged(QMediaPlayer_State state);
 	void slotVideoAvailableChanged(bool videoAvailable);
 
-protected:
-	void UpdatePlayPause();
+	void slotFooterAnimationFinished();
+
+private:
+	QPropertyAnimation* m_pAnimationPlaylist;
+	QPropertyAnimation* m_pAnimationFooter;
 
 public:
 	QAscVideoView_Private* m_pInternal;

@@ -123,6 +123,7 @@ public:
 	void Save();
 
 	void Next();
+	void Prev();
 
 	void PlayCurrent();
 

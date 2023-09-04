@@ -105,7 +105,8 @@ void QAscVideoWidget::keyPressEvent(QKeyEvent *event)
 		setFullScreenOnCurrentScreen(false);
 		event->accept();
 	}
-	else if (((event->key() == Qt::Key_Enter) || (event->key() == Qt::Key_Return)) && event->modifiers() & Qt::AltModifier)
+	else if ((((event->key() == Qt::Key_Enter) || (event->key() == Qt::Key_Return)) && event->modifiers() & Qt::AltModifier) ||
+			 (event->key() == Qt::Key_F))
 	{
 		setFullScreenOnCurrentScreen(!isVideoFullScreen());
 		event->accept();
@@ -118,9 +119,12 @@ void QAscVideoWidget::keyPressEvent(QKeyEvent *event)
 
 void QAscVideoWidget::mouseDoubleClickEvent(QMouseEvent *event)
 {
-	QAscVideoView* pView = (QAscVideoView*)(m_pParent->parentWidget());
-	if (!pView->m_pInternal->m_bIsPresentationMode)
-		setFullScreenOnCurrentScreen(!isVideoFullScreen());
+	if (event->button() == Qt::LeftButton)
+	{
+		QAscVideoView* pView = (QAscVideoView*)(m_pParent->parentWidget());
+		if (!pView->m_pInternal->m_bIsPresentationMode)
+			setFullScreenOnCurrentScreen(!isVideoFullScreen());
+	}
 	event->accept();
 }
 
@@ -225,6 +229,7 @@ void QAscVideoWidget::setFullScreenOnCurrentScreen(bool isFullscreen)
 	if (isFullscreen == isVideoFullScreen())
 		return;
 
+	QAscVideoView* pView = static_cast<QAscVideoView*>(m_pParent->parentWidget());
 #ifndef USE_VLC_LIBRARY
 
 #ifdef USE_ASC_MAINWINDOW_FULLSCREEN
@@ -234,6 +239,11 @@ void QAscVideoWidget::setFullScreenOnCurrentScreen(bool isFullscreen)
 #endif
 
 #else
+	if (pView->m_pInternal->m_bIsShowingPlaylist)
+		pView->Playlist(0);
+	if (!pView->m_pInternal->m_pVolumeControl->isHidden())
+		pView->m_pInternal->m_pVolumeControl->setHidden(true);
+
 	if (isFullscreen)
 	{
 #ifdef USE_VLC_LIBRARY_VIDEO
@@ -241,7 +251,7 @@ void QAscVideoWidget::setFullScreenOnCurrentScreen(bool isFullscreen)
 #endif
 
 #ifdef USE_ASC_MAINWINDOW_FULLSCREEN
-		((QAscVideoView*)(m_pParent->parentWidget()))->setMainWindowFullScreen(true);
+		pView->setMainWindowFullScreen(true);
 #else
 		QPoint pt = mapToGlobal(pos());
 		QRect rect = QApplication::desktop()->screenGeometry(m_pParent);
@@ -259,26 +269,19 @@ void QAscVideoWidget::setFullScreenOnCurrentScreen(bool isFullscreen)
 #endif
 
 #ifdef USE_ASC_MAINWINDOW_FULLSCREEN
-		((QAscVideoView*)(m_pParent->parentWidget()))->setMainWindowFullScreen(false);
+		pView->setMainWindowFullScreen(false);
 #else
 		this->setParent(m_pParent);
 		showNormal();
 		this->lower();
 #endif
-
-		QAscVideoView* pView = (QAscVideoView*)(m_pParent->parentWidget());
-		m_pParent->stackUnder(pView->m_pInternal->m_pVolumeControl);
-		m_pParent->stackUnder(pView->m_pInternal->m_pPlaylist);
-		pView->m_pInternal->m_pVolumeControl->raise();
-		pView->m_pInternal->m_pPlaylist->raise();
-
-		this->setGeometry(0, 0, m_pParent->width(), m_pParent->height());
 	}
 #endif
 
+	pView->UpdateFullscreenIcon();
 	if (!isFullscreen)
 	{
-		((QAscVideoView*)this->m_pView)->resizeEvent(NULL);
+		pView->resizeEvent(nullptr);
 	}
 }
 

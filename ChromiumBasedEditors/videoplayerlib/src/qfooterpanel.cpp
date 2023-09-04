@@ -82,8 +82,14 @@ void QFooterPanel::mouseMoveEvent(QMouseEvent* e)
 }
 #endif
 
-void QFooterPanel::SetPlayPause(bool bIsPlay)
+void QFooterPanel::SetPlayPauseIcon(bool bIsPlay)
 {
 	QString sI = bIsPlay ? "play" : "pause";
 	((QIconPushButton*)m_pPlayPause)->changeIcons(sI, sI + "-active");
+}
+
+void QFooterPanel::SetFullscreenIcon(bool bIsFullscreen)
+{
+	QString sI = bIsFullscreen ? "fullscreen-on" : "fullscreen-off";
+	((QIconPushButton*)m_pFullscreen)->changeIcons(sI, sI + "-active");
 }

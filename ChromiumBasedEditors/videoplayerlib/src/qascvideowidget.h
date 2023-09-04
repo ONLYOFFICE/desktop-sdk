@@ -28,6 +28,7 @@ public:
 	QAscVideoWidget*    m_pPlayer;
 
 	bool m_bIsShowingPlaylist;
+	bool m_bIsShowingFooter;
 	bool m_bIsPlay;
 	bool m_bIsSeekEnabled;
 
@@ -38,6 +39,9 @@ public:
 	bool m_bIsPresentationModeMediaTypeSended;
 
 	bool m_bIsDestroy;
+
+	bool m_bIsMuted;
+	int m_nMutedVolume;
 };
 
 class QAscVideoWidget : public QASCVIDEOBASE
@@ -53,10 +57,10 @@ class QAscVideoWidget : public QASCVIDEOBASE
 	QMediaPlayer* m_pEngine;
 #endif
 
-	int m_nVolume;
-
 public:
 	QWidget* m_pParent;
+
+	int m_nVolume;
 
 public:
 	QAscVideoWidget(QWidget *parent = 0);
