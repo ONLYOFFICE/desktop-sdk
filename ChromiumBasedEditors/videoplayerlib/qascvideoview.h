@@ -11,11 +11,9 @@
 #include <QDropEvent>
 #include <QPaintEvent>
 #include <QWheelEvent>
-#include <QMediaPlayer>
 #include <QPropertyAnimation>
-#include "src/qascmediaplayer.h"
-
 #include <QtCore/QtGlobal>
+#include "./src/qmultimedia.h"
 
 #if defined(BUILD_VIDEO_LIBRARY)
 #  define VIDEO_LIB_EXPORT Q_DECL_EXPORT

@@ -12,10 +12,7 @@
 #include "../../../../core/DesktopEditor/graphics/TemporaryCS.h"
 
 #include "lib_base.h"
-
-#ifndef USE_VLC_LIBRARY
-#include "qascmediaplayer.h"
-#endif
+#include "qmultimedia.h"
 
 class CVideoExt
 {

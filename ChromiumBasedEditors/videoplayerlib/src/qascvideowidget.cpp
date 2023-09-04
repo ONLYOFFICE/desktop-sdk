@@ -166,7 +166,6 @@ void QAscVideoWidget::setPause()
 #endif
 }
 
-#include <QAudioOutput>
 void QAscVideoWidget::setVolume(int nVolume)
 {
 	m_nVolume = nVolume;

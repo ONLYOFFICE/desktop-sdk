@@ -10,8 +10,6 @@
 #include <QStandardPaths>
 
 #include <QShortcut>
-#include <QMediaPlayer>
-
 #include <QDebug>
 #include "../../../../core/DesktopEditor/common/Directory.h"
 #include "../../../../core/DesktopEditor/common/StringBuilder.h"

@@ -1,4 +1,4 @@
-QT       += core gui printsupport widgets multimedia multimediawidgets
+QT       += core gui printsupport widgets
 
 TARGET = videoplayer
 TEMPLATE = lib

@@ -3,11 +3,9 @@
 #include <QWidget>
 #include "lib_base.h"
 
-#include <QVideoWidget>
-#include <QMediaPlayer>
+#include "qmultimedia.h"
 #include "qfooterpanel.h"
 #include "qvideoplaylist.h"
-#include "qascmediaplayer.h"
 
 #ifndef USE_VLC_LIBRARY
 #define QASCVIDEOBASE QVideoWidget
