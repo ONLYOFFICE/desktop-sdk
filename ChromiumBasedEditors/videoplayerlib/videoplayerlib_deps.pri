@@ -17,7 +17,7 @@ building_videoplayer_lib {
 }
 
 libvlc {
-    DEFINES += USE_VLC_LIBRARY
+	DEFINES += USE_VLC_LIBRARY
 } else {
-    QT += multimedia multimediawidgets
+	QT += multimedia multimediawidgets
 }
