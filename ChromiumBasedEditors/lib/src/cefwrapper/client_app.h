@@ -49,13 +49,15 @@
 
 #include "../../../../../core/Common/Network/FileTransporter/include/FileTransporter.h"
 #include "../../../../../core/DesktopEditor/common/File.h"
-#include "../../../../../core/OOXML/Base/Base.h"
-
 #include "../../include/applicationmanager.h"
-
 #include "client_renderer_params.h"
 
-// #define DISABLE_WEB_SEQURITY
+#ifndef VALUE2STR
+#define VALUE_TO_STRING(x) #x
+#define VALUE2STR(x) VALUE_TO_STRING(x)
+#endif
+
+// #define DISABLE_WEB_SECURITY
 
 static int IsForceDpiRound()
 {
@@ -310,7 +312,7 @@ public:
 			if (m_manager->GetDebugInfoSupport())
 				command_line->AppendSwitchWithValue("--remote-debugging-port", "8080");
 
-#ifdef DISABLE_WEB_SEQURITY
+#ifdef DISABLE_WEB_SECURITY
 			command_line->AppendSwitch("--disable-web-security");
 #endif
 		}
@@ -404,7 +406,7 @@ public:
 			if (0 != forceDpi)
 				command_line->AppendSwitchWithValue("--force-device-scale-factor", std::to_string(forceDpi));
 
-#ifdef DISABLE_WEB_SEQURITY
+#ifdef DISABLE_WEB_SECURITY
 			command_line->AppendSwitch("--disable-web-security");
 #endif
 		}
@@ -465,7 +467,7 @@ public:
 			if (0 != forceDpi)
 				command_line->AppendSwitchWithValue("--force-device-scale-factor", std::to_string(forceDpi));
 
-#ifdef DISABLE_WEB_SEQURITY
+#ifdef DISABLE_WEB_SECURITY
 			command_line->AppendSwitch("--disable-web-security");
 #endif
 		}
