@@ -6710,6 +6710,12 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 
 		break;
 	}
+	case ASC_MENU_EVENT_TYPE_CEF_DRAG_LEAVE:
+	{
+		CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("clear_drop_files");
+		SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
+		break;
+	}
 	case ASC_MENU_EVENT_TYPE_CEF_DROP:
 	{
 		NSEditorApi::CAscLocalDragDropData* pData = (NSEditorApi::CAscLocalDragDropData*)pEvent->m_pData;

@@ -527,6 +527,17 @@ void QCefView::dragEnterEvent(QDragEnterEvent *e)
 	}
 }
 
+void QCefView::dragLeaveEvent(QDragLeaveEvent *e)
+{
+	if (m_pCefView->GetType() == cvwtEditor)
+	{
+		NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
+		pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_DRAG_LEAVE;
+
+		m_pCefView->Apply(pEvent);
+	}
+}
+
 void QCefView::dropEvent(QDropEvent *e)
 {
 	if (m_pCefView)

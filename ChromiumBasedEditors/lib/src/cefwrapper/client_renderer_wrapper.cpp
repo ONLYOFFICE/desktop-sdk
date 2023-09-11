@@ -1940,6 +1940,11 @@ retval, exception);
 			}
 			return true;
 		}
+		else if (name == "ClearDropFiles")
+		{
+			m_arDropFiles.clear();
+			return true;
+		}
 		else if (name == "IsImageFile")
 		{
 			CImageFileFormatChecker oChecker;
@@ -4509,7 +4514,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
 	CefRefPtr<CefV8Handler> handler = pWrapper;
 
-	#define EXTEND_METHODS_COUNT 175
+	#define EXTEND_METHODS_COUNT 176
 	const char* methods[EXTEND_METHODS_COUNT] = {
 		"Copy",
 		"Paste",
@@ -4587,6 +4592,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 		"execCommand",
 
 		"SetDropFiles",
+		"ClearDropFiles",
 		"IsImageFile",
 		"GetDropFiles",
 		"DropOfficeFiles",
@@ -5896,6 +5902,20 @@ delete window[\"crypto_images_map\"][_url];\n\
 	  }
 
 	  return true;
+	}
+	else if (sMessageName == "clear_drop_files")
+	{
+		std::vector<int64> arFramesIds;
+		browser->GetFrameIdentifiers(arFramesIds);
+
+		for (std::vector<int64>::iterator i = arFramesIds.begin(); i != arFramesIds.end(); i++)
+		{
+			CefRefPtr<CefFrame> _frame = browser->GetFrame(*i);
+			if (_frame)
+				_frame->ExecuteJavaScript(L"window.AscDesktopEditor.ClearDropFiles();", _frame->GetURL(), 0);
+		}
+
+		return true;
 	}
 	else if (sMessageName == "on_convert_local_file")
 	{

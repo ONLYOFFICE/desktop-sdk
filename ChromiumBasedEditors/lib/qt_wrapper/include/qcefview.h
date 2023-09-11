@@ -66,6 +66,7 @@ public:
 	// drag'n'drop
 #if defined (_LINUX) && !defined(_MAC)
 	virtual void dragEnterEvent(QDragEnterEvent *e);
+	virtual void dragLeaveEvent(QDragLeaveEvent *e);
 	virtual void dropEvent(QDropEvent *e);
 	NSEditorApi::CAscLocalDragDropData* convertMimeData(const QMimeData *pMimeData);
 #endif
