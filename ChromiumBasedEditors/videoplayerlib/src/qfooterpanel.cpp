@@ -85,6 +85,10 @@ void QFooterPanel::mouseMoveEvent(QMouseEvent* event)
 	QAscVideoView* pView = static_cast<QAscVideoView*>(this->parentWidget());
 	if (pView->getMainWindowFullScreen())
 	{
+		// stop cursor hiding timer
+		if (pView->m_pInternal->m_oCursorTimer.isActive())
+			pView->m_pInternal->m_oCursorTimer.stop();
+		// stop footer hiding timer
 		if (pView->m_pInternal->m_oFooterTimer.isActive())
 			pView->m_pInternal->m_oFooterTimer.stop();
 	}

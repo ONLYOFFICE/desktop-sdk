@@ -143,6 +143,10 @@ void QAscVideoWidget::mouseMoveEvent(QMouseEvent* event)
 	{
 		if (!pView->m_pInternal->m_pVolumeControl->isVisible() && !pView->m_pInternal->m_bIsShowingPlaylist)
 		{
+			pView->setCursor(Qt::ArrowCursor);
+			// start (or restart) cursor hiding timer
+			pView->m_pInternal->m_oCursorTimer.start(pView->m_pInternal->c_nCursorHidingDelay);
+			// start footer hiding timer if it is not started
 			if (pView->m_pInternal->m_bIsShowingFooter && !pView->m_pInternal->m_oFooterTimer.isActive())
 				pView->m_pInternal->m_oFooterTimer.start(pView->m_pInternal->c_nFooterHidingDelay);
 		}

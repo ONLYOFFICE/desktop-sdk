@@ -99,6 +99,7 @@ public slots:
 
 	void slotFooterAnimationFinished();
 	void slotFooterTimerOverflowed();
+	void slotCursorTimerOverflowed();
 
 private:
 	QPropertyAnimation* m_pAnimationPlaylist;

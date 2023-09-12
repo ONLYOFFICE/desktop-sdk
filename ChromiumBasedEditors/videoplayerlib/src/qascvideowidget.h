@@ -47,7 +47,7 @@ public:
 
 	// constants
 	const int c_nFooterHidingDelay = 2000;
-	const int c_nCursorHidingDelay = 4000;
+	const int c_nCursorHidingDelay = 3000;
 };
 
 class QAscVideoWidget : public QASCVIDEOBASE
