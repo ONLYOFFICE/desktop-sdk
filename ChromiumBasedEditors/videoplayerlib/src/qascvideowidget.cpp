@@ -57,6 +57,8 @@
 #endif
 #endif
 
+#include <QDebug>
+
 QAscVideoWidget::QAscVideoWidget(QWidget *parent)
 	: QASCVIDEOBASE(parent)
 {
@@ -133,13 +135,21 @@ void QAscVideoWidget::mousePressEvent(QMouseEvent *event)
 	QASCVIDEOBASE::mousePressEvent(event);
 }
 
-#if defined(_LINUX) && !defined(_MAC)
-#include <QApplication>
-void QAscVideoWidget::mouseMoveEvent(QMouseEvent* e)
+//#include <QApplication>
+void QAscVideoWidget::mouseMoveEvent(QMouseEvent* event)
 {
-	QApplication::setOverrideCursor(QCursor(Qt::ArrowCursor));
+	QAscVideoView* pView = static_cast<QAscVideoView*>(m_pParent->parentWidget());
+	if (pView->getMainWindowFullScreen())
+	{
+		if (!pView->m_pInternal->m_pVolumeControl->isVisible() && !pView->m_pInternal->m_bIsShowingPlaylist)
+		{
+			if (pView->m_pInternal->m_bIsShowingFooter && !pView->m_pInternal->m_oFooterTimer.isActive())
+				pView->m_pInternal->m_oFooterTimer.start(pView->m_pInternal->c_nFooterHidingDelay);
+		}
+	}
+	event->accept();
+//	QApplication::setOverrideCursor(QCursor(Qt::ArrowCursor));
 }
-#endif
 
 void QAscVideoWidget::setPlay()
 {
