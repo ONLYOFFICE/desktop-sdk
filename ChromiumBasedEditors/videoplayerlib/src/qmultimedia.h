@@ -16,19 +16,6 @@ namespace QMediaPlayer
 		PlayingState,
 		PausedState
 	};
-
-	enum MediaStatus
-	{
-		UnknownMediaStatus,
-		NoMedia,
-		LoadingMedia,
-		LoadedMedia,
-		StalledMedia,
-		BufferingMedia,
-		BufferedMedia,
-		EndOfMedia,
-		InvalidMedia
-	};
 }
 
 typedef QMediaPlayer::State QMediaPlayer_State;

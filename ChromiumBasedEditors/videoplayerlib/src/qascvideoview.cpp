@@ -277,7 +277,7 @@ void QAscVideoView::mousePressEvent(QMouseEvent *event)
 		else
 		{
 			// showing footer after a short delay
-			QTimer::singleShot(150, [this](){ Footer(); });
+			QTimer::singleShot(150, this, [this](){ Footer(); });
 		}
 	}
 
