@@ -281,13 +281,16 @@ void QAscVideoView::mousePressEvent(QMouseEvent *event)
 		// toggle footer
 		if (m_pInternal->m_bIsShowingFooter)
 		{
-			// hiding footer
-			Footer();
+			// hide footer after a short delay
+			QTimer::singleShot(300, this, [this]() {
+				if (getMainWindowFullScreen())
+					Footer();
+			});
 		}
 		else
 		{
-			// showing footer after a short delay
-			QTimer::singleShot(150, this, [this](){ Footer(); });
+			// show footer
+			Footer();
 		}
 	}
 
