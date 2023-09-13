@@ -5,8 +5,6 @@
 #include "qascvideoview.h"
 #include "qascvideowidget.h"
 
-#include <QDebug>
-
 QFooterPanel::QFooterPanel(QWidget *parent) : QWidget(parent)
 {
 	m_nHeigth = 40;
@@ -29,16 +27,12 @@ QFooterPanel::QFooterPanel(QWidget *parent) : QWidget(parent)
 	m_bIsEnabledPlayList = true;
 	m_bIsEnabledFullscreen = true;
 
-//#if defined(_LINUX) && !defined(_MAC)
 	this->setMouseTracking(true);
 	m_pSlider->setMouseTracking(true);
 	m_pFullscreen->setMouseTracking(true);
 	m_pPlaylist->setMouseTracking(true);
 	m_pVolume->setMouseTracking(true);
 	m_pPlayPause->setMouseTracking(true);
-
-//	this->setCursor(QCursor(Qt::ArrowCursor));
-//#endif
 }
 
 void QFooterPanel::resizeEvent(QResizeEvent* e)
@@ -78,8 +72,6 @@ void QFooterPanel::paintEvent(QPaintEvent *)
 	style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 }
 
-//#if defined(_LINUX) && !defined(_MAC)
-//#include <QApplication>
 void QFooterPanel::mouseMoveEvent(QMouseEvent* event)
 {
 	QAscVideoView* pView = static_cast<QAscVideoView*>(this->parentWidget());
@@ -93,9 +85,7 @@ void QFooterPanel::mouseMoveEvent(QMouseEvent* event)
 			pView->m_pInternal->m_oFooterTimer.stop();
 	}
 	event->accept();
-//	QApplication::setOverrideCursor(QCursor(Qt::ArrowCursor));
 }
-//#endif
 
 void QFooterPanel::SetPlayPauseIcon(bool bIsPlay)
 {

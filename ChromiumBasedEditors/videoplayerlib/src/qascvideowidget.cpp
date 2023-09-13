@@ -57,8 +57,6 @@
 #endif
 #endif
 
-#include <QDebug>
-
 QAscVideoWidget::QAscVideoWidget(QWidget *parent)
 	: QASCVIDEOBASE(parent)
 {

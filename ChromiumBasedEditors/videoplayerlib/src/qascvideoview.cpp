@@ -14,8 +14,6 @@
 #include "qascvideowidget.h"
 #include "qvideoslider.h"
 
-#include <QDebug>
-
 #ifdef USE_VLC_LIBRARY
 #ifdef WIN32
 //#define USE_VLC_LIBRARY_VIDEO
@@ -312,16 +310,6 @@ void QAscVideoView::mouseReleaseEvent(QMouseEvent *event)
 		}
 	}
 }
-
-//void QAscVideoView::mouseMoveEvent(QMouseEvent* event)
-//{
-//#if defined(_LINUX) && !defined(_MAC)
-//#include <QApplication>
-//	QApplication::setOverrideCursor(QCursor(Qt::ArrowCursor));
-//#endif
-//	qDebug() << event->pos();
-//	event->accept();
-//}
 
 void QAscVideoView::keyPressEvent(QKeyEvent *event)
 {
