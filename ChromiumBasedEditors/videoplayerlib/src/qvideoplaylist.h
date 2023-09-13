@@ -110,10 +110,6 @@ public slots:
 #endif
 	void slotDeletedShortcut();
 
-#if defined(_LINUX) && !defined(_MAC)
-	virtual void mouseMoveEvent(QMouseEvent* e);
-#endif
-
 public:
 	void AddFiles(QStringList& files, const bool isStart = false);
 	void Load();

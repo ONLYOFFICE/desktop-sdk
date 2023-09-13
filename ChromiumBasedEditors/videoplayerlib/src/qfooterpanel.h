@@ -18,9 +18,7 @@ public:
 
 	virtual void paintEvent(QPaintEvent *);
 
-#if defined(_LINUX) && !defined(_MAC)
-	virtual void mouseMoveEvent(QMouseEvent* e);
-#endif
+	virtual void mouseMoveEvent(QMouseEvent* event);
 
 public:
 	QPushButton* m_pPlayPause;

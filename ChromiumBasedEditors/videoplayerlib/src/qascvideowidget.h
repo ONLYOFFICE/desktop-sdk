@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QWidget>
+#include <QTimer>
 #include "lib_base.h"
 
 #include "qmultimedia.h"
@@ -17,13 +18,16 @@ class QAscVideoWidget;
 class QAscVideoView_Private
 {
 public:
-	QFooterPanel*   m_pFooter;
+	QFooterPanel*		m_pFooter;
 
-	QWidget*        m_pVolumeControl;
-	QVideoSlider*   m_pVolumeControlV;
+	QWidget*			m_pVolumeControl;
+	QVideoSlider*		m_pVolumeControlV;
 
-	QVideoPlaylist*     m_pPlaylist;
-	QAscVideoWidget*    m_pPlayer;
+	QVideoPlaylist*		m_pPlaylist;
+	QAscVideoWidget*	m_pPlayer;
+
+	QTimer				m_oFooterTimer;
+	QTimer				m_oCursorTimer;
 
 	bool m_bIsShowingPlaylist;
 	bool m_bIsShowingFooter;
@@ -40,6 +44,10 @@ public:
 
 	bool m_bIsMuted;
 	int m_nMutedVolume;
+
+	// constants
+	const int c_nFooterHidingDelay = 2000;
+	const int c_nCursorHidingDelay = 3000;
 };
 
 class QAscVideoWidget : public QASCVIDEOBASE
@@ -68,10 +76,7 @@ public:
 	void keyPressEvent(QKeyEvent *event);
 	void mouseDoubleClickEvent(QMouseEvent *event);
 	void mousePressEvent(QMouseEvent *event);
-
-#if defined(_LINUX) && !defined(_MAC)
-	virtual void mouseMoveEvent(QMouseEvent* e);
-#endif
+	void mouseMoveEvent(QMouseEvent* event);
 
 public:
 	void open(QString& sFile);

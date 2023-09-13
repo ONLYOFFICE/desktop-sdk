@@ -345,14 +345,6 @@ void QVideoPlaylist::slotDeletedShortcut()
 	this->m_pListView->model()->removeRow(m_pListView->selectionModel()->currentIndex().row());
 }
 
-#if defined(_LINUX) && !defined(_MAC)
-#include <QApplication>
-void QVideoPlaylist::mouseMoveEvent(QMouseEvent* e)
-{
-	QApplication::setOverrideCursor(QCursor(Qt::ArrowCursor));
-}
-#endif
-
 void QVideoPlaylist::slotButtonAdd()
 {
 	QString sDir = QStandardPaths::writableLocation(QStandardPaths::MoviesLocation);

@@ -47,10 +47,6 @@ public:
 	void mousePressEvent(QMouseEvent *event);
 	void mouseReleaseEvent(QMouseEvent *event);
 
-#if defined(_LINUX) && !defined(_MAC)
-	virtual void mouseMoveEvent(QMouseEvent* e);
-#endif
-
 	void keyPressEvent(QKeyEvent *event);
 	bool eventFilter(QObject *watched, QEvent *event);
 
@@ -101,6 +97,8 @@ public slots:
 	void slotVideoAvailableChanged(bool videoAvailable);
 
 	void slotFooterAnimationFinished();
+	void slotFooterTimerOverflowed();
+	void slotCursorTimerOverflowed();
 
 private:
 	QPropertyAnimation* m_pAnimationPlaylist;

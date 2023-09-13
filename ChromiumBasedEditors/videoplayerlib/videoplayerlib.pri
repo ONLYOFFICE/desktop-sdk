@@ -18,7 +18,6 @@ HEADERS += \
 	$$PWD/src/qvideoslider.h \
 	$$PWD/src/qvideoplaylist.h \
 	$$PWD/src/qascvideowidget.h \
-	$$PWD/src/qascmediaplayer.h \
 	$$PWD/src/qmultimedia.h
 
 SOURCES += \
@@ -38,3 +37,7 @@ RESOURCES += \
 
 CONFIG += building_videoplayer_lib
 include(videoplayerlib_deps.pri)
+
+!libvlc {
+	HEADERS += $$PWD/src/qascmediaplayer.h
+}

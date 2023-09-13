@@ -114,6 +114,9 @@ QAscVideoView::QAscVideoView(QWidget *parent, int r, int g, int b) : QWidget(par
 	QObject::connect(m_pInternal->m_pPlayer, SIGNAL(posChanged(int)), this, SLOT(slotPlayerPosChanged(int)));
 
 	QObject::connect(m_pAnimationFooter, SIGNAL(finished()), this, SLOT(slotFooterAnimationFinished()));
+	// timers
+	QObject::connect(&m_pInternal->m_oFooterTimer, SIGNAL(timeout()), this, SLOT(slotFooterTimerOverflowed()));
+	QObject::connect(&m_pInternal->m_oCursorTimer, SIGNAL(timeout()), this, SLOT(slotCursorTimerOverflowed()));
 
 #ifndef USE_VLC_LIBRARY
 	QObject::connect(m_pInternal->m_pPlayer->getEngine(), SIGNAL(videoAvailableChanged(bool)), this, SLOT(slotVideoAvailableChanged(bool)));
@@ -123,11 +126,10 @@ QAscVideoView::QAscVideoView(QWidget *parent, int r, int g, int b) : QWidget(par
 
 	setAcceptDrops(true);
 
-#if defined(_LINUX) && !defined(_MAC)
 	this->setMouseTracking(true);
+	m_pInternal->m_pPlayer->parentWidget()->setMouseTracking(true);
 	m_pInternal->m_pPlayer->setMouseTracking(true);
 	m_pInternal->m_pPlaylist->setMouseTracking(true);
-#endif
 
 	m_pInternal->m_bIsShowingPlaylist = false;
 	m_pInternal->m_bIsShowingFooter = true;
@@ -167,6 +169,16 @@ void QAscVideoView::resizeEvent(QResizeEvent* e)
 		m_pInternal->m_pFooter->raise();
 		nFooterH = 0;
 		m_pInternal->m_bIsShowingFooter = false;
+		// start cursor hiding timer
+		m_pInternal->m_oCursorTimer.start(m_pInternal->c_nCursorHidingDelay);
+	}
+	else
+	{
+		// show cursor
+		setCursor(Qt::ArrowCursor);
+		// stop all hiding timers
+		m_pInternal->m_oCursorTimer.stop();
+		m_pInternal->m_oFooterTimer.stop();
 	}
 
 	m_pInternal->m_pFooter->setGeometry(0, size.height() - nFooterH, size.width(), nFooterH);
@@ -259,7 +271,25 @@ void QAscVideoView::mousePressEvent(QMouseEvent *event)
 	}
 
 	if (getMainWindowFullScreen())
-		Footer();
+	{
+		setCursor(Qt::ArrowCursor);
+		// start cursor hiding timer
+		m_pInternal->m_oCursorTimer.start(m_pInternal->c_nCursorHidingDelay);
+		// toggle footer
+		if (m_pInternal->m_bIsShowingFooter)
+		{
+			// hide footer after a short delay
+			QTimer::singleShot(300, this, [this]() {
+				if (getMainWindowFullScreen())
+					Footer();
+			});
+		}
+		else
+		{
+			// show footer
+			Footer();
+		}
+	}
 
 	setFocus();
 	event->accept();
@@ -279,14 +309,6 @@ void QAscVideoView::mouseReleaseEvent(QMouseEvent *event)
 		}
 	}
 }
-
-#if defined(_LINUX) && !defined(_MAC)
-#include <QApplication>
-void QAscVideoView::mouseMoveEvent(QMouseEvent* e)
-{
-	QApplication::setOverrideCursor(QCursor(Qt::ArrowCursor));
-}
-#endif
 
 void QAscVideoView::keyPressEvent(QKeyEvent *event)
 {
@@ -620,7 +642,29 @@ void QAscVideoView::slotVideoAvailableChanged(bool videoAvailable)
 
 void QAscVideoView::slotFooterAnimationFinished()
 {
-	// without this slot, the footer animation may be ended just after user has exited from fullscreen, so the footer will not be visible
 	if (!getMainWindowFullScreen())
+	{
+		// without calling this event, the footer animation may be ended just after user has exited
+		//  from fullscreen, so the footer will not be visible
 		resizeEvent(nullptr);
+	}
+	else
+	{
+		if (m_pInternal->m_bIsShowingFooter)
+			m_pInternal->m_oFooterTimer.start(m_pInternal->c_nFooterHidingDelay);
+		else
+			m_pInternal->m_oFooterTimer.stop();
+	}
+}
+
+void QAscVideoView::slotFooterTimerOverflowed()
+{
+	m_pInternal->m_oFooterTimer.stop();
+	this->Footer();
+}
+
+void QAscVideoView::slotCursorTimerOverflowed()
+{
+	m_pInternal->m_oCursorTimer.stop();
+	setCursor(Qt::BlankCursor);
 }
