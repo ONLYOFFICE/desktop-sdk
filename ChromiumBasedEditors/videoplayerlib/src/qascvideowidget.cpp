@@ -133,7 +133,6 @@ void QAscVideoWidget::mousePressEvent(QMouseEvent *event)
 	QASCVIDEOBASE::mousePressEvent(event);
 }
 
-//#include <QApplication>
 void QAscVideoWidget::mouseMoveEvent(QMouseEvent* event)
 {
 	QAscVideoView* pView = static_cast<QAscVideoView*>(m_pParent->parentWidget());
@@ -150,7 +149,6 @@ void QAscVideoWidget::mouseMoveEvent(QMouseEvent* event)
 		}
 	}
 	event->accept();
-//	QApplication::setOverrideCursor(QCursor(Qt::ArrowCursor));
 }
 
 void QAscVideoWidget::setPlay()

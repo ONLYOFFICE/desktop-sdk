@@ -3,7 +3,6 @@
 #include <QPrintDialog>
 #include <QMimeData>
 #include <QStyleOption>
-#include <QApplication>
 
 #include "../../../../core/DesktopEditor/common/File.h"
 
