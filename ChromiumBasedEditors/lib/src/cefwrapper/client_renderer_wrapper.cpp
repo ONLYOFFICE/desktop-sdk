@@ -3793,8 +3793,8 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
 		}
 		else if (name == "GetSupportedScaleValues")
 		{
-			#define SCALES_COUNT 11
-			const double scales[SCALES_COUNT] = {1, 1.25, 1.5, 1.75, 2, 2.5, 3, 3.5, 4, 4.5, 5};
+			#define SCALES_COUNT 13
+			const double scales[SCALES_COUNT] = {1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.5, 4, 4.5, 5};
 			retval = CefV8Value::CreateArray(SCALES_COUNT);
 			for (int i = 0; i < SCALES_COUNT; ++i)
 				retval->SetValue(i, CefV8Value::CreateDouble(scales[i]));
