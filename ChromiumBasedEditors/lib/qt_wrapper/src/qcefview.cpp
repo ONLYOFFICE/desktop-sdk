@@ -529,7 +529,7 @@ void QCefView::dragEnterEvent(QDragEnterEvent *e)
 
 void QCefView::dragLeaveEvent(QDragLeaveEvent *e)
 {
-	if (m_pCefView->GetType() == cvwtEditor)
+	if (m_pCefView && m_pCefView->GetType() == cvwtEditor)
 	{
 		NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
 		pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_DRAG_LEAVE;
@@ -540,37 +540,13 @@ void QCefView::dragLeaveEvent(QDragLeaveEvent *e)
 
 void QCefView::dropEvent(QDropEvent *e)
 {
-	if (m_pCefView)
+	if (m_pCefView && m_pCefView->GetType() == cvwtEditor)
 	{
 		NSEditorApi::CAscLocalDragDropData* pData = convertMimeData(e->mimeData());
-		std::vector<std::wstring> arFiles = pData->get_Files();
-
-		if (arFiles.size() == 1)
-		{
-			std::wstring sPath = arFiles[0];
-			std::wstring::size_type nPosPluginExt = sPath.rfind(L".plugin");
-			std::wstring::size_type nUrlLen = sPath.length();
-			if ((nPosPluginExt != std::wstring::npos) && ((nPosPluginExt + 7) == nUrlLen))
-			{
-				// register plugin
-				NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
-				pEvent->m_nType = ASC_MENU_EVENT_TYPE_DOCUMENTEDITORS_ADD_PLUGIN;
-				NSEditorApi::CAscAddPlugin* pData = new NSEditorApi::CAscAddPlugin();
-				pData->put_Path(sPath);
-				pEvent->m_pData = pData;
-
-				m_pCefView->GetAppManager()->Apply(pEvent);
-			}
-		}
-
-		if (m_pCefView->GetType() == cvwtEditor)
-		{
-			NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
-			pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_DROP;
-
-			pEvent->m_pData = pData;
-			m_pCefView->Apply(pEvent);
-		}
+		NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
+		pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_DROP;
+		pEvent->m_pData = pData;
+		m_pCefView->Apply(pEvent);
 
 		e->acceptProposedAction();
 	}

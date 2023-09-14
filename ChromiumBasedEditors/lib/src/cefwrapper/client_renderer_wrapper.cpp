@@ -5267,10 +5267,10 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 				NSStringUtils::string_replace(arParts[i], L"\n", L"");
 			}
 
-			std::wstring sCode = L"(function(){var editor = window.Asc.editor ? window.Asc.editor : window.editor;\
+			std::wstring sCode = L"(function(){ var htmlElement = document.getElementById('editor_sdk'); if (htmlElement) {\
 var event = document.createEvent('MouseEvents'); event.type = 'drop'; event.dataTransfer = new DataTransfer();\
 event.dataTransfer.setData('text/plain', \"" + arParts[0] + L"\"); event.dataTransfer.setData('text/html', \"" + arParts[1] + L"\");\
-editor.HtmlElement.ondrop(event);})();";
+htmlElement.ondrop(event); } })();";
 
 			_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
 		}
@@ -5877,31 +5877,31 @@ delete window[\"crypto_images_map\"][_url];\n\
 	}
 	else if (sMessageName == "set_drop_files")
 	{
-	  int nCount = message->GetArgumentList()->GetSize();
-	  int nIndex = 0;
-	  std::wstring sCode = L"[";
-	  while (nIndex < nCount)
-	  {
-		  std::wstring sFile = message->GetArgumentList()->GetString(nIndex++).ToWString();
-		  g_pLocalResolver->AddFile(sFile);
+		int nCount = message->GetArgumentList()->GetSize();
+		int nIndex = 0;
+		std::wstring sCode = L"[";
+		while (nIndex < nCount)
+		{
+			std::wstring sFile = message->GetArgumentList()->GetString(nIndex++).ToWString();
+			g_pLocalResolver->AddFile(sFile);
 
-		  sCode += L"\"";
-		  sCode += sFile;
-		  sCode += L"\",";
-	  }
-	  ((wchar_t*)sCode.c_str())[sCode.length() - 1] = ']';
+			sCode += L"\"";
+			sCode += sFile;
+			sCode += L"\",";
+		}
+		((wchar_t*)sCode.c_str())[sCode.length() - 1] = ']';
 
-	  std::vector<int64> arFramesIds;
-	  browser->GetFrameIdentifiers(arFramesIds);
+		std::vector<int64> arFramesIds;
+		browser->GetFrameIdentifiers(arFramesIds);
 
-	  for (std::vector<int64>::iterator i = arFramesIds.begin(); i != arFramesIds.end(); i++)
-	  {
-		  CefRefPtr<CefFrame> _frame = browser->GetFrame(*i);
-		  if (_frame)
-			  _frame->ExecuteJavaScript(L"window.AscDesktopEditor.SetDropFiles(" + sCode + L");", _frame->GetURL(), 0);
-	  }
+		for (std::vector<int64>::iterator i = arFramesIds.begin(); i != arFramesIds.end(); i++)
+		{
+			CefRefPtr<CefFrame> _frame = browser->GetFrame(*i);
+			if (_frame)
+				_frame->ExecuteJavaScript(L"window.AscDesktopEditor.SetDropFiles(" + sCode + L");", _frame->GetURL(), 0);
+		}
 
-	  return true;
+		return true;
 	}
 	else if (sMessageName == "clear_drop_files")
 	{
