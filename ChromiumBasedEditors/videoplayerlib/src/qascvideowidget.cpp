@@ -207,7 +207,7 @@ void QAscVideoWidget::open(QString& sFile)
 	m_pEngine->play();
 #else
 
-	if (!m_pMedia && !sFile.isEmpty())
+	if (m_pMedia && !sFile.isEmpty())
 	{
 		delete m_pMedia;
 		m_pMedia = nullptr;

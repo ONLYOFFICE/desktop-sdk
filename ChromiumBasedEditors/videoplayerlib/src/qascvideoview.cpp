@@ -571,7 +571,7 @@ void QAscVideoView::slotOpenFile(QString sFile)
 
 	std::wstring sFileW = sFile.toStdWString();
 	std::wstring sFileName = NSFile::GetFileName(sFileW);
-	emit OnTitleChanged(QString::fromStdWString(sFileName));
+	emit titleChanged(QString::fromStdWString(sFileName));
 }
 
 void QAscVideoView::slotPlayerPosChanged(int nPos)
