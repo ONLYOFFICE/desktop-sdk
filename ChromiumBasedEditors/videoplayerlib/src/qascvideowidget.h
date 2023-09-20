@@ -103,7 +103,7 @@ signals:
 public slots:
 #ifdef USE_VLC_LIBRARY
 	void slotVlcStateChanged(int state);
-	void slotVlcTimeChanged(qint64 time);
+	void slotVlcPositionChanged(float position);
 #else
 	void slotChangeState(QMediaPlayer::State state);
 	void slotPositionChange(qint64 pos);

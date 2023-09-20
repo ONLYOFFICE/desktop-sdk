@@ -80,7 +80,7 @@ public:
 	void UpdateFullscreenIcon();
 
 signals:
-	void OnTitleChanged(const QString& sTitle);
+	void titleChanged(const QString& sTitle);
 
 public slots:
 	void slotPlayPause();
