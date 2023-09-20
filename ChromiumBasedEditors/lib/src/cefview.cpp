@@ -6720,25 +6720,17 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 	{
 		NSEditorApi::CAscLocalDragDropData* pData = (NSEditorApi::CAscLocalDragDropData*)pEvent->m_pData;
 
-		std::vector<std::wstring> arrFiles = pData->get_Files();
-		std::wstring sFiles = L"[";
-		for (size_t i = 0; i < arrFiles.size(); i++)
-		{
-			sFiles += L"\\\"";
-			sFiles += arrFiles[i];
-			sFiles += L"\\\"";
-			if (i < arrFiles.size() - 1)
-				sFiles += L",";
-		}
-		sFiles += L"]";
-
 		CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_ondropdata");
 		message->GetArgumentList()->SetString(0, pData->get_Text());
 		message->GetArgumentList()->SetString(1, pData->get_Html());
-		message->GetArgumentList()->SetString(2, sFiles);
+
+		std::vector<std::wstring> arrFiles = pData->get_Files();
+		for (size_t i = 0; i < arrFiles.size(); i++)
+		{
+			message->GetArgumentList()->SetString(2 + i, arrFiles[i]);
+		}
 
 		SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
-
 		break;
 	}
 	case ASC_MENU_EVENT_TYPE_CEF_EXECUTE_COMMAND_JS:

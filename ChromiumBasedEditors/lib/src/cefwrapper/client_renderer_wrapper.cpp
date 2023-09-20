@@ -5250,11 +5250,9 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 
 		if (_frame)
 		{
-			CefRefPtr<CefListValue> list = message->GetArgumentList();
-
+			CefRefPtr<CefListValue> argList = message->GetArgumentList();
 			std::wstring sText = message->GetArgumentList()->GetString(0).ToWString();
 			std::wstring sHtml = message->GetArgumentList()->GetString(1).ToWString();
-			std::wstring sFiles = message->GetArgumentList()->GetString(2).ToWString();
 
 			std::vector<std::wstring> arParts;
 			arParts.push_back(sText);
@@ -5267,10 +5265,54 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 				NSStringUtils::string_replace(arParts[i], L"\n", L"");
 			}
 
+			// Получаем тип и base64 файлов, если это изображения. Пока один элемент
+			std::wstring sDataTransferItems = L"";
+			if (argList->GetSize() > 2)
+			{
+				std::wstring sFilePath = message->GetArgumentList()->GetString(2);
+
+				int nSize = 0;
+				std::wstring sFileName = NSFile::GetFileName(sFilePath);
+				std::wstring sImageBase64 = UTF8_TO_U(GetFileBase64(sFilePath, &nSize));
+
+				std::wstring sImageType = L"";
+				if (IMAGE_CHECKER_SIZE < nSize)
+				{
+					BYTE pData[IMAGE_CHECKER_SIZE];
+					memset(pData, 0, IMAGE_CHECKER_SIZE);
+					DWORD dwSize = 0;
+					NSFile::CFileBinary oFile;
+					oFile.OpenFile(sFilePath);
+					oFile.ReadFile(pData, IMAGE_CHECKER_SIZE, dwSize);
+					oFile.CloseFile();
+
+					CImageFileFormatChecker _checker;
+
+					if (_checker.isBmpFile(pData, IMAGE_CHECKER_SIZE))
+						sImageType = L"image/bmp";
+					else if (_checker.isJpgFile(pData, IMAGE_CHECKER_SIZE))
+						sImageType = L"image/jpeg";
+					else if (_checker.isPngFile(pData, IMAGE_CHECKER_SIZE))
+						sImageType = L"image/png";
+					else if (_checker.isGifFile(pData, IMAGE_CHECKER_SIZE))
+						sImageType = L"image/gif";
+					else if (_checker.isTiffFile(pData, IMAGE_CHECKER_SIZE))
+						sImageType = L"image/tiff";
+				}
+
+				if (sImageType.length())
+				{
+					sDataTransferItems = L"var dataBase64 = ['" + sImageBase64 + L"'];\
+var byteCharacters = atob(dataBase64); var byteNumbers = new Array(byteCharacters.length);\
+for (let i = 0; i < byteCharacters.length; i++) { byteNumbers[i] = byteCharacters.charCodeAt(i); }\
+var byteArray = new Uint8Array(byteNumbers); event.dataTransfer.items.add(new File([byteArray], '" + sFileName + L"'));";
+				}
+			}
+
 			std::wstring sCode = L"(function(){ var htmlElement = document.getElementById('editor_sdk'); if (htmlElement) {\
 var event = document.createEvent('MouseEvents'); event.type = 'drop'; event.dataTransfer = new DataTransfer();\
-event.dataTransfer.setData('text/plain', \"" + arParts[0] + L"\"); event.dataTransfer.setData('text/html', \"" + arParts[1] + L"\");\
-htmlElement.ondrop(event); } })();";
+event.dataTransfer.setData('text/plain', \"" + arParts[0] + L"\");\
+event.dataTransfer.setData('text/html', \"" + arParts[1] + L"\"); " + sDataTransferItems + L"htmlElement.ondrop(event); } })();";
 
 			_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
 		}
