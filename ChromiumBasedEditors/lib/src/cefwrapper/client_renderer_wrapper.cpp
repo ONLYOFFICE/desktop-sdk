@@ -3838,8 +3838,8 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
 		}
 		else if (name == "GetSupportedScaleValues")
 		{
-			#define SCALES_COUNT 11
-			const double scales[SCALES_COUNT] = {1, 1.25, 1.5, 1.75, 2, 2.5, 3, 3.5, 4, 4.5, 5};
+			#define SCALES_COUNT 13
+			const double scales[SCALES_COUNT] = {1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.5, 4, 4.5, 5};
 			retval = CefV8Value::CreateArray(SCALES_COUNT);
 			for (int i = 0; i < SCALES_COUNT; ++i)
 				retval->SetValue(i, CefV8Value::CreateDouble(scales[i]));
@@ -4051,6 +4051,14 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
 #else
 			retval = CefV8Value::CreateBool(true);
 #endif
+			return true;
+		}
+		else if (name == "startExternalConvertation")
+		{
+			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("external_convertation");
+			message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
+			message->GetArgumentList()->SetString(1, arguments[1]->GetStringValue());
+			SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 			return true;
 		}
 
@@ -4794,6 +4802,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 		"emulateCloudPrinting",
 
 		"isSupportNetworkFunctionality",
+		"startExternalConvertation",
 
 		NULL
 	};
@@ -5242,7 +5251,7 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 	}
 	else if (sMessageName == "onlocaldocument_sendrecents")
 	{
-		CefRefPtr<CefFrame> _frame = browser->GetMainFrame();
+		CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
 		if (_frame)
 		{
 			std::wstring sJSON = message->GetArgumentList()->GetString(0).ToWString();
@@ -5255,7 +5264,7 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 	}
 	else if (sMessageName == "onlocaldocument_sendrecovers")
 	{
-		CefRefPtr<CefFrame> _frame = browser->GetMainFrame();
+		CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
 		if (_frame)
 		{
 			std::wstring sJSON = message->GetArgumentList()->GetString(0).ToWString();

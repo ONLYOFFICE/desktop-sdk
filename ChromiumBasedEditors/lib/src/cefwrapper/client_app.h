@@ -41,20 +41,23 @@
 #include "include/cef_version.h"
 
 #if defined(_LINUX) && !defined(_MAC)
+#include <X11/Xlib.h>
 #include <gdk/gdk.h>
 #include <gdk/gdkx.h>
 #include <gtk/gtk.h>
-#include <X11/Xlib.h>
 #endif
 
-#include "../../../../../core/DesktopEditor/common/File.h"
 #include "../../../../../core/Common/Network/FileTransporter/include/FileTransporter.h"
-
+#include "../../../../../core/DesktopEditor/common/File.h"
 #include "../../include/applicationmanager.h"
-
 #include "client_renderer_params.h"
 
-//#define DISABLE_WEB_SEQURITY
+#ifndef VALUE2STR
+#define VALUE_TO_STRING(x) #x
+#define VALUE2STR(x) VALUE_TO_STRING(x)
+#endif
+
+// #define DISABLE_WEB_SECURITY
 
 static int IsForceDpiRound()
 {
@@ -240,10 +243,9 @@ public:
 	virtual ~CAscClientAppBrowser()
 	{
 	}
+
 public:
-	virtual void OnBeforeCommandLineProcessing(
-			const CefString& process_type,
-			CefRefPtr<CefCommandLine> command_line) OVERRIDE
+	virtual void OnBeforeCommandLineProcessing(const CefString& process_type, CefRefPtr<CefCommandLine> command_line) OVERRIDE
 	{
 		if (process_type.empty())
 		{
@@ -283,11 +285,16 @@ public:
 			command_line->AppendSwitch("--allow-file-access-from-files");
 #endif
 
-            //command_line->AppendSwitch("--allow-file-access-from-files");
-            //command_line->AppendSwitch("--allow-file-access");
-			//command_line->AppendSwitch("--allow-running-insecure-content");
+			// command_line->AppendSwitch("--allow-file-access-from-files");
+			// command_line->AppendSwitch("--allow-file-access");
+			// command_line->AppendSwitch("--allow-running-insecure-content");
 
-			std::string sAppNavigator = "Chrome/" + std::to_string(CHROME_VERSION_MAJOR) + ".0.0.0 AscDesktopEditor/7.4.0";
+			std::string sVersionApp = "7.5.0";
+#if defined(INTVER)
+			sVersionApp = VALUE2STR(INTVER);
+#endif
+
+			std::string sAppNavigator = "Chrome/" + std::to_string(CHROME_VERSION_MAJOR) + ".0.0.0 AscDesktopEditor/" + sVersionApp;
 #ifdef CEF_2623
 			sAppNavigator += " windowsXP";
 #endif
@@ -305,7 +312,7 @@ public:
 			if (m_manager->GetDebugInfoSupport())
 				command_line->AppendSwitchWithValue("--remote-debugging-port", "8080");
 
-#ifdef DISABLE_WEB_SEQURITY
+#ifdef DISABLE_WEB_SECURITY
 			command_line->AppendSwitch("--disable-web-security");
 #endif
 		}
@@ -341,11 +348,11 @@ public:
 };
 
 #ifdef CEF_2623
-#include "cefclient/renderer/client_app_renderer.h"
 #include "cefclient/common/client_app_other.h"
+#include "cefclient/renderer/client_app_renderer.h"
 #else
-#include "tests/shared/renderer/client_app_renderer.h"
 #include "tests/shared/common/client_app_other.h"
+#include "tests/shared/renderer/client_app_renderer.h"
 #endif
 
 class CAscClientAppOther : public client::ClientAppOther, public CAppSettings
@@ -361,10 +368,9 @@ public:
 	virtual ~CAscClientAppOther()
 	{
 	}
+
 public:
-	virtual void OnBeforeCommandLineProcessing(
-			const CefString& process_type,
-			CefRefPtr<CefCommandLine> command_line) OVERRIDE
+	virtual void OnBeforeCommandLineProcessing(const CefString& process_type, CefRefPtr<CefCommandLine> command_line) OVERRIDE
 	{
 		if (process_type.empty())
 		{
@@ -391,16 +397,16 @@ public:
 			command_line->AppendSwitch("--enable-color-correct-rendering");
 			command_line->AppendSwitchWithValue("--log-severity", "disable");
 
-			//command_line->AppendSwitch("--allow-file-access-from-files");
-			//command_line->AppendSwitch("--allow-file-access");
+			// command_line->AppendSwitch("--allow-file-access-from-files");
+			// command_line->AppendSwitch("--allow-file-access");
 
-			//command_line->AppendSwitch("--allow-running-insecure-content");
+			// command_line->AppendSwitch("--allow-running-insecure-content");
 
 			int forceDpi = IsForceDpiRound();
 			if (0 != forceDpi)
 				command_line->AppendSwitchWithValue("--force-device-scale-factor", std::to_string(forceDpi));
 
-#ifdef DISABLE_WEB_SEQURITY
+#ifdef DISABLE_WEB_SECURITY
 			command_line->AppendSwitch("--disable-web-security");
 #endif
 		}
@@ -423,10 +429,9 @@ public:
 	virtual ~CAscClientAppRenderer()
 	{
 	}
+
 public:
-	virtual void OnBeforeCommandLineProcessing(
-			const CefString& process_type,
-			CefRefPtr<CefCommandLine> command_line) OVERRIDE
+	virtual void OnBeforeCommandLineProcessing(const CefString& process_type, CefRefPtr<CefCommandLine> command_line) OVERRIDE
 	{
 		if (process_type.empty())
 		{
@@ -453,16 +458,16 @@ public:
 			command_line->AppendSwitch("--enable-color-correct-rendering");
 			command_line->AppendSwitchWithValue("--log-severity", "disable");
 
-			//command_line->AppendSwitch("--allow-file-access-from-files");
-			//command_line->AppendSwitch("--allow-file-access");
+			// command_line->AppendSwitch("--allow-file-access-from-files");
+			// command_line->AppendSwitch("--allow-file-access");
 
-			//command_line->AppendSwitch("--allow-running-insecure-content");
+			// command_line->AppendSwitch("--allow-running-insecure-content");
 
 			int forceDpi = IsForceDpiRound();
 			if (0 != forceDpi)
 				command_line->AppendSwitchWithValue("--force-device-scale-factor", std::to_string(forceDpi));
 
-#ifdef DISABLE_WEB_SEQURITY
+#ifdef DISABLE_WEB_SECURITY
 			command_line->AppendSwitch("--disable-web-security");
 #endif
 		}

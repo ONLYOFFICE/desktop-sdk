@@ -147,15 +147,14 @@ public:
 		if (!oNode.FromXmlFile(sFile))
 			return;
 
-		XmlUtils::CXmlNodes oNodes;
-		if (!oNode.GetChilds(oNodes))
-			return;
+        std::vector<XmlUtils::CXmlNode> oNodes;
+        if (!oNode.GetChilds(oNodes))
+            return;
 
-		int nCount = oNodes.GetCount();
-		for (int i = 0; i < nCount; ++i)
-		{
-			XmlUtils::CXmlNode oSetting;
-			oNodes.GetAt(i, oSetting);
+        size_t nCount = oNodes.size();
+        for (size_t i = 0; i < nCount; ++i)
+        {
+            XmlUtils::CXmlNode & oSetting = oNodes[i];
 
 			std::wstring nameW = oSetting.GetName();
 			std::string name = U_TO_UTF8(nameW);
@@ -1046,6 +1045,11 @@ void CAscApplicationManager::SetEventToAllMainWindows(NSEditorApi::CAscMenuEvent
 	m_pInternal->SetEventToAllMainWindows(pEvent);
 }
 
+void CAscApplicationManager::SetEventToAllWindows(NSEditorApi::CAscMenuEvent* pEvent)
+{
+	m_pInternal->SetEventToAllWindows(pEvent);
+}
+
 void CAscApplicationManager::SetCryptoMode(const std::string& sPassword, const int& nMode)
 {
 	if (0 < nMode && !sPassword.empty())
@@ -1243,14 +1247,14 @@ bool CAscApplicationManager::IsUseSystemScaling()
 }
 double Core_GetMonitorScale(const unsigned int& xDpi, const unsigned int& yDpi)
 {
-	// допустимые значения: 1; 1.25; 1.5; 1.75; 2; 2.5; 3; 3.5; 4; 4.5; 5;
+	// допустимые значения: 1; 1.25; 1.5; 1.75; 2; 2.25, 2.5; 2.75, 3; 3.5; 4; 4.5; 5;
 	double dScale = (xDpi + yDpi) / (2 * 96.0);
 	int nCount = (int)((dScale + 0.125) / 0.25);
 	dScale = 0.25 * nCount;
 	if (dScale > 5) dScale = 5;
 	if (dScale < 1) dScale = 1;
 
-	if (dScale > 2)
+	if (dScale > 3)
 		dScale = 0.5 * ((int)(2 * dScale));
 
 	return dScale;
