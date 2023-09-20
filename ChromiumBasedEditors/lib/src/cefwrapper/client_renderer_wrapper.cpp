@@ -380,6 +380,43 @@ std::string GetFileBase64(const std::wstring& sFile, int* outSize = NULL)
 	return sBase64;
 }
 
+std::wstring GetFileImageType(const std::wstring& sFile)
+{
+	std::wstring sImageType = L"";
+
+	NSFile::CFileBinary oFile;
+	if (!oFile.OpenFile(sFile))
+		return sImageType;
+
+	long nSize = oFile.GetFileSize();
+	DWORD nCheckerSize = 50;
+
+	if (nCheckerSize < nSize)
+	{
+		BYTE pData[nCheckerSize];
+		memset(pData, 0, nCheckerSize);
+		DWORD dwSize = 0;
+		oFile.OpenFile(sFile);
+		oFile.ReadFile(pData, nCheckerSize, dwSize);
+		oFile.CloseFile();
+
+		CImageFileFormatChecker _checker;
+
+		if (_checker.isBmpFile(pData, nCheckerSize))
+			sImageType = L"image/bmp";
+		else if (_checker.isJpgFile(pData, nCheckerSize))
+			sImageType = L"image/jpeg";
+		else if (_checker.isPngFile(pData, nCheckerSize))
+			sImageType = L"image/png";
+		else if (_checker.isGifFile(pData, nCheckerSize))
+			sImageType = L"image/gif";
+		else if (_checker.isTiffFile(pData, nCheckerSize))
+			sImageType = L"image/tiff";
+	}
+
+	return sImageType;
+}
+
 class CLocalFileConvertV8Handler : public CefV8Handler
 {
 private:
@@ -5265,54 +5302,33 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 				NSStringUtils::string_replace(arParts[i], L"\n", L"");
 			}
 
-			// Получаем тип и base64 файлов, если это изображения. Пока один элемент
-			std::wstring sDataTransferItems = L"";
+			// Получаем тип и base64 файлов, если это изображения и добавляем в dataTransfer
+			std::wstring sDataTransferCode = L"";
 			if (argList->GetSize() > 2)
 			{
-				std::wstring sFilePath = message->GetArgumentList()->GetString(2);
-
-				int nSize = 0;
-				std::wstring sFileName = NSFile::GetFileName(sFilePath);
-				std::wstring sImageBase64 = UTF8_TO_U(GetFileBase64(sFilePath, &nSize));
-
-				std::wstring sImageType = L"";
-				if (IMAGE_CHECKER_SIZE < nSize)
-				{
-					BYTE pData[IMAGE_CHECKER_SIZE];
-					memset(pData, 0, IMAGE_CHECKER_SIZE);
-					DWORD dwSize = 0;
-					NSFile::CFileBinary oFile;
-					oFile.OpenFile(sFilePath);
-					oFile.ReadFile(pData, IMAGE_CHECKER_SIZE, dwSize);
-					oFile.CloseFile();
-
-					CImageFileFormatChecker _checker;
-
-					if (_checker.isBmpFile(pData, IMAGE_CHECKER_SIZE))
-						sImageType = L"image/bmp";
-					else if (_checker.isJpgFile(pData, IMAGE_CHECKER_SIZE))
-						sImageType = L"image/jpeg";
-					else if (_checker.isPngFile(pData, IMAGE_CHECKER_SIZE))
-						sImageType = L"image/png";
-					else if (_checker.isGifFile(pData, IMAGE_CHECKER_SIZE))
-						sImageType = L"image/gif";
-					else if (_checker.isTiffFile(pData, IMAGE_CHECKER_SIZE))
-						sImageType = L"image/tiff";
-				}
-
-				if (sImageType.length())
-				{
-					sDataTransferItems = L"var dataBase64 = ['" + sImageBase64 + L"'];\
-var byteCharacters = atob(dataBase64); var byteNumbers = new Array(byteCharacters.length);\
+				sDataTransferCode = L"function addImageItem(dataBase64, fileName) {\
+let byteCharacters = atob(dataBase64); let byteNumbers = new Array(byteCharacters.length);\
 for (let i = 0; i < byteCharacters.length; i++) { byteNumbers[i] = byteCharacters.charCodeAt(i); }\
-var byteArray = new Uint8Array(byteNumbers); event.dataTransfer.items.add(new File([byteArray], '" + sFileName + L"'));";
+let byteArray = new Uint8Array(byteNumbers); event.dataTransfer.items.add(new File([byteArray], fileName)); }";
+
+				for (int i = 0; i < argList->GetSize() - 2; i++)
+				{
+					std::wstring sFilePath = message->GetArgumentList()->GetString(2 + i);
+
+					int nSize = 0;
+					std::wstring sFileName = NSFile::GetFileName(sFilePath);
+					std::wstring sImageType = GetFileImageType(sFilePath);
+					std::string sImageBase64 = GetFileBase64(sFilePath, &nSize);
+
+					if (sImageType.length())
+						sDataTransferCode += L"addImageItem(\"" + UTF8_TO_U(sImageBase64) + L"\", \"" + sFileName + L"\");";
 				}
 			}
 
-			std::wstring sCode = L"(function(){ var htmlElement = document.getElementById('editor_sdk'); if (htmlElement) {\
-var event = document.createEvent('MouseEvents'); event.type = 'drop'; event.dataTransfer = new DataTransfer();\
-event.dataTransfer.setData('text/plain', \"" + arParts[0] + L"\");\
-event.dataTransfer.setData('text/html', \"" + arParts[1] + L"\"); " + sDataTransferItems + L"htmlElement.ondrop(event); } })();";
+			std::wstring sCode = L"(function(){ let htmlElement = document.getElementById(\"editor_sdk\"); if (htmlElement) {\
+let event = document.createEvent(\"MouseEvents\"); event.type = \"drop\"; event.dataTransfer = new DataTransfer();\
+event.dataTransfer.setData(\"text/plain\", \"" + arParts[0] + L"\");\
+event.dataTransfer.setData(\"text/html\", \"" + arParts[1] + L"\"); " + sDataTransferCode + L"htmlElement.ondrop(event); } })();";
 
 			_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
 		}
