@@ -4559,7 +4559,7 @@ class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
 
 	CefRefPtr<CefV8Handler> handler = pWrapper;
 
-	#define EXTEND_METHODS_COUNT 176
+	#define EXTEND_METHODS_COUNT 177
 	const char* methods[EXTEND_METHODS_COUNT] = {
 		"Copy",
 		"Paste",
