@@ -47,7 +47,7 @@ QVideoPlaylist::QVideoPlaylist(QWidget *parent) : QWidget(parent)
 	m_pClear = new QIconPushButton(this, true, "drop-playlist", "drop-playlist-active");
 
 	m_pListView = new QTableView(this);
-	QStandardItemModel* pModel = new QStandardItemModel();
+	QStandardItemModel* pModel = new QStandardItemModel(this);
 	m_pListView->setModel(pModel);
 
 	pModel->setColumnCount(2);
