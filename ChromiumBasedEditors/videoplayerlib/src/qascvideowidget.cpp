@@ -217,7 +217,7 @@ void QAscVideoWidget::open(QString& sFile)
 		return;
 	}
 
-	m_pMedia = new CVlcMedia(reinterpret_cast<libvlc_instance_t*>(NSBaseVideoLibrary::GetLibrary()), sFile);
+	m_pMedia = new CVlcMedia(GetVlcInstance(), sFile);
 	m_pVlcPlayer->open(m_pMedia);
 #endif
 }
