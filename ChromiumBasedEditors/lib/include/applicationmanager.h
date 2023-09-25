@@ -216,7 +216,7 @@ public:
 	CCefViewEditor* CreateCefPresentationReporter(CCefViewWidgetImpl* parent, CAscReporterData* data);
 
 	// new files path
-	std::wstring GetNewFilePath(const int& format);
+	std::wstring GetNewFilePath(const AscEditorType& format);
 
 	// <view> <-> <id>
 	CCefView* GetViewById(int nId);

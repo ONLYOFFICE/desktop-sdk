@@ -613,7 +613,7 @@ public:
 				std::wstring sTmp = m_oInfo.m_sRecoveryDir + L"/Editor.bin";
 				NSFile::CFileBinary oFile;
 
-				AscEditorType eType = etDocument;
+				AscEditorType eType = AscEditorType::etDocument;
 				if (oFile.OpenFile(sTmp) && 4 < oFile.GetFileSize())
 				{
 					BYTE _buffer[4];
@@ -623,9 +623,9 @@ public:
 					if (4 == dwRead)
 					{
 						if ('X' == _buffer[0] && 'L' == _buffer[1] && 'S' == _buffer[2] && 'Y' == _buffer[3])
-							eType = etSpreadsheet;
+							eType = AscEditorType::etSpreadsheet;
 						else if ('P' == _buffer[0] && 'P' == _buffer[1] && 'T' == _buffer[2] && 'Y' == _buffer[3])
-							eType = etPresentation;
+							eType = AscEditorType::etPresentation;
 					}
 					oFile.CloseFile();
 				}
@@ -686,11 +686,13 @@ public:
 			NSEditorApi::CAscTabEditorType* pData = new NSEditorApi::CAscTabEditorType();
 			pData->put_Id(m_pView->GetId());
 
-			AscEditorType eType = etDocument;
+			AscEditorType eType = AscEditorType::etDocument;
 			if (m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_PRESENTATION)
-				eType = etPresentation;
-			if (m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
-				eType = etSpreadsheet;
+				eType = AscEditorType::etPresentation;
+			else if (m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
+				eType = AscEditorType::etSpreadsheet;
+			else if (m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
+				eType = AscEditorType::etPdf;
 
 			pData->put_Type((int)eType);
 
@@ -749,11 +751,11 @@ public:
 			{
 				if (0 == oFileEmptyCheck.GetFileSize())
 				{
-					int nFormatEmpty = etDocument;
+					AscEditorType nFormatEmpty = AscEditorType::etDocument;
 					if (m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_PRESENTATION)
-						nFormatEmpty = etPresentation;
+						nFormatEmpty = AscEditorType::etPresentation;
 					else if (m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
-						nFormatEmpty = etSpreadsheet;
+						nFormatEmpty = AscEditorType::etSpreadsheet;
 
 					sLocalFilePath = m_pManager->GetNewFilePath(nFormatEmpty);
 				}

@@ -644,7 +644,7 @@ CCefViewEditor* CAscApplicationManager::CreateCefPresentationReporter(CCefViewWi
 	return pView;
 }
 
-std::wstring CAscApplicationManager::GetNewFilePath(const int& nFileFormat)
+std::wstring CAscApplicationManager::GetNewFilePath(const AscEditorType& nFileFormat)
 {
 	std::string sCountry = m_oSettings.country;
 	NSCommon::makeUpper(sCountry);
@@ -663,9 +663,9 @@ std::wstring CAscApplicationManager::GetNewFilePath(const int& nFileFormat)
 	std::wstring sFilePath = m_oSettings.file_converter_path + L"/empty/" + sPrefix + L"new.";
 	std::wstring sExtension = L"docx";
 
-	if (nFileFormat == etPresentation)
+	if (nFileFormat == AscEditorType::etPresentation)
 		sExtension = L"pptx";
-	else if (nFileFormat == etSpreadsheet)
+	else if (nFileFormat == AscEditorType::etSpreadsheet)
 		sExtension = L"xlsx";
 
 	sFilePath += sExtension;
