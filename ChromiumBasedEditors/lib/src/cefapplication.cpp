@@ -682,4 +682,8 @@ void CAscApplicationManager::ExternalMessageLoop_OnTimeout()
 	loop->OnTimer();
 #endif
 }
+bool CAscApplicationManager::IsExitMessageLoop()
+{
+	return m_pInternal->m_bIsExitMessageLoop;
+}
 //

@@ -759,6 +759,7 @@ void CAscApplicationManager::DestroyCefView(int nId, bool bIsSafe)
 {
 	if (-1 == nId)
 	{
+		m_pInternal->m_bIsExitMessageLoop = true;
 		for (std::map<int, CCefView*>::iterator i = m_pInternal->m_mapViews.begin(); i != m_pInternal->m_mapViews.end(); i++)
 		{
 			CCefView* pView = i->second;
@@ -921,6 +922,7 @@ void CAscApplicationManager::OnDestroyWindow()
 	if (0 == m_pInternal->m_nWindowCounter)
 	{
 		CefCookieManager::GetGlobalManager(nullptr)->FlushStore(nullptr);
+		m_pInternal->m_bIsExitMessageLoop = true;
 		m_pInternal->m_pApplication->ExitMessageLoop();
 	}
 }

@@ -48,6 +48,7 @@ public:
 	virtual IExternalMessageLoop* GetExternalMessageLoop();
 	virtual int GetPlatformKeyboardLayout();
 	virtual void OnNeedCheckKeyboard();
+	void processEvents();
 };
 
 #endif  // Q_ASC_APPLICATION_MANAGER_H

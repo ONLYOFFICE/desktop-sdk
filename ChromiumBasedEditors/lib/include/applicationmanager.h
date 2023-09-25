@@ -248,6 +248,7 @@ public:
 	virtual IExternalMessageLoop* GetExternalMessageLoop();
 	virtual void ExternalMessageLoop_OnExecute(void* message);
 	virtual void ExternalMessageLoop_OnTimeout();
+	bool IsExitMessageLoop();
 
 	// parameters to local file url
 	void InitAdditionalEditorParams(std::wstring& sParams);
