@@ -23,9 +23,8 @@
 
 namespace NSBaseVideoLibrary
 {
-	VIDEO_LIB_EXPORT void Init(QObject* parent);
-	VIDEO_LIB_EXPORT void Destroy();
-	VIDEO_LIB_EXPORT void* GetLibrary();
+	void Init(QObject* parent);
+	VIDEO_LIB_EXPORT void SetVerbosityLevel(int nVerbose);
 }
 
 class QAscVideoView_Private;
