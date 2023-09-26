@@ -47,7 +47,7 @@ QVideoPlaylist::QVideoPlaylist(QWidget *parent) : QWidget(parent)
 	m_pClear = new QIconPushButton(this, true, "drop-playlist", "drop-playlist-active");
 
 	m_pListView = new QTableView(this);
-	QStandardItemModel* pModel = new QStandardItemModel();
+	QStandardItemModel* pModel = new QStandardItemModel(this);
 	m_pListView->setModel(pModel);
 
 	pModel->setColumnCount(2);
@@ -638,7 +638,7 @@ void QVideoPlaylist::_onThreadFunc()
 #ifndef USE_VLC_LIBRARY
 	QMediaPlayer_setMedia(m_pCheckPlayer, m_sCheckFile);
 #else
-	m_pCheckMedia = new CVlcMedia(reinterpret_cast<libvlc_instance_t*>(NSBaseVideoLibrary::GetLibrary()), m_sCheckFile);
+	m_pCheckMedia = new CVlcMedia(GetVlcInstance(), m_sCheckFile);
 	QObject::connect(m_pCheckMedia, SIGNAL(parsedChanged(bool)), this, SLOT(_onVlcMediaParseChanged(bool)));
 	m_pCheckMedia->parse();
 #endif

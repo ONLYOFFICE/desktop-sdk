@@ -6036,20 +6036,20 @@ void CCefView::load(const std::wstring& urlInputSrc)
 
 			int nFormat = CAscApplicationManager::GetFileFormatByExtentionForSave(m_pInternal->m_sTemplateUrl);
 
-			int nEditorFormat = etDocumentViewer;
+			AscEditorType nEditorFormat = AscEditorType::etPdf;
 			if (-1 != nFormat)
 			{
-				nEditorFormat = etDocument;
+				nEditorFormat = AscEditorType::etDocument;
 				if (nFormat & AVS_OFFICESTUDIO_FILE_PRESENTATION)
-					nEditorFormat = etPresentation;
+					nEditorFormat = AscEditorType::etPresentation;
 				else if (nFormat & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
-					nEditorFormat = etSpreadsheet;
+					nEditorFormat = AscEditorType::etSpreadsheet;
 				else if (nFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF)
-					nEditorFormat = etDocumentMasterForm;
+					nEditorFormat = AscEditorType::etDocumentMasterForm;
 				else if (nFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
-					nEditorFormat = etDocumentMasterOForm;
+					nEditorFormat = AscEditorType::etDocumentMasterOForm;
 				else if (nFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
-					nEditorFormat = etDocumentViewer;
+					nEditorFormat = AscEditorType::etPdf;
 			}
 
 			((CCefViewEditor*)this)->CreateLocalFile(nEditorFormat, m_pInternal->m_sTemplateName);
@@ -7246,7 +7246,7 @@ CefRefPtr<CefFrame> CCefView_Private::CCloudCryptoUpload::GetFrame()
 // CefViewEditor --------------------------------------------------------------------------
 CCefViewEditor::CCefViewEditor(CCefViewWidgetImpl* parent, int nId) : CCefView(parent, nId)
 {
-	m_eType = etUndefined;
+	m_eType = AscEditorType::etUndefined;
 	m_eWrapperType = cvwtEditor;
 }
 CCefViewEditor::~CCefViewEditor()
@@ -7477,7 +7477,7 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
 	// start convert file
 	this->load(sUrl + sParams);
 }
-void CCefViewEditor::CreateLocalFile(const int& nFileFormat, const std::wstring& sName, const std::wstring& sTemplatePath)
+void CCefViewEditor::CreateLocalFile(const AscEditorType& nFileFormat, const std::wstring& sName, const std::wstring& sTemplatePath)
 {
 	if (!sTemplatePath.empty())
 	{
@@ -7491,27 +7491,27 @@ void CCefViewEditor::CreateLocalFile(const int& nFileFormat, const std::wstring&
 
 	m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX;
 	std::wstring sParams = L"placement=desktop";
-	if (nFileFormat == etPresentation)
+	if (nFileFormat == AscEditorType::etPresentation)
 	{
 		sParams = L"placement=desktop&doctype=presentation";
 		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
 	}
-	else if (nFileFormat == etSpreadsheet)
+	else if (nFileFormat == AscEditorType::etSpreadsheet)
 	{
 		sParams = L"placement=desktop&doctype=spreadsheet";
 		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX;
 	}
-	else if (nFileFormat == etDocumentMasterForm)
+	else if (nFileFormat == AscEditorType::etDocumentMasterForm)
 	{
 		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF;
 		sParams += L"&filetype=docxf";
 	}
-	else if (nFileFormat == etDocumentMasterOForm)
+	else if (nFileFormat == AscEditorType::etDocumentMasterOForm)
 	{
 		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM;
 		sParams += L"&filetype=oform";
 	}
-	else if (nFileFormat == etDocumentViewer)
+	else if (nFileFormat == AscEditorType::etPdf)
 	{
 		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF;
 		sParams += L"&filetype=pdf&mode=view";

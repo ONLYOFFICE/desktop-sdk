@@ -153,7 +153,7 @@ QAscVideoView::QAscVideoView(QWidget *parent, int r, int g, int b) : QWidget(par
 
 QAscVideoView::~QAscVideoView()
 {
-
+	delete m_pInternal;
 }
 
 void QAscVideoView::resizeEvent(QResizeEvent* e)

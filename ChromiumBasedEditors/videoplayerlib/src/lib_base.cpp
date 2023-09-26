@@ -33,55 +33,19 @@ static void CheckWindowsOld()
 
 #endif
 
-#include <QCoreApplication>
-
-#include "../../../../core/DesktopEditor/common/File.h"
-#include "../../../../core/DesktopEditor/common/Directory.h"
-
-static libvlc_instance_t* g_vlc_instance = NULL;
-
 void NSBaseVideoLibrary::Init(QObject* parent)
 {
-	if (g_vlc_instance)
-		return;
-
 	if (!parent)
 		return;
 
 #ifdef _WIN32
 	CheckWindowsOld();
 #endif
-
-	std::wstring sProcessDir = NSFile::GetProcessDirectory();
-	std::wstring sPluginsDir = sProcessDir + L"/plugins";
-	if (!NSDirectory::Exists(sPluginsDir))
-	{
-		std::vector<std::wstring> dirs = NSDirectory::GetDirectories(sProcessDir + L"/..");
-		for (std::vector<std::wstring>::iterator i = dirs.begin(); i != dirs.end(); i++)
-		{
-			std::wstring sTest = *i + L"/plugins";
-			if (NSDirectory::Exists(sTest))
-			{
-				sPluginsDir = sTest;
-				break;
-			}
-		}
-	}
-
-	qputenv("VLC_PLUGIN_PATH", QString::fromStdWString(sPluginsDir).toLocal8Bit());
-	g_vlc_instance = libvlc_new(0, nullptr);
 }
-void NSBaseVideoLibrary::Destroy()
+
+void NSBaseVideoLibrary::SetVerbosityLevel(int nVerbose)
 {
-	if (g_vlc_instance)
-	{
-		libvlc_release(g_vlc_instance);
-		g_vlc_instance = nullptr;
-	}
-}
-void* NSBaseVideoLibrary::GetLibrary()
-{
-	return (void*)g_vlc_instance;
+	CVlcInstance::setVerbosityLevel(nVerbose);
 }
 
 #else
@@ -89,12 +53,9 @@ void* NSBaseVideoLibrary::GetLibrary()
 void NSBaseVideoLibrary::Init(QObject* parent)
 {
 }
-void NSBaseVideoLibrary::Destroy()
+
+void NSBaseVideoLibrary::SetVerbosityLevel(int nVerbose)
 {
-}
-void* NSBaseVideoLibrary::GetLibrary()
-{
-	return NULL;
 }
 
 #endif

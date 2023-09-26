@@ -1501,6 +1501,7 @@ public:
 	// использовать ли внешнюю очередь сообщений
 	bool m_bIsUseExternalMessageLoop;
 	IExternalMessageLoop* m_pExternalMessageLoop;
+	bool m_bIsExitMessageLoop;
 
 	// event listener
 	NSEditorApi::CAscCefMenuEventListener* m_pListener;
@@ -1626,6 +1627,7 @@ public:
 
 		m_bIsUseExternalMessageLoop = false;
 		m_pExternalMessageLoop = NULL;
+		m_bIsExitMessageLoop = false;
 
 		m_nIsCefSaveDialogWait = -1;
 
