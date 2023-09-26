@@ -64,6 +64,8 @@
 #ifndef CEF_2623
 #define CEF_V8_SUPPORT_TYPED_ARRAYS
 
+#define IMAGE_CHECKER_SIZE 50
+
 class CAscCefV8ArrayBufferReleaseCallback : public CefV8ArrayBufferReleaseCallback
 {
 public:
@@ -382,6 +384,7 @@ std::string GetFileBase64(const std::wstring& sFile, int* outSize = NULL)
 
 std::wstring GetFileImageType(const std::wstring& sFile)
 {
+	// TODO: сделать общим с GetImageBase64
 	std::wstring sImageType = L"";
 
 	NSFile::CFileBinary oFile;
@@ -389,28 +392,27 @@ std::wstring GetFileImageType(const std::wstring& sFile)
 		return sImageType;
 
 	long nSize = oFile.GetFileSize();
-	DWORD nCheckerSize = 50;
 
-	if (nCheckerSize < nSize)
+	if (IMAGE_CHECKER_SIZE < nSize)
 	{
-		BYTE pData[nCheckerSize];
-		memset(pData, 0, nCheckerSize);
+		BYTE pData[IMAGE_CHECKER_SIZE];
+		memset(pData, 0, IMAGE_CHECKER_SIZE);
 		DWORD dwSize = 0;
 		oFile.OpenFile(sFile);
-		oFile.ReadFile(pData, nCheckerSize, dwSize);
+		oFile.ReadFile(pData, IMAGE_CHECKER_SIZE, dwSize);
 		oFile.CloseFile();
 
 		CImageFileFormatChecker _checker;
 
-		if (_checker.isBmpFile(pData, nCheckerSize))
+		if (_checker.isBmpFile(pData, IMAGE_CHECKER_SIZE))
 			sImageType = L"image/bmp";
-		else if (_checker.isJpgFile(pData, nCheckerSize))
+		else if (_checker.isJpgFile(pData, IMAGE_CHECKER_SIZE))
 			sImageType = L"image/jpeg";
-		else if (_checker.isPngFile(pData, nCheckerSize))
+		else if (_checker.isPngFile(pData, IMAGE_CHECKER_SIZE))
 			sImageType = L"image/png";
-		else if (_checker.isGifFile(pData, nCheckerSize))
+		else if (_checker.isGifFile(pData, IMAGE_CHECKER_SIZE))
 			sImageType = L"image/gif";
-		else if (_checker.isTiffFile(pData, nCheckerSize))
+		else if (_checker.isTiffFile(pData, IMAGE_CHECKER_SIZE))
 			sImageType = L"image/tiff";
 	}
 
@@ -1502,7 +1504,6 @@ DE.controllers.Main.DisableVersionHistory(); \
 			if (g_pLocalResolver->Check(sFileUrl))
 				sImageData = GetFileBase64(sFileUrl, &nSize);
 
-			#define IMAGE_CHECKER_SIZE 50
 			if (IMAGE_CHECKER_SIZE > nSize)
 			{
 				retval = CefV8Value::CreateString("");
