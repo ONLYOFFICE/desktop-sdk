@@ -463,14 +463,6 @@ public:
 
 class CAscEditorNativeV8Handler : public CefV8Handler, public INativeViewer_Events
 {
-	enum EditorType
-	{
-		Document        = 0,
-		Presentation    = 1,
-		Spreadsheet     = 2,
-		etUndefined     = 255
-	};
-
 	class CSavedPageInfo
 	{
 	public:
@@ -510,9 +502,9 @@ class CAscEditorNativeV8Handler : public CefV8Handler, public INativeViewer_Even
 	};
 
 public:
-	EditorType  m_etType;
-	int         m_nEditorId;
-	bool*       sync_command_check;
+	AscEditorType m_etType;
+	int           m_nEditorId;
+	bool*         sync_command_check;
 
 	// версия редактора
 	std::string m_sVersion;
@@ -595,7 +587,7 @@ public:
 
 	CAscEditorNativeV8Handler(const std::wstring& sUrl)
 	{
-		m_etType = etUndefined;
+		m_etType = AscEditorType::etUndefined;
 		m_nEditorId = -1;
 		sync_command_check = NULL;
 
@@ -745,7 +737,7 @@ public:
 	{
 		// функция, которая работает при включенном service worker
 		// не подменился require.js и так далее
-		if (!m_sVersion.empty() || m_etType != etUndefined)
+		if (!m_sVersion.empty() || m_etType != AscEditorType::etUndefined)
 			return false;
 
 		CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
@@ -785,17 +777,19 @@ retval, exception);
 		std::string sUrl = CefV8Context::GetCurrentContext()->GetFrame()->GetURL().ToString();
 		if (m_sVersion == "undefined" && sUrl.find("index.reporter.html") != std::string::npos)
 		{
-			m_etType = Presentation;
+			m_etType = AscEditorType::etPresentation;
 		}
 		else
 		{
 			// сначала определим тип редактора
 			if (sUrl.find("documenteditor") != std::wstring::npos)
-				m_etType = Document;
+				m_etType = AscEditorType::etDocument;
 			else if (sUrl.find("presentationeditor") != std::wstring::npos)
-				m_etType = Presentation;
+				m_etType = AscEditorType::etPresentation;
 			else if (sUrl.find("spreadsheeteditor") != std::wstring::npos)
-				m_etType = Spreadsheet;
+				m_etType = AscEditorType::etSpreadsheet;
+			else if (sUrl.find("pdfeditor") != std::wstring::npos)
+				m_etType = AscEditorType::etPdf;
 		}
 
 		CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("EditorType");
@@ -893,9 +887,9 @@ retval, exception);
 				if ((m_sVersion == "undefined") && (sUrl.find("index.reporter.html") != std::string::npos))
 				{
 					m_sVersion = "reporter_cloud";
-					if (m_etType != Presentation)
+					if (m_etType != AscEditorType::etPresentation)
 					{
-						m_etType = Presentation;
+						m_etType = AscEditorType::etPresentation;
 						CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("EditorType");
 						message->GetArgumentList()->SetInt(0, (int)m_etType);
 						SEND_MESSAGE_TO_BROWSER_PROCESS(message);
@@ -906,11 +900,13 @@ retval, exception);
 			{
 				// сначала определим тип редактора
 				if (sUrl.find("documenteditor") != std::wstring::npos)
-					m_etType = Document;
+					m_etType = AscEditorType::etDocument;
 				else if (sUrl.find("presentationeditor") != std::wstring::npos)
-					m_etType = Presentation;
+					m_etType = AscEditorType::etPresentation;
 				else if (sUrl.find("spreadsheeteditor") != std::wstring::npos)
-					m_etType = Spreadsheet;
+					m_etType = AscEditorType::etSpreadsheet;
+				else if (sUrl.find("pdfeditor") != std::wstring::npos)
+					m_etType = AscEditorType::etPdf;
 
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("EditorType");
 				message->GetArgumentList()->SetInt(0, (int)m_etType);
@@ -3793,8 +3789,8 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
 		}
 		else if (name == "GetSupportedScaleValues")
 		{
-			#define SCALES_COUNT 11
-			const double scales[SCALES_COUNT] = {1, 1.25, 1.5, 1.75, 2, 2.5, 3, 3.5, 4, 4.5, 5};
+			#define SCALES_COUNT 13
+			const double scales[SCALES_COUNT] = {1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.5, 4, 4.5, 5};
 			retval = CefV8Value::CreateArray(SCALES_COUNT);
 			for (int i = 0; i < SCALES_COUNT; ++i)
 				retval->SetValue(i, CefV8Value::CreateDouble(scales[i]));

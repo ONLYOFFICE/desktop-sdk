@@ -12,10 +12,7 @@
 #include "../../../../core/DesktopEditor/graphics/TemporaryCS.h"
 
 #include "lib_base.h"
-
-#ifndef USE_VLC_LIBRARY
-#include "qascmediaplayer.h"
-#endif
+#include "qmultimedia.h"
 
 class CVideoExt
 {
@@ -113,16 +110,13 @@ public slots:
 #endif
 	void slotDeletedShortcut();
 
-#if defined(_LINUX) && !defined(_MAC)
-	virtual void mouseMoveEvent(QMouseEvent* e);
-#endif
-
 public:
 	void AddFiles(QStringList& files, const bool isStart = false);
 	void Load();
 	void Save();
 
 	void Next();
+	void Prev();
 
 	void PlayCurrent();
 

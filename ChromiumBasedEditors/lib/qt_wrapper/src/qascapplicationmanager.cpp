@@ -57,3 +57,8 @@ void QAscApplicationManager::OnNeedCheckKeyboard()
 	if (GetEventListener())
 		GetEventListener()->OnEvent(new NSEditorApi::CAscCefMenuEvent(ASC_MENU_EVENT_TYPE_CEF_CHECK_KEYBOARD));
 }
+void QAscApplicationManager::processEvents()
+{
+	if (!IsExitMessageLoop())
+		qApp->processEvents();
+}

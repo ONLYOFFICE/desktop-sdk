@@ -1,13 +1,12 @@
 #pragma once
 
 #include <QWidget>
+#include <QTimer>
 #include "lib_base.h"
 
-#include <QVideoWidget>
-#include <QMediaPlayer>
+#include "qmultimedia.h"
 #include "qfooterpanel.h"
 #include "qvideoplaylist.h"
-#include "qascmediaplayer.h"
 
 #ifndef USE_VLC_LIBRARY
 #define QASCVIDEOBASE QVideoWidget
@@ -19,15 +18,19 @@ class QAscVideoWidget;
 class QAscVideoView_Private
 {
 public:
-	QFooterPanel*   m_pFooter;
+	QFooterPanel*		m_pFooter;
 
-	QWidget*        m_pVolumeControl;
-	QVideoSlider*   m_pVolumeControlV;
+	QWidget*			m_pVolumeControl;
+	QVideoSlider*		m_pVolumeControlV;
 
-	QVideoPlaylist*     m_pPlaylist;
-	QAscVideoWidget*    m_pPlayer;
+	QVideoPlaylist*		m_pPlaylist;
+	QAscVideoWidget*	m_pPlayer;
+
+	QTimer				m_oFooterTimer;
+	QTimer				m_oCursorTimer;
 
 	bool m_bIsShowingPlaylist;
+	bool m_bIsShowingFooter;
 	bool m_bIsPlay;
 	bool m_bIsSeekEnabled;
 
@@ -38,6 +41,13 @@ public:
 	bool m_bIsPresentationModeMediaTypeSended;
 
 	bool m_bIsDestroy;
+
+	bool m_bIsMuted;
+	int m_nMutedVolume;
+
+	// constants
+	const int c_nFooterHidingDelay = 2000;
+	const int c_nCursorHidingDelay = 3000;
 };
 
 class QAscVideoWidget : public QASCVIDEOBASE
@@ -53,10 +63,10 @@ class QAscVideoWidget : public QASCVIDEOBASE
 	QMediaPlayer* m_pEngine;
 #endif
 
-	int m_nVolume;
-
 public:
 	QWidget* m_pParent;
+
+	int m_nVolume;
 
 public:
 	QAscVideoWidget(QWidget *parent = 0);
@@ -66,10 +76,7 @@ public:
 	void keyPressEvent(QKeyEvent *event);
 	void mouseDoubleClickEvent(QMouseEvent *event);
 	void mousePressEvent(QMouseEvent *event);
-
-#if defined(_LINUX) && !defined(_MAC)
-	virtual void mouseMoveEvent(QMouseEvent* e);
-#endif
+	void mouseMoveEvent(QMouseEvent* event);
 
 public:
 	void open(QString& sFile);
@@ -96,7 +103,7 @@ signals:
 public slots:
 #ifdef USE_VLC_LIBRARY
 	void slotVlcStateChanged(int state);
-	void slotVlcTimeChanged(qint64 time);
+	void slotVlcPositionChanged(float position);
 #else
 	void slotChangeState(QMediaPlayer::State state);
 	void slotPositionChange(qint64 pos);

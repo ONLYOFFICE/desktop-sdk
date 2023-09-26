@@ -2,7 +2,6 @@
 
 building_videoplayer_lib {
 	libvlc {
-		DEFINES += USE_VLC_LIBRARY
 		include($$CORE_ROOT_DIR/Common/3dParty/libvlc/libvlc.pri)
 	}
 } else {
@@ -15,4 +14,10 @@ building_videoplayer_lib {
 
 	# if you build with libvlc option - do not forget remove
 	# videoplayer library from base build directory (without mediaplayer prefix)
+}
+
+libvlc {
+	DEFINES += USE_VLC_LIBRARY
+} else {
+	QT += multimedia multimediawidgets
 }

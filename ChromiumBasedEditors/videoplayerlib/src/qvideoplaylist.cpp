@@ -10,8 +10,6 @@
 #include <QStandardPaths>
 
 #include <QShortcut>
-#include <QMediaPlayer>
-
 #include <QDebug>
 #include "../../../../core/DesktopEditor/common/Directory.h"
 #include "../../../../core/DesktopEditor/common/StringBuilder.h"
@@ -49,7 +47,7 @@ QVideoPlaylist::QVideoPlaylist(QWidget *parent) : QWidget(parent)
 	m_pClear = new QIconPushButton(this, true, "drop-playlist", "drop-playlist-active");
 
 	m_pListView = new QTableView(this);
-	QStandardItemModel* pModel = new QStandardItemModel();
+	QStandardItemModel* pModel = new QStandardItemModel(this);
 	m_pListView->setModel(pModel);
 
 	pModel->setColumnCount(2);
@@ -73,6 +71,7 @@ QVideoPlaylist::QVideoPlaylist(QWidget *parent) : QWidget(parent)
 	m_pListView->setDropIndicatorShown(false);
 
 	QObject::connect(m_pAdd, SIGNAL(clicked(bool)), this, SLOT(slotButtonAdd()));
+
 	QObject::connect(m_pClear, SIGNAL(clicked(bool)), this, SLOT(slotButtonClear()));
 
 	QObject::connect(m_pListView, SIGNAL(clicked(const QModelIndex &)),
@@ -346,14 +345,6 @@ void QVideoPlaylist::slotDeletedShortcut()
 	this->m_pListView->model()->removeRow(m_pListView->selectionModel()->currentIndex().row());
 }
 
-#if defined(_LINUX) && !defined(_MAC)
-#include <QApplication>
-void QVideoPlaylist::mouseMoveEvent(QMouseEvent* e)
-{
-	QApplication::setOverrideCursor(QCursor(Qt::ArrowCursor));
-}
-#endif
-
 void QVideoPlaylist::slotButtonAdd()
 {
 	QString sDir = QStandardPaths::writableLocation(QStandardPaths::MoviesLocation);
@@ -374,6 +365,7 @@ void QVideoPlaylist::slotButtonAdd()
 														  );
 
 	AddFiles(filenames);
+	this->setFocus();
 }
 
 void QVideoPlaylist::slotButtonClear()
@@ -646,7 +638,7 @@ void QVideoPlaylist::_onThreadFunc()
 #ifndef USE_VLC_LIBRARY
 	QMediaPlayer_setMedia(m_pCheckPlayer, m_sCheckFile);
 #else
-	m_pCheckMedia = new CVlcMedia(reinterpret_cast<libvlc_instance_t*>(NSBaseVideoLibrary::GetLibrary()), m_sCheckFile);
+	m_pCheckMedia = new CVlcMedia(GetVlcInstance(), m_sCheckFile);
 	QObject::connect(m_pCheckMedia, SIGNAL(parsedChanged(bool)), this, SLOT(_onVlcMediaParseChanged(bool)));
 	m_pCheckMedia->parse();
 #endif
@@ -717,4 +709,30 @@ void QVideoPlaylist::Next()
 	m_pListView->setCurrentIndex(pModel->index(nRow, 0));
 	m_pListView->activated(pModel->index(nRow, 0));
 	//m_pListView->selectionModel()->select(pModel->index(nRow, 0), QItemSelectionModel::Toggle | QItemSelectionModel::Rows | QItemSelectionModel::ClearAndSelect);
+}
+
+void QVideoPlaylist::Prev()
+{
+	QStandardItemModel* pModel = (QStandardItemModel*)m_pListView->model();
+	int nRows = pModel->rowCount();
+	int nRow = -1;
+
+	for (int i = 0; i < nRows; i++)
+	{
+		QStandardItem* item1 = pModel->item(i, 0);
+
+		if (item1->font().bold())
+		{
+			nRow = i;
+			break;
+		}
+	}
+
+	if (nRow == 0)
+		return;
+
+	--nRow;
+
+	m_pListView->setCurrentIndex(pModel->index(nRow, 0));
+	m_pListView->activated(pModel->index(nRow, 0));
 }

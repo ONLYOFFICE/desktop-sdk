@@ -11,10 +11,9 @@
 #include <QDropEvent>
 #include <QPaintEvent>
 #include <QWheelEvent>
-#include <QMediaPlayer>
-#include "src/qascmediaplayer.h"
-
+#include <QPropertyAnimation>
 #include <QtCore/QtGlobal>
+#include "./src/qmultimedia.h"
 
 #if defined(BUILD_VIDEO_LIBRARY)
 #  define VIDEO_LIB_EXPORT Q_DECL_EXPORT
@@ -24,9 +23,8 @@
 
 namespace NSBaseVideoLibrary
 {
-	VIDEO_LIB_EXPORT void Init(QObject* parent);
-	VIDEO_LIB_EXPORT void Destroy();
-	VIDEO_LIB_EXPORT void* GetLibrary();
+	void Init(QObject* parent);
+	VIDEO_LIB_EXPORT void SetVerbosityLevel(int nVerbose);
 }
 
 class QAscVideoView_Private;
@@ -48,10 +46,6 @@ public:
 	void mousePressEvent(QMouseEvent *event);
 	void mouseReleaseEvent(QMouseEvent *event);
 
-#if defined(_LINUX) && !defined(_MAC)
-	virtual void mouseMoveEvent(QMouseEvent* e);
-#endif
-
 	void keyPressEvent(QKeyEvent *event);
 	bool eventFilter(QObject *watched, QEvent *event);
 
@@ -61,9 +55,11 @@ public:
 
 public:
 	void PlayPause();
+	void ToggleMute();
 	void Volume();
 	void Fullscreen();
 	void Playlist(double duration = 100);
+	void Footer(double duration = 150);
 	void SavePlayListAddons(const QString& sAddon);
 
 	void AddFilesToPlaylist(QStringList& files, const bool isStart = false);
@@ -79,8 +75,11 @@ public:
 
 	void Stop();
 
+	void UpdatePlayPauseIcon();
+	void UpdateFullscreenIcon();
+
 signals:
-	void OnTitleChanged(const QString& sTitle);
+	void titleChanged(const QString& sTitle);
 
 public slots:
 	void slotPlayPause();
@@ -96,8 +95,13 @@ public slots:
 	void slotPlayerStateChanged(QMediaPlayer_State state);
 	void slotVideoAvailableChanged(bool videoAvailable);
 
-protected:
-	void UpdatePlayPause();
+	void slotFooterAnimationFinished();
+	void slotFooterTimerOverflowed();
+	void slotCursorTimerOverflowed();
+
+private:
+	QPropertyAnimation* m_pAnimationPlaylist;
+	QPropertyAnimation* m_pAnimationFooter;
 
 public:
 	QAscVideoView_Private* m_pInternal;
