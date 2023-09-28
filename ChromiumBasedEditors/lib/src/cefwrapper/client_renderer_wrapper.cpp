@@ -64,8 +64,6 @@
 #ifndef CEF_2623
 #define CEF_V8_SUPPORT_TYPED_ARRAYS
 
-#define IMAGE_CHECKER_SIZE 50
-
 class CAscCefV8ArrayBufferReleaseCallback : public CefV8ArrayBufferReleaseCallback
 {
 public:
@@ -380,43 +378,6 @@ std::string GetFileBase64(const std::wstring& sFile, int* outSize = NULL)
 		*outSize = nSize;
 
 	return sBase64;
-}
-
-std::wstring GetFileImageType(const std::wstring& sFile)
-{
-	// TODO: сделать общим с GetImageBase64
-	std::wstring sImageType = L"";
-
-	NSFile::CFileBinary oFile;
-	if (!oFile.OpenFile(sFile))
-		return sImageType;
-
-	long nSize = oFile.GetFileSize();
-
-	if (IMAGE_CHECKER_SIZE < nSize)
-	{
-		BYTE pData[IMAGE_CHECKER_SIZE];
-		memset(pData, 0, IMAGE_CHECKER_SIZE);
-		DWORD dwSize = 0;
-		oFile.OpenFile(sFile);
-		oFile.ReadFile(pData, IMAGE_CHECKER_SIZE, dwSize);
-		oFile.CloseFile();
-
-		CImageFileFormatChecker _checker;
-
-		if (_checker.isBmpFile(pData, IMAGE_CHECKER_SIZE))
-			sImageType = L"image/bmp";
-		else if (_checker.isJpgFile(pData, IMAGE_CHECKER_SIZE))
-			sImageType = L"image/jpeg";
-		else if (_checker.isPngFile(pData, IMAGE_CHECKER_SIZE))
-			sImageType = L"image/png";
-		else if (_checker.isGifFile(pData, IMAGE_CHECKER_SIZE))
-			sImageType = L"image/gif";
-		else if (_checker.isTiffFile(pData, IMAGE_CHECKER_SIZE))
-			sImageType = L"image/tiff";
-	}
-
-	return sImageType;
 }
 
 class CLocalFileConvertV8Handler : public CefV8Handler
@@ -1504,6 +1465,7 @@ DE.controllers.Main.DisableVersionHistory(); \
 			if (g_pLocalResolver->Check(sFileUrl))
 				sImageData = GetFileBase64(sFileUrl, &nSize);
 
+			#define IMAGE_CHECKER_SIZE 50
 			if (IMAGE_CHECKER_SIZE > nSize)
 			{
 				retval = CefV8Value::CreateString("");
@@ -5309,32 +5271,32 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 			}
 
 			// Получаем тип и base64 файлов, если это изображения и добавляем в dataTransfer
-			std::wstring sDataTransferCode = L"";
+			std::wstring sDataTransferFiles = L"";
 			if (argList->GetSize() > 2)
 			{
-				sDataTransferCode = L"function addImageItem(dataBase64, fileName) {\
+				sDataTransferFiles = L"function addFile(dataBase64, fileName) {\
 let byteCharacters = atob(dataBase64); let byteNumbers = new Array(byteCharacters.length);\
 for (let i = 0; i < byteCharacters.length; i++) { byteNumbers[i] = byteCharacters.charCodeAt(i); }\
 let byteArray = new Uint8Array(byteNumbers); event.dataTransfer.items.add(new File([byteArray], fileName)); }";
 
-				for (int i = 0; i < argList->GetSize() - 2; i++)
+				for (uint i = 0; i < argList->GetSize() - 2; i++)
 				{
 					std::wstring sFilePath = message->GetArgumentList()->GetString(2 + i);
 
 					int nSize = 0;
 					std::wstring sFileName = NSFile::GetFileName(sFilePath);
-					std::wstring sImageType = GetFileImageType(sFilePath);
 					std::string sImageBase64 = GetFileBase64(sFilePath, &nSize);
 
-					if (sImageType.length())
-						sDataTransferCode += L"addImageItem(\"" + UTF8_TO_U(sImageBase64) + L"\", \"" + sFileName + L"\");";
+					//if (sImageType.length())
+						sDataTransferFiles += L"addFile(\"" + UTF8_TO_U(sImageBase64) + L"\", \"" + sFileName + L"\");";
 				}
 			}
 
-			std::wstring sCode = L"(function(){ let htmlElement = document.getElementById(\"editor_sdk\"); if (htmlElement) {\
-let event = document.createEvent(\"MouseEvents\"); event.type = \"drop\"; event.dataTransfer = new DataTransfer();\
+			std::wstring sCode = L"(function(){ let htmlElement = document.getElementById(\"editor_sdk\");\
+let htmlTarget = htmlElement ? htmlElement : document;\
+if (htmlTarget) { let event = document.createEvent(\"MouseEvents\"); event.type = \"drop\"; event.dataTransfer = new DataTransfer();\
 event.dataTransfer.setData(\"text/plain\", \"" + arParts[0] + L"\");\
-event.dataTransfer.setData(\"text/html\", \"" + arParts[1] + L"\"); " + sDataTransferCode + L"htmlElement.ondrop(event); } })();";
+event.dataTransfer.setData(\"text/html\", \"" + arParts[1] + L"\"); " + sDataTransferFiles + L"htmlTarget.ondrop(event); } })();";
 
 			_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
 		}
