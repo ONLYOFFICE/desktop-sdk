@@ -7418,12 +7418,27 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
 	// start convert file
 	this->load(sUrl + sParams);
 }
-void CCefViewEditor::CreateLocalFile(const AscEditorType& nFileFormat, const std::wstring& sName, const std::wstring& sTemplatePath)
+void CCefViewEditor::CreateLocalFile(const AscEditorType& nFileFormatSrc, const std::wstring& sName, const std::wstring& sTemplatePath)
 {
+	AscEditorType nFileFormat = nFileFormatSrc;
 	if (!sTemplatePath.empty())
 	{
 		m_pInternal->m_sTemplateName = sName;
 		m_pInternal->m_sTemplateUrl = sTemplatePath;
+
+		if (AscEditorType::etUndefined == nFileFormat)
+		{
+			COfficeFileFormatChecker oChecker;
+			if (oChecker.isOfficeFile(sTemplatePath))
+			{
+				if (oChecker.nFileType & AVS_OFFICESTUDIO_FILE_DOCUMENT)
+					nFileFormat = AscEditorType::etDocument;
+				else if (oChecker.nFileType & AVS_OFFICESTUDIO_FILE_PRESENTATION)
+					nFileFormat = AscEditorType::etPresentation;
+				else if (oChecker.nFileType & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
+					nFileFormat = AscEditorType::etSpreadsheet;
+			}
+		}
 	}
 
 	m_pInternal->m_oLocalInfo.m_oInfo.m_bIsSaved = false;
