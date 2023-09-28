@@ -5292,8 +5292,16 @@ let byteArray = new Uint8Array(byteNumbers); event.dataTransfer.items.add(new Fi
 				}
 			}
 
-			std::wstring sCode = L"(function(){ let htmlElement = document.getElementById(\"editor_sdk\");\
-let htmlTarget = htmlElement ? htmlElement : document;\
+			std::wstring sCode = L"(function(){\
+function findDropItem(element) {\
+if (element && element.children) {\
+for (var i = 0; i < element.children.length; i++) {\
+var item = element.children[i];\
+if (item.ondrop) { return item; }\
+var found = findDropItem(item);\
+if (found) { return found; }}}}\
+var htmlTarget = findDropItem(document); \
+/*console.log('Drop element'); console.log(htmlTarget);*/\
 if (htmlTarget) { let event = document.createEvent(\"MouseEvents\"); event.type = \"drop\"; event.dataTransfer = new DataTransfer();\
 event.dataTransfer.setData(\"text/plain\", \"" + arParts[0] + L"\");\
 event.dataTransfer.setData(\"text/html\", \"" + arParts[1] + L"\"); " + sDataTransferFiles + L"htmlTarget.ondrop(event); } })();";
