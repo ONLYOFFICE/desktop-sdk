@@ -5270,7 +5270,7 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 				NSStringUtils::string_replace(arParts[i], L"\n", L"");
 			}
 
-			// Получаем тип и base64 файлов, если это изображения и добавляем в dataTransfer
+			// Читаем файлы и добавляем в dataTransfer
 			std::wstring sDataTransferFiles = L"";
 			if (argList->GetSize() > 2)
 			{
@@ -5287,11 +5287,11 @@ let byteArray = new Uint8Array(byteNumbers); event.dataTransfer.items.add(new Fi
 					std::wstring sFileName = NSFile::GetFileName(sFilePath);
 					std::string sImageBase64 = GetFileBase64(sFilePath, &nSize);
 
-					//if (sImageType.length())
-						sDataTransferFiles += L"addFile(\"" + UTF8_TO_U(sImageBase64) + L"\", \"" + sFileName + L"\");";
+					sDataTransferFiles += L"addFile(\"" + UTF8_TO_U(sImageBase64) + L"\", \"" + sFileName + L"\");";
 				}
 			}
 
+			// Поиск ondrop-элемента и вызов
 			std::wstring sCode = L"(function(){\
 function findDropItem(element) {\
 if (element && element.children) {\
@@ -5301,10 +5301,10 @@ if (item.ondrop) { return item; }\
 var found = findDropItem(item);\
 if (found) { return found; }}}}\
 var htmlTarget = findDropItem(document); \
-/*console.log('Drop element'); console.log(htmlTarget);*/\
+/*console.log('Drop element'); console.log(htmlTarget)*/;\
 if (htmlTarget) { let event = document.createEvent(\"MouseEvents\"); event.type = \"drop\"; event.dataTransfer = new DataTransfer();\
 event.dataTransfer.setData(\"text/plain\", \"" + arParts[0] + L"\");\
-event.dataTransfer.setData(\"text/html\", \"" + arParts[1] + L"\"); " + sDataTransferFiles + L"htmlTarget.ondrop(event); } })();";
+event.dataTransfer.setData(\"text/html\", \"" + arParts[1] + L"\"); " + sDataTransferFiles + L"htmlTarget.ondrop(event); }})();";
 
 			_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
 		}
