@@ -122,6 +122,8 @@ public:
 
 	void CheckStyles();
 
+	bool isScrollBarVisible();
+
 public:
 	QPushButton* m_pAdd;
 	QPushButton* m_pClear;
