@@ -7292,7 +7292,13 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
 		}
 		else if (nFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
 		{
-			sParams = L"placement=desktop&filetype=pdf&mode=view";
+			sParams = L"placement=desktop&mode=view";
+			if (nFileFormat == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_DJVU)
+				sParams += L"&filetype=djvu";
+			else if (nFileFormat == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_XPS)
+				sParams += L"&filetype=xps";
+			else
+				sParams = L"&filetype=pdf";
 		}
 
 		if (nFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
