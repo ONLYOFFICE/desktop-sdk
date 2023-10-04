@@ -4430,8 +4430,15 @@ window.AscDesktopEditor.CallInFrame(\"" +
 					double _max = (w >= h) ? w : h;
 					double dKoef = 1000.0 / _max;
 
-					int WW = (int)(dKoef * w + 0.5);
-					int HH = (int)(dKoef * h + 0.5);
+					int WW = (int)w;
+					int HH = (int)h;
+
+					if (dKoef < 1)
+					{
+						// слишком большие картинки не делаем
+						WW = (int)(dKoef * w + 0.5);
+						HH = (int)(dKoef * h + 0.5);
+					}
 
 					std::wstring sOutFile = sOutDir + sSvg;
 					pMetafile->ConvertToRaster(sOutFile.c_str(), _CXIMAGE_FORMAT_PNG, WW, HH);
