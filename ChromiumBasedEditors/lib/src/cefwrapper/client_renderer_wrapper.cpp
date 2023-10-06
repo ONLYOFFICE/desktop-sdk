@@ -4478,6 +4478,91 @@ window.AscDesktopEditor.CallInFrame(\"" + sId + "\", \
 	IMPLEMENT_REFCOUNTING(CAscEditorNativeV8Handler);
 };
 
+// Класс для создания dnd-событий по типу
+// Есть проблема с перетаскиванием теста в инпут портала, возможно, проблема с dataTransfer.effectAllowed, которое read-only
+class CAscDragDrop
+{
+private:
+	CefRefPtr<CefProcessMessage> m_pCefMessage;
+
+public:
+	CAscDragDrop(CefRefPtr<CefProcessMessage> message)
+	{
+		m_pCefMessage = message->Copy();
+	}
+
+	std::wstring CreateEvent(const std::wstring& type)
+	{
+		std::wstring sCode = L"";
+
+		if (m_pCefMessage.get() && type.length())
+		{
+			CefRefPtr<CefListValue> argList = m_pCefMessage->GetArgumentList();
+			int nX = m_pCefMessage->GetArgumentList()->GetInt(0);
+			int nY = m_pCefMessage->GetArgumentList()->GetInt(1);
+			int nCursorX = m_pCefMessage->GetArgumentList()->GetInt(2);
+			int nCursorY = m_pCefMessage->GetArgumentList()->GetInt(3);
+			std::wstring sText = m_pCefMessage->GetArgumentList()->GetString(4).ToWString();
+			std::wstring sHtml = m_pCefMessage->GetArgumentList()->GetString(5).ToWString();
+
+			std::vector<std::wstring> arParts;
+			arParts.push_back(sText);
+			arParts.push_back(sHtml);
+			for (size_t i = 0; i < arParts.size(); i++)
+			{
+				NSStringUtils::string_replace(arParts[i], L"\\", L"\\\\");
+				NSStringUtils::string_replace(arParts[i], L"\"", L"\\\"");
+				NSStringUtils::string_replace(arParts[i], L"\r", L"");
+				NSStringUtils::string_replace(arParts[i], L"\n", L"");
+			}
+
+			// Поиск нужного элемента по координатам и вызов события
+			sCode = L"(function(){\
+/* Create custom event */\
+function createCustomEvent(type, x, y, c_x, c_y) {\
+let dt = new DataTransfer(); dt.dropEffect = \"copy\"; dt.effectAllowed = \"all\";\
+var event = new DragEvent(type, { dataTransfer: dt,  bubbles: true, cancelable: true, clientX: x, clientY: y, screenX: c_x, screenY: c_y });\
+return event; }\
+/* Add file to dataTransfer */\
+function addFileToDataTransfer(ev, dataBase64, fileName) {\
+let byteCharacters = atob(dataBase64); let byteNumbers = new Array(byteCharacters.length);\
+for (let i = 0; i < byteCharacters.length; i++) { byteNumbers[i] = byteCharacters.charCodeAt(i); }\
+let byteArray = new Uint8Array(byteNumbers); ev.dataTransfer.items.add(new File([byteArray], fileName)); }\
+/* Code */\
+let event = createCustomEvent(\"" + type + L"\"," + std::to_wstring(nX) + L"," + std::to_wstring(nY) + L"," + std::to_wstring(nCursorX) + L"," + std::to_wstring(nCursorY) + L");";
+
+			if (arParts[0].length())
+				sCode += L"event.dataTransfer.setData(\"text/plain\", \"" + arParts[0] + L"\");";
+			if (arParts[1].length())
+				sCode += L"event.dataTransfer.setData(\"text/html\", \"" + arParts[1] + L"\");";
+
+			// Читаем файлы и добавляем в dataTransfer
+			std::wstring sDataTransferFiles = L"";
+			if (argList->GetSize() > 6)
+			{
+				sDataTransferFiles = L"";
+				for (uint i = 0; i < argList->GetSize() - 6; i++)
+				{
+					std::wstring sFilePath = m_pCefMessage->GetArgumentList()->GetString(6 + i);
+
+					int nSize = 0;
+					std::wstring sFileName = NSFile::GetFileName(sFilePath);
+					std::string sImageBase64 = GetFileBase64(sFilePath, &nSize);
+
+					if (sImageBase64.length())
+						sDataTransferFiles += L"addFileToDataTransfer(event, \"" + UTF8_TO_U(sImageBase64) + L"\", \"" + sFileName + L"\");";
+				}
+			}
+
+			sCode += sDataTransferFiles + L"let targetElem = document.elementFromPoint(" + std::to_wstring(nX) + L", " + std::to_wstring(nY) + L");\
+if (targetElem) { targetElem.dispatchEvent(event); }\
+console.log(targetElem); console.log('Event'); console.log(event); })();";
+		}
+
+		return sCode;
+	}
+};
+
 class ClientRenderDelegate : public client::ClientAppRenderer::Delegate {
  public:
   ClientRenderDelegate()
@@ -5249,91 +5334,24 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 		}
 		return true;
 	}
+	else if (sMessageName == "onlocaldocument_ondragenter")
+	{
+		CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
+
+		if (_frame)
+		{
+		}
+		return true;
+	}
 	else if (sMessageName == "onlocaldocument_ondropdata")
 	{
 		CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
 
 		if (_frame)
 		{
-			CefRefPtr<CefListValue> argList = message->GetArgumentList();
-			int nX = message->GetArgumentList()->GetInt(0);
-			int nY = message->GetArgumentList()->GetInt(1);
-			int nCursorX = message->GetArgumentList()->GetInt(2);
-			int nCursorY = message->GetArgumentList()->GetInt(3);
-			std::wstring sText = message->GetArgumentList()->GetString(4).ToWString();
-			std::wstring sHtml = message->GetArgumentList()->GetString(5).ToWString();
+			CAscDragDrop oDnd(message);
 
-			std::vector<std::wstring> arParts;
-			arParts.push_back(sText);
-			arParts.push_back(sHtml);
-			for (size_t i = 0; i < arParts.size(); i++)
-			{
-				NSStringUtils::string_replace(arParts[i], L"\\", L"\\\\");
-				NSStringUtils::string_replace(arParts[i], L"\"", L"\\\"");
-				NSStringUtils::string_replace(arParts[i], L"\r", L"");
-				NSStringUtils::string_replace(arParts[i], L"\n", L"");
-			}
-
-			// Читаем файлы и добавляем в dataTransfer
-			std::wstring sDataTransferFiles = L"";
-			if (argList->GetSize() > 6)
-			{
-				sDataTransferFiles = L"";
-
-				for (uint i = 0; i < argList->GetSize() - 6; i++)
-				{
-					std::wstring sFilePath = message->GetArgumentList()->GetString(6 + i);
-
-					int nSize = 0;
-					std::wstring sFileName = NSFile::GetFileName(sFilePath);
-					std::string sImageBase64 = GetFileBase64(sFilePath, &nSize);
-
-					if (sImageBase64.length())
-						sDataTransferFiles += L"addFileToDataTransfer(event, \"" + UTF8_TO_U(sImageBase64) + L"\", \"" + sFileName + L"\");";
-				}
-			}
-
-			// Поиск ondrop-элемента и вызов
-			std::wstring sCode = L"(function(){\
-/* Find drop event */\
-function findDropItem(element) {\
-if (element && element.children) {\
-for (let i = 0; i < element.children.length; i++) {\
-var child = element.children[i];\
-if (child.ondrop) { return child; }\
-var found = findDropItem(child);\
-if (found) { return found; }}}}\
-/* Dispatch drop event */\
-function findDispatchEvent(e, parent) {\
-if (e && parent) { for (let i = 0; i < parent.children.length; i++) {\
-let child = parent.children[i];\
-let result = false; try { result = child.dispatchEvent(e); } catch(e) {}\
-if (result) { findDispatchEvent(e, child); }\
-else { console.log('Found listener'); console.log(child); } }}}\
-/* Add file to dataTransfer */\
-function addFileToDataTransfer(ev, dataBase64, fileName) {\
-let byteCharacters = atob(dataBase64); let byteNumbers = new Array(byteCharacters.length);\
-for (let i = 0; i < byteCharacters.length; i++) { byteNumbers[i] = byteCharacters.charCodeAt(i); }\
-let byteArray = new Uint8Array(byteNumbers); ev.dataTransfer.items.add(new File([byteArray], fileName)); }\
-/* Create custom event */\
-function createCustomEvent(type, x, y, c_x, c_y) {\
-let event = new Event(type, { bubbles: true, cancelable: true, clientX: x, clientY: y, screenX: c_x, screenY: c_y });\
-event.dataTransfer = new DataTransfer(); return event; }\
-/* Work */\
-var htmlTarget = findDropItem(document); \
-htmlTarget = htmlTarget ? htmlTarget : document;\
-console.log('Drop element'); console.log(htmlTarget);\
-if (htmlTarget) { let event = createCustomEvent(\"drop\"," + std::to_wstring(nX) + L"," + std::to_wstring(nY) + L"," + std::to_wstring(nCursorX) + L"," + std::to_wstring(nCursorY) + L");";
-
-			if (arParts[0].length())
-				sCode += L"event.dataTransfer.setData(\"text/plain\", \"" + arParts[0] + L"\");";
-			if (arParts[1].length())
-				sCode += L"event.dataTransfer.setData(\"text/html\", \"" + arParts[1] + L"\");";
-
-			sCode += sDataTransferFiles + L"let targetElem = document.elementFromPoint(" + std::to_wstring(nX) + L", " + std::to_wstring(nY) + L");\
-if (targetElem) { targetElem.dispatchEvent(event); }\
-console.log(targetElem); console.log('Event'); console.log(event); }})();";
-
+			std::wstring sCode = oDnd.CreateEvent(L"drop");
 			_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
 		}
 		return true;

@@ -6753,6 +6753,21 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 	{
 		NSEditorApi::CAscLocalDragDropData* pData = (NSEditorApi::CAscLocalDragDropData*)pEvent->m_pData;
 
+		CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_ondragenter");
+		message->GetArgumentList()->SetInt(0, pData->get_X());
+		message->GetArgumentList()->SetInt(1, pData->get_Y());
+		message->GetArgumentList()->SetInt(2, pData->get_CursorX());
+		message->GetArgumentList()->SetInt(3, pData->get_CursorY());
+		message->GetArgumentList()->SetString(4, pData->get_Text());
+		message->GetArgumentList()->SetString(5, pData->get_Html());
+
+		std::vector<std::wstring> arrFiles = pData->get_Files();
+		for (size_t i = 0; i < arrFiles.size(); i++)
+		{
+			message->GetArgumentList()->SetString(6 + i, arrFiles[i]);
+		}
+		SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
+
 		CefRefPtr<CefDragData> pCefDragData = ConvertDragDropData(pData);
 		if (m_pInternal && m_pInternal->m_handler)
 		{
@@ -6787,8 +6802,8 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 		{
 			message->GetArgumentList()->SetString(6 + i, arrFiles[i]);
 		}
-
 		SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
+
 		break;
 	}
 	case ASC_MENU_EVENT_TYPE_CEF_EXECUTE_COMMAND_JS:
