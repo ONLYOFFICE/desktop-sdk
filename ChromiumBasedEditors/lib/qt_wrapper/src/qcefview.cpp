@@ -514,11 +514,13 @@ void QCefView::UpdateSize()
 
 void QCefView::dragEnterEvent(QDragEnterEvent *e)
 {
-	if (m_pCefView && m_pCefView->GetType() == cvwtEditor)
+	//if (m_pCefView && m_pCefView->GetType() == cvwtEditor)
 	{
 		NSEditorApi::CAscLocalDragDropData* pData = convertMimeData(e->mimeData());
 		pData->put_X(e->pos().x());
 		pData->put_Y(e->pos().y());
+		pData->put_CursorX(QCursor::pos().x());
+		pData->put_CursorY(QCursor::pos().y());
 
 		NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
 		pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_DRAG_ENTER;
@@ -542,11 +544,13 @@ void QCefView::dragLeaveEvent(QDragLeaveEvent *e)
 
 void QCefView::dropEvent(QDropEvent *e)
 {
-	if (m_pCefView && m_pCefView->GetType() == cvwtEditor)
+	//if (m_pCefView && m_pCefView->GetType() == cvwtEditor)
 	{
 		NSEditorApi::CAscLocalDragDropData* pData = convertMimeData(e->mimeData());
 		pData->put_X(e->pos().x());
 		pData->put_Y(e->pos().y());
+		pData->put_CursorX(QCursor::pos().x());
+		pData->put_CursorY(QCursor::pos().y());
 
 		NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
 		pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_DROP;

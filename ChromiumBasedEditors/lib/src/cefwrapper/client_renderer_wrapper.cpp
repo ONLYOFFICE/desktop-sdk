@@ -5256,8 +5256,12 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 		if (_frame)
 		{
 			CefRefPtr<CefListValue> argList = message->GetArgumentList();
-			std::wstring sText = message->GetArgumentList()->GetString(0).ToWString();
-			std::wstring sHtml = message->GetArgumentList()->GetString(1).ToWString();
+			int nX = message->GetArgumentList()->GetInt(0);
+			int nY = message->GetArgumentList()->GetInt(1);
+			int nCursorX = message->GetArgumentList()->GetInt(2);
+			int nCursorY = message->GetArgumentList()->GetInt(3);
+			std::wstring sText = message->GetArgumentList()->GetString(4).ToWString();
+			std::wstring sHtml = message->GetArgumentList()->GetString(5).ToWString();
 
 			std::vector<std::wstring> arParts;
 			arParts.push_back(sText);
@@ -5272,39 +5276,63 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 
 			// Читаем файлы и добавляем в dataTransfer
 			std::wstring sDataTransferFiles = L"";
-			if (argList->GetSize() > 2)
+			if (argList->GetSize() > 6)
 			{
-				sDataTransferFiles = L"function addFile(dataBase64, fileName) {\
-let byteCharacters = atob(dataBase64); let byteNumbers = new Array(byteCharacters.length);\
-for (let i = 0; i < byteCharacters.length; i++) { byteNumbers[i] = byteCharacters.charCodeAt(i); }\
-let byteArray = new Uint8Array(byteNumbers); event.dataTransfer.items.add(new File([byteArray], fileName)); }";
+				sDataTransferFiles = L"";
 
-				for (uint i = 0; i < argList->GetSize() - 2; i++)
+				for (uint i = 0; i < argList->GetSize() - 6; i++)
 				{
-					std::wstring sFilePath = message->GetArgumentList()->GetString(2 + i);
+					std::wstring sFilePath = message->GetArgumentList()->GetString(6 + i);
 
 					int nSize = 0;
 					std::wstring sFileName = NSFile::GetFileName(sFilePath);
 					std::string sImageBase64 = GetFileBase64(sFilePath, &nSize);
 
-					sDataTransferFiles += L"addFile(\"" + UTF8_TO_U(sImageBase64) + L"\", \"" + sFileName + L"\");";
+					if (sImageBase64.length())
+						sDataTransferFiles += L"addFileToDataTransfer(event, \"" + UTF8_TO_U(sImageBase64) + L"\", \"" + sFileName + L"\");";
 				}
 			}
 
 			// Поиск ondrop-элемента и вызов
 			std::wstring sCode = L"(function(){\
+/* Find drop event */\
 function findDropItem(element) {\
 if (element && element.children) {\
-for (var i = 0; i < element.children.length; i++) {\
-var item = element.children[i];\
-if (item.ondrop) { return item; }\
-var found = findDropItem(item);\
+for (let i = 0; i < element.children.length; i++) {\
+var child = element.children[i];\
+if (child.ondrop) { return child; }\
+var found = findDropItem(child);\
 if (found) { return found; }}}}\
+/* Dispatch drop event */\
+function findDispatchEvent(e, parent) {\
+if (e && parent) { for (let i = 0; i < parent.children.length; i++) {\
+let child = parent.children[i];\
+let result = false; try { result = child.dispatchEvent(e); } catch(e) {}\
+if (result) { findDispatchEvent(e, child); }\
+else { console.log('Found listener'); console.log(child); } }}}\
+/* Add file to dataTransfer */\
+function addFileToDataTransfer(ev, dataBase64, fileName) {\
+let byteCharacters = atob(dataBase64); let byteNumbers = new Array(byteCharacters.length);\
+for (let i = 0; i < byteCharacters.length; i++) { byteNumbers[i] = byteCharacters.charCodeAt(i); }\
+let byteArray = new Uint8Array(byteNumbers); ev.dataTransfer.items.add(new File([byteArray], fileName)); }\
+/* Create custom event */\
+function createCustomEvent(type, x, y, c_x, c_y) {\
+let event = new Event(type, { bubbles: true, cancelable: true, clientX: x, clientY: y, screenX: c_x, screenY: c_y });\
+event.dataTransfer = new DataTransfer(); return event; }\
+/* Work */\
 var htmlTarget = findDropItem(document); \
-/*console.log('Drop element'); console.log(htmlTarget)*/;\
-if (htmlTarget) { let event = document.createEvent(\"MouseEvents\"); event.type = \"drop\"; event.dataTransfer = new DataTransfer();\
-event.dataTransfer.setData(\"text/plain\", \"" + arParts[0] + L"\");\
-event.dataTransfer.setData(\"text/html\", \"" + arParts[1] + L"\"); " + sDataTransferFiles + L"htmlTarget.ondrop(event); }})();";
+htmlTarget = htmlTarget ? htmlTarget : document;\
+console.log('Drop element'); console.log(htmlTarget);\
+if (htmlTarget) { let event = createCustomEvent(\"drop\"," + std::to_wstring(nX) + L"," + std::to_wstring(nY) + L"," + std::to_wstring(nCursorX) + L"," + std::to_wstring(nCursorY) + L");";
+
+			if (arParts[0].length())
+				sCode += L"event.dataTransfer.setData(\"text/plain\", \"" + arParts[0] + L"\");";
+			if (arParts[1].length())
+				sCode += L"event.dataTransfer.setData(\"text/html\", \"" + arParts[1] + L"\");";
+
+			sCode += sDataTransferFiles + L"let targetElem = document.elementFromPoint(" + std::to_wstring(nX) + L", " + std::to_wstring(nY) + L");\
+if (targetElem) { targetElem.dispatchEvent(event); }\
+console.log(targetElem); console.log('Event'); console.log(event); }})();";
 
 			_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
 		}

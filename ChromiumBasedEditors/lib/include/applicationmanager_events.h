@@ -1046,6 +1046,8 @@ namespace NSEditorApi
 	private:
 		int m_nX;
 		int m_nY;
+		int m_nCursorX;
+		int m_nCursorY;
 		std::wstring m_sText;
 		std::wstring m_sHtml;
 		std::vector<std::wstring> m_arFiles;
@@ -1055,6 +1057,8 @@ namespace NSEditorApi
 		{
 			m_nX = 0;
 			m_nY = 0;
+			m_nCursorX = 0;
+			m_nCursorY = 0;
 			m_sText = L"";
 			m_sHtml = L"";
 		}
@@ -1064,6 +1068,8 @@ namespace NSEditorApi
 
 		LINK_PROPERTY_INT(X)
 		LINK_PROPERTY_INT(Y)
+		LINK_PROPERTY_INT(CursorX)
+		LINK_PROPERTY_INT(CursorY)
 		LINK_PROPERTY_STRING(Text)
 		LINK_PROPERTY_STRING(Html)
 
