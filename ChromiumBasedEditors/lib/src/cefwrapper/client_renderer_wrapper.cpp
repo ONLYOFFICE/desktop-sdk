@@ -4072,7 +4072,7 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				if (IsLocalFile(true))
 					retval = CefV8Value::CreateString("../../../../../dictionaries/");
 				else
-					retval = CefV8Value::CreateBool("");
+					retval = CefV8Value::CreateString("");
 				return true;
 			}
 
