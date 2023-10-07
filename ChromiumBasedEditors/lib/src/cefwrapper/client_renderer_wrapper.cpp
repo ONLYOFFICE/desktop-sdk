@@ -4075,6 +4075,33 @@ window.AscDesktopEditor.CallInFrame(\"" +
 					retval = CefV8Value::CreateString("");
 				return true;
 			}
+			else if (name == "AddChanges")
+			{
+				if (!IsLocalFile(true))
+					return true;
+
+				std::wstring sDirectory = m_sLocalFileFolderWithoutFile + L"/changes";
+				if (!NSDirectory::Exists(sDirectory))
+					return true;
+
+				std::wstring sFile = sDirectory + L"/changes" + std::to_wstring(arguments[0]->GetIntValue()) + L".json";
+				if (NSFile::CFileBinary::Exists(sFile))
+					NSFile::CFileBinary::Remove(sFile);
+
+				std::string sContent = arguments[1]->GetStringValue().ToString();
+				BYTE* pDataDst = NULL;
+				int nLenDst = 0;
+				if (NSFile::CBase64Converter::Decode(sContent.c_str(), sContent.length(), pDataDst, nLenDst))
+				{
+					NSFile::CFileBinary oFileChanges;
+					oFileChanges.CreateFileW(sFile);
+					oFileChanges.WriteFile(pDataDst, nLenDst);
+					oFileChanges.CloseFile();
+				}
+
+				RELEASEARRAYOBJECTS(pDataDst);
+				return true;
+			}
 
 			// Function does not exist.
 			return false;
@@ -4579,7 +4606,7 @@ window.AscDesktopEditor.CallInFrame(\"" +
 
 			CefRefPtr<CefV8Handler> handler = pWrapper;
 
-#define EXTEND_METHODS_COUNT 177
+#define EXTEND_METHODS_COUNT 178
 			const char* methods[EXTEND_METHODS_COUNT] = {
 				"Copy",
 				"Paste",
@@ -4824,6 +4851,7 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				"startExternalConvertation",
 
 				"getDictionariesPath",
+				"AddChanges",
 
 				NULL};
 
