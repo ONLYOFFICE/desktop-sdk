@@ -61,6 +61,8 @@
 #include "../../../../../core/Common/3dParty/openssl/common/common_openssl.h"
 #include "../../../../../core/OfficeCryptReader/source/ECMACryptFile.h"
 
+#include <boost/filesystem.hpp>
+
 #ifndef CEF_2623
 #define CEF_V8_SUPPORT_TYPED_ARRAYS
 
@@ -1743,6 +1745,31 @@ DE.controllers.Main.DisableVersionHistory(); \
 			else if (name == "LocalFileSetSourcePath")
 			{
 				m_sLocalFileSrc = arguments[0]->GetStringValue().ToWString();
+				return true;
+			}
+			else if (name == "LocalFileGetRelativePath")
+			{
+				if (arguments.size() != 1 ||
+					m_sLocalFileSrc.empty())
+				{
+					retval = CefV8Value::CreateString("");
+					return true;
+				}
+
+				std::wstring sRequestPath = arguments[0]->GetStringValue();
+
+				boost::filesystem::wpath current_path = m_sLocalFileSrc;
+				boost::filesystem::wpath request_path = sRequestPath;
+
+				boost::filesystem::wpath relativePath = boost::filesystem::relative(request_path, current_path.parent_path());
+				std::wstring sRelativePath = relativePath.c_str();
+
+				if (sRelativePath.empty())
+					sRelativePath = m_sLocalFileSrc;
+
+				NSStringUtils::string_replace(sRelativePath, L"\\", L"/");
+
+				retval = CefV8Value::CreateString(sRelativePath);
 				return true;
 			}
 			else if (name == "LocalFileGetSaved")
@@ -4606,7 +4633,7 @@ window.AscDesktopEditor.CallInFrame(\"" +
 
 			CefRefPtr<CefV8Handler> handler = pWrapper;
 
-#define EXTEND_METHODS_COUNT 178
+#define EXTEND_METHODS_COUNT 179
 			const char* methods[EXTEND_METHODS_COUNT] = {
 				"Copy",
 				"Paste",
@@ -4672,6 +4699,7 @@ window.AscDesktopEditor.CallInFrame(\"" +
 
 				"LocalFileGetSourcePath",
 				"LocalFileSetSourcePath",
+				"LocalFileGetRelativePath",
 
 				"LocalFileGetSaved",
 				"LocalFileSetSaved",
