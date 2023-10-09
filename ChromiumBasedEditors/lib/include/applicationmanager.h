@@ -69,6 +69,7 @@ public:
 	std::wstring                    app_data_path;
 
 	std::wstring                    local_editors_path;
+	std::wstring                    connection_error_path;
 	std::wstring                    file_converter_path;
 	std::wstring                    recover_path;
 	std::string                     country;
