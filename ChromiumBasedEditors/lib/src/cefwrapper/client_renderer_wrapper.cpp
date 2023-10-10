@@ -1762,7 +1762,7 @@ DE.controllers.Main.DisableVersionHistory(); \
 				boost::filesystem::wpath request_path = sRequestPath;
 
 				boost::filesystem::wpath relativePath = boost::filesystem::relative(request_path, current_path.parent_path());
-				std::wstring sRelativePath = relativePath.c_str();
+				std::wstring sRelativePath = relativePath.wstring();
 
 				if (sRelativePath.empty())
 					sRelativePath = m_sLocalFileSrc;
