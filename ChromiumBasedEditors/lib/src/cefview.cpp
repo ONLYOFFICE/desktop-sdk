@@ -4920,8 +4920,28 @@ virtual void OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser,
 	{
 		m_pParent->m_pInternal->m_bIsCrashed = true;
 
-		NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_PAGE_CRASH);
-		m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+		NSEditorApi::CAscCefMenuEventListener* pListener = m_pParent->GetAppManager()->GetEventListener();
+
+		if (pListener)
+		{
+			NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_PAGE_CRASH);
+			pListener->OnEvent(pEvent);
+
+			if (m_pParent->GetType() == cvwtEditor)
+			{
+				// чтобы не спрашивали,сохранять изменения или нет - отошлем, что нет изменений.
+				pEvent = new NSEditorApi::CAscCefMenuEvent();
+				pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_MODIFY_CHANGED;
+				pEvent->put_SenderId(m_pParent->GetId());
+
+				NSEditorApi::CAscDocumentModifyChanged* pData = new NSEditorApi::CAscDocumentModifyChanged();
+				pData->put_Id(m_pParent->GetId());
+				pData->put_Changed(false);
+				pEvent->m_pData = pData;
+
+				pListener->OnEvent(pEvent);
+			}
+		}
 	}
 }
 

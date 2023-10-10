@@ -1765,7 +1765,7 @@ DE.controllers.Main.DisableVersionHistory(); \
 				std::wstring sRelativePath = relativePath.wstring();
 
 				if (sRelativePath.empty())
-					sRelativePath = m_sLocalFileSrc;
+					sRelativePath = sRequestPath;
 
 				NSStringUtils::string_replace(sRelativePath, L"\\", L"/");
 
