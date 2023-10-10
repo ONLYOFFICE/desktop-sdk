@@ -4556,7 +4556,7 @@ let event = createCustomEvent(\"" + type + L"\"," + std::to_wstring(nX) + L"," +
 
 			sCode += sDataTransferFiles + L"let targetElem = document.elementFromPoint(" + std::to_wstring(nX) + L", " + std::to_wstring(nY) + L");\
 if (targetElem) { targetElem.dispatchEvent(event); }\
-console.log(targetElem); console.log('Event'); console.log(event); })();";
+console.log(targetElem); console.log(\"" + type + L"\"); console.log(event); })();";
 		}
 
 		return sCode;
@@ -5351,7 +5351,13 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 		{
 			CAscDragDrop oDnd(message);
 
-			std::wstring sCode = oDnd.CreateEvent(L"drop");
+			std::wstring sCode = oDnd.CreateEvent(L"dragenter");
+			_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+
+			sCode = oDnd.CreateEvent(L"dragover");
+			_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+
+			sCode = oDnd.CreateEvent(L"drop");
 			_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
 		}
 		return true;
