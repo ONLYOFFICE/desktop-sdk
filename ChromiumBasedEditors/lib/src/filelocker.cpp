@@ -91,6 +91,7 @@ namespace NSSystem
 
 		virtual bool Lock()
 		{
+			bool bResult = true;
 			std::wstring sFileFull = CorrectPathW(m_sFile);
 			DWORD dwFileAttributes = 0; //GetFileAttributesW(sFileFull.c_str());
 			m_nDescriptor = CreateFileW(sFileFull.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, dwFileAttributes, NULL);
@@ -152,7 +153,7 @@ namespace NSSystem
 		}
 
 	public:
-		static bool IsLockedInternal(const std::wstring& file)
+		static LockType IsLockedInternal(const std::wstring& file)
 		{
 			LockType lockType = LockType::ltNone;
 			HANDLE hFile = CreateFileW(file.c_str(),                  // открываемый файл
@@ -164,7 +165,7 @@ namespace NSSystem
 			                           NULL);                         // атрибутов шаблона нет
 			if (hFile == INVALID_HANDLE_VALUE)
 			{
-				DWORD fileAttr = GetFileAttributesW(sFile.c_str());
+				DWORD fileAttr = GetFileAttributesW(file.c_str());
 				if (INVALID_FILE_ATTRIBUTES != fileAttr)
 				{
 					if (fileAttr & FILE_ATTRIBUTE_READONLY)
