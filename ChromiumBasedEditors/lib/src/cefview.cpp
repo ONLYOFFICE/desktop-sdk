@@ -5393,7 +5393,7 @@ void CCefView_Private::LocalFile_End()
 	
 	NSSystem::LockType isLocked = NSSystem::LockType::ltNone;
 	if (m_oLocalInfo.m_oInfo.m_bIsSaved)
-		isLocked = NSSystem::LockType::ltNone;//NSSystem::CLocalFileLocker::IsLocked(m_oLocalInfo.m_oInfo.m_sFileSrc);
+		isLocked = NSSystem::CLocalFileLocker::IsLocked(m_oLocalInfo.m_oInfo.m_sFileSrc);
 	
 	if (NSSystem::LockType::ltNone == isLocked)
 		CheckLockLocalFile();
