@@ -435,7 +435,8 @@ namespace NSOOXMLPassword
 
 			if (m_sPassword.empty())
 			{
-				NSFile::CFileBinary::Remove(m_sFile);
+				if (!m_pLocker)
+					NSFile::CFileBinary::Remove(m_sFile);
 				COfficeUtils oCOfficeUtils(NULL);
 				HRESULT hRes = oCOfficeUtils.CompressFileOrDirectory(m_sDirectory, sLockerSavedPath, true);
 				NSDirectory::DeleteDirectory(m_sDirectory);
@@ -1672,7 +1673,7 @@ public:
 
 		if (!m_bIsApplyChanges)
 		{
-			if (!NSSystem::CLocalFileLocker::IsLocked(m_sSrcFilePath))
+			if (NSSystem::LockType::ltNone == NSSystem::CLocalFileLocker::IsLocked(m_sSrcFilePath))
 			{
 				sSrcFile = m_sSrcFilePath;
 			}

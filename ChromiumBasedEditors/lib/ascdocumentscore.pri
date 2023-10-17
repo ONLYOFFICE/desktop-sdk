@@ -115,7 +115,8 @@ SOURCES += \
     $$PWD/src/cefview.cpp \
     $$PWD/src/fileprinter.cpp \
     $$PWD/src/crypto_mode.cpp \
-    $$PWD/src/keychain.cpp
+    $$PWD/src/keychain.cpp \
+    $$PWD/src/filelocker.cpp
 
 SOURCES += \
     $$CORE_ROOT_DIR/Common/OfficeFileFormatChecker2.cpp \
