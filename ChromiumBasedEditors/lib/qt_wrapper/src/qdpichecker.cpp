@@ -41,7 +41,11 @@
 #endif
 
 #ifdef _LINUX
+#ifndef QT_VERSION_6
 #include <QX11Info>
+#else
+#include <QtGui/private/qtx11extras_p.h>
+#endif
 #endif
 
 QDpiChecker::QDpiChecker(CAscApplicationManager* pManager) : CAscDpiChecker(pManager)

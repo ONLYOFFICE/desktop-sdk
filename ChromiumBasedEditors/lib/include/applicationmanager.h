@@ -216,7 +216,7 @@ public:
 	CCefViewEditor* CreateCefPresentationReporter(CCefViewWidgetImpl* parent, CAscReporterData* data);
 
 	// new files path
-	std::wstring GetNewFilePath(const int& format);
+	std::wstring GetNewFilePath(const AscEditorType& format);
 
 	// <view> <-> <id>
 	CCefView* GetViewById(int nId);
@@ -248,6 +248,7 @@ public:
 	virtual IExternalMessageLoop* GetExternalMessageLoop();
 	virtual void ExternalMessageLoop_OnExecute(void* message);
 	virtual void ExternalMessageLoop_OnTimeout();
+	bool IsExitMessageLoop();
 
 	// parameters to local file url
 	void InitAdditionalEditorParams(std::wstring& sParams);
@@ -259,6 +260,7 @@ public:
 
 	// send to all main pages
 	void SetEventToAllMainWindows(NSEditorApi::CAscMenuEvent* pEvent);
+	void SetEventToAllWindows(NSEditorApi::CAscMenuEvent* pEvent);
 
 	// crypto modes <0 - none, 1 - simple, 2 - advanced>
 	void SetCryptoMode(const std::string& sPassword, const int& nMode);

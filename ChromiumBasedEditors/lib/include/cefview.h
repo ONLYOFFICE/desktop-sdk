@@ -42,14 +42,14 @@ enum CefViewWrapperType
 	cvwtEditor      = 1
 };
 
-enum AscEditorType
+enum class AscEditorType
 {
 	etDocument              = 0,
 	etPresentation          = 1,
 	etSpreadsheet           = 2,
 	etDocumentMasterForm    = 3,
 	etDocumentMasterOForm   = 4,
-	etDocumentViewer        = 5,
+	etPdf                   = 5,
 	etUndefined             = 255
 };
 
@@ -166,7 +166,7 @@ public:
 	AscEditorType GetEditorType();
 
 	void OpenLocalFile(const std::wstring& sFilePath, const int& nFileFormat, const std::wstring& params = L"");
-	void CreateLocalFile(const int& nFileFormat, const std::wstring& sName = L"");
+	void CreateLocalFile(const AscEditorType& nFileFormat, const std::wstring& sName = L"", const std::wstring& sTemplatePath = L"");
 	bool OpenCopyAsRecoverFile(const int& nIdSrc);
 	bool OpenRecoverFile(const int& nId);
 	bool OpenRecentFile(const int& nId);

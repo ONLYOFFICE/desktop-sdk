@@ -44,7 +44,7 @@ CPrintData::CPrintData()
 	m_pCache = NULL;
 
 	m_nCurrentPage = -1;
-	m_eEditorType = etDocument;
+	m_eEditorType = AscEditorType::etDocument;
 
 	m_pNativePrinter = NULL;
 
@@ -99,7 +99,7 @@ void CPrintData::Print_End()
 	m_nCurrentPage = -1;
 	m_arPages.clear();
 
-	m_eEditorType = etDocument;
+	m_eEditorType = AscEditorType::etDocument;
 }
 
 std::wstring CPrintData::DownloadImage(const std::wstring& strFile)
@@ -529,7 +529,7 @@ CPrintData::CPrintContextPageData CPrintData::CheckPrintRotate(NSEditorApi::CAsc
 
 	CAscPrintSettings settings = settingsConst;
 
-	if (m_eEditorType == etPresentation)
+	if (m_eEditorType == AscEditorType::etPresentation)
 	{
 		settings.Mode = CAscPrintSettings::pmFit;
 		settings.ZoomEnable = true;

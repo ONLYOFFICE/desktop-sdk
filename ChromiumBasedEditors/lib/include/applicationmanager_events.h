@@ -33,8 +33,6 @@
 #ifndef APPLICATION_MANAGER_EVENTS_H
 #define APPLICATION_MANAGER_EVENTS_H
 
-#include "../../../../core/DesktopEditor/Word_Api/Editor_Api.h"
-
 #define ASC_MENU_EVENT_TYPE_CEF_CREATETAB       1001
 #define ASC_MENU_EVENT_TYPE_CEF_TABEDITORTYPE   1002
 #define ASC_MENU_EVENT_TYPE_CEF_SPELLCHECK      1003
@@ -145,8 +143,401 @@
 
 #define ASC_MENU_EVENT_TYPE_WINDOW_SHOW_CERTIFICATE         9001
 
-
 #define ASC_MENU_EVENT_TYPE_WINDOWS_MESSAGE_USER_COUNT      10
+
+#include <string>
+#include <vector>
+
+namespace NSEditorApi
+{
+	class IMenuEventDataBase
+	{
+	protected:
+		unsigned int m_lRef;
+
+	public:
+		IMenuEventDataBase()
+		{
+			m_lRef = 1;
+		}
+
+		virtual ~IMenuEventDataBase()
+		{
+		}
+
+		virtual unsigned int AddRef()
+		{
+			++m_lRef;
+			return m_lRef;
+		}
+		virtual unsigned int Release()
+		{
+			unsigned int ret = --m_lRef;
+			if (0 == m_lRef)
+				delete this;
+			return ret;
+		}
+	};
+}
+
+namespace NSEditorApi
+{
+#define LINK_PROPERTY_INT(memberName)					\
+	inline int get_##memberName()						\
+	{													\
+		return m_n##memberName;							\
+	}													\
+	inline void put_##memberName(const int& newVal)		\
+	{													\
+		m_n##memberName = newVal;						\
+	}
+#define LINK_PROPERTY_UINT(memberName)					\
+	inline unsigned int get_##memberName()				\
+	{													\
+		return m_n##memberName;							\
+	}													\
+	inline void put_##memberName(const unsigned int& newVal)		\
+	{													\
+		m_n##memberName = newVal;						\
+	}
+
+#define LINK_PROPERTY_DOUBLE(memberName)				\
+	inline double get_##memberName()					\
+	{													\
+		return m_d##memberName;							\
+	}													\
+	inline void put_##memberName(const double& newVal)	\
+	{													\
+		m_d##memberName = newVal;						\
+	}
+
+#define LINK_PROPERTY_BOOL(memberName)					\
+	inline bool get_##memberName()						\
+	{													\
+		return m_b##memberName;							\
+	}													\
+	inline void put_##memberName(const bool& newVal)	\
+	{													\
+		m_b##memberName = newVal;						\
+	}
+
+#define LINK_PROPERTY_BYTE(memberName)					\
+	inline unsigned char get_##memberName()				\
+	{													\
+		return m_n##memberName;							\
+	}													\
+	inline void put_##memberName(const unsigned char& newVal)	\
+	{															\
+		m_n##memberName = newVal;								\
+	}
+
+#define LINK_PROPERTY_STRING(memberName)						\
+	inline std::wstring get_##memberName()						\
+	{															\
+		return m_s##memberName;									\
+	}															\
+	inline void put_##memberName(const std::wstring& newVal)	\
+	{															\
+		m_s##memberName = newVal;								\
+	}
+#define LINK_PROPERTY_STRINGA(memberName)						\
+	inline std::string get_##memberName()						\
+	{															\
+		return m_s##memberName;									\
+	}															\
+	inline void put_##memberName(const std::string& newVal)		\
+	{															\
+		m_s##memberName = newVal;								\
+	}
+
+#define LINK_PROPERTY_OBJECT(objectType, memberName)			\
+	inline objectType& get_##memberName()						\
+	{                                                           \
+		return m_o##memberName;                                 \
+	}                                                           \
+	inline void put_##memberName(const objectType& newVal)      \
+	{                                                           \
+		m_o##memberName = newVal;                               \
+	}
+
+// JS
+#define LINK_PROPERTY_INT_JS(memberName)								\
+	inline js_wrapper<int>& get_##memberName()							\
+	{																	\
+		return m_n##memberName;											\
+	}																	\
+	inline void put_##memberName(const int& newVal)						\
+	{																	\
+		m_n##memberName = newVal;										\
+	}																	\
+	inline void put_##memberName(const js_wrapper<int>& newVal)			\
+	{																	\
+		m_n##memberName = newVal;										\
+	}
+
+#define LINK_PROPERTY_DOUBLE_JS(memberName)								\
+	inline js_wrapper<double>& get_##memberName()						\
+	{																	\
+		return m_d##memberName;											\
+	}																	\
+	inline void put_##memberName(const double& newVal)					\
+	{																	\
+		m_d##memberName = newVal;										\
+	}																	\
+	inline void put_##memberName(const js_wrapper<double>& newVal)		\
+	{																	\
+		m_d##memberName = newVal;										\
+	}
+
+#define LINK_PROPERTY_BOOL_JS(memberName)								\
+	inline js_wrapper<bool>& get_##memberName()							\
+	{																	\
+		return m_b##memberName;											\
+	}																	\
+	inline void put_##memberName(const bool& newVal)					\
+	{																	\
+		m_b##memberName = newVal;										\
+	}																	\
+	inline void put_##memberName(const js_wrapper<bool>& newVal)		\
+	{																	\
+		m_b##memberName = newVal;										\
+	}
+
+#define LINK_PROPERTY_BYTE_JS(memberName)								\
+	inline js_wrapper<unsigned char>& get_##memberName()				\
+	{																	\
+		return m_n##memberName;											\
+	}																	\
+	inline void put_##memberName(const unsigned char& newVal)			\
+	{																	\
+		m_n##memberName = newVal;										\
+	}																	\
+	inline void put_##memberName(const js_wrapper<unsigned char>& newVal)		\
+	{																	\
+		m_n##memberName = newVal;										\
+	}
+
+#define LINK_PROPERTY_STRING_JS(memberName)									\
+	inline js_wrapper<std::wstring>& get_##memberName()						\
+	{																		\
+		return m_s##memberName;												\
+	}																		\
+	inline void put_##memberName(const std::wstring& newVal)				\
+	{																		\
+		m_s##memberName = newVal;											\
+	}																		\
+	inline void put_##memberName(const js_wrapper<std::wstring>& newVal)	\
+	{																		\
+		m_s##memberName = newVal;											\
+	}
+
+#define LINK_PROPERTY_STRINGA_JS(memberName)								\
+	inline js_wrapper<std::string>& get_##memberName()						\
+	{																		\
+		return m_s##memberName;												\
+	}																		\
+	inline void put_##memberName(const std::string& newVal)					\
+	{																		\
+		m_s##memberName = newVal;											\
+	}																		\
+	inline void put_##memberName(const js_wrapper<std::string>& newVal)		\
+	{																		\
+		m_s##memberName = newVal;											\
+	}
+
+#define LINK_PROPERTY_OBJECT_JS(objectType, memberName)						\
+	inline js_wrapper<objectType>& get_##memberName()						\
+	{																		\
+		return m_o##memberName;												\
+	}																		\
+	inline void put_##memberName(const js_wrapper<objectType>& newVal)		\
+	{																		\
+		m_o##memberName = newVal;											\
+	}																		\
+	inline void put_##memberName(objectType* newVal)						\
+	{																		\
+		m_o##memberName = newVal;											\
+	}
+}
+
+namespace NSEditorApi
+{
+	class CAscMenuEvent : public IMenuEventDataBase
+	{
+	public:
+		int					m_nType;
+		IMenuEventDataBase*	m_pData;
+
+	public:
+		CAscMenuEvent(int nType = -1)
+					: m_nType(nType)
+					, m_pData(NULL)
+		{
+		}
+		virtual ~CAscMenuEvent()
+		{
+			if (NULL != m_pData)
+				m_pData->Release();
+		}
+	};
+
+	class CAscCefMenuEvent : public CAscMenuEvent
+	{
+	public:
+		int	m_nSenderId;
+
+	public:
+		CAscCefMenuEvent(int nType = -1) : CAscMenuEvent(nType)
+		{
+			m_nSenderId = -1;
+		}
+		virtual ~CAscCefMenuEvent()
+		{
+		}
+
+		LINK_PROPERTY_INT(SenderId)
+	};
+
+	class CAscCefMenuEventListener
+	{
+	public:
+		// memory release!!!
+		virtual void OnEvent(CAscCefMenuEvent* pEvent)
+		{
+			if (NULL != pEvent)
+				pEvent->Release();
+		}
+		virtual bool IsSupportEvent(int nEventType)
+		{
+			return true;
+		}
+	};
+}
+
+namespace NSEditorApi
+{
+	class CAscLocalRecentsAll : public IMenuEventDataBase
+	{
+	private:
+		std::wstring m_sJSON;
+		int m_nId;
+
+	public:
+
+		CAscLocalRecentsAll()
+		{
+			m_nId = -1;
+		}
+		virtual ~CAscLocalRecentsAll()
+		{
+		}
+
+		LINK_PROPERTY_STRING(JSON)
+		LINK_PROPERTY_INT(Id)
+	};
+
+	class CAscLocalOpenFileRecent_Recover : public IMenuEventDataBase
+	{
+	private:
+		int m_nId;
+		bool m_bIsRecover;
+		std::wstring m_sPath;
+		bool m_bIsRemove;
+
+	public:
+
+		CAscLocalOpenFileRecent_Recover()
+		{
+			m_bIsRecover = false;
+			m_bIsRemove = false;
+		}
+		virtual ~CAscLocalOpenFileRecent_Recover()
+		{
+		}
+
+		LINK_PROPERTY_BOOL(IsRecover)
+		LINK_PROPERTY_BOOL(IsRemove)
+		LINK_PROPERTY_INT(Id)
+		LINK_PROPERTY_STRING(Path)
+	};
+
+	class CAscLocalFileOpen : public IMenuEventDataBase
+	{
+	private:
+		std::wstring m_sDirectory;
+
+	public:
+
+		CAscLocalFileOpen()
+		{
+		}
+		virtual ~CAscLocalFileOpen()
+		{
+		}
+
+		LINK_PROPERTY_STRING(Directory)
+	};
+
+	class CAscLocalFileCreate : public IMenuEventDataBase
+	{
+	private:
+		int m_nType;
+
+	public:
+
+		CAscLocalFileCreate()
+		{
+		}
+		virtual ~CAscLocalFileCreate()
+		{
+		}
+
+		LINK_PROPERTY_INT(Type)
+	};
+}
+
+namespace NSEditorApi
+{
+	class CAscExecCommand : public IMenuEventDataBase
+	{
+	private:
+		std::wstring m_sCommand;
+		std::wstring m_sParam;
+
+	public:
+
+		CAscExecCommand()
+		{
+		}
+		virtual ~CAscExecCommand()
+		{
+		}
+
+		LINK_PROPERTY_STRING(Command)
+		LINK_PROPERTY_STRING(Param)
+	};
+
+	class CAscExecCommandJS : public IMenuEventDataBase
+	{
+	private:
+		std::wstring m_sCommand;
+		std::wstring m_sParam;
+		std::wstring m_sFrameName;
+
+	public:
+
+		CAscExecCommandJS()
+		{
+		}
+		virtual ~CAscExecCommandJS()
+		{
+		}
+
+		LINK_PROPERTY_STRING(Command)
+		LINK_PROPERTY_STRING(Param)
+		LINK_PROPERTY_STRING(FrameName)
+	};
+}
 
 namespace NSEditorApi
 {

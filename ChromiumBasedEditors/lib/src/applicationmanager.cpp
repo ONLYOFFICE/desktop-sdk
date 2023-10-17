@@ -147,15 +147,14 @@ public:
 		if (!oNode.FromXmlFile(sFile))
 			return;
 
-		XmlUtils::CXmlNodes oNodes;
-		if (!oNode.GetChilds(oNodes))
-			return;
+        std::vector<XmlUtils::CXmlNode> oNodes;
+        if (!oNode.GetChilds(oNodes))
+            return;
 
-		int nCount = oNodes.GetCount();
-		for (int i = 0; i < nCount; ++i)
-		{
-			XmlUtils::CXmlNode oSetting;
-			oNodes.GetAt(i, oSetting);
+        size_t nCount = oNodes.size();
+        for (size_t i = 0; i < nCount; ++i)
+        {
+            XmlUtils::CXmlNode & oSetting = oNodes[i];
 
 			std::wstring nameW = oSetting.GetName();
 			std::string name = U_TO_UTF8(nameW);
@@ -645,7 +644,7 @@ CCefViewEditor* CAscApplicationManager::CreateCefPresentationReporter(CCefViewWi
 	return pView;
 }
 
-std::wstring CAscApplicationManager::GetNewFilePath(const int& nFileFormat)
+std::wstring CAscApplicationManager::GetNewFilePath(const AscEditorType& nFileFormat)
 {
 	std::string sCountry = m_oSettings.country;
 	NSCommon::makeUpper(sCountry);
@@ -664,9 +663,9 @@ std::wstring CAscApplicationManager::GetNewFilePath(const int& nFileFormat)
 	std::wstring sFilePath = m_oSettings.file_converter_path + L"/empty/" + sPrefix + L"new.";
 	std::wstring sExtension = L"docx";
 
-	if (nFileFormat == etPresentation)
+	if (nFileFormat == AscEditorType::etPresentation)
 		sExtension = L"pptx";
-	else if (nFileFormat == etSpreadsheet)
+	else if (nFileFormat == AscEditorType::etSpreadsheet)
 		sExtension = L"xlsx";
 
 	sFilePath += sExtension;
@@ -760,6 +759,7 @@ void CAscApplicationManager::DestroyCefView(int nId, bool bIsSafe)
 {
 	if (-1 == nId)
 	{
+		m_pInternal->m_bIsExitMessageLoop = true;
 		for (std::map<int, CCefView*>::iterator i = m_pInternal->m_mapViews.begin(); i != m_pInternal->m_mapViews.end(); i++)
 		{
 			CCefView* pView = i->second;
@@ -922,6 +922,7 @@ void CAscApplicationManager::OnDestroyWindow()
 	if (0 == m_pInternal->m_nWindowCounter)
 	{
 		CefCookieManager::GetGlobalManager(nullptr)->FlushStore(nullptr);
+		m_pInternal->m_bIsExitMessageLoop = true;
 		m_pInternal->m_pApplication->ExitMessageLoop();
 	}
 }
@@ -1044,6 +1045,11 @@ double CAscApplicationManager::GetMonitorScaleByWindow(const WindowHandleId& nHa
 void CAscApplicationManager::SetEventToAllMainWindows(NSEditorApi::CAscMenuEvent* pEvent)
 {
 	m_pInternal->SetEventToAllMainWindows(pEvent);
+}
+
+void CAscApplicationManager::SetEventToAllWindows(NSEditorApi::CAscMenuEvent* pEvent)
+{
+	m_pInternal->SetEventToAllWindows(pEvent);
 }
 
 void CAscApplicationManager::SetCryptoMode(const std::string& sPassword, const int& nMode)
@@ -1243,14 +1249,14 @@ bool CAscApplicationManager::IsUseSystemScaling()
 }
 double Core_GetMonitorScale(const unsigned int& xDpi, const unsigned int& yDpi)
 {
-	// допустимые значения: 1; 1.25; 1.5; 1.75; 2; 2.5; 3; 3.5; 4; 4.5; 5;
+	// допустимые значения: 1; 1.25; 1.5; 1.75; 2; 2.25, 2.5; 2.75, 3; 3.5; 4; 4.5; 5;
 	double dScale = (xDpi + yDpi) / (2 * 96.0);
 	int nCount = (int)((dScale + 0.125) / 0.25);
 	dScale = 0.25 * nCount;
 	if (dScale > 5) dScale = 5;
 	if (dScale < 1) dScale = 1;
 
-	if (dScale > 2)
+	if (dScale > 3)
 		dScale = 0.5 * ((int)(2 * dScale));
 
 	return dScale;

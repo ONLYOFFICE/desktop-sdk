@@ -10,33 +10,32 @@
 
 class QFooterPanel : public QWidget
 {
-    Q_OBJECT
+	Q_OBJECT
 public:
-    explicit QFooterPanel(QWidget *parent = 0);
+	explicit QFooterPanel(QWidget *parent = 0);
 
-    virtual void resizeEvent(QResizeEvent* e);
+	virtual void resizeEvent(QResizeEvent* e);
 
-    virtual void paintEvent(QPaintEvent *);
+	virtual void paintEvent(QPaintEvent *);
 
-#if defined(_LINUX) && !defined(_MAC)
-    virtual void mouseMoveEvent(QMouseEvent* e);
-#endif
+	virtual void mouseMoveEvent(QMouseEvent* event);
 
 public:
-    QPushButton* m_pPlayPause;
-    QPushButton* m_pVolume;
-    QPushButton* m_pFullscreen;
-    QPushButton* m_pPlaylist;
+	QPushButton* m_pPlayPause;
+	QPushButton* m_pVolume;
+	QPushButton* m_pFullscreen;
+	QPushButton* m_pPlaylist;
 
-    QVideoSlider* m_pSlider;
-    
-    int m_nHeigth;
+	QVideoSlider* m_pSlider;
 
-    bool m_bIsEnabledPlayList;
-    bool m_bIsEnabledFullscreen;
+	int m_nHeigth;
+
+	bool m_bIsEnabledPlayList;
+	bool m_bIsEnabledFullscreen;
 
 public:
-    void SetPlayPause(bool bIsPlay);
+	void SetPlayPauseIcon(bool bIsPlay);
+	void SetFullscreenIcon(bool bIsFullscreen);
 };
 
 #endif // QFOOTERPANEL_H

@@ -42,5 +42,11 @@
         <file>icons/volume-active.svg</file>
         <file>icons/volume-active-2x.png</file>
         <file>icons/fullscreen-on-active-2x.png</file>
+        <file>icons/fullscreen-off.png</file>
+        <file>icons/fullscreen-off.svg</file>
+        <file>icons/fullscreen-off-2x.png</file>
+        <file>icons/fullscreen-off-active.png</file>
+        <file>icons/fullscreen-off-active.svg</file>
+        <file>icons/fullscreen-off-active-2x.png</file>
     </qresource>
 </RCC>

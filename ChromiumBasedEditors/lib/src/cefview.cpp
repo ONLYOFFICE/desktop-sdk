@@ -2781,7 +2781,7 @@ public:
 		}
 		else if (message_name == "onlocaldocument_sendrecents")
 		{
-			pManager->m_pInternal->Recents_Dump();
+			pManager->m_pInternal->Recents_Dump(true, m_pParent->GetId());
 			return true;
 		}
 		else if (message_name == "onlocaldocument_openrecents")
@@ -2808,7 +2808,7 @@ public:
 		}
 		else if (message_name == "onlocaldocument_sendrecovers")
 		{
-			pManager->m_pInternal->Recovers_Dump();
+			pManager->m_pInternal->Recovers_Dump(m_pParent->GetId());
 			return true;
 		}
 		else if (message_name == "onlocaldocument_openrecovers")
@@ -4920,8 +4920,28 @@ virtual void OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser,
 	{
 		m_pParent->m_pInternal->m_bIsCrashed = true;
 
-		NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_PAGE_CRASH);
-		m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+		NSEditorApi::CAscCefMenuEventListener* pListener = m_pParent->GetAppManager()->GetEventListener();
+
+		if (pListener)
+		{
+			NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_PAGE_CRASH);
+			pListener->OnEvent(pEvent);
+
+			if (m_pParent->GetType() == cvwtEditor)
+			{
+				// чтобы не спрашивали,сохранять изменения или нет - отошлем, что нет изменений.
+				pEvent = new NSEditorApi::CAscCefMenuEvent();
+				pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_MODIFY_CHANGED;
+				pEvent->put_SenderId(m_pParent->GetId());
+
+				NSEditorApi::CAscDocumentModifyChanged* pData = new NSEditorApi::CAscDocumentModifyChanged();
+				pData->put_Id(m_pParent->GetId());
+				pData->put_Changed(false);
+				pEvent->m_pData = pData;
+
+				pListener->OnEvent(pEvent);
+			}
+		}
 	}
 }
 
@@ -5373,17 +5393,17 @@ void CCefView_Private::LocalFile_End()
 	message->GetArgumentList()->SetString(1, m_oLocalInfo.m_oInfo.m_sFileSrc);
 	message->GetArgumentList()->SetBool(2, m_oLocalInfo.m_oInfo.m_bIsSaved);
 	message->GetArgumentList()->SetString(3, m_oConverterToEditor.GetSignaturesJSON());
-
-	int isLocked = NSSystem::CLocalFileLocker::ltNone;
+	
+	int isLocked = NSSystem::CFileLocker::ltNone;
 	if (m_oLocalInfo.m_oInfo.m_bIsSaved)
 		isLocked = NSSystem::CLocalFileLocker::IsLocked(m_oLocalInfo.m_oInfo.m_sFileSrc);
-
-	if (NSSystem::CLocalFileLocker::ltNone == isLocked)
+	
+	if (NSSystem::CFileLocker::ltNone == isLocked)
 		CheckLockLocalFile();
 
 	message->GetArgumentList()->SetInt(4, isLocked);
-
-	if (NSSystem::CLocalFileLocker::ltNone != isLocked)
+	
+	if (NSSystem::CFileLocker::ltNone != isLocked)
 		m_oLocalInfo.m_oInfo.m_bIsSaved = false;
 
 	SEND_MESSAGE_TO_RENDERER_PROCESS(m_handler->GetBrowser(), message);
@@ -6036,20 +6056,20 @@ void CCefView::load(const std::wstring& urlInputSrc)
 
 			int nFormat = CAscApplicationManager::GetFileFormatByExtentionForSave(m_pInternal->m_sTemplateUrl);
 
-			int nEditorFormat = etDocumentViewer;
+			AscEditorType nEditorFormat = AscEditorType::etPdf;
 			if (-1 != nFormat)
 			{
-				nEditorFormat = etDocument;
+				nEditorFormat = AscEditorType::etDocument;
 				if (nFormat & AVS_OFFICESTUDIO_FILE_PRESENTATION)
-					nEditorFormat = etPresentation;
+					nEditorFormat = AscEditorType::etPresentation;
 				else if (nFormat & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
-					nEditorFormat = etSpreadsheet;
+					nEditorFormat = AscEditorType::etSpreadsheet;
 				else if (nFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF)
-					nEditorFormat = etDocumentMasterForm;
+					nEditorFormat = AscEditorType::etDocumentMasterForm;
 				else if (nFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
-					nEditorFormat = etDocumentMasterOForm;
+					nEditorFormat = AscEditorType::etDocumentMasterOForm;
 				else if (nFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
-					nEditorFormat = etDocumentViewer;
+					nEditorFormat = AscEditorType::etPdf;
 			}
 
 			((CCefViewEditor*)this)->CreateLocalFile(nEditorFormat, m_pInternal->m_sTemplateName);
@@ -7187,7 +7207,7 @@ CefRefPtr<CefFrame> CCefView_Private::CCloudCryptoUpload::GetFrame()
 // CefViewEditor --------------------------------------------------------------------------
 CCefViewEditor::CCefViewEditor(CCefViewWidgetImpl* parent, int nId) : CCefView(parent, nId)
 {
-	m_eType = etUndefined;
+	m_eType = AscEditorType::etUndefined;
 	m_eWrapperType = cvwtEditor;
 }
 CCefViewEditor::~CCefViewEditor()
@@ -7292,7 +7312,13 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
 		}
 		else if (nFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
 		{
-			sParams = L"placement=desktop&filetype=pdf&mode=view";
+			sParams = L"placement=desktop&mode=view";
+			if (nFileFormat == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_DJVU)
+				sParams += L"&filetype=djvu";
+			else if (nFileFormat == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_XPS)
+				sParams += L"&filetype=xps";
+			else
+				sParams = L"&filetype=pdf";
 		}
 
 		if (nFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
@@ -7418,35 +7444,56 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
 	// start convert file
 	this->load(sUrl + sParams);
 }
-void CCefViewEditor::CreateLocalFile(const int& nFileFormat, const std::wstring& sName)
+void CCefViewEditor::CreateLocalFile(const AscEditorType& nFileFormatSrc, const std::wstring& sName, const std::wstring& sTemplatePath)
 {
+	AscEditorType nFileFormat = nFileFormatSrc;
+	if (!sTemplatePath.empty())
+	{
+		m_pInternal->m_sTemplateName = sName;
+		m_pInternal->m_sTemplateUrl = sTemplatePath;
+
+		if (AscEditorType::etUndefined == nFileFormat)
+		{
+			COfficeFileFormatChecker oChecker;
+			if (oChecker.isOfficeFile(sTemplatePath))
+			{
+				if (oChecker.nFileType & AVS_OFFICESTUDIO_FILE_DOCUMENT)
+					nFileFormat = AscEditorType::etDocument;
+				else if (oChecker.nFileType & AVS_OFFICESTUDIO_FILE_PRESENTATION)
+					nFileFormat = AscEditorType::etPresentation;
+				else if (oChecker.nFileType & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
+					nFileFormat = AscEditorType::etSpreadsheet;
+			}
+		}
+	}
+
 	m_pInternal->m_oLocalInfo.m_oInfo.m_bIsSaved = false;
 
 	std::wstring sFilePath = this->GetAppManager()->GetNewFilePath(nFileFormat);
 
 	m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX;
 	std::wstring sParams = L"placement=desktop";
-	if (nFileFormat == etPresentation)
+	if (nFileFormat == AscEditorType::etPresentation)
 	{
 		sParams = L"placement=desktop&doctype=presentation";
 		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
 	}
-	else if (nFileFormat == etSpreadsheet)
+	else if (nFileFormat == AscEditorType::etSpreadsheet)
 	{
 		sParams = L"placement=desktop&doctype=spreadsheet";
 		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX;
 	}
-	else if (nFileFormat == etDocumentMasterForm)
+	else if (nFileFormat == AscEditorType::etDocumentMasterForm)
 	{
 		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF;
 		sParams += L"&filetype=docxf";
 	}
-	else if (nFileFormat == etDocumentMasterOForm)
+	else if (nFileFormat == AscEditorType::etDocumentMasterOForm)
 	{
 		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM;
 		sParams += L"&filetype=oform";
 	}
-	else if (nFileFormat == etDocumentViewer)
+	else if (nFileFormat == AscEditorType::etPdf)
 	{
 		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF;
 		sParams += L"&filetype=pdf&mode=view";
@@ -7742,7 +7789,7 @@ int CCefViewEditor::GetFileFormat(const std::wstring& sFilePath)
 {
 	if (!NSFile::CFileBinary::Exists(sFilePath))
 	{
-		if (NSSystem::CLocalFileLocker::ltNone != NSSystem::CLocalFileLocker::IsLocked(sFilePath))
+		if (NSSystem::CFileLocker::ltNone != NSSystem::CLocalFileLocker::IsLocked(sFilePath))
 		{
 			std::wstring sTmpFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"TMP");
 			if (NSFile::CFileBinary::Exists(sTmpFile))
