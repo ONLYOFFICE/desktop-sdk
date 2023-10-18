@@ -4528,8 +4528,8 @@ return item; }\
 function createCustomEvent(type, x, y, c_x, c_y) {\
 let event = new Event(\"Event\");\
 event.initEvent(type, true, true, null);\
-event.dataTransfer = { dropEffect: \"\", effectAllowed: \"all\", files: [], items: [], types: [], data: {},\
-setData: function(_type, _value) { this.data[_type] = _value; this.types.push(_type);\
+event.dataTransfer = { dropEffect: \"none\", effectAllowed: \"all\", files: [], items: [], types: [], data: {},\
+setData: function(_type, _value) { this.effectAllowed = \"copyMove\"; this.data[_type] = _value; this.types.push(_type);\
 let dtItem = createDataTransferItem(\"string\", _type, _value); this.items.push(dtItem); },\
 getData: function(_type) { return this.data[_type]; } };\
 event.clientX = x; event.clientY = y; event.screenX = c_x; event.screenY = c_y;\
@@ -5352,6 +5352,13 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 
 		if (_frame)
 		{
+			/*CAscDragDrop oDnd(message);
+
+			std::wstring sCode = oDnd.CreateEvent(L"dragenter");
+			_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+
+			sCode = oDnd.CreateEvent(L"dragover");
+			_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);*/
 		}
 		return true;
 	}
@@ -5362,12 +5369,6 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 		if (_frame)
 		{
 			CAscDragDrop oDnd(message);
-
-			/*std::wstring sCode = oDnd.CreateEvent(L"dragenter");
-			_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
-
-			sCode = oDnd.CreateEvent(L"dragover");
-			_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);*/
 
 			std::wstring sCode = oDnd.CreateEvent(L"drop");
 			_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
