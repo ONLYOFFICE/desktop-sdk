@@ -966,10 +966,16 @@ void CCloudPDFSaver::LoadData(const std::string& sBase64)
 
 DWORD CCloudPDFSaver::ThreadProc()
 {
+	std::wstring sTempDir = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"PR_");
+	if (NSFile::CFileBinary::Exists(sTempDir))
+		NSFile::CFileBinary::Remove(sTempDir);
+	NSDirectory::CreateDirectory(sTempDir);
+
 	if (m_nOutputFormat == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF ||
 		m_nOutputFormat == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA)
 	{
 		CPdfFile oPdfFile(m_oPrintData.m_pApplicationFonts);
+		oPdfFile.SetTempDirectory(sTempDir);
 		oPdfFile.CreatePdf((m_nOutputFormat == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA) ? true : false);
 
 		CMetafileToRenderterPDF oCorrector(&oPdfFile);
@@ -1042,6 +1048,8 @@ DWORD CCloudPDFSaver::ThreadProc()
 			RELEASEINTERFACE(pImagesCache);
 		}
 	}
+
+	NSDirectory::DeleteDirectory(sTempDir);
 
 	m_bRunThread = FALSE;
 	m_pEvents->OnFileConvertFromEditor(0, L"");
