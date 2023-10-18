@@ -4177,6 +4177,16 @@ public:
 		m_pParent->GetAppManager()->Apply(pEvent);
 		return true;
 	}
+	else if ("external_reference_open" == message_name)
+	{
+		std::wstring sUrl = args->GetString(0).ToWString();
+		NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_CREATETAB);
+		NSEditorApi::CAscCreateTab* pData = new NSEditorApi::CAscCreateTab();
+		pData->put_Url(L"ascdesktop://external/" + sUrl);
+		pEvent->m_pData = pData;
+		pListener->OnEvent(pEvent);
+		return true;
+	}
 
 	CAscApplicationManager_Private* pInternalMan = m_pParent->GetAppManager()->m_pInternal;
 	if (pInternalMan->m_pAdditional && pInternalMan->m_pAdditional->OnProcessMessageReceived(browser, source_process, message, m_pParent))
@@ -6072,6 +6082,60 @@ void CCefView::load(const std::wstring& urlInputSrc)
 			((CCefViewEditor*)this)->CreateLocalFile(nEditorFormat, m_pInternal->m_sTemplateName);
 		}
 
+		return;
+	}
+	else if (0 == urlInput.find(L"ascdesktop://external/"))
+	{
+		if (this->GetType() == cvwtEditor)
+		{
+			std::wstring sUrlExternal = urlInput.substr(22);
+			if (NSFile::CFileBinary::Exists(sUrlExternal))
+			{
+				COfficeFileFormatChecker oChecker;
+				if (oChecker.isOfficeFile(sUrlExternal))
+				{
+					((CCefViewEditor*)this)->OpenLocalFile(sUrlExternal, oChecker.nFileType);
+					return;
+				}
+			}
+			else if (NSFileDownloader::IsNeedDownload(sUrlExternal))
+			{
+				std::wstring sTmpFile = NSFile::CFileBinary::GetTempPath() + L"/External";
+				if (NSFile::CFileBinary::Exists(sTmpFile))
+					NSFile::CFileBinary::Remove(sTmpFile);
+
+				CFileDownloaderWrapper oDownloader(sUrlExternal, sTmpFile);
+				oDownloader.DownloadSync();
+
+				if (NSFile::CFileBinary::Exists(sTmpFile))
+				{
+					COfficeFileFormatChecker oChecker;
+					if (oChecker.isOfficeFile(sTmpFile))
+					{
+						AscEditorType nEditorFormat = AscEditorType::etPdf;
+						if (-1 != oChecker.nFileType)
+						{
+						nEditorFormat = AscEditorType::etDocument;
+						if (oChecker.nFileType & AVS_OFFICESTUDIO_FILE_PRESENTATION)
+								nEditorFormat = AscEditorType::etPresentation;
+						else if (oChecker.nFileType & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
+								nEditorFormat = AscEditorType::etSpreadsheet;
+						else if (oChecker.nFileType == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF)
+								nEditorFormat = AscEditorType::etDocumentMasterForm;
+						else if (oChecker.nFileType == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
+								nEditorFormat = AscEditorType::etDocumentMasterOForm;
+						else if (oChecker.nFileType & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
+								nEditorFormat = AscEditorType::etPdf;
+						}
+
+						((CCefViewEditor*)this)->CreateLocalFile(nEditorFormat, L"External", sTmpFile);
+						return;
+					}
+				}
+			}
+		}
+
+		this->load(L"ascdesktop://crash.html");
 		return;
 	}
 

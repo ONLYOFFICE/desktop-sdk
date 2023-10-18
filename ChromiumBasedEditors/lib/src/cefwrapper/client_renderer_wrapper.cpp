@@ -2180,6 +2180,10 @@ window.AscDesktopEditor.loadLocalFile = function(url, callback, start, len) {\n\
   };\n\
   xhr.send(null);\n\
 };\n\
+window.AscDesktopEditor.openExternalReference = function(link, callbackError) {\n\
+window.AscDesktopEditor._openExternalReferenceCallback = callbackError;\n\
+return window.AscDesktopEditor._openExternalReference(link);\n\
+};\n\
 Object.defineProperty(window.AscDesktopEditor, 'CryptoMode', {\n\
 get: function() { return window.AscDesktopEditor.Property_GetCryptoMode(); },\n\
 set: function(value) { window.AscDesktopEditor.Property_SetCryptoMode(value); }\n\
@@ -4129,6 +4133,46 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				RELEASEARRAYOBJECTS(pDataDst);
 				return true;
 			}
+			else if (name == "_openExternalReference")
+			{
+				bool bIsError = false;
+				if (!IsLocalFile(true) || arguments.size() < 1 || !arguments[0]->IsString() || m_sLocalFileSrc.empty())
+				{
+					bIsError = true;
+				}
+
+				std::wstring sRequestPath = arguments[0]->GetStringValue();
+
+				if (!bIsError)
+				{
+					if (!NSFileDownloader::IsNeedDownload(sRequestPath) &&
+						!NSFile::CFileBinary::Exists(sRequestPath))
+					{
+						boost::filesystem::wpath current_path = m_sLocalFileSrc;
+						boost::filesystem::wpath request_path = sRequestPath;
+
+						boost::filesystem::wpath absolute_path = boost::filesystem::absolute(request_path, current_path.parent_path());
+						sRequestPath = absolute_path.wstring();
+
+						if (!NSFile::CFileBinary::Exists(sRequestPath))
+						{
+							bIsError = true;
+						}
+					}
+				}
+
+				if (bIsError)
+				{
+					CefV8Context::GetCurrentContext()->GetFrame()->ExecuteJavaScript("window.AscDesktopEditor._openExternalReferenceCallback(0);", "", 0);
+					return true;
+				}
+
+				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("external_reference_open");
+				message->GetArgumentList()->SetString(0, sRequestPath);
+				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+
+				return true;
+			}
 
 			// Function does not exist.
 			return false;
@@ -4633,7 +4677,7 @@ window.AscDesktopEditor.CallInFrame(\"" +
 
 			CefRefPtr<CefV8Handler> handler = pWrapper;
 
-#define EXTEND_METHODS_COUNT 179
+#define EXTEND_METHODS_COUNT 180
 			const char* methods[EXTEND_METHODS_COUNT] = {
 				"Copy",
 				"Paste",
@@ -4880,6 +4924,8 @@ window.AscDesktopEditor.CallInFrame(\"" +
 
 				"getDictionariesPath",
 				"AddChanges",
+
+				"_openExternalReference",
 
 				NULL};
 
