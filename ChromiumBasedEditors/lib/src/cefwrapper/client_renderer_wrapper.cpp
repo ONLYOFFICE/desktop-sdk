@@ -4520,14 +4520,18 @@ public:
 			sCode = L"(function(){\
 /* Create custom event */\
 function createCustomEvent(type, x, y, c_x, c_y) {\
-let dt = new DataTransfer(); dt.dropEffect = \"copy\"; dt.effectAllowed = \"all\";\
-var event = new DragEvent(type, { dataTransfer: dt,  bubbles: true, cancelable: true, clientX: x, clientY: y, screenX: c_x, screenY: c_y });\
+var event = new Event(\"Event\");\
+event.initEvent(type, true, true, null);\
+event.dataTransfer = { dropEffect: \"\", effectAllowed: \"all\", files: [], items: [], types: [], data: {},\
+setData: function(t, val) { this.data[t] = val; this.items.push(val); this.types.push(t); },\
+getData: function(t) { return this.data[t]; } };\
+event.clientX = x; event.clientY = y; event.screenX = c_x; event.screenY = c_y;\
 return event; }\
 /* Add file to dataTransfer */\
 function addFileToDataTransfer(ev, dataBase64, fileName) {\
 let byteCharacters = atob(dataBase64); let byteNumbers = new Array(byteCharacters.length);\
 for (let i = 0; i < byteCharacters.length; i++) { byteNumbers[i] = byteCharacters.charCodeAt(i); }\
-let byteArray = new Uint8Array(byteNumbers); ev.dataTransfer.items.add(new File([byteArray], fileName)); }\
+let byteArray = new Uint8Array(byteNumbers); ev.dataTransfer.files.push(new File([byteArray], fileName)); }\
 /* Code */\
 let event = createCustomEvent(\"" + type + L"\"," + std::to_wstring(nX) + L"," + std::to_wstring(nY) + L"," + std::to_wstring(nCursorX) + L"," + std::to_wstring(nCursorY) + L");";
 
@@ -5351,13 +5355,13 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 		{
 			CAscDragDrop oDnd(message);
 
-			std::wstring sCode = oDnd.CreateEvent(L"dragenter");
+			/*std::wstring sCode = oDnd.CreateEvent(L"dragenter");
 			_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
 
 			sCode = oDnd.CreateEvent(L"dragover");
-			_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+			_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);*/
 
-			sCode = oDnd.CreateEvent(L"drop");
+			std::wstring sCode = oDnd.CreateEvent(L"drop");
 			_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
 		}
 		return true;
