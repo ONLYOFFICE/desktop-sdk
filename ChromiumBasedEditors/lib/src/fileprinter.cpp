@@ -269,8 +269,8 @@ std::wstring CPrintData::GetImagePath(const std::wstring& sPath)
 
 	// 4) может это файл файла?
 	if (0 == sPath.find(L"media/image") || 0 == sPath.find(L"image") ||
-			0 == sPath.find(L"image/display") || 0 == sPath.find(L"display") ||
-			((0 == sPath.find(L"media/") && m_bIsOpenAsLocal)))
+		0 == sPath.find(L"image/display") || 0 == sPath.find(L"display") ||
+		((0 == sPath.find(L"media/") && m_bIsOpenAsLocal)))
 	{
 		std::wstring sExt = L"";
 		int nPos = sPath.find_last_of(wchar_t('.'));
@@ -287,32 +287,32 @@ std::wstring CPrintData::GetImagePath(const std::wstring& sPath)
 		}
 
 		std::wstring sUrl = m_sDocumentImagesPath + sPath2;
-		std::wstring sUrl2 = L"";
+
+		std::wstring sMetafileUrlBase = L"";
 		if (sExt == L"svg")
-		{
-			sUrl = m_sDocumentImagesPath + sPath2.substr(0, nPos) + L".emf";
-			sUrl2 = m_sDocumentImagesPath + sPath2.substr(0, nPos) + L".wmf";
-		}
+			sMetafileUrlBase = m_sDocumentImagesPath + sPath2.substr(0, nPos);
 
 		if (NSFileDownloader::IsNeedDownload(m_sDocumentImagesPath))
 		{
-			std::wstring s1 = this->DownloadImage(sUrl);
-			if (!s1.empty())
+			std::wstring sResultImagePath = L"";
+
+			if (!sMetafileUrlBase.empty())
 			{
-				m_mapImages.insert(std::pair<std::wstring, std::wstring>(sPath, s1));
-				m_mapImagesDelete.insert(std::pair<std::wstring, std::wstring>(sPath, s1));
-				return s1;
+				sResultImagePath = this->DownloadImage(sMetafileUrlBase + L".emf");
+				if (sMetafileUrlBase.empty())
+					sResultImagePath = this->DownloadImage(sMetafileUrlBase + L".wmf");
 			}
-			if (!sUrl2.empty())
+
+			if (sResultImagePath.empty())
+				sResultImagePath = this->DownloadImage(sUrl);
+
+			if (!sResultImagePath.empty())
 			{
-				std::wstring s2 = this->DownloadImage(sUrl2);
-				if (!s2.empty())
-				{
-					m_mapImages.insert(std::pair<std::wstring, std::wstring>(sPath, s2));
-					m_mapImagesDelete.insert(std::pair<std::wstring, std::wstring>(sPath, s2));
-					return s2;
-				}
+				m_mapImages.insert(std::pair<std::wstring, std::wstring>(sPath, sResultImagePath));
+				m_mapImagesDelete.insert(std::pair<std::wstring, std::wstring>(sPath, sResultImagePath));
+				return sResultImagePath;
 			}
+
 			m_mapImages.insert(std::pair<std::wstring, std::wstring>(sPath, sPath));
 			return sPath;
 		}
@@ -320,40 +320,36 @@ std::wstring CPrintData::GetImagePath(const std::wstring& sPath)
 		{
 			if (!sUrl.empty() && 0 == sUrl.find(L"file://"))
 			{
-				std::wstring s1 = sUrl.substr(7);
-				std::wstring s2 = sUrl.substr(8);
-				if (NSFile::CFileBinary::Exists(s1))
+				if (NSFile::CFileBinary::Exists(sUrl.substr(7)))
 				{
-					sUrl = s1;
+					sUrl = sUrl.substr(7);
+					if (!sMetafileUrlBase.empty())
+						sMetafileUrlBase = sMetafileUrlBase.substr(7);
 				}
-				else if (NSFile::CFileBinary::Exists(s2))
+				else if (NSFile::CFileBinary::Exists(sUrl.substr(8)))
 				{
-					sUrl = s2;
-				}
-			}
-			if (!sUrl2.empty() && 0 == sUrl2.find(L"file://"))
-			{
-				std::wstring s1 = sUrl2.substr(7);
-				std::wstring s2 = sUrl2.substr(8);
-				if (NSFile::CFileBinary::Exists(s1))
-				{
-					sUrl2 = s1;
-				}
-				else if (NSFile::CFileBinary::Exists(s2))
-				{
-					sUrl2 = s2;
+					sUrl = sUrl.substr(8);
+					if (!sMetafileUrlBase.empty())
+						sMetafileUrlBase = sMetafileUrlBase.substr(8);
 				}
 			}
 
-			if (NSFile::CFileBinary::Exists(sUrl))
+			std::wstring sResultImagePath = L"";
+			if (!sMetafileUrlBase.empty())
 			{
-				m_mapImages.insert(std::pair<std::wstring, std::wstring>(sPath, sUrl));
-				return sUrl;
+				if (NSFile::CFileBinary::Exists(sMetafileUrlBase + L".emf"))
+					sResultImagePath = sMetafileUrlBase + L".emf";
+				else if (NSFile::CFileBinary::Exists(sMetafileUrlBase + L".wmf"))
+					sResultImagePath = sMetafileUrlBase + L".wmf";
 			}
-			else if (NSFile::CFileBinary::Exists(sUrl2))
+
+			if (sResultImagePath.empty())
+				sResultImagePath = sUrl;
+
+			if (NSFile::CFileBinary::Exists(sResultImagePath))
 			{
-				m_mapImages.insert(std::pair<std::wstring, std::wstring>(sPath, sUrl2));
-				return sUrl2;
+				m_mapImages.insert(std::pair<std::wstring, std::wstring>(sPath, sResultImagePath));
+				return sResultImagePath;
 			}
 			else
 			{
@@ -380,32 +376,32 @@ std::wstring CPrintData::GetImagePath(const std::wstring& sPath)
 			sPresentationThemesPath += m_sThemesUrl;
 
 		std::wstring sUrl = sPresentationThemesPath + sPath;
-		std::wstring sUrl2 = L"";
+
+		std::wstring sMetafileUrlBase = L"";
 		if (sExt == L"svg")
-		{
-			sUrl = sPresentationThemesPath + sPath.substr(0, nPos) + L".emf";
-			sUrl2 = sPresentationThemesPath + sPath.substr(0, nPos) + L".wmf";
-		}
+			sMetafileUrlBase = sPresentationThemesPath + sPath.substr(0, nPos);
 
 		if (NSFileDownloader::IsNeedDownload(m_sPresentationThemesPath))
 		{
-			std::wstring s1 = this->DownloadImage(sUrl);
-			if (!s1.empty())
+			std::wstring sResultImagePath = L"";
+
+			if (!sMetafileUrlBase.empty())
 			{
-				m_mapImages.insert(std::pair<std::wstring, std::wstring>(sPath, s1));
-				m_mapImagesDelete.insert(std::pair<std::wstring, std::wstring>(sPath, s1));
-				return s1;
+				sResultImagePath = this->DownloadImage(sMetafileUrlBase + L".emf");
+				if (sMetafileUrlBase.empty())
+					sResultImagePath = this->DownloadImage(sMetafileUrlBase + L".wmf");
 			}
-			if (!sUrl2.empty())
+
+			if (sResultImagePath.empty())
+				sResultImagePath = this->DownloadImage(sUrl);
+
+			if (!sResultImagePath.empty())
 			{
-				std::wstring s2 = this->DownloadImage(sUrl2);
-				if (!s2.empty())
-				{
-					m_mapImages.insert(std::pair<std::wstring, std::wstring>(sPath, s2));
-					m_mapImagesDelete.insert(std::pair<std::wstring, std::wstring>(sPath, s2));
-					return s2;
-				}
+				m_mapImages.insert(std::pair<std::wstring, std::wstring>(sPath, sResultImagePath));
+				m_mapImagesDelete.insert(std::pair<std::wstring, std::wstring>(sPath, sResultImagePath));
+				return sResultImagePath;
 			}
+
 			m_mapImages.insert(std::pair<std::wstring, std::wstring>(sPath, sPath));
 			return sPath;
 		}
@@ -413,40 +409,36 @@ std::wstring CPrintData::GetImagePath(const std::wstring& sPath)
 		{
 			if (!sUrl.empty() && 0 == sUrl.find(L"file://"))
 			{
-				std::wstring s1 = sUrl.substr(7);
-				std::wstring s2 = sUrl.substr(8);
-				if (NSFile::CFileBinary::Exists(s1))
+				if (NSFile::CFileBinary::Exists(sUrl.substr(7)))
 				{
-					sUrl = s1;
+					sUrl = sUrl.substr(7);
+					if (!sMetafileUrlBase.empty())
+						sMetafileUrlBase = sMetafileUrlBase.substr(7);
 				}
-				else if (NSFile::CFileBinary::Exists(s2))
+				else if (NSFile::CFileBinary::Exists(sUrl.substr(8)))
 				{
-					sUrl = s2;
-				}
-			}
-			if (!sUrl2.empty() && 0 == sUrl2.find(L"file://"))
-			{
-				std::wstring s1 = sUrl2.substr(7);
-				std::wstring s2 = sUrl2.substr(8);
-				if (NSFile::CFileBinary::Exists(s1))
-				{
-					sUrl2 = s1;
-				}
-				else if (NSFile::CFileBinary::Exists(s2))
-				{
-					sUrl2 = s2;
+					sUrl = sUrl.substr(8);
+					if (!sMetafileUrlBase.empty())
+						sMetafileUrlBase = sMetafileUrlBase.substr(8);
 				}
 			}
 
-			if (NSFile::CFileBinary::Exists(sUrl))
+			std::wstring sResultImagePath = L"";
+			if (!sMetafileUrlBase.empty())
 			{
-				m_mapImages.insert(std::pair<std::wstring, std::wstring>(sPath, sUrl));
-				return sUrl;
+				if (NSFile::CFileBinary::Exists(sMetafileUrlBase + L".emf"))
+					sResultImagePath = sMetafileUrlBase + L".emf";
+				else if (NSFile::CFileBinary::Exists(sMetafileUrlBase + L".wmf"))
+					sResultImagePath = sMetafileUrlBase + L".wmf";
 			}
-			else if (NSFile::CFileBinary::Exists(sUrl2))
+
+			if (sResultImagePath.empty())
+				sResultImagePath = sUrl;
+
+			if (NSFile::CFileBinary::Exists(sResultImagePath))
 			{
-				m_mapImages.insert(std::pair<std::wstring, std::wstring>(sPath, sUrl2));
-				return sUrl2;
+				m_mapImages.insert(std::pair<std::wstring, std::wstring>(sPath, sResultImagePath));
+				return sResultImagePath;
 			}
 			else
 			{
