@@ -845,6 +845,12 @@ public:
 			}
 		}
 		bool isOfficeFileBase = isOfficeFile(fileName);
+		if (isOfficeFileBase &&
+			this->nFileType == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_SVG)
+		{
+			isOfficeFileBase = false;
+			this->nFileType = AVS_OFFICESTUDIO_FILE_UNKNOWN;
+		}
 
 		if (isCheckLocal)
 		{
