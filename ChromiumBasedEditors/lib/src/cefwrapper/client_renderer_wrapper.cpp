@@ -4518,20 +4518,28 @@ public:
 
 			// Поиск нужного элемента по координатам и вызов события
 			sCode = L"(function(){\
+/* Create custom data transfer item */\
+function createDataTransferItem(kind, type, data) {\
+let item = { kind: kind, type: type, data: data,\
+getAsFile: function() { return this.data; },\
+getAsString: function(fcall) { if (fcall) { fcall(this.data); } } };\
+return item; }\
 /* Create custom event */\
 function createCustomEvent(type, x, y, c_x, c_y) {\
-var event = new Event(\"Event\");\
+let event = new Event(\"Event\");\
 event.initEvent(type, true, true, null);\
 event.dataTransfer = { dropEffect: \"\", effectAllowed: \"all\", files: [], items: [], types: [], data: {},\
-setData: function(t, val) { this.data[t] = val; this.items.push(val); this.types.push(t); },\
-getData: function(t) { return this.data[t]; } };\
+setData: function(_type, _value) { this.data[_type] = _value; this.types.push(_type);\
+let dtItem = createDataTransferItem(\"string\", _type, _value); this.items.push(dtItem); },\
+getData: function(_type) { return this.data[_type]; } };\
 event.clientX = x; event.clientY = y; event.screenX = c_x; event.screenY = c_y;\
 return event; }\
 /* Add file to dataTransfer */\
 function addFileToDataTransfer(ev, dataBase64, fileName) {\
 let byteCharacters = atob(dataBase64); let byteNumbers = new Array(byteCharacters.length);\
 for (let i = 0; i < byteCharacters.length; i++) { byteNumbers[i] = byteCharacters.charCodeAt(i); }\
-let byteArray = new Uint8Array(byteNumbers); ev.dataTransfer.files.push(new File([byteArray], fileName)); }\
+let byteArray = new Uint8Array(byteNumbers); let oFile = new File([byteArray], fileName); ev.dataTransfer.files.push(oFile);\
+let dtItem = createDataTransferItem(\"file\", \"\", oFile); ev.dataTransfer.items.push(dtItem);}\
 /* Code */\
 let event = createCustomEvent(\"" + type + L"\"," + std::to_wstring(nX) + L"," + std::to_wstring(nY) + L"," + std::to_wstring(nCursorX) + L"," + std::to_wstring(nCursorY) + L");";
 
