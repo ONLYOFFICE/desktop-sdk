@@ -4526,13 +4526,13 @@ getAsString: function(fcall) { if (fcall) { fcall(this.data); } } };\
 return item; }\
 /* Create custom event */\
 function createCustomEvent(type, x, y, c_x, c_y) {\
-let event = new Event(\"Event\");\
-event.initEvent(type, true, true, null);\
+let event = new Event(type, { bubbles: true, cancelable: true, composed: true });\
 event.dataTransfer = { dropEffect: \"none\", effectAllowed: \"all\", files: [], items: [], types: [], data: {},\
 setData: function(_type, _value) { this.effectAllowed = \"copyMove\"; this.data[_type] = _value; this.types.push(_type);\
 let dtItem = createDataTransferItem(\"string\", _type, _value); this.items.push(dtItem); },\
 getData: function(_type) { return this.data[_type]; } };\
-event.clientX = x; event.clientY = y; event.screenX = c_x; event.screenY = c_y;\
+event.x = event.pageX = event.clientX = x; event.y = event.pageY = event.clientY = y; event.screenX = c_x; event.screenY = c_y;\
+event.view = window;\
 return event; }\
 /* Add file to dataTransfer */\
 function addFileToDataTransfer(ev, dataBase64, fileName) {\
@@ -4567,8 +4567,8 @@ let event = createCustomEvent(\"" + type + L"\"," + std::to_wstring(nX) + L"," +
 			}
 
 			sCode += sDataTransferFiles + L"let targetElem = document.elementFromPoint(" + std::to_wstring(nX) + L", " + std::to_wstring(nY) + L");\
-if (targetElem) { targetElem.dispatchEvent(event); }\
-console.log(targetElem); console.log(\"" + type + L"\"); console.log(event); })();";
+if (targetElem) { event.toElement = targetElem; targetElem.dispatchEvent(event); }\
+console.log(targetElem); console.log(\"" + type + L"\"); console.log(event.dataTransfer.getData('text/plain')); console.log(event); })();";
 		}
 
 		return sCode;
