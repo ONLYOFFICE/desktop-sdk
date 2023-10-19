@@ -448,10 +448,6 @@ public:
 	}
 };
 
-#ifdef _MAC
-#define DISABLE_LOCK_FUNCTIONALITY
-#endif
-
 class IASCFileConverterEvents
 {
 public:
@@ -474,29 +470,21 @@ namespace NSSystem
 				return;
 
 			m_sFile = sFile;
-			m_pLocker = new CFileLocker(sFile);
+			m_pLocker = CFileLocker::Create(sFile);
 
 			Lock();
 		}
 
 		bool Lock()
 		{
-			if (!IsSupportFunctionality())
-				return true;
-
 			Unlock();
 			m_pLocker->Lock();
-
 			return true;
 		}
 
 		bool Unlock()
 		{
-			if (!IsSupportFunctionality())
-				return true;
-
 			m_pLocker->Unlock();
-
 			return true;
 		}
 
@@ -511,15 +499,9 @@ namespace NSSystem
 			}
 		}
 
-		static CFileLocker::LockType IsLocked(const::std::wstring& sFile)
+		static NSSystem::LockType IsLocked(const::std::wstring& sFile)
 		{
-			if (!IsSupportFunctionality())
-				return CFileLocker::ltNone;
-
-			CFileLocker::LockType isLocked = CFileLocker::ltNone;
-			isLocked = CFileLocker::IsLocked(sFile);
-
-			return isLocked;
+			return CFileLocker::IsLocked(sFile);
 		}
 
 		std::wstring GetFileLocked()
@@ -527,20 +509,9 @@ namespace NSSystem
 			return m_sFile;
 		}
 
-		static bool IsSupportFunctionality()
-		{
-#ifdef DISABLE_LOCK_FUNCTIONALITY
-			return false;
-#else
-			return true;
-#endif
-		}
-
 		// из .local/share
 		bool SaveFile(const std::wstring& sFile)
 		{
-			m_pLocker->CheckDescriptor();
-
 			DWORD nSection = 10 * 1024 * 1024;
 			DWORD nFileSize = 0;
 
@@ -874,6 +845,12 @@ public:
 			}
 		}
 		bool isOfficeFileBase = isOfficeFile(fileName);
+		if (isOfficeFileBase &&
+			this->nFileType == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_SVG)
+		{
+			isOfficeFileBase = false;
+			this->nFileType = AVS_OFFICESTUDIO_FILE_UNKNOWN;
+		}
 
 		if (isCheckLocal)
 		{
@@ -883,7 +860,7 @@ public:
 			int nFormat = GetFormatByExtension(L"." + sFileExt);
 			if (nFormat != 0)
 			{
-				if (NSSystem::CFileLocker::ltNone != NSSystem::CLocalFileLocker::IsLocked(fileName))
+				if (NSSystem::LockType::ltNone != NSSystem::CLocalFileLocker::IsLocked(fileName))
 				{
 					std::wstring sTmpFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"TMP");
 					if (NSFile::CFileBinary::Exists(sTmpFile))
@@ -2328,7 +2305,7 @@ public:
 
 			if (i->m_sParentUrl.empty())
 			{
-				if (NSFile::CFileBinary::Exists(i->m_sPath))
+				if (NSSystem::CFileLocker::IsHandled(i->m_sPath) || NSFile::CFileBinary::Exists(i->m_sPath))
 				{
 					oBuilder.WriteString(L"\" parent=\"");
 					oBuilder.WriteEncodeXmlString(NSFile::GetDirectoryName(i->m_sPath));
@@ -2398,7 +2375,7 @@ public:
 			oBuilder.WriteString(L"\",parent:\"");
 			if (i->m_sParentUrl.empty())
 			{
-				if (NSFile::CFileBinary::Exists(i->m_sPath))
+				if (NSSystem::CFileLocker::IsHandled(i->m_sPath) || NSFile::CFileBinary::Exists(i->m_sPath))
 				{
 					oBuilder.WriteEncodeXmlString(NSFile::GetDirectoryName(i->m_sPath));
 				}
@@ -2436,7 +2413,7 @@ public:
 			bool bIsViewer = false;
 
 			std::wstring sRecoveryLocker = arDirectories[i] + L"/rec.lock";
-			if (NSFile::CFileBinary::Exists(sRecoveryLocker) && (NSSystem::CFileLocker::ltNone != NSSystem::CLocalFileLocker::IsLocked(sRecoveryLocker)))
+			if (NSFile::CFileBinary::Exists(sRecoveryLocker) && (NSSystem::LockType::ltNone != NSSystem::CLocalFileLocker::IsLocked(sRecoveryLocker)))
 				continue;
 
 			if (!NSFile::CFileBinary::Exists(arDirectories[i] + L"/changes/changes0.json"))
