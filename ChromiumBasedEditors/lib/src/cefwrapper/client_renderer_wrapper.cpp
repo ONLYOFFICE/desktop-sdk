@@ -4567,8 +4567,9 @@ let event = createCustomEvent(\"" + type + L"\"," + std::to_wstring(nX) + L"," +
 			}
 
 			sCode += sDataTransferFiles + L"let targetElem = document.elementFromPoint(" + std::to_wstring(nX) + L", " + std::to_wstring(nY) + L");\
-if (targetElem) { event.toElement = targetElem; targetElem.dispatchEvent(event); }\
-console.log(targetElem); console.log(\"" + type + L"\"); console.log(event.dataTransfer.getData('text/plain')); console.log(event); })();";
+if (targetElem) { targetElem.dispatchEvent(event); if (targetElem.nodeName === \"INPUT\") {\
+targetElem.value = event.dataTransfer.getData(\"text/plain\"); } }\
+console.log(targetElem); console.log(\"" + type + L"\"); console.log(event); })();";
 		}
 
 		return sCode;
