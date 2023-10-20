@@ -515,7 +515,9 @@ void QCefView::UpdateSize()
 void QCefView::dragEnterEvent(QDragEnterEvent *e)
 {
 	//if (m_pCefView && m_pCefView->GetType() == cvwtEditor)
-	{
+	{		
+		//bool bRes = setFocusToCef();
+
 		NSEditorApi::CAscLocalDragDropData* pData = convertMimeData(e->mimeData());
 		pData->put_X(e->pos().x());
 		pData->put_Y(e->pos().y());
@@ -546,6 +548,8 @@ void QCefView::dropEvent(QDropEvent *e)
 {
 	//if (m_pCefView && m_pCefView->GetType() == cvwtEditor)
 	{
+		//bool bRes = setFocusToCef();
+
 		NSEditorApi::CAscLocalDragDropData* pData = convertMimeData(e->mimeData());
 		pData->put_X(e->pos().x());
 		pData->put_Y(e->pos().y());

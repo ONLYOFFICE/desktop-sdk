@@ -4540,6 +4540,9 @@ let byteCharacters = atob(dataBase64); let byteNumbers = new Array(byteCharacter
 for (let i = 0; i < byteCharacters.length; i++) { byteNumbers[i] = byteCharacters.charCodeAt(i); }\
 let byteArray = new Uint8Array(byteNumbers); let oFile = new File([byteArray], fileName); ev.dataTransfer.files.push(oFile);\
 let dtItem = createDataTransferItem(\"file\", \"\", oFile); ev.dataTransfer.items.push(dtItem);}\
+/* Create keyup event */\
+function createKeyupEvent() {\
+return new KeyboardEvent(\"keyup\", { which: 13, keyCode: 13 }); }\
 /* Code */\
 let event = createCustomEvent(\"" + type + L"\"," + std::to_wstring(nX) + L"," + std::to_wstring(nY) + L"," + std::to_wstring(nCursorX) + L"," + std::to_wstring(nCursorY) + L");";
 
@@ -4568,7 +4571,9 @@ let event = createCustomEvent(\"" + type + L"\"," + std::to_wstring(nX) + L"," +
 
 			sCode += sDataTransferFiles + L"let targetElem = document.elementFromPoint(" + std::to_wstring(nX) + L", " + std::to_wstring(nY) + L");\
 if (targetElem) { targetElem.dispatchEvent(event);\
-if (targetElem.nodeName === \"INPUT\") { targetElem.value = event.dataTransfer.getData(\"text/plain\"); } }\
+if (targetElem.nodeName === \"INPUT\") {\
+targetElem.value = event.dataTransfer.getData(\"text/plain\");\
+targetElem.dispatchEvent(createKeyupEvent()); } }\
 console.log(targetElem); console.log(\"" + type + L"\"); console.log(event); })();";
 		}
 
