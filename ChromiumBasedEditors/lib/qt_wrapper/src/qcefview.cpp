@@ -514,23 +514,20 @@ void QCefView::UpdateSize()
 
 void QCefView::dragEnterEvent(QDragEnterEvent *e)
 {
-	//if (m_pCefView && m_pCefView->GetType() == cvwtEditor)
-	{		
-		//bool bRes = setFocusToCef();
+	setFocusToCef();
 
-		NSEditorApi::CAscLocalDragDropData* pData = convertMimeData(e->mimeData());
-		pData->put_X(e->pos().x());
-		pData->put_Y(e->pos().y());
-		pData->put_CursorX(QCursor::pos().x());
-		pData->put_CursorY(QCursor::pos().y());
+	NSEditorApi::CAscLocalDragDropData* pData = convertMimeData(e->mimeData());
+	pData->put_X(e->pos().x());
+	pData->put_Y(e->pos().y());
+	pData->put_CursorX(QCursor::pos().x());
+	pData->put_CursorY(QCursor::pos().y());
 
-		NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
-		pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_DRAG_ENTER;
-		pEvent->m_pData = pData;
-		m_pCefView->Apply(pEvent);
+	NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
+	pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_DRAG_ENTER;
+	pEvent->m_pData = pData;
+	m_pCefView->Apply(pEvent);
 
-		e->acceptProposedAction();
-	}
+	e->acceptProposedAction();
 }
 
 void QCefView::dragLeaveEvent(QDragLeaveEvent *e)
@@ -546,23 +543,20 @@ void QCefView::dragLeaveEvent(QDragLeaveEvent *e)
 
 void QCefView::dropEvent(QDropEvent *e)
 {
-	//if (m_pCefView && m_pCefView->GetType() == cvwtEditor)
-	{
-		//bool bRes = setFocusToCef();
+	setFocusToCef();
 
-		NSEditorApi::CAscLocalDragDropData* pData = convertMimeData(e->mimeData());
-		pData->put_X(e->pos().x());
-		pData->put_Y(e->pos().y());
-		pData->put_CursorX(QCursor::pos().x());
-		pData->put_CursorY(QCursor::pos().y());
+	NSEditorApi::CAscLocalDragDropData* pData = convertMimeData(e->mimeData());
+	pData->put_X(e->pos().x());
+	pData->put_Y(e->pos().y());
+	pData->put_CursorX(QCursor::pos().x());
+	pData->put_CursorY(QCursor::pos().y());
 
-		NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
-		pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_DROP;
-		pEvent->m_pData = pData;
-		m_pCefView->Apply(pEvent);
+	NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent();
+	pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_DROP;
+	pEvent->m_pData = pData;
+	m_pCefView->Apply(pEvent);
 
-		e->acceptProposedAction();
-	}
+	e->acceptProposedAction();
 }
 
 NSEditorApi::CAscLocalDragDropData* QCefView::convertMimeData(const QMimeData *pMimeData)
