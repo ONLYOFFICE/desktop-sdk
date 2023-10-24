@@ -370,6 +370,11 @@ bool QAscVideoView::eventFilter(QObject *watched, QEvent *event)
 
 	if (event->type() == QEvent::Wheel)
 	{
+		// don't change volume if wheel event was caused by playlist scrolling
+		if (m_pInternal->m_bIsShowingPlaylist && m_pInternal->m_pPlaylist->isScrollBarVisible() &&
+			(watched == m_pInternal->m_pPlaylist->m_pListView || watched == m_pInternal->m_pPlaylist))
+			return true;
+
 		m_pInternal->m_pVolumeControlV->event(event);
 		return true;
 	}

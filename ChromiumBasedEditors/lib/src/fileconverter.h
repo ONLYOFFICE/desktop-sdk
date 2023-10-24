@@ -435,7 +435,8 @@ namespace NSOOXMLPassword
 
 			if (m_sPassword.empty())
 			{
-				NSFile::CFileBinary::Remove(m_sFile);
+				if (!m_pLocker)
+					NSFile::CFileBinary::Remove(m_sFile);
 				COfficeUtils oCOfficeUtils(NULL);
 				HRESULT hRes = oCOfficeUtils.CompressFileOrDirectory(m_sDirectory, sLockerSavedPath, true);
 				NSDirectory::DeleteDirectory(m_sDirectory);
@@ -1281,6 +1282,19 @@ public:
 
 		int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileForParams, m_pManager, m_pManager->m_pInternal->m_bIsEnableConvertLogs);
 
+		if (m_nTypeEditorFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
+		{
+			std::vector<std::wstring> arFiles = NSDirectory::GetFiles(m_oInfo.m_sRecoveryDir + L"/changes");
+
+			if (m_pManager->m_pInternal->m_bDebugInfoSupport && !arFiles.empty())
+			{
+				NSDirectory::CopyDirectory(m_oInfo.m_sRecoveryDir + L"/changes", sDstTmpDir + L"/changes");
+			}
+
+			for (std::vector<std::wstring>::const_iterator i = arFiles.begin(); i != arFiles.end(); i++)
+				NSFile::CFileBinary::Remove(*i);
+		}
+
 		m_sOriginalFileNameCrossPlatform = L"";
 		m_bIsRetina = false;
 
@@ -1659,7 +1673,7 @@ public:
 
 		if (!m_bIsApplyChanges)
 		{
-			if (!NSSystem::CLocalFileLocker::IsLocked(m_sSrcFilePath))
+			if (NSSystem::LockType::ltNone == NSSystem::CLocalFileLocker::IsLocked(m_sSrcFilePath))
 			{
 				sSrcFile = m_sSrcFilePath;
 			}
