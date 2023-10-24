@@ -2027,6 +2027,9 @@ DE.controllers.Main.DisableVersionHistory(); \
 				for (std::vector<std::wstring>::iterator i = m_arDropFiles.begin(); i != m_arDropFiles.end(); i++)
 					retval->SetValue(nCurrent++, CefV8Value::CreateString(*i));
 
+				// Отдали список, чистим. Иначе всегда будем вставлять файлы с предыдущего дропа
+				m_arDropFiles.clear();
+
 				return true;
 			}
 			else if (name == "DropOfficeFiles")
@@ -4710,9 +4713,6 @@ let byteCharacters = atob(dataBase64); let byteNumbers = new Array(byteCharacter
 for (let i = 0; i < byteCharacters.length; i++) { byteNumbers[i] = byteCharacters.charCodeAt(i); }\
 let byteArray = new Uint8Array(byteNumbers); let oFile = new File([byteArray], fileName); event.dataTransfer.files.push(oFile);\
 let dtItem = createDataTransferItem(\"file\", \"\", oFile); event.dataTransfer.items.push(dtItem);}\
-/* Create keyup event */\
-function createKeyupEvent() {\
-return new KeyboardEvent(\"keyup\", { which: 13, keyCode: 13 }); }\
 /* Code */\
 let event = createCustomEvent(\"" + type + L"\"," + std::to_wstring(nX) + L"," +
 														std::to_wstring(nY) + L"," +
@@ -4748,10 +4748,7 @@ let event = createCustomEvent(\"" + type + L"\"," + std::to_wstring(nX) + L"," +
 				// логирование getData и getAsString показывает, что они не вызываются, поэтому присваиваем значение сами
 
 				sCode += sDataTransferFiles + L"let targetElem = document.elementFromPoint(" + std::to_wstring(nX) + L", " + std::to_wstring(nY) + L");\
-if (targetElem) { targetElem.dispatchEvent(event);\
-if (targetElem.nodeName === \"INPUT\") {\
-targetElem.value += event.dataTransfer.getData(\"text/plain\");\
-targetElem.dispatchEvent(createKeyupEvent()); } }\
+if (targetElem) { targetElem.dispatchEvent(event); }\
 if (log) { console.log(targetElem); console.log(\"" + type + L"\"); console.log(event); }})();";
 			}
 
@@ -5530,22 +5527,6 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 
 					std::wstring sCode = L"window.DesktopOfflineAppDocumentAddImageEnd(\"" + sPath + L"\");";
 					_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
-				}
-				return true;
-			}
-			else if (sMessageName == "onlocaldocument_ondragenter")
-			{
-				CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
-
-				if (_frame)
-				{
-					/*CAscDragDrop oDnd(message);
-
-					std::wstring sCode = oDnd.CreateEvent(L"dragenter");
-					_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
-
-					sCode = oDnd.CreateEvent(L"dragover");
-					_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);*/
 				}
 				return true;
 			}
