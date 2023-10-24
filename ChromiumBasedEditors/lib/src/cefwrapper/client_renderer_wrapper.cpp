@@ -4683,7 +4683,7 @@ window.AscDesktopEditor.CallInFrame(\"" +
 					NSStringUtils::string_replace(arParts[i], L"\n", L"");
 				}
 
-				// Поиск нужного элемента по координатам и вызов события
+				// Создаём базовое событие со своим dataTransfer
 
 				sCode = L"(function(){\
 function createDataTransferItem(a,c,d){return{kind:a,type:c,data:d,getAsFile:function(){return this.data},getAsString:function(e){e&&e(this.data)}}}function createCustomEvent(a,c,d,e,f){a=new Event(a,{bubbles:!0,cancelable:!0,composed:!0});a.dataTransfer={dropEffect:\"none\",effectAllowed:\"all\",files:[],items:[],types:[],data:{},setData:function(b,g){this.effectAllowed=\"copyMove\";this.data[b]=g;this.types.push(b);b=createDataTransferItem(\"string\",b,g);this.items.push(b)},getData:function(b){b=b.toLowerCase();\"text\"===b?b=\"text/plain\":\"html\"===b&&(b=\"text/html\");return this.data[b]}};a.x=a.pageX=a.clientX=c;a.y=a.pageY=a.clientY=d;a.screenX=e;a.screenY=f;return a}function addFileToDataTransfer(a,c,d){c=atob(c);let e=Array(c.length);for(let f=0;f<c.length;f++)e[f]=c.charCodeAt(f);c=new Uint8Array(e);d=new File([c],d);a.dataTransfer.files.push(d);d=createDataTransferItem(\"file\",\"\",d);a.dataTransfer.items.push(d)};\
