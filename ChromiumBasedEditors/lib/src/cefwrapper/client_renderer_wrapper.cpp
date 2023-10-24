@@ -4684,36 +4684,9 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				}
 
 				// Поиск нужного элемента по координатам и вызов события
-				// Нет чёткого определения для получения текста в getData:
-				// требуется text/plain(html), но применимо и просто text(html)
 
 				sCode = L"(function(){\
-let log = false;\
-/* Create custom data transfer item */\
-function createDataTransferItem(kind, type, data) {\
-let item = { kind: kind, type: type, data: data,\
-getAsFile: function() { if (log) { console.log(\"getAsFile()\"); } return this.data; },\
-getAsString: function(fcallback) { if (fcallback) { if (log) { console.log(\"getAsString()\"); } fcallback(this.data); } } };\
-return item; }\
-/* Create custom event */\
-function createCustomEvent(type, x, y, c_x, c_y) {\
-let event = new Event(type, { bubbles: true, cancelable: true, composed: true });\
-event.dataTransfer = { dropEffect: \"none\", effectAllowed: \"all\", files: [], items: [], types: [], data: {},\
-setData: function(type, value) { this.effectAllowed = \"copyMove\"; this.data[type] = value; this.types.push(type);\
-let dtItem = createDataTransferItem(\"string\", type, value); this.items.push(dtItem); },\
-getData: function(type) { if (log) { console.log(\"getData()\"); console.log(type); }\
-let _type = type.toLowerCase(); if (_type === \"text\") { _type = \"text/plain\" }\
-else if (_type === \"html\") { _type = \"text/html\" }\
-return this.data[_type]; } };\
-event.x = event.pageX = event.clientX = x; event.y = event.pageY = event.clientY = y; event.screenX = c_x; event.screenY = c_y;\
-return event; }\
-/* Add file to dataTransfer */\
-function addFileToDataTransfer(event, dataBase64, fileName) {\
-let byteCharacters = atob(dataBase64); let byteNumbers = new Array(byteCharacters.length);\
-for (let i = 0; i < byteCharacters.length; i++) { byteNumbers[i] = byteCharacters.charCodeAt(i); }\
-let byteArray = new Uint8Array(byteNumbers); let oFile = new File([byteArray], fileName); event.dataTransfer.files.push(oFile);\
-let dtItem = createDataTransferItem(\"file\", \"\", oFile); event.dataTransfer.items.push(dtItem);}\
-/* Code */\
+function createDataTransferItem(a,c,d){return{kind:a,type:c,data:d,getAsFile:function(){return this.data},getAsString:function(e){e&&e(this.data)}}}function createCustomEvent(a,c,d,e,f){a=new Event(a,{bubbles:!0,cancelable:!0,composed:!0});a.dataTransfer={dropEffect:\"none\",effectAllowed:\"all\",files:[],items:[],types:[],data:{},setData:function(b,g){this.effectAllowed=\"copyMove\";this.data[b]=g;this.types.push(b);b=createDataTransferItem(\"string\",b,g);this.items.push(b)},getData:function(b){b=b.toLowerCase();\"text\"===b?b=\"text/plain\":\"html\"===b&&(b=\"text/html\");return this.data[b]}};a.x=a.pageX=a.clientX=c;a.y=a.pageY=a.clientY=d;a.screenX=e;a.screenY=f;return a}function addFileToDataTransfer(a,c,d){c=atob(c);let e=Array(c.length);for(let f=0;f<c.length;f++)e[f]=c.charCodeAt(f);c=new Uint8Array(e);d=new File([c],d);a.dataTransfer.files.push(d);d=createDataTransferItem(\"file\",\"\",d);a.dataTransfer.items.push(d)};\
 let event = createCustomEvent(\"" + type + L"\"," + std::to_wstring(nX) + L"," +
 														std::to_wstring(nY) + L"," +
 														std::to_wstring(nCursorX) + L"," +
@@ -4741,15 +4714,12 @@ let event = createCustomEvent(\"" + type + L"\"," + std::to_wstring(nX) + L"," +
 							sDataTransferFiles += L"addFileToDataTransfer(event, \"" + UTF8_TO_U(sImageBase64) + L"\", \"" + sFileName + L"\");";
 					}
 				}
+				sCode += sDataTransferFiles;
 
 				// Поиск нужного элемента по координатам и вызов события
-				// Есть проблема с пробрасыванием текста в input-элементы
-				// т.к. присвоение значения происходит системно, а не через eventListener
-				// логирование getData и getAsString показывает, что они не вызываются, поэтому присваиваем значение сами
 
-				sCode += sDataTransferFiles + L"let targetElem = document.elementFromPoint(" + std::to_wstring(nX) + L", " + std::to_wstring(nY) + L");\
-if (targetElem) { targetElem.dispatchEvent(event); }\
-if (log) { console.log(targetElem); console.log(\"" + type + L"\"); console.log(event); }})();";
+				sCode += L"let targetElem = document.elementFromPoint(" + std::to_wstring(nX) + L", " + std::to_wstring(nY) + L");\
+if (targetElem) { targetElem.dispatchEvent(event); }})();";
 			}
 
 			return sCode;
