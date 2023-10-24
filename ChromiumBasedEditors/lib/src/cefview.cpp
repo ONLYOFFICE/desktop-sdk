@@ -1102,9 +1102,6 @@ public:
 		if (!m_oLocalInfo.m_oInfo.m_bIsSaved)
 			return;
 
-		if (!NSSystem::CLocalFileLocker::IsSupportFunctionality())
-			return;
-
 		if (NSFile::CFileBinary::Exists(m_oLocalInfo.m_oInfo.m_sFileSrc))
 		{
 			if (m_pLocalFileLocker && m_pLocalFileLocker->GetFileLocked() != m_oLocalInfo.m_oInfo.m_sFileSrc)
@@ -4180,6 +4177,16 @@ public:
 		m_pParent->GetAppManager()->Apply(pEvent);
 		return true;
 	}
+	else if ("external_reference_open" == message_name)
+	{
+		std::wstring sUrl = args->GetString(0).ToWString();
+		NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_CREATETAB);
+		NSEditorApi::CAscCreateTab* pData = new NSEditorApi::CAscCreateTab();
+		pData->put_Url(L"ascdesktop://external/" + sUrl);
+		pEvent->m_pData = pData;
+		pListener->OnEvent(pEvent);
+		return true;
+	}
 
 	CAscApplicationManager_Private* pInternalMan = m_pParent->GetAppManager()->m_pInternal;
 	if (pInternalMan->m_pAdditional && pInternalMan->m_pAdditional->OnProcessMessageReceived(browser, source_process, message, m_pParent))
@@ -4920,8 +4927,28 @@ virtual void OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser,
 	{
 		m_pParent->m_pInternal->m_bIsCrashed = true;
 
-		NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_PAGE_CRASH);
-		m_pParent->GetAppManager()->GetEventListener()->OnEvent(pEvent);
+		NSEditorApi::CAscCefMenuEventListener* pListener = m_pParent->GetAppManager()->GetEventListener();
+
+		if (pListener)
+		{
+			NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_PAGE_CRASH);
+			pListener->OnEvent(pEvent);
+
+			if (m_pParent->GetType() == cvwtEditor)
+			{
+				// чтобы не спрашивали,сохранять изменения или нет - отошлем, что нет изменений.
+				pEvent = new NSEditorApi::CAscCefMenuEvent();
+				pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_MODIFY_CHANGED;
+				pEvent->put_SenderId(m_pParent->GetId());
+
+				NSEditorApi::CAscDocumentModifyChanged* pData = new NSEditorApi::CAscDocumentModifyChanged();
+				pData->put_Id(m_pParent->GetId());
+				pData->put_Changed(false);
+				pEvent->m_pData = pData;
+
+				pListener->OnEvent(pEvent);
+			}
+		}
 	}
 }
 
@@ -5374,16 +5401,16 @@ void CCefView_Private::LocalFile_End()
 	message->GetArgumentList()->SetBool(2, m_oLocalInfo.m_oInfo.m_bIsSaved);
 	message->GetArgumentList()->SetString(3, m_oConverterToEditor.GetSignaturesJSON());
 	
-	int isLocked = NSSystem::CFileLocker::ltNone;
+	NSSystem::LockType isLocked = NSSystem::LockType::ltNone;
 	if (m_oLocalInfo.m_oInfo.m_bIsSaved)
 		isLocked = NSSystem::CLocalFileLocker::IsLocked(m_oLocalInfo.m_oInfo.m_sFileSrc);
 	
-	if (NSSystem::CFileLocker::ltNone == isLocked)
+	if (NSSystem::LockType::ltNone == isLocked)
 		CheckLockLocalFile();
 
-	message->GetArgumentList()->SetInt(4, isLocked);
+	message->GetArgumentList()->SetInt(4, (int)isLocked);
 	
-	if (NSSystem::CFileLocker::ltNone != isLocked)
+	if (NSSystem::LockType::ltNone != isLocked)
 		m_oLocalInfo.m_oInfo.m_bIsSaved = false;
 
 	SEND_MESSAGE_TO_RENDERER_PROCESS(m_handler->GetBrowser(), message);
@@ -6055,6 +6082,60 @@ void CCefView::load(const std::wstring& urlInputSrc)
 			((CCefViewEditor*)this)->CreateLocalFile(nEditorFormat, m_pInternal->m_sTemplateName);
 		}
 
+		return;
+	}
+	else if (0 == urlInput.find(L"ascdesktop://external/"))
+	{
+		if (this->GetType() == cvwtEditor)
+		{
+			std::wstring sUrlExternal = urlInput.substr(22);
+			if (NSFile::CFileBinary::Exists(sUrlExternal))
+			{
+				COfficeFileFormatChecker oChecker;
+				if (oChecker.isOfficeFile(sUrlExternal))
+				{
+					((CCefViewEditor*)this)->OpenLocalFile(sUrlExternal, oChecker.nFileType);
+					return;
+				}
+			}
+			else if (NSFileDownloader::IsNeedDownload(sUrlExternal))
+			{
+				std::wstring sTmpFile = NSFile::CFileBinary::GetTempPath() + L"/External";
+				if (NSFile::CFileBinary::Exists(sTmpFile))
+					NSFile::CFileBinary::Remove(sTmpFile);
+
+				CFileDownloaderWrapper oDownloader(sUrlExternal, sTmpFile);
+				oDownloader.DownloadSync();
+
+				if (NSFile::CFileBinary::Exists(sTmpFile))
+				{
+					COfficeFileFormatChecker oChecker;
+					if (oChecker.isOfficeFile(sTmpFile))
+					{
+						AscEditorType nEditorFormat = AscEditorType::etPdf;
+						if (-1 != oChecker.nFileType)
+						{
+						nEditorFormat = AscEditorType::etDocument;
+						if (oChecker.nFileType & AVS_OFFICESTUDIO_FILE_PRESENTATION)
+								nEditorFormat = AscEditorType::etPresentation;
+						else if (oChecker.nFileType & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
+								nEditorFormat = AscEditorType::etSpreadsheet;
+						else if (oChecker.nFileType == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF)
+								nEditorFormat = AscEditorType::etDocumentMasterForm;
+						else if (oChecker.nFileType == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
+								nEditorFormat = AscEditorType::etDocumentMasterOForm;
+						else if (oChecker.nFileType & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
+								nEditorFormat = AscEditorType::etPdf;
+						}
+
+						((CCefViewEditor*)this)->CreateLocalFile(nEditorFormat, L"External", sTmpFile);
+						return;
+					}
+				}
+			}
+		}
+
+		this->load(L"ascdesktop://crash.html");
 		return;
 	}
 
@@ -7292,7 +7373,13 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
 		}
 		else if (nFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
 		{
-			sParams = L"placement=desktop&filetype=pdf&mode=view";
+			sParams = L"placement=desktop&mode=view";
+			if (nFileFormat == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_DJVU)
+				sParams += L"&filetype=djvu";
+			else if (nFileFormat == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_XPS)
+				sParams += L"&filetype=xps";
+			else
+				sParams = L"&filetype=pdf";
 		}
 
 		if (nFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
@@ -7418,12 +7505,27 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
 	// start convert file
 	this->load(sUrl + sParams);
 }
-void CCefViewEditor::CreateLocalFile(const AscEditorType& nFileFormat, const std::wstring& sName, const std::wstring& sTemplatePath)
+void CCefViewEditor::CreateLocalFile(const AscEditorType& nFileFormatSrc, const std::wstring& sName, const std::wstring& sTemplatePath)
 {
+	AscEditorType nFileFormat = nFileFormatSrc;
 	if (!sTemplatePath.empty())
 	{
 		m_pInternal->m_sTemplateName = sName;
 		m_pInternal->m_sTemplateUrl = sTemplatePath;
+
+		if (AscEditorType::etUndefined == nFileFormat)
+		{
+			COfficeFileFormatChecker oChecker;
+			if (oChecker.isOfficeFile(sTemplatePath))
+			{
+				if (oChecker.nFileType & AVS_OFFICESTUDIO_FILE_DOCUMENT)
+					nFileFormat = AscEditorType::etDocument;
+				else if (oChecker.nFileType & AVS_OFFICESTUDIO_FILE_PRESENTATION)
+					nFileFormat = AscEditorType::etPresentation;
+				else if (oChecker.nFileType & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
+					nFileFormat = AscEditorType::etSpreadsheet;
+			}
+		}
 	}
 
 	m_pInternal->m_oLocalInfo.m_oInfo.m_bIsSaved = false;
@@ -7748,7 +7850,7 @@ int CCefViewEditor::GetFileFormat(const std::wstring& sFilePath)
 {
 	if (!NSFile::CFileBinary::Exists(sFilePath))
 	{
-		if (NSSystem::CFileLocker::ltNone != NSSystem::CLocalFileLocker::IsLocked(sFilePath))
+		if (NSSystem::LockType::ltNone != NSSystem::CLocalFileLocker::IsLocked(sFilePath))
 		{
 			std::wstring sTmpFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"TMP");
 			if (NSFile::CFileBinary::Exists(sTmpFile))

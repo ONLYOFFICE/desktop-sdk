@@ -333,6 +333,11 @@ void QVideoPlaylist::CheckStyles()
 	}
 }
 
+bool QVideoPlaylist::isScrollBarVisible()
+{
+	return m_pListView->verticalScrollBar()->isVisible();
+}
+
 #ifdef _MAC
 void QVideoPlaylist::slotActivatedShortcut()
 {
