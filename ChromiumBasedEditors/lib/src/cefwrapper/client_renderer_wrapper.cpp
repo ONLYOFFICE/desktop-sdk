@@ -5530,7 +5530,7 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 				}
 				return true;
 			}
-			else if (sMessageName == "onlocaldocument_ondropdata")
+			else if (sMessageName == "on_drop_data")
 			{
 				CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
 

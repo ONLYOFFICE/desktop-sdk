@@ -6855,7 +6855,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 	{
 		NSEditorApi::CAscLocalDragDropData* pData = (NSEditorApi::CAscLocalDragDropData*)pEvent->m_pData;
 
-		CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_ondropdata");
+		CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_drop_data");
 		message->GetArgumentList()->SetInt(0, pData->get_X());
 		message->GetArgumentList()->SetInt(1, pData->get_Y());
 		message->GetArgumentList()->SetInt(2, pData->get_CursorX());
