@@ -2006,6 +2006,11 @@ DE.controllers.Main.DisableVersionHistory(); \
 				}
 				return true;
 			}
+			else if (name == "ClearDropFiles")
+			{
+				m_arDropFiles.clear();
+				return true;
+			}
 			else if (name == "IsImageFile")
 			{
 				CImageFileFormatChecker oChecker;
@@ -4638,6 +4643,122 @@ window.AscDesktopEditor.CallInFrame(\"" +
 		IMPLEMENT_REFCOUNTING(CAscEditorNativeV8Handler);
 	};
 
+	// Класс для создания dnd-событий по типу
+	class CAscDragDrop
+	{
+	private:
+		CefRefPtr<CefProcessMessage> m_pCefMessage;
+
+	public:
+		CAscDragDrop(CefRefPtr<CefProcessMessage> message)
+		{
+			m_pCefMessage = message->Copy();
+		}
+
+		std::wstring CreateEvent(const std::wstring& type)
+		{
+			std::wstring sCode = L"";
+
+			if (m_pCefMessage.get() && type.length())
+			{
+				CefRefPtr<CefListValue> argList = m_pCefMessage->GetArgumentList();
+				int nX = m_pCefMessage->GetArgumentList()->GetInt(0);
+				int nY = m_pCefMessage->GetArgumentList()->GetInt(1);
+				int nCursorX = m_pCefMessage->GetArgumentList()->GetInt(2);
+				int nCursorY = m_pCefMessage->GetArgumentList()->GetInt(3);
+				std::wstring sText = m_pCefMessage->GetArgumentList()->GetString(4).ToWString();
+				std::wstring sHtml = m_pCefMessage->GetArgumentList()->GetString(5).ToWString();
+
+				std::vector<std::wstring> arParts;
+				arParts.push_back(sText);
+				arParts.push_back(sHtml);
+				for (size_t i = 0; i < arParts.size(); i++)
+				{
+					NSStringUtils::string_replace(arParts[i], L"\\", L"\\\\");
+					NSStringUtils::string_replace(arParts[i], L"\"", L"\\\"");
+					NSStringUtils::string_replace(arParts[i], L"\r", L"");
+					NSStringUtils::string_replace(arParts[i], L"\n", L"");
+				}
+
+				// Поиск нужного элемента по координатам и вызов события
+				// Нет чёткого определения для получения текста в getData:
+				// требуется text/plain(html), но применимо и просто text(html)
+
+				sCode = L"(function(){\
+let log = false;\
+/* Create custom data transfer item */\
+function createDataTransferItem(kind, type, data) {\
+let item = { kind: kind, type: type, data: data,\
+getAsFile: function() { if (log) { console.log(\"getAsFile()\"); } return this.data; },\
+getAsString: function(fcallback) { if (fcallback) { if (log) { console.log(\"getAsString()\"); } fcallback(this.data); } } };\
+return item; }\
+/* Create custom event */\
+function createCustomEvent(type, x, y, c_x, c_y) {\
+let event = new Event(type, { bubbles: true, cancelable: true, composed: true });\
+event.dataTransfer = { dropEffect: \"none\", effectAllowed: \"all\", files: [], items: [], types: [], data: {},\
+setData: function(type, value) { this.effectAllowed = \"copyMove\"; this.data[type] = value; this.types.push(type);\
+let dtItem = createDataTransferItem(\"string\", type, value); this.items.push(dtItem); },\
+getData: function(type) { if (log) { console.log(\"getData()\"); console.log(type); }\
+let _type = type.toLowerCase(); if (_type === \"text\") { _type = \"text/plain\" }\
+else if (_type === \"html\") { _type = \"text/html\" }\
+return this.data[_type]; } };\
+event.x = event.pageX = event.clientX = x; event.y = event.pageY = event.clientY = y; event.screenX = c_x; event.screenY = c_y;\
+return event; }\
+/* Add file to dataTransfer */\
+function addFileToDataTransfer(event, dataBase64, fileName) {\
+let byteCharacters = atob(dataBase64); let byteNumbers = new Array(byteCharacters.length);\
+for (let i = 0; i < byteCharacters.length; i++) { byteNumbers[i] = byteCharacters.charCodeAt(i); }\
+let byteArray = new Uint8Array(byteNumbers); let oFile = new File([byteArray], fileName); event.dataTransfer.files.push(oFile);\
+let dtItem = createDataTransferItem(\"file\", \"\", oFile); event.dataTransfer.items.push(dtItem);}\
+/* Create keyup event */\
+function createKeyupEvent() {\
+return new KeyboardEvent(\"keyup\", { which: 13, keyCode: 13 }); }\
+/* Code */\
+let event = createCustomEvent(\"" + type + L"\"," + std::to_wstring(nX) + L"," +
+														std::to_wstring(nY) + L"," +
+														std::to_wstring(nCursorX) + L"," +
+														std::to_wstring(nCursorY) + L");";
+
+				if (arParts[0].length())
+					sCode += L"event.dataTransfer.setData(\"text/plain\", \"" + arParts[0] + L"\");";
+				if (arParts[1].length())
+					sCode += L"event.dataTransfer.setData(\"text/html\", \"" + arParts[1] + L"\");";
+
+				// Читаем файлы и добавляем в dataTransfer
+				std::wstring sDataTransferFiles = L"";
+				if (argList->GetSize() > 6)
+				{
+					sDataTransferFiles = L"";
+					for (size_t i = 0; i < argList->GetSize() - 6; i++)
+					{
+						std::wstring sFilePath = m_pCefMessage->GetArgumentList()->GetString(6 + i);
+
+						int nSize = 0;
+						std::wstring sFileName = NSFile::GetFileName(sFilePath);
+						std::string sImageBase64 = GetFileBase64(sFilePath, &nSize);
+
+						if (sImageBase64.length())
+							sDataTransferFiles += L"addFileToDataTransfer(event, \"" + UTF8_TO_U(sImageBase64) + L"\", \"" + sFileName + L"\");";
+					}
+				}
+
+				// Поиск нужного элемента по координатам и вызов события
+				// Есть проблема с пробрасыванием текста в input-элементы
+				// т.к. присвоение значения происходит системно, а не через eventListener
+				// логирование getData и getAsString показывает, что они не вызываются, поэтому присваиваем значение сами
+
+				sCode += sDataTransferFiles + L"let targetElem = document.elementFromPoint(" + std::to_wstring(nX) + L", " + std::to_wstring(nY) + L");\
+if (targetElem) { targetElem.dispatchEvent(event);\
+if (targetElem.nodeName === \"INPUT\") {\
+targetElem.value += event.dataTransfer.getData(\"text/plain\");\
+targetElem.dispatchEvent(createKeyupEvent()); } }\
+if (log) { console.log(targetElem); console.log(\"" + type + L"\"); console.log(event); }})();";
+			}
+
+			return sCode;
+		}
+	};
+
 	class ClientRenderDelegate : public client::ClientAppRenderer::Delegate
 	{
 	public:
@@ -4677,7 +4798,7 @@ window.AscDesktopEditor.CallInFrame(\"" +
 
 			CefRefPtr<CefV8Handler> handler = pWrapper;
 
-#define EXTEND_METHODS_COUNT 180
+#define EXTEND_METHODS_COUNT 181
 			const char* methods[EXTEND_METHODS_COUNT] = {
 				"Copy",
 				"Paste",
@@ -4756,6 +4877,7 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				"execCommand",
 
 				"SetDropFiles",
+				"ClearDropFiles",
 				"IsImageFile",
 				"GetDropFiles",
 				"DropOfficeFiles",
@@ -5411,6 +5533,35 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 				}
 				return true;
 			}
+			else if (sMessageName == "onlocaldocument_ondragenter")
+			{
+				CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
+
+				if (_frame)
+				{
+					/*CAscDragDrop oDnd(message);
+
+					std::wstring sCode = oDnd.CreateEvent(L"dragenter");
+					_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+
+					sCode = oDnd.CreateEvent(L"dragover");
+					_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);*/
+				}
+				return true;
+			}
+			else if (sMessageName == "onlocaldocument_ondropdata")
+			{
+				CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
+
+				if (_frame)
+				{
+					CAscDragDrop oDnd(message);
+
+					std::wstring sCode = oDnd.CreateEvent(L"drop");
+					_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+				}
+				return true;
+			}
 			else if (sMessageName == "on_native_message")
 			{
 				std::string sCommand = message->GetArgumentList()->GetString(0).ToString();
@@ -6043,6 +6194,20 @@ delete window[\"crypto_images_map\"][_url];\n\
 					CefRefPtr<CefFrame> _frame = browser->GetFrame(*i);
 					if (_frame)
 						_frame->ExecuteJavaScript(L"window.AscDesktopEditor.SetDropFiles(" + sCode + L");", _frame->GetURL(), 0);
+				}
+
+				return true;
+			}
+			else if (sMessageName == "clear_drop_files")
+			{
+				std::vector<int64> arFramesIds;
+				browser->GetFrameIdentifiers(arFramesIds);
+
+				for (std::vector<int64>::iterator i = arFramesIds.begin(); i != arFramesIds.end(); i++)
+				{
+					CefRefPtr<CefFrame> _frame = browser->GetFrame(*i);
+					if (_frame)
+						_frame->ExecuteJavaScript(L"window.AscDesktopEditor.ClearDropFiles();", _frame->GetURL(), 0);
 				}
 
 				return true;
