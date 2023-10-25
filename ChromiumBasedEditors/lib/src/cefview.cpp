@@ -7518,6 +7518,9 @@ void CCefViewEditor::CreateLocalFile(const AscEditorType& nFileFormatSrc, const 
 			COfficeFileFormatChecker oChecker;
 			if (oChecker.isOfficeFile(sTemplatePath))
 			{
+				if (AVS_OFFICESTUDIO_FILE_OTHER_MS_OFFCRYPTO == oChecker.nFileType)
+					oChecker.nFileType = CAscApplicationManager::GetFileFormatByExtentionForSave(sTemplatePath);
+
 				if (oChecker.nFileType & AVS_OFFICESTUDIO_FILE_DOCUMENT)
 					nFileFormat = AscEditorType::etDocument;
 				else if (oChecker.nFileType & AVS_OFFICESTUDIO_FILE_PRESENTATION)
