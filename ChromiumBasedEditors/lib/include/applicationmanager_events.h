@@ -53,6 +53,10 @@
 #define ASC_MENU_EVENT_TYPE_CEF_DESTROY_SAFE    1016
 #define ASC_MENU_EVENT_TYPE_CEF_CHECK_KEYBOARD  1017
 
+#define ASC_MENU_EVENT_TYPE_CEF_DRAG_ENTER      1018
+#define ASC_MENU_EVENT_TYPE_CEF_DRAG_LEAVE      1019
+#define ASC_MENU_EVENT_TYPE_CEF_DROP            1020
+
 #define ASC_MENU_EVENT_TYPE_CEF_ONCLOSE         2001
 #define ASC_MENU_EVENT_TYPE_CEF_ONBEFORECLOSE   2002
 
@@ -1034,6 +1038,49 @@ namespace NSEditorApi
 		std::vector<int>& get_SupportFormats()
 		{
 			return m_arSupportFormats;
+		}
+	};
+
+	class CAscLocalDragDropData : public IMenuEventDataBase
+	{
+	private:
+		int m_nX;
+		int m_nY;
+		int m_nCursorX;
+		int m_nCursorY;
+		std::wstring m_sText;
+		std::wstring m_sHtml;
+		std::vector<std::wstring> m_arFiles;
+
+	public:
+		CAscLocalDragDropData()
+		{
+			m_nX = 0;
+			m_nY = 0;
+			m_nCursorX = 0;
+			m_nCursorY = 0;
+			m_sText = L"";
+			m_sHtml = L"";
+		}
+		virtual ~CAscLocalDragDropData()
+		{
+		}
+
+		LINK_PROPERTY_INT(X)
+		LINK_PROPERTY_INT(Y)
+		LINK_PROPERTY_INT(CursorX)
+		LINK_PROPERTY_INT(CursorY)
+		LINK_PROPERTY_STRING(Text)
+		LINK_PROPERTY_STRING(Html)
+
+		void add_File(const std::wstring& sPath)
+		{
+			m_arFiles.push_back(sPath);
+		}
+
+		std::vector<std::wstring>& get_Files()
+		{
+			return m_arFiles;
 		}
 	};
 

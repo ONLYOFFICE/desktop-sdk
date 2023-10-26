@@ -6393,6 +6393,26 @@ bool CCefView::isDoubleResizeEvent()
 	return false;
 }
 
+static CefRefPtr<CefDragData> ConvertDragDropData(NSEditorApi::CAscLocalDragDropData* pData)
+{
+	CefRefPtr<CefDragData> pCefDragData = CefDragData::Create();
+
+	std::wstring sText = pData->get_Text();
+	std::wstring sHtml = pData->get_Html();
+	std::vector<std::wstring> arFiles = pData->get_Files();
+
+	if (sText.length())
+		pCefDragData->SetFragmentText(sText);
+	if (sHtml.length())
+		pCefDragData->SetFragmentHtml(sHtml);
+	for (size_t i = 0; i < arFiles.size(); i++)
+	{
+		pCefDragData->AddFile(arFiles[i], L"");
+	}
+
+	return pCefDragData;
+}
+
 void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 {
 	if (!m_pInternal || NULL == pEvent)
@@ -6810,6 +6830,48 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 		SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
 		break;
 	}
+	case ASC_MENU_EVENT_TYPE_CEF_DRAG_ENTER:
+	{
+		NSEditorApi::CAscLocalDragDropData* pData = (NSEditorApi::CAscLocalDragDropData*)pEvent->m_pData;
+
+		CefRefPtr<CefDragData> pCefDragData = ConvertDragDropData(pData);
+		if (m_pInternal && m_pInternal->m_handler)
+		{
+			// Send to resolver
+			CefRefPtr<CefDragHandler> pDragHandler = m_pInternal->m_handler->GetDragHandler();
+			if (pDragHandler)
+				pDragHandler->OnDragEnter(browser, pCefDragData, DRAG_OPERATION_COPY);
+		}
+
+		break;
+	}
+	case ASC_MENU_EVENT_TYPE_CEF_DRAG_LEAVE:
+	{
+		CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("clear_drop_files");
+		SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
+		break;
+	}
+	case ASC_MENU_EVENT_TYPE_CEF_DROP:
+	{
+		NSEditorApi::CAscLocalDragDropData* pData = (NSEditorApi::CAscLocalDragDropData*)pEvent->m_pData;
+
+		CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_drop_data");
+		message->GetArgumentList()->SetInt(0, pData->get_X());
+		message->GetArgumentList()->SetInt(1, pData->get_Y());
+		message->GetArgumentList()->SetInt(2, pData->get_CursorX());
+		message->GetArgumentList()->SetInt(3, pData->get_CursorY());
+		message->GetArgumentList()->SetString(4, pData->get_Text());
+		message->GetArgumentList()->SetString(5, pData->get_Html());
+
+		std::vector<std::wstring> arrFiles = pData->get_Files();
+		for (size_t i = 0; i < arrFiles.size(); i++)
+		{
+			message->GetArgumentList()->SetString(6 + i, arrFiles[i]);
+		}
+		SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
+
+		break;
+	}
 	case ASC_MENU_EVENT_TYPE_CEF_EXECUTE_COMMAND_JS:
 	{
 		NSEditorApi::CAscExecCommandJS* pData = (NSEditorApi::CAscExecCommandJS*)pEvent->m_pData;
@@ -7086,6 +7148,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 
 	RELEASEINTERFACE(pEvent);
 }
+
 NSEditorApi::CAscMenuEvent* CCefView::ApplySync(NSEditorApi::CAscMenuEvent* pEvent)
 {
 	return NULL;
