@@ -71,6 +71,9 @@ void QCefView_Media::OnMediaStart(NSEditorApi::CAscExternalMedia* data)
 	QCefView_SetDPI(this, m_pCefView->GetDeviceScale());
 	m_pMediaView->setGeometry(data->get_BoundsX(), data->get_BoundsY(), data->get_BoundsW(), data->get_BoundsH());
 
+	if (m_pCefView && m_pCefView->IsPresentationReporter())
+		m_pMediaView->ToggleMute();
+
 	// for vlc:
 #if defined(_WIN32) && defined(USE_VLC_LIBRARY)
 	m_pMediaView->show();
