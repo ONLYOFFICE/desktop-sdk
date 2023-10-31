@@ -5249,8 +5249,11 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 						}
 						nCounter >>= 1;
 
-						sChanges = "window.DesktopOfflineAppDocumentApplyChanges([" + sChanges + ");window.AscDesktopEditor.LocalFileSetOpenChangesCount(" + std::to_string(nCounter) + ");";
-						_frame->ExecuteJavaScript(sChanges, _frame->GetURL(), 0);
+						if (0 != nCounter && !sChanges.empty())
+						{
+							sChanges = "window.DesktopOfflineAppDocumentApplyChanges([" + sChanges + ");window.AscDesktopEditor.LocalFileSetOpenChangesCount(" + std::to_string(nCounter) + ");";
+							_frame->ExecuteJavaScript(sChanges, _frame->GetURL(), 0);
+						}
 					}
 
 					if (bIsLockedFile)
