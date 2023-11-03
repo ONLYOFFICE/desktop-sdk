@@ -4370,11 +4370,25 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				m_mapLocalAddImages.insert(std::pair<std::wstring, std::wstring>(sUrlMap, sRet));
 				if (0 != nCRC32)
 					m_mapLocalAddImagesCRC.insert(std::pair<unsigned int, std::wstring>(nCRC32, sRet));
+
+				CBgraFrame::RemoveOrientation(m_sLocalFileFolderWithoutFile + L"/media/" + sRet);
 				return sRet;
 			}
 			if (oChecker.eFileType == _CXIMAGE_FORMAT_JPG)
 			{
 				std::wstring sRet = L"image" + std::to_wstring(m_nLocalImagesNextIndex++) + L".jpg";
+				NSFile::CFileBinary::Copy(sUrl, m_sLocalFileFolderWithoutFile + L"/media/" + sRet);
+				m_mapLocalAddImages.insert(std::pair<std::wstring, std::wstring>(sUrlMap, sRet));
+				if (0 != nCRC32)
+					m_mapLocalAddImagesCRC.insert(std::pair<unsigned int, std::wstring>(nCRC32, sRet));
+
+				CBgraFrame::RemoveOrientation(m_sLocalFileFolderWithoutFile + L"/media/" + sRet);
+				return sRet;
+			}
+			if (oChecker.eFileType == _CXIMAGE_FORMAT_SVG)
+			{
+				// SVG now supported (old version below (convert to raster))
+				std::wstring sRet = L"image" + std::to_wstring(m_nLocalImagesNextIndex++) + L".svg";
 				NSFile::CFileBinary::Copy(sUrl, m_sLocalFileFolderWithoutFile + L"/media/" + sRet);
 				m_mapLocalAddImages.insert(std::pair<std::wstring, std::wstring>(sUrlMap, sRet));
 				if (0 != nCRC32)
