@@ -404,6 +404,63 @@ namespace asc_client_renderer
 		return sBase64;
 	}
 
+	std::string GetImagePngBase64(const std::wstring& sFileName, NSFonts::IApplicationFonts* pFonts)
+	{
+		std::wstring sFileTmp = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"IMG");
+		if (NSFile::CFileBinary::Exists(sFileTmp))
+			NSFile::CFileBinary::Remove(sFileTmp);
+
+		bool bIsSave = false;
+
+		CBgraFrame oFrame;
+		if (oFrame.OpenFile(sFileName, 0, true))
+		{
+			oFrame.SaveFile(sFileTmp, 4);
+			bIsSave = true;
+		}
+
+		if (!bIsSave)
+		{
+			MetaFile::IMetaFile* pMetafile = MetaFile::Create(pFonts);
+			pMetafile->LoadFromFile(sFileName.c_str());
+
+			if (pMetafile->GetType() == MetaFile::c_lMetaEmf ||
+				pMetafile->GetType() == MetaFile::c_lMetaWmf ||
+				pMetafile->GetType() == MetaFile::c_lMetaSvg ||
+				pMetafile->GetType() == MetaFile::c_lMetaSvm)
+			{
+				double x = 0, y = 0, w = 0, h = 0;
+				pMetafile->GetBounds(&x, &y, &w, &h);
+
+				double _max = (w >= h) ? w : h;
+				double dKoef = 1000.0 / _max;
+
+				int WW = (int)w;
+				int HH = (int)h;
+
+				if (dKoef < 1)
+				{
+					// слишком большие картинки не делаем
+					WW = (int)(dKoef * w + 0.5);
+					HH = (int)(dKoef * h + 0.5);
+				}
+
+				pMetafile->ConvertToRaster(sFileTmp.c_str(), 4, WW, HH);
+				bIsSave = true;
+			}
+			RELEASEINTERFACE(pMetafile);
+		}
+
+		if (bIsSave)
+		{
+			std::string sRet = GetFileBase64(sFileTmp);
+			NSFile::CFileBinary::Remove(sFileTmp);
+			return sRet;
+		}
+
+		return "";
+	}
+
 	class CLocalFileConvertV8Handler : public CefV8Handler
 	{
 	private:
@@ -1536,6 +1593,18 @@ DE.controllers.Main.DisableVersionHistory(); \
 						sHeader = "data:image/gif;base64,";
 					else if (_checker.isTiffFile(pData, IMAGE_CHECKER_SIZE))
 						sHeader = "data:image/tiff;base64,";
+					else
+					{
+						if (NULL == m_pLocalApplicationFonts)
+						{
+							m_pLocalApplicationFonts = NSFonts::NSApplication::Create();
+							m_pLocalApplicationFonts->InitializeFromFolder(m_sFontsData);
+						}
+
+						sImageData = GetImagePngBase64(sFileUrl, m_pLocalApplicationFonts);
+						if (!sImageData.empty())
+							sHeader = "data:image/png;base64,";
+					}
 				}
 
 				if (sHeader.empty() && !bIsNoHeader)
