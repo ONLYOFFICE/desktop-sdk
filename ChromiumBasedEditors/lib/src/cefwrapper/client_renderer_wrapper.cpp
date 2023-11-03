@@ -2926,11 +2926,11 @@ window.AscDesktopEditor.getPortalsList = function() { debugger;var ret = []; try
 			else if (name == "GetImageFormat")
 			{
 				std::wstring sFile = arguments[0]->GetStringValue();
-				std::string sExt = "jpg";
+				std::string sExt = "png";
 
 				CImageFileFormatChecker _checker;
-				if (_checker.isPngFile(sFile))
-					sExt = "png";
+				if (!_checker.isPngFile(sFile))
+					sExt = "jpg";
 
 				retval = CefV8Value::CreateString(sExt);
 				return true;
