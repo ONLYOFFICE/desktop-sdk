@@ -404,6 +404,63 @@ namespace asc_client_renderer
 		return sBase64;
 	}
 
+	std::string GetImagePngBase64(const std::wstring& sFileName, NSFonts::IApplicationFonts* pFonts)
+	{
+		std::wstring sFileTmp = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"IMG");
+		if (NSFile::CFileBinary::Exists(sFileTmp))
+			NSFile::CFileBinary::Remove(sFileTmp);
+
+		bool bIsSave = false;
+
+		CBgraFrame oFrame;
+		if (oFrame.OpenFile(sFileName, 0, true))
+		{
+			oFrame.SaveFile(sFileTmp, 4);
+			bIsSave = true;
+		}
+
+		if (!bIsSave)
+		{
+			MetaFile::IMetaFile* pMetafile = MetaFile::Create(pFonts);
+			pMetafile->LoadFromFile(sFileName.c_str());
+
+			if (pMetafile->GetType() == MetaFile::c_lMetaEmf ||
+				pMetafile->GetType() == MetaFile::c_lMetaWmf ||
+				pMetafile->GetType() == MetaFile::c_lMetaSvg ||
+				pMetafile->GetType() == MetaFile::c_lMetaSvm)
+			{
+				double x = 0, y = 0, w = 0, h = 0;
+				pMetafile->GetBounds(&x, &y, &w, &h);
+
+				double _max = (w >= h) ? w : h;
+				double dKoef = 1000.0 / _max;
+
+				int WW = (int)w;
+				int HH = (int)h;
+
+				if (dKoef < 1)
+				{
+					// слишком большие картинки не делаем
+					WW = (int)(dKoef * w + 0.5);
+					HH = (int)(dKoef * h + 0.5);
+				}
+
+				pMetafile->ConvertToRaster(sFileTmp.c_str(), 4, WW, HH);
+				bIsSave = true;
+			}
+			RELEASEINTERFACE(pMetafile);
+		}
+
+		if (bIsSave)
+		{
+			std::string sRet = GetFileBase64(sFileTmp);
+			NSFile::CFileBinary::Remove(sFileTmp);
+			return sRet;
+		}
+
+		return "";
+	}
+
 	class CLocalFileConvertV8Handler : public CefV8Handler
 	{
 	private:
@@ -1536,6 +1593,18 @@ DE.controllers.Main.DisableVersionHistory(); \
 						sHeader = "data:image/gif;base64,";
 					else if (_checker.isTiffFile(pData, IMAGE_CHECKER_SIZE))
 						sHeader = "data:image/tiff;base64,";
+					else
+					{
+						if (NULL == m_pLocalApplicationFonts)
+						{
+							m_pLocalApplicationFonts = NSFonts::NSApplication::Create();
+							m_pLocalApplicationFonts->InitializeFromFolder(m_sFontsData);
+						}
+
+						sImageData = GetImagePngBase64(sFileUrl, m_pLocalApplicationFonts);
+						if (!sImageData.empty())
+							sHeader = "data:image/png;base64,";
+					}
 				}
 
 				if (sHeader.empty() && !bIsNoHeader)
@@ -2865,11 +2934,11 @@ window.AscDesktopEditor.getPortalsList = function() { debugger;var ret = []; try
 			else if (name == "GetImageFormat")
 			{
 				std::wstring sFile = arguments[0]->GetStringValue();
-				std::string sExt = "jpg";
+				std::string sExt = "png";
 
 				CImageFileFormatChecker _checker;
-				if (_checker.isPngFile(sFile))
-					sExt = "png";
+				if (!_checker.isPngFile(sFile))
+					sExt = "jpg";
 
 				retval = CefV8Value::CreateString(sExt);
 				return true;
@@ -4378,11 +4447,25 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				m_mapLocalAddImages.insert(std::pair<std::wstring, std::wstring>(sUrlMap, sRet));
 				if (0 != nCRC32)
 					m_mapLocalAddImagesCRC.insert(std::pair<unsigned int, std::wstring>(nCRC32, sRet));
+
+				CBgraFrame::RemoveOrientation(m_sLocalFileFolderWithoutFile + L"/media/" + sRet);
 				return sRet;
 			}
 			if (oChecker.eFileType == _CXIMAGE_FORMAT_JPG)
 			{
 				std::wstring sRet = L"image" + std::to_wstring(m_nLocalImagesNextIndex++) + L".jpg";
+				NSFile::CFileBinary::Copy(sUrl, m_sLocalFileFolderWithoutFile + L"/media/" + sRet);
+				m_mapLocalAddImages.insert(std::pair<std::wstring, std::wstring>(sUrlMap, sRet));
+				if (0 != nCRC32)
+					m_mapLocalAddImagesCRC.insert(std::pair<unsigned int, std::wstring>(nCRC32, sRet));
+
+				CBgraFrame::RemoveOrientation(m_sLocalFileFolderWithoutFile + L"/media/" + sRet);
+				return sRet;
+			}
+			if (oChecker.eFileType == _CXIMAGE_FORMAT_SVG)
+			{
+				// SVG now supported (old version below (convert to raster))
+				std::wstring sRet = L"image" + std::to_wstring(m_nLocalImagesNextIndex++) + L".svg";
 				NSFile::CFileBinary::Copy(sUrl, m_sLocalFileFolderWithoutFile + L"/media/" + sRet);
 				m_mapLocalAddImages.insert(std::pair<std::wstring, std::wstring>(sUrlMap, sRet));
 				if (0 != nCRC32)
@@ -5338,8 +5421,11 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 						}
 						nCounter >>= 1;
 
-						sChanges = "window.DesktopOfflineAppDocumentApplyChanges([" + sChanges + ");window.AscDesktopEditor.LocalFileSetOpenChangesCount(" + std::to_string(nCounter) + ");";
-						_frame->ExecuteJavaScript(sChanges, _frame->GetURL(), 0);
+						if (0 != nCounter && !sChanges.empty())
+						{
+							sChanges = "window.DesktopOfflineAppDocumentApplyChanges([" + sChanges + ");window.AscDesktopEditor.LocalFileSetOpenChangesCount(" + std::to_string(nCounter) + ");";
+							_frame->ExecuteJavaScript(sChanges, _frame->GetURL(), 0);
+						}
 					}
 
 					if (bIsLockedFile)
