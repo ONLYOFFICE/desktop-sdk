@@ -907,9 +907,15 @@ public:
 
 #ifdef DISABLE_OFORM_SUPPORT
 		if (this->nFileType2 == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM ||
-				this->nFileType2 == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF)
+			this->nFileType2 == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF)
 		{
 			this->nFileType2 = AVS_OFFICESTUDIO_FILE_UNKNOWN;
+			return false;
+		}
+
+		if (this->nFileType2 == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF)
+		{
+			this->nFileType2 = AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF;
 			return false;
 		}
 #endif

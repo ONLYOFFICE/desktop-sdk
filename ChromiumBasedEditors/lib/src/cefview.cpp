@@ -1402,6 +1402,7 @@ public:
 #ifndef DISABLE_OFORM_SUPPORT
 			arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF);
 			arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM);
+			arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF);
 #endif
 
 			if (!bEncryption)
@@ -5435,8 +5436,9 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
 	{
 		bIsSavedFileCurrent = false;
 	}
-	if (m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM &&
-			nOldFormat != AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
+	if ((m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM ||
+		 m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF) &&
+		 nOldFormat != m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat)
 	{
 		// значит был saveAs. мы не можем переходить из интерфейса редактора в интерфейс заполнения
 		bIsSavedFileCurrent = false;
@@ -6073,7 +6075,8 @@ void CCefView::load(const std::wstring& urlInputSrc)
 					nEditorFormat = AscEditorType::etSpreadsheet;
 				else if (nFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF)
 					nEditorFormat = AscEditorType::etDocumentMasterForm;
-				else if (nFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
+				else if (nFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM ||
+						 nFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF)
 					nEditorFormat = AscEditorType::etDocumentMasterOForm;
 				else if (nFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
 					nEditorFormat = AscEditorType::etPdf;
@@ -6122,7 +6125,8 @@ void CCefView::load(const std::wstring& urlInputSrc)
 								nEditorFormat = AscEditorType::etSpreadsheet;
 						else if (oChecker.nFileType == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF)
 								nEditorFormat = AscEditorType::etDocumentMasterForm;
-						else if (oChecker.nFileType == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
+						else if (oChecker.nFileType == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM ||
+								 oChecker.nFileType == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF)
 								nEditorFormat = AscEditorType::etDocumentMasterOForm;
 						else if (oChecker.nFileType & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
 								nEditorFormat = AscEditorType::etPdf;
@@ -7445,7 +7449,8 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
 				sParams = L"&filetype=pdf";
 		}
 
-		if (nFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
+		if (nFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM ||
+			nFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF)
 		{
 			sParams += L"&filetype=oform";
 		}
@@ -7617,7 +7622,7 @@ void CCefViewEditor::CreateLocalFile(const AscEditorType& nFileFormatSrc, const 
 	}
 	else if (nFileFormat == AscEditorType::etDocumentMasterOForm)
 	{
-		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM;
+		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF;
 		sParams += L"&filetype=oform";
 	}
 	else if (nFileFormat == AscEditorType::etPdf)

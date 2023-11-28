@@ -73,6 +73,7 @@ static bool IsFormatSupportCrypto(const int& nFormat)
 	case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX:
 	case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF:
 	case AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM:
+	case AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF:
 	case AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX:
 	case AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX:
 	case AVS_OFFICESTUDIO_FILE_DOCUMENT_ODT:
@@ -883,10 +884,10 @@ public:
 
 		RELEASEOBJECT(m_pVerifier);
 		if (m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX ||
-				m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX ||
-				m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX ||
-				m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF ||
-				m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
+			m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX ||
+			m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX ||
+			m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF ||
+			m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
 		{
 			COfficeFileFormatChecker oChecker;
 			oChecker.isOfficeFile(sFile);
