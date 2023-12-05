@@ -1285,6 +1285,10 @@ public:
 
 	void LocalFile_SaveStart(std::wstring sPath = L"", int nType = -1)
 	{
+		m_oConverterFromEditor.m_sOriginalFileNameCrossPlatform = L"";
+		if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
+			m_oConverterFromEditor.m_sOriginalFileNameCrossPlatform = m_oLocalInfo.m_oInfo.m_sFileSrc;
+
 		m_oLocalInfo.SetupOptions(m_oConverterFromEditor.m_oInfo);
 		m_oLocalInfo.m_oInfo.m_sSaveJsonParams = L"";
 		m_oLocalInfo.m_oInfo.m_sDocumentInfo = L"";
@@ -6807,11 +6811,6 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 		else
 		{
 			int nFileType = pData->get_FileType();
-
-			m_pInternal->m_oConverterFromEditor.m_sOriginalFileNameCrossPlatform = L"";
-			if (m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
-				m_pInternal->m_oConverterFromEditor.m_sOriginalFileNameCrossPlatform = m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc;
-
 			m_pInternal->LocalFile_SaveStart(sPath, nFileType);
 		}
 		break;
