@@ -20,6 +20,7 @@ core_windows {
 
 	!build_xp {
 		CONFIG -= embed_manifest_exe
+		QMAKE_MANIFEST = $$PWD/helper.exe.manifest
 		OTHER_FILES += $$PWD/helper.exe.manifest
 	}
 }
