@@ -667,6 +667,8 @@ std::wstring CAscApplicationManager::GetNewFilePath(const AscEditorType& nFileFo
 		sExtension = L"pptx";
 	else if (nFileFormat == AscEditorType::etSpreadsheet)
 		sExtension = L"xlsx";
+	else if (nFileFormat == AscEditorType::etDocumentMasterForm)
+		sExtension = L"docxf";
 
 	sFilePath += sExtension;
 	if (!NSFile::CFileBinary::Exists(sFilePath))

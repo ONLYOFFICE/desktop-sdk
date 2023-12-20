@@ -2662,4 +2662,55 @@ window.AscDesktopEditor.CryptoPassword = \"" + sPass + L"\";\n\
 	}
 };
 
+static std::wstring GetFileUrlParams(const int& nFileFormat, const bool& bIsView)
+{
+	std::wstring sParams = L"placement=desktop";
+	bool bViewer = bIsView;
+
+	if (nFileFormat & AVS_OFFICESTUDIO_FILE_DOCUMENT)
+	{
+		if (nFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF ||
+			nFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
+			sParams += L"&doctype=word&filetype=docxf";
+		else if (nFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF)
+			sParams += L"&doctype=pdf&isForm=true&filetype=pdf";
+		else
+			sParams += L"&doctype=word";
+	}
+	else if (nFileFormat & AVS_OFFICESTUDIO_FILE_PRESENTATION)
+	{
+		sParams += L"&doctype=slide";
+	}
+	else if (nFileFormat & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
+	{
+		sParams += L"&doctype=cell";
+	}
+	else if (nFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
+	{
+		sParams = L"&doctype=pdf&isForm=false";
+
+		if (nFileFormat == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_DJVU)
+		{
+			sParams += L"&filetype=djvu";
+			bViewer = true;
+		}
+		else if (nFileFormat == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_XPS)
+		{
+			sParams += L"&filetype=xps";
+			bViewer = true;
+		}
+		else
+		{
+			sParams += L"&filetype=pdf";
+		}
+	}
+
+	if (bViewer)
+	{
+		sParams += L"&mode=view";
+	}
+
+	return sParams;
+}
+
 #endif // APPLICATION_MANAGER_PRIVATE_H

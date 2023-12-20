@@ -1185,6 +1185,13 @@ public:
 			oBuilder.WriteString(std::to_wstring(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF));
 			sParams += L"<m_bIsPDFA>true</m_bIsPDFA>";
 		}
+		else if (AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF == m_oInfo.m_nCurrentFileFormat &&
+			(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF == m_nTypeEditorFormat ||
+			 AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM == m_nTypeEditorFormat ||
+			 AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF == m_nTypeEditorFormat))
+		{
+			oBuilder.WriteString(std::to_wstring(AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF));
+		}
 		else
 		{
 			oBuilder.WriteString(std::to_wstring(m_oInfo.m_nCurrentFileFormat));

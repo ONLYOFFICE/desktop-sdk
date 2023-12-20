@@ -1405,8 +1405,8 @@ public:
 
 #ifndef DISABLE_OFORM_SUPPORT
 			arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF);
-			arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM);
-			arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF);
+			//arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM);
+			//arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF);
 #endif
 
 			if (!bEncryption)
@@ -1546,6 +1546,10 @@ public:
 	}
 	bool LocalFile_IsSupportEditFormat(int nFormat)
 	{
+		// pdf since 8.0 support edit
+		if (nFormat == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF)
+			return true;
+
 		if ((nFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM) != 0)
 			return false;
 		if ((nFormat & AVS_OFFICESTUDIO_FILE_IMAGE) != 0)
@@ -5444,7 +5448,7 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
 		 m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF) &&
 		 nOldFormat != m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat)
 	{
-		// значит был saveAs. мы не можем переходить из интерфейса редактора в интерфейс заполнения
+		// значит был saveAs. мы не можем переходить из интерфейса редактора в интерфейсе заполнения
 		bIsSavedFileCurrent = false;
 	}
 
@@ -7423,44 +7427,15 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
 		nFileFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX;
 
 	m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = nFileFormat;
-
 	std::wstring sParams = L"";
 
 	if (!m_pInternal->m_bIsCloudCryptFile)
 	{
-		sParams += L"placement=desktop";
-		if (nFileFormat & AVS_OFFICESTUDIO_FILE_PRESENTATION)
-		{
-			sParams = L"placement=desktop&doctype=presentation";
-		}
-		else if (nFileFormat & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
-		{
-			sParams = L"placement=desktop&doctype=spreadsheet";
-		}
-		else if (nFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
-		{
-			sParams = L"placement=desktop&mode=view";
-			if (nFileFormat == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_DJVU)
-				sParams += L"&filetype=djvu";
-			else if (nFileFormat == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_XPS)
-				sParams += L"&filetype=xps";
-			else
-				sParams = L"&filetype=pdf";
-		}
-
-		if (nFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM ||
-			nFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF)
-		{
-			sParams += L"&filetype=oform";
-		}
-		else if (nFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF)
-		{
-			sParams += L"&filetype=docxf";
-		}
-
+		bool bIsView = false;
 		if (!GetAppManager()->m_pInternal->GetEditorPermission() && sParams.find(L"mode=view") == std::wstring::npos)
-			sParams += L"&mode=view";
+			bIsView = true;
 
+		sParams = GetFileUrlParams(nFileFormat, bIsView);
 		std::wstring sAdditionalParams = !params.empty() ? params : GetAppManager()->m_pInternal->m_sAdditionalUrlParams;
 		if (!sAdditionalParams.empty())
 			sParams += (L"&" + sAdditionalParams);
@@ -7602,36 +7577,18 @@ void CCefViewEditor::CreateLocalFile(const AscEditorType& nFileFormatSrc, const 
 
 	std::wstring sFilePath = this->GetAppManager()->GetNewFilePath(nFileFormat);
 
-	m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX;
-	std::wstring sParams = L"placement=desktop";
+	int nFileFormatType = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX;
 	if (nFileFormat == AscEditorType::etPresentation)
-	{
-		sParams = L"placement=desktop&doctype=presentation";
-		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
-	}
+		nFileFormatType = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
 	else if (nFileFormat == AscEditorType::etSpreadsheet)
-	{
-		sParams = L"placement=desktop&doctype=spreadsheet";
-		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX;
-	}
+		nFileFormatType = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX;
 	else if (nFileFormat == AscEditorType::etDocumentMasterForm)
-	{
-		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF;
-		sParams += L"&filetype=docxf";
-	}
-	else if (nFileFormat == AscEditorType::etDocumentMasterOForm)
-	{
-		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF;
-		sParams += L"&filetype=oform";
-	}
-	else if (nFileFormat == AscEditorType::etPdf)
-	{
-		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF;
-		sParams += L"&filetype=pdf&mode=view";
-	}
+		nFileFormatType = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF;
 
-	if (!GetAppManager()->m_pInternal->GetEditorPermission())
-		sParams += L"&mode=view";
+	bool bIsView = GetAppManager()->m_pInternal->GetEditorPermission() ? false : true;
+
+	m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = nFileFormatType;
+	std::wstring sParams = GetFileUrlParams(nFileFormatType, bIsView);
 
 	std::wstring sAdditionalParams = GetAppManager()->m_pInternal->m_sAdditionalUrlParams;
 	if (!sAdditionalParams.empty())
@@ -7726,16 +7683,7 @@ bool CCefViewEditor::OpenCopyAsRecoverFile(const int& nIdSrc)
 	int nFileType = pViewSrc->m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat;
 	m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = nFileType;
 
-	std::wstring sParams = L"";
-	if (nFileType & AVS_OFFICESTUDIO_FILE_PRESENTATION)
-		sParams = L"placement=desktop&doctype=presentation";
-	else if (nFileType & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
-		sParams = L"placement=desktop&doctype=spreadsheet";
-	else if (nFileType & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
-		sParams = L"placement=desktop&mode=view";
-	else
-		sParams = L"placement=desktop";
-
+	std::wstring sParams = GetFileUrlParams(nFileType, false);
 	std::wstring sAdditionalParams = GetAppManager()->m_pInternal->m_sAdditionalUrlParams;
 	if (!sAdditionalParams.empty())
 		sParams += (L"&" + sAdditionalParams);
@@ -7780,27 +7728,21 @@ bool CCefViewEditor::OpenRecoverFile(const int& nId)
 	if (-1 == oInfo.m_nId)
 		return false;
 
-	m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX;
+	std::wstring sParams = GetFileUrlParams(oInfo.m_nFileType, oInfo.m_bIsViewer);
 
-	std::wstring sParams = L"";
+	m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX;
 	if (oInfo.m_nFileType & AVS_OFFICESTUDIO_FILE_PRESENTATION)
-	{
-		sParams = L"placement=desktop&doctype=presentation";
 		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
-	}
 	else if (oInfo.m_nFileType & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
-	{
-		sParams = L"placement=desktop&doctype=spreadsheet";
 		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX;
-	}
-	else if (oInfo.m_nFileType & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM || oInfo.m_bIsViewer)
-	{
-		sParams = L"placement=desktop&mode=view";
-	}
-	else
-	{
-		sParams = L"placement=desktop";
-	}
+	else if (oInfo.m_nFileType & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
+		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = oInfo.m_nFileType;
+	else if (oInfo.m_nFileType == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF ||
+			 oInfo.m_nFileType == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
+		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF;
+	else if (oInfo.m_nFileType == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF)
+		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF;
+
 	std::wstring sAdditionalParams = GetAppManager()->m_pInternal->m_sAdditionalUrlParams;
 	if (!sAdditionalParams.empty())
 		sParams += (L"&" + sAdditionalParams);
