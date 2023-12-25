@@ -5451,6 +5451,12 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
 		// значит был saveAs. мы не можем переходить из интерфейса редактора в интерфейсе заполнения
 		bIsSavedFileCurrent = false;
 	}
+	if (nOldFormat & AVS_OFFICESTUDIO_FILE_DOCUMENT &&
+		m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
+	{
+		// pdf - format for edit, but we can't switch t another editor on save.
+		bIsSavedFileCurrent = false;
+	}
 
 	if (!bIsSavedFileCurrent)
 	{
