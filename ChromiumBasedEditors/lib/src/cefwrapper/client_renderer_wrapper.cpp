@@ -1803,6 +1803,7 @@ DE.controllers.Main.DisableVersionHistory(); \
 				message->GetArgumentList()->SetString(2, ((arguments.size() > 2) && arguments[2]->IsString()) ? arguments[2]->GetStringValue() : "");
 				message->GetArgumentList()->SetInt(3, (arguments.size() > 3) ? arguments[3]->GetIntValue() : 0);
 				message->GetArgumentList()->SetString(4, ((arguments.size() > 4) && arguments[4]->IsString()) ? arguments[4]->GetStringValue() : "");
+				message->GetArgumentList()->SetString(5, ((arguments.size() > 5) && arguments[5]->IsString()) ? arguments[5]->GetStringValue() : "");
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 				return true;
 			}

@@ -116,6 +116,9 @@ public:
 	std::wstring m_sPassword;
 	std::wstring m_sSaveJsonParams;
 
+	// for change password in pdf
+	std::wstring m_sOldPassword;
+
 	std::wstring m_sDocumentInfo;
 
 public:
@@ -145,6 +148,8 @@ public:
 		m_sPassword = oSrc.m_sPassword;
 		m_sDocumentInfo = oSrc.m_sDocumentInfo;
 		m_sSaveJsonParams = oSrc.m_sSaveJsonParams;
+
+		m_sOldPassword = oSrc.m_sOldPassword;
 		return *this;
 	}
 };
@@ -1210,6 +1215,14 @@ public:
 		oBuilder.WriteEncodeXmlString(m_pManager->m_oSettings.fonts_cache_info_path);
 		oBuilder.WriteString(L"/AllFonts.js</m_sAllFontsPath><m_nCsvTxtEncoding>46</m_nCsvTxtEncoding><m_nCsvDelimiter>4</m_nCsvDelimiter>");
 		oBuilder.WriteString(sParams);
+
+		if (!m_oInfo.m_sOldPassword.empty() && (m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM))
+		{
+			oBuilder.WriteString(L"<m_sPassword>");
+			oBuilder.WriteEncodeXmlString(m_oInfo.m_sOldPassword);
+			oBuilder.WriteString(L"</m_sPassword>");
+			m_oInfo.m_sOldPassword = L"";
+		}
 
 		if (!m_oInfo.m_sPassword.empty() && IsFormatSupportCrypto(m_oInfo.m_nCurrentFileFormat))
 		{

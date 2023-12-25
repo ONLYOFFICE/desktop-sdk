@@ -2847,6 +2847,7 @@ public:
 			std::wstring sDocInfo   = args->GetString(2).ToWString();
 			int nSaveFileType       = args->GetInt(3);
 			std::wstring sSaveParams = args->GetString(4);
+			std::wstring sOldPassword = args->GetString(5);
 
 			bool bIsSaveAs = (sParams.find("saveas=true") != std::string::npos) ? true : false;
 
@@ -2865,6 +2866,7 @@ public:
 
 			m_pParent->m_pInternal->m_oLocalInfo.m_bIsRetina = (sParams.find("retina=true") != std::string::npos) ? true : false;
 			m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sPassword = sPassword;
+			m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sOldPassword = sOldPassword;
 			m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sDocumentInfo = sDocInfo;
 			m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sSaveJsonParams = sSaveParams;
 
@@ -5436,7 +5438,8 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
 
 	bool bIsSavedFileCurrent = true;
 	int nOldFormat = m_oLocalInfo.m_oInfo.m_nCurrentFileFormat;
-	if (nOldFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
+	if (nOldFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM &&
+		nOldFormat != m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat)
 	{
 		bIsSavedFileCurrent = false;
 	}
