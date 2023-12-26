@@ -2669,9 +2669,10 @@ static std::wstring GetFileUrlParams(const int& nFileFormat, const bool& bIsView
 
 	if (nFileFormat & AVS_OFFICESTUDIO_FILE_DOCUMENT)
 	{
-		if (nFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF ||
-			nFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
+		if (nFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF)
 			sParams += L"&doctype=word&filetype=docxf";
+		else if (nFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
+			sParams += L"&doctype=word&filetype=oform";
 		else if (nFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF)
 			sParams += L"&doctype=pdf&isForm=true&filetype=pdf";
 		else
