@@ -4398,7 +4398,8 @@ virtual void OnLoadError(CefRefPtr<CefBrowser> browser,
 	{
 		if (frame->IsMain())
 		{
-			m_pParent->load(L"ascdesktop://loaderror.html");
+			std::string sAddon = CAscApplicationManager::GetErrorPageAddon(ErrorPageType::Network);
+			m_pParent->load(L"ascdesktop://loaderror.html" + UTF8_TO_U(sAddon));
 			m_pParent->m_pInternal->m_bIsLoadingError = true;
 		}
 		else
@@ -4932,7 +4933,7 @@ virtual void OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser,
 
 	// Load the startup URL if that's not the website that we terminated on.
 	CefRefPtr<CefFrame> frame = browser->GetMainFrame();
-	frame->LoadURL("ascdesktop://crash.html");
+	frame->LoadURL("ascdesktop://crash.html" + CAscApplicationManager::GetErrorPageAddon(ErrorPageType::Crash));
 
 	if (m_pParent && m_pParent->m_pInternal)
 	{
@@ -6156,7 +6157,8 @@ void CCefView::load(const std::wstring& urlInputSrc)
 			}
 		}
 
-		this->load(L"ascdesktop://crash.html");
+		std::string sAddon = CAscApplicationManager::GetErrorPageAddon(ErrorPageType::Crash);
+		this->load(L"ascdesktop://crash.html" + UTF8_TO_U(sAddon));
 		return;
 	}
 

@@ -1242,6 +1242,24 @@ std::wstring CAscApplicationManager::GetExternalSchemeName()
 	return L"oo-office";
 }
 
+std::string CAscApplicationManager::GetErrorPageAddon(const ErrorPageType& type)
+{
+	std::string sAddon = "";
+	switch (type)
+	{
+	case ErrorPageType::Network:
+		sAddon = "?page=cloudfile";
+		break;
+	case ErrorPageType::Crash:
+		sAddon = "?page=fileerr";
+		break;
+	default:
+		break;
+	}
+
+	return sAddon;
+}
+
 bool NSCommon::CSystemWindowScale::g_isUseSystemScalingInit = false;
 bool NSCommon::CSystemWindowScale::g_isUseSystemScaling = false;
 
