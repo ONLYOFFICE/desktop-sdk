@@ -308,6 +308,8 @@ public:
 
 	static std::string GetErrorPageAddon(const ErrorPageType& type);
 
+	bool InstallPluginFromStore(const std::wstring& sName);
+
 protected:
 	int GenerateNextViewId();
 	virtual CAscDpiChecker* InitDpiChecker();

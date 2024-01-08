@@ -1260,6 +1260,28 @@ std::string CAscApplicationManager::GetErrorPageAddon(const ErrorPageType& type)
 	return sAddon;
 }
 
+bool CAscApplicationManager::InstallPluginFromStore(const std::wstring& sName)
+{
+	CPluginsManager oPlugins;
+	oPlugins.m_strDirectory = m_oSettings.system_plugins_path;
+	oPlugins.m_strUserDirectory = m_oSettings.user_plugins_path;
+
+	if (!oPlugins.InstallPluginFromStore(sName))
+		return false;
+
+	for (std::map<int, CCefView*>::iterator iterView = m_pInternal->m_mapViews.begin(); iterView != m_pInternal->m_mapViews.end(); iterView++)
+	{
+		CCefView* pView = iterView->second;
+		if (pView->GetType() != cvwtEditor)
+			continue;
+
+		CCefViewEditor* pEditor = (CCefViewEditor*)pView;
+		pEditor->UpdatePlugins();
+	}
+
+	return true;
+}
+
 bool NSCommon::CSystemWindowScale::g_isUseSystemScalingInit = false;
 bool NSCommon::CSystemWindowScale::g_isUseSystemScaling = false;
 

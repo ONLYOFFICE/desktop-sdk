@@ -5932,6 +5932,7 @@ void CCefView::load(const std::wstring& urlInputSrc)
 	NSStringUtils::string_replace(urlInput, L"//?desktop=true", L"/?desktop=true");
 
 	std::wstring sExternalSchemeName = m_pInternal->m_pManager->GetExternalSchemeName() + L":";
+	std::wstring sExternalName = L"External";
 
 	bool bIsScheme = false;
 	if (0 == urlInput.find(sExternalSchemeName))
@@ -5941,6 +5942,8 @@ void CCefView::load(const std::wstring& urlInputSrc)
 			urlInput = urlInput.substr(12);
 		else
 			urlInput = urlInput.substr(10);
+
+		NSStringUtils::string_replace(urlInput, L"%7C", L"|");
 	}
 	if (!bIsScheme)
 	{
@@ -5969,6 +5972,23 @@ void CCefView::load(const std::wstring& urlInputSrc)
 		else if (1 < nSizeParams && L"open" == arParams[0])
 		{
 			urlInput = arParams[nSizeParams - 1];
+
+			// check for external download
+			bool bIsExternalDownload = false;
+			for (size_t i = 1; i < (nSizeParams - 1); ++i)
+			{
+				if (L"f" == arParams[i] && !bIsExternalDownload)
+				{
+					urlInput = L"ascdesktop://external/" + urlInput;
+					bIsExternalDownload = true;
+				}
+				if (L"n" == arParams[i] && i < (nSizeParams - 2))
+				{
+					sExternalName = arParams[i + 1];
+					NSStringUtils::string_replace(sExternalName, L"%20", L" ");
+					++i;
+				}
+			}
 		}
 	}
 
@@ -6150,7 +6170,7 @@ void CCefView::load(const std::wstring& urlInputSrc)
 								nEditorFormat = AscEditorType::etPdf;
 						}
 
-						((CCefViewEditor*)this)->CreateLocalFile(nEditorFormat, L"External", sTmpFile);
+						((CCefViewEditor*)this)->CreateLocalFile(nEditorFormat, sExternalName, sTmpFile);
 						return;
 					}
 				}
@@ -7892,6 +7912,20 @@ int CCefViewEditor::GetFileFormat(const std::wstring& sFilePath)
 	if (oChecker.isOfficeFile2(sFilePath))
 		return oChecker.nFileType2;
 	return 0;
+}
+
+void CCefViewEditor::UpdatePlugins()
+{
+	if (m_pInternal->m_bIsDestroy || m_pInternal->m_bIsDestroying)
+		return;
+
+	CefRefPtr<CefBrowser> pBrowser = m_pInternal->GetBrowser();
+	if (!pBrowser)
+		return;
+
+	CefRefPtr<CefFrame> pFrame = pBrowser->GetFrame("frameEditor");
+	if (pFrame)
+		pFrame->ExecuteJavaScript("if (window.UpdateInstallPlugins) window.UpdateInstallPlugins();", pFrame->GetURL(), 0);
 }
 
 // NATIVE file converter
