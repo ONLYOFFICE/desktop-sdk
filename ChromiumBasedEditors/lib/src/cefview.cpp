@@ -1285,9 +1285,12 @@ public:
 
 	void LocalFile_SaveStart(std::wstring sPath = L"", int nType = -1)
 	{
-		m_oConverterFromEditor.m_sOriginalFileNameCrossPlatform = L"";
-		if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
+		if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM &&
+			m_oConverterFromEditor.m_sOriginalFileNameCrossPlatform.empty())
+		{
+			// source file copied to recover - name used in convertation
 			m_oConverterFromEditor.m_sOriginalFileNameCrossPlatform = m_oLocalInfo.m_oInfo.m_sFileSrc;
+		}
 
 		m_oLocalInfo.SetupOptions(m_oConverterFromEditor.m_oInfo);
 		m_oLocalInfo.m_oInfo.m_sSaveJsonParams = L"";

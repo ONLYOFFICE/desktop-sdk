@@ -1316,7 +1316,6 @@ public:
 				NSFile::CFileBinary::Remove(*i);
 		}
 
-		m_sOriginalFileNameCrossPlatform = L"";
 		m_bIsRetina = false;
 
 		if (!m_pManager->m_pInternal->m_bDebugInfoSupport)
