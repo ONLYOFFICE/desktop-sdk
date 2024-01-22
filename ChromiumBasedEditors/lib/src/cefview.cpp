@@ -5442,7 +5442,7 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
 
 	bool bIsSavedFileCurrent = true;
 	int nOldFormat = m_oLocalInfo.m_oInfo.m_nCurrentFileFormat;
-	if (nOldFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM &&
+	if ((nOldFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM || nOldFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF) &&
 		nOldFormat != m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat)
 	{
 		bIsSavedFileCurrent = false;
