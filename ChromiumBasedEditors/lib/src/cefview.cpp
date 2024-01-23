@@ -7616,7 +7616,8 @@ void CCefViewEditor::CreateLocalFile(const AscEditorType& nFileFormatSrc, const 
 		nFileFormatType = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
 	else if (nFileFormat == AscEditorType::etSpreadsheet)
 		nFileFormatType = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX;
-	else if (nFileFormat == AscEditorType::etDocumentMasterForm)
+	else if (nFileFormat == AscEditorType::etDocumentMasterForm ||
+			 nFileFormat == AscEditorType::etDocumentMasterOForm)
 		nFileFormatType = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF;
 
 	bool bIsView = GetAppManager()->m_pInternal->GetEditorPermission() ? false : true;
