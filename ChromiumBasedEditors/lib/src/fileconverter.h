@@ -700,6 +700,8 @@ public:
 				eType = AscEditorType::etSpreadsheet;
 			else if (m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
 				eType = AscEditorType::etPdf;
+			else if (m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF)
+				eType = AscEditorType::etPdf;
 
 			pData->put_Type((int)eType);
 
