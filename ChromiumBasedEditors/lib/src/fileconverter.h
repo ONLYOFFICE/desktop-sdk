@@ -1218,7 +1218,8 @@ public:
 		oBuilder.WriteString(L"/AllFonts.js</m_sAllFontsPath><m_nCsvTxtEncoding>46</m_nCsvTxtEncoding><m_nCsvDelimiter>4</m_nCsvDelimiter>");
 		oBuilder.WriteString(sParams);
 
-		if (!m_oInfo.m_sOldPassword.empty() && (m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM))
+		if (!m_oInfo.m_sOldPassword.empty() &&
+			((m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM) || !m_sOriginalFileNameCrossPlatform.empty()))
 		{
 			oBuilder.WriteString(L"<m_sPassword>");
 			oBuilder.WriteEncodeXmlString(m_oInfo.m_sOldPassword);
