@@ -1659,6 +1659,10 @@ DE.controllers.Main.DisableVersionHistory(); \
 				if (!NSDirectory::Exists(m_sLocalFileFolderWithoutFile + L"/changes"))
 					NSDirectory::CreateDirectory(m_sLocalFileFolderWithoutFile + L"/changes");
 
+				// for pdf
+				if (!NSDirectory::Exists(m_sLocalFileFolderWithoutFile + L"/media"))
+					NSDirectory::CreateDirectory(m_sLocalFileFolderWithoutFile + L"/media");
+
 				std::vector<std::wstring> arMedia = NSDirectory::GetFiles(m_sLocalFileFolderWithoutFile + L"/media");
 				m_nLocalImagesNextIndex = (int)arMedia.size() + 1;
 
