@@ -1411,8 +1411,10 @@ else \n\
 					CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetFrame();
 					_frame->ExecuteJavaScript(
 						"(function() { try { \
-DE.controllers.Main.DisableMailMerge(); \
-DE.controllers.Main.DisableVersionHistory(); \
+var control = window.DE || window.PE || window.SSE; \
+var main = control.controllers.Main; \
+if (main.DisableMailMerge) main.DisableMailMerge(); \
+if (main.DisableVersionHistory) main.DisableVersionHistory(); \
 } catch(err){} })();",
 						_frame->GetURL(), 0);
 				}
