@@ -1411,8 +1411,10 @@ else \n\
 					CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetFrame();
 					_frame->ExecuteJavaScript(
 						"(function() { try { \
-DE.controllers.Main.DisableMailMerge(); \
-DE.controllers.Main.DisableVersionHistory(); \
+var control = window.DE || window.PE || window.SSE; \
+var main = control.controllers.Main; \
+if (main.DisableMailMerge) main.DisableMailMerge(); \
+if (main.DisableVersionHistory) main.DisableVersionHistory(); \
 } catch(err){} })();",
 						_frame->GetURL(), 0);
 				}
@@ -1659,6 +1661,10 @@ DE.controllers.Main.DisableVersionHistory(); \
 				if (!NSDirectory::Exists(m_sLocalFileFolderWithoutFile + L"/changes"))
 					NSDirectory::CreateDirectory(m_sLocalFileFolderWithoutFile + L"/changes");
 
+				// for pdf
+				if (!NSDirectory::Exists(m_sLocalFileFolderWithoutFile + L"/media"))
+					NSDirectory::CreateDirectory(m_sLocalFileFolderWithoutFile + L"/media");
+
 				std::vector<std::wstring> arMedia = NSDirectory::GetFiles(m_sLocalFileFolderWithoutFile + L"/media");
 				m_nLocalImagesNextIndex = (int)arMedia.size() + 1;
 
@@ -1803,6 +1809,7 @@ DE.controllers.Main.DisableVersionHistory(); \
 				message->GetArgumentList()->SetString(2, ((arguments.size() > 2) && arguments[2]->IsString()) ? arguments[2]->GetStringValue() : "");
 				message->GetArgumentList()->SetInt(3, (arguments.size() > 3) ? arguments[3]->GetIntValue() : 0);
 				message->GetArgumentList()->SetString(4, ((arguments.size() > 4) && arguments[4]->IsString()) ? arguments[4]->GetStringValue() : "");
+				message->GetArgumentList()->SetString(5, ((arguments.size() > 5) && arguments[5]->IsString()) ? arguments[5]->GetStringValue() : "");
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 				return true;
 			}
@@ -2075,6 +2082,11 @@ DE.controllers.Main.DisableVersionHistory(); \
 				}
 				return true;
 			}
+			else if (name == "ClearDropFiles")
+			{
+				m_arDropFiles.clear();
+				return true;
+			}
 			else if (name == "IsImageFile")
 			{
 				CImageFileFormatChecker oChecker;
@@ -2090,6 +2102,9 @@ DE.controllers.Main.DisableVersionHistory(); \
 				int nCurrent = 0;
 				for (std::vector<std::wstring>::iterator i = m_arDropFiles.begin(); i != m_arDropFiles.end(); i++)
 					retval->SetValue(nCurrent++, CefV8Value::CreateString(*i));
+
+				// Отдали список, чистим. Иначе всегда будем вставлять файлы с предыдущего дропа
+				m_arDropFiles.clear();
 
 				return true;
 			}
@@ -4721,6 +4736,86 @@ window.AscDesktopEditor.CallInFrame(\"" +
 		IMPLEMENT_REFCOUNTING(CAscEditorNativeV8Handler);
 	};
 
+	// Класс для создания dnd-событий по типу
+	class CAscDragDrop
+	{
+	private:
+		CefRefPtr<CefProcessMessage> m_pCefMessage;
+
+	public:
+		CAscDragDrop(CefRefPtr<CefProcessMessage> message)
+		{
+			m_pCefMessage = message->Copy();
+		}
+
+		std::wstring CreateEvent(const std::wstring& type)
+		{
+			std::wstring sCode = L"";
+
+			if (m_pCefMessage.get() && type.length())
+			{
+				CefRefPtr<CefListValue> argList = m_pCefMessage->GetArgumentList();
+				int nX = m_pCefMessage->GetArgumentList()->GetInt(0);
+				int nY = m_pCefMessage->GetArgumentList()->GetInt(1);
+				int nCursorX = m_pCefMessage->GetArgumentList()->GetInt(2);
+				int nCursorY = m_pCefMessage->GetArgumentList()->GetInt(3);
+				std::wstring sText = m_pCefMessage->GetArgumentList()->GetString(4).ToWString();
+				std::wstring sHtml = m_pCefMessage->GetArgumentList()->GetString(5).ToWString();
+
+				std::vector<std::wstring> arParts;
+				arParts.push_back(sText);
+				arParts.push_back(sHtml);
+				for (size_t i = 0; i < arParts.size(); i++)
+				{
+					NSStringUtils::string_replace(arParts[i], L"\\", L"\\\\");
+					NSStringUtils::string_replace(arParts[i], L"\"", L"\\\"");
+					NSStringUtils::string_replace(arParts[i], L"\r", L"");
+					NSStringUtils::string_replace(arParts[i], L"\n", L"");
+				}
+
+				// Создаём базовое событие со своим dataTransfer
+
+				sCode = L"(function(){\
+function createDataTransferItem(a,c,d){return{kind:a,type:c,data:d,getAsFile:function(){return this.data},getAsString:function(e){e&&e(this.data)}}}function createCustomEvent(a,c,d,e,f){a=new Event(a,{bubbles:!0,cancelable:!0,composed:!0});a.dataTransfer={dropEffect:\"none\",effectAllowed:\"all\",files:[],items:[],types:[],data:{},setData:function(b,g){this.effectAllowed=\"copyMove\";this.data[b]=g;this.types.push(b);b=createDataTransferItem(\"string\",b,g);this.items.push(b)},getData:function(b){b=b.toLowerCase();\"text\"===b?b=\"text/plain\":\"html\"===b&&(b=\"text/html\");return this.data[b]}};a.x=a.pageX=a.clientX=c;a.y=a.pageY=a.clientY=d;a.screenX=e;a.screenY=f;return a}function addFileToDataTransfer(a,c,d){c=atob(c);let e=Array(c.length);for(let f=0;f<c.length;f++)e[f]=c.charCodeAt(f);c=new Uint8Array(e);d=new File([c],d);a.dataTransfer.files.push(d);d=createDataTransferItem(\"file\",\"\",d);a.dataTransfer.items.push(d)};\
+let event = createCustomEvent(\"" + type + L"\"," + std::to_wstring(nX) + L"," +
+														std::to_wstring(nY) + L"," +
+														std::to_wstring(nCursorX) + L"," +
+														std::to_wstring(nCursorY) + L");";
+
+				if (arParts[0].length())
+					sCode += L"event.dataTransfer.setData(\"text/plain\", \"" + arParts[0] + L"\");";
+				if (arParts[1].length())
+					sCode += L"event.dataTransfer.setData(\"text/html\", \"" + arParts[1] + L"\");";
+
+				// Читаем файлы и добавляем в dataTransfer
+				std::wstring sDataTransferFiles = L"";
+				if (argList->GetSize() > 6)
+				{
+					sDataTransferFiles = L"";
+					for (size_t i = 0; i < argList->GetSize() - 6; i++)
+					{
+						std::wstring sFilePath = m_pCefMessage->GetArgumentList()->GetString(6 + i);
+
+						int nSize = 0;
+						std::wstring sFileName = NSFile::GetFileName(sFilePath);
+						std::string sImageBase64 = GetFileBase64(sFilePath, &nSize);
+
+						if (sImageBase64.length())
+							sDataTransferFiles += L"addFileToDataTransfer(event, \"" + UTF8_TO_U(sImageBase64) + L"\", \"" + sFileName + L"\");";
+					}
+				}
+				sCode += sDataTransferFiles;
+
+				// Поиск нужного элемента по координатам и вызов события
+
+				sCode += L"let targetElem = document.elementFromPoint(" + std::to_wstring(nX) + L", " + std::to_wstring(nY) + L");\
+if (targetElem) { targetElem.dispatchEvent(event); }})();";
+			}
+
+			return sCode;
+		}
+	};
+
 	class ClientRenderDelegate : public client::ClientAppRenderer::Delegate
 	{
 	public:
@@ -4760,7 +4855,7 @@ window.AscDesktopEditor.CallInFrame(\"" +
 
 			CefRefPtr<CefV8Handler> handler = pWrapper;
 
-#define EXTEND_METHODS_COUNT 180
+#define EXTEND_METHODS_COUNT 181
 			const char* methods[EXTEND_METHODS_COUNT] = {
 				"Copy",
 				"Paste",
@@ -4839,6 +4934,7 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				"execCommand",
 
 				"SetDropFiles",
+				"ClearDropFiles",
 				"IsImageFile",
 				"GetDropFiles",
 				"DropOfficeFiles",
@@ -5497,6 +5593,19 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 				}
 				return true;
 			}
+			else if (sMessageName == "on_drop_data")
+			{
+				CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
+
+				if (_frame)
+				{
+					CAscDragDrop oDnd(message);
+
+					std::wstring sCode = oDnd.CreateEvent(L"drop");
+					_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+				}
+				return true;
+			}
 			else if (sMessageName == "on_native_message")
 			{
 				std::string sCommand = message->GetArgumentList()->GetString(0).ToString();
@@ -6129,6 +6238,20 @@ delete window[\"crypto_images_map\"][_url];\n\
 					CefRefPtr<CefFrame> _frame = browser->GetFrame(*i);
 					if (_frame)
 						_frame->ExecuteJavaScript(L"window.AscDesktopEditor.SetDropFiles(" + sCode + L");", _frame->GetURL(), 0);
+				}
+
+				return true;
+			}
+			else if (sMessageName == "clear_drop_files")
+			{
+				std::vector<int64> arFramesIds;
+				browser->GetFrameIdentifiers(arFramesIds);
+
+				for (std::vector<int64>::iterator i = arFramesIds.begin(); i != arFramesIds.end(); i++)
+				{
+					CefRefPtr<CefFrame> _frame = browser->GetFrame(*i);
+					if (_frame)
+						_frame->ExecuteJavaScript(L"window.AscDesktopEditor.ClearDropFiles();", _frame->GetURL(), 0);
 				}
 
 				return true;

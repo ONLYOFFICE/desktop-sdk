@@ -1285,6 +1285,13 @@ public:
 
 	void LocalFile_SaveStart(std::wstring sPath = L"", int nType = -1)
 	{
+		if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM &&
+			m_oConverterFromEditor.m_sOriginalFileNameCrossPlatform.empty())
+		{
+			// source file copied to recover - name used in convertation
+			m_oConverterFromEditor.m_sOriginalFileNameCrossPlatform = m_oLocalInfo.m_oInfo.m_sFileSrc;
+		}
+
 		m_oLocalInfo.SetupOptions(m_oConverterFromEditor.m_oInfo);
 		m_oLocalInfo.m_oInfo.m_sSaveJsonParams = L"";
 		m_oLocalInfo.m_oInfo.m_sDocumentInfo = L"";
@@ -1401,7 +1408,8 @@ public:
 
 #ifndef DISABLE_OFORM_SUPPORT
 			arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF);
-			arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM);
+			//arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM);
+			//arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF);
 #endif
 
 			if (!bEncryption)
@@ -1541,6 +1549,10 @@ public:
 	}
 	bool LocalFile_IsSupportEditFormat(int nFormat)
 	{
+		// pdf since 8.0 support edit
+		if (nFormat == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF)
+			return true;
+
 		if ((nFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM) != 0)
 			return false;
 		if ((nFormat & AVS_OFFICESTUDIO_FILE_IMAGE) != 0)
@@ -2838,6 +2850,7 @@ public:
 			std::wstring sDocInfo   = args->GetString(2).ToWString();
 			int nSaveFileType       = args->GetInt(3);
 			std::wstring sSaveParams = args->GetString(4);
+			std::wstring sOldPassword = args->GetString(5);
 
 			bool bIsSaveAs = (sParams.find("saveas=true") != std::string::npos) ? true : false;
 
@@ -2856,6 +2869,7 @@ public:
 
 			m_pParent->m_pInternal->m_oLocalInfo.m_bIsRetina = (sParams.find("retina=true") != std::string::npos) ? true : false;
 			m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sPassword = sPassword;
+			m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sOldPassword = sOldPassword;
 			m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sDocumentInfo = sDocInfo;
 			m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sSaveJsonParams = sSaveParams;
 
@@ -4387,7 +4401,8 @@ virtual void OnLoadError(CefRefPtr<CefBrowser> browser,
 	{
 		if (frame->IsMain())
 		{
-			m_pParent->load(L"ascdesktop://loaderror.html");
+			std::string sAddon = CAscApplicationManager::GetErrorPageAddon(ErrorPageType::Network);
+			m_pParent->load(L"ascdesktop://loaderror.html" + UTF8_TO_U(sAddon));
 			m_pParent->m_pInternal->m_bIsLoadingError = true;
 		}
 		else
@@ -4921,7 +4936,7 @@ virtual void OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser,
 
 	// Load the startup URL if that's not the website that we terminated on.
 	CefRefPtr<CefFrame> frame = browser->GetMainFrame();
-	frame->LoadURL("ascdesktop://crash.html");
+	frame->LoadURL("ascdesktop://crash.html" + CAscApplicationManager::GetErrorPageAddon(ErrorPageType::Crash));
 
 	if (m_pParent && m_pParent->m_pInternal)
 	{
@@ -5427,7 +5442,8 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
 
 	bool bIsSavedFileCurrent = true;
 	int nOldFormat = m_oLocalInfo.m_oInfo.m_nCurrentFileFormat;
-	if (nOldFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
+	if ((nOldFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM || nOldFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF) &&
+		nOldFormat != m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat)
 	{
 		bIsSavedFileCurrent = false;
 	}
@@ -5435,10 +5451,17 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
 	{
 		bIsSavedFileCurrent = false;
 	}
-	if (m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM &&
-			nOldFormat != AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
+	if ((m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM ||
+		 m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF) &&
+		 nOldFormat != m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat)
 	{
-		// значит был saveAs. мы не можем переходить из интерфейса редактора в интерфейс заполнения
+		// значит был saveAs. мы не можем переходить из интерфейса редактора в интерфейсе заполнения
+		bIsSavedFileCurrent = false;
+	}
+	if (!(nOldFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM) &&
+		m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
+	{
+		// pdf - format for edit, but we can't switch t another editor on save.
 		bIsSavedFileCurrent = false;
 	}
 
@@ -5912,6 +5935,7 @@ void CCefView::load(const std::wstring& urlInputSrc)
 	NSStringUtils::string_replace(urlInput, L"//?desktop=true", L"/?desktop=true");
 
 	std::wstring sExternalSchemeName = m_pInternal->m_pManager->GetExternalSchemeName() + L":";
+	std::wstring sExternalName = L"External";
 
 	bool bIsScheme = false;
 	if (0 == urlInput.find(sExternalSchemeName))
@@ -5921,6 +5945,8 @@ void CCefView::load(const std::wstring& urlInputSrc)
 			urlInput = urlInput.substr(12);
 		else
 			urlInput = urlInput.substr(10);
+
+		NSStringUtils::string_replace(urlInput, L"%7C", L"|");
 	}
 	if (!bIsScheme)
 	{
@@ -5949,6 +5975,23 @@ void CCefView::load(const std::wstring& urlInputSrc)
 		else if (1 < nSizeParams && L"open" == arParams[0])
 		{
 			urlInput = arParams[nSizeParams - 1];
+
+			// check for external download
+			bool bIsExternalDownload = false;
+			for (size_t i = 1; i < (nSizeParams - 1); ++i)
+			{
+				if (L"f" == arParams[i] && !bIsExternalDownload)
+				{
+					urlInput = L"ascdesktop://external/" + urlInput;
+					bIsExternalDownload = true;
+				}
+				if (L"n" == arParams[i] && i < (nSizeParams - 2))
+				{
+					sExternalName = arParams[i + 1];
+					NSStringUtils::string_replace(sExternalName, L"%20", L" ");
+					++i;
+				}
+			}
 		}
 	}
 
@@ -6073,7 +6116,8 @@ void CCefView::load(const std::wstring& urlInputSrc)
 					nEditorFormat = AscEditorType::etSpreadsheet;
 				else if (nFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF)
 					nEditorFormat = AscEditorType::etDocumentMasterForm;
-				else if (nFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
+				else if (nFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM ||
+						 nFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF)
 					nEditorFormat = AscEditorType::etDocumentMasterOForm;
 				else if (nFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
 					nEditorFormat = AscEditorType::etPdf;
@@ -6122,20 +6166,22 @@ void CCefView::load(const std::wstring& urlInputSrc)
 								nEditorFormat = AscEditorType::etSpreadsheet;
 						else if (oChecker.nFileType == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF)
 								nEditorFormat = AscEditorType::etDocumentMasterForm;
-						else if (oChecker.nFileType == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
+						else if (oChecker.nFileType == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM ||
+								 oChecker.nFileType == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF)
 								nEditorFormat = AscEditorType::etDocumentMasterOForm;
 						else if (oChecker.nFileType & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
 								nEditorFormat = AscEditorType::etPdf;
 						}
 
-						((CCefViewEditor*)this)->CreateLocalFile(nEditorFormat, L"External", sTmpFile);
+						((CCefViewEditor*)this)->CreateLocalFile(nEditorFormat, sExternalName, sTmpFile);
 						return;
 					}
 				}
 			}
 		}
 
-		this->load(L"ascdesktop://crash.html");
+		std::string sAddon = CAscApplicationManager::GetErrorPageAddon(ErrorPageType::Crash);
+		this->load(L"ascdesktop://crash.html" + UTF8_TO_U(sAddon));
 		return;
 	}
 
@@ -6391,6 +6437,26 @@ bool CCefView::isDoubleResizeEvent()
 #endif
 
 	return false;
+}
+
+static CefRefPtr<CefDragData> ConvertDragDropData(NSEditorApi::CAscLocalDragDropData* pData)
+{
+	CefRefPtr<CefDragData> pCefDragData = CefDragData::Create();
+
+	std::wstring sText = pData->get_Text();
+	std::wstring sHtml = pData->get_Html();
+	std::vector<std::wstring> arFiles = pData->get_Files();
+
+	if (sText.length())
+		pCefDragData->SetFragmentText(sText);
+	if (sHtml.length())
+		pCefDragData->SetFragmentHtml(sHtml);
+	for (size_t i = 0; i < arFiles.size(); i++)
+	{
+		pCefDragData->AddFile(arFiles[i], L"");
+	}
+
+	return pCefDragData;
 }
 
 void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
@@ -6783,11 +6849,6 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 		else
 		{
 			int nFileType = pData->get_FileType();
-
-			m_pInternal->m_oConverterFromEditor.m_sOriginalFileNameCrossPlatform = L"";
-			if (m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
-				m_pInternal->m_oConverterFromEditor.m_sOriginalFileNameCrossPlatform = m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc;
-
 			m_pInternal->LocalFile_SaveStart(sPath, nFileType);
 		}
 		break;
@@ -6808,6 +6869,48 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 		m_pInternal->m_pManager->AddFileToLocalResolver(sPath);
 		message->GetArgumentList()->SetString(0, sPath);
 		SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
+		break;
+	}
+	case ASC_MENU_EVENT_TYPE_CEF_DRAG_ENTER:
+	{
+		NSEditorApi::CAscLocalDragDropData* pData = (NSEditorApi::CAscLocalDragDropData*)pEvent->m_pData;
+
+		CefRefPtr<CefDragData> pCefDragData = ConvertDragDropData(pData);
+		if (m_pInternal && m_pInternal->m_handler)
+		{
+			// Send to resolver
+			CefRefPtr<CefDragHandler> pDragHandler = m_pInternal->m_handler->GetDragHandler();
+			if (pDragHandler)
+				pDragHandler->OnDragEnter(browser, pCefDragData, DRAG_OPERATION_COPY);
+		}
+
+		break;
+	}
+	case ASC_MENU_EVENT_TYPE_CEF_DRAG_LEAVE:
+	{
+		CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("clear_drop_files");
+		SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
+		break;
+	}
+	case ASC_MENU_EVENT_TYPE_CEF_DROP:
+	{
+		NSEditorApi::CAscLocalDragDropData* pData = (NSEditorApi::CAscLocalDragDropData*)pEvent->m_pData;
+
+		CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_drop_data");
+		message->GetArgumentList()->SetInt(0, pData->get_X());
+		message->GetArgumentList()->SetInt(1, pData->get_Y());
+		message->GetArgumentList()->SetInt(2, pData->get_CursorX());
+		message->GetArgumentList()->SetInt(3, pData->get_CursorY());
+		message->GetArgumentList()->SetString(4, pData->get_Text());
+		message->GetArgumentList()->SetString(5, pData->get_Html());
+
+		std::vector<std::wstring> arrFiles = pData->get_Files();
+		for (size_t i = 0; i < arrFiles.size(); i++)
+		{
+			message->GetArgumentList()->SetString(6 + i, arrFiles[i]);
+		}
+		SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
+
 		break;
 	}
 	case ASC_MENU_EVENT_TYPE_CEF_EXECUTE_COMMAND_JS:
@@ -7086,6 +7189,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 
 	RELEASEINTERFACE(pEvent);
 }
+
 NSEditorApi::CAscMenuEvent* CCefView::ApplySync(NSEditorApi::CAscMenuEvent* pEvent)
 {
 	return NULL;
@@ -7357,43 +7461,15 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
 		nFileFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX;
 
 	m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = nFileFormat;
-
 	std::wstring sParams = L"";
 
 	if (!m_pInternal->m_bIsCloudCryptFile)
 	{
-		sParams += L"placement=desktop";
-		if (nFileFormat & AVS_OFFICESTUDIO_FILE_PRESENTATION)
-		{
-			sParams = L"placement=desktop&doctype=presentation";
-		}
-		else if (nFileFormat & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
-		{
-			sParams = L"placement=desktop&doctype=spreadsheet";
-		}
-		else if (nFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
-		{
-			sParams = L"placement=desktop&mode=view";
-			if (nFileFormat == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_DJVU)
-				sParams += L"&filetype=djvu";
-			else if (nFileFormat == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_XPS)
-				sParams += L"&filetype=xps";
-			else
-				sParams = L"&filetype=pdf";
-		}
-
-		if (nFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
-		{
-			sParams += L"&filetype=oform";
-		}
-		else if (nFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF)
-		{
-			sParams += L"&filetype=docxf";
-		}
-
+		bool bIsView = false;
 		if (!GetAppManager()->m_pInternal->GetEditorPermission() && sParams.find(L"mode=view") == std::wstring::npos)
-			sParams += L"&mode=view";
+			bIsView = true;
 
+		sParams = GetFileUrlParams(nFileFormat, bIsView);
 		std::wstring sAdditionalParams = !params.empty() ? params : GetAppManager()->m_pInternal->m_sAdditionalUrlParams;
 		if (!sAdditionalParams.empty())
 			sParams += (L"&" + sAdditionalParams);
@@ -7535,36 +7611,19 @@ void CCefViewEditor::CreateLocalFile(const AscEditorType& nFileFormatSrc, const 
 
 	std::wstring sFilePath = this->GetAppManager()->GetNewFilePath(nFileFormat);
 
-	m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX;
-	std::wstring sParams = L"placement=desktop";
+	int nFileFormatType = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX;
 	if (nFileFormat == AscEditorType::etPresentation)
-	{
-		sParams = L"placement=desktop&doctype=presentation";
-		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
-	}
+		nFileFormatType = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
 	else if (nFileFormat == AscEditorType::etSpreadsheet)
-	{
-		sParams = L"placement=desktop&doctype=spreadsheet";
-		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX;
-	}
-	else if (nFileFormat == AscEditorType::etDocumentMasterForm)
-	{
-		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF;
-		sParams += L"&filetype=docxf";
-	}
-	else if (nFileFormat == AscEditorType::etDocumentMasterOForm)
-	{
-		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM;
-		sParams += L"&filetype=oform";
-	}
-	else if (nFileFormat == AscEditorType::etPdf)
-	{
-		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF;
-		sParams += L"&filetype=pdf&mode=view";
-	}
+		nFileFormatType = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX;
+	else if (nFileFormat == AscEditorType::etDocumentMasterForm ||
+			 nFileFormat == AscEditorType::etDocumentMasterOForm)
+		nFileFormatType = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF;
 
-	if (!GetAppManager()->m_pInternal->GetEditorPermission())
-		sParams += L"&mode=view";
+	bool bIsView = GetAppManager()->m_pInternal->GetEditorPermission() ? false : true;
+
+	m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = nFileFormatType;
+	std::wstring sParams = GetFileUrlParams(nFileFormatType, bIsView);
 
 	std::wstring sAdditionalParams = GetAppManager()->m_pInternal->m_sAdditionalUrlParams;
 	if (!sAdditionalParams.empty())
@@ -7659,16 +7718,7 @@ bool CCefViewEditor::OpenCopyAsRecoverFile(const int& nIdSrc)
 	int nFileType = pViewSrc->m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat;
 	m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = nFileType;
 
-	std::wstring sParams = L"";
-	if (nFileType & AVS_OFFICESTUDIO_FILE_PRESENTATION)
-		sParams = L"placement=desktop&doctype=presentation";
-	else if (nFileType & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
-		sParams = L"placement=desktop&doctype=spreadsheet";
-	else if (nFileType & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
-		sParams = L"placement=desktop&mode=view";
-	else
-		sParams = L"placement=desktop";
-
+	std::wstring sParams = GetFileUrlParams(nFileType, false);
 	std::wstring sAdditionalParams = GetAppManager()->m_pInternal->m_sAdditionalUrlParams;
 	if (!sAdditionalParams.empty())
 		sParams += (L"&" + sAdditionalParams);
@@ -7713,27 +7763,21 @@ bool CCefViewEditor::OpenRecoverFile(const int& nId)
 	if (-1 == oInfo.m_nId)
 		return false;
 
-	m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX;
+	std::wstring sParams = GetFileUrlParams(oInfo.m_nFileType, oInfo.m_bIsViewer);
 
-	std::wstring sParams = L"";
+	m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX;
 	if (oInfo.m_nFileType & AVS_OFFICESTUDIO_FILE_PRESENTATION)
-	{
-		sParams = L"placement=desktop&doctype=presentation";
 		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
-	}
 	else if (oInfo.m_nFileType & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
-	{
-		sParams = L"placement=desktop&doctype=spreadsheet";
 		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX;
-	}
-	else if (oInfo.m_nFileType & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM || oInfo.m_bIsViewer)
-	{
-		sParams = L"placement=desktop&mode=view";
-	}
-	else
-	{
-		sParams = L"placement=desktop";
-	}
+	else if (oInfo.m_nFileType & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
+		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = oInfo.m_nFileType;
+	else if (oInfo.m_nFileType == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF ||
+			 oInfo.m_nFileType == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
+		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF;
+	else if (oInfo.m_nFileType == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF)
+		m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF;
+
 	std::wstring sAdditionalParams = GetAppManager()->m_pInternal->m_sAdditionalUrlParams;
 	if (!sAdditionalParams.empty())
 		sParams += (L"&" + sAdditionalParams);
@@ -7872,6 +7916,20 @@ int CCefViewEditor::GetFileFormat(const std::wstring& sFilePath)
 	if (oChecker.isOfficeFile2(sFilePath))
 		return oChecker.nFileType2;
 	return 0;
+}
+
+void CCefViewEditor::UpdatePlugins()
+{
+	if (m_pInternal->m_bIsDestroy || m_pInternal->m_bIsDestroying)
+		return;
+
+	CefRefPtr<CefBrowser> pBrowser = m_pInternal->GetBrowser();
+	if (!pBrowser)
+		return;
+
+	CefRefPtr<CefFrame> pFrame = pBrowser->GetFrame("frameEditor");
+	if (pFrame)
+		pFrame->ExecuteJavaScript("if (window.UpdateInstallPlugins) window.UpdateInstallPlugins();", pFrame->GetURL(), 0);
 }
 
 // NATIVE file converter

@@ -69,6 +69,7 @@ public:
 	std::wstring                    app_data_path;
 
 	std::wstring                    local_editors_path;
+	std::wstring                    connection_error_path;
 	std::wstring                    file_converter_path;
 	std::wstring                    recover_path;
 	std::string                     country;
@@ -167,6 +168,13 @@ public:
 	virtual void SetTimer(long delay) = 0;
 	virtual void KillTimer() = 0;
 	virtual void Exit() = 0;
+};
+
+enum class ErrorPageType
+{
+	Network   = 0,
+	Crash     = 1,
+	Undefined = 255
 };
 
 class CAscReporterData;
@@ -297,6 +305,10 @@ public:
 	static bool IsUseSystemScaling();
 
 	std::wstring GetExternalSchemeName();
+
+	static std::string GetErrorPageAddon(const ErrorPageType& type);
+
+	bool InstallPluginFromStore(const std::wstring& sName);
 
 protected:
 	int GenerateNextViewId();

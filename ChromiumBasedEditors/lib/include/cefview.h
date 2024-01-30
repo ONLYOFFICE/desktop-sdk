@@ -179,6 +179,8 @@ public:
 	std::wstring GetRecoveryDir();
 
 	static int GetFileFormat(const std::wstring& sFilePath);
+
+	void UpdatePlugins();
 };
 
 #if defined(_LINUX) && !defined(_MAC)

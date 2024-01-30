@@ -667,6 +667,9 @@ std::wstring CAscApplicationManager::GetNewFilePath(const AscEditorType& nFileFo
 		sExtension = L"pptx";
 	else if (nFileFormat == AscEditorType::etSpreadsheet)
 		sExtension = L"xlsx";
+	else if (nFileFormat == AscEditorType::etDocumentMasterForm ||
+			 nFileFormat == AscEditorType::etDocumentMasterOForm /* такого быть не должно, сейчас - только из шаблона */)
+		sExtension = L"docxf";
 
 	sFilePath += sExtension;
 	if (!NSFile::CFileBinary::Exists(sFilePath))
@@ -1238,6 +1241,46 @@ std::wstring CAscApplicationManager::GetExternalSchemeName()
 	if (m_pInternal->m_pAdditional)
 		return m_pInternal->m_pAdditional->GetExternalSchemeName();
 	return L"oo-office";
+}
+
+std::string CAscApplicationManager::GetErrorPageAddon(const ErrorPageType& type)
+{
+	std::string sAddon = "";
+	switch (type)
+	{
+	case ErrorPageType::Network:
+		sAddon = "?page=cloudfile";
+		break;
+	case ErrorPageType::Crash:
+		sAddon = "?page=fileerr";
+		break;
+	default:
+		break;
+	}
+
+	return sAddon;
+}
+
+bool CAscApplicationManager::InstallPluginFromStore(const std::wstring& sName)
+{
+	CPluginsManager oPlugins;
+	oPlugins.m_strDirectory = m_oSettings.system_plugins_path;
+	oPlugins.m_strUserDirectory = m_oSettings.user_plugins_path;
+
+	if (!oPlugins.InstallPluginFromStore(sName))
+		return false;
+
+	for (std::map<int, CCefView*>::iterator iterView = m_pInternal->m_mapViews.begin(); iterView != m_pInternal->m_mapViews.end(); iterView++)
+	{
+		CCefView* pView = iterView->second;
+		if (pView->GetType() != cvwtEditor)
+			continue;
+
+		CCefViewEditor* pEditor = (CCefViewEditor*)pView;
+		pEditor->UpdatePlugins();
+	}
+
+	return true;
 }
 
 bool NSCommon::CSystemWindowScale::g_isUseSystemScalingInit = false;
