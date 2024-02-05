@@ -36,9 +36,14 @@
 #include "../../../../core/DesktopEditor/common/Directory.h"
 #include "../../../../core/OfficeUtils/src/OfficeUtils.h"
 #include "../../../../core/DesktopEditor/common/StringBuilder.h"
+#include "./utils.h"
 
 //#include "./plugins_resources.h"
 #include <map>
+
+#ifdef GetTempPath
+#undef GetTempPath
+#endif
 
 class CExternalPluginInfo
 {
@@ -285,6 +290,27 @@ public:
 
 			NSDirectory::DeleteDirectory(sPluginDir);
 			bResult = true;
+		}
+
+		return bResult;
+	}
+
+	bool InstallPluginFromStore(const std::wstring& name)
+	{
+		std::wstring sPackageUrl = L"https://onlyoffice.github.io/sdkjs-plugins/content/" + name + L"/deploy/" + name + L".plugin";
+
+		std::wstring sTmpFile = NSDirectory::GetTempPath() + L"/temp_asc_plugin.plugin";
+		if (NSFile::CFileBinary::Exists(sTmpFile))
+			NSFile::CFileBinary::Remove(sTmpFile);
+
+		CFileDownloaderWrapper oDownloader(sPackageUrl, sTmpFile);
+		oDownloader.DownloadSync();
+
+		bool bResult = false;
+		if (NSFile::CFileBinary::Exists(sTmpFile))
+		{
+			bResult = AddPlugin(sTmpFile);
+			NSFile::CFileBinary::Remove(sTmpFile);
 		}
 
 		return bResult;

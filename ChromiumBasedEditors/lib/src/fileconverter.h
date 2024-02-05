@@ -73,6 +73,7 @@ static bool IsFormatSupportCrypto(const int& nFormat)
 	case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX:
 	case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF:
 	case AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM:
+	case AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF:
 	case AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX:
 	case AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX:
 	case AVS_OFFICESTUDIO_FILE_DOCUMENT_ODT:
@@ -115,6 +116,9 @@ public:
 	std::wstring m_sPassword;
 	std::wstring m_sSaveJsonParams;
 
+	// for change password in pdf
+	std::wstring m_sOldPassword;
+
 	std::wstring m_sDocumentInfo;
 
 public:
@@ -144,6 +148,8 @@ public:
 		m_sPassword = oSrc.m_sPassword;
 		m_sDocumentInfo = oSrc.m_sDocumentInfo;
 		m_sSaveJsonParams = oSrc.m_sSaveJsonParams;
+
+		m_sOldPassword = oSrc.m_sOldPassword;
 		return *this;
 	}
 };
@@ -694,6 +700,8 @@ public:
 				eType = AscEditorType::etSpreadsheet;
 			else if (m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
 				eType = AscEditorType::etPdf;
+			else if (m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF)
+				eType = AscEditorType::etPdf;
 
 			pData->put_Type((int)eType);
 
@@ -883,10 +891,10 @@ public:
 
 		RELEASEOBJECT(m_pVerifier);
 		if (m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX ||
-				m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX ||
-				m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX ||
-				m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF ||
-				m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
+			m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX ||
+			m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX ||
+			m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF ||
+			m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM)
 		{
 			COfficeFileFormatChecker oChecker;
 			oChecker.isOfficeFile(sFile);
@@ -1184,6 +1192,13 @@ public:
 			oBuilder.WriteString(std::to_wstring(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF));
 			sParams += L"<m_bIsPDFA>true</m_bIsPDFA>";
 		}
+		else if (AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF == m_oInfo.m_nCurrentFileFormat &&
+			(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF == m_nTypeEditorFormat ||
+			 AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM == m_nTypeEditorFormat ||
+			 AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF == m_nTypeEditorFormat))
+		{
+			oBuilder.WriteString(std::to_wstring(AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF));
+		}
 		else
 		{
 			oBuilder.WriteString(std::to_wstring(m_oInfo.m_nCurrentFileFormat));
@@ -1202,6 +1217,15 @@ public:
 		oBuilder.WriteEncodeXmlString(m_pManager->m_oSettings.fonts_cache_info_path);
 		oBuilder.WriteString(L"/AllFonts.js</m_sAllFontsPath><m_nCsvTxtEncoding>46</m_nCsvTxtEncoding><m_nCsvDelimiter>4</m_nCsvDelimiter>");
 		oBuilder.WriteString(sParams);
+
+		if (!m_oInfo.m_sOldPassword.empty() &&
+			((m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM) || !m_sOriginalFileNameCrossPlatform.empty()))
+		{
+			oBuilder.WriteString(L"<m_sPassword>");
+			oBuilder.WriteEncodeXmlString(m_oInfo.m_sOldPassword);
+			oBuilder.WriteString(L"</m_sPassword>");
+			m_oInfo.m_sOldPassword = L"";
+		}
 
 		if (!m_oInfo.m_sPassword.empty() && IsFormatSupportCrypto(m_oInfo.m_nCurrentFileFormat))
 		{
@@ -1295,7 +1319,6 @@ public:
 				NSFile::CFileBinary::Remove(*i);
 		}
 
-		m_sOriginalFileNameCrossPlatform = L"";
 		m_bIsRetina = false;
 
 		if (!m_pManager->m_pInternal->m_bDebugInfoSupport)

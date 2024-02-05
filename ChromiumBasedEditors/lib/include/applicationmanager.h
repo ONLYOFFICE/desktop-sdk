@@ -170,6 +170,13 @@ public:
 	virtual void Exit() = 0;
 };
 
+enum class ErrorPageType
+{
+	Network   = 0,
+	Crash     = 1,
+	Undefined = 255
+};
+
 class CAscReporterData;
 class CAscApplicationManager_Private;
 namespace NSFonts { class IApplicationFonts; }
@@ -298,6 +305,10 @@ public:
 	static bool IsUseSystemScaling();
 
 	std::wstring GetExternalSchemeName();
+
+	static std::string GetErrorPageAddon(const ErrorPageType& type);
+
+	bool InstallPluginFromStore(const std::wstring& sName);
 
 protected:
 	int GenerateNextViewId();

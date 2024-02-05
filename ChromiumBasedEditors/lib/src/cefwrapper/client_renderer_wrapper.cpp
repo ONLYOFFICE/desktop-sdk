@@ -1411,8 +1411,10 @@ else \n\
 					CefRefPtr<CefFrame> _frame = CefV8Context::GetCurrentContext()->GetFrame();
 					_frame->ExecuteJavaScript(
 						"(function() { try { \
-DE.controllers.Main.DisableMailMerge(); \
-DE.controllers.Main.DisableVersionHistory(); \
+var control = window.DE || window.PE || window.SSE; \
+var main = control.controllers.Main; \
+if (main.DisableMailMerge) main.DisableMailMerge(); \
+if (main.DisableVersionHistory) main.DisableVersionHistory(); \
 } catch(err){} })();",
 						_frame->GetURL(), 0);
 				}
@@ -1659,6 +1661,10 @@ DE.controllers.Main.DisableVersionHistory(); \
 				if (!NSDirectory::Exists(m_sLocalFileFolderWithoutFile + L"/changes"))
 					NSDirectory::CreateDirectory(m_sLocalFileFolderWithoutFile + L"/changes");
 
+				// for pdf
+				if (!NSDirectory::Exists(m_sLocalFileFolderWithoutFile + L"/media"))
+					NSDirectory::CreateDirectory(m_sLocalFileFolderWithoutFile + L"/media");
+
 				std::vector<std::wstring> arMedia = NSDirectory::GetFiles(m_sLocalFileFolderWithoutFile + L"/media");
 				m_nLocalImagesNextIndex = (int)arMedia.size() + 1;
 
@@ -1803,6 +1809,7 @@ DE.controllers.Main.DisableVersionHistory(); \
 				message->GetArgumentList()->SetString(2, ((arguments.size() > 2) && arguments[2]->IsString()) ? arguments[2]->GetStringValue() : "");
 				message->GetArgumentList()->SetInt(3, (arguments.size() > 3) ? arguments[3]->GetIntValue() : 0);
 				message->GetArgumentList()->SetString(4, ((arguments.size() > 4) && arguments[4]->IsString()) ? arguments[4]->GetStringValue() : "");
+				message->GetArgumentList()->SetString(5, ((arguments.size() > 5) && arguments[5]->IsString()) ? arguments[5]->GetStringValue() : "");
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 				return true;
 			}
