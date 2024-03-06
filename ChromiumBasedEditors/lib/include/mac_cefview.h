@@ -35,77 +35,33 @@
 #include "./cefview.h"
 #import <Cocoa/Cocoa.h>
 
-class CCefViewWrapper : public CCefViewWidgetImpl
+class DESKTOP_DECL CCefViewWrapper : public CCefViewWidgetImpl
 {
 public:
     CCefView* m_pCefView;
     NSView* m_pParent;
 
 public:
-    CCefViewWrapper(NSView* pView) : CCefViewWidgetImpl()
-    {
-        m_pParent = pView;
-        m_pCefView = NULL;
+	CCefViewWrapper(NSView* pView);
+	virtual ~CCefViewWrapper();
 
-        cef_handle = (__bridge WindowHandleId)m_pParent;
-    }
-    virtual ~CCefViewWrapper()
-    {
-    }
+	void SetBackgroundCefColor(unsigned char r, unsigned char g, unsigned char b);
 
-    void SetBackgroundCefColor(unsigned char r, unsigned char g, unsigned char b)
-    {
-    }
+	CCefView* GetCefView();
 
-    CCefView* GetCefView()
-    {
-        return m_pCefView;
-    }
-
-    void focusInEvent()
-    {
-        if (NULL != m_pCefView)
-            m_pCefView->focus();
-    }
-
-    void resizeEvent()
-    {
-        UpdateGeometry();
-        if (NULL != m_pCefView)
-            m_pCefView->resizeEvent();
-    }
-
-    void moveEvent()
-    {
-        UpdateGeometry();
-        if (NULL != m_pCefView)
-            m_pCefView->moveEvent();
-    }
+	void focusInEvent();
+	void resizeEvent();
+	void moveEvent();
 
 public:
-    virtual void UpdateSize()
-    {
-        NSView* child = nil;
+	virtual void OnMediaStart(NSEditorApi::CAscExternalMedia* data);
+	virtual void OnMediaEnd();
 
-        if ([[m_pParent subviews] count] > 0)
-            child = [m_pParent subviews][0];
-
-        NSRect childRect = m_pParent.frame;
-        childRect.origin.x = 0;
-        childRect.origin.y = 0;
-        child.frame = childRect;
-    }
+public:
+	virtual void UpdateSize();
 
 protected:
-    void UpdateGeometry()
-    {
-        //CGFloat koef = [[NSScreen mainScreen] backingScaleFactor];
-        CGFloat koef = 1;
-        cef_x = 0;
-        cef_y = 0;
-        cef_width = (int)(m_pParent.frame.size.width * koef);
-        cef_height = (int)(m_pParent.frame.size.height * koef);
-    }
+	void UpdateGeometry();
 };
 
 #endif

@@ -157,12 +157,20 @@ SOURCES += \
 
 core_mac {
     LIBS += -framework Security
+	LIBS += -framework AVFoundation
 
-    HEADERS += ./include/mac_cefview.h
+	HEADERS += \
+		./include/mac_cefview.h \
+		./include/mac_application.h \
+		./include/mac_cefviewmedia.h
+
+	OBJECTIVE_SOURCES += $$CORE_ROOT_DIR/DesktopEditor/common/Mac/NSString+StringUtils.mm
 
     OBJECTIVE_SOURCES += \
         $$PWD/src/widget_impl.mm \
-        $$PWD/src/mac_application.mm
+		$$PWD/src/mac_application.mm \
+		$$PWD/src/mac_cefview.mm \
+		$$PWD/src/mac_cefviewmedia.mm
 
     use_v8:DEFINES += OLD_MACOS_SYSTEM
 

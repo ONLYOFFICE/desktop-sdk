@@ -7681,8 +7681,11 @@ double CCefView::GetDeviceScale()
 	Core_GetMonitorRawDpi(hwnd, &_dx, &_dy);
 	dDeviceScale = Core_GetMonitorScale(_dx, _dy);
 #else
+// TODO: fix GetDpiCheker() for mac
+#ifndef MAC
 	int nDeviceScaleTmp = CAscApplicationManager::GetDpiChecker()->GetWidgetImplDpi(GetWidgetImpl(), &_dx, &_dy);
 	dDeviceScale = CAscApplicationManager::GetDpiChecker()->GetScale(_dx, _dy);
+#endif
 #endif
 
 	return dDeviceScale;
