@@ -22,7 +22,7 @@ void CCefViewMedia::OnMediaStart(NSEditorApi::CAscExternalMedia* data)
 		m_pPlayer = [AVPlayer playerWithURL:url];
 		AVPlayerLayer* layer = [AVPlayerLayer playerLayerWithPlayer:m_pPlayer];
 
-		m_pMediaView = [[NSView alloc] initWithFrame:NSMakeRect(data->get_BoundsX(), data->get_BoundsY(), data->get_BoundsW(), data->get_BoundsH())];
+		m_pMediaView = [[NSView alloc] initWithFrame:NSMakeRect(data->get_BoundsX(), cef_height - data->get_BoundsH() - data->get_BoundsY(), data->get_BoundsW(), data->get_BoundsH())];
 		[m_pMediaView setLayer:layer];
 
 		[m_pParent addSubview:m_pMediaView positioned:NSWindowAbove relativeTo:nil];
