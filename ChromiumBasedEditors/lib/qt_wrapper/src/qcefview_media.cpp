@@ -49,7 +49,7 @@ void QCefView_SetDPI(QWidget* w, const double& v)
 	QCefView_SetProperty(w, p);
 }
 
-QCefView_Media::QCefView_Media(QWidget* parent) : QCefView(parent)
+QCefView_Media::QCefView_Media(QWidget* parent, const QSize& size) : QCefView(parent, size)
 {
 	m_pMediaView = NULL;
 }
