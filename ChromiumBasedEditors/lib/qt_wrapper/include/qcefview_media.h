@@ -41,7 +41,7 @@ class DESKTOP_DECL QCefView_Media : public QCefView
 	Q_OBJECT
 
 public:
-	QCefView_Media(QWidget* parent);
+	QCefView_Media(QWidget* parent, const QSize& size = QSize());
 	virtual ~QCefView_Media();
 
 	virtual void OnMediaStart(NSEditorApi::CAscExternalMedia* data);
