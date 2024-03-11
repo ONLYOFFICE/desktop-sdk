@@ -5,6 +5,14 @@
 
 #import <AVFoundation/AVFoundation.h>
 
+@interface NSMediaView : NSView
+{
+	NSView* m_pPlayerView;
+	NSRect m_oFrame;
+}
+- (void) setPlayerLayer:(AVPlayerLayer*)layer;
+@end
+
 class DESKTOP_DECL CCefViewMedia : public CCefViewWrapper
 {
 public:
@@ -17,7 +25,7 @@ public:
 
 private:
 	AVPlayer* m_pPlayer;
-	NSView* m_pMediaView;
+	NSMediaView* m_pMediaView;
 };
 
 #endif	// MAC_CEF_VIEW_MEDIA_H
