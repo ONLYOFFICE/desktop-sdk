@@ -3490,9 +3490,7 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
 			else if (name == "IsSupportMedia")
 			{
 				bool bIsLocal = IsLocalFile(true);
-#ifdef _MAC
-				bIsLocal = false;
-#endif
+
 				retval = CefV8Value::CreateBool(bIsLocal);
 				return true;
 			}
