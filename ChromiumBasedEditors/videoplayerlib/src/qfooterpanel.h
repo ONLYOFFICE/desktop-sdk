@@ -12,7 +12,7 @@ class QFooterPanel : public QWidget
 {
 	Q_OBJECT
 public:
-	explicit QFooterPanel(QWidget *parent = 0);
+	explicit QFooterPanel(QWidget *parent = nullptr, bool bIsPresentationMode = false);
 
 	virtual void resizeEvent(QResizeEvent* e);
 
@@ -32,6 +32,7 @@ public:
 
 	bool m_bIsEnabledPlayList;
 	bool m_bIsEnabledFullscreen;
+	bool m_bIsPresentationMode;
 
 public:
 	void SetPlayPauseIcon(bool bIsPlay);

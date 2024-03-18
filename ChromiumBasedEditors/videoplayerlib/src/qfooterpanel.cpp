@@ -5,9 +5,10 @@
 #include "qascvideoview.h"
 #include "qascvideowidget.h"
 
-QFooterPanel::QFooterPanel(QWidget *parent) : QWidget(parent)
+QFooterPanel::QFooterPanel(QWidget* parent, bool bIsPresentationMode) : QWidget(parent)
 {
 	m_nHeigth = 40;
+	m_bIsPresentationMode = bIsPresentationMode;
 
 	m_pPlayPause = new QIconPushButton(this, true, "play", "play-active");
 	m_pVolume = new QIconPushButton(this, true, "volume", "volume-active");
@@ -27,16 +28,21 @@ QFooterPanel::QFooterPanel(QWidget *parent) : QWidget(parent)
 	m_bIsEnabledPlayList = true;
 	m_bIsEnabledFullscreen = true;
 
-	this->setMouseTracking(true);
-	m_pSlider->setMouseTracking(true);
-	m_pFullscreen->setMouseTracking(true);
-	m_pPlaylist->setMouseTracking(true);
-	m_pVolume->setMouseTracking(true);
-	m_pPlayPause->setMouseTracking(true);
+	if (!bIsPresentationMode)
+	{
+		this->setMouseTracking(true);
+		m_pSlider->setMouseTracking(true);
+		m_pFullscreen->setMouseTracking(true);
+		m_pPlaylist->setMouseTracking(true);
+		m_pVolume->setMouseTracking(true);
+		m_pPlayPause->setMouseTracking(true);
+	}
 }
 
 void QFooterPanel::resizeEvent(QResizeEvent* e)
 {
+	QWidget::resizeEvent(e);
+
 	double dDpi = QWidget_GetDPI(this);
 
 	int nWidth = this->width();
@@ -74,15 +80,18 @@ void QFooterPanel::paintEvent(QPaintEvent *)
 
 void QFooterPanel::mouseMoveEvent(QMouseEvent* event)
 {
-	QAscVideoView* pView = static_cast<QAscVideoView*>(this->parentWidget());
-	if (pView->getMainWindowFullScreen())
+	if (!m_bIsPresentationMode)
 	{
-		// stop cursor hiding timer
-		if (pView->m_pInternal->m_oCursorTimer.isActive())
-			pView->m_pInternal->m_oCursorTimer.stop();
-		// stop footer hiding timer
-		if (pView->m_pInternal->m_oFooterTimer.isActive())
-			pView->m_pInternal->m_oFooterTimer.stop();
+		QAscVideoView* pView = static_cast<QAscVideoView*>(this->parentWidget());
+		if (pView->getMainWindowFullScreen())
+		{
+			// stop cursor hiding timer
+			if (pView->m_pInternal->m_oCursorTimer.isActive())
+				pView->m_pInternal->m_oCursorTimer.stop();
+			// stop footer hiding timer
+			if (pView->m_pInternal->m_oFooterTimer.isActive())
+				pView->m_pInternal->m_oFooterTimer.stop();
+		}
 	}
 	event->accept();
 }

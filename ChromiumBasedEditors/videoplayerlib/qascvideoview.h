@@ -32,7 +32,7 @@ class VIDEO_LIB_EXPORT QAscVideoView : public QWidget
 {
 	Q_OBJECT
 public:
-	explicit QAscVideoView(QWidget *parent, int r, int g, int b);
+	explicit QAscVideoView(QWidget *parent, int r, int g, int b, bool bIsPresentationMode = false);
 	virtual ~QAscVideoView();
 
 public:
@@ -44,7 +44,6 @@ public:
 	virtual void dropEvent(QDropEvent *event);
 
 	void mousePressEvent(QMouseEvent *event);
-	void mouseReleaseEvent(QMouseEvent *event);
 
 	void keyPressEvent(QKeyEvent *event);
 	bool eventFilter(QObject *watched, QEvent *event);
@@ -58,22 +57,23 @@ public:
 	void ToggleMute();
 	void Volume();
 	void Fullscreen();
-	void Playlist(double duration = 100);
-	void Footer(double duration = 150);
+	void Playlist(double duration = 100);	// toggle playlist display
+	void Footer(double duration = 150);		// toggle footer display
 	void SavePlayListAddons(const QString& sAddon);
+
+	int GetFooterHeight();
+	void SetFooterGeometry(int ax, int ay, int aw, int ah);
 
 	void AddFilesToPlaylist(QStringList& files, const bool isStart = false);
 	void LoadPlaylist();
 	void SavePlaylist();
 
-	void setFooterVisible(bool isVisible);
-
 	void setPlayListUsed(bool isUsed);
 	void setFullScreenUsed(bool isUsed);
-	void setPresentationMode(bool isPresentationMode);
 	void setMedia(QString sMedia);
 
 	void Stop();
+	void RemoveFromPresentation();
 
 	void UpdatePlayPauseIcon();
 	void UpdateFullscreenIcon();

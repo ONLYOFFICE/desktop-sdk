@@ -64,12 +64,12 @@ void QCefView_Media::OnMediaStart(NSEditorApi::CAscExternalMedia* data)
 	if (m_pMediaView)
 		return;
 
-	m_pMediaView = new QAscVideoView(this, 49, 52, 55);
+	m_pMediaView = new QAscVideoView(this, 49, 52, 55, true);
 	m_pMediaView->setPlayListUsed(false);
 	m_pMediaView->setFullScreenUsed(false);
-	m_pMediaView->setPresentationMode(true);
 	QCefView_SetDPI(this, m_pCefView->GetDeviceScale());
 	m_pMediaView->setGeometry(data->get_BoundsX(), data->get_BoundsY(), data->get_BoundsW(), data->get_BoundsH());
+	m_pMediaView->SetFooterGeometry(data->get_BoundsX(), data->get_BoundsY() + data->get_BoundsH() + 10, data->get_BoundsW(), m_pMediaView->GetFooterHeight());
 
 	if (m_pCefView && m_pCefView->IsPresentationReporter())
 		m_pMediaView->ToggleMute();
@@ -86,10 +86,8 @@ void QCefView_Media::OnMediaEnd(bool isFromResize)
 	if (!m_pMediaView)
 		return;
 
-	m_pMediaView->hide();
-	m_pMediaView->Stop();
-	m_pMediaView->deleteLater();
-	m_pMediaView = NULL;
+	m_pMediaView->RemoveFromPresentation();
+	m_pMediaView = nullptr;
 
 	if (isFromResize)
 	{
