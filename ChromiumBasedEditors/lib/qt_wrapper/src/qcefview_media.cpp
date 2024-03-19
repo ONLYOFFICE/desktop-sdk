@@ -69,7 +69,7 @@ void QCefView_Media::OnMediaStart(NSEditorApi::CAscExternalMedia* data)
 	m_pMediaView->setFullScreenUsed(false);
 	QCefView_SetDPI(this, m_pCefView->GetDeviceScale());
 	m_pMediaView->setGeometry(data->get_BoundsX(), data->get_BoundsY(), data->get_BoundsW(), data->get_BoundsH());
-	m_pMediaView->SetFooterGeometry(data->get_BoundsX(), data->get_BoundsY() + data->get_BoundsH() + 10, data->get_BoundsW(), m_pMediaView->GetFooterHeight());
+	m_pMediaView->SetFooterGeometry(data->get_BoundsX(), data->get_BoundsY() + data->get_BoundsH() + 12, data->get_BoundsW(), m_pMediaView->GetFooterHeight());
 
 	if (m_pCefView && m_pCefView->IsPresentationReporter())
 		m_pMediaView->ToggleMute();

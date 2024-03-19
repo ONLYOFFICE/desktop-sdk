@@ -12,7 +12,7 @@ class QFooterPanel : public QWidget
 {
 	Q_OBJECT
 public:
-	explicit QFooterPanel(QWidget *parent = nullptr, bool bIsPresentationMode = false);
+	explicit QFooterPanel(QWidget* parent, QWidget* pVideoView = nullptr);
 
 	virtual void resizeEvent(QResizeEvent* e);
 
@@ -28,11 +28,21 @@ public:
 
 	QVideoSlider* m_pSlider;
 
-	int m_nHeigth;
+	QWidget* m_pVideoView;
 
 	bool m_bIsEnabledPlayList;
 	bool m_bIsEnabledFullscreen;
-	bool m_bIsPresentationMode;
+
+	// constants
+	const int c_nHeight = 40;
+
+	const int c_nVolumeControlWidth = 60;
+	const int c_nVolumeControlHeight = 160;
+
+	const int c_nVolumeSliderX = 15;
+	const int c_nVolumeSliderY = 20;
+	const int c_nVolumeSliderWidth = 30;
+	const int c_nVolumeSliderHeight = 120;
 
 public:
 	void SetPlayPauseIcon(bool bIsPlay);

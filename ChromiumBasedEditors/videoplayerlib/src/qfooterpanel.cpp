@@ -5,10 +5,10 @@
 #include "qascvideoview.h"
 #include "qascvideowidget.h"
 
-QFooterPanel::QFooterPanel(QWidget* parent, bool bIsPresentationMode) : QWidget(parent)
+QFooterPanel::QFooterPanel(QWidget* parent, QWidget* pVideoView) : QWidget(parent)
 {
-	m_nHeigth = 40;
-	m_bIsPresentationMode = bIsPresentationMode;
+	m_pVideoView = pVideoView ? pVideoView : parent;
+	QAscVideoView* pView = static_cast<QAscVideoView*>(m_pVideoView);
 
 	m_pPlayPause = new QIconPushButton(this, true, "play", "play-active");
 	m_pVolume = new QIconPushButton(this, true, "volume", "volume-active");
@@ -28,7 +28,7 @@ QFooterPanel::QFooterPanel(QWidget* parent, bool bIsPresentationMode) : QWidget(
 	m_bIsEnabledPlayList = true;
 	m_bIsEnabledFullscreen = true;
 
-	if (!bIsPresentationMode)
+	if (!pView->m_pInternal->m_bIsPresentationMode)
 	{
 		this->setMouseTracking(true);
 		m_pSlider->setMouseTracking(true);
@@ -68,6 +68,27 @@ void QFooterPanel::resizeEvent(QResizeEvent* e)
 
 	m_pVolume->setGeometry(nRight, nY, nButW, nButW); nRight -= nBetweenButtons;
 	m_pSlider->setGeometry(nLeft, nY, nRight - nLeft, nButW);
+
+	// volume controls
+	QAscVideoView* pView = static_cast<QAscVideoView*>(m_pVideoView);
+
+	// set volume control geometry
+	int nVolumeControlW = QWidget_ScaleDPI(c_nVolumeControlWidth, dDpi);
+	int nVolumeControlH = QWidget_ScaleDPI(c_nVolumeControlHeight, dDpi);
+	int nVolumeControlX = this->x() + m_pVolume->x() + nButW / 2 - nVolumeControlW / 2;
+	int nVolumeControlY = this->y() + m_pVolume->y() - nVolumeControlH - nBetweenButtons;
+
+	QWidget* pVolumeControl = pView->m_pInternal->m_pVolumeControl;
+	pVolumeControl->setGeometry(nVolumeControlX, nVolumeControlY, nVolumeControlW, nVolumeControlH);
+
+	// set volume slider geometry
+	int nVolumeSliderW = QWidget_ScaleDPI(c_nVolumeSliderWidth, dDpi);
+	int nVolumeSliderH = QWidget_ScaleDPI(c_nVolumeSliderHeight, dDpi);
+	int nVolumeSliderX = QWidget_ScaleDPI(c_nVolumeSliderX, dDpi);
+	int nVolumeSliderY = QWidget_ScaleDPI(c_nVolumeSliderY, dDpi);
+
+	QVideoSlider* pVolumeControlSlider = pView->m_pInternal->m_pVolumeControlV;
+	pVolumeControlSlider->setGeometry(nVolumeSliderX, nVolumeSliderY, nVolumeSliderW, nVolumeSliderH);
 }
 
 void QFooterPanel::paintEvent(QPaintEvent *)
@@ -80,18 +101,15 @@ void QFooterPanel::paintEvent(QPaintEvent *)
 
 void QFooterPanel::mouseMoveEvent(QMouseEvent* event)
 {
-	if (!m_bIsPresentationMode)
+	QAscVideoView* pView = static_cast<QAscVideoView*>(m_pVideoView);
+	if (pView->getMainWindowFullScreen())
 	{
-		QAscVideoView* pView = static_cast<QAscVideoView*>(this->parentWidget());
-		if (pView->getMainWindowFullScreen())
-		{
-			// stop cursor hiding timer
-			if (pView->m_pInternal->m_oCursorTimer.isActive())
-				pView->m_pInternal->m_oCursorTimer.stop();
-			// stop footer hiding timer
-			if (pView->m_pInternal->m_oFooterTimer.isActive())
-				pView->m_pInternal->m_oFooterTimer.stop();
-		}
+		// stop cursor hiding timer
+		if (pView->m_pInternal->m_oCursorTimer.isActive())
+			pView->m_pInternal->m_oCursorTimer.stop();
+		// stop footer hiding timer
+		if (pView->m_pInternal->m_oFooterTimer.isActive())
+			pView->m_pInternal->m_oFooterTimer.stop();
 	}
 	event->accept();
 }

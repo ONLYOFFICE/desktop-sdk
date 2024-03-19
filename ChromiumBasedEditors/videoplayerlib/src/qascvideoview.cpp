@@ -65,18 +65,11 @@ QAscVideoView::QAscVideoView(QWidget *parent, int r, int g, int b, bool bIsPrese
 	m_pInternal->m_bIsPresentationMode = bIsPresentationMode;
 
 	QWidget_setBackground(this, 0x22, 0x22, 0x22);
-	if (bIsPresentationMode)
-	{
-		// create footer as a separated from QAscVideoView widget
-		m_pInternal->m_pFooter = new QFooterPanel(parent, true);
-	}
-	else
-	{
-		// create footer as a child of QAscVideoView
-		m_pInternal->m_pFooter = new QFooterPanel(this);
-	}
+	// create footer as a separated from QAscVideoView widget
+	m_pInternal->m_pFooter = new QFooterPanel(parent, this);
 	QWidget_setBackground(m_pInternal->m_pFooter, r, g, b);
 
+	// TODO: remove
 	this->setStyleSheet("QFrame {border: none;}");
 
 	QWidget* pParentVideo = new QVideoWidgetParent(this);
@@ -95,14 +88,13 @@ QAscVideoView::QAscVideoView(QWidget *parent, int r, int g, int b, bool bIsPrese
 	m_pInternal->m_pPlaylist->m_pAdd->installEventFilter(this);
 	m_pInternal->m_pPlaylist->m_pClear->installEventFilter(this);
 
-	m_pInternal->m_pVolumeControl = new QWidget(this);
+	// create volume control as a separated from QAscVideoView widget
+	m_pInternal->m_pVolumeControl = new QWidget(parent);
 	m_pInternal->m_pVolumeControl->setHidden(true);
-	m_pInternal->m_pVolumeControl->setGeometry(0, 0, 60, 160);
 	m_pInternal->m_pVolumeControl->setStyleSheet("border: none; background-color:#111111");
 
 	m_pInternal->m_pVolumeControlV = new QVideoSlider(m_pInternal->m_pVolumeControl);
 	m_pInternal->m_pVolumeControlV->setOrientation(Qt::Vertical);
-	m_pInternal->m_pVolumeControlV->setGeometry(15, 20, 30, 120);
 	m_pInternal->m_pVolumeControlV->setMinimum(0);
 	m_pInternal->m_pVolumeControlV->setMaximum(100);
 	m_pInternal->m_pVolumeControlV->setValue(50);
@@ -136,7 +128,7 @@ QAscVideoView::QAscVideoView(QWidget *parent, int r, int g, int b, bool bIsPrese
 
 	setAcceptDrops(true);
 
-	if (!bIsPresentationMode)
+	if (!m_pInternal->m_bIsPresentationMode)
 	{
 		this->setMouseTracking(true);
 		m_pInternal->m_pPlayer->parentWidget()->setMouseTracking(true);
@@ -174,59 +166,42 @@ void QAscVideoView::resizeEvent(QResizeEvent* e)
 
 	QSize size = this->size();
 	double dDpi = QWidget_GetDPI(this);
-	int nFooterH = GetFooterHeight();
 
-	if (getMainWindowFullScreen())
+	if (m_pInternal->m_bIsEnabledFullscreen)
 	{
-		m_pInternal->m_pFooter->raise();
-		nFooterH = 0;
-		m_pInternal->m_bIsShowingFooter = false;
-		// start cursor hiding timer
-		m_pInternal->m_oCursorTimer.start(m_pInternal->c_nCursorHidingDelay);
+		if (getMainWindowFullScreen())
+		{
+			m_pInternal->m_pFooter->raise();
+			m_pInternal->m_bIsShowingFooter = false;
+			// start cursor hiding timer
+			m_pInternal->m_oCursorTimer.start(m_pInternal->c_nCursorHidingDelay);
+		}
+		else
+		{
+			// show cursor
+			setCursor(Qt::ArrowCursor);
+			// stop all hiding timers
+			m_pInternal->m_oCursorTimer.stop();
+			m_pInternal->m_oFooterTimer.stop();
+		}
 	}
-	else
-	{
-		// show cursor
-		setCursor(Qt::ArrowCursor);
-		// stop all hiding timers
-		m_pInternal->m_oCursorTimer.stop();
-		m_pInternal->m_oFooterTimer.stop();
-	}
-
-	if (!m_pInternal->m_bIsPresentationMode)
-		m_pInternal->m_pFooter->setGeometry(0, size.height() - nFooterH, size.width(), nFooterH);
 
 	int nViewHeight = size.height();
-
-	if (!m_pInternal->m_bIsPresentationMode)
-		nViewHeight -= nFooterH;
 
 	m_pInternal->m_pPlayer->parentWidget()->setGeometry(0, 0, width(), nViewHeight);
 	m_pInternal->m_pPlayer->setGeometry(0, 0, width(), nViewHeight);
 
-	int nVolumeVHeight = QWidget_ScaleDPI(160, dDpi);
-	if (nVolumeVHeight > nViewHeight)
-		nVolumeVHeight = nViewHeight;
+	if (m_pInternal->m_bIsEnabledPlayList)
+	{
+		if (getMainWindowFullScreen())
+			nViewHeight -= GetFooterHeight();
 
-	int nVolumeVHeightSlider = nVolumeVHeight - QWidget_ScaleDPI(40, dDpi);
-	if (30 > nVolumeVHeightSlider)
-		nVolumeVHeightSlider = 30;
-
-	m_pInternal->m_pVolumeControl->setGeometry(0, 0, QWidget_ScaleDPI(60, dDpi), nVolumeVHeight);
-	m_pInternal->m_pVolumeControlV->setGeometry(QWidget_ScaleDPI(15, dDpi), QWidget_ScaleDPI(20, dDpi), QWidget_ScaleDPI(30, dDpi), nVolumeVHeightSlider);
-
-	int nOffsetVolume = QWidget_ScaleDPI(135, dDpi);
-	if (!m_pInternal->m_bIsEnabledPlayList)
-		nOffsetVolume -= QWidget_ScaleDPI(35, dDpi);
-	if (!m_pInternal->m_bIsEnabledFullscreen)
-		nOffsetVolume -= QWidget_ScaleDPI(35, dDpi);
-
-	if (getMainWindowFullScreen())
-		nViewHeight -= GetFooterHeight();
-
-	m_pInternal->m_pVolumeControl->move(width() - nOffsetVolume, nViewHeight - m_pInternal->m_pVolumeControl->height());
-	m_pInternal->m_pVolumeControlV->resizeEvent(NULL);
-	m_pInternal->m_pPlaylist->setGeometry(m_pInternal->m_bIsShowingPlaylist ? (width() - QWidget_ScaleDPI(250, dDpi)) : width(), 0, QWidget_ScaleDPI(250, dDpi), nViewHeight);
+		m_pInternal->m_pPlaylist->setGeometry(m_pInternal->m_bIsShowingPlaylist ? (width() - QWidget_ScaleDPI(250, dDpi)) : width(), 0, QWidget_ScaleDPI(250, dDpi), nViewHeight);
+	}
+	else
+	{
+		m_pInternal->m_pPlaylist->hide();
+	}
 }
 
 void QAscVideoView::paintEvent(QPaintEvent *)
@@ -516,6 +491,9 @@ void QAscVideoView::RemoveFromPresentation()
 
 	m_pInternal->m_pFooter->hide();
 	m_pInternal->m_pFooter->deleteLater();
+
+	m_pInternal->m_pVolumeControl->hide();
+	m_pInternal->m_pVolumeControl->deleteLater();
 }
 
 void QAscVideoView::UpdatePlayPauseIcon()
@@ -602,7 +580,10 @@ void QAscVideoView::slotPlayerStateChanged(QMediaPlayer_State state)
 		{
 			m_pInternal->m_bIsPresentationModeMediaTypeSended = true;
 			if (!m_pInternal->m_pPlayer->isAudio() && !m_pInternal->m_bIsDestroy)
+			{
 				this->show();
+				m_pInternal->m_pFooter->show();
+			}
 		}
 #endif
 	}
@@ -636,7 +617,7 @@ QWidget* QAscVideoView::getMainWindow()
 
 int QAscVideoView::GetFooterHeight()
 {
-	return QWidget_ScaleDPI(m_pInternal->m_pFooter->m_nHeigth, QWidget_GetDPI(this));
+	return QWidget_ScaleDPI(m_pInternal->m_pFooter->c_nHeight, QWidget_GetDPI(this));
 }
 
 void QAscVideoView::SetFooterGeometry(int ax, int ay, int aw, int ah)
