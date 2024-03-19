@@ -69,9 +69,6 @@ QAscVideoView::QAscVideoView(QWidget *parent, int r, int g, int b, bool bIsPrese
 	m_pInternal->m_pFooter = new QFooterPanel(parent, this);
 	QWidget_setBackground(m_pInternal->m_pFooter, r, g, b);
 
-	// TODO: remove
-	this->setStyleSheet("QFrame {border: none;}");
-
 	QWidget* pParentVideo = new QVideoWidgetParent(this);
 	pParentVideo->setGeometry(0, 0, width(), height());
 
@@ -618,6 +615,16 @@ QWidget* QAscVideoView::getMainWindow()
 int QAscVideoView::GetFooterHeight()
 {
 	return QWidget_ScaleDPI(m_pInternal->m_pFooter->c_nHeight, QWidget_GetDPI(this));
+}
+
+int QAscVideoView::GetFooterMinWidth()
+{
+	return QWidget_ScaleDPI(m_pInternal->m_pFooter->c_nMinWidth, QWidget_GetDPI(this));
+}
+
+int QAscVideoView::GetFooterMaxWidth()
+{
+	return QWidget_ScaleDPI(m_pInternal->m_pFooter->c_nMaxWidth, QWidget_GetDPI(this));
 }
 
 void QAscVideoView::SetFooterGeometry(int ax, int ay, int aw, int ah)

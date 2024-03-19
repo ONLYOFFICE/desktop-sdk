@@ -62,6 +62,8 @@ public:
 	void SavePlayListAddons(const QString& sAddon);
 
 	int GetFooterHeight();
+	int GetFooterMinWidth();
+	int GetFooterMaxWidth();
 	void SetFooterGeometry(int ax, int ay, int aw, int ah);
 
 	void AddFilesToPlaylist(QStringList& files, const bool isStart = false);

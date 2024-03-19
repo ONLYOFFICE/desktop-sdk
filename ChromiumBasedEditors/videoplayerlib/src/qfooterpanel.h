@@ -35,6 +35,8 @@ public:
 
 	// constants
 	const int c_nHeight = 40;
+	const int c_nMinWidth = 320;
+	const int c_nMaxWidth = 1000;
 
 	const int c_nVolumeControlWidth = 60;
 	const int c_nVolumeControlHeight = 160;
