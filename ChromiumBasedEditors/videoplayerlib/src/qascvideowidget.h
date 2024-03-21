@@ -5,7 +5,7 @@
 #include "lib_base.h"
 
 #include "qmultimedia.h"
-#include "qfooterpanel.h"
+#include "../qfooterpanel.h"
 #include "qvideoplaylist.h"
 
 #ifndef USE_VLC_LIBRARY
@@ -18,10 +18,7 @@ class QAscVideoWidget;
 class QAscVideoView_Private
 {
 public:
-	QFooterPanel*		m_pFooter;
-
-	QWidget*			m_pVolumeControl;
-	QVideoSlider*		m_pVolumeControlV;
+	QFooterPanel*	m_pFooter;
 
 	QVideoPlaylist*		m_pPlaylist;
 	QAscVideoWidget*	m_pPlayer;

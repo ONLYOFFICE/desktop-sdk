@@ -15,7 +15,6 @@
 #include "../../../../core/DesktopEditor/common/StringBuilder.h"
 #include "../../../../core/DesktopEditor/xml/include/xmlutils.h"
 #include "qpushbutton_icons.h"
-#include "../qascvideoview.h"
 
 QStandardItem* CreateFileItem(const QString& text, const QString& file)
 {

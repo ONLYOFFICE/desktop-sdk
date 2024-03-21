@@ -38,7 +38,6 @@
 **
 ****************************************************************************/
 
-#include "../qascvideoview.h"
 #include "qascvideowidget.h"
 
 #include <QKeyEvent>
@@ -46,6 +45,9 @@
 #include <QApplication>
 #include <QWindow>
 #include <QScreen>
+
+#include "../qascvideoview.h"
+#include "qfooterpanel_private.h"
 
 #ifdef ASC_MAIN_WINDOW_HAS_QWINDOW_AS_PARENT
 #define USE_ASC_MAINWINDOW_FULLSCREEN
@@ -138,7 +140,7 @@ void QAscVideoWidget::mouseMoveEvent(QMouseEvent* event)
 	QAscVideoView* pView = static_cast<QAscVideoView*>(m_pParent->parentWidget());
 	if (pView->getMainWindowFullScreen())
 	{
-		if (!pView->m_pInternal->m_pVolumeControl->isVisible() && !pView->m_pInternal->m_bIsShowingPlaylist)
+		if (!pView->Footer()->VolumeControls()->isVisible() && !pView->m_pInternal->m_bIsShowingPlaylist)
 		{
 			pView->setCursor(Qt::ArrowCursor);
 			// start (or restart) cursor hiding timer
@@ -239,9 +241,9 @@ void QAscVideoWidget::setFullScreenOnCurrentScreen(bool isFullscreen)
 	QAscVideoView* pView = static_cast<QAscVideoView*>(m_pParent->parentWidget());
 
 	if (pView->m_pInternal->m_bIsShowingPlaylist)
-		pView->Playlist(0);
-	if (!pView->m_pInternal->m_pVolumeControl->isHidden())
-		pView->m_pInternal->m_pVolumeControl->setHidden(true);
+		pView->TogglePlaylist(0);
+	if (!pView->Footer()->VolumeControls()->isHidden())
+		pView->Footer()->VolumeControls()->setHidden(true);
 
 #ifndef USE_VLC_LIBRARY
 

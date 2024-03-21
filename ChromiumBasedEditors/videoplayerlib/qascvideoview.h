@@ -13,13 +13,10 @@
 #include <QWheelEvent>
 #include <QPropertyAnimation>
 #include <QtCore/QtGlobal>
-#include "./src/qmultimedia.h"
 
-#if defined(BUILD_VIDEO_LIBRARY)
-#  define VIDEO_LIB_EXPORT Q_DECL_EXPORT
-#else
-#  define VIDEO_LIB_EXPORT Q_DECL_IMPORT
-#endif
+#include "./src/videoplayerlib_export.h"
+#include "./src/qmultimedia.h"
+#include "./qfooterpanel.h"
 
 namespace NSBaseVideoLibrary
 {
@@ -54,17 +51,15 @@ public:
 
 public:
 	void PlayPause();
+	void ChangeVolume(int nValue);
+	void ChangeSeek(int nValue);
 	void ToggleMute();
-	void Volume();
 	void Fullscreen();
-	void Playlist(double duration = 100);	// toggle playlist display
-	void Footer(double duration = 150);		// toggle footer display
+	void TogglePlaylist(double duration = 100);
+	void ToggleFooter(double duration = 150);
 	void SavePlayListAddons(const QString& sAddon);
 
-	int GetFooterHeight();
-	int GetFooterMinWidth();
-	int GetFooterMaxWidth();
-	void SetFooterGeometry(int ax, int ay, int aw, int ah);
+	inline QFooterPanel* Footer();
 
 	void AddFilesToPlaylist(QStringList& files, const bool isStart = false);
 	void LoadPlaylist();
@@ -84,13 +79,6 @@ signals:
 	void titleChanged(const QString& sTitle);
 
 public slots:
-	void slotPlayPause();
-	void slotVolume();
-	void slotFullscreen();
-	void slotPlaylist();
-	void slotVolumeChanged(int nValue);
-	void slotSeekChanged(int nValue);
-
 	void slotOpenFile(QString sFile);
 
 	void slotPlayerPosChanged(int nPos);

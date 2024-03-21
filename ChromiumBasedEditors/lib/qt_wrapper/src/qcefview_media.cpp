@@ -75,9 +75,10 @@ void QCefView_Media::OnMediaStart(NSEditorApi::CAscExternalMedia* data)
 	int nWidth = data->get_BoundsW();
 	m_pMediaView->setGeometry(data->get_BoundsX(), data->get_BoundsY(), nWidth, data->get_BoundsH());
 	// set footer geometry
-	int nFooterWidth = std::min(std::max(nWidth, m_pMediaView->GetFooterMinWidth()), m_pMediaView->GetFooterMaxWidth());
+	QFooterPanel* pFooter = m_pMediaView->Footer();
+	int nFooterWidth = std::min(std::max(nWidth, pFooter->GetMinWidth()), pFooter->GetMaxWidth());
 	int nFooterX = data->get_BoundsX() + nWidth / 2 - nFooterWidth / 2;
-	m_pMediaView->SetFooterGeometry(nFooterX, data->get_BoundsY() + data->get_BoundsH() + 12, nFooterWidth, m_pMediaView->GetFooterHeight());
+	pFooter->setGeometry(nFooterX, data->get_BoundsY() + data->get_BoundsH() + 12, nFooterWidth, pFooter->GetHeight());
 
 	if (m_pCefView && m_pCefView->IsPresentationReporter())
 		m_pMediaView->ToggleMute();

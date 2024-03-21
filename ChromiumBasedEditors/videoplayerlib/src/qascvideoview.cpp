@@ -8,10 +8,9 @@
 
 #include "qpushbutton_icons.h"
 #include "../qascvideoview.h"
-#include "qfooterpanel.h"
 #include "qvideoplaylist.h"
 #include "qascvideowidget.h"
-#include "qvideoslider.h"
+#include "qfooterpanel_private.h"
 
 #ifdef USE_VLC_LIBRARY
 #ifdef WIN32
@@ -85,30 +84,11 @@ QAscVideoView::QAscVideoView(QWidget *parent, int r, int g, int b, bool bIsPrese
 	m_pInternal->m_pPlaylist->m_pAdd->installEventFilter(this);
 	m_pInternal->m_pPlaylist->m_pClear->installEventFilter(this);
 
-	// create volume control as a separated from QAscVideoView widget
-	m_pInternal->m_pVolumeControl = new QWidget(parent);
-	m_pInternal->m_pVolumeControl->setHidden(true);
-	m_pInternal->m_pVolumeControl->setStyleSheet("border: none; background-color:#111111");
-
-	m_pInternal->m_pVolumeControlV = new QVideoSlider(m_pInternal->m_pVolumeControl);
-	m_pInternal->m_pVolumeControlV->setOrientation(Qt::Vertical);
-	m_pInternal->m_pVolumeControlV->setMinimum(0);
-	m_pInternal->m_pVolumeControlV->setMaximum(100);
-	m_pInternal->m_pVolumeControlV->setValue(50);
-	QObject::connect(m_pInternal->m_pVolumeControlV, SIGNAL(valueChanged(int)), this, SLOT(slotVolumeChanged(int)));
-
 	// animations
 	m_pAnimationPlaylist = new QPropertyAnimation(m_pInternal->m_pPlaylist, "pos", this);
 	m_pAnimationFooter = new QPropertyAnimation(m_pInternal->m_pFooter, "geometry", this);
 
 	// init events
-	QObject::connect(m_pInternal->m_pFooter->m_pPlayPause, SIGNAL(clicked(bool)), this, SLOT(slotPlayPause()));
-	QObject::connect(m_pInternal->m_pFooter->m_pVolume, SIGNAL(clicked(bool)), this, SLOT(slotVolume()));
-	QObject::connect(m_pInternal->m_pFooter->m_pFullscreen, SIGNAL(clicked(bool)), this, SLOT(slotFullscreen()));
-	QObject::connect(m_pInternal->m_pFooter->m_pPlaylist, SIGNAL(clicked(bool)), this, SLOT(slotPlaylist()));
-
-	QObject::connect(m_pInternal->m_pFooter->m_pSlider, SIGNAL(valueChanged(int)), this, SLOT(slotSeekChanged(int)));
-
 	QObject::connect(m_pInternal->m_pPlayer, SIGNAL(stateChanged(QMediaPlayer_State)), this, SLOT(slotPlayerStateChanged(QMediaPlayer_State)));
 	QObject::connect(m_pInternal->m_pPlayer, SIGNAL(posChanged(int)), this, SLOT(slotPlayerPosChanged(int)));
 
@@ -145,11 +125,6 @@ QAscVideoView::QAscVideoView(QWidget *parent, int r, int g, int b, bool bIsPrese
 	m_pInternal->m_bIsSeekEnabled = true;
 
 	m_pInternal->m_pFooter->installEventFilter(this);
-	m_pInternal->m_pFooter->m_pFullscreen->installEventFilter(this);
-	m_pInternal->m_pFooter->m_pVolume->installEventFilter(this);
-	m_pInternal->m_pFooter->m_pPlaylist->installEventFilter(this);
-	m_pInternal->m_pFooter->m_pSlider->installEventFilter(this);
-	m_pInternal->m_pFooter->m_pPlayPause->installEventFilter(this);
 }
 
 QAscVideoView::~QAscVideoView()
@@ -168,7 +143,7 @@ void QAscVideoView::resizeEvent(QResizeEvent* e)
 	{
 		if (getMainWindowFullScreen())
 		{
-			m_pInternal->m_pFooter->raise();
+			Footer()->raise();
 			m_pInternal->m_bIsShowingFooter = false;
 			// start cursor hiding timer
 			m_pInternal->m_oCursorTimer.start(m_pInternal->c_nCursorHidingDelay);
@@ -191,7 +166,7 @@ void QAscVideoView::resizeEvent(QResizeEvent* e)
 	if (m_pInternal->m_bIsEnabledPlayList)
 	{
 		if (getMainWindowFullScreen())
-			nViewHeight -= GetFooterHeight();
+			nViewHeight -= Footer()->GetHeight();
 
 		m_pInternal->m_pPlaylist->setGeometry(m_pInternal->m_bIsShowingPlaylist ? (width() - QWidget_ScaleDPI(250, dDpi)) : width(), 0, QWidget_ScaleDPI(250, dDpi), nViewHeight);
 	}
@@ -243,13 +218,13 @@ void QAscVideoView::dropEvent(QDropEvent *event)
 
 void QAscVideoView::mousePressEvent(QMouseEvent *event)
 {
-	if (!m_pInternal->m_pVolumeControl->isHidden())
-		m_pInternal->m_pVolumeControl->setHidden(true);
+	if (!Footer()->VolumeControls()->isHidden())
+		Footer()->VolumeControls()->setHidden(true);
 
 	if (event->button() == Qt::LeftButton)
 	{
 		if (m_pInternal->m_bIsShowingPlaylist)
-			Playlist();
+			TogglePlaylist();
 	}
 
 	if (getMainWindowFullScreen())
@@ -263,13 +238,13 @@ void QAscVideoView::mousePressEvent(QMouseEvent *event)
 			// hide footer after a short delay
 			QTimer::singleShot(300, this, [this]() {
 				if (getMainWindowFullScreen())
-					Footer();
+					ToggleFooter();
 			});
 		}
 		else
 		{
 			// show footer
-			Footer();
+			ToggleFooter();
 		}
 	}
 
@@ -284,13 +259,9 @@ void QAscVideoView::keyPressEvent(QKeyEvent *event)
 	switch (event->key())
 	{
 	case Qt::Key_Left:
-	{
-		m_pInternal->m_pFooter->m_pSlider->event(event);
-		break;
-	}
 	case Qt::Key_Right:
 	{
-		m_pInternal->m_pFooter->m_pSlider->event(event);
+		Footer()->m_pInternal->m_pSlider->event(event);
 		break;
 	}
 	case Qt::Key_O:
@@ -311,13 +282,13 @@ void QAscVideoView::keyPressEvent(QKeyEvent *event)
 	}
 	case Qt::Key_N:
 	{
-		m_pInternal->m_pFooter->m_pSlider->setValue(100000);
+		Footer()->m_pInternal->m_pSlider->setValue(100000);
 		m_pInternal->m_pPlaylist->Next();
 		break;
 	}
 	case Qt::Key_P:
 	{
-		m_pInternal->m_pFooter->m_pSlider->setValue(0);
+		Footer()->m_pInternal->m_pSlider->setValue(0);
 		m_pInternal->m_pPlaylist->Prev();
 	}
 	default:
@@ -342,7 +313,7 @@ bool QAscVideoView::eventFilter(QObject *watched, QEvent *event)
 			(watched == m_pInternal->m_pPlaylist->m_pListView || watched == m_pInternal->m_pPlaylist))
 			return true;
 
-		m_pInternal->m_pVolumeControlV->event(event);
+		Footer()->m_pInternal->m_pVolumeControlV->event(event);
 		return true;
 	}
 	return QWidget::eventFilter(watched, event);
@@ -356,13 +327,26 @@ void QAscVideoView::PlayPause()
 		m_pInternal->m_pPlayer->setPause();
 }
 
+void QAscVideoView::ChangeVolume(int nValue)
+{
+	m_pInternal->m_pPlayer->setVolume(nValue);
+	if (nValue)
+		m_pInternal->m_bIsMuted = false;
+}
+
+void QAscVideoView::ChangeSeek(int nValue)
+{
+	if (m_pInternal->m_bIsSeekEnabled)
+		m_pInternal->m_pPlayer->setSeek(nValue);
+}
+
 void QAscVideoView::ToggleMute()
 {
 	if (m_pInternal->m_bIsMuted)
 	{
 		// restore and apply old volume
 		m_pInternal->m_pPlayer->m_nVolume = m_pInternal->m_nMutedVolume;
-		m_pInternal->m_pVolumeControlV->setValue(m_pInternal->m_pPlayer->m_nVolume);
+		Footer()->m_pInternal->m_pVolumeControlV->setValue(m_pInternal->m_pPlayer->m_nVolume);
 		m_pInternal->m_bIsMuted = false;
 	}
 	else
@@ -370,14 +354,9 @@ void QAscVideoView::ToggleMute()
 		// save volume
 		m_pInternal->m_nMutedVolume = m_pInternal->m_pPlayer->m_nVolume;
 		// set current volume to 0
-		m_pInternal->m_pVolumeControlV->setValue(0);
+		Footer()->m_pInternal->m_pVolumeControlV->setValue(0);
 		m_pInternal->m_bIsMuted = true;
 	}
-}
-
-void QAscVideoView::Volume()
-{
-	m_pInternal->m_pVolumeControl->setHidden(!m_pInternal->m_pVolumeControl->isHidden());
 }
 
 void QAscVideoView::Fullscreen()
@@ -387,7 +366,7 @@ void QAscVideoView::Fullscreen()
 	this->setFocus();
 }
 
-void QAscVideoView::Playlist(double duration)
+void QAscVideoView::TogglePlaylist(double duration)
 {
 	m_pInternal->m_bIsShowingPlaylist = !m_pInternal->m_bIsShowingPlaylist;
 
@@ -406,24 +385,24 @@ void QAscVideoView::Playlist(double duration)
 	m_pAnimationPlaylist->start();
 }
 
-void QAscVideoView::Footer(double duration)
+void QAscVideoView::ToggleFooter(double duration)
 {
-	if (m_pInternal->m_bIsShowingFooter && (m_pInternal->m_pVolumeControl->isVisible() || m_pInternal->m_bIsShowingPlaylist))
+	if (m_pInternal->m_bIsShowingFooter && (Footer()->VolumeControls()->isVisible() || m_pInternal->m_bIsShowingPlaylist))
 		return;
 
 	m_pInternal->m_bIsShowingFooter = !m_pInternal->m_bIsShowingFooter;
 
 	QSize size = this->size();
-	int nFooterH = GetFooterHeight();
+	int nFooterH = Footer()->GetHeight();
 
 	m_pAnimationFooter->setDuration(duration);
 	if (m_pInternal->m_bIsShowingFooter)
 	{
-		m_pAnimationFooter->setEndValue(QRect(0, size.height() - nFooterH, m_pInternal->m_pFooter->width(), nFooterH));
+		m_pAnimationFooter->setEndValue(QRect(0, size.height() - nFooterH, Footer()->width(), nFooterH));
 	}
 	else
 	{
-		m_pAnimationFooter->setEndValue(QRect(0, size.height(), m_pInternal->m_pFooter->width(), nFooterH));
+		m_pAnimationFooter->setEndValue(QRect(0, size.height(), Footer()->width(), nFooterH));
 	}
 	m_pAnimationFooter->start();
 }
@@ -431,6 +410,11 @@ void QAscVideoView::Footer(double duration)
 void QAscVideoView::SavePlayListAddons(const QString& sAddon)
 {
 	m_pInternal->m_pPlaylist->m_sSavePlayListAddon = sAddon;
+}
+
+QFooterPanel* QAscVideoView::Footer()
+{
+	return m_pInternal->m_pFooter;
 }
 
 void QAscVideoView::AddFilesToPlaylist(QStringList& files, const bool isStart)
@@ -452,16 +436,16 @@ void QAscVideoView::SavePlaylist()
 void QAscVideoView::setPlayListUsed(bool isUsed)
 {
 	m_pInternal->m_bIsEnabledPlayList = isUsed;
-	m_pInternal->m_pFooter->m_bIsEnabledPlayList = isUsed;
+	Footer()->m_pInternal->m_bIsEnabledPlayList = isUsed;
 
-	m_pInternal->m_pFooter->m_pPlaylist->setHidden(!isUsed);
+	Footer()->m_pInternal->m_pPlaylist->setHidden(!isUsed);
 }
 void QAscVideoView::setFullScreenUsed(bool isUsed)
 {
 	m_pInternal->m_bIsEnabledFullscreen = isUsed;
-	m_pInternal->m_pFooter->m_bIsEnabledFullscreen = isUsed;
+	Footer()->m_pInternal->m_bIsEnabledFullscreen = isUsed;
 
-	m_pInternal->m_pFooter->m_pFullscreen->setHidden(!isUsed);
+	Footer()->m_pInternal->m_pFullscreen->setHidden(!isUsed);
 }
 void QAscVideoView::setMedia(QString sMedia)
 {
@@ -486,61 +470,28 @@ void QAscVideoView::RemoveFromPresentation()
 	this->hide();
 	this->deleteLater();
 
-	m_pInternal->m_pFooter->hide();
-	m_pInternal->m_pFooter->deleteLater();
+	Footer()->hide();
+	Footer()->deleteLater();
 
-	m_pInternal->m_pVolumeControl->hide();
-	m_pInternal->m_pVolumeControl->deleteLater();
+	Footer()->VolumeControls()->hide();
+	Footer()->VolumeControls()->deleteLater();
 }
 
 void QAscVideoView::UpdatePlayPauseIcon()
 {
-	m_pInternal->m_pFooter->SetPlayPauseIcon(m_pInternal->m_bIsPlay);
+	Footer()->SetPlayPauseIcon(m_pInternal->m_bIsPlay);
 }
 
 void QAscVideoView::UpdateFullscreenIcon()
 {
-	m_pInternal->m_pFooter->SetFullscreenIcon(!getMainWindowFullScreen());
-}
-
-void QAscVideoView::slotPlayPause()
-{
-	this->PlayPause();
-}
-
-void QAscVideoView::slotVolume()
-{
-	this->Volume();
-}
-
-void QAscVideoView::slotFullscreen()
-{
-	this->Fullscreen();
-}
-
-void QAscVideoView::slotPlaylist()
-{
-	this->Playlist();
-}
-
-void QAscVideoView::slotVolumeChanged(int nValue)
-{
-	m_pInternal->m_pPlayer->setVolume(nValue);
-	if (nValue)
-		m_pInternal->m_bIsMuted = false;
-}
-
-void QAscVideoView::slotSeekChanged(int nValue)
-{
-	if (m_pInternal->m_bIsSeekEnabled)
-		m_pInternal->m_pPlayer->setSeek(nValue);
+	Footer()->SetFullscreenIcon(!getMainWindowFullScreen());
 }
 
 void QAscVideoView::slotOpenFile(QString sFile)
 {
 	if (sFile.isEmpty() && m_pInternal->m_bIsPresentationMode)
 	{
-		slotSeekChanged(0);
+		ChangeSeek(0);
 		return;
 	}
 	m_pInternal->m_pPlayer->open(sFile);
@@ -556,7 +507,7 @@ void QAscVideoView::slotOpenFile(QString sFile)
 void QAscVideoView::slotPlayerPosChanged(int nPos)
 {
 	m_pInternal->m_bIsSeekEnabled = false;
-	m_pInternal->m_pFooter->m_pSlider->setValue(nPos);
+	Footer()->m_pInternal->m_pSlider->setValue(nPos);
 	m_pInternal->m_bIsSeekEnabled = true;
 }
 
@@ -567,9 +518,9 @@ void QAscVideoView::slotPlayerStateChanged(QMediaPlayer_State state)
 
 	if (!m_pInternal->m_bIsPlay)
 	{
-		if (!m_pInternal->m_pFooter->isHidden())
+		if (!Footer()->isHidden())
 		{
-			m_pInternal->m_pFooter->raise();
+			Footer()->raise();
 		}
 
 #ifdef USE_VLC_LIBRARY
@@ -579,7 +530,7 @@ void QAscVideoView::slotPlayerStateChanged(QMediaPlayer_State state)
 			if (!m_pInternal->m_pPlayer->isAudio() && !m_pInternal->m_bIsDestroy)
 			{
 				this->show();
-				m_pInternal->m_pFooter->show();
+				Footer()->show();
 			}
 		}
 #endif
@@ -593,7 +544,7 @@ void QAscVideoView::slotPlayerStateChanged(QMediaPlayer_State state)
 
 	{
 		// force slider to be put to the end
-		m_pInternal->m_pFooter->m_pSlider->setValue(100000);
+		Footer()->m_pInternal->m_pSlider->setValue(100000);
 		// play next video (if any)
 		m_pInternal->m_pPlaylist->Next();
 	}
@@ -612,26 +563,6 @@ QWidget* QAscVideoView::getMainWindow()
 	return NULL;
 }
 
-int QAscVideoView::GetFooterHeight()
-{
-	return QWidget_ScaleDPI(m_pInternal->m_pFooter->c_nHeight, QWidget_GetDPI(this));
-}
-
-int QAscVideoView::GetFooterMinWidth()
-{
-	return QWidget_ScaleDPI(m_pInternal->m_pFooter->c_nMinWidth, QWidget_GetDPI(this));
-}
-
-int QAscVideoView::GetFooterMaxWidth()
-{
-	return QWidget_ScaleDPI(m_pInternal->m_pFooter->c_nMaxWidth, QWidget_GetDPI(this));
-}
-
-void QAscVideoView::SetFooterGeometry(int ax, int ay, int aw, int ah)
-{
-	m_pInternal->m_pFooter->setGeometry(ax, ay, aw, ah);
-}
-
 void QAscVideoView::slotVideoAvailableChanged(bool videoAvailable)
 {
 	if (m_pInternal->m_bIsPresentationMode && !m_pInternal->m_bIsPresentationModeMediaTypeSended)
@@ -640,7 +571,7 @@ void QAscVideoView::slotVideoAvailableChanged(bool videoAvailable)
 		if (!m_pInternal->m_pPlayer->isAudio() && !m_pInternal->m_bIsDestroy)
 		{
 			this->show();
-			m_pInternal->m_pFooter->show();
+			Footer()->show();
 		}
 	}
 }
@@ -665,7 +596,7 @@ void QAscVideoView::slotFooterAnimationFinished()
 void QAscVideoView::slotFooterTimerOverflowed()
 {
 	m_pInternal->m_oFooterTimer.stop();
-	this->Footer();
+	this->ToggleFooter();
 }
 
 void QAscVideoView::slotCursorTimerOverflowed()
