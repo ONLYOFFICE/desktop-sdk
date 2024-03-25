@@ -47,7 +47,6 @@
 #include <QScreen>
 
 #include "../qascvideoview.h"
-#include "qfooterpanel_private.h"
 
 #ifdef ASC_MAIN_WINDOW_HAS_QWINDOW_AS_PARENT
 #define USE_ASC_MAINWINDOW_FULLSCREEN

@@ -1,7 +1,9 @@
 #include "qvideoslider.h"
+
 #include <QStyleOption>
 #include <QPainter>
-#include "qpushbutton_icons.h"
+
+#include "../qwidgetutils.h"
 
 QVideoSlider::QVideoSlider(QWidget *parent) : QSlider(parent)
 {
@@ -89,7 +91,7 @@ void QVideoSlider::mousePressEvent(QMouseEvent *event)
 
 void QVideoSlider::resizeEvent(QResizeEvent* e)
 {
-	double dDpi = QWidget_GetDPI(this);
+	double dDpi = QWidgetUtils::GetDPI(this);
 	if (fabs(dDpi - m_dDpi) > 0.01)
 	{
 		m_dDpi = dDpi;

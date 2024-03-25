@@ -14,9 +14,10 @@
 #include <QPropertyAnimation>
 #include <QtCore/QtGlobal>
 
-#include "./src/videoplayerlib_export.h"
-#include "./src/qmultimedia.h"
-#include "./qfooterpanel.h"
+#include "src/videoplayerlib_export.h"
+#include "src/qmultimedia.h"
+#include "qfooterpanel.h"
+#include "qwidgetutils.h"
 
 namespace NSBaseVideoLibrary
 {
@@ -29,7 +30,7 @@ class VIDEO_LIB_EXPORT QAscVideoView : public QWidget
 {
 	Q_OBJECT
 public:
-	explicit QAscVideoView(QWidget *parent, int r, int g, int b, bool bIsPresentationMode = false);
+	explicit QAscVideoView(QWidget *parent, bool bIsPresentationMode = false);
 	virtual ~QAscVideoView();
 
 public:

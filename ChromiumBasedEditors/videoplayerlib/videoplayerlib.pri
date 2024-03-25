@@ -14,7 +14,7 @@ ADD_DEPENDENCY(kernel)
 HEADERS += \
 	$$PWD/src/lib_base.h \
 	$$PWD/src/videoplayerlib_export.h \
-	$$PWD/src/qpushbutton_icons.h \
+	$$PWD/src/qiconpushbutton.h \
 	$$PWD/src/qfooterpanel_private.h \
 	$$PWD/src/qvideoslider.h \
 	$$PWD/src/qvideoplaylist.h \
@@ -23,16 +23,18 @@ HEADERS += \
 
 SOURCES += \
 	$$PWD/src/lib_base.cpp \
-	$$PWD/src/qpushbutton_icons.cpp \
+	$$PWD/src/qiconpushbutton.cpp \
 	$$PWD/src/qfooterpanel.cpp \
 	$$PWD/src/qascvideoview.cpp \
 	$$PWD/src/qvideoslider.cpp \
 	$$PWD/src/qvideoplaylist.cpp \
-	$$PWD/src/qascvideowidget.cpp
+	$$PWD/src/qascvideowidget.cpp \
+	$$PWD/src/qwidgetutils.cpp
 
 HEADERS += \
 	$$PWD/qascvideoview.h \
-	$$PWD/qfooterpanel.h
+	$$PWD/qfooterpanel.h \
+	$$PWD/qwidgetutils.h
 
 RESOURCES += \
 	$$PWD/IconsVideoPlayerLib.qrc

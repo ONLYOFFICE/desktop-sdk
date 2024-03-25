@@ -1,3 +1,5 @@
+#include "../qascvideoview.h"
+
 #include <QPrinter>
 #include <QPainter>
 #include <QPrintDialog>
@@ -6,8 +8,6 @@
 
 #include "../../../../core/DesktopEditor/common/File.h"
 
-#include "qpushbutton_icons.h"
-#include "../qascvideoview.h"
 #include "qvideoplaylist.h"
 #include "qascvideowidget.h"
 #include "qfooterpanel_private.h"
@@ -57,16 +57,16 @@ void QVideoWidgetParent::resizeEvent(QResizeEvent *event)
 
 #endif
 
-QAscVideoView::QAscVideoView(QWidget *parent, int r, int g, int b, bool bIsPresentationMode) : QWidget(parent)
+QAscVideoView::QAscVideoView(QWidget *parent, bool bIsPresentationMode) : QWidget(parent)
 {
 	NSBaseVideoLibrary::Init(parent);
 	m_pInternal = new QAscVideoView_Private();
 	m_pInternal->m_bIsPresentationMode = bIsPresentationMode;
 
-	QWidget_setBackground(this, 0x22, 0x22, 0x22);
+	QWidgetUtils::SetBackground(this, 0x22, 0x22, 0x22);
 	// create footer as a separated from QAscVideoView widget
 	m_pInternal->m_pFooter = new QFooterPanel(parent, this);
-	QWidget_setBackground(m_pInternal->m_pFooter, r, g, b);
+	m_pInternal->m_pFooter->ApplySkin(QFooterPanel::stDark);
 
 	QWidget* pParentVideo = new QVideoWidgetParent(this);
 	pParentVideo->setGeometry(0, 0, width(), height());
@@ -137,7 +137,7 @@ void QAscVideoView::resizeEvent(QResizeEvent* e)
 	QWidget::resizeEvent(e);
 
 	QSize size = this->size();
-	double dDpi = QWidget_GetDPI(this);
+	double dDpi = QWidgetUtils::GetDPI(this);
 
 	if (m_pInternal->m_bIsEnabledFullscreen)
 	{
@@ -168,7 +168,7 @@ void QAscVideoView::resizeEvent(QResizeEvent* e)
 		if (getMainWindowFullScreen())
 			nViewHeight -= Footer()->GetHeight();
 
-		m_pInternal->m_pPlaylist->setGeometry(m_pInternal->m_bIsShowingPlaylist ? (width() - QWidget_ScaleDPI(250, dDpi)) : width(), 0, QWidget_ScaleDPI(250, dDpi), nViewHeight);
+		m_pInternal->m_pPlaylist->setGeometry(m_pInternal->m_bIsShowingPlaylist ? (width() - QWidgetUtils::ScaleDPI(250, dDpi)) : width(), 0, QWidgetUtils::ScaleDPI(250, dDpi), nViewHeight);
 	}
 	else
 	{
@@ -370,8 +370,8 @@ void QAscVideoView::TogglePlaylist(double duration)
 {
 	m_pInternal->m_bIsShowingPlaylist = !m_pInternal->m_bIsShowingPlaylist;
 
-	double dDpi = QWidget_GetDPI(this);
-	int nPlaylistW = QWidget_ScaleDPI(250, dDpi);
+	double dDpi = QWidgetUtils::GetDPI(this);
+	int nPlaylistW = QWidgetUtils::ScaleDPI(250, dDpi);
 
 	m_pAnimationPlaylist->setDuration(duration);
 	if (m_pInternal->m_bIsShowingPlaylist)

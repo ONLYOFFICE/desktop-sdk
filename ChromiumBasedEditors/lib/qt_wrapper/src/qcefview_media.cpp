@@ -35,22 +35,6 @@
 
 #include <algorithm>
 
-void QCefView_SetProperty(QObject* w, const QVariant& p)
-{
-	w->setProperty("native_dpi", p);
-	QObjectList childs = w->children();
-	for (int i = childs.count() - 1; i >= 0; --i)
-	{
-		QCefView_SetProperty(childs.at(i), p);
-	}
-}
-
-void QCefView_SetDPI(QWidget* w, const double& v)
-{
-	QVariant p(v);
-	QCefView_SetProperty(w, p);
-}
-
 QCefView_Media::QCefView_Media(QWidget* parent, const QSize& size) : QCefView(parent, size)
 {
 	m_pMediaView = NULL;
@@ -66,11 +50,11 @@ void QCefView_Media::OnMediaStart(NSEditorApi::CAscExternalMedia* data)
 	if (m_pMediaView)
 		return;
 
-	m_pMediaView = new QAscVideoView(this, 49, 52, 55, true);
+	m_pMediaView = new QAscVideoView(this, true);
 	m_pMediaView->setPlayListUsed(false);
 	m_pMediaView->setFullScreenUsed(false);
 
-	QCefView_SetDPI(this, m_pCefView->GetDeviceScale());
+	QWidgetUtils::SetDPI(this, m_pCefView->GetDeviceScale());
 	// set video view geometry
 	int nWidth = data->get_BoundsW();
 	m_pMediaView->setGeometry(data->get_BoundsX(), data->get_BoundsY(), nWidth, data->get_BoundsH());
@@ -101,6 +85,8 @@ void QCefView_Media::OnMediaEnd(bool isFromResize)
 	if (isFromResize)
 	{
 		// под виндоус проблемы с ресайзом.
-		QTimer::singleShot(100, [=]{ this->resizeEvent(NULL); });
+		QTimer::singleShot(100, this, [this]() {
+			this->resizeEvent(nullptr);
+		});
 	}
 }

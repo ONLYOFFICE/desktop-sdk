@@ -6,7 +6,7 @@
 #include "qfooterpanel_private.h"
 #include "../qascvideoview.h"
 #include "qascvideowidget.h"
-#include "qpushbutton_icons.h"
+#include "qiconpushbutton.h"
 
 QFooterPanel::QFooterPanel(QWidget* parent, QAscVideoView* pView) : QWidget(parent)
 {
@@ -81,11 +81,11 @@ void QFooterPanel::resizeEvent(QResizeEvent* event)
 {
 	QWidget::resizeEvent(event);
 
-	double dDpi = QWidget_GetDPI(this);
+	double dDpi = QWidgetUtils::GetDPI(this);
 
-	int nButW = QWidget_ScaleDPI(m_pInternal->c_nButtonsWidth, dDpi);
-	int nY = QWidget_ScaleDPI(m_pInternal->c_nButtonsY, dDpi);
-	int nBetweenButtons = QWidget_ScaleDPI(m_pInternal->c_nButtonsBetween, dDpi);
+	int nButW = QWidgetUtils::ScaleDPI(m_pInternal->c_nButtonsWidth, dDpi);
+	int nY = QWidgetUtils::ScaleDPI(m_pInternal->c_nButtonsY, dDpi);
+	int nBetweenButtons = QWidgetUtils::ScaleDPI(m_pInternal->c_nButtonsBetween, dDpi);
 
 	int nLeft = nBetweenButtons;
 	m_pInternal->m_pPlayPause->setGeometry(nLeft, nY, nButW, nButW); nLeft += (nButW + nBetweenButtons);
@@ -106,18 +106,18 @@ void QFooterPanel::resizeEvent(QResizeEvent* event)
 	m_pInternal->m_pSlider->setGeometry(nLeft, nY, nRight - nLeft, nButW);
 
 	// set volume control geometry
-	int nVolumeControlW = QWidget_ScaleDPI(m_pInternal->c_nVolumeControlWidth, dDpi);
-	int nVolumeControlH = QWidget_ScaleDPI(m_pInternal->c_nVolumeControlHeight, dDpi);
+	int nVolumeControlW = QWidgetUtils::ScaleDPI(m_pInternal->c_nVolumeControlWidth, dDpi);
+	int nVolumeControlH = QWidgetUtils::ScaleDPI(m_pInternal->c_nVolumeControlHeight, dDpi);
 	int nVolumeControlX = this->x() + m_pInternal->m_pVolume->x() + nButW / 2 - nVolumeControlW / 2;
 	int nVolumeControlY = this->y() + m_pInternal->m_pVolume->y() - nVolumeControlH - nBetweenButtons;
 
 	m_pInternal->m_pVolumeControl->setGeometry(nVolumeControlX, nVolumeControlY, nVolumeControlW, nVolumeControlH);
 
 	// set volume slider geometry
-	int nVolumeSliderW = QWidget_ScaleDPI(m_pInternal->c_nVolumeSliderWidth, dDpi);
-	int nVolumeSliderH = QWidget_ScaleDPI(m_pInternal->c_nVolumeSliderHeight, dDpi);
-	int nVolumeSliderX = QWidget_ScaleDPI(m_pInternal->c_nVolumeSliderX, dDpi);
-	int nVolumeSliderY = QWidget_ScaleDPI(m_pInternal->c_nVolumeSliderY, dDpi);
+	int nVolumeSliderW = QWidgetUtils::ScaleDPI(m_pInternal->c_nVolumeSliderWidth, dDpi);
+	int nVolumeSliderH = QWidgetUtils::ScaleDPI(m_pInternal->c_nVolumeSliderHeight, dDpi);
+	int nVolumeSliderX = QWidgetUtils::ScaleDPI(m_pInternal->c_nVolumeSliderX, dDpi);
+	int nVolumeSliderY = QWidgetUtils::ScaleDPI(m_pInternal->c_nVolumeSliderY, dDpi);
 
 	m_pInternal->m_pVolumeControlV->setGeometry(nVolumeSliderX, nVolumeSliderY, nVolumeSliderW, nVolumeSliderH);
 }
@@ -147,22 +147,42 @@ void QFooterPanel::paintEvent(QPaintEvent* event)
 
 int QFooterPanel::GetHeight()
 {
-	return QWidget_ScaleDPI(m_pInternal->c_nHeight, QWidget_GetDPI(this));
+	return QWidgetUtils::ScaleDPI(this, m_pInternal->c_nHeight);
 }
 
 int QFooterPanel::GetMinWidth()
 {
-	return QWidget_ScaleDPI(m_pInternal->c_nMinWidth, QWidget_GetDPI(this));
+	return QWidgetUtils::ScaleDPI(this, m_pInternal->c_nMinWidth);
 }
 
 int QFooterPanel::GetMaxWidth()
 {
-	return QWidget_ScaleDPI(m_pInternal->c_nMaxWidth, QWidget_GetDPI(this));
+	return QWidgetUtils::ScaleDPI(this, m_pInternal->c_nMaxWidth);
 }
 
 QWidget* QFooterPanel::VolumeControls()
 {
 	return m_pInternal->m_pVolumeControl;
+}
+
+void QFooterPanel::ApplySkin(SkinType skin)
+{
+	// TODO: rework with skin classes
+	switch (skin)
+	{
+	case stLight:
+	{
+		QWidgetUtils::SetBackground(this, 0xF1, 0xF1, 0xF1);
+		break;
+	}
+	case stDark:
+	{
+		QWidgetUtils::SetBackground(this, 49, 52, 55);
+		break;
+	}
+	default:
+		break;
+	}
 }
 
 void QFooterPanel::onPlayPauseBtnClicked()

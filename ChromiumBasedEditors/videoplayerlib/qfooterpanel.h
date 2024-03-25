@@ -14,10 +14,10 @@ class VIDEO_LIB_EXPORT QFooterPanel : public QWidget
 	friend class QAscVideoView;
 
 public:
-	enum ColorTheme
+	enum SkinType
 	{
-		ctDark,
-		ctLight
+		stLight,
+		stDark
 	};
 
 public:
@@ -35,6 +35,8 @@ public:
 	inline int GetMaxWidth();
 
 	inline QWidget* VolumeControls();
+
+	void ApplySkin(SkinType skin);
 
 public slots:
 	void onPlayPauseBtnClicked();
