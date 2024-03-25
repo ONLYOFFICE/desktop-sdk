@@ -860,7 +860,12 @@ return undefined; \n\
 			{
 				// сначала определим тип редактора
 				if (sUrl.find("documenteditor") != std::wstring::npos)
-					m_etType = AscEditorType::etDocument;
+				{
+					if (std::wstring::npos == sUrl.find("&isForm=true"))
+						m_etType = AscEditorType::etDocument;
+					else
+						m_etType = AscEditorType::etPdf;
+				}
 				else if (sUrl.find("presentationeditor") != std::wstring::npos)
 					m_etType = AscEditorType::etPresentation;
 				else if (sUrl.find("spreadsheeteditor") != std::wstring::npos)
@@ -973,7 +978,12 @@ else \n\
 				{
 					// сначала определим тип редактора
 					if (sUrl.find("documenteditor") != std::wstring::npos)
-						m_etType = AscEditorType::etDocument;
+					{
+						if (std::wstring::npos == sUrl.find("&isForm=true"))
+							m_etType = AscEditorType::etDocument;
+						else
+							m_etType = AscEditorType::etPdf;
+					}
 					else if (sUrl.find("presentationeditor") != std::wstring::npos)
 						m_etType = AscEditorType::etPresentation;
 					else if (sUrl.find("spreadsheeteditor") != std::wstring::npos)
