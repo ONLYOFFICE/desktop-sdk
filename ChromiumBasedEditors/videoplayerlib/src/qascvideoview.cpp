@@ -62,10 +62,12 @@ QAscVideoView::QAscVideoView(QWidget *parent, bool bIsPresentationMode) : QWidge
 	NSBaseVideoLibrary::Init(parent);
 	m_pInternal = new QAscVideoView_Private();
 	m_pInternal->m_bIsPresentationMode = bIsPresentationMode;
+	QWidgetUtils::SetDPI(this, QWidgetUtils::GetDPI(parent));
 
 	QWidgetUtils::SetBackground(this, 0x22, 0x22, 0x22);
 	// create footer as a separated from QAscVideoView widget
 	m_pInternal->m_pFooter = new QFooterPanel(parent, this);
+	// apply default skin for the footer
 	m_pInternal->m_pFooter->ApplySkin(QFooterPanel::stDark);
 
 	QWidget* pParentVideo = new QVideoWidgetParent(this);

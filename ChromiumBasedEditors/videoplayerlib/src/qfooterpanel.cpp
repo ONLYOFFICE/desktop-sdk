@@ -6,12 +6,13 @@
 #include "qfooterpanel_private.h"
 #include "../qascvideoview.h"
 #include "qascvideowidget.h"
-#include "qiconpushbutton.h"
 
 QFooterPanel::QFooterPanel(QWidget* parent, QAscVideoView* pView) : QWidget(parent)
 {
 	m_pInternal = new QFooterPanel_Private();
 	m_pInternal->m_pView = pView;
+	double dpi = QWidgetUtils::GetDPI(parent);
+	QWidgetUtils::SetDPI(this, dpi);
 
 	// footer widgets
 	m_pInternal->m_pPlayPause = new QIconPushButton(this, true, "play", "play-active");
@@ -31,8 +32,9 @@ QFooterPanel::QFooterPanel(QWidget* parent, QAscVideoView* pView) : QWidget(pare
 
 	// volume control widgets
 	m_pInternal->m_pVolumeControl = new QWidget(parent);
+	QWidgetUtils::SetDPI(m_pInternal->m_pVolumeControl, dpi);
 	m_pInternal->m_pVolumeControl->setHidden(true);
-	m_pInternal->m_pVolumeControl->setStyleSheet("border: none; background-color:#111111");
+	m_pInternal->m_pVolumeControl->setStyleSheet("border: none; background-color:#111111;");
 
 	m_pInternal->m_pVolumeControlV = new QVideoSlider(m_pInternal->m_pVolumeControl);
 	m_pInternal->m_pVolumeControlV->setOrientation(Qt::Vertical);
@@ -218,11 +220,11 @@ void QFooterPanel::onVolumeChanged(int nValue)
 void QFooterPanel::SetPlayPauseIcon(bool bIsPlay)
 {
 	QString sI = bIsPlay ? "play" : "pause";
-	((QIconPushButton*)m_pInternal->m_pPlayPause)->changeIcons(sI, sI + "-active");
+	m_pInternal->m_pPlayPause->setIcons(sI, sI + "-active");
 }
 
 void QFooterPanel::SetFullscreenIcon(bool bIsFullscreen)
 {
 	QString sI = bIsFullscreen ? "fullscreen-on" : "fullscreen-off";
-	((QIconPushButton*)m_pInternal->m_pFullscreen)->changeIcons(sI, sI + "-active");
+	m_pInternal->m_pFullscreen->setIcons(sI, sI + "-active");
 }

@@ -2,10 +2,10 @@
 #define Q_FOOTER_PANEL_PRIVATE_H
 
 #include <QWidget>
-#include <QPushButton>
 #include <QResizeEvent>
 #include <QPaintEvent>
 
+#include "qiconpushbutton.h"
 #include "qvideoslider.h"
 
 class QAscVideoView;
@@ -16,11 +16,11 @@ public:
 	QAscVideoView*	m_pView;
 
 	// footer elements
-	QPushButton*	m_pPlayPause;
-	QPushButton*	m_pVolume;
-	QPushButton*	m_pFullscreen;
-	QPushButton*	m_pPlaylist;
-	QVideoSlider*	m_pSlider;
+	QIconPushButton*	m_pPlayPause;
+	QIconPushButton*	m_pVolume;
+	QIconPushButton*	m_pFullscreen;
+	QIconPushButton*	m_pPlaylist;
+	QVideoSlider*		m_pSlider;
 
 	// volume control elements
 	QWidget*		m_pVolumeControl;

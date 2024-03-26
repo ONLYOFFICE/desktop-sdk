@@ -50,11 +50,13 @@ void QCefView_Media::OnMediaStart(NSEditorApi::CAscExternalMedia* data)
 	if (m_pMediaView)
 		return;
 
+	// set DPI for this widget BEFORE creating media view
+	QWidgetUtils::SetDPI(this, m_pCefView->GetDeviceScale());
+
 	m_pMediaView = new QAscVideoView(this, true);
 	m_pMediaView->setPlayListUsed(false);
 	m_pMediaView->setFullScreenUsed(false);
 
-	QWidgetUtils::SetDPI(this, m_pCefView->GetDeviceScale());
 	// set video view geometry
 	int nWidth = data->get_BoundsW();
 	m_pMediaView->setGeometry(data->get_BoundsX(), data->get_BoundsY(), nWidth, data->get_BoundsH());

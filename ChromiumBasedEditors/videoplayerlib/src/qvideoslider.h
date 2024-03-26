@@ -19,5 +19,6 @@ public:
 	virtual void resizeEvent(QResizeEvent* e);
 
 public:
+	void updateStyle();
 	void SetSeekOnClick(bool bValue);
 };
