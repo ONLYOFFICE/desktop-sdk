@@ -17,19 +17,17 @@ public:
 	void changeIcons(QString sIconR, QString sIconH = "", QString sIconP = "");
 
 protected:
-	virtual bool event(QEvent* e);
 	virtual void resizeEvent(QResizeEvent* e);
 
 private:
 	void checkDpi(const double dDpi, const bool isAttack = false);
-	void setIconFileName(QString s);
+	QString getIconPostfix();
 
 private:
 	QString m_sIconR;
 	QString m_sIconH;
 	QString m_sIconP;
 
-	bool m_bIsSvg;
 	bool m_bIsSvgSupport;
 	double m_dDpi;
 };
