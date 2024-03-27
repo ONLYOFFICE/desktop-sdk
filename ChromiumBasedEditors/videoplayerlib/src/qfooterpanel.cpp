@@ -28,15 +28,14 @@ QFooterPanel::QFooterPanel(QWidget* parent, QAscVideoView* pView) : QWidget(pare
 	m_pInternal->m_pSlider->setSingleStep(1000);
 	m_pInternal->m_pSlider->setShortcutEnabled(QKeySequence::Back, true);
 	m_pInternal->m_pSlider->setShortcutEnabled(QKeySequence::Forward, true);
-	m_pInternal->m_pSlider->SetSeekOnClick(true);
 
 	// volume control widgets
 	m_pInternal->m_pVolumeControl = new QWidget(parent);
 	QWidgetUtils::SetDPI(m_pInternal->m_pVolumeControl, dpi);
 	m_pInternal->m_pVolumeControl->setHidden(true);
-	m_pInternal->m_pVolumeControl->setStyleSheet("border: none; background-color:#111111;");
+	m_pInternal->m_pVolumeControl->setStyleSheet("border: none; background-color:#313437;");
 
-	m_pInternal->m_pVolumeControlV = new QVideoSlider(m_pInternal->m_pVolumeControl);
+	m_pInternal->m_pVolumeControlV = new QVideoSlider(m_pInternal->m_pVolumeControl, QVideoSlider::hsCircle);
 	m_pInternal->m_pVolumeControlV->setOrientation(Qt::Vertical);
 	m_pInternal->m_pVolumeControlV->setMinimum(0);
 	m_pInternal->m_pVolumeControlV->setMaximum(100);
@@ -118,8 +117,8 @@ void QFooterPanel::resizeEvent(QResizeEvent* event)
 	// set volume slider geometry
 	int nVolumeSliderW = QWidgetUtils::ScaleDPI(m_pInternal->c_nVolumeSliderWidth, dDpi);
 	int nVolumeSliderH = QWidgetUtils::ScaleDPI(m_pInternal->c_nVolumeSliderHeight, dDpi);
-	int nVolumeSliderX = QWidgetUtils::ScaleDPI(m_pInternal->c_nVolumeSliderX, dDpi);
-	int nVolumeSliderY = QWidgetUtils::ScaleDPI(m_pInternal->c_nVolumeSliderY, dDpi);
+	int nVolumeSliderX = (nVolumeControlW - nVolumeSliderW) / 2;
+	int nVolumeSliderY = (nVolumeControlH - nVolumeSliderH) / 2;
 
 	m_pInternal->m_pVolumeControlV->setGeometry(nVolumeSliderX, nVolumeSliderY, nVolumeSliderW, nVolumeSliderH);
 }

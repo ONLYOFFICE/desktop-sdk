@@ -30,11 +30,11 @@ public:
 	virtual void paintEvent(QPaintEvent* event);
 
 public:
-	inline int GetHeight();
-	inline int GetMinWidth();
-	inline int GetMaxWidth();
+	int GetHeight();
+	int GetMinWidth();
+	int GetMaxWidth();
 
-	inline QWidget* VolumeControls();
+	QWidget* VolumeControls();
 
 	void ApplySkin(SkinType skin);
 

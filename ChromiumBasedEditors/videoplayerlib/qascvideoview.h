@@ -60,7 +60,7 @@ public:
 	void ToggleFooter(double duration = 150);
 	void SavePlayListAddons(const QString& sAddon);
 
-	inline QFooterPanel* Footer();
+	QFooterPanel* Footer();
 
 	void AddFilesToPlaylist(QStringList& files, const bool isStart = false);
 	void LoadPlaylist();

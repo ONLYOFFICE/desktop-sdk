@@ -39,12 +39,10 @@ public:
 	const int c_nButtonsY = 5;
 	const int c_nButtonsBetween = 10;
 
-	const int c_nVolumeControlWidth = 60;
-	const int c_nVolumeControlHeight = 160;
+	const int c_nVolumeControlWidth = 30;
+	const int c_nVolumeControlHeight = 140;
 
-	const int c_nVolumeSliderX = 15;
-	const int c_nVolumeSliderY = 20;
-	const int c_nVolumeSliderWidth = 30;
+	const int c_nVolumeSliderWidth = 20;
 	const int c_nVolumeSliderHeight = 120;
 };
 

@@ -9,16 +9,27 @@ class QVideoSlider : public QSlider
 {
 	Q_OBJECT
 
-	bool m_bIsSeekOnClick;
-	double m_dDpi;
+public:
+	enum HandleStyle
+	{
+		hsSimple,
+		hsCircle
+	};
 
 public:
-	explicit QVideoSlider(QWidget *parent = 0);
+	explicit QVideoSlider(QWidget* parent, HandleStyle handleStyle = hsSimple);
 
 	virtual void mousePressEvent(QMouseEvent* e);
 	virtual void resizeEvent(QResizeEvent* e);
 
 public:
 	void updateStyle();
-	void SetSeekOnClick(bool bValue);
+	void setSeekOnClick(bool bValue);
+	void setHandleStyle(HandleStyle handleStyle);
+
+private:
+	double m_dDpi;
+	bool m_bIsSeekOnClick;
+
+	HandleStyle m_handleStyle;
 };
