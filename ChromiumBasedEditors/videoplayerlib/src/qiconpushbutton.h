@@ -2,9 +2,10 @@
 #define Q_ICON_PUSH_BUTTON_H
 
 #include <QWidget>
-#include <QColor>
 #include <QPushButton>
 #include <QResizeEvent>
+
+#include "style/style_options.h"
 
 class QIconPushButton : public QPushButton
 {
@@ -16,24 +17,21 @@ public:
 
 public:
 	void setIcons(QString sIconR, QString sIconH = "", QString sIconP = "");
-	void setBackgrounds(const QColor& oBgR, const QColor& oBgH = QColor(), const QColor& oBgP = QColor());
 	void updateStyle();
+	void setStyleOptions(const CButtonStyleOptions& opt);
 
 protected:
 	virtual void resizeEvent(QResizeEvent* e);
 
 private:
 	QString getIconPostfix();
-	QString getColorAsString(const QColor& color);
 
 private:
 	QString m_sIconR;
 	QString m_sIconH;
 	QString m_sIconP;
 
-	QColor m_oBackgroundR;
-	QColor m_oBackgroundH;
-	QColor m_oBackgroundP;
+	CButtonStyleOptions m_oStyleOpt;
 
 	bool m_bIsSvgSupport;
 	double m_dDpi;

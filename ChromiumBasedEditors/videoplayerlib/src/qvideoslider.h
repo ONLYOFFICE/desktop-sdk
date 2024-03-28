@@ -5,19 +5,21 @@
 #include <QSlider>
 #include <QMouseEvent>
 
+#include "style/style_options.h"
+
 class QVideoSlider : public QSlider
 {
 	Q_OBJECT
 
 public:
-	enum HandleStyle
+	enum HandleType
 	{
-		hsSimple,
-		hsCircle
+		htSimple,
+		htCircle
 	};
 
 public:
-	explicit QVideoSlider(QWidget* parent, HandleStyle handleStyle = hsSimple);
+	explicit QVideoSlider(QWidget* parent, HandleType handleType = htSimple);
 
 	virtual void mousePressEvent(QMouseEvent* e);
 	virtual void resizeEvent(QResizeEvent* e);
@@ -25,11 +27,14 @@ public:
 public:
 	void updateStyle();
 	void setSeekOnClick(bool bValue);
-	void setHandleStyle(HandleStyle handleStyle);
+	void setHandleType(HandleType handleType);
+	void setStyleOptions(const CSliderStyleOptions& opt);
 
 private:
 	double m_dDpi;
 	bool m_bIsSeekOnClick;
 
-	HandleStyle m_handleStyle;
+	CSliderStyleOptions m_oStyleOpt;
+
+	HandleType m_handleType;
 };

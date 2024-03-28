@@ -5,7 +5,7 @@
 
 #include "../qwidgetutils.h"
 
-QVideoSlider::QVideoSlider(QWidget *parent, HandleStyle handleStyle) : QSlider(parent)
+QVideoSlider::QVideoSlider(QWidget *parent, HandleType handleType) : QSlider(parent)
 {
 	double dpi = QWidgetUtils::GetDPI(parent);
 	QWidgetUtils::SetDPI(this, dpi);
@@ -13,7 +13,7 @@ QVideoSlider::QVideoSlider(QWidget *parent, HandleStyle handleStyle) : QSlider(p
 
 	m_bIsSeekOnClick = true;
 
-	setHandleStyle(handleStyle);
+	setHandleType(handleType);
 }
 
 void QVideoSlider::mousePressEvent(QMouseEvent *event)
@@ -90,27 +90,28 @@ void QVideoSlider::updateStyle()
 
 	QString sStyle;
 
-	switch (m_handleStyle)
+	switch (m_handleType)
 	{
-	case hsSimple:
+	case htSimple:
 	{
 		sStyle = QString("\
-			QSlider::groove:horizontal { height: %1px; background-color: transparent; margin: 0; }\
+			QSlider::groove:horizontal	 { height: %1px; background-color: transparent; margin: 0; }\
 			\
-			QSlider::groove:vertical   { width: %1px; background-color: transparent; margin: 0; }\
+			QSlider::groove:vertical     { width: %1px; background-color: transparent; margin: 0; }\
 			\
-			QSlider::sub-page:horizontal { height: %1px; background-color: #9B9B9B; border-top-left-radius: %2px; border-top-right-radius: 0; border-bottom-right-radius: 0; border-bottom-left-radius: %2px; }\
-			QSlider::add-page:horizontal { height: %1px; background-color: #545454; border-top-left-radius: 0; border-top-right-radius: %2px; border-bottom-right-radius: %2px; border-bottom-left-radius: 0; }\
+			QSlider::sub-page:horizontal { height: %1px; background-color: " + m_oStyleOpt.m_sAddColor + "; border-top-left-radius: %2px; border-top-right-radius: 0; border-bottom-right-radius: 0; border-bottom-left-radius: %2px; }\
+			QSlider::add-page:horizontal { height: %1px; background-color: " + m_oStyleOpt.m_sSubColor + "; border-top-left-radius: 0; border-top-right-radius: %2px; border-bottom-right-radius: %2px; border-bottom-left-radius: 0; }\
 			\
-			QSlider::sub-page:vertical { width: %1px; background-color: #545454; border-top-left-radius: %2px; border-top-right-radius: %2px; border-bottom-right-radius: 0; border-bottom-left-radius: 0; }\
-			QSlider::add-page:vertical { width: %1px; background-color: #9B9B9B; border-top-left-radius: 0; border-top-right-radius: 0; border-bottom-right-radius: %2px; border-bottom-left-radius: %2px;}\
+			QSlider::sub-page:vertical   { width: %1px; background-color: " + m_oStyleOpt.m_sSubColor + "; border-top-left-radius: %2px; border-top-right-radius: %2px; border-bottom-right-radius: 0; border-bottom-left-radius: 0; }\
+			QSlider::add-page:vertical   { width: %1px; background-color: " + m_oStyleOpt.m_sAddColor + "; border-top-left-radius: 0; border-top-right-radius: 0; border-bottom-right-radius: %2px; border-bottom-left-radius: %2px;}\
 			\
-			QSlider::handle:horizontal { width: %1px; height: %1px; background-color: #9B9B9B; margin: 0 1px; border-radius: %2px; } \
-			QSlider::handle:vertical   { width: %1px; height: %1px; background-color: #9B9B9B; margin: 1px 0; border-radius: %2px; } \
+			QSlider::handle:horizontal   { width: %1px; height: %1px; background-color: " + m_oStyleOpt.m_sAddColor + "; margin: 0 1px; border-radius: %2px; } \
+			QSlider::handle:vertical     { width: %1px; height: %1px; background-color: " + m_oStyleOpt.m_sAddColor + "; margin: 1px 0; border-radius: %2px; } \
+			\
 			").arg(QString::number(nGrooveThickness), QString::number(nGrooveBorderRadius));
 		break;
 	}
-	case hsCircle:
+	case htCircle:
 	{
 		int nHandleWidth = (int)(m_dDpi * 16);								// %3
 		int nHandleBorderSize = (int)(m_dDpi * 2);							// %4
@@ -120,17 +121,18 @@ void QVideoSlider::updateStyle()
 		int nHandleBorderRadius = nHandleTotalSize / 2;						// %7
 
 		sStyle = QString("\
-			QSlider::groove:horizontal { height: %5px; background-color: transparent; margin: -%6px 0 -%6px 0; }\
+			QSlider::groove:horizontal   { height: %5px; background-color: transparent; margin: -%6px 0 -%6px 0; }\
 			\
-			QSlider::groove:vertical   { width: %5px; background-color: transparent; margin: 0 -%6px 0 -%6px; }\
+			QSlider::groove:vertical     { width: %5px; background-color: transparent; margin: 0 -%6px 0 -%6px; }\
 			\
-			QSlider::sub-page:horizontal { height: %1px; background-color: #9B9B9B; border-top-left-radius: %2px; border-top-right-radius: 0; border-bottom-right-radius: 0; border-bottom-left-radius: %2px; }\
-			QSlider::add-page:horizontal { height: %1px; background-color: #545454; border-top-left-radius: 0; border-top-right-radius: %2px; border-bottom-right-radius: %2px; border-bottom-left-radius: 0; }\
+			QSlider::sub-page:horizontal { height: %1px; background-color: " + m_oStyleOpt.m_sAddColor + "; border-top-left-radius: %2px; border-top-right-radius: 0; border-bottom-right-radius: 0; border-bottom-left-radius: %2px; }\
+			QSlider::add-page:horizontal { height: %1px; background-color: " + m_oStyleOpt.m_sSubColor + "; border-top-left-radius: 0; border-top-right-radius: %2px; border-bottom-right-radius: %2px; border-bottom-left-radius: 0; }\
 			\
-			QSlider::sub-page:vertical { width: %1px; background-color: #545454; border-top-left-radius: %2px; border-top-right-radius: %2px; border-bottom-right-radius: 0; border-bottom-left-radius: 0; }\
-			QSlider::add-page:vertical { width: %1px; background-color: #9B9B9B; border-top-left-radius: 0; border-top-right-radius: 0; border-bottom-right-radius: %2px; border-bottom-left-radius: %2px;}\
+			QSlider::sub-page:vertical   { width: %1px; background-color: " + m_oStyleOpt.m_sSubColor + "; border-top-left-radius: %2px; border-top-right-radius: %2px; border-bottom-right-radius: 0; border-bottom-left-radius: 0; }\
+			QSlider::add-page:vertical   { width: %1px; background-color: " + m_oStyleOpt.m_sAddColor + "; border-top-left-radius: 0; border-top-right-radius: 0; border-bottom-right-radius: %2px; border-bottom-left-radius: %2px;}\
 			\
-			QSlider::handle { width: %3px; height: %3px; background-color: #FFFFFF; margin: 0; border: %4px solid #222222; border-radius: %7px; } \
+			QSlider::handle { width: %3px; height: %3px; background-color: " + m_oStyleOpt.m_sHandleColor + "; margin: 0; border: %4px solid " + m_oStyleOpt.m_sHandleBorderColor + "; border-radius: %7px; } \
+			\
 			").arg(QString::number(nGrooveThickness), QString::number(nGrooveBorderRadius), QString::number(nHandleWidth), QString::number(nHandleBorderSize), QString::number(nHandleTotalSize), QString::number(nGrooveMargin), QString::number(nHandleBorderRadius));
 		break;
 	}
@@ -146,8 +148,14 @@ void QVideoSlider::setSeekOnClick(bool bValue)
 	m_bIsSeekOnClick = bValue;
 }
 
-void QVideoSlider::setHandleStyle(HandleStyle handleStyle)
+void QVideoSlider::setHandleType(HandleType handleType)
 {
-	m_handleStyle = handleStyle;
+	m_handleType = handleType;
+	updateStyle();
+}
+
+void QVideoSlider::setStyleOptions(const CSliderStyleOptions& opt)
+{
+	m_oStyleOpt = opt;
 	updateStyle();
 }

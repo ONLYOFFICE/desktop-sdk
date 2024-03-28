@@ -33,9 +33,8 @@ QFooterPanel::QFooterPanel(QWidget* parent, QAscVideoView* pView) : QWidget(pare
 	m_pInternal->m_pVolumeControl = new QWidget(parent);
 	QWidgetUtils::SetDPI(m_pInternal->m_pVolumeControl, dpi);
 	m_pInternal->m_pVolumeControl->setHidden(true);
-	m_pInternal->m_pVolumeControl->setStyleSheet("border: none; background-color:#313437;");
 
-	m_pInternal->m_pVolumeControlV = new QVideoSlider(m_pInternal->m_pVolumeControl, QVideoSlider::hsCircle);
+	m_pInternal->m_pVolumeControlV = new QVideoSlider(m_pInternal->m_pVolumeControl, QVideoSlider::htCircle);
 	m_pInternal->m_pVolumeControlV->setOrientation(Qt::Vertical);
 	m_pInternal->m_pVolumeControlV->setMinimum(0);
 	m_pInternal->m_pVolumeControlV->setMaximum(100);
@@ -166,24 +165,20 @@ QWidget* QFooterPanel::VolumeControls()
 	return m_pInternal->m_pVolumeControl;
 }
 
-void QFooterPanel::ApplySkin(SkinType skin)
+void QFooterPanel::ApplySkin(CFooterSkin::Type type)
 {
-	// TODO: rework with skin classes
-	switch (skin)
-	{
-	case stLight:
-	{
-		QWidgetUtils::SetBackground(this, 0xF1, 0xF1, 0xF1);
-		break;
-	}
-	case stDark:
-	{
-		QWidgetUtils::SetBackground(this, 49, 52, 55);
-		break;
-	}
-	default:
-		break;
-	}
+	CFooterSkin skin = CFooterSkin::getSkin(type);
+	// footer and volume control backgrounds
+	QWidgetUtils::SetBackground(this, QColor(skin.m_oFooterStyleOpt.m_sBgColor));
+	m_pInternal->m_pVolumeControl->setStyleSheet("border: none; background-color:" + skin.m_oFooterStyleOpt.m_sVolumeControlBgColor + ";");
+	// buttons
+	m_pInternal->m_pPlayPause->setStyleOptions(skin.m_oButtonStyleOpt);
+	m_pInternal->m_pVolume->setStyleOptions(skin.m_oButtonStyleOpt);
+	m_pInternal->m_pFullscreen->setStyleOptions(skin.m_oButtonStyleOpt);
+	m_pInternal->m_pPlaylist->setStyleOptions(skin.m_oButtonStyleOpt);
+	// sliders
+	m_pInternal->m_pSlider->setStyleOptions(skin.m_oSliderStyleOpt);
+	m_pInternal->m_pVolumeControlV->setStyleOptions(skin.m_oSliderStyleOpt);
 }
 
 void QFooterPanel::onPlayPauseBtnClicked()

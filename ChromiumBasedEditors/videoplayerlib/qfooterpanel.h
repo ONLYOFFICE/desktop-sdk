@@ -4,6 +4,7 @@
 #include <QWidget>
 
 #include "src/videoplayerlib_export.h"
+#include "src/style/skins_footer.h"
 
 class QAscVideoView;
 class QFooterPanel_Private;
@@ -12,13 +13,6 @@ class VIDEO_LIB_EXPORT QFooterPanel : public QWidget
 	Q_OBJECT
 
 	friend class QAscVideoView;
-
-public:
-	enum SkinType
-	{
-		stLight,
-		stDark
-	};
 
 public:
 	QFooterPanel(QWidget* parent, QAscVideoView* pView);
@@ -36,7 +30,7 @@ public:
 
 	QWidget* VolumeControls();
 
-	void ApplySkin(SkinType skin);
+	void ApplySkin(CFooterSkin::Type type);
 
 public slots:
 	void onPlayPauseBtnClicked();

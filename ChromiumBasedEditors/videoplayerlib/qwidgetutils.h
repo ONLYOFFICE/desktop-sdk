@@ -4,6 +4,7 @@
 #include "src/videoplayerlib_export.h"
 
 #include <QWidget>
+#include <QColor>
 #include <QVariant>
 
 namespace QWidgetUtils
@@ -13,7 +14,7 @@ namespace QWidgetUtils
 	VIDEO_LIB_EXPORT double GetDPI(QWidget* widget);
 	VIDEO_LIB_EXPORT int ScaleDPI(const int& value, const double& scale);
 	VIDEO_LIB_EXPORT int ScaleDPI(QWidget* widget, const int& value);
-	VIDEO_LIB_EXPORT void SetBackground(QWidget* widget, int r, int g, int b);
+	VIDEO_LIB_EXPORT void SetBackground(QWidget* widget, const QColor& color);
 }
 
 #endif	// Q_WIDGET_UTILS_H

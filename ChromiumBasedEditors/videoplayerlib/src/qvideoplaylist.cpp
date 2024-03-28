@@ -42,7 +42,7 @@ QVideoPlaylist::QVideoPlaylist(QWidget *parent) : QWidget(parent)
 	m_pDialogParent = NULL;
 
 	m_sSavePlayListAddon = "/ONLYOFFICE/VideoPlayer";
-	QWidgetUtils::SetBackground(this, 0x22, 0x22, 0x22);
+	QWidgetUtils::SetBackground(this, QColor(0x22, 0x22, 0x22));
 
 	m_pAdd = new QIconPushButton(this, true, "add-files", "add-files-active");
 	m_pClear = new QIconPushButton(this, true, "drop-playlist", "drop-playlist-active");

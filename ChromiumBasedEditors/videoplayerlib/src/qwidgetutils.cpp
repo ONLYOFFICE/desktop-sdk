@@ -41,15 +41,14 @@ namespace QWidgetUtils
 		return ScaleDPI(value, GetDPI(widget));
 	}
 
-	void SetBackground(QWidget* widget, int r, int g, int b)
+	void SetBackground(QWidget* widget, const QColor& color)
 	{
 		// set stylesheet
-		QColor color(r, g, b);
 		QString sBackColor = "background-color: " + color.name() + ";";
 		widget->setStyleSheet(sBackColor);
 		// set palette
 		QPalette pal;
-		pal.setColor(QPalette::Window, QColor(r, g, b));
+		pal.setColor(QPalette::Window, color);
 		widget->setAutoFillBackground(true);
 		widget->setPalette(pal);
 	}
