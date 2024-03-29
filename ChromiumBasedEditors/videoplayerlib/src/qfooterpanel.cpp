@@ -40,6 +40,11 @@ QFooterPanel::QFooterPanel(QWidget* parent, QAscVideoView* pView) : QWidget(pare
 	m_pInternal->m_pVolumeControlV->setMaximum(100);
 	m_pInternal->m_pVolumeControlV->setValue(50);
 
+	// set default style options
+	m_pInternal->m_oStyleOpt.m_sBgColor = "#333";
+	m_pInternal->m_oStyleOpt.m_sVolumeControlBgColor = "#333";
+	updateStyle();
+
 	// connect signals
 	QObject::connect(m_pInternal->m_pPlayPause, SIGNAL(clicked(bool)), this, SLOT(onPlayPauseBtnClicked()));
 	QObject::connect(m_pInternal->m_pVolume, SIGNAL(clicked(bool)), this, SLOT(onVolumeBtnClicked()));
@@ -168,9 +173,8 @@ QWidget* QFooterPanel::VolumeControls()
 void QFooterPanel::ApplySkin(CFooterSkin::Type type)
 {
 	CFooterSkin skin = CFooterSkin::getSkin(type);
-	// footer and volume control backgrounds
-	QWidgetUtils::SetBackground(this, QColor(skin.m_oFooterStyleOpt.m_sBgColor));
-	m_pInternal->m_pVolumeControl->setStyleSheet("border: none; background-color:" + skin.m_oFooterStyleOpt.m_sVolumeControlBgColor + ";");
+	// footer
+	setStyleOptions(skin.m_oFooterStyleOpt);
 	// buttons
 	m_pInternal->m_pPlayPause->setStyleOptions(skin.m_oButtonStyleOpt);
 	m_pInternal->m_pVolume->setStyleOptions(skin.m_oButtonStyleOpt);
@@ -179,6 +183,18 @@ void QFooterPanel::ApplySkin(CFooterSkin::Type type)
 	// sliders
 	m_pInternal->m_pSlider->setStyleOptions(skin.m_oSliderStyleOpt);
 	m_pInternal->m_pVolumeControlV->setStyleOptions(skin.m_oSliderStyleOpt);
+}
+
+void QFooterPanel::updateStyle()
+{
+	QWidgetUtils::SetBackground(this, QColor(m_pInternal->m_oStyleOpt.m_sBgColor));
+	m_pInternal->m_pVolumeControl->setStyleSheet("border: none; background-color:" + m_pInternal->m_oStyleOpt.m_sVolumeControlBgColor + ";");
+}
+
+void QFooterPanel::setStyleOptions(const CFooterStyleOptions& opt)
+{
+	m_pInternal->m_oStyleOpt = opt;
+	updateStyle();
 }
 
 void QFooterPanel::onPlayPauseBtnClicked()

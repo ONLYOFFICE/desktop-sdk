@@ -13,6 +13,12 @@ QVideoSlider::QVideoSlider(QWidget *parent, HandleType handleType) : QSlider(par
 
 	m_bIsSeekOnClick = true;
 
+	// set default style options
+	m_oStyleOpt.m_sAddColor = "#FFF";
+	m_oStyleOpt.m_sSubColor = "#000";
+	m_oStyleOpt.m_sHandleColor = "#FFF";
+	m_oStyleOpt.m_sHandleBorderColor = "#000";
+
 	setHandleType(handleType);
 }
 

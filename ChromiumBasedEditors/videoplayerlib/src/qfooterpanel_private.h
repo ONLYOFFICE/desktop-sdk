@@ -7,6 +7,7 @@
 
 #include "qiconpushbutton.h"
 #include "qvideoslider.h"
+#include "style/style_options.h"
 
 class QAscVideoView;
 class QFooterPanel;
@@ -25,6 +26,9 @@ public:
 	// volume control elements
 	QWidget*		m_pVolumeControl;
 	QVideoSlider*	m_pVolumeControlV;
+
+	// style options
+	CFooterStyleOptions	m_oStyleOpt;
 
 	// flags
 	bool m_bIsEnabledPlayList;

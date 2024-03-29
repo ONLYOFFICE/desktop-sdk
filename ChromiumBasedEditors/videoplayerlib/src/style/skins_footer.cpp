@@ -7,6 +7,18 @@ CFooterSkin CFooterSkin::getSkin(Type type)
 	{
 	case tLight:
 	{
+		skin.m_oFooterStyleOpt.m_sBgColor = "#fff";
+		skin.m_oFooterStyleOpt.m_sVolumeControlBgColor = "#fff";
+
+		skin.m_oButtonStyleOpt.m_sSkinPostfix = "";
+		skin.m_oButtonStyleOpt.m_sBgColorR = "transparent";
+		skin.m_oButtonStyleOpt.m_sBgColorH = "transparent";
+		skin.m_oButtonStyleOpt.m_sBgColorP = "transparent";
+
+		skin.m_oSliderStyleOpt.m_sAddColor = "#9B9B9B";
+		skin.m_oSliderStyleOpt.m_sSubColor = "#545454";
+		skin.m_oSliderStyleOpt.m_sHandleColor = "#FFFFFF";
+		skin.m_oSliderStyleOpt.m_sHandleBorderColor = "#222222";
 		break;
 	}
 	case tDark:

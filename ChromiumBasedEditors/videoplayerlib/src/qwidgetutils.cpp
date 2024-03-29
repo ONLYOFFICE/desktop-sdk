@@ -47,9 +47,9 @@ namespace QWidgetUtils
 		QString sBackColor = "background-color: " + color.name() + ";";
 		widget->setStyleSheet(sBackColor);
 		// set palette
-		QPalette pal;
-		pal.setColor(QPalette::Window, color);
-		widget->setAutoFillBackground(true);
-		widget->setPalette(pal);
+		// QPalette pal;
+		// pal.setColor(QPalette::Window, color);
+		// widget->setAutoFillBackground(true);
+		// widget->setPalette(pal);
 	}
 }

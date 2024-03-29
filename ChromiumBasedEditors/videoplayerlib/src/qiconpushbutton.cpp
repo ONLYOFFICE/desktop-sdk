@@ -12,6 +12,12 @@ QIconPushButton::QIconPushButton(QWidget *parent, bool bIsSvgSupport, QString sI
 
 	m_bIsSvgSupport = bIsSvgSupport;
 
+	// set default style options
+	m_oStyleOpt.m_sSkinPostfix = "";
+	m_oStyleOpt.m_sBgColorR = "transparent";
+	m_oStyleOpt.m_sBgColorH = "transparent";
+	m_oStyleOpt.m_sBgColorP = "transparent";
+
 	setIcons(sIconR, sIconH, sIconP);
 }
 

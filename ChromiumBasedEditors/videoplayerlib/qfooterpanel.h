@@ -32,6 +32,9 @@ public:
 
 	void ApplySkin(CFooterSkin::Type type);
 
+	void updateStyle();
+	void setStyleOptions(const CFooterStyleOptions& opt);
+
 public slots:
 	void onPlayPauseBtnClicked();
 	void onVolumeBtnClicked();
