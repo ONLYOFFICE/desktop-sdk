@@ -181,8 +181,8 @@ void QFooterPanel::ApplySkin(CFooterSkin::Type type)
 	m_pInternal->m_pFullscreen->setStyleOptions(skin.m_oButtonStyleOpt);
 	m_pInternal->m_pPlaylist->setStyleOptions(skin.m_oButtonStyleOpt);
 	// sliders
-	m_pInternal->m_pSlider->setStyleOptions(skin.m_oSliderStyleOpt);
-	m_pInternal->m_pVolumeControlV->setStyleOptions(skin.m_oSliderStyleOpt);
+	m_pInternal->m_pSlider->setStyleOptions(skin.m_oSliderStyleOpt1);
+	m_pInternal->m_pVolumeControlV->setStyleOptions(skin.m_oSliderStyleOpt2);
 }
 
 void QFooterPanel::updateStyle()

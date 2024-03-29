@@ -19,9 +19,10 @@ public:
 	static CFooterSkin getSkin(Type type);
 
 public:
-	CButtonStyleOptions m_oButtonStyleOpt;
-	CSliderStyleOptions m_oSliderStyleOpt;
 	CFooterStyleOptions m_oFooterStyleOpt;
+	CButtonStyleOptions m_oButtonStyleOpt;
+	CSliderStyleOptions m_oSliderStyleOpt1;
+	CSliderStyleOptions m_oSliderStyleOpt2;
 };
 
 #endif	// SKINS_FOOTER_PANEL_H
