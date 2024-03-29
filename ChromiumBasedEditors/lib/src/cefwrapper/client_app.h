@@ -272,6 +272,7 @@ public:
 			command_line->AppendSwitch("--enable-aggressive-domstorage-flushing");
 			command_line->AppendSwitch("--enable-color-correct-rendering");
 			command_line->AppendSwitchWithValue("--log-severity", "disable");
+			command_line->AppendSwitch("--disable-component-update");
 
 #ifdef CEF_2623
 			command_line->AppendSwitch("--enable-experimental-web-platform-features");
