@@ -40,6 +40,8 @@ public slots:
 	void onVolumeBtnClicked();
 	void onFullscreenBtnClicked();
 	void onPlaylistBtnClicked();
+	void onRewindBackBtnClicked();
+	void onRewindForwardBtnClicked();
 
 	void onSeekChanged(int nValue);
 	void onVolumeChanged(int nValue);

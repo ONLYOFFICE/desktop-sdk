@@ -16,6 +16,7 @@ HEADERS += \
 	$$PWD/src/style/style_options.h \
 	$$PWD/src/videoplayerlib_export.h \
 	$$PWD/src/qiconpushbutton.h \
+	$$PWD/src/qtimelabel.h \
 	$$PWD/src/qfooterpanel_private.h \
 	$$PWD/src/qvideoslider.h \
 	$$PWD/src/qvideoplaylist.h \
@@ -26,6 +27,7 @@ HEADERS += \
 SOURCES += \
 	$$PWD/src/lib_base.cpp \
 	$$PWD/src/qiconpushbutton.cpp \
+	$$PWD/src/qtimelabel.cpp \
 	$$PWD/src/qfooterpanel.cpp \
 	$$PWD/src/qascvideoview.cpp \
 	$$PWD/src/qvideoslider.cpp \

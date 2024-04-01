@@ -19,6 +19,10 @@ QFooterPanel::QFooterPanel(QWidget* parent, QAscVideoView* pView) : QWidget(pare
 	m_pInternal->m_pVolume = new QIconPushButton(this, true, "btn-volume-2");
 	m_pInternal->m_pFullscreen = new QIconPushButton(this, true, "fullscreen-on", "fullscreen-on-active");
 	m_pInternal->m_pPlaylist = new QIconPushButton(this, true, "playlist", "playlist-active");
+	m_pInternal->m_pRewindBack = new QIconPushButton(this, true, "btn-rewind-back");
+	m_pInternal->m_pRewindForward = new QIconPushButton(this, true, "btn-rewind-forward");
+	m_pInternal->m_pTimeLabel = new QTimeLabel(this);
+	m_pInternal->m_pTimeLabel->setTime(0);
 
 	m_pInternal->m_pSlider = new QVideoSlider(this);
 	m_pInternal->m_pSlider->setOrientation(Qt::Horizontal);
@@ -50,6 +54,8 @@ QFooterPanel::QFooterPanel(QWidget* parent, QAscVideoView* pView) : QWidget(pare
 	QObject::connect(m_pInternal->m_pVolume, SIGNAL(clicked(bool)), this, SLOT(onVolumeBtnClicked()));
 	QObject::connect(m_pInternal->m_pFullscreen, SIGNAL(clicked(bool)), this, SLOT(onFullscreenBtnClicked()));
 	QObject::connect(m_pInternal->m_pPlaylist, SIGNAL(clicked(bool)), this, SLOT(onPlaylistBtnClicked()));
+	QObject::connect(m_pInternal->m_pRewindBack, SIGNAL(clicked()), this, SLOT(onRewindBackBtnClicked()));
+	QObject::connect(m_pInternal->m_pRewindForward, SIGNAL(clicked()), this, SLOT(onRewindForwardBtnClicked()));
 
 	QObject::connect(m_pInternal->m_pSlider, SIGNAL(valueChanged(int)), this, SLOT(onSeekChanged(int)));
 	QObject::connect(m_pInternal->m_pVolumeControlV, SIGNAL(valueChanged(int)), this, SLOT(onVolumeChanged(int)));
@@ -60,6 +66,7 @@ QFooterPanel::QFooterPanel(QWidget* parent, QAscVideoView* pView) : QWidget(pare
 	m_pInternal->m_pPlaylist->installEventFilter(pView);
 	m_pInternal->m_pSlider->installEventFilter(pView);
 	m_pInternal->m_pPlayPause->installEventFilter(pView);
+	m_pInternal->m_pVolumeControl->installEventFilter(pView);
 
 	// set mouse tracking
 	if (!pView->m_pInternal->m_bIsPresentationMode)
@@ -93,7 +100,8 @@ void QFooterPanel::resizeEvent(QResizeEvent* event)
 	int nBetweenButtons = QWidgetUtils::ScaleDPI(m_pInternal->c_nButtonsBetween, dDpi);
 
 	int nLeft = nBetweenButtons;
-	m_pInternal->m_pPlayPause->setGeometry(nLeft, nY, nButW, nButW); nLeft += (nButW + nBetweenButtons);
+	m_pInternal->m_pPlayPause->setGeometry(nLeft, nY, nButW, nButW);
+	nLeft += (nButW + nBetweenButtons);
 
 	int nRight = this->width();
 
@@ -107,7 +115,19 @@ void QFooterPanel::resizeEvent(QResizeEvent* event)
 		m_pInternal->m_pFullscreen->setGeometry(nRight, nY, nButW, nButW); nRight -= (nBetweenButtons + nButW);
 	}
 
-	m_pInternal->m_pVolume->setGeometry(nRight, nY, nButW, nButW); nRight -= nBetweenButtons;
+	int nTimeLabelWidth = QWidgetUtils::ScaleDPI(m_pInternal->c_nTimeLabelWidth, dDpi);
+	m_pInternal->m_pVolume->setGeometry(nRight, nY, nButW, nButW);
+
+	nRight -= (nBetweenButtons + nTimeLabelWidth);
+	m_pInternal->m_pTimeLabel->setGeometry(nRight, nY, nTimeLabelWidth, nButW);
+
+	nRight -= (nBetweenButtons + nButW);
+	m_pInternal->m_pRewindForward->setGeometry(nRight, nY, nButW, nButW);
+
+	nRight -= (nBetweenButtons / 2 + nButW);
+	m_pInternal->m_pRewindBack->setGeometry(nRight, nY, nButW, nButW);
+
+	nRight -= nBetweenButtons;
 	m_pInternal->m_pSlider->setGeometry(nLeft, nY, nRight - nLeft, nButW);
 
 	// set volume control geometry
@@ -180,9 +200,13 @@ void QFooterPanel::ApplySkin(CFooterSkin::Type type)
 	m_pInternal->m_pVolume->setStyleOptions(skin.m_oButtonStyleOpt);
 	m_pInternal->m_pFullscreen->setStyleOptions(skin.m_oButtonStyleOpt);
 	m_pInternal->m_pPlaylist->setStyleOptions(skin.m_oButtonStyleOpt);
+	m_pInternal->m_pRewindBack->setStyleOptions(skin.m_oButtonStyleOpt);
+	m_pInternal->m_pRewindForward->setStyleOptions(skin.m_oButtonStyleOpt);
 	// sliders
 	m_pInternal->m_pSlider->setStyleOptions(skin.m_oSliderStyleOpt1);
 	m_pInternal->m_pVolumeControlV->setStyleOptions(skin.m_oSliderStyleOpt2);
+	// time label
+	m_pInternal->m_pTimeLabel->setStyleOptions(skin.m_oTimeLabelStyleOpt);
 }
 
 void QFooterPanel::updateStyle()
@@ -215,6 +239,16 @@ void QFooterPanel::onFullscreenBtnClicked()
 void QFooterPanel::onPlaylistBtnClicked()
 {
 	m_pInternal->m_pView->TogglePlaylist();
+}
+
+void QFooterPanel::onRewindBackBtnClicked()
+{
+	// TODO: implement
+}
+
+void QFooterPanel::onRewindForwardBtnClicked()
+{
+	// TODO: implement
 }
 
 void QFooterPanel::onSeekChanged(int nValue)

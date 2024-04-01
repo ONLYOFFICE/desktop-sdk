@@ -23,6 +23,7 @@ public:
 	CButtonStyleOptions m_oButtonStyleOpt;
 	CSliderStyleOptions m_oSliderStyleOpt1;
 	CSliderStyleOptions m_oSliderStyleOpt2;
+	CTimeLabelOptions	m_oTimeLabelStyleOpt;
 };
 
 #endif	// SKINS_FOOTER_PANEL_H

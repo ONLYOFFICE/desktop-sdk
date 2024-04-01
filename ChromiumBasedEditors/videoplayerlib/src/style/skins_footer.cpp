@@ -24,6 +24,9 @@ CFooterSkin CFooterSkin::getSkin(Type type)
 		skin.m_oSliderStyleOpt2.m_sSubColor = "#E2E2E2";
 		skin.m_oSliderStyleOpt2.m_sHandleColor = "#FFFFFF";
 		skin.m_oSliderStyleOpt2.m_sHandleBorderColor = "#444444";
+
+		skin.m_oTimeLabelStyleOpt.m_oFont = QFont("Open Sans", 14, QFont::Normal);
+		skin.m_oTimeLabelStyleOpt.m_sColor = "#444444";
 		break;
 	}
 	case tDark:
@@ -45,6 +48,9 @@ CFooterSkin CFooterSkin::getSkin(Type type)
 		skin.m_oSliderStyleOpt2.m_sSubColor = "#545454";
 		skin.m_oSliderStyleOpt2.m_sHandleColor = "#FFFFFF";
 		skin.m_oSliderStyleOpt2.m_sHandleBorderColor = "#222222";
+
+		skin.m_oTimeLabelStyleOpt.m_oFont = QFont("Open Sans", 14, QFont::Normal);
+		skin.m_oTimeLabelStyleOpt.m_sColor = "#D5D6D6";
 		break;
 	}
 	default:

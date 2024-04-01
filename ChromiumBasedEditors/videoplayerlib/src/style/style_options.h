@@ -2,6 +2,7 @@
 #define STYLE_OPTIONS_H
 
 #include <QString>
+#include <QFont>
 
 /* NOTES:
  * 1. Colors are written in the same format as in CSS (i.e. using color names, hex, rgb() or rgba()).
@@ -26,6 +27,12 @@ struct CSliderStyleOptions
 	// handle colors (only applied for sliders with QVideoSlider::HandleStyle = hsCircle)
 	QString m_sHandleColor;
 	QString m_sHandleBorderColor;
+};
+
+struct CTimeLabelOptions
+{
+	QFont m_oFont;
+	QString m_sColor;
 };
 
 struct CFooterStyleOptions
