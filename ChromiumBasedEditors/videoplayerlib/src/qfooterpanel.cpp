@@ -15,8 +15,8 @@ QFooterPanel::QFooterPanel(QWidget* parent, QAscVideoView* pView) : QWidget(pare
 	QWidgetUtils::SetDPI(this, dpi);
 
 	// footer widgets
-	m_pInternal->m_pPlayPause = new QIconPushButton(this, true, "play", "play-active");
-	m_pInternal->m_pVolume = new QIconPushButton(this, true, "volume", "volume-active");
+	m_pInternal->m_pPlayPause = new QIconPushButton(this, true, "btn-play");
+	m_pInternal->m_pVolume = new QIconPushButton(this, true, "btn-volume-2");
 	m_pInternal->m_pFullscreen = new QIconPushButton(this, true, "fullscreen-on", "fullscreen-on-active");
 	m_pInternal->m_pPlaylist = new QIconPushButton(this, true, "playlist", "playlist-active");
 
@@ -225,12 +225,29 @@ void QFooterPanel::onSeekChanged(int nValue)
 void QFooterPanel::onVolumeChanged(int nValue)
 {
 	m_pInternal->m_pView->ChangeVolume(nValue);
+	// change icon
+	if (nValue > 75)
+	{
+		m_pInternal->m_pVolume->setIcons("btn-volume-3");
+	}
+	else if (nValue > 25)
+	{
+		m_pInternal->m_pVolume->setIcons("btn-volume-2");
+	}
+	else if (nValue > 0)
+	{
+		m_pInternal->m_pVolume->setIcons("btn-volume-1");
+	}
+	else
+	{
+		m_pInternal->m_pVolume->setIcons("btn-volume-mute");
+	}
 }
 
 void QFooterPanel::SetPlayPauseIcon(bool bIsPlay)
 {
-	QString sI = bIsPlay ? "play" : "pause";
-	m_pInternal->m_pPlayPause->setIcons(sI, sI + "-active");
+	QString sI = bIsPlay ? "btn-play" : "btn-pause";
+	m_pInternal->m_pPlayPause->setIcons(sI);
 }
 
 void QFooterPanel::SetFullscreenIcon(bool bIsFullscreen)

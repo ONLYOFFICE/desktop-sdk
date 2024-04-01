@@ -17,30 +17,12 @@
         <file>icons/fullscreen-on-2x.png</file>
         <file>icons/fullscreen-on-active.png</file>
         <file>icons/fullscreen-on-active.svg</file>
-        <file>icons/pause.png</file>
-        <file>icons/pause.svg</file>
-        <file>icons/pause-2x.png</file>
-        <file>icons/pause-active.png</file>
-        <file>icons/pause-active.svg</file>
-        <file>icons/pause-active-2x.png</file>
-        <file>icons/play.png</file>
-        <file>icons/play.svg</file>
-        <file>icons/play-2x.png</file>
-        <file>icons/play-active.png</file>
-        <file>icons/play-active.svg</file>
-        <file>icons/play-active-2x.png</file>
         <file>icons/playlist.png</file>
         <file>icons/playlist.svg</file>
         <file>icons/playlist-2x.png</file>
         <file>icons/playlist-active.png</file>
         <file>icons/playlist-active.svg</file>
         <file>icons/playlist-active-2x.png</file>
-        <file>icons/volume.png</file>
-        <file>icons/volume.svg</file>
-        <file>icons/volume-2x.png</file>
-        <file>icons/volume-active.png</file>
-        <file>icons/volume-active.svg</file>
-        <file>icons/volume-active-2x.png</file>
         <file>icons/fullscreen-on-active-2x.png</file>
         <file>icons/fullscreen-off.png</file>
         <file>icons/fullscreen-off.svg</file>
@@ -48,5 +30,53 @@
         <file>icons/fullscreen-off-active.png</file>
         <file>icons/fullscreen-off-active.svg</file>
         <file>icons/fullscreen-off-active-2x.png</file>
+        <file>icons/btn-play-light.svg</file>
+        <file>icons/btn-play-light.png</file>
+        <file>icons/btn-play-light-2x.png</file>
+        <file>icons/btn-pause-light.png</file>
+        <file>icons/btn-pause-light.svg</file>
+        <file>icons/btn-pause-light-2x.png</file>
+        <file>icons/btn-volume-1-light.png</file>
+        <file>icons/btn-volume-1-light.svg</file>
+        <file>icons/btn-volume-1-light-2x.png</file>
+        <file>icons/btn-volume-2-light.png</file>
+        <file>icons/btn-volume-2-light.svg</file>
+        <file>icons/btn-volume-2-light-2x.png</file>
+        <file>icons/btn-volume-3-light.png</file>
+        <file>icons/btn-volume-3-light.svg</file>
+        <file>icons/btn-volume-3-light-2x.png</file>
+        <file>icons/btn-volume-mute-light.png</file>
+        <file>icons/btn-volume-mute-light.svg</file>
+        <file>icons/btn-volume-mute-light-2x.png</file>
+        <file>icons/btn-rewind-back-light.png</file>
+        <file>icons/btn-rewind-back-light.svg</file>
+        <file>icons/btn-rewind-back-light-2x.png</file>
+        <file>icons/btn-rewind-forward-light.png</file>
+        <file>icons/btn-rewind-forward-light.svg</file>
+        <file>icons/btn-rewind-forward-light-2x.png</file>
+        <file>icons/btn-play-dark.svg</file>
+        <file>icons/btn-play-dark.png</file>
+        <file>icons/btn-play-dark-2x.png</file>
+        <file>icons/btn-pause-dark.png</file>
+        <file>icons/btn-pause-dark.svg</file>
+        <file>icons/btn-pause-dark-2x.png</file>
+        <file>icons/btn-volume-1-dark.png</file>
+        <file>icons/btn-volume-1-dark.svg</file>
+        <file>icons/btn-volume-1-dark-2x.png</file>
+        <file>icons/btn-volume-2-dark.png</file>
+        <file>icons/btn-volume-2-dark.svg</file>
+        <file>icons/btn-volume-2-dark-2x.png</file>
+        <file>icons/btn-volume-3-dark.png</file>
+        <file>icons/btn-volume-3-dark.svg</file>
+        <file>icons/btn-volume-3-dark-2x.png</file>
+        <file>icons/btn-volume-mute-dark.png</file>
+        <file>icons/btn-volume-mute-dark.svg</file>
+        <file>icons/btn-volume-mute-dark-2x.png</file>
+        <file>icons/btn-rewind-back-dark.png</file>
+        <file>icons/btn-rewind-back-dark.svg</file>
+        <file>icons/btn-rewind-back-dark-2x.png</file>
+        <file>icons/btn-rewind-forward-dark.png</file>
+        <file>icons/btn-rewind-forward-dark.svg</file>
+        <file>icons/btn-rewind-forward-dark-2x.png</file>
     </qresource>
 </RCC>

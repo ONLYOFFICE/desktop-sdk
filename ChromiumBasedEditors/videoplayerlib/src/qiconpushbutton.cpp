@@ -66,20 +66,20 @@ void QIconPushButton::resizeEvent(QResizeEvent* e)
 QString QIconPushButton::getIconPostfix()
 {
 	QString sPostfix = m_oStyleOpt.m_sSkinPostfix;
-	if (fabs(0.0 - m_dDpi) > 0.05 && fabs(1.0 - m_dDpi) > 0.05 && fabs(2.0 - m_dDpi) > 0.05 && m_bIsSvgSupport)
+	// Since button icons will be automatically scaled down by Qt engine:
+	//   if scale <= 2.0 use appropriate PNG icons
+	//   if scale > 2.0 use SVG icon
+	if (m_dDpi - 0.05 < 1.0)
 	{
-		// use SVG icon if scale is fractional
-		sPostfix += ".svg";
+		sPostfix += ".png";
 	}
-	else if (fabs(2.0 - m_dDpi) < 0.1)
+	else if (m_dDpi - 0.05 < 2.0)
 	{
-		// use double-scaled PNG icon if scale is 2.0
 		sPostfix += "-2x.png";
 	}
 	else
 	{
-		// use regular PNG icon otherwise
-		sPostfix += ".png";
+		sPostfix += ".svg";
 	}
 	return sPostfix;
 }

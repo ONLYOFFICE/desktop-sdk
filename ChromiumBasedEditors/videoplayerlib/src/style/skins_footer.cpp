@@ -10,7 +10,7 @@ CFooterSkin CFooterSkin::getSkin(Type type)
 		skin.m_oFooterStyleOpt.m_sBgColor = "#F1F1F1";
 		skin.m_oFooterStyleOpt.m_sVolumeControlBgColor = "#F1F1F1";
 
-		skin.m_oButtonStyleOpt.m_sSkinPostfix = "";
+		skin.m_oButtonStyleOpt.m_sSkinPostfix = "-light";
 		skin.m_oButtonStyleOpt.m_sBgColorR = "transparent";
 		skin.m_oButtonStyleOpt.m_sBgColorH = "#CBCBCB";
 		skin.m_oButtonStyleOpt.m_sBgColorP = "#CBCBCB";
@@ -31,10 +31,10 @@ CFooterSkin CFooterSkin::getSkin(Type type)
 		skin.m_oFooterStyleOpt.m_sBgColor = "#313437";
 		skin.m_oFooterStyleOpt.m_sVolumeControlBgColor = "#313437";
 
-		skin.m_oButtonStyleOpt.m_sSkinPostfix = "";
+		skin.m_oButtonStyleOpt.m_sSkinPostfix = "-dark";
 		skin.m_oButtonStyleOpt.m_sBgColorR = "transparent";
-		skin.m_oButtonStyleOpt.m_sBgColorH = "transparent";
-		skin.m_oButtonStyleOpt.m_sBgColorP = "transparent";
+		skin.m_oButtonStyleOpt.m_sBgColorH = "#46494B";
+		skin.m_oButtonStyleOpt.m_sBgColorP = "#46494B";
 
 		skin.m_oSliderStyleOpt1.m_sAddColor = "#9B9B9B";
 		skin.m_oSliderStyleOpt1.m_sSubColor = "#545454";
