@@ -35,6 +35,8 @@ public:
 	void updateStyle();
 	void setStyleOptions(const CFooterStyleOptions& opt);
 
+	void setTimeOnLabel(qint64 time);
+
 public slots:
 	void onPlayPauseBtnClicked();
 	void onVolumeBtnClicked();

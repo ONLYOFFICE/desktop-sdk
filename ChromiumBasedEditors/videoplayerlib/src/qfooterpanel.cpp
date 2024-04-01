@@ -221,6 +221,11 @@ void QFooterPanel::setStyleOptions(const CFooterStyleOptions& opt)
 	updateStyle();
 }
 
+void QFooterPanel::setTimeOnLabel(qint64 time)
+{
+	m_pInternal->m_pTimeLabel->setTime(time);
+}
+
 void QFooterPanel::onPlayPauseBtnClicked()
 {
 	m_pInternal->m_pView->PlayPause();

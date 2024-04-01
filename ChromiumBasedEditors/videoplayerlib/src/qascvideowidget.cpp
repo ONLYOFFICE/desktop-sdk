@@ -76,6 +76,7 @@ QAscVideoWidget::QAscVideoWidget(QWidget *parent)
 #ifndef USE_VLC_LIBRARY
 	m_pEngine = new QMediaPlayer(parent);
 	m_pEngine->setVideoOutput(this);
+	m_pEngine->setNotifyInterval(500);
 
 	QObject::connect(m_pEngine, SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(slotChangeState(QMediaPlayer::State)));
 	QObject::connect(m_pEngine, SIGNAL(positionChanged(qint64)), this, SLOT(slotPositionChange(qint64)));
@@ -336,6 +337,9 @@ void QAscVideoWidget::slotChangeState(QMediaPlayer_State state)
 
 void QAscVideoWidget::slotPositionChange(qint64 pos)
 {
+	QAscVideoView* pView = static_cast<QAscVideoView*>(m_pView);
+	pView->Footer()->setTimeOnLabel(pos);
+
 	qint64 nDuration = m_pEngine->duration();
 	double dProgress = (double)pos / nDuration;
 	emit posChanged((int)(100000 * dProgress + 0.5));
