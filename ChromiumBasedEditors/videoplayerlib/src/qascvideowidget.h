@@ -47,23 +47,13 @@ public:
 	const int c_nCursorHidingDelay = 3000;
 };
 
+class QAscVideoView;
 class QAscVideoWidget : public QASCVIDEOBASE
 {
 	Q_OBJECT
 
-	QString m_sCurrentSource;
-
-#ifdef USE_VLC_LIBRARY
-	CVlcPlayer* m_pVlcPlayer;
-	CVlcMedia* m_pMedia;
-#else
-	QMediaPlayer* m_pEngine;
-#endif
-
 public:
-	QWidget* m_pParent;
-
-	int m_nVolume;
+	static const float c_arrPlaybackRates[10];
 
 public:
 	QAscVideoWidget(QWidget *parent = 0);
@@ -82,6 +72,9 @@ public:
 	void setPause();
 	void setVolume(int nVolume);
 	void setSeek(int nPos);
+
+	void setRateUp();
+	void setRateDown();
 
 	bool isVideoFullScreen();
 	void setFullScreenOnCurrentScreen(bool isFullscreen);
@@ -107,5 +100,17 @@ public slots:
 #endif
 
 public:
-	QWidget* m_pView;
+	QAscVideoView* m_pView;
+	int m_nVolume;
+	int m_nRateIndex;
+
+private:
+	QString m_sCurrentSource;
+
+#ifdef USE_VLC_LIBRARY
+	CVlcPlayer* m_pVlcPlayer;
+	CVlcMedia* m_pMedia;
+#else
+	QMediaPlayer* m_pEngine;
+#endif
 };
