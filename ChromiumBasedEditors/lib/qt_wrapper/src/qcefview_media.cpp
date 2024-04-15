@@ -66,8 +66,9 @@ void QCefView_Media::OnMediaStart(NSEditorApi::CAscExternalMedia* data)
 	int nFooterX = data->get_BoundsX() + nWidth / 2 - nFooterWidth / 2;
 	pFooter->setGeometry(nFooterX, data->get_BoundsY() + data->get_BoundsH() + 12, nFooterWidth, pFooter->GetHeight());
 	pFooter->SetRoundedCorners(true);
-	// set footer skin
+	// set footer skin and show it explicitly
 	pFooter->ApplySkin(CFooterSkin::tDark);
+	pFooter->show();
 
 	if (m_pCefView && m_pCefView->IsPresentationReporter())
 		m_pMediaView->ToggleMute();
