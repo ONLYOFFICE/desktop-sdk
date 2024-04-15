@@ -12,24 +12,6 @@
         <file>icons/drop-playlist-active.png</file>
         <file>icons/drop-playlist-active.svg</file>
         <file>icons/drop-playlist-active-2x.png</file>
-        <file>icons/fullscreen-on.png</file>
-        <file>icons/fullscreen-on.svg</file>
-        <file>icons/fullscreen-on-2x.png</file>
-        <file>icons/fullscreen-on-active.png</file>
-        <file>icons/fullscreen-on-active.svg</file>
-        <file>icons/playlist.png</file>
-        <file>icons/playlist.svg</file>
-        <file>icons/playlist-2x.png</file>
-        <file>icons/playlist-active.png</file>
-        <file>icons/playlist-active.svg</file>
-        <file>icons/playlist-active-2x.png</file>
-        <file>icons/fullscreen-on-active-2x.png</file>
-        <file>icons/fullscreen-off.png</file>
-        <file>icons/fullscreen-off.svg</file>
-        <file>icons/fullscreen-off-2x.png</file>
-        <file>icons/fullscreen-off-active.png</file>
-        <file>icons/fullscreen-off-active.svg</file>
-        <file>icons/fullscreen-off-active-2x.png</file>
         <file>icons/btn-play-light.svg</file>
         <file>icons/btn-play-light.png</file>
         <file>icons/btn-play-light-2x.png</file>
@@ -78,5 +60,14 @@
         <file>icons/btn-rewind-forward-dark.png</file>
         <file>icons/btn-rewind-forward-dark.svg</file>
         <file>icons/btn-rewind-forward-dark-2x.png</file>
+        <file>icons/btn-fullscreen-off-dark.png</file>
+        <file>icons/btn-fullscreen-off-dark.svg</file>
+        <file>icons/btn-fullscreen-off-dark-2x.png</file>
+        <file>icons/btn-fullscreen-on-dark.png</file>
+        <file>icons/btn-fullscreen-on-dark.svg</file>
+        <file>icons/btn-fullscreen-on-dark-2x.png</file>
+        <file>icons/btn-playlist-dark.png</file>
+        <file>icons/btn-playlist-dark.svg</file>
+        <file>icons/btn-playlist-dark-2x.png</file>
     </qresource>
 </RCC>

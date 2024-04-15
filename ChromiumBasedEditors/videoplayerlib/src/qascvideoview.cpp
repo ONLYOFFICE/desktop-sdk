@@ -136,7 +136,6 @@ void QAscVideoView::resizeEvent(QResizeEvent* e)
 {
 	QWidget::resizeEvent(e);
 
-	QSize size = this->size();
 	double dDpi = QWidgetUtils::GetDPI(this);
 
 	if (m_pInternal->m_bIsEnabledFullscreen)
@@ -158,17 +157,18 @@ void QAscVideoView::resizeEvent(QResizeEvent* e)
 		}
 	}
 
-	int nViewHeight = size.height();
+	int nViewHeight = height();
+	int nVideoHeight = nViewHeight;
+	if (!m_pInternal->m_bIsPresentationMode && !getMainWindowFullScreen())
+		nVideoHeight -= Footer()->GetHeight();
 
-	m_pInternal->m_pPlayer->parentWidget()->setGeometry(0, 0, width(), nViewHeight);
-	m_pInternal->m_pPlayer->setGeometry(0, 0, width(), nViewHeight);
+	m_pInternal->m_pPlayer->parentWidget()->setGeometry(0, 0, width(), nVideoHeight);
+	m_pInternal->m_pPlayer->setGeometry(0, 0, width(), nVideoHeight);
 
 	if (m_pInternal->m_bIsEnabledPlayList)
 	{
-		if (getMainWindowFullScreen())
-			nViewHeight -= Footer()->GetHeight();
-
-		m_pInternal->m_pPlaylist->setGeometry(m_pInternal->m_bIsShowingPlaylist ? (width() - QWidgetUtils::ScaleDPI(250, dDpi)) : width(), 0, QWidgetUtils::ScaleDPI(250, dDpi), nViewHeight);
+		int nPlaylistHeight = nViewHeight - Footer()->GetHeight();
+		m_pInternal->m_pPlaylist->setGeometry(m_pInternal->m_bIsShowingPlaylist ? (width() - QWidgetUtils::ScaleDPI(250, dDpi)) : width(), 0, QWidgetUtils::ScaleDPI(250, dDpi), nPlaylistHeight);
 	}
 	else
 	{

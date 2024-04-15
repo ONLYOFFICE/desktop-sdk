@@ -17,8 +17,8 @@ QFooterPanel::QFooterPanel(QWidget* parent, QAscVideoView* pView) : QWidget(pare
 	// footer widgets
 	m_pInternal->m_pPlayPause = new QIconPushButton(this, true, "btn-play");
 	m_pInternal->m_pVolume = new QIconPushButton(this, true, "btn-volume-2");
-	m_pInternal->m_pFullscreen = new QIconPushButton(this, true, "fullscreen-on", "fullscreen-on-active");
-	m_pInternal->m_pPlaylist = new QIconPushButton(this, true, "playlist", "playlist-active");
+	m_pInternal->m_pFullscreen = new QIconPushButton(this, true, "btn-fullscreen-on");
+	m_pInternal->m_pPlaylist = new QIconPushButton(this, true, "btn-playlist");
 	m_pInternal->m_pRewindBack = new QIconPushButton(this, true, "btn-rewind-back");
 	m_pInternal->m_pRewindForward = new QIconPushButton(this, true, "btn-rewind-forward");
 	m_pInternal->m_pTimeLabel = new QTimeLabel(this);
@@ -106,18 +106,21 @@ void QFooterPanel::resizeEvent(QResizeEvent* event)
 
 	int nRight = this->width();
 
-	nRight -= (nBetweenButtons + nButW);
 	if (m_pInternal->m_bIsEnabledPlayList)
 	{
-		m_pInternal->m_pPlaylist->setGeometry(nRight, nY, nButW, nButW); nRight -= (nBetweenButtons + nButW);
+		nRight -= (nBetweenButtons + nButW);
+		m_pInternal->m_pPlaylist->setGeometry(nRight, nY, nButW, nButW);
 	}
 	if (m_pInternal->m_bIsEnabledFullscreen)
 	{
-		m_pInternal->m_pFullscreen->setGeometry(nRight, nY, nButW, nButW); nRight -= (nBetweenButtons + nButW);
+		nRight -= (nBetweenButtons + nButW);
+		m_pInternal->m_pFullscreen->setGeometry(nRight, nY, nButW, nButW);
 	}
 
-	int nTimeLabelWidth = QWidgetUtils::ScaleDPI(m_pInternal->c_nTimeLabelWidth, dDpi);
+	nRight -= (nBetweenButtons + nButW);
 	m_pInternal->m_pVolume->setGeometry(nRight, nY, nButW, nButW);
+
+	int nTimeLabelWidth = QWidgetUtils::ScaleDPI(m_pInternal->c_nTimeLabelWidth, dDpi);
 
 	nRight -= (nBetweenButtons + nTimeLabelWidth);
 	m_pInternal->m_pTimeLabel->setGeometry(nRight, nY, nTimeLabelWidth, nButW);
@@ -304,6 +307,6 @@ void QFooterPanel::SetPlayPauseIcon(bool bIsPlay)
 
 void QFooterPanel::SetFullscreenIcon(bool bIsFullscreen)
 {
-	QString sI = bIsFullscreen ? "fullscreen-on" : "fullscreen-off";
-	m_pInternal->m_pFullscreen->setIcons(sI, sI + "-active");
+	QString sI = bIsFullscreen ? "btn-fullscreen-on" : "btn-fullscreen-off";
+	m_pInternal->m_pFullscreen->setIcons(sI);
 }
