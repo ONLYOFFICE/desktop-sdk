@@ -17,6 +17,8 @@ struct CButtonStyleOptions
 	QString m_sBgColorR;
 	QString m_sBgColorH;
 	QString m_sBgColorP;
+	// border radius
+	int m_nBorderRadius;
 };
 
 struct CSliderStyleOptions

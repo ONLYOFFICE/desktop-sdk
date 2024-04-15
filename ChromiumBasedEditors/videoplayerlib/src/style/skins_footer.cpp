@@ -14,6 +14,7 @@ CFooterSkin CFooterSkin::getSkin(Type type)
 		skin.m_oButtonStyleOpt.m_sBgColorR = "transparent";
 		skin.m_oButtonStyleOpt.m_sBgColorH = "#CBCBCB";
 		skin.m_oButtonStyleOpt.m_sBgColorP = "#CBCBCB";
+		skin.m_oButtonStyleOpt.m_nBorderRadius = 3;
 
 		skin.m_oSliderStyleOpt1.m_sAddColor = "#848484";
 		skin.m_oSliderStyleOpt1.m_sSubColor = "#E2E2E2";
@@ -38,6 +39,7 @@ CFooterSkin CFooterSkin::getSkin(Type type)
 		skin.m_oButtonStyleOpt.m_sBgColorR = "transparent";
 		skin.m_oButtonStyleOpt.m_sBgColorH = "#46494B";
 		skin.m_oButtonStyleOpt.m_sBgColorP = "#46494B";
+		skin.m_oButtonStyleOpt.m_nBorderRadius = 3;
 
 		skin.m_oSliderStyleOpt1.m_sAddColor = "#9B9B9B";
 		skin.m_oSliderStyleOpt1.m_sSubColor = "#545454";

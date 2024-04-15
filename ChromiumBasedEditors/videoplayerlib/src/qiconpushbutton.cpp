@@ -38,7 +38,8 @@ void QIconPushButton::updateStyle()
 {
 	QString sPostfix = getIconPostfix();
 
-	QString sStyle = "QPushButton {border-image:url(:/icons/" + m_sIconR + sPostfix + ") 0 0 0 0 stretch stretch; background-color: " + m_oStyleOpt.m_sBgColorR + ";margin:0;padding:0;outline:none;}";
+	QString sRadius = QString::number(QWidgetUtils::ScaleDPI(this, m_oStyleOpt.m_nBorderRadius));
+	QString sStyle = "QPushButton {border-image:url(:/icons/" + m_sIconR + sPostfix + ") 0 0 0 0 stretch stretch; border-radius: " + sRadius + "px; background-color: " + m_oStyleOpt.m_sBgColorR + ";margin:0;padding:0;outline:none;}";
 	sStyle += "QPushButton:hover {border-image:url(:/icons/" + m_sIconH + sPostfix + ") 0 0 0 0 stretch stretch; background-color: " + m_oStyleOpt.m_sBgColorH + ";margin:0;padding:0;outline:none;}";
 	sStyle += "QPushButton:pressed {border-image:url(:/icons/" + m_sIconP + sPostfix + ") 0 0 0 0 stretch stretch; background-color: " + m_oStyleOpt.m_sBgColorP + ";margin:0;padding:0;outline:none;}";
 

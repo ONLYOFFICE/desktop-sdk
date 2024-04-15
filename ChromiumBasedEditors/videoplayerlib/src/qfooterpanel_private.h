@@ -36,6 +36,7 @@ public:
 	// flags
 	bool m_bIsEnabledPlayList;
 	bool m_bIsEnabledFullscreen;
+	bool m_bIsRoundedCorners;
 
 	// constants
 	const int c_nHeight = 40;
@@ -53,6 +54,8 @@ public:
 	const int c_nVolumeSliderHeight = 120;
 
 	const int c_nTimeLabelWidth = 60;
+
+	const int c_nBorderRadius = 5;
 };
 
 #endif // Q_FOOTER_PANEL_PRIVATE_H

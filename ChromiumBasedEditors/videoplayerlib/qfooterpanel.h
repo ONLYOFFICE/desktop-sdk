@@ -31,6 +31,7 @@ public:
 	QWidget* VolumeControls();
 
 	void ApplySkin(CFooterSkin::Type type);
+	void SetRoundedCorners(bool isRounded = true);
 
 	void updateStyle();
 	void setStyleOptions(const CFooterStyleOptions& opt);

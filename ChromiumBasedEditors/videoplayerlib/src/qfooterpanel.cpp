@@ -82,6 +82,7 @@ QFooterPanel::QFooterPanel(QWidget* parent, QAscVideoView* pView) : QWidget(pare
 	// init flags
 	m_pInternal->m_bIsEnabledPlayList = true;
 	m_pInternal->m_bIsEnabledFullscreen = true;
+	m_pInternal->m_bIsRoundedCorners = false;
 }
 
 QFooterPanel::~QFooterPanel()
@@ -138,6 +139,9 @@ void QFooterPanel::resizeEvent(QResizeEvent* event)
 
 	m_pInternal->m_pVolumeControl->setGeometry(nVolumeControlX, nVolumeControlY, nVolumeControlW, nVolumeControlH);
 
+	if (m_pInternal->m_bIsRoundedCorners)
+		QWidgetUtils::SetRoundedRectMask(m_pInternal->m_pVolumeControl, m_pInternal->c_nBorderRadius);
+
 	// set volume slider geometry
 	int nVolumeSliderW = QWidgetUtils::ScaleDPI(m_pInternal->c_nVolumeSliderWidth, dDpi);
 	int nVolumeSliderH = QWidgetUtils::ScaleDPI(m_pInternal->c_nVolumeSliderHeight, dDpi);
@@ -145,6 +149,9 @@ void QFooterPanel::resizeEvent(QResizeEvent* event)
 	int nVolumeSliderY = (nVolumeControlH - nVolumeSliderH) / 2;
 
 	m_pInternal->m_pVolumeControlV->setGeometry(nVolumeSliderX, nVolumeSliderY, nVolumeSliderW, nVolumeSliderH);
+
+	if (m_pInternal->m_bIsRoundedCorners)
+		QWidgetUtils::SetRoundedRectMask(this, m_pInternal->c_nBorderRadius);
 }
 
 void QFooterPanel::mouseMoveEvent(QMouseEvent* event)
@@ -207,6 +214,12 @@ void QFooterPanel::ApplySkin(CFooterSkin::Type type)
 	m_pInternal->m_pVolumeControlV->setStyleOptions(skin.m_oSliderStyleOpt2);
 	// time label
 	m_pInternal->m_pTimeLabel->setStyleOptions(skin.m_oTimeLabelStyleOpt);
+}
+
+void QFooterPanel::SetRoundedCorners(bool isRounded)
+{
+	m_pInternal->m_bIsRoundedCorners = isRounded;
+	resizeEvent(nullptr);
 }
 
 void QFooterPanel::updateStyle()

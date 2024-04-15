@@ -15,6 +15,7 @@ namespace QWidgetUtils
 	VIDEO_LIB_EXPORT int ScaleDPI(const int& value, const double& scale);
 	VIDEO_LIB_EXPORT int ScaleDPI(QWidget* widget, const int& value);
 	VIDEO_LIB_EXPORT void SetBackground(QWidget* widget, const QColor& color);
+	void SetRoundedRectMask(QWidget* widget, int nRadius);
 }
 
 #endif	// Q_WIDGET_UTILS_H

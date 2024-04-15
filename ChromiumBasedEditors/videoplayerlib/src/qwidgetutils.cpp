@@ -3,6 +3,12 @@
 #include <QColor>
 #include <QPalette>
 
+// for masking widget
+// TODO: remove
+#include <QPainter>
+#include <QPixmap>
+#include <QBitmap>
+
 namespace QWidgetUtils
 {
 	void SetProperty(QObject* widget, const char* property, const QVariant& value)
@@ -52,4 +58,23 @@ namespace QWidgetUtils
 		// widget->setAutoFillBackground(true);
 		// widget->setPalette(pal);
 	}
+
+	void SetRoundedRectMask(QWidget* widget, int nRadius)
+	{
+		const int width = widget->width();
+		const int height = widget->height();
+
+		QPixmap pixmap(width, height);
+		pixmap.fill(QColor(Qt::transparent));
+		QPainter painter(&pixmap);
+		// mask is a bitmap, so there is no need for antialiasing
+		// painter.setRenderHint(QPainter::Antialiasing);
+		painter.setPen(Qt::NoPen);
+		painter.setBrush(QColor(Qt::white));
+		int radius = ScaleDPI(nRadius, GetDPI(widget));
+		painter.drawRoundedRect(0, 0, width, height, radius, radius);
+
+		widget->setMask(pixmap.mask());
+	}
+
 }

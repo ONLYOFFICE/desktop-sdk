@@ -65,6 +65,7 @@ void QCefView_Media::OnMediaStart(NSEditorApi::CAscExternalMedia* data)
 	int nFooterWidth = std::min(std::max(nWidth, pFooter->GetMinWidth()), pFooter->GetMaxWidth());
 	int nFooterX = data->get_BoundsX() + nWidth / 2 - nFooterWidth / 2;
 	pFooter->setGeometry(nFooterX, data->get_BoundsY() + data->get_BoundsH() + 12, nFooterWidth, pFooter->GetHeight());
+	pFooter->SetRoundedCorners(true);
 	// set footer skin
 	pFooter->ApplySkin(CFooterSkin::tDark);
 
