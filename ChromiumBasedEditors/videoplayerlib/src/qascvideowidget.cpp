@@ -191,7 +191,7 @@ void QAscVideoWidget::setSeek(int nPos)
 	double dProgress = (double)nPos / 100000.0;
 	m_pEngine->setPosition((qint64)(dProgress * nDuration));
 #else
-	m_pVlcPlayer->setPosition(static_cast<float>(nPos) / 100000);
+	m_pVlcPlayer->setPosition((float)nPos / 100000);
 #endif
 }
 
@@ -203,7 +203,11 @@ void QAscVideoWidget::stepBack(int nStep)
 		targetPos = 0;
 	m_pEngine->setPosition(targetPos);
 #else
-	// TODO
+	qint64 targetPos = m_pVlcPlayer->time() - nStep;
+	qint64 duration = m_pMedia->duration();
+	if (targetPos < 0)
+		targetPos = 0;
+	m_pVlcPlayer->setPosition((float)targetPos / duration);
 #endif
 }
 
@@ -216,7 +220,11 @@ void QAscVideoWidget::stepForward(int nStep)
 		targetPos = duration - 1;
 	m_pEngine->setPosition(targetPos);
 #else
-	// TODO
+	qint64 targetPos = m_pVlcPlayer->time() + nStep;
+	qint64 duration = m_pMedia->duration();
+	if (targetPos >= duration)
+		targetPos = duration - 1;
+	m_pVlcPlayer->setPosition((float)targetPos / duration);
 #endif
 }
 
