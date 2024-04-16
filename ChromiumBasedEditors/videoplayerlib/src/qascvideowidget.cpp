@@ -58,13 +58,10 @@
 #endif
 #endif
 
-const float QAscVideoWidget::c_arrPlaybackRates[] = { 0.125f, 0.25f, 0.5f, 1.0f, 2.0f, 4.0f };
-
 QAscVideoWidget::QAscVideoWidget(QWidget *parent)
 	: QASCVIDEOBASE(parent)
 {
 	m_nVolume = 50;
-	m_nRateIndex = 3;	// 1.0
 	setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
 
 	/*
@@ -198,27 +195,28 @@ void QAscVideoWidget::setSeek(int nPos)
 #endif
 }
 
-void QAscVideoWidget::setRateUp()
+void QAscVideoWidget::stepBack(int nStep)
 {
-	if (m_nRateIndex < 5)
-		m_nRateIndex++;
-
 #ifndef USE_VLC_LIBRARY
-	m_pEngine->setPlaybackRate(c_arrPlaybackRates[m_nRateIndex]);
+	qint64 targetPos = m_pEngine->position() - nStep;
+	if (targetPos < 0)
+		targetPos = 0;
+	m_pEngine->setPosition(targetPos);
 #else
-
+	// TODO
 #endif
 }
 
-void QAscVideoWidget::setRateDown()
+void QAscVideoWidget::stepForward(int nStep)
 {
-	if (m_nRateIndex > 0)
-		m_nRateIndex--;
-
 #ifndef USE_VLC_LIBRARY
-	m_pEngine->setPlaybackRate(c_arrPlaybackRates[m_nRateIndex]);
+	qint64 targetPos = m_pEngine->position() + nStep;
+	qint64 duration = m_pEngine->duration();
+	if (targetPos >= duration)
+		targetPos = duration - 1;
+	m_pEngine->setPosition(targetPos);
 #else
-
+	// TODO
 #endif
 }
 

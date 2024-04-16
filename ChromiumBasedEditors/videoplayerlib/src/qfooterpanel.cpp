@@ -264,12 +264,12 @@ void QFooterPanel::onPlaylistBtnClicked()
 
 void QFooterPanel::onRewindBackBtnClicked()
 {
-	m_pInternal->m_pView->m_pInternal->m_pPlayer->setRateDown();
+	m_pInternal->m_pView->m_pInternal->m_pPlayer->stepBack();
 }
 
 void QFooterPanel::onRewindForwardBtnClicked()
 {
-	m_pInternal->m_pView->m_pInternal->m_pPlayer->setRateUp();
+	m_pInternal->m_pView->m_pInternal->m_pPlayer->stepForward();
 }
 
 void QFooterPanel::onSeekChanged(int nValue)

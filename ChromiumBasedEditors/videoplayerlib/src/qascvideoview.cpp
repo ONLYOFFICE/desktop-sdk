@@ -259,9 +259,13 @@ void QAscVideoView::keyPressEvent(QKeyEvent *event)
 	switch (event->key())
 	{
 	case Qt::Key_Left:
+	{
+		m_pInternal->m_pPlayer->stepBack();
+		break;
+	}
 	case Qt::Key_Right:
 	{
-		Footer()->m_pInternal->m_pSlider->event(event);
+		m_pInternal->m_pPlayer->stepForward();
 		break;
 	}
 	case Qt::Key_O:

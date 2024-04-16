@@ -53,9 +53,6 @@ class QAscVideoWidget : public QASCVIDEOBASE
 	Q_OBJECT
 
 public:
-	static const float c_arrPlaybackRates[10];
-
-public:
 	QAscVideoWidget(QWidget *parent = 0);
 	~QAscVideoWidget();
 
@@ -73,8 +70,8 @@ public:
 	void setVolume(int nVolume);
 	void setSeek(int nPos);
 
-	void setRateUp();
-	void setRateDown();
+	void stepBack(int nStep = 5000);
+	void stepForward(int nStep = 5000);
 
 	bool isVideoFullScreen();
 	void setFullScreenOnCurrentScreen(bool isFullscreen);
@@ -102,7 +99,6 @@ public slots:
 public:
 	QAscVideoView* m_pView;
 	int m_nVolume;
-	int m_nRateIndex;
 
 private:
 	QString m_sCurrentSource;
