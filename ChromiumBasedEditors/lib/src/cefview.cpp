@@ -7362,6 +7362,10 @@ bool CCefView::IsDestroy()
 	return false;
 }
 
+void CCefView::SetParentWidgetInfo(const std::wstring& json)
+{
+}
+
 CefRefPtr<CefFrame> CCefView_Private::CCloudCryptoUpload::GetFrame()
 {
 	if (!View->m_handler || !View->m_handler->GetBrowser())
