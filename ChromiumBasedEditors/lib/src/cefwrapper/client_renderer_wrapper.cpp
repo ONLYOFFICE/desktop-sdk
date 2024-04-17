@@ -4277,12 +4277,14 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			}
 			else if (name == "_getViewportSettings")
 			{
-				retval = CefV8Value::CreateString(m_sViewportSettings);
+				retval = CefV8Value::CreateString(m_sViewportSettings.empty() ? "{}" : m_sViewportSettings);
 				return true;
 			}
 			else if (name == "_setViewportSettings")
 			{
 				m_sViewportSettings = arguments[0]->GetStringValue().ToString();
+				if (m_sViewportSettings.empty())
+					m_sViewportSettings = "{}";
 				std::string sCode = "(function(){if(window.AscDesktopEditor._events['onViewportSettingsChanged']){let handlers=window.AscDesktopEditor._events['onViewportSettingsChanged'];for(let i=0;i<handlers.length;i++)handlers[i](" + m_sViewportSettings + ");}})();";
 				CefV8Context::GetCurrentContext()->GetFrame()->ExecuteJavaScript(sCode, "", 0);
 				return true;
