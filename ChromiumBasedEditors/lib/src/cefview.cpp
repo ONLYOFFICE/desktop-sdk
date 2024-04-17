@@ -933,6 +933,9 @@ public:
 	CConvertFileInEditor* m_pLocalFileConverter;
 	CCloudPDFSaver* m_pCloudSaveToDrawing;
 
+	// информация о view (type, caption...)
+	std::wstring m_sViewportSettings;
+
 public:
 	CCefView_Private()
 	{
@@ -6344,6 +6347,7 @@ void CCefView::load(const std::wstring& urlInputSrc)
 	{
 		extra_info->SetString(std::to_string(++nCount), *iter);
 	}
+	extra_info->SetString(std::to_string(++nCount), "viewport_settings=" + U_TO_UTF8(m_pInternal->m_sViewportSettings));
 #endif
 
 	// Creat the new child browser window
@@ -7364,6 +7368,31 @@ bool CCefView::IsDestroy()
 
 void CCefView::SetParentWidgetInfo(const std::wstring& json)
 {
+	m_pInternal->m_sViewportSettings = json;
+
+	if (m_pInternal->m_bIsDestroying || m_pInternal->m_bIsDestroy)
+		return;
+
+	CefRefPtr<CefBrowser> pBrowser = m_pInternal->GetBrowser();
+	if (!pBrowser)
+		return;
+
+	std::string sViewportInfo = U_TO_UTF8(json);
+	NSStringUtils::string_replaceA(sViewportInfo, "\\", "\\\\");
+	NSStringUtils::string_replaceA(sViewportInfo, "\"", "\\\"");
+	std::string sCode = "(function(){window.AscDesktopEditor._setViewportSettings(\"" + sViewportInfo + "\");})();";
+
+	std::vector<int64> identifiers;
+	pBrowser->GetFrameIdentifiers(identifiers);
+
+	for (std::vector<int64>::iterator iter = identifiers.begin(); iter != identifiers.end(); iter++)
+	{
+		CefRefPtr<CefFrame> pFrame = pBrowser->GetFrame(*iter);
+		if (pFrame)
+		{
+			pFrame->ExecuteJavaScript(sCode, pFrame->GetURL(), 0);
+		}
+	}
 }
 
 CefRefPtr<CefFrame> CCefView_Private::CCloudCryptoUpload::GetFrame()

@@ -659,6 +659,8 @@ namespace asc_client_renderer
 		// для печати облачных файлов (pdf/xps/djvu)
 		std::wstring m_sCloudNativePrintFile;
 
+		std::string m_sViewportSettings;
+
 		bool m_bIsMacrosesSupport;
 		bool m_bIsPluginsSupport;
 
@@ -746,6 +748,8 @@ namespace asc_client_renderer
 				m_bIsMacrosesSupport = false;
 			if ("false" == default_params.GetValue("plugins_support"))
 				m_bIsPluginsSupport = false;
+
+			m_sViewportSettings = default_params.GetValue("viewport_settings");
 
 #if 0
 		default_params.Print();
@@ -2304,6 +2308,10 @@ window.AscDesktopEditor.getPortalsList = function() { debugger;var ret = []; try
 								   "r=o[e];r&&(r.timer&&clearTimeout(r.timer),r.complete&&r.complete(t,t.status),delete o[e])},window.AscSimpleRequest._onError=function(e,t){let "
 								   "r=o[e];r&&(r.timer&&clearTimeout(r.timer),r.error&&r.error(t,t.status),delete o[e])}}();\n";
 #endif
+					sCodeInitJS += "\
+window.AscDesktopEditor.getViewportSettings=function(){return JSON.parse(window.AscDesktopEditor._getViewportSettings());};\
+window.AscDesktopEditor._events={};\
+window.AscDesktopEditor.attachEvent=function(name,callback){if(undefined===window.AscDesktopEditor._events[name]){window.AscDesktopEditor._events[name]=[];}window.AscDesktopEditor._events[name].push(callback);};";
 
 					_frame->ExecuteJavaScript(sCodeInitJS, _frame->GetURL(), 0);
 				}
@@ -4267,6 +4275,18 @@ window.AscDesktopEditor.CallInFrame(\"" +
 
 				return true;
 			}
+			else if (name == "_getViewportSettings")
+			{
+				retval = CefV8Value::CreateString(m_sViewportSettings);
+				return true;
+			}
+			else if (name == "_setViewportSettings")
+			{
+				m_sViewportSettings = arguments[0]->GetStringValue().ToString();
+				std::string sCode = "(function(){if(window.AscDesktopEditor._events['onViewportSettingsChanged']){let handlers=window.AscDesktopEditor._events['onViewportSettingsChanged'];for(let i=0;i<handlers.length;i++)handlers[i](" + m_sViewportSettings + ");}})();";
+				CefV8Context::GetCurrentContext()->GetFrame()->ExecuteJavaScript(sCode, "", 0);
+				return true;
+			}
 
 			// Function does not exist.
 			return false;
@@ -4865,7 +4885,7 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 			CefRefPtr<CefV8Handler> handler = pWrapper;
 
-#define EXTEND_METHODS_COUNT 181
+#define EXTEND_METHODS_COUNT 183
 			const char* methods[EXTEND_METHODS_COUNT] = {
 				"Copy",
 				"Paste",
@@ -5115,6 +5135,9 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 				"AddChanges",
 
 				"_openExternalReference",
+
+				"_getViewportSettings",
+				"_setViewportSettings",
 
 				NULL};
 
