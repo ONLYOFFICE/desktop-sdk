@@ -46,9 +46,14 @@ public:
 
 	virtual void OnMediaStart(NSEditorApi::CAscExternalMedia* data);
 	virtual void OnMediaEnd(bool isFromResize = false);
+	virtual void OnMediaPlayerCommand(NSEditorApi::CAscExternalMediaPlayerCommand* data);
+
+	void showMediaControl(NSEditorApi::CAscExternalMediaPlayerCommand* data);
+	void hideMediaControl();
 
 protected:
 	QAscVideoView* m_pMediaView;
+	// QFooterPanel* m_pFooter;
 };
 
 #endif  // QCEFWEBVIEW_MEDIA_H

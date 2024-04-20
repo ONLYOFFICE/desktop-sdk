@@ -145,6 +145,8 @@
 
 #define ASC_MENU_EVENT_TYPE_ON_NEED_UPDATE_APP              8012
 
+#define ASC_MENU_EVENT_TYPE_SYSTEM_EXTERNAL_MEDIA_PLAYER_COMMAND 8013
+
 #define ASC_MENU_EVENT_TYPE_WINDOW_SHOW_CERTIFICATE         9001
 
 #define ASC_MENU_EVENT_TYPE_WINDOWS_MESSAGE_USER_COUNT      10
@@ -1502,6 +1504,86 @@ namespace NSEditorApi
 		LINK_PROPERTY_DOUBLE(sy)
 		LINK_PROPERTY_DOUBLE(tx)
 		LINK_PROPERTY_DOUBLE(ty)
+	};
+
+	class CAscExternalMediaPlayerCommand : public IMenuEventDataBase
+	{
+	private:
+		std::string m_sCmd;
+
+		int m_nFrameRectX;
+		int m_nFrameRectY;
+		int m_nFrameRectW;
+		int m_nFrameRectH;
+
+		int m_nControlRectX;
+		int m_nControlRectY;
+		int m_nControlRectW;
+		int m_nControlRectH;
+
+		std::wstring m_sUrl;
+
+		bool m_bFullscreen;
+		bool m_bIsVideo;
+		bool m_bMute;
+
+		int m_nVolume;
+
+		int m_nStartTime;
+		int m_nEndTime;
+		int m_nFrom;
+
+	public:
+		CAscExternalMediaPlayerCommand()
+		{
+			m_nFrameRectX = 0;
+			m_nFrameRectY = 0;
+			m_nFrameRectW = 0;
+			m_nFrameRectH = 0;
+
+			m_nControlRectX = 0;
+			m_nControlRectY = 0;
+			m_nControlRectW = 0;
+			m_nControlRectH = 0;
+
+			m_bFullscreen = false;
+			m_bIsVideo = false;
+			m_bMute = false;
+
+			m_nVolume = 0;
+
+			m_nStartTime = 0;
+			m_nEndTime = 0;
+			m_nFrom = 0;
+		}
+
+		virtual ~CAscExternalMediaPlayerCommand()
+		{
+		}
+
+		LINK_PROPERTY_STRINGA(Cmd)
+
+		LINK_PROPERTY_INT(FrameRectX)
+		LINK_PROPERTY_INT(FrameRectY)
+		LINK_PROPERTY_INT(FrameRectW)
+		LINK_PROPERTY_INT(FrameRectH)
+
+		LINK_PROPERTY_INT(ControlRectX)
+		LINK_PROPERTY_INT(ControlRectY)
+		LINK_PROPERTY_INT(ControlRectW)
+		LINK_PROPERTY_INT(ControlRectH)
+
+		LINK_PROPERTY_STRING(Url)
+
+		LINK_PROPERTY_BOOL(Fullscreen)
+		LINK_PROPERTY_BOOL(IsVideo)
+		LINK_PROPERTY_BOOL(Mute)
+
+		LINK_PROPERTY_INT(Volume)
+
+		LINK_PROPERTY_INT(StartTime)
+		LINK_PROPERTY_INT(EndTime)
+		LINK_PROPERTY_INT(From)
 	};
 }
 

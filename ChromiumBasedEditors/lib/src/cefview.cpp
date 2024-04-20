@@ -71,6 +71,8 @@
 
 #include <boost/regex.hpp>
 
+#include <iostream>
+
 #if defined (_LINUX) && !defined(_MAC)
 #define DONT_USE_NATIVE_FILE_DIALOGS
 #endif
@@ -3858,6 +3860,148 @@ public:
 			pData->put_BoundsY((int)(dKoef * (nY + nBoundsY)));
 			pData->put_BoundsW((int)(dKoef * (nBoundsR - nBoundsX + 1)));
 			pData->put_BoundsH((int)(dKoef * (nBoundsB - nBoundsY + 1)));
+
+			pListener->OnEvent(pEvent);
+			return true;
+		}
+		else if ("call_media_player_command" == message_name)
+		{
+			NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_SYSTEM_EXTERNAL_MEDIA_PLAYER_COMMAND);
+			NSEditorApi::CAscExternalMediaPlayerCommand* pData = new NSEditorApi::CAscExternalMediaPlayerCommand();
+			pEvent->m_pData = pData;
+
+			// TODO: remove debug info
+#define DEBUG_MEDIA_PLAYER
+
+			std::string sCmd = args->GetString(0).ToString();
+			pData->put_Cmd(sCmd);
+
+#ifdef DEBUG_MEDIA_PLAYER
+			std::string indent = "";
+			std::cout << "MediaPlayerData: {" << std::endl;
+			indent = "  ";
+
+			std::cout << indent << "Cmd: " << sCmd << "," << std::endl;
+#endif
+
+			if (args->GetSize() > 1)
+			{
+				int frameRectX = args->GetInt(1);
+				int frameRectY = args->GetInt(2);
+				int frameRectW = args->GetInt(3);
+				int frameRectH = args->GetInt(4);
+
+				int controlRectX = args->GetInt(5);
+				int controlRectY = args->GetInt(6);
+				int controlRectW = args->GetInt(7);
+				int controlRectH = args->GetInt(8);
+
+				double sx = args->GetDouble(9);
+				double shy = args->GetDouble(10);
+				double shx = args->GetDouble(11);
+				double sy = args->GetDouble(12);
+				double tx = args->GetDouble(13);
+				double ty = args->GetDouble(14);
+
+				// transform
+				std::cout << "Before: " << frameRectX << ", " << frameRectY << std::endl;
+				Aggplus::CMatrix oTransform;
+				oTransform.SetElements(sx, shy, shx, sy, tx, ty);
+				double dFrameX = frameRectX, dFrameY = frameRectY;
+				oTransform.TransformPoint(dFrameX, dFrameY);
+
+				double dScale = (double)m_pParent->GetDeviceScale();
+
+				frameRectX = (int)(dFrameX );
+				frameRectY = (int)(dFrameY );
+				std::cout << "After: " << frameRectX << ", " << frameRectY << std::endl;
+
+
+				std::wstring sPath = args->GetString(15).ToWString();
+
+				bool isFullscreen = args->GetBool(16);
+				bool isVideo = args->GetBool(17);
+				bool isMute = args->GetBool(18);
+
+				int volume = args->GetInt(19);
+
+				int startTime = args->GetInt(20);
+				int endTime = args->GetInt(21);
+				int from = args->GetInt(22);
+
+				// put all to data
+				pData->put_FrameRectX(frameRectX);
+				pData->put_FrameRectY(frameRectY);
+				pData->put_FrameRectW(frameRectW);
+				pData->put_FrameRectH(frameRectH);
+
+				pData->put_ControlRectX(controlRectX);
+				pData->put_ControlRectY(controlRectY);
+				pData->put_ControlRectW(controlRectW);
+				pData->put_ControlRectH(controlRectH);
+
+				pData->put_Url(sPath);
+
+				pData->put_Fullscreen(isFullscreen);
+				pData->put_IsVideo(isVideo);
+				pData->put_Mute(isMute);
+
+				pData->put_Volume(volume);
+
+				pData->put_StartTime(startTime);
+				pData->put_EndTime(endTime);
+				pData->put_From(from);
+
+#ifdef DEBUG_MEDIA_PLAYER
+				// print
+				std::cout << indent << "FrameRect: {" << std::endl;
+				indent = "    ";
+				std::cout << indent << "X: " << frameRectX << "," << std::endl;
+				std::cout << indent << "Y: " << frameRectY << "," << std::endl;
+				std::cout << indent << "W: " << frameRectW << "," << std::endl;
+				std::cout << indent << "H: " << frameRectH << "," << std::endl;
+				indent = "  ";
+				std::cout << indent << "}," << std::endl;
+
+				std::cout << indent << "ControlRect: {" << std::endl;
+				indent = "    ";
+				std::cout << indent << "X: " << controlRectX << "," << std::endl;
+				std::cout << indent << "Y: " << controlRectY << "," << std::endl;
+				std::cout << indent << "W: " << controlRectW << "," << std::endl;
+				std::cout << indent << "H: " << controlRectH << "," << std::endl;
+				indent = "  ";
+				std::cout << indent << "}," << std::endl;
+
+				std::cout << indent << "DrawingTransform: {" << std::endl;
+				indent = "    ";
+				std::cout << indent << "SX: " << sx << "," << std::endl;
+				std::cout << indent << "SHY: " << shy << "," << std::endl;
+				std::cout << indent << "SHX: " << shx << "," << std::endl;
+				std::cout << indent << "SY: " << sy << "," << std::endl;
+				std::cout << indent << "TX: " << tx << "," << std::endl;
+				std::cout << indent << "TY: " << ty << "," << std::endl;
+				indent = "  ";
+				std::cout << indent << "}," << std::endl;
+
+				std::cout << indent << "Fullscreen: " << std::boolalpha << isFullscreen << "," << std::endl;
+				std::cout << indent << "IsVideo: " << std::boolalpha << isVideo << "," << std::endl;
+
+				std::wcout << "  MediaFile: \"" << sPath << "\"," << std::endl;
+
+				std::cout << indent << "Mute: " << std::boolalpha << isMute << "," << std::endl;
+
+				std::cout << indent << "Volume: " << volume << "," << std::endl;
+
+				std::cout << indent << "StartTime: " << startTime << "," << std::endl;
+				std::cout << indent << "EndTime: " << endTime << "," << std::endl;
+				std::cout << indent << "From: " << from << "," << std::endl;
+				indent = "";
+#endif
+			}
+
+#ifdef DEBUG_MEDIA_PLAYER
+			std::cout << "}\n" << std::endl;
+#endif
 
 			pListener->OnEvent(pEvent);
 			return true;

@@ -35,6 +35,8 @@
 
 #include <algorithm>
 
+#include <QDebug>
+
 QCefView_Media::QCefView_Media(QWidget* parent, const QSize& size) : QCefView(parent, size)
 {
 	m_pMediaView = NULL;
@@ -80,6 +82,7 @@ void QCefView_Media::OnMediaStart(NSEditorApi::CAscExternalMedia* data)
 
 	m_pMediaView->setMedia(QString::fromStdWString(data->get_Url()));
 }
+
 void QCefView_Media::OnMediaEnd(bool isFromResize)
 {
 	if (!m_pMediaView)
@@ -95,4 +98,52 @@ void QCefView_Media::OnMediaEnd(bool isFromResize)
 			this->resizeEvent(nullptr);
 		});
 	}
+}
+
+void QCefView_Media::OnMediaPlayerCommand(NSEditorApi::CAscExternalMediaPlayerCommand* data)
+{
+	std::string sCmd = data->get_Cmd();
+
+	if (sCmd == "showMediaControl")
+	{
+		showMediaControl(data);
+	}
+	else if (sCmd == "hideMediaControl")
+	{
+		hideMediaControl();
+	}
+	else
+	{
+		qDebug() << "Command " << QString::fromStdString("\"" + sCmd + "\"") << "can not be handled.";
+	}
+}
+
+void QCefView_Media::showMediaControl(NSEditorApi::CAscExternalMediaPlayerCommand* data)
+{
+	if (m_pMediaView)
+		return;
+
+	// set DPI for this widget BEFORE creating media view
+	QWidgetUtils::SetDPI(this, m_pCefView->GetDeviceScale());
+
+	m_pMediaView = new QAscVideoView(this, true);
+	m_pMediaView->setPlayListUsed(false);
+	m_pMediaView->setFullScreenUsed(false);
+
+	// m_pMediaView->setGeometry(100, 100, 100, 100);
+
+	QFooterPanel* pFooter = m_pMediaView->Footer();
+	pFooter->setGeometry(data->get_ControlRectX(), data->get_ControlRectY(), pFooter->GetMinWidth(), pFooter->GetHeight());
+
+	pFooter->ApplySkin(CFooterSkin::tDark);
+	pFooter->show();
+}
+
+void QCefView_Media::hideMediaControl()
+{
+	if (!m_pMediaView)
+		return;
+
+	m_pMediaView->RemoveFromPresentation();
+	m_pMediaView = nullptr;
 }

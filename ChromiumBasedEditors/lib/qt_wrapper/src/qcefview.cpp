@@ -181,6 +181,10 @@ void QCefView::OnMediaEnd(bool isFromResize)
 {
 }
 
+void QCefView::OnMediaPlayerCommand(NSEditorApi::CAscExternalMediaPlayerCommand* data)
+{
+}
+
 // events
 void QCefView::OnRelease()
 {
