@@ -72,6 +72,7 @@
 #include <boost/regex.hpp>
 
 #include <iostream>
+#include <algorithm>
 
 #if defined (_LINUX) && !defined(_MAC)
 #define DONT_USE_NATIVE_FILE_DIALOGS
@@ -3903,21 +3904,40 @@ public:
 				double tx = args->GetDouble(13);
 				double ty = args->GetDouble(14);
 
-				// transform
-				std::cout << "Before: " << frameRectX << ", " << frameRectY << std::endl;
-				Aggplus::CMatrix oTransform;
-				oTransform.SetElements(sx, shy, shx, sy, tx, ty);
-				double dFrameX = frameRectX, dFrameY = frameRectY;
-				oTransform.TransformPoint(dFrameX, dFrameY);
+				// TODO: transform?
 
-				double dScale = (double)m_pParent->GetDeviceScale();
+				// double x1 = 0, y1 = 0;
+				// double x2 = controlRectW, y2 = 0;
+				// double x3 = controlRectW, y3 = controlRectH;
+				// double x4 = 0, y4 = controlRectH;
 
-				frameRectX = (int)(dFrameX );
-				frameRectY = (int)(dFrameY );
-				std::cout << "After: " << frameRectX << ", " << frameRectY << std::endl;
+				// Aggplus::CMatrix oTransform;
+				// oTransform.SetElements(sx, shy, shx, sy, tx, ty);
+				// oTransform.TransformPoint(x1, y1);
+				// oTransform.TransformPoint(x2, y2);
+				// oTransform.TransformPoint(x3, y3);
+				// oTransform.TransformPoint(x4, y4);
 
+				// double boundsX = std::min({x1, x2, x3, x4});
+				// double boundsY = std::min({y1, y2, y3, y4});
+				// double boundsR = std::max({x1, x2, x3, x4});
+				// double boundsB = std::max({y1, y2, y3, y4});
+
+				double dKoef = m_pParent->GetDeviceScale();
+
+				controlRectX = (int)(dKoef * controlRectX + 0.5);
+				controlRectY = (int)(dKoef * controlRectY + 0.5);
+				controlRectW = (int)(dKoef * controlRectW + 0.5);
+				controlRectH = (int)(dKoef * controlRectH + 0.5);
+
+				frameRectX = (int)(dKoef * frameRectX + 0.5);
+				frameRectY = (int)(dKoef * frameRectY + 0.5);
+				frameRectW = (int)(dKoef * frameRectW + 0.5);
+				frameRectH = (int)(dKoef * frameRectH + 0.5);
 
 				std::wstring sPath = args->GetString(15).ToWString();
+				if (!NSFile::CFileBinary::Exists(sPath))
+					sPath = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/media/" + sPath;
 
 				bool isFullscreen = args->GetBool(16);
 				bool isVideo = args->GetBool(17);

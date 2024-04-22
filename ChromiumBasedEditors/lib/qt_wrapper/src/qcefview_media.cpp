@@ -112,9 +112,13 @@ void QCefView_Media::OnMediaPlayerCommand(NSEditorApi::CAscExternalMediaPlayerCo
 	{
 		hideMediaControl();
 	}
+	else if (sCmd == "update")
+	{
+		updateMediaControl(data);
+	}
 	else
 	{
-		qDebug() << "Command " << QString::fromStdString("\"" + sCmd + "\"") << "can not be handled.";
+		qDebug() << "Media player command " << QString::fromStdString("\"" + sCmd + "\"") << "can not be handled.";
 	}
 }
 
@@ -130,13 +134,17 @@ void QCefView_Media::showMediaControl(NSEditorApi::CAscExternalMediaPlayerComman
 	m_pMediaView->setPlayListUsed(false);
 	m_pMediaView->setFullScreenUsed(false);
 
-	// m_pMediaView->setGeometry(100, 100, 100, 100);
+	m_pMediaView->setGeometry(data->get_FrameRectX(), data->get_FrameRectY(), data->get_FrameRectW(), data->get_FrameRectH());
+	// m_pMediaView->show();
 
 	QFooterPanel* pFooter = m_pMediaView->Footer();
-	pFooter->setGeometry(data->get_ControlRectX(), data->get_ControlRectY(), pFooter->GetMinWidth(), pFooter->GetHeight());
+	pFooter->setGeometry(data->get_ControlRectX(), data->get_ControlRectY(), data->get_ControlRectW(), pFooter->GetHeight());
 
 	pFooter->ApplySkin(CFooterSkin::tDark);
+	pFooter->SetRoundedCorners();
 	pFooter->show();
+
+	// m_pMediaView->setMedia(QString::fromStdWString(data->get_Url()));
 }
 
 void QCefView_Media::hideMediaControl()
@@ -147,3 +155,13 @@ void QCefView_Media::hideMediaControl()
 	m_pMediaView->RemoveFromPresentation();
 	m_pMediaView = nullptr;
 }
+
+void QCefView_Media::updateMediaControl(NSEditorApi::CAscExternalMediaPlayerCommand* data)
+{
+	if (!m_pMediaView)
+		return;
+
+	QFooterPanel* pFooter = m_pMediaView->Footer();
+	pFooter->setGeometry(data->get_ControlRectX(), data->get_ControlRectY(), data->get_ControlRectW(), pFooter->GetHeight());
+}
+

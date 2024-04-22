@@ -50,10 +50,10 @@ public:
 
 	void showMediaControl(NSEditorApi::CAscExternalMediaPlayerCommand* data);
 	void hideMediaControl();
+	void updateMediaControl(NSEditorApi::CAscExternalMediaPlayerCommand* data);
 
 protected:
 	QAscVideoView* m_pMediaView;
-	// QFooterPanel* m_pFooter;
 };
 
 #endif  // QCEFWEBVIEW_MEDIA_H
