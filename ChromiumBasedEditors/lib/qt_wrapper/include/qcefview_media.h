@@ -50,7 +50,7 @@ public:
 
 	void showMediaControl(NSEditorApi::CAscExternalMediaPlayerCommand* data);
 	void hideMediaControl();
-	void updateMediaControl(NSEditorApi::CAscExternalMediaPlayerCommand* data);
+	void updateGeometry(NSEditorApi::CAscExternalMediaPlayerCommand* data);
 
 protected:
 	QAscVideoView* m_pMediaView;

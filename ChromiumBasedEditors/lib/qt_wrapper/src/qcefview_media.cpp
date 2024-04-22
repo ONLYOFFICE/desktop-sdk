@@ -114,7 +114,7 @@ void QCefView_Media::OnMediaPlayerCommand(NSEditorApi::CAscExternalMediaPlayerCo
 	}
 	else if (sCmd == "update")
 	{
-		updateMediaControl(data);
+		updateGeometry(data);
 	}
 	else
 	{
@@ -135,7 +135,6 @@ void QCefView_Media::showMediaControl(NSEditorApi::CAscExternalMediaPlayerComman
 	m_pMediaView->setFullScreenUsed(false);
 
 	m_pMediaView->setGeometry(data->get_FrameRectX(), data->get_FrameRectY(), data->get_FrameRectW(), data->get_FrameRectH());
-	// m_pMediaView->show();
 
 	QFooterPanel* pFooter = m_pMediaView->Footer();
 	pFooter->setGeometry(data->get_ControlRectX(), data->get_ControlRectY(), data->get_ControlRectW(), pFooter->GetHeight());
@@ -144,7 +143,7 @@ void QCefView_Media::showMediaControl(NSEditorApi::CAscExternalMediaPlayerComman
 	pFooter->SetRoundedCorners();
 	pFooter->show();
 
-	// m_pMediaView->setMedia(QString::fromStdWString(data->get_Url()));
+	m_pMediaView->setMedia(QString::fromStdWString(data->get_Url()), false);
 }
 
 void QCefView_Media::hideMediaControl()
@@ -156,10 +155,12 @@ void QCefView_Media::hideMediaControl()
 	m_pMediaView = nullptr;
 }
 
-void QCefView_Media::updateMediaControl(NSEditorApi::CAscExternalMediaPlayerCommand* data)
+void QCefView_Media::updateGeometry(NSEditorApi::CAscExternalMediaPlayerCommand* data)
 {
 	if (!m_pMediaView)
 		return;
+
+	m_pMediaView->setGeometry(data->get_FrameRectX(), data->get_FrameRectY(), data->get_FrameRectW(), data->get_FrameRectH());
 
 	QFooterPanel* pFooter = m_pMediaView->Footer();
 	pFooter->setGeometry(data->get_ControlRectX(), data->get_ControlRectY(), data->get_ControlRectW(), pFooter->GetHeight());

@@ -451,11 +451,11 @@ void QAscVideoView::setFullScreenUsed(bool isUsed)
 
 	Footer()->m_pInternal->m_pFullscreen->setHidden(!isUsed);
 }
-void QAscVideoView::setMedia(QString sMedia)
+void QAscVideoView::setMedia(QString sMedia, bool isStart)
 {
 	QStringList files;
 	files.append(sMedia);
-	AddFilesToPlaylist(files, true);
+	AddFilesToPlaylist(files, isStart);
 }
 
 void QAscVideoView::Stop()

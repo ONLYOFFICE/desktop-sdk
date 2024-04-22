@@ -68,7 +68,7 @@ public:
 
 	void setPlayListUsed(bool isUsed);
 	void setFullScreenUsed(bool isUsed);
-	void setMedia(QString sMedia);
+	void setMedia(QString sMedia, bool isStart = true);
 
 	void Stop();
 	void RemoveFromPresentation();
