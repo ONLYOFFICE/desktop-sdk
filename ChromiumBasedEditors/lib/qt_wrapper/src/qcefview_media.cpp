@@ -35,7 +35,12 @@
 
 #include <algorithm>
 
-#include <QDebug>
+// TODO: remove debug info
+// #define DEBUG_MEDIA_PLAYER
+
+#ifdef DEBUG_MEDIA_PLAYER
+#include <iostream>
+#endif
 
 QCefView_Media::QCefView_Media(QWidget* parent, const QSize& size) : QCefView(parent, size)
 {
@@ -118,13 +123,70 @@ void QCefView_Media::OnMediaPlayerCommand(NSEditorApi::CAscExternalMediaPlayerCo
 	}
 	else
 	{
-		qDebug() << "Media player command " << QString::fromStdString("\"" + sCmd + "\"") << "can not be handled.";
+#ifdef DEBUG_MEDIA_PLAYER
+		std::cout << "Media player command \"" << sCmd << "\" can not be handled.";
+#endif
 	}
+
+#ifdef DEBUG_MEDIA_PLAYER
+	std::string indent = "";
+	std::cout << "MediaPlayerData: {" << std::endl;
+	indent = "  ";
+
+	std::cout << indent << "Cmd: " << sCmd << "," << std::endl;
+
+	if (sCmd != "hideMediaControl")
+	{
+		std::cout << indent << "FrameRect: {" << std::endl;
+		indent = "    ";
+		std::cout << indent << "X: " << data->get_FrameRectX() << "," << std::endl;
+		std::cout << indent << "Y: " << data->get_FrameRectY() << "," << std::endl;
+		std::cout << indent << "W: " << data->get_FrameRectW() << "," << std::endl;
+		std::cout << indent << "H: " << data->get_FrameRectH() << "," << std::endl;
+		indent = "  ";
+		std::cout << indent << "}," << std::endl;
+
+		std::cout << indent << "ControlRect: {" << std::endl;
+		indent = "    ";
+		std::cout << indent << "X: " << data->get_ControlRectX() << "," << std::endl;
+		std::cout << indent << "Y: " << data->get_ControlRectY() << "," << std::endl;
+		std::cout << indent << "W: " << data->get_ControlRectW() << "," << std::endl;
+		std::cout << indent << "H: " << data->get_ControlRectH() << "," << std::endl;
+		indent = "  ";
+		std::cout << indent << "}," << std::endl;
+
+		std::cout << indent << "IsSelected: " << std::boolalpha << data->get_IsSelected() << "," << std::endl;
+
+		std::cout << indent << "Rotation: " << data->get_Rotation() << "," << std::endl;
+
+		std::cout << indent << "FlipH: " << std::boolalpha << data->get_FlipH() << "," << std::endl;
+		std::cout << indent << "FlipV: " << std::boolalpha << data->get_FlipV() << "," << std::endl;
+
+		std::wcout << "  MediaFile: \"" << data->get_Url() << "\"," << std::endl;
+
+		std::cout << indent << "Fullscreen: " << std::boolalpha << data->get_Fullscreen() << "," << std::endl;
+		std::cout << indent << "IsVideo: " << std::boolalpha << data->get_IsVideo() << "," << std::endl;
+		std::cout << indent << "Mute: " << std::boolalpha << data->get_Mute() << "," << std::endl;
+
+		std::cout << indent << "Volume: " << data->get_Volume() << "," << std::endl;
+
+		std::cout << indent << "StartTime: " << data->get_StartTime() << "," << std::endl;
+		std::cout << indent << "EndTime: " << data->get_EndTime() << "," << std::endl;
+		std::cout << indent << "From: " << data->get_From() << "," << std::endl;
+		indent = "";
+	}
+
+	std::cout << "}\n" << std::endl;
+#endif
 }
 
 void QCefView_Media::showMediaControl(NSEditorApi::CAscExternalMediaPlayerCommand* data)
 {
 	if (m_pMediaView)
+		return;
+
+	// if media is not selected don't do anything
+	if (!data->get_IsSelected())
 		return;
 
 	// set DPI for this widget BEFORE creating media view

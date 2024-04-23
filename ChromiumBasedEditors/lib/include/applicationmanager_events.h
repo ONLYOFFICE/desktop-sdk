@@ -1521,6 +1521,13 @@ namespace NSEditorApi
 		int m_nControlRectW;
 		int m_nControlRectH;
 
+		bool m_bIsSelected;
+
+		double m_dRotation;
+
+		bool m_bFlipH;
+		bool m_bFlipV;
+
 		std::wstring m_sUrl;
 
 		bool m_bFullscreen;
@@ -1545,6 +1552,13 @@ namespace NSEditorApi
 			m_nControlRectY = 0;
 			m_nControlRectW = 0;
 			m_nControlRectH = 0;
+
+			m_bIsSelected = false;
+
+			m_dRotation = 0.0;
+
+			m_bFlipH = false;
+			m_bFlipV = false;
 
 			m_bFullscreen = false;
 			m_bIsVideo = false;
@@ -1572,6 +1586,13 @@ namespace NSEditorApi
 		LINK_PROPERTY_INT(ControlRectY)
 		LINK_PROPERTY_INT(ControlRectW)
 		LINK_PROPERTY_INT(ControlRectH)
+
+		LINK_PROPERTY_BOOL(IsSelected)
+
+		LINK_PROPERTY_DOUBLE(Rotation)
+
+		LINK_PROPERTY_BOOL(FlipH)
+		LINK_PROPERTY_BOOL(FlipV)
 
 		LINK_PROPERTY_STRING(Url)
 

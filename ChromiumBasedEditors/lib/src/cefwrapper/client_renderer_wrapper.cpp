@@ -3106,33 +3106,32 @@ window.AscDesktopEditor.getPortalsList = function() { debugger;var ret = []; try
 					messageArgs->SetInt(6, controlRect->GetValue("Y")->GetIntValue());
 					messageArgs->SetInt(7, controlRect->GetValue("W")->GetIntValue());
 					messageArgs->SetInt(8, controlRect->GetValue("H")->GetIntValue());
-					// DrawingTransform
-					CefRefPtr<CefV8Value> drawingTransform = data->GetValue("DrawingTransform");
-					messageArgs->SetDouble(9, drawingTransform->GetValue("SX")->GetDoubleValue());
-					messageArgs->SetDouble(10, drawingTransform->GetValue("SHY")->GetDoubleValue());
-					messageArgs->SetDouble(11, drawingTransform->GetValue("SHX")->GetDoubleValue());
-					messageArgs->SetDouble(12, drawingTransform->GetValue("SY")->GetDoubleValue());
-					messageArgs->SetDouble(13, drawingTransform->GetValue("TX")->GetDoubleValue());
-					messageArgs->SetDouble(14, drawingTransform->GetValue("TY")->GetDoubleValue());
+					// IsSelected
+					messageArgs->SetBool(9, data->GetValue("IsSelected")->GetBoolValue());
+					// Rotation
+					messageArgs->SetDouble(10, data->GetValue("Rotation")->GetDoubleValue());
+					// FlipH & FlipV
+					messageArgs->SetBool(11, data->GetValue("FlipH")->GetBoolValue());
+					messageArgs->SetBool(12, data->GetValue("FlipV")->GetBoolValue());
 					// MediaFile
-					messageArgs->SetString(15, data->GetValue("MediaFile")->GetStringValue());
+					messageArgs->SetString(13, data->GetValue("MediaFile")->GetStringValue());
 					// Fullscreen
-					messageArgs->SetBool(16, data->GetValue("Fullscreen")->GetBoolValue());
+					messageArgs->SetBool(14, data->GetValue("Fullscreen")->GetBoolValue());
 					// IsVideo
-					messageArgs->SetBool(17, data->GetValue("IsVideo")->GetBoolValue());
+					messageArgs->SetBool(15, data->GetValue("IsVideo")->GetBoolValue());
 					// Mute
-					messageArgs->SetBool(18, data->GetValue("Mute")->GetBoolValue());
+					messageArgs->SetBool(16, data->GetValue("Mute")->GetBoolValue());
 					// Volume
 					CefRefPtr<CefV8Value> volume = data->GetValue("Volume");
-					messageArgs->SetInt(19, (volume->IsNull() ? -1 : volume->GetIntValue()));
+					messageArgs->SetInt(17, (volume->IsNull() ? -1 : volume->GetIntValue()));
 					// StartTime
 					CefRefPtr<CefV8Value> startTime = data->GetValue("StartTime");
-					messageArgs->SetInt(20, (startTime->IsNull() ? -1 : startTime->GetIntValue()));
+					messageArgs->SetInt(18, (startTime->IsNull() ? -1 : startTime->GetIntValue()));
 					// EndTime
 					CefRefPtr<CefV8Value> endTime = data->GetValue("EndTime");
-					messageArgs->SetInt(21, (endTime->IsNull() ? -1 : endTime->GetIntValue()));
+					messageArgs->SetInt(19, (endTime->IsNull() ? -1 : endTime->GetIntValue()));
 					// From
-					messageArgs->SetInt(22, data->GetValue("From")->GetIntValue());
+					messageArgs->SetInt(20, data->GetValue("From")->GetIntValue());
 				}
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 				return true;
