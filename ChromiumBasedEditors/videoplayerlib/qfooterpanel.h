@@ -20,6 +20,7 @@ public:
 
 public:
 	virtual void resizeEvent(QResizeEvent* event);
+	virtual void moveEvent(QMoveEvent* event);
 	virtual void mouseMoveEvent(QMouseEvent* event);
 	virtual void paintEvent(QPaintEvent* event);
 

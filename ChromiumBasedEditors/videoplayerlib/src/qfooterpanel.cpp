@@ -7,6 +7,8 @@
 #include "../qascvideoview.h"
 #include "qascvideowidget.h"
 
+#include <QDebug>
+
 QFooterPanel::QFooterPanel(QWidget* parent, QAscVideoView* pView) : QWidget(parent)
 {
 	m_pInternal = new QFooterPanel_Private();
@@ -92,8 +94,6 @@ QFooterPanel::~QFooterPanel()
 
 void QFooterPanel::resizeEvent(QResizeEvent* event)
 {
-	QWidget::resizeEvent(event);
-
 	double dDpi = QWidgetUtils::GetDPI(this);
 
 	int nButW = QWidgetUtils::ScaleDPI(m_pInternal->c_nButtonsWidth, dDpi);
@@ -155,6 +155,22 @@ void QFooterPanel::resizeEvent(QResizeEvent* event)
 
 	if (m_pInternal->m_bIsRoundedCorners)
 		QWidgetUtils::SetRoundedRectMask(this, m_pInternal->c_nBorderRadius);
+}
+
+void QFooterPanel::moveEvent(QMoveEvent* event)
+{
+	double dDpi = QWidgetUtils::GetDPI(this);
+
+	int nButW = QWidgetUtils::ScaleDPI(m_pInternal->c_nButtonsWidth, dDpi);
+	int nBetweenButtons = QWidgetUtils::ScaleDPI(m_pInternal->c_nButtonsBetween, dDpi);
+
+	// move volume controls
+	int nVolumeControlW = QWidgetUtils::ScaleDPI(m_pInternal->c_nVolumeControlWidth, dDpi);
+	int nVolumeControlH = QWidgetUtils::ScaleDPI(m_pInternal->c_nVolumeControlHeight, dDpi);
+	int nVolumeControlX = this->x() + m_pInternal->m_pVolume->x() + nButW / 2 - nVolumeControlW / 2;
+	int nVolumeControlY = this->y() + m_pInternal->m_pVolume->y() - nVolumeControlH - nBetweenButtons;
+
+	m_pInternal->m_pVolumeControl->move(nVolumeControlX, nVolumeControlY);
 }
 
 void QFooterPanel::mouseMoveEvent(QMouseEvent* event)
