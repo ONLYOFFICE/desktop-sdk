@@ -1407,12 +1407,24 @@ public:
 
 		if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_DOCUMENT)
 		{
-			arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX);
+			bool bIsPdfFormPriority = (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF) ? true : false;
 
 #ifndef DISABLE_OFORM_SUPPORT
-			arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF);
+			//arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF);
 			//arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM);
-			//arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF);
+
+			if (bIsPdfFormPriority)
+			{
+				arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF);
+				arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX);
+			}
+			else
+			{
+				arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX);
+				arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF);
+			}
+#else
+			arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX);
 #endif
 
 			if (!bEncryption)
@@ -7651,7 +7663,7 @@ void CCefViewEditor::CreateLocalFile(const AscEditorType& nFileFormatSrc, const 
 		nFileFormatType = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX;
 	else if (nFileFormat == AscEditorType::etDocumentMasterForm ||
 			 nFileFormat == AscEditorType::etDocumentMasterOForm)
-		nFileFormatType = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF;
+		nFileFormatType = AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF;
 
 	bool bIsView = GetAppManager()->m_pInternal->GetEditorPermission() ? false : true;
 
