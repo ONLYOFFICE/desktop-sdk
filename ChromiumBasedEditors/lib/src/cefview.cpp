@@ -1407,7 +1407,16 @@ public:
 
 		if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_DOCUMENT)
 		{
-			bool bIsPdfFormPriority = (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF) ? true : false;
+			bool bIsPdfFormPriority = false;
+			switch (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat)
+			{
+			case AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM:
+			case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF:
+			case AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF:
+				bIsPdfFormPriority = true;
+			default:
+				break;
+			}
 
 #ifndef DISABLE_OFORM_SUPPORT
 			//arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF);
