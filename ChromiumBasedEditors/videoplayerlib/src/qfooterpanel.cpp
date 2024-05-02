@@ -295,7 +295,7 @@ void QFooterPanel::onSeekChanged(int nValue)
 
 void QFooterPanel::onVolumeChanged(int nValue)
 {
-	m_pInternal->m_pView->ChangeVolume(nValue);
+	m_pInternal->m_pView->m_pInternal->m_pPlayer->setVolume(nValue);
 	// change icon
 	if (nValue > 75)
 	{
@@ -313,6 +313,9 @@ void QFooterPanel::onVolumeChanged(int nValue)
 	{
 		m_pInternal->m_pVolume->setIcons("btn-volume-mute");
 	}
+	// change mute state
+	if (nValue)
+		m_pInternal->m_pView->m_pInternal->m_bIsMuted = false;
 }
 
 void QFooterPanel::SetPlayPauseIcon(bool bIsPlay)

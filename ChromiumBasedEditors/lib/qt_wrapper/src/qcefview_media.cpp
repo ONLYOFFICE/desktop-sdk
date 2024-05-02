@@ -222,6 +222,16 @@ void QCefView_Media::showMediaControl(NSEditorApi::CAscExternalMediaPlayerComman
 	pFooter->show();
 
 	m_pMediaView->setMedia(QString::fromStdWString(data->get_Url()), false);
+
+	int nVolume = data->get_Volume();
+	if (data->get_Mute())
+	{
+		m_pMediaView->ToggleMute();
+	}
+	else if (nVolume != -1)
+	{
+		m_pMediaView->ChangeVolume(nVolume);
+	}
 }
 
 void QCefView_Media::hideMediaControl()

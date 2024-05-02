@@ -333,9 +333,12 @@ void QAscVideoView::PlayPause()
 
 void QAscVideoView::ChangeVolume(int nValue)
 {
-	m_pInternal->m_pPlayer->setVolume(nValue);
-	if (nValue)
-		m_pInternal->m_bIsMuted = false;
+	if (nValue < 0)
+		nValue = 0;
+	if (nValue > 100)
+		nValue = 100;
+
+	m_pInternal->m_pFooter->m_pInternal->m_pVolumeControlV->setValue(nValue);
 }
 
 void QAscVideoView::ChangeSeek(int nValue)
