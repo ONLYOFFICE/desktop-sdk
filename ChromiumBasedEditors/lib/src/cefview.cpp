@@ -71,6 +71,8 @@
 
 #include <boost/regex.hpp>
 
+#include <algorithm>
+
 #if defined (_LINUX) && !defined(_MAC)
 #define DONT_USE_NATIVE_FILE_DIALOGS
 #endif
@@ -3890,19 +3892,42 @@ public:
 				bool flipH = args->GetBool(11);
 				bool flipV = args->GetBool(12);
 
-				// TODO: rotate & flip video frame
-
 				double dKoef = m_pParent->GetDeviceScale();
-
-				controlRectX = (int)(dKoef * controlRectX + 0.5);
-				controlRectY = (int)(dKoef * controlRectY + 0.5);
-				controlRectW = (int)(dKoef * controlRectW + 0.5);
-				controlRectH = (int)(dKoef * controlRectH + 0.5);
 
 				frameRectX = (int)(dKoef * frameRectX + 0.5);
 				frameRectY = (int)(dKoef * frameRectY + 0.5);
 				frameRectW = (int)(dKoef * frameRectW + 0.5);
 				frameRectH = (int)(dKoef * frameRectH + 0.5);
+
+				// calculate bounds
+				double dWHalf = frameRectW / 2.0;
+				double dHHalf = frameRectH / 2.0;
+				double x1 = -dWHalf, y1 = -dHHalf;
+				double x2 = dWHalf, y2 = -dHHalf;
+				double x3 = dWHalf, y3 = dHHalf;
+				double x4 = -dWHalf, y4 = dHHalf;
+
+				Aggplus::CMatrix oTransform(1.0, 0.0, 0.0, 1.0, 0.0, 0.0);
+				oTransform.Rotate(rotation * 180.0 / M_PI);
+				oTransform.TransformPoint(x1, y1);
+				oTransform.TransformPoint(x2, y2);
+				oTransform.TransformPoint(x3, y3);
+				oTransform.TransformPoint(x4, y4);
+
+				double dBoundsX = std::min({x1, x2, x3, x4});
+				double dBoundsY = std::min({y1, y2, y3, y4});
+				double dBoundsR = std::max({x1, x2, x3, x4});
+				double dBoundsB = std::max({y1, y2, y3, y4});
+
+				int frameBoundsX = (int)(dWHalf + frameRectX + dBoundsX + 0.5);
+				int frameBoundsY = (int)(dHHalf + frameRectY + dBoundsY + 0.5);
+				int frameBoundsW = (int)(dBoundsR - dBoundsX + 0.5);
+				int frameBoundsH = (int)(dBoundsB - dBoundsY + 0.5);
+
+				controlRectX = (int)(dKoef * controlRectX + 0.5);
+				controlRectY = (int)(dKoef * controlRectY + 0.5);
+				controlRectW = (int)(dKoef * controlRectW + 0.5);
+				controlRectH = (int)(dKoef * controlRectH + 0.5);
 
 				std::wstring sPath = args->GetString(13).ToWString();
 				if (!NSFile::CFileBinary::Exists(sPath))
@@ -3923,6 +3948,11 @@ public:
 				pData->put_FrameRectY(frameRectY);
 				pData->put_FrameRectW(frameRectW);
 				pData->put_FrameRectH(frameRectH);
+
+				pData->put_FrameBoundsX(frameBoundsX);
+				pData->put_FrameBoundsY(frameBoundsY);
+				pData->put_FrameBoundsW(frameBoundsW);
+				pData->put_FrameBoundsH(frameBoundsH);
 
 				pData->put_ControlRectX(controlRectX);
 				pData->put_ControlRectY(controlRectY);

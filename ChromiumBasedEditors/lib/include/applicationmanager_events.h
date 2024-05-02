@@ -1516,6 +1516,11 @@ namespace NSEditorApi
 		int m_nFrameRectW;
 		int m_nFrameRectH;
 
+		int m_nFrameBoundsX;
+		int m_nFrameBoundsY;
+		int m_nFrameBoundsW;
+		int m_nFrameBoundsH;
+
 		int m_nControlRectX;
 		int m_nControlRectY;
 		int m_nControlRectW;
@@ -1547,6 +1552,11 @@ namespace NSEditorApi
 			m_nFrameRectY = 0;
 			m_nFrameRectW = 0;
 			m_nFrameRectH = 0;
+
+			m_nFrameBoundsX = 0;
+			m_nFrameBoundsY = 0;
+			m_nFrameBoundsW = 0;
+			m_nFrameBoundsH = 0;
 
 			m_nControlRectX = 0;
 			m_nControlRectY = 0;
@@ -1581,6 +1591,11 @@ namespace NSEditorApi
 		LINK_PROPERTY_INT(FrameRectY)
 		LINK_PROPERTY_INT(FrameRectW)
 		LINK_PROPERTY_INT(FrameRectH)
+
+		LINK_PROPERTY_INT(FrameBoundsX)
+		LINK_PROPERTY_INT(FrameBoundsY)
+		LINK_PROPERTY_INT(FrameBoundsW)
+		LINK_PROPERTY_INT(FrameBoundsH)
 
 		LINK_PROPERTY_INT(ControlRectX)
 		LINK_PROPERTY_INT(ControlRectY)

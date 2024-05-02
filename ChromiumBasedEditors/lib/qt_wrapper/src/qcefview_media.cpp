@@ -146,6 +146,15 @@ void QCefView_Media::OnMediaPlayerCommand(NSEditorApi::CAscExternalMediaPlayerCo
 		indent = "  ";
 		std::cout << indent << "}," << std::endl;
 
+		std::cout << indent << "FrameBounds: {" << std::endl;
+		indent = "    ";
+		std::cout << indent << "X: " << data->get_FrameBoundsX() << "," << std::endl;
+		std::cout << indent << "Y: " << data->get_FrameBoundsY() << "," << std::endl;
+		std::cout << indent << "W: " << data->get_FrameBoundsW() << "," << std::endl;
+		std::cout << indent << "H: " << data->get_FrameBoundsH() << "," << std::endl;
+		indent = "  ";
+		std::cout << indent << "}," << std::endl;
+
 		std::cout << indent << "ControlRect: {" << std::endl;
 		indent = "    ";
 		std::cout << indent << "X: " << data->get_ControlRectX() << "," << std::endl;
@@ -196,7 +205,7 @@ void QCefView_Media::showMediaControl(NSEditorApi::CAscExternalMediaPlayerComman
 	m_pMediaView->setPlayListUsed(false);
 	m_pMediaView->setFullScreenUsed(false);
 
-	m_pMediaView->setGeometry(data->get_FrameRectX(), data->get_FrameRectY(), data->get_FrameRectW(), data->get_FrameRectH());
+	m_pMediaView->setGeometry(data->get_FrameBoundsX(), data->get_FrameBoundsY(), data->get_FrameBoundsW(), data->get_FrameBoundsH());
 
 	QFooterPanel* pFooter = m_pMediaView->Footer();
 	pFooter->setGeometry(data->get_ControlRectX(), data->get_ControlRectY(), data->get_ControlRectW(), pFooter->GetHeight());
@@ -222,7 +231,7 @@ void QCefView_Media::updateGeometry(NSEditorApi::CAscExternalMediaPlayerCommand*
 	if (!m_pMediaView)
 		return;
 
-	m_pMediaView->setGeometry(data->get_FrameRectX(), data->get_FrameRectY(), data->get_FrameRectW(), data->get_FrameRectH());
+	m_pMediaView->setGeometry(data->get_FrameBoundsX(), data->get_FrameBoundsY(), data->get_FrameBoundsW(), data->get_FrameBoundsH());
 
 	QFooterPanel* pFooter = m_pMediaView->Footer();
 	pFooter->setGeometry(data->get_ControlRectX(), data->get_ControlRectY(), data->get_ControlRectW(), pFooter->GetHeight());
