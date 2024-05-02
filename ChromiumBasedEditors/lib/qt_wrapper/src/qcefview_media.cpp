@@ -35,7 +35,7 @@
 
 #include <algorithm>
 
-// TODO: remove debug info
+// uncomment to watch debug info
 // #define DEBUG_MEDIA_PLAYER
 
 #ifdef DEBUG_MEDIA_PLAYER
@@ -182,6 +182,9 @@ void QCefView_Media::OnMediaPlayerCommand(NSEditorApi::CAscExternalMediaPlayerCo
 		std::cout << indent << "StartTime: " << data->get_StartTime() << "," << std::endl;
 		std::cout << indent << "EndTime: " << data->get_EndTime() << "," << std::endl;
 		std::cout << indent << "From: " << data->get_From() << "," << std::endl;
+
+		std::cout << indent << "Theme: " << data->get_Theme() << "," << std::endl;
+
 		indent = "";
 	}
 
@@ -210,7 +213,11 @@ void QCefView_Media::showMediaControl(NSEditorApi::CAscExternalMediaPlayerComman
 	QFooterPanel* pFooter = m_pMediaView->Footer();
 	pFooter->setGeometry(data->get_ControlRectX(), data->get_ControlRectY(), data->get_ControlRectW(), pFooter->GetHeight());
 
-	pFooter->ApplySkin(CFooterSkin::tDark);
+	std::string sTheme = data->get_Theme();
+	if (sTheme == "dark")
+		pFooter->ApplySkin(CFooterSkin::tDark);
+	else
+		pFooter->ApplySkin(CFooterSkin::tLight);
 	pFooter->SetRoundedCorners();
 	pFooter->show();
 

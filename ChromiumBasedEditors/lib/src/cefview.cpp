@@ -3943,6 +3943,8 @@ public:
 				int endTime = args->GetInt(19);
 				int from = args->GetInt(20);
 
+				std::string sTheme = args->GetString(21).ToString();
+
 				// put all to data
 				pData->put_FrameRectX(frameRectX);
 				pData->put_FrameRectY(frameRectY);
@@ -3977,6 +3979,8 @@ public:
 				pData->put_StartTime(startTime);
 				pData->put_EndTime(endTime);
 				pData->put_From(from);
+
+				pData->put_Theme(sTheme);
 			}
 
 			pListener->OnEvent(pEvent);

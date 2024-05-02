@@ -1545,6 +1545,8 @@ namespace NSEditorApi
 		int m_nEndTime;
 		int m_nFrom;
 
+		std::string m_sTheme;
+
 	public:
 		CAscExternalMediaPlayerCommand()
 		{
@@ -1620,6 +1622,8 @@ namespace NSEditorApi
 		LINK_PROPERTY_INT(StartTime)
 		LINK_PROPERTY_INT(EndTime)
 		LINK_PROPERTY_INT(From)
+
+		LINK_PROPERTY_STRINGA(Theme)
 	};
 }
 

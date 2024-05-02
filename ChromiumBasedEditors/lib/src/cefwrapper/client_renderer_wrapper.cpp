@@ -3132,6 +3132,8 @@ window.AscDesktopEditor.getPortalsList = function() { debugger;var ret = []; try
 					messageArgs->SetInt(19, (endTime->IsNull() ? -1 : endTime->GetIntValue()));
 					// From
 					messageArgs->SetInt(20, data->GetValue("From")->GetIntValue());
+					// Theme
+					messageArgs->SetString(21, data->GetValue("Theme")->GetStringValue());
 				}
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 				return true;
