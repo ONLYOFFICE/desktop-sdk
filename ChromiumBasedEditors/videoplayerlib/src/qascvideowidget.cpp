@@ -203,11 +203,14 @@ void QAscVideoWidget::stepBack(int nStep)
 		targetPos = 0;
 	m_pEngine->setPosition(targetPos);
 #else
-	qint64 targetPos = m_pVlcPlayer->time() - nStep;
-	qint64 duration = m_pMedia->duration();
-	if (targetPos < 0)
-		targetPos = 0;
-	m_pVlcPlayer->setPosition((float)targetPos / duration);
+	if (m_pMedia)
+	{
+		qint64 targetPos = m_pVlcPlayer->time() - nStep;
+		qint64 duration = m_pMedia->duration();
+		if (targetPos < 0)
+			targetPos = 0;
+		m_pVlcPlayer->setPosition((float)targetPos / duration);
+	}
 #endif
 }
 
@@ -220,11 +223,14 @@ void QAscVideoWidget::stepForward(int nStep)
 		targetPos = duration - 1;
 	m_pEngine->setPosition(targetPos);
 #else
-	qint64 targetPos = m_pVlcPlayer->time() + nStep;
-	qint64 duration = m_pMedia->duration();
-	if (targetPos >= duration)
-		targetPos = duration - 1;
-	m_pVlcPlayer->setPosition((float)targetPos / duration);
+	if (m_pMedia)
+	{
+		qint64 targetPos = m_pVlcPlayer->time() + nStep;
+		qint64 duration = m_pMedia->duration();
+		if (targetPos >= duration)
+			targetPos = duration - 1;
+		m_pVlcPlayer->setPosition((float)targetPos / duration);
+	}
 #endif
 }
 
@@ -350,9 +356,12 @@ void QAscVideoWidget::slotVlcStateChanged(int state)
 
 void QAscVideoWidget::slotVlcPositionChanged(float position)
 {
-	m_pView->Footer()->setTimeOnLabel(position * m_pMedia->duration());
+	if (m_pMedia)
+	{
+		m_pView->Footer()->setTimeOnLabel(position * m_pMedia->duration());
 
-	emit posChanged(static_cast<int>(100000 * position + 0.5));
+		emit posChanged(static_cast<int>(100000 * position + 0.5));
+	}
 }
 #else
 
