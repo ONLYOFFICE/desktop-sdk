@@ -138,6 +138,8 @@ public:
 
 	bool IsDestroy();
 
+    void SetParentWidgetInfo(const std::wstring& json);
+
 protected:
 	int m_nId;
 	CefViewWrapperType m_eWrapperType;

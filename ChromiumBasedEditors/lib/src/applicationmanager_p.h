@@ -2394,6 +2394,8 @@ public:
 			{
 				oBuilder.WriteEncodeXmlString(i->m_sParentUrl);
 			}
+			oBuilder.WriteString(L"\",cloud:\"");
+			oBuilder.WriteEncodeXmlString(!i->m_sExternalCloudId.empty() ? i->m_sExternalCloudId : L"");
 			oBuilder.WriteString(L"\"}");
 		}
 		oBuilder.WriteString(L"]");

@@ -935,6 +935,9 @@ public:
 	CConvertFileInEditor* m_pLocalFileConverter;
 	CCloudPDFSaver* m_pCloudSaveToDrawing;
 
+	// информация о view (type, caption...)
+	std::wstring m_sViewportSettings;
+
 public:
 	CCefView_Private()
 	{
@@ -1406,12 +1409,33 @@ public:
 
 		if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_DOCUMENT)
 		{
-			arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX);
+			bool bIsPdfFormPriority = false;
+			switch (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat)
+			{
+			case AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM:
+			case AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF:
+			case AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF:
+				bIsPdfFormPriority = true;
+			default:
+				break;
+			}
 
 #ifndef DISABLE_OFORM_SUPPORT
-			arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF);
+			//arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF);
 			//arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM);
-			//arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF);
+
+			if (bIsPdfFormPriority)
+			{
+				arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF);
+				arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX);
+			}
+			else
+			{
+				arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX);
+				arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF);
+			}
+#else
+			arFormats.push_back(AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX);
 #endif
 
 			if (!bEncryption)
@@ -6468,6 +6492,7 @@ void CCefView::load(const std::wstring& urlInputSrc)
 	{
 		extra_info->SetString(std::to_string(++nCount), *iter);
 	}
+	extra_info->SetString(std::to_string(++nCount), "viewport_settings=" + U_TO_UTF8(m_pInternal->m_sViewportSettings));
 #endif
 
 	// Creat the new child browser window
@@ -7486,6 +7511,35 @@ bool CCefView::IsDestroy()
 	return false;
 }
 
+void CCefView::SetParentWidgetInfo(const std::wstring& json)
+{
+	m_pInternal->m_sViewportSettings = json;
+
+	if (m_pInternal->m_bIsDestroying || m_pInternal->m_bIsDestroy)
+		return;
+
+	CefRefPtr<CefBrowser> pBrowser = m_pInternal->GetBrowser();
+	if (!pBrowser)
+		return;
+
+	std::string sViewportInfo = U_TO_UTF8(json);
+	NSStringUtils::string_replaceA(sViewportInfo, "\\", "\\\\");
+	NSStringUtils::string_replaceA(sViewportInfo, "\"", "\\\"");
+	std::string sCode = "(function(){window.AscDesktopEditor._setViewportSettings(\"" + sViewportInfo + "\");})();";
+
+	std::vector<int64> identifiers;
+	pBrowser->GetFrameIdentifiers(identifiers);
+
+	for (std::vector<int64>::iterator iter = identifiers.begin(); iter != identifiers.end(); iter++)
+	{
+		CefRefPtr<CefFrame> pFrame = pBrowser->GetFrame(*iter);
+		if (pFrame)
+		{
+			pFrame->ExecuteJavaScript(sCode, pFrame->GetURL(), 0);
+		}
+	}
+}
+
 CefRefPtr<CefFrame> CCefView_Private::CCloudCryptoUpload::GetFrame()
 {
 	if (!View->m_handler || !View->m_handler->GetBrowser())
@@ -7742,7 +7796,7 @@ void CCefViewEditor::CreateLocalFile(const AscEditorType& nFileFormatSrc, const 
 		nFileFormatType = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX;
 	else if (nFileFormat == AscEditorType::etDocumentMasterForm ||
 			 nFileFormat == AscEditorType::etDocumentMasterOForm)
-		nFileFormatType = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF;
+		nFileFormatType = AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF;
 
 	bool bIsView = GetAppManager()->m_pInternal->GetEditorPermission() ? false : true;
 
