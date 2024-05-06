@@ -1,4 +1,5 @@
 #include "qvideoplaylist.h"
+
 #include <QStyleOption>
 #include <QPainter>
 #include <QStandardItemModel>
@@ -8,14 +9,14 @@
 #include <QAbstractItemModel>
 #include <QFileDialog>
 #include <QStandardPaths>
-
 #include <QShortcut>
-#include <QDebug>
+
 #include "../../../../core/DesktopEditor/common/Directory.h"
 #include "../../../../core/DesktopEditor/common/StringBuilder.h"
 #include "../../../../core/DesktopEditor/xml/include/xmlutils.h"
-#include "qpushbutton_icons.h"
-#include "../qascvideoview.h"
+
+#include "qiconpushbutton.h"
+#include "../qwidgetutils.h"
 
 QStandardItem* CreateFileItem(const QString& text, const QString& file)
 {
@@ -41,7 +42,7 @@ QVideoPlaylist::QVideoPlaylist(QWidget *parent) : QWidget(parent)
 	m_pDialogParent = NULL;
 
 	m_sSavePlayListAddon = "/ONLYOFFICE/VideoPlayer";
-	QWidget_setBackground(this, 0x22, 0x22, 0x22);
+	QWidgetUtils::SetBackground(this, QColor(0x22, 0x22, 0x22));
 
 	m_pAdd = new QIconPushButton(this, true, "add-files", "add-files-active");
 	m_pClear = new QIconPushButton(this, true, "drop-playlist", "drop-playlist-active");
@@ -202,22 +203,22 @@ void QVideoPlaylist::private_Style(double dDpi)
 									  ").arg(QString::number(n5), QString::number(n10), QString::number((int)(dDpi * 12)));
 									  m_pListView->setStyleSheet(sStyleL);
 
-			m_pListView->setColumnWidth(0, QWidget_ScaleDPI(150, m_dDpi));
-	m_pListView->setColumnWidth(1, QWidget_ScaleDPI(50, m_dDpi));
+			m_pListView->setColumnWidth(0, QWidgetUtils::ScaleDPI(150, m_dDpi));
+	m_pListView->setColumnWidth(1, QWidgetUtils::ScaleDPI(50, m_dDpi));
 
 	m_pListView->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
-	m_pListView->verticalHeader()->setDefaultSectionSize(QWidget_ScaleDPI(30, m_dDpi));
+	m_pListView->verticalHeader()->setDefaultSectionSize(QWidgetUtils::ScaleDPI(30, m_dDpi));
 
 	CheckStyles();
 }
 
 void QVideoPlaylist::resizeEvent(QResizeEvent* e)
 {
-	double dDpi = QWidget_GetDPI(this);
+	double dDpi = QWidgetUtils::GetDPI(this);
 
-	int nButW = QWidget_ScaleDPI(30, dDpi);
-	int n5 = QWidget_ScaleDPI(5, dDpi);
-	int n10 = QWidget_ScaleDPI(10, dDpi);
+	int nButW = QWidgetUtils::ScaleDPI(30, dDpi);
+	int n5 = QWidgetUtils::ScaleDPI(5, dDpi);
+	int n10 = QWidgetUtils::ScaleDPI(10, dDpi);
 
 	int nTopB = height() - nButW;
 
@@ -246,8 +247,8 @@ void QVideoPlaylist::slotActivated(const QModelIndex &index)
 	fontAll.setStrikeOut(false);
 	fontSelected.setUnderline(false);
 	fontSelected.setStrikeOut(false);
-	fontAll.setPixelSize(QWidget_ScaleDPI(12, m_dDpi));
-	fontSelected.setPixelSize(QWidget_ScaleDPI(12, m_dDpi));
+	fontAll.setPixelSize(QWidgetUtils::ScaleDPI(12, m_dDpi));
+	fontSelected.setPixelSize(QWidgetUtils::ScaleDPI(12, m_dDpi));
 
 	QBrush brushAll(QColor(0xBB, 0xBB, 0xBB));
 	QBrush brushSelected(QColor(0xFF, 0xFF, 0xFF));
@@ -303,8 +304,8 @@ void QVideoPlaylist::CheckStyles()
 	fontAll.setStrikeOut(false);
 	fontSelected.setUnderline(false);
 	fontSelected.setStrikeOut(false);
-	fontAll.setPixelSize(QWidget_ScaleDPI(12, m_dDpi));
-	fontSelected.setPixelSize(QWidget_ScaleDPI(12, m_dDpi));
+	fontAll.setPixelSize(QWidgetUtils::ScaleDPI(12, m_dDpi));
+	fontSelected.setPixelSize(QWidgetUtils::ScaleDPI(12, m_dDpi));
 
 	QBrush brushAll(QColor(0xBB, 0xBB, 0xBB));
 	QBrush brushSelected(QColor(0xFF, 0xFF, 0xFF));
@@ -410,8 +411,8 @@ void QVideoPlaylist::AddFiles(QStringList& filenames, const bool isStart)
 		pModel->appendRow(rowData);
 	}
 
-	m_pListView->setColumnWidth(0, QWidget_ScaleDPI(150, m_dDpi));
-	m_pListView->setColumnWidth(1, QWidget_ScaleDPI(50, m_dDpi));
+	m_pListView->setColumnWidth(0, QWidgetUtils::ScaleDPI(150, m_dDpi));
+	m_pListView->setColumnWidth(1, QWidgetUtils::ScaleDPI(50, m_dDpi));
 
 	AddFilesToCheck(listCheck);
 

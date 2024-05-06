@@ -3101,6 +3101,61 @@ window.AscDesktopEditor.attachEvent=function(name,callback){if(undefined===windo
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 				return true;
 			}
+			else if (name == "CallMediaPlayerCommand")
+			{
+				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("call_media_player_command");
+				CefRefPtr<CefListValue> messageArgs = message->GetArgumentList();
+
+				CefRefPtr<CefV8Value> data = arguments[0];
+				// Cmd
+				std::string sCmd = data->GetValue("Cmd")->GetStringValue();
+				messageArgs->SetString(0, sCmd);
+				if (sCmd != "hideMediaControl")
+				{
+					// FrameRect
+					CefRefPtr<CefV8Value> frameRect = data->GetValue("FrameRect");
+					messageArgs->SetInt(1, frameRect->GetValue("X")->GetIntValue());
+					messageArgs->SetInt(2, frameRect->GetValue("Y")->GetIntValue());
+					messageArgs->SetInt(3, frameRect->GetValue("W")->GetIntValue());
+					messageArgs->SetInt(4, frameRect->GetValue("H")->GetIntValue());
+					// ControlRect
+					CefRefPtr<CefV8Value> controlRect = data->GetValue("ControlRect");
+					messageArgs->SetInt(5, controlRect->GetValue("X")->GetIntValue());
+					messageArgs->SetInt(6, controlRect->GetValue("Y")->GetIntValue());
+					messageArgs->SetInt(7, controlRect->GetValue("W")->GetIntValue());
+					messageArgs->SetInt(8, controlRect->GetValue("H")->GetIntValue());
+					// IsSelected
+					messageArgs->SetBool(9, data->GetValue("IsSelected")->GetBoolValue());
+					// Rotation
+					messageArgs->SetDouble(10, data->GetValue("Rotation")->GetDoubleValue());
+					// FlipH & FlipV
+					messageArgs->SetBool(11, data->GetValue("FlipH")->GetBoolValue());
+					messageArgs->SetBool(12, data->GetValue("FlipV")->GetBoolValue());
+					// MediaFile
+					messageArgs->SetString(13, data->GetValue("MediaFile")->GetStringValue());
+					// Fullscreen
+					messageArgs->SetBool(14, data->GetValue("Fullscreen")->GetBoolValue());
+					// IsVideo
+					messageArgs->SetBool(15, data->GetValue("IsVideo")->GetBoolValue());
+					// Mute
+					messageArgs->SetBool(16, data->GetValue("Mute")->GetBoolValue());
+					// Volume
+					CefRefPtr<CefV8Value> volume = data->GetValue("Volume");
+					messageArgs->SetInt(17, (volume->IsNull() ? -1 : volume->GetIntValue()));
+					// StartTime
+					CefRefPtr<CefV8Value> startTime = data->GetValue("StartTime");
+					messageArgs->SetInt(18, (startTime->IsNull() ? -1 : startTime->GetIntValue()));
+					// EndTime
+					CefRefPtr<CefV8Value> endTime = data->GetValue("EndTime");
+					messageArgs->SetInt(19, (endTime->IsNull() ? -1 : endTime->GetIntValue()));
+					// From
+					messageArgs->SetInt(20, data->GetValue("From")->GetIntValue());
+					// Theme
+					messageArgs->SetString(21, data->GetValue("Theme")->GetStringValue());
+				}
+				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+				return true;
+			}
 			else if (name == "MediaEnd")
 			{
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("media_end");
@@ -4887,7 +4942,7 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 			CefRefPtr<CefV8Handler> handler = pWrapper;
 
-#define EXTEND_METHODS_COUNT 183
+#define EXTEND_METHODS_COUNT 184
 			const char* methods[EXTEND_METHODS_COUNT] = {
 				"Copy",
 				"Paste",
@@ -5043,6 +5098,7 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 				"IsNativeViewer",
 				"CryptoDownloadAs",
 				"MediaStart",
+				"CallMediaPlayerCommand",
 				"GetImageOriginalSize",
 				"MediaEnd",
 				"_AddAudio",

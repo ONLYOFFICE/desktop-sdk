@@ -38,7 +38,6 @@
 **
 ****************************************************************************/
 
-#include "../qascvideoview.h"
 #include "qascvideowidget.h"
 
 #include <QKeyEvent>
@@ -46,6 +45,8 @@
 #include <QApplication>
 #include <QWindow>
 #include <QScreen>
+
+#include "../qascvideoview.h"
 
 #ifdef ASC_MAIN_WINDOW_HAS_QWINDOW_AS_PARENT
 #define USE_ASC_MAINWINDOW_FULLSCREEN
@@ -60,7 +61,6 @@
 QAscVideoWidget::QAscVideoWidget(QWidget *parent)
 	: QASCVIDEOBASE(parent)
 {
-	m_pParent = parent;
 	m_nVolume = 50;
 	setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
 
@@ -75,6 +75,7 @@ QAscVideoWidget::QAscVideoWidget(QWidget *parent)
 #ifndef USE_VLC_LIBRARY
 	m_pEngine = new QMediaPlayer(parent);
 	m_pEngine->setVideoOutput(this);
+	m_pEngine->setNotifyInterval(500);
 
 	QObject::connect(m_pEngine, SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(slotChangeState(QMediaPlayer::State)));
 	QObject::connect(m_pEngine, SIGNAL(positionChanged(qint64)), this, SLOT(slotPositionChange(qint64)));
@@ -121,8 +122,7 @@ void QAscVideoWidget::mouseDoubleClickEvent(QMouseEvent *event)
 {
 	if (event->button() == Qt::LeftButton)
 	{
-		QAscVideoView* pView = (QAscVideoView*)(m_pParent->parentWidget());
-		if (!pView->m_pInternal->m_bIsPresentationMode)
+		if (!m_pView->m_pInternal->m_bIsPresentationMode)
 			setFullScreenOnCurrentScreen(!isVideoFullScreen());
 	}
 	event->accept();
@@ -135,17 +135,16 @@ void QAscVideoWidget::mousePressEvent(QMouseEvent *event)
 
 void QAscVideoWidget::mouseMoveEvent(QMouseEvent* event)
 {
-	QAscVideoView* pView = static_cast<QAscVideoView*>(m_pParent->parentWidget());
-	if (pView->getMainWindowFullScreen())
+	if (m_pView->getMainWindowFullScreen())
 	{
-		if (!pView->m_pInternal->m_pVolumeControl->isVisible() && !pView->m_pInternal->m_bIsShowingPlaylist)
+		if (!m_pView->Footer()->VolumeControls()->isVisible() && !m_pView->m_pInternal->m_bIsShowingPlaylist)
 		{
-			pView->setCursor(Qt::ArrowCursor);
+			m_pView->setCursor(Qt::ArrowCursor);
 			// start (or restart) cursor hiding timer
-			pView->m_pInternal->m_oCursorTimer.start(pView->m_pInternal->c_nCursorHidingDelay);
+			m_pView->m_pInternal->m_oCursorTimer.start(m_pView->m_pInternal->c_nCursorHidingDelay);
 			// start footer hiding timer if it is not started
-			if (pView->m_pInternal->m_bIsShowingFooter && !pView->m_pInternal->m_oFooterTimer.isActive())
-				pView->m_pInternal->m_oFooterTimer.start(pView->m_pInternal->c_nFooterHidingDelay);
+			if (m_pView->m_pInternal->m_bIsShowingFooter && !m_pView->m_pInternal->m_oFooterTimer.isActive())
+				m_pView->m_pInternal->m_oFooterTimer.start(m_pView->m_pInternal->c_nFooterHidingDelay);
 		}
 	}
 	event->accept();
@@ -155,8 +154,7 @@ void QAscVideoWidget::setPlay()
 {
 	if (m_sCurrentSource.isEmpty())
 	{
-		QAscVideoView* pView = (QAscVideoView*)(m_pParent->parentWidget());
-		pView->m_pInternal->m_pPlaylist->PlayCurrent();
+		m_pView->m_pInternal->m_pPlaylist->PlayCurrent();
 		return;
 	}
 
@@ -193,7 +191,46 @@ void QAscVideoWidget::setSeek(int nPos)
 	double dProgress = (double)nPos / 100000.0;
 	m_pEngine->setPosition((qint64)(dProgress * nDuration));
 #else
-	m_pVlcPlayer->setPosition(static_cast<float>(nPos) / 100000);
+	m_pVlcPlayer->setPosition((float)nPos / 100000);
+#endif
+}
+
+void QAscVideoWidget::stepBack(int nStep)
+{
+#ifndef USE_VLC_LIBRARY
+	qint64 targetPos = m_pEngine->position() - nStep;
+	if (targetPos < 0)
+		targetPos = 0;
+	m_pEngine->setPosition(targetPos);
+#else
+	if (m_pMedia)
+	{
+		qint64 targetPos = m_pVlcPlayer->time() - nStep;
+		qint64 duration = m_pMedia->duration();
+		if (targetPos < 0)
+			targetPos = 0;
+		m_pVlcPlayer->setPosition((float)targetPos / duration);
+	}
+#endif
+}
+
+void QAscVideoWidget::stepForward(int nStep)
+{
+#ifndef USE_VLC_LIBRARY
+	qint64 targetPos = m_pEngine->position() + nStep;
+	qint64 duration = m_pEngine->duration();
+	if (targetPos >= duration)
+		targetPos = duration - 1;
+	m_pEngine->setPosition(targetPos);
+#else
+	if (m_pMedia)
+	{
+		qint64 targetPos = m_pVlcPlayer->time() + nStep;
+		qint64 duration = m_pMedia->duration();
+		if (targetPos >= duration)
+			targetPos = duration - 1;
+		m_pVlcPlayer->setPosition((float)targetPos / duration);
+	}
 #endif
 }
 
@@ -225,7 +262,7 @@ void QAscVideoWidget::open(QString& sFile)
 bool QAscVideoWidget::isVideoFullScreen()
 {
 #ifdef USE_ASC_MAINWINDOW_FULLSCREEN
-	return ((QAscVideoView*)(m_pParent->parentWidget()))->getMainWindowFullScreen();
+	return m_pView->getMainWindowFullScreen();
 #else
 	return isFullScreen();
 #endif
@@ -236,17 +273,15 @@ void QAscVideoWidget::setFullScreenOnCurrentScreen(bool isFullscreen)
 	if (isFullscreen == isVideoFullScreen())
 		return;
 
-	QAscVideoView* pView = static_cast<QAscVideoView*>(m_pParent->parentWidget());
-
-	if (pView->m_pInternal->m_bIsShowingPlaylist)
-		pView->Playlist(0);
-	if (!pView->m_pInternal->m_pVolumeControl->isHidden())
-		pView->m_pInternal->m_pVolumeControl->setHidden(true);
+	if (m_pView->m_pInternal->m_bIsShowingPlaylist)
+		m_pView->TogglePlaylist(0);
+	if (!m_pView->Footer()->VolumeControls()->isHidden())
+		m_pView->Footer()->VolumeControls()->setHidden(true);
 
 #ifndef USE_VLC_LIBRARY
 
 #ifdef USE_ASC_MAINWINDOW_FULLSCREEN
-	((QAscVideoView*)(m_pParent->parentWidget()))->setMainWindowFullScreen(isFullscreen);
+	m_pView->setMainWindowFullScreen(isFullscreen);
 #else
 	setFullScreen(isFullscreen);
 #endif
@@ -260,7 +295,7 @@ void QAscVideoWidget::setFullScreenOnCurrentScreen(bool isFullscreen)
 #endif
 
 #ifdef USE_ASC_MAINWINDOW_FULLSCREEN
-		pView->setMainWindowFullScreen(true);
+		m_pView->setMainWindowFullScreen(true);
 #else
 		QPoint pt = mapToGlobal(pos());
 		QRect rect = QApplication::desktop()->screenGeometry(m_pParent);
@@ -278,7 +313,7 @@ void QAscVideoWidget::setFullScreenOnCurrentScreen(bool isFullscreen)
 #endif
 
 #ifdef USE_ASC_MAINWINDOW_FULLSCREEN
-		pView->setMainWindowFullScreen(false);
+		m_pView->setMainWindowFullScreen(false);
 #else
 		this->setParent(m_pParent);
 		showNormal();
@@ -287,10 +322,10 @@ void QAscVideoWidget::setFullScreenOnCurrentScreen(bool isFullscreen)
 	}
 #endif
 
-	pView->UpdateFullscreenIcon();
+	m_pView->UpdateFullscreenIcon();
 	if (!isFullscreen)
 	{
-		pView->resizeEvent(nullptr);
+		m_pView->resizeEvent(nullptr);
 	}
 }
 
@@ -321,7 +356,12 @@ void QAscVideoWidget::slotVlcStateChanged(int state)
 
 void QAscVideoWidget::slotVlcPositionChanged(float position)
 {
-	emit posChanged(static_cast<int>(100000 * position + 0.5));
+	if (m_pMedia)
+	{
+		m_pView->Footer()->setTimeOnLabel(position * m_pMedia->duration());
+
+		emit posChanged(static_cast<int>(100000 * position + 0.5));
+	}
 }
 #else
 
@@ -335,6 +375,8 @@ void QAscVideoWidget::slotChangeState(QMediaPlayer_State state)
 
 void QAscVideoWidget::slotPositionChange(qint64 pos)
 {
+	m_pView->Footer()->setTimeOnLabel(pos);
+
 	qint64 nDuration = m_pEngine->duration();
 	double dProgress = (double)pos / nDuration;
 	emit posChanged((int)(100000 * dProgress + 0.5));

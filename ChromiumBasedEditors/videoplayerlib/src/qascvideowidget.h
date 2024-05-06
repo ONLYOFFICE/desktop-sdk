@@ -5,7 +5,7 @@
 #include "lib_base.h"
 
 #include "qmultimedia.h"
-#include "qfooterpanel.h"
+#include "../qfooterpanel.h"
 #include "qvideoplaylist.h"
 
 #ifndef USE_VLC_LIBRARY
@@ -18,10 +18,7 @@ class QAscVideoWidget;
 class QAscVideoView_Private
 {
 public:
-	QFooterPanel*		m_pFooter;
-
-	QWidget*			m_pVolumeControl;
-	QVideoSlider*		m_pVolumeControlV;
+	QFooterPanel*	m_pFooter;
 
 	QVideoPlaylist*		m_pPlaylist;
 	QAscVideoWidget*	m_pPlayer;
@@ -50,23 +47,10 @@ public:
 	const int c_nCursorHidingDelay = 3000;
 };
 
+class QAscVideoView;
 class QAscVideoWidget : public QASCVIDEOBASE
 {
 	Q_OBJECT
-
-	QString m_sCurrentSource;
-
-#ifdef USE_VLC_LIBRARY
-	CVlcPlayer* m_pVlcPlayer;
-	CVlcMedia* m_pMedia;
-#else
-	QMediaPlayer* m_pEngine;
-#endif
-
-public:
-	QWidget* m_pParent;
-
-	int m_nVolume;
 
 public:
 	QAscVideoWidget(QWidget *parent = 0);
@@ -85,6 +69,9 @@ public:
 	void setPause();
 	void setVolume(int nVolume);
 	void setSeek(int nPos);
+
+	void stepBack(int nStep = 5000);
+	void stepForward(int nStep = 5000);
 
 	bool isVideoFullScreen();
 	void setFullScreenOnCurrentScreen(bool isFullscreen);
@@ -110,5 +97,16 @@ public slots:
 #endif
 
 public:
-	QWidget* m_pView;
+	QAscVideoView* m_pView;
+	int m_nVolume;
+
+private:
+	QString m_sCurrentSource;
+
+#ifdef USE_VLC_LIBRARY
+	CVlcPlayer* m_pVlcPlayer;
+	CVlcMedia* m_pMedia;
+#else
+	QMediaPlayer* m_pEngine;
+#endif
 };

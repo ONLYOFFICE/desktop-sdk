@@ -5,19 +5,36 @@
 #include <QSlider>
 #include <QMouseEvent>
 
+#include "style/style_options.h"
+
 class QVideoSlider : public QSlider
 {
 	Q_OBJECT
 
-	bool m_bIsSeekOnClick;
-	double m_dDpi;
+public:
+	enum HandleType
+	{
+		htSimple,
+		htCircle
+	};
 
 public:
-	explicit QVideoSlider(QWidget *parent = 0);
+	explicit QVideoSlider(QWidget* parent, HandleType handleType = htSimple);
 
 	virtual void mousePressEvent(QMouseEvent* e);
 	virtual void resizeEvent(QResizeEvent* e);
 
 public:
-	void SetSeekOnClick(bool bValue);
+	void updateStyle();
+	void setSeekOnClick(bool bValue);
+	void setHandleType(HandleType handleType);
+	void setStyleOptions(const CSliderStyleOptions& opt);
+
+private:
+	double m_dDpi;
+	bool m_bIsSeekOnClick;
+
+	CSliderStyleOptions m_oStyleOpt;
+
+	HandleType m_handleType;
 };

@@ -13,24 +13,33 @@ ADD_DEPENDENCY(kernel)
 
 HEADERS += \
 	$$PWD/src/lib_base.h \
-	$$PWD/src/qpushbutton_icons.h \
-	$$PWD/src/qfooterpanel.h \
+	$$PWD/src/style/style_options.h \
+	$$PWD/src/videoplayerlib_export.h \
+	$$PWD/src/qiconpushbutton.h \
+	$$PWD/src/qtimelabel.h \
+	$$PWD/src/qfooterpanel_private.h \
 	$$PWD/src/qvideoslider.h \
 	$$PWD/src/qvideoplaylist.h \
 	$$PWD/src/qascvideowidget.h \
-	$$PWD/src/qmultimedia.h
+	$$PWD/src/qmultimedia.h \
+	$$PWD/src/style/skins_footer.h
 
 SOURCES += \
 	$$PWD/src/lib_base.cpp \
-	$$PWD/src/qpushbutton_icons.cpp \
+	$$PWD/src/qiconpushbutton.cpp \
+	$$PWD/src/qtimelabel.cpp \
 	$$PWD/src/qfooterpanel.cpp \
 	$$PWD/src/qascvideoview.cpp \
 	$$PWD/src/qvideoslider.cpp \
 	$$PWD/src/qvideoplaylist.cpp \
-	$$PWD/src/qascvideowidget.cpp
+	$$PWD/src/qascvideowidget.cpp \
+	$$PWD/src/qwidgetutils.cpp \
+	$$PWD/src/style/skins_footer.cpp
 
 HEADERS += \
 	$$PWD/qascvideoview.h \
+	$$PWD/qfooterpanel.h \
+	$$PWD/qwidgetutils.h
 
 RESOURCES += \
 	$$PWD/IconsVideoPlayerLib.qrc
