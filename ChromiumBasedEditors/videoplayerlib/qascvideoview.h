@@ -84,7 +84,7 @@ public slots:
 
 	void slotPlayerPosChanged(int nPos);
 	void slotPlayerStateChanged(QMediaPlayer_State state);
-	void slotVideoAvailableChanged(bool videoAvailable);
+	void slotVideoAvailableChanged(bool isVideoAvailable);
 
 	void slotFooterAnimationFinished();
 	void slotFooterTimerOverflowed();

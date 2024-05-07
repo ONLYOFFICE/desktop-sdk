@@ -91,17 +91,12 @@ QAscVideoView::QAscVideoView(QWidget *parent, bool bIsPresentationMode) : QWidge
 	// init events
 	QObject::connect(m_pInternal->m_pPlayer, SIGNAL(stateChanged(QMediaPlayer_State)), this, SLOT(slotPlayerStateChanged(QMediaPlayer_State)));
 	QObject::connect(m_pInternal->m_pPlayer, SIGNAL(posChanged(int)), this, SLOT(slotPlayerPosChanged(int)));
+	QObject::connect(m_pInternal->m_pPlayer, SIGNAL(videoOutputChanged(bool)), this, SLOT(slotVideoAvailableChanged(bool)));
 
 	QObject::connect(m_pAnimationFooter, SIGNAL(finished()), this, SLOT(slotFooterAnimationFinished()));
 	// timers
 	QObject::connect(&m_pInternal->m_oFooterTimer, SIGNAL(timeout()), this, SLOT(slotFooterTimerOverflowed()));
 	QObject::connect(&m_pInternal->m_oCursorTimer, SIGNAL(timeout()), this, SLOT(slotCursorTimerOverflowed()));
-
-#ifndef USE_VLC_LIBRARY
-	QObject::connect(m_pInternal->m_pPlayer->getEngine(), SIGNAL(videoAvailableChanged(bool)), this, SLOT(slotVideoAvailableChanged(bool)));
-#else
-
-#endif
 
 	setAcceptDrops(true);
 
@@ -529,18 +524,6 @@ void QAscVideoView::slotPlayerStateChanged(QMediaPlayer_State state)
 		{
 			Footer()->raise();
 		}
-
-#ifdef USE_VLC_LIBRARY
-		if (m_pInternal->m_bIsPresentationMode && !m_pInternal->m_bIsPresentationModeMediaTypeSended)
-		{
-			m_pInternal->m_bIsPresentationModeMediaTypeSended = true;
-			if (!m_pInternal->m_pPlayer->isAudio() && !m_pInternal->m_bIsDestroy)
-			{
-				this->show();
-				Footer()->show();
-			}
-		}
-#endif
 	}
 
 	if (state == QMediaPlayer::StoppedState
@@ -570,7 +553,7 @@ QWidget* QAscVideoView::getMainWindow()
 	return NULL;
 }
 
-void QAscVideoView::slotVideoAvailableChanged(bool videoAvailable)
+void QAscVideoView::slotVideoAvailableChanged(bool isVideoAvailable)
 {
 	if (m_pInternal->m_bIsPresentationMode && !m_pInternal->m_bIsPresentationModeMediaTypeSended)
 	{

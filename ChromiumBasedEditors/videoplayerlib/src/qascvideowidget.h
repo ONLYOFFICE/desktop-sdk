@@ -86,14 +86,17 @@ public:
 signals:
 	void stateChanged(QMediaPlayer_State);
 	void posChanged(int);
+	void videoOutputChanged(bool isVideoAvailable);
 
 public slots:
 #ifdef USE_VLC_LIBRARY
 	void slotVlcStateChanged(int state);
 	void slotVlcPositionChanged(float position);
+	void slotVlcVideoOutputChanged(int nVoutCount);
 #else
 	void slotChangeState(QMediaPlayer::State state);
 	void slotPositionChange(qint64 pos);
+	void slotVideoAvailableChanged(bool isAvailable);
 #endif
 
 public:
