@@ -79,12 +79,14 @@ QAscVideoWidget::QAscVideoWidget(QWidget *parent)
 
 	QObject::connect(m_pEngine, SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(slotChangeState(QMediaPlayer::State)));
 	QObject::connect(m_pEngine, SIGNAL(positionChanged(qint64)), this, SLOT(slotPositionChange(qint64)));
+	QObject::connect(m_pEngine, SIGNAL(videoAvailableChanged(bool)), this, SLOT(slotVideoAvailableChanged(bool)));
 #else
 	m_pVlcPlayer = new CVlcPlayer(this);
 	m_pVlcPlayer->integrateIntoWidget(this);
 
 	QObject::connect(m_pVlcPlayer, SIGNAL(stateChanged(int)), this, SLOT(slotVlcStateChanged(int)));
 	QObject::connect(m_pVlcPlayer, SIGNAL(positionChanged(float)), this, SLOT(slotVlcPositionChanged(float)));
+	QObject::connect(m_pVlcPlayer, SIGNAL(videoOutputChanged(int)), this, SLOT(slotVlcVideoOutputChanged(int)));
 
 	m_pMedia = nullptr;
 #endif
@@ -363,6 +365,11 @@ void QAscVideoWidget::slotVlcPositionChanged(float position)
 		emit posChanged(static_cast<int>(100000 * position + 0.5));
 	}
 }
+
+void QAscVideoWidget::slotVlcVideoOutputChanged(int nVoutCount)
+{
+	emit videoOutputChanged((bool)nVoutCount);
+}
 #else
 
 void QAscVideoWidget::slotChangeState(QMediaPlayer_State state)
@@ -380,6 +387,11 @@ void QAscVideoWidget::slotPositionChange(qint64 pos)
 	qint64 nDuration = m_pEngine->duration();
 	double dProgress = (double)pos / nDuration;
 	emit posChanged((int)(100000 * dProgress + 0.5));
+}
+
+void QAscVideoWidget::slotVideoAvailableChanged(bool isAvailable)
+{
+	emit videoOutputChanged(isAvailable);
 }
 
 QMediaPlayer* QAscVideoWidget::getEngine()
