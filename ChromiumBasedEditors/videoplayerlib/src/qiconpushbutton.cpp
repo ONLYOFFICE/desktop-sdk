@@ -1,6 +1,7 @@
 #include "qiconpushbutton.h"
 
 #include <math.h>
+#include <QFileInfo>
 
 #include "../qwidgetutils.h"
 
@@ -38,10 +39,24 @@ void QIconPushButton::updateStyle()
 {
 	QString sPostfix = getIconPostfix();
 
+	auto borderImageStr = [this, sPostfix](const QString& sIcon) {
+		if (m_bIsUseSVG)
+			return QString("border: none;");
+		return "border-image: url(:/icons/" + sIcon + sPostfix + ") 0 0 0 0 stretch stretch;";
+	};
+
 	QString sRadius = QString::number(QWidgetUtils::ScaleDPI(this, m_oStyleOpt.m_nBorderRadius));
-	QString sStyle = "QPushButton {border-image:url(:/icons/" + m_sIconR + sPostfix + ") 0 0 0 0 stretch stretch; border-radius: " + sRadius + "px; background-color: " + m_oStyleOpt.m_sBgColorR + ";margin:0;padding:0;outline:none;}";
-	sStyle += "QPushButton:hover {border-image:url(:/icons/" + m_sIconH + sPostfix + ") 0 0 0 0 stretch stretch; background-color: " + m_oStyleOpt.m_sBgColorH + ";margin:0;padding:0;outline:none;}";
-	sStyle += "QPushButton:pressed {border-image:url(:/icons/" + m_sIconP + sPostfix + ") 0 0 0 0 stretch stretch; background-color: " + m_oStyleOpt.m_sBgColorP + ";margin:0;padding:0;outline:none;}";
+	QString sStyle = "QPushButton         {" + borderImageStr(m_sIconR) + " background-color: " + m_oStyleOpt.m_sBgColorR + ";margin:0;padding:0;outline:none; border-radius: " + sRadius + "px;}";
+	sStyle +=        "QPushButton:hover   {" + borderImageStr(m_sIconH) + " background-color: " + m_oStyleOpt.m_sBgColorH + ";margin:0;padding:0;outline:none;}";
+	sStyle +=        "QPushButton:pressed {" + borderImageStr(m_sIconP) + " background-color: " + m_oStyleOpt.m_sBgColorP + ";margin:0;padding:0;outline:none;}";
+
+	if (m_bIsUseSVG)
+	{
+		QString sIcon = ":/icons/" + m_sIconR + sPostfix;
+		QFileInfo iconFile(sIcon);
+		if (iconFile.exists())
+			setIconSVG(sIcon);
+	}
 
 	setStyleSheet(sStyle);
 }
@@ -56,31 +71,66 @@ void QIconPushButton::resizeEvent(QResizeEvent* e)
 {
 	QPushButton::resizeEvent(e);
 
-	double dpi = QWidgetUtils::GetDPI(this);
-	if (fabs(dpi - m_dDpi) > 0.01)
+	m_dDpi = QWidgetUtils::GetDPI(this);
+	updateStyle();
+}
+
+bool QIconPushButton::event(QEvent* e)
+{
+	if (!m_bIsUseSVG)
+		return QPushButton::event(e);
+
+	QPushButton::event(e);
+	if (e->type() == QEvent::Enter)
 	{
-		m_dDpi = dpi;
-		updateStyle();
+		setIconSVG(":/icons/" + m_sIconH + m_oStyleOpt.m_sSkinPostfix + ".svg");
 	}
+	if (e->type() == QEvent::Leave)
+	{
+		setIconSVG(":/icons/" + m_sIconR + m_oStyleOpt.m_sSkinPostfix + ".svg");
+	}
+	return true;
 }
 
 QString QIconPushButton::getIconPostfix()
 {
 	QString sPostfix = m_oStyleOpt.m_sSkinPostfix;
-	// Since button icons will be automatically scaled down by Qt engine:
-	//   if scale <= 2.0 use appropriate PNG icons
-	//   if scale > 2.0 use SVG icon
-	if (m_dDpi - 0.05 < 1.0)
+	// - If scale is fractional, use SVG icon if allowed, or use 2x PNG icon otherwise.
+	// - If scale is integer, use corresponding PNG icon (1x or 2x).
+
+	m_bIsUseSVG = false;
+	if (fabs(1.0 - m_dDpi) < 0.05)
 	{
 		sPostfix += ".png";
 	}
-	else if (m_dDpi - 0.05 < 2.0)
+	else if (fabs(2.0 - m_dDpi) < 0.05)
 	{
 		sPostfix += "-2x.png";
 	}
 	else
 	{
-		sPostfix += ".svg";
+		if (m_bIsSvgSupport)
+		{
+			m_bIsUseSVG = true;
+			sPostfix += ".svg";
+		}
+		else
+		{
+			sPostfix += "-2x.png";
+		}
 	}
+
 	return sPostfix;
+}
+
+void QIconPushButton::setIconSVG(const QString& sUrl)
+{
+	if (!m_bIsUseSVG)
+		return;
+
+	QIcon icon;
+	QSize iconSize = size();
+	icon.addFile(sUrl, iconSize);
+	setIcon(icon);
+	setIconSize(iconSize);
 }

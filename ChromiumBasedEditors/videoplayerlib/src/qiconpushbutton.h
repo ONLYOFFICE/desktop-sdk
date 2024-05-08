@@ -20,11 +20,13 @@ public:
 	void updateStyle();
 	void setStyleOptions(const CButtonStyleOptions& opt);
 
-protected:
+public:
 	virtual void resizeEvent(QResizeEvent* e);
+	virtual bool event(QEvent* event);
 
 private:
 	QString getIconPostfix();
+	void setIconSVG(const QString& sUrl);
 
 private:
 	QString m_sIconR;
@@ -33,8 +35,10 @@ private:
 
 	CButtonStyleOptions m_oStyleOpt;
 
-	bool m_bIsSvgSupport;
 	double m_dDpi;
+
+	bool m_bIsSvgSupport;
+	bool m_bIsUseSVG;
 };
 
 #endif // Q_ICON_PUSH_BUTTON_H
