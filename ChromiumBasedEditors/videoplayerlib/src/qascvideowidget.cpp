@@ -163,6 +163,11 @@ void QAscVideoWidget::setPlay()
 #ifndef USE_VLC_LIBRARY
 	m_pEngine->play();
 #else
+	// if media has ended in presentation, player must be stopped before playing it again
+	if (m_pView->m_pInternal->m_bIsPresentationMode && m_pVlcPlayer->getState() == libvlc_Ended)
+	{
+		m_pVlcPlayer->stop();
+	}
 	m_pVlcPlayer->play();
 #endif
 }
@@ -411,7 +416,7 @@ bool QAscVideoWidget::isAudio()
 	if (m_pEngine && !QMediaPlayer_isAudio(m_pEngine))
 		return false;
 	return true;
-#endif    
+#endif
 }
 
 void QAscVideoWidget::stop()
