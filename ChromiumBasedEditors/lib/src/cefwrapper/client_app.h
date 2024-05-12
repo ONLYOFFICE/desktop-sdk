@@ -168,10 +168,6 @@ public:
 #endif
 #endif
 
-#if defined(_LINUX) && !defined(_MAC)
-		m_GPU = false;
-#endif
-
 		std::map<std::string, std::string>::iterator pairGPU = mapSettings.find("disable-gpu");
 		if (pairGPU != mapSettings.end())
 		{
@@ -249,9 +245,6 @@ public:
 	{
 		if (process_type.empty())
 		{
-			if (m_manager->GetUserSettings()->Get(L"disable-gpu") == L"1")
-				m_GPU = false;
-
 			CAppSettings::Process(command_line);
 
 #if defined(_LINUX) && !defined(_MAC)
