@@ -1471,6 +1471,7 @@ public:
 
 			if (!bEncryption)
 			{
+				arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSB);
 				arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLTX);
 			}
 
