@@ -299,7 +299,20 @@ namespace NSRequest
 			m_frameId = NSArgumentList::GetInt64(args, 0);
 			m_requestId = args->GetInt(1);
 			m_request->SetURL(args->GetString(2));
-			m_request->SetMethod(args->GetString(3));
+
+			std::string sMethod = args->GetString(3).ToString();
+			m_request->SetMethod(sMethod);
+
+			if ("POST" == sMethod)
+			{
+				std::string sPostData = args->GetString(4).ToString();
+
+				CefRefPtr<CefPostDataElement> postDataElement(CefPostDataElement::Create());
+				postDataElement->SetToBytes(sPostData.length(), sPostData.c_str());
+				CefRefPtr<CefPostData> postData(CefPostData::Create());
+				postData->AddElement(postDataElement);
+				m_request->SetPostData(postData);
+			}
 
 			m_request->SetHeaderByName("Accept", "*/*", true);
 			int nHeadersCount = args->GetSize();

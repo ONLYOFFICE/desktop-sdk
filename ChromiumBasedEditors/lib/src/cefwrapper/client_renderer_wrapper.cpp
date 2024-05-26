@@ -4177,18 +4177,23 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				if (arguments[1]->GetValue("method") && arguments[1]->GetValue("method")->IsString())
 					sMethod = arguments[1]->GetValue("method")->GetStringValue().ToString();
 
+				std::string sPostData = "";
+				if (arguments[1]->GetValue("body") && arguments[1]->GetValue("body")->IsString())
+					sPostData = arguments[1]->GetValue("body")->GetStringValue().ToString();
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("send_simple_request");
 
 				NSArgumentList::SetInt64(message->GetArgumentList(), 0, CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
 				message->GetArgumentList()->SetInt(1, nCounter);
 				message->GetArgumentList()->SetString(2, sUrl);
 				message->GetArgumentList()->SetString(3, sMethod);
+				message->GetArgumentList()->SetString(4, sPostData);
 
 				CefRefPtr<CefV8Value> headers = arguments[1]->GetValue("headers");
 				if (headers && headers->IsObject())
 				{
 					std::vector<CefString> arKeys;
-					int nArgIndex = 4;
+					int nArgIndex = 5;
 					if (headers->GetKeys(arKeys))
 					{
 						for (int i = 0, len = arKeys.size(); i < len; ++i)
