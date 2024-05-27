@@ -4350,6 +4350,19 @@ public:
 		pListener->OnEvent(pEvent);
 		return true;
 	}
+	else if ("on_open_binary_as_new" == message_name)
+	{
+		std::wstring sUrl = L"ascdesktop://open_binary_as_new/" + std::to_wstring(m_pParent->GetId());
+
+		NSEditorApi::CAscCreateTab* pData = new NSEditorApi::CAscCreateTab();
+		pData->put_Url(sUrl);
+
+		NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_CREATETAB);
+		pEvent->m_pData = pData;
+
+		pListener->OnEvent(pEvent);
+		return true;
+	}
 
 	CAscApplicationManager_Private* pInternalMan = m_pParent->GetAppManager()->m_pInternal;
 	if (pInternalMan->m_pAdditional && pInternalMan->m_pAdditional->OnProcessMessageReceived(browser, source_process, message, m_pParent))
@@ -6223,6 +6236,12 @@ void CCefView::load(const std::wstring& urlInputSrc)
 	else if (0 == urlInput.find(L"ascdesktop://merge/"))
 		nComparingMode = 1;
 
+	if (0 == urlInput.find(L"ascdesktop://open_binary_as_new/"))
+	{
+		((CCefViewEditor*)this)->OpenCopyAsRecoverFile(std::stoi(urlInput.substr(32)));
+		return;
+	}
+
 	// check compare
 	if (-1 != nComparingMode)
 	{
@@ -7871,14 +7890,21 @@ bool CCefViewEditor::OpenCopyAsRecoverFile(const int& nIdSrc)
 
 	NSDirectory::CopyDirectory(pViewSrc->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir, sNewRecoveryDir);
 
+	std::wstring sBinFile = sNewRecoveryDir + L"/EditorForCompare.bin";
+	bool bIsOpenCopy = false;
+	if (!NSFile::CFileBinary::Exists(sBinFile))
+	{
+		sBinFile = sNewRecoveryDir + L"/EditorForAsLocal.bin";
+		bIsOpenCopy = true;
+	}
+
 	// check on cloud crypto
-	if (NSFile::CFileBinary::Exists(sNewRecoveryDir + L"/EditorForCompare.bin"))
+	if (NSFile::CFileBinary::Exists(sBinFile))
 	{
 		if (NSFile::CFileBinary::Exists(sNewRecoveryDir + L"/Editor.bin"))
 			NSFile::CFileBinary::Remove(sNewRecoveryDir + L"/Editor.bin");
-		NSFile::CFileBinary::Copy(sNewRecoveryDir + L"/EditorForCompare.bin", sNewRecoveryDir + L"/Editor.bin");
-		if (NSFile::CFileBinary::Exists(sNewRecoveryDir + L"/EditorForCompare.bin"))
-			NSFile::CFileBinary::Remove(sNewRecoveryDir + L"/EditorForCompare.bin");
+		NSFile::CFileBinary::Copy(sBinFile, sNewRecoveryDir + L"/Editor.bin");
+		NSFile::CFileBinary::Remove(sBinFile);
 
 		if (NSDirectory::Exists(sNewRecoveryDir + L"/openaslocal"))
 			NSDirectory::DeleteDirectory(sNewRecoveryDir + L"/openaslocal");
@@ -7895,6 +7921,15 @@ bool CCefViewEditor::OpenCopyAsRecoverFile(const int& nIdSrc)
 	sUrl += L"?";
 
 	int nFileType = pViewSrc->m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat;
+	if (bIsOpenCopy)
+	{
+		if (nFileType & AVS_OFFICESTUDIO_FILE_DOCUMENT && (nFileType != AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF))
+			nFileType = AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX;
+		else if (nFileType & AVS_OFFICESTUDIO_FILE_PRESENTATION)
+			nFileType = AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX;
+		else if (nFileType & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
+			nFileType = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX;
+	}
 	m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = nFileType;
 
 	std::wstring sParams = GetFileUrlParams(nFileType, false);

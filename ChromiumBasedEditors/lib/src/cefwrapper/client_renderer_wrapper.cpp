@@ -4349,6 +4349,34 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				CefV8Context::GetCurrentContext()->GetFrame()->ExecuteJavaScript(sCode, "", 0);
 				return true;
 			}
+			else if (name == "OpenBinaryAsNewFile" || name == "OpenWorkbook")
+			{
+				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_open_binary_as_new");
+
+				std::wstring sLocalDir = m_sCryptDocumentFolder;
+				if (!sLocalDir.empty())
+				{
+					std::string sContent = arguments[0]->GetStringValue().ToString();
+					BYTE* pDataDst = NULL;
+					int nLenDst = 0;
+
+					NSFile::CBase64Converter::Decode(sContent.c_str(), sContent.length(), pDataDst, nLenDst);
+
+					std::wstring sFile = sLocalDir + L"/EditorForAsLocal.bin";
+					if (NSFile::CFileBinary::Exists(sFile))
+						NSFile::CFileBinary::Remove(sFile);
+
+					NSFile::CFileBinary oFileWithChanges;
+					oFileWithChanges.CreateFileW(sFile);
+					oFileWithChanges.WriteFile(pDataDst, nLenDst);
+					oFileWithChanges.CloseFile();
+
+					RELEASEARRAYOBJECTS(pDataDst);
+				}
+
+				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+				return true;
+			}
 
 			// Function does not exist.
 			return false;
@@ -4947,7 +4975,7 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 			CefRefPtr<CefV8Handler> handler = pWrapper;
 
-#define EXTEND_METHODS_COUNT 184
+#define EXTEND_METHODS_COUNT 186
 			const char* methods[EXTEND_METHODS_COUNT] = {
 				"Copy",
 				"Paste",
@@ -5201,6 +5229,9 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 				"_getViewportSettings",
 				"_setViewportSettings",
+
+				"OpenBinaryAsNewFile",
+				"OpenWorkbook",
 
 				NULL};
 
