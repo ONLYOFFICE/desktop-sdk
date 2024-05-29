@@ -45,6 +45,7 @@
 #include <QApplication>
 #include <QWindow>
 #include <QScreen>
+#include <QSlider>
 
 #include "../qascvideoview.h"
 
@@ -164,11 +165,22 @@ void QAscVideoWidget::setPlay()
 	m_pEngine->play();
 #else
 	// if media has ended in presentation, player must be stopped before playing it again
+	bool isStopped = false;
 	if (m_pView->m_pInternal->m_bIsPresentationMode && m_pVlcPlayer->getState() == libvlc_Ended)
 	{
 		m_pVlcPlayer->stop();
+		isStopped = true;
 	}
+
+	QSlider* pSlider = static_cast<QSlider*>(m_pView->Footer()->VideoSlider());
+	float pos = (float)pSlider->value() / 100000;
+
 	m_pVlcPlayer->play();
+
+	if (m_pView->m_pInternal->m_bIsPresentationMode && isStopped)
+	{
+		m_pVlcPlayer->setPosition(pos);
+	}
 #endif
 }
 
@@ -244,9 +256,15 @@ void QAscVideoWidget::stepForward(int nStep)
 void QAscVideoWidget::open(QString& sFile)
 {
 	m_sCurrentSource = sFile;
+
+	QSlider* pSlider = static_cast<QSlider*>(m_pView->Footer()->VideoSlider());
+	float pos = (float)pSlider->value() / 100000;
+
 #ifndef USE_VLC_LIBRARY
 	QMediaPlayer_setMedia(m_pEngine, sFile);
 	m_pEngine->play();
+	if (m_pView->m_pInternal->m_bIsPresentationMode)
+		m_pEngine->setPosition((qint64)(pos * m_pView->m_pInternal->m_pPlaylist->GetLastParsedDuration()));
 #else
 
 	if (m_pMedia && !sFile.isEmpty())
@@ -263,6 +281,9 @@ void QAscVideoWidget::open(QString& sFile)
 
 	m_pMedia = new CVlcMedia(GetVlcInstance(), sFile);
 	m_pVlcPlayer->open(m_pMedia);
+
+	if (m_pView->m_pInternal->m_bIsPresentationMode)
+		m_pVlcPlayer->setPosition(pos);
 #endif
 }
 

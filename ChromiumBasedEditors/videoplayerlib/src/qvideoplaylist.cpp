@@ -339,6 +339,13 @@ bool QVideoPlaylist::isScrollBarVisible()
 	return m_pListView->verticalScrollBar()->isVisible();
 }
 
+#ifndef USE_VLC_LIBRARY
+qint64 QVideoPlaylist::GetLastParsedDuration()
+{
+	return m_nLastParsedDuration;
+}
+#endif
+
 #ifdef _MAC
 void QVideoPlaylist::slotActivatedShortcut()
 {
@@ -547,6 +554,9 @@ void QVideoPlaylist::_onSlotDurationChanged(qint64 duration)
 {
 	if (m_sCheckFile.isEmpty())
 		return;
+
+	if (duration != 0)
+		m_nLastParsedDuration = duration;
 
 	qint64 nH = (qint64)(duration / 3600000);
 	duration -= (nH * 3600000);

@@ -124,6 +124,10 @@ public:
 
 	bool isScrollBarVisible();
 
+#ifndef USE_VLC_LIBRARY
+	qint64 GetLastParsedDuration();
+#endif
+
 public:
 	QPushButton* m_pAdd;
 	QPushButton* m_pClear;
@@ -142,6 +146,7 @@ private:
 
 #ifndef USE_VLC_LIBRARY
 	QMediaPlayer* m_pCheckPlayer;
+	qint64 m_nLastParsedDuration;
 #else
 	CVlcMedia* m_pCheckMedia;
 #endif
