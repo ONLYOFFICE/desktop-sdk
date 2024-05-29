@@ -408,6 +408,10 @@ void QAscVideoWidget::slotChangeState(QMediaPlayer_State state)
 
 void QAscVideoWidget::slotPositionChange(qint64 pos)
 {
+	// prevent changing slider position by player with no loaded media
+	if (m_pEngine->mediaStatus() == QMediaPlayer::NoMedia)
+		return;
+
 	m_pView->Footer()->setTimeOnLabel(pos);
 
 	qint64 nDuration = m_pEngine->duration();
