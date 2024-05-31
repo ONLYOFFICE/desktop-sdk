@@ -7,8 +7,6 @@
 #include "../qascvideoview.h"
 #include "qascvideowidget.h"
 
-#include <QDebug>
-
 QFooterPanel::QFooterPanel(QWidget* parent, QAscVideoView* pView) : QWidget(parent)
 {
 	m_pInternal = new QFooterPanel_Private();

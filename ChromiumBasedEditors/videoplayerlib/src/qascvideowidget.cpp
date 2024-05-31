@@ -45,7 +45,6 @@
 #include <QApplication>
 #include <QWindow>
 #include <QScreen>
-#include <QSlider>
 
 #include "../qascvideoview.h"
 
@@ -90,6 +89,7 @@ QAscVideoWidget::QAscVideoWidget(QWidget *parent)
 	QObject::connect(m_pVlcPlayer, SIGNAL(videoOutputChanged(int)), this, SLOT(slotVlcVideoOutputChanged(int)));
 
 	m_pMedia = nullptr;
+	m_bIsPauseOnPlay = false;
 #endif
 }
 
@@ -155,32 +155,18 @@ void QAscVideoWidget::mouseMoveEvent(QMouseEvent* event)
 
 void QAscVideoWidget::setPlay()
 {
-	if (m_sCurrentSource.isEmpty())
-	{
-		m_pView->m_pInternal->m_pPlaylist->PlayCurrent();
-		return;
-	}
+	preloadMediaIfNeeded();
 
 #ifndef USE_VLC_LIBRARY
 	m_pEngine->play();
 #else
 	// if media has ended in presentation, player must be stopped before playing it again
-	bool isStopped = false;
 	if (m_pView->m_pInternal->m_bIsPresentationMode && m_pVlcPlayer->getState() == libvlc_Ended)
 	{
 		m_pVlcPlayer->stop();
-		isStopped = true;
 	}
-
-	QSlider* pSlider = static_cast<QSlider*>(m_pView->Footer()->VideoSlider());
-	float pos = (float)pSlider->value() / 100000;
 
 	m_pVlcPlayer->play();
-
-	if (m_pView->m_pInternal->m_bIsPresentationMode && isStopped)
-	{
-		m_pVlcPlayer->setPosition(pos);
-	}
 #endif
 }
 
@@ -205,8 +191,9 @@ void QAscVideoWidget::setVolume(int nVolume)
 
 void QAscVideoWidget::setSeek(int nPos)
 {
+	preloadMediaIfNeeded();
 #ifndef USE_VLC_LIBRARY
-	qint64 nDuration = m_pEngine->duration();
+	qint64 nDuration = m_pView->m_pInternal->m_pPlaylist->GetDurationOfCurrentMedia();
 	double dProgress = (double)nPos / 100000.0;
 	m_pEngine->setPosition((qint64)(dProgress * nDuration));
 #else
@@ -253,18 +240,16 @@ void QAscVideoWidget::stepForward(int nStep)
 #endif
 }
 
-void QAscVideoWidget::open(QString& sFile)
+void QAscVideoWidget::open(QString& sFile, bool isPlay)
 {
 	m_sCurrentSource = sFile;
 
-	QSlider* pSlider = static_cast<QSlider*>(m_pView->Footer()->VideoSlider());
-	float pos = (float)pSlider->value() / 100000;
-
 #ifndef USE_VLC_LIBRARY
 	QMediaPlayer_setMedia(m_pEngine, sFile);
+	// if `isPlay` is false, then start and immediately pause playback to load video frames
 	m_pEngine->play();
-	if (m_pView->m_pInternal->m_bIsPresentationMode)
-		m_pEngine->setPosition((qint64)(pos * m_pView->m_pInternal->m_pPlaylist->GetLastParsedDuration()));
+	if (!isPlay)
+		m_pEngine->pause();
 #else
 
 	if (m_pMedia && !sFile.isEmpty())
@@ -280,10 +265,10 @@ void QAscVideoWidget::open(QString& sFile)
 	}
 
 	m_pMedia = new CVlcMedia(GetVlcInstance(), sFile);
+	// if `isPlay` is false, then start and immediately pause playback to load video frames
 	m_pVlcPlayer->open(m_pMedia);
-
-	if (m_pView->m_pInternal->m_bIsPresentationMode)
-		m_pVlcPlayer->setPosition(pos);
+	if (!isPlay)
+		m_bIsPauseOnPlay = true;
 #endif
 }
 
@@ -366,6 +351,11 @@ void QAscVideoWidget::slotVlcStateChanged(int state)
 	{
 		stateQ = QMediaPlayer::PlayingState;
 		setVolume(m_nVolume);
+		if (m_bIsPauseOnPlay)
+		{
+			m_pVlcPlayer->pause();
+			m_bIsPauseOnPlay = false;
+		}
 	}
 	else if (state == libvlc_Paused)
 	{
@@ -408,10 +398,6 @@ void QAscVideoWidget::slotChangeState(QMediaPlayer_State state)
 
 void QAscVideoWidget::slotPositionChange(qint64 pos)
 {
-	// prevent changing slider position by player with no loaded media
-	if (m_pEngine->mediaStatus() == QMediaPlayer::NoMedia)
-		return;
-
 	m_pView->Footer()->setTimeOnLabel(pos);
 
 	qint64 nDuration = m_pEngine->duration();
@@ -453,4 +439,12 @@ void QAscVideoWidget::stop()
 	if (m_pEngine)
 		m_pEngine->stop();
 #endif
+}
+
+void QAscVideoWidget::preloadMediaIfNeeded()
+{
+	if (m_sCurrentSource.isEmpty())
+	{
+		m_pView->m_pInternal->m_pPlaylist->LoadCurrent();
+	}
 }

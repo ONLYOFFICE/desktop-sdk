@@ -78,7 +78,7 @@ QAscVideoView::QAscVideoView(QWidget *parent, bool bIsPresentationMode) : QWidge
 	m_pInternal->m_pPlaylist = new QVideoPlaylist(this);
 	m_pInternal->m_pPlaylist->setGeometry(width(), 0, 250, height());
 
-	QObject::connect(m_pInternal->m_pPlaylist, SIGNAL(fileChanged(QString)), this, SLOT(slotOpenFile(QString)));
+	QObject::connect(m_pInternal->m_pPlaylist, SIGNAL(fileChanged(QString,bool)), this, SLOT(slotOpenFile(QString,bool)));
 	m_pInternal->m_pPlaylist->installEventFilter(this);
 	m_pInternal->m_pPlaylist->m_pListView->installEventFilter(this);
 	m_pInternal->m_pPlaylist->m_pAdd->installEventFilter(this);
@@ -90,7 +90,7 @@ QAscVideoView::QAscVideoView(QWidget *parent, bool bIsPresentationMode) : QWidge
 
 	// init events
 	QObject::connect(m_pInternal->m_pPlayer, SIGNAL(stateChanged(QMediaPlayer_State)), this, SLOT(slotPlayerStateChanged(QMediaPlayer_State)));
-	QObject::connect(m_pInternal->m_pPlayer, SIGNAL(posChanged(int)), this, SLOT(slotPlayerPosChanged(int)));
+	QObject::connect(m_pInternal->m_pPlayer, SIGNAL(posChanged(int)), this, SLOT(slotPlayerPosChanged(int)), Qt::QueuedConnection);
 	QObject::connect(m_pInternal->m_pPlayer, SIGNAL(videoOutputChanged(bool)), this, SLOT(slotVideoAvailableChanged(bool)));
 
 	QObject::connect(m_pAnimationFooter, SIGNAL(finished()), this, SLOT(slotFooterAnimationFinished()));
@@ -489,14 +489,14 @@ void QAscVideoView::UpdateFullscreenIcon()
 	Footer()->SetFullscreenIcon(!getMainWindowFullScreen());
 }
 
-void QAscVideoView::slotOpenFile(QString sFile)
+void QAscVideoView::slotOpenFile(QString sFile, bool isPlay)
 {
 	if (sFile.isEmpty() && m_pInternal->m_bIsPresentationMode)
 	{
 		ChangeSeek(0);
 		return;
 	}
-	m_pInternal->m_pPlayer->open(sFile);
+	m_pInternal->m_pPlayer->open(sFile, isPlay);
 
 	if (sFile == "")
 		return;

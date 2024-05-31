@@ -80,7 +80,7 @@ signals:
 	void titleChanged(const QString& sTitle);
 
 public slots:
-	void slotOpenFile(QString sFile);
+	void slotOpenFile(QString sFile, bool isPlay);
 
 	void slotPlayerPosChanged(int nPos);
 	void slotPlayerStateChanged(QMediaPlayer_State state);

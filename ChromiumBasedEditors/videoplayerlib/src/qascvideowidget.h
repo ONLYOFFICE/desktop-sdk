@@ -63,7 +63,7 @@ public:
 	void mouseMoveEvent(QMouseEvent* event);
 
 public:
-	void open(QString& sFile);
+	void open(QString& sFile, bool isPlay);
 
 	void setPlay();
 	void setPause();
@@ -82,6 +82,10 @@ public:
 
 	bool isAudio();
 	void stop();
+
+private:
+	// if there is no media playing, preloads the current one
+	inline void preloadMediaIfNeeded();
 
 signals:
 	void stateChanged(QMediaPlayer_State);
@@ -109,6 +113,7 @@ private:
 #ifdef USE_VLC_LIBRARY
 	CVlcPlayer* m_pVlcPlayer;
 	CVlcMedia* m_pMedia;
+	bool m_bIsPauseOnPlay;
 #else
 	QMediaPlayer* m_pEngine;
 #endif
