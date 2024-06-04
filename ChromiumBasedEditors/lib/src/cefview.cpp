@@ -4563,8 +4563,14 @@ virtual void OnLoadError(CefRefPtr<CefBrowser> browser,
 	{
 		if (frame->IsMain())
 		{
-			std::string sAddon = CAscApplicationManager::GetErrorPageAddon(ErrorPageType::Network);
-			m_pParent->load(L"ascdesktop://loaderror.html" + UTF8_TO_U(sAddon));
+			if (m_pParent->m_eWrapperType == cvwtSimple)
+				m_pParent->load(L"ascdesktop://loaderror.html");
+			else
+			{
+				std::string sAddon = CAscApplicationManager::GetErrorPageAddon(ErrorPageType::Network);
+				m_pParent->load(L"ascdesktop://loaderror.html" + UTF8_TO_U(sAddon));
+			}
+
 			m_pParent->m_pInternal->m_bIsLoadingError = true;
 		}
 		else
