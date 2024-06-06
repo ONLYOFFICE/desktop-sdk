@@ -155,7 +155,7 @@ void QAscVideoWidget::mouseMoveEvent(QMouseEvent* event)
 
 void QAscVideoWidget::setPlay()
 {
-	preloadMediaIfNeeded();
+	bool isPreloading = preloadMediaIfNeeded();
 
 #ifndef USE_VLC_LIBRARY
 	m_pEngine->play();
@@ -166,7 +166,18 @@ void QAscVideoWidget::setPlay()
 		m_pVlcPlayer->stop();
 	}
 
-	m_pVlcPlayer->play();
+	if (isPreloading)
+	{
+		// play media after it is loaded
+		std::lock_guard<std::mutex> cs(m_oMutex);
+		m_oPauseCmdQueue.push([this]() {
+			m_pVlcPlayer->play();
+		});
+	}
+	else
+	{
+		m_pVlcPlayer->play();
+	}
 #endif
 }
 
@@ -191,13 +202,24 @@ void QAscVideoWidget::setVolume(int nVolume)
 
 void QAscVideoWidget::setSeek(int nPos)
 {
-	preloadMediaIfNeeded();
+	bool isPreloading = preloadMediaIfNeeded();
 #ifndef USE_VLC_LIBRARY
 	qint64 nDuration = m_pView->m_pInternal->m_pPlaylist->GetDurationOfCurrentMedia();
 	double dProgress = (double)nPos / 100000.0;
 	m_pEngine->setPosition((qint64)(dProgress * nDuration));
 #else
-	m_pVlcPlayer->setPosition((float)nPos / 100000);
+	if (isPreloading)
+	{
+		// set position of playback after media is loaded
+		std::lock_guard<std::mutex> cs(m_oMutex);
+		m_oPauseCmdQueue.push([this, nPos]() {
+			m_pVlcPlayer->setPosition((float)nPos / 100000);
+		});
+	}
+	else
+	{
+		m_pVlcPlayer->setPosition((float)nPos / 100000);
+	}
 #endif
 }
 
@@ -360,10 +382,18 @@ void QAscVideoWidget::slotVlcStateChanged(int state)
 	else if (state == libvlc_Paused)
 	{
 		stateQ = QMediaPlayer::PausedState;
+		// call functors from command queue
+		std::lock_guard<std::mutex> cs(m_oMutex);
+		while (!m_oPauseCmdQueue.empty())
+		{
+			m_oPauseCmdQueue.front()();
+			m_oPauseCmdQueue.pop();
+		}
 	}
 	else if (state == libvlc_Ended)
 	{
 		stateQ = QMediaPlayer::StoppedState;
+		m_sCurrentSource = "";
 	}
 
 	if (stateQ < 0)
@@ -441,10 +471,13 @@ void QAscVideoWidget::stop()
 #endif
 }
 
-void QAscVideoWidget::preloadMediaIfNeeded()
+bool QAscVideoWidget::preloadMediaIfNeeded()
 {
+	bool isPreloading = false;
 	if (m_sCurrentSource.isEmpty())
 	{
 		m_pView->m_pInternal->m_pPlaylist->LoadCurrent();
+		isPreloading = true;
 	}
+	return isPreloading;
 }

@@ -90,7 +90,7 @@ QAscVideoView::QAscVideoView(QWidget *parent, bool bIsPresentationMode) : QWidge
 
 	// init events
 	QObject::connect(m_pInternal->m_pPlayer, SIGNAL(stateChanged(QMediaPlayer_State)), this, SLOT(slotPlayerStateChanged(QMediaPlayer_State)));
-	QObject::connect(m_pInternal->m_pPlayer, SIGNAL(posChanged(int)), this, SLOT(slotPlayerPosChanged(int)), Qt::QueuedConnection);
+	QObject::connect(m_pInternal->m_pPlayer, SIGNAL(posChanged(int)), this, SLOT(slotPlayerPosChanged(int)));
 	QObject::connect(m_pInternal->m_pPlayer, SIGNAL(videoOutputChanged(bool)), this, SLOT(slotVideoAvailableChanged(bool)));
 
 	QObject::connect(m_pAnimationFooter, SIGNAL(finished()), this, SLOT(slotFooterAnimationFinished()));
@@ -493,7 +493,7 @@ void QAscVideoView::slotOpenFile(QString sFile, bool isPlay)
 {
 	if (sFile.isEmpty() && m_pInternal->m_bIsPresentationMode)
 	{
-		ChangeSeek(0);
+		slotPlayerPosChanged(0);
 		return;
 	}
 	m_pInternal->m_pPlayer->open(sFile, isPlay);
@@ -534,7 +534,7 @@ void QAscVideoView::slotPlayerStateChanged(QMediaPlayer_State state)
 
 	{
 		// force slider to be put to the end
-		Footer()->m_pInternal->m_pSlider->setValue(100000);
+		slotPlayerPosChanged(100000);
 		// play next video (if any)
 		m_pInternal->m_pPlaylist->Next();
 	}
