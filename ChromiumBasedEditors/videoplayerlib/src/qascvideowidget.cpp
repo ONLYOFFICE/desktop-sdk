@@ -225,25 +225,35 @@ void QAscVideoWidget::setSeek(int nPos)
 
 void QAscVideoWidget::stepBack(int nStep)
 {
+	bool isPreloading = preloadMediaIfNeeded();
 #ifndef USE_VLC_LIBRARY
 	qint64 targetPos = m_pEngine->position() - nStep;
 	if (targetPos < 0)
 		targetPos = 0;
 	m_pEngine->setPosition(targetPos);
 #else
-	if (m_pMedia)
-	{
+	auto stepFunc = [this, nStep]() {
 		qint64 targetPos = m_pVlcPlayer->time() - nStep;
 		qint64 duration = m_pMedia->duration();
 		if (targetPos < 0)
 			targetPos = 0;
 		m_pVlcPlayer->setPosition((float)targetPos / duration);
+	};
+
+	if (isPreloading)
+	{
+		m_oPauseCmdQueue.push(stepFunc);
+	}
+	else
+	{
+		stepFunc();
 	}
 #endif
 }
 
 void QAscVideoWidget::stepForward(int nStep)
 {
+	bool isPreloading = preloadMediaIfNeeded();
 #ifndef USE_VLC_LIBRARY
 	qint64 targetPos = m_pEngine->position() + nStep;
 	qint64 duration = m_pEngine->duration();
@@ -251,13 +261,21 @@ void QAscVideoWidget::stepForward(int nStep)
 		targetPos = duration - 1;
 	m_pEngine->setPosition(targetPos);
 #else
-	if (m_pMedia)
-	{
+	auto stepFunc = [this, nStep]() {
 		qint64 targetPos = m_pVlcPlayer->time() + nStep;
 		qint64 duration = m_pMedia->duration();
 		if (targetPos >= duration)
 			targetPos = duration - 1;
 		m_pVlcPlayer->setPosition((float)targetPos / duration);
+	};
+
+	if (isPreloading)
+	{
+		m_oPauseCmdQueue.push(stepFunc);
+	}
+	else
+	{
+		stepFunc();
 	}
 #endif
 }
