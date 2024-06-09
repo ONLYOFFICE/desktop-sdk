@@ -80,6 +80,7 @@ QAscVideoWidget::QAscVideoWidget(QWidget *parent)
 	QObject::connect(m_pEngine, SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(slotChangeState(QMediaPlayer::State)));
 	QObject::connect(m_pEngine, SIGNAL(positionChanged(qint64)), this, SLOT(slotPositionChange(qint64)));
 	QObject::connect(m_pEngine, SIGNAL(videoAvailableChanged(bool)), this, SLOT(slotVideoAvailableChanged(bool)));
+	QObject::connect(m_pEngine, SIGNAL(durationChanged(qint64)), this, SLOT(slotMediaDurationParsed(qint64)));
 #else
 	m_pVlcPlayer = new CVlcPlayer(this);
 	m_pVlcPlayer->integrateIntoWidget(this);
@@ -89,8 +90,8 @@ QAscVideoWidget::QAscVideoWidget(QWidget *parent)
 	QObject::connect(m_pVlcPlayer, SIGNAL(videoOutputChanged(int)), this, SLOT(slotVlcVideoOutputChanged(int)));
 
 	m_pMedia = nullptr;
-	m_bIsPauseOnPlay = false;
 #endif
+	m_bIsMediaPreloading = false;
 }
 
 QAscVideoWidget::~QAscVideoWidget()
@@ -155,9 +156,10 @@ void QAscVideoWidget::mouseMoveEvent(QMouseEvent* event)
 
 void QAscVideoWidget::setPlay()
 {
-	bool isPreloading = preloadMediaIfNeeded();
+	preloadMediaIfNeeded();
 
 #ifndef USE_VLC_LIBRARY
+	// `play()` slot is called syncronously so there is no need for queueing it
 	m_pEngine->play();
 #else
 	// if media has ended in presentation, player must be stopped before playing it again
@@ -166,11 +168,11 @@ void QAscVideoWidget::setPlay()
 		m_pVlcPlayer->stop();
 	}
 
-	if (isPreloading)
+	if (m_bIsMediaPreloading)
 	{
 		// play media after it is loaded
 		std::lock_guard<std::mutex> cs(m_oMutex);
-		m_oPauseCmdQueue.push([this]() {
+		m_oPreloadCmdQueue.push([this]() {
 			m_pVlcPlayer->play();
 		});
 	}
@@ -202,17 +204,28 @@ void QAscVideoWidget::setVolume(int nVolume)
 
 void QAscVideoWidget::setSeek(int nPos)
 {
-	bool isPreloading = preloadMediaIfNeeded();
+	preloadMediaIfNeeded();
+
 #ifndef USE_VLC_LIBRARY
-	qint64 nDuration = m_pView->m_pInternal->m_pPlaylist->GetDurationOfCurrentMedia();
-	double dProgress = (double)nPos / 100000.0;
-	m_pEngine->setPosition((qint64)(dProgress * nDuration));
+	if (m_bIsMediaPreloading)
+	{
+		std::lock_guard<std::mutex> cs(m_oMutex);
+		m_oPreloadCmdQueue.push([this, nPos]() {
+			setSeek(nPos);
+		});
+	}
+	else
+	{
+		qint64 nDuration = m_pEngine->duration();
+		double dProgress = (double)nPos / 100000.0;
+		m_pEngine->setPosition((qint64)(dProgress * nDuration));
+	}
 #else
-	if (isPreloading)
+	if (m_bIsMediaPreloading)
 	{
 		// set position of playback after media is loaded
 		std::lock_guard<std::mutex> cs(m_oMutex);
-		m_oPauseCmdQueue.push([this, nPos]() {
+		m_oPreloadCmdQueue.push([this, nPos]() {
 			m_pVlcPlayer->setPosition((float)nPos / 100000);
 		});
 	}
@@ -225,12 +238,24 @@ void QAscVideoWidget::setSeek(int nPos)
 
 void QAscVideoWidget::stepBack(int nStep)
 {
-	bool isPreloading = preloadMediaIfNeeded();
+	preloadMediaIfNeeded();
+
 #ifndef USE_VLC_LIBRARY
-	qint64 targetPos = m_pEngine->position() - nStep;
-	if (targetPos < 0)
-		targetPos = 0;
-	m_pEngine->setPosition(targetPos);
+	if (m_bIsMediaPreloading)
+	{
+		std::lock_guard<std::mutex> cs(m_oMutex);
+		m_oPreloadCmdQueue.push([this, nStep]() {
+			stepBack(nStep);
+		});
+	}
+	else
+	{
+		qint64 curPos = m_pEngine->state() == QMediaPlayer::StoppedState ? 0 : m_pEngine->position();
+		qint64 targetPos = curPos - nStep;
+		if (targetPos < 0)
+			targetPos = 0;
+		m_pEngine->setPosition(targetPos);
+	}
 #else
 	auto stepFunc = [this, nStep]() {
 		qint64 targetPos = m_pVlcPlayer->time() - nStep;
@@ -240,9 +265,10 @@ void QAscVideoWidget::stepBack(int nStep)
 		m_pVlcPlayer->setPosition((float)targetPos / duration);
 	};
 
-	if (isPreloading)
+	if (m_bIsMediaPreloading)
 	{
-		m_oPauseCmdQueue.push(stepFunc);
+		std::lock_guard<std::mutex> cs(m_oMutex);
+		m_oPreloadCmdQueue.push(stepFunc);
 	}
 	else
 	{
@@ -253,13 +279,25 @@ void QAscVideoWidget::stepBack(int nStep)
 
 void QAscVideoWidget::stepForward(int nStep)
 {
-	bool isPreloading = preloadMediaIfNeeded();
+	preloadMediaIfNeeded();
+
 #ifndef USE_VLC_LIBRARY
-	qint64 targetPos = m_pEngine->position() + nStep;
-	qint64 duration = m_pEngine->duration();
-	if (targetPos >= duration)
-		targetPos = duration - 1;
-	m_pEngine->setPosition(targetPos);
+	if (m_bIsMediaPreloading)
+	{
+		std::lock_guard<std::mutex> cs(m_oMutex);
+		m_oPreloadCmdQueue.push([this, nStep]() {
+			stepForward(nStep);
+		});
+	}
+	else
+	{
+		qint64 curPos = m_pEngine->state() == QMediaPlayer::StoppedState ? 0 : m_pEngine->position();
+		qint64 targetPos = curPos + nStep;
+		qint64 duration = m_pEngine->duration();
+		if (targetPos >= duration)
+			targetPos = duration - 1;
+		m_pEngine->setPosition(targetPos);
+	}
 #else
 	auto stepFunc = [this, nStep]() {
 		qint64 targetPos = m_pVlcPlayer->time() + nStep;
@@ -269,9 +307,10 @@ void QAscVideoWidget::stepForward(int nStep)
 		m_pVlcPlayer->setPosition((float)targetPos / duration);
 	};
 
-	if (isPreloading)
+	if (m_bIsMediaPreloading)
 	{
-		m_oPauseCmdQueue.push(stepFunc);
+		std::lock_guard<std::mutex> cs(m_oMutex);
+		m_oPreloadCmdQueue.push(stepFunc);
 	}
 	else
 	{
@@ -291,7 +330,6 @@ void QAscVideoWidget::open(QString& sFile, bool isPlay)
 	if (!isPlay)
 		m_pEngine->pause();
 #else
-
 	if (m_pMedia && !sFile.isEmpty())
 	{
 		delete m_pMedia;
@@ -305,10 +343,7 @@ void QAscVideoWidget::open(QString& sFile, bool isPlay)
 	}
 
 	m_pMedia = new CVlcMedia(GetVlcInstance(), sFile);
-	// if `isPlay` is false, then start and immediately pause playback to load video frames
 	m_pVlcPlayer->open(m_pMedia);
-	if (!isPlay)
-		m_bIsPauseOnPlay = true;
 #endif
 }
 
@@ -391,21 +426,26 @@ void QAscVideoWidget::slotVlcStateChanged(int state)
 	{
 		stateQ = QMediaPlayer::PlayingState;
 		setVolume(m_nVolume);
-		if (m_bIsPauseOnPlay)
+		// if media is preloading, then start and immediately pause playback to load video frames
+		if (m_bIsMediaPreloading)
 		{
 			m_pVlcPlayer->pause();
-			m_bIsPauseOnPlay = false;
 		}
 	}
 	else if (state == libvlc_Paused)
 	{
 		stateQ = QMediaPlayer::PausedState;
-		// call functors from command queue
-		std::lock_guard<std::mutex> cs(m_oMutex);
-		while (!m_oPauseCmdQueue.empty())
+
+		if (m_bIsMediaPreloading)
 		{
-			m_oPauseCmdQueue.front()();
-			m_oPauseCmdQueue.pop();
+			m_bIsMediaPreloading = false;
+			// call functors from command queue
+			std::lock_guard<std::mutex> cs(m_oMutex);
+			while (!m_oPreloadCmdQueue.empty())
+			{
+				m_oPreloadCmdQueue.front()();
+				m_oPreloadCmdQueue.pop();
+			}
 		}
 	}
 	else if (state == libvlc_Ended)
@@ -438,8 +478,14 @@ void QAscVideoWidget::slotVlcVideoOutputChanged(int nVoutCount)
 
 void QAscVideoWidget::slotChangeState(QMediaPlayer_State state)
 {
-	if (QMediaPlayer::PlayingState == state)
+	if (state == QMediaPlayer::PlayingState)
+	{
 		setVolume(m_nVolume);
+	}
+	else if (state == QMediaPlayer::StoppedState)
+	{
+		m_sCurrentSource = "";
+	}
 
 	emit stateChanged(state);
 }
@@ -449,6 +495,9 @@ void QAscVideoWidget::slotPositionChange(qint64 pos)
 	m_pView->Footer()->setTimeOnLabel(pos);
 
 	qint64 nDuration = m_pEngine->duration();
+	if (nDuration == 0)
+		return;
+
 	double dProgress = (double)pos / nDuration;
 	emit posChanged((int)(100000 * dProgress + 0.5));
 }
@@ -456,6 +505,21 @@ void QAscVideoWidget::slotPositionChange(qint64 pos)
 void QAscVideoWidget::slotVideoAvailableChanged(bool isAvailable)
 {
 	emit videoOutputChanged(isAvailable);
+}
+
+void QAscVideoWidget::slotMediaDurationParsed(qint64 duration)
+{
+	if (m_bIsMediaPreloading)
+	{
+		m_bIsMediaPreloading = false;
+		// call functors from command queue
+		std::lock_guard<std::mutex> cs(m_oMutex);
+		while (!m_oPreloadCmdQueue.empty())
+		{
+			m_oPreloadCmdQueue.front()();
+			m_oPreloadCmdQueue.pop();
+		}
+	}
 }
 
 QMediaPlayer* QAscVideoWidget::getEngine()
@@ -489,13 +553,15 @@ void QAscVideoWidget::stop()
 #endif
 }
 
-bool QAscVideoWidget::preloadMediaIfNeeded()
+void QAscVideoWidget::preloadMediaIfNeeded()
 {
-	bool isPreloading = false;
-	if (m_sCurrentSource.isEmpty())
+	if (m_sCurrentSource.isEmpty() && !m_bIsMediaPreloading)
 	{
+		m_bIsMediaPreloading = true;
 		m_pView->m_pInternal->m_pPlaylist->LoadCurrent();
-		isPreloading = true;
+#ifndef USE_VLC_LIBRARY
+		if (m_pEngine->duration())
+			m_bIsMediaPreloading = false;
+#endif
 	}
-	return isPreloading;
 }

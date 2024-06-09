@@ -673,13 +673,15 @@ void QVideoPlaylist::LoadCurrent()
 	QStandardItemModel* pModel = (QStandardItemModel*)m_pListView->model();
 	int nRows = pModel->rowCount();
 
-	// TODO: fix when there are no videos in player
+	// TODO: fix when there are no media in playlist
+	/*
 	if (0 == nRows)
 	{
 		// файлов нет - показыаем файл диалог
 		slotButtonAdd();
 		nRows = pModel->rowCount();
 	}
+	*/
 	if (0 == nRows)
 		return;
 

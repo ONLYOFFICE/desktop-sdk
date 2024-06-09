@@ -8,14 +8,14 @@
 #include "../qfooterpanel.h"
 #include "qvideoplaylist.h"
 
+#include <functional>
+#include <queue>
+#include <mutex>
+
 #ifndef USE_VLC_LIBRARY
 #define QASCVIDEOBASE QVideoWidget
 #else
 #define QASCVIDEOBASE QWidget
-
-#include <functional>
-#include <queue>
-#include <mutex>
 #endif
 
 class QAscVideoWidget;
@@ -88,8 +88,8 @@ public:
 	void stop();
 
 private:
-	// if there is no media playing, preloads the current one and returns true
-	bool preloadMediaIfNeeded();
+	// if there is no media playing, preloads the current one
+	void preloadMediaIfNeeded();
 
 signals:
 	void stateChanged(QMediaPlayer_State);
@@ -105,6 +105,7 @@ public slots:
 	void slotChangeState(QMediaPlayer::State state);
 	void slotPositionChange(qint64 pos);
 	void slotVideoAvailableChanged(bool isAvailable);
+	void slotMediaDurationParsed(qint64 duration);
 #endif
 
 public:
@@ -114,13 +115,13 @@ public:
 private:
 	QString m_sCurrentSource;
 
+	bool m_bIsMediaPreloading;
+	std::queue<std::function<void()>> m_oPreloadCmdQueue;
+	std::mutex m_oMutex;
+
 #ifdef USE_VLC_LIBRARY
 	CVlcPlayer* m_pVlcPlayer;
 	CVlcMedia* m_pMedia;
-
-	bool m_bIsPauseOnPlay;
-	std::queue<std::function<void()>> m_oPauseCmdQueue;
-	std::mutex m_oMutex;
 #else
 	QMediaPlayer* m_pEngine;
 #endif
