@@ -78,7 +78,7 @@ QAscVideoView::QAscVideoView(QWidget *parent, bool bIsPresentationMode) : QWidge
 	m_pInternal->m_pPlaylist = new QVideoPlaylist(this);
 	m_pInternal->m_pPlaylist->setGeometry(width(), 0, 250, height());
 
-	QObject::connect(m_pInternal->m_pPlaylist, SIGNAL(fileChanged(QString)), this, SLOT(slotOpenFile(QString)));
+	QObject::connect(m_pInternal->m_pPlaylist, SIGNAL(fileChanged(QString,bool)), this, SLOT(slotOpenFile(QString,bool)));
 	m_pInternal->m_pPlaylist->installEventFilter(this);
 	m_pInternal->m_pPlaylist->m_pListView->installEventFilter(this);
 	m_pInternal->m_pPlaylist->m_pAdd->installEventFilter(this);
@@ -489,14 +489,14 @@ void QAscVideoView::UpdateFullscreenIcon()
 	Footer()->SetFullscreenIcon(!getMainWindowFullScreen());
 }
 
-void QAscVideoView::slotOpenFile(QString sFile)
+void QAscVideoView::slotOpenFile(QString sFile, bool isPlay)
 {
 	if (sFile.isEmpty() && m_pInternal->m_bIsPresentationMode)
 	{
-		ChangeSeek(0);
+		slotPlayerPosChanged(0);
 		return;
 	}
-	m_pInternal->m_pPlayer->open(sFile);
+	m_pInternal->m_pPlayer->open(sFile, isPlay);
 
 	if (sFile == "")
 		return;
@@ -534,7 +534,7 @@ void QAscVideoView::slotPlayerStateChanged(QMediaPlayer_State state)
 
 	{
 		// force slider to be put to the end
-		Footer()->m_pInternal->m_pSlider->setValue(100000);
+		slotPlayerPosChanged(100000);
 		// play next video (if any)
 		m_pInternal->m_pPlaylist->Next();
 	}
