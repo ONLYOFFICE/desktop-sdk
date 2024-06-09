@@ -162,12 +162,6 @@ void QAscVideoWidget::setPlay()
 	// `play()` slot is called syncronously so there is no need for queueing it
 	m_pEngine->play();
 #else
-	// if media has ended in presentation, player must be stopped before playing it again
-	if (m_pView->m_pInternal->m_bIsPresentationMode && m_pVlcPlayer->getState() == libvlc_Ended)
-	{
-		m_pVlcPlayer->stop();
-	}
-
 	if (m_bIsMediaPreloading)
 	{
 		// play media after it is loaded
@@ -257,22 +251,20 @@ void QAscVideoWidget::stepBack(int nStep)
 		m_pEngine->setPosition(targetPos);
 	}
 #else
-	auto stepFunc = [this, nStep]() {
+	if (m_bIsMediaPreloading)
+	{
+		std::lock_guard<std::mutex> cs(m_oMutex);
+		m_oPreloadCmdQueue.push([this, nStep]() {
+			stepBack(nStep);
+		});
+	}
+	else
+	{
 		qint64 targetPos = m_pVlcPlayer->time() - nStep;
 		qint64 duration = m_pMedia->duration();
 		if (targetPos < 0)
 			targetPos = 0;
 		m_pVlcPlayer->setPosition((float)targetPos / duration);
-	};
-
-	if (m_bIsMediaPreloading)
-	{
-		std::lock_guard<std::mutex> cs(m_oMutex);
-		m_oPreloadCmdQueue.push(stepFunc);
-	}
-	else
-	{
-		stepFunc();
 	}
 #endif
 }
@@ -299,22 +291,20 @@ void QAscVideoWidget::stepForward(int nStep)
 		m_pEngine->setPosition(targetPos);
 	}
 #else
-	auto stepFunc = [this, nStep]() {
+	if (m_bIsMediaPreloading)
+	{
+		std::lock_guard<std::mutex> cs(m_oMutex);
+		m_oPreloadCmdQueue.push([this, nStep]() {
+			stepForward(nStep);
+		});
+	}
+	else
+	{
 		qint64 targetPos = m_pVlcPlayer->time() + nStep;
 		qint64 duration = m_pMedia->duration();
 		if (targetPos >= duration)
 			targetPos = duration - 1;
 		m_pVlcPlayer->setPosition((float)targetPos / duration);
-	};
-
-	if (m_bIsMediaPreloading)
-	{
-		std::lock_guard<std::mutex> cs(m_oMutex);
-		m_oPreloadCmdQueue.push(stepFunc);
-	}
-	else
-	{
-		stepFunc();
 	}
 #endif
 }

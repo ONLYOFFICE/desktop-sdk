@@ -326,16 +326,6 @@ bool QVideoPlaylist::isScrollBarVisible()
 	return m_pListView->verticalScrollBar()->isVisible();
 }
 
-qint64 QVideoPlaylist::GetDurationOfCurrentMedia()
-{
-	QStandardItemModel* pModel = static_cast<QStandardItemModel*>(m_pListView->model());
-	int nRow = GetIndexOfSelectedItem();
-	if (nRow == -1)
-		return 0;
-
-	return m_mapDurations[pModel->item(nRow, 0)->accessibleText()];
-}
-
 #ifdef _MAC
 void QVideoPlaylist::slotActivatedShortcut()
 {

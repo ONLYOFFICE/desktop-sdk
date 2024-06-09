@@ -30,7 +30,6 @@ public:
 	int GetMaxWidth();
 
 	QWidget* VolumeControls();
-	QWidget* VideoSlider();
 
 	void ApplySkin(CFooterSkin::Type type);
 	void SetRoundedCorners(bool isRounded = true);

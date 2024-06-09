@@ -123,8 +123,6 @@ public:
 	void CheckStyles();
 
 	bool isScrollBarVisible();
-	// get duration of media which is currently selected in playlist. If there is no such - returns 0.
-	qint64 GetDurationOfCurrentMedia();
 
 public:
 	QPushButton* m_pAdd;

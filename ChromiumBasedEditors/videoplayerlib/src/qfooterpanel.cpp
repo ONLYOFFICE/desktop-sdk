@@ -214,11 +214,6 @@ QWidget* QFooterPanel::VolumeControls()
 	return m_pInternal->m_pVolumeControl;
 }
 
-QWidget* QFooterPanel::VideoSlider()
-{
-	return m_pInternal->m_pSlider;
-}
-
 void QFooterPanel::ApplySkin(CFooterSkin::Type type)
 {
 	CFooterSkin skin = CFooterSkin::getSkin(type);
