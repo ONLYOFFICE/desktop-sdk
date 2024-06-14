@@ -41,8 +41,6 @@ public:
 	bool m_bIsPresentationMode;
 	bool m_bIsPresentationModeMediaTypeSended;
 
-	bool m_bIsDestroy;
-
 	bool m_bIsMuted;
 	int m_nMutedVolume;
 
@@ -106,6 +104,7 @@ public slots:
 	void slotPositionChange(qint64 pos);
 	void slotVideoAvailableChanged(bool isAvailable);
 	void slotMediaDurationParsed(qint64 duration);
+	void slotMediaStatusChanged(QMediaPlayer::MediaStatus mediaStatus);
 #endif
 
 public:

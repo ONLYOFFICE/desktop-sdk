@@ -108,7 +108,7 @@ void QCefView_Media::OnMediaEnd(bool isFromResize)
 void QCefView_Media::OnMediaPlayerCommand(NSEditorApi::CAscExternalMediaPlayerCommand* data)
 {
 	std::string sCmd = data->get_Cmd();
-
+	// panel and video widget commands
 	if (sCmd == "showMediaControl")
 	{
 		showMediaControl(data);
@@ -120,6 +120,23 @@ void QCefView_Media::OnMediaPlayerCommand(NSEditorApi::CAscExternalMediaPlayerCo
 	else if (sCmd == "update")
 	{
 		updateGeometry(data);
+	}
+	// player commands
+	else if (sCmd == "play" || sCmd == "resume")
+	{
+		m_pMediaView->Play();
+	}
+	else if (sCmd == "pause")
+	{
+		m_pMediaView->Pause();
+	}
+	else if (sCmd == "stop")
+	{
+		m_pMediaView->Stop();
+	}
+	else if (sCmd == "togglePause")
+	{
+		m_pMediaView->TogglePause();
 	}
 	else
 	{

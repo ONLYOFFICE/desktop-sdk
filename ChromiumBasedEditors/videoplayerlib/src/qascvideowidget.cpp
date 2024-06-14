@@ -81,6 +81,7 @@ QAscVideoWidget::QAscVideoWidget(QWidget *parent)
 	QObject::connect(m_pEngine, SIGNAL(positionChanged(qint64)), this, SLOT(slotPositionChange(qint64)));
 	QObject::connect(m_pEngine, SIGNAL(videoAvailableChanged(bool)), this, SLOT(slotVideoAvailableChanged(bool)));
 	QObject::connect(m_pEngine, SIGNAL(durationChanged(qint64)), this, SLOT(slotMediaDurationParsed(qint64)));
+	QObject::connect(m_pEngine, SIGNAL(mediaStatusChanged(QMediaPlayer::MediaStatus)), this, SLOT(slotMediaStatusChanged(QMediaPlayer::MediaStatus)));
 #else
 	m_pVlcPlayer = new CVlcPlayer(this);
 	m_pVlcPlayer->integrateIntoWidget(this);
@@ -438,7 +439,7 @@ void QAscVideoWidget::slotVlcStateChanged(int state)
 			}
 		}
 	}
-	else if (state == libvlc_Ended)
+	else if (state == libvlc_Ended || state == libvlc_Stopped)
 	{
 		stateQ = QMediaPlayer::StoppedState;
 		m_sCurrentSource = "";
@@ -510,6 +511,12 @@ void QAscVideoWidget::slotMediaDurationParsed(qint64 duration)
 			m_oPreloadCmdQueue.pop();
 		}
 	}
+}
+
+void QAscVideoWidget::slotMediaStatusChanged(QMediaPlayer::MediaStatus mediaStatus)
+{
+	if (mediaStatus == QMediaPlayer::LoadedMedia)
+		emit videoOutputChanged(m_pEngine->isVideoAvailable());
 }
 
 QMediaPlayer* QAscVideoWidget::getEngine()

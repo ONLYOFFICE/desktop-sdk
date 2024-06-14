@@ -258,7 +258,7 @@ void QFooterPanel::setTimeOnLabel(qint64 time)
 
 void QFooterPanel::onPlayPauseBtnClicked()
 {
-	m_pInternal->m_pView->PlayPause();
+	m_pInternal->m_pView->TogglePause();
 }
 
 void QFooterPanel::onVolumeBtnClicked()
