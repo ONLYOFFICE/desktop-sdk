@@ -118,7 +118,7 @@ void QFooterPanel::resizeEvent(QResizeEvent* event)
 	nRight -= (nBetweenButtons + nButW);
 	m_pInternal->m_pVolume->setGeometry(nRight, nY, nButW, nButW);
 
-	int nTimeLabelWidth = QWidgetUtils::ScaleDPI(m_pInternal->c_nTimeLabelWidth, dDpi);
+	int nTimeLabelWidth = m_pInternal->m_pTimeLabel->getMaxWidth();
 
 	nRight -= (nBetweenButtons + nTimeLabelWidth);
 	m_pInternal->m_pTimeLabel->setGeometry(nRight, nY, nTimeLabelWidth, nButW);

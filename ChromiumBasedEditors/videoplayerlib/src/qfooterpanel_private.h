@@ -53,8 +53,6 @@ public:
 	const int c_nVolumeSliderWidth = 20;
 	const int c_nVolumeSliderHeight = 120;
 
-	const int c_nTimeLabelWidth = 60;
-
 	const int c_nBorderRadius = 5;
 };
 
