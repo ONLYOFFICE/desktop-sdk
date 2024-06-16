@@ -1,5 +1,8 @@
 #include "qtimelabel.h"
 
+#include <QFontMetrics>
+#include <QtGlobal>
+
 #include "../qwidgetutils.h"
 
 QTimeLabel::QTimeLabel(QWidget* parent) : QLabel(parent)
@@ -7,6 +10,8 @@ QTimeLabel::QTimeLabel(QWidget* parent) : QLabel(parent)
 	double dpi = QWidgetUtils::GetDPI(parent);
 	QWidgetUtils::SetDPI(this, dpi);
 	m_dDpi = dpi;
+
+	setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
 }
 
 QTimeLabel::~QTimeLabel()
@@ -37,6 +42,11 @@ void QTimeLabel::setTime(qint64 time)
 	setText(sTime);
 }
 
+int QTimeLabel::getMaxWidth()
+{
+	return m_nMaxWidth;
+}
+
 void QTimeLabel::updateStyle()
 {
 	QFont font = m_oStyleOpt.m_oFont;
@@ -56,6 +66,14 @@ void QTimeLabel::updateStyle()
 
 	QString sStyle = "QLabel { color: " + m_oStyleOpt.m_sColor + "; }";
 	setStyleSheet(sStyle);
+
+	// update label's max width
+	QFontMetrics fontMetrics(font);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+	m_nMaxWidth = fontMetrics.horizontalAdvance("00:00:00");
+#else
+	m_nMaxWidth = fontMetrics.width("00:00:00");
+#endif
 }
 
 void QTimeLabel::setStyleOptions(const CTimeLabelOptions& opt)

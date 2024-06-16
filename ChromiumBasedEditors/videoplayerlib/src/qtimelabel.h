@@ -17,6 +17,7 @@ public:
 
 public:
 	void setTime(qint64 time);
+	int getMaxWidth();
 
 	void updateStyle();
 	void setStyleOptions(const CTimeLabelOptions& opt);
@@ -28,6 +29,7 @@ private:
 	CTimeLabelOptions m_oStyleOpt;
 
 	double m_dDpi;
+	int m_nMaxWidth;
 };
 
 #endif	// Q_TIME_LABEL_H
