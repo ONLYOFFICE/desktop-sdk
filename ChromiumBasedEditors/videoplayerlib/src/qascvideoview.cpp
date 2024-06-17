@@ -297,6 +297,8 @@ void QAscVideoView::keyPressEvent(QKeyEvent *event)
 		break;
 	}
 
+	emit onKeyDown(event->key(), ee);
+
 	event->accept();
 }
 

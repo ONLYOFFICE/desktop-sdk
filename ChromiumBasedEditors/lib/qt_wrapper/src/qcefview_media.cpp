@@ -251,6 +251,9 @@ void QCefView_Media::showMediaControl(NSEditorApi::CAscExternalMediaPlayerComman
 	int xOffset = 0, yOffset = 0;
 	m_pMediaView = new QAscVideoView(getMainPanel(this, xOffset, yOffset), true);
 
+	QObject::connect(m_pMediaView, SIGNAL(onKeyDown(int, Qt::KeyboardModifiers)),
+					 this, SLOT(onMediaKeyDown(int, Qt::KeyboardModifiers)));
+
 	m_pMediaView->setPlayListUsed(false);
 	m_pMediaView->setFullScreenUsed(false);
 
@@ -286,6 +289,7 @@ void QCefView_Media::hideMediaControl()
 	if (!m_pMediaView)
 		return;
 
+	m_pMediaView->disconnect();
 	m_pMediaView->RemoveFromPresentation();
 	m_pMediaView = nullptr;
 }
@@ -302,3 +306,17 @@ void QCefView_Media::updateGeometry(NSEditorApi::CAscExternalMediaPlayerCommand*
 	pFooter->setGeometry(xOffset + data->get_ControlRectX(), yOffset + data->get_ControlRectY(), data->get_ControlRectW(), pFooter->GetHeight());
 }
 
+void QCefView_Media::onMediaKeyDown(int key, Qt::KeyboardModifiers mods)
+{
+	switch (key)
+	{
+	case Qt::Key_Escape:
+	{
+		hideMediaControl();
+		setFocus();
+		break;
+	}
+	default:
+		break;
+	}
+}

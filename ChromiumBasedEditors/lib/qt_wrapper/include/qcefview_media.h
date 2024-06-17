@@ -54,6 +54,9 @@ public:
 
 protected:
 	QAscVideoView* m_pMediaView;
+
+protected slots:
+	void onMediaKeyDown(int key, Qt::KeyboardModifiers mods);
 };
 
 #endif  // QCEFWEBVIEW_MEDIA_H

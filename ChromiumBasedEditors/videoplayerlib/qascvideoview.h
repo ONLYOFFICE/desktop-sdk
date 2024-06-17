@@ -78,6 +78,7 @@ public:
 
 signals:
 	void titleChanged(const QString& sTitle);
+	void onKeyDown(int key, Qt::KeyboardModifiers mods);
 
 public slots:
 	void slotOpenFile(QString sFile, bool isPlay);
