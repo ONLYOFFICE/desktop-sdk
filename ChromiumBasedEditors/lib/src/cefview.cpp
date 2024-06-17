@@ -6280,6 +6280,9 @@ void CCefView::load(const std::wstring& urlInputSrc)
 
 			int nFormat = CAscApplicationManager::GetFileFormatByExtentionForSave(m_pInternal->m_sTemplateUrl);
 
+			if (nFormat == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF)
+				nFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF;
+
 			AscEditorType nEditorFormat = AscEditorType::etPdf;
 			if (-1 != nFormat)
 			{
