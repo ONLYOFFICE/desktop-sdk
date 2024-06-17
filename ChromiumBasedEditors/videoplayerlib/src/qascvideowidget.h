@@ -13,7 +13,15 @@
 #include <mutex>
 
 #ifndef USE_VLC_LIBRARY
+#define USE_QVIDEO_ITEM
+#ifndef USE_QVIDEO_ITEM
 #define QASCVIDEOBASE QVideoWidget
+#else
+#include <QGraphicsView>
+#include <QGraphicsScene>
+#include <QGraphicsVideoItem>
+#define QASCVIDEOBASE QGraphicsView
+#endif
 #else
 #define QASCVIDEOBASE QWidget
 #endif
@@ -65,6 +73,10 @@ public:
 	void mouseDoubleClickEvent(QMouseEvent *event);
 	void mousePressEvent(QMouseEvent *event);
 	void mouseMoveEvent(QMouseEvent* event);
+
+#ifdef USE_QVIDEO_ITEM
+	void resizeEvent(QResizeEvent* event);
+#endif
 
 public:
 	void open(QString& sFile, bool isPlay);

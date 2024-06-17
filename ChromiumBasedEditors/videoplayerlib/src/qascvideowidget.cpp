@@ -74,7 +74,17 @@ QAscVideoWidget::QAscVideoWidget(QWidget *parent)
 
 #ifndef USE_VLC_LIBRARY
 	m_pEngine = new QMediaPlayer(parent);
+#ifdef USE_QVIDEO_ITEM
+	setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	QGraphicsScene* pScene = new QGraphicsScene();
+	this->setScene(pScene);
+	QGraphicsVideoItem* pItem = new QGraphicsVideoItem();
+	pScene->addItem(pItem);
+	m_pEngine->setVideoOutput(pItem);
+#else
 	m_pEngine->setVideoOutput(this);
+#endif
 	m_pEngine->setNotifyInterval(500);
 
 	QObject::connect(m_pEngine, SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(slotChangeState(QMediaPlayer::State)));
@@ -153,6 +163,17 @@ void QAscVideoWidget::mouseMoveEvent(QMouseEvent* event)
 	}
 	event->accept();
 }
+
+#ifdef USE_QVIDEO_ITEM
+void QAscVideoWidget::resizeEvent(QResizeEvent* event)
+{
+	QRect rcontent = contentsRect();
+	setSceneRect(0, 0, rcontent.width(), rcontent.height());
+
+	this->scene()->items()[0]->setPos(0, 0);
+	((QGraphicsVideoItem*)this->scene()->items()[0])->setSize(QSizeF(width(), height()));
+}
+#endif
 
 void QAscVideoWidget::setPlay()
 {

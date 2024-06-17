@@ -52,6 +52,50 @@ QCefView_Media::~QCefView_Media()
 	OnMediaEnd();
 }
 
+#ifdef _LINUX
+#include <QX11Info>
+QWidget* getMainPanel(QWidget* cur, int& x, int& y)
+{
+    x = 0; y = 0;
+    if (!QX11Info::isCompositingManagerRunning())
+        return cur;
+
+    QWidget* pp = cur;
+
+    QString objName = pp->objectName();
+    while (objName != "mainPanel" && pp)
+    {
+        if ("ascTabWidget" == objName)
+        {
+            x += pp->x();
+            y += pp->y();
+        }
+        pp = pp->parentWidget();
+        if (!pp)
+            break;
+        objName = pp->objectName();
+    }
+
+    // presenter view
+    x += cur->x();
+    y += cur->y();
+
+    if (pp)
+    	return pp;
+
+    if (cur->parentWidget())
+    	return cur->parentWidget();
+
+    return cur;
+}
+#else
+QWidget* getMainPanel(QWidget* cur, int& x, int& y)
+{
+    x = 0; y = 0;
+    return cur;
+}
+#endif
+
 void QCefView_Media::OnMediaStart(NSEditorApi::CAscExternalMedia* data)
 {
 	if (m_pMediaView)
@@ -204,27 +248,30 @@ void QCefView_Media::showMediaControl(NSEditorApi::CAscExternalMediaPlayerComman
 	// set DPI for this widget BEFORE creating media view
 	QWidgetUtils::SetDPI(this, m_pCefView->GetDeviceScale());
 
-	m_pMediaView = new QAscVideoView(this, true);
+	int xOffset = 0, yOffset = 0;
+	m_pMediaView = new QAscVideoView(getMainPanel(this, xOffset, yOffset), true);
+
 	m_pMediaView->setPlayListUsed(false);
 	m_pMediaView->setFullScreenUsed(false);
 
-	m_pMediaView->setGeometry(data->get_FrameBoundsX(), data->get_FrameBoundsY(), data->get_FrameBoundsW(), data->get_FrameBoundsH());
+	m_pMediaView->setGeometry(xOffset + data->get_FrameBoundsX(), yOffset + data->get_FrameBoundsY(), data->get_FrameBoundsW(), data->get_FrameBoundsH());
 
 	QFooterPanel* pFooter = m_pMediaView->Footer();
-	pFooter->setGeometry(data->get_ControlRectX(), data->get_ControlRectY(), data->get_ControlRectW(), pFooter->GetHeight());
+	pFooter->setGeometry(xOffset + data->get_ControlRectX(), yOffset + data->get_ControlRectY(), data->get_ControlRectW(), pFooter->GetHeight());
 
+	// show before skin! (problem in fullscreen mode)
+	pFooter->show();
 	std::string sTheme = data->get_Theme();
 	if (sTheme == "dark")
 		pFooter->ApplySkin(CFooterSkin::tDark);
 	else
 		pFooter->ApplySkin(CFooterSkin::tLight);
 	pFooter->SetRoundedCorners();
-	pFooter->show();
 
 	m_pMediaView->setMedia(QString::fromStdWString(data->get_Url()), false);
 
 	int nVolume = data->get_Volume();
-	if (data->get_Mute())
+	if (data->get_Mute() || m_pCefView->IsPresentationReporter())
 	{
 		m_pMediaView->ToggleMute();
 	}
@@ -248,9 +295,10 @@ void QCefView_Media::updateGeometry(NSEditorApi::CAscExternalMediaPlayerCommand*
 	if (!m_pMediaView)
 		return;
 
-	m_pMediaView->setGeometry(data->get_FrameBoundsX(), data->get_FrameBoundsY(), data->get_FrameBoundsW(), data->get_FrameBoundsH());
-
+	int xOffset = 0, yOffset = 0;
+	getMainPanel(this, xOffset, yOffset);
+	m_pMediaView->setGeometry(xOffset + data->get_FrameBoundsX(), yOffset + data->get_FrameBoundsY(), data->get_FrameBoundsW(), data->get_FrameBoundsH());
 	QFooterPanel* pFooter = m_pMediaView->Footer();
-	pFooter->setGeometry(data->get_ControlRectX(), data->get_ControlRectY(), data->get_ControlRectW(), pFooter->GetHeight());
+	pFooter->setGeometry(xOffset + data->get_ControlRectX(), yOffset + data->get_ControlRectY(), data->get_ControlRectW(), pFooter->GetHeight());
 }
 

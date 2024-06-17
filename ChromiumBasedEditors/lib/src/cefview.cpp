@@ -6430,10 +6430,6 @@ void CCefView::load(const std::wstring& urlInputSrc)
 		m_pInternal->m_bIsSSO = true;
 	}
 
-	m_pInternal->m_oConverterToEditor.m_pManager = this->GetAppManager();
-	m_pInternal->m_oConverterToEditor.m_pView = this;
-	m_pInternal->m_oConverterFromEditor.m_pManager = this->GetAppManager();
-
 	m_pInternal->m_strUrl = url;
 	NSCommon::url_correct(m_pInternal->m_strUrl);
 	m_pInternal->m_oPrintData.m_pApplicationFonts = GetAppManager()->GetApplicationFonts();
@@ -7409,6 +7405,10 @@ void CCefView::SetAppManager(CAscApplicationManager* pManager)
 		return;
 	m_pInternal->m_pManager = pManager;
 	m_pInternal->m_oPrintData.m_pAdditional = pManager->m_pInternal->m_pAdditional;
+
+	m_pInternal->m_oConverterToEditor.m_pManager = pManager;
+	m_pInternal->m_oConverterToEditor.m_pView = this;
+	m_pInternal->m_oConverterFromEditor.m_pManager = pManager;
 }
 
 CCefViewWidgetImpl* CCefView::GetWidgetImpl()
@@ -7764,10 +7764,6 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
 		m_pInternal->m_pTemporaryCloudFileInfo = NULL;
 	}
 
-	m_pInternal->m_oConverterToEditor.m_pManager = this->GetAppManager();
-	m_pInternal->m_oConverterToEditor.m_pView = this;
-	m_pInternal->m_oConverterFromEditor.m_pManager = this->GetAppManager();
-
 	m_pInternal->LocalFile_Start();
 
 	if (m_pInternal->m_bIsCloudCryptFile)
@@ -7849,9 +7845,6 @@ void CCefViewEditor::CreateLocalFile(const AscEditorType& nFileFormatSrc, const 
 	if (!sParams.empty())
 		sUrl += L"?";
 
-	m_pInternal->m_oConverterToEditor.m_pManager = this->GetAppManager();
-	m_pInternal->m_oConverterToEditor.m_pView = this;
-	m_pInternal->m_oConverterFromEditor.m_pManager = this->GetAppManager();
 	m_pInternal->m_oConverterToEditor.m_sName = sName;
 
 	m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc = sFilePath;
