@@ -77,7 +77,7 @@ QAscVideoWidget::QAscVideoWidget(QWidget *parent)
 #ifdef USE_QVIDEO_ITEM
 	setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 	setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-	QGraphicsScene* pScene = new QGraphicsScene();
+	QGraphicsScene* pScene = new QGraphicsScene(this);
 	this->setScene(pScene);
 	QGraphicsVideoItem* pItem = new QGraphicsVideoItem();
 	pScene->addItem(pItem);
