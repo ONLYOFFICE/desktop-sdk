@@ -4318,6 +4318,53 @@ public:
 		if (nFileType == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA)
 			nFileType = AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF;
 
+		std::wstring sNeedExt = oChecker.GetExtensionByType(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF);
+		if (!sNeedExt.empty())
+		{
+			std::wstring::size_type posOldExt = sFileName.rfind('.');
+			if (posOldExt != std::wstring::npos && 7 > (sFileName.length() - posOldExt))
+			{
+				sFileName = sFileName.substr(0, posOldExt);
+				sFileName += sNeedExt;
+			}
+		}
+
+		// save dialog
+		NSEditorApi::CAscMenuEvent* pEvent = new NSEditorApi::CAscMenuEvent(ASC_MENU_EVENT_TYPE_CEF_SAVEFILEDIALOG);
+		NSEditorApi::CAscSaveDialog* pData = new NSEditorApi::CAscSaveDialog();
+		pData->put_Id(m_pParent->GetId());
+		pData->put_FilePath(sFileName);
+		pData->put_IdDownload(0);
+		pEvent->m_pData = pData;
+
+		m_pParent->GetAppManager()->Apply(pEvent);
+		return true;
+	}
+	else if ("local_save_to_drawing_pdf" == message_name)
+	{
+		CCloudPDFSaver* pSaver = new CCloudPDFSaver();
+		pSaver->m_pEvents = m_pParent->m_pInternal;
+		pSaver->m_oPrintData.m_pApplicationFonts = m_pParent->GetAppManager()->GetApplicationFonts();
+
+		std::wstring sFileName = args->GetString(0).ToWString();
+
+		pSaver->m_oPrintData.m_sDocumentUrl = args->GetString(1).ToWString();
+		pSaver->m_oPrintData.m_sFrameUrl = args->GetString(2).ToWString();
+		pSaver->m_oPrintData.m_sThemesUrl = args->GetString(3).ToWString();
+		pSaver->m_oPrintData.CalculateImagePaths(false);
+		pSaver->m_nOutputFormat = AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF;
+		pSaver->LoadData(args->GetString(4).ToString());
+		pSaver->m_sPdfFileSrc = args->GetString(5).ToWString();
+		pSaver->m_sPdfFileSrcPassword = args->GetString(6).ToWString();
+
+		m_pParent->m_pInternal->m_pCloudSaveToDrawing = pSaver;
+		m_pParent->m_pInternal->m_pCloudSaveToDrawing->DestroyOnFinish();
+
+		COfficeFileFormatChecker oChecker;
+		int nFileType = pSaver->m_nOutputFormat;
+		if (nFileType == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA)
+			nFileType = AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF;
+
 		std::wstring sNeedExt = oChecker.GetExtensionByType(nFileType);
 		if (!sNeedExt.empty())
 		{
