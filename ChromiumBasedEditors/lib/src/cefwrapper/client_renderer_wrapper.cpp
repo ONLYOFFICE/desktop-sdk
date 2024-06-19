@@ -4238,6 +4238,36 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 				return true;
 			}
+			else if (name == "localSaveToDrawingFormat2")
+			{
+				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("local_save_to_drawing_pdf");
+				message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
+				message->GetArgumentList()->SetString(1, arguments[1]->GetStringValue());
+				message->GetArgumentList()->SetString(2, CefV8Context::GetCurrentContext()->GetBrowser()->GetFocusedFrame()->GetURL());
+				message->GetArgumentList()->SetString(3, arguments[2]->GetStringValue());
+				message->GetArgumentList()->SetString(4, arguments[3]->GetStringValue());
+
+				std::string sSrcFileBase64 = arguments[4]->GetStringValue().ToString();
+				std::wstring sTmpFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"PDF");
+				if (NSFile::CFileBinary::Exists(sTmpFile))
+					NSFile::CFileBinary::Remove(sTmpFile);
+
+				BYTE* pDataDst = NULL;
+				int nLenDst = 0;
+				if (NSFile::CBase64Converter::Decode(sSrcFileBase64.c_str(), sSrcFileBase64.length(), pDataDst, nLenDst))
+				{
+					NSFile::CFileBinary oFileChanges;
+					oFileChanges.CreateFileW(sTmpFile);
+					oFileChanges.WriteFile(pDataDst, nLenDst);
+					oFileChanges.CloseFile();
+				}
+				RELEASEARRAYOBJECTS(pDataDst);
+
+				message->GetArgumentList()->SetString(5, sTmpFile);
+				message->GetArgumentList()->SetString(6, arguments[5]->GetStringValue());
+				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+				return true;
+			}
 			else if (name == "emulateCloudPrinting")
 			{
 				m_bIsPrinting = arguments[0]->GetBoolValue();
@@ -4975,7 +5005,7 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 			CefRefPtr<CefV8Handler> handler = pWrapper;
 
-#define EXTEND_METHODS_COUNT 186
+#define EXTEND_METHODS_COUNT 187
 			const char* methods[EXTEND_METHODS_COUNT] = {
 				"Copy",
 				"Paste",
@@ -5217,6 +5247,7 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 				"setPortalsList",
 				"localSaveToDrawingFormat",
+				"localSaveToDrawingFormat2",
 				"emulateCloudPrinting",
 
 				"isSupportNetworkFunctionality",
