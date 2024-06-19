@@ -335,6 +335,14 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 
 			pManager->m_pInternal->CheckSetting(sName, sValue);
 		}
+
+		// DEFAULT SETTINGS
+#if defined(_LINUX) && !defined(_MAC)
+		std::map<std::string, std::string>& mapSettings = pManager->m_pInternal->m_mapSettings;
+		if (mapSettings.end() == mapSettings.find("disable-gpu"))
+			mapSettings.insert(std::pair<std::string, std::string>("disable-gpu", "1"));
+#endif
+
 		pManager->m_pInternal->SaveSettings();
 
 #if defined(_WIN32) && !defined(_DEBUG)

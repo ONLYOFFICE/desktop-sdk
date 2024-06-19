@@ -1,4 +1,5 @@
 #include "qvideoplaylist.h"
+
 #include <QStyleOption>
 #include <QPainter>
 #include <QStandardItemModel>
@@ -8,14 +9,14 @@
 #include <QAbstractItemModel>
 #include <QFileDialog>
 #include <QStandardPaths>
-
 #include <QShortcut>
-#include <QDebug>
+
 #include "../../../../core/DesktopEditor/common/Directory.h"
 #include "../../../../core/DesktopEditor/common/StringBuilder.h"
 #include "../../../../core/DesktopEditor/xml/include/xmlutils.h"
-#include "qpushbutton_icons.h"
-#include "../qascvideoview.h"
+
+#include "qiconpushbutton.h"
+#include "../qwidgetutils.h"
 
 QStandardItem* CreateFileItem(const QString& text, const QString& file)
 {
@@ -41,7 +42,7 @@ QVideoPlaylist::QVideoPlaylist(QWidget *parent) : QWidget(parent)
 	m_pDialogParent = NULL;
 
 	m_sSavePlayListAddon = "/ONLYOFFICE/VideoPlayer";
-	QWidget_setBackground(this, 0x22, 0x22, 0x22);
+	QWidgetUtils::SetBackground(this, QColor(0x22, 0x22, 0x22));
 
 	m_pAdd = new QIconPushButton(this, true, "add-files", "add-files-active");
 	m_pClear = new QIconPushButton(this, true, "drop-playlist", "drop-playlist-active");
@@ -74,11 +75,11 @@ QVideoPlaylist::QVideoPlaylist(QWidget *parent) : QWidget(parent)
 
 	QObject::connect(m_pClear, SIGNAL(clicked(bool)), this, SLOT(slotButtonClear()));
 
-	QObject::connect(m_pListView, SIGNAL(clicked(const QModelIndex &)),
-					 this, SLOT(slotClick(const QModelIndex &)));
+	QObject::connect(m_pListView, SIGNAL(clicked(QModelIndex)),
+					 this, SLOT(slotClick(QModelIndex)));
 
-	QObject::connect(m_pListView, SIGNAL(activated(const QModelIndex &)),
-					 this, SLOT(slotActivated(const QModelIndex &)));
+	QObject::connect(m_pListView, SIGNAL(activated(QModelIndex)),
+					 this, SLOT(slotActivated(QModelIndex)));
 
 	m_pListView->setEditTriggers(QAbstractItemView::NoEditTriggers);
 	m_pListView->setShowGrid(false);
@@ -103,7 +104,7 @@ QVideoPlaylist::QVideoPlaylist(QWidget *parent) : QWidget(parent)
 	m_oTimer.start(100);
 
 #ifndef USE_VLC_LIBRARY
-	m_pCheckPlayer = new QMediaPlayer();
+	m_pCheckPlayer = new QMediaPlayer(this);
 	QObject::connect(m_pCheckPlayer, SIGNAL(durationChanged(qint64)), this, SLOT(_onSlotDurationChanged(qint64)));
 	QObject::connect(m_pCheckPlayer, SIGNAL(mediaStatusChanged(QMediaPlayer::MediaStatus)), this, SLOT(_onSlotMediaStatusChanged(QMediaPlayer::MediaStatus)));
 
@@ -202,22 +203,22 @@ void QVideoPlaylist::private_Style(double dDpi)
 									  ").arg(QString::number(n5), QString::number(n10), QString::number((int)(dDpi * 12)));
 									  m_pListView->setStyleSheet(sStyleL);
 
-			m_pListView->setColumnWidth(0, QWidget_ScaleDPI(150, m_dDpi));
-	m_pListView->setColumnWidth(1, QWidget_ScaleDPI(50, m_dDpi));
+			m_pListView->setColumnWidth(0, QWidgetUtils::ScaleDPI(150, m_dDpi));
+	m_pListView->setColumnWidth(1, QWidgetUtils::ScaleDPI(50, m_dDpi));
 
 	m_pListView->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
-	m_pListView->verticalHeader()->setDefaultSectionSize(QWidget_ScaleDPI(30, m_dDpi));
+	m_pListView->verticalHeader()->setDefaultSectionSize(QWidgetUtils::ScaleDPI(30, m_dDpi));
 
 	CheckStyles();
 }
 
 void QVideoPlaylist::resizeEvent(QResizeEvent* e)
 {
-	double dDpi = QWidget_GetDPI(this);
+	double dDpi = QWidgetUtils::GetDPI(this);
 
-	int nButW = QWidget_ScaleDPI(30, dDpi);
-	int n5 = QWidget_ScaleDPI(5, dDpi);
-	int n10 = QWidget_ScaleDPI(10, dDpi);
+	int nButW = QWidgetUtils::ScaleDPI(30, dDpi);
+	int n5 = QWidgetUtils::ScaleDPI(5, dDpi);
+	int n10 = QWidgetUtils::ScaleDPI(10, dDpi);
 
 	int nTopB = height() - nButW;
 
@@ -233,8 +234,7 @@ void QVideoPlaylist::slotClick(const QModelIndex &index)
 
 }
 
-
-void QVideoPlaylist::slotActivated(const QModelIndex &index)
+void QVideoPlaylist::slotActivated(const QModelIndex &index, bool isPlay)
 {
 	QStandardItemModel* pModel = (QStandardItemModel*)m_pListView->model();
 	int nRows = pModel->rowCount();
@@ -246,8 +246,8 @@ void QVideoPlaylist::slotActivated(const QModelIndex &index)
 	fontAll.setStrikeOut(false);
 	fontSelected.setUnderline(false);
 	fontSelected.setStrikeOut(false);
-	fontAll.setPixelSize(QWidget_ScaleDPI(12, m_dDpi));
-	fontSelected.setPixelSize(QWidget_ScaleDPI(12, m_dDpi));
+	fontAll.setPixelSize(QWidgetUtils::ScaleDPI(12, m_dDpi));
+	fontSelected.setPixelSize(QWidgetUtils::ScaleDPI(12, m_dDpi));
 
 	QBrush brushAll(QColor(0xBB, 0xBB, 0xBB));
 	QBrush brushSelected(QColor(0xFF, 0xFF, 0xFF));
@@ -273,7 +273,7 @@ void QVideoPlaylist::slotActivated(const QModelIndex &index)
 			item2->setFont(fontSelected);
 			item2->setForeground(brushSelected);
 
-			emit fileChanged(item1->accessibleText());
+			emit fileChanged(item1->accessibleText(), isPlay);
 		}
 	}
 }
@@ -282,19 +282,7 @@ void QVideoPlaylist::CheckStyles()
 {
 	QStandardItemModel* pModel = (QStandardItemModel*)m_pListView->model();
 	int nRows = pModel->rowCount();
-
-	int nRow = -1;
-	for (int i = 0; i < nRows; i++)
-	{
-		QStandardItem* item1 = pModel->item(i, 0);
-
-		if (item1->font().bold())
-		{
-			nRow = i;
-			break;
-		}
-	}
-
+	int nRow = GetIndexOfSelectedItem();
 	int nCurrentRow = nRow;
 
 	QFont fontAll("Open Sans", 10, QFont::Normal, false);
@@ -303,8 +291,8 @@ void QVideoPlaylist::CheckStyles()
 	fontAll.setStrikeOut(false);
 	fontSelected.setUnderline(false);
 	fontSelected.setStrikeOut(false);
-	fontAll.setPixelSize(QWidget_ScaleDPI(12, m_dDpi));
-	fontSelected.setPixelSize(QWidget_ScaleDPI(12, m_dDpi));
+	fontAll.setPixelSize(QWidgetUtils::ScaleDPI(12, m_dDpi));
+	fontSelected.setPixelSize(QWidgetUtils::ScaleDPI(12, m_dDpi));
 
 	QBrush brushAll(QColor(0xBB, 0xBB, 0xBB));
 	QBrush brushSelected(QColor(0xFF, 0xFF, 0xFF));
@@ -410,15 +398,15 @@ void QVideoPlaylist::AddFiles(QStringList& filenames, const bool isStart)
 		pModel->appendRow(rowData);
 	}
 
-	m_pListView->setColumnWidth(0, QWidget_ScaleDPI(150, m_dDpi));
-	m_pListView->setColumnWidth(1, QWidget_ScaleDPI(50, m_dDpi));
+	m_pListView->setColumnWidth(0, QWidgetUtils::ScaleDPI(150, m_dDpi));
+	m_pListView->setColumnWidth(1, QWidgetUtils::ScaleDPI(50, m_dDpi));
 
 	AddFilesToCheck(listCheck);
 
 	if (isStart)
 	{
 		m_pListView->setCurrentIndex(pModel->index(nPrevCount, 0));
-		m_pListView->activated(pModel->index(nPrevCount, 0));
+		emit m_pListView->activated(pModel->index(nPrevCount, 0));
 	}
 }
 
@@ -517,6 +505,24 @@ void QVideoPlaylist::AddFilesToCheck(QStringList& list)
 	}
 }
 
+int QVideoPlaylist::GetIndexOfSelectedItem()
+{
+	QStandardItemModel* pModel = static_cast<QStandardItemModel*>(m_pListView->model());
+	const int nRows = pModel->rowCount();
+	int nRow = -1;
+	for (int i = 0; i < nRows; i++)
+	{
+		QStandardItem* item1 = pModel->item(i, 0);
+
+		if (item1->font().bold())
+		{
+			nRow = i;
+			break;
+		}
+	}
+	return nRow;
+}
+
 void QVideoPlaylist::_onSlotCheckDuration(const QString& file, const QString& duration)
 {
 	QStandardItemModel* pModel = (QStandardItemModel*)m_pListView->model();
@@ -546,6 +552,8 @@ void QVideoPlaylist::_onSlotDurationChanged(qint64 duration)
 {
 	if (m_sCheckFile.isEmpty())
 		return;
+
+	m_mapDurations[m_sCheckFile] = duration;
 
 	qint64 nH = (qint64)(duration / 3600000);
 	duration -= (nH * 3600000);
@@ -650,31 +658,24 @@ void QVideoPlaylist::_onThreadFunc()
 	return;
 }
 
-void QVideoPlaylist::PlayCurrent()
+void QVideoPlaylist::LoadCurrent()
 {
 	QStandardItemModel* pModel = (QStandardItemModel*)m_pListView->model();
 	int nRows = pModel->rowCount();
-	int nRow = -1;
 
+	// TODO: fix when there are no media in playlist
+	/*
 	if (0 == nRows)
 	{
 		// файлов нет - показыаем файл диалог
 		slotButtonAdd();
 		nRows = pModel->rowCount();
 	}
+	*/
 	if (0 == nRows)
 		return;
 
-	for (int i = 0; i < nRows; i++)
-	{
-		QStandardItem* item1 = pModel->item(i, 0);
-
-		if (item1->font().bold())
-		{
-			nRow = i;
-			break;
-		}
-	}
+	int nRow = GetIndexOfSelectedItem();
 
 	if (-1 == nRow)
 		nRow = m_pListView->selectionModel()->currentIndex().row();
@@ -683,55 +684,33 @@ void QVideoPlaylist::PlayCurrent()
 		nRow = 0;
 
 	m_pListView->setCurrentIndex(pModel->index(nRow, 0));
-	m_pListView->activated(pModel->index(nRow, 0));
+	// call slot manually to pass false to `isPlay`
+	slotActivated(pModel->index(nRow, 0), false);
 }
 
 void QVideoPlaylist::Next()
 {
 	QStandardItemModel* pModel = (QStandardItemModel*)m_pListView->model();
 	int nRows = pModel->rowCount();
-	int nRow = -1;
-
-	for (int i = 0; i < nRows; i++)
-	{
-		QStandardItem* item1 = pModel->item(i, 0);
-
-		if (item1->font().bold())
-		{
-			nRow = i;
-			break;
-		}
-	}
+	int nRow = GetIndexOfSelectedItem();
 
 	if (nRow >= (nRows - 1))
 	{
-		emit fileChanged("");
+		emit fileChanged("", false);
 		return;
 	}
 
 	++nRow;
 
 	m_pListView->setCurrentIndex(pModel->index(nRow, 0));
-	m_pListView->activated(pModel->index(nRow, 0));
+	emit m_pListView->activated(pModel->index(nRow, 0));
 	//m_pListView->selectionModel()->select(pModel->index(nRow, 0), QItemSelectionModel::Toggle | QItemSelectionModel::Rows | QItemSelectionModel::ClearAndSelect);
 }
 
 void QVideoPlaylist::Prev()
 {
 	QStandardItemModel* pModel = (QStandardItemModel*)m_pListView->model();
-	int nRows = pModel->rowCount();
-	int nRow = -1;
-
-	for (int i = 0; i < nRows; i++)
-	{
-		QStandardItem* item1 = pModel->item(i, 0);
-
-		if (item1->font().bold())
-		{
-			nRow = i;
-			break;
-		}
-	}
+	int nRow = GetIndexOfSelectedItem();
 
 	if (nRow == 0)
 		return;
@@ -739,5 +718,5 @@ void QVideoPlaylist::Prev()
 	--nRow;
 
 	m_pListView->setCurrentIndex(pModel->index(nRow, 0));
-	m_pListView->activated(pModel->index(nRow, 0));
+	emit m_pListView->activated(pModel->index(nRow, 0));
 }

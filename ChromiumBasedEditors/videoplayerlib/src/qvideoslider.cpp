@@ -1,35 +1,25 @@
 #include "qvideoslider.h"
+
 #include <QStyleOption>
 #include <QPainter>
-#include "qpushbutton_icons.h"
 
-QVideoSlider::QVideoSlider(QWidget *parent) : QSlider(parent)
+#include "../qwidgetutils.h"
+
+QVideoSlider::QVideoSlider(QWidget *parent, HandleType handleType) : QSlider(parent)
 {
-	QString sStyle = "\
-	QSlider::groove:horizontal { background-color: transparent; border: 1px solid transparent; border-radius: 3px; background: transparent; height: 16px; \
-	margin-top: -5px; margin-bottom: -5px; margin-left: 0px; margin-right:0px; border-radius: 3px; }\
-	\
-	QSlider::groove:vertical { background-color: transparent; border: 1px solid transparent; border-radius: 3px; background: transparent; width: 16px; \
-	margin-left: -5px; margin-right: -5px; margin-top: 0px; margin-bottom:0px; border-radius: 3px; }\
-	\
-	QSlider::sub-page:horizontal { background-color: #9B9B9B; border: 1px solid #9B9B9B; border-radius: 3px; }\
-	QSlider::add-page:horizontal { background-color: #545454; border: 1px solid #545454; border-radius: 3px; }\
-	\
-	QSlider::sub-page:vertical { background-color: #545454; border: 1px solid #545454; border-radius: 3px; }\
-	QSlider::add-page:vertical { background-color: #9B9B9B; border: 1px solid #9B9B9B; border-radius: 3px; }\
-	\
-	QSlider::handle { background-color: #FFFFFF; border: 1px solid #FFFFFF; border-radius: 7px;\
-	width: 14px; height: 14px; margin-top: 0px; margin-bottom: 0px; }\
-	\
-	QSlider::sub-page:disabled { background: #545454; border-color: #545454; }\
-	\
-	QSlider::add-page:disabled { background: #545454; border-color: #545454; }\
-	\
-	QSlider::handle:disabled { background: #545454; border: 1px solid #545454; border-radius: 8px;\
-}\
-			";
-			m_dDpi = 1;
-	this->setStyleSheet(sStyle);
+	double dpi = QWidgetUtils::GetDPI(parent);
+	QWidgetUtils::SetDPI(this, dpi);
+	m_dDpi = dpi;
+
+	m_bIsSeekOnClick = true;
+
+	// set default style options
+	m_oStyleOpt.m_sAddColor = "#FFF";
+	m_oStyleOpt.m_sSubColor = "#000";
+	m_oStyleOpt.m_sHandleColor = "#FFF";
+	m_oStyleOpt.m_sHandleBorderColor = "#000";
+
+	setHandleType(handleType);
 }
 
 void QVideoSlider::mousePressEvent(QMouseEvent *event)
@@ -89,46 +79,89 @@ void QVideoSlider::mousePressEvent(QMouseEvent *event)
 
 void QVideoSlider::resizeEvent(QResizeEvent* e)
 {
-	double dDpi = QWidget_GetDPI(this);
+	QSlider::resizeEvent(e);
+
+	double dDpi = QWidgetUtils::GetDPI(this);
 	if (fabs(dDpi - m_dDpi) > 0.01)
 	{
 		m_dDpi = dDpi;
-		int n8 = (int)(m_dDpi * 7);
-		int n14 = (int)(m_dDpi * 14);
-		int n3 = (int)(m_dDpi * 3);
-		int n5 = (int)(m_dDpi * 5);
-		int n16 = (int)(m_dDpi * 16);
-		int n1 = (int)(m_dDpi * 1);
-
-		QString sStyle = QString("\
-		QSlider::groove:horizontal { background-color: transparent; border: %6px solid transparent; border-radius: %3px; background: transparent; height: %5px; \
-								  margin-top: -%4px; margin-bottom: -%4px; margin-left: 0px; margin-right:0px; border-radius: %3px; }\
-		\
-		QSlider::groove:vertical { background-color: transparent; border: %6px solid transparent; border-radius: %3px; background: transparent; width: %5px; \
-								margin-left: -%4px; margin-right: -%4px; margin-top: 0px; margin-bottom:0px; border-radius: %3px; }\
-		\
-		QSlider::sub-page:horizontal { background-color: #9B9B9B; border: %6px solid #9B9B9B; border-radius: %3px; }\
-		QSlider::add-page:horizontal { background-color: #545454; border: %6px solid #545454; border-radius: %3px; }\
-		\
-		QSlider::sub-page:vertical { background-color: #545454; border: %6px solid #545454; border-radius: %3px; }\
-		QSlider::add-page:vertical { background-color: #9B9B9B; border: %6px solid #9B9B9B; border-radius: %3px; }\
-		\
-		QSlider::handle { background-color: #FFFFFF; border: %6px solid #FFFFFF; border-radius: %1px;\
-					   width: %2px; height: %2px; margin-top: 0px; margin-bottom: 0px; }\
-		\
-		QSlider::sub-page:disabled { background: #545454; border-color: #545454; }\
-		\
-		QSlider::add-page:disabled { background: #545454; border-color: #545454; }\
-		\
-		QSlider::handle:disabled { background: #545454; border: %6px solid #545454; border-radius: %1px;\
-		}\
-		").arg(QString::number(n8), QString::number(n14), QString::number(n3), QString::number(n5), QString::number(n16), QString::number(n1));
-								 this->setStyleSheet(sStyle);
+		updateStyle();
 	}
 }
 
-void QVideoSlider::SetSeekOnClick(bool bValue)
+void QVideoSlider::updateStyle()
+{
+	int nGrooveThickness = (int)(m_dDpi * 8);		// %1
+	int nGrooveBorderRadius = (int)(m_dDpi * 4);	// %2
+
+	QString sStyle;
+
+	switch (m_handleType)
+	{
+	case htSimple:
+	{
+		sStyle = QString("\
+			QSlider::groove:horizontal	 { height: %1px; background-color: transparent; margin: 0; }\
+			\
+			QSlider::groove:vertical     { width: %1px; background-color: transparent; margin: 0; }\
+			\
+			QSlider::sub-page:horizontal { height: %1px; background-color: " + m_oStyleOpt.m_sAddColor + "; border-top-left-radius: %2px; border-top-right-radius: 0; border-bottom-right-radius: 0; border-bottom-left-radius: %2px; }\
+			QSlider::add-page:horizontal { height: %1px; background-color: " + m_oStyleOpt.m_sSubColor + "; border-top-left-radius: 0; border-top-right-radius: %2px; border-bottom-right-radius: %2px; border-bottom-left-radius: 0; }\
+			\
+			QSlider::sub-page:vertical   { width: %1px; background-color: " + m_oStyleOpt.m_sSubColor + "; border-top-left-radius: %2px; border-top-right-radius: %2px; border-bottom-right-radius: 0; border-bottom-left-radius: 0; }\
+			QSlider::add-page:vertical   { width: %1px; background-color: " + m_oStyleOpt.m_sAddColor + "; border-top-left-radius: 0; border-top-right-radius: 0; border-bottom-right-radius: %2px; border-bottom-left-radius: %2px;}\
+			\
+			QSlider::handle:horizontal   { width: %1px; height: %1px; background-color: " + m_oStyleOpt.m_sAddColor + "; margin: 0 1px; border-radius: %2px; } \
+			QSlider::handle:vertical     { width: %1px; height: %1px; background-color: " + m_oStyleOpt.m_sAddColor + "; margin: 1px 0; border-radius: %2px; } \
+			\
+			").arg(QString::number(nGrooveThickness), QString::number(nGrooveBorderRadius));
+		break;
+	}
+	case htCircle:
+	{
+		int nHandleWidth = (int)(m_dDpi * 16);								// %3
+		int nHandleBorderSize = (int)(m_dDpi * 2);							// %4
+
+		int nHandleTotalSize = nHandleWidth + nHandleBorderSize * 2;		// %5
+		int nGrooveMargin = (nHandleTotalSize - nGrooveThickness) / 2;		// %6
+		int nHandleBorderRadius = nHandleTotalSize / 2;						// %7
+
+		sStyle = QString("\
+			QSlider::groove:horizontal   { height: %5px; background-color: transparent; margin: -%6px 0 -%6px 0; }\
+			\
+			QSlider::groove:vertical     { width: %5px; background-color: transparent; margin: 0 -%6px 0 -%6px; }\
+			\
+			QSlider::sub-page:horizontal { height: %1px; background-color: " + m_oStyleOpt.m_sAddColor + "; border-top-left-radius: %2px; border-top-right-radius: 0; border-bottom-right-radius: 0; border-bottom-left-radius: %2px; }\
+			QSlider::add-page:horizontal { height: %1px; background-color: " + m_oStyleOpt.m_sSubColor + "; border-top-left-radius: 0; border-top-right-radius: %2px; border-bottom-right-radius: %2px; border-bottom-left-radius: 0; }\
+			\
+			QSlider::sub-page:vertical   { width: %1px; background-color: " + m_oStyleOpt.m_sSubColor + "; border-top-left-radius: %2px; border-top-right-radius: %2px; border-bottom-right-radius: 0; border-bottom-left-radius: 0; }\
+			QSlider::add-page:vertical   { width: %1px; background-color: " + m_oStyleOpt.m_sAddColor + "; border-top-left-radius: 0; border-top-right-radius: 0; border-bottom-right-radius: %2px; border-bottom-left-radius: %2px;}\
+			\
+			QSlider::handle { width: %3px; height: %3px; background-color: " + m_oStyleOpt.m_sHandleColor + "; margin: 0; border: %4px solid " + m_oStyleOpt.m_sHandleBorderColor + "; border-radius: %7px; } \
+			\
+			").arg(QString::number(nGrooveThickness), QString::number(nGrooveBorderRadius), QString::number(nHandleWidth), QString::number(nHandleBorderSize), QString::number(nHandleTotalSize), QString::number(nGrooveMargin), QString::number(nHandleBorderRadius));
+		break;
+	}
+	default:
+		break;
+	}
+
+	setStyleSheet(sStyle);
+}
+
+void QVideoSlider::setSeekOnClick(bool bValue)
 {
 	m_bIsSeekOnClick = bValue;
 }
 
+void QVideoSlider::setHandleType(HandleType handleType)
+{
+	m_handleType = handleType;
+	updateStyle();
+}
+
+void QVideoSlider::setStyleOptions(const CSliderStyleOptions& opt)
+{
+	m_oStyleOpt = opt;
+	updateStyle();
+}

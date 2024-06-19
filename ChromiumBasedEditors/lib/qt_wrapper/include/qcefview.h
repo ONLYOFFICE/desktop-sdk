@@ -87,6 +87,7 @@ public:
 	// multimedia
 	virtual void OnMediaStart(NSEditorApi::CAscExternalMedia* data);
 	virtual void OnMediaEnd(bool isFromResize = false);
+	virtual void OnMediaPlayerCommand(NSEditorApi::CAscExternalMediaPlayerCommand* data);
 
 	// events
 	virtual void OnLoaded();

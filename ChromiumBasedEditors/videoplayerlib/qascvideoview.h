@@ -13,13 +13,11 @@
 #include <QWheelEvent>
 #include <QPropertyAnimation>
 #include <QtCore/QtGlobal>
-#include "./src/qmultimedia.h"
 
-#if defined(BUILD_VIDEO_LIBRARY)
-#  define VIDEO_LIB_EXPORT Q_DECL_EXPORT
-#else
-#  define VIDEO_LIB_EXPORT Q_DECL_IMPORT
-#endif
+#include "src/videoplayerlib_export.h"
+#include "src/qmultimedia.h"
+#include "qfooterpanel.h"
+#include "qwidgetutils.h"
 
 namespace NSBaseVideoLibrary
 {
@@ -32,7 +30,7 @@ class VIDEO_LIB_EXPORT QAscVideoView : public QWidget
 {
 	Q_OBJECT
 public:
-	explicit QAscVideoView(QWidget *parent, int r, int g, int b);
+	explicit QAscVideoView(QWidget *parent, bool bIsPresentationMode = false);
 	virtual ~QAscVideoView();
 
 public:
@@ -44,7 +42,6 @@ public:
 	virtual void dropEvent(QDropEvent *event);
 
 	void mousePressEvent(QMouseEvent *event);
-	void mouseReleaseEvent(QMouseEvent *event);
 
 	void keyPressEvent(QKeyEvent *event);
 	bool eventFilter(QObject *watched, QEvent *event);
@@ -55,45 +52,40 @@ public:
 
 public:
 	void PlayPause();
+	void ChangeVolume(int nValue);
+	void ChangeSeek(int nValue);
 	void ToggleMute();
-	void Volume();
 	void Fullscreen();
-	void Playlist(double duration = 100);
-	void Footer(double duration = 150);
+	void TogglePlaylist(double duration = 100);
+	void ToggleFooter(double duration = 150);
 	void SavePlayListAddons(const QString& sAddon);
+
+	QFooterPanel* Footer();
 
 	void AddFilesToPlaylist(QStringList& files, const bool isStart = false);
 	void LoadPlaylist();
 	void SavePlaylist();
 
-	void setFooterVisible(bool isVisible);
-
 	void setPlayListUsed(bool isUsed);
 	void setFullScreenUsed(bool isUsed);
-	void setPresentationMode(bool isPresentationMode);
-	void setMedia(QString sMedia);
+	void setMedia(QString sMedia, bool isStart = true);
 
 	void Stop();
+	void RemoveFromPresentation();
 
 	void UpdatePlayPauseIcon();
 	void UpdateFullscreenIcon();
 
 signals:
 	void titleChanged(const QString& sTitle);
+	void onKeyDown(int key, Qt::KeyboardModifiers mods);
 
 public slots:
-	void slotPlayPause();
-	void slotVolume();
-	void slotFullscreen();
-	void slotPlaylist();
-	void slotVolumeChanged(int nValue);
-	void slotSeekChanged(int nValue);
-
-	void slotOpenFile(QString sFile);
+	void slotOpenFile(QString sFile, bool isPlay);
 
 	void slotPlayerPosChanged(int nPos);
 	void slotPlayerStateChanged(QMediaPlayer_State state);
-	void slotVideoAvailableChanged(bool videoAvailable);
+	void slotVideoAvailableChanged(bool isVideoAvailable);
 
 	void slotFooterAnimationFinished();
 	void slotFooterTimerOverflowed();
