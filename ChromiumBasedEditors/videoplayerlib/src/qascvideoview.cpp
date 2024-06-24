@@ -267,6 +267,9 @@ void QAscVideoView::keyPressEvent(QKeyEvent *event)
 	}
 	case Qt::Key_O:
 	{
+		if (m_pInternal->m_bIsPresentationMode)
+			break;
+
 		if (static_cast<int>(ee) == Qt::ControlModifier)
 			m_pInternal->m_pPlaylist->slotButtonAdd();
 		break;
@@ -283,14 +286,29 @@ void QAscVideoView::keyPressEvent(QKeyEvent *event)
 	}
 	case Qt::Key_N:
 	{
+		if (m_pInternal->m_bIsPresentationMode)
+			break;
+
 		Footer()->m_pInternal->m_pSlider->setValue(100000);
 		m_pInternal->m_pPlaylist->Next();
 		break;
 	}
 	case Qt::Key_P:
 	{
+		if (m_pInternal->m_bIsPresentationMode)
+			break;
+
 		Footer()->m_pInternal->m_pSlider->setValue(0);
 		m_pInternal->m_pPlaylist->Prev();
+	}
+	case Qt::Key_Escape:
+	{
+		if (m_pInternal->m_bIsPresentationMode)
+		{
+			Stop();
+			parentWidget()->setFocus();
+		}
+		break;
 	}
 	default:
 		break;
