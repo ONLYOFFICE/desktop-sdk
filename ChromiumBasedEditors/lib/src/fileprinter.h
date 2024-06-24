@@ -172,8 +172,12 @@ public:
 	CPrintData m_oPrintData;
 	IASCFileConverterEvents* m_pEvents;
 
+	// pdf command binary or changes in pdf
 	BYTE* m_pData;
 	int m_nDataLen;
+
+	std::wstring m_sPdfFileSrc;
+	std::wstring m_sPdfFileSrcPassword;
 
 public:
 	CCloudPDFSaver();
