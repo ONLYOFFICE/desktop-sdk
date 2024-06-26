@@ -36,7 +36,7 @@
 #include "./cefwrapper/monitor_info.h"
 
 #ifdef LINUX
-CApplicationCEF* CLinuxData::app_cef            = NULL;
+CApplicationCEF* CLinuxData::app_cef = NULL;
 CAscApplicationManager* CLinuxData::app_manager = NULL;
 
 void posix_death_signal(int signum)
@@ -62,48 +62,48 @@ void __attribute__((constructor)) preload_engine()
 
 CAscApplicationSettings::CAscApplicationSettings()
 {
-	std::wstring sApplicationPath   = NSFile::GetProcessDirectory();
+	std::wstring sApplicationPath = NSFile::GetProcessDirectory();
 	NSStringUtils::string_replace(sApplicationPath, L"\\", L"/");
 
-	app_data_path                   = sApplicationPath;
+	app_data_path = sApplicationPath;
 
-	spell_dictionaries_path         = sApplicationPath + L"/Dictionaries";
-	cache_path                      = sApplicationPath + L"/data/cache";
-	cookie_path                     = sApplicationPath + L"/data";
+	spell_dictionaries_path = sApplicationPath + L"/Dictionaries";
+	cache_path              = sApplicationPath + L"/data/cache";
+	cookie_path             = sApplicationPath + L"/data";
 
-	use_system_fonts                = true;
-	fonts_cache_info_path           = app_data_path + L"/data/fonts";
+	use_system_fonts        = true;
+	fonts_cache_info_path   = app_data_path + L"/data/fonts";
 
-	system_plugins_path             = app_data_path + L"/editors/sdkjs-plugins";
-	user_plugins_path               = app_data_path + L"/editors/sdkjs-plugins-user";
+	system_plugins_path     = app_data_path + L"/editors/sdkjs-plugins";
+	user_plugins_path       = app_data_path + L"/editors/sdkjs-plugins-user";
 
-	local_editors_path              = sApplicationPath + L"/editors/web-apps/apps/api/documents/index.html";
-	file_converter_path             = sApplicationPath + L"/converter";
-	recover_path                    = app_data_path + L"/data/recover";
+	local_editors_path      = sApplicationPath + L"/editors/web-apps/apps/api/documents/index.html";
+	file_converter_path     = sApplicationPath + L"/converter";
+	recover_path            = app_data_path + L"/data/recover";
 
-	country                         = "RU";
+	country = "RU";
 
 #ifdef FEATURE_ENABLE_PROTECT
-	protect_support                 = true;
+	protect_support = true;
 #else
-	protect_support                 = false;
+	protect_support = false;
 #endif
 
 #ifdef FEATURE_ENABLE_SIGNATURE
-	sign_support                    = true;
+	sign_support = true;
 #else
-	sign_support                    = false;
+	sign_support = false;
 #endif
 
-	pass_support                    = true;
+	pass_support = true;
 
-	user_providers_path             = L"";
+	user_providers_path = L"";
 
-	converter_application_name      = "ONLYOFFICE";
-	converter_application_company   = "Ascensio System SIA Copyright (c) 2022";
+	converter_application_name    = "ONLYOFFICE";
+	converter_application_company = "Ascensio System SIA Copyright (c) 2022";
 
-	macroses_support                = true;
-	plugins_support                 = true;
+	macroses_support = true;
+	plugins_support = true;
 }
 CAscApplicationSettings::~CAscApplicationSettings()
 {
@@ -111,18 +111,18 @@ CAscApplicationSettings::~CAscApplicationSettings()
 
 void CAscApplicationSettings::SetUserDataPath(std::wstring sPath)
 {
-	app_data_path                   = sPath;
+	app_data_path = sPath;
 	NSStringUtils::string_replace(app_data_path, L"\\", L"/");
 
-	cache_path                      = app_data_path + L"/data/cache";
-	cookie_path                     = app_data_path + L"/data";
+	cache_path             = app_data_path + L"/data/cache";
+	cookie_path            = app_data_path + L"/data";
 
-	use_system_fonts                = true;
-	fonts_cache_info_path           = app_data_path + L"/data/fonts";
-	recover_path                    = app_data_path + L"/data/recover";
-	user_dictionaries_path          = app_data_path + L"/data/dictionaries";
+	use_system_fonts       = true;
+	fonts_cache_info_path  = app_data_path + L"/data/fonts";
+	recover_path           = app_data_path + L"/data/recover";
+	user_dictionaries_path = app_data_path + L"/data/dictionaries";
 
-	user_plugins_path               = app_data_path + L"/data/sdkjs-plugins";
+	user_plugins_path      = app_data_path + L"/data/sdkjs-plugins";
 }
 
 // ---------------------------------------------------------------------------------
@@ -147,14 +147,14 @@ public:
 		if (!oNode.FromXmlFile(sFile))
 			return;
 
-        std::vector<XmlUtils::CXmlNode> oNodes;
-        if (!oNode.GetChilds(oNodes))
-            return;
+		std::vector<XmlUtils::CXmlNode> oNodes;
+		if (!oNode.GetChilds(oNodes))
+			return;
 
-        size_t nCount = oNodes.size();
-        for (size_t i = 0; i < nCount; ++i)
-        {
-            XmlUtils::CXmlNode & oSetting = oNodes[i];
+		size_t nCount = oNodes.size();
+		for (size_t i = 0; i < nCount; ++i)
+		{
+			XmlUtils::CXmlNode& oSetting = oNodes[i];
 
 			std::wstring nameW = oSetting.GetName();
 			std::string name = U_TO_UTF8(nameW);
@@ -430,8 +430,7 @@ void CAscApplicationManager::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 
 				m_pInternal->m_mapLoadedScripts.insert(std::pair<std::wstring, std::vector<CEditorFrameId>>(pData->get_Destination(), _arr));
 
-				if (std::wstring::npos == pData->get_Url().find(L"sdk/Common/AllFonts.js") &&
-						std::wstring::npos == pData->get_Url().find(L"sdkjs/common/AllFonts.js"))
+				if (std::wstring::npos == pData->get_Url().find(L"sdk/Common/AllFonts.js") && std::wstring::npos == pData->get_Url().find(L"sdkjs/common/AllFonts.js"))
 				{
 					if (m_pInternal->m_strPrivateDownloadUrl.empty())
 						m_pInternal->Start_PrivateDownloadScript(pData->get_Url(), pData->get_Destination());
@@ -625,7 +624,7 @@ CCefViewEditor* CAscApplicationManager::CreateCefEditor(CCefViewWidgetImpl* pare
 }
 
 CCefViewEditor* CAscApplicationManager::CreateCefPresentationReporter(CCefViewWidgetImpl* parent, CAscReporterData* data)
-{    
+{
 	m_pInternal->m_nWindowCounter++;
 	CCefViewEditor* pView = new CCefViewEditor(parent, data->Id);
 	pView->SetAppManager(this);
@@ -667,9 +666,10 @@ std::wstring CAscApplicationManager::GetNewFilePath(const AscEditorType& nFileFo
 		sExtension = L"pptx";
 	else if (nFileFormat == AscEditorType::etSpreadsheet)
 		sExtension = L"xlsx";
-	else if (nFileFormat == AscEditorType::etDocumentMasterForm ||
-			 nFileFormat == AscEditorType::etDocumentMasterOForm /* такого быть не должно, сейчас - только из шаблона */)
-		sExtension = L"docxf";
+	else if (nFileFormat == AscEditorType::etDocumentMasterForm || nFileFormat == AscEditorType::etDocumentMasterOForm /* такого быть не должно, сейчас - только из шаблона */)
+		sExtension = L"pdf";
+	else if (nFileFormat == AscEditorType::etPdf)
+		sExtension = L"pdf";
 
 	sFilePath += sExtension;
 	if (!NSFile::CFileBinary::Exists(sFilePath))
@@ -1158,8 +1158,10 @@ double CAscDpiChecker::GetForceScale(unsigned int* dpix, unsigned int* dpiy)
 		return -1;
 
 	double dScale = m_pManager->m_pInternal->m_dForceDisplayScale;
-	if (dpix) *dpix = (unsigned int)(dScale * 96);
-	if (dpiy) *dpiy = (unsigned int)(dScale * 96);
+	if (dpix)
+		*dpix = (unsigned int)(dScale * 96);
+	if (dpiy)
+		*dpiy = (unsigned int)(dScale * 96);
 	return dScale;
 }
 
@@ -1208,8 +1210,10 @@ std::vector<std::string> CAscApplicationManager::GetRendererStartupProperties()
 	props.push_back("recovers_folder=" + U_TO_UTF8(m_oSettings.recover_path));
 	props.push_back("renderer_process_variable=" + U_TO_UTF8(m_pInternal->m_sRendererJSON));
 
-	if (!m_oSettings.macroses_support) props.push_back("macroses_support=false");
-	if (!m_oSettings.plugins_support) props.push_back("plugins_support=false");
+	if (!m_oSettings.macroses_support)
+		props.push_back("macroses_support=false");
+	if (!m_oSettings.plugins_support)
+		props.push_back("plugins_support=false");
 
 	return props;
 }
@@ -1296,8 +1300,10 @@ double Core_GetMonitorScale(const unsigned int& xDpi, const unsigned int& yDpi)
 	double dScale = (xDpi + yDpi) / (2 * 96.0);
 	int nCount = (int)((dScale + 0.125) / 0.25);
 	dScale = 0.25 * nCount;
-	if (dScale > 5) dScale = 5;
-	if (dScale < 1) dScale = 1;
+	if (dScale > 5)
+		dScale = 5;
+	if (dScale < 1)
+		dScale = 1;
 
 	if (dScale > 3)
 		dScale = 0.5 * ((int)(2 * dScale));

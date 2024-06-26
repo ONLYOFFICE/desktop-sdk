@@ -5,11 +5,23 @@
 #include "lib_base.h"
 
 #include "qmultimedia.h"
-#include "qfooterpanel.h"
+#include "../qfooterpanel.h"
 #include "qvideoplaylist.h"
 
+#include <functional>
+#include <queue>
+#include <mutex>
+
 #ifndef USE_VLC_LIBRARY
+#define USE_QVIDEO_ITEM
+#ifndef USE_QVIDEO_ITEM
 #define QASCVIDEOBASE QVideoWidget
+#else
+#include <QGraphicsView>
+#include <QGraphicsScene>
+#include <QGraphicsVideoItem>
+#define QASCVIDEOBASE QGraphicsView
+#endif
 #else
 #define QASCVIDEOBASE QWidget
 #endif
@@ -18,10 +30,7 @@ class QAscVideoWidget;
 class QAscVideoView_Private
 {
 public:
-	QFooterPanel*		m_pFooter;
-
-	QWidget*			m_pVolumeControl;
-	QVideoSlider*		m_pVolumeControlV;
+	QFooterPanel*	m_pFooter;
 
 	QVideoPlaylist*		m_pPlaylist;
 	QAscVideoWidget*	m_pPlayer;
@@ -50,23 +59,10 @@ public:
 	const int c_nCursorHidingDelay = 3000;
 };
 
+class QAscVideoView;
 class QAscVideoWidget : public QASCVIDEOBASE
 {
 	Q_OBJECT
-
-	QString m_sCurrentSource;
-
-#ifdef USE_VLC_LIBRARY
-	CVlcPlayer* m_pVlcPlayer;
-	CVlcMedia* m_pMedia;
-#else
-	QMediaPlayer* m_pEngine;
-#endif
-
-public:
-	QWidget* m_pParent;
-
-	int m_nVolume;
 
 public:
 	QAscVideoWidget(QWidget *parent = 0);
@@ -78,13 +74,20 @@ public:
 	void mousePressEvent(QMouseEvent *event);
 	void mouseMoveEvent(QMouseEvent* event);
 
+#ifdef USE_QVIDEO_ITEM
+	void resizeEvent(QResizeEvent* event);
+#endif
+
 public:
-	void open(QString& sFile);
+	void open(QString& sFile, bool isPlay);
 
 	void setPlay();
 	void setPause();
 	void setVolume(int nVolume);
 	void setSeek(int nPos);
+
+	void stepBack(int nStep = 5000);
+	void stepForward(int nStep = 5000);
 
 	bool isVideoFullScreen();
 	void setFullScreenOnCurrentScreen(bool isFullscreen);
@@ -96,19 +99,42 @@ public:
 	bool isAudio();
 	void stop();
 
+private:
+	// if there is no media playing, preloads the current one
+	void preloadMediaIfNeeded();
+
 signals:
 	void stateChanged(QMediaPlayer_State);
 	void posChanged(int);
+	void videoOutputChanged(bool isVideoAvailable);
 
 public slots:
 #ifdef USE_VLC_LIBRARY
 	void slotVlcStateChanged(int state);
 	void slotVlcPositionChanged(float position);
+	void slotVlcVideoOutputChanged(int nVoutCount);
 #else
 	void slotChangeState(QMediaPlayer::State state);
 	void slotPositionChange(qint64 pos);
+	void slotVideoAvailableChanged(bool isAvailable);
+	void slotMediaDurationParsed(qint64 duration);
 #endif
 
 public:
-	QWidget* m_pView;
+	QAscVideoView* m_pView;
+	int m_nVolume;
+
+private:
+	QString m_sCurrentSource;
+
+	bool m_bIsMediaPreloading;
+	std::queue<std::function<void()>> m_oPreloadCmdQueue;
+	std::mutex m_oMutex;
+
+#ifdef USE_VLC_LIBRARY
+	CVlcPlayer* m_pVlcPlayer;
+	CVlcMedia* m_pMedia;
+#else
+	QMediaPlayer* m_pEngine;
+#endif
 };

@@ -168,10 +168,6 @@ public:
 #endif
 #endif
 
-#if defined(_LINUX) && !defined(_MAC)
-		m_GPU = false;
-#endif
-
 		std::map<std::string, std::string>::iterator pairGPU = mapSettings.find("disable-gpu");
 		if (pairGPU != mapSettings.end())
 		{
@@ -272,6 +268,7 @@ public:
 			command_line->AppendSwitch("--enable-aggressive-domstorage-flushing");
 			command_line->AppendSwitch("--enable-color-correct-rendering");
 			command_line->AppendSwitchWithValue("--log-severity", "disable");
+			command_line->AppendSwitch("--disable-component-update");
 
 #ifdef CEF_2623
 			command_line->AppendSwitch("--enable-experimental-web-platform-features");
@@ -285,6 +282,9 @@ public:
 			command_line->AppendSwitch("--allow-file-access-from-files");
 #endif
 
+#ifdef _MAC
+			command_line->AppendSwitch("--use-mock-keychain");
+#endif
 			// command_line->AppendSwitch("--allow-file-access-from-files");
 			// command_line->AppendSwitch("--allow-file-access");
 			// command_line->AppendSwitch("--allow-running-insecure-content");
@@ -396,6 +396,10 @@ public:
 			command_line->AppendSwitch("--enable-aggressive-domstorage-flushing");
 			command_line->AppendSwitch("--enable-color-correct-rendering");
 			command_line->AppendSwitchWithValue("--log-severity", "disable");
+
+#ifdef _MAC
+			command_line->AppendSwitch("--use-mock-keychain");
+#endif
 
 			// command_line->AppendSwitch("--allow-file-access-from-files");
 			// command_line->AppendSwitch("--allow-file-access");

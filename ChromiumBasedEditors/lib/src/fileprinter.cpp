@@ -974,16 +974,37 @@ DWORD CCloudPDFSaver::ThreadProc()
 	if (m_nOutputFormat == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF ||
 		m_nOutputFormat == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA)
 	{
-		CPdfFile oPdfFile(m_oPrintData.m_pApplicationFonts);
-		oPdfFile.SetTempDirectory(sTempDir);
-		oPdfFile.CreatePdf((m_nOutputFormat == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA) ? true : false);
+		if (m_sPdfFileSrc.empty())
+		{
+			CPdfFile oPdfFile(m_oPrintData.m_pApplicationFonts);
+			oPdfFile.SetTempDirectory(sTempDir);
+			oPdfFile.CreatePdf((m_nOutputFormat == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA) ? true : false);
 
-		CMetafileToRenderterPDF oCorrector(&oPdfFile);
-		oCorrector.m_pPrintData = &m_oPrintData;
+			CMetafileToRenderterPDF oCorrector(&oPdfFile);
+			oCorrector.m_pPrintData = &m_oPrintData;
 
-		NSOnlineOfficeBinToPdf::ConvertBufferToRenderer(m_pData, m_nDataLen, &oCorrector);
+			NSOnlineOfficeBinToPdf::ConvertBufferToRenderer(m_pData, m_nDataLen, &oCorrector);
 
-		oPdfFile.SaveToFile(m_sOutputFileName);
+			oPdfFile.SaveToFile(m_sOutputFileName);
+		}
+		else
+		{
+			CPdfFile oPdfResult(m_oPrintData.m_pApplicationFonts);
+			oPdfResult.SetTempDirectory(sTempDir);
+
+			oPdfResult.LoadFromFile(m_sPdfFileSrc, L"", m_sPdfFileSrcPassword, m_sPdfFileSrcPassword);
+			oPdfResult.EditPdf(m_sOutputFileName);
+
+			CConvertFromBinParams oConvertParams;
+			oConvertParams.m_sInternalMediaDirectory = m_oPrintData.m_sDocumentImagesPath;
+			oConvertParams.m_sMediaDirectory = oConvertParams.m_sInternalMediaDirectory;
+
+			oPdfResult.AddToPdfFromBinary(m_pData, (unsigned int)m_nDataLen, &oConvertParams);
+			oPdfResult.Close();
+
+			// remove temporary src file
+			NSFile::CFileBinary::Remove(m_sPdfFileSrc);
+		}
 	}
 	else
 	{

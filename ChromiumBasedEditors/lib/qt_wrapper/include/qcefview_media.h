@@ -41,14 +41,22 @@ class DESKTOP_DECL QCefView_Media : public QCefView
 	Q_OBJECT
 
 public:
-	QCefView_Media(QWidget* parent);
+	QCefView_Media(QWidget* parent, const QSize& size = QSize());
 	virtual ~QCefView_Media();
 
 	virtual void OnMediaStart(NSEditorApi::CAscExternalMedia* data);
 	virtual void OnMediaEnd(bool isFromResize = false);
+	virtual void OnMediaPlayerCommand(NSEditorApi::CAscExternalMediaPlayerCommand* data);
+
+	void showMediaControl(NSEditorApi::CAscExternalMediaPlayerCommand* data);
+	void hideMediaControl();
+	void updateGeometry(NSEditorApi::CAscExternalMediaPlayerCommand* data);
 
 protected:
 	QAscVideoView* m_pMediaView;
+
+protected slots:
+	void onMediaKeyDown(int key, Qt::KeyboardModifiers mods);
 };
 
 #endif  // QCEFWEBVIEW_MEDIA_H

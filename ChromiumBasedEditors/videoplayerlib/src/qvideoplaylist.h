@@ -96,11 +96,11 @@ public:
 	virtual void resizeEvent(QResizeEvent* e);
 
 signals:
-	void fileChanged(const QString& file);
+	void fileChanged(const QString& file, bool isPlay);
 
 public slots:
 	void slotClick(const QModelIndex &index);
-	void slotActivated(const QModelIndex &index);
+	void slotActivated(const QModelIndex &index, bool isPlay = true);
 
 	void slotButtonAdd();
 	void slotButtonClear();
@@ -118,7 +118,7 @@ public:
 	void Next();
 	void Prev();
 
-	void PlayCurrent();
+	void LoadCurrent();
 
 	void CheckStyles();
 
@@ -148,7 +148,11 @@ private:
 
 	QString m_sCheckFile;
 	QMap<QString, bool> m_mapChecked;
+	QMap<QString, qint64> m_mapDurations;
+
 	void AddFilesToCheck(QStringList& list);
+	// returns index of selected item or -1 otherwise
+	int GetIndexOfSelectedItem();
 
 signals:
 	void _onCheckDuration(const QString& file, const QString& duration);

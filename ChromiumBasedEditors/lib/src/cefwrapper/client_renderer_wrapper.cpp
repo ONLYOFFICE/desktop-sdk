@@ -659,6 +659,8 @@ namespace asc_client_renderer
 		// для печати облачных файлов (pdf/xps/djvu)
 		std::wstring m_sCloudNativePrintFile;
 
+		std::string m_sViewportSettings;
+
 		bool m_bIsMacrosesSupport;
 		bool m_bIsPluginsSupport;
 
@@ -746,6 +748,8 @@ namespace asc_client_renderer
 				m_bIsMacrosesSupport = false;
 			if ("false" == default_params.GetValue("plugins_support"))
 				m_bIsPluginsSupport = false;
+
+			m_sViewportSettings = default_params.GetValue("viewport_settings");
 
 #if 0
 		default_params.Print();
@@ -860,7 +864,12 @@ return undefined; \n\
 			{
 				// сначала определим тип редактора
 				if (sUrl.find("documenteditor") != std::wstring::npos)
-					m_etType = AscEditorType::etDocument;
+				{
+					if (std::wstring::npos == sUrl.find("&isForm=true"))
+						m_etType = AscEditorType::etDocument;
+					else
+						m_etType = AscEditorType::etPdf;
+				}
 				else if (sUrl.find("presentationeditor") != std::wstring::npos)
 					m_etType = AscEditorType::etPresentation;
 				else if (sUrl.find("spreadsheeteditor") != std::wstring::npos)
@@ -973,7 +982,12 @@ else \n\
 				{
 					// сначала определим тип редактора
 					if (sUrl.find("documenteditor") != std::wstring::npos)
-						m_etType = AscEditorType::etDocument;
+					{
+						if (std::wstring::npos == sUrl.find("&isForm=true"))
+							m_etType = AscEditorType::etDocument;
+						else
+							m_etType = AscEditorType::etPdf;
+					}
 					else if (sUrl.find("presentationeditor") != std::wstring::npos)
 						m_etType = AscEditorType::etPresentation;
 					else if (sUrl.find("spreadsheeteditor") != std::wstring::npos)
@@ -2294,6 +2308,10 @@ window.AscDesktopEditor.getPortalsList = function() { debugger;var ret = []; try
 								   "r=o[e];r&&(r.timer&&clearTimeout(r.timer),r.complete&&r.complete(t,t.status),delete o[e])},window.AscSimpleRequest._onError=function(e,t){let "
 								   "r=o[e];r&&(r.timer&&clearTimeout(r.timer),r.error&&r.error(t,t.status),delete o[e])}}();\n";
 #endif
+					sCodeInitJS += "\
+window.AscDesktopEditor.getViewportSettings=function(){return JSON.parse(window.AscDesktopEditor._getViewportSettings());};\
+window.AscDesktopEditor._events={};\
+window.AscDesktopEditor.attachEvent=function(name,callback){if(undefined===window.AscDesktopEditor._events[name]){window.AscDesktopEditor._events[name]=[];}window.AscDesktopEditor._events[name].push(callback);};";
 
 					_frame->ExecuteJavaScript(sCodeInitJS, _frame->GetURL(), 0);
 				}
@@ -3080,6 +3098,61 @@ window.AscDesktopEditor.getPortalsList = function() { debugger;var ret = []; try
 					message->GetArgumentList()->SetDouble(11, arguments[11]->GetDoubleValue());
 				}
 
+				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+				return true;
+			}
+			else if (name == "CallMediaPlayerCommand")
+			{
+				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("call_media_player_command");
+				CefRefPtr<CefListValue> messageArgs = message->GetArgumentList();
+
+				CefRefPtr<CefV8Value> data = arguments[0];
+				// Cmd
+				std::string sCmd = data->GetValue("Cmd")->GetStringValue();
+				messageArgs->SetString(0, sCmd);
+				if (sCmd != "hideMediaControl")
+				{
+					// FrameRect
+					CefRefPtr<CefV8Value> frameRect = data->GetValue("FrameRect");
+					messageArgs->SetInt(1, frameRect->GetValue("X")->GetIntValue());
+					messageArgs->SetInt(2, frameRect->GetValue("Y")->GetIntValue());
+					messageArgs->SetInt(3, frameRect->GetValue("W")->GetIntValue());
+					messageArgs->SetInt(4, frameRect->GetValue("H")->GetIntValue());
+					// ControlRect
+					CefRefPtr<CefV8Value> controlRect = data->GetValue("ControlRect");
+					messageArgs->SetInt(5, controlRect->GetValue("X")->GetIntValue());
+					messageArgs->SetInt(6, controlRect->GetValue("Y")->GetIntValue());
+					messageArgs->SetInt(7, controlRect->GetValue("W")->GetIntValue());
+					messageArgs->SetInt(8, controlRect->GetValue("H")->GetIntValue());
+					// IsSelected
+					messageArgs->SetBool(9, data->GetValue("IsSelected")->GetBoolValue());
+					// Rotation
+					messageArgs->SetDouble(10, data->GetValue("Rotation")->GetDoubleValue());
+					// FlipH & FlipV
+					messageArgs->SetBool(11, data->GetValue("FlipH")->GetBoolValue());
+					messageArgs->SetBool(12, data->GetValue("FlipV")->GetBoolValue());
+					// MediaFile
+					messageArgs->SetString(13, data->GetValue("MediaFile")->GetStringValue());
+					// Fullscreen
+					messageArgs->SetBool(14, data->GetValue("Fullscreen")->GetBoolValue());
+					// IsVideo
+					messageArgs->SetBool(15, data->GetValue("IsVideo")->GetBoolValue());
+					// Mute
+					messageArgs->SetBool(16, data->GetValue("Mute")->GetBoolValue());
+					// Volume
+					CefRefPtr<CefV8Value> volume = data->GetValue("Volume");
+					messageArgs->SetInt(17, (volume->IsNull() ? -1 : volume->GetIntValue()));
+					// StartTime
+					CefRefPtr<CefV8Value> startTime = data->GetValue("StartTime");
+					messageArgs->SetInt(18, (startTime->IsNull() ? -1 : startTime->GetIntValue()));
+					// EndTime
+					CefRefPtr<CefV8Value> endTime = data->GetValue("EndTime");
+					messageArgs->SetInt(19, (endTime->IsNull() ? -1 : endTime->GetIntValue()));
+					// From
+					messageArgs->SetInt(20, data->GetValue("From")->GetIntValue());
+					// Theme
+					messageArgs->SetString(21, data->GetValue("Theme")->GetStringValue());
+				}
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 				return true;
 			}
@@ -4104,18 +4177,23 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				if (arguments[1]->GetValue("method") && arguments[1]->GetValue("method")->IsString())
 					sMethod = arguments[1]->GetValue("method")->GetStringValue().ToString();
 
+				std::string sPostData = "";
+				if (arguments[1]->GetValue("body") && arguments[1]->GetValue("body")->IsString())
+					sPostData = arguments[1]->GetValue("body")->GetStringValue().ToString();
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("send_simple_request");
 
 				NSArgumentList::SetInt64(message->GetArgumentList(), 0, CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
 				message->GetArgumentList()->SetInt(1, nCounter);
 				message->GetArgumentList()->SetString(2, sUrl);
 				message->GetArgumentList()->SetString(3, sMethod);
+				message->GetArgumentList()->SetString(4, sPostData);
 
 				CefRefPtr<CefV8Value> headers = arguments[1]->GetValue("headers");
 				if (headers && headers->IsObject())
 				{
 					std::vector<CefString> arKeys;
-					int nArgIndex = 4;
+					int nArgIndex = 5;
 					if (headers->GetKeys(arKeys))
 					{
 						for (int i = 0, len = arKeys.size(); i < len; ++i)
@@ -4157,6 +4235,36 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				message->GetArgumentList()->SetString(3, arguments[2]->GetStringValue());
 				message->GetArgumentList()->SetString(4, arguments[3]->GetStringValue());
 				message->GetArgumentList()->SetInt(5, arguments[4]->GetIntValue());
+				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+				return true;
+			}
+			else if (name == "localSaveToDrawingFormat2")
+			{
+				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("local_save_to_drawing_pdf");
+				message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
+				message->GetArgumentList()->SetString(1, arguments[1]->GetStringValue());
+				message->GetArgumentList()->SetString(2, CefV8Context::GetCurrentContext()->GetBrowser()->GetFocusedFrame()->GetURL());
+				message->GetArgumentList()->SetString(3, arguments[2]->GetStringValue());
+				message->GetArgumentList()->SetString(4, arguments[3]->GetStringValue());
+
+				std::string sSrcFileBase64 = arguments[4]->GetStringValue().ToString();
+				std::wstring sTmpFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"PDF");
+				if (NSFile::CFileBinary::Exists(sTmpFile))
+					NSFile::CFileBinary::Remove(sTmpFile);
+
+				BYTE* pDataDst = NULL;
+				int nLenDst = 0;
+				if (NSFile::CBase64Converter::Decode(sSrcFileBase64.c_str(), sSrcFileBase64.length(), pDataDst, nLenDst))
+				{
+					NSFile::CFileBinary oFileChanges;
+					oFileChanges.CreateFileW(sTmpFile);
+					oFileChanges.WriteFile(pDataDst, nLenDst);
+					oFileChanges.CloseFile();
+				}
+				RELEASEARRAYOBJECTS(pDataDst);
+
+				message->GetArgumentList()->SetString(5, sTmpFile);
+				message->GetArgumentList()->SetString(6, arguments[5]->GetStringValue());
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 				return true;
 			}
@@ -4255,6 +4363,48 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				message->GetArgumentList()->SetString(0, sRequestPath);
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 
+				return true;
+			}
+			else if (name == "_getViewportSettings")
+			{
+				retval = CefV8Value::CreateString(m_sViewportSettings.empty() ? "{}" : m_sViewportSettings);
+				return true;
+			}
+			else if (name == "_setViewportSettings")
+			{
+				m_sViewportSettings = arguments[0]->GetStringValue().ToString();
+				if (m_sViewportSettings.empty())
+					m_sViewportSettings = "{}";
+				std::string sCode = "(function(){if(window.AscDesktopEditor._events['onViewportSettingsChanged']){let handlers=window.AscDesktopEditor._events['onViewportSettingsChanged'];for(let i=0;i<handlers.length;i++)handlers[i](" + m_sViewportSettings + ");}})();";
+				CefV8Context::GetCurrentContext()->GetFrame()->ExecuteJavaScript(sCode, "", 0);
+				return true;
+			}
+			else if (name == "OpenBinaryAsNewFile" || name == "OpenWorkbook")
+			{
+				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_open_binary_as_new");
+
+				std::wstring sLocalDir = m_sCryptDocumentFolder;
+				if (!sLocalDir.empty())
+				{
+					std::string sContent = arguments[0]->GetStringValue().ToString();
+					BYTE* pDataDst = NULL;
+					int nLenDst = 0;
+
+					NSFile::CBase64Converter::Decode(sContent.c_str(), sContent.length(), pDataDst, nLenDst);
+
+					std::wstring sFile = sLocalDir + L"/EditorForAsLocal.bin";
+					if (NSFile::CFileBinary::Exists(sFile))
+						NSFile::CFileBinary::Remove(sFile);
+
+					NSFile::CFileBinary oFileWithChanges;
+					oFileWithChanges.CreateFileW(sFile);
+					oFileWithChanges.WriteFile(pDataDst, nLenDst);
+					oFileWithChanges.CloseFile();
+
+					RELEASEARRAYOBJECTS(pDataDst);
+				}
+
+				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 				return true;
 			}
 
@@ -4855,7 +5005,7 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 			CefRefPtr<CefV8Handler> handler = pWrapper;
 
-#define EXTEND_METHODS_COUNT 181
+#define EXTEND_METHODS_COUNT 187
 			const char* methods[EXTEND_METHODS_COUNT] = {
 				"Copy",
 				"Paste",
@@ -5011,6 +5161,7 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 				"IsNativeViewer",
 				"CryptoDownloadAs",
 				"MediaStart",
+				"CallMediaPlayerCommand",
 				"GetImageOriginalSize",
 				"MediaEnd",
 				"_AddAudio",
@@ -5096,6 +5247,7 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 				"setPortalsList",
 				"localSaveToDrawingFormat",
+				"localSaveToDrawingFormat2",
 				"emulateCloudPrinting",
 
 				"isSupportNetworkFunctionality",
@@ -5105,6 +5257,12 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 				"AddChanges",
 
 				"_openExternalReference",
+
+				"_getViewportSettings",
+				"_setViewportSettings",
+
+				"OpenBinaryAsNewFile",
+				"OpenWorkbook",
 
 				NULL};
 
