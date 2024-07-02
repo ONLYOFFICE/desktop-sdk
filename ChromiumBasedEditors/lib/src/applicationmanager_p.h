@@ -2313,7 +2313,7 @@ public:
 			}
 		}
 
-		Recents_Dump();
+		Recents_Dump(false);
 	}
 	void Recents_Remove(const int& nId)
 	{
