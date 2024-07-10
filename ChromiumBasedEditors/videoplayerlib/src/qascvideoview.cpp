@@ -563,7 +563,12 @@ void QAscVideoView::slotVideoAvailableChanged(bool isVideoAvailable)
 	if (m_pInternal->m_bIsPresentationMode && !m_pInternal->m_bIsPresentationModeMediaTypeSended)
 	{
 		m_pInternal->m_bIsPresentationModeMediaTypeSended = true;
+#ifndef USE_VLC_LIBRARY
 		if (!m_pInternal->m_pPlayer->isAudio() && !m_pInternal->m_bIsDestroy)
+#else
+		// with libVLC it is sufficient to check for `isVideoAvailable` flag. `isAudio()` can return true on Linux if the same video is replayed several times.
+		if (isVideoAvailable && !m_pInternal->m_bIsDestroy)
+#endif
 		{
 			this->show();
 			Footer()->show();
