@@ -51,7 +51,9 @@ public:
 	virtual QWidget* getMainWindow();
 
 public:
-	void PlayPause();
+	void Play();
+	void Pause();
+	void TogglePause();
 	void ChangeVolume(int nValue);
 	void ChangeSeek(int nValue);
 	void ToggleMute();

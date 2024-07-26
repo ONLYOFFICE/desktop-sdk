@@ -152,7 +152,7 @@ void QCefView_Media::OnMediaEnd(bool isFromResize)
 void QCefView_Media::OnMediaPlayerCommand(NSEditorApi::CAscExternalMediaPlayerCommand* data)
 {
 	std::string sCmd = data->get_Cmd();
-
+	// panel and video widget commands
 	if (sCmd == "showMediaControl")
 	{
 		showMediaControl(data);
@@ -164,6 +164,23 @@ void QCefView_Media::OnMediaPlayerCommand(NSEditorApi::CAscExternalMediaPlayerCo
 	else if (sCmd == "update")
 	{
 		updateGeometry(data);
+	}
+	// player commands
+	else if (sCmd == "play" || sCmd == "resume")
+	{
+		m_pMediaView->Play();
+	}
+	else if (sCmd == "pause")
+	{
+		m_pMediaView->Pause();
+	}
+	else if (sCmd == "stop")
+	{
+		m_pMediaView->Stop();
+	}
+	else if (sCmd == "togglePause")
+	{
+		m_pMediaView->TogglePause();
 	}
 	else
 	{
@@ -251,8 +268,9 @@ void QCefView_Media::showMediaControl(NSEditorApi::CAscExternalMediaPlayerComman
 	int xOffset = 0, yOffset = 0;
 	m_pMediaView = new QAscVideoView(getMainPanel(this, xOffset, yOffset), true);
 
-	QObject::connect(m_pMediaView, SIGNAL(onKeyDown(int, Qt::KeyboardModifiers)),
-					 this, SLOT(onMediaKeyDown(int, Qt::KeyboardModifiers)));
+	// NOTE: uncomment if you want to handle key events from media player
+	// QObject::connect(m_pMediaView, SIGNAL(onKeyDown(int,Qt::KeyboardModifiers)),
+	// 				 this, SLOT(onMediaKeyDown(int,Qt::KeyboardModifiers)));
 
 	m_pMediaView->setPlayListUsed(false);
 	m_pMediaView->setFullScreenUsed(false);
@@ -289,7 +307,6 @@ void QCefView_Media::hideMediaControl()
 	if (!m_pMediaView)
 		return;
 
-	m_pMediaView->disconnect();
 	m_pMediaView->RemoveFromPresentation();
 	m_pMediaView = nullptr;
 }
@@ -308,15 +325,10 @@ void QCefView_Media::updateGeometry(NSEditorApi::CAscExternalMediaPlayerCommand*
 
 void QCefView_Media::onMediaKeyDown(int key, Qt::KeyboardModifiers mods)
 {
-	switch (key)
-	{
-	case Qt::Key_Escape:
-	{
-		hideMediaControl();
-		setFocus();
-		break;
-	}
-	default:
-		break;
-	}
+	// NOTE: here can be handled some key events while media is playing
+	// switch (key)
+	// {
+	// default:
+	// 	break;
+	// }
 }
