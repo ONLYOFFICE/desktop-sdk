@@ -117,7 +117,6 @@ QAscVideoView::QAscVideoView(QWidget *parent, bool bIsPresentationMode) : QWidge
 	m_pInternal->m_bIsEnabledPlayList = true;
 	m_pInternal->m_bIsEnabledFullscreen = true;
 	m_pInternal->m_bIsPresentationModeMediaTypeSended = false;
-	m_pInternal->m_bIsDestroy = false;
 	m_pInternal->m_bIsMuted = false;
 
 	m_pInternal->m_bIsSeekEnabled = true;
@@ -268,13 +267,16 @@ void QAscVideoView::keyPressEvent(QKeyEvent *event)
 	}
 	case Qt::Key_O:
 	{
+		if (m_pInternal->m_bIsPresentationMode)
+			break;
+
 		if (static_cast<int>(ee) == Qt::ControlModifier)
 			m_pInternal->m_pPlaylist->slotButtonAdd();
 		break;
 	}
 	case Qt::Key_Space:
 	{
-		PlayPause();
+		TogglePause();
 		break;
 	}
 	case Qt::Key_M:
@@ -284,14 +286,29 @@ void QAscVideoView::keyPressEvent(QKeyEvent *event)
 	}
 	case Qt::Key_N:
 	{
+		if (m_pInternal->m_bIsPresentationMode)
+			break;
+
 		Footer()->m_pInternal->m_pSlider->setValue(100000);
 		m_pInternal->m_pPlaylist->Next();
 		break;
 	}
 	case Qt::Key_P:
 	{
+		if (m_pInternal->m_bIsPresentationMode)
+			break;
+
 		Footer()->m_pInternal->m_pSlider->setValue(0);
 		m_pInternal->m_pPlaylist->Prev();
+	}
+	case Qt::Key_Escape:
+	{
+		if (m_pInternal->m_bIsPresentationMode)
+		{
+			Stop();
+			parentWidget()->setFocus();
+		}
+		break;
 	}
 	default:
 		break;
@@ -323,7 +340,17 @@ bool QAscVideoView::eventFilter(QObject *watched, QEvent *event)
 	return QWidget::eventFilter(watched, event);
 }
 
-void QAscVideoView::PlayPause()
+void QAscVideoView::Play()
+{
+	m_pInternal->m_pPlayer->setPlay();
+}
+
+void QAscVideoView::Pause()
+{
+	m_pInternal->m_pPlayer->setPause();
+}
+
+void QAscVideoView::TogglePause()
 {
 	if (m_pInternal->m_bIsPlay)
 		m_pInternal->m_pPlayer->setPlay();
@@ -463,8 +490,9 @@ void QAscVideoView::setMedia(QString sMedia, bool isStart)
 
 void QAscVideoView::Stop()
 {
-	m_pInternal->m_bIsDestroy = true;
 	m_pInternal->m_pPlayer->stop();
+	this->hide();
+	m_pInternal->m_bIsPresentationModeMediaTypeSended = false;
 }
 
 void QAscVideoView::RemoveFromPresentation()
@@ -563,7 +591,7 @@ void QAscVideoView::slotVideoAvailableChanged(bool isVideoAvailable)
 	if (m_pInternal->m_bIsPresentationMode && !m_pInternal->m_bIsPresentationModeMediaTypeSended)
 	{
 		m_pInternal->m_bIsPresentationModeMediaTypeSended = true;
-		if (!m_pInternal->m_pPlayer->isAudio() && !m_pInternal->m_bIsDestroy)
+		if (!m_pInternal->m_pPlayer->isAudio())
 		{
 			this->show();
 			Footer()->show();
