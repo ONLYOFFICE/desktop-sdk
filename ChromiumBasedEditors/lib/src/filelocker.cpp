@@ -240,6 +240,18 @@ namespace NSSystem
 
 		virtual bool WriteFile(const void* pData, DWORD dwBytesToWrite, DWORD& dwSizeWrite)
 		{
+			if (!NSFile::CFileBinary::Exists(m_sFile))
+			{
+				Unlock();
+				std::wstring sDirectory = NSFile::GetDirectoryName(m_sFile);
+				NSDirectory::CreateDirectories(sDirectory);
+
+				NSFile::CFileBinary oFile;
+				oFile.CreateFile(m_sFile);
+				oFile.CloseFile();
+
+				Lock();
+			}
 			bool bResult = false;
 			if ( m_nDescriptor != -1 )
 			{
@@ -247,6 +259,11 @@ namespace NSSystem
 				bResult = dwSizeWrite != -1;
 			}
 			return bResult;
+		}
+
+		virtual bool IsEmpty()
+		{
+			return true;
 		}
 	};
 
@@ -544,6 +561,11 @@ namespace NSSystem
 	}
 	CFileLocker::~CFileLocker()
 	{
+	}
+
+	bool CFileLocker::IsEmpty()
+	{
+		return false;
 	}
 
 	bool CFileLocker::IsHandled(const std::wstring& file)

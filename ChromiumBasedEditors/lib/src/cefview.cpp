@@ -2881,6 +2881,16 @@ public:
 
 			bool bIsSaveAs = (sParams.find("saveas=true") != std::string::npos) ? true : false;
 
+			if (!bIsNeedSave)
+			{
+				if (m_pParent->m_pInternal->m_pLocalFileLocker &&
+					m_pParent->m_pInternal->m_pLocalFileLocker->IsEmpty() &&
+					!NSFile::CFileBinary::Exists(m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc))
+				{
+					bIsNeedSave = true;
+				}
+			}
+
 			// нужно ли показывать диалог?
 			// 1) файл новый/восстановленный, т.е. некуда пока сохранять
 			// 2) saveAs

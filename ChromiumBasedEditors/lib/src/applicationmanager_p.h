@@ -501,6 +501,11 @@ namespace NSSystem
 			return true;
 		}
 
+		bool IsEmpty()
+		{
+			return m_pLocker->IsEmpty();
+		}
+
 		~CLocalFileLocker()
 		{
 			Unlock();
