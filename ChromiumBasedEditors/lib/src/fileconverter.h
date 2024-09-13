@@ -1306,19 +1306,6 @@ public:
 
 		int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileForParams, m_pManager, m_pManager->m_pInternal->m_bIsEnableConvertLogs);
 
-		if (m_nTypeEditorFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
-		{
-			std::vector<std::wstring> arFiles = NSDirectory::GetFiles(m_oInfo.m_sRecoveryDir + L"/changes");
-
-			if (m_pManager->m_pInternal->m_bDebugInfoSupport && !arFiles.empty())
-			{
-				NSDirectory::CopyDirectory(m_oInfo.m_sRecoveryDir + L"/changes", sDstTmpDir + L"/changes");
-			}
-
-			for (std::vector<std::wstring>::const_iterator i = arFiles.begin(); i != arFiles.end(); i++)
-				NSFile::CFileBinary::Remove(*i);
-		}
-
 		m_bIsRetina = false;
 
 		if (!m_pManager->m_pInternal->m_bDebugInfoSupport)
