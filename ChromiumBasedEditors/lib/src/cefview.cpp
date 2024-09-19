@@ -7052,6 +7052,16 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 		SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
 		break;
 	}
+	case ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_TEMPLATES:
+	{
+		NSEditorApi::CAscLocalRecentsAll* pData = (NSEditorApi::CAscLocalRecentsAll*)pEvent->m_pData;
+
+		CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_sendtemplates");
+		message->GetArgumentList()->SetString(0, pData->get_JSON());
+
+		SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
+		break;
+	}
 	case ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_SAVE_PATH:
 	{
 		NSEditorApi::CAscLocalSaveFileDialog* pData = (NSEditorApi::CAscLocalSaveFileDialog*)pEvent->m_pData;

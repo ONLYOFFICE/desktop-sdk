@@ -151,6 +151,8 @@
 
 #define ASC_MENU_EVENT_TYPE_WINDOWS_MESSAGE_USER_COUNT      10
 
+#define ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_TEMPLATES         9010
+
 #include <string>
 #include <vector>
 

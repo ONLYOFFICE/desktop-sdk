@@ -5754,6 +5754,19 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 				}
 				return true;
 			}
+			else if (sMessageName == "onlocaldocument_sendtemplates")
+			{
+				CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
+				if (_frame)
+				{
+					std::wstring sJSON = message->GetArgumentList()->GetString(0).ToWString();
+					NSStringUtils::string_replace(sJSON, L"\\", L"\\\\");
+
+					std::wstring sCode = L"if (window.onupdaterecovers) {window.onaddtemplates(" + sJSON + L");}";
+					_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+				}
+				return true;
+			}
 			else if (sMessageName == "onlocaldocument_onaddimage")
 			{
 				CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);

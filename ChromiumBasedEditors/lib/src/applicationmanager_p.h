@@ -62,6 +62,7 @@
 
 #include "utils.h"
 #include "../../../../core/DesktopEditor/xmlsec/src/include/CertificateCommon.h"
+#include "templatesmanager.h"
 
 #ifdef CEF_2623
 #define MESSAGE_IN_BROWSER
@@ -1606,6 +1607,9 @@ public:
 	// сброс LD_PRELOAD
 	bool m_bIsPreloadDiscard;
 
+	// генератор шаблонов
+	CTemplatesCache m_oTemplatesCache;
+
 public:
 	IMPLEMENT_REFCOUNTING(CAscApplicationManager_Private);
 
@@ -1721,6 +1725,8 @@ public:
 		Stop();
 		m_oKeyboardTimer.Stop();
 		m_oSpellChecker.End();
+
+		m_oTemplatesCache.Stop();
 	}
 
 	// logout из портала -----------------------------------------------------------------------
@@ -2153,6 +2159,8 @@ public:
 
 			oAddons.CheckVersion(sEditorsPath);
 		}
+
+		m_oTemplatesCache.Start(0);
 
 		oWorker.CheckThumbnails();
 

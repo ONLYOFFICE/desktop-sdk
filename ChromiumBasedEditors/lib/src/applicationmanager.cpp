@@ -81,6 +81,10 @@ CAscApplicationSettings::CAscApplicationSettings()
 	file_converter_path     = sApplicationPath + L"/converter";
 	recover_path            = app_data_path + L"/data/recover";
 
+	system_templates_path   = file_converter_path + L"/templates";
+	templates_image_width   = 140;
+	templates_image_height  = 200;
+
 	country = "RU";
 
 #ifdef FEATURE_ENABLE_PROTECT
@@ -123,6 +127,8 @@ void CAscApplicationSettings::SetUserDataPath(std::wstring sPath)
 	user_dictionaries_path = app_data_path + L"/data/dictionaries";
 
 	user_plugins_path      = app_data_path + L"/data/sdkjs-plugins";
+
+	templates_cache_info_path = app_data_path + L"/data/templates_cache";
 }
 
 // ---------------------------------------------------------------------------------
@@ -232,6 +238,7 @@ CAscApplicationManager::CAscApplicationManager()
 {
 	m_pInternal = new CAscApplicationManager_Private();
 	m_pInternal->m_pMain = this;
+	m_pInternal->m_oTemplatesCache.SetManager(this);
 	m_pInternal->m_pAdditional = Create_ApplicationManagerAdditional(this);
 	m_pInternal->m_pAdditional->m_arApplyEvents = &m_pInternal->m_arApplyEvents;
 }
