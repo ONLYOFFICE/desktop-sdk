@@ -536,11 +536,16 @@ namespace asc_client_renderer
 				std::wstring sDirectory = m_sDirectory + L"/media";
 				std::vector<std::wstring> arFiles = NSDirectory::GetFiles(sDirectory, false);
 
-				int nCount = (int)arFiles.size();
-				retval = CefV8Value::CreateArray(nCount);
-				int nCurrent = 0;
+#ifdef CEF_2623
+				retval = CefV8Value::CreateObject(NULL);
+#else
+				retval = CefV8Value::CreateObject(nullptr, nullptr);
+#endif
+
 				for (std::vector<std::wstring>::iterator i = arFiles.begin(); i != arFiles.end(); i++)
-					retval->SetValue(nCurrent++, CefV8Value::CreateString(L"media/" + NSFile::GetFileName(*i)));
+				{
+					retval->SetValue(CefString(L"media/" + NSFile::GetFileName(*i)), CefV8Value::CreateString(*i), V8_PROPERTY_ATTRIBUTE_NONE);
+				}
 
 				return true;
 			}
