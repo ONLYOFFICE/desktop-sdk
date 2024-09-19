@@ -5805,23 +5805,51 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 				if (_frame)
 				{
 					std::string sParam = std::to_string(message->GetArgumentList()->GetInt(0));
+					std::wstring sSrcFile = message->GetArgumentList()->GetString(1).ToWString();
+
+					if (!sSrcFile.empty())
+						g_pLocalResolver->AddFile(sSrcFile);
+
 					std::string sCode = "window.asc_initAdvancedOptions(" + sParam;
 
-					if (2 <= message->GetArgumentList()->GetSize())
+					if (3 <= message->GetArgumentList()->GetSize())
 					{
-						std::string sHash = message->GetArgumentList()->GetString(1).ToString();
+						std::string sHash = message->GetArgumentList()->GetString(2).ToString();
 						sCode += ",\"";
 						sCode += sHash;
 						sCode += "\"";
 					}
-					if (3 <= message->GetArgumentList()->GetSize())
+					else
+						sCode += ",undefined";
+
+					if (4 <= message->GetArgumentList()->GetSize())
 					{
-						std::string sDocInfo = message->GetArgumentList()->GetString(2).ToString();
+						std::string sDocInfo = message->GetArgumentList()->GetString(3).ToString();
 						NSStringUtils::string_replaceA(sDocInfo, "\n", "<!--break-->");
 						sCode += ",\"";
 						sCode += sDocInfo;
 						sCode += "\"";
 					}
+					else
+						sCode += ",undefined";
+
+					if (!sSrcFile.empty())
+					{
+						std::string sSrcFileA = U_TO_UTF8(sSrcFile);
+
+						char* pDataBase64 = NULL;
+						int nDataBase64Len = 0;
+
+						NSFile::CBase64Converter::Encode((BYTE*)sSrcFileA.c_str(), (int)sSrcFileA.length(), pDataBase64, nDataBase64Len, NSBase64::B64_BASE64_FLAG_NOCRLF);
+
+						sCode += ",\"binary_content://";
+						sCode += std::string(pDataBase64, nDataBase64Len);
+						sCode += "\"";
+
+						RELEASEARRAYOBJECTS(pDataBase64);
+					}
+					else
+						sCode += ",undefined";
 
 					sCode += ");";
 					_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);

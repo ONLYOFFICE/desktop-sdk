@@ -5863,17 +5863,23 @@ void CCefView_Private::LocalFile_IncrementCounter()
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_additionalparams");
 				message->GetArgumentList()->SetInt(0, m_nLocalFileOpenError);
 
+				std::wstring sFileForData = L"";
+				if ((89 == m_nLocalFileOpenError) && (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_SPREADSHEET_CSV))
+					sFileForData = m_oLocalInfo.m_oInfo.m_sFileSrc;
+
+				message->GetArgumentList()->SetString(1, sFileForData);
+
 				if (90 == m_nLocalFileOpenError || 91 == m_nLocalFileOpenError)
 				{
 					ICertificate* pCert = NSCertificate::CreateInstance();
 					std::string sHash = pCert->GetHash(m_oLocalInfo.m_oInfo.m_sFileSrc, OOXML_HASH_ALG_SHA256);
 					delete pCert;
 
-					message->GetArgumentList()->SetString(1, sHash);
+					message->GetArgumentList()->SetString(2, sHash);
 
 					std::wstring sDocInfo = GetFileDocInfo(m_oLocalInfo.m_oInfo.m_sFileSrc);
 					if (!sDocInfo.empty())
-						message->GetArgumentList()->SetString(2, sDocInfo);
+						message->GetArgumentList()->SetString(3, sDocInfo);
 				}
 
 				SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);

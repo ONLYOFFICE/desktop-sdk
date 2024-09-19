@@ -797,6 +797,16 @@ public:
 			return 0;
 		}
 
+		std::wstring sNameInfo = m_oInfo.m_sRecoveryDir + L"/asc_name.info";
+		if (NSFile::CFileBinary::Exists(sNameInfo))
+			NSFile::CFileBinary::Remove(sNameInfo);
+
+		NSStringUtils::CStringBuilder oBuilderInfo;
+		oBuilderInfo.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><info type=\"" + std::to_wstring(m_oInfo.m_nCurrentFileFormat) + L"\" name=\"");
+		oBuilderInfo.WriteEncodeXmlString(NSFile::GetFileName(sDestinationPath));
+		oBuilderInfo.WriteString(L"\" />");
+		NSFile::CFileBinary::SaveToFile(sNameInfo, oBuilderInfo.GetData(), true);
+
 		if (m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
 		{
 			if (m_bIsNativeSupport)
@@ -808,16 +818,6 @@ public:
 			m_bRunThread = FALSE;
 			return 0;
 		}
-
-		std::wstring sNameInfo = m_oInfo.m_sRecoveryDir + L"/asc_name.info";
-		if (NSFile::CFileBinary::Exists(sNameInfo))
-			NSFile::CFileBinary::Remove(sNameInfo);
-
-		NSStringUtils::CStringBuilder oBuilderInfo;
-		oBuilderInfo.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><info type=\"" + std::to_wstring(m_oInfo.m_nCurrentFileFormat) + L"\" name=\"");
-		oBuilderInfo.WriteEncodeXmlString(NSFile::GetFileName(sDestinationPath));
-		oBuilderInfo.WriteString(L"\" />");
-		NSFile::CFileBinary::SaveToFile(sNameInfo, oBuilderInfo.GetData(), true);
 
 		std::wstring sParams = L"";
 		if (!m_sAdditionalConvertation.empty())

@@ -2480,7 +2480,7 @@ public:
 			}
 
 			std::wstring sNameInfo = arDirectories[i] + L"/asc_name.info";
-			if (!NSFile::CFileBinary::Exists(sNameInfo) || nType == -1)
+			if (!NSFile::CFileBinary::Exists(sNameInfo))
 				continue;
 
 			XmlUtils::CXmlNode oNode;
