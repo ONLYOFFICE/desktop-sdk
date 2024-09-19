@@ -531,6 +531,19 @@ namespace asc_client_renderer
 				// #endif
 				return true;
 			}
+			else if (name == "getImages")
+			{
+				std::wstring sDirectory = m_sDirectory + L"/media";
+				std::vector<std::wstring> arFiles = NSDirectory::GetFiles(sDirectory, false);
+
+				int nCount = (int)arFiles.size();
+				retval = CefV8Value::CreateArray(nCount);
+				int nCurrent = 0;
+				for (std::vector<std::wstring>::iterator i = arFiles.begin(); i != arFiles.end(); i++)
+					retval->SetValue(nCurrent++, CefV8Value::CreateString(L"media/" + NSFile::GetFileName(*i)));
+
+				return true;
+			}
 
 			return false;
 		}
