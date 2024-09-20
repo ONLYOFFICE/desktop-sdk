@@ -2869,6 +2869,11 @@ public:
 			pManager->m_pInternal->Recovers_RemoveAll();
 			return true;
 		}
+		else if (message_name == "onlocaldocument_templates")
+		{
+			pManager->m_pInternal->m_oTemplatesCache.IncrementStartPointer();
+			return true;
+		}
 		else if (message_name == "onlocaldocument_onsavestart")
 		{
 			bool bIsNeedSave = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_bIsSaved ? false : true;

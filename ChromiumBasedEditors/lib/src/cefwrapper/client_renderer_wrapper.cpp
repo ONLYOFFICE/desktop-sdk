@@ -1778,6 +1778,12 @@ if (main.DisableVersionHistory) main.DisableVersionHistory(); \
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 				return true;
 			}
+			else if (name == "LocalFileTemplates")
+			{
+				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_templates");
+				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+				return true;
+			}
 			else if (name == "LocalFileSaveChanges")
 			{
 				std::vector<CefRefPtr<CefV8Value>>::const_iterator iter = arguments.begin();
@@ -5023,7 +5029,7 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 			CefRefPtr<CefV8Handler> handler = pWrapper;
 
-#define EXTEND_METHODS_COUNT 187
+#define EXTEND_METHODS_COUNT 188
 			const char* methods[EXTEND_METHODS_COUNT] = {
 				"Copy",
 				"Paste",
@@ -5070,6 +5076,7 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 				"LocalFileRecents",
 				"LocalFileOpenRecent",
+				"LocalFileTemplates",
 				"LocalFileRemoveRecent",
 				"GetLocalFeatures",
 
@@ -5762,7 +5769,7 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 					std::wstring sJSON = message->GetArgumentList()->GetString(0).ToWString();
 					NSStringUtils::string_replace(sJSON, L"\\", L"\\\\");
 
-					std::wstring sCode = L"if (window.onupdaterecovers) {window.onaddtemplates(" + sJSON + L");}";
+					std::wstring sCode = L"if (window.onaddtemplates) {window.onaddtemplates(" + sJSON + L");}";
 					_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
 				}
 				return true;

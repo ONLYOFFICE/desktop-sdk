@@ -82,6 +82,8 @@ HEADERS += \
     $$PWD/src/cefwrapper/client_renderer_params.h \
     $$PWD/src/cefwrapper/client_scheme.h \
     $$PWD/src/fileconverter.h \
+	$$PWD/src/x2t.h \
+	$$PWD/src/templatesmanager.h \
     $$PWD/src/cefwrapper/client_resource_handler_async.h
 
 SOURCES += \

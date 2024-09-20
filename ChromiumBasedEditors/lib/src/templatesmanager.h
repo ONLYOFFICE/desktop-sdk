@@ -73,6 +73,8 @@ private:
 
 	std::vector<CTemplateRec> m_arTemplates;
 
+	int m_nStartCounter;
+
 public:
 	CTemplatesCache()
 	{
@@ -80,11 +82,19 @@ public:
 
 		m_sLang = L"en";
 		m_nScale = 100;
+		m_nStartCounter = 0;
 	}
 	~CTemplatesCache()
 	{
 		Stop();
 		m_oCS.DeleteCriticalSection();
+	}
+
+	void IncrementStartPointer()
+	{
+		++m_nStartCounter;
+		if (2 == m_nStartCounter)
+			Start(0);
 	}
 
 	void SetManager(CAscApplicationManager* pManager)
@@ -115,8 +125,33 @@ public:
 		Start(0);
 	}
 
+	void SetPin(const int& nId, const bool& isPin)
+	{
+		CTemporaryCS oCS(&m_oCS);
+
+		if (nId < 0 || nId >= (int)m_arTemplates.size())
+			return;
+
+		m_arTemplates[nId].IsPin = isPin;
+		SaveTemplates();
+	}
+
+	void SetIcon(const int& nId, const std::wstring& sIcon)
+	{
+		CTemporaryCS oCS(&m_oCS);
+
+		if (nId < 0 || nId >= (int)m_arTemplates.size())
+			return;
+
+		m_arTemplates[nId].Icon = sIcon;
+	}
+
+protected:
+
 	void LoadTemplates()
 	{
+		CTemporaryCS oCS(&m_oCS);
+
 		m_arTemplates.clear();
 
 		XmlUtils::CXmlNode oNode;
@@ -164,6 +199,8 @@ public:
 
 	void DumpTemplates(std::vector<std::wstring>& templatePaths)
 	{
+		CTemporaryCS oCS(&m_oCS);
+
 		m_arTemplates.clear();
 		int nId = 0;
 		for (std::vector<std::wstring>::iterator i = templatePaths.begin(); i != templatePaths.end(); i++)
@@ -196,11 +233,11 @@ public:
 
 			oBuilder.WriteString(L"{id:");
 			oBuilder.AddInt(i->Id);
-			oBuilder.WriteString(L",format:");
+			oBuilder.WriteString(L",type:");
 			oBuilder.AddInt(i->Format);
-			oBuilder.WriteString(L",name:");
+			oBuilder.WriteString(L",name:\"");
 			oBuilder.WriteEncodeXmlString(i->Name);
-			oBuilder.WriteString(L",path:\"");
+			oBuilder.WriteString(L"\",path:\"");
 			oBuilder.WriteEncodeXmlString(i->Path);
 			oBuilder.WriteString(L"\",pin:\"");
 			oBuilder.AddInt(i->IsPin ? 1 : 0);
@@ -215,8 +252,7 @@ public:
 		pData->put_JSON(oBuilder.GetData());
 		pEvent->m_pData = pData;
 
-		CCefView* pView = m_pManager->GetViewById(0);
-		pView->Apply(pEvent);
+		m_pManager->SetEventToAllMainWindows(pEvent);
 	}
 
 public:
@@ -362,20 +398,35 @@ public:
 		DWORD dwTime = NSTimers::GetTickCount();
 		DWORD dwTime2 = dwTime;
 		DWORD dwTimeEps = 2000;
-		SendToInterface();
+
+		bool bIsNeedConvert = false;
+		for (std::vector<std::wstring>::iterator i = arTemplatesPaths.begin(); i != arTemplatesPaths.end(); i++)
+		{
+			std::wstring sOutputFile = sOutputDir + L"/" + NSFile::GetFileName(*i) + L".jpg";
+			if (NSFile::CFileBinary::Exists(sOutputFile))
+				continue;
+
+			bIsNeedConvert = true;
+		}
+
+		if (bIsNeedConvert)
+			SendToInterface();
 
 		if (!m_bRunThread)
 			return 0;
 
-		bool bIsConvert = false;
-		for (std::vector<std::wstring>::iterator i = arTemplatesPaths.begin(); i != arTemplatesPaths.end(); i++)
+		int nCurrentId = 0;
+		for (std::vector<std::wstring>::iterator i = arTemplatesPaths.begin(); i != arTemplatesPaths.end(); i++, ++nCurrentId)
 		{
 			if (!m_bRunThread)
 				break;
 
 			std::wstring sOutputFile = sOutputDir + L"/" + NSFile::GetFileName(*i) + L".jpg";
 			if (NSFile::CFileBinary::Exists(sOutputFile))
+			{
+				SetIcon(nCurrentId, sOutputFile);
 				continue;
+			}
 
 			std::wstring sTempDir = NSDirectory::GetTempPath();
 
@@ -437,16 +488,26 @@ public:
 			std::wstring sTempFileForParams = sTempDir + L"/params.xml";
 			NSFile::CFileBinary::SaveToFile(sTempFileForParams, oBuilder.GetData(), true);
 
-			bIsConvert = true;
 			int nReturnCode = NSX2T::Convert(m_pManager->m_oSettings.file_converter_path + L"/x2t", sTempFileForParams, m_pManager);
+			SetIcon(nCurrentId, sOutputFile);
 
 			NSDirectory::DeleteDirectory(sTempDir);
 
 			dwTime2 = NSTimers::GetTickCount();
+			if (dwTime2 > (dwTime + dwTimeEps))
+			{
+				if (m_bRunThread)
+					SendToInterface();
+				dwTime = dwTime2;
+			}
 		}
 
-		SendToInterface();
+		if (m_bRunThread)
+		{
+			SendToInterface();
+		}
 
+		m_bRunThread = FALSE;
 		return 0;
 	}
 };
