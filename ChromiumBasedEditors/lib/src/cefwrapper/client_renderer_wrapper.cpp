@@ -1778,9 +1778,11 @@ if (main.DisableVersionHistory) main.DisableVersionHistory(); \
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 				return true;
 			}
-			else if (name == "LocalFileTemplates")
+			else if (name == "_LocalFileTemplates")
 			{
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_templates");
+				message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
+				message->GetArgumentList()->SetInt(1, arguments[1]->GetIntValue());
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 				return true;
 			}
@@ -2335,7 +2337,8 @@ window.AscDesktopEditor.getPortalsList = function() { debugger;var ret = []; try
 					sCodeInitJS += "\
 window.AscDesktopEditor.getViewportSettings=function(){return JSON.parse(window.AscDesktopEditor._getViewportSettings());};\
 window.AscDesktopEditor._events={};\
-window.AscDesktopEditor.attachEvent=function(name,callback){if(undefined===window.AscDesktopEditor._events[name]){window.AscDesktopEditor._events[name]=[];}window.AscDesktopEditor._events[name].push(callback);};";
+window.AscDesktopEditor.attachEvent=function(name,callback){if(undefined===window.AscDesktopEditor._events[name]){window.AscDesktopEditor._events[name]=[];}window.AscDesktopEditor._events[name].push(callback);};\
+window.AscDesktopEditor.LocalFileTemplates=function(e){window.__lang_checker_templates__=e||\"\",window.__resize_checker_templates__||(window.__resize_checker_templates__=!0,window.addEventListener(\"resize\",function(){window.AscDesktopEditor._LocalFileTemplates(window.__lang_checker_templates__,(100*window.devicePixelRatio)>>0)})),window.AscDesktopEditor._LocalFileTemplates(window.__lang_checker_templates__,(100*window.devicePixelRatio)>>0)};";
 
 					_frame->ExecuteJavaScript(sCodeInitJS, _frame->GetURL(), 0);
 				}
@@ -5076,7 +5079,7 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 				"LocalFileRecents",
 				"LocalFileOpenRecent",
-				"LocalFileTemplates",
+				"_LocalFileTemplates",
 				"LocalFileRemoveRecent",
 				"GetLocalFeatures",
 

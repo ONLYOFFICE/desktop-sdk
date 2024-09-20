@@ -80,7 +80,7 @@ public:
 	{
 		m_oCS.InitializeCriticalSection();
 
-		m_sLang = L"en";
+		m_sLang = L"";
 		m_nScale = 100;
 		m_nStartCounter = 0;
 	}
@@ -102,22 +102,16 @@ public:
 		m_pManager = pManager;
 	}
 
-	void SetLang(const std::wstring& lang)
+	void SetProps(const std::wstring& lang, const int& scale)
 	{
 		CTemporaryCS oCS(&m_oCS);
-		if (m_sLang == lang)
+		if (m_sLang == lang && m_nScale == scale)
 			return;
 
 		m_sLang = lang;
+		m_nScale = scale;
 
-		if (IsRunned())
-			Stop();
-		Start(0);
-	}
-	void SetScale(const int& scale)
-	{
-		CTemporaryCS oCS(&m_oCS);
-		if (m_nScale == scale)
+		if (m_nStartCounter < 2)
 			return;
 
 		if (IsRunned())
@@ -316,8 +310,12 @@ public:
 
 		// читаем "новый" набор шаблонов
 		std::wstring sSystemTemplatesPath = m_pManager->m_oSettings.system_templates_path;
-		if (NSDirectory::Exists(sSystemTemplatesPath + L"/" + m_sLang))
-			sSystemTemplatesPath = sSystemTemplatesPath + L"/" + m_sLang;
+		std::wstring sLang = m_sLang;
+		if (sLang.empty())
+			sLang = L"en-US";
+
+		if (NSDirectory::Exists(sSystemTemplatesPath + L"/" + sLang))
+			sSystemTemplatesPath = sSystemTemplatesPath + L"/" + sLang;
 
 		std::vector<std::wstring> arTemplatesPathsTmp = NSDirectory::GetFiles(sSystemTemplatesPath, true);
 		if (!m_pManager->m_oSettings.user_templates_path.empty())
