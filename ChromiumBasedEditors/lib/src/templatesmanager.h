@@ -140,6 +140,16 @@ public:
 		m_arTemplates[nId].Icon = sIcon;
 	}
 
+	std::wstring GetPath(const int& nId)
+	{
+		CTemporaryCS oCS(&m_oCS);
+
+		if (nId < 0 || nId >= (int)m_arTemplates.size())
+			return L"";
+
+		return m_arTemplates[nId].Path;
+	}
+
 protected:
 
 	void LoadTemplates()

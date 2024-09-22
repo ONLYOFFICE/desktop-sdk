@@ -169,6 +169,7 @@ public:
 
 	void OpenLocalFile(const std::wstring& sFilePath, const int& nFileFormat, const std::wstring& params = L"");
 	void CreateLocalFile(const AscEditorType& nFileFormat, const std::wstring& sName = L"", const std::wstring& sTemplatePath = L"");
+	void CreateLocalFile(const AscEditorType& nFileFormat, const int& nTemplateId, const std::wstring& sName = L"");
 	bool OpenCopyAsRecoverFile(const int& nIdSrc);
 	bool OpenRecoverFile(const int& nId);
 	bool OpenRecentFile(const int& nId);

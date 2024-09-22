@@ -7955,6 +7955,14 @@ void CCefViewEditor::CreateLocalFile(const AscEditorType& nFileFormatSrc, const 
 	// start convert file
 	this->load(sUrl + sParams);
 }
+void CCefViewEditor::CreateLocalFile(const AscEditorType& nFileFormatSrc, const int& nTemplateId, const std::wstring& sName)
+{
+	std::wstring sPath = m_pInternal->m_pManager->m_pInternal->m_oTemplatesCache.GetPath(nTemplateId);
+	if (sPath.empty())
+		return;
+
+	return CreateLocalFile(nFileFormatSrc, sName, sPath);
+}
 bool CCefViewEditor::OpenCopyAsRecoverFile(const int& nIdSrc)
 {
 	std::wstring sNewRecoveryDir = NSFile::CFileBinary::CreateTempFileWithUniqueName(GetAppManager()->m_oSettings.recover_path, L"DE_");
