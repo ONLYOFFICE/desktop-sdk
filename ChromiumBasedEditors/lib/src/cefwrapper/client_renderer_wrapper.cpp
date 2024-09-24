@@ -544,7 +544,11 @@ namespace asc_client_renderer
 
 				for (std::vector<std::wstring>::iterator i = arFiles.begin(); i != arFiles.end(); i++)
 				{
-					retval->SetValue(CefString(L"media/" + NSFile::GetFileName(*i)), CefV8Value::CreateString(*i), V8_PROPERTY_ATTRIBUTE_NONE);
+					std::wstring sPath = *i;
+#ifdef _WIN32
+					NSStringUtils::string_replace(sPath, L"\\", L"/");
+#endif
+					retval->SetValue(CefString(L"media/" + NSFile::GetFileName(sPath)), CefV8Value::CreateString(sPath), V8_PROPERTY_ATTRIBUTE_NONE);
 				}
 
 				return true;
@@ -4150,6 +4154,7 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				CefRefPtr<CefV8Handler> handler = new CLocalFileConvertV8Handler(sFolder);
 				retval->SetValue("get", CefV8Value::CreateFunction("get", handler), V8_PROPERTY_ATTRIBUTE_NONE);
 				retval->SetValue("close", CefV8Value::CreateFunction("close", handler), V8_PROPERTY_ATTRIBUTE_NONE);
+				retval->SetValue("getImages", CefV8Value::CreateFunction("getImages", handler), V8_PROPERTY_ATTRIBUTE_NONE);
 
 				return true;
 			}
