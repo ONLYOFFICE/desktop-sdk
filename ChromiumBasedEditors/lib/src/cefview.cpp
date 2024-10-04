@@ -6379,6 +6379,13 @@ void CCefView::load(const std::wstring& urlInputSrc)
 		if (this->GetType() == cvwtEditor)
 		{
 			std::wstring sUrlExternal = urlInput.substr(22);
+
+			// на маке при открытии по схеме - теряется ":"
+			if (0 == sUrlExternal.find(L"https//"))
+				NSStringUtils::string_replace(sUrlExternal, L"https//", L"https://");
+			else if (0 == sUrlExternal.find(L"http//"))
+				NSStringUtils::string_replace(sUrlExternal, L"http//", L"http://");
+
 			if (NSFile::CFileBinary::Exists(sUrlExternal))
 			{
 				COfficeFileFormatChecker oChecker;
