@@ -3138,6 +3138,9 @@ window.AscDesktopEditor.LocalFileTemplates=function(e){window.__lang_checker_tem
 				CefRefPtr<CefListValue> messageArgs = message->GetArgumentList();
 
 				CefRefPtr<CefV8Value> data = arguments[0];
+				// Handle cases when the data object is invalid
+				if (data->IsNull())
+					return true;
 				// Cmd
 				std::string sCmd = data->GetValue("Cmd")->GetStringValue();
 				messageArgs->SetString(0, sCmd);
