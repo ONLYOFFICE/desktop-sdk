@@ -1785,7 +1785,22 @@ if (main.DisableVersionHistory) main.DisableVersionHistory(); \
 			else if (name == "_LocalFileTemplates")
 			{
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_templates");
-				message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
+
+				if (arguments[0]->IsString())
+					message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
+				else if (arguments[0]->IsArray())
+				{
+					std::string sRes = "";
+					for (int i = 0, len = (int)arguments[0]->GetArrayLength(); i < len; ++i)
+					{
+						if (i != 0)
+							sRes += ";";
+						sRes += arguments[0]->GetValue(i)->GetStringValue().ToString();
+					}
+					message->GetArgumentList()->SetString(0, sRes);
+				}
+				else
+					message->GetArgumentList()->SetString(0, "");
 				message->GetArgumentList()->SetInt(1, arguments[1]->GetIntValue());
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 				return true;

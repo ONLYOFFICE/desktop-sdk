@@ -39,6 +39,7 @@
 #include "./../../../../core/DesktopEditor/common/Directory.h"
 #include "./../../../../core/Common/OfficeFileFormatChecker.h"
 #include "./../../../../core/DesktopEditor/xml/include/xmlutils.h"
+#include "./../../../../core/DesktopEditor/common/StringExt.h"
 #include "./x2t.h"
 
 class CTemplateRec
@@ -132,6 +133,9 @@ public:
 
 	void SetIcon(const int& nId, const std::wstring& sIcon)
 	{
+		if (!m_bRunThread)
+			return;
+
 		CTemporaryCS oCS(&m_oCS);
 
 		if (nId < 0 || nId >= (int)m_arTemplates.size())
@@ -203,6 +207,9 @@ protected:
 
 	void DumpTemplates(std::vector<std::wstring>& templatePaths)
 	{
+		if (!m_bRunThread)
+			return;
+
 		CTemporaryCS oCS(&m_oCS);
 
 		m_arTemplates.clear();
@@ -320,9 +327,100 @@ public:
 
 		// читаем "новый" набор шаблонов
 		std::wstring sSystemTemplatesPath = m_pManager->m_oSettings.system_templates_path;
-		std::wstring sLang = m_sLang;
-		if (sLang.empty())
-			sLang = L"en-US";
+
+		std::vector<std::wstring> arLangs;
+		if (m_sLang.empty())
+			arLangs.push_back(L"en-US");
+		else
+		{
+			NSStringExt::Split(m_sLang, ';', arLangs);
+		}
+
+		if (0 < arLangs.size() && arLangs[0].length() > 2)
+		{
+			std::wstring sInsert = arLangs[0].substr(0, 2);
+
+			std::vector<std::wstring>::iterator i = arLangs.begin();
+			while (i != arLangs.end() && i->length() > 2)
+				i++;
+
+			if (i == arLangs.end())
+				arLangs.push_back(sInsert);
+			else if (sInsert != *i)
+				arLangs.insert(i, sInsert);
+		}
+
+		std::wstring sLang = L"";
+		for (int nIteration = 0; nIteration < 2; ++nIteration)
+		{
+			for (std::vector<std::wstring>::iterator i = arLangs.begin(); i != arLangs.end(); i++)
+			{
+				std::wstring sTest = *i;
+				if (sTest.length() == 2)
+				{
+					std::wstring s1 = sTest; NSStringExt::ToLower(s1);
+					std::wstring s2 = sTest; NSStringExt::ToUpper(s2);
+
+					if (NSDirectory::Exists(sSystemTemplatesPath + L"/" + s1))
+					{
+						sLang = s1;
+						break;
+					}
+					if (NSDirectory::Exists(sSystemTemplatesPath + L"/" + s2))
+					{
+						sLang = s2;
+						break;
+					}
+				}
+				else
+				{
+					std::wstring s1 = sTest; NSStringExt::Replace(s1, L"_", L"-");
+					std::wstring s2 = sTest; NSStringExt::Replace(s2, L"-", L"_");
+
+					if (NSDirectory::Exists(sSystemTemplatesPath + L"/" + s1))
+					{
+						sLang = s1;
+						break;
+					}
+					if (NSDirectory::Exists(sSystemTemplatesPath + L"/" + s2))
+					{
+						sLang = s2;
+						break;
+					}
+				}
+			}
+
+			if (!sLang.empty())
+				break;
+
+			for (std::vector<std::wstring>::iterator i = arLangs.begin(); i != arLangs.end(); i++)
+			{
+				std::wstring sTest = *i;
+				if (sTest.length() > 2)
+				{
+					sTest = sTest.substr(0, 2);
+					std::wstring s1 = sTest; NSStringExt::ToLower(s1);
+					std::wstring s2 = sTest; NSStringExt::ToUpper(s2);
+
+					if (NSDirectory::Exists(sSystemTemplatesPath + L"/" + s1))
+					{
+						sLang = s1;
+						break;
+					}
+					if (NSDirectory::Exists(sSystemTemplatesPath + L"/" + s2))
+					{
+						sLang = s2;
+						break;
+					}
+				}
+			}
+
+			if (!sLang.empty())
+				break;
+
+			arLangs.clear();
+			arLangs.push_back(L"en-US");
+		}
 
 		if (NSDirectory::Exists(sSystemTemplatesPath + L"/" + sLang))
 			sSystemTemplatesPath = sSystemTemplatesPath + L"/" + sLang;
