@@ -41,6 +41,7 @@
 #include "./../../../../core/DesktopEditor/xml/include/xmlutils.h"
 #include "./../../../../core/DesktopEditor/common/StringExt.h"
 #include "./x2t.h"
+#include "./../../../../core/DesktopEditor/common/Base64.h"
 
 class CTemplateRec
 {
@@ -219,7 +220,7 @@ protected:
 			CTemplateRec rec;
 			rec.Id = nId++;
 			rec.Path = *i;
-			rec.Name = NSFile::GetFileName(rec.Path);
+			rec.Name = GetFileName(NSFile::GetFileName(rec.Path));
 			rec.IsPin = false;
 			rec.Format = 0;
 
@@ -508,7 +509,7 @@ public:
 		bool bIsNeedConvert = false;
 		for (std::vector<std::wstring>::iterator i = arTemplatesPaths.begin(); i != arTemplatesPaths.end(); i++)
 		{
-			std::wstring sOutputFile = sOutputDir + L"/" + NSFile::GetFileName(*i) + L".jpg";
+			std::wstring sOutputFile = sOutputDir + L"/" + GetFileName(NSFile::GetFileName(*i)) + L".jpg";
 			if (NSFile::CFileBinary::Exists(sOutputFile))
 				continue;
 
@@ -527,7 +528,7 @@ public:
 			if (!m_bRunThread)
 				break;
 
-			std::wstring sOutputFile = sOutputDir + L"/" + NSFile::GetFileName(*i) + L".jpg";
+			std::wstring sOutputFile = sOutputDir + L"/" + GetFileName(NSFile::GetFileName(*i)) + L".jpg";
 			if (NSFile::CFileBinary::Exists(sOutputFile))
 			{
 				SetIcon(nCurrentId, sOutputFile);
@@ -615,6 +616,23 @@ public:
 
 		m_bRunThread = FALSE;
 		return 0;
+	}
+
+	std::wstring GetFileName(const std::wstring& name)
+	{
+		if (0 != name.find(L"[32]"))
+			return name;
+		std::string nameA = U_TO_UTF8(name);
+		int nSrcLen = (int)nameA.length() - 4;
+		int nDstLen = NSBase32::DecodeGetRequiredLength(nSrcLen);
+		char* pDst = new char[nDstLen];
+		if (NSBase32::Decode((unsigned char*)(nameA.c_str() + 4), nSrcLen, (unsigned char*)pDst))
+		{
+			std::string sRes(pDst, nDstLen);
+			delete [] pDst;
+			return UTF8_TO_U(sRes);
+		}
+		return name;
 	}
 };
 
