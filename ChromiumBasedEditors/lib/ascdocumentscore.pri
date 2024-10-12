@@ -152,6 +152,8 @@ core_mac {
         $$PWD/src/mac_application.mm
 
     use_v8:DEFINES += OLD_MACOS_SYSTEM
+
+	DEFINES += NO_SUPPORT_MEDIA_PLAYER
 }
 
 core_linux {
