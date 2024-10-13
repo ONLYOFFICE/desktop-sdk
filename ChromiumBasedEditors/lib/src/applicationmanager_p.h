@@ -2160,7 +2160,7 @@ public:
 			oAddons.CheckVersion(sEditorsPath);
 		}
 
-		m_oTemplatesCache.IncrementStartPointer();
+		m_oTemplatesCache.Init();
 
 		oWorker.CheckThumbnails();
 

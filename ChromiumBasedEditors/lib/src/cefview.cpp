@@ -2872,7 +2872,6 @@ public:
 		else if (message_name == "onlocaldocument_templates")
 		{
 			pManager->m_pInternal->m_oTemplatesCache.SetProps(args->GetString(0).ToWString(), args->GetInt(1));
-			pManager->m_pInternal->m_oTemplatesCache.IncrementStartPointer();
 			return true;
 		}
 		else if (message_name == "onlocaldocument_onsavestart")

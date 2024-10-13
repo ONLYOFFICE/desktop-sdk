@@ -75,7 +75,8 @@ private:
 
 	std::vector<CTemplateRec> m_arTemplates;
 
-	int m_nStartCounter;
+	bool m_bIsUpdate;
+	bool m_bInit;
 
 public:
 	CTemplatesCache()
@@ -84,7 +85,9 @@ public:
 
 		m_sLang = L"";
 		m_nScale = 100;
-		m_nStartCounter = 0;
+
+		m_bInit = false;
+		m_bIsUpdate = false;
 	}
 	~CTemplatesCache()
 	{
@@ -92,10 +95,10 @@ public:
 		m_oCS.DeleteCriticalSection();
 	}
 
-	void IncrementStartPointer()
+	void Init()
 	{
-		++m_nStartCounter;
-		if (2 == m_nStartCounter)
+		m_bInit = true;
+		if (m_bIsUpdate)
 			Start(0);
 	}
 
@@ -113,8 +116,11 @@ public:
 		m_sLang = lang;
 		m_nScale = scale;
 
-		if (m_nStartCounter < 2)
+		if (!m_bInit)
+		{
+			m_bIsUpdate = true;
 			return;
+		}
 
 		if (IsRunned())
 			Stop();

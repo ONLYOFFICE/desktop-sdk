@@ -3126,6 +3126,9 @@ window.AscDesktopEditor.LocalFileTemplates=function(e){window.__lang_checker_tem
 			}
 			else if (name == "MediaStart")
 			{
+#ifdef NO_SUPPORT_MEDIA_PLAYER
+				return true;
+#endif
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("media_start");
 				message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
 				message->GetArgumentList()->SetInt(1, arguments[1]->GetIntValue());
@@ -3149,6 +3152,9 @@ window.AscDesktopEditor.LocalFileTemplates=function(e){window.__lang_checker_tem
 			}
 			else if (name == "CallMediaPlayerCommand")
 			{
+#ifdef NO_SUPPORT_MEDIA_PLAYER
+				return true;
+#endif
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("call_media_player_command");
 				CefRefPtr<CefListValue> messageArgs = message->GetArgumentList();
 
@@ -3207,6 +3213,9 @@ window.AscDesktopEditor.LocalFileTemplates=function(e){window.__lang_checker_tem
 			}
 			else if (name == "MediaEnd")
 			{
+#ifdef NO_SUPPORT_MEDIA_PLAYER
+				return true;
+#endif
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("media_end");
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 				return true;
