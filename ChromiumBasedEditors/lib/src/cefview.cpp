@@ -4196,8 +4196,11 @@ public:
 		Core_GetMonitorRawDpi(hwnd, &_dx, &_dy);
 		dDeviceScale = Core_GetMonitorScale(_dx, _dy);
 #else
-		int nDeviceScaleTmp = CAscApplicationManager::GetDpiChecker()->GetWidgetImplDpi(m_pParent->GetWidgetImpl(), &_dx, &_dy);
-		dDeviceScale = CAscApplicationManager::GetDpiChecker()->GetScale(_dx, _dy);
+		if (CAscApplicationManager::GetDpiChecker())
+		{
+			int nDeviceScaleTmp = CAscApplicationManager::GetDpiChecker()->GetWidgetImplDpi(m_pParent->GetWidgetImpl(), &_dx, &_dy);
+			dDeviceScale = CAscApplicationManager::GetDpiChecker()->GetScale(_dx, _dy);
+		}
 #endif
 
 		std::string sCode = "console.log(\"window [" + std::to_string(_dx) + ", " + std::to_string(_dx) + "]: " + std::to_string(dDeviceScale) + "\");";
