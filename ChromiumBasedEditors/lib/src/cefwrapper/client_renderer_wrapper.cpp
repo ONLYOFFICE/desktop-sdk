@@ -4324,6 +4324,7 @@ window.AscDesktopEditor.CallInFrame(\"" +
 
 				message->GetArgumentList()->SetString(5, sTmpFile);
 				message->GetArgumentList()->SetString(6, arguments[5]->GetStringValue());
+				message->GetArgumentList()->SetInt(7, arguments[6]->GetIntValue());
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 				return true;
 			}

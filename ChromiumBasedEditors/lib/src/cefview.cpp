@@ -4370,7 +4370,7 @@ public:
 		pSaver->m_oPrintData.m_sFrameUrl = args->GetString(2).ToWString();
 		pSaver->m_oPrintData.m_sThemesUrl = args->GetString(3).ToWString();
 		pSaver->m_oPrintData.CalculateImagePaths(false);
-		pSaver->m_nOutputFormat = AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF;
+		pSaver->m_nOutputFormat = args->GetInt(7);
 		pSaver->LoadData(args->GetString(4).ToString());
 		pSaver->m_sPdfFileSrc = args->GetString(5).ToWString();
 		pSaver->m_sPdfFileSrcPassword = args->GetString(6).ToWString();

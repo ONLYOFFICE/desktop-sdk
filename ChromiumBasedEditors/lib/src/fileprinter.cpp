@@ -964,6 +964,26 @@ void CCloudPDFSaver::LoadData(const std::string& sBase64)
 	NSFile::CBase64Converter::Decode(sBase64.c_str(), sBase64.length(), m_pData, m_nDataLen);
 }
 
+void CCloudPDFSaver::GetResultPdf(const std::wstring& sOutputFile, const std::wstring& sTempDir)
+{
+	CPdfFile oPdfResult(m_oPrintData.m_pApplicationFonts);
+	oPdfResult.SetTempDirectory(sTempDir);
+
+	oPdfResult.LoadFromFile(m_sPdfFileSrc, L"", m_sPdfFileSrcPassword, m_sPdfFileSrcPassword);
+	oPdfResult.EditPdf(sOutputFile);
+
+	CConvertFromBinParams oConvertParams;
+	oConvertParams.m_sInternalMediaDirectory = m_oPrintData.m_sDocumentImagesPath;
+	oConvertParams.m_sMediaDirectory = oConvertParams.m_sInternalMediaDirectory;
+
+	if (m_nDataLen > 4)
+		oPdfResult.AddToPdfFromBinary(m_pData + 4, (unsigned int)(m_nDataLen - 4), &oConvertParams);
+	oPdfResult.Close();
+
+	// remove temporary src file
+	NSFile::CFileBinary::Remove(m_sPdfFileSrc);
+}
+
 DWORD CCloudPDFSaver::ThreadProc()
 {
 	std::wstring sTempDir = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"PR_");
@@ -989,21 +1009,7 @@ DWORD CCloudPDFSaver::ThreadProc()
 		}
 		else
 		{
-			CPdfFile oPdfResult(m_oPrintData.m_pApplicationFonts);
-			oPdfResult.SetTempDirectory(sTempDir);
-
-			oPdfResult.LoadFromFile(m_sPdfFileSrc, L"", m_sPdfFileSrcPassword, m_sPdfFileSrcPassword);
-			oPdfResult.EditPdf(m_sOutputFileName);
-
-			CConvertFromBinParams oConvertParams;
-			oConvertParams.m_sInternalMediaDirectory = m_oPrintData.m_sDocumentImagesPath;
-			oConvertParams.m_sMediaDirectory = oConvertParams.m_sInternalMediaDirectory;
-
-			oPdfResult.AddToPdfFromBinary(m_pData, (unsigned int)m_nDataLen, &oConvertParams);
-			oPdfResult.Close();
-
-			// remove temporary src file
-			NSFile::CFileBinary::Remove(m_sPdfFileSrc);
+			GetResultPdf(m_sOutputFileName, sTempDir);
 		}
 	}
 	else
@@ -1015,58 +1021,89 @@ DWORD CCloudPDFSaver::ThreadProc()
 		if (sExt.empty())
 			sExt = L".png";
 
-		NSOnlineOfficeBinToPdf::CMetafilePagesInfo oInfo;
-		oInfo.CheckBuffer(m_pData, m_nDataLen);
-
-		int nPagesCount = oInfo.PagesCount;
-		if (0 != nPagesCount)
+		if (m_sPdfFileSrc.empty())
 		{
-			NSFonts::IFontManager* pFontManager = m_oPrintData.m_pApplicationFonts->GenerateFontManager();
-			NSFonts::IFontsCache* pFontsCache = NSFonts::NSFontCache::Create();
-			pFontsCache->SetStreams(m_oPrintData.m_pApplicationFonts->GetStreams());
-			pFontManager->SetOwnerCache(pFontsCache);
-			CImageFilesCache* pImagesCache = new CImageFilesCache(m_oPrintData.m_pApplicationFonts);
+			NSOnlineOfficeBinToPdf::CMetafilePagesInfo oInfo;
+			oInfo.CheckBuffer(m_pData, m_nDataLen);
 
-			for (int nPageIndex = 0; (nPageIndex < nPagesCount) && m_bRunThread; ++nPageIndex)
+			int nPagesCount = oInfo.PagesCount;
+			if (0 != nPagesCount)
 			{
-				CBgraFrame oFrame;
-				int nRasterW = (int)(96 * oInfo.arSizes[nPageIndex].width / 25.4);
-				int nRasterH = (int)(96 * oInfo.arSizes[nPageIndex].height / 25.4);
+				NSFonts::IFontManager* pFontManager = m_oPrintData.m_pApplicationFonts->GenerateFontManager();
+				NSFonts::IFontsCache* pFontsCache = NSFonts::NSFontCache::Create();
+				pFontsCache->SetStreams(m_oPrintData.m_pApplicationFonts->GetStreams());
+				pFontManager->SetOwnerCache(pFontsCache);
+				CImageFilesCache* pImagesCache = new CImageFilesCache(m_oPrintData.m_pApplicationFonts);
 
-				oFrame.put_Width(nRasterW);
-				oFrame.put_Height(nRasterH);
-				oFrame.put_Stride(4 * nRasterW);
+				for (int nPageIndex = 0; (nPageIndex < nPagesCount) && m_bRunThread; ++nPageIndex)
+				{
+					CBgraFrame oFrame;
+					int nRasterW = (int)(96 * oInfo.arSizes[nPageIndex].width / 25.4);
+					int nRasterH = (int)(96 * oInfo.arSizes[nPageIndex].height / 25.4);
 
-				BYTE* pDataRaster = new BYTE[4 * nRasterW * nRasterH];
-				memset(pDataRaster, 0xFF, 4 * nRasterW * nRasterH);
-				oFrame.put_Data(pDataRaster);
+					oFrame.put_Width(nRasterW);
+					oFrame.put_Height(nRasterH);
+					oFrame.put_Stride(4 * nRasterW);
 
-				NSGraphics::IGraphicsRenderer* pRenderer = NSGraphics::Create();
-				pRenderer->SetFontManager(pFontManager);
-				pRenderer->SetImageCache(pImagesCache);
+					BYTE* pDataRaster = new BYTE[4 * nRasterW * nRasterH];
+					memset(pDataRaster, 0xFF, 4 * nRasterW * nRasterH);
+					oFrame.put_Data(pDataRaster);
 
-				pRenderer->CreateFromBgraFrame(&oFrame);
-				pRenderer->SetTileImageDpi(96.0);
-				pRenderer->SetSwapRGB(false);
+					NSGraphics::IGraphicsRenderer* pRenderer = NSGraphics::Create();
+					pRenderer->SetFontManager(pFontManager);
+					pRenderer->SetImageCache(pImagesCache);
 
-				CMetafileToRenderterDesktop oCorrector(pRenderer);
-				oCorrector.m_pPrintData = &m_oPrintData;
+					pRenderer->CreateFromBgraFrame(&oFrame);
+					pRenderer->SetTileImageDpi(96.0);
+					pRenderer->SetSwapRGB(false);
 
-				BYTE* pBufferPage = oInfo.arSizes[nPageIndex].data;
-				int nLen = m_nDataLen - ((int)(pBufferPage - m_pData));
-				NSOnlineOfficeBinToPdf::ConvertBufferToRenderer(pBufferPage, nLen, &oCorrector);
+					CMetafileToRenderterDesktop oCorrector(pRenderer);
+					oCorrector.m_pPrintData = &m_oPrintData;
 
-				RELEASEINTERFACE(pRenderer);
+					BYTE* pBufferPage = oInfo.arSizes[nPageIndex].data;
+					int nLen = m_nDataLen - ((int)(pBufferPage - m_pData));
+					NSOnlineOfficeBinToPdf::ConvertBufferToRenderer(pBufferPage, nLen, &oCorrector);
 
+					RELEASEINTERFACE(pRenderer);
+
+					int nImageFormat = 4; // PNG
+					if (AVS_OFFICESTUDIO_FILE_IMAGE_JPG == m_nOutputFormat)
+						nImageFormat = 3;
+
+					oFrame.SaveFile(m_sOutputFileName + L"/image" + std::to_wstring(nPageIndex + 1) + sExt, nImageFormat);
+				}
+
+				RELEASEINTERFACE(pFontManager);
+				RELEASEINTERFACE(pImagesCache);
+			}
+		}
+		else
+		{
+			std::wstring sTmpFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"PDFT");
+			if (NSFile::CFileBinary::Exists(sTmpFile))
+				NSFile::CFileBinary::Remove(sTmpFile);
+
+			GetResultPdf(sTmpFile, sTempDir);
+
+			CPdfFile oPdfResult(m_oPrintData.m_pApplicationFonts);
+			oPdfResult.SetTempDirectory(sTempDir);
+
+			if (oPdfResult.LoadFromFile(sTmpFile, L"", m_sPdfFileSrcPassword, m_sPdfFileSrcPassword))
+			{
+				int nPagesCount = oPdfResult.GetPagesCount();
 				int nImageFormat = 4; // PNG
 				if (AVS_OFFICESTUDIO_FILE_IMAGE_JPG == m_nOutputFormat)
 					nImageFormat = 3;
 
-				oFrame.SaveFile(m_sOutputFileName + L"/image" + std::to_wstring(nPageIndex + 1) + sExt, nImageFormat);
+				for (int nPageIndex = 0; (nPageIndex < nPagesCount) && m_bRunThread; ++nPageIndex)
+				{
+					std::wstring sResFile = m_sOutputFileName + L"/image" + std::to_wstring(nPageIndex + 1) + sExt;
+					oPdfResult.ConvertToRaster(nPageIndex, sResFile, nImageFormat);
+				}
 			}
 
-			RELEASEINTERFACE(pFontManager);
-			RELEASEINTERFACE(pImagesCache);
+			oPdfResult.Close();
+			NSFile::CFileBinary::Remove(sTmpFile);
 		}
 	}
 

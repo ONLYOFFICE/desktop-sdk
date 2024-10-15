@@ -184,6 +184,7 @@ public:
 	~CCloudPDFSaver();
 
 	void LoadData(const std::string& sBase64);
+	void GetResultPdf(const std::wstring& sOutputFile, const std::wstring& sTempDir);
 
 	virtual DWORD ThreadProc();
 };
