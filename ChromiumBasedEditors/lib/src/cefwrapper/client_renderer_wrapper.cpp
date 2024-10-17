@@ -531,6 +531,28 @@ namespace asc_client_renderer
 				// #endif
 				return true;
 			}
+			else if (name == "getImages")
+			{
+				std::wstring sDirectory = m_sDirectory + L"/media";
+				std::vector<std::wstring> arFiles = NSDirectory::GetFiles(sDirectory, false);
+
+#ifdef CEF_2623
+				retval = CefV8Value::CreateObject(NULL);
+#else
+				retval = CefV8Value::CreateObject(nullptr, nullptr);
+#endif
+
+				for (std::vector<std::wstring>::iterator i = arFiles.begin(); i != arFiles.end(); i++)
+				{
+					std::wstring sPath = *i;
+#ifdef _WIN32
+					NSStringUtils::string_replace(sPath, L"\\", L"/");
+#endif
+					retval->SetValue(CefString(L"media/" + NSFile::GetFileName(sPath)), CefV8Value::CreateString(sPath), V8_PROPERTY_ATTRIBUTE_NONE);
+				}
+
+				return true;
+			}
 
 			return false;
 		}
@@ -1760,6 +1782,29 @@ if (main.DisableVersionHistory) main.DisableVersionHistory(); \
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 				return true;
 			}
+			else if (name == "_LocalFileTemplates")
+			{
+				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_templates");
+
+				if (arguments[0]->IsString())
+					message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
+				else if (arguments[0]->IsArray())
+				{
+					std::string sRes = "";
+					for (int i = 0, len = (int)arguments[0]->GetArrayLength(); i < len; ++i)
+					{
+						if (i != 0)
+							sRes += ";";
+						sRes += arguments[0]->GetValue(i)->GetStringValue().ToString();
+					}
+					message->GetArgumentList()->SetString(0, sRes);
+				}
+				else
+					message->GetArgumentList()->SetString(0, "");
+				message->GetArgumentList()->SetInt(1, arguments[1]->GetIntValue());
+				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+				return true;
+			}
 			else if (name == "LocalFileSaveChanges")
 			{
 				std::vector<CefRefPtr<CefV8Value>>::const_iterator iter = arguments.begin();
@@ -2311,7 +2356,8 @@ window.AscDesktopEditor.getPortalsList = function() { debugger;var ret = []; try
 					sCodeInitJS += "\
 window.AscDesktopEditor.getViewportSettings=function(){return JSON.parse(window.AscDesktopEditor._getViewportSettings());};\
 window.AscDesktopEditor._events={};\
-window.AscDesktopEditor.attachEvent=function(name,callback){if(undefined===window.AscDesktopEditor._events[name]){window.AscDesktopEditor._events[name]=[];}window.AscDesktopEditor._events[name].push(callback);};";
+window.AscDesktopEditor.attachEvent=function(name,callback){if(undefined===window.AscDesktopEditor._events[name]){window.AscDesktopEditor._events[name]=[];}window.AscDesktopEditor._events[name].push(callback);};\
+window.AscDesktopEditor.LocalFileTemplates=function(e){window.__lang_checker_templates__=e||\"\",window.__resize_checker_templates__||(window.__resize_checker_templates__=!0,window.addEventListener(\"resize\",function(){window.AscDesktopEditor._LocalFileTemplates(window.__lang_checker_templates__,(100*window.devicePixelRatio)>>0)})),window.AscDesktopEditor._LocalFileTemplates(window.__lang_checker_templates__,(100*window.devicePixelRatio)>>0)};";
 
 					_frame->ExecuteJavaScript(sCodeInitJS, _frame->GetURL(), 0);
 				}
@@ -3080,6 +3126,9 @@ window.AscDesktopEditor.attachEvent=function(name,callback){if(undefined===windo
 			}
 			else if (name == "MediaStart")
 			{
+#ifdef NO_SUPPORT_MEDIA_PLAYER
+				return true;
+#endif
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("media_start");
 				message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
 				message->GetArgumentList()->SetInt(1, arguments[1]->GetIntValue());
@@ -3103,10 +3152,16 @@ window.AscDesktopEditor.attachEvent=function(name,callback){if(undefined===windo
 			}
 			else if (name == "CallMediaPlayerCommand")
 			{
+#ifdef NO_SUPPORT_MEDIA_PLAYER
+				return true;
+#endif
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("call_media_player_command");
 				CefRefPtr<CefListValue> messageArgs = message->GetArgumentList();
 
 				CefRefPtr<CefV8Value> data = arguments[0];
+				// Handle cases when the data object is invalid
+				if (data->IsNull())
+					return true;
 				// Cmd
 				std::string sCmd = data->GetValue("Cmd")->GetStringValue();
 				messageArgs->SetString(0, sCmd);
@@ -3158,6 +3213,9 @@ window.AscDesktopEditor.attachEvent=function(name,callback){if(undefined===windo
 			}
 			else if (name == "MediaEnd")
 			{
+#ifdef NO_SUPPORT_MEDIA_PLAYER
+				return true;
+#endif
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("media_end");
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 				return true;
@@ -4123,6 +4181,7 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				CefRefPtr<CefV8Handler> handler = new CLocalFileConvertV8Handler(sFolder);
 				retval->SetValue("get", CefV8Value::CreateFunction("get", handler), V8_PROPERTY_ATTRIBUTE_NONE);
 				retval->SetValue("close", CefV8Value::CreateFunction("close", handler), V8_PROPERTY_ATTRIBUTE_NONE);
+				retval->SetValue("getImages", CefV8Value::CreateFunction("getImages", handler), V8_PROPERTY_ATTRIBUTE_NONE);
 
 				return true;
 			}
@@ -4265,6 +4324,7 @@ window.AscDesktopEditor.CallInFrame(\"" +
 
 				message->GetArgumentList()->SetString(5, sTmpFile);
 				message->GetArgumentList()->SetString(6, arguments[5]->GetStringValue());
+				message->GetArgumentList()->SetInt(7, arguments[6]->GetIntValue());
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 				return true;
 			}
@@ -5005,7 +5065,7 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 			CefRefPtr<CefV8Handler> handler = pWrapper;
 
-#define EXTEND_METHODS_COUNT 187
+#define EXTEND_METHODS_COUNT 188
 			const char* methods[EXTEND_METHODS_COUNT] = {
 				"Copy",
 				"Paste",
@@ -5052,6 +5112,7 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 				"LocalFileRecents",
 				"LocalFileOpenRecent",
+				"_LocalFileTemplates",
 				"LocalFileRemoveRecent",
 				"GetLocalFeatures",
 
@@ -5736,6 +5797,19 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 				}
 				return true;
 			}
+			else if (sMessageName == "onlocaldocument_sendtemplates")
+			{
+				CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
+				if (_frame)
+				{
+					std::wstring sJSON = message->GetArgumentList()->GetString(0).ToWString();
+					NSStringUtils::string_replace(sJSON, L"\\", L"\\\\");
+
+					std::wstring sCode = L"if (window.onaddtemplates) {window.onaddtemplates(" + sJSON + L");}";
+					_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+				}
+				return true;
+			}
 			else if (sMessageName == "onlocaldocument_onaddimage")
 			{
 				CefRefPtr<CefFrame> _frame = GetEditorFrame(browser);
@@ -5805,23 +5879,51 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 				if (_frame)
 				{
 					std::string sParam = std::to_string(message->GetArgumentList()->GetInt(0));
+					std::wstring sSrcFile = message->GetArgumentList()->GetString(1).ToWString();
+
+					if (!sSrcFile.empty())
+						g_pLocalResolver->AddFile(sSrcFile);
+
 					std::string sCode = "window.asc_initAdvancedOptions(" + sParam;
 
-					if (2 <= message->GetArgumentList()->GetSize())
+					if (3 <= message->GetArgumentList()->GetSize())
 					{
-						std::string sHash = message->GetArgumentList()->GetString(1).ToString();
+						std::string sHash = message->GetArgumentList()->GetString(2).ToString();
 						sCode += ",\"";
 						sCode += sHash;
 						sCode += "\"";
 					}
-					if (3 <= message->GetArgumentList()->GetSize())
+					else
+						sCode += ",undefined";
+
+					if (4 <= message->GetArgumentList()->GetSize())
 					{
-						std::string sDocInfo = message->GetArgumentList()->GetString(2).ToString();
+						std::string sDocInfo = message->GetArgumentList()->GetString(3).ToString();
 						NSStringUtils::string_replaceA(sDocInfo, "\n", "<!--break-->");
 						sCode += ",\"";
 						sCode += sDocInfo;
 						sCode += "\"";
 					}
+					else
+						sCode += ",undefined";
+
+					if (!sSrcFile.empty())
+					{
+						std::string sSrcFileA = U_TO_UTF8(sSrcFile);
+
+						char* pDataBase64 = NULL;
+						int nDataBase64Len = 0;
+
+						NSFile::CBase64Converter::Encode((BYTE*)sSrcFileA.c_str(), (int)sSrcFileA.length(), pDataBase64, nDataBase64Len, NSBase64::B64_BASE64_FLAG_NOCRLF);
+
+						sCode += ",\"binary_content://";
+						sCode += std::string(pDataBase64, nDataBase64Len);
+						sCode += "\"";
+
+						RELEASEARRAYOBJECTS(pDataBase64);
+					}
+					else
+						sCode += ",undefined";
 
 					sCode += ");";
 					_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);

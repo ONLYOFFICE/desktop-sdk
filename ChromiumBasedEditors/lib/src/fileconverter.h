@@ -43,11 +43,7 @@
 #include "../../../../core/DesktopEditor/graphics/pro/Image.h"
 #include "../../../../core/Common/OfficeFileErrorDescription.h"
 
-#ifdef LINUX
-#include <unistd.h>
-#include <sys/wait.h>
-#include <stdio.h>
-#endif
+#include "./x2t.h"
 
 std::wstring GetPresentationThemes(CAscApplicationManager* pManager)
 {
@@ -178,167 +174,6 @@ public:
 		oInfo = m_oInfo;
 	}
 };
-
-namespace NSX2T
-{
-	int Convert(const std::wstring& sConverterPath, const std::wstring sXmlPath, CAscApplicationManager* pManager, bool bIsLoggingErrors = false)
-	{
-		int nReturnCode = 0;
-		std::wstring sConverterExe = sConverterPath;
-
-#ifdef WIN32
-		sConverterExe += L".exe";
-		std::wstring sApp = L"x2t ";
-
-		STARTUPINFO sturtupinfo;
-		ZeroMemory(&sturtupinfo,sizeof(STARTUPINFO));
-		sturtupinfo.cb = sizeof(STARTUPINFO);
-
-		sApp += (L"\"" + sXmlPath + L"\"");
-		wchar_t* pCommandLine = NULL;
-		if (true)
-		{
-			pCommandLine = new wchar_t[sApp.length() + 1];
-			memcpy(pCommandLine, sApp.c_str(), sApp.length() * sizeof(wchar_t));
-			pCommandLine[sApp.length()] = (wchar_t)'\0';
-		}
-
-		HANDLE ghJob = CreateJobObject(NULL, NULL);
-
-		if (ghJob)
-		{
-			JOBOBJECT_EXTENDED_LIMIT_INFORMATION jeli = { 0 };
-
-			// Configure all child processes associated with the job to terminate when the
-			jeli.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
-			if ( 0 == SetInformationJobObject( ghJob, JobObjectExtendedLimitInformation, &jeli, sizeof(jeli)))
-			{
-				CloseHandle(ghJob);
-				ghJob = NULL;
-			}
-		}
-
-		PROCESS_INFORMATION processinfo;
-		ZeroMemory(&processinfo,sizeof(PROCESS_INFORMATION));
-		BOOL bResult = CreateProcessW(sConverterExe.c_str(), pCommandLine,
-									  NULL, NULL, TRUE, CREATE_NO_WINDOW, NULL, NULL, &sturtupinfo, &processinfo);
-
-		if (bResult && ghJob)
-		{
-			AssignProcessToJobObject(ghJob, processinfo.hProcess);
-		}
-
-		::WaitForSingleObject(processinfo.hProcess, INFINITE);
-
-		RELEASEARRAYOBJECTS(pCommandLine);
-
-		//get exit code
-		DWORD dwExitCode = 0;
-		if (GetExitCodeProcess(processinfo.hProcess, &dwExitCode))
-		{
-			nReturnCode = (int)dwExitCode;
-		}
-
-		CloseHandle(processinfo.hProcess);
-		CloseHandle(processinfo.hThread);
-
-		if (ghJob)
-		{
-			CloseHandle(ghJob);
-			ghJob = NULL;
-		}
-
-#endif
-
-#ifdef LINUX
-		pid_t pid = fork(); // create child process
-		int status;
-
-		std::string sProgramm = U_TO_UTF8(sConverterExe);
-		std::string sXmlA = U_TO_UTF8(sXmlPath);
-
-		switch (pid)
-		{
-		case -1: // error
-			break;
-
-		case 0: // child process
-		{
-			std::string sLibraryDir = sProgramm;
-			std::string sPATH = sProgramm;
-			if (std::string::npos != sProgramm.find_last_of('/'))
-			{
-				sLibraryDir = "LD_LIBRARY_PATH=" + sProgramm.substr(0, sProgramm.find_last_of('/'));
-#ifndef _MAC
-				sLibraryDir += ":";
-				sLibraryDir += pManager->GetLibraryPathVariable();
-#endif
-				sPATH = "PATH=" + sProgramm.substr(0, sProgramm.find_last_of('/'));
-			}
-
-#ifdef _MAC
-			sLibraryDir = "DY" + sLibraryDir;
-#endif
-
-			const char* nargs[3];
-			nargs[0] = sProgramm.c_str();
-			nargs[1] = sXmlA.c_str();
-			nargs[2] = NULL;
-
-#ifndef _MAC
-			const char* nenv[4];
-			std::string s1 = "APPLICATION_NAME=" + pManager->m_oSettings.converter_application_name;
-			std::string s2 = "COMPANY_NAME=" + pManager->m_oSettings.converter_application_company;
-			nenv[0] = sLibraryDir.c_str();
-			nenv[1] = s1.c_str();
-			nenv[2] = s2.c_str();
-			nenv[3] = NULL;
-#else
-			const char* nenv[5];
-			std::string s1 = "APPLICATION_NAME=" + pManager->m_oSettings.converter_application_name;
-			std::string s2 = "COMPANY_NAME=" + pManager->m_oSettings.converter_application_company;
-			nenv[0] = sLibraryDir.c_str();
-			nenv[1] = sPATH.c_str();
-			nenv[2] = s1.c_str();
-			nenv[3] = s2.c_str();
-			nenv[4] = NULL;
-#endif
-
-			execve(sProgramm.c_str(),
-				   (char * const *)nargs,
-				   (char * const *)nenv);
-			exit(EXIT_SUCCESS);
-			break;
-		}
-		default: // parent process, pid now contains the child pid
-			while (-1 == waitpid(pid, &status, 0)); // wait for child to complete
-			if (WIFEXITED(status))
-			{
-				nReturnCode =  WEXITSTATUS(status);
-			}
-			break;
-		}
-#endif
-
-		if (bIsLoggingErrors && nReturnCode != 0)
-		{
-			std::string sXmlContent;
-			NSFile::CFileBinary::ReadAllTextUtf8A(sXmlPath, sXmlContent);
-			NSStringUtils::string_replaceA(sXmlContent, "%", "%%");
-
-			std::wstring sLogFile = NSFile::GetDirectoryName(sXmlPath) + L"/errors.log";
-			std::string sLogFileA = U_TO_UTF8(sLogFile);
-			FILE* f = fopen(sLogFileA.c_str(), "a+");
-			fprintf(f, "--------------------------------------------------------\n");
-			fprintf(f, "error: %d\nxml:\n", nReturnCode);
-			fprintf(f, sXmlContent.c_str());
-			fprintf(f, "\n\n");
-			fclose(f);
-		}
-
-		return nReturnCode;
-	}
-}
 
 namespace NSOOXMLPassword
 {
@@ -797,6 +632,16 @@ public:
 			return 0;
 		}
 
+		std::wstring sNameInfo = m_oInfo.m_sRecoveryDir + L"/asc_name.info";
+		if (NSFile::CFileBinary::Exists(sNameInfo))
+			NSFile::CFileBinary::Remove(sNameInfo);
+
+		NSStringUtils::CStringBuilder oBuilderInfo;
+		oBuilderInfo.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><info type=\"" + std::to_wstring(m_oInfo.m_nCurrentFileFormat) + L"\" name=\"");
+		oBuilderInfo.WriteEncodeXmlString(NSFile::GetFileName(sDestinationPath));
+		oBuilderInfo.WriteString(L"\" />");
+		NSFile::CFileBinary::SaveToFile(sNameInfo, oBuilderInfo.GetData(), true);
+
 		if (m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
 		{
 			if (m_bIsNativeSupport)
@@ -808,16 +653,6 @@ public:
 			m_bRunThread = FALSE;
 			return 0;
 		}
-
-		std::wstring sNameInfo = m_oInfo.m_sRecoveryDir + L"/asc_name.info";
-		if (NSFile::CFileBinary::Exists(sNameInfo))
-			NSFile::CFileBinary::Remove(sNameInfo);
-
-		NSStringUtils::CStringBuilder oBuilderInfo;
-		oBuilderInfo.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><info type=\"" + std::to_wstring(m_oInfo.m_nCurrentFileFormat) + L"\" name=\"");
-		oBuilderInfo.WriteEncodeXmlString(NSFile::GetFileName(sDestinationPath));
-		oBuilderInfo.WriteString(L"\" />");
-		NSFile::CFileBinary::SaveToFile(sNameInfo, oBuilderInfo.GetData(), true);
 
 		std::wstring sParams = L"";
 		if (!m_sAdditionalConvertation.empty())
@@ -1306,19 +1141,6 @@ public:
 
 		int nReturnCode = NSX2T::Convert(sConverterExe, sTempFileForParams, m_pManager, m_pManager->m_pInternal->m_bIsEnableConvertLogs);
 
-		if (m_nTypeEditorFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
-		{
-			std::vector<std::wstring> arFiles = NSDirectory::GetFiles(m_oInfo.m_sRecoveryDir + L"/changes");
-
-			if (m_pManager->m_pInternal->m_bDebugInfoSupport && !arFiles.empty())
-			{
-				NSDirectory::CopyDirectory(m_oInfo.m_sRecoveryDir + L"/changes", sDstTmpDir + L"/changes");
-			}
-
-			for (std::vector<std::wstring>::const_iterator i = arFiles.begin(); i != arFiles.end(); i++)
-				NSFile::CFileBinary::Remove(*i);
-		}
-
 		m_bIsRetina = false;
 
 		if (!m_pManager->m_pInternal->m_bDebugInfoSupport)
@@ -1800,5 +1622,67 @@ public:
 		m_sDstFilePath = NSFile::CFileBinary::GetTempPath() + L"/" + sSrcFileName;
 	}
 };
+
+bool GetTemplateImage(CAscApplicationManager* pManager, const std::wstring sTempDir,
+					  const int& w, const int& h,
+					  const std::wstring& sFile, const std::wstring& sImagesDir, const std::wstring& sOutput)
+{
+	NSStringUtils::CStringBuilder oBuilder;
+	oBuilder.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><TaskQueueDataConvert><m_sFileFrom>");
+	oBuilder.WriteEncodeXmlString(sFile);
+	oBuilder.WriteString(L"</m_sFileFrom><m_sFileTo>");
+	oBuilder.WriteEncodeXmlString(sOutput);
+	oBuilder.WriteString(L"</m_sFileTo><m_nFormatTo>1025</m_nFormatTo><m_sFontDir>");
+	oBuilder.WriteEncodeXmlString(pManager->m_oSettings.fonts_cache_info_path);
+	oBuilder.WriteString(L"</m_sFontDir><m_bIsNoBase64>false</m_bIsNoBase64><m_sAllFontsPath>");
+	oBuilder.WriteEncodeXmlString(pManager->m_oSettings.fonts_cache_info_path);
+	oBuilder.WriteString(L"/AllFonts.js</m_sAllFontsPath>");
+
+	oBuilder.WriteString(L"<m_sTempDir>");
+	oBuilder.WriteEncodeXmlString(sTempDir);
+	oBuilder.WriteString(L"</m_sTempDir>");
+
+	oBuilder.WriteString(L"<m_bDontSaveAdditional>true</m_bDontSaveAdditional>");
+	oBuilder.WriteString(L"<m_bFromChanges>false</m_bFromChanges>");
+
+	std::wstring json_params = L"{\
+'spreadsheetLayout':{\
+'fitToWidth':0,'fitToHeight':0,'orientation':'landscape',\
+'sheetsProps':{\
+'0':{\
+'headings':false,'printTitlesWidth':null,'printTitlesHeight':null,\
+'pageMargins':{'bottom':10,'footer':5,'header':5,'left':5,'right':5,'top':10},\
+'pageSetup':{'orientation':1,'width':210,'height':297,'paperUnits':0,'scale':100,'printArea':false,'horizontalDpi':600,'verticalDpi':600,'usePrinterDefaults':true,'fitToHeight':0,'fitToWidth':0}\
+}\
+}\
+},\
+'documentLayout':{'drawPlaceHolders':true,'drawFormHighlight':true,'isPrint':true}\
+}";
+
+	NSStringUtils::string_replace(json_params, L"'", L"&quot;");
+
+	oBuilder.WriteString(L"<m_sJsonParams>");
+	oBuilder.WriteEncodeXmlString(json_params);
+	oBuilder.WriteString(L"</m_sJsonParams>");
+
+	// disable cache
+	oBuilder.WriteString(L"<m_nDoctParams>1</m_nDoctParams>");
+
+	oBuilder.WriteString(L"<m_oThumbnail><first>true</first><aspect>16</aspect><width>");
+	oBuilder.WriteString(std::to_wstring(w));
+	oBuilder.WriteString(L"</width><height>");
+	oBuilder.WriteString(std::to_wstring(h));
+	oBuilder.WriteString(L"</height></m_oThumbnail>");
+
+	oBuilder.WriteString(L"</TaskQueueDataConvert>");
+
+	std::wstring sTempFileForParams = sTempDir + L"/params.xml";
+	NSFile::CFileBinary::SaveToFile(sTempFileForParams, oBuilder.GetData(), true);
+
+	int nReturnCode = NSX2T::Convert(pManager->m_oSettings.file_converter_path + L"/x2t", sTempFileForParams, pManager);
+	NSFile::CFileBinary::Remove(sTempFileForParams);
+
+	return (0 == nReturnCode) ? true : false;
+}
 
 #endif // ASC_CEFCONVERTER_FILECONVERTER_H
