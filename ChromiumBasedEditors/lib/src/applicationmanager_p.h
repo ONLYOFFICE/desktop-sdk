@@ -62,6 +62,7 @@
 
 #include "utils.h"
 #include "../../../../core/DesktopEditor/xmlsec/src/include/CertificateCommon.h"
+#include "templatesmanager.h"
 
 #ifdef CEF_2623
 #define MESSAGE_IN_BROWSER
@@ -499,6 +500,11 @@ namespace NSSystem
 		{
 			m_pLocker->Unlock();
 			return true;
+		}
+
+		bool IsEmpty()
+		{
+			return m_pLocker->IsEmpty();
 		}
 
 		~CLocalFileLocker()
@@ -1601,6 +1607,9 @@ public:
 	// сброс LD_PRELOAD
 	bool m_bIsPreloadDiscard;
 
+	// генератор шаблонов
+	CTemplatesCache m_oTemplatesCache;
+
 public:
 	IMPLEMENT_REFCOUNTING(CAscApplicationManager_Private);
 
@@ -1716,6 +1725,8 @@ public:
 		Stop();
 		m_oKeyboardTimer.Stop();
 		m_oSpellChecker.End();
+
+		m_oTemplatesCache.Stop();
 	}
 
 	// logout из портала -----------------------------------------------------------------------
@@ -2149,6 +2160,8 @@ public:
 			oAddons.CheckVersion(sEditorsPath);
 		}
 
+		m_oTemplatesCache.Init();
+
 		oWorker.CheckThumbnails();
 
 		m_bRunThread = FALSE;
@@ -2475,7 +2488,7 @@ public:
 			}
 
 			std::wstring sNameInfo = arDirectories[i] + L"/asc_name.info";
-			if (!NSFile::CFileBinary::Exists(sNameInfo) || nType == -1)
+			if (!NSFile::CFileBinary::Exists(sNameInfo))
 				continue;
 
 			XmlUtils::CXmlNode oNode;

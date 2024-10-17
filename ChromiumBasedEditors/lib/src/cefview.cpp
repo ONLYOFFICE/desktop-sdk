@@ -2869,6 +2869,11 @@ public:
 			pManager->m_pInternal->Recovers_RemoveAll();
 			return true;
 		}
+		else if (message_name == "onlocaldocument_templates")
+		{
+			pManager->m_pInternal->m_oTemplatesCache.SetProps(args->GetString(0).ToWString(), args->GetInt(1));
+			return true;
+		}
 		else if (message_name == "onlocaldocument_onsavestart")
 		{
 			bool bIsNeedSave = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_bIsSaved ? false : true;
@@ -2880,6 +2885,16 @@ public:
 			std::wstring sOldPassword = args->GetString(5);
 
 			bool bIsSaveAs = (sParams.find("saveas=true") != std::string::npos) ? true : false;
+
+			if (!bIsNeedSave)
+			{
+				if (m_pParent->m_pInternal->m_pLocalFileLocker &&
+					m_pParent->m_pInternal->m_pLocalFileLocker->IsEmpty() &&
+					!NSFile::CFileBinary::Exists(m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sFileSrc))
+				{
+					bIsNeedSave = true;
+				}
+			}
 
 			// нужно ли показывать диалог?
 			// 1) файл новый/восстановленный, т.е. некуда пока сохранять
@@ -4181,8 +4196,11 @@ public:
 		Core_GetMonitorRawDpi(hwnd, &_dx, &_dy);
 		dDeviceScale = Core_GetMonitorScale(_dx, _dy);
 #else
-		int nDeviceScaleTmp = CAscApplicationManager::GetDpiChecker()->GetWidgetImplDpi(m_pParent->GetWidgetImpl(), &_dx, &_dy);
-		dDeviceScale = CAscApplicationManager::GetDpiChecker()->GetScale(_dx, _dy);
+		if (CAscApplicationManager::GetDpiChecker())
+		{
+			int nDeviceScaleTmp = CAscApplicationManager::GetDpiChecker()->GetWidgetImplDpi(m_pParent->GetWidgetImpl(), &_dx, &_dy);
+			dDeviceScale = CAscApplicationManager::GetDpiChecker()->GetScale(_dx, _dy);
+		}
 #endif
 
 		std::string sCode = "console.log(\"window [" + std::to_string(_dx) + ", " + std::to_string(_dx) + "]: " + std::to_string(dDeviceScale) + "\");";
@@ -4352,7 +4370,7 @@ public:
 		pSaver->m_oPrintData.m_sFrameUrl = args->GetString(2).ToWString();
 		pSaver->m_oPrintData.m_sThemesUrl = args->GetString(3).ToWString();
 		pSaver->m_oPrintData.CalculateImagePaths(false);
-		pSaver->m_nOutputFormat = AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF;
+		pSaver->m_nOutputFormat = args->GetInt(7);
 		pSaver->LoadData(args->GetString(4).ToString());
 		pSaver->m_sPdfFileSrc = args->GetString(5).ToWString();
 		pSaver->m_sPdfFileSrcPassword = args->GetString(6).ToWString();
@@ -5853,17 +5871,23 @@ void CCefView_Private::LocalFile_IncrementCounter()
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_additionalparams");
 				message->GetArgumentList()->SetInt(0, m_nLocalFileOpenError);
 
+				std::wstring sFileForData = L"";
+				if ((89 == m_nLocalFileOpenError) && (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_SPREADSHEET_CSV))
+					sFileForData = m_oLocalInfo.m_oInfo.m_sFileSrc;
+
+				message->GetArgumentList()->SetString(1, sFileForData);
+
 				if (90 == m_nLocalFileOpenError || 91 == m_nLocalFileOpenError)
 				{
 					ICertificate* pCert = NSCertificate::CreateInstance();
 					std::string sHash = pCert->GetHash(m_oLocalInfo.m_oInfo.m_sFileSrc, OOXML_HASH_ALG_SHA256);
 					delete pCert;
 
-					message->GetArgumentList()->SetString(1, sHash);
+					message->GetArgumentList()->SetString(2, sHash);
 
 					std::wstring sDocInfo = GetFileDocInfo(m_oLocalInfo.m_oInfo.m_sFileSrc);
 					if (!sDocInfo.empty())
-						message->GetArgumentList()->SetString(2, sDocInfo);
+						message->GetArgumentList()->SetString(3, sDocInfo);
 				}
 
 				SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
@@ -6357,6 +6381,13 @@ void CCefView::load(const std::wstring& urlInputSrc)
 		if (this->GetType() == cvwtEditor)
 		{
 			std::wstring sUrlExternal = urlInput.substr(22);
+
+			// на маке при открытии по схеме - теряется ":"
+			if (0 == sUrlExternal.find(L"https//"))
+				NSStringUtils::string_replace(sUrlExternal, L"https//", L"https://");
+			else if (0 == sUrlExternal.find(L"http//"))
+				NSStringUtils::string_replace(sUrlExternal, L"http//", L"http://");
+
 			if (NSFile::CFileBinary::Exists(sUrlExternal))
 			{
 				COfficeFileFormatChecker oChecker;
@@ -7031,6 +7062,16 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 		NSEditorApi::CAscLocalRecentsAll* pData = (NSEditorApi::CAscLocalRecentsAll*)pEvent->m_pData;
 
 		CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_sendrecovers");
+		message->GetArgumentList()->SetString(0, pData->get_JSON());
+
+		SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
+		break;
+	}
+	case ASC_MENU_EVENT_TYPE_CEF_LOCALFILE_TEMPLATES:
+	{
+		NSEditorApi::CAscLocalRecentsAll* pData = (NSEditorApi::CAscLocalRecentsAll*)pEvent->m_pData;
+
+		CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_sendtemplates");
 		message->GetArgumentList()->SetString(0, pData->get_JSON());
 
 		SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
@@ -7922,6 +7963,14 @@ void CCefViewEditor::CreateLocalFile(const AscEditorType& nFileFormatSrc, const 
 
 	// start convert file
 	this->load(sUrl + sParams);
+}
+void CCefViewEditor::CreateLocalFile(const AscEditorType& nFileFormatSrc, const int& nTemplateId, const std::wstring& sName)
+{
+	std::wstring sPath = m_pInternal->m_pManager->m_pInternal->m_oTemplatesCache.GetPath(nTemplateId);
+	if (sPath.empty())
+		return;
+
+	return CreateLocalFile(nFileFormatSrc, sName, sPath);
 }
 bool CCefViewEditor::OpenCopyAsRecoverFile(const int& nIdSrc)
 {

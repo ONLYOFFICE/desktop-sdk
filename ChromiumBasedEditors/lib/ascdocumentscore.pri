@@ -82,6 +82,8 @@ HEADERS += \
     $$PWD/src/cefwrapper/client_renderer_params.h \
     $$PWD/src/cefwrapper/client_scheme.h \
     $$PWD/src/fileconverter.h \
+	$$PWD/src/x2t.h \
+	$$PWD/src/templatesmanager.h \
     $$PWD/src/cefwrapper/client_resource_handler_async.h
 
 SOURCES += \
@@ -150,6 +152,8 @@ core_mac {
         $$PWD/src/mac_application.mm
 
     use_v8:DEFINES += OLD_MACOS_SYSTEM
+
+	DEFINES += NO_SUPPORT_MEDIA_PLAYER
 }
 
 core_linux {

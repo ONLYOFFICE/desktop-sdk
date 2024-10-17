@@ -34,7 +34,7 @@
 #define FILELOCKER_H
 
 #include <iostream>
-#include "../../../../core/DesktopEditor/common/File.h"
+#include "../../../../core/DesktopEditor/common/Directory.h"
 #include "../../../../core/DesktopEditor/common/Types.h"
 
 namespace NSSystem
@@ -61,6 +61,8 @@ namespace NSSystem
 		virtual bool SeekFile(DWORD dwPosition) = 0;
 		virtual bool Truncate(DWORD dwPosition) = 0;
 		virtual bool WriteFile(const void* pData, DWORD dwBytesToWrite, DWORD& dwSizeWrite) = 0;
+
+		virtual bool IsEmpty();
 
 		static LockType IsLocked(const std::wstring& file);
 		static CFileLocker* Create(const std::wstring& file);

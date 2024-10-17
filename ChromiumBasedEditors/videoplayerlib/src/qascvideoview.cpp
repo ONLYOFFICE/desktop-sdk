@@ -500,15 +500,15 @@ void QAscVideoView::RemoveFromPresentation()
 	if (!m_pInternal->m_bIsPresentationMode)
 		return;
 
-	this->Stop();
-
+	// first hide all widgets
 	this->hide();
-	this->deleteLater();
-
 	Footer()->hide();
-	Footer()->deleteLater();
-
 	Footer()->VolumeControls()->hide();
+	// then stop player
+	this->Stop();
+	// and delete widgets
+	this->deleteLater();
+	Footer()->deleteLater();
 	Footer()->VolumeControls()->deleteLater();
 }
 
