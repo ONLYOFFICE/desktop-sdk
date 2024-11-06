@@ -4336,7 +4336,7 @@ public:
 		if (nFileType == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA)
 			nFileType = AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF;
 
-		std::wstring sNeedExt = oChecker.GetExtensionByType(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF);
+		std::wstring sNeedExt = oChecker.GetExtensionByType(nFileType);
 		if (!sNeedExt.empty())
 		{
 			std::wstring::size_type posOldExt = sFileName.rfind('.');
@@ -6995,6 +6995,9 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 						_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
 					}
 				}
+
+
+				RELEASEOBJECT(m_pInternal->m_pCloudSaveToDrawing);
 			}
 			else
 			{
