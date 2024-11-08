@@ -2367,6 +2367,27 @@ public:
 		if (frame->IsMain() && m_nBeforeBrowserCounter != 0 && sUrl.find(L"file://") == 0 && sTest1 != sTest2)
 			return true;
 
+		if (m_pParent && m_pParent->GetType() == cvwtEditor &&
+			frame->IsMain() && AscEditorType::etUndefined != ((CCefViewEditor*)m_pParent)->GetEditorType())
+		{
+			// not exit from editor for own clouds
+			bool bIsOwnCloud = true;
+			if (m_pParent->m_pInternal->m_bIsExternalCloud)
+			{
+				if (m_pParent->m_pInternal->m_oExternalCloud.id != L"asc" &&
+					m_pParent->m_pInternal->m_oExternalCloud.id != L"onlyoffice")
+				{
+					bIsOwnCloud = false;
+				}
+			}
+
+			if (bIsOwnCloud && (sUrl.find(L"file://") == 0))
+				bIsOwnCloud = false;
+
+			if (bIsOwnCloud)
+				return true;
+		}
+
 		m_nBeforeBrowserCounter++;
 
 		if (m_pParent && m_pParent->GetType() == cvwtSimple)
