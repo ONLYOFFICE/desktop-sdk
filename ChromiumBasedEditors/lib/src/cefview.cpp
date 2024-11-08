@@ -322,6 +322,7 @@ protected:
 	IOfficeDrawingFile* m_pReader;
 	std::wstring m_sPassword;
 	int m_nFileType;
+	std::wstring m_sFileWithChanges;
 
 public:
 	CAscNativePrintDocument(const std::wstring& sPassword) : IAscNativePrintDocument()
@@ -334,6 +335,12 @@ public:
 	{
 		RELEASEOBJECT(m_pReader);
 		NSDirectory::DeleteDirectory(m_sTempFolder);
+
+		if (!m_sFileWithChanges.empty())
+		{
+			NSFile::CFileBinary::Remove(m_sFileWithChanges);
+			m_sFileWithChanges = L"";
+		}
 	}
 public:
 	virtual void Draw(IRenderer* pRenderer, int nPageIndex)
@@ -369,7 +376,7 @@ public:
 		};
 	}
 
-	virtual void Open(const std::wstring& sPath, const std::wstring& sRecoveryDir)
+	virtual void Open(const std::wstring& sPath, const std::wstring& sRecoveryDir, const std::wstring& sChangesFile)
 	{
 		m_sFilePath = sPath;
 		m_sTempFolder = sRecoveryDir + L"/PrintTemp";
@@ -384,6 +391,39 @@ public:
 		case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA:
 		{
 			((CPdfFile*)m_pReader)->SetCMapFolder(m_sCMapFolder);
+
+			if (!sChangesFile.empty())
+			{
+				std::wstring sTmpFileWithChanges = sRecoveryDir + L"/PdfFileWithChanges.bin";
+				if (NSFile::CFileBinary::Exists(sTmpFileWithChanges))
+					NSFile::CFileBinary::Remove(sTmpFileWithChanges);
+
+				if (((CPdfFile*)m_pReader)->EditPdf(sTmpFileWithChanges))
+				{
+					CConvertFromBinParams oConvertParams;
+					oConvertParams.m_sInternalMediaDirectory = m_sImagesDirectory;
+					oConvertParams.m_sMediaDirectory = oConvertParams.m_sInternalMediaDirectory;
+
+					BYTE* pChanges = NULL;
+					DWORD nChangesLen = 0;
+					if (NSFile::CFileBinary::ReadAllBytes(sChangesFile, &pChanges, nChangesLen))
+					{
+						if (nChangesLen > 4)
+							((CPdfFile*)m_pReader)->AddToPdfFromBinary(pChanges + 4, (unsigned int)(nChangesLen - 4), &oConvertParams);
+					}
+
+					RELEASEARRAYOBJECTS(pChanges);
+
+					((CPdfFile*)m_pReader)->Close();
+
+					RELEASEOBJECT(m_pReader);
+					NSDirectory::DeleteDirectory(m_sTempFolder);
+
+					m_pReader = new CPdfFile(m_pApplicationFonts);
+					Open(sTmpFileWithChanges, sRecoveryDir, L"");
+				}
+			}
+
 			break;
 		}
 		default:
@@ -779,6 +819,7 @@ public:
 	std::string m_sPrintParameters;
 
 	std::wstring m_sCloudNativePrintFile;
+	std::wstring m_sNativePrintChangesFile;
 
 	// ссылка для view
 	std::wstring m_strUrl;
@@ -2754,8 +2795,19 @@ public:
 			m_pParent->m_pInternal->m_sPrintParameters = args->GetString(0);
 			m_pParent->m_pInternal->m_sNativeFilePassword = args->GetString(1);
 
-			if (args->GetSize() > 2)
-				m_pParent->m_pInternal->m_sCloudNativePrintFile = args->GetString(2);
+			m_pParent->m_pInternal->m_sCloudNativePrintFile = args->GetString(2);
+			m_pParent->m_pInternal->m_sNativePrintChangesFile = args->GetString(3);
+
+			if (args->GetSize() > 4)
+			{
+				m_pParent->m_pInternal->m_oPrintData.m_sDocumentUrl = args->GetString(4).ToWString();
+				m_pParent->m_pInternal->m_oPrintData.m_sFrameUrl = args->GetString(5).ToWString();
+
+				if (!m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir.empty())
+					m_pParent->m_pInternal->m_oPrintData.m_sDocumentUrl = m_pParent->m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/";
+
+				m_pParent->m_pInternal->m_oPrintData.CalculateImagePaths(!m_pParent->m_pInternal->m_sCloudCryptSrc.empty());
+			}
 
 			m_pParent->Apply(pEvent);
 			return true;
@@ -6904,7 +6956,9 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 					NSDirectory::CreateDirectory(sTempDirRecover);
 				}
 
-				m_pInternal->m_oPrintData.m_pNativePrinter->Open(sLocalFileSrc, sTempDirRecover);
+				m_pInternal->m_oPrintData.m_pNativePrinter->m_sImagesDirectory = m_pInternal->m_oPrintData.m_sDocumentImagesPath;
+
+				m_pInternal->m_oPrintData.m_pNativePrinter->Open(sLocalFileSrc, sTempDirRecover, m_pInternal->m_sNativePrintChangesFile);
 				m_pInternal->m_oPrintData.m_pNativePrinter->Check(m_pInternal->m_oPrintData.m_arPages);
 				bIsNativePrint = true;
 			}
