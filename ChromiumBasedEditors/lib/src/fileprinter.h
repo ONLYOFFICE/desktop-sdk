@@ -56,6 +56,7 @@ public:
 	NSFonts::IApplicationFonts*  m_pApplicationFonts;
 	std::wstring            m_sTempFolder;
 	std::wstring            m_sCMapFolder;
+	std::wstring            m_sImagesDirectory;
 
 public:
 
@@ -63,7 +64,7 @@ public:
 
 	virtual void Draw(IRenderer* pRenderer, int nPageIndex) = 0;
 	virtual void PreOpen(int nFileType) = 0;
-	virtual void Open(const std::wstring& sPath, const std::wstring& sRecoveryDir) = 0;
+	virtual void Open(const std::wstring& sPath, const std::wstring& sRecoveryDir, const std::wstring& sChangesFile) = 0;
 	virtual void Close() = 0;
 
 	virtual void Check(std::vector<CPagePrintData>& arPages) = 0;

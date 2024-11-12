@@ -131,7 +131,10 @@ LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lCryptoPPLib
 LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lCompoundFileLib
 
 DEFINES += CRYPTOPP_DISABLE_ASM
-SOURCES += $$CORE_ROOT_DIR/MsBinaryFile/DocFile/MemoryStream.cpp
+SOURCES += \
+	$$CORE_ROOT_DIR/MsBinaryFile/DocFile/MemoryStream.cpp \
+	$$CORE_ROOT_DIR/MsBinaryFile/XlsFile/Format/Logging/Log.cpp \
+	$$CORE_ROOT_DIR/MsBinaryFile/XlsFile/Format/Logging/Logger.cpp
 # -----------------------------------------
 
 

@@ -880,7 +880,8 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
 		pGraphicsRenderer->SetSwapRGB(true);
 #endif
 
-		pGraphicsRenderer->SetTileImageDpi(96.0);
+		if (!m_pNativePrinter)
+			pGraphicsRenderer->SetTileImageDpi(96.0);
 
 		pDrawingRenderer = pGraphicsRenderer;
 	}
