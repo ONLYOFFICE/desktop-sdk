@@ -163,6 +163,18 @@ core_linux {
     QMAKE_LFLAGS += "-Wl,-rpath,\'\$$ORIGIN\'"
     QMAKE_LFLAGS += "-Wl,-rpath,\'\$$ORIGIN/converter\'"
     QMAKE_LFLAGS += -Wl,--disable-new-dtags
+
+    ICU_PATH = $$CORE_ROOT_DIR/Common/3dParty/icu/icu/cross_build_install
+    INCLUDEPATH += $$ICU_PATH/include
+
+    HEADERS += \
+        $$PWD/src/keyboardlayout.h
+
+    SOURCES += \
+        $$PWD/src/keyboardlayout.cpp
+
+    LIBS += -lX11 -lX11-xcb -lxkbcommon-x11 -lxkbcommon
+    LIBS += -L"$$ICU_PATH/lib/" -licuuc
 }
 
 ADD_DEPENDENCY(graphics, kernel, UnicodeConverter, kernel_network, PdfFile, XpsFile, DjVuFile, HtmlRenderer, hunspell, ooxmlsignature)
