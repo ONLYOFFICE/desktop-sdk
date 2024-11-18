@@ -36,6 +36,8 @@
 #include "./cefwrapper/monitor_info.h"
 
 #ifdef LINUX
+# include "keyboardlayout.h"
+
 CApplicationCEF* CLinuxData::app_cef = NULL;
 CAscApplicationManager* CLinuxData::app_manager = NULL;
 
@@ -908,20 +910,26 @@ void CAscApplicationManager::EndSaveDialog(const std::wstring& sPath, unsigned i
 
 bool CAscApplicationManager::IsPlatformKeyboardSupport()
 {
-#ifdef WIN32
+#if defined(WIN32)
 	return true;
+#elif defined(LINUX)
+    KeyboardLayout kl;
+    return kl.IsKeyboardSupport();
 #endif
 	return false;
 }
 
 int CAscApplicationManager::GetPlatformKeyboardLayout()
 {
-#ifdef WIN32
+#if defined(WIN32)
 	HWND wFocus = GetFocus();
 	DWORD dwThread = GetWindowThreadProcessId(wFocus, 0);
 	HKL hkl = GetKeyboardLayout(dwThread);
 	int nLang = LOWORD(hkl);
 	return nLang;
+#elif defined(LINUX)
+    KeyboardLayout kl;
+    return kl.GetKeyboardLayout();
 #endif
 	return -1;
 }
