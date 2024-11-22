@@ -63,6 +63,39 @@
 
 #include <boost/filesystem.hpp>
 
+std::wstring GetTmpFileFromBase64(const std::string& sData, const std::wstring& sTmpFolder)
+{
+	if (sData.empty())
+		return L"";
+
+	std::wstring sRes = L"";
+
+	BYTE* pData = NULL;
+	int nDataLen = 0;
+	NSFile::CBase64Converter::Decode(sData.c_str(), (int)sData.length(), pData, nDataLen);
+
+	std::wstring sDirTmp = sTmpFolder;
+	if (sDirTmp.empty())
+		sDirTmp = NSFile::CFileBinary::GetTempPath();
+
+	std::wstring sFileTmp = NSFile::CFileBinary::CreateTempFileWithUniqueName(sDirTmp, L"IMG");
+	if (NSFile::CFileBinary::Exists(sFileTmp))
+		NSFile::CFileBinary::Remove(sFileTmp);
+
+	NSFile::CFileBinary oFile;
+	if (oFile.CreateFile(sFileTmp))
+	{
+		oFile.WriteFile(pData, (DWORD)nDataLen);
+		oFile.CloseFile();
+
+		sRes = sFileTmp;
+	}
+
+	RELEASEARRAYOBJECTS(pData);
+
+	return sRes;
+}
+
 #ifndef CEF_2623
 #define CEF_V8_SUPPORT_TYPED_ARRAYS
 
@@ -1551,8 +1584,22 @@ if (main.DisableVersionHistory) main.DisableVersionHistory(); \
 				message->GetArgumentList()->SetString(0, params);
 				message->GetArgumentList()->SetString(1, password);
 
-				if (!m_sCloudNativePrintFile.empty())
-					message->GetArgumentList()->SetString(2, m_sCloudNativePrintFile);
+				message->GetArgumentList()->SetString(2, m_sCloudNativePrintFile);
+				std::wstring sChangesFile = L"";
+
+				if (arguments.size() > 2)
+				{
+					std::string sChangesBase64 = arguments[2]->GetStringValue().ToString();
+					sChangesFile = GetTmpFileFromBase64(sChangesBase64, m_sAppTmpFolder);
+				}
+
+				message->GetArgumentList()->SetString(3, sChangesFile);
+
+				if (arguments.size() > 3)
+				{
+					message->GetArgumentList()->SetString(4, arguments[3]->GetStringValue());
+					message->GetArgumentList()->SetString(5, CefV8Context::GetCurrentContext()->GetBrowser()->GetFocusedFrame()->GetURL());
+				}
 
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 				return true;
@@ -4188,29 +4235,7 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			else if (name == "SetPdfCloudPrintFileInfo")
 			{
 				std::string sBase64File = arguments[0]->GetStringValue().ToString();
-
-				BYTE* pData = NULL;
-				int nDataLen = 0;
-				NSFile::CBase64Converter::Decode(sBase64File.c_str(), (int)sBase64File.length(), pData, nDataLen);
-
-				std::wstring sDirTmp = m_sAppTmpFolder;
-				if (sDirTmp.empty())
-					sDirTmp = NSFile::CFileBinary::GetTempPath();
-
-				std::wstring sFileTmp = NSFile::CFileBinary::CreateTempFileWithUniqueName(sDirTmp, L"IMG");
-				if (NSFile::CFileBinary::Exists(sFileTmp))
-					NSFile::CFileBinary::Remove(sFileTmp);
-
-				NSFile::CFileBinary oFile;
-				if (oFile.CreateFile(sFileTmp))
-				{
-					oFile.WriteFile(pData, (DWORD)nDataLen);
-					oFile.CloseFile();
-
-					m_sCloudNativePrintFile = sFileTmp;
-				}
-
-				RELEASEARRAYOBJECTS(pData);
+				m_sCloudNativePrintFile = GetTmpFileFromBase64(sBase64File, m_sAppTmpFolder);
 				return true;
 			}
 			else if (name == "IsCachedPdfCloudPrintFileInfo")
