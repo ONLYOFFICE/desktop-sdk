@@ -316,6 +316,8 @@ public:
 
 	bool InstallPluginFromStore(const std::wstring& sName);
 
+	bool RemoveRecentByViewId(const int& viewId);
+
 protected:
 	int GenerateNextViewId();
 	virtual CAscDpiChecker* InitDpiChecker();
