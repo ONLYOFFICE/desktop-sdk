@@ -138,7 +138,9 @@ public:
 
 	bool IsDestroy();
 
-    void SetParentWidgetInfo(const std::wstring& json);
+	void SetParentWidgetInfo(const std::wstring& json);
+
+	int GetRecentId();
 
 protected:
 	int m_nId;
