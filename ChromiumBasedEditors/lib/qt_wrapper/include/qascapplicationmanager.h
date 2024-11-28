@@ -47,7 +47,6 @@ public:
 	virtual CAscDpiChecker* InitDpiChecker();
 	virtual IExternalMessageLoop* GetExternalMessageLoop();
 	virtual int GetPlatformKeyboardLayout();
-	virtual void OnNeedCheckKeyboard();
 	void processEvents();
 };
 

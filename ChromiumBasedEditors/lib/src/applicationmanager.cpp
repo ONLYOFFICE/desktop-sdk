@@ -279,7 +279,8 @@ void CAscApplicationManager::StartKeyboardChecker()
 }
 void CAscApplicationManager::OnNeedCheckKeyboard()
 {
-	// none. evaluate in UI thread
+	if (GetEventListener())
+		GetEventListener()->OnEvent(new NSEditorApi::CAscCefMenuEvent(ASC_MENU_EVENT_TYPE_CEF_CHECK_KEYBOARD));
 }
 
 void CAscApplicationManager::CheckKeyboard()

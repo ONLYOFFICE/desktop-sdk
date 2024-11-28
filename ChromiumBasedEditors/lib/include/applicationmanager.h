@@ -207,7 +207,7 @@ public:
 	void StartKeyboardChecker();
 	void CheckKeyboard();
 	void SendKeyboardAttack();
-	virtual void OnNeedCheckKeyboard();
+	void OnNeedCheckKeyboard();
 	virtual bool IsPlatformKeyboardSupport();
 	virtual int GetPlatformKeyboardLayout();
 
