@@ -2300,6 +2300,20 @@ public:
 
 		Recents_Dump();
 	}
+	int Recents_GetIdByUrl(const std::wstring& sUrl)
+	{
+		CTemporaryCS oCS(&m_oCS_LocalFiles);
+
+		for (std::vector<CAscEditorFileInfo>::iterator i = m_arRecents.begin(); i != m_arRecents.end(); i++)
+		{
+			if (sUrl == i->m_sUrl)
+			{
+				return i->m_nId;
+			}
+		}
+
+		return -1;
+	}
 	void Recents_RemoveAll()
 	{
 		CTemporaryCS oCS(&m_oCS_LocalFiles);
