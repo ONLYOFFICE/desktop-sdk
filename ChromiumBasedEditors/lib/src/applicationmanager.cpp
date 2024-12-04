@@ -1303,6 +1303,20 @@ bool CAscApplicationManager::InstallPluginFromStore(const std::wstring& sName)
 	return true;
 }
 
+bool CAscApplicationManager::RemoveRecentByViewId(const int& nId)
+{
+	CCefView* pView = GetViewById(nId);
+	if (!pView)
+		return false;
+
+	int nRecentId = pView->GetRecentId();
+	if (-1 == nRecentId)
+		return false;
+
+	m_pInternal->Recents_Remove(nRecentId);
+	return true;
+}
+
 bool NSCommon::CSystemWindowScale::g_isUseSystemScalingInit = false;
 bool NSCommon::CSystemWindowScale::g_isUseSystemScaling = false;
 
