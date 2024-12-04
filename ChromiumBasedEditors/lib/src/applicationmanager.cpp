@@ -35,9 +35,11 @@
 #include "./cefwrapper/client_resource_handler_async.h"
 #include "./cefwrapper/monitor_info.h"
 
-#ifdef LINUX
+#if defined(_LINUX) && !defined(_MAC)
 # include "keyboardlayout.h"
+#endif
 
+#ifdef LINUX
 CApplicationCEF* CLinuxData::app_cef = NULL;
 CAscApplicationManager* CLinuxData::app_manager = NULL;
 
@@ -911,27 +913,33 @@ void CAscApplicationManager::EndSaveDialog(const std::wstring& sPath, unsigned i
 
 bool CAscApplicationManager::IsPlatformKeyboardSupport()
 {
-#if defined(WIN32)
+#ifdef WIN32
 	return true;
-#elif defined(LINUX)
-    KeyboardLayout kl;
-    return kl.IsKeyboardSupport();
 #endif
+
+#if defined(_LINUX) && !defined(_MAC)
+	KeyboardLayout kl;
+	return kl.IsKeyboardSupport();
+#endif
+
 	return false;
 }
 
 int CAscApplicationManager::GetPlatformKeyboardLayout()
 {
-#if defined(WIN32)
+#ifdef WIN32
 	HWND wFocus = GetFocus();
 	DWORD dwThread = GetWindowThreadProcessId(wFocus, 0);
 	HKL hkl = GetKeyboardLayout(dwThread);
 	int nLang = LOWORD(hkl);
 	return nLang;
-#elif defined(LINUX)
-    KeyboardLayout kl;
-    return kl.GetKeyboardLayout();
 #endif
+
+#if defined(_LINUX) && !defined(_MAC)
+	KeyboardLayout kl;
+	return kl.GetKeyboardLayout();
+#endif
+
 	return -1;
 }
 
