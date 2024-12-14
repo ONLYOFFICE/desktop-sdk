@@ -18,8 +18,7 @@ include($$CORE_ROOT_DIR/Common/base.pri)
 DEFINES += \
     PDFFILE_USE_DYNAMIC_LIBRARY \
     DJVU_USE_DYNAMIC_LIBRARY \
-    XPS_USE_DYNAMIC_LIBRARY \
-    HTMLRENDERER_USE_DYNAMIC_LIBRARY
+	XPS_USE_DYNAMIC_LIBRARY
 
 DEFINES += DESKTOP_USE_DYNAMIC_LIBRARY_BUILDING
 
@@ -174,4 +173,4 @@ core_linux {
     LIBS += -lX11 -lX11-xcb -lxkbcommon-x11 -lxkbcommon
 }
 
-ADD_DEPENDENCY(graphics, kernel, UnicodeConverter, kernel_network, PdfFile, XpsFile, DjVuFile, HtmlRenderer, hunspell, ooxmlsignature)
+ADD_DEPENDENCY(graphics, kernel, UnicodeConverter, kernel_network, PdfFile, XpsFile, DjVuFile, hunspell, ooxmlsignature)
