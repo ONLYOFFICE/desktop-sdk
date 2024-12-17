@@ -468,6 +468,8 @@ public:
 							eType = AscEditorType::etSpreadsheet;
 						else if ('P' == _buffer[0] && 'P' == _buffer[1] && 'T' == _buffer[2] && 'Y' == _buffer[3])
 							eType = AscEditorType::etPresentation;
+						else if ('P' == _buffer[0] && 'K' == _buffer[1])
+							eType = AscEditorType::etDraw;
 					}
 					oFile.CloseFile();
 				}
@@ -537,6 +539,8 @@ public:
 				eType = AscEditorType::etPdf;
 			else if (m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF)
 				eType = AscEditorType::etPdf;
+			else if (m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_DRAW)
+				eType = AscEditorType::etDraw;
 
 			pData->put_Type((int)eType);
 
@@ -649,6 +653,15 @@ public:
 				NSDirectory::CreateDirectory(m_oInfo.m_sRecoveryDir + L"/media");
 				this->NativeViewerOpen(true); // async. sleep!!!
 			}
+			m_pEvents->OnFileConvertToEditor(0);
+			m_bRunThread = FALSE;
+			return 0;
+		}
+
+		if (m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_DRAW)
+		{
+			NSFile::CFileBinary::Copy(sLocalFilePath, m_oInfo.m_sRecoveryDir + L"/Editor.bin");
+
 			m_pEvents->OnFileConvertToEditor(0);
 			m_bRunThread = FALSE;
 			return 0;

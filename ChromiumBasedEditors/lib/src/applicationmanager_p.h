@@ -2747,6 +2747,11 @@ static std::wstring GetFileUrlParams(const int& nFileFormat, const bool& bIsView
 			sParams += L"&filetype=pdf";
 		}
 	}
+	else if (nFileFormat & AVS_OFFICESTUDIO_FILE_DRAW)
+	{
+		sParams = L"&doctype=visio";
+		sParams += L"&mode=view";
+	}
 
 	if (bViewer)
 	{

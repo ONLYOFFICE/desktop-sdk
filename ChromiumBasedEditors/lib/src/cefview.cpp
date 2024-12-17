@@ -6482,6 +6482,8 @@ void CCefView::load(const std::wstring& urlInputSrc)
 								nEditorFormat = AscEditorType::etDocumentMasterOForm;
 						else if (oChecker.nFileType & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
 								nEditorFormat = AscEditorType::etPdf;
+						else if (oChecker.nFileType & AVS_OFFICESTUDIO_FILE_DRAW)
+								nEditorFormat = AscEditorType::etDraw;
 						}
 
 						((CCefViewEditor*)this)->CreateLocalFile(nEditorFormat, sExternalName, sTmpFile);

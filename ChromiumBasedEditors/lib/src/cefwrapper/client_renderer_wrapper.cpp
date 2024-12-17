@@ -927,6 +927,8 @@ return undefined; \n\
 					m_etType = AscEditorType::etSpreadsheet;
 				else if (sUrl.find("pdfeditor") != std::wstring::npos)
 					m_etType = AscEditorType::etPdf;
+				else if (sUrl.find("visioeditor") != std::wstring::npos)
+					m_etType = AscEditorType::etDraw;
 			}
 
 			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("EditorType");
@@ -1045,6 +1047,8 @@ else \n\
 						m_etType = AscEditorType::etSpreadsheet;
 					else if (sUrl.find("pdfeditor") != std::wstring::npos)
 						m_etType = AscEditorType::etPdf;
+					else if (sUrl.find("visioeditor") != std::wstring::npos)
+						m_etType = AscEditorType::etDraw;
 
 					CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("EditorType");
 					message->GetArgumentList()->SetInt(0, (int)m_etType);
