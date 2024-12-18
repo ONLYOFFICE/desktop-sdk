@@ -1597,6 +1597,13 @@ public:
 				arFormats.push_back(AVS_OFFICESTUDIO_FILE_IMAGE_JPG);
 			}
 		}
+		else if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_DRAW)
+		{
+			arFormats.push_back(AVS_OFFICESTUDIO_FILE_DRAW_VSDX);
+			arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF);
+			arFormats.push_back(AVS_OFFICESTUDIO_FILE_IMAGE_PNG);
+			arFormats.push_back(AVS_OFFICESTUDIO_FILE_IMAGE_JPG);
+		}
 	}
 
 	bool LocalFile_IsSupportSaveCurrentFormat()
