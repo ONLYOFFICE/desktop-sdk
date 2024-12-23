@@ -682,6 +682,8 @@ std::wstring CAscApplicationManager::GetNewFilePath(const AscEditorType& nFileFo
 		sExtension = L"pdf";
 	else if (nFileFormat == AscEditorType::etPdf)
 		sExtension = L"pdf";
+	else if (nFileFormat == AscEditorType::etDraw)
+		sExtension = L"vsdx";
 
 	sFilePath += sExtension;
 	if (!NSFile::CFileBinary::Exists(sFilePath))

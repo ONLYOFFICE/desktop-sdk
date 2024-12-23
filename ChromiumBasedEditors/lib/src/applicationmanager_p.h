@@ -317,7 +317,7 @@ namespace NSRequest
 
 			m_request->SetHeaderByName("Accept", "*/*", true);
 			int nHeadersCount = args->GetSize();
-			for (int i = 4; i < nHeadersCount; i += 2)
+			for (int i = 5; i < nHeadersCount; i += 2)
 			{
 				m_request->SetHeaderByName(args->GetString(i), args->GetString(i + 1), true);
 			}
@@ -2746,6 +2746,11 @@ static std::wstring GetFileUrlParams(const int& nFileFormat, const bool& bIsView
 		{
 			sParams += L"&filetype=pdf";
 		}
+	}
+	else if (nFileFormat & AVS_OFFICESTUDIO_FILE_DRAW)
+	{
+		sParams = L"&doctype=visio";
+		sParams += L"&mode=view";
 	}
 
 	if (bViewer)

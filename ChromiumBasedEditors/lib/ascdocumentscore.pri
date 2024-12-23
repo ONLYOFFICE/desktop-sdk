@@ -18,8 +18,7 @@ include($$CORE_ROOT_DIR/Common/base.pri)
 DEFINES += \
     PDFFILE_USE_DYNAMIC_LIBRARY \
     DJVU_USE_DYNAMIC_LIBRARY \
-    XPS_USE_DYNAMIC_LIBRARY \
-    HTMLRENDERER_USE_DYNAMIC_LIBRARY
+	XPS_USE_DYNAMIC_LIBRARY
 
 DEFINES += DESKTOP_USE_DYNAMIC_LIBRARY_BUILDING
 
@@ -123,8 +122,7 @@ SOURCES += \
 SOURCES += \
     $$CORE_ROOT_DIR/Common/OfficeFileFormatChecker2.cpp \
     $$CORE_ROOT_DIR/Common/3dParty/pole/pole.cpp \
-    $$CORE_ROOT_DIR/OOXML/Base/unicode_util.cpp \
-    $$CORE_ROOT_DIR/HtmlRenderer/src/ASCSVGWriter.cpp
+	$$CORE_ROOT_DIR/OOXML/Base/unicode_util.cpp
 
 # crypto ----------------------------------
 LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lCryptoPPLib
@@ -175,4 +173,4 @@ core_linux {
     LIBS += -lX11 -lX11-xcb -lxkbcommon-x11 -lxkbcommon
 }
 
-ADD_DEPENDENCY(graphics, kernel, UnicodeConverter, kernel_network, PdfFile, XpsFile, DjVuFile, HtmlRenderer, hunspell, ooxmlsignature)
+ADD_DEPENDENCY(graphics, kernel, UnicodeConverter, kernel_network, PdfFile, XpsFile, DjVuFile, hunspell, ooxmlsignature)
