@@ -860,6 +860,8 @@ public:
 	bool m_bIsCrashed;
 	// ошибка загрузки
 	bool m_bIsLoadingError;
+	// если документ не модифицирован, но закрывать без предупреждения нельзя
+	bool m_bIsLockedSave;
 
 	// поддерживается ли криптование
 	bool m_bIsOnlyPassSupport;
@@ -999,6 +1001,7 @@ public:
 		m_bIsDestroy = false;
 		m_bIsCrashed = false;
 		m_bIsLoadingError = false;
+		m_bIsLockedSave = false;
 
 		m_strUrl = L"";
 
@@ -4489,6 +4492,11 @@ public:
 		pEvent->m_pData = pData;
 
 		pListener->OnEvent(pEvent);
+		return true;
+	}
+	else if ("on_file_locked_close" == message_name)
+	{
+		m_pParent->m_pInternal->m_bIsLockedSave = args->GetBool(0);
 		return true;
 	}
 
@@ -8272,6 +8280,10 @@ bool CCefViewEditor::IsBuilding()
 		return true;
 
 	return false;
+}
+bool CCefViewEditor::IsSaveLocked()
+{
+	return m_pInternal->m_bIsLockedSave;
 }
 
 std::wstring CCefViewEditor::GetLocalFilePath()

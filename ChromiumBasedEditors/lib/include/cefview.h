@@ -180,6 +180,7 @@ public:
 
 	bool CheckCloudCryptoNeedBuild();
 	bool IsBuilding();
+	bool IsSaveLocked();
 
 	std::wstring GetLocalFilePath();
 	std::wstring GetRecoveryDir();

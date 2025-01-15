@@ -4336,6 +4336,13 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 				return true;
 			}
+			else if (name == "onFileLockedClose")
+			{
+				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_file_locked_close");
+				message->GetArgumentList()->SetBool(0, arguments[0]->GetBoolValue());
+				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+				return true;
+			}
 
 			// Function does not exist.
 			return false;
@@ -4911,7 +4918,7 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 			CefRefPtr<CefV8Handler> handler = pWrapper;
 
-#define EXTEND_METHODS_COUNT 183
+#define EXTEND_METHODS_COUNT 184
 			const char* methods[EXTEND_METHODS_COUNT] = {
 				"Copy",
 				"Paste",
@@ -5164,6 +5171,8 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 				"OpenBinaryAsNewFile",
 				"OpenWorkbook",
+
+				"onFileLockedClose",
 
 				NULL};
 
