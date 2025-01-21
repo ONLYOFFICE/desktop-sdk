@@ -2749,7 +2749,7 @@ static std::wstring GetFileUrlParams(const int& nFileFormat, const bool& bIsView
 	}
 	else if (nFileFormat & AVS_OFFICESTUDIO_FILE_DRAW)
 	{
-		sParams = L"&doctype=visio";
+		sParams = L"&doctype=diagram";
 		sParams += L"&mode=view";
 	}
 
