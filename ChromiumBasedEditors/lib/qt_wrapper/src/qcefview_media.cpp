@@ -63,7 +63,7 @@ QWidget* getMainPanel(QWidget* widget, int& x, int& y)
 	QWidget* cur = widget;
 	while (cur->parentWidget() && cur->objectName() != "mainPanel")
 	{
-		if ("ascTabWidget" == objName)
+		if (cur->objectName() == "ascTabWidget")
 		{
 			x += cur->x();
 			y += cur->y();
