@@ -54,39 +54,31 @@ QCefView_Media::~QCefView_Media()
 
 #ifdef _LINUX
 #include <QX11Info>
-QWidget* getMainPanel(QWidget* cur, int& x, int& y)
+QWidget* getMainPanel(QWidget* widget, int& x, int& y)
 {
-    x = 0; y = 0;
-    if (!QX11Info::isCompositingManagerRunning())
-        return cur;
+	x = 0; y = 0;
+	if (!QX11Info::isCompositingManagerRunning())
+		return widget;
 
-    QWidget* pp = cur;
+	QWidget* cur = widget;
+	while (cur->parentWidget() && cur->objectName() != "mainPanel")
+	{
+		if ("ascTabWidget" == objName)
+		{
+			x += cur->x();
+			y += cur->y();
+		}
+		cur = cur->parentWidget();
+	}
 
-    QString objName = pp->objectName();
-    while (objName != "mainPanel" && pp)
-    {
-        if ("ascTabWidget" == objName)
-        {
-            x += pp->x();
-            y += pp->y();
-        }
-        pp = pp->parentWidget();
-        if (!pp)
-            break;
-        objName = pp->objectName();
-    }
+	// presenter view
+	x += widget->x();
+	y += widget->y();
 
-    // presenter view
-    x += cur->x();
-    y += cur->y();
+	if (cur)
+		return cur;
 
-    if (pp)
-    	return pp;
-
-    if (cur->parentWidget())
-    	return cur->parentWidget();
-
-    return cur;
+	return widget;
 }
 #else
 QWidget* getMainPanel(QWidget* cur, int& x, int& y)
