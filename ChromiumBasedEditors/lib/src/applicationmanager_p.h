@@ -871,6 +871,14 @@ public:
 			this->nFileType = AVS_OFFICESTUDIO_FILE_UNKNOWN;
 		}
 
+#ifdef DISABLE_VSDX
+		if (isOfficeFileBase && this->nFileType & AVS_OFFICESTUDIO_FILE_DRAW)
+		{
+			isOfficeFileBase = false;
+			this->nFileType = AVS_OFFICESTUDIO_FILE_UNKNOWN;
+		}
+#endif
+
 		if (isCheckLocal)
 		{
 			// check locked files
