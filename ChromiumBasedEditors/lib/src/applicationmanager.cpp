@@ -35,6 +35,10 @@
 #include "./cefwrapper/client_resource_handler_async.h"
 #include "./cefwrapper/monitor_info.h"
 
+#if defined(_LINUX) && !defined(_MAC)
+# include "keyboardlayout.h"
+#endif
+
 #ifdef LINUX
 CApplicationCEF* CLinuxData::app_cef = NULL;
 CAscApplicationManager* CLinuxData::app_manager = NULL;
@@ -277,7 +281,8 @@ void CAscApplicationManager::StartKeyboardChecker()
 }
 void CAscApplicationManager::OnNeedCheckKeyboard()
 {
-	// none. evaluate in UI thread
+	if (GetEventListener())
+		GetEventListener()->OnEvent(new NSEditorApi::CAscCefMenuEvent(ASC_MENU_EVENT_TYPE_CEF_CHECK_KEYBOARD));
 }
 
 void CAscApplicationManager::CheckKeyboard()
@@ -677,6 +682,8 @@ std::wstring CAscApplicationManager::GetNewFilePath(const AscEditorType& nFileFo
 		sExtension = L"pdf";
 	else if (nFileFormat == AscEditorType::etPdf)
 		sExtension = L"pdf";
+	else if (nFileFormat == AscEditorType::etDraw)
+		sExtension = L"vsdx";
 
 	sFilePath += sExtension;
 	if (!NSFile::CFileBinary::Exists(sFilePath))
@@ -911,6 +918,12 @@ bool CAscApplicationManager::IsPlatformKeyboardSupport()
 #ifdef WIN32
 	return true;
 #endif
+
+#if defined(_LINUX) && !defined(_MAC)
+	KeyboardLayout kl;
+	return kl.IsKeyboardSupport();
+#endif
+
 	return false;
 }
 
@@ -923,6 +936,12 @@ int CAscApplicationManager::GetPlatformKeyboardLayout()
 	int nLang = LOWORD(hkl);
 	return nLang;
 #endif
+
+#if defined(_LINUX) && !defined(_MAC)
+	KeyboardLayout kl;
+	return kl.GetKeyboardLayout();
+#endif
+
 	return -1;
 }
 

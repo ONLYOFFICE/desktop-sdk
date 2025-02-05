@@ -50,6 +50,7 @@ enum class AscEditorType
 	etDocumentMasterForm    = 3,
 	etDocumentMasterOForm   = 4,
 	etPdf                   = 5,
+	etDraw                  = 6,
 	etUndefined             = 255
 };
 
@@ -179,6 +180,7 @@ public:
 
 	bool CheckCloudCryptoNeedBuild();
 	bool IsBuilding();
+	bool IsSaveLocked();
 
 	std::wstring GetLocalFilePath();
 	std::wstring GetRecoveryDir();

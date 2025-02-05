@@ -860,6 +860,8 @@ public:
 	bool m_bIsCrashed;
 	// ошибка загрузки
 	bool m_bIsLoadingError;
+	// если документ не модифицирован, но закрывать без предупреждения нельзя
+	bool m_bIsLockedSave;
 
 	// поддерживается ли криптование
 	bool m_bIsOnlyPassSupport;
@@ -999,6 +1001,7 @@ public:
 		m_bIsDestroy = false;
 		m_bIsCrashed = false;
 		m_bIsLoadingError = false;
+		m_bIsLockedSave = false;
 
 		m_strUrl = L"";
 
@@ -1596,6 +1599,13 @@ public:
 				arFormats.push_back(AVS_OFFICESTUDIO_FILE_IMAGE_PNG);
 				arFormats.push_back(AVS_OFFICESTUDIO_FILE_IMAGE_JPG);
 			}
+		}
+		else if (m_oLocalInfo.m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_DRAW)
+		{
+			arFormats.push_back(AVS_OFFICESTUDIO_FILE_DRAW_VSDX);
+			arFormats.push_back(AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF);
+			arFormats.push_back(AVS_OFFICESTUDIO_FILE_IMAGE_PNG);
+			arFormats.push_back(AVS_OFFICESTUDIO_FILE_IMAGE_JPG);
 		}
 	}
 
@@ -4484,6 +4494,11 @@ public:
 		pListener->OnEvent(pEvent);
 		return true;
 	}
+	else if ("on_file_locked_close" == message_name)
+	{
+		m_pParent->m_pInternal->m_bIsLockedSave = args->GetBool(0);
+		return true;
+	}
 
 	CAscApplicationManager_Private* pInternalMan = m_pParent->GetAppManager()->m_pInternal;
 	if (pInternalMan->m_pAdditional && pInternalMan->m_pAdditional->OnProcessMessageReceived(browser, source_process, message, m_pParent))
@@ -6482,6 +6497,8 @@ void CCefView::load(const std::wstring& urlInputSrc)
 								nEditorFormat = AscEditorType::etDocumentMasterOForm;
 						else if (oChecker.nFileType & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
 								nEditorFormat = AscEditorType::etPdf;
+						else if (oChecker.nFileType & AVS_OFFICESTUDIO_FILE_DRAW)
+								nEditorFormat = AscEditorType::etDraw;
 						}
 
 						((CCefViewEditor*)this)->CreateLocalFile(nEditorFormat, sExternalName, sTmpFile);
@@ -8263,6 +8280,10 @@ bool CCefViewEditor::IsBuilding()
 		return true;
 
 	return false;
+}
+bool CCefViewEditor::IsSaveLocked()
+{
+	return m_pInternal->m_bIsLockedSave;
 }
 
 std::wstring CCefViewEditor::GetLocalFilePath()

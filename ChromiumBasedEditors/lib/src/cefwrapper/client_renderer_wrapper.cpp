@@ -48,9 +48,6 @@
 #include "../../../../../core/DesktopEditor/raster/BgraFrame.h"
 #include "../../../../../core/DesktopEditor/graphics/pro/Image.h"
 
-#include "../../../../../core/HtmlRenderer/include/ASCSVGWriter.h"
-
-#include "../../src/nativeviewer.h"
 #include "../../src/plugins.h"
 #include "../../src/providers.h"
 
@@ -593,7 +590,7 @@ namespace asc_client_renderer
 		IMPLEMENT_REFCOUNTING(CLocalFileConvertV8Handler);
 	};
 
-	class CAscEditorNativeV8Handler : public CefV8Handler, public INativeViewer_Events
+	class CAscEditorNativeV8Handler : public CefV8Handler
 	{
 		class CSavedPageInfo
 		{
@@ -677,7 +674,6 @@ namespace asc_client_renderer
 		std::vector<std::wstring> m_arDropFiles;
 
 		// открытие pdf, djvu, xps
-		CNativeViewer m_oNativeViewer;
 		int m_nNativeOpenFileTimerID;
 		int m_bIsNativeViewerMode;
 		std::list<CSavedPageInfo> m_arCompleteTasks;
@@ -931,6 +927,8 @@ return undefined; \n\
 					m_etType = AscEditorType::etSpreadsheet;
 				else if (sUrl.find("pdfeditor") != std::wstring::npos)
 					m_etType = AscEditorType::etPdf;
+				else if (sUrl.find("visioeditor") != std::wstring::npos)
+					m_etType = AscEditorType::etDraw;
 			}
 
 			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("EditorType");
@@ -1049,6 +1047,8 @@ else \n\
 						m_etType = AscEditorType::etSpreadsheet;
 					else if (sUrl.find("pdfeditor") != std::wstring::npos)
 						m_etType = AscEditorType::etPdf;
+					else if (sUrl.find("visioeditor") != std::wstring::npos)
+						m_etType = AscEditorType::etDraw;
 
 					CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("EditorType");
 					message->GetArgumentList()->SetInt(0, (int)m_etType);
@@ -2408,162 +2408,6 @@ window.AscDesktopEditor.LocalFileTemplates=function(e){window.__lang_checker_tem
 
 					_frame->ExecuteJavaScript(sCodeInitJS, _frame->GetURL(), 0);
 				}
-
-				return true;
-			}
-			else if (name == "NativeViewerOpen")
-			{
-				std::vector<CefRefPtr<CefV8Value>>::const_iterator iter = arguments.begin();
-
-				if (arguments.size() == 1) // password
-				{
-					m_oNativeViewer.SetPassword((*iter)->GetStringValue().ToWString());
-					return true;
-				}
-
-				std::wstring sOpeningFilePath = (*iter)->GetStringValue().ToWString();
-				iter++;
-				std::wstring sFontsDir = (*iter)->GetStringValue().ToWString();
-				iter++;
-				std::wstring sFileDir = (*iter)->GetStringValue().ToWString();
-				++iter;
-
-				m_oNativeViewer.Init(sFileDir, sFontsDir, sOpeningFilePath, this);
-				m_bIsNativeViewerMode = true;
-
-				CefRefPtr<CefV8Value> _timerID;
-				CefRefPtr<CefV8Exception> _exception;
-				if (CefV8Context::GetCurrentContext()->Eval(
-						"(function(){ var intervalID = setInterval(function(){ if (!window.NativeFileOpen_error) { return; } window.AscDesktopEditor.NativeFunctionTimer(intervalID); }, 100); return "
-						"intervalID; })();",
-#ifndef CEF_2623
-						"", 0,
-#endif
-						_timerID, _exception))
-				{
-					m_nNativeOpenFileTimerID = _timerID->GetIntValue();
-					// LOGGER_STRING2("timer created: " + std::to_string(m_nNativeOpenFileTimerID));
-				}
-
-				m_oNativeViewer.Start(0);
-
-				return true;
-			}
-			else if (name == "NativeViewerClose")
-			{
-				m_oNativeViewer.CloseFile();
-				return true;
-			}
-			else if (name == "NativeFunctionTimer")
-			{
-				int nIntervalID = arguments[0]->GetIntValue();
-				// LOGGER_STRING2("NativeFunctionTimer called: " + std::to_string(nIntervalID));
-
-				if (nIntervalID == m_nNativeOpenFileTimerID)
-				{
-					std::string sBase64File = m_oNativeViewer.GetBase64File();
-
-					if (!sBase64File.empty())
-					{
-						CefRefPtr<CefV8Value> _timerID;
-						CefRefPtr<CefV8Exception> _exception;
-
-						if (sBase64File == "error" || sBase64File == "password")
-						{
-							m_oNativeViewer.Stop();
-							m_oNativeViewer.ClearBase64();
-
-							std::string sCode = "window.NativeFileOpen_error(\"" + sBase64File + "\", \"" + m_oNativeViewer.GetHash() + "\", \"" + m_oNativeViewer.GetDocInfo() + "\");";
-
-							CefV8Context::GetCurrentContext()->Eval(
-								sCode,
-#ifndef CEF_2623
-								"", 0,
-#endif
-								_timerID, _exception);
-							return true;
-						}
-
-						std::string sCode = "clearTimeout(" + std::to_string(m_nNativeOpenFileTimerID) + ");";
-						if (CefV8Context::GetCurrentContext()->Eval(
-								sCode,
-#ifndef CEF_2623
-								"", 0,
-#endif
-								_timerID, _exception))
-						{
-							// LOGGER_STRING2("timer stoped: " + std::to_string(m_nNativeOpenFileTimerID));
-						}
-						m_nNativeOpenFileTimerID = -1;
-
-						CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("native_viewer_onopened");
-						message->GetArgumentList()->SetString(0, (sBase64File == "error") ? "" : sBase64File);
-						message->GetArgumentList()->SetString(1, m_oNativeViewer.GetPassword());
-						SEND_MESSAGE_TO_BROWSER_PROCESS(message);
-					}
-				}
-
-				return true;
-			}
-			else if (name == "NativeViewerGetPageUrl")
-			{
-				CNativeViewerPageInfo oInfo;
-				oInfo.Page = arguments[0]->GetIntValue();
-				oInfo.W = arguments[1]->GetIntValue();
-				oInfo.H = arguments[2]->GetIntValue();
-
-				int nPageStart = arguments[3]->GetIntValue();
-				int nPageEnd = arguments[4]->GetIntValue();
-
-				if (arguments.size() > 5)
-				{
-					bool bIsDarkMode = arguments[5]->GetBoolValue();
-					m_oNativeViewer.CheckDarkMode(bIsDarkMode);
-				}
-
-				std::wstring sUrl = m_oNativeViewer.GetPathPageImage(oInfo);
-				if (NSFile::CFileBinary::Exists(sUrl))
-					retval = CefV8Value::CreateString(sUrl + m_oNativeViewer.GetUrlAddon());
-				else
-				{
-					m_oNativeViewer.AddTask(oInfo, nPageStart, nPageEnd);
-					retval = CefV8Value::CreateString(L"");
-				}
-
-				return true;
-			}
-			else if (name == "NativeViewerGetCompleteTasks")
-			{
-				CTemporaryCS oCS(&m_oCompleteTasksCS);
-
-				int nCount1 = (int)m_arCompleteTasks.size();
-				int nCount2 = (int)m_arCompleteTextTasks.size();
-
-				retval = CefV8Value::CreateArray(2 + nCount1 * 4 + nCount2 * 6);
-
-				int nCurrent = 0;
-				retval->SetValue(nCurrent++, CefV8Value::CreateInt(nCount1));
-				retval->SetValue(nCurrent++, CefV8Value::CreateInt(nCount2));
-
-				for (std::list<CSavedPageInfo>::iterator i = m_arCompleteTasks.begin(); i != m_arCompleteTasks.end(); i++)
-				{
-					retval->SetValue(nCurrent++, CefV8Value::CreateString(i->Url));
-					retval->SetValue(nCurrent++, CefV8Value::CreateInt(i->Page));
-					retval->SetValue(nCurrent++, CefV8Value::CreateInt(i->W));
-					retval->SetValue(nCurrent++, CefV8Value::CreateInt(i->H));
-				}
-				m_arCompleteTasks.clear();
-
-				for (std::list<CSavedPageTextInfo>::iterator i = m_arCompleteTextTasks.begin(); i != m_arCompleteTextTasks.end(); i++)
-				{
-					retval->SetValue(nCurrent++, CefV8Value::CreateString(i->Info));
-					retval->SetValue(nCurrent++, CefV8Value::CreateInt(i->Page));
-					retval->SetValue(nCurrent++, CefV8Value::CreateInt(i->Paragraphs));
-					retval->SetValue(nCurrent++, CefV8Value::CreateInt(i->Words));
-					retval->SetValue(nCurrent++, CefV8Value::CreateInt(i->Spaces));
-					retval->SetValue(nCurrent++, CefV8Value::CreateInt(i->Symbols));
-				}
-				m_arCompleteTextTasks.clear();
 
 				return true;
 			}
@@ -4492,6 +4336,13 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 				return true;
 			}
+			else if (name == "onFileLockedClose")
+			{
+				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_file_locked_close");
+				message->GetArgumentList()->SetBool(0, arguments[0]->GetBoolValue());
+				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+				return true;
+			}
 
 			// Function does not exist.
 			return false;
@@ -4778,30 +4629,7 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				if (!NSFile::CFileBinary::Exists(sOutDir + sSvg))
 				{
 					std::wstring sInternalSvg = pMetafile->ConvertToSvg();
-					if (!sInternalSvg.empty())
-					{
-						NSFile::CFileBinary::SaveToFile(sOutDir + sSvg, sInternalSvg);
-					}
-					else
-					{
-						double x = 0, y = 0, w = 0, h = 0;
-						pMetafile->GetBounds(&x, &y, &w, &h);
-
-						double _max = (w >= h) ? w : h;
-						double dKoef = 100000.0 / _max;
-
-						int WW = (int)(dKoef * w + 0.5);
-						int HH = (int)(dKoef * h + 0.5);
-
-						// TODO: заменить на новую конвертацию
-						NSHtmlRenderer::CASCSVGWriter oWriterSVG(false);
-						oWriterSVG.SetFontManager(m_pLocalApplicationFonts->GenerateFontManager());
-						oWriterSVG.put_Width(WW);
-						oWriterSVG.put_Height(HH);
-						pMetafile->DrawOnRenderer(&oWriterSVG, 0, 0, WW, HH);
-
-						oWriterSVG.SaveFile(sOutDir + sSvg);
-					}
+					NSFile::CFileBinary::SaveToFile(sOutDir + sSvg, sInternalSvg);
 				}
 
 				m_mapLocalAddImages.insert(std::pair<std::wstring, std::wstring>(sUrlMap, sSvg));
@@ -5090,7 +4918,7 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 			CefRefPtr<CefV8Handler> handler = pWrapper;
 
-#define EXTEND_METHODS_COUNT 188
+#define EXTEND_METHODS_COUNT 184
 			const char* methods[EXTEND_METHODS_COUNT] = {
 				"Copy",
 				"Paste",
@@ -5185,12 +5013,6 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 				"ApplyAction",
 
 				"InitJSContext",
-
-				"NativeViewerOpen",
-				"NativeViewerClose",
-				"NativeFunctionTimer",
-				"NativeViewerGetPageUrl",
-				"NativeViewerGetCompleteTasks",
 
 				"GetInstallPlugins",
 				"GetBackupPlugins",
@@ -5349,6 +5171,8 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 				"OpenBinaryAsNewFile",
 				"OpenWorkbook",
+
+				"onFileLockedClose",
 
 				NULL};
 
