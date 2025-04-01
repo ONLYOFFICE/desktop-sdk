@@ -122,6 +122,9 @@ namespace NSStringUtils
 	// locale independent (simple double convert)
 	static double GetDouble(const std::string& sValue)
 	{
+		if (sValue.empty())
+			return 0;
+
 		char delim = '.';
 
 		std::string::size_type posDelim = sValue.find(delim);
