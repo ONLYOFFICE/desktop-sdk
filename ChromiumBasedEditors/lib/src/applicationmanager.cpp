@@ -1266,6 +1266,11 @@ void CAscApplicationManager::SetRendererProcessVariable(const std::wstring& sVar
 	m_pInternal->m_sRendererJSON = sVariable;
 }
 
+void CAscApplicationManager::SetRecentPin(const int& nId, const bool& bIsPin)
+{
+	m_pInternal->Recents_Pin(nId, bIsPin);
+}
+
 std::wstring CAscApplicationManager::GetExternalSchemeName()
 {
 	if (m_pInternal->m_pAdditional)

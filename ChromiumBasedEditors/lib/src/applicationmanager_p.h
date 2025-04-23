@@ -1404,6 +1404,7 @@ public:
 	std::wstring    m_sExternalCloudId;
 	std::wstring    m_sParentUrl;
 	bool            m_bIsCrypted;
+	bool            m_bPin;
 
 public:
 	CAscEditorFileInfo()
@@ -1413,6 +1414,7 @@ public:
 		m_nFileType = 0;
 		m_bIsViewer = false;
 		m_bIsCrypted = false;
+		m_bPin = false;
 	}
 
 	void UpdateDate()
@@ -2239,6 +2241,7 @@ public:
 				oInfo.m_sExternalCloudId = oFile.GetAttribute(L"externalcloud");
 				oInfo.m_sParentUrl = oFile.GetAttribute(L"parent");
 				oInfo.m_bIsCrypted = (oFile.GetAttribute(L"crypted") == L"1") ? true : false;
+				oInfo.m_bPin = (oFile.GetAttribute(L"pin") == L"1") ? true : false;
 				m_arRecents.push_back(oInfo);
 
 				map_files.insert(std::pair<std::wstring, bool>(sPath, true));
@@ -2257,15 +2260,18 @@ public:
 			NSStringUtils::string_replace(sPath, L"/", L"\\");
 #endif
 
+		bool bIsPinned = false;
 		for (std::vector<CAscEditorFileInfo>::iterator i = m_arRecents.begin(); i != m_arRecents.end(); i++)
 		{
 			if (sPath == i->m_sPath)
 			{
+				bIsPinned = i->m_bPin;
 				m_arRecents.erase(i);
 				break;
 			}
 			if (!sUrl.empty() && (sUrl == i->m_sUrl))
 			{
+				bIsPinned = i->m_bPin;
 				m_arRecents.erase(i);
 				break;
 			}
@@ -2277,6 +2283,7 @@ public:
 		oInfo.m_sExternalCloudId = sExternalCloudId;
 		oInfo.m_sParentUrl = sParentUrl;
 		oInfo.m_bIsCrypted = bIsCrypted;
+		oInfo.m_bPin = bIsPinned;
 		oInfo.UpdateDate();
 
 		oInfo.m_nFileType = nType;
@@ -2289,6 +2296,24 @@ public:
 		}
 
 		Recents_Dump();
+	}
+	void Recents_Pin(const int& nId, bool bIsPin)
+	{
+		CTemporaryCS oCS(&m_oCS_LocalFiles);
+
+		for (std::vector<CAscEditorFileInfo>::iterator i = m_arRecents.begin(); i != m_arRecents.end(); i++)
+		{
+			if (nId == i->m_nId)
+			{
+				if (i->m_bPin == bIsPin)
+					return;
+
+				i->m_bPin = bIsPin;
+				break;
+			}
+		}
+
+		Recents_Dump(false);
 	}
 	void Recents_Remove(const int& nId)
 	{
@@ -2383,6 +2408,11 @@ public:
 				oBuilder.WriteString(L"\" crypted=\"1");
 			}
 
+			if (i->m_bPin)
+			{
+				oBuilder.WriteString(L"\" pin=\"1");
+			}
+
 			oBuilder.WriteString(L"\" />");
 		}
 		oBuilder.WriteString(L"</recents>");
@@ -2425,6 +2455,8 @@ public:
 			oBuilder.AddInt(i->m_nFileType);
 			oBuilder.WriteString(L",crypted:");
 			oBuilder.AddInt(i->m_bIsCrypted ? 1 : 0);
+			oBuilder.WriteString(L",pin:");
+			oBuilder.WriteString(i->m_bPin ? L"true" : L"false");
 			oBuilder.WriteString(L",path:\"");
 			oBuilder.WriteEncodeXmlString(i->m_sPath);
 			oBuilder.WriteString(L"\",modifyed:\"");
