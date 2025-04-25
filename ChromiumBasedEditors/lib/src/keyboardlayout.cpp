@@ -45,12 +45,13 @@ static uint16_t layoutNameToLangId(const std::string &layoutName)
         }
 
         int32_t count;
+        icu::Locale loc("en");
         icu::UnicodeString uname;
         const icu::Locale *availableLocales = icu::Locale::getAvailableLocales(count);
         for (int32_t i = 0; i < count; ++i) {
             std::string name;
             if (language.empty()) {
-                availableLocales[i].getDisplayLanguage(uname);
+                availableLocales[i].getDisplayLanguage(loc, uname);
                 uname.toUTF8String(name);
                 if (name.find(languageDisplayName) != std::string::npos)
                     language = availableLocales[i].getLanguage();
@@ -58,7 +59,7 @@ static uint16_t layoutNameToLangId(const std::string &layoutName)
             }
 
             if (script.empty()) {
-                availableLocales[i].getDisplayScript(uname);
+                availableLocales[i].getDisplayScript(loc, uname);
                 uname.toUTF8String(name);
                 if (!name.empty()) {
                     for (auto it = parts.cbegin(); it != parts.cend(); it++) {
@@ -73,7 +74,7 @@ static uint16_t layoutNameToLangId(const std::string &layoutName)
             }
 
             if (region.empty()) {
-                availableLocales[i].getDisplayCountry(uname);
+                availableLocales[i].getDisplayCountry(loc, uname);
                 uname.toUTF8String(name);
                 if (!name.empty()) {
                     for (auto it = parts.cbegin(); it != parts.cend(); it++) {

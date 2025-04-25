@@ -939,7 +939,9 @@ int CAscApplicationManager::GetPlatformKeyboardLayout()
 
 #if defined(_LINUX) && !defined(_MAC)
 	KeyboardLayout kl;
-	return kl.GetKeyboardLayout();
+    uint16_t layout = kl.GetKeyboardLayout();
+    if (layout != 0)
+        return layout;
 #endif
 
 	return -1;
