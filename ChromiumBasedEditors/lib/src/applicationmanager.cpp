@@ -35,7 +35,7 @@
 #include "./cefwrapper/client_resource_handler_async.h"
 #include "./cefwrapper/monitor_info.h"
 
-#if defined(_LINUX) && !defined(_MAC)
+#if !defined(_MAC)
 # include "keyboardlayout.h"
 #endif
 
