@@ -285,6 +285,14 @@ void CAscApplicationManager::OnNeedCheckKeyboard()
 		GetEventListener()->OnEvent(new NSEditorApi::CAscCefMenuEvent(ASC_MENU_EVENT_TYPE_CEF_CHECK_KEYBOARD));
 }
 
+void CAscApplicationManager::GetKeyboardLayouts(std::vector<std::pair<std::string, std::string> > &layouts) const
+{
+#if !defined(_MAC)
+    KeyboardLayout kbl;
+    kbl.GetKeyboardLayouts(layouts);
+#endif
+}
+
 void CAscApplicationManager::CheckKeyboard()
 {
 	m_pInternal->m_oKeyboardChecker.Check(this, -1);
