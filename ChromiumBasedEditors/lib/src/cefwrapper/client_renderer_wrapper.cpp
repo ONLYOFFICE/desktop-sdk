@@ -6325,6 +6325,12 @@ delete window[\"crypto_images_map\"][_url];\n\
 			}
 			else if (sMessageName == "set_drop_files")
 			{
+				if (!g_pLocalResolver.is_init())
+				{
+					// Handler was not created!
+					return true;
+				}
+
 				int nCount = message->GetArgumentList()->GetSize();
 				int nIndex = 0;
 				std::wstring sCode = L"[";
