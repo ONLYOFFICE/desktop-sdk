@@ -15,7 +15,7 @@ public:
     KeyboardLayout();
     ~KeyboardLayout();
 
-    void GetKeyboardLayouts(std::vector<std::pair<std::string, std::string>>&) const;
+    std::vector<std::pair<std::string, std::string>> GetKeyboardLayoutList() const;
 #ifdef __linux__
     bool IsKeyboardSupport() const;
     uint16_t GetKeyboardLayout() const;

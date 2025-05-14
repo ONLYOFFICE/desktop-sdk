@@ -208,7 +208,7 @@ public:
 	void CheckKeyboard();
 	void SendKeyboardAttack();
 	void OnNeedCheckKeyboard();
-    void GetKeyboardLayouts(std::vector<std::pair<std::string, std::string>> &layouts) const;
+    std::vector<std::pair<std::string, std::string>> GetKeyboardLayoutList() const;
 	virtual bool IsPlatformKeyboardSupport();
 	virtual int GetPlatformKeyboardLayout();
 

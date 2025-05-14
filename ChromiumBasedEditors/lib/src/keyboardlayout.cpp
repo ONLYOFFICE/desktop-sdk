@@ -243,13 +243,14 @@ uint16_t KeyboardLayout::GetKeyboardLayout() const
 }
 #endif
 
-void KeyboardLayout::GetKeyboardLayouts(std::vector<std::pair<std::string, std::string>> &layouts) const
+std::vector<std::pair<std::string, std::string>> KeyboardLayout::GetKeyboardLayoutList() const
 {
+    std::vector<std::pair<std::string, std::string>> layouts;
 #ifdef _WIN32
-    int nBuff = GetKeyboardLayoutList(0, NULL);
+    int nBuff = ::GetKeyboardLayoutList(0, NULL);
     if (nBuff > 0) {
         HKL *lpList = new HKL[nBuff];
-        int count = GetKeyboardLayoutList(nBuff, lpList);
+        int count = ::GetKeyboardLayoutList(nBuff, lpList);
         for (int i = 0; i < count; ++i) {
             LANGID langID = LOWORD(lpList[i]);
             LCID lcid = MAKELCID(langID, SORT_DEFAULT);
@@ -298,4 +299,5 @@ void KeyboardLayout::GetKeyboardLayouts(std::vector<std::pair<std::string, std::
         }
     }
 #endif
+    return layouts;
 }
