@@ -145,6 +145,16 @@ SOURCES += \
 
 }
 
+!core_mac {
+    include($$CORE_ROOT_DIR/Common/3dParty/icu/icu.pri)
+
+    HEADERS += \
+        $$PWD/src/keyboardlayout.h
+
+    SOURCES += \
+        $$PWD/src/keyboardlayout.cpp
+}
+
 core_mac {
     LIBS += -framework Security
 
@@ -163,14 +173,6 @@ core_linux {
     QMAKE_LFLAGS += "-Wl,-rpath,\'\$$ORIGIN\'"
     QMAKE_LFLAGS += "-Wl,-rpath,\'\$$ORIGIN/converter\'"
     QMAKE_LFLAGS += -Wl,--disable-new-dtags
-
-    include($$CORE_ROOT_DIR/Common/3dParty/icu/icu.pri)
-
-    HEADERS += \
-        $$PWD/src/keyboardlayout.h
-
-    SOURCES += \
-        $$PWD/src/keyboardlayout.cpp
 
     LIBS += -lX11 -lX11-xcb -lxkbcommon-x11 -lxkbcommon
 }
