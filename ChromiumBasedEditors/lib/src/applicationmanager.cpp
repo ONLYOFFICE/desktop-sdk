@@ -35,7 +35,7 @@
 #include "./cefwrapper/client_resource_handler_async.h"
 #include "./cefwrapper/monitor_info.h"
 
-#if defined(_LINUX) && !defined(_MAC)
+#if !defined(_MAC)
 # include "keyboardlayout.h"
 #endif
 
@@ -283,6 +283,16 @@ void CAscApplicationManager::OnNeedCheckKeyboard()
 {
 	if (GetEventListener())
 		GetEventListener()->OnEvent(new NSEditorApi::CAscCefMenuEvent(ASC_MENU_EVENT_TYPE_CEF_CHECK_KEYBOARD));
+}
+
+std::vector<std::pair<std::string, std::string>> CAscApplicationManager::GetKeyboardLayoutList() const
+{
+#if !defined(_MAC)
+    KeyboardLayout kbl;
+    return kbl.GetKeyboardLayoutList();
+#else
+    return std::vector<std::pair<std::string, std::string>>();
+#endif
 }
 
 void CAscApplicationManager::CheckKeyboard()
