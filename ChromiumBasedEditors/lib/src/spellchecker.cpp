@@ -685,7 +685,7 @@ public:
 
 	void Init(const std::wstring& sDirectory, const std::wstring& sUserDirectory)
 	{
-#define DictionaryRec_count 49
+#define DictionaryRec_count 65
 		static const DictionaryRec Dictionaries[DictionaryRec_count] =
 		{
 			{"az_Latn_AZ", 1068},
@@ -736,7 +736,23 @@ public:
 			{"uz_Cyrl_UZ", 2115},
 			{"uz_Latn_UZ", 1091},
 			{"vi_VN", 1066},
-			{"nl_NL", 2067} // nl_BE
+			{"nl_NL", 2067}, // nl_BE
+			{"ar", 1025},
+			{"ar", 2049},
+			{"ar", 3073},
+			{"ar", 4097},
+			{"ar", 5121},
+			{"ar", 6145},
+			{"ar", 7169},
+			{"ar", 8193},
+			{"ar", 9217},
+			{"ar", 10241},
+			{"ar", 11265},
+			{"ar", 12289},
+			{"ar", 13313},
+			{"ar", 14337},
+			{"ar", 15361},
+			{"ar", 16385}
 		};
 
 		for (int i = 0; i < DictionaryRec_count; ++i)
