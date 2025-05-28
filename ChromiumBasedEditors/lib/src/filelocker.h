@@ -68,6 +68,8 @@ namespace NSSystem
 		static CFileLocker* Create(const std::wstring& file);
 
 		static bool IsHandled(const std::wstring& file);
+
+		static bool RemoveRestrictionFlags(const std::wstring& file);
 	};
 }
 

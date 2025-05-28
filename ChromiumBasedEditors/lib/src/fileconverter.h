@@ -611,8 +611,12 @@ public:
 			}
 		}
 
+		bool bIsCopied = false;
 		if (sLocalFilePath != sDestinationPath)
+		{
 			NSFile::CFileBinary::Copy(sLocalFilePath, sDestinationPath);
+			bIsCopied = true;
+		}
 
 		bool bIsTestFile = true;
 		if (!NSFile::CFileBinary::Exists(sDestinationPath))
@@ -635,6 +639,9 @@ public:
 			m_bRunThread = FALSE;
 			return 0;
 		}
+
+		if (bIsCopied && (m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF || m_oInfo.m_nCurrentFileFormat == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA))
+			NSSystem::CFileLocker::RemoveRestrictionFlags(sDestinationPath);
 
 		std::wstring sNameInfo = m_oInfo.m_sRecoveryDir + L"/asc_name.info";
 		if (NSFile::CFileBinary::Exists(sNameInfo))

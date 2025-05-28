@@ -186,6 +186,7 @@ namespace NSSystem
 
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 namespace NSSystem
 {
@@ -536,19 +537,19 @@ namespace NSSystem
 
 	CFileLocker* CFileLocker::Create(const std::wstring& file)
 	{
-    #ifdef _WIN32
+	#ifdef _WIN32
 		return new NSSystem::CFileLockerWin(file);
-    #endif
+	#endif
 
-    #ifdef _LINUX
-    #ifndef _MAC
+	#ifdef _LINUX
+	#ifndef _MAC
 		if (IsLocalFile(file))
 			return new NSSystem::CFileLockerFCNTL(file);
 		else
 			return new NSSystem::CFileLockerGIO(file);
-    #else
+	#else
 		return new NSSystem::CFileLockerEmpty(file);
-    #endif
+	#endif
     #endif
 
 		// ERROR!!!
@@ -571,5 +572,43 @@ namespace NSSystem
 	bool CFileLocker::IsHandled(const std::wstring& file)
 	{
 		return CHandlesMonitor::Instance().IsExist(file);
+	}
+
+	bool CFileLocker::RemoveRestrictionFlags(const std::wstring& file)
+	{
+#ifdef _LINUX
+		std::wstring fileA = U_TO_UTF8(file);
+		struct stat fileStat;
+		if (stat(fileA.c_str, &fileStat) != 0)
+		{
+			return false;
+		}
+
+		if (fileStat.st_mode & S_IWUSR)
+			return true;
+
+		if (chmod(filename, fileStat.st_mode | S_IWUSR) != 0)
+		{
+			return false;
+		}
+		return true;
+#else
+		DWORD attrs = GetFileAttributesW(file.c_str());
+		if (attrs == INVALID_FILE_ATTRIBUTES)
+		{
+			return false;
+		}
+
+		if (0 == (attrs & FILE_ATTRIBUTE_READONLY))
+			return true;
+
+		if (!SetFileAttributesW(file.c_str(), attrs &= ~FILE_ATTRIBUTE_READONLY))
+		{
+			return false;
+		}
+
+		return true;
+#endif
+
 	}
 }
