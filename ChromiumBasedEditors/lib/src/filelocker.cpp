@@ -579,7 +579,7 @@ namespace NSSystem
 #ifdef _LINUX
 		std::string fileA = U_TO_UTF8(file);
 		struct stat fileStat;
-		if (stat(fileA.c_str, &fileStat) != 0)
+		if (stat(fileA.c_str(), &fileStat) != 0)
 		{
 			return false;
 		}
