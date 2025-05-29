@@ -577,7 +577,7 @@ namespace NSSystem
 	bool CFileLocker::RemoveRestrictionFlags(const std::wstring& file)
 	{
 #ifdef _LINUX
-		std::wstring fileA = U_TO_UTF8(file);
+		std::string fileA = U_TO_UTF8(file);
 		struct stat fileStat;
 		if (stat(fileA.c_str, &fileStat) != 0)
 		{
@@ -587,7 +587,7 @@ namespace NSSystem
 		if (fileStat.st_mode & S_IWUSR)
 			return true;
 
-		if (chmod(filename, fileStat.st_mode | S_IWUSR) != 0)
+		if (chmod(fileA.c_str(), fileStat.st_mode | S_IWUSR) != 0)
 		{
 			return false;
 		}
