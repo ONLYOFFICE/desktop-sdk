@@ -158,27 +158,39 @@ void QCefView_Media::OnMediaPlayerCommand(NSEditorApi::CAscExternalMediaPlayerCo
 		updateGeometry(data);
 	}
 	// player commands
-	else if (sCmd == "play" || sCmd == "resume")
-	{
-		m_pMediaView->Play();
-	}
-	else if (sCmd == "pause")
-	{
-		m_pMediaView->Pause();
-	}
-	else if (sCmd == "stop")
-	{
-		m_pMediaView->Stop();
-	}
-	else if (sCmd == "togglePause")
-	{
-		m_pMediaView->TogglePause();
-	}
 	else
 	{
+		// handle the possible case when player is not yet initialized
+		if (m_pMediaView == nullptr)
+		{
 #ifdef DEBUG_MEDIA_PLAYER
-		std::cout << "Media player command \"" << sCmd << "\" can not be handled.";
+			std::cerr << "Requested player command \"" << sCmd << "\" on an unitialized player." << std::endl;
 #endif
+			return;
+		}
+		// handle player commands
+		if (sCmd == "play" || sCmd == "resume")
+		{
+			m_pMediaView->Play();
+		}
+		else if (sCmd == "pause")
+		{
+			m_pMediaView->Pause();
+		}
+		else if (sCmd == "stop")
+		{
+			m_pMediaView->Stop();
+		}
+		else if (sCmd == "togglePause")
+		{
+			m_pMediaView->TogglePause();
+		}
+		else
+		{
+#ifdef DEBUG_MEDIA_PLAYER
+			std::cerr << "Media player command \"" << sCmd << "\" can not be handled." << std::endl;
+#endif
+		}
 	}
 
 #ifdef DEBUG_MEDIA_PLAYER
