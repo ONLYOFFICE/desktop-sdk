@@ -665,13 +665,22 @@ public:
 			return 0;
 		}
 
+		int nOutputFormat = 8192;
 		if (m_oInfo.m_nCurrentFileFormat & AVS_OFFICESTUDIO_FILE_DRAW)
 		{
-			NSFile::CFileBinary::Copy(sLocalFilePath, m_oInfo.m_sRecoveryDir + L"/Editor.bin");
+			// Move to binary
+			if (false)
+			{
+				NSFile::CFileBinary::Copy(sLocalFilePath, m_oInfo.m_sRecoveryDir + L"/Editor.bin");
 
-			m_pEvents->OnFileConvertToEditor(0);
-			m_bRunThread = FALSE;
-			return 0;
+				m_pEvents->OnFileConvertToEditor(0);
+				m_bRunThread = FALSE;
+				return 0;
+			}
+			else
+			{
+				nOutputFormat = 8197;
+			}
 		}
 
 		std::wstring sParams = L"";
@@ -699,7 +708,9 @@ public:
 		oBuilder.WriteEncodeXmlString(sDestinationPath);
 		oBuilder.WriteString(L"</m_sFileFrom><m_sFileTo>");
 		oBuilder.WriteEncodeXmlString(m_oInfo.m_sRecoveryDir);
-		oBuilder.WriteString(L"/Editor.bin</m_sFileTo><m_nFormatTo>8192</m_nFormatTo>");
+		oBuilder.WriteString(L"/Editor.bin</m_sFileTo><m_nFormatTo>");
+		oBuilder.AddInt(nOutputFormat);
+		oBuilder.WriteString(L"</m_nFormatTo>");
 		X2T_AddThemesPath(oBuilder, m_pManager);
 		oBuilder.WriteString(L"<m_bDontSaveAdditional>true</m_bDontSaveAdditional>");
 		oBuilder.WriteString(sParams);
