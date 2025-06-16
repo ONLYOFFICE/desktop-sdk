@@ -6935,6 +6935,12 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 				nLocalFileSrcFormat = oChecker.nFileType;
 		}
 
+		if (!m_pInternal->m_oConverterFromEditor.m_sOriginalFileNameCrossPlatform.empty())
+		{
+			sLocalFileSrc = m_pInternal->m_oConverterFromEditor.m_oInfo.m_sRecoveryDir + L"/" +
+							NSFile::GetFileName(m_pInternal->m_oConverterFromEditor.m_sOriginalFileNameCrossPlatform);
+		}
+
 		if (!sLocalFileSrc.empty())
 		{
 			// локальные файлы
