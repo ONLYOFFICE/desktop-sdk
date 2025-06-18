@@ -1,5 +1,6 @@
 #include "qvideoslider.h"
 
+#include <cmath>
 #include <QStyleOption>
 #include <QPainter>
 
@@ -82,7 +83,7 @@ void QVideoSlider::resizeEvent(QResizeEvent* e)
 	QSlider::resizeEvent(e);
 
 	double dDpi = QWidgetUtils::GetDPI(this);
-	if (fabs(dDpi - m_dDpi) > 0.01)
+	if (std::abs(dDpi - m_dDpi) > 0.01)
 	{
 		m_dDpi = dDpi;
 		updateStyle();

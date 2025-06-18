@@ -4343,6 +4343,52 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 				return true;
 			}
+			else if (name == "LocalFileGetImageUrlCorrect")
+			{
+				std::wstring sUrl = arguments[0]->GetStringValue().ToWString();
+				std::wstring sUrlFile = sUrl;
+				if (sUrlFile.find(L"file://") == 0)
+				{
+					sUrlFile = sUrlFile.substr(7);
+					NSStringUtils::string_replace(sUrlFile, L"%20", L" ");
+
+					if (!NSFile::CFileBinary::Exists(sUrlFile))
+						sUrlFile = sUrlFile.substr(1);
+				}
+
+				if (NSFile::CFileBinary::Exists(sUrlFile))
+				{
+					CImageFileFormatChecker checker;
+					if (checker.isImageFile(sUrlFile))
+					{
+						if (checker.eFileType != _CXIMAGE_FORMAT_JPG &&
+							checker.eFileType != _CXIMAGE_FORMAT_SVG &&
+							checker.eFileType != _CXIMAGE_FORMAT_PNG)
+						{
+							std::wstring::size_type pos = sUrlFile.rfind('.');
+							if (pos != std::wstring::npos)
+							{
+								std::wstring::size_type posSrc = sUrl.rfind('.');
+								sUrlFile = sUrlFile.substr(0, pos + 1);
+
+								if ((checker.eFileType == _CXIMAGE_FORMAT_WMF ||
+									 checker.eFileType == _CXIMAGE_FORMAT_EMF) &&
+									 NSFile::CFileBinary::Exists(sUrlFile + L"svg"))
+								{
+									sUrl = sUrl.substr(0, posSrc + 1) + L"svg";
+								}
+								else if (NSFile::CFileBinary::Exists(sUrlFile + L"png"))
+								{
+									sUrl = sUrl.substr(0, posSrc + 1) + L"png";
+								}
+							}
+						}
+					}
+				}
+
+				retval = CefV8Value::CreateString(sUrl);
+				return true;
+			}
 
 			// Function does not exist.
 			return false;
@@ -4918,7 +4964,7 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 			CefRefPtr<CefV8Handler> handler = pWrapper;
 
-#define EXTEND_METHODS_COUNT 184
+#define EXTEND_METHODS_COUNT 185
 			const char* methods[EXTEND_METHODS_COUNT] = {
 				"Copy",
 				"Paste",
@@ -4992,6 +5038,7 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 				"LocalFileGetImageUrl",
 				"LocalFileGetImageUrlFromOpenFileDialog",
+				"LocalFileGetImageUrlCorrect",
 
 				"checkAuth",
 
@@ -6325,6 +6372,12 @@ delete window[\"crypto_images_map\"][_url];\n\
 			}
 			else if (sMessageName == "set_drop_files")
 			{
+				if (!g_pLocalResolver.is_init())
+				{
+					// Handler was not created!
+					return true;
+				}
+
 				int nCount = message->GetArgumentList()->GetSize();
 				int nIndex = 0;
 				std::wstring sCode = L"[";

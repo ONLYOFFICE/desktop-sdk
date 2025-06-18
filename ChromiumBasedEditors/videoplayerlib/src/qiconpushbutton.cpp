@@ -1,6 +1,6 @@
 #include "qiconpushbutton.h"
 
-#include <math.h>
+#include <cmath>
 #include <QFileInfo>
 
 #include "../qwidgetutils.h"
@@ -99,11 +99,11 @@ QString QIconPushButton::getIconPostfix()
 	// - If scale is integer, use corresponding PNG icon (1x or 2x).
 
 	m_bIsUseSVG = false;
-	if (fabs(1.0 - m_dDpi) < 0.05)
+	if (std::abs(1.0 - m_dDpi) < 0.05)
 	{
 		sPostfix += ".png";
 	}
-	else if (fabs(2.0 - m_dDpi) < 0.05)
+	else if (std::abs(2.0 - m_dDpi) < 0.05)
 	{
 		sPostfix += "-2x.png";
 	}

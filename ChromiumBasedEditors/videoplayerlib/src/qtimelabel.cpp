@@ -1,5 +1,6 @@
 #include "qtimelabel.h"
 
+#include <cmath>
 #include <QFontMetrics>
 #include <QtGlobal>
 
@@ -87,7 +88,7 @@ void QTimeLabel::resizeEvent(QResizeEvent* e)
 	QLabel::resizeEvent(e);
 
 	double dDpi = QWidgetUtils::GetDPI(this);
-	if (fabs(dDpi - m_dDpi) > 0.01)
+	if (std::abs(dDpi - m_dDpi) > 0.01)
 	{
 		m_dDpi = dDpi;
 		updateStyle();

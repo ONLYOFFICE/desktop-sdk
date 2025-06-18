@@ -208,6 +208,7 @@ public:
 	void CheckKeyboard();
 	void SendKeyboardAttack();
 	void OnNeedCheckKeyboard();
+    std::vector<std::pair<std::string, std::string>> GetKeyboardLayoutList() const;
 	virtual bool IsPlatformKeyboardSupport();
 	virtual int GetPlatformKeyboardLayout();
 
@@ -305,6 +306,8 @@ public:
 	// check local file
 	bool IsResolveLocalFile(const std::wstring& sFile);
 	void AddFileToLocalResolver(const std::wstring& sFile);
+
+	void SetRecentPin(const int& nId, const bool& bIsPin);
 
 	void SetRendererProcessVariable(const std::wstring& sVariable);
 
