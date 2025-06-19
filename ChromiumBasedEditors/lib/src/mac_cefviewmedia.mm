@@ -2,47 +2,104 @@
 
 #import "../../../../core/DesktopEditor/common/Mac/NSString+StringUtils.h"
 
-CCefViewMedia::CCefViewMedia(NSView* pView) : CCefViewWrapper(pView)
+CCefViewMedia::CCefViewMedia(NSView* view) : CCefViewWrapper(view)
 {
-	m_pPlayer = nil;
-	m_pMediaView = nil;
 }
 
 CCefViewMedia::~CCefViewMedia()
 {
 }
 
-void CCefViewMedia::OnMediaStart(NSEditorApi::CAscExternalMedia* data)
+void CCefViewMedia::OnMediaPlayerCommand(NSEditorApi::CAscExternalMediaPlayerCommand* data)
 {
+	std::string cmd = data->get_Cmd();
+	if (cmd == "showMediaControl")
+	{
+		NSLog(@"debug: show media control");
+		showMediaControl(data);
+	}
+	else if (cmd == "hideMediaControl")
+	{
+		NSLog(@"debug: hide media control");
+		hideMediaControl();
+	}
+	else if (cmd == "update")
+	{
+		NSLog(@"debug: update");
+		updateGeometry(data);
+	}
+	else
+	{
+		NSLog(@"debug: unsupported player command");
+	}
+}
+
+void CCefViewMedia::showMediaControl(NSEditorApi::CAscExternalMediaPlayerCommand* data)
+{
+	if (m_media_view)
+		return;
+
+	// if media is not selected, don't do anything
+	if (!data->get_IsSelected())
+		return;
+
+	// TODO: main logic here
 	NSURL* url = [NSURL fileURLWithPath:[NSString stringWithWString:data->get_Url()]];
 
 	NSError* err;
 	if (url && [url checkResourceIsReachableAndReturnError:&err])
 	{
-		m_pPlayer = [AVPlayer playerWithURL:url];
-		AVPlayerLayer* layer = [AVPlayerLayer playerLayerWithPlayer:m_pPlayer];
-		[layer setBackgroundColor:CGColorCreateGenericRGB(0, 0, 0, 1.0)];
+		m_player = [AVPlayer playerWithURL:url];
+		NSRect media_view_rect = NSMakeRect(data->get_FrameRectX(), cef_height - data->get_FrameRectH() - data->get_FrameRectY(), data->get_FrameRectW(), data->get_FrameRectH());
+		m_media_view = [[NSView alloc] initWithFrame:media_view_rect];
+		// set black background (transparent by default)
+		AVPlayerLayer* layer = [AVPlayerLayer playerLayerWithPlayer:m_player];
+		CGColorRef bg_color = [[NSColor blackColor] CGColor];
+		[layer setBackgroundColor:bg_color];
+		[m_media_view setWantsLayer:YES];
+		[m_media_view setLayer:layer];
+		// attach as subview
+		[m_pParent addSubview:m_media_view positioned:NSWindowAbove relativeTo:nil];
+		// start playback
+		[m_player play];
 
-		m_pMediaView = [[NSView alloc] initWithFrame:NSMakeRect(data->get_BoundsX(), cef_height - data->get_BoundsH() - data->get_BoundsY(), data->get_BoundsW(), data->get_BoundsH())];
-		[m_pMediaView setLayer:layer];
-
-		[m_pParent addSubview:m_pMediaView positioned:NSWindowAbove relativeTo:nil];
-
-		[m_pPlayer play];
+		// add control rect
+		NSRect control_view_rect = NSMakeRect(data->get_ControlRectX(), cef_height - data->get_ControlRectH() - data->get_ControlRectY(), data->get_ControlRectW(), data->get_ControlRectH());
+		m_control_view = [[NSView alloc] initWithFrame:control_view_rect];
+		[m_control_view setWantsLayer:YES];
+		m_control_view.layer.cornerRadius = 8.0;
+		m_control_view.layer.masksToBounds = YES;
+		[m_control_view.layer setBackgroundColor:bg_color];
+		[m_pParent addSubview:m_control_view positioned:NSWindowAbove relativeTo:nil];
 	}
 }
 
-void CCefViewMedia::OnMediaEnd()
+void CCefViewMedia::hideMediaControl()
 {
-	if (m_pPlayer)
+	if (!m_player || !m_media_view)
+		return;
+
+	// TODO: main logic here
+	if (m_player)
 	{
-		[m_pPlayer pause];
-		m_pPlayer = nil;
+		[m_player pause];
+		m_player = nil;
 	}
 
-	if (m_pMediaView)
+	if (m_media_view)
 	{
-		[m_pMediaView removeFromSuperview];
-		m_pMediaView = nil;
+		[m_media_view removeFromSuperview];
+		m_media_view = nil;
 	}
+
+	if (m_control_view)
+	{
+		[m_control_view removeFromSuperview];
+		m_control_view = nil;
+	}
+}
+
+void CCefViewMedia::updateGeometry(NSEditorApi::CAscExternalMediaPlayerCommand* data)
+{
+	// TODO
 }

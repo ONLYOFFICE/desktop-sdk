@@ -174,7 +174,7 @@ core_mac {
 
     use_v8:DEFINES += OLD_MACOS_SYSTEM
 
-	DEFINES += NO_SUPPORT_MEDIA_PLAYER
+	# DEFINES += NO_SUPPORT_MEDIA_PLAYER
 }
 
 core_linux {

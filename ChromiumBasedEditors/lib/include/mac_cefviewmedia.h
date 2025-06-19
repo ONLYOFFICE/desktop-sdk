@@ -8,16 +8,20 @@
 class DESKTOP_DECL CCefViewMedia : public CCefViewWrapper
 {
 public:
-	CCefViewMedia(NSView* pView);
+	CCefViewMedia(NSView* view);
 	virtual ~CCefViewMedia();
 
 public:
-	virtual void OnMediaStart(NSEditorApi::CAscExternalMedia* data);
-	virtual void OnMediaEnd();
+	virtual void OnMediaPlayerCommand(NSEditorApi::CAscExternalMediaPlayerCommand* data) override;
+
+	void showMediaControl(NSEditorApi::CAscExternalMediaPlayerCommand* data);
+	void hideMediaControl();
+	void updateGeometry(NSEditorApi::CAscExternalMediaPlayerCommand* data);
 
 private:
-	AVPlayer* m_pPlayer;
-	NSView* m_pMediaView;
+	AVPlayer* m_player = nil;
+	NSView* m_media_view = nil;
+	NSView* m_control_view = nil;
 };
 
 #endif	// MAC_CEF_VIEW_MEDIA_H

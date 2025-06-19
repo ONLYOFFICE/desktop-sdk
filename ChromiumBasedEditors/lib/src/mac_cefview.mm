@@ -41,11 +41,7 @@ void CCefViewWrapper::moveEvent()
 		m_pCefView->moveEvent();
 }
 
-void CCefViewWrapper::OnMediaStart(NSEditorApi::CAscExternalMedia* data)
-{
-}
-
-void CCefViewWrapper::OnMediaEnd()
+void CCefViewWrapper::OnMediaPlayerCommand(NSEditorApi::CAscExternalMediaPlayerCommand* data)
 {
 }
 
