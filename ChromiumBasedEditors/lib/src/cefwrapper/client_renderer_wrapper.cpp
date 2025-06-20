@@ -2391,7 +2391,7 @@ window.AscDesktopEditor._convertFile((files && files[0]) ? files[0] : '', format
 window.AscDesktopEditor._convertFile(path, format);\n\
 }\n\
 };\n\
-window.AscDesktopEditor.getPortalsList = function() { debugger;var ret = []; try { var portals = JSON.parse(localStorage.getItem(\"portals\")); for (var i = 0, len = portals.length; i < len; i++) { ret.push(portals[i].portal); ret.push(portals[i].provider); } } catch(err) { ret = []; } console.log(ret);window.AscDesktopEditor.setPortalsList(ret); };\n\
+window.AscDesktopEditor.getPortalsList = function() { var ret = []; try { var portals = JSON.parse(localStorage.getItem(\"portals\")); for (var i = 0, len = portals.length; i < len; i++) { ret.push(portals[i].portal); ret.push(portals[i].provider); } } catch(err) { ret = []; } console.log(ret);window.AscDesktopEditor.setPortalsList(ret); };\n\
 ";
 #ifdef CEF_VERSION_ABOVE_102
 					sCodeInitJS += "!function(){window.AscSimpleRequest=window.AscSimpleRequest||{};var r=0,o={};window.AscSimpleRequest.createRequest=function(e){var "
