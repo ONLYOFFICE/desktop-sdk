@@ -164,8 +164,6 @@ core_mac {
 		./include/mac_application.h \
 		./include/mac_cefviewmedia.h
 
-	OBJECTIVE_SOURCES += $$CORE_ROOT_DIR/DesktopEditor/common/Mac/NSString+StringUtils.mm
-
     OBJECTIVE_SOURCES += \
         $$PWD/src/widget_impl.mm \
 		$$PWD/src/mac_application.mm \
@@ -174,7 +172,23 @@ core_mac {
 
     use_v8:DEFINES += OLD_MACOS_SYSTEM
 
+	INCLUDEPATH += $$CORE_ROOT_DIR/DesktopEditor/common/Mac
+	OBJECTIVE_SOURCES += $$CORE_ROOT_DIR/DesktopEditor/common/Mac/NSString+StringUtils.mm
+
 	# DEFINES += NO_SUPPORT_MEDIA_PLAYER
+	OBJECTIVE_HEADERS += \
+		src/mac_videoplayer/footerpanel.h \
+		src/mac_videoplayer/iconpushbutton.h \
+		src/mac_videoplayer/playerview.h \
+		src/mac_videoplayer/slider.h \
+		src/mac_videoplayer/videoview.h
+
+	OBJECTIVE_SOURCES += \
+		src/mac_videoplayer/footerpanel.mm \
+		src/mac_videoplayer/iconpushbutton.mm \
+		src/mac_videoplayer/playerview.mm \
+		src/mac_videoplayer/slider.mm \
+		src/mac_videoplayer/videoview.mm
 }
 
 core_linux {

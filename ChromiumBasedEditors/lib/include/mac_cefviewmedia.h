@@ -3,7 +3,7 @@
 
 #import "mac_cefview.h"
 
-#import <AVFoundation/AVFoundation.h>
+#include "../src/mac_videoplayer/playerview.h"
 
 class DESKTOP_DECL CCefViewMedia : public CCefViewWrapper
 {
@@ -19,9 +19,7 @@ public:
 	void updateGeometry(NSEditorApi::CAscExternalMediaPlayerCommand* data);
 
 private:
-	AVPlayer* m_player = nil;
-	NSView* m_media_view = nil;
-	NSView* m_control_view = nil;
+	CPlayerView* m_player_view = nullptr;
 };
 
 #endif	// MAC_CEF_VIEW_MEDIA_H
