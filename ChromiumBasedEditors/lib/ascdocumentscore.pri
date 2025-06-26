@@ -181,14 +181,16 @@ core_mac {
 		src/mac_videoplayer/iconpushbutton.h \
 		src/mac_videoplayer/playerview.h \
 		src/mac_videoplayer/slider.h \
-		src/mac_videoplayer/videoview.h
+		src/mac_videoplayer/videoview.h \
+		src/mac_videoplayer/utils.h
 
 	OBJECTIVE_SOURCES += \
 		src/mac_videoplayer/footerpanel.mm \
 		src/mac_videoplayer/iconpushbutton.mm \
 		src/mac_videoplayer/playerview.mm \
 		src/mac_videoplayer/slider.mm \
-		src/mac_videoplayer/videoview.mm
+		src/mac_videoplayer/videoview.mm \
+		src/mac_videoplayer/utils.mm
 }
 
 core_linux {

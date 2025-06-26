@@ -5,7 +5,6 @@
 
 @interface NSFooterPanel : NSView
 {
-
 }
 - (instancetype)initWithFrame:(NSRect)frame_rect;
 - (void)dealloc;

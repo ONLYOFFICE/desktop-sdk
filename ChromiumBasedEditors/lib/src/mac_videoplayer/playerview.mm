@@ -55,9 +55,9 @@ void CPlayerView::Pause() {
 
 void CPlayerView::TogglePause() {
 	if (m_player.rate > 0.0) {
-		[m_player pause];
+		Pause();
 	} else {
-		[m_player play];
+		Play();
 	}
 }
 
@@ -66,7 +66,10 @@ void CPlayerView::ToggleMute() {
 }
 
 bool CPlayerView::SetMedia(const std::wstring& media_path) {
-	NSURL* url = [NSURL fileURLWithPath:[NSString stringWithWString:media_path]];
+	// TODO: stringWithWString causes memory leaks ???
+	NSString* path = [NSString stringWithWString:media_path];
+	NSURL* url = [NSURL fileURLWithPath:path];
+
 	NSError* err;
 	if (url && [url checkResourceIsReachableAndReturnError:&err]) {
 		AVPlayerItem* player_item = [AVPlayerItem playerItemWithURL:url];

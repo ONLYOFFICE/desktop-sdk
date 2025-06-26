@@ -1,16 +1,26 @@
 #import "footerpanel.h"
 
+#import "iconpushbutton.h"
+#import "utils.h"
+
 @implementation NSFooterPanel
 
 - (instancetype)initWithFrame:(NSRect)frame_rect {
 	self = [super initWithFrame:frame_rect];
 	if (self) {
 		[self setWantsLayer:YES];
-		// TODO: rework
-		self.layer.cornerRadius = 8.0;
-		self.layer.masksToBounds = YES;
-		CGColorRef bg_color = [[NSColor redColor] CGColor];
+		// TODO: rework with skins
+		// bg color
+		CGColorRef bg_color = [NSColorFromHex(0x313437) CGColor];
 		[self.layer setBackgroundColor:bg_color];
+		// border radius
+		self.layer.cornerRadius = 5.0;
+		self.layer.masksToBounds = YES;
+
+		// place buttons
+		NSIconPushButton* btn_play = [[NSIconPushButton alloc] initWithFrame:NSMakeRect(8, 5, 30, 30) iconName:@"btn-play"];
+		[self addSubview:btn_play];
+		[btn_play release];
 	}
 	return self;
 }
