@@ -61,6 +61,10 @@ void CPlayerView::TogglePause() {
 	}
 }
 
+void CPlayerView::ChangeVolume(int new_value) {
+	// TODO
+}
+
 void CPlayerView::ToggleMute() {
 	// TODO
 }

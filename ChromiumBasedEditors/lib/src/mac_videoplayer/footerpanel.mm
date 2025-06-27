@@ -34,6 +34,16 @@ void setRightConstraintsToView(NSView* view, NSLayoutYAxisAnchor* top_anchor, NS
 	[view.heightAnchor constraintEqualToConstant:size.height].active = YES;
 }
 
+@interface NSFooterPanel ()
+{
+	CFooterSkin m_skin;
+	// buttons
+	NSIconPushButton* m_btn_play;
+	NSIconPushButton* m_btn_volume;
+	NSIconPushButton* m_btn_rewind_forward;
+}
+- (void)updateStyle;
+@end
 
 @implementation NSFooterPanel
 
@@ -41,31 +51,33 @@ void setRightConstraintsToView(NSView* view, NSLayoutYAxisAnchor* top_anchor, NS
 	self = [super initWithFrame:frame_rect];
 	if (self) {
 		[self setWantsLayer:YES];
-		// TODO: rework with skins
-		// bg color
-		CGColorRef bg_color = [NSColorFromHex(0x313437) CGColor];
-		[self.layer setBackgroundColor:bg_color];
-		// border radius
-		self.layer.cornerRadius = 5.0;
+		// apply light skin by default
+		m_skin = CFooterSkin::getSkin(CFooterSkin::Type::kLight);
+		[self updateStyle];
+		// set border radius
+		self.layer.cornerRadius = CFooterSkin::border_radius;
 		self.layer.masksToBounds = YES;
 
 		// place elements
-		const NSSize button_size = NSMakeSize(30, 30);
+		const int button_width = CFooterSkin::button_width;
+		const int button_y_offset = CFooterSkin::button_y_offset;
+		const int button_space_between = CFooterSkin::button_space_between;
+		const NSSize button_size = NSMakeSize(button_width, button_width);
 		// play button
-		NSIconPushButton* btn_play = [[NSIconPushButton alloc] initWithIconName:@"btn-play" size:button_size];
-		[self addSubview:btn_play];
-		setLeftConstraintsToView(btn_play, self.topAnchor, self.leftAnchor, 5, 8, button_size);
-		[btn_play release];
+		m_btn_play = [[NSIconPushButton alloc] initWithIconName:@"btn-play" size:button_size skin:&m_skin];
+		[self addSubview:m_btn_play];
+		setLeftConstraintsToView(m_btn_play, self.topAnchor, self.leftAnchor, button_y_offset, button_space_between, button_size);
+		[m_btn_play release];
 		// volume button
-		NSIconPushButton* btn_volume = [[NSIconPushButton alloc] initWithIconName:@"btn-volume-2" size:button_size];
-		[self addSubview:btn_volume];
-		setRightConstraintsToView(btn_volume, self.topAnchor, self.rightAnchor, 5, 8, button_size);
-		[btn_volume release];
+		m_btn_volume = [[NSIconPushButton alloc] initWithIconName:@"btn-volume-2" size:button_size skin:&m_skin];
+		[self addSubview:m_btn_volume];
+		setRightConstraintsToView(m_btn_volume, self.topAnchor, self.rightAnchor, button_y_offset, button_space_between, button_size);
+		[m_btn_volume release];
 		// rewind forward button
-		NSIconPushButton* btn_rewind_forward = [[NSIconPushButton alloc] initWithIconName:@"btn-rewind-forward" size:button_size];
-		[self addSubview:btn_rewind_forward];
-		setRightConstraintsToView(btn_rewind_forward, self.topAnchor, btn_volume.leftAnchor, 5, 8, button_size);
-		[btn_rewind_forward release];
+		m_btn_rewind_forward = [[NSIconPushButton alloc] initWithIconName:@"btn-rewind-forward" size:button_size skin:&m_skin];
+		[self addSubview:m_btn_rewind_forward];
+		setRightConstraintsToView(m_btn_rewind_forward, self.topAnchor, m_btn_volume.leftAnchor, button_y_offset, button_space_between, button_size);
+		[m_btn_rewind_forward release];
 	}
 	return self;
 }
@@ -75,6 +87,21 @@ void setRightConstraintsToView(NSView* view, NSLayoutYAxisAnchor* top_anchor, NS
 #if !__has_feature(objc_arc)
 	[super dealloc];
 #endif
+}
+
+- (void)updateStyle {
+	CGColorRef bg_color = [NSColorFromHex(m_skin.footer.bg_color) CGColor];
+	[self.layer setBackgroundColor:bg_color];
+}
+
+- (void)applySkin:(CFooterSkin::Type)type {
+	if (type == m_skin.type)
+		return;
+	m_skin = CFooterSkin::getSkin(type);
+	[self updateStyle];
+	[m_btn_play updateStyle];
+	[m_btn_volume updateStyle];
+	[m_btn_rewind_forward updateStyle];
 }
 
 @end

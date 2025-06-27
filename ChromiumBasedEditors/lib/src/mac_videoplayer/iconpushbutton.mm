@@ -2,17 +2,25 @@
 
 #import "utils.h"
 
+@interface NSIconPushButton()
+{
+	CFooterSkin* m_skin;
+	bool m_hovered;
+	NSString* m_icon_name;
+}
+@end
+
 @implementation NSIconPushButton
 
-- (instancetype)initWithIconName:(NSString*)icon_name size:(NSSize)size {
+- (instancetype)initWithIconName:(NSString*)icon_name size:(NSSize)size skin:(CFooterSkin*)skin {
 	NSRect init_frame_rect = NSMakeRect(0, 0, size.width, size.height);
 	self = [super initWithFrame:init_frame_rect];
 	if (self) {
 		[self setWantsLayer:YES];
-		self.layer.cornerRadius = 3.0;
-		self.bordered = NO;
-		self.layer.backgroundColor = [NSColorFromHex(0x313437) CGColor];
-		[self setIcon:icon_name];
+		// apply skin
+		m_skin = skin;
+		m_icon_name = icon_name;
+		[self updateStyle];
 		// add mouse tracking for background color or/and icon changing
 		[self addTrackingRect:init_frame_rect owner:self userData:nil assumeInside:NO];
 	}
@@ -26,9 +34,17 @@
 #endif
 }
 
+- (void)updateStyle {
+	self.layer.cornerRadius = m_skin->button.border_radius;
+	self.bordered = NO;
+	self.layer.backgroundColor = [NSColorFromHex(m_skin->button.bg_color_regular) CGColor];
+	[self setIcon:m_icon_name];
+}
+
 - (void)setIcon:(NSString*)icon_name {
-	// TODO: rework with skins
-	NSString* icon_full_name = [NSString stringWithFormat:@"%@%@", icon_name, @"-dark-2x"];
+	m_icon_name = icon_name;
+	// TODO: are -2x png icons always suitable on mac platforms ???
+	NSString* icon_full_name = [NSString stringWithFormat:@"%@%@%@", icon_name, m_skin->button.icon_postfix, @"-2x"];
 	NSString* icon_path = [[NSBundle mainBundle] pathForResource:icon_full_name ofType:@"png"];
 	if (icon_path == nil) {
 		NSLog(@"Error: could not load icon %@.png", icon_full_name);
@@ -41,18 +57,28 @@
 }
 
 - (void)mouseEntered:(NSEvent*)event {
-	self.layer.backgroundColor = [NSColorFromHex(0x46494B) CGColor];
+	m_hovered = true;
+	self.layer.backgroundColor = [NSColorFromHex(m_skin->button.bg_color_hovered) CGColor];
 }
 
 - (void)mouseExited:(NSEvent*)event {
-	self.layer.backgroundColor = [NSColorFromHex(0x313437) CGColor];
+	m_hovered = false;
+	self.layer.backgroundColor = [NSColorFromHex(m_skin->button.bg_color_regular) CGColor];
 }
 
 - (void)mouseDown:(NSEvent*)event {
+	self.layer.backgroundColor = [NSColorFromHex(m_skin->button.bg_color_pressed) CGColor];
 	NSLog(@"debug: button pressed");
 }
 
 - (void)mouseUp:(NSEvent*)event {
+	CGColor* bg_color = nil;
+	if (m_hovered) {
+		bg_color = [NSColorFromHex(m_skin->button.bg_color_hovered) CGColor];
+	} else {
+		bg_color = [NSColorFromHex(m_skin->button.bg_color_regular) CGColor];
+	}
+	self.layer.backgroundColor = bg_color;
 	NSLog(@"debug: button released");
 }
 

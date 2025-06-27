@@ -5,8 +5,7 @@
 
 #include "../src/mac_videoplayer/playerview.h"
 
-class DESKTOP_DECL CCefViewMedia : public CCefViewWrapper
-{
+class DESKTOP_DECL CCefViewMedia : public CCefViewWrapper {
 public:
 	CCefViewMedia(NSView* view);
 	virtual ~CCefViewMedia();

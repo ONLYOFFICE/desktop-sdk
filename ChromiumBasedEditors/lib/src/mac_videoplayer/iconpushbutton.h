@@ -3,10 +3,14 @@
 
 #import <Cocoa/Cocoa.h>
 
+#import "footerskin.h"
+
 @interface NSIconPushButton : NSButton
-- (instancetype)initWithIconName:(NSString*)icon_name size:(NSSize)size;
+- (instancetype)initWithIconName:(NSString*)icon_name size:(NSSize)size skin:(CFooterSkin*)skin;
 - (void)dealloc;
 
+// button appearance
+- (void)updateStyle;
 - (void)setIcon:(NSString*)icon_name;
 
 // events

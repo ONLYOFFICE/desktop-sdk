@@ -2,41 +2,30 @@
 
 #import "../../../../core/DesktopEditor/common/Mac/NSString+StringUtils.h"
 
-CCefViewMedia::CCefViewMedia(NSView* view) : CCefViewWrapper(view)
-{
-}
+CCefViewMedia::CCefViewMedia(NSView* view) : CCefViewWrapper(view) {}
 
-CCefViewMedia::~CCefViewMedia()
-{
+CCefViewMedia::~CCefViewMedia() {
 	hideMediaControl();
 }
 
-void CCefViewMedia::OnMediaPlayerCommand(NSEditorApi::CAscExternalMediaPlayerCommand* data)
-{
+void CCefViewMedia::OnMediaPlayerCommand(NSEditorApi::CAscExternalMediaPlayerCommand* data) {
 	std::string cmd = data->get_Cmd();
-	if (cmd == "showMediaControl")
-	{
+	// TODO: remove debug logs
+	if (cmd == "showMediaControl") {
 		NSLog(@"debug: show media control");
 		showMediaControl(data);
-	}
-	else if (cmd == "hideMediaControl")
-	{
+	} else if (cmd == "hideMediaControl") {
 		NSLog(@"debug: hide media control");
 		hideMediaControl();
-	}
-	else if (cmd == "update")
-	{
+	} else if (cmd == "update") {
 		NSLog(@"debug: update");
 		updateGeometry(data);
-	}
-	else
-	{
+	} else {
 		NSLog(@"debug: unsupported player command");
 	}
 }
 
-void CCefViewMedia::showMediaControl(NSEditorApi::CAscExternalMediaPlayerCommand* data)
-{
+void CCefViewMedia::showMediaControl(NSEditorApi::CAscExternalMediaPlayerCommand* data) {
 	if (m_player_view)
 		return;
 
@@ -50,12 +39,28 @@ void CCefViewMedia::showMediaControl(NSEditorApi::CAscExternalMediaPlayerCommand
 	// create and initialize player view
 	m_player_view = new CPlayerView(video_view_rect, footer_panel_rect, m_pParent);
 
+	// set footer skin
+	NSFooterPanel* footer = m_player_view->Footer();
+	std::string sTheme = data->get_Theme();
+	if (sTheme == "dark") {
+		[footer applySkin:CFooterSkin::Type::kDark];
+	} else {
+		[footer applySkin:CFooterSkin::Type::kLight];
+	}
+
 	m_player_view->SetMedia(data->get_Url());
+	// TODO: remove play
 	m_player_view->Play();
+
+	int nVolume = data->get_Volume();
+	if (data->get_Mute() || m_pCefView->IsPresentationReporter()) {
+		m_player_view->ToggleMute();
+	} else if (nVolume != -1) {
+		m_player_view->ChangeVolume(nVolume);
+	}
 }
 
-void CCefViewMedia::hideMediaControl()
-{
+void CCefViewMedia::hideMediaControl() {
 	if (!m_player_view)
 		return;
 
@@ -63,8 +68,7 @@ void CCefViewMedia::hideMediaControl()
 	m_player_view = nullptr;
 }
 
-void CCefViewMedia::updateGeometry(NSEditorApi::CAscExternalMediaPlayerCommand* data)
-{
+void CCefViewMedia::updateGeometry(NSEditorApi::CAscExternalMediaPlayerCommand* data) {
 	if (!m_player_view)
 		return;
 

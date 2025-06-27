@@ -8,7 +8,7 @@
 #import "videoview.h"
 #import "footerpanel.h"
 
-/**
+/*
  * Main class that owns footer panel and video frame and
  * handles audio/video playback functionality.
  */
@@ -32,6 +32,7 @@ public:
 	void Play();
 	void Pause();
 	void TogglePause();
+	void ChangeVolume(int new_value);
 	void ToggleMute();
 	bool SetMedia(const std::wstring& media_path);
 	void Stop();
