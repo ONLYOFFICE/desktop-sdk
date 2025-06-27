@@ -1,12 +1,16 @@
 #include "keyboardlayout.h"
+#include "unicode/locid.h"
+#ifdef _WIN32
+# include <Windows.h>
+#else
 //#include <stdio.h>
 #include <list>
 #include <sstream>
+#include <algorithm>
 #include <cctype>
 #include <xcb/xcb.h>
 #include <X11/Xlib-xcb.h>
 #include <xkbcommon/xkbcommon-x11.h>
-#include "unicode/locid.h"
 
 #define LANGIDFROMLCID(lcid) ((uint16_t)(lcid))
 
@@ -21,7 +25,7 @@ static std::string trim(const std::string &str)
     return "";
 }
 
-static uint16_t layoutNameToLangId(const std::string &layoutName)
+static std::string layoutNameToLocaleName(const std::string &layoutName)
 {
     if (!layoutName.empty()) {
         std::string languageDisplayName, language, script, region;
@@ -45,12 +49,13 @@ static uint16_t layoutNameToLangId(const std::string &layoutName)
         }
 
         int32_t count;
+        icu::Locale loc("en");
         icu::UnicodeString uname;
         const icu::Locale *availableLocales = icu::Locale::getAvailableLocales(count);
         for (int32_t i = 0; i < count; ++i) {
             std::string name;
             if (language.empty()) {
-                availableLocales[i].getDisplayLanguage(uname);
+                availableLocales[i].getDisplayLanguage(loc, uname);
                 uname.toUTF8String(name);
                 if (name.find(languageDisplayName) != std::string::npos)
                     language = availableLocales[i].getLanguage();
@@ -58,7 +63,7 @@ static uint16_t layoutNameToLangId(const std::string &layoutName)
             }
 
             if (script.empty()) {
-                availableLocales[i].getDisplayScript(uname);
+                availableLocales[i].getDisplayScript(loc, uname);
                 uname.toUTF8String(name);
                 if (!name.empty()) {
                     for (auto it = parts.cbegin(); it != parts.cend(); it++) {
@@ -73,7 +78,7 @@ static uint16_t layoutNameToLangId(const std::string &layoutName)
             }
 
             if (region.empty()) {
-                availableLocales[i].getDisplayCountry(uname);
+                availableLocales[i].getDisplayCountry(loc, uname);
                 uname.toUTF8String(name);
                 if (!name.empty()) {
                     for (auto it = parts.cbegin(); it != parts.cend(); it++) {
@@ -109,9 +114,18 @@ static uint16_t layoutNameToLangId(const std::string &layoutName)
                 language.append("_" + region);
 
             // fprintf(stderr, "Canonical name: %s\n", language.c_str());
-            icu::Locale loc(language.c_str());
-            return LANGIDFROMLCID(loc.getLCID());
+            return language;
         }
+    }
+    return "";
+}
+
+static uint16_t layoutNameToLangId(const std::string &layoutName)
+{
+    std::string localeName = layoutNameToLocaleName(layoutName);
+    if (!localeName.empty()) {
+        icu::Locale loc(localeName.c_str());
+        return LANGIDFROMLCID(loc.getLCID());
     }
     return 0;
 }
@@ -160,19 +174,40 @@ KeyboardLayoutPrivate::~KeyboardLayoutPrivate()
     if (display)
         XCloseDisplay(display);
 }
+#endif
 
+static std::string getNativeLanguageName(const std::string &localeName)
+{
+    std::string displayName;
+    icu::Locale loc(localeName.c_str());
+    icu::UnicodeString uname;
+    loc.getDisplayLanguage(loc, uname);
+    if (!uname.isEmpty()) {
+        UnicodeString first = uname.tempSubString(0, 1);
+        UnicodeString rest = uname.tempSubString(1);
+        first.toUpper();
+        uname = first + rest;
+        uname.toUTF8String(displayName);
+    }
+    return displayName;
+}
 
-KeyboardLayout::KeyboardLayout() :
-    pimpl(new KeyboardLayoutPrivate)
+KeyboardLayout::KeyboardLayout()
+#ifdef __linux__
+    : pimpl(new KeyboardLayoutPrivate)
+#endif
 {
 
 }
 
 KeyboardLayout::~KeyboardLayout()
 {
+#ifdef __linux__
     delete pimpl, pimpl = nullptr;
+#endif
 }
 
+#ifdef __linux__
 bool KeyboardLayout::IsKeyboardSupport() const
 {
     return pimpl->device_id != -1;
@@ -205,4 +240,64 @@ uint16_t KeyboardLayout::GetKeyboardLayout() const
         }
     }
     return layout;
+}
+#endif
+
+std::vector<std::pair<std::string, std::string>> KeyboardLayout::GetKeyboardLayoutList() const
+{
+    std::vector<std::pair<std::string, std::string>> layouts;
+#ifdef _WIN32
+    int nBuff = ::GetKeyboardLayoutList(0, NULL);
+    if (nBuff > 0) {
+        HKL *lpList = new HKL[nBuff];
+        int count = ::GetKeyboardLayoutList(nBuff, lpList);
+        for (int i = 0; i < count; ++i) {
+            LANGID langID = LOWORD(lpList[i]);
+            LCID lcid = MAKELCID(langID, SORT_DEFAULT);
+
+            char localeNameA[LOCALE_NAME_MAX_LENGTH] = {0};
+#ifdef WIN_XP_OR_VISTA
+            if (GetLocaleInfoA(lcid, LOCALE_SISO639LANGNAME, localeNameA, LOCALE_NAME_MAX_LENGTH) > 0) {
+                std::string locName(localeNameA);
+                if (GetLocaleInfoA(lcid, LOCALE_SISO3166CTRYNAME, localeNameA, LOCALE_NAME_MAX_LENGTH) > 0) {
+                    locName.append("-");
+                    locName.append(localeNameA);
+                }
+                std::string displayName = getNativeLanguageName(locName);
+                layouts.emplace_back(locName, displayName);
+            }
+#else
+            WCHAR localeName[LOCALE_NAME_MAX_LENGTH];
+            if (LCIDToLocaleName(lcid, localeName, LOCALE_NAME_MAX_LENGTH, 0) > 0) {
+                WideCharToMultiByte(CP_UTF8, 0, localeName, -1, localeNameA, LOCALE_NAME_MAX_LENGTH, NULL, NULL);
+                std::string displayName = getNativeLanguageName(localeNameA);
+                layouts.emplace_back(localeNameA, displayName);
+            }
+#endif
+        }
+        delete[] lpList;
+    }
+#else
+    if (pimpl->device_id != -1) {
+        if (xkb_keymap *keymap = xkb_x11_keymap_new_from_device(pimpl->context, pimpl->connection, pimpl->device_id, XKB_KEYMAP_COMPILE_NO_FLAGS)) {
+            xkb_layout_index_t num_layouts = xkb_keymap_num_layouts(keymap);
+
+            for (xkb_layout_index_t i = 0; i < num_layouts; ++i) {
+                if (const char *layout_name = xkb_keymap_layout_get_name(keymap, i)) {
+                    std::string localeName = layoutNameToLocaleName(layout_name);
+                    if (!localeName.empty()) {
+                        std::replace(localeName.begin(), localeName.end(), '_', '-');
+                        std::string displayName = getNativeLanguageName(localeName);
+                        layouts.emplace_back(localeName, displayName);
+                        // fprintf(stderr, "%s %s\n", localeName.c_str(), displayName.c_str());
+                    }
+                }
+            }
+            xkb_keymap_unref(keymap);
+        } else {
+            // fprintf(stderr, "Cannot get keymap\n");
+        }
+    }
+#endif
+    return layouts;
 }

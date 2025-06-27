@@ -35,7 +35,7 @@
 #include "./cefwrapper/client_resource_handler_async.h"
 #include "./cefwrapper/monitor_info.h"
 
-#if defined(_LINUX) && !defined(_MAC)
+#if !defined(_MAC)
 # include "keyboardlayout.h"
 #endif
 
@@ -283,6 +283,16 @@ void CAscApplicationManager::OnNeedCheckKeyboard()
 {
 	if (GetEventListener())
 		GetEventListener()->OnEvent(new NSEditorApi::CAscCefMenuEvent(ASC_MENU_EVENT_TYPE_CEF_CHECK_KEYBOARD));
+}
+
+std::vector<std::pair<std::string, std::string>> CAscApplicationManager::GetKeyboardLayoutList() const
+{
+#if !defined(_MAC)
+    KeyboardLayout kbl;
+    return kbl.GetKeyboardLayoutList();
+#else
+    return std::vector<std::pair<std::string, std::string>>();
+#endif
 }
 
 void CAscApplicationManager::CheckKeyboard()
@@ -939,7 +949,9 @@ int CAscApplicationManager::GetPlatformKeyboardLayout()
 
 #if defined(_LINUX) && !defined(_MAC)
 	KeyboardLayout kl;
-	return kl.GetKeyboardLayout();
+    uint16_t layout = kl.GetKeyboardLayout();
+    if (layout != 0)
+        return layout;
 #endif
 
 	return -1;
@@ -1264,6 +1276,11 @@ void CAscApplicationManager::AddFileToLocalResolver(const std::wstring& sFile)
 void CAscApplicationManager::SetRendererProcessVariable(const std::wstring& sVariable)
 {
 	m_pInternal->m_sRendererJSON = sVariable;
+}
+
+void CAscApplicationManager::SetRecentPin(const int& nId, const bool& bIsPin)
+{
+	m_pInternal->Recents_Pin(nId, bIsPin);
 }
 
 std::wstring CAscApplicationManager::GetExternalSchemeName()

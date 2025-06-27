@@ -1,5 +1,6 @@
 #include "qvideoplaylist.h"
 
+#include <cmath>
 #include <QStyleOption>
 #include <QPainter>
 #include <QStandardItemModel>
@@ -126,7 +127,7 @@ QVideoPlaylist::~QVideoPlaylist()
 
 void QVideoPlaylist::private_Style(double dDpi)
 {
-	if (fabs(dDpi - m_dDpi) < 0.1)
+	if (std::abs(dDpi - m_dDpi) < 0.1)
 		return;
 	m_dDpi = dDpi;
 
