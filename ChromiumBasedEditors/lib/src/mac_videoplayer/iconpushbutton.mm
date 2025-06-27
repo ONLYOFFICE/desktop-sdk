@@ -4,8 +4,9 @@
 
 @implementation NSIconPushButton
 
-- (instancetype)initWithFrame:(NSRect)frame_rect iconName:(NSString*)icon_name {
-	self = [super initWithFrame:frame_rect];
+- (instancetype)initWithIconName:(NSString*)icon_name size:(NSSize)size {
+	NSRect init_frame_rect = NSMakeRect(0, 0, size.width, size.height);
+	self = [super initWithFrame:init_frame_rect];
 	if (self) {
 		[self setWantsLayer:YES];
 		self.layer.cornerRadius = 3.0;
@@ -13,7 +14,7 @@
 		self.layer.backgroundColor = [NSColorFromHex(0x313437) CGColor];
 		[self setIcon:icon_name];
 		// add mouse tracking for background color or/and icon changing
-		[self addTrackingRect:self.bounds owner:self userData:nil assumeInside:NO];
+		[self addTrackingRect:init_frame_rect owner:self userData:nil assumeInside:NO];
 	}
 	return self;
 }

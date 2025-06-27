@@ -65,5 +65,13 @@ void CCefViewMedia::hideMediaControl()
 
 void CCefViewMedia::updateGeometry(NSEditorApi::CAscExternalMediaPlayerCommand* data)
 {
-	// TODO
+	if (!m_player_view)
+		return;
+
+	// update frame of the video view
+	NSRect video_view_rect = NSMakeRect(data->get_FrameRectX(), cef_height - data->get_FrameRectH() - data->get_FrameRectY(), data->get_FrameRectW(), data->get_FrameRectH());
+	[m_player_view->VideoView() setFrame:video_view_rect];
+	// update frame of the footer panel
+	NSRect footer_panel_rect = NSMakeRect(data->get_ControlRectX(), cef_height - data->get_ControlRectH() - data->get_ControlRectY(), data->get_ControlRectW(), data->get_ControlRectH());
+	[m_player_view->Footer() setFrame:footer_panel_rect];
 }

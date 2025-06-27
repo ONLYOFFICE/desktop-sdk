@@ -5,9 +5,6 @@
 #import <AVFoundation/AVFoundation.h>
 
 @interface NSVideoView : NSView
-{
-	AVPlayerLayer* player_layer;
-}
 - (instancetype)initWithFrame:(NSRect)frame_rect player:(AVPlayer*)player;
 - (void)dealloc;
 @end

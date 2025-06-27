@@ -4,9 +4,7 @@
 #import <Cocoa/Cocoa.h>
 
 @interface NSIconPushButton : NSButton
-{
-}
-- (instancetype)initWithFrame:(NSRect)frame_rect iconName:(NSString*)icon_name;
+- (instancetype)initWithIconName:(NSString*)icon_name size:(NSSize)size;
 - (void)dealloc;
 
 - (void)setIcon:(NSString*)icon_name;

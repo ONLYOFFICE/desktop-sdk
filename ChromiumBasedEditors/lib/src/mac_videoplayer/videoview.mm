@@ -1,5 +1,11 @@
 #import "videoview.h"
 
+@interface NSVideoView () {
+	AVPlayerLayer* player_layer;
+}
+@end
+
+
 @implementation NSVideoView
 
 - (instancetype)initWithFrame:(NSRect)frame_rect player:(AVPlayer*)player {
