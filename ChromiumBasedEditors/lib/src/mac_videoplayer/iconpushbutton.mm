@@ -2,7 +2,7 @@
 
 #import "utils.h"
 
-@interface NSIconPushButton()
+@interface NSIconPushButton ()
 {
 	CFooterSkin* m_skin;
 	bool m_hovered;
@@ -28,7 +28,7 @@
 }
 
 - (void)dealloc {
-	NSLog(@"debug: icon button deallocated");
+	NSLog(@"debug: button deallocated");
 #if !__has_feature(objc_arc)
 	[super dealloc];
 #endif
@@ -53,7 +53,9 @@
 	NSImage* image = [[NSImage alloc] initWithContentsOfFile:icon_path];
 	self.image = image;
 	self.imageScaling = NSImageScaleProportionallyDown;
+#if !__has_feature(objc_arc)
 	[image release];
+#endif
 }
 
 - (void)mouseEntered:(NSEvent*)event {

@@ -182,7 +182,9 @@ core_mac {
 		src/mac_videoplayer/playerview.h \
 		src/mac_videoplayer/slider.h \
 		src/mac_videoplayer/videoview.h \
-		src/mac_videoplayer/utils.h
+		src/mac_videoplayer/utils.h \
+		src/mac_videoplayer/timelabel.h \
+		src/mac_videoplayer/footerskin.h
 
 	OBJECTIVE_SOURCES += \
 		src/mac_videoplayer/footerpanel.mm \
@@ -190,7 +192,9 @@ core_mac {
 		src/mac_videoplayer/playerview.mm \
 		src/mac_videoplayer/slider.mm \
 		src/mac_videoplayer/videoview.mm \
-		src/mac_videoplayer/utils.mm
+		src/mac_videoplayer/utils.mm \
+		src/mac_videoplayer/timelabel.mm \
+		src/mac_videoplayer/footerskin.mm
 }
 
 core_linux {

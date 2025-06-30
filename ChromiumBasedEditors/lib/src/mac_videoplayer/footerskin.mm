@@ -23,8 +23,9 @@ CFooterSkin CFooterSkin::getSkin(Type type) {
 			// skin.m_oSliderStyleOpt2.m_sHandleColor = "#FFFFFF";
 			// skin.m_oSliderStyleOpt2.m_sHandleBorderColor = "#444444";
 
-			// skin.m_oTimeLabelStyleOpt.m_oFont = QFont("Open Sans", 14, QFont::Normal);
-			// skin.m_oTimeLabelStyleOpt.m_sColor = "#444444";
+			skin.time_label.font_name = @"";
+			skin.time_label.font_size = 14;
+			skin.time_label.color = 0x444444;
 			break;
 		}
 		case Type::kDark: {
@@ -46,8 +47,9 @@ CFooterSkin CFooterSkin::getSkin(Type type) {
 			// skin.m_oSliderStyleOpt2.m_sHandleColor = "#FFFFFF";
 			// skin.m_oSliderStyleOpt2.m_sHandleBorderColor = "#222222";
 
-			// skin.m_oTimeLabelStyleOpt.m_oFont = QFont("Open Sans", 14, QFont::Normal);
-			// skin.m_oTimeLabelStyleOpt.m_sColor = "#D5D6D6";
+			skin.time_label.font_name = @"";
+			skin.time_label.font_size = 14;
+			skin.time_label.color = 0xD5D6D6;
 			break;
 		}
 		default:

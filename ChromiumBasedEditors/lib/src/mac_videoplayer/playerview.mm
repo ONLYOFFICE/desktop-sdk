@@ -1,7 +1,5 @@
 #include "playerview.h"
 
-#include <iostream>
-
 #import "NSString+StringUtils.h"
 
 CPlayerView::CPlayerView(NSRect video_view_rect, NSRect footer_panel_rect, NSView* parent) {
@@ -79,7 +77,7 @@ bool CPlayerView::SetMedia(const std::wstring& media_path) {
 		AVPlayerItem* player_item = [AVPlayerItem playerItemWithURL:url];
 		[m_player replaceCurrentItemWithPlayerItem:player_item];
 	} else {
-		std::wcerr << L"Error: could not open file: " << media_path << std::endl;
+		NSLog(@"Error: could not open file: %@", path);
 		return false;
 	}
 	return true;

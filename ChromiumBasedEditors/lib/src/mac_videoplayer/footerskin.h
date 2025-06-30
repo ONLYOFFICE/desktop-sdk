@@ -18,6 +18,12 @@ struct CButtonStyle {
 	int border_radius;
 };
 
+struct CTimeLabelStyle {
+	NSString* font_name;	// may be empty string (system font will be applied)
+	int font_size;
+	Color color;
+};
+
 class CFooterSkin {
 public:
     enum class Type {
@@ -42,6 +48,7 @@ public:
 	Type type;
 	CFooterStyle footer;
 	CButtonStyle button;
+	CTimeLabelStyle time_label;
 
 public:
 	// some global constants (skin-independent)
