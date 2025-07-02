@@ -59,8 +59,8 @@ void CPlayerView::TogglePause() {
 	}
 }
 
-void CPlayerView::ChangeVolume(int new_value) {
-	// TODO
+void CPlayerView::ChangeVolume(CGFloat new_value) {
+	m_player.volume = new_value;
 }
 
 void CPlayerView::ToggleMute() {

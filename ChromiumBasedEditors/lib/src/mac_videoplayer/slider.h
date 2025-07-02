@@ -3,8 +3,17 @@
 
 #import <Cocoa/Cocoa.h>
 
-@interface NSVideoSlider : NSSlider
+#import "footerskin.h"
 
+@interface NSStyledSlider : NSSlider
+- (instancetype)initWithStyle:(CSliderStyle*)style;
+- (void)dealloc;
+
+// slider appearance
+- (void)updateStyle;
+
+// test action function
+- (void)sliderValueChanged:(NSSlider*)sender;
 @end
 
 #endif	// VIDEOPLAYER_SLIDER_H_

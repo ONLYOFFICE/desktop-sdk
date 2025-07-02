@@ -2,6 +2,7 @@
 
 #import "iconpushbutton.h"
 #import "timelabel.h"
+#import "slider.h"
 #import "utils.h"
 
 // Helper functions for maintaining auto layout
@@ -45,6 +46,8 @@ void setRightConstraintsToView(NSView* view, NSLayoutYAxisAnchor* top_anchor, NS
 	NSIconPushButton* m_btn_rewind_back;
 	// text labels
 	NSTimeLabel* m_time_label;
+	// sliders
+	NSStyledSlider* m_slider_video;
 	// constraints
 	NSLayoutConstraint* m_time_label_width_constraint;
 	NSLayoutConstraint* m_time_label_height_constraint;
@@ -72,7 +75,7 @@ void setRightConstraintsToView(NSView* view, NSLayoutYAxisAnchor* top_anchor, NS
 		const NSSize button_size = NSMakeSize(button_width, button_width);
 
 		// play button
-		m_btn_play = [[NSIconPushButton alloc] initWithIconName:@"btn-play" size:button_size skin:&m_skin];
+		m_btn_play = [[NSIconPushButton alloc] initWithIconName:@"btn-play" size:button_size style:&m_skin.button];
 		[self addSubview:m_btn_play];
 		setLeftConstraintsToView(m_btn_play, self.topAnchor, self.leftAnchor, button_y_offset, button_space_between, button_size);
 #if !__has_feature(objc_arc)
@@ -80,7 +83,7 @@ void setRightConstraintsToView(NSView* view, NSLayoutYAxisAnchor* top_anchor, NS
 #endif
 
 		// volume button
-		m_btn_volume = [[NSIconPushButton alloc] initWithIconName:@"btn-volume-2" size:button_size skin:&m_skin];
+		m_btn_volume = [[NSIconPushButton alloc] initWithIconName:@"btn-volume-2" size:button_size style:&m_skin.button];
 		[self addSubview:m_btn_volume];
 		setRightConstraintsToView(m_btn_volume, self.topAnchor, self.rightAnchor, button_y_offset, button_space_between, button_size);
 #if !__has_feature(objc_arc)
@@ -88,14 +91,14 @@ void setRightConstraintsToView(NSView* view, NSLayoutYAxisAnchor* top_anchor, NS
 #endif
 
 		// time label
-		m_time_label = [[NSTimeLabel alloc] initWithSkin:&m_skin];
+		m_time_label = [[NSTimeLabel alloc] initWithStyle:&m_skin.time_label];
 		[self addSubview:m_time_label];
 		NSSize text_bounds = [m_time_label getBoundingBoxSize];
-		// manually set all constraints
+		// manually set all text label constraints
 		m_time_label.translatesAutoresizingMaskIntoConstraints = NO;
 		[m_time_label.centerYAnchor constraintEqualToAnchor:self.centerYAnchor constant:0].active = YES;
 		[m_time_label.rightAnchor constraintEqualToAnchor:m_btn_volume.leftAnchor constant:-button_space_between].active = YES;
-		// we need to save width and height constraints becuase changing skin may affect text width and height
+		// we need to save width and height constraints because changing skin may affect text width and height
 		m_time_label_width_constraint = [m_time_label.widthAnchor constraintEqualToConstant:text_bounds.width];
 		m_time_label_width_constraint.active = YES;
 		m_time_label_height_constraint = [m_time_label.heightAnchor constraintEqualToConstant:text_bounds.height];
@@ -105,7 +108,7 @@ void setRightConstraintsToView(NSView* view, NSLayoutYAxisAnchor* top_anchor, NS
 #endif
 
 		// rewind forward button
-		m_btn_rewind_forward = [[NSIconPushButton alloc] initWithIconName:@"btn-rewind-forward" size:button_size skin:&m_skin];
+		m_btn_rewind_forward = [[NSIconPushButton alloc] initWithIconName:@"btn-rewind-forward" size:button_size style:&m_skin.button];
 		[self addSubview:m_btn_rewind_forward];
 		setRightConstraintsToView(m_btn_rewind_forward, self.topAnchor, m_time_label.leftAnchor, button_y_offset, button_space_between, button_size);
 #if !__has_feature(objc_arc)
@@ -113,7 +116,7 @@ void setRightConstraintsToView(NSView* view, NSLayoutYAxisAnchor* top_anchor, NS
 #endif
 
 		// rewind back button
-		m_btn_rewind_back = [[NSIconPushButton alloc] initWithIconName:@"btn-rewind-back" size:button_size skin:&m_skin];
+		m_btn_rewind_back = [[NSIconPushButton alloc] initWithIconName:@"btn-rewind-back" size:button_size style:&m_skin.button];
 		[self addSubview:m_btn_rewind_back];
 		setRightConstraintsToView(m_btn_rewind_back, self.topAnchor, m_btn_rewind_forward.leftAnchor, button_y_offset, button_space_between, button_size);
 #if !__has_feature(objc_arc)
@@ -121,7 +124,18 @@ void setRightConstraintsToView(NSView* view, NSLayoutYAxisAnchor* top_anchor, NS
 #endif
 
 		// video slider
-		// TODO:
+		m_slider_video = [[NSStyledSlider alloc] initWithStyle:&m_skin.video_slider];
+		[self addSubview:m_slider_video];
+		// manually set all constraints
+		m_slider_video.translatesAutoresizingMaskIntoConstraints = NO;
+		[m_slider_video.centerYAnchor constraintEqualToAnchor:self.centerYAnchor constant:0].active = YES;
+		[m_slider_video.leftAnchor constraintEqualToAnchor:m_btn_play.rightAnchor constant:button_space_between].active = YES;
+		[m_slider_video.rightAnchor constraintEqualToAnchor:m_btn_rewind_back.leftAnchor constant:-button_space_between].active = YES;
+		// TODO: the whole slider area on panel becomes clickable because of this
+		[m_slider_video.heightAnchor constraintEqualToConstant:frame_rect.size.height].active = YES;
+#if !__has_feature(objc_arc)
+		[m_slider_video release];
+#endif
 	}
 	return self;
 }
@@ -154,6 +168,8 @@ void setRightConstraintsToView(NSView* view, NSLayoutYAxisAnchor* top_anchor, NS
 	NSSize text_bounds = [m_time_label getBoundingBoxSize];
 	m_time_label_width_constraint.constant = text_bounds.width;
 	m_time_label_height_constraint.constant = text_bounds.height;
+	// update sliders
+	[m_slider_video updateStyle];
 }
 
 @end

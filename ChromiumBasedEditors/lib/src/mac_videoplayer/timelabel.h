@@ -6,7 +6,7 @@
 #import "footerskin.h"
 
 @interface NSTimeLabel : NSTextField
-- (instancetype)initWithSkin:(CFooterSkin*)skin;
+- (instancetype)initWithStyle:(CTimeLabelStyle*)style;
 - (void)dealloc;
 
 // time label appearance and content

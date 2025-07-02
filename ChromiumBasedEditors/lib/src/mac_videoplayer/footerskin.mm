@@ -13,15 +13,22 @@ CFooterSkin CFooterSkin::getSkin(Type type) {
 			skin.button.bg_color_pressed = 0xCBCBCB;
 			skin.button.border_radius = 3;
 
-			// skin.m_oSliderStyleOpt1.m_sAddColor = "#848484";
-			// skin.m_oSliderStyleOpt1.m_sSubColor = "#E2E2E2";
-			// skin.m_oSliderStyleOpt1.m_sHandleColor = "#FFFFFF";
-			// skin.m_oSliderStyleOpt1.m_sHandleBorderColor = "#444444";
+			skin.video_slider.track.color = 0xE2E2E2;
+			skin.video_slider.track.fill_color = 0x848484;
+			skin.video_slider.track.thickness = 8;
+			skin.video_slider.track.border_radius = 4;
+			skin.video_slider.is_knob_visible = false;
 
-			// skin.m_oSliderStyleOpt2.m_sAddColor = "#C0C0C0";
-			// skin.m_oSliderStyleOpt2.m_sSubColor = "#E2E2E2";
-			// skin.m_oSliderStyleOpt2.m_sHandleColor = "#FFFFFF";
-			// skin.m_oSliderStyleOpt2.m_sHandleBorderColor = "#444444";
+			skin.volume_slider.track.color = 0xE2E2E2;
+			skin.volume_slider.track.fill_color = 0xC0C0C0;
+			skin.volume_slider.track.thickness = 8;
+			skin.volume_slider.track.border_radius = 4;
+			skin.volume_slider.is_knob_visible = true;
+			skin.volume_slider.knob.color = 0xFFFFFF;
+			skin.volume_slider.knob.border_color = 0x444444;
+			skin.volume_slider.knob.thickness = 16;
+			skin.volume_slider.knob.border_width = 2;
+			skin.volume_slider.knob.border_radius = 8;
 
 			skin.time_label.font_name = @"";
 			skin.time_label.font_size = 14;
@@ -37,15 +44,22 @@ CFooterSkin CFooterSkin::getSkin(Type type) {
 			skin.button.bg_color_pressed = 0x46494B;
 			skin.button.border_radius = 3;
 
-			// skin.m_oSliderStyleOpt1.m_sAddColor = "#9B9B9B";
-			// skin.m_oSliderStyleOpt1.m_sSubColor = "#545454";
-			// skin.m_oSliderStyleOpt1.m_sHandleColor = "#FFFFFF";
-			// skin.m_oSliderStyleOpt1.m_sHandleBorderColor = "#222222";
+			skin.video_slider.track.color = 0x545454;
+			skin.video_slider.track.fill_color = 0x9B9B9B;
+			skin.video_slider.track.thickness = 8;
+			skin.video_slider.track.border_radius = 4;
+			skin.video_slider.is_knob_visible = false;
 
-			// skin.m_oSliderStyleOpt2.m_sAddColor = "#808080";
-			// skin.m_oSliderStyleOpt2.m_sSubColor = "#545454";
-			// skin.m_oSliderStyleOpt2.m_sHandleColor = "#FFFFFF";
-			// skin.m_oSliderStyleOpt2.m_sHandleBorderColor = "#222222";
+			skin.volume_slider.track.color = 0x545454;
+			skin.volume_slider.track.fill_color = 0x808080;
+			skin.volume_slider.track.thickness = 8;
+			skin.volume_slider.track.border_radius = 4;
+			skin.volume_slider.is_knob_visible = true;
+			skin.volume_slider.knob.color = 0xFFFFFF;
+			skin.volume_slider.knob.border_color = 0x222222;
+			skin.volume_slider.knob.thickness = 16;
+			skin.volume_slider.knob.border_width = 2;
+			skin.volume_slider.knob.border_radius = 8;
 
 			skin.time_label.font_name = @"";
 			skin.time_label.font_size = 14;

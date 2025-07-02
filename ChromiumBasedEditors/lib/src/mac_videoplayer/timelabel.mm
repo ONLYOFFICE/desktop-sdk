@@ -4,7 +4,7 @@
 
 @interface NSTimeLabel ()
 {
-	CFooterSkin* m_skin;
+	CTimeLabelStyle* m_style;
 	NSDictionary* m_attributes;
 	NSSize m_bounding_box_size;
 }
@@ -12,12 +12,12 @@
 
 @implementation NSTimeLabel
 
-- (instancetype)initWithSkin:(CFooterSkin*)skin {
+- (instancetype)initWithStyle:(CTimeLabelStyle*)style {
 	self = [super init];
 	if (self) {
 		[self setWantsLayer:YES];
 		// apply skin
-		m_skin = skin;
+		m_style = style;
 		[self updateStyle];
 		// set initial time
 		[self setText:@"00:00:00"];
@@ -40,18 +40,18 @@
 
 - (void)updateStyle {
 	// get font
-	CGFloat font_size = m_skin->time_label.font_size;
+	CGFloat font_size = m_style->font_size;
 	NSFont* font = nil;
-	if (m_skin->time_label.font_name.length == 0) {
+	if (m_style->font_name.length == 0) {
 		font = [NSFont systemFontOfSize:font_size];
 	} else {
-		font = [NSFont fontWithName:m_skin->time_label.font_name size:font_size];
+		font = [NSFont fontWithName:m_style->font_name size:font_size];
 		if (!font) {
 			font = [NSFont systemFontOfSize:font_size];
 		}
 	}
 	// get color
-	NSColor* color = NSColorFromHex(m_skin->time_label.color);
+	NSColor* color = NSColorFromHex(m_style->color);
 	// update attributes
 	m_attributes = @{
 		NSFontAttributeName: font,

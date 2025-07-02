@@ -32,7 +32,7 @@ public:
 	void Play();
 	void Pause();
 	void TogglePause();
-	void ChangeVolume(int new_value);
+	void ChangeVolume(CGFloat new_value);
 	void ToggleMute();
 	bool SetMedia(const std::wstring& media_path);
 	void Stop();

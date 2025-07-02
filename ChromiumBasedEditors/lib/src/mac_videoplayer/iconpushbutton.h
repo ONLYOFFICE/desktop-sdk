@@ -6,7 +6,7 @@
 #import "footerskin.h"
 
 @interface NSIconPushButton : NSButton
-- (instancetype)initWithIconName:(NSString*)icon_name size:(NSSize)size skin:(CFooterSkin*)skin;
+- (instancetype)initWithIconName:(NSString*)icon_name size:(NSSize)size style:(CButtonStyle*)style;
 - (void)dealloc;
 
 // button appearance

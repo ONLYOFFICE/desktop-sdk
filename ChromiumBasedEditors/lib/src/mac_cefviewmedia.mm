@@ -49,8 +49,9 @@ void CCefViewMedia::showMediaControl(NSEditorApi::CAscExternalMediaPlayerCommand
 	}
 
 	m_player_view->SetMedia(data->get_Url());
-	// TODO: remove play
+	// TODO: remove play and mute
 	m_player_view->Play();
+	m_player_view->ChangeVolume(0);
 
 	int nVolume = data->get_Volume();
 	if (data->get_Mute() || m_pCefView->IsPresentationReporter()) {
