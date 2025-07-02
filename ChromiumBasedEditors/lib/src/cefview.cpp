@@ -2408,7 +2408,7 @@ public:
 		return ret;
 	}
 
-#if !defined(CEF_2623) && !defined(CEF_VERSION_107)
+#if !defined(CEF_2623) && !defined(CEF_VERSION_103)
 	virtual bool OnShowPermissionPrompt(
 		CefRefPtr<CefBrowser> browser,
 		uint64 prompt_id,
