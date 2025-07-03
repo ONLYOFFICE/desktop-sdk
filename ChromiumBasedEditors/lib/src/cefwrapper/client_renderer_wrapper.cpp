@@ -4389,6 +4389,25 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				retval = CefV8Value::CreateString(sUrl);
 				return true;
 			}
+			else if (name == "getEngineVersion")
+			{
+				int nVersion = 109;
+#ifdef CEF_2623
+				nVersion = 49;
+#endif
+
+#ifdef CEF_VERSION_103
+				nVersion = 103;
+#endif
+
+
+#ifdef CEF_VERSION_107
+				nVersion = 107;
+#endif
+
+				retval = CefV8Value::CreateInt(nVersion);
+				return true;
+			}
 
 			// Function does not exist.
 			return false;
@@ -4964,7 +4983,7 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 			CefRefPtr<CefV8Handler> handler = pWrapper;
 
-#define EXTEND_METHODS_COUNT 185
+#define EXTEND_METHODS_COUNT 186
 			const char* methods[EXTEND_METHODS_COUNT] = {
 				"Copy",
 				"Paste",
@@ -5220,6 +5239,8 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 				"OpenWorkbook",
 
 				"onFileLockedClose",
+
+				"getEngineVersion",
 
 				NULL};
 
