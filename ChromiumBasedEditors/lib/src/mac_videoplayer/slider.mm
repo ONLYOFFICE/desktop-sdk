@@ -101,13 +101,20 @@
 - (void)updateStyle {
 	// set knob image
 	if (m_style->is_knob_visible) {
-		const CGFloat knob_thickness = m_style->knob.thickness;
+		const CGFloat knob_thickness = m_style->knob.thickness + m_style->knob.border_width;
 		m_knob_image = [[NSImage imageWithSize:NSMakeSize(knob_thickness, knob_thickness) flipped:NO drawingHandler:^BOOL(NSRect dst_rect) {
-			// TODO: add border
+			// draw knob
 			const CGFloat border_radius = m_style->knob.border_radius;
-			NSBezierPath *path = [NSBezierPath bezierPathWithRoundedRect:dst_rect xRadius:border_radius yRadius:border_radius];
+			const CGFloat border_width = m_style->knob.border_width;
+			NSRect knob_rect = NSMakeRect(dst_rect.origin.x + border_width / 2, dst_rect.origin.y + border_width / 2,
+										  dst_rect.size.width - border_width, dst_rect.size.height - border_width);
+			NSBezierPath* path = [NSBezierPath bezierPathWithRoundedRect:knob_rect xRadius:border_radius yRadius:border_radius];
 			[NSColorFromHex(m_style->knob.color) setFill];
 			[path fill];
+			// draw border
+			[path setLineWidth:border_width];
+			[NSColorFromHex(m_style->knob.border_color) setStroke];
+			[path stroke];
 			return YES;
 		}] retain];
 	} else {
