@@ -5,7 +5,7 @@
 
 #import "footerskin.h"
 
-@interface NSFooterPanel : NSView
+@interface NSFooterPanel : NSView<StyledView>
 - (instancetype)initWithFrame:(NSRect)frame_rect superview:(NSView*)parent;
 - (void)dealloc;
 

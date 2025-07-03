@@ -64,7 +64,6 @@
 	[self setText:self.stringValue];
 }
 
-// TODO: should be setTime and take CMTime
 - (void)setText:(NSString*)text {
 	NSAttributedString* attr_string = [[NSAttributedString alloc] initWithString:NSLocalizedString(text, nil) attributes:m_attributes];
 	[self setAttributedStringValue:attr_string];

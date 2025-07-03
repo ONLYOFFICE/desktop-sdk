@@ -3,7 +3,11 @@
 
 #import <Foundation/NSString.h>
 
-// TODO: add protocol for updateStyle() function
+// views with styling options should implement this protocol
+@protocol StyledView
+// applies style and updates view appearance
+- (void)updateStyle;
+@end
 
 // color is specified in hex format, for example: 0xF1F1F1
 using Color = unsigned;

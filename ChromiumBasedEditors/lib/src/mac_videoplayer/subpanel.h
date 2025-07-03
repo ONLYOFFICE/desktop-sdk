@@ -5,10 +5,8 @@
 
 #import "footerskin.h"
 
-@interface NSSubPanel : NSView
+@interface NSSubPanel : NSView<StyledView>
 - (instancetype)initWithStyle:(CFooterStyle*)style;
-// appearance
-- (void)updateStyle;
 @end
 
 #endif	// FOOTER_SUB_PANEL_H_

@@ -5,13 +5,15 @@
 
 #import "footerskin.h"
 
-@interface NSTimeLabel : NSTextField
+@interface NSTimeLabel : NSTextField<StyledView>
 - (instancetype)initWithStyle:(CTimeLabelStyle*)style;
 - (void)dealloc;
 
-// time label appearance and content
-- (void)updateStyle;
+// setters
+// TODO: should be setTime and take CMTime
 - (void)setText:(NSString*)text;
+
+// get bounding box size for longest possible time
 - (NSSize)getBoundingBoxSize;
 @end
 

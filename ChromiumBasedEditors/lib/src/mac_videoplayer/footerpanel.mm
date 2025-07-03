@@ -41,7 +41,6 @@ void setRightConstraintsToView(NSView* view, NSLayoutYAxisAnchor* top_anchor, NS
 	// volume control rect
 	NSSubPanel* m_panel_volume;
 }
-- (void)updateStyle;
 @end
 
 @implementation NSFooterPanel

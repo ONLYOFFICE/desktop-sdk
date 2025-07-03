@@ -5,12 +5,9 @@
 
 #import "footerskin.h"
 
-@interface NSStyledSlider : NSSlider
+@interface NSStyledSlider : NSSlider<StyledView>
 - (instancetype)initWithStyle:(CSliderStyle*)style vertical:(BOOL)vertical;
 - (void)dealloc;
-
-// slider appearance
-- (void)updateStyle;
 
 // test action function
 - (void)sliderValueChanged:(NSSlider*)sender;

@@ -2,14 +2,13 @@
 
 #import "utils.h"
 
-@interface NSStyledSliderCell : NSSliderCell
+@interface NSStyledSliderCell : NSSliderCell<StyledView>
 {
 	CSliderStyle* m_style;
 	NSImage* m_knob_image;
 	NSRect m_track_rect;
 }
 - (instancetype)initWithStyle:(CSliderStyle*)style;
-- (void)updateStyle;
 @end
 
 @implementation NSStyledSliderCell
