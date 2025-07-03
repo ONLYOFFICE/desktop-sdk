@@ -6,7 +6,7 @@
 #import "footerskin.h"
 
 @interface NSFooterPanel : NSView
-- (instancetype)initWithFrame:(NSRect)frame_rect;
+- (instancetype)initWithFrame:(NSRect)frame_rect superview:(NSView*)parent;
 - (void)dealloc;
 
 - (void)applySkin:(CFooterSkin::Type)type;

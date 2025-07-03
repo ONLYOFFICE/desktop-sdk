@@ -3,6 +3,8 @@
 
 #import <Foundation/NSString.h>
 
+// TODO: add protocol for updateStyle() function
+
 // color is specified in hex format, for example: 0xF1F1F1
 using Color = unsigned;
 

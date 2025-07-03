@@ -6,7 +6,7 @@
 #import "footerskin.h"
 
 @interface NSStyledSlider : NSSlider
-- (instancetype)initWithStyle:(CSliderStyle*)style;
+- (instancetype)initWithStyle:(CSliderStyle*)style vertical:(BOOL)vertical;
 - (void)dealloc;
 
 // slider appearance

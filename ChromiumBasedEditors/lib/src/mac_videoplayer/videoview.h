@@ -5,7 +5,7 @@
 #import <AVFoundation/AVFoundation.h>
 
 @interface NSVideoView : NSView
-- (instancetype)initWithFrame:(NSRect)frame_rect player:(AVPlayer*)player;
+- (instancetype)initWithFrame:(NSRect)frame_rect player:(AVPlayer*)player superview:(NSView*)parent;
 - (void)dealloc;
 @end
 

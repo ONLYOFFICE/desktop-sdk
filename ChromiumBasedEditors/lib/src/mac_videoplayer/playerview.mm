@@ -5,14 +5,10 @@
 CPlayerView::CPlayerView(NSRect video_view_rect, NSRect footer_panel_rect, NSView* parent) {
 	// create player
 	m_player = [[AVPlayer alloc] init];
-
 	// add video view
-	m_video_view = [[NSVideoView alloc] initWithFrame:video_view_rect player:m_player];
-	[parent addSubview:m_video_view positioned:NSWindowAbove relativeTo:nil];
-
+	m_video_view = [[NSVideoView alloc] initWithFrame:video_view_rect player:m_player superview:parent];
 	// add footer panel
-	m_footer = [[NSFooterPanel alloc] initWithFrame:footer_panel_rect];
-	[parent addSubview:m_footer positioned:NSWindowAbove relativeTo:nil];
+	m_footer = [[NSFooterPanel alloc] initWithFrame:footer_panel_rect superview:parent];
 }
 
 CPlayerView::~CPlayerView() {

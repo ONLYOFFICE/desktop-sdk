@@ -3,24 +3,10 @@
 #import "iconpushbutton.h"
 #import "timelabel.h"
 #import "slider.h"
+#import "subpanel.h"
 #import "utils.h"
 
 // Helper functions for maintaining auto layout
-/*
- * Sets `view` positioning as follows:
- *  - to the right of `left_anchor` with `left_offset` pixels offset
- *  - under `top_anchor` with `top_offset` pixels offset
- *  - with width and size specified by `size`
- */
-void setLeftConstraintsToView(NSView* view, NSLayoutYAxisAnchor* top_anchor, NSLayoutXAxisAnchor* left_anchor,
-							  CGFloat top_offset, CGFloat left_offset, NSSize size) {
-	view.translatesAutoresizingMaskIntoConstraints = NO;
-	[view.topAnchor constraintEqualToAnchor:top_anchor constant:top_offset].active = YES;
-	[view.leftAnchor constraintEqualToAnchor:left_anchor constant:left_offset].active = YES;
-	[view.widthAnchor constraintEqualToConstant:size.width].active = YES;
-	[view.heightAnchor constraintEqualToConstant:size.height].active = YES;
-}
-
 /*
  * Sets `view` positioning as follows:
  *  - to the left of `right_anchor` with `right_offset` pixels offset
@@ -48,18 +34,24 @@ void setRightConstraintsToView(NSView* view, NSLayoutYAxisAnchor* top_anchor, NS
 	NSTimeLabel* m_time_label;
 	// sliders
 	NSStyledSlider* m_slider_video;
+	NSStyledSlider* m_slider_volume;
 	// constraints
 	NSLayoutConstraint* m_time_label_width_constraint;
 	NSLayoutConstraint* m_time_label_height_constraint;
+	// volume control rect
+	NSSubPanel* m_panel_volume;
 }
 - (void)updateStyle;
 @end
 
 @implementation NSFooterPanel
 
-- (instancetype)initWithFrame:(NSRect)frame_rect {
+- (instancetype)initWithFrame:(NSRect)frame_rect superview:(NSView*)parent {
 	self = [super initWithFrame:frame_rect];
 	if (self) {
+		// set superview
+		[parent addSubview:self positioned:NSWindowAbove relativeTo:nil];
+		// set appearance
 		[self setWantsLayer:YES];
 		// apply light skin by default
 		m_skin = CFooterSkin::getSkin(CFooterSkin::Type::kLight);
@@ -77,7 +69,12 @@ void setRightConstraintsToView(NSView* view, NSLayoutYAxisAnchor* top_anchor, NS
 		// play button
 		m_btn_play = [[NSIconPushButton alloc] initWithIconName:@"btn-play" size:button_size style:&m_skin.button];
 		[self addSubview:m_btn_play];
-		setLeftConstraintsToView(m_btn_play, self.topAnchor, self.leftAnchor, button_y_offset, button_space_between, button_size);
+		// constraints: place on the left side of the footer panel
+		m_btn_play.translatesAutoresizingMaskIntoConstraints = NO;
+		[m_btn_play.topAnchor constraintEqualToAnchor:self.topAnchor constant:button_y_offset].active = YES;
+		[m_btn_play.leftAnchor constraintEqualToAnchor:self.leftAnchor constant:button_space_between].active = YES;
+		[m_btn_play.widthAnchor constraintEqualToConstant:button_width].active = YES;
+		[m_btn_play.heightAnchor constraintEqualToConstant:button_width].active = YES;
 #if !__has_feature(objc_arc)
 		[m_btn_play release];
 #endif
@@ -85,6 +82,7 @@ void setRightConstraintsToView(NSView* view, NSLayoutYAxisAnchor* top_anchor, NS
 		// volume button
 		m_btn_volume = [[NSIconPushButton alloc] initWithIconName:@"btn-volume-2" size:button_size style:&m_skin.button];
 		[self addSubview:m_btn_volume];
+		// constraints: place on the right side of the footer panel
 		setRightConstraintsToView(m_btn_volume, self.topAnchor, self.rightAnchor, button_y_offset, button_space_between, button_size);
 #if !__has_feature(objc_arc)
 		[m_btn_volume release];
@@ -94,9 +92,9 @@ void setRightConstraintsToView(NSView* view, NSLayoutYAxisAnchor* top_anchor, NS
 		m_time_label = [[NSTimeLabel alloc] initWithStyle:&m_skin.time_label];
 		[self addSubview:m_time_label];
 		NSSize text_bounds = [m_time_label getBoundingBoxSize];
-		// manually set all text label constraints
+		// constraints: place to the left of volume button
 		m_time_label.translatesAutoresizingMaskIntoConstraints = NO;
-		[m_time_label.centerYAnchor constraintEqualToAnchor:self.centerYAnchor constant:0].active = YES;
+		[m_time_label.centerYAnchor constraintEqualToAnchor:self.centerYAnchor].active = YES;
 		[m_time_label.rightAnchor constraintEqualToAnchor:m_btn_volume.leftAnchor constant:-button_space_between].active = YES;
 		// we need to save width and height constraints because changing skin may affect text width and height
 		m_time_label_width_constraint = [m_time_label.widthAnchor constraintEqualToConstant:text_bounds.width];
@@ -110,6 +108,7 @@ void setRightConstraintsToView(NSView* view, NSLayoutYAxisAnchor* top_anchor, NS
 		// rewind forward button
 		m_btn_rewind_forward = [[NSIconPushButton alloc] initWithIconName:@"btn-rewind-forward" size:button_size style:&m_skin.button];
 		[self addSubview:m_btn_rewind_forward];
+		// constraints: place to the left of time label
 		setRightConstraintsToView(m_btn_rewind_forward, self.topAnchor, m_time_label.leftAnchor, button_y_offset, button_space_between, button_size);
 #if !__has_feature(objc_arc)
 		[m_btn_rewind_forward release];
@@ -118,17 +117,18 @@ void setRightConstraintsToView(NSView* view, NSLayoutYAxisAnchor* top_anchor, NS
 		// rewind back button
 		m_btn_rewind_back = [[NSIconPushButton alloc] initWithIconName:@"btn-rewind-back" size:button_size style:&m_skin.button];
 		[self addSubview:m_btn_rewind_back];
+		// constraints: place to the left of rewind forward button
 		setRightConstraintsToView(m_btn_rewind_back, self.topAnchor, m_btn_rewind_forward.leftAnchor, button_y_offset, button_space_between, button_size);
 #if !__has_feature(objc_arc)
 		[m_btn_rewind_back release];
 #endif
 
 		// video slider
-		m_slider_video = [[NSStyledSlider alloc] initWithStyle:&m_skin.video_slider];
+		m_slider_video = [[NSStyledSlider alloc] initWithStyle:&m_skin.video_slider vertical:NO];
 		[self addSubview:m_slider_video];
-		// manually set all constraints
+		// constraints: stretch between play button and rewind back button
 		m_slider_video.translatesAutoresizingMaskIntoConstraints = NO;
-		[m_slider_video.centerYAnchor constraintEqualToAnchor:self.centerYAnchor constant:0].active = YES;
+		[m_slider_video.centerYAnchor constraintEqualToAnchor:self.centerYAnchor].active = YES;
 		[m_slider_video.leftAnchor constraintEqualToAnchor:m_btn_play.rightAnchor constant:button_space_between].active = YES;
 		[m_slider_video.rightAnchor constraintEqualToAnchor:m_btn_rewind_back.leftAnchor constant:-button_space_between].active = YES;
 		// TODO: the whole slider area on panel becomes clickable because of this
@@ -136,12 +136,40 @@ void setRightConstraintsToView(NSView* view, NSLayoutYAxisAnchor* top_anchor, NS
 #if !__has_feature(objc_arc)
 		[m_slider_video release];
 #endif
+
+		// volume control rect
+		m_panel_volume = [[NSSubPanel alloc] initWithStyle:&m_skin.footer];
+		// add to parent instead of self, because volume panel should be rendered outside of the footer panel rect
+		[parent addSubview:m_panel_volume positioned:NSWindowAbove relativeTo:nil];
+		// constraints: place above the volume button
+		m_panel_volume.translatesAutoresizingMaskIntoConstraints = NO;
+		[m_panel_volume.bottomAnchor constraintEqualToAnchor:self.topAnchor constant:-button_space_between].active = YES;
+		[m_panel_volume.centerXAnchor constraintEqualToAnchor:m_btn_volume.centerXAnchor].active = YES;
+		[m_panel_volume.widthAnchor constraintEqualToConstant:CFooterSkin::volume_control_width].active = YES;
+		[m_panel_volume.heightAnchor constraintEqualToConstant:CFooterSkin::volume_control_height].active = YES;
+#if !__has_feature(objc_arc)
+		[m_panel_volume release];
+#endif
+
+		// volume slider
+		m_slider_volume = [[NSStyledSlider alloc] initWithStyle:&m_skin.volume_slider vertical:YES];
+		[m_panel_volume addSubview:m_slider_volume];
+		// constraints: place in the center of the subpanel
+		m_slider_volume.translatesAutoresizingMaskIntoConstraints = NO;
+		[m_slider_volume.centerYAnchor constraintEqualToAnchor:m_panel_volume.centerYAnchor].active = YES;
+		[m_slider_volume.centerXAnchor constraintEqualToAnchor:m_panel_volume.centerXAnchor].active = YES;
+		[m_slider_volume.widthAnchor constraintEqualToConstant:CFooterSkin::volume_slider_width].active = YES;
+		[m_slider_volume.heightAnchor constraintEqualToConstant:CFooterSkin::volume_slider_height].active = YES;
+#if !__has_feature(objc_arc)
+		[m_slider_volume release];
+#endif
 	}
 	return self;
 }
 
 - (void)dealloc {
 	NSLog(@"debug: footer panel deallocated");
+	[m_panel_volume removeFromSuperview];
 #if !__has_feature(objc_arc)
 	[super dealloc];
 #endif
@@ -170,6 +198,9 @@ void setRightConstraintsToView(NSView* view, NSLayoutYAxisAnchor* top_anchor, NS
 	m_time_label_height_constraint.constant = text_bounds.height;
 	// update sliders
 	[m_slider_video updateStyle];
+	[m_slider_volume updateStyle];
+	// update subpanels
+	[m_panel_volume updateStyle];
 }
 
 @end

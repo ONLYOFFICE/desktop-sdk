@@ -178,6 +178,7 @@ core_mac {
 	# DEFINES += NO_SUPPORT_MEDIA_PLAYER
 	OBJECTIVE_HEADERS += \
 		src/mac_videoplayer/footerpanel.h \
+		src/mac_videoplayer/subpanel.h \
 		src/mac_videoplayer/iconpushbutton.h \
 		src/mac_videoplayer/playerview.h \
 		src/mac_videoplayer/slider.h \
@@ -188,6 +189,7 @@ core_mac {
 
 	OBJECTIVE_SOURCES += \
 		src/mac_videoplayer/footerpanel.mm \
+		src/mac_videoplayer/subpanel.mm \
 		src/mac_videoplayer/iconpushbutton.mm \
 		src/mac_videoplayer/playerview.mm \
 		src/mac_videoplayer/slider.mm \

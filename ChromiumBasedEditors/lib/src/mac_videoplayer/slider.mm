@@ -28,14 +28,24 @@
 	// draw the whole track
 	const CGFloat track_thickness = m_style->track.thickness;
 	const CGFloat track_border_radius = m_style->track.border_radius;
-	m_track_rect = NSInsetRect(rect, 0, (rect.size.height - track_thickness) / 2);
+	if (![self isVertical]) {
+		m_track_rect = NSInsetRect(rect, 0, (rect.size.height - track_thickness) / 2);
+	} else {
+		m_track_rect = NSInsetRect(rect, (rect.size.width - track_thickness) / 2, 0);
+	}
 	NSBezierPath* track_path = [NSBezierPath bezierPathWithRoundedRect:m_track_rect xRadius:track_border_radius yRadius:track_border_radius];
 	[NSColorFromHex(m_style->track.color) setFill];
 	[track_path fill];
+
 	// draw the filled portion of track (left of knob)
 	double value = (self.doubleValue - self.minValue) / (self.maxValue - self.minValue);
 	NSRect filled_rect = m_track_rect;
-	filled_rect.size.width *= value;
+	if (![self isVertical]) {
+		filled_rect.size.width *= value;
+	} else {
+		filled_rect.origin.y += filled_rect.size.height * (1 - value);
+		filled_rect.size.height *= value;
+	}
 	[NSColorFromHex(m_style->track.fill_color) setFill];
 	// TODO: when knob is visible, the right part of the filled rect does not have to be rounded
 	NSBezierPath* filled_path = [NSBezierPath bezierPathWithRoundedRect:filled_rect xRadius:track_border_radius yRadius:track_border_radius];
@@ -44,11 +54,19 @@
 
 - (NSRect)knobRectFlipped:(BOOL)flipped {
 	// calculate knob center offset relative to slider current value
-	// by default we stick knob edge to the edge of the slider track
-	CGFloat knob_center_max_offset = m_knob_image.size.width / 2;
-	if (knob_center_max_offset >= m_track_rect.origin.x) {
-		// if the knob is big enough, then stick it to the control rect edge
-		knob_center_max_offset -= m_track_rect.origin.x;
+	CGFloat knob_center_max_offset = 0;
+	if (![self isVertical]) {
+		// by default we stick knob edge to the edge of the slider track
+		knob_center_max_offset = m_knob_image.size.width / 2;
+		if (knob_center_max_offset >= m_track_rect.origin.x) {
+			// if the knob is big enough, then stick it to the control rect edge
+			knob_center_max_offset -= m_track_rect.origin.x;
+		}
+	} else {
+		knob_center_max_offset = m_knob_image.size.height / 2;
+		if (knob_center_max_offset >= m_track_rect.origin.y) {
+			knob_center_max_offset -= m_track_rect.origin.y;
+		}
 	}
 	// this formula essentially means the following:
 	//  - near the edges the knob will have corresponding offset from slider exact value, to be able to fit into control rect
@@ -57,10 +75,21 @@
 	CGFloat knob_center_offset = -(knob_center_max_offset * self.doubleValue) / ((self.maxValue - self.minValue) / 2) + knob_center_max_offset;
 	// get current slider value
 	double value = (self.doubleValue - self.minValue) / (self.maxValue - self.minValue);
-	CGFloat slider_pos = m_track_rect.size.width * value + m_track_rect.origin.x;
+	CGFloat slider_pos = 0;
+	if (![self isVertical]) {
+		slider_pos = m_track_rect.size.width * value + m_track_rect.origin.x;
+	} else {
+		slider_pos = m_track_rect.size.height * (1 - value) + m_track_rect.origin.y;
+	}
 	// create knob rect from the center point
-	CGFloat knob_center_pos = slider_pos + knob_center_offset;
-	NSRect knob_rect = NSMakeRect(knob_center_pos - m_knob_image.size.width / 2, NSMidY(m_track_rect) - m_knob_image.size.height / 2, m_knob_image.size.width, m_knob_image.size.height);
+	NSRect knob_rect;
+	if (![self isVertical]) {
+		CGFloat knob_center_pos = slider_pos + knob_center_offset;
+		knob_rect = NSMakeRect(knob_center_pos - m_knob_image.size.width / 2, NSMidY(m_track_rect) - m_knob_image.size.height / 2, m_knob_image.size.width, m_knob_image.size.height);
+	} else {
+		CGFloat knob_center_pos = slider_pos - knob_center_offset;
+		knob_rect = NSMakeRect(NSMidX(m_track_rect) - m_knob_image.size.width / 2, knob_center_pos - m_knob_image.size.height / 2, m_knob_image.size.width, m_knob_image.size.height);
+	}
 	return knob_rect;
 }
 
@@ -89,7 +118,7 @@
 }
 
 - (void)dealloc {
-	NSLog(@"debug: slider cell deallocated");
+	NSLog(@"debug: cell for slider %d deallocated", [self isVertical]);
 #if !__has_feature(objc_arc)
 	[m_knob_image release];
 	[super dealloc];
@@ -107,17 +136,19 @@
 
 @implementation NSStyledSlider
 
+// needed for correct redrawing when moving knob quickly or shrinking footer panel
 - (void)setNeedsDisplayInRect:(NSRect)invalid_rect {
-	[super setNeedsDisplayInRect:[self bounds]];
+	[super setNeedsDisplayInRect:NSUnionRect(self.bounds, invalid_rect)];
 }
 
-- (instancetype)initWithStyle:(CSliderStyle*)style {
+- (instancetype)initWithStyle:(CSliderStyle*)style vertical:(BOOL)vertical {
 	self = [super init];
 	if (self) {
-		[self setWantsLayer:YES];
 		// set cell
 		m_cell = [[NSStyledSliderCell alloc] initWithStyle:style];
 		[self setCell:m_cell];
+		// set slider orientation
+		[self setVertical:vertical];
 		// set min and max values
 		self.minValue = 0.0;
 		self.maxValue = 100.0;
@@ -129,9 +160,10 @@
 }
 
 - (void)dealloc {
-	NSLog(@"debug: slider deallocated");
+	NSLog(@"debug: slider %d deallocated", [self isVertical]);
 #if !__has_feature(objc_arc)
 	[m_cell release];
+	// TODO: vertical slider cell is not deallocated ???
 	[super dealloc];
 #endif
 }

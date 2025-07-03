@@ -8,9 +8,12 @@
 
 @implementation NSVideoView
 
-- (instancetype)initWithFrame:(NSRect)frame_rect player:(AVPlayer*)player {
+- (instancetype)initWithFrame:(NSRect)frame_rect player:(AVPlayer*)player superview:(NSView*)parent {
 	self = [super initWithFrame:frame_rect];
 	if (self) {
+		// set parent
+		[parent addSubview:self positioned:NSWindowAbove relativeTo:nil];
+		// setup layer
 		m_player_layer = [AVPlayerLayer playerLayerWithPlayer:player];
 		// set black background (transparent by default)
 		CGColorRef bg_color = [[NSColor blackColor] CGColor];
