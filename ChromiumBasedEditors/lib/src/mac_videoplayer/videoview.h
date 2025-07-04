@@ -6,7 +6,6 @@
 
 @interface NSVideoView : NSView
 - (instancetype)initWithFrame:(NSRect)frame_rect player:(AVPlayer*)player superview:(NSView*)parent;
-- (void)dealloc;
 @end
 
 #endif	// VIDEO_VIEW_H_

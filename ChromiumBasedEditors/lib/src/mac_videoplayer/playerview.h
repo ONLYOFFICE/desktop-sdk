@@ -7,10 +7,12 @@
 
 #import "videoview.h"
 #import "footerpanel.h"
+#import "playercontroller.h"
 
 /*
- * Main class that owns footer panel and video frame and
- * handles audio/video playback functionality.
+ * The main class that owns footer panel, player and video frame.
+ * It also provides an interface for media playback functionality, but does not
+ * control playback itself, delegating it to the player controller instead.
  */
 class CPlayerView {
 public:
@@ -32,7 +34,7 @@ public:
 	void Play();
 	void Pause();
 	void TogglePause();
-	void ChangeVolume(CGFloat new_value);
+	void ChangeVolume(double new_value);
 	void ToggleMute();
 	bool SetMedia(const std::wstring& media_path);
 	void Stop();
@@ -41,6 +43,7 @@ private:
 	AVPlayer* m_player = nil;
 	NSVideoView* m_video_view = nil;
 	NSFooterPanel* m_footer = nil;
+	NSPlayerControllerBridge* m_controller = nil;
 };
 
 #endif	// PLAYER_VIEW_H_

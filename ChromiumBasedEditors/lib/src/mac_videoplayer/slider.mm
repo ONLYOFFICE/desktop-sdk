@@ -158,11 +158,12 @@
 		// set min and max values
 		self.minValue = 0.0;
 		self.maxValue = 100.0;
-		// set action
-		[self setTarget:self];
-		[self setAction:@selector(sliderValueChanged:)];
 	}
 	return self;
+}
+
+- (void)updateStyle {
+	[m_cell updateStyle];
 }
 
 - (void)dealloc {
@@ -172,14 +173,6 @@
 	// TODO: vertical slider cell is not deallocated ???
 	[super dealloc];
 #endif
-}
-
-- (void)updateStyle {
-	[m_cell updateStyle];
-}
-
-- (void)sliderValueChanged:(NSSlider*)sender {
-	NSLog(@"debug: slider value changed: %.2f", sender.doubleValue);
 }
 
 @end

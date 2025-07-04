@@ -1,9 +1,5 @@
 #import "footerpanel.h"
 
-#import "iconpushbutton.h"
-#import "timelabel.h"
-#import "slider.h"
-#import "subpanel.h"
 #import "utils.h"
 
 // Helper functions for maintaining auto layout
@@ -24,22 +20,11 @@ void setRightConstraintsToView(NSView* view, NSLayoutYAxisAnchor* top_anchor, NS
 
 @interface NSFooterPanel ()
 {
+	// skin
 	CFooterSkin m_skin;
-	// buttons
-	NSIconPushButton* m_btn_play;
-	NSIconPushButton* m_btn_volume;
-	NSIconPushButton* m_btn_rewind_forward;
-	NSIconPushButton* m_btn_rewind_back;
-	// text labels
-	NSTimeLabel* m_time_label;
-	// sliders
-	NSStyledSlider* m_slider_video;
-	NSStyledSlider* m_slider_volume;
 	// constraints
 	NSLayoutConstraint* m_time_label_width_constraint;
 	NSLayoutConstraint* m_time_label_height_constraint;
-	// volume control rect
-	NSSubPanel* m_panel_volume;
 }
 @end
 
@@ -138,6 +123,7 @@ void setRightConstraintsToView(NSView* view, NSLayoutYAxisAnchor* top_anchor, NS
 
 		// volume control rect
 		m_panel_volume = [[NSSubPanel alloc] initWithStyle:&m_skin.footer];
+		[m_panel_volume setHidden:YES];
 		// add to parent instead of self, because volume panel should be rendered outside of the footer panel rect
 		[parent addSubview:m_panel_volume positioned:NSWindowAbove relativeTo:nil];
 		// constraints: place above the volume button
@@ -166,13 +152,6 @@ void setRightConstraintsToView(NSView* view, NSLayoutYAxisAnchor* top_anchor, NS
 	return self;
 }
 
-- (void)dealloc {
-	NSLog(@"debug: footer panel deallocated");
-	[m_panel_volume removeFromSuperview];
-#if !__has_feature(objc_arc)
-	[super dealloc];
-#endif
-}
 
 - (void)updateStyle {
 	CGColorRef bg_color = [NSColorFromHex(m_skin.footer.bg_color) CGColor];
@@ -200,6 +179,26 @@ void setRightConstraintsToView(NSView* view, NSLayoutYAxisAnchor* top_anchor, NS
 	[m_slider_volume updateStyle];
 	// update subpanels
 	[m_panel_volume updateStyle];
+}
+
+- (void)updatePlayPauseButton:(float)player_rate {
+	if (player_rate > 0.0) {
+		[m_btn_play setIcon:@"btn-pause"];
+	} else {
+		[m_btn_play setIcon:@"btn-play"];
+	}
+}
+
+- (void)toggleVolumeControls {
+	[m_panel_volume setHidden:(!m_panel_volume.hidden)];
+}
+
+- (void)dealloc {
+	NSLog(@"debug: footer panel deallocated");
+	[m_panel_volume removeFromSuperview];
+#if !__has_feature(objc_arc)
+	[super dealloc];
+#endif
 }
 
 @end

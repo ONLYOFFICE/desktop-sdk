@@ -12,13 +12,10 @@ void CCefViewMedia::OnMediaPlayerCommand(NSEditorApi::CAscExternalMediaPlayerCom
 	std::string cmd = data->get_Cmd();
 	// TODO: remove debug logs
 	if (cmd == "showMediaControl") {
-		NSLog(@"debug: show media control");
 		showMediaControl(data);
 	} else if (cmd == "hideMediaControl") {
-		NSLog(@"debug: hide media control");
 		hideMediaControl();
 	} else if (cmd == "update") {
-		NSLog(@"debug: update");
 		updateGeometry(data);
 	} else {
 		NSLog(@"debug: unsupported player command");
@@ -49,9 +46,6 @@ void CCefViewMedia::showMediaControl(NSEditorApi::CAscExternalMediaPlayerCommand
 	}
 
 	m_player_view->SetMedia(data->get_Url());
-	// TODO: remove play and mute
-	m_player_view->Play();
-	m_player_view->ChangeVolume(0);
 
 	int nVolume = data->get_Volume();
 	if (data->get_Mute() || m_pCefView->IsPresentationReporter()) {

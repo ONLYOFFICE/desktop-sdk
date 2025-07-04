@@ -9,9 +9,14 @@ CPlayerView::CPlayerView(NSRect video_view_rect, NSRect footer_panel_rect, NSVie
 	m_video_view = [[NSVideoView alloc] initWithFrame:video_view_rect player:m_player superview:parent];
 	// add footer panel
 	m_footer = [[NSFooterPanel alloc] initWithFrame:footer_panel_rect superview:parent];
+	// initialize player controller (it should be initialized AFTER the player and footer panel)
+	m_controller = [[NSPlayerControllerBridge alloc] initWithPlayer:m_player footer:m_footer];
 }
 
 CPlayerView::~CPlayerView() {
+	// we MUST remove any existing observers first
+	[m_controller removeObservers];
+
 	[m_player pause];
 #if !__has_feature(objc_arc)
 	[m_player release];
@@ -29,6 +34,11 @@ CPlayerView::~CPlayerView() {
 	[m_footer release];
 #endif
 	m_footer = nil;
+
+#if !__has_feature(objc_arc)
+	[m_controller release];
+#endif
+	m_controller = nil;
 }
 
 NSVideoView* CPlayerView::VideoView() {
@@ -40,27 +50,23 @@ NSFooterPanel* CPlayerView::Footer() {
 }
 
 void CPlayerView::Play() {
-	[m_player play];
+	[m_controller play];
 }
 
 void CPlayerView::Pause() {
-	[m_player pause];
+	[m_controller pause];
 }
 
 void CPlayerView::TogglePause() {
-	if (m_player.rate > 0.0) {
-		Pause();
-	} else {
-		Play();
-	}
+	[m_controller togglePause];
 }
 
-void CPlayerView::ChangeVolume(CGFloat new_value) {
-	m_player.volume = new_value;
+void CPlayerView::ChangeVolume(double new_value) {
+	[m_controller setVolume:new_value];
 }
 
 void CPlayerView::ToggleMute() {
-	// TODO
+	[m_controller toggleMute];
 }
 
 bool CPlayerView::SetMedia(const std::wstring& media_path) {
@@ -80,5 +86,5 @@ bool CPlayerView::SetMedia(const std::wstring& media_path) {
 }
 
 void CPlayerView::Stop() {
-	// TODO
+	[m_controller stop];
 }

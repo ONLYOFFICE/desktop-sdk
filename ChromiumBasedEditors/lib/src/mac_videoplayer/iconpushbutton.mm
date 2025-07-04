@@ -27,13 +27,6 @@
 	return self;
 }
 
-- (void)dealloc {
-	NSLog(@"debug: button deallocated");
-#if !__has_feature(objc_arc)
-	[super dealloc];
-#endif
-}
-
 - (void)updateStyle {
 	self.layer.cornerRadius = m_style->border_radius;
 	self.bordered = NO;
@@ -70,7 +63,9 @@
 
 - (void)mouseDown:(NSEvent*)event {
 	self.layer.backgroundColor = [NSColorFromHex(m_style->bg_color_pressed) CGColor];
-	NSLog(@"debug: button pressed");
+	if (self.target && self.action) {
+		[self.target performSelector:self.action withObject:self];
+	}
 }
 
 - (void)mouseUp:(NSEvent*)event {
@@ -81,7 +76,13 @@
 		bg_color = [NSColorFromHex(m_style->bg_color_regular) CGColor];
 	}
 	self.layer.backgroundColor = bg_color;
-	NSLog(@"debug: button released");
+}
+
+- (void)dealloc {
+	NSLog(@"debug: button deallocated");
+#if !__has_feature(objc_arc)
+	[super dealloc];
+#endif
 }
 
 @end

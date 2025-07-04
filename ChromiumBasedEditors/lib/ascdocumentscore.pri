@@ -181,6 +181,7 @@ core_mac {
 		src/mac_videoplayer/subpanel.h \
 		src/mac_videoplayer/iconpushbutton.h \
 		src/mac_videoplayer/playerview.h \
+		src/mac_videoplayer/playercontroller.h \
 		src/mac_videoplayer/slider.h \
 		src/mac_videoplayer/videoview.h \
 		src/mac_videoplayer/utils.h \
@@ -192,6 +193,7 @@ core_mac {
 		src/mac_videoplayer/subpanel.mm \
 		src/mac_videoplayer/iconpushbutton.mm \
 		src/mac_videoplayer/playerview.mm \
+		src/mac_videoplayer/playercontroller.mm \
 		src/mac_videoplayer/slider.mm \
 		src/mac_videoplayer/videoview.mm \
 		src/mac_videoplayer/utils.mm \
