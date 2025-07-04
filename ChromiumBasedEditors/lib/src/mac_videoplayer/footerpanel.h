@@ -11,7 +11,6 @@
 
 @interface NSFooterPanel : NSView<StyledView>
 {
-// TODO: provide function interface instead of exposing UI data
 @public
 	// buttons
 	NSIconPushButton* m_btn_play;
@@ -23,8 +22,6 @@
 	// sliders
 	NSStyledSlider* m_slider_video;
 	NSStyledSlider* m_slider_volume;
-	// volume control rect
-	NSSubPanel* m_panel_volume;
 }
 - (instancetype)initWithFrame:(NSRect)frame_rect superview:(NSView*)parent;
 // appearance

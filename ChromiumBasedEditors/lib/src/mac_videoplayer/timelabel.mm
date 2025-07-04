@@ -33,7 +33,6 @@
 }
 
 - (void)setText:(NSString*)text {
-	NSLog(@"debug: set text: %@", text);
 	NSAttributedString* attr_string = [[NSAttributedString alloc] initWithString:NSLocalizedString(text, nil) attributes:m_attributes];
 	[self setAttributedStringValue:attr_string];
 #if !__has_feature(objc_arc)
@@ -56,13 +55,16 @@
 	// get color
 	NSColor* color = NSColorFromHex(m_style->color);
 	// update attributes
-	m_attributes = @{
+#if !__has_feature(objc_arc)
+	[m_attributes release];
+#endif
+	m_attributes = [@{
 		NSFontAttributeName: font,
 		NSForegroundColorAttributeName: color
-	};
+	} retain];
 	// update text bounding box size
 	m_bounding_box_size = [@"00:00:00" sizeWithAttributes:m_attributes];
-	m_bounding_box_size.width += 2;		// add extra couple of pixels
+	m_bounding_box_size.width += 2;		// add extra couple of pixels just in case
 	// update current text
 	[self setText:self.stringValue];
 }
@@ -88,6 +90,7 @@
 - (void)dealloc {
 	NSLog(@"debug: time label deallocated");
 #if !__has_feature(objc_arc)
+	[m_attributes release];
 	[super dealloc];
 #endif
 }

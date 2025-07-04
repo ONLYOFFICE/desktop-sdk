@@ -22,6 +22,8 @@ void setRightConstraintsToView(NSView* view, NSLayoutYAxisAnchor* top_anchor, NS
 {
 	// skin
 	CFooterSkin m_skin;
+	// volume control rect
+	NSSubPanel* m_panel_volume;
 	// constraints
 	NSLayoutConstraint* m_time_label_width_constraint;
 	NSLayoutConstraint* m_time_label_height_constraint;

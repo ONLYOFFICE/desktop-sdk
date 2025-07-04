@@ -65,7 +65,6 @@
 		[m_footer->m_btn_rewind_forward setAction:@selector(onBtnRewindForwardPressed:)];
 		[m_footer->m_btn_rewind_back setTarget:self];
 		[m_footer->m_btn_rewind_back setAction:@selector(onBtnRewindBackPressed:)];
-
 	}
 	return self;
 }
@@ -86,7 +85,7 @@
 		CMTime curr_time = m_player.currentTime;
 		double curr_time_sec = CMTimeGetSeconds(curr_time);
 		CMTime seek_time = CMTimeMakeWithSeconds(std::min(curr_time_sec + 5, duration_sec), NSEC_PER_SEC);
-		[m_player seekToTime:seek_time toleranceBefore:kCMTimeZero toleranceAfter:kCMTimePositiveInfinity];
+		[m_player seekToTime:seek_time toleranceBefore:kCMTimeZero toleranceAfter:kCMTimeZero];
 	}
 }
 
@@ -98,7 +97,7 @@
 		CMTime curr_time = m_player.currentTime;
 		double curr_time_sec = CMTimeGetSeconds(curr_time);
 		CMTime seek_time = CMTimeMakeWithSeconds(std::max(curr_time_sec - 5, 0.0), NSEC_PER_SEC);
-		[m_player seekToTime:seek_time toleranceBefore:kCMTimePositiveInfinity toleranceAfter:kCMTimeZero];
+		[m_player seekToTime:seek_time toleranceBefore:kCMTimeZero toleranceAfter:kCMTimeZero];
 	}
 }
 
@@ -109,7 +108,7 @@
 	if (std::isfinite(duration_sec)) {
 		double seek_sec = (sender.doubleValue / sender.maxValue) * duration_sec;
 		CMTime seek_time = CMTimeMakeWithSeconds(seek_sec, NSEC_PER_SEC);
-		[m_player seekToTime:seek_time];
+		[m_player seekToTime:seek_time toleranceBefore:kCMTimeZero toleranceAfter:kCMTimeZero];
 	}
 }
 
@@ -127,8 +126,7 @@
 		double time_value = (time_sec / duration_sec) * m_footer->m_slider_video.maxValue;
 		[m_footer->m_slider_video setDoubleValue:time_value];
 		// update time label
-		// TODO: fix
-		// [m_footer->m_time_label setTime:time_sec];
+		[m_footer->m_time_label setTime:time_sec];
 	}
 }
 
