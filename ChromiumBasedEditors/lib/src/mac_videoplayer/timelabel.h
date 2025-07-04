@@ -7,9 +7,8 @@
 
 @interface NSTimeLabel : NSTextField<StyledView>
 - (instancetype)initWithStyle:(CTimeLabelStyle*)style;
-// setters
-// TODO: should be setTime and take CMTime
-- (void)setText:(NSString*)text;
+
+- (void)setTime:(double)time_sec;
 // get bounding box size for longest possible time
 - (NSSize)getBoundingBoxSize;
 @end

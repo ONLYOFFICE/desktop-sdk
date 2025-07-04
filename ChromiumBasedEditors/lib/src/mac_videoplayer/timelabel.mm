@@ -8,6 +8,7 @@
 	NSDictionary* m_attributes;
 	NSSize m_bounding_box_size;
 }
+- (void)setText:(NSString*)text;
 @end
 
 @implementation NSTimeLabel
@@ -31,10 +32,12 @@
 	return self;
 }
 
-- (void)dealloc {
-	NSLog(@"debug: time label deallocated");
+- (void)setText:(NSString*)text {
+	NSLog(@"debug: set text: %@", text);
+	NSAttributedString* attr_string = [[NSAttributedString alloc] initWithString:NSLocalizedString(text, nil) attributes:m_attributes];
+	[self setAttributedStringValue:attr_string];
 #if !__has_feature(objc_arc)
-	[super dealloc];
+	[attr_string release];
 #endif
 }
 
@@ -64,16 +67,29 @@
 	[self setText:self.stringValue];
 }
 
-- (void)setText:(NSString*)text {
-	NSAttributedString* attr_string = [[NSAttributedString alloc] initWithString:NSLocalizedString(text, nil) attributes:m_attributes];
-	[self setAttributedStringValue:attr_string];
-#if !__has_feature(objc_arc)
-	[attr_string release];
-#endif
+- (void)setTime:(double)time_sec {
+	// calculate hours
+	unsigned hours = (unsigned)(time_sec / 3600);
+	time_sec -= hours * 3600;
+	// calculate minutes
+	unsigned minutes = (unsigned)(time_sec / 60);
+	time_sec -= (minutes * 60);
+	// calculate seconds
+	unsigned seconds = (unsigned)(time_sec);
+	// set label text
+	NSString* time_str = [NSString stringWithFormat:@"%02u:%02u:%02u", hours, minutes, seconds];
+	[self setText:time_str];
 }
 
 - (NSSize)getBoundingBoxSize {
 	return m_bounding_box_size;
+}
+
+- (void)dealloc {
+	NSLog(@"debug: time label deallocated");
+#if !__has_feature(objc_arc)
+	[super dealloc];
+#endif
 }
 
 @end

@@ -6,6 +6,7 @@ CPlayerView::CPlayerView(NSRect video_view_rect, NSRect footer_panel_rect, NSVie
 	// create player
 	m_player = [[AVPlayer alloc] init];
 	// add video view
+	// TODO: hide video view before first click on play button
 	m_video_view = [[NSVideoView alloc] initWithFrame:video_view_rect player:m_player superview:parent];
 	// add footer panel
 	m_footer = [[NSFooterPanel alloc] initWithFrame:footer_panel_rect superview:parent];

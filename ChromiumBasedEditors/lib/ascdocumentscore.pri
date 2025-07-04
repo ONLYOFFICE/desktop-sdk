@@ -158,6 +158,7 @@ SOURCES += \
 core_mac {
     LIBS += -framework Security
 	LIBS += -framework AVFoundation
+	LIBS += -framework CoreMedia
 
 	HEADERS += \
 		./include/mac_cefview.h \
