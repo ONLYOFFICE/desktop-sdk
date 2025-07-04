@@ -193,6 +193,18 @@ void setRightConstraintsToView(NSView* view, NSLayoutYAxisAnchor* top_anchor, NS
 	[m_panel_volume setHidden:(!m_panel_volume.hidden)];
 }
 
+- (void)updateVolumeButton:(double)volume {
+   if (volume > 75) {
+	   [m_btn_volume setIcon:@"btn-volume-3"];
+   } else if (volume > 25) {
+	   [m_btn_volume setIcon:@"btn-volume-2"];
+   } else if (volume > 0) {
+	   [m_btn_volume setIcon:@"btn-volume-1"];
+   } else {
+	   [m_btn_volume setIcon:@"btn-volume-mute"];
+   }
+}
+
 - (void)dealloc {
 	NSLog(@"debug: footer panel deallocated");
 	[m_panel_volume removeFromSuperview];

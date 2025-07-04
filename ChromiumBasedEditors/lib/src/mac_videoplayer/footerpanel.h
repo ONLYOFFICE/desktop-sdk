@@ -31,6 +31,7 @@
 - (void)applySkin:(CFooterSkin::Type)type;
 - (void)updatePlayPauseButton:(float)player_rate;
 - (void)toggleVolumeControls;
+- (void)updateVolumeButton:(double)volume;
 @end
 
 #endif	// FOOTER_PANEL_H_

@@ -38,6 +38,10 @@
 		[m_footer->m_slider_volume setAction:@selector(onSliderVolumeChanged:)];
 		// player volume observer
 		[m_player addObserver:self forKeyPath:@"volume" options:NSKeyValueObservingOptionNew context:nil];
+
+		// TODO: change
+		[m_footer->m_btn_rewind_forward setTarget:self];
+		[m_footer->m_btn_rewind_forward setAction:@selector(onBtnRewindForwardPressed:)];
 	}
 	return self;
 }
@@ -55,8 +59,7 @@
 }
 
 - (void)onBtnRewindForwardPressed:(NSIconPushButton*)sender {
-	double old_value = m_footer->m_slider_volume.doubleValue;
-	[m_footer->m_slider_volume setDoubleValue:(old_value + 1)];
+	[self toggleMute];
 }
 
 - (void)onSliderVolumeChanged:(NSIconPushButton*)sender {
@@ -68,8 +71,9 @@
 		float rate = [change[NSKeyValueChangeNewKey] floatValue];
 		[m_footer updatePlayPauseButton:rate];
 	} else if ([key_path isEqualToString:@"volume"]) {
-		float volume = [change[NSKeyValueChangeNewKey] floatValue];
-		[m_footer->m_slider_volume setDoubleValue:(volume * 100.0)];
+		double volume = [change[NSKeyValueChangeNewKey] floatValue] * 100.0;
+		[m_footer->m_slider_volume setDoubleValue:volume];
+		[m_footer updateVolumeButton:volume];
 	}
 }
 
@@ -99,7 +103,8 @@
 }
 
 - (void)toggleMute {
-	// TODO
+	// TODO: restore previous volume on second call
+	[self setVolume:0];
 }
 
 - (void)stop {
