@@ -117,7 +117,7 @@ void setRightConstraintsToView(NSView* view, NSLayoutYAxisAnchor* top_anchor, NS
 		[m_slider_video.centerYAnchor constraintEqualToAnchor:self.centerYAnchor].active = YES;
 		[m_slider_video.leftAnchor constraintEqualToAnchor:m_btn_play.rightAnchor constant:button_space_between].active = YES;
 		[m_slider_video.rightAnchor constraintEqualToAnchor:m_btn_rewind_back.leftAnchor constant:-button_space_between].active = YES;
-		// TODO: the whole slider area on panel becomes clickable because of this
+		// NOTE: the whole slider area on panel becomes clickable because of this
 		[m_slider_video.heightAnchor constraintEqualToConstant:frame_rect.size.height].active = YES;
 #if !__has_feature(objc_arc)
 		[m_slider_video release];

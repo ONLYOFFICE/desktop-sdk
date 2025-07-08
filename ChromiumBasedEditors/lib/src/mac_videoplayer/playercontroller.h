@@ -4,13 +4,14 @@
 #import <AVFoundation/AVFoundation.h>
 
 #import "footerpanel.h"
+#import "videoview.h"
 
 /*
  * This class is designed to connect UI events (button pressed, slider moved, etc.) with player,
  * as well as player events (playback rage changed, seek changed) with UI.
  */
 @interface NSPlayerControllerBridge : NSObject
-- (instancetype)initWithPlayer:(AVPlayer*)player footer:(NSFooterPanel*)footer;
+- (instancetype)initWithPlayer:(AVPlayer*)player videoView:(NSVideoView*)video_view footer:(NSFooterPanel*)footer;
 - (void)removeObservers;
 // media
 - (BOOL)setMedia:(NSString*)media_path;

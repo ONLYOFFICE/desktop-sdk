@@ -6,11 +6,13 @@
 @interface NSPlayerControllerBridge ()
 {
 	AVPlayer* m_player;
+	NSVideoView* m_video_view;
 	NSFooterPanel* m_footer;
 	// observers
 	id m_time_observer_token;
 	// media info
 	double m_duration_sec;
+	bool m_is_video;
 }
 // button callbacks
 - (void)onBtnPlayPausePressed:(NSIconPushButton*)sender;
@@ -26,10 +28,11 @@
 
 @implementation NSPlayerControllerBridge
 
-- (instancetype)initWithPlayer:(AVPlayer*)player footer:(NSFooterPanel*)footer {
+- (instancetype)initWithPlayer:(AVPlayer*)player videoView:(NSVideoView*)video_view footer:(NSFooterPanel*)footer {
 	self = [super init];
 	if (self) {
 		m_player = player;
+		m_video_view = video_view;
 		m_footer = footer;
 
 		// PLAY & PAUSE
@@ -104,6 +107,10 @@
 }
 
 - (void)onPlayerTimeChanged:(CMTime)time {
+	// show video view if it's hidden
+	if (m_is_video) {
+		[m_video_view setHidden:NO];
+	}
 	// update slider position
 	double time_sec = CMTimeGetSeconds(time);
 	double time_value = (time_sec / m_duration_sec) * m_footer->m_slider_video.maxValue;
@@ -116,6 +123,10 @@
 - (void)observeValueForKeyPath:(NSString*)key_path ofObject:(id)object change:(NSDictionary<NSString*, id>*)change context:(void*)context {
 	if ([key_path isEqualToString:@"rate"]) {
 		// player rate changed
+		// show video view if it's hidden
+		if (m_is_video) {
+			[m_video_view setHidden:NO];
+		}
 		float rate = [change[NSKeyValueChangeNewKey] floatValue];
 		[m_footer updatePlayPauseButton:rate];
 	} else if ([key_path isEqualToString:@"volume"]) {
@@ -142,8 +153,16 @@
 		CMTime duration = item.duration;
 		m_duration_sec = CMTimeGetSeconds(duration);
 		if (m_duration_sec == 0.0 || !std::isfinite(m_duration_sec)) {
-			// TODO: is it the real case? Handle it somehow ???
+			// NOTE: is it the real case? Handle it somehow ???
 			NSLog(@"Error: Media duration was not determined successfully");
+		}
+		// save media type flag (video or audio)
+		AVAsset* asset = item.asset;
+		NSArray* video_tracks = [asset tracksWithMediaType:AVMediaTypeVideo];
+		if (video_tracks.count > 0) {
+			m_is_video = true;
+		} else {
+			m_is_video = false;
 		}
 	}
 }
@@ -197,7 +216,9 @@
 }
 
 - (void)stop {
-	// TODO
+	[m_video_view setHidden:YES];
+	[m_player pause];
+	[m_player seekToTime:kCMTimeZero toleranceBefore:kCMTimeZero toleranceAfter:kCMTimeZero];
 }
 
 - (void)dealloc {

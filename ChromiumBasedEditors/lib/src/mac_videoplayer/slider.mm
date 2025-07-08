@@ -46,7 +46,6 @@
 		filled_rect.size.height *= value;
 	}
 	[NSColorFromHex(m_style->track.fill_color) setFill];
-	// TODO: when knob is visible, the right part of the filled rect does not have to be rounded
 	NSBezierPath* filled_path = [NSBezierPath bezierPathWithRoundedRect:filled_rect xRadius:track_border_radius yRadius:track_border_radius];
 	[filled_path fill];
 }
