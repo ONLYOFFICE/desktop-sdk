@@ -1,7 +1,5 @@
 #import "../include/mac_cefviewmedia.h"
 
-#import "../../../../core/DesktopEditor/common/Mac/NSString+StringUtils.h"
-
 CCefViewMedia::CCefViewMedia(NSView* view) : CCefViewWrapper(view) {}
 
 CCefViewMedia::~CCefViewMedia() {
@@ -10,7 +8,6 @@ CCefViewMedia::~CCefViewMedia() {
 
 void CCefViewMedia::OnMediaPlayerCommand(NSEditorApi::CAscExternalMediaPlayerCommand* data) {
 	std::string cmd = data->get_Cmd();
-	// TODO: remove debug logs
 	if (cmd == "showMediaControl") {
 		showMediaControl(data);
 	} else if (cmd == "hideMediaControl") {
@@ -18,7 +15,22 @@ void CCefViewMedia::OnMediaPlayerCommand(NSEditorApi::CAscExternalMediaPlayerCom
 	} else if (cmd == "update") {
 		updateGeometry(data);
 	} else {
-		NSLog(@"debug: unsupported player command");
+		// handle the possible case when player is not yet initialized
+		if (m_player_view == nullptr) {
+			return;
+		}
+		// handle player commands
+		if (cmd == "play" || cmd == "resume") {
+			m_player_view->Play();
+		} else if (cmd == "pause") {
+			m_player_view->Pause();
+		} else if (cmd == "stop") {
+			m_player_view->Stop();
+		} else if (cmd == "togglePause") {
+			m_player_view->TogglePause();
+		} else {
+			NSLog(@"Error: Media player command %s can not be handled.", cmd.c_str());
+		}
 	}
 }
 
@@ -38,20 +50,21 @@ void CCefViewMedia::showMediaControl(NSEditorApi::CAscExternalMediaPlayerCommand
 
 	// set footer skin
 	NSFooterPanel* footer = m_player_view->Footer();
-	std::string sTheme = data->get_Theme();
-	if (sTheme == "dark") {
+	std::string theme = data->get_Theme();
+	if (theme == "dark") {
 		[footer applySkin:CFooterSkin::Type::kDark];
 	} else {
 		[footer applySkin:CFooterSkin::Type::kLight];
 	}
 
+	// set media
 	m_player_view->SetMedia(data->get_Url());
-
-	int nVolume = data->get_Volume();
+	// set volume
+	int volume = data->get_Volume();
 	if (data->get_Mute() || m_pCefView->IsPresentationReporter()) {
 		m_player_view->ToggleMute();
-	} else if (nVolume != -1) {
-		m_player_view->ChangeVolume(nVolume);
+	} else if (volume != -1) {
+		m_player_view->ChangeVolume(volume);
 	}
 }
 
