@@ -73,17 +73,7 @@ void CPlayerView::ToggleMute() {
 bool CPlayerView::SetMedia(const std::wstring& media_path) {
 	// TODO: stringWithWString causes memory leaks ???
 	NSString* path = [NSString stringWithWString:media_path];
-	NSURL* url = [NSURL fileURLWithPath:path];
-
-	NSError* err;
-	if (url && [url checkResourceIsReachableAndReturnError:&err]) {
-		AVPlayerItem* player_item = [AVPlayerItem playerItemWithURL:url];
-		[m_player replaceCurrentItemWithPlayerItem:player_item];
-	} else {
-		NSLog(@"Error: could not open file: %@", path);
-		return false;
-	}
-	return true;
+	return [m_controller setMedia:path];
 }
 
 void CPlayerView::Stop() {

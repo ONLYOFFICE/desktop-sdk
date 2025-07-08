@@ -9,6 +9,8 @@
 	NSFooterPanel* m_footer;
 	// observers
 	id m_time_observer_token;
+	// media info
+	double m_duration_sec;
 }
 // button callbacks
 - (void)onBtnPlayPausePressed:(NSIconPushButton*)sender;
@@ -78,38 +80,23 @@
 }
 
 - (void)onBtnRewindForwardPressed:(NSIconPushButton*)sender {
-	// TODO: cache duration value
-	CMTime duration = m_player.currentItem.duration;
-	double duration_sec = CMTimeGetSeconds(duration);
-	if (std::isfinite(duration_sec)) {
-		CMTime curr_time = m_player.currentTime;
-		double curr_time_sec = CMTimeGetSeconds(curr_time);
-		CMTime seek_time = CMTimeMakeWithSeconds(std::min(curr_time_sec + 5, duration_sec), NSEC_PER_SEC);
-		[m_player seekToTime:seek_time toleranceBefore:kCMTimeZero toleranceAfter:kCMTimeZero];
-	}
+	CMTime curr_time = m_player.currentTime;
+	double curr_time_sec = CMTimeGetSeconds(curr_time);
+	CMTime seek_time = CMTimeMakeWithSeconds(std::min(curr_time_sec + 5, m_duration_sec), NSEC_PER_SEC);
+	[m_player seekToTime:seek_time toleranceBefore:kCMTimeZero toleranceAfter:kCMTimeZero];
 }
 
 - (void)onBtnRewindBackPressed:(NSIconPushButton*)sender {
-	// TODO: cache duration value
-	CMTime duration = m_player.currentItem.duration;
-	double duration_sec = CMTimeGetSeconds(duration);
-	if (std::isfinite(duration_sec)) {
-		CMTime curr_time = m_player.currentTime;
-		double curr_time_sec = CMTimeGetSeconds(curr_time);
-		CMTime seek_time = CMTimeMakeWithSeconds(std::max(curr_time_sec - 5, 0.0), NSEC_PER_SEC);
-		[m_player seekToTime:seek_time toleranceBefore:kCMTimeZero toleranceAfter:kCMTimeZero];
-	}
+	CMTime curr_time = m_player.currentTime;
+	double curr_time_sec = CMTimeGetSeconds(curr_time);
+	CMTime seek_time = CMTimeMakeWithSeconds(std::max(curr_time_sec - 5, 0.0), NSEC_PER_SEC);
+	[m_player seekToTime:seek_time toleranceBefore:kCMTimeZero toleranceAfter:kCMTimeZero];
 }
 
 - (void)onSliderVideoChanged:(NSStyledSlider*)sender {
-	// TODO: cache duration value
-	CMTime duration = m_player.currentItem.duration;
-	double duration_sec = CMTimeGetSeconds(duration);
-	if (std::isfinite(duration_sec)) {
-		double seek_sec = (sender.doubleValue / sender.maxValue) * duration_sec;
-		CMTime seek_time = CMTimeMakeWithSeconds(seek_sec, NSEC_PER_SEC);
-		[m_player seekToTime:seek_time toleranceBefore:kCMTimeZero toleranceAfter:kCMTimeZero];
-	}
+	double seek_sec = (sender.doubleValue / sender.maxValue) * m_duration_sec;
+	CMTime seek_time = CMTimeMakeWithSeconds(seek_sec, NSEC_PER_SEC);
+	[m_player seekToTime:seek_time toleranceBefore:kCMTimeZero toleranceAfter:kCMTimeZero];
 }
 
 - (void)onSliderVolumeChanged:(NSStyledSlider*)sender {
@@ -117,27 +104,47 @@
 }
 
 - (void)onPlayerTimeChanged:(CMTime)time {
-	// TODO: cache duration value
-	CMTime duration = m_player.currentItem.duration;
-	double duration_sec = CMTimeGetSeconds(duration);
-	if (std::isfinite(duration_sec)) {
-		// update slider position
-		double time_sec = CMTimeGetSeconds(time);
-		double time_value = (time_sec / duration_sec) * m_footer->m_slider_video.maxValue;
-		[m_footer->m_slider_video setDoubleValue:time_value];
-		// update time label
-		[m_footer->m_time_label setTime:time_sec];
-	}
+	// update slider position
+	double time_sec = CMTimeGetSeconds(time);
+	double time_value = (time_sec / m_duration_sec) * m_footer->m_slider_video.maxValue;
+	[m_footer->m_slider_video setDoubleValue:time_value];
+	// update time label
+	[m_footer->m_time_label setTime:time_sec];
 }
 
+// the main function for general observer handles
 - (void)observeValueForKeyPath:(NSString*)key_path ofObject:(id)object change:(NSDictionary<NSString*, id>*)change context:(void*)context {
 	if ([key_path isEqualToString:@"rate"]) {
+		// player rate changed
 		float rate = [change[NSKeyValueChangeNewKey] floatValue];
 		[m_footer updatePlayPauseButton:rate];
 	} else if ([key_path isEqualToString:@"volume"]) {
+		// player volume changed
 		double volume = [change[NSKeyValueChangeNewKey] floatValue] * m_footer->m_slider_volume.maxValue;
 		[m_footer->m_slider_volume setDoubleValue:volume];
 		[m_footer updateVolumeButton:volume];
+	} else if ([key_path isEqualToString:@"status"]) {
+		// player item status changed
+		AVPlayerItemStatus media_status = (AVPlayerItemStatus)[change[NSKeyValueChangeNewKey] integerValue];
+		if (media_status == AVPlayerItemStatusUnknown) {
+			// what for parsing to end
+			return;
+		}
+		// unregister current observer
+		[object removeObserver:self forKeyPath:@"status"];
+		if (media_status == AVPlayerItemStatusFailed) {
+			// log error and do nothing
+			NSLog(@"Error: Media parsing failed");
+			return;
+		}
+		// it case everything went good, save media duration
+		AVPlayerItem* item = (AVPlayerItem*)object;
+		CMTime duration = item.duration;
+		m_duration_sec = CMTimeGetSeconds(duration);
+		if (m_duration_sec == 0.0 || !std::isfinite(m_duration_sec)) {
+			// TODO: is it the real case? Handle it somehow ???
+			NSLog(@"Error: Media duration was not determined successfully");
+		}
 	}
 }
 
@@ -146,6 +153,22 @@
 	[m_player removeObserver:self forKeyPath:@"volume"];
 	[m_player removeTimeObserver:m_time_observer_token];
 	m_time_observer_token = nil;
+}
+
+- (BOOL)setMedia:(NSString*)media_path {
+	NSURL* url = [NSURL fileURLWithPath:media_path];
+	NSError* err;
+	if (url && [url checkResourceIsReachableAndReturnError:&err]) {
+		AVPlayerItem* player_item = [AVPlayerItem playerItemWithURL:url];
+		// add media status observer
+		[player_item addObserver:self forKeyPath:@"status" options:NSKeyValueObservingOptionNew context:nil];
+		// set this item for the player
+		[m_player replaceCurrentItemWithPlayerItem:player_item];
+	} else {
+		NSLog(@"Error: Could not open file: %@", media_path);
+		return NO;
+	}
+	return YES;
 }
 
 - (void)play {

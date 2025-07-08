@@ -12,6 +12,8 @@
 @interface NSPlayerControllerBridge : NSObject
 - (instancetype)initWithPlayer:(AVPlayer*)player footer:(NSFooterPanel*)footer;
 - (void)removeObservers;
+// media
+- (BOOL)setMedia:(NSString*)media_path;
 // playback functions
 - (void)play;
 - (void)pause;
