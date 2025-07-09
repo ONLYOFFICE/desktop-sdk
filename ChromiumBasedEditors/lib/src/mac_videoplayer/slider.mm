@@ -123,7 +123,6 @@
 }
 
 - (void)dealloc {
-	NSLog(@"debug: cell for slider %d deallocated", [self isVertical]);
 #if !__has_feature(objc_arc)
 	[m_knob_image release];
 	[super dealloc];
@@ -166,7 +165,6 @@
 }
 
 - (void)dealloc {
-	NSLog(@"debug: slider %d deallocated", [self isVertical]);
 #if !__has_feature(objc_arc)
 	[m_cell release];
 	// TODO: vertical slider cell is not deallocated ???

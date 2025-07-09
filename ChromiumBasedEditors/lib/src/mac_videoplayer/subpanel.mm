@@ -30,7 +30,6 @@
 }
 
 - (void)dealloc {
-	NSLog(@"debug: sub panel deallocated");
 #if !__has_feature(objc_arc)
 	[super dealloc];
 #endif

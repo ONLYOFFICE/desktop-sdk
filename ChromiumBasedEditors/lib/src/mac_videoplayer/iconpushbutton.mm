@@ -79,7 +79,6 @@
 }
 
 - (void)dealloc {
-	NSLog(@"debug: button deallocated");
 #if !__has_feature(objc_arc)
 	[super dealloc];
 #endif

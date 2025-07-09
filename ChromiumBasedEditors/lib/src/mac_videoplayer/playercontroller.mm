@@ -222,7 +222,6 @@
 }
 
 - (void)dealloc {
-	NSLog(@"debug: player controller deallocated");
 #if !__has_feature(objc_arc)
 	[super dealloc];
 #endif

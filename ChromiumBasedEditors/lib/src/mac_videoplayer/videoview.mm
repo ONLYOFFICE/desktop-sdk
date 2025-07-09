@@ -25,7 +25,6 @@
 }
 
 - (void)dealloc {
-	NSLog(@"debug: video view deallocated");
 #if !__has_feature(objc_arc)
 	[super dealloc];
 #endif

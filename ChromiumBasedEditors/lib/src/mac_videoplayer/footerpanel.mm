@@ -208,7 +208,6 @@ void setRightConstraintsToView(NSView* view, NSLayoutYAxisAnchor* top_anchor, NS
 }
 
 - (void)dealloc {
-	NSLog(@"debug: footer panel deallocated");
 	[m_panel_volume removeFromSuperview];
 #if !__has_feature(objc_arc)
 	[super dealloc];

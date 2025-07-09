@@ -88,7 +88,6 @@
 }
 
 - (void)dealloc {
-	NSLog(@"debug: time label deallocated");
 #if !__has_feature(objc_arc)
 	[m_attributes release];
 	[super dealloc];
