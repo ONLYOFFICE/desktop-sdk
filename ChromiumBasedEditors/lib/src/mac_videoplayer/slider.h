@@ -7,6 +7,9 @@
 
 @interface NSStyledSlider : NSSlider<StyledView>
 - (instancetype)initWithStyle:(CSliderStyle*)style vertical:(BOOL)vertical;
+// actions
+- (void)setActionPress:(SEL)action;
+- (void)setActionRelease:(SEL)action;
 @end
 
 #endif	// VIDEOPLAYER_SLIDER_H_

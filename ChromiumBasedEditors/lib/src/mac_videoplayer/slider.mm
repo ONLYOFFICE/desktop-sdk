@@ -135,6 +135,9 @@
 @interface NSStyledSlider ()
 {
 	NSStyledSliderCell* m_cell;
+	// actions
+	SEL m_action_press;
+	SEL m_action_release;
 }
 @end
 
@@ -162,6 +165,26 @@
 
 - (void)updateStyle {
 	[m_cell updateStyle];
+}
+
+- (void)setActionPress:(SEL)action {
+	m_action_press = action;
+}
+
+- (void)setActionRelease:(SEL)action {
+	m_action_release = action;
+}
+
+- (void)mouseDown:(NSEvent*)event {
+	if (self.target && self->m_action_press) {
+		[self.target performSelector:self->m_action_press withObject:self];
+	}
+	// enters dragging loop
+	[super mouseDown:event];
+	// call release when dragging ends
+	if (self.target && self->m_action_release) {
+		[self.target performSelector:self->m_action_release withObject:self];
+	}
 }
 
 - (void)dealloc {

@@ -13,6 +13,9 @@
 	// media info
 	double m_duration_sec;
 	bool m_is_video;
+	// time slider dragging info
+	bool m_is_drag;
+	float m_rate_before_drag;
 }
 // button callbacks
 - (void)onBtnPlayPausePressed:(NSIconPushButton*)sender;
@@ -21,6 +24,8 @@
 - (void)onBtnRewindBackPressed:(NSIconPushButton*)sender;
 // slider callbacks
 - (void)onSliderVideoChanged:(NSStyledSlider*)sender;
+- (void)onSliderVideoPressed:(NSStyledSlider*)sender;
+- (void)onSliderVideoReleased:(NSStyledSlider*)sender;
 - (void)onSliderVolumeChanged:(NSStyledSlider*)sender;
 // player callbacks
 - (void)onPlayerTimeChanged:(CMTime)time;
@@ -53,9 +58,11 @@
 		[m_player addObserver:self forKeyPath:@"volume" options:NSKeyValueObservingOptionNew context:nil];
 
 		// TIME SLIDER
-		// UI slider action
+		// UI slider actions
 		[m_footer->m_slider_video setTarget:self];
 		[m_footer->m_slider_video setAction:@selector(onSliderVideoChanged:)];
+		[m_footer->m_slider_video setActionPress:@selector(onSliderVideoPressed:)];
+		[m_footer->m_slider_video setActionRelease:@selector(onSliderVideoReleased:)];
 		// player
 		double observe_interval_sec = 0.1;
 		m_time_observer_token = [m_player addPeriodicTimeObserverForInterval:CMTimeMakeWithSeconds(observe_interval_sec, NSEC_PER_SEC)
@@ -102,6 +109,19 @@
 	[m_player seekToTime:seek_time toleranceBefore:kCMTimeZero toleranceAfter:kCMTimeZero];
 }
 
+- (void)onSliderVideoPressed:(NSStyledSlider*)sender {
+	m_is_drag = true;
+	// save current rate and pause player
+	m_rate_before_drag = m_player.rate;
+	[m_player pause];
+}
+
+- (void)onSliderVideoReleased:(NSStyledSlider*)sender {
+	m_is_drag = false;
+	// restore previous player rate
+	[m_player setRate:m_rate_before_drag];
+}
+
 - (void)onSliderVolumeChanged:(NSStyledSlider*)sender {
 	[self setVolume:(sender.doubleValue / sender.maxValue)];
 }
@@ -111,10 +131,12 @@
 	if (m_is_video) {
 		[m_video_view setHidden:NO];
 	}
-	// update slider position
 	double time_sec = CMTimeGetSeconds(time);
-	double time_value = (time_sec / m_duration_sec) * m_footer->m_slider_video.maxValue;
-	[m_footer->m_slider_video setDoubleValue:time_value];
+	// update slider position unless video slider is being dragged
+	if (!m_is_drag) {
+		double time_value = (time_sec / m_duration_sec) * m_footer->m_slider_video.maxValue;
+		[m_footer->m_slider_video setDoubleValue:time_value];
+	}
 	// update time label
 	[m_footer->m_time_label setTime:time_sec];
 }
