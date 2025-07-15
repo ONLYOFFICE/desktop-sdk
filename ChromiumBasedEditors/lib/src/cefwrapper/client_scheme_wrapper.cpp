@@ -299,8 +299,7 @@ public:
 	virtual bool ReadResponse(void* data_out,
 							  int bytes_to_read,
 							  int& bytes_read,
-							  CefRefPtr<CefCallback> callback)
-	OVERRIDE
+							  CefRefPtr<CefCallback> callback) OVERRIDE
 	{
 		CEF_REQUIRE_IO_THREAD();
 
@@ -374,9 +373,156 @@ private:
 	IMPLEMENT_REFCOUNTING(ClientSchemeHandler);
 };
 
+class ClientSchemeHandlerOO : public CefResourceHandler
+{
+public:
+	ClientSchemeHandlerOO(CAscApplicationManager* pManager) : offset_(0)
+	{
+		offset_ = 0;
+		data_binary_ = NULL;
+		data_binary_len_ = 0;
+
+		m_pManager = pManager;
+	}
+	virtual ~ClientSchemeHandlerOO()
+	{
+		if (NULL != data_binary_)
+			delete [] data_binary_;
+	}
+
+	virtual bool ProcessRequest(CefRefPtr<CefRequest> request,
+								CefRefPtr<CefCallback> callback) OVERRIDE
+	{
+		CEF_REQUIRE_IO_THREAD();
+
+		std::string url = request->GetURL().ToString();
+		std::string::size_type posFind = url.find("onlyoffice://plugin/");
+		if (posFind != std::string::npos)
+		{
+			std::wstring sFile = read_file_path(request).substr(20);
+			if (!m_pManager->IsResolveLocalFile(sFile))
+				return false;
+
+			std::wstring::size_type posSearch = sFile.find(L"?lang=");
+			if (std::wstring::npos != posSearch)
+				sFile = sFile.substr(0, posSearch);
+
+			if (0 == sFile.find(L"file:///"))
+			{
+				sFile = sFile.substr(7);
+				if (!NSFile::CFileBinary::Exists(sFile))
+					sFile = sFile.substr(1);
+			}
+
+			read_binary_file(sFile, true);
+
+			callback->Continue();
+			return true;
+		}
+
+		return false;
+	}
+
+	virtual void GetResponseHeaders(CefRefPtr<CefResponse> response,
+									int64& response_length,
+									CefString& redirectUrl) OVERRIDE
+	{
+		CEF_REQUIRE_IO_THREAD();
+
+		DCHECK(!data_.empty() || !data_binary_);
+
+		response->SetMimeType(mime_type_);
+		response->SetStatus(200);
+
+		CefResponse::HeaderMap headers;
+		response->GetHeaderMap(headers);
+		headers.insert(std::make_pair("Access-Control-Allow-Origin", "*"));
+		response->SetHeaderMap(headers);
+
+		// Set the resulting response length
+		response_length = (NULL == data_binary_) ? data_.length() : data_binary_len_;
+	}
+
+	virtual void Cancel() OVERRIDE
+	{
+		CEF_REQUIRE_IO_THREAD();
+	}
+
+	virtual bool ReadResponse(void* data_out,
+							  int bytes_to_read,
+							  int& bytes_read,
+							  CefRefPtr<CefCallback> callback) OVERRIDE
+	{
+		CEF_REQUIRE_IO_THREAD();
+		bytes_read = 0;
+
+		BYTE* read_data = (BYTE*)data_binary_;
+		size_t read_data_len = data_binary_len_;
+
+		if (!read_data)
+		{
+			read_data = (BYTE*)data_.c_str();
+			read_data_len = data_.length();
+		}
+
+		if (offset_ < read_data_len)
+		{
+			// Copy the next block of data into the buffer.
+			int transfer_size = std::min(bytes_to_read, static_cast<int>(read_data_len - offset_));
+			memcpy(data_out, read_data + offset_, transfer_size);
+			offset_ += transfer_size;
+
+			bytes_read = transfer_size;
+			return true;
+		}
+
+		return false;
+	}
+
+private:
+	std::wstring read_file_path(CefRefPtr<CefRequest>& request)
+	{
+		int nFlag = UU_SPACES | UU_REPLACE_PLUS_WITH_SPACE;
+#if defined (_LINUX) && !defined(_MAC)
+		nFlag |= UU_URL_SPECIAL_CHARS_EXCEPT_PATH_SEPARATORS;
+#else
+#ifndef CEF_2623
+		nFlag |= UU_URL_SPECIAL_CHARS_EXCEPT_PATH_SEPARATORS;
+#endif
+#endif
+
+		CefString cefUrl = request->GetURL();
+		CefString cefFile = CefURIDecode(cefUrl, false, static_cast<cef_uri_unescape_rule_t>(nFlag));
+
+		return cefFile.ToWString();
+	}
+
+	void read_binary_file(std::wstring& sFile, const bool& isCheckExt = false)
+	{
+		data_binary_len_ = (size_t)asc_scheme::read_file_with_urls(sFile, data_binary_);
+
+		if (isCheckExt)
+			mime_type_ = asc_scheme::GetMimeTypeFromExt(sFile);
+
+		if (mime_type_.empty())
+			mime_type_ = "*/*";
+	}
+
+private:
+	std::string data_;
+	std::string mime_type_;
+	size_t offset_;
+
+	BYTE* data_binary_;
+	size_t data_binary_len_;
+
+	CAscApplicationManager* m_pManager;
+
+	IMPLEMENT_REFCOUNTING(ClientSchemeHandlerOO);
+};
+
 namespace asc_scheme
 {
-
 	// Implementation of the factory for for creating schema handlers.
 	class ClientSchemeHandlerFactory : public CefSchemeHandlerFactory
 	{
@@ -394,13 +540,18 @@ namespace asc_scheme
 		virtual CefRefPtr<CefResourceHandler> Create(CefRefPtr<CefBrowser> browser,
 													 CefRefPtr<CefFrame> frame,
 													 const CefString& scheme_name,
-													 CefRefPtr<CefRequest> request)
-		OVERRIDE
+													 CefRefPtr<CefRequest> request) OVERRIDE
 		{
 			CEF_REQUIRE_IO_THREAD();
+			std::string schemeName = scheme_name.ToString();
+
+			if (schemeName == "onlyoffice")
+				return new ClientSchemeHandlerOO(m_pManager);
+
 			std::wstring sMainUrl = L"";
 			if (browser && browser->GetMainFrame())
 				sMainUrl = browser->GetMainFrame()->GetURL().ToWString();
+
 			return new ClientSchemeHandler(m_pManager, sMainUrl);
 		}
 
@@ -420,13 +571,17 @@ namespace asc_scheme
 							   #endif
 							   )
 	{
-		registrar->AddCustomScheme("ascdesktop", CEF_SCHEME_OPTION_STANDARD | CEF_SCHEME_OPTION_SECURE | CEF_SCHEME_OPTION_CORS_ENABLED/* | CEF_SCHEME_OPTION_FETCH_ENABLED*/);	
+		registrar->AddCustomScheme("ascdesktop", CEF_SCHEME_OPTION_STANDARD | CEF_SCHEME_OPTION_SECURE | CEF_SCHEME_OPTION_CORS_ENABLED | CEF_SCHEME_OPTION_FETCH_ENABLED);
+		registrar->AddCustomScheme("onlyoffice", CEF_SCHEME_OPTION_STANDARD | CEF_SCHEME_OPTION_SECURE | CEF_SCHEME_OPTION_CORS_ENABLED | CEF_SCHEME_OPTION_FETCH_ENABLED);
 	}
 #endif
 
 	bool InitScheme(CAscApplicationManager* pManager)
 	{
-		return CefRegisterSchemeHandlerFactory("ascdesktop", "", new ClientSchemeHandlerFactory(pManager));
+		bool res = true;
+		res = res && CefRegisterSchemeHandlerFactory("ascdesktop", "", new ClientSchemeHandlerFactory(pManager));
+		res = res && CefRegisterSchemeHandlerFactory("onlyoffice", "", new ClientSchemeHandlerFactory(pManager));
+		return res;
 	}
 
 }  // namespace asc_scheme
