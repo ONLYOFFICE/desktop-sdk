@@ -51,6 +51,9 @@ public:
 	std::string sGuid;
 	std::string sName;
 	std::string sNameObject;
+	std::string sConfigName;
+	std::string sUrl;
+	bool isOnlyofficeScheme;
 	bool isUser;
 };
 
@@ -74,6 +77,7 @@ public:
 
 	// плагин не для редактора, а для главной страницы (для системных сообщенией)
 	std::vector<CExternalPluginInfo> m_arExternals;
+	bool m_bIsSupportMultiplugins;
 
 public:
 	CPluginsManager()
@@ -88,6 +92,8 @@ public:
 		// Возможность псевдо-обновления системных плагинов
 		// По факту подмена системного на более новый из папки пользователя
 		m_isSupportSystemUpdate = true;
+
+		m_bIsSupportMultiplugins = false;
 	}
 
 	std::string GetPluginsJson(const bool& bActivePlugins = true, const bool& bCheckCrypto = false,
@@ -142,12 +148,13 @@ public:
 			for (size_t j = 0; j < _arPlugins.size(); j++)
 			{
 				std::string sJson;
+				bool bIsExternal = false;
 				if (NSFile::CFileBinary::ReadAllTextUtf8A(_arPlugins[j] + L"/config.json", sJson))
 				{
 					CheckEncryption(sJson, false);
 
 					// !!! это надо обсудить, т.к. возможны такие плагины в папке пользователя
-					CheckExternal(sJson, i == 0);
+					bIsExternal = CheckExternal(sJson, i == 0);
 
 					std::string::size_type pos1 = sJson.find("asc.{");
 					std::string::size_type pos2 = sJson.find('}', pos1);
@@ -163,6 +170,12 @@ public:
 							arCongigs.push_back(sGuid);
 						}
 					}
+				}
+
+				// check for desktop
+				if (m_bIsSupportMultiplugins && !bIsExternal && NSFile::CFileBinary::ReadAllTextUtf8A(_arPlugins[j] + L"/configDesktop.json", sJson))
+				{
+					CheckExternal(sJson, i == 0);
 				}
 			}
 		}
@@ -555,6 +568,8 @@ private:
 				info.sName = GetStringValue(sJson, "name");
 				info.sNameObject = GetObjectValue(sJson, "nameLocale");
 				info.isUser = isSystem ? false : true;
+				info.sUrl = GetStringValue(sJson, "url");
+				info.isOnlyofficeScheme = (std::string::npos != sJson.find("onlyofficeScheme")) ? true : false;
 
 				m_arExternals.push_back(info);
 			}

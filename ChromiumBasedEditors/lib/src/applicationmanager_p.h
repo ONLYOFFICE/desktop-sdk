@@ -1546,6 +1546,8 @@ public:
 	// показывать ли консоль для дебага
 	bool m_bDebugInfoSupport;
 
+	bool m_bSupportMultiplugins;
+
 	// экспериментальные возможности
 	bool m_bExperimentalFeatures;
 
@@ -1678,6 +1680,7 @@ public:
 		m_sLogFile = "";
 		m_bDebugInfoSupport = false;
 		m_bExperimentalFeatures = false;
+		m_bSupportMultiplugins = false;
 
 		m_bIsUseExternalMessageLoop = false;
 		m_pExternalMessageLoop = NULL;
@@ -1933,6 +1936,10 @@ public:
 		std::map<std::string, std::string>::iterator pairDEBUG = _map->find("ascdesktop-support-debug-info-keep");
 		if (pairDEBUG != _map->end() && "1" == pairDEBUG->second)
 			m_bDebugInfoSupport = true;
+
+		std::map<std::string, std::string>::iterator pairComplexPlugins = _map->find("support-complex-plugins");
+		if (pairComplexPlugins != _map->end() && "1" == pairComplexPlugins->second)
+			m_bSupportMultiplugins = true;
 
 		if (!NSCommon::CSystemWindowScale::IsInit())
 		{

@@ -501,6 +501,8 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 	CPluginsManager oPlugins;
 	oPlugins.m_strDirectory = pManager->m_oSettings.system_plugins_path;
 	oPlugins.m_strUserDirectory = pManager->m_oSettings.user_plugins_path;
+	oPlugins.m_bIsSupportMultiplugins = pManager->m_pInternal->m_bSupportMultiplugins;
+
 	oPlugins.GetInstalledPlugins();
 
 	bool bIsCurrentCryptoPresent = false;

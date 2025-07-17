@@ -60,6 +60,8 @@
 
 #include <boost/filesystem.hpp>
 
+#include "../../tools/tools.h"
+
 std::wstring GetTmpFileFromBase64(const std::string& sData, const std::wstring& sTmpFolder)
 {
 	if (sData.empty())
@@ -4410,6 +4412,32 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				retval = CefV8Value::CreateInt(nVersion);
 				return true;
 			}
+			else if (name == "getToolFunctions")
+			{
+				CAITools& tools = CAITools::getInstance();
+				if (tools.getWorkDirectory().empty())
+				{
+					tools.setFontsDirectory(m_sFontsData);
+					tools.setWorkDirectory(m_sSystemPlugins + L"/../../converter");
+				}
+
+				retval = CefV8Value::CreateString(tools.getFunctions());
+				return true;
+			}
+			else if (name == "callToolFunction")
+			{
+				CAITools& tools = CAITools::getInstance();
+				if (tools.getWorkDirectory().empty())
+				{
+					tools.setFontsDirectory(m_sFontsData);
+					tools.setWorkDirectory(m_sSystemPlugins + L"/../../converter");
+				}
+
+				std::string name = arguments[0]->GetStringValue().ToString();
+				std::string param = arguments[1]->GetStringValue().ToString();
+				retval = CefV8Value::CreateString(tools.callFunc(name, param));
+				return true;
+			}
 
 			// Function does not exist.
 			return false;
@@ -4985,7 +5013,7 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 			CefRefPtr<CefV8Handler> handler = pWrapper;
 
-#define EXTEND_METHODS_COUNT 186
+#define EXTEND_METHODS_COUNT 188
 			const char* methods[EXTEND_METHODS_COUNT] = {
 				"Copy",
 				"Paste",
@@ -5243,6 +5271,9 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 				"onFileLockedClose",
 
 				"getEngineVersion",
+
+				"getToolFunctions",
+				"callToolFunction",
 
 				NULL};
 

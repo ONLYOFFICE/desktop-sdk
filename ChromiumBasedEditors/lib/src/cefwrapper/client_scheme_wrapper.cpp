@@ -404,6 +404,13 @@ public:
 				return false;
 
 			std::wstring::size_type posSearch = sFile.find(L"?lang=");
+			if (std::wstring::npos == posSearch)
+			{
+				posSearch = sFile.find(L".html?");
+				if (std::wstring::npos != posSearch)
+					posSearch += 5;
+			}
+
 			if (std::wstring::npos != posSearch)
 				sFile = sFile.substr(0, posSearch);
 
