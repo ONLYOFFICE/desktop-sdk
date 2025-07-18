@@ -1,6 +1,10 @@
 #pragma once
 #include "../../tools.h"
 
+#ifndef JSON_HAS_CPP_11
+#define JSON_HAS_CPP_11
+#endif
+
 #include "./json.hpp"
 using namespace nlohmann;
 #include "../../../../../../core/DesktopEditor/doctrenderer/docbuilder.h"
