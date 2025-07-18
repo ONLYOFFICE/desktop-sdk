@@ -188,7 +188,7 @@ core_mac {
 	INCLUDEPATH += $$CORE_ROOT_DIR/DesktopEditor/common/Mac
 	OBJECTIVE_SOURCES += $$CORE_ROOT_DIR/DesktopEditor/common/Mac/NSString+StringUtils.mm
 
-	# DEFINES += NO_SUPPORT_MEDIA_PLAYER
+	# player
 	OBJECTIVE_HEADERS += \
 		src/mac_videoplayer/footerpanel.h \
 		src/mac_videoplayer/subpanel.h \
@@ -212,6 +212,12 @@ core_mac {
 		src/mac_videoplayer/utils.mm \
 		src/mac_videoplayer/timelabel.mm \
 		src/mac_videoplayer/footerskin.mm
+
+	# add button icons to framework's bundle resources
+	ICONS_DIR = $$PWD/../videoplayerlib/icons
+	PLAYER_BUTTON_ICONS.files = $$files($$ICONS_DIR/*)
+	PLAYER_BUTTON_ICONS.path = Versions/$$MAJOR_VERSION/Resources
+	QMAKE_BUNDLE_DATA += PLAYER_BUTTON_ICONS
 }
 
 core_linux {

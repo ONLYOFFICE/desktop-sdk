@@ -38,7 +38,7 @@
 	m_icon_name = icon_name;
 	// TODO: are -2x png icons always suitable on mac platforms ???
 	NSString* icon_full_name = [NSString stringWithFormat:@"%@%@%@", icon_name, m_style->icon_postfix, @"-2x"];
-	NSString* icon_path = [[NSBundle mainBundle] pathForResource:icon_full_name ofType:@"png"];
+	NSString* icon_path = [[NSBundle bundleForClass:[self class]] pathForResource:icon_full_name ofType:@"png"];
 	if (icon_path == nil) {
 		NSLog(@"Error: could not load icon %@.png", icon_full_name);
 		return;
