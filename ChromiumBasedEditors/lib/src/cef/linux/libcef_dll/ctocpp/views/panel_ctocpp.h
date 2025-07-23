@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=c0c4823d1084bd1ea4f2065e93b51a56718bed87$
+// $hash=fd113f92e49f22d78b874fbbf87e98437e4573fb$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_VIEWS_PANEL_CTOCPP_H_
@@ -97,9 +97,11 @@ class CefPanelCToCpp
   void SetFocusable(bool focusable) override;
   bool IsFocusable() override;
   bool IsAccessibilityFocusable() override;
+  bool HasFocus() override;
   void RequestFocus() override;
   void SetBackgroundColor(cef_color_t color) override;
   cef_color_t GetBackgroundColor() override;
+  cef_color_t GetThemeColor(int color_id) override;
   bool ConvertPointToScreen(CefPoint& point) override;
   bool ConvertPointFromScreen(CefPoint& point) override;
   bool ConvertPointToWindow(CefPoint& point) override;
@@ -107,5 +109,8 @@ class CefPanelCToCpp
   bool ConvertPointToView(CefRefPtr<CefView> view, CefPoint& point) override;
   bool ConvertPointFromView(CefRefPtr<CefView> view, CefPoint& point) override;
 };
+
+constexpr auto CefPanelCToCpp_Wrap = CefPanelCToCpp::Wrap;
+constexpr auto CefPanelCToCpp_Unwrap = CefPanelCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_VIEWS_PANEL_CTOCPP_H_

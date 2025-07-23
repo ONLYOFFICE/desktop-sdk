@@ -36,6 +36,13 @@ void ExpectCloseRects(const CefRect& expected,
   EXPECT_LE(abs(expected.height - actual.height), allowed_deviance);
 }
 
+void ExpectClosePoints(const CefPoint& expected,
+                       const CefPoint& actual,
+                       int allowed_deviance) {
+  EXPECT_LE(abs(expected.x - actual.x), allowed_deviance);
+  EXPECT_LE(abs(expected.y - actual.y), allowed_deviance);
+}
+
 void WindowCreateImpl(CefRefPtr<CefWaitableEvent> event) {
   auto config = std::make_unique<TestWindowDelegate::Config>();
   TestWindowDelegate::RunTest(event, std::move(config));
@@ -47,23 +54,136 @@ void WindowCreateFramelessImpl(CefRefPtr<CefWaitableEvent> event) {
   TestWindowDelegate::RunTest(event, std::move(config));
 }
 
-void RunWindowShow(CefRefPtr<CefWindow> window) {
-  EXPECT_FALSE(window->IsVisible());
-  EXPECT_FALSE(window->IsDrawn());
-  window->Show();
-  EXPECT_TRUE(window->IsVisible());
-  EXPECT_TRUE(window->IsDrawn());
+void RunWindowShow(cef_show_state_t initial_show_state,
+                   CefRefPtr<CefWindow> window) {
+#if defined(OS_MAC)
+  if (initial_show_state == CEF_SHOW_STATE_FULLSCREEN) {
+    // On MacOS, starting in fullscreen mode also shows the window on creation.
+    EXPECT_TRUE(window->IsVisible());
+    EXPECT_TRUE(window->IsDrawn());
+  } else
+#endif
+  {
+    EXPECT_FALSE(window->IsVisible());
+    EXPECT_FALSE(window->IsDrawn());
+    window->Show();
+  }
+
+  if (initial_show_state == CEF_SHOW_STATE_MINIMIZED) {
+#if !defined(OS_MAC)
+    // This result is a bit unexpected, but I guess the platform considers a
+    // window to be visible even when it's minimized.
+    EXPECT_TRUE(window->IsVisible());
+    EXPECT_TRUE(window->IsDrawn());
+#else
+    EXPECT_FALSE(window->IsVisible());
+    EXPECT_FALSE(window->IsDrawn());
+#endif
+  } else {
+    EXPECT_TRUE(window->IsVisible());
+    EXPECT_TRUE(window->IsDrawn());
+  }
+
+  switch (initial_show_state) {
+    case CEF_SHOW_STATE_NORMAL:
+      EXPECT_FALSE(window->IsMaximized());
+      EXPECT_FALSE(window->IsMinimized());
+      EXPECT_FALSE(window->IsFullscreen());
+      break;
+    case CEF_SHOW_STATE_MINIMIZED:
+      EXPECT_FALSE(window->IsMaximized());
+#if defined(OS_WIN)
+      // On MacOS, IsMinimized() state isn't reliable in this callback due to a
+      // timing issue between NativeWidgetMac::Minimize requesting the minimize
+      // state change (before this callback) and
+      // NativeWidgetMacNSWindowHost::OnWindowMiniaturizedChanged indicating the
+      // completed state change (after this callback).
+      // On Linux, there's likely a similar timing issue.
+      EXPECT_TRUE(window->IsMinimized());
+#endif
+      EXPECT_FALSE(window->IsFullscreen());
+      break;
+    case CEF_SHOW_STATE_MAXIMIZED:
+#if !defined(OS_LINUX)
+      // On Linux, there's likely a similar timing issue.
+      EXPECT_TRUE(window->IsMaximized());
+#endif
+      EXPECT_FALSE(window->IsMinimized());
+      EXPECT_FALSE(window->IsFullscreen());
+      break;
+    case CEF_SHOW_STATE_FULLSCREEN:
+      EXPECT_FALSE(window->IsMaximized());
+      EXPECT_FALSE(window->IsMinimized());
+      EXPECT_TRUE(window->IsFullscreen());
+      break;
+    case CEF_SHOW_STATE_HIDDEN:
+      break;
+    case CEF_SHOW_STATE_NUM_VALUES:
+      NOTREACHED();
+      break;
+  }
 }
 
 void WindowCreateWithOriginImpl(CefRefPtr<CefWaitableEvent> event) {
   auto config = std::make_unique<TestWindowDelegate::Config>();
   config->window_origin = {100, 200};
-  config->on_window_created = base::BindOnce(RunWindowShow);
+  config->on_window_created =
+      base::BindOnce(RunWindowShow, config->initial_show_state);
   TestWindowDelegate::RunTest(event, std::move(config));
 }
 
-void RunWindowShowHide(CefRefPtr<CefWindow> window) {
-  RunWindowShow(window);
+void WindowCreateMinimizedImpl(CefRefPtr<CefWaitableEvent> event) {
+  auto config = std::make_unique<TestWindowDelegate::Config>();
+  config->initial_show_state = CEF_SHOW_STATE_MINIMIZED;
+  config->on_window_created =
+      base::BindOnce(RunWindowShow, config->initial_show_state);
+  TestWindowDelegate::RunTest(event, std::move(config));
+}
+
+void WindowCreateMaximizedImpl(CefRefPtr<CefWaitableEvent> event) {
+  auto config = std::make_unique<TestWindowDelegate::Config>();
+  config->initial_show_state = CEF_SHOW_STATE_MAXIMIZED;
+  config->on_window_created =
+      base::BindOnce(RunWindowShow, config->initial_show_state);
+  TestWindowDelegate::RunTest(event, std::move(config));
+}
+
+#if defined(OS_MAC)
+void WindowFullscreenCreationComplete(CefRefPtr<CefWindow> window,
+                                      size_t count) {
+  EXPECT_FALSE(window->IsMinimized());
+  EXPECT_EQ(window->IsFullscreen(), window->IsMaximized());
+
+  if (window->IsFullscreen()) {
+    EXPECT_EQ(1U, count);
+    window->SetFullscreen(false);
+  } else {
+    EXPECT_EQ(2U, count);
+    // End the test by closing the Window.
+    window->Close();
+  }
+}
+#endif
+
+void WindowCreateFullscreenImpl(CefRefPtr<CefWaitableEvent> event) {
+  auto config = std::make_unique<TestWindowDelegate::Config>();
+  config->initial_show_state = CEF_SHOW_STATE_FULLSCREEN;
+  config->on_window_created =
+      base::BindOnce(RunWindowShow, config->initial_show_state);
+#if defined(OS_MAC)
+  // On macOS, destroying a fullscreen window can take a long time.
+  // To prevent the next test from starting before the window is fully closed,
+  // we need to exit fullscreen mode before closing the window.
+  config->on_window_fullscreen_transition_complete =
+      base::BindRepeating(WindowFullscreenCreationComplete);
+  config->close_window = false;
+#endif
+  TestWindowDelegate::RunTest(event, std::move(config));
+}
+
+void RunWindowShowHide(cef_show_state_t initial_show_state,
+                       CefRefPtr<CefWindow> window) {
+  RunWindowShow(initial_show_state, window);
   window->Hide();
   EXPECT_FALSE(window->IsVisible());
   EXPECT_FALSE(window->IsDrawn());
@@ -71,13 +191,15 @@ void RunWindowShowHide(CefRefPtr<CefWindow> window) {
 
 void WindowShowHideImpl(CefRefPtr<CefWaitableEvent> event) {
   auto config = std::make_unique<TestWindowDelegate::Config>();
-  config->on_window_created = base::BindOnce(RunWindowShowHide);
+  config->on_window_created =
+      base::BindOnce(RunWindowShowHide, config->initial_show_state);
   TestWindowDelegate::RunTest(event, std::move(config));
 }
 
 void WindowShowHideFramelessImpl(CefRefPtr<CefWaitableEvent> event) {
   auto config = std::make_unique<TestWindowDelegate::Config>();
-  config->on_window_created = base::BindOnce(RunWindowShowHide);
+  config->on_window_created =
+      base::BindOnce(RunWindowShowHide, config->initial_show_state);
   config->frameless = true;
   TestWindowDelegate::RunTest(event, std::move(config));
 }
@@ -121,9 +243,9 @@ void CreateBoxLayout(CefRefPtr<CefWindow> parent) {
 
   // The children should each take up 50% of the client area.
   ExpectCloseRects(CefRect(0, 0, kWSize, kWSize / 2), panel_child1->GetBounds(),
-                   2);
+                   3);
   ExpectCloseRects(CefRect(0, kWSize / 2, kWSize, kWSize / 2),
-                   panel_child2->GetBounds(), 2);
+                   panel_child2->GetBounds(), 3);
 }
 
 void RunWindowLayoutAndCoords(CefRefPtr<CefWindow> window) {
@@ -146,9 +268,9 @@ void RunWindowLayoutAndCoords(CefRefPtr<CefWindow> window) {
             point);
   point = CefPoint(0, 0);
   EXPECT_TRUE(view2->ConvertPointToScreen(point));
-  EXPECT_EQ(CefPoint(client_bounds_in_screen.x,
-                     client_bounds_in_screen.y + kWSize / 2),
-            point);
+  ExpectClosePoints(CefPoint(client_bounds_in_screen.x,
+                             client_bounds_in_screen.y + kWSize / 2),
+                    point, 3);
 
   // Test view from screen coordinate conversions.
   point = CefPoint(client_bounds_in_screen.x, client_bounds_in_screen.y);
@@ -157,7 +279,7 @@ void RunWindowLayoutAndCoords(CefRefPtr<CefWindow> window) {
   point = CefPoint(client_bounds_in_screen.x,
                    client_bounds_in_screen.y + kWSize / 2);
   EXPECT_TRUE(view2->ConvertPointFromScreen(point));
-  EXPECT_EQ(CefPoint(0, 0), point);
+  ExpectClosePoints(CefPoint(0, 0), point, 3);
 
   // Test view to window coordinate conversions.
   point = CefPoint(0, 0);
@@ -165,7 +287,7 @@ void RunWindowLayoutAndCoords(CefRefPtr<CefWindow> window) {
   EXPECT_EQ(CefPoint(0, 0), point);
   point = CefPoint(0, 0);
   EXPECT_TRUE(view2->ConvertPointToWindow(point));
-  EXPECT_EQ(CefPoint(0, kWSize / 2), point);
+  ExpectClosePoints(CefPoint(0, kWSize / 2), point, 3);
 
   // Test view from window coordinate conversions.
   point = CefPoint(0, 0);
@@ -173,23 +295,23 @@ void RunWindowLayoutAndCoords(CefRefPtr<CefWindow> window) {
   EXPECT_EQ(CefPoint(0, 0), point);
   point = CefPoint(0, kWSize / 2);
   EXPECT_TRUE(view2->ConvertPointFromWindow(point));
-  EXPECT_EQ(CefPoint(0, 0), point);
+  ExpectClosePoints(CefPoint(0, 0), point, 3);
 
   // Test view to view coordinate conversions.
   point = CefPoint(0, 0);
   EXPECT_TRUE(view1->ConvertPointToView(view2, point));
-  EXPECT_EQ(CefPoint(0, -kWSize / 2), point);
+  ExpectClosePoints(CefPoint(0, -kWSize / 2), point, 3);
   point = CefPoint(0, 0);
   EXPECT_TRUE(view2->ConvertPointToView(view1, point));
-  EXPECT_EQ(CefPoint(0, kWSize / 2), point);
+  ExpectClosePoints(CefPoint(0, kWSize / 2), point, 3);
 
   // Test view from view coordinate conversions.
   point = CefPoint(0, -kWSize / 2);
   EXPECT_TRUE(view1->ConvertPointFromView(view2, point));
-  EXPECT_EQ(CefPoint(0, 0), point);
+  ExpectClosePoints(CefPoint(0, 0), point, 3);
   point = CefPoint(0, kWSize / 2);
   EXPECT_TRUE(view2->ConvertPointFromView(view1, point));
-  EXPECT_EQ(CefPoint(0, 0), point);
+  ExpectClosePoints(CefPoint(0, 0), point, 3);
 
   CefRefPtr<CefDisplay> display = window->GetDisplay();
   EXPECT_TRUE(display.get());
@@ -198,14 +320,14 @@ void RunWindowLayoutAndCoords(CefRefPtr<CefWindow> window) {
   point = CefPoint(client_bounds_in_screen.x, client_bounds_in_screen.y);
   display->ConvertPointToPixels(point);
   display->ConvertPointFromPixels(point);
-  EXPECT_EQ(CefPoint(client_bounds_in_screen.x, client_bounds_in_screen.y),
-            point);
+  ExpectClosePoints(
+      CefPoint(client_bounds_in_screen.x, client_bounds_in_screen.y), point, 1);
 
   // We don't know what the pixel values will be, but they should be reversable.
   point = CefPoint(client_bounds_in_screen.x, client_bounds_in_screen.y);
   const auto pixels = CefDisplay::ConvertScreenPointToPixels(point);
   const auto dip = CefDisplay::ConvertScreenPointFromPixels(pixels);
-  EXPECT_EQ(point, dip);
+  ExpectClosePoints(point, dip, 1);
 }
 
 void WindowLayoutAndCoordsImpl(CefRefPtr<CefWaitableEvent> event) {
@@ -278,10 +400,15 @@ void VerifyMinimize(CefRefPtr<CefWindow> window) {
   EXPECT_FALSE(window->IsMaximized());
   EXPECT_FALSE(window->IsFullscreen());
 
+#if defined(OS_WIN)
   // This result is a bit unexpected, but I guess the platform considers a
   // window to be visible even when it's minimized.
   EXPECT_TRUE(window->IsVisible());
   EXPECT_TRUE(window->IsDrawn());
+#else
+  EXPECT_FALSE(window->IsVisible());
+  EXPECT_FALSE(window->IsDrawn());
+#endif
 
   window->Restore();
   CefPostDelayedTask(TID_UI, base::BindOnce(VerifyRestore, window),
@@ -316,28 +443,26 @@ void WindowMinimizeFramelessImpl(CefRefPtr<CefWaitableEvent> event) {
   config->close_window = false;
   TestWindowDelegate::RunTest(event, std::move(config));
 }
-
-void VerifyFullscreenExit(CefRefPtr<CefWindow> window) {
+void WindowFullscreenTransitionComplete(CefRefPtr<CefWindow> window,
+                                        size_t count) {
   EXPECT_FALSE(window->IsMinimized());
+
+#if defined(OS_MAC)
+  // On MacOS, IsMaximized() returns true when IsFullscreen() returns true.
+  EXPECT_EQ(window->IsFullscreen(), window->IsMaximized());
+#else
   EXPECT_FALSE(window->IsMaximized());
-  EXPECT_FALSE(window->IsFullscreen());
-  EXPECT_TRUE(window->IsVisible());
-  EXPECT_TRUE(window->IsDrawn());
+#endif
 
-  // End the test by closing the Window.
-  window->Close();
-}
+  if (window->IsFullscreen()) {
+    EXPECT_EQ(1U, count);
+    window->SetFullscreen(false);
+  } else {
+    EXPECT_EQ(2U, count);
 
-void VerifyFullscreen(CefRefPtr<CefWindow> window) {
-  EXPECT_FALSE(window->IsMinimized());
-  EXPECT_FALSE(window->IsMaximized());
-  EXPECT_TRUE(window->IsFullscreen());
-  EXPECT_TRUE(window->IsVisible());
-  EXPECT_TRUE(window->IsDrawn());
-
-  window->SetFullscreen(false);
-  CefPostDelayedTask(TID_UI, base::BindOnce(VerifyFullscreenExit, window),
-                     kStateDelayMS);
+    // End the test by closing the Window.
+    window->Close();
+  }
 }
 
 void RunWindowFullscreen(CefRefPtr<CefWindow> window) {
@@ -350,13 +475,13 @@ void RunWindowFullscreen(CefRefPtr<CefWindow> window) {
   EXPECT_TRUE(window->IsDrawn());
 
   window->SetFullscreen(true);
-  CefPostDelayedTask(TID_UI, base::BindOnce(VerifyFullscreen, window),
-                     kStateDelayMS);
 }
 
 void WindowFullscreenImpl(CefRefPtr<CefWaitableEvent> event) {
   auto config = std::make_unique<TestWindowDelegate::Config>();
   config->on_window_created = base::BindOnce(RunWindowFullscreen);
+  config->on_window_fullscreen_transition_complete =
+      base::BindRepeating(WindowFullscreenTransitionComplete);
   config->close_window = false;
   TestWindowDelegate::RunTest(event, std::move(config));
 }
@@ -364,6 +489,8 @@ void WindowFullscreenImpl(CefRefPtr<CefWaitableEvent> event) {
 void WindowFullscreenFramelessImpl(CefRefPtr<CefWaitableEvent> event) {
   auto config = std::make_unique<TestWindowDelegate::Config>();
   config->on_window_created = base::BindOnce(RunWindowFullscreen);
+  config->on_window_fullscreen_transition_complete =
+      base::BindRepeating(WindowFullscreenTransitionComplete);
   config->frameless = true;
   config->close_window = false;
   TestWindowDelegate::RunTest(event, std::move(config));
@@ -398,72 +525,27 @@ void WindowIconFramelessImpl(CefRefPtr<CefWaitableEvent> event) {
   TestWindowDelegate::RunTest(event, std::move(config));
 }
 
-const int kChar = 'A';
-const int kCloseWindowId = 2;
+constexpr int kChar = 'A';
+constexpr int kCloseWindowId = 2;
 bool got_accelerator;
-int got_key_event_alt_count;
-bool got_key_event_char;
 
 void TriggerAccelerator(CefRefPtr<CefWindow> window) {
   window->SendKeyPress(kChar, EVENTFLAG_ALT_DOWN);
 }
 
-bool OnKeyEvent(CefRefPtr<CefWindow> window, const CefKeyEvent& event) {
-  if (event.type != KEYEVENT_RAWKEYDOWN)
-    return false;
-
-  if (event.windows_key_code == VK_MENU) {
-    // First we get the ALT key press in all cases.
-    EXPECT_FALSE(got_key_event_char);
-    if (got_key_event_alt_count == 0)
-      EXPECT_FALSE(got_accelerator);
-    else
-      EXPECT_TRUE(got_accelerator);
-
-    EXPECT_EQ(EVENTFLAG_ALT_DOWN, static_cast<int>(event.modifiers));
-    got_key_event_alt_count++;
-  } else if (event.windows_key_code == kChar) {
-    // Then we get the char key press with the ALT modifier if the accelerator
-    // isn't registered.
-    EXPECT_TRUE(got_accelerator);
-    EXPECT_EQ(got_key_event_alt_count, 2);
-    EXPECT_FALSE(got_key_event_char);
-
-    EXPECT_EQ(EVENTFLAG_ALT_DOWN, static_cast<int>(event.modifiers));
-    got_key_event_char = true;
-
-    // Call this method just to make sure it doesn't crash.
-    window->RemoveAllAccelerators();
-
-    // End the test by closing the Window.
-    window->Close();
-
-    return true;
-  }
-
-  return false;
-}
-
 bool OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
   EXPECT_FALSE(got_accelerator);
-  EXPECT_EQ(got_key_event_alt_count, 1);
-  EXPECT_FALSE(got_key_event_char);
 
   EXPECT_EQ(kCloseWindowId, command_id);
   got_accelerator = true;
 
-  // Remove the accelerator.
-  window->RemoveAccelerator(kCloseWindowId);
-
-  // Now send the event without the accelerator registered. Should result in a
-  // call to OnKeyEvent.
-  TriggerAccelerator(window);
+  window->Close();
 
   return true;
 }
 
 void RunWindowAccelerator(CefRefPtr<CefWindow> window) {
-  window->SetAccelerator(kCloseWindowId, kChar, false, false, true);
+  window->SetAccelerator(kCloseWindowId, kChar, false, false, true, false);
   window->Show();
 
   CefPostDelayedTask(TID_UI, base::BindOnce(TriggerAccelerator, window),
@@ -472,25 +554,15 @@ void RunWindowAccelerator(CefRefPtr<CefWindow> window) {
 
 void VerifyWindowAccelerator(CefRefPtr<CefWindow> window) {
   EXPECT_TRUE(got_accelerator);
-  EXPECT_EQ(got_key_event_alt_count, 2);
-  EXPECT_TRUE(got_key_event_char);
 }
 
-// Expected order of events:
-// 1. OnKeyEvent for ALT key press.
-// 2. OnAccelerator for ALT+Char key press (with accelerator registered).
-// 3. OnKeyEvent for ALT key press.
-// 4. OnKeyEvent for ALT+Char key press (without accelerator registered).
 void WindowAcceleratorImpl(CefRefPtr<CefWaitableEvent> event) {
   got_accelerator = false;
-  got_key_event_alt_count = 0;
-  got_key_event_char = false;
 
   auto config = std::make_unique<TestWindowDelegate::Config>();
   config->on_window_created = base::BindOnce(RunWindowAccelerator);
   config->on_window_destroyed = base::BindOnce(VerifyWindowAccelerator);
   config->on_accelerator = base::BindRepeating(OnAccelerator);
-  config->on_key_event = base::BindRepeating(OnKeyEvent);
   config->close_window = false;
   TestWindowDelegate::RunTest(event, std::move(config));
 }
@@ -503,6 +575,9 @@ void WindowAcceleratorImpl(CefRefPtr<CefWaitableEvent> event) {
 WINDOW_TEST_ASYNC(WindowCreate)
 WINDOW_TEST_ASYNC(WindowCreateFrameless)
 WINDOW_TEST_ASYNC(WindowCreateWithOrigin)
+WINDOW_TEST_ASYNC(WindowCreateMinimized)
+WINDOW_TEST_ASYNC(WindowCreateMaximized)
+WINDOW_TEST_ASYNC(WindowCreateFullscreen)
 WINDOW_TEST_ASYNC(WindowShowHide)
 WINDOW_TEST_ASYNC(WindowShowHideFrameless)
 WINDOW_TEST_ASYNC(WindowLayoutAndCoords)
@@ -516,3 +591,173 @@ WINDOW_TEST_ASYNC(WindowFullscreenFrameless)
 WINDOW_TEST_ASYNC(WindowIcon)
 WINDOW_TEST_ASYNC(WindowIconFrameless)
 WINDOW_TEST_ASYNC(WindowAccelerator)
+
+namespace {
+
+enum class OverlayTestMode {
+  // Destroy the overlay after the Window is destroyed.
+  kDestroyAfterWindowDestroyImplicit,
+  kDestroyAfterWindowDestroyExplicit,
+
+  // Destroy the overlay explicitly before the Window is shown.
+  kDestroyBeforeWindowShow,
+  kDestroyBeforeWindowShowAndAddAgain,
+
+  // Destroy the overlay explicitly after the Window is shown.
+  kDestroyAfterWindowShow,
+  kDestroyAfterWindowShowAndAddAgain,
+};
+
+class OverlayTestWindowDelegate : public TestWindowDelegate {
+ public:
+  static TestWindowDelegate* Factory(OverlayTestMode test_mode,
+                                     CefRefPtr<CefWaitableEvent> event,
+                                     std::unique_ptr<Config> config,
+                                     const CefSize& window_size) {
+    return new OverlayTestWindowDelegate(test_mode, event, std::move(config),
+                                         window_size);
+  }
+
+ private:
+  OverlayTestWindowDelegate(OverlayTestMode test_mode,
+                            CefRefPtr<CefWaitableEvent> event,
+                            std::unique_ptr<Config> config,
+                            const CefSize& window_size)
+      : TestWindowDelegate(event, std::move(config), window_size),
+        test_mode_(test_mode) {
+    this->config()->on_window_created = base::BindOnce(
+        &OverlayTestWindowDelegate::RunWindowCreated, base::Unretained(this));
+    this->config()->on_window_destroyed = base::BindOnce(
+        &OverlayTestWindowDelegate::RunWindowDestroyed, base::Unretained(this));
+  }
+
+  bool DestroyBeforeShow() const {
+    return test_mode_ == OverlayTestMode::kDestroyBeforeWindowShow ||
+           test_mode_ == OverlayTestMode::kDestroyBeforeWindowShowAndAddAgain;
+  }
+
+  bool DestroyAfterShow() const {
+    return test_mode_ == OverlayTestMode::kDestroyAfterWindowShow ||
+           test_mode_ == OverlayTestMode::kDestroyAfterWindowShowAndAddAgain;
+  }
+
+  bool AddAgain() const {
+    return test_mode_ == OverlayTestMode::kDestroyBeforeWindowShowAndAddAgain ||
+           test_mode_ == OverlayTestMode::kDestroyAfterWindowShowAndAddAgain;
+  }
+
+  void RunWindowCreated(CefRefPtr<CefWindow> window) {
+    CreateOverlay();
+
+    if (DestroyBeforeShow()) {
+      DestroyOverlay();
+    }
+
+    window->Show();
+
+    if (DestroyAfterShow()) {
+      DestroyOverlay();
+    }
+  }
+
+  void RunWindowDestroyed(CefRefPtr<CefWindow> window) {
+    if (test_mode_ == OverlayTestMode::kDestroyAfterWindowDestroyExplicit) {
+      DestroyOverlay();
+    }
+  }
+
+  void CreateOverlay() {
+    // |view_| may be reused.
+    if (!view_) {
+      view_ = CefPanel::CreatePanel(nullptr);
+    }
+
+    // View is visible but not drawn.
+    EXPECT_EQ(nullptr, view_->GetWindow());
+    EXPECT_TRUE(view_->IsVisible());
+    EXPECT_FALSE(view_->IsDrawn());
+
+    EXPECT_FALSE(controller_);
+    controller_ = window()->AddOverlayView(view_, CEF_DOCKING_MODE_TOP_LEFT,
+                                           /*can_activate=*/false);
+
+    // View is visible/drawn (because it belongs to the controller), but the
+    // controller itself is not.
+    EXPECT_FALSE(controller_->IsVisible());
+    EXPECT_FALSE(controller_->IsDrawn());
+    EXPECT_TRUE(window()->IsSame(view_->GetWindow()));
+    EXPECT_TRUE(view_->IsVisible());
+    EXPECT_TRUE(view_->IsDrawn());
+
+    controller_->SetVisible(true);
+
+    EXPECT_TRUE(controller_->IsValid());
+    EXPECT_TRUE(controller_->GetContentsView()->IsSame(view_));
+    EXPECT_TRUE(controller_->GetWindow()->IsSame(window()));
+    EXPECT_EQ(CEF_DOCKING_MODE_TOP_LEFT, controller_->GetDockingMode());
+
+    // Controller is visible/drawn if the host window is drawn.
+    if (window()->IsDrawn()) {
+      EXPECT_TRUE(controller_->IsVisible());
+      EXPECT_TRUE(controller_->IsDrawn());
+    } else {
+      EXPECT_FALSE(controller_->IsVisible());
+      EXPECT_FALSE(controller_->IsDrawn());
+    }
+
+    EXPECT_TRUE(view_->IsVisible());
+    EXPECT_TRUE(view_->IsDrawn());
+  }
+
+  void DestroyOverlay() {
+    // Disassociates the controller from the view and host window.
+    controller_->Destroy();
+
+    EXPECT_FALSE(controller_->IsValid());
+    EXPECT_EQ(nullptr, controller_->GetContentsView());
+    EXPECT_EQ(nullptr, controller_->GetWindow());
+    EXPECT_FALSE(controller_->IsVisible());
+    EXPECT_FALSE(controller_->IsDrawn());
+
+    // View is still visible but no longer drawn (because it no longer belongs
+    // to the controller).
+    EXPECT_EQ(nullptr, view_->GetWindow());
+    EXPECT_TRUE(view_->IsVisible());
+    EXPECT_FALSE(view_->IsDrawn());
+
+    controller_ = nullptr;
+
+    if (AddAgain()) {
+      CreateOverlay();
+    }
+  }
+
+  OverlayTestMode const test_mode_;
+  CefRefPtr<CefView> view_;
+  CefRefPtr<CefOverlayController> controller_;
+};
+
+void WindowOverlay(OverlayTestMode test_mode,
+                   CefRefPtr<CefWaitableEvent> event) {
+  auto config = std::make_unique<TestWindowDelegate::Config>();
+  TestWindowDelegate::RunTest(
+      event, std::move(config),
+      base::BindOnce(&OverlayTestWindowDelegate::Factory, test_mode));
+}
+
+}  // namespace
+
+#define WINDOW_OVERLAY_TEST(name)                                     \
+  namespace {                                                         \
+  void WindowOverlay##name##Impl(CefRefPtr<CefWaitableEvent> event) { \
+    WindowOverlay(OverlayTestMode::k##name, event);                   \
+  }                                                                   \
+  }                                                                   \
+  WINDOW_TEST_ASYNC(WindowOverlay##name)
+
+WINDOW_OVERLAY_TEST(DestroyAfterWindowDestroyImplicit)
+WINDOW_OVERLAY_TEST(DestroyAfterWindowDestroyExplicit)
+WINDOW_OVERLAY_TEST(DestroyBeforeWindowShow)
+WINDOW_OVERLAY_TEST(DestroyBeforeWindowShowAndAddAgain)
+WINDOW_OVERLAY_TEST(DestroyAfterWindowShow)
+WINDOW_OVERLAY_TEST(DestroyAfterWindowShowAndAddAgain)

@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,10 +9,11 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=7d0f87f5e909c52e5424e018ff46f806960f7df2$
+// $hash=da5bfe7c7e45c192788bb5e09194a89ab4f6836e$
 //
 
 #include "libcef_dll/ctocpp/run_quick_menu_callback_ctocpp.h"
+
 #include "libcef_dll/shutdown_checker.h"
 
 // VIRTUAL METHODS - Body may be edited by hand.
@@ -22,9 +23,10 @@ void CefRunQuickMenuCallbackCToCpp::Continue(int command_id,
                                              cef_event_flags_t event_flags) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_run_quick_menu_callback_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, cont))
+  auto* _struct = GetStruct();
+  if (!_struct->cont) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -35,9 +37,10 @@ void CefRunQuickMenuCallbackCToCpp::Continue(int command_id,
 NO_SANITIZE("cfi-icall") void CefRunQuickMenuCallbackCToCpp::Cancel() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_run_quick_menu_callback_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, cancel))
+  auto* _struct = GetStruct();
+  if (!_struct->cancel) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -61,7 +64,7 @@ cef_run_quick_menu_callback_t* CefCToCppRefCounted<
     CefRunQuickMenuCallback,
     cef_run_quick_menu_callback_t>::UnwrapDerived(CefWrapperType type,
                                                   CefRunQuickMenuCallback* c) {
-  NOTREACHED() << "Unexpected class type: " << type;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
   return nullptr;
 }
 

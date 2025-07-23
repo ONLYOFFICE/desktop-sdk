@@ -9,6 +9,7 @@
 #include "include/cef_parser.h"
 #include "include/cef_permission_handler.h"
 #include "include/cef_request_context_handler.h"
+#include "include/test/cef_test_helpers.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "include/wrapper/cef_stream_resource_handler.h"
 #include "tests/ceftests/test_handler.h"
@@ -29,7 +30,7 @@ constexpr char kMediaNavUrl[] = "https://media-access-test/nav.html";
 class MediaAccessBrowserTest : public client::ClientAppBrowser::Delegate,
                                public CefPermissionHandler {
  public:
-  MediaAccessBrowserTest() {}
+  MediaAccessBrowserTest() = default;
 
   void OnBeforeCommandLineProcessing(
       CefRefPtr<client::ClientAppBrowser> app,
@@ -45,9 +46,12 @@ class MediaAccessBrowserTest : public client::ClientAppBrowser::Delegate,
 
 class TestSetup {
  public:
-  TestSetup() {}
+  TestSetup() = default;
 
   // CONFIGURATION
+
+  // True if a user gesture is required for the getDisplayMedia call.
+  bool needs_user_gesture = false;
 
   // Deny the prompt by returning false in OnRequestMediaAccessPermission.
   bool deny_implicitly = false;
@@ -80,7 +84,7 @@ class TestSetup {
 
 class MediaAccessTestHandler : public TestHandler, public CefPermissionHandler {
  public:
-  MediaAccessTestHandler(TestSetup* tr, uint32 request, uint32 response)
+  MediaAccessTestHandler(TestSetup* tr, uint32_t request, uint32_t response)
       : test_setup_(tr), request_(request), response_(response) {}
 
   cef_return_value_t OnBeforeResourceLoad(
@@ -127,9 +131,10 @@ class MediaAccessTestHandler : public TestHandler, public CefPermissionHandler {
         "   data = {};"
         " }"
         " document.location = "
-        "`http://tests/"
+        "`https://tests/"
         "exit?result=${val}&data=${encodeURIComponent(JSON.stringify(data))}`;"
-        "}";
+        "}"
+        "function runTest() {";
 
     if (want_audio_device() || want_video_device()) {
       page += std::string("navigator.mediaDevices.getUserMedia({audio: ") +
@@ -150,10 +155,11 @@ class MediaAccessTestHandler : public TestHandler, public CefPermissionHandler {
         ".catch(function(err) {"
         "  console.log(err.toString());"
         "  onResult(`ERROR`, {error_str: err.toString()});"
-        "});";
+        "});"
+        "}";
 
-    if (test_setup_->deny_implicitly && IsChromeRuntimeEnabled()) {
-      // Default behavior with the Chrome runtime is to show a UI prompt, so add
+    if (test_setup_->deny_implicitly && !use_alloy_style_browser()) {
+      // Default behavior with Chrome style is to show a UI prompt, so add
       // a timeout.
       page += "setTimeout(() => { onResult(`TIMEOUT`); }, 1000);";
     } else if (test_setup_->deny_with_navigation) {
@@ -164,7 +170,13 @@ class MediaAccessTestHandler : public TestHandler, public CefPermissionHandler {
 
     page +=
         "</script>"
-        "</head><body>MEDIA ACCESS TEST</body></html>";
+        "</head><body>";
+
+    if (!test_setup_->needs_user_gesture) {
+      page += "<script>runTest();</script>";
+    }
+
+    page += "MEDIA ACCESS TEST</body></html>";
 
     // Create the request context that will use an in-memory cache.
     CefRequestContextSettings settings;
@@ -196,6 +208,8 @@ class MediaAccessTestHandler : public TestHandler, public CefPermissionHandler {
       if (frame->GetURL().ToString() == kMediaNavUrl) {
         DestroyTest();
       }
+    } else if (test_setup_->needs_user_gesture) {
+      CefExecuteJavaScriptWithUserGestureForTests(frame, "runTest()");
     }
   }
 
@@ -203,7 +217,7 @@ class MediaAccessTestHandler : public TestHandler, public CefPermissionHandler {
       CefRefPtr<CefBrowser> browser,
       CefRefPtr<CefFrame> frame,
       const CefString& requesting_origin,
-      uint32 requested_permissions,
+      uint32_t requested_permissions,
       CefRefPtr<CefMediaAccessCallback> callback) override {
     EXPECT_UI_THREAD();
     EXPECT_TRUE(frame->IsMain());
@@ -301,8 +315,8 @@ class MediaAccessTestHandler : public TestHandler, public CefPermissionHandler {
   }
 
   TestSetup* const test_setup_;
-  const uint32 request_;
-  const uint32 response_;
+  const uint32_t request_;
+  const uint32_t response_;
 
   CefRefPtr<CefMediaAccessCallback> callback_;
 
@@ -320,11 +334,12 @@ TEST(MediaAccessTest, DeviceFailureWhenReturningFalse) {
                                  CEF_MEDIA_PERMISSION_DEVICE_AUDIO_CAPTURE |
                                      CEF_MEDIA_PERMISSION_DEVICE_VIDEO_CAPTURE,
                                  CEF_MEDIA_PERMISSION_NONE);
+  const bool use_alloy_style_browser = handler->use_alloy_style_browser();
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
   EXPECT_TRUE(test_setup.got_request);
-  if (IsChromeRuntimeEnabled()) {
+  if (!use_alloy_style_browser) {
     // Chrome shows a UI prompt, so we time out.
     EXPECT_TRUE(test_setup.got_js_timeout);
   } else {
@@ -400,8 +415,7 @@ TEST(MediaAccessTest, DeviceFailureWhenRequestingAudioButReturningVideo) {
 
   EXPECT_TRUE(test_setup.got_request);
   EXPECT_TRUE(test_setup.got_js_error);
-  EXPECT_STREQ("NotAllowedError: Invalid state",
-               test_setup.js_error_str.c_str());
+  EXPECT_STREQ("AbortError: Invalid state", test_setup.js_error_str.c_str());
   EXPECT_FALSE(test_setup.got_change);
 }
 
@@ -416,8 +430,7 @@ TEST(MediaAccessTest, DeviceFailureWhenRequestingVideoButReturningAudio) {
 
   EXPECT_TRUE(test_setup.got_request);
   EXPECT_TRUE(test_setup.got_js_error);
-  EXPECT_STREQ("NotAllowedError: Invalid state",
-               test_setup.js_error_str.c_str());
+  EXPECT_STREQ("AbortError: Invalid state", test_setup.js_error_str.c_str());
   EXPECT_FALSE(test_setup.got_change);
 }
 
@@ -434,8 +447,7 @@ TEST(MediaAccessTest, DevicePartialFailureReturningVideo) {
 
   EXPECT_TRUE(test_setup.got_request);
   EXPECT_TRUE(test_setup.got_js_error);
-  EXPECT_STREQ("NotAllowedError: Invalid state",
-               test_setup.js_error_str.c_str());
+  EXPECT_STREQ("AbortError: Invalid state", test_setup.js_error_str.c_str());
   EXPECT_FALSE(test_setup.got_change);
 }
 
@@ -452,8 +464,7 @@ TEST(MediaAccessTest, DevicePartialFailureReturningAudio) {
 
   EXPECT_TRUE(test_setup.got_request);
   EXPECT_TRUE(test_setup.got_js_error);
-  EXPECT_STREQ("NotAllowedError: Invalid state",
-               test_setup.js_error_str.c_str());
+  EXPECT_STREQ("AbortError: Invalid state", test_setup.js_error_str.c_str());
   EXPECT_FALSE(test_setup.got_change);
 }
 
@@ -470,8 +481,7 @@ TEST(MediaAccessTest, DeviceFailureWhenReturningScreenCapture1) {
 
   EXPECT_TRUE(test_setup.got_request);
   EXPECT_TRUE(test_setup.got_js_error);
-  EXPECT_STREQ("NotAllowedError: Invalid state",
-               test_setup.js_error_str.c_str());
+  EXPECT_STREQ("AbortError: Invalid state", test_setup.js_error_str.c_str());
   EXPECT_FALSE(test_setup.got_change);
 }
 
@@ -488,8 +498,7 @@ TEST(MediaAccessTest, DeviceFailureWhenReturningScreenCapture2) {
 
   EXPECT_TRUE(test_setup.got_request);
   EXPECT_TRUE(test_setup.got_js_error);
-  EXPECT_STREQ("NotAllowedError: Invalid state",
-               test_setup.js_error_str.c_str());
+  EXPECT_STREQ("AbortError: Invalid state", test_setup.js_error_str.c_str());
   EXPECT_FALSE(test_setup.got_change);
 }
 
@@ -504,8 +513,7 @@ TEST(MediaAccessTest, DeviceFailureWhenReturningScreenCapture3) {
 
   EXPECT_TRUE(test_setup.got_request);
   EXPECT_TRUE(test_setup.got_js_error);
-  EXPECT_STREQ("NotAllowedError: Invalid state",
-               test_setup.js_error_str.c_str());
+  EXPECT_STREQ("AbortError: Invalid state", test_setup.js_error_str.c_str());
   EXPECT_FALSE(test_setup.got_change);
 }
 
@@ -520,8 +528,7 @@ TEST(MediaAccessTest, DeviceFailureWhenReturningScreenCapture4) {
 
   EXPECT_TRUE(test_setup.got_request);
   EXPECT_TRUE(test_setup.got_js_error);
-  EXPECT_STREQ("NotAllowedError: Invalid state",
-               test_setup.js_error_str.c_str());
+  EXPECT_STREQ("AbortError: Invalid state", test_setup.js_error_str.c_str());
   EXPECT_FALSE(test_setup.got_change);
 }
 
@@ -536,8 +543,7 @@ TEST(MediaAccessTest, DeviceFailureWhenReturningScreenCapture5) {
 
   EXPECT_TRUE(test_setup.got_request);
   EXPECT_TRUE(test_setup.got_js_error);
-  EXPECT_STREQ("NotAllowedError: Invalid state",
-               test_setup.js_error_str.c_str());
+  EXPECT_STREQ("AbortError: Invalid state", test_setup.js_error_str.c_str());
   EXPECT_FALSE(test_setup.got_change);
 }
 
@@ -552,8 +558,7 @@ TEST(MediaAccessTest, DeviceFailureWhenReturningScreenCapture6) {
 
   EXPECT_TRUE(test_setup.got_request);
   EXPECT_TRUE(test_setup.got_js_error);
-  EXPECT_STREQ("NotAllowedError: Invalid state",
-               test_setup.js_error_str.c_str());
+  EXPECT_STREQ("AbortError: Invalid state", test_setup.js_error_str.c_str());
   EXPECT_FALSE(test_setup.got_change);
 }
 
@@ -631,6 +636,7 @@ TEST(MediaAccessTest, DeviceSuccessAudioVideoAsync) {
 // Screen capture tests
 TEST(MediaAccessTest, DesktopFailureWhenReturningNoPermission) {
   TestSetup test_setup;
+  test_setup.needs_user_gesture = true;
 
   CefRefPtr<MediaAccessTestHandler> handler =
       new MediaAccessTestHandler(&test_setup,
@@ -649,6 +655,7 @@ TEST(MediaAccessTest, DesktopFailureWhenReturningNoPermission) {
 
 TEST(MediaAccessTest, DesktopFailureWhenRequestingVideoButReturningAudio) {
   TestSetup test_setup;
+  test_setup.needs_user_gesture = true;
 
   CefRefPtr<MediaAccessTestHandler> handler = new MediaAccessTestHandler(
       &test_setup, CEF_MEDIA_PERMISSION_DESKTOP_VIDEO_CAPTURE,
@@ -658,13 +665,13 @@ TEST(MediaAccessTest, DesktopFailureWhenRequestingVideoButReturningAudio) {
 
   EXPECT_TRUE(test_setup.got_request);
   EXPECT_TRUE(test_setup.got_js_error);
-  EXPECT_STREQ("NotAllowedError: Invalid state",
-               test_setup.js_error_str.c_str());
+  EXPECT_STREQ("AbortError: Invalid state", test_setup.js_error_str.c_str());
   EXPECT_FALSE(test_setup.got_change);
 }
 
 TEST(MediaAccessTest, DesktopPartialSuccessReturningVideo) {
   TestSetup test_setup;
+  test_setup.needs_user_gesture = true;
 
   CefRefPtr<MediaAccessTestHandler> handler =
       new MediaAccessTestHandler(&test_setup,
@@ -683,6 +690,8 @@ TEST(MediaAccessTest, DesktopPartialSuccessReturningVideo) {
 
 TEST(MediaAccessTest, DesktopPartialFailureReturningAudio) {
   TestSetup test_setup;
+  test_setup.needs_user_gesture = true;
+
   CefRefPtr<MediaAccessTestHandler> handler =
       new MediaAccessTestHandler(&test_setup,
                                  CEF_MEDIA_PERMISSION_DESKTOP_AUDIO_CAPTURE |
@@ -693,8 +702,7 @@ TEST(MediaAccessTest, DesktopPartialFailureReturningAudio) {
 
   EXPECT_TRUE(test_setup.got_request);
   EXPECT_TRUE(test_setup.got_js_error);
-  EXPECT_STREQ("NotAllowedError: Invalid state",
-               test_setup.js_error_str.c_str());
+  EXPECT_STREQ("AbortError: Invalid state", test_setup.js_error_str.c_str());
   EXPECT_FALSE(test_setup.got_change);
 }
 

@@ -6,6 +6,7 @@
 #include <map>
 #include <memory>
 #include <queue>
+#include <set>
 #include <sstream>
 #include <string>
 
@@ -16,13 +17,11 @@
 #include "tests/ceftests/test_util.h"
 #include "tests/gtest/include/gtest/gtest.h"
 
-// Set to 1 to enable verbose debugging info logging.
+// Set to 1 and add `--enable-logging --vmodule=*frame*=1 --log-file=<path>` to
+// the command-line to enable verbose debugging info logging.
 #define VERBOSE_DEBUGGING 0
 
 namespace {
-
-// Must match CefFrameHostImpl::kInvalidFrameId.
-const int kInvalidFrameId = -4;
 
 // Tracks callback status for a single frame object.
 struct FrameStatus {
@@ -36,8 +35,9 @@ struct FrameStatus {
     MAIN_FRAME_CHANGED_ASSIGNED,
     LOAD_START,
     LOAD_END,
-    BEFORE_CLOSE,
     FRAME_DETACHED,
+    BEFORE_CLOSE,
+    FRAME_DESTROYED,
     MAIN_FRAME_CHANGED_REMOVED,
     MAIN_FRAME_FINAL_REMOVED,
 
@@ -60,10 +60,12 @@ struct FrameStatus {
         return "OnLoadStart";
       case LOAD_END:
         return "OnLoadEnd";
-      case BEFORE_CLOSE:
-        return "OnBeforeClose";
       case FRAME_DETACHED:
         return "OnFrameDetached";
+      case BEFORE_CLOSE:
+        return "OnBeforeClose";
+      case FRAME_DESTROYED:
+        return "OnFrameDestroyed";
       case MAIN_FRAME_CHANGED_REMOVED:
         return "OnMainFrameChanged(changed_removed)";
       case MAIN_FRAME_FINAL_REMOVED:
@@ -84,23 +86,17 @@ struct FrameStatus {
   static std::string GetFrameDebugString(CefRefPtr<CefFrame> frame) {
     // Match the logic in frame_util::GetFrameDebugString.
     // Specific formulation of the frame ID is an implementation detail that
-    // should generally not be relied upon, but this decomposed format makes the
+    // should generally not be relied upon, but a consistent format makes the
     // debug logging easier to follow.
-    uint64 frame_id = frame->GetIdentifier();
-    uint32_t process_id = frame_id >> 32;
-    uint32_t routing_id = std::numeric_limits<uint32_t>::max() & frame_id;
-    std::stringstream ss;
-    ss << (frame->IsMain() ? "main" : " sub") << "[" << process_id << ","
-       << routing_id << "]";
-    return ss.str();
+    return frame->GetIdentifier();
   }
 
-  FrameStatus(CefRefPtr<CefFrame> frame)
+  explicit FrameStatus(CefRefPtr<CefFrame> frame)
       : frame_id_(frame->GetIdentifier()),
         is_main_(frame->IsMain()),
         ident_str_(GetFrameDebugString(frame)) {}
 
-  int64 frame_id() const { return frame_id_; }
+  std::string frame_id() const { return frame_id_; }
   bool is_main() const { return is_main_; }
 
   bool AllQueriesDelivered(std::string* msg = nullptr) const {
@@ -122,7 +118,7 @@ struct FrameStatus {
   }
 
   bool IsSame(CefRefPtr<CefFrame> frame) const {
-    return frame->GetIdentifier() == frame_id();
+    return frame->GetIdentifier().ToString() == frame_id();
   }
 
   bool IsLoaded(std::string* msg = nullptr) const {
@@ -132,8 +128,9 @@ struct FrameStatus {
       ss << ident_str_ << "(";
       for (int i = 0; i <= LOAD_END; ++i) {
         ss << GetCallbackName(i) << "=" << got_callback_[i];
-        if (i < LOAD_END)
+        if (i < LOAD_END) {
           ss << " ";
+        }
       }
       ss << ")";
       *msg += ss.str();
@@ -141,7 +138,9 @@ struct FrameStatus {
 #endif
     return got_callback_[LOAD_END];
   }
-  bool IsDetached() const { return got_callback_[FRAME_DETACHED]; }
+  bool IsDestroyed() const { return got_callback_[FRAME_DESTROYED]; }
+
+  bool IsMain() const { return is_main_; }
 
   void SetIsFirstMain(bool val) {
     EXPECT_TRUE(is_main_);
@@ -156,17 +155,24 @@ struct FrameStatus {
     is_last_main_ = val;
   }
 
-  void SetIsTemporary(bool val) {
-    EXPECT_FALSE(is_main_);
-    is_temporary_ = val;
-  }
+  void SetIsTemporary(bool val) { is_temporary_ = val; }
   bool IsTemporary() const { return is_temporary_; }
 
   void SetAdditionalDebugInfo(const std::string& debug_info) {
     debug_info_ = debug_info;
   }
 
-  std::string GetDebugString() const { return debug_info_ + ident_str_; }
+  std::string GetDebugString(bool dump_state = false) const {
+    std::string result = debug_info_ + ident_str_;
+    if (dump_state) {
+      std::stringstream ss;
+      ss << "\nis_main=" << is_main_ << "\nis_first_main=" << is_first_main_
+         << "\nis_last_main=" << is_last_main_
+         << "\nis_temporary=" << is_temporary_;
+      result += ss.str();
+    }
+    return result;
+  }
 
   // The main frame will be reused for same-origin navigations.
   void ResetMainLoadStatus() {
@@ -208,10 +214,32 @@ struct FrameStatus {
                        CefRefPtr<CefFrame> frame) {
     EXPECT_UI_THREAD();
     VerifyBrowser(__FUNCTION__, browser);
-    // A frame is never valid after it's detached.
-    VerifyFrame(__FUNCTION__, frame, /*expect_valid=*/false);
+
+    // Don't check IsValid() here for sub-frames. Invalidation will occur during
+    // destruction and we may become detached either before or during
+    // destruction, so the value is not guaranteed.
+    std::optional<bool> expect_valid;
+
+    if (frame->IsMain()) {
+      // Check IsValid() here for main frames. It will only return true for the
+      // current main frame.
+      expect_valid =
+          frame->GetIdentifier() == browser->GetMainFrame()->GetIdentifier();
+    }
+
+    VerifyFrame(__FUNCTION__, frame, expect_valid);
 
     GotCallback(__FUNCTION__, FRAME_DETACHED);
+  }
+
+  void OnFrameDestroyed(CefRefPtr<CefBrowser> browser,
+                        CefRefPtr<CefFrame> frame) {
+    EXPECT_UI_THREAD();
+    VerifyBrowser(__FUNCTION__, browser);
+    // A frame is never valid after it's destroyed.
+    VerifyFrame(__FUNCTION__, frame, /*expect_valid=*/false);
+
+    GotCallback(__FUNCTION__, FRAME_DESTROYED);
   }
 
   void OnMainFrameChanged(CefRefPtr<CefBrowser> browser,
@@ -224,7 +252,8 @@ struct FrameStatus {
     bool got_match = false;
 
     if (old_frame && new_frame) {
-      EXPECT_NE(old_frame->GetIdentifier(), new_frame->GetIdentifier());
+      EXPECT_STRNE(old_frame->GetIdentifier().ToString().c_str(),
+                   new_frame->GetIdentifier().ToString().c_str());
     }
 
     if (old_frame && IsSame(old_frame)) {
@@ -264,7 +293,7 @@ struct FrameStatus {
 
   // Called for all existing frames, not just the target frame.
   // We need to track this status to know if the browser should be valid in
-  // following calls to OnFrameDetached.
+  // following calls to OnFrameDetached/OnFrameDestroyed.
   void OnBeforeClose(CefRefPtr<CefBrowser> browser) {
     EXPECT_UI_THREAD();
     VerifyBrowser(__FUNCTION__, browser);
@@ -316,8 +345,9 @@ struct FrameStatus {
     EXPECT_GE(pending_queries_.size(), 1U);
     const std::string& expected_query = pending_queries_.front();
     EXPECT_STREQ(expected_query.c_str(), received_query.c_str());
-    if (expected_query == received_query)
+    if (expected_query == received_query) {
       pending_queries_.pop();
+    }
 
     EXPECT_LT(delivered_query_ct_, expected_query_ct_);
     delivered_query_ct_++;
@@ -331,7 +361,6 @@ struct FrameStatus {
 
     if (is_temporary_) {
       // Should not receive any queries.
-      EXPECT_FALSE(is_main_);
       EXPECT_EQ(0, delivered_query_ct_);
     } else {
       // Verify that all expected messages have been sent and received.
@@ -359,8 +388,17 @@ struct FrameStatus {
   }
 
   bool IsExpectedCallback(int callback) const {
-    if (!is_main_ && IsMainFrameOnlyCallback(callback))
+    if (!is_main_ && IsMainFrameOnlyCallback(callback)) {
       return false;
+    }
+
+    if (is_temporary_) {
+      // Temporary frames should not connect or load.
+      if (callback == FRAME_ATTACHED || callback == FRAME_DETACHED ||
+          callback == LOAD_START || callback == LOAD_END) {
+        return false;
+      }
+    }
 
     if (is_main_) {
       if ((callback == MAIN_FRAME_INITIAL_ASSIGNED ||
@@ -378,17 +416,20 @@ struct FrameStatus {
       if (callback == MAIN_FRAME_CHANGED_REMOVED && is_last_main_) {
         return false;
       }
-    } else if (is_temporary_) {
-      // For cross-process sub-frame navigation a sub-frame is first created in
-      // the parent's renderer process. That sub-frame is then discarded after
-      // the real cross-origin sub-frame is created in a different renderer
-      // process. These discarded sub-frames will get OnFrameCreated/
-      // OnFrameAttached immediately followed by OnFrameDetached.
-      return callback == FRAME_CREATED || callback == FRAME_ATTACHED ||
-             callback == FRAME_DETACHED;
     }
 
     return true;
+  }
+
+  bool IsFlakyCallbackOrder(int callback1, int callback2) const {
+    if (callback1 == FRAME_ATTACHED &&
+        (callback2 == MAIN_FRAME_CHANGED_ASSIGNED || callback2 == LOAD_START ||
+         callback2 == LOAD_END)) {
+      // Timing of OnFrameAttached is flaky. See issue #3817.
+      return true;
+    }
+
+    return false;
   }
 
   void VerifyCallbackStatus(const std::string& func,
@@ -397,13 +438,21 @@ struct FrameStatus {
 
     for (int i = 0; i <= CALLBACK_LAST; ++i) {
       if (i < current_callback && IsExpectedCallback(i)) {
+        if (IsFlakyCallbackOrder(i, current_callback)) {
+          continue;
+        }
         EXPECT_TRUE(got_callback_[i])
-            << "inside " << func << " should already have gotten "
-            << GetCallbackName(i);
+            << "inside " << func << "\nfor "
+            << GetDebugString(/*dump_state=*/true)
+            << "\nshould already have gotten " << GetCallbackName(i);
       } else {
+        if (IsFlakyCallbackOrder(current_callback, i)) {
+          continue;
+        }
         EXPECT_FALSE(got_callback_[i])
-            << "inside " << func << " should not already have gotten "
-            << GetCallbackName(i);
+            << "inside " << func << "\nfor "
+            << GetDebugString(/*dump_state=*/true)
+            << "\nshould NOT already have gotten " << GetCallbackName(i);
       }
     }
   }
@@ -417,6 +466,11 @@ struct FrameStatus {
       EXPECT_FALSE(browser->IsValid()) << func;
     }
 
+    const auto browser_id = browser->GetIdentifier();
+    EXPECT_GT(browser_id, 0) << func;
+    auto get_browser = CefBrowserHost::GetBrowserByIdentifier(browser_id);
+    EXPECT_TRUE(get_browser && get_browser->IsSame(browser)) << func;
+
     // Note that this might not be the same main frame as us when navigating
     // cross-origin, because the new main frame object is assigned to the
     // browser before the CefFrameHandler callbacks related to main frame change
@@ -424,12 +478,15 @@ struct FrameStatus {
     // nicely with the concept that "GetMainFrame() always returns a frame that
     // can be used", which wouldn't be the case if we returned the old frame
     // when calling GetMainFrame() from inside OnFrameCreated (for the new
-    // frame), OnFrameDetached (for the old frame) or OnMainFrameChanged.
+    // frame), OnFrameDetached/OnFrameDestoyed (for the old frame) or
+    // OnMainFrameChanged.
     auto main_frame = browser->GetMainFrame();
     if (expect_valid) {
       EXPECT_TRUE(main_frame) << func;
-      EXPECT_TRUE(main_frame->IsValid()) << func;
-      EXPECT_TRUE(main_frame->IsMain()) << func;
+      if (main_frame) {
+        EXPECT_TRUE(main_frame->IsValid()) << func;
+        EXPECT_TRUE(main_frame->IsMain()) << func;
+      }
     } else {
       // GetMainFrame() returns nullptr after OnBeforeClose.
       EXPECT_FALSE(main_frame) << func;
@@ -438,11 +495,13 @@ struct FrameStatus {
 
   void VerifyFrame(const std::string& func,
                    CefRefPtr<CefFrame> frame,
-                   bool expect_valid = true) const {
-    if (expect_valid) {
-      EXPECT_TRUE(frame->IsValid()) << func;
-    } else {
-      EXPECT_FALSE(frame->IsValid()) << func;
+                   std::optional<bool> expect_valid = true) const {
+    if (expect_valid.has_value()) {
+      if (*expect_valid) {
+        EXPECT_TRUE(frame->IsValid()) << func;
+      } else {
+        EXPECT_FALSE(frame->IsValid()) << func;
+      }
     }
 
     // |frame| should be us. This checks the frame type and ID.
@@ -478,11 +537,12 @@ struct FrameStatus {
     EXPECT_TRUE(got_callback_[callback]) << GetCallbackName(callback);
     got_callback_[callback].reset();
 
-    if (expect_query)
+    if (expect_query) {
       delivered_query_ct_--;
+    }
   }
 
-  const int64 frame_id_;
+  const std::string frame_id_;
   const bool is_main_;
   const std::string ident_str_;
 
@@ -502,11 +562,11 @@ struct FrameStatus {
   int delivered_query_ct_ = 0;
 };
 
-const char kOrderMainUrl[] = "http://tests-frame-handler/main-order.html";
+const char kOrderMainUrl[] = "https://tests-frame-handler/main-order.html";
 
 class OrderMainTestHandler : public RoutingTestHandler, public CefFrameHandler {
  public:
-  OrderMainTestHandler(CompletionState* completion_state = nullptr)
+  explicit OrderMainTestHandler(CompletionState* completion_state = nullptr)
       : RoutingTestHandler(completion_state) {}
 
   CefRefPtr<CefFrameHandler> GetFrameHandler() override {
@@ -565,14 +625,16 @@ class OrderMainTestHandler : public RoutingTestHandler, public CefFrameHandler {
     got_before_close_ = true;
 
     EXPECT_TRUE(current_main_frame_);
-    current_main_frame_->OnBeforeClose(browser);
+    if (current_main_frame_) {
+      current_main_frame_->OnBeforeClose(browser);
+    }
 
     RoutingTestHandler::OnBeforeClose(browser);
   }
 
   bool OnQuery(CefRefPtr<CefBrowser> browser,
                CefRefPtr<CefFrame> frame,
-               int64 query_id,
+               int64_t query_id,
                const CefString& request,
                bool persistent,
                CefRefPtr<Callback> callback) override {
@@ -629,6 +691,13 @@ class OrderMainTestHandler : public RoutingTestHandler, public CefFrameHandler {
     EXPECT_UI_THREAD();
     EXPECT_TRUE(current_main_frame_);
     current_main_frame_->OnFrameDetached(browser, frame);
+  }
+
+  void OnFrameDestroyed(CefRefPtr<CefBrowser> browser,
+                        CefRefPtr<CefFrame> frame) override {
+    EXPECT_UI_THREAD();
+    EXPECT_TRUE(current_main_frame_);
+    current_main_frame_->OnFrameDestroyed(browser, frame);
   }
 
   void OnMainFrameChanged(CefRefPtr<CefBrowser> browser,
@@ -697,15 +766,17 @@ class OrderMainTestHandler : public RoutingTestHandler, public CefFrameHandler {
 
   virtual bool AllQueriesDelivered(std::string* msg = nullptr) const {
     EXPECT_UI_THREAD();
-    if (pending_main_frame_)
+    if (pending_main_frame_) {
       return false;
+    }
     return current_main_frame_->AllQueriesDelivered(msg);
   }
 
   virtual bool AllFramesLoaded(std::string* msg = nullptr) const {
     EXPECT_UI_THREAD();
-    if (pending_main_frame_)
+    if (pending_main_frame_) {
       return false;
+    }
     return current_main_frame_->IsLoaded(msg);
   }
 
@@ -791,11 +862,12 @@ TEST(FrameHandlerTest, OrderMain) {
 
 namespace {
 
-const char kOrderMainUrlPrefix[] = "http://tests-frame-handler";
+const char kOrderMainUrlPrefix[] = "https://tests-frame-handler";
 
 class NavigateOrderMainTestHandler : public OrderMainTestHandler {
  public:
-  NavigateOrderMainTestHandler(bool cross_origin, int additional_nav_ct = 2)
+  explicit NavigateOrderMainTestHandler(bool cross_origin,
+                                        int additional_nav_ct = 2)
       : cross_origin_(cross_origin), additional_nav_ct_(additional_nav_ct) {}
 
   void RunTest() override {
@@ -894,8 +966,8 @@ class FrameStatusMap {
 
     EXPECT_LT(size(), expected_frame_ct_);
 
-    const int64 id = frame->GetIdentifier();
-    EXPECT_NE(kInvalidFrameId, id);
+    const std::string& id = frame->GetIdentifier();
+    EXPECT_TRUE(!id.empty());
     EXPECT_EQ(frame_map_.find(id), frame_map_.end());
 
     FrameStatus* status = new FrameStatus(frame);
@@ -906,15 +978,15 @@ class FrameStatusMap {
   FrameStatus* GetFrameStatus(CefRefPtr<CefFrame> frame) const {
     EXPECT_UI_THREAD();
 
-    const int64 id = frame->GetIdentifier();
-    EXPECT_NE(kInvalidFrameId, id);
+    const std::string& id = frame->GetIdentifier();
+    EXPECT_TRUE(!id.empty());
     Map::const_iterator it = frame_map_.find(id);
     EXPECT_NE(it, frame_map_.end());
     return it->second;
   }
 
   void RemoveFrameStatus(CefRefPtr<CefFrame> frame) {
-    const int64 id = frame->GetIdentifier();
+    const std::string& id = frame->GetIdentifier();
     Map::iterator it = frame_map_.find(id);
     EXPECT_NE(it, frame_map_.end());
     frame_map_.erase(it);
@@ -983,14 +1055,16 @@ class FrameStatusMap {
     return true;
   }
 
-  bool AllFramesDetached() const {
-    if (size() != expected_frame_ct_)
+  bool AllFramesDestroyed() const {
+    if (size() != expected_frame_ct_) {
       return false;
+    }
 
     Map::const_iterator it = frame_map_.begin();
     for (; it != frame_map_.end(); ++it) {
-      if (!it->second->IsDetached())
+      if (!it->second->IsDestroyed()) {
         return false;
+      }
     }
 
     return true;
@@ -1009,7 +1083,8 @@ class FrameStatusMap {
   size_t size() const { return frame_map_.size(); }
 
  private:
-  using Map = std::map<int64, FrameStatus*>;
+  // Map of frame ID to status object.
+  using Map = std::map<std::string, FrameStatus*>;
   Map frame_map_;
 
   // The expected number of sub-frames.
@@ -1055,7 +1130,7 @@ class OrderSubTestHandler : public NavigateOrderMainTestHandler {
 
   bool OnQuery(CefRefPtr<CefBrowser> browser,
                CefRefPtr<CefFrame> frame,
-               int64 query_id,
+               int64_t query_id,
                const CefString& request,
                bool persistent,
                CefRefPtr<Callback> callback) override {
@@ -1103,20 +1178,32 @@ class OrderSubTestHandler : public NavigateOrderMainTestHandler {
   void OnFrameDetached(CefRefPtr<CefBrowser> browser,
                        CefRefPtr<CefFrame> frame) override {
     if (!frame->IsMain()) {
+      auto map = GetFrameMap(frame);
+      auto status = map->GetFrameStatus(frame);
+      status->OnFrameDetached(browser, frame);
+      return;
+    }
+
+    NavigateOrderMainTestHandler::OnFrameDetached(browser, frame);
+  }
+
+  void OnFrameDestroyed(CefRefPtr<CefBrowser> browser,
+                        CefRefPtr<CefFrame> frame) override {
+    if (!frame->IsMain()) {
       // Potentially the last notification for an old sub-frame after
       // navigation.
       auto map = GetFrameMap(frame);
       auto status = map->GetFrameStatus(frame);
-      status->OnFrameDetached(browser, frame);
+      status->OnFrameDestroyed(browser, frame);
 
-      if (map->AllFramesDetached()) {
+      if (map->AllFramesDestroyed()) {
         // Verify results from the previous navigation.
         VerifyAndClearSubFrameTestResults(map);
       }
       return;
     }
 
-    NavigateOrderMainTestHandler::OnFrameDetached(browser, frame);
+    NavigateOrderMainTestHandler::OnFrameDestroyed(browser, frame);
   }
 
   void OnLoadStart(CefRefPtr<CefBrowser> browser,
@@ -1181,24 +1268,27 @@ class OrderSubTestHandler : public NavigateOrderMainTestHandler {
   bool AllQueriesDelivered(std::string* msg = nullptr) const override {
     if (!NavigateOrderMainTestHandler::AllQueriesDelivered(msg)) {
 #if VERBOSE_DEBUGGING
-      if (msg)
+      if (msg) {
         *msg += " MAIN PENDING";
+      }
 #endif
       return false;
     }
 
     if (frame_maps_.empty()) {
 #if VERBOSE_DEBUGGING
-      if (msg)
+      if (msg) {
         *msg += " NO SUBS";
+      }
 #endif
       return false;
     }
 
     if (!frame_maps_.back()->AllQueriesDelivered(msg)) {
 #if VERBOSE_DEBUGGING
-      if (msg)
+      if (msg) {
         *msg += " SUBS PENDING";
+      }
 #endif
       return false;
     }
@@ -1208,24 +1298,27 @@ class OrderSubTestHandler : public NavigateOrderMainTestHandler {
   bool AllFramesLoaded(std::string* msg = nullptr) const override {
     if (!NavigateOrderMainTestHandler::AllFramesLoaded(msg)) {
 #if VERBOSE_DEBUGGING
-      if (msg)
+      if (msg) {
         *msg += " MAIN PENDING";
+      }
 #endif
       return false;
     }
 
     if (frame_maps_.empty()) {
 #if VERBOSE_DEBUGGING
-      if (msg)
+      if (msg) {
         *msg += " NO SUBS";
+      }
 #endif
       return false;
     }
 
     if (!frame_maps_.back()->AllFramesLoaded(msg)) {
 #if VERBOSE_DEBUGGING
-      if (msg)
+      if (msg) {
         *msg += " SUBS PENDING";
+      }
 #endif
       return false;
     }
@@ -1241,8 +1334,9 @@ class OrderSubTestHandler : public NavigateOrderMainTestHandler {
 
   FrameStatusMap* GetFrameMap(CefRefPtr<CefFrame> frame) const {
     for (auto& map : frame_maps_) {
-      if (map->Contains(frame))
+      if (map->Contains(frame)) {
         return map.get();
+      }
     }
     return nullptr;
   }
@@ -1266,8 +1360,9 @@ class OrderSubTestHandler : public NavigateOrderMainTestHandler {
   }
 
   FrameStatusMap* GetOrCreateFrameMap(CefRefPtr<CefFrame> frame) {
-    if (auto map = GetFrameMap(frame))
+    if (auto map = GetFrameMap(frame)) {
       return map;
+    }
 
     if (frame_maps_.empty() ||
         frame_maps_.back()->size() >= expected_frame_ct_) {
@@ -1359,23 +1454,45 @@ class CrossOriginOrderSubTestHandler : public OrderSubTestHandler {
                             mode,
                             /*expected_frame_ct=*/4U) {}
 
-  void OnFrameDetached(CefRefPtr<CefBrowser> browser,
-                       CefRefPtr<CefFrame> frame) override {
+  void OnFrameCreated(CefRefPtr<CefBrowser> browser,
+                      CefRefPtr<CefFrame> frame) override {
+    OrderSubTestHandler::OnFrameCreated(browser, frame);
+
+    if (!frame->IsMain() &&
+        loaded_frame_child_ids_.find(ExtractChildId(frame->GetIdentifier())) !=
+            loaded_frame_child_ids_.end()) {
+      // Mark sub-frames in the same process as a loaded frame as temporary.
+      // See below comments in OnFrameDestroyed.
+      auto map = GetFrameMap(frame);
+      auto status = map->GetFrameStatus(frame);
+      status->SetIsTemporary(true);
+    }
+  }
+
+  void OnLoadStart(CefRefPtr<CefBrowser> browser,
+                   CefRefPtr<CefFrame> frame,
+                   TransitionType transition_type) override {
+    OrderSubTestHandler::OnLoadStart(browser, frame, transition_type);
+
+    loaded_frame_child_ids_.insert(ExtractChildId(frame->GetIdentifier()));
+  }
+
+  void OnFrameDestroyed(CefRefPtr<CefBrowser> browser,
+                        CefRefPtr<CefFrame> frame) override {
     // A sub-frame is first created in the parent's renderer process. That
     // sub-frame is then discarded after the real cross-origin sub-frame is
     // created in a different renderer process. These discarded sub-frames will
-    // get OnFrameCreated/OnFrameAttached immediately followed by
-    // OnFrameDetached.
+    // get OnFrameCreated/OnFrameDestroyed.
     if (!frame->IsMain()) {
       auto map = GetFrameMap(frame);
       auto status = map->GetFrameStatus(frame);
       if (status && !status->DidGetCallback(FrameStatus::LOAD_START)) {
-        status->SetIsTemporary(true);
+        EXPECT_TRUE(status->IsTemporary());
         temp_frame_detached_ct_++;
       }
     }
 
-    OrderSubTestHandler::OnFrameDetached(browser, frame);
+    OrderSubTestHandler::OnFrameDestroyed(browser, frame);
   }
 
  protected:
@@ -1400,7 +1517,16 @@ class CrossOriginOrderSubTestHandler : public OrderSubTestHandler {
   }
 
  private:
+  // Parse the format from frame_util::MakeFrameIdentifier to return |child_id|.
+  static std::string ExtractChildId(const std::string& frame_id) {
+    const auto pos = frame_id.find('-');
+    CHECK_GT(pos, 0U) << frame_id;
+    return frame_id.substr(0, pos);
+  }
+
   size_t temp_frame_detached_ct_ = 0U;
+
+  std::set<std::string> loaded_frame_child_ids_;
 };
 
 }  // namespace
@@ -1452,7 +1578,7 @@ TEST(FrameHandlerTest, OrderSubCrossOriginChildrenNavCrossOrigin) {
 namespace {
 
 const char kOrderMainCrossUrl[] =
-    "http://tests-frame-handler-cross/main-order.html";
+    "https://tests-frame-handler-cross/main-order.html";
 
 // Will be assigned as popup handler via
 // ParentOrderMainTestHandler::OnBeforePopup.
@@ -1492,6 +1618,7 @@ class PopupOrderMainTestHandler : public OrderMainTestHandler {
       temp_main_frame_->SetAdditionalDebugInfo(GetAdditionalDebugInfo() +
                                                "temp ");
       temp_main_frame_->SetIsFirstMain(true);
+      temp_main_frame_->SetIsTemporary(true);
       temp_main_frame_->OnFrameCreated(browser, frame);
       return;
     }
@@ -1527,6 +1654,17 @@ class PopupOrderMainTestHandler : public OrderMainTestHandler {
     OrderMainTestHandler::OnFrameAttached(browser, frame, reattached);
   }
 
+  void OnFrameDetached(CefRefPtr<CefBrowser> browser,
+                       CefRefPtr<CefFrame> frame) override {
+    if (temp_main_frame_ && temp_main_frame_->IsSame(frame)) {
+      EXPECT_TRUE(cross_origin_);
+      temp_main_frame_->OnFrameDetached(browser, frame);
+      return;
+    }
+
+    OrderMainTestHandler::OnFrameDetached(browser, frame);
+  }
+
   void OnMainFrameChanged(CefRefPtr<CefBrowser> browser,
                           CefRefPtr<CefFrame> old_frame,
                           CefRefPtr<CefFrame> new_frame) override {
@@ -1539,8 +1677,8 @@ class PopupOrderMainTestHandler : public OrderMainTestHandler {
     OrderMainTestHandler::OnMainFrameChanged(browser, old_frame, new_frame);
   }
 
-  void OnFrameDetached(CefRefPtr<CefBrowser> browser,
-                       CefRefPtr<CefFrame> frame) override {
+  void OnFrameDestroyed(CefRefPtr<CefBrowser> browser,
+                        CefRefPtr<CefFrame> frame) override {
     if (temp_main_frame_ && temp_main_frame_->IsSame(frame)) {
       EXPECT_TRUE(cross_origin_);
       EXPECT_FALSE(got_temp_destroyed_);
@@ -1548,33 +1686,35 @@ class PopupOrderMainTestHandler : public OrderMainTestHandler {
 
 #if VERBOSE_DEBUGGING
       LOG(INFO) << temp_main_frame_->GetDebugString()
-                << " callback OnFrameDetached(discarded)";
+                << " callback OnFrameDestroyed(discarded)";
 #endif
 
       // All of the initial main frame callbacks go to the proxy.
       EXPECT_TRUE(temp_main_frame_->DidGetCallback(FrameStatus::AFTER_CREATED));
       EXPECT_TRUE(temp_main_frame_->DidGetCallback(
           FrameStatus::MAIN_FRAME_INITIAL_ASSIGNED));
-      EXPECT_TRUE(!temp_main_frame_->DidGetCallback(FrameStatus::LOAD_START));
+      EXPECT_FALSE(temp_main_frame_->DidGetCallback(FrameStatus::LOAD_START));
+      EXPECT_FALSE(temp_main_frame_->DidGetCallback(FrameStatus::LOAD_END));
       EXPECT_TRUE(temp_main_frame_->DidGetCallback(FrameStatus::FRAME_CREATED));
-      EXPECT_TRUE(
+      EXPECT_FALSE(
           temp_main_frame_->DidGetCallback(FrameStatus::FRAME_ATTACHED));
+      EXPECT_FALSE(
+          temp_main_frame_->DidGetCallback(FrameStatus::FRAME_DETACHED));
 
-      // Should receive queries for OnFrameCreated, OnAfterCreated,
-      // OnFrameAttached.
-      EXPECT_EQ(temp_main_frame_->QueriesDeliveredCount(), 3);
+      // Temporary frames never attach.
+      EXPECT_EQ(temp_main_frame_->QueriesDeliveredCount(), 0);
 
       delete temp_main_frame_;
       temp_main_frame_ = nullptr;
       return;
     }
 
-    OrderMainTestHandler::OnFrameDetached(browser, frame);
+    OrderMainTestHandler::OnFrameDestroyed(browser, frame);
   }
 
   bool OnQuery(CefRefPtr<CefBrowser> browser,
                CefRefPtr<CefFrame> frame,
-               int64 query_id,
+               int64_t query_id,
                const CefString& request,
                bool persistent,
                CefRefPtr<Callback> callback) override {
@@ -1627,6 +1767,7 @@ class ParentOrderMainTestHandler : public OrderMainTestHandler {
   bool OnBeforePopup(
       CefRefPtr<CefBrowser> browser,
       CefRefPtr<CefFrame> frame,
+      int popup_id,
       const CefString& target_url,
       const CefString& target_frame_name,
       CefLifeSpanHandler::WindowOpenDisposition target_disposition,
@@ -1650,6 +1791,8 @@ class ParentOrderMainTestHandler : public OrderMainTestHandler {
 
   void OnAfterCreated(CefRefPtr<CefBrowser> browser) override {
     OrderMainTestHandler::OnAfterCreated(browser);
+
+    GrantPopupPermission(browser->GetHost()->GetRequestContext(), GetMainURL());
 
     // Create the popup ASAP.
     browser->GetMainFrame()->ExecuteJavaScript(
@@ -1675,7 +1818,7 @@ class ParentOrderMainTestHandler : public OrderMainTestHandler {
 };
 
 void RunOrderMainPopupTest(bool cross_origin) {
-  TestHandler::CompletionState completion_state(/*count=*/2);
+  TestHandler::CompletionState completion_state(/*total=*/2);
   TestHandler::Collection collection(&completion_state);
 
   CefRefPtr<PopupOrderMainTestHandler> popup_handler =

@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=5f87c82093a6a16e03df00673d2ff20a9f0490d5$
+// $hash=13baf39b5c4b9e3c5fdd91f29f5c393ea7858ded$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_XML_READER_CTOCPP_H_
@@ -66,5 +66,8 @@ class CefXmlReaderCToCpp : public CefCToCppRefCounted<CefXmlReaderCToCpp,
   bool MoveToNextAttribute() override;
   bool MoveToCarryingElement() override;
 };
+
+constexpr auto CefXmlReaderCToCpp_Wrap = CefXmlReaderCToCpp::Wrap;
+constexpr auto CefXmlReaderCToCpp_Unwrap = CefXmlReaderCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_XML_READER_CTOCPP_H_

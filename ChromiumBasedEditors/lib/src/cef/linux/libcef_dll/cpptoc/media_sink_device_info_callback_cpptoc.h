@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=66fb13a617c9405f7829e797b21a663e5275e61d$
+// $hash=449d1f609b408e81d60e08796d93f83d4f0d199f$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_MEDIA_SINK_DEVICE_INFO_CALLBACK_CPPTOC_H_
@@ -34,5 +34,10 @@ class CefMediaSinkDeviceInfoCallbackCppToC
   CefMediaSinkDeviceInfoCallbackCppToC();
   virtual ~CefMediaSinkDeviceInfoCallbackCppToC();
 };
+
+constexpr auto CefMediaSinkDeviceInfoCallbackCppToC_Wrap =
+    CefMediaSinkDeviceInfoCallbackCppToC::Wrap;
+constexpr auto CefMediaSinkDeviceInfoCallbackCppToC_Unwrap =
+    CefMediaSinkDeviceInfoCallbackCppToC::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_MEDIA_SINK_DEVICE_INFO_CALLBACK_CPPTOC_H_

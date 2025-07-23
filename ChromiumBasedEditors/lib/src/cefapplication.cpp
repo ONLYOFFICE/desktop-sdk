@@ -249,7 +249,7 @@ CApplicationCEF::CApplicationCEF()
 
 int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* argv[])
 {
-	LOGGER_STRING("CApplicationCEF::Init_CEF::start");
+	// LOGGER_STRING("CApplicationCEF::Init_CEF::start");
 
 #ifdef _MAC
 	bool bIsHelper = false;
@@ -385,7 +385,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 		return m_pInternal->m_nReturnCodeInitCef;
 	}
 
-	LOGGER_STRING("CApplicationCEF::Init_CEF::main");
+	// LOGGER_STRING("CApplicationCEF::Init_CEF::main");
 
 	CefSettings settings;
 
@@ -402,6 +402,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 	memset(&_subprocess, 0, sizeof(_subprocess));
 	cef_string_from_wide(sHelperPath.c_str(), sHelperPath.length(), &_subprocess);
 	settings.browser_subprocess_path = _subprocess;
+	// LOG(WARNING) << "Poo-poo"; // <-- PROBLEM HERE
 
 #if !defined(CEF_USE_SANDBOX)
 	settings.no_sandbox = true;
@@ -462,19 +463,18 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 	memset(&_cache, 0, sizeof(_cache));
 	cef_string_from_wide(sCachePath.c_str(), sCachePath.length(), &_cache);
 	settings.cache_path = _cache;
+	settings.log_severity = LOGSEVERITY_DISABLE;
 
 	std::wstring sCachePathUser = sCachePath;
 	cef_string_t _cache_user;
 	memset(&_cache_user, 0, sizeof(_cache_user));
 	cef_string_from_wide(sCachePathUser.c_str(), sCachePathUser.length(), &_cache_user);
-	// settings.user_data_path = _cache_user; TODO
 
 	std::wstring sCachePathLog = sCachePath + L"/log.log";
 	cef_string_t _cache_log;
 	memset(&_cache_log, 0, sizeof(_cache_log));
 	cef_string_from_wide(sCachePathLog.c_str(), sCachePathLog.length(), &_cache_log);
 	settings.log_file = _cache_log;
-	settings.log_severity = LOGSEVERITY_DISABLE;
 
 	settings.persist_session_cookies = true;
 
@@ -482,7 +482,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 	m_pInternal->context->Initialize(main_args, settings, m_pInternal->m_app.get(), NULL);
 	asc_scheme::InitScheme(pManager);
 
-	LOGGER_STRING("CApplicationCEF::Init_CEF::initialize");
+	// LOGGER_STRING("CApplicationCEF::Init_CEF::initialize");
 
 #if defined(_LINUX) && !defined(_MAC)
 	// The Chromium sandbox requires that there only be a single thread during
@@ -588,7 +588,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 		NSFile::CFileBinary::Copy(sSystemPlugins + L"/plugins.css", sUserPlugins + L"/plugins.css");
 	}
 
-	LOGGER_STRING("CApplicationCEF::Init_CEF::end");
+	// LOGGER_STRING("CApplicationCEF::Init_CEF::end");
 
 	return 0;
 }

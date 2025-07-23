@@ -20,8 +20,8 @@ namespace {
 // Base class for creating and testing threads.
 class ThreadTest : public base::RefCountedThreadSafe<ThreadTest> {
  public:
-  ThreadTest() {}
-  virtual ~ThreadTest() {}
+  ThreadTest() = default;
+  virtual ~ThreadTest() = default;
 
   // Create the test thread. Should only be called one time.
   void CreateTestThread() {
@@ -135,9 +135,7 @@ class SimpleThreadTest : public ThreadTest {
                    base::OnceClosure done_callback)
       : expected_task_count_(expected_task_count),
         task_callback_(std::move(task_callback)),
-        done_callback_(std::move(done_callback)),
-        got_task_count_(0U),
-        got_done_count_(0U) {}
+        done_callback_(std::move(done_callback)) {}
 
   void RunTest() {
     // Create the test thread.
@@ -163,29 +161,32 @@ class SimpleThreadTest : public ThreadTest {
   void Task() {
     AssertTestThread();
     got_task_count_++;
-    if (!task_callback_.is_null())
+    if (!task_callback_.is_null()) {
       std::move(task_callback_).Run();
+    }
   }
 
   void Done() {
     AssertOwnerThread();
-    if (++got_done_count_ == expected_task_count_ && !done_callback_.is_null())
+    if (++got_done_count_ == expected_task_count_ &&
+        !done_callback_.is_null()) {
       std::move(done_callback_).Run();
+    }
   }
 
   const size_t expected_task_count_;
   base::OnceClosure task_callback_;
   base::OnceClosure done_callback_;
 
-  size_t got_task_count_;
-  size_t got_done_count_;
+  size_t got_task_count_ = 0U;
+  size_t got_done_count_ = 0U;
 
   DISALLOW_COPY_AND_ASSIGN(SimpleThreadTest);
 };
 
 // Test creation/execution of threads in the browser process.
 
-const char kBrowserThreadTestHtml[] = "http://test.com/browserthread.html";
+const char kBrowserThreadTestHtml[] = "https://test.com/browserthread.html";
 
 // Browser side.
 class BrowserThreadTestHandler : public TestHandler {
@@ -247,8 +248,9 @@ class BrowserThreadTestHandler : public TestHandler {
                             bool isLoading,
                             bool canGoBack,
                             bool canGoForward) override {
-    if (!isLoading)
+    if (!isLoading) {
       RunThreadTestOnOwnerThread();
+    }
   }
 
  private:
@@ -299,13 +301,13 @@ namespace {
 
 // Test creation/execution of threads in the render process.
 
-const char kRenderThreadTestHtml[] = "http://test.com/renderthread.html";
+const char kRenderThreadTestHtml[] = "https://test.com/renderthread.html";
 const char kRenderThreadTestMsg[] = "ThreadTest.RenderThreadTest";
 
 // Browser side.
 class RenderThreadTestHandler : public TestHandler {
  public:
-  RenderThreadTestHandler() {}
+  RenderThreadTestHandler() = default;
 
   void RunTest() override {
     AddResource(kRenderThreadTestHtml, "<html><body>Test</body></html>",
@@ -344,8 +346,9 @@ class RenderThreadTestHandler : public TestHandler {
 
     got_message_.yes();
 
-    if (message->GetArgumentList()->GetBool(0))
+    if (message->GetArgumentList()->GetBool(0)) {
       got_success_.yes();
+    }
 
     // Test is complete.
     DestroyTest();
@@ -371,7 +374,7 @@ class RenderThreadTestHandler : public TestHandler {
 // Renderer side.
 class RenderThreadRendererTest : public ClientAppRenderer::Delegate {
  public:
-  RenderThreadRendererTest() {}
+  RenderThreadRendererTest() = default;
 
   bool OnProcessMessageReceived(CefRefPtr<ClientAppRenderer> app,
                                 CefRefPtr<CefBrowser> browser,

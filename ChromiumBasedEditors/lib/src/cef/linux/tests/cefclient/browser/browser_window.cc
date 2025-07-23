@@ -9,8 +9,7 @@
 
 namespace client {
 
-BrowserWindow::BrowserWindow(Delegate* delegate)
-    : delegate_(delegate), is_closing_(false) {
+BrowserWindow::BrowserWindow(Delegate* delegate) : delegate_(delegate) {
   DCHECK(delegate_);
 }
 
@@ -28,6 +27,10 @@ CefRefPtr<CefBrowser> BrowserWindow::GetBrowser() const {
 bool BrowserWindow::IsClosing() const {
   REQUIRE_MAIN_THREAD();
   return is_closing_;
+}
+
+bool BrowserWindow::UseAlloyStyle() const {
+  return delegate_->UseAlloyStyle();
 }
 
 void BrowserWindow::OnBrowserCreated(CefRefPtr<CefBrowser> browser) {
@@ -78,6 +81,16 @@ void BrowserWindow::OnSetFullscreen(bool fullscreen) {
 void BrowserWindow::OnAutoResize(const CefSize& new_size) {
   REQUIRE_MAIN_THREAD();
   delegate_->OnAutoResize(new_size);
+}
+
+void BrowserWindow::OnContentsBounds(const CefRect& new_bounds) {
+  REQUIRE_MAIN_THREAD();
+  delegate_->OnContentsBounds(new_bounds);
+}
+
+bool BrowserWindow::GetRootWindowScreenRect(CefRect& rect) {
+  CEF_REQUIRE_UI_THREAD();
+  return delegate_->GetRootWindowScreenRect(rect);
 }
 
 void BrowserWindow::OnSetLoadingState(bool isLoading,

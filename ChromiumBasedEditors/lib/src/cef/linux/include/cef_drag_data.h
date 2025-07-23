@@ -39,6 +39,7 @@
 #pragma once
 
 #include <vector>
+
 #include "include/cef_base.h"
 #include "include/cef_image.h"
 #include "include/cef_stream.h"
@@ -144,6 +145,13 @@ class CefDragData : public virtual CefBaseRefCounted {
   ///
   /*--cef()--*/
   virtual bool GetFileNames(std::vector<CefString>& names) = 0;
+
+  ///
+  /// Retrieve the list of file paths that are being dragged into the browser
+  /// window.
+  ///
+  /*--cef()--*/
+  virtual bool GetFilePaths(std::vector<CefString>& paths) = 0;
 
   ///
   /// Set the link URL that is being dragged.

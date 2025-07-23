@@ -8,25 +8,21 @@
 
 #include "tests/cefclient/browser/window_test_runner.h"
 
-namespace client {
-namespace window_test {
+namespace client::window_test {
 
 // Views platform implementation.
 class WindowTestRunnerViews : public WindowTestRunner {
  public:
   WindowTestRunnerViews();
 
-  void SetPos(CefRefPtr<CefBrowser> browser,
-              int x,
-              int y,
-              int width,
-              int height) override;
   void Minimize(CefRefPtr<CefBrowser> browser) override;
   void Maximize(CefRefPtr<CefBrowser> browser) override;
   void Restore(CefRefPtr<CefBrowser> browser) override;
+  void Fullscreen(CefRefPtr<CefBrowser> browser) override;
+  void SetTitleBarHeight(CefRefPtr<CefBrowser> browser,
+                         const std::optional<float>& height) override;
 };
 
-}  // namespace window_test
-}  // namespace client
+}  // namespace client::window_test
 
 #endif  // CEF_TESTS_CEFCLIENT_BROWSER_WINDOW_TEST_RUNNER_VIEWS_H_

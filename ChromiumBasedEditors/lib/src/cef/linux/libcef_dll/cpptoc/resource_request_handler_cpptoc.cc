@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,10 +9,11 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=477291aae432b368ed8195975c5d93b5e19da36e$
+// $hash=d8467fbef777e0310b940ac5490acf42c8c37526$
 //
 
 #include "libcef_dll/cpptoc/resource_request_handler_cpptoc.h"
+
 #include "libcef_dll/cpptoc/cookie_access_filter_cpptoc.h"
 #include "libcef_dll/cpptoc/resource_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/response_filter_cpptoc.h"
@@ -29,113 +30,124 @@ namespace {
 struct _cef_cookie_access_filter_t* CEF_CALLBACK
 resource_request_handler_get_cookie_access_filter(
     struct _cef_resource_request_handler_t* self,
-    cef_browser_t* browser,
-    cef_frame_t* frame,
-    cef_request_t* request) {
+    struct _cef_browser_t* browser,
+    struct _cef_frame_t* frame,
+    struct _cef_request_t* request) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return NULL;
+  }
   // Verify param: request; type: refptr_diff
   DCHECK(request);
-  if (!request)
+  if (!request) {
     return NULL;
+  }
   // Unverified params: browser, frame
 
   // Execute
   CefRefPtr<CefCookieAccessFilter> _retval =
       CefResourceRequestHandlerCppToC::Get(self)->GetCookieAccessFilter(
-          CefBrowserCToCpp::Wrap(browser), CefFrameCToCpp::Wrap(frame),
-          CefRequestCToCpp::Wrap(request));
+          CefBrowserCToCpp_Wrap(browser), CefFrameCToCpp_Wrap(frame),
+          CefRequestCToCpp_Wrap(request));
 
   // Return type: refptr_same
-  return CefCookieAccessFilterCppToC::Wrap(_retval);
+  return CefCookieAccessFilterCppToC_Wrap(_retval);
 }
 
 cef_return_value_t CEF_CALLBACK
 resource_request_handler_on_before_resource_load(
     struct _cef_resource_request_handler_t* self,
-    cef_browser_t* browser,
-    cef_frame_t* frame,
-    cef_request_t* request,
-    cef_callback_t* callback) {
+    struct _cef_browser_t* browser,
+    struct _cef_frame_t* frame,
+    struct _cef_request_t* request,
+    struct _cef_callback_t* callback) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return RV_CONTINUE;
+  }
   // Verify param: request; type: refptr_diff
   DCHECK(request);
-  if (!request)
+  if (!request) {
     return RV_CONTINUE;
+  }
   // Verify param: callback; type: refptr_diff
   DCHECK(callback);
-  if (!callback)
+  if (!callback) {
     return RV_CONTINUE;
+  }
   // Unverified params: browser, frame
 
   // Execute
   cef_return_value_t _retval =
       CefResourceRequestHandlerCppToC::Get(self)->OnBeforeResourceLoad(
-          CefBrowserCToCpp::Wrap(browser), CefFrameCToCpp::Wrap(frame),
-          CefRequestCToCpp::Wrap(request), CefCallbackCToCpp::Wrap(callback));
+          CefBrowserCToCpp_Wrap(browser), CefFrameCToCpp_Wrap(frame),
+          CefRequestCToCpp_Wrap(request), CefCallbackCToCpp_Wrap(callback));
 
   // Return type: simple
   return _retval;
 }
 
-cef_resource_handler_t* CEF_CALLBACK
+struct _cef_resource_handler_t* CEF_CALLBACK
 resource_request_handler_get_resource_handler(
     struct _cef_resource_request_handler_t* self,
-    cef_browser_t* browser,
-    cef_frame_t* frame,
-    cef_request_t* request) {
+    struct _cef_browser_t* browser,
+    struct _cef_frame_t* frame,
+    struct _cef_request_t* request) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return NULL;
+  }
   // Verify param: request; type: refptr_diff
   DCHECK(request);
-  if (!request)
+  if (!request) {
     return NULL;
+  }
   // Unverified params: browser, frame
 
   // Execute
   CefRefPtr<CefResourceHandler> _retval =
       CefResourceRequestHandlerCppToC::Get(self)->GetResourceHandler(
-          CefBrowserCToCpp::Wrap(browser), CefFrameCToCpp::Wrap(frame),
-          CefRequestCToCpp::Wrap(request));
+          CefBrowserCToCpp_Wrap(browser), CefFrameCToCpp_Wrap(frame),
+          CefRequestCToCpp_Wrap(request));
 
   // Return type: refptr_same
-  return CefResourceHandlerCppToC::Wrap(_retval);
+  return CefResourceHandlerCppToC_Wrap(_retval);
 }
 
 void CEF_CALLBACK resource_request_handler_on_resource_redirect(
     struct _cef_resource_request_handler_t* self,
-    cef_browser_t* browser,
-    cef_frame_t* frame,
-    cef_request_t* request,
+    struct _cef_browser_t* browser,
+    struct _cef_frame_t* frame,
+    struct _cef_request_t* request,
     struct _cef_response_t* response,
     cef_string_t* new_url) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return;
+  }
   // Verify param: request; type: refptr_diff
   DCHECK(request);
-  if (!request)
+  if (!request) {
     return;
+  }
   // Verify param: response; type: refptr_diff
   DCHECK(response);
-  if (!response)
+  if (!response) {
     return;
+  }
   // Verify param: new_url; type: string_byref
   DCHECK(new_url);
-  if (!new_url)
+  if (!new_url) {
     return;
+  }
   // Unverified params: browser, frame
 
   // Translate param: new_url; type: string_byref
@@ -143,36 +155,39 @@ void CEF_CALLBACK resource_request_handler_on_resource_redirect(
 
   // Execute
   CefResourceRequestHandlerCppToC::Get(self)->OnResourceRedirect(
-      CefBrowserCToCpp::Wrap(browser), CefFrameCToCpp::Wrap(frame),
-      CefRequestCToCpp::Wrap(request), CefResponseCToCpp::Wrap(response),
+      CefBrowserCToCpp_Wrap(browser), CefFrameCToCpp_Wrap(frame),
+      CefRequestCToCpp_Wrap(request), CefResponseCToCpp_Wrap(response),
       new_urlStr);
 }
 
 int CEF_CALLBACK resource_request_handler_on_resource_response(
     struct _cef_resource_request_handler_t* self,
-    cef_browser_t* browser,
-    cef_frame_t* frame,
-    cef_request_t* request,
+    struct _cef_browser_t* browser,
+    struct _cef_frame_t* frame,
+    struct _cef_request_t* request,
     struct _cef_response_t* response) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return 0;
+  }
   // Verify param: request; type: refptr_diff
   DCHECK(request);
-  if (!request)
+  if (!request) {
     return 0;
+  }
   // Verify param: response; type: refptr_diff
   DCHECK(response);
-  if (!response)
+  if (!response) {
     return 0;
+  }
   // Unverified params: browser, frame
 
   // Execute
   bool _retval = CefResourceRequestHandlerCppToC::Get(self)->OnResourceResponse(
-      CefBrowserCToCpp::Wrap(browser), CefFrameCToCpp::Wrap(frame),
-      CefRequestCToCpp::Wrap(request), CefResponseCToCpp::Wrap(response));
+      CefBrowserCToCpp_Wrap(browser), CefFrameCToCpp_Wrap(frame),
+      CefRequestCToCpp_Wrap(request), CefResponseCToCpp_Wrap(response));
 
   // Return type: bool
   return _retval;
@@ -181,84 +196,93 @@ int CEF_CALLBACK resource_request_handler_on_resource_response(
 struct _cef_response_filter_t* CEF_CALLBACK
 resource_request_handler_get_resource_response_filter(
     struct _cef_resource_request_handler_t* self,
-    cef_browser_t* browser,
-    cef_frame_t* frame,
-    cef_request_t* request,
+    struct _cef_browser_t* browser,
+    struct _cef_frame_t* frame,
+    struct _cef_request_t* request,
     struct _cef_response_t* response) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return NULL;
+  }
   // Verify param: request; type: refptr_diff
   DCHECK(request);
-  if (!request)
+  if (!request) {
     return NULL;
+  }
   // Verify param: response; type: refptr_diff
   DCHECK(response);
-  if (!response)
+  if (!response) {
     return NULL;
+  }
   // Unverified params: browser, frame
 
   // Execute
   CefRefPtr<CefResponseFilter> _retval =
       CefResourceRequestHandlerCppToC::Get(self)->GetResourceResponseFilter(
-          CefBrowserCToCpp::Wrap(browser), CefFrameCToCpp::Wrap(frame),
-          CefRequestCToCpp::Wrap(request), CefResponseCToCpp::Wrap(response));
+          CefBrowserCToCpp_Wrap(browser), CefFrameCToCpp_Wrap(frame),
+          CefRequestCToCpp_Wrap(request), CefResponseCToCpp_Wrap(response));
 
   // Return type: refptr_same
-  return CefResponseFilterCppToC::Wrap(_retval);
+  return CefResponseFilterCppToC_Wrap(_retval);
 }
 
 void CEF_CALLBACK resource_request_handler_on_resource_load_complete(
     struct _cef_resource_request_handler_t* self,
-    cef_browser_t* browser,
-    cef_frame_t* frame,
-    cef_request_t* request,
+    struct _cef_browser_t* browser,
+    struct _cef_frame_t* frame,
+    struct _cef_request_t* request,
     struct _cef_response_t* response,
     cef_urlrequest_status_t status,
-    int64 received_content_length) {
+    int64_t received_content_length) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return;
+  }
   // Verify param: request; type: refptr_diff
   DCHECK(request);
-  if (!request)
+  if (!request) {
     return;
+  }
   // Verify param: response; type: refptr_diff
   DCHECK(response);
-  if (!response)
+  if (!response) {
     return;
+  }
   // Unverified params: browser, frame
 
   // Execute
   CefResourceRequestHandlerCppToC::Get(self)->OnResourceLoadComplete(
-      CefBrowserCToCpp::Wrap(browser), CefFrameCToCpp::Wrap(frame),
-      CefRequestCToCpp::Wrap(request), CefResponseCToCpp::Wrap(response),
-      status, received_content_length);
+      CefBrowserCToCpp_Wrap(browser), CefFrameCToCpp_Wrap(frame),
+      CefRequestCToCpp_Wrap(request), CefResponseCToCpp_Wrap(response), status,
+      received_content_length);
 }
 
 void CEF_CALLBACK resource_request_handler_on_protocol_execution(
     struct _cef_resource_request_handler_t* self,
-    cef_browser_t* browser,
-    cef_frame_t* frame,
-    cef_request_t* request,
+    struct _cef_browser_t* browser,
+    struct _cef_frame_t* frame,
+    struct _cef_request_t* request,
     int* allow_os_execution) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return;
+  }
   // Verify param: request; type: refptr_diff
   DCHECK(request);
-  if (!request)
+  if (!request) {
     return;
+  }
   // Verify param: allow_os_execution; type: bool_byref
   DCHECK(allow_os_execution);
-  if (!allow_os_execution)
+  if (!allow_os_execution) {
     return;
+  }
   // Unverified params: browser, frame
 
   // Translate param: allow_os_execution; type: bool_byref
@@ -267,12 +291,13 @@ void CEF_CALLBACK resource_request_handler_on_protocol_execution(
 
   // Execute
   CefResourceRequestHandlerCppToC::Get(self)->OnProtocolExecution(
-      CefBrowserCToCpp::Wrap(browser), CefFrameCToCpp::Wrap(frame),
-      CefRequestCToCpp::Wrap(request), allow_os_executionBool);
+      CefBrowserCToCpp_Wrap(browser), CefFrameCToCpp_Wrap(frame),
+      CefRequestCToCpp_Wrap(request), allow_os_executionBool);
 
   // Restore param: allow_os_execution; type: bool_byref
-  if (allow_os_execution)
+  if (allow_os_execution) {
     *allow_os_execution = allow_os_executionBool ? true : false;
+  }
 }
 
 }  // namespace
@@ -308,7 +333,7 @@ CefCppToCRefCounted<CefResourceRequestHandlerCppToC,
                     CefResourceRequestHandler,
                     cef_resource_request_handler_t>::
     UnwrapDerived(CefWrapperType type, cef_resource_request_handler_t* s) {
-  NOTREACHED() << "Unexpected class type: " << type;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
   return nullptr;
 }
 

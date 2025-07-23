@@ -75,7 +75,7 @@ CefRefPtr<CefValue> CreateDictionaryValue(CefRefPtr<CefDictionaryValue> value) {
 // Browser-side app delegate.
 class PreferenceBrowserTest : public client::ClientAppBrowser::Delegate {
  public:
-  PreferenceBrowserTest() {}
+  PreferenceBrowserTest() = default;
 
   void OnRegisterCustomPreferences(
       CefRefPtr<client::ClientAppBrowser> app,
@@ -416,7 +416,7 @@ void ValidateGet(CefRefPtr<CefPreferenceManager> context,
 // No-op implementation.
 class TestRequestContextHandler : public CefRequestContextHandler {
  public:
-  TestRequestContextHandler() {}
+  TestRequestContextHandler() = default;
   explicit TestRequestContextHandler(CefRefPtr<CefWaitableEvent> event)
       : event_(event) {}
 
@@ -533,16 +533,12 @@ TEST(PreferenceTest, RequestContextGlobalSetGetShared) {
 
   // Get the values from the 4th context.
   *PendingAction() = "Get the values from the 4th context.";
-  if (IsChromeRuntimeEnabled()) {
-    // With the Chrome runtime, prefs set via an incognito profile will become
-    // an overlay on top of the global (parent) profile. The incognito profile
-    // shares the prefs in this case because they were set via the global
-    // profile.
-    ValidateGet(context4, event);
-  } else {
-    // They should be at the default.
-    ValidateDefaults(context4, false, event);
-  }
+
+  // Prefs set via an incognito profile will become an overlay on top of the
+  // global (parent) profile. The incognito profile shares the prefs in this
+  // case because they were set via the global profile.
+  ValidateGet(context4, event);
+
   event->Wait();
 
   // Reset to the default values.
@@ -630,7 +626,7 @@ TEST(PreferenceTest, RequestContextCustomSetGetShared) {
   event->Wait();
 
   // Get the values from the 4th context. They should be at the default.
-  // This works with the Chrome runtime because the preference changes only
+  // This works with Chrome style because the preference changes only
   // exist in the other incognito profile's overlay.
   *PendingAction() = "Get the values from the 4th context.";
   ValidateDefaults(context4, false, event);

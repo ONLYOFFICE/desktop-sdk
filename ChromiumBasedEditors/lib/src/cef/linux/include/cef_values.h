@@ -39,6 +39,7 @@
 #pragma once
 
 #include <vector>
+
 #include "include/cef_base.h"
 
 class CefBinaryValue;
@@ -277,6 +278,13 @@ class CefBinaryValue : public virtual CefBaseRefCounted {
   ///
   /*--cef()--*/
   virtual CefRefPtr<CefBinaryValue> Copy() = 0;
+
+  ///
+  /// Returns a pointer to the beginning of the memory block.
+  /// The returned pointer is valid as long as the CefBinaryValue is alive.
+  ///
+  /*--cef()--*/
+  virtual const void* GetRawData() = 0;
 
   ///
   /// Returns the data size.

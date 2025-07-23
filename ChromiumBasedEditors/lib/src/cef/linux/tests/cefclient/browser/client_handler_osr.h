@@ -48,7 +48,7 @@ class ClientHandlerOsr : public ClientHandler,
         CefRefPtr<CefBrowser> browser,
         CefRenderHandler::PaintElementType type,
         const CefRenderHandler::RectList& dirtyRects,
-        void* share_handle) {}
+        const CefAcceleratedPaintInfo& info) {}
     virtual bool StartDragging(CefRefPtr<CefBrowser> browser,
                                CefRefPtr<CefDragData> drag_data,
                                CefRenderHandler::DragOperationsMask allowed_ops,
@@ -72,13 +72,17 @@ class ClientHandlerOsr : public ClientHandler,
     virtual void UpdateAccessibilityLocation(CefRefPtr<CefValue> value) = 0;
 
    protected:
-    virtual ~OsrDelegate() {}
+    virtual ~OsrDelegate() = default;
   };
 
   ClientHandlerOsr(Delegate* delegate,
                    OsrDelegate* osr_delegate,
                    bool with_controls,
                    const std::string& startup_url);
+
+  // Returns the ClientHandlerOsr for |client|, or nullptr if |client| is not a
+  // ClientHandlerOsr.
+  static CefRefPtr<ClientHandlerOsr> GetForClient(CefRefPtr<CefClient> client);
 
   // This object may outlive the OsrDelegate object so it's necessary for the
   // OsrDelegate to detach itself before destruction.
@@ -115,7 +119,7 @@ class ClientHandlerOsr : public ClientHandler,
   void OnAcceleratedPaint(CefRefPtr<CefBrowser> browser,
                           CefRenderHandler::PaintElementType type,
                           const CefRenderHandler::RectList& dirtyRects,
-                          void* share_handle) override;
+                          const CefAcceleratedPaintInfo& info) override;
   bool StartDragging(CefRefPtr<CefBrowser> browser,
                      CefRefPtr<CefDragData> drag_data,
                      CefRenderHandler::DragOperationsMask allowed_ops,
@@ -139,6 +143,10 @@ class ClientHandlerOsr : public ClientHandler,
   void OnAccessibilityLocationChange(CefRefPtr<CefValue> value) override;
 
  private:
+  // Used to determine the object type.
+  virtual const void* GetTypeKey() const override { return &kTypeKey; }
+  static constexpr int kTypeKey = 0;
+
   // Only accessed on the UI thread.
   OsrDelegate* osr_delegate_;
 

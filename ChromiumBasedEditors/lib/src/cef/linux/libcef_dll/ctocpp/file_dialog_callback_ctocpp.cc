@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,10 +9,11 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=d664c44b5479f5c63b7920b0e6a6f3e75409c0ce$
+// $hash=b6d86a18511920f3ea60f9dc8f6575866898fbe2$
 //
 
 #include "libcef_dll/ctocpp/file_dialog_callback_ctocpp.h"
+
 #include "libcef_dll/shutdown_checker.h"
 #include "libcef_dll/transfer_util.h"
 
@@ -23,9 +24,10 @@ void CefFileDialogCallbackCToCpp::Continue(
     const std::vector<CefString>& file_paths) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_file_dialog_callback_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, cont))
+  auto* _struct = GetStruct();
+  if (!_struct->cont) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -34,23 +36,26 @@ void CefFileDialogCallbackCToCpp::Continue(
   // Translate param: file_paths; type: string_vec_byref_const
   cef_string_list_t file_pathsList = cef_string_list_alloc();
   DCHECK(file_pathsList);
-  if (file_pathsList)
+  if (file_pathsList) {
     transfer_string_list_contents(file_paths, file_pathsList);
+  }
 
   // Execute
   _struct->cont(_struct, file_pathsList);
 
   // Restore param:file_paths; type: string_vec_byref_const
-  if (file_pathsList)
+  if (file_pathsList) {
     cef_string_list_free(file_pathsList);
+  }
 }
 
 NO_SANITIZE("cfi-icall") void CefFileDialogCallbackCToCpp::Cancel() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_file_dialog_callback_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, cancel))
+  auto* _struct = GetStruct();
+  if (!_struct->cancel) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -74,7 +79,7 @@ cef_file_dialog_callback_t* CefCToCppRefCounted<
     CefFileDialogCallback,
     cef_file_dialog_callback_t>::UnwrapDerived(CefWrapperType type,
                                                CefFileDialogCallback* c) {
-  NOTREACHED() << "Unexpected class type: " << type;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
   return nullptr;
 }
 

@@ -18,8 +18,7 @@ typedef std::vector<std::string> UrlList;
 
 class WebUITestHandler : public TestHandler {
  public:
-  explicit WebUITestHandler(const UrlList& url_list)
-      : url_list_(url_list), url_index_(0U), expected_error_code_(ERR_NONE) {
+  explicit WebUITestHandler(const UrlList& url_list) : url_list_(url_list) {
     CHECK(!url_list_.empty());
   }
 
@@ -81,10 +80,11 @@ class WebUITestHandler : public TestHandler {
 
   void DestroyTest() override {
     EXPECT_TRUE(got_loading_state_done_);
-    if (expected_error_code_ == ERR_NONE)
+    if (expected_error_code_ == ERR_NONE) {
       EXPECT_FALSE(got_load_error_);
-    else
+    } else {
       EXPECT_TRUE(got_load_error_);
+    }
 
     TestHandler::DestroyTest();
   }
@@ -93,8 +93,9 @@ class WebUITestHandler : public TestHandler {
   void NextNavIfDone(const std::string& url) {
     bool done = false;
     if (expected_error_code_ == ERR_NONE) {
-      if (got_loading_state_done_)
+      if (got_loading_state_done_) {
         done = true;
+      }
     } else if (got_load_error_ && got_loading_state_done_) {
       done = true;
     }
@@ -102,8 +103,9 @@ class WebUITestHandler : public TestHandler {
     if (done) {
       // Verify that we navigated to the expected URL.
       std::string expected_url = expected_url_;
-      if (expected_url.empty() && url_index_ < url_list_.size())
+      if (expected_url.empty() && url_index_ < url_list_.size()) {
         expected_url = url_list_[url_index_];
+      }
       EXPECT_STREQ(expected_url.c_str(), url.c_str());
 
       NextNav();
@@ -111,10 +113,10 @@ class WebUITestHandler : public TestHandler {
   }
 
   UrlList url_list_;
-  size_t url_index_;
+  size_t url_index_ = 0U;
 
   std::string expected_url_;
-  int expected_error_code_;
+  int expected_error_code_ = ERR_NONE;
 
   TrackCallback got_loading_state_done_;
   TrackCallback got_load_error_;
@@ -174,7 +176,6 @@ void RunWebUITest(const std::string& url) {
 
 WEBUI_TEST(accessibility)
 WEBUI_TEST(blob_internals)
-WEBUI_TEST(extensions_support)
 WEBUI_TEST(gpu)
 WEBUI_TEST(histograms)
 WEBUI_TEST(indexeddb_internals)
@@ -187,7 +188,6 @@ WEBUI_TEST(system)
 WEBUI_TEST(tracing)
 WEBUI_TEST(version)
 WEBUI_TEST(webrtc_internals)
-WEBUI_TEST(webui_hosts)
 
 // Test hosts with multiple URLs.
 

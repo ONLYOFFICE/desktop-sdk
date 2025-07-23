@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,10 +9,11 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=b5570ab9e0f65395cc117a2c9bfa9d8fb7b5d546$
+// $hash=e219136f14ea77cc56f2fa9d3ab1553bae4e8a4a$
 //
 
 #include "libcef_dll/cpptoc/cookie_visitor_cpptoc.h"
+
 #include "libcef_dll/shutdown_checker.h"
 #include "libcef_dll/template_util.h"
 
@@ -30,25 +31,29 @@ int CEF_CALLBACK cookie_visitor_visit(struct _cef_cookie_visitor_t* self,
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return 0;
+  }
   // Verify param: cookie; type: struct_byref_const
   DCHECK(cookie);
-  if (!cookie)
+  if (!cookie) {
     return 0;
+  }
   if (!template_util::has_valid_size(cookie)) {
-    NOTREACHED() << "invalid cookie->[base.]size";
+    DCHECK(false) << "invalid cookie->[base.]size";
     return 0;
   }
   // Verify param: deleteCookie; type: bool_byref
   DCHECK(deleteCookie);
-  if (!deleteCookie)
+  if (!deleteCookie) {
     return 0;
+  }
 
   // Translate param: cookie; type: struct_byref_const
   CefCookie cookieObj;
-  if (cookie)
+  if (cookie) {
     cookieObj.Set(*cookie, false);
+  }
   // Translate param: deleteCookie; type: bool_byref
   bool deleteCookieBool = (deleteCookie && *deleteCookie) ? true : false;
 
@@ -57,8 +62,9 @@ int CEF_CALLBACK cookie_visitor_visit(struct _cef_cookie_visitor_t* self,
       cookieObj, count, total, deleteCookieBool);
 
   // Restore param: deleteCookie; type: bool_byref
-  if (deleteCookie)
+  if (deleteCookie) {
     *deleteCookie = deleteCookieBool ? true : false;
+  }
 
   // Return type: bool
   return _retval;
@@ -84,7 +90,7 @@ CefRefPtr<CefCookieVisitor> CefCppToCRefCounted<
     CefCookieVisitor,
     cef_cookie_visitor_t>::UnwrapDerived(CefWrapperType type,
                                          cef_cookie_visitor_t* s) {
-  NOTREACHED() << "Unexpected class type: " << type;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
   return nullptr;
 }
 

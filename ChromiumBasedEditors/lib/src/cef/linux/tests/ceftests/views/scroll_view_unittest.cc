@@ -3,7 +3,6 @@
 // can be found in the LICENSE file.
 
 #include "include/base/cef_callback.h"
-#include "include/cef_pack_strings.h"
 #include "include/views/cef_panel.h"
 #include "include/views/cef_panel_delegate.h"
 #include "include/views/cef_scroll_view.h"
@@ -25,7 +24,7 @@ const int kContentPanelSize = TestWindowDelegate::kWSize + 200;
 
 class TestScrollViewDelegate : public CefViewDelegate {
  public:
-  TestScrollViewDelegate() {}
+  TestScrollViewDelegate() = default;
 
   CefSize GetPreferredSize(CefRefPtr<CefView> view) override {
     EXPECT_EQ(kScrollViewID, view->GetID());
@@ -42,7 +41,7 @@ class TestScrollViewDelegate : public CefViewDelegate {
 
 class TestPanelDelegate : public CefPanelDelegate {
  public:
-  TestPanelDelegate() {}
+  TestPanelDelegate() = default;
 
   CefSize GetPreferredSize(CefRefPtr<CefView> view) override {
     EXPECT_EQ(kContentPanelID, view->GetID());

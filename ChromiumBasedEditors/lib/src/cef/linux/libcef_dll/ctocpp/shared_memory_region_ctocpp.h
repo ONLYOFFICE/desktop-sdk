@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=f5d0285d28412c40b8e04953025294c5f0779ecd$
+// $hash=cbcb1ecf0970d426dbf045cd6b3fd28a26a0c7c7$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_SHARED_MEMORY_REGION_CTOCPP_H_
@@ -37,7 +37,12 @@ class CefSharedMemoryRegionCToCpp
   // CefSharedMemoryRegion methods.
   bool IsValid() override;
   size_t Size() override;
-  const void* Memory() override;
+  void* Memory() override;
 };
+
+constexpr auto CefSharedMemoryRegionCToCpp_Wrap =
+    CefSharedMemoryRegionCToCpp::Wrap;
+constexpr auto CefSharedMemoryRegionCToCpp_Unwrap =
+    CefSharedMemoryRegionCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_SHARED_MEMORY_REGION_CTOCPP_H_

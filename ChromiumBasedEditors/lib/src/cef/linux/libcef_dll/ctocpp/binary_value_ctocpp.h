@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=b6f011a6c26b4264084eb68dae0d63032c07013c$
+// $hash=661d8e54cd47020516e9c076416d71d4986495f3$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_BINARY_VALUE_CTOCPP_H_
@@ -39,8 +39,12 @@ class CefBinaryValueCToCpp : public CefCToCppRefCounted<CefBinaryValueCToCpp,
   bool IsSame(CefRefPtr<CefBinaryValue> that) override;
   bool IsEqual(CefRefPtr<CefBinaryValue> that) override;
   CefRefPtr<CefBinaryValue> Copy() override;
+  const void* GetRawData() override;
   size_t GetSize() override;
   size_t GetData(void* buffer, size_t buffer_size, size_t data_offset) override;
 };
+
+constexpr auto CefBinaryValueCToCpp_Wrap = CefBinaryValueCToCpp::Wrap;
+constexpr auto CefBinaryValueCToCpp_Unwrap = CefBinaryValueCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_BINARY_VALUE_CTOCPP_H_

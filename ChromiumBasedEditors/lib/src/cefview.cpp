@@ -1738,6 +1738,7 @@ public:
 	};
 
 public:
+
 	CCefView* m_pParent;
 	bool m_bIsLoaded;
 
@@ -1808,13 +1809,24 @@ public:
 		return this;
 	}
 
+#ifdef CEF_VERSION_138
+	virtual bool OnFileDialog(CefRefPtr<CefBrowser> browser,
+	                          CefDialogHandler::FileDialogMode mode,
+	                          const CefString& title,
+	                          const CefString& default_file_path,
+	                          const std::vector<CefString>& accept_filters,
+	                          const std::vector<CefString>& accept_extensions,
+	                          const std::vector<CefString>& accept_descriptions,
+	                          CefRefPtr<CefFileDialogCallback> callback) OVERRIDE
+#else
 	virtual bool OnFileDialog(CefRefPtr<CefBrowser> browser,
 							  CefDialogHandler::FileDialogMode mode,
 							  const CefString& title,
 							  const CefString& default_file_path,
 							  const std::vector<CefString>& accept_filters,
 							  int selected_accept_filter,
-							  CefRefPtr<CefFileDialogCallback> callback)
+	                          CefRefPtr<CefFileDialogCallback> callback)
+#endif // CEF_VERSION_138
 	{
 #ifndef _MAC
 
@@ -4551,13 +4563,15 @@ virtual void OnAfterCreated(CefRefPtr<CefBrowser> browser) OVERRIDE
 
 virtual void OnBeforeClose(CefRefPtr<CefBrowser> browser) OVERRIDE
 {
+#ifdef CEF_VERSION_138
+	ClientHandler::OnBeforeClose(browser); // TODO
+#else
 	CEF_REQUIRE_UI_THREAD();
 
 	if (--browser_count_ == 0)
 	{
 		// Remove and delete message router handlers.
-		MessageHandlerSet::const_iterator it =
-				message_handler_set_.begin();
+		auto it = message_handler_set_.begin();
 		for (; it != message_handler_set_.end(); ++it)
 		{
 			message_router_->RemoveHandler(*(it));
@@ -4566,8 +4580,8 @@ virtual void OnBeforeClose(CefRefPtr<CefBrowser> browser) OVERRIDE
 		message_handler_set_.clear();
 		message_router_ = nullptr;
 	}
-
 	NotifyBrowserClosed(browser);
+#endif // CEF_VERSION_138
 }
 
 virtual bool DoClose(CefRefPtr<CefBrowser> browser) OVERRIDE
@@ -5671,6 +5685,14 @@ virtual void OnFoundCookies(std::map<std::string, std::string>& mapValues);
 
 // ClientHandlerDelegate
 virtual void OnBrowserCreated(CefRefPtr<CefBrowser> browser) OVERRIDE {}
+
+#ifdef CEF_VERSION_138
+virtual bool UseViews() const OVERRIDE {return false;}
+virtual bool UseAlloyStyle() const OVERRIDE {return false;}
+virtual void OnContentsBounds(const CefRect& new_bounds) OVERRIDE {return;}
+virtual const void* GetTypeKey() const {return 0;}
+
+#endif // CEF_VERSION_138
 
 // Called when the browser is closing.
 virtual void OnBrowserClosing(CefRefPtr<CefBrowser> browser) OVERRIDE

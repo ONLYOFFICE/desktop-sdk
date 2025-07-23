@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=6b1e5c1fa56a6561a054d35866e1c598c7e64368$
+// $hash=1a558c5f6ed2caf2bd73a8bf330d629ca299d996$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_FRAME_CTOCPP_H_
@@ -45,6 +45,7 @@ class CefFrameCToCpp
   void Cut() override;
   void Copy() override;
   void Paste() override;
+  void PasteAndMatchStyle() override;
   void Delete() override;
   void SelectAll() override;
   void ViewSource() override;
@@ -58,7 +59,7 @@ class CefFrameCToCpp
   bool IsMain() override;
   bool IsFocused() override;
   CefString GetName() override;
-  int64 GetIdentifier() override;
+  CefString GetIdentifier() override;
   CefRefPtr<CefFrame> GetParent() override;
   CefString GetURL() override;
   CefRefPtr<CefBrowser> GetBrowser() override;
@@ -70,5 +71,8 @@ class CefFrameCToCpp
   void SendProcessMessage(CefProcessId target_process,
                           CefRefPtr<CefProcessMessage> message) override;
 };
+
+constexpr auto CefFrameCToCpp_Wrap = CefFrameCToCpp::Wrap;
+constexpr auto CefFrameCToCpp_Unwrap = CefFrameCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_FRAME_CTOCPP_H_

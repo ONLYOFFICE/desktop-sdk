@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,12 +33,16 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=dcfa5d39d1355b2c675637a13378f43376a8053e$
+// $hash=bbca87053624fb8cedfea5e6fa4934a8adf78874$
 //
 
 #ifndef CEF_INCLUDE_CAPI_VIEWS_CEF_MENU_BUTTON_CAPI_H_
 #define CEF_INCLUDE_CAPI_VIEWS_CEF_MENU_BUTTON_CAPI_H_
 #pragma once
+
+#if defined(BUILDING_CEF_SHARED)
+#error This file cannot be included DLL-side
+#endif
 
 #include "include/capi/cef_menu_model_capi.h"
 #include "include/capi/views/cef_label_button_capi.h"
@@ -54,6 +58,8 @@ extern "C" {
 /// values are in density independent pixels (DIP) unless otherwise indicated.
 /// Methods must be called on the browser process UI thread unless otherwise
 /// indicated.
+///
+/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_menu_button_t {
   ///

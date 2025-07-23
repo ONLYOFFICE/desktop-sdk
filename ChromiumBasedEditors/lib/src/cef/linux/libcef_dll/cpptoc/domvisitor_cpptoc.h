@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=2a64ff6edd81d5158997158c91e75b85dbd8da39$
+// $hash=16b1bff7ce05ef464df298dfd26a72d0df3877bd$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_DOMVISITOR_CPPTOC_H_
@@ -33,5 +33,8 @@ class CefDOMVisitorCppToC : public CefCppToCRefCounted<CefDOMVisitorCppToC,
   CefDOMVisitorCppToC();
   virtual ~CefDOMVisitorCppToC();
 };
+
+constexpr auto CefDOMVisitorCppToC_Wrap = CefDOMVisitorCppToC::Wrap;
+constexpr auto CefDOMVisitorCppToC_Unwrap = CefDOMVisitorCppToC::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_DOMVISITOR_CPPTOC_H_

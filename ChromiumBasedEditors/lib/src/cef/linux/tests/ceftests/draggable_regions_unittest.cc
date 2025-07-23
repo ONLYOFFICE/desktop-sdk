@@ -120,8 +120,9 @@ class DraggableRegionsTestHandler : public TestHandler,
       case kStepWithRegions:
       case kStepWithChangingRegions2:
         EXPECT_EQ(2U, regions.size()) << step_;
-        if (regions.size() != 2U)
+        if (regions.size() != 2U) {
           break;
+        }
         EXPECT_NEAR(50, regions[0].bounds.x, 1);
         EXPECT_NEAR(50, regions[0].bounds.y, 1);
         EXPECT_NEAR(200, regions[0].bounds.width, 1);
@@ -136,8 +137,9 @@ class DraggableRegionsTestHandler : public TestHandler,
       case kStepWithChangingRegions:
       case kStepWithChangingRegions3:
         EXPECT_EQ(2U, regions.size()) << step_;
-        if (regions.size() != 2U)
+        if (regions.size() != 2U) {
           break;
+        }
         EXPECT_EQ(0, regions[0].bounds.x);
         EXPECT_EQ(0, regions[0].bounds.y);
         EXPECT_NEAR(200, regions[0].bounds.width, 1);
@@ -221,16 +223,16 @@ class DraggableRegionsTestHandler : public TestHandler,
     // When |same_origin_| is true every other URL gets a different origin.
     switch (step) {
       case kStepWithRegions:
-        return same_origin_ ? "http://test.com/regions"
-                            : "http://test2.com/regions";
+        return same_origin_ ? "https://test.com/regions"
+                            : "https://test2.com/regions";
       case kStepWithChangingRegions:
       case kStepWithChangingRegions2:
       case kStepWithChangingRegions3:
-        return "http://test.com/changing-regions";
+        return "https://test.com/changing-regions";
       case kStepWithoutRegions:
       case kStepWithoutRegions2:
-        return same_origin_ ? "http://test.com/no-regions"
-                            : "http://test2.com/no-regions";
+        return same_origin_ ? "https://test.com/no-regions"
+                            : "https://test2.com/no-regions";
     }
 
     NOTREACHED();

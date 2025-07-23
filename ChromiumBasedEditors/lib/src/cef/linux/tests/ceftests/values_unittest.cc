@@ -44,12 +44,12 @@ const char* kStringValue = "My string value";
 void TestBinary(CefRefPtr<CefBinaryValue> value, char* data, size_t data_size) {
   // Testing requires strings longer than 15 characters.
   EXPECT_GT(data_size, 15U);
-
   EXPECT_EQ(data_size, value->GetSize());
 
-  char* buff = new char[data_size + 1];
-  char old_char;
+  // Test direct access.
+  EXPECT_EQ(memcmp(value->GetRawData(), data, data_size), 0);
 
+  char* buff = new char[data_size + 1];
   // Test full read.
   memset(buff, 0, data_size + 1);
   EXPECT_EQ(data_size, value->GetData(buff, data_size, 0));
@@ -57,7 +57,7 @@ void TestBinary(CefRefPtr<CefBinaryValue> value, char* data, size_t data_size) {
 
   // Test partial read with offset.
   memset(buff, 0, data_size + 1);
-  old_char = data[15];
+  char old_char = data[15];
   data[15] = 0;
   EXPECT_EQ(10U, value->GetData(buff, 10, 5));
   EXPECT_TRUE(!strcmp(buff, data + 5));
@@ -266,6 +266,8 @@ void TestDictionary(CefRefPtr<CefDictionaryValue> value,
 
   // Test the size.
   EXPECT_EQ(0U, value->GetSize());
+  // Should be a no-op.
+  EXPECT_TRUE(value->Clear());
 
   // Re-add some values.
   TestDictionaryNull(value);

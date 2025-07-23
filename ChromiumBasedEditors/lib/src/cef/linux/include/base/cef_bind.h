@@ -71,7 +71,7 @@
 
 #if defined(USING_CHROMIUM_INCLUDES)
 // When building CEF include the Chromium header directly.
-#include "base/bind.h"
+#include "base/functional/bind.h"
 #else  // !USING_CHROMIUM_INCLUDES
 // The following is substantially similar to the Chromium implementation.
 // If the Chromium implementation diverges the below implementation should be
@@ -84,7 +84,6 @@
 
 #include "include/base/cef_build.h"
 #include "include/base/cef_compiler_specific.h"
-#include "include/base/cef_template_util.h"
 #include "include/base/internal/cef_bind_internal.h"
 
 #if defined(OS_APPLE) && !HAS_FEATURE(objc_arc)
@@ -97,35 +96,34 @@ namespace base {
 /// Bind as OnceCallback.
 ///
 template <typename Functor, typename... Args>
-inline OnceCallback<internal::MakeUnboundRunType<Functor, Args...>> BindOnce(
-    Functor&& functor,
-    Args&&... args) {
-  static_assert(!internal::IsOnceCallback<std::decay_t<Functor>>() ||
+inline OnceCallback<cef_internal::MakeUnboundRunType<Functor, Args...>>
+BindOnce(Functor&& functor, Args&&... args) {
+  static_assert(!cef_internal::IsOnceCallback<std::decay_t<Functor>>() ||
                     (std::is_rvalue_reference<Functor&&>() &&
                      !std::is_const<std::remove_reference_t<Functor>>()),
                 "BindOnce requires non-const rvalue for OnceCallback binding."
                 " I.e.: base::BindOnce(std::move(callback)).");
   static_assert(
-      conjunction<
-          internal::AssertBindArgIsNotBasePassed<std::decay_t<Args>>...>::value,
+      std::conjunction<cef_internal::AssertBindArgIsNotBasePassed<
+          std::decay_t<Args>>...>::value,
       "Use std::move() instead of base::Passed() with base::BindOnce()");
 
-  return internal::BindImpl<OnceCallback>(std::forward<Functor>(functor),
-                                          std::forward<Args>(args)...);
+  return cef_internal::BindImpl<OnceCallback>(std::forward<Functor>(functor),
+                                              std::forward<Args>(args)...);
 }
 
 ///
 /// Bind as RepeatingCallback.
 ///
 template <typename Functor, typename... Args>
-inline RepeatingCallback<internal::MakeUnboundRunType<Functor, Args...>>
+inline RepeatingCallback<cef_internal::MakeUnboundRunType<Functor, Args...>>
 BindRepeating(Functor&& functor, Args&&... args) {
   static_assert(
-      !internal::IsOnceCallback<std::decay_t<Functor>>(),
+      !cef_internal::IsOnceCallback<std::decay_t<Functor>>(),
       "BindRepeating cannot bind OnceCallback. Use BindOnce with std::move().");
 
-  return internal::BindImpl<RepeatingCallback>(std::forward<Functor>(functor),
-                                               std::forward<Args>(args)...);
+  return cef_internal::BindImpl<RepeatingCallback>(
+      std::forward<Functor>(functor), std::forward<Args>(args)...);
 }
 
 ///
@@ -175,8 +173,8 @@ RepeatingCallback<Signature> BindRepeating(
 /// to compile because Foo does not support the AddRef() and Release() methods.
 ///
 template <typename T>
-inline internal::UnretainedWrapper<T> Unretained(T* o) {
-  return internal::UnretainedWrapper<T>(o);
+inline cef_internal::UnretainedWrapper<T> Unretained(T* o) {
+  return cef_internal::UnretainedWrapper<T>(o);
 }
 
 ///
@@ -201,12 +199,12 @@ inline internal::UnretainedWrapper<T> Unretained(T* o) {
 /// </pre>
 ///
 template <typename T>
-inline internal::RetainedRefWrapper<T> RetainedRef(T* o) {
-  return internal::RetainedRefWrapper<T>(o);
+inline cef_internal::RetainedRefWrapper<T> RetainedRef(T* o) {
+  return cef_internal::RetainedRefWrapper<T>(o);
 }
 template <typename T>
-inline internal::RetainedRefWrapper<T> RetainedRef(scoped_refptr<T> o) {
-  return internal::RetainedRefWrapper<T>(std::move(o));
+inline cef_internal::RetainedRefWrapper<T> RetainedRef(scoped_refptr<T> o) {
+  return cef_internal::RetainedRefWrapper<T>(std::move(o));
 }
 
 ///
@@ -234,14 +232,14 @@ inline internal::RetainedRefWrapper<T> RetainedRef(scoped_refptr<T> o) {
 /// reference to the callback is deleted.
 ///
 template <typename T>
-inline internal::OwnedWrapper<T> Owned(T* o) {
-  return internal::OwnedWrapper<T>(o);
+inline cef_internal::OwnedWrapper<T> Owned(T* o) {
+  return cef_internal::OwnedWrapper<T>(o);
 }
 
 template <typename T, typename Deleter>
-inline internal::OwnedWrapper<T, Deleter> Owned(
+inline cef_internal::OwnedWrapper<T, Deleter> Owned(
     std::unique_ptr<T, Deleter>&& ptr) {
-  return internal::OwnedWrapper<T, Deleter>(std::move(ptr));
+  return cef_internal::OwnedWrapper<T, Deleter>(std::move(ptr));
 }
 
 ///
@@ -277,8 +275,8 @@ inline internal::OwnedWrapper<T, Deleter> Owned(
 /// an object owned by the callback.
 ///
 template <typename T>
-internal::OwnedRefWrapper<std::decay_t<T>> OwnedRef(T&& t) {
-  return internal::OwnedRefWrapper<std::decay_t<T>>(std::forward<T>(t));
+cef_internal::OwnedRefWrapper<std::decay_t<T>> OwnedRef(T&& t) {
+  return cef_internal::OwnedRefWrapper<std::decay_t<T>>(std::forward<T>(t));
 }
 
 ///
@@ -329,12 +327,12 @@ internal::OwnedRefWrapper<std::decay_t<T>> OwnedRef(T&& t) {
 ///
 template <typename T,
           std::enable_if_t<!std::is_lvalue_reference<T>::value>* = nullptr>
-inline internal::PassedWrapper<T> Passed(T&& scoper) {
-  return internal::PassedWrapper<T>(std::move(scoper));
+inline cef_internal::PassedWrapper<T> Passed(T&& scoper) {
+  return cef_internal::PassedWrapper<T>(std::move(scoper));
 }
 template <typename T>
-inline internal::PassedWrapper<T> Passed(T* scoper) {
-  return internal::PassedWrapper<T>(std::move(*scoper));
+inline cef_internal::PassedWrapper<T> Passed(T* scoper) {
+  return cef_internal::PassedWrapper<T>(std::move(*scoper));
 }
 
 ///
@@ -357,8 +355,8 @@ inline internal::PassedWrapper<T> Passed(T* scoper) {
 /// </pre>
 ///
 template <typename T>
-inline internal::IgnoreResultHelper<T> IgnoreResult(T data) {
-  return internal::IgnoreResultHelper<T>(std::move(data));
+inline cef_internal::IgnoreResultHelper<T> IgnoreResult(T data) {
+  return cef_internal::IgnoreResultHelper<T>(std::move(data));
 }
 
 #if defined(OS_APPLE) && !HAS_FEATURE(objc_arc)

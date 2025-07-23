@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,10 +9,11 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=7426be91c0a1a5d650b24d18f23cc5f559c9971e$
+// $hash=c9958226c446565bba04921ac4d103dcf0185422$
 //
 
 #include "libcef_dll/cpptoc/domvisitor_cpptoc.h"
+
 #include "libcef_dll/ctocpp/domdocument_ctocpp.h"
 #include "libcef_dll/shutdown_checker.h"
 
@@ -27,15 +28,17 @@ void CEF_CALLBACK domvisitor_visit(struct _cef_domvisitor_t* self,
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return;
+  }
   // Verify param: document; type: refptr_diff
   DCHECK(document);
-  if (!document)
+  if (!document) {
     return;
+  }
 
   // Execute
-  CefDOMVisitorCppToC::Get(self)->Visit(CefDOMDocumentCToCpp::Wrap(document));
+  CefDOMVisitorCppToC::Get(self)->Visit(CefDOMDocumentCToCpp_Wrap(document));
 }
 
 }  // namespace
@@ -56,7 +59,7 @@ template <>
 CefRefPtr<CefDOMVisitor>
 CefCppToCRefCounted<CefDOMVisitorCppToC, CefDOMVisitor, cef_domvisitor_t>::
     UnwrapDerived(CefWrapperType type, cef_domvisitor_t* s) {
-  NOTREACHED() << "Unexpected class type: " << type;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
   return nullptr;
 }
 

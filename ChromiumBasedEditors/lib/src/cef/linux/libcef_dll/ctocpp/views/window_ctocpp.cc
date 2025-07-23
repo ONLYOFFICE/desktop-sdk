@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,10 +9,11 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=a4c6dd54b71d800640730d4bc5d643c4293d783d$
+// $hash=be05fee839be1ee90b85a19391253287856c5400$
 //
 
 #include "libcef_dll/ctocpp/views/window_ctocpp.h"
+
 #include "libcef_dll/cpptoc/views/view_delegate_cpptoc.h"
 #include "libcef_dll/cpptoc/views/window_delegate_cpptoc.h"
 #include "libcef_dll/ctocpp/image_ctocpp.h"
@@ -42,11 +43,11 @@ CefRefPtr<CefWindow> CefWindow::CreateTopLevelWindow(
   // Unverified params: delegate
 
   // Execute
-  cef_window_t* _retval =
-      cef_window_create_top_level(CefWindowDelegateCppToC::Wrap(delegate));
+  auto* _retval =
+      cef_window_create_top_level(CefWindowDelegateCppToC_Wrap(delegate));
 
   // Return type: refptr_same
-  return CefWindowCToCpp::Wrap(_retval);
+  return CefWindowCToCpp_Wrap(_retval);
 }
 
 // VIRTUAL METHODS - Body may be edited by hand.
@@ -54,9 +55,10 @@ CefRefPtr<CefWindow> CefWindow::CreateTopLevelWindow(
 NO_SANITIZE("cfi-icall") void CefWindowCToCpp::Show() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, show))
+  auto* _struct = GetStruct();
+  if (!_struct->show) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -64,12 +66,36 @@ NO_SANITIZE("cfi-icall") void CefWindowCToCpp::Show() {
   _struct->show(_struct);
 }
 
+NO_SANITIZE("cfi-icall")
+void CefWindowCToCpp::ShowAsBrowserModalDialog(
+    CefRefPtr<CefBrowserView> browser_view) {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->show_as_browser_modal_dialog) {
+    return;
+  }
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Verify param: browser_view; type: refptr_same
+  DCHECK(browser_view.get());
+  if (!browser_view.get()) {
+    return;
+  }
+
+  // Execute
+  _struct->show_as_browser_modal_dialog(
+      _struct, CefBrowserViewCToCpp_Unwrap(browser_view));
+}
+
 NO_SANITIZE("cfi-icall") void CefWindowCToCpp::Hide() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, hide))
+  auto* _struct = GetStruct();
+  if (!_struct->hide) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -81,9 +107,10 @@ NO_SANITIZE("cfi-icall")
 void CefWindowCToCpp::CenterWindow(const CefSize& size) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, center_window))
+  auto* _struct = GetStruct();
+  if (!_struct->center_window) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -94,9 +121,10 @@ void CefWindowCToCpp::CenterWindow(const CefSize& size) {
 NO_SANITIZE("cfi-icall") void CefWindowCToCpp::Close() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, close))
+  auto* _struct = GetStruct();
+  if (!_struct->close) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -107,9 +135,10 @@ NO_SANITIZE("cfi-icall") void CefWindowCToCpp::Close() {
 NO_SANITIZE("cfi-icall") bool CefWindowCToCpp::IsClosed() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, is_closed))
+  auto* _struct = GetStruct();
+  if (!_struct->is_closed) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -123,9 +152,10 @@ NO_SANITIZE("cfi-icall") bool CefWindowCToCpp::IsClosed() {
 NO_SANITIZE("cfi-icall") void CefWindowCToCpp::Activate() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, activate))
+  auto* _struct = GetStruct();
+  if (!_struct->activate) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -136,9 +166,10 @@ NO_SANITIZE("cfi-icall") void CefWindowCToCpp::Activate() {
 NO_SANITIZE("cfi-icall") void CefWindowCToCpp::Deactivate() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, deactivate))
+  auto* _struct = GetStruct();
+  if (!_struct->deactivate) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -149,9 +180,10 @@ NO_SANITIZE("cfi-icall") void CefWindowCToCpp::Deactivate() {
 NO_SANITIZE("cfi-icall") bool CefWindowCToCpp::IsActive() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, is_active))
+  auto* _struct = GetStruct();
+  if (!_struct->is_active) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -165,9 +197,10 @@ NO_SANITIZE("cfi-icall") bool CefWindowCToCpp::IsActive() {
 NO_SANITIZE("cfi-icall") void CefWindowCToCpp::BringToTop() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, bring_to_top))
+  auto* _struct = GetStruct();
+  if (!_struct->bring_to_top) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -178,9 +211,10 @@ NO_SANITIZE("cfi-icall") void CefWindowCToCpp::BringToTop() {
 NO_SANITIZE("cfi-icall") void CefWindowCToCpp::SetAlwaysOnTop(bool on_top) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, set_always_on_top))
+  auto* _struct = GetStruct();
+  if (!_struct->set_always_on_top) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -191,9 +225,10 @@ NO_SANITIZE("cfi-icall") void CefWindowCToCpp::SetAlwaysOnTop(bool on_top) {
 NO_SANITIZE("cfi-icall") bool CefWindowCToCpp::IsAlwaysOnTop() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, is_always_on_top))
+  auto* _struct = GetStruct();
+  if (!_struct->is_always_on_top) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -207,9 +242,10 @@ NO_SANITIZE("cfi-icall") bool CefWindowCToCpp::IsAlwaysOnTop() {
 NO_SANITIZE("cfi-icall") void CefWindowCToCpp::Maximize() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, maximize))
+  auto* _struct = GetStruct();
+  if (!_struct->maximize) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -220,9 +256,10 @@ NO_SANITIZE("cfi-icall") void CefWindowCToCpp::Maximize() {
 NO_SANITIZE("cfi-icall") void CefWindowCToCpp::Minimize() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, minimize))
+  auto* _struct = GetStruct();
+  if (!_struct->minimize) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -233,9 +270,10 @@ NO_SANITIZE("cfi-icall") void CefWindowCToCpp::Minimize() {
 NO_SANITIZE("cfi-icall") void CefWindowCToCpp::Restore() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, restore))
+  auto* _struct = GetStruct();
+  if (!_struct->restore) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -246,9 +284,10 @@ NO_SANITIZE("cfi-icall") void CefWindowCToCpp::Restore() {
 NO_SANITIZE("cfi-icall") void CefWindowCToCpp::SetFullscreen(bool fullscreen) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, set_fullscreen))
+  auto* _struct = GetStruct();
+  if (!_struct->set_fullscreen) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -259,9 +298,10 @@ NO_SANITIZE("cfi-icall") void CefWindowCToCpp::SetFullscreen(bool fullscreen) {
 NO_SANITIZE("cfi-icall") bool CefWindowCToCpp::IsMaximized() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, is_maximized))
+  auto* _struct = GetStruct();
+  if (!_struct->is_maximized) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -275,9 +315,10 @@ NO_SANITIZE("cfi-icall") bool CefWindowCToCpp::IsMaximized() {
 NO_SANITIZE("cfi-icall") bool CefWindowCToCpp::IsMinimized() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, is_minimized))
+  auto* _struct = GetStruct();
+  if (!_struct->is_minimized) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -291,9 +332,10 @@ NO_SANITIZE("cfi-icall") bool CefWindowCToCpp::IsMinimized() {
 NO_SANITIZE("cfi-icall") bool CefWindowCToCpp::IsFullscreen() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, is_fullscreen))
+  auto* _struct = GetStruct();
+  if (!_struct->is_fullscreen) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -304,13 +346,31 @@ NO_SANITIZE("cfi-icall") bool CefWindowCToCpp::IsFullscreen() {
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall") CefRefPtr<CefView> CefWindowCToCpp::GetFocusedView() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->get_focused_view) {
+    return nullptr;
+  }
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  auto* _retval = _struct->get_focused_view(_struct);
+
+  // Return type: refptr_same
+  return CefViewCToCpp_Wrap(_retval);
+}
+
 NO_SANITIZE("cfi-icall")
 void CefWindowCToCpp::SetTitle(const CefString& title) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, set_title))
+  auto* _struct = GetStruct();
+  if (!_struct->set_title) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -323,9 +383,10 @@ void CefWindowCToCpp::SetTitle(const CefString& title) {
 NO_SANITIZE("cfi-icall") CefString CefWindowCToCpp::GetTitle() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, get_title))
+  auto* _struct = GetStruct();
+  if (!_struct->get_title) {
     return CefString();
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -342,96 +403,105 @@ NO_SANITIZE("cfi-icall")
 void CefWindowCToCpp::SetWindowIcon(CefRefPtr<CefImage> image) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, set_window_icon))
+  auto* _struct = GetStruct();
+  if (!_struct->set_window_icon) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: image; type: refptr_same
   DCHECK(image.get());
-  if (!image.get())
+  if (!image.get()) {
     return;
+  }
 
   // Execute
-  _struct->set_window_icon(_struct, CefImageCToCpp::Unwrap(image));
+  _struct->set_window_icon(_struct, CefImageCToCpp_Unwrap(image));
 }
 
 NO_SANITIZE("cfi-icall") CefRefPtr<CefImage> CefWindowCToCpp::GetWindowIcon() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, get_window_icon))
+  auto* _struct = GetStruct();
+  if (!_struct->get_window_icon) {
     return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_image_t* _retval = _struct->get_window_icon(_struct);
+  auto* _retval = _struct->get_window_icon(_struct);
 
   // Return type: refptr_same
-  return CefImageCToCpp::Wrap(_retval);
+  return CefImageCToCpp_Wrap(_retval);
 }
 
 NO_SANITIZE("cfi-icall")
 void CefWindowCToCpp::SetWindowAppIcon(CefRefPtr<CefImage> image) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, set_window_app_icon))
+  auto* _struct = GetStruct();
+  if (!_struct->set_window_app_icon) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: image; type: refptr_same
   DCHECK(image.get());
-  if (!image.get())
+  if (!image.get()) {
     return;
+  }
 
   // Execute
-  _struct->set_window_app_icon(_struct, CefImageCToCpp::Unwrap(image));
+  _struct->set_window_app_icon(_struct, CefImageCToCpp_Unwrap(image));
 }
 
 NO_SANITIZE("cfi-icall")
 CefRefPtr<CefImage> CefWindowCToCpp::GetWindowAppIcon() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, get_window_app_icon))
+  auto* _struct = GetStruct();
+  if (!_struct->get_window_app_icon) {
     return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_image_t* _retval = _struct->get_window_app_icon(_struct);
+  auto* _retval = _struct->get_window_app_icon(_struct);
 
   // Return type: refptr_same
-  return CefImageCToCpp::Wrap(_retval);
+  return CefImageCToCpp_Wrap(_retval);
 }
 
 NO_SANITIZE("cfi-icall")
 CefRefPtr<CefOverlayController> CefWindowCToCpp::AddOverlayView(
     CefRefPtr<CefView> view,
-    cef_docking_mode_t docking_mode) {
+    cef_docking_mode_t docking_mode,
+    bool can_activate) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, add_overlay_view))
+  auto* _struct = GetStruct();
+  if (!_struct->add_overlay_view) {
     return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: view; type: refptr_same
   DCHECK(view.get());
-  if (!view.get())
+  if (!view.get()) {
     return nullptr;
+  }
 
   // Execute
-  cef_overlay_controller_t* _retval = _struct->add_overlay_view(
-      _struct, CefViewCToCpp::Unwrap(view), docking_mode);
+  auto* _retval = _struct->add_overlay_view(_struct, CefViewCToCpp_Unwrap(view),
+                                            docking_mode, can_activate);
 
   // Return type: refptr_same
-  return CefOverlayControllerCToCpp::Wrap(_retval);
+  return CefOverlayControllerCToCpp_Wrap(_retval);
 }
 
 NO_SANITIZE("cfi-icall")
@@ -440,28 +510,31 @@ void CefWindowCToCpp::ShowMenu(CefRefPtr<CefMenuModel> menu_model,
                                cef_menu_anchor_position_t anchor_position) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, show_menu))
+  auto* _struct = GetStruct();
+  if (!_struct->show_menu) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: menu_model; type: refptr_same
   DCHECK(menu_model.get());
-  if (!menu_model.get())
+  if (!menu_model.get()) {
     return;
+  }
 
   // Execute
-  _struct->show_menu(_struct, CefMenuModelCToCpp::Unwrap(menu_model),
+  _struct->show_menu(_struct, CefMenuModelCToCpp_Unwrap(menu_model),
                      &screen_point, anchor_position);
 }
 
 NO_SANITIZE("cfi-icall") void CefWindowCToCpp::CancelMenu() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, cancel_menu))
+  auto* _struct = GetStruct();
+  if (!_struct->cancel_menu) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -472,26 +545,28 @@ NO_SANITIZE("cfi-icall") void CefWindowCToCpp::CancelMenu() {
 NO_SANITIZE("cfi-icall") CefRefPtr<CefDisplay> CefWindowCToCpp::GetDisplay() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, get_display))
+  auto* _struct = GetStruct();
+  if (!_struct->get_display) {
     return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_display_t* _retval = _struct->get_display(_struct);
+  auto* _retval = _struct->get_display(_struct);
 
   // Return type: refptr_same
-  return CefDisplayCToCpp::Wrap(_retval);
+  return CefDisplayCToCpp_Wrap(_retval);
 }
 
 NO_SANITIZE("cfi-icall")
 CefRect CefWindowCToCpp::GetClientAreaBoundsInScreen() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, get_client_area_bounds_in_screen))
+  auto* _struct = GetStruct();
+  if (!_struct->get_client_area_bounds_in_screen) {
     return CefRect();
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -507,9 +582,10 @@ void CefWindowCToCpp::SetDraggableRegions(
     const std::vector<CefDraggableRegion>& regions) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, set_draggable_regions))
+  auto* _struct = GetStruct();
+  if (!_struct->set_draggable_regions) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -532,16 +608,18 @@ void CefWindowCToCpp::SetDraggableRegions(
   _struct->set_draggable_regions(_struct, regionsCount, regionsList);
 
   // Restore param:regions; type: simple_vec_byref_const
-  if (regionsList)
+  if (regionsList) {
     delete[] regionsList;
+  }
 }
 
 NO_SANITIZE("cfi-icall") CefWindowHandle CefWindowCToCpp::GetWindowHandle() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, get_window_handle))
+  auto* _struct = GetStruct();
+  if (!_struct->get_window_handle) {
     return kNullWindowHandle;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -553,12 +631,13 @@ NO_SANITIZE("cfi-icall") CefWindowHandle CefWindowCToCpp::GetWindowHandle() {
 }
 
 NO_SANITIZE("cfi-icall")
-void CefWindowCToCpp::SendKeyPress(int key_code, uint32 event_flags) {
+void CefWindowCToCpp::SendKeyPress(int key_code, uint32_t event_flags) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, send_key_press))
+  auto* _struct = GetStruct();
+  if (!_struct->send_key_press) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -570,9 +649,10 @@ NO_SANITIZE("cfi-icall")
 void CefWindowCToCpp::SendMouseMove(int screen_x, int screen_y) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, send_mouse_move))
+  auto* _struct = GetStruct();
+  if (!_struct->send_mouse_move) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -586,9 +666,10 @@ void CefWindowCToCpp::SendMouseEvents(cef_mouse_button_type_t button,
                                       bool mouse_up) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, send_mouse_events))
+  auto* _struct = GetStruct();
+  if (!_struct->send_mouse_events) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -601,27 +682,30 @@ void CefWindowCToCpp::SetAccelerator(int command_id,
                                      int key_code,
                                      bool shift_pressed,
                                      bool ctrl_pressed,
-                                     bool alt_pressed) {
+                                     bool alt_pressed,
+                                     bool high_priority) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, set_accelerator))
+  auto* _struct = GetStruct();
+  if (!_struct->set_accelerator) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
   _struct->set_accelerator(_struct, command_id, key_code, shift_pressed,
-                           ctrl_pressed, alt_pressed);
+                           ctrl_pressed, alt_pressed, high_priority);
 }
 
 NO_SANITIZE("cfi-icall")
 void CefWindowCToCpp::RemoveAccelerator(int command_id) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, remove_accelerator))
+  auto* _struct = GetStruct();
+  if (!_struct->remove_accelerator) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -632,9 +716,10 @@ void CefWindowCToCpp::RemoveAccelerator(int command_id) {
 NO_SANITIZE("cfi-icall") void CefWindowCToCpp::RemoveAllAccelerators() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_window_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, remove_all_accelerators))
+  auto* _struct = GetStruct();
+  if (!_struct->remove_all_accelerators) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -642,37 +727,86 @@ NO_SANITIZE("cfi-icall") void CefWindowCToCpp::RemoveAllAccelerators() {
   _struct->remove_all_accelerators(_struct);
 }
 
-NO_SANITIZE("cfi-icall") CefRefPtr<CefWindow> CefWindowCToCpp::AsWindow() {
+NO_SANITIZE("cfi-icall")
+void CefWindowCToCpp::SetThemeColor(int color_id, cef_color_t color) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_panel_t* _struct = reinterpret_cast<cef_panel_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, as_window))
-    return nullptr;
+  auto* _struct = GetStruct();
+  if (!_struct->set_theme_color) {
+    return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_window_t* _retval = _struct->as_window(_struct);
+  _struct->set_theme_color(_struct, color_id, color);
+}
+
+NO_SANITIZE("cfi-icall") void CefWindowCToCpp::ThemeChanged() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->theme_changed) {
+    return;
+  }
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  _struct->theme_changed(_struct);
+}
+
+NO_SANITIZE("cfi-icall")
+cef_runtime_style_t CefWindowCToCpp::GetRuntimeStyle() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->get_runtime_style) {
+    return CEF_RUNTIME_STYLE_DEFAULT;
+  }
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  cef_runtime_style_t _retval = _struct->get_runtime_style(_struct);
+
+  // Return type: simple
+  return _retval;
+}
+
+NO_SANITIZE("cfi-icall") CefRefPtr<CefWindow> CefWindowCToCpp::AsWindow() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_panel_t*>(GetStruct());
+  if (!_struct->as_window) {
+    return nullptr;
+  }
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  auto* _retval = _struct->as_window(_struct);
 
   // Return type: refptr_same
-  return CefWindowCToCpp::Wrap(_retval);
+  return CefWindowCToCpp_Wrap(_retval);
 }
 
 NO_SANITIZE("cfi-icall")
 CefRefPtr<CefFillLayout> CefWindowCToCpp::SetToFillLayout() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_panel_t* _struct = reinterpret_cast<cef_panel_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, set_to_fill_layout))
+  auto* _struct = reinterpret_cast<cef_panel_t*>(GetStruct());
+  if (!_struct->set_to_fill_layout) {
     return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_fill_layout_t* _retval = _struct->set_to_fill_layout(_struct);
+  auto* _retval = _struct->set_to_fill_layout(_struct);
 
   // Return type: refptr_same
-  return CefFillLayoutCToCpp::Wrap(_retval);
+  return CefFillLayoutCToCpp_Wrap(_retval);
 }
 
 NO_SANITIZE("cfi-icall")
@@ -680,41 +814,44 @@ CefRefPtr<CefBoxLayout> CefWindowCToCpp::SetToBoxLayout(
     const CefBoxLayoutSettings& settings) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_panel_t* _struct = reinterpret_cast<cef_panel_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, set_to_box_layout))
+  auto* _struct = reinterpret_cast<cef_panel_t*>(GetStruct());
+  if (!_struct->set_to_box_layout) {
     return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_box_layout_t* _retval = _struct->set_to_box_layout(_struct, &settings);
+  auto* _retval = _struct->set_to_box_layout(_struct, &settings);
 
   // Return type: refptr_same
-  return CefBoxLayoutCToCpp::Wrap(_retval);
+  return CefBoxLayoutCToCpp_Wrap(_retval);
 }
 
 NO_SANITIZE("cfi-icall") CefRefPtr<CefLayout> CefWindowCToCpp::GetLayout() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_panel_t* _struct = reinterpret_cast<cef_panel_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_layout))
+  auto* _struct = reinterpret_cast<cef_panel_t*>(GetStruct());
+  if (!_struct->get_layout) {
     return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_layout_t* _retval = _struct->get_layout(_struct);
+  auto* _retval = _struct->get_layout(_struct);
 
   // Return type: refptr_same
-  return CefLayoutCToCpp::Wrap(_retval);
+  return CefLayoutCToCpp_Wrap(_retval);
 }
 
 NO_SANITIZE("cfi-icall") void CefWindowCToCpp::Layout() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_panel_t* _struct = reinterpret_cast<cef_panel_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, layout))
+  auto* _struct = reinterpret_cast<cef_panel_t*>(GetStruct());
+  if (!_struct->layout) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -726,88 +863,98 @@ NO_SANITIZE("cfi-icall")
 void CefWindowCToCpp::AddChildView(CefRefPtr<CefView> view) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_panel_t* _struct = reinterpret_cast<cef_panel_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, add_child_view))
+  auto* _struct = reinterpret_cast<cef_panel_t*>(GetStruct());
+  if (!_struct->add_child_view) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: view; type: refptr_same
   DCHECK(view.get());
-  if (!view.get())
+  if (!view.get()) {
     return;
+  }
 
   // Execute
-  _struct->add_child_view(_struct, CefViewCToCpp::Unwrap(view));
+  _struct->add_child_view(_struct, CefViewCToCpp_Unwrap(view));
 }
 
 NO_SANITIZE("cfi-icall")
 void CefWindowCToCpp::AddChildViewAt(CefRefPtr<CefView> view, int index) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_panel_t* _struct = reinterpret_cast<cef_panel_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, add_child_view_at))
+  auto* _struct = reinterpret_cast<cef_panel_t*>(GetStruct());
+  if (!_struct->add_child_view_at) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: view; type: refptr_same
   DCHECK(view.get());
-  if (!view.get())
+  if (!view.get()) {
     return;
+  }
   // Verify param: index; type: simple_byval
   DCHECK_GE(index, 0);
-  if (index < 0)
+  if (index < 0) {
     return;
+  }
 
   // Execute
-  _struct->add_child_view_at(_struct, CefViewCToCpp::Unwrap(view), index);
+  _struct->add_child_view_at(_struct, CefViewCToCpp_Unwrap(view), index);
 }
 
 NO_SANITIZE("cfi-icall")
 void CefWindowCToCpp::ReorderChildView(CefRefPtr<CefView> view, int index) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_panel_t* _struct = reinterpret_cast<cef_panel_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, reorder_child_view))
+  auto* _struct = reinterpret_cast<cef_panel_t*>(GetStruct());
+  if (!_struct->reorder_child_view) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: view; type: refptr_same
   DCHECK(view.get());
-  if (!view.get())
+  if (!view.get()) {
     return;
+  }
 
   // Execute
-  _struct->reorder_child_view(_struct, CefViewCToCpp::Unwrap(view), index);
+  _struct->reorder_child_view(_struct, CefViewCToCpp_Unwrap(view), index);
 }
 
 NO_SANITIZE("cfi-icall")
 void CefWindowCToCpp::RemoveChildView(CefRefPtr<CefView> view) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_panel_t* _struct = reinterpret_cast<cef_panel_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, remove_child_view))
+  auto* _struct = reinterpret_cast<cef_panel_t*>(GetStruct());
+  if (!_struct->remove_child_view) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: view; type: refptr_same
   DCHECK(view.get());
-  if (!view.get())
+  if (!view.get()) {
     return;
+  }
 
   // Execute
-  _struct->remove_child_view(_struct, CefViewCToCpp::Unwrap(view));
+  _struct->remove_child_view(_struct, CefViewCToCpp_Unwrap(view));
 }
 
 NO_SANITIZE("cfi-icall") void CefWindowCToCpp::RemoveAllChildViews() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_panel_t* _struct = reinterpret_cast<cef_panel_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, remove_all_child_views))
+  auto* _struct = reinterpret_cast<cef_panel_t*>(GetStruct());
+  if (!_struct->remove_all_child_views) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -818,9 +965,10 @@ NO_SANITIZE("cfi-icall") void CefWindowCToCpp::RemoveAllChildViews() {
 NO_SANITIZE("cfi-icall") size_t CefWindowCToCpp::GetChildViewCount() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_panel_t* _struct = reinterpret_cast<cef_panel_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_child_view_count))
+  auto* _struct = reinterpret_cast<cef_panel_t*>(GetStruct());
+  if (!_struct->get_child_view_count) {
     return 0;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -835,113 +983,121 @@ NO_SANITIZE("cfi-icall")
 CefRefPtr<CefView> CefWindowCToCpp::GetChildViewAt(int index) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_panel_t* _struct = reinterpret_cast<cef_panel_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_child_view_at))
+  auto* _struct = reinterpret_cast<cef_panel_t*>(GetStruct());
+  if (!_struct->get_child_view_at) {
     return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: index; type: simple_byval
   DCHECK_GE(index, 0);
-  if (index < 0)
+  if (index < 0) {
     return nullptr;
+  }
 
   // Execute
-  cef_view_t* _retval = _struct->get_child_view_at(_struct, index);
+  auto* _retval = _struct->get_child_view_at(_struct, index);
 
   // Return type: refptr_same
-  return CefViewCToCpp::Wrap(_retval);
+  return CefViewCToCpp_Wrap(_retval);
 }
 
 NO_SANITIZE("cfi-icall")
 CefRefPtr<CefBrowserView> CefWindowCToCpp::AsBrowserView() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, as_browser_view))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->as_browser_view) {
     return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_browser_view_t* _retval = _struct->as_browser_view(_struct);
+  auto* _retval = _struct->as_browser_view(_struct);
 
   // Return type: refptr_same
-  return CefBrowserViewCToCpp::Wrap(_retval);
+  return CefBrowserViewCToCpp_Wrap(_retval);
 }
 
 NO_SANITIZE("cfi-icall") CefRefPtr<CefButton> CefWindowCToCpp::AsButton() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, as_button))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->as_button) {
     return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_button_t* _retval = _struct->as_button(_struct);
+  auto* _retval = _struct->as_button(_struct);
 
   // Return type: refptr_same
-  return CefButtonCToCpp::Wrap(_retval);
+  return CefButtonCToCpp_Wrap(_retval);
 }
 
 NO_SANITIZE("cfi-icall") CefRefPtr<CefPanel> CefWindowCToCpp::AsPanel() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, as_panel))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->as_panel) {
     return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_panel_t* _retval = _struct->as_panel(_struct);
+  auto* _retval = _struct->as_panel(_struct);
 
   // Return type: refptr_same
-  return CefPanelCToCpp::Wrap(_retval);
+  return CefPanelCToCpp_Wrap(_retval);
 }
 
 NO_SANITIZE("cfi-icall")
 CefRefPtr<CefScrollView> CefWindowCToCpp::AsScrollView() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, as_scroll_view))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->as_scroll_view) {
     return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_scroll_view_t* _retval = _struct->as_scroll_view(_struct);
+  auto* _retval = _struct->as_scroll_view(_struct);
 
   // Return type: refptr_same
-  return CefScrollViewCToCpp::Wrap(_retval);
+  return CefScrollViewCToCpp_Wrap(_retval);
 }
 
 NO_SANITIZE("cfi-icall")
 CefRefPtr<CefTextfield> CefWindowCToCpp::AsTextfield() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, as_textfield))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->as_textfield) {
     return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_textfield_t* _retval = _struct->as_textfield(_struct);
+  auto* _retval = _struct->as_textfield(_struct);
 
   // Return type: refptr_same
-  return CefTextfieldCToCpp::Wrap(_retval);
+  return CefTextfieldCToCpp_Wrap(_retval);
 }
 
 NO_SANITIZE("cfi-icall") CefString CefWindowCToCpp::GetTypeString() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_type_string))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_type_string) {
     return CefString();
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -958,9 +1114,10 @@ NO_SANITIZE("cfi-icall")
 CefString CefWindowCToCpp::ToString(bool include_children) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, to_string))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->to_string) {
     return CefString();
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -976,9 +1133,10 @@ CefString CefWindowCToCpp::ToString(bool include_children) {
 NO_SANITIZE("cfi-icall") bool CefWindowCToCpp::IsValid() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, is_valid))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->is_valid) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -992,9 +1150,10 @@ NO_SANITIZE("cfi-icall") bool CefWindowCToCpp::IsValid() {
 NO_SANITIZE("cfi-icall") bool CefWindowCToCpp::IsAttached() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, is_attached))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->is_attached) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1008,19 +1167,21 @@ NO_SANITIZE("cfi-icall") bool CefWindowCToCpp::IsAttached() {
 NO_SANITIZE("cfi-icall") bool CefWindowCToCpp::IsSame(CefRefPtr<CefView> that) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, is_same))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->is_same) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: that; type: refptr_same
   DCHECK(that.get());
-  if (!that.get())
+  if (!that.get()) {
     return false;
+  }
 
   // Execute
-  int _retval = _struct->is_same(_struct, CefViewCToCpp::Unwrap(that));
+  int _retval = _struct->is_same(_struct, CefViewCToCpp_Unwrap(that));
 
   // Return type: bool
   return _retval ? true : false;
@@ -1030,41 +1191,44 @@ NO_SANITIZE("cfi-icall")
 CefRefPtr<CefViewDelegate> CefWindowCToCpp::GetDelegate() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_delegate))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_delegate) {
     return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_view_delegate_t* _retval = _struct->get_delegate(_struct);
+  auto* _retval = _struct->get_delegate(_struct);
 
   // Return type: refptr_diff
-  return CefViewDelegateCppToC::Unwrap(_retval);
+  return CefViewDelegateCppToC_Unwrap(_retval);
 }
 
 NO_SANITIZE("cfi-icall") CefRefPtr<CefWindow> CefWindowCToCpp::GetWindow() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_window))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_window) {
     return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_window_t* _retval = _struct->get_window(_struct);
+  auto* _retval = _struct->get_window(_struct);
 
   // Return type: refptr_same
-  return CefWindowCToCpp::Wrap(_retval);
+  return CefWindowCToCpp_Wrap(_retval);
 }
 
 NO_SANITIZE("cfi-icall") int CefWindowCToCpp::GetID() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_id))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_id) {
     return 0;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1078,9 +1242,10 @@ NO_SANITIZE("cfi-icall") int CefWindowCToCpp::GetID() {
 NO_SANITIZE("cfi-icall") void CefWindowCToCpp::SetID(int id) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, set_id))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->set_id) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1091,9 +1256,10 @@ NO_SANITIZE("cfi-icall") void CefWindowCToCpp::SetID(int id) {
 NO_SANITIZE("cfi-icall") int CefWindowCToCpp::GetGroupID() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_group_id))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_group_id) {
     return 0;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1107,9 +1273,10 @@ NO_SANITIZE("cfi-icall") int CefWindowCToCpp::GetGroupID() {
 NO_SANITIZE("cfi-icall") void CefWindowCToCpp::SetGroupID(int group_id) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, set_group_id))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->set_group_id) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1120,43 +1287,46 @@ NO_SANITIZE("cfi-icall") void CefWindowCToCpp::SetGroupID(int group_id) {
 NO_SANITIZE("cfi-icall") CefRefPtr<CefView> CefWindowCToCpp::GetParentView() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_parent_view))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_parent_view) {
     return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_view_t* _retval = _struct->get_parent_view(_struct);
+  auto* _retval = _struct->get_parent_view(_struct);
 
   // Return type: refptr_same
-  return CefViewCToCpp::Wrap(_retval);
+  return CefViewCToCpp_Wrap(_retval);
 }
 
 NO_SANITIZE("cfi-icall")
 CefRefPtr<CefView> CefWindowCToCpp::GetViewForID(int id) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_view_for_id))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_view_for_id) {
     return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_view_t* _retval = _struct->get_view_for_id(_struct, id);
+  auto* _retval = _struct->get_view_for_id(_struct, id);
 
   // Return type: refptr_same
-  return CefViewCToCpp::Wrap(_retval);
+  return CefViewCToCpp_Wrap(_retval);
 }
 
 NO_SANITIZE("cfi-icall")
 void CefWindowCToCpp::SetBounds(const CefRect& bounds) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, set_bounds))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->set_bounds) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1167,9 +1337,10 @@ void CefWindowCToCpp::SetBounds(const CefRect& bounds) {
 NO_SANITIZE("cfi-icall") CefRect CefWindowCToCpp::GetBounds() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_bounds))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_bounds) {
     return CefRect();
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1183,9 +1354,10 @@ NO_SANITIZE("cfi-icall") CefRect CefWindowCToCpp::GetBounds() {
 NO_SANITIZE("cfi-icall") CefRect CefWindowCToCpp::GetBoundsInScreen() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_bounds_in_screen))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_bounds_in_screen) {
     return CefRect();
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1199,9 +1371,10 @@ NO_SANITIZE("cfi-icall") CefRect CefWindowCToCpp::GetBoundsInScreen() {
 NO_SANITIZE("cfi-icall") void CefWindowCToCpp::SetSize(const CefSize& size) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, set_size))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->set_size) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1212,9 +1385,10 @@ NO_SANITIZE("cfi-icall") void CefWindowCToCpp::SetSize(const CefSize& size) {
 NO_SANITIZE("cfi-icall") CefSize CefWindowCToCpp::GetSize() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_size))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_size) {
     return CefSize();
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1229,9 +1403,10 @@ NO_SANITIZE("cfi-icall")
 void CefWindowCToCpp::SetPosition(const CefPoint& position) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, set_position))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->set_position) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1242,9 +1417,10 @@ void CefWindowCToCpp::SetPosition(const CefPoint& position) {
 NO_SANITIZE("cfi-icall") CefPoint CefWindowCToCpp::GetPosition() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_position))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_position) {
     return CefPoint();
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1259,9 +1435,10 @@ NO_SANITIZE("cfi-icall")
 void CefWindowCToCpp::SetInsets(const CefInsets& insets) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, set_insets))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->set_insets) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1272,9 +1449,10 @@ void CefWindowCToCpp::SetInsets(const CefInsets& insets) {
 NO_SANITIZE("cfi-icall") CefInsets CefWindowCToCpp::GetInsets() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_insets))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_insets) {
     return CefInsets();
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1288,9 +1466,10 @@ NO_SANITIZE("cfi-icall") CefInsets CefWindowCToCpp::GetInsets() {
 NO_SANITIZE("cfi-icall") CefSize CefWindowCToCpp::GetPreferredSize() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_preferred_size))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_preferred_size) {
     return CefSize();
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1304,9 +1483,10 @@ NO_SANITIZE("cfi-icall") CefSize CefWindowCToCpp::GetPreferredSize() {
 NO_SANITIZE("cfi-icall") void CefWindowCToCpp::SizeToPreferredSize() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, size_to_preferred_size))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->size_to_preferred_size) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1317,9 +1497,10 @@ NO_SANITIZE("cfi-icall") void CefWindowCToCpp::SizeToPreferredSize() {
 NO_SANITIZE("cfi-icall") CefSize CefWindowCToCpp::GetMinimumSize() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_minimum_size))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_minimum_size) {
     return CefSize();
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1333,9 +1514,10 @@ NO_SANITIZE("cfi-icall") CefSize CefWindowCToCpp::GetMinimumSize() {
 NO_SANITIZE("cfi-icall") CefSize CefWindowCToCpp::GetMaximumSize() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_maximum_size))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_maximum_size) {
     return CefSize();
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1349,9 +1531,10 @@ NO_SANITIZE("cfi-icall") CefSize CefWindowCToCpp::GetMaximumSize() {
 NO_SANITIZE("cfi-icall") int CefWindowCToCpp::GetHeightForWidth(int width) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_height_for_width))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_height_for_width) {
     return 0;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1365,9 +1548,10 @@ NO_SANITIZE("cfi-icall") int CefWindowCToCpp::GetHeightForWidth(int width) {
 NO_SANITIZE("cfi-icall") void CefWindowCToCpp::InvalidateLayout() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, invalidate_layout))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->invalidate_layout) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1378,9 +1562,10 @@ NO_SANITIZE("cfi-icall") void CefWindowCToCpp::InvalidateLayout() {
 NO_SANITIZE("cfi-icall") void CefWindowCToCpp::SetVisible(bool visible) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, set_visible))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->set_visible) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1391,9 +1576,10 @@ NO_SANITIZE("cfi-icall") void CefWindowCToCpp::SetVisible(bool visible) {
 NO_SANITIZE("cfi-icall") bool CefWindowCToCpp::IsVisible() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, is_visible))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->is_visible) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1407,9 +1593,10 @@ NO_SANITIZE("cfi-icall") bool CefWindowCToCpp::IsVisible() {
 NO_SANITIZE("cfi-icall") bool CefWindowCToCpp::IsDrawn() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, is_drawn))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->is_drawn) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1423,9 +1610,10 @@ NO_SANITIZE("cfi-icall") bool CefWindowCToCpp::IsDrawn() {
 NO_SANITIZE("cfi-icall") void CefWindowCToCpp::SetEnabled(bool enabled) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, set_enabled))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->set_enabled) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1436,9 +1624,10 @@ NO_SANITIZE("cfi-icall") void CefWindowCToCpp::SetEnabled(bool enabled) {
 NO_SANITIZE("cfi-icall") bool CefWindowCToCpp::IsEnabled() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, is_enabled))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->is_enabled) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1452,9 +1641,10 @@ NO_SANITIZE("cfi-icall") bool CefWindowCToCpp::IsEnabled() {
 NO_SANITIZE("cfi-icall") void CefWindowCToCpp::SetFocusable(bool focusable) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, set_focusable))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->set_focusable) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1465,9 +1655,10 @@ NO_SANITIZE("cfi-icall") void CefWindowCToCpp::SetFocusable(bool focusable) {
 NO_SANITIZE("cfi-icall") bool CefWindowCToCpp::IsFocusable() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, is_focusable))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->is_focusable) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1481,9 +1672,10 @@ NO_SANITIZE("cfi-icall") bool CefWindowCToCpp::IsFocusable() {
 NO_SANITIZE("cfi-icall") bool CefWindowCToCpp::IsAccessibilityFocusable() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, is_accessibility_focusable))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->is_accessibility_focusable) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1494,12 +1686,30 @@ NO_SANITIZE("cfi-icall") bool CefWindowCToCpp::IsAccessibilityFocusable() {
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall") bool CefWindowCToCpp::HasFocus() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->has_focus) {
+    return false;
+  }
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  int _retval = _struct->has_focus(_struct);
+
+  // Return type: bool
+  return _retval ? true : false;
+}
+
 NO_SANITIZE("cfi-icall") void CefWindowCToCpp::RequestFocus() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, request_focus))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->request_focus) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1511,9 +1721,10 @@ NO_SANITIZE("cfi-icall")
 void CefWindowCToCpp::SetBackgroundColor(cef_color_t color) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, set_background_color))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->set_background_color) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1524,9 +1735,10 @@ void CefWindowCToCpp::SetBackgroundColor(cef_color_t color) {
 NO_SANITIZE("cfi-icall") cef_color_t CefWindowCToCpp::GetBackgroundColor() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_background_color))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_background_color) {
     return 0;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1538,12 +1750,31 @@ NO_SANITIZE("cfi-icall") cef_color_t CefWindowCToCpp::GetBackgroundColor() {
 }
 
 NO_SANITIZE("cfi-icall")
+cef_color_t CefWindowCToCpp::GetThemeColor(int color_id) {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_theme_color) {
+    return 0;
+  }
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  cef_color_t _retval = _struct->get_theme_color(_struct, color_id);
+
+  // Return type: simple
+  return _retval;
+}
+
+NO_SANITIZE("cfi-icall")
 bool CefWindowCToCpp::ConvertPointToScreen(CefPoint& point) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, convert_point_to_screen))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->convert_point_to_screen) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1558,9 +1789,10 @@ NO_SANITIZE("cfi-icall")
 bool CefWindowCToCpp::ConvertPointFromScreen(CefPoint& point) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, convert_point_from_screen))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->convert_point_from_screen) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1575,9 +1807,10 @@ NO_SANITIZE("cfi-icall")
 bool CefWindowCToCpp::ConvertPointToWindow(CefPoint& point) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, convert_point_to_window))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->convert_point_to_window) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1592,9 +1825,10 @@ NO_SANITIZE("cfi-icall")
 bool CefWindowCToCpp::ConvertPointFromWindow(CefPoint& point) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, convert_point_from_window))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->convert_point_from_window) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -1610,20 +1844,22 @@ bool CefWindowCToCpp::ConvertPointToView(CefRefPtr<CefView> view,
                                          CefPoint& point) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, convert_point_to_view))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->convert_point_to_view) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: view; type: refptr_same
   DCHECK(view.get());
-  if (!view.get())
+  if (!view.get()) {
     return false;
+  }
 
   // Execute
   int _retval = _struct->convert_point_to_view(
-      _struct, CefViewCToCpp::Unwrap(view), &point);
+      _struct, CefViewCToCpp_Unwrap(view), &point);
 
   // Return type: bool
   return _retval ? true : false;
@@ -1634,20 +1870,22 @@ bool CefWindowCToCpp::ConvertPointFromView(CefRefPtr<CefView> view,
                                            CefPoint& point) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, convert_point_from_view))
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->convert_point_from_view) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: view; type: refptr_same
   DCHECK(view.get());
-  if (!view.get())
+  if (!view.get()) {
     return false;
+  }
 
   // Execute
   int _retval = _struct->convert_point_from_view(
-      _struct, CefViewCToCpp::Unwrap(view), &point);
+      _struct, CefViewCToCpp_Unwrap(view), &point);
 
   // Return type: bool
   return _retval ? true : false;
@@ -1668,7 +1906,7 @@ cef_window_t*
 CefCToCppRefCounted<CefWindowCToCpp, CefWindow, cef_window_t>::UnwrapDerived(
     CefWrapperType type,
     CefWindow* c) {
-  NOTREACHED() << "Unexpected class type: " << type;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
   return nullptr;
 }
 

@@ -23,14 +23,14 @@ class MainContextImpl : public MainContext {
                   bool terminate_when_all_windows_closed);
 
   // MainContext members.
+  CefRefPtr<CefCommandLine> GetCommandLine() override;
   std::string GetConsoleLogPath() override;
   std::string GetDownloadPath(const std::string& file_name) override;
   std::string GetAppWorkingDirectory() override;
-  std::string GetMainURL() override;
+  std::string GetMainURL(CefRefPtr<CefCommandLine> command_line) override;
   cef_color_t GetBackgroundColor() override;
-  bool UseChromeRuntime() override;
-  bool UseViews() override;
-  bool UseWindowlessRendering() override;
+  bool UseViewsGlobal() override;
+  bool UseAlloyStyleGlobal() override;
   bool TouchEventsEnabled() override;
   bool UseDefaultPopup() override;
   void PopulateSettings(CefSettings* settings) override;
@@ -53,7 +53,7 @@ class MainContextImpl : public MainContext {
   // Allow deletion via std::unique_ptr only.
   friend std::default_delete<MainContextImpl>;
 
-  ~MainContextImpl();
+  ~MainContextImpl() override;
 
   // Returns true if the context is in a valid state (initialized and not yet
   // shut down).
@@ -68,19 +68,16 @@ class MainContextImpl : public MainContext {
   bool initialized_ = false;
   bool shutdown_ = false;
 
-  std::string main_url_;
   cef_color_t background_color_ = 0;
   cef_color_t browser_background_color_ = 0;
   bool use_windowless_rendering_;
   int windowless_frame_rate_ = 0;
-  bool use_chrome_runtime_;
   bool use_views_;
+  bool use_alloy_style_;
 
   std::unique_ptr<RootWindowManager> root_window_manager_;
 
-#if defined(OS_WIN)
   bool shared_texture_enabled_;
-#endif
 
   bool external_begin_frame_enabled_;
 

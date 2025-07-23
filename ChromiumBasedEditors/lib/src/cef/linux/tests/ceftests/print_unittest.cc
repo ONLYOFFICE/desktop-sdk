@@ -31,15 +31,16 @@ TEST(PrintTest, SettingsSetGet) {
   EXPECT_EQ(dpi, settings->GetDPI());
 
   CefPrintSettings::PageRangeList page_ranges;
-  page_ranges.push_back(CefRange(1, 3));
-  page_ranges.push_back(CefRange(5, 6));
+  page_ranges.emplace_back(1, 3);
+  page_ranges.emplace_back(5, 6);
   settings->SetPageRanges(page_ranges);
   EXPECT_EQ(page_ranges.size(), settings->GetPageRangesCount());
   CefPrintSettings::PageRangeList page_ranges2;
   settings->GetPageRanges(page_ranges2);
   EXPECT_EQ(page_ranges.size(), page_ranges2.size());
-  for (size_t i = 0; i < page_ranges.size(); ++i)
+  for (size_t i = 0; i < page_ranges.size(); ++i) {
     EXPECT_EQ(page_ranges[i], page_ranges2[i]);
+  }
 
   bool selection_only = true;
   settings->SetSelectionOnly(selection_only);

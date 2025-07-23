@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,11 +9,12 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=06c8402a284783263dc841eb9c2e87be956ec5ef$
+// $hash=7445695dc7c4bbc2129c9bae2657761718b3d4d4$
 //
 
 #include "libcef_dll/ctocpp/select_client_certificate_callback_ctocpp.h"
-#include "libcef_dll/ctocpp/x509certificate_ctocpp.h"
+
+#include "libcef_dll/ctocpp/x509_certificate_ctocpp.h"
 #include "libcef_dll/shutdown_checker.h"
 
 // VIRTUAL METHODS - Body may be edited by hand.
@@ -23,16 +24,17 @@ void CefSelectClientCertificateCallbackCToCpp::Select(
     CefRefPtr<CefX509Certificate> cert) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_select_client_certificate_callback_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, select))
+  auto* _struct = GetStruct();
+  if (!_struct->select) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Unverified params: cert
 
   // Execute
-  _struct->select(_struct, CefX509CertificateCToCpp::Unwrap(cert));
+  _struct->select(_struct, CefX509CertificateCToCpp_Unwrap(cert));
 }
 
 // CONSTRUCTOR - Do not edit by hand.
@@ -53,7 +55,7 @@ CefCToCppRefCounted<CefSelectClientCertificateCallbackCToCpp,
                     CefSelectClientCertificateCallback,
                     cef_select_client_certificate_callback_t>::
     UnwrapDerived(CefWrapperType type, CefSelectClientCertificateCallback* c) {
-  NOTREACHED() << "Unexpected class type: " << type;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
   return nullptr;
 }
 

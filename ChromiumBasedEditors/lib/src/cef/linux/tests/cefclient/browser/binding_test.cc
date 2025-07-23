@@ -9,8 +9,7 @@
 
 #include "tests/cefclient/browser/test_runner.h"
 
-namespace client {
-namespace binding_test {
+namespace client::binding_test {
 
 namespace {
 
@@ -20,19 +19,20 @@ const char kTestMessageName[] = "BindingTest";
 // Handle messages in the browser process.
 class Handler : public CefMessageRouterBrowserSide::Handler {
  public:
-  Handler() {}
+  Handler() = default;
 
   // Called due to cefQuery execution in binding.html.
-  virtual bool OnQuery(CefRefPtr<CefBrowser> browser,
-                       CefRefPtr<CefFrame> frame,
-                       int64 query_id,
-                       const CefString& request,
-                       bool persistent,
-                       CefRefPtr<Callback> callback) override {
+  bool OnQuery(CefRefPtr<CefBrowser> browser,
+               CefRefPtr<CefFrame> frame,
+               int64_t query_id,
+               const CefString& request,
+               bool persistent,
+               CefRefPtr<Callback> callback) override {
     // Only handle messages from the test URL.
     const std::string& url = frame->GetURL();
-    if (!test_runner::IsTestURL(url, kTestUrlPath))
+    if (!test_runner::IsTestURL(url, kTestUrlPath)) {
       return false;
+    }
 
     const std::string& message_name = request;
     if (message_name.find(kTestMessageName) == 0) {
@@ -53,5 +53,4 @@ void CreateMessageHandlers(test_runner::MessageHandlerSet& handlers) {
   handlers.insert(new Handler());
 }
 
-}  // namespace binding_test
-}  // namespace client
+}  // namespace client::binding_test

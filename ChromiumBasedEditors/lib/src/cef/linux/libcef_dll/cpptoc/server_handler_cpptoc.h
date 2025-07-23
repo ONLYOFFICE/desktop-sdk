@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=ba72a7b9571b7e2d9d490a02972855eca1ff987f$
+// $hash=f4c6ded29253a533851318f5c27b276db1bc8cb1$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_SERVER_HANDLER_CPPTOC_H_
@@ -34,5 +34,8 @@ class CefServerHandlerCppToC
   CefServerHandlerCppToC();
   virtual ~CefServerHandlerCppToC();
 };
+
+constexpr auto CefServerHandlerCppToC_Wrap = CefServerHandlerCppToC::Wrap;
+constexpr auto CefServerHandlerCppToC_Unwrap = CefServerHandlerCppToC::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_SERVER_HANDLER_CPPTOC_H_

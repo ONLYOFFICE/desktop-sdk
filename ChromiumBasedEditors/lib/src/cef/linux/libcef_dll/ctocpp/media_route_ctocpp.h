@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=c8f6db85d4b577c287a587a72aa11d6e10f55d78$
+// $hash=36ad853b121b3bd7a914f5b270923084bdb0fe5e$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_MEDIA_ROUTE_CTOCPP_H_
@@ -40,5 +40,8 @@ class CefMediaRouteCToCpp : public CefCToCppRefCounted<CefMediaRouteCToCpp,
   void SendRouteMessage(const void* message, size_t message_size) override;
   void Terminate() override;
 };
+
+constexpr auto CefMediaRouteCToCpp_Wrap = CefMediaRouteCToCpp::Wrap;
+constexpr auto CefMediaRouteCToCpp_Unwrap = CefMediaRouteCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_MEDIA_ROUTE_CTOCPP_H_

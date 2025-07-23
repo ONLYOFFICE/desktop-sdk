@@ -37,8 +37,8 @@ class AccessibilityTestHandler : public TestHandler,
                                  public CefRenderHandler,
                                  public CefAccessibilityHandler {
  public:
-  AccessibilityTestHandler(const AccessibilityTestType& type)
-      : test_type_(type), edit_box_id_(-1), accessibility_disabled_(false) {}
+  explicit AccessibilityTestHandler(const AccessibilityTestType& type)
+      : test_type_(type) {}
 
   CefRefPtr<CefAccessibilityHandler> GetAccessibilityHandler() override {
     return this;
@@ -171,8 +171,9 @@ class AccessibilityTestHandler : public TestHandler,
         } else {
           // Retrieve the "focus" event.
           CefRefPtr<CefDictionaryValue> event;
-          if (!GetFirstMatchingEvent(value, "focus", event))
+          if (!GetFirstMatchingEvent(value, "focus", event)) {
             return;
+          }
           EXPECT_TRUE(event.get());
 
           // Verify that focus is set to expected element edit_box.
@@ -268,16 +269,18 @@ class AccessibilityTestHandler : public TestHandler,
 
   static size_t GetUpdateListSize(CefRefPtr<CefValue> value) {
     CefRefPtr<CefListValue> updates = GetUpdateList(value);
-    if (updates)
+    if (updates) {
       return updates->GetSize();
+    }
     return 0U;
   }
 
   static CefRefPtr<CefDictionaryValue> GetUpdateValue(CefRefPtr<CefValue> value,
                                                       size_t index) {
     CefRefPtr<CefListValue> updates = GetUpdateList(value);
-    if (!updates)
+    if (!updates) {
       return nullptr;
+    }
     EXPECT_LT(index, updates->GetSize());
     CefRefPtr<CefDictionaryValue> update = updates->GetDictionary(index);
     EXPECT_TRUE(update);
@@ -295,16 +298,18 @@ class AccessibilityTestHandler : public TestHandler,
 
   static size_t GetEventListSize(CefRefPtr<CefValue> value) {
     CefRefPtr<CefListValue> events = GetEventList(value);
-    if (events)
+    if (events) {
       return events->GetSize();
+    }
     return 0U;
   }
 
   static CefRefPtr<CefDictionaryValue> GetEventValue(CefRefPtr<CefValue> value,
                                                      size_t index) {
     CefRefPtr<CefListValue> events = GetEventList(value);
-    if (!events)
+    if (!events) {
       return nullptr;
+    }
     EXPECT_LT(index, events->GetSize());
     CefRefPtr<CefDictionaryValue> event = events->GetDictionary(index);
     EXPECT_TRUE(event);
@@ -314,10 +319,12 @@ class AccessibilityTestHandler : public TestHandler,
   static void GetFirstUpdateAndEvent(CefRefPtr<CefValue> value,
                                      CefRefPtr<CefDictionaryValue>& update,
                                      CefRefPtr<CefDictionaryValue>& event) {
-    if (GetUpdateListSize(value) > 0U)
+    if (GetUpdateListSize(value) > 0U) {
       update = GetUpdateValue(value, 0U);
-    if (GetEventListSize(value) > 0U)
+    }
+    if (GetEventListSize(value) > 0U) {
       event = GetEventValue(value, 0U);
+    }
   }
 
   static bool GetFirstMatchingEvent(CefRefPtr<CefValue> value,
@@ -417,8 +424,8 @@ class AccessibilityTestHandler : public TestHandler,
   }
 
   AccessibilityTestType test_type_;
-  int edit_box_id_;
-  bool accessibility_disabled_;
+  int edit_box_id_ = -1;
+  bool accessibility_disabled_ = false;
   TrackCallback got_hide_edit_box_;
   TrackCallback got_accessibility_location_change_;
 

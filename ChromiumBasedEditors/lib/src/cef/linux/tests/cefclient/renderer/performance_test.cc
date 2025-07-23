@@ -11,8 +11,7 @@
 #include "include/wrapper/cef_stream_resource_handler.h"
 #include "tests/cefclient/renderer/performance_test_setup.h"
 
-namespace client {
-namespace performance_test {
+namespace client::performance_test {
 
 // Use more interations for a Release build.
 #if DCHECK_IS_ON()
@@ -29,13 +28,13 @@ const char kPerfTestReturnValue[] = "PerfTestReturnValue";
 
 class V8Handler : public CefV8Handler {
  public:
-  V8Handler() {}
+  V8Handler() = default;
 
-  virtual bool Execute(const CefString& name,
-                       CefRefPtr<CefV8Value> object,
-                       const CefV8ValueList& arguments,
-                       CefRefPtr<CefV8Value>& retval,
-                       CefString& exception) override {
+  bool Execute(const CefString& name,
+               CefRefPtr<CefV8Value> object,
+               const CefV8ValueList& arguments,
+               CefRefPtr<CefV8Value>& retval,
+               CefString& exception) override {
     if (name == kRunPerfTest) {
       if (arguments.size() == 1 && arguments[0]->IsString()) {
         // Run the specified perf test.
@@ -45,9 +44,9 @@ class V8Handler : public CefV8Handler {
         for (int i = 0; i < kPerfTestsCount; ++i) {
           if (test == kPerfTests[i].name) {
             // Execute the test.
-            int64 delta = kPerfTests[i].test(kPerfTests[i].iterations);
+            int64_t delta = kPerfTests[i].test(kPerfTests[i].iterations);
 
-            retval = CefV8Value::CreateInt(static_cast<int32>(delta));
+            retval = CefV8Value::CreateInt(static_cast<int32_t>(delta));
             found = true;
             break;
           }
@@ -74,7 +73,7 @@ class V8Handler : public CefV8Handler {
       if (arguments.size() == 0) {
         retval = CefV8Value::CreateInt(1);
       } else if (arguments.size() == 1 && arguments[0]->IsInt()) {
-        int32 type = arguments[0]->GetIntValue();
+        int32_t type = arguments[0]->GetIntValue();
         switch (type) {
           case 0:
             retval = CefV8Value::CreateUndefined();
@@ -126,12 +125,12 @@ class V8Handler : public CefV8Handler {
 // Handle bindings in the render process.
 class RenderDelegate : public ClientAppRenderer::Delegate {
  public:
-  RenderDelegate() {}
+  RenderDelegate() = default;
 
-  virtual void OnContextCreated(CefRefPtr<ClientAppRenderer> app,
-                                CefRefPtr<CefBrowser> browser,
-                                CefRefPtr<CefFrame> frame,
-                                CefRefPtr<CefV8Context> context) override {
+  void OnContextCreated(CefRefPtr<ClientAppRenderer> app,
+                        CefRefPtr<CefBrowser> browser,
+                        CefRefPtr<CefFrame> frame,
+                        CefRefPtr<CefV8Context> context) override {
     CefRefPtr<CefV8Value> object = context->GetGlobal();
 
     CefRefPtr<CefV8Handler> handler = new V8Handler();
@@ -158,5 +157,4 @@ void CreateDelegates(ClientAppRenderer::DelegateSet& delegates) {
   delegates.insert(new RenderDelegate);
 }
 
-}  // namespace performance_test
-}  // namespace client
+}  // namespace client::performance_test

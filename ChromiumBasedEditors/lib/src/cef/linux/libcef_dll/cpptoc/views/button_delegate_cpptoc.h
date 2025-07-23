@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=455b4eb400cc642cfb4cf0089b12059b8be31af6$
+// $hash=99310cec22b3f5b7abb44e429706e2aa378995af$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_VIEWS_BUTTON_DELEGATE_CPPTOC_H_
@@ -36,5 +36,8 @@ class CefButtonDelegateCppToC
   CefButtonDelegateCppToC();
   virtual ~CefButtonDelegateCppToC();
 };
+
+constexpr auto CefButtonDelegateCppToC_Wrap = CefButtonDelegateCppToC::Wrap;
+constexpr auto CefButtonDelegateCppToC_Unwrap = CefButtonDelegateCppToC::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_VIEWS_BUTTON_DELEGATE_CPPTOC_H_

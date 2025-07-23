@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,10 +9,11 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=9350838bdab0fb5944a83d88f3cdd07485934de3$
+// $hash=ce8c52f4eede293b684111bf1700f6af740a2884$
 //
 
 #include "libcef_dll/ctocpp/test/translator_test_ref_ptr_library_ctocpp.h"
+
 #include "libcef_dll/ctocpp/test/translator_test_ref_ptr_library_child_child_ctocpp.h"
 #include "libcef_dll/ctocpp/test/translator_test_ref_ptr_library_child_ctocpp.h"
 #include "libcef_dll/shutdown_checker.h"
@@ -20,18 +21,17 @@
 // STATIC METHODS - Body may be edited by hand.
 
 NO_SANITIZE("cfi-icall")
-CefRefPtr<CefTranslatorTestRefPtrLibrary>
-CefTranslatorTestRefPtrLibrary::Create(int value) {
+CefRefPtr<CefTranslatorTestRefPtrLibrary> CefTranslatorTestRefPtrLibrary::
+    Create(int value) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_translator_test_ref_ptr_library_t* _retval =
-      cef_translator_test_ref_ptr_library_create(value);
+  auto* _retval = cef_translator_test_ref_ptr_library_create(value);
 
   // Return type: refptr_same
-  return CefTranslatorTestRefPtrLibraryCToCpp::Wrap(_retval);
+  return CefTranslatorTestRefPtrLibraryCToCpp_Wrap(_retval);
 }
 
 // VIRTUAL METHODS - Body may be edited by hand.
@@ -39,9 +39,10 @@ CefTranslatorTestRefPtrLibrary::Create(int value) {
 NO_SANITIZE("cfi-icall") int CefTranslatorTestRefPtrLibraryCToCpp::GetValue() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_translator_test_ref_ptr_library_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, get_value))
+  auto* _struct = GetStruct();
+  if (!_struct->get_value) {
     return 0;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -56,9 +57,10 @@ NO_SANITIZE("cfi-icall")
 void CefTranslatorTestRefPtrLibraryCToCpp::SetValue(int value) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_translator_test_ref_ptr_library_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, set_value))
+  auto* _struct = GetStruct();
+  if (!_struct->set_value) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -84,15 +86,15 @@ CefCToCppRefCounted<CefTranslatorTestRefPtrLibraryCToCpp,
     UnwrapDerived(CefWrapperType type, CefTranslatorTestRefPtrLibrary* c) {
   if (type == WT_TRANSLATOR_TEST_REF_PTR_LIBRARY_CHILD) {
     return reinterpret_cast<cef_translator_test_ref_ptr_library_t*>(
-        CefTranslatorTestRefPtrLibraryChildCToCpp::Unwrap(
+        CefTranslatorTestRefPtrLibraryChildCToCpp_Unwrap(
             reinterpret_cast<CefTranslatorTestRefPtrLibraryChild*>(c)));
   }
   if (type == WT_TRANSLATOR_TEST_REF_PTR_LIBRARY_CHILD_CHILD) {
     return reinterpret_cast<cef_translator_test_ref_ptr_library_t*>(
-        CefTranslatorTestRefPtrLibraryChildChildCToCpp::Unwrap(
+        CefTranslatorTestRefPtrLibraryChildChildCToCpp_Unwrap(
             reinterpret_cast<CefTranslatorTestRefPtrLibraryChildChild*>(c)));
   }
-  NOTREACHED() << "Unexpected class type: " << type;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
   return nullptr;
 }
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=a16d73107ffbbcdb06153c0bfcc5e4ac43bbadb0$
+// $hash=b2c3395a0f549c3e25878cf33b619a5bb6d0f132$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_VIEWS_WINDOW_CTOCPP_H_
@@ -21,7 +21,12 @@
 #endif
 
 #include <vector>
+
+#include "include/capi/views/cef_browser_view_capi.h"
+#include "include/capi/views/cef_view_capi.h"
 #include "include/capi/views/cef_window_capi.h"
+#include "include/views/cef_browser_view.h"
+#include "include/views/cef_view.h"
 #include "include/views/cef_window.h"
 #include "libcef_dll/ctocpp/ctocpp_ref_counted.h"
 
@@ -35,6 +40,8 @@ class CefWindowCToCpp
 
   // CefWindow methods.
   void Show() override;
+  void ShowAsBrowserModalDialog(
+      CefRefPtr<CefBrowserView> browser_view) override;
   void Hide() override;
   void CenterWindow(const CefSize& size) override;
   void Close() override;
@@ -52,6 +59,7 @@ class CefWindowCToCpp
   bool IsMaximized() override;
   bool IsMinimized() override;
   bool IsFullscreen() override;
+  CefRefPtr<CefView> GetFocusedView() override;
   void SetTitle(const CefString& title) override;
   CefString GetTitle() override;
   void SetWindowIcon(CefRefPtr<CefImage> image) override;
@@ -60,7 +68,8 @@ class CefWindowCToCpp
   CefRefPtr<CefImage> GetWindowAppIcon() override;
   CefRefPtr<CefOverlayController> AddOverlayView(
       CefRefPtr<CefView> view,
-      cef_docking_mode_t docking_mode) override;
+      cef_docking_mode_t docking_mode,
+      bool can_activate) override;
   void ShowMenu(CefRefPtr<CefMenuModel> menu_model,
                 const CefPoint& screen_point,
                 cef_menu_anchor_position_t anchor_position) override;
@@ -70,7 +79,7 @@ class CefWindowCToCpp
   void SetDraggableRegions(
       const std::vector<CefDraggableRegion>& regions) override;
   CefWindowHandle GetWindowHandle() override;
-  void SendKeyPress(int key_code, uint32 event_flags) override;
+  void SendKeyPress(int key_code, uint32_t event_flags) override;
   void SendMouseMove(int screen_x, int screen_y) override;
   void SendMouseEvents(cef_mouse_button_type_t button,
                        bool mouse_down,
@@ -79,9 +88,13 @@ class CefWindowCToCpp
                       int key_code,
                       bool shift_pressed,
                       bool ctrl_pressed,
-                      bool alt_pressed) override;
+                      bool alt_pressed,
+                      bool high_priority) override;
   void RemoveAccelerator(int command_id) override;
   void RemoveAllAccelerators() override;
+  void SetThemeColor(int color_id, cef_color_t color) override;
+  void ThemeChanged() override;
+  cef_runtime_style_t GetRuntimeStyle() override;
 
   // CefPanel methods.
   CefRefPtr<CefWindow> AsWindow() override;
@@ -140,9 +153,11 @@ class CefWindowCToCpp
   void SetFocusable(bool focusable) override;
   bool IsFocusable() override;
   bool IsAccessibilityFocusable() override;
+  bool HasFocus() override;
   void RequestFocus() override;
   void SetBackgroundColor(cef_color_t color) override;
   cef_color_t GetBackgroundColor() override;
+  cef_color_t GetThemeColor(int color_id) override;
   bool ConvertPointToScreen(CefPoint& point) override;
   bool ConvertPointFromScreen(CefPoint& point) override;
   bool ConvertPointToWindow(CefPoint& point) override;
@@ -150,5 +165,8 @@ class CefWindowCToCpp
   bool ConvertPointToView(CefRefPtr<CefView> view, CefPoint& point) override;
   bool ConvertPointFromView(CefRefPtr<CefView> view, CefPoint& point) override;
 };
+
+constexpr auto CefWindowCToCpp_Wrap = CefWindowCToCpp::Wrap;
+constexpr auto CefWindowCToCpp_Unwrap = CefWindowCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_VIEWS_WINDOW_CTOCPP_H_

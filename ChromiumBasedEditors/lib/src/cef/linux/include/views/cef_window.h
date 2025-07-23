@@ -45,6 +45,9 @@
 #include "include/views/cef_panel.h"
 #include "include/views/cef_window_delegate.h"
 
+class CefBrowserView;
+class CefView;
+
 ///
 /// A Window is a top-level Window/widget in the Views hierarchy. By default it
 /// will have a non-client area with title bar, icon and buttons that supports
@@ -67,6 +70,20 @@ class CefWindow : public CefPanel {
   ///
   /*--cef()--*/
   virtual void Show() = 0;
+
+  ///
+  /// Show the Window as a browser modal dialog relative to |browser_view|. A
+  /// parent Window must be returned via CefWindowDelegate::GetParentWindow()
+  /// and |browser_view| must belong to that parent Window. While this Window is
+  /// visible, |browser_view| will be disabled while other controls in the
+  /// parent Window remain enabled. Navigating or destroying the |browser_view|
+  /// will close this Window automatically. Alternately, use Show() and return
+  /// true from CefWindowDelegate::IsWindowModalDialog() for a window modal
+  /// dialog where all controls in the parent Window are disabled.
+  ///
+  /*--cef()--*/
+  virtual void ShowAsBrowserModalDialog(
+      CefRefPtr<CefBrowserView> browser_view) = 0;
 
   ///
   /// Hide the Window.
@@ -149,7 +166,9 @@ class CefWindow : public CefPanel {
   virtual void Restore() = 0;
 
   ///
-  /// Set fullscreen Window state.
+  /// Set fullscreen Window state. The
+  /// CefWindowDelegate::OnWindowFullscreenTransition method will be called
+  /// during the fullscreen transition for notification purposes.
   ///
   /*--cef()--*/
   virtual void SetFullscreen(bool fullscreen) = 0;
@@ -171,6 +190,15 @@ class CefWindow : public CefPanel {
   ///
   /*--cef()--*/
   virtual bool IsFullscreen() = 0;
+
+  ///
+  /// Returns the View that currently has focus in this Window, or nullptr if no
+  /// View currently has focus. A Window may have a focused View even if it is
+  /// not currently active. Any focus changes while a Window is not active may
+  /// be applied after that Window next becomes active.
+  ///
+  /*--cef()--*/
+  virtual CefRefPtr<CefView> GetFocusedView() = 0;
 
   ///
   /// Set the Window title.
@@ -215,8 +243,9 @@ class CefWindow : public CefPanel {
   ///
   /// Add a View that will be overlayed on the Window contents with absolute
   /// positioning and high z-order. Positioning is controlled by |docking_mode|
-  /// as described below. The returned CefOverlayController object is used to
-  /// control the overlay. Overlays are hidden by default.
+  /// as described below. Setting |can_activate| to true will allow the overlay
+  /// view to receive input focus. The returned CefOverlayController object is
+  /// used to control the overlay. Overlays are hidden by default.
   ///
   /// With CEF_DOCKING_MODE_CUSTOM:
   ///   1. The overlay is initially hidden, sized to |view|'s preferred size,
@@ -244,7 +273,8 @@ class CefWindow : public CefPanel {
   /*--cef()--*/
   virtual CefRefPtr<CefOverlayController> AddOverlayView(
       CefRefPtr<CefView> view,
-      cef_docking_mode_t docking_mode) = 0;
+      cef_docking_mode_t docking_mode,
+      bool can_activate) = 0;
 
   ///
   /// Show a menu with contents |menu_model|. |screen_point| specifies the menu
@@ -300,7 +330,7 @@ class CefWindow : public CefPanel {
   /// primarily for testing purposes.
   ///
   /*--cef()--*/
-  virtual void SendKeyPress(int key_code, uint32 event_flags) = 0;
+  virtual void SendKeyPress(int key_code, uint32_t event_flags) = 0;
 
   ///
   /// Simulate a mouse move. The mouse cursor will be moved to the specified
@@ -326,16 +356,25 @@ class CefWindow : public CefPanel {
 
   ///
   /// Set the keyboard accelerator for the specified |command_id|. |key_code|
-  /// can be any virtual key or character value.
+  /// can be any virtual key or character value. Required modifier keys are
+  /// specified by |shift_pressed|, |ctrl_pressed| and/or |alt_pressed|.
   /// CefWindowDelegate::OnAccelerator will be called if the keyboard
   /// combination is triggered while this window has focus.
+  ///
+  /// The |high_priority| value will be considered if a child CefBrowserView has
+  /// focus when the keyboard combination is triggered. If |high_priority| is
+  /// true then the key event will not be forwarded to the web content
+  /// (`keydown` event handler) or CefKeyboardHandler first. If |high_priority|
+  /// is false then the behavior will depend on the
+  /// CefBrowserView::SetPreferAccelerators configuration.
   ///
   /*--cef()--*/
   virtual void SetAccelerator(int command_id,
                               int key_code,
                               bool shift_pressed,
                               bool ctrl_pressed,
-                              bool alt_pressed) = 0;
+                              bool alt_pressed,
+                              bool high_priority) = 0;
 
   ///
   /// Remove the keyboard accelerator for the specified |command_id|.
@@ -348,6 +387,50 @@ class CefWindow : public CefPanel {
   ///
   /*--cef()--*/
   virtual void RemoveAllAccelerators() = 0;
+
+  ///
+  /// Override a standard theme color or add a custom color associated with
+  /// |color_id|. See cef_color_ids.h for standard ID values. Recommended usage
+  /// is as follows:
+  ///
+  /// 1. Customize the default native/OS theme by calling SetThemeColor before
+  ///    showing the first Window. When done setting colors call
+  ///    CefWindow::ThemeChanged to trigger CefViewDelegate::OnThemeChanged
+  ///    notifications.
+  /// 2. Customize the current native/OS or Chrome theme after it changes by
+  ///    calling SetThemeColor from the CefWindowDelegate::OnThemeColorsChanged
+  ///    callback. CefViewDelegate::OnThemeChanged notifications will then be
+  ///    triggered automatically.
+  ///
+  /// The configured color will be available immediately via
+  /// CefView::GetThemeColor and will be applied to each View in this Window's
+  /// component hierarchy when CefViewDelegate::OnThemeChanged is called. See
+  /// OnThemeColorsChanged documentation for additional details.
+  ///
+  /// Clients wishing to add custom colors should use |color_id| values >=
+  /// CEF_ChromeColorsEnd.
+  ///
+  /*--cef()--*/
+  virtual void SetThemeColor(int color_id, cef_color_t color) = 0;
+
+  ///
+  /// Trigger CefViewDelegate::OnThemeChanged callbacks for each View in this
+  /// Window's component hierarchy. Unlike a native/OS or Chrome theme change
+  /// this method does not reset theme colors to standard values and does not
+  /// result in a call to CefWindowDelegate::OnThemeColorsChanged.
+  ///
+  /// Do not call this method from CefWindowDelegate::OnThemeColorsChanged or
+  /// CefViewDelegate::OnThemeChanged.
+  ///
+  /*--cef()--*/
+  virtual void ThemeChanged() = 0;
+
+  ///
+  /// Returns the runtime style for this Window (ALLOY or CHROME). See
+  /// cef_runtime_style_t documentation for details.
+  ///
+  /*--cef(default_retval=CEF_RUNTIME_STYLE_DEFAULT)--*/
+  virtual cef_runtime_style_t GetRuntimeStyle() = 0;
 };
 
 #endif  // CEF_INCLUDE_VIEWS_CEF_WINDOW_H_

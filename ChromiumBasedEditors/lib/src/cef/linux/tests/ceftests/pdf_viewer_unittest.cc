@@ -3,7 +3,6 @@
 // can be found in the LICENSE file.
 
 #include "include/base/cef_callback.h"
-#include "include/cef_pack_resources.h"
 #include "include/cef_request_context_handler.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "include/wrapper/cef_stream_resource_handler.h"
@@ -15,14 +14,14 @@
 
 namespace {
 
-const char kPdfHtmlUrl[] = "http://tests/pdf.html";
-const char kPdfDirectUrl[] = "http://tests/pdf.pdf";
+const char kPdfHtmlUrl[] = "https://tests/pdf.html";
+const char kPdfDirectUrl[] = "https://tests/pdf.pdf";
 
 // Delay waiting for iframe tests to load the PDF file.
 #if defined(OS_LINUX)
-const int64 kPdfLoadDelayMs = 7000;
+const int64_t kPdfLoadDelayMs = 7000;
 #else
-const int64 kPdfLoadDelayMs = 5000;
+const int64_t kPdfLoadDelayMs = 5000;
 #endif
 
 // Browser-side test handler.
@@ -92,14 +91,16 @@ class PdfViewerTestHandler : public TestHandler, public CefContextMenuHandler {
                  int httpStatusCode) override {
     bool is_pdf1 = false;
     const std::string& url = frame->GetURL();
-    if (url == "about:blank")
+    if (url == "about:blank" || url.find("chrome-extension://") == 0) {
       return;
+    }
 
     if (url == kPdfHtmlUrl) {
-      if (!got_on_load_end_html_)
+      if (!got_on_load_end_html_) {
         got_on_load_end_html_.yes();
-      else
+      } else {
         NOTREACHED();
+      }
     } else if (url == kPdfDirectUrl) {
       if (!got_on_load_end_pdf1_) {
         got_on_load_end_pdf1_.yes();
@@ -115,8 +116,7 @@ class PdfViewerTestHandler : public TestHandler, public CefContextMenuHandler {
 
     if (is_pdf1) {
       // The first PDF document has loaded.
-      // TODO(chrome): Add support for custom context menus.
-      if (IsChromeRuntimeEnabled() || got_context_menu_dismissed_) {
+      if (got_context_menu_dismissed_) {
         // After context menu display. Destroy the test.
         CefPostDelayedTask(
             TID_UI, base::BindOnce(&PdfViewerTestHandler::DestroyTest, this),
@@ -146,8 +146,7 @@ class PdfViewerTestHandler : public TestHandler, public CefContextMenuHandler {
     }
 
     // Send right-click mouse down and mouse up to tigger context menu.
-    browser->GetHost()->SendMouseClickEvent(mouse_event, MBT_RIGHT, false, 1);
-    browser->GetHost()->SendMouseClickEvent(mouse_event, MBT_RIGHT, true, 1);
+    SendMouseClickEvent(browser, mouse_event, MBT_RIGHT);
   }
 
   bool RunContextMenu(CefRefPtr<CefBrowser> browser,
@@ -174,14 +173,8 @@ class PdfViewerTestHandler : public TestHandler, public CefContextMenuHandler {
   }
 
   void DestroyTest() override {
-    // TODO(chrome): Add support for custom context menus.
-    if (!IsChromeRuntimeEnabled()) {
-      EXPECT_TRUE(got_run_context_menu_);
-      EXPECT_TRUE(got_context_menu_dismissed_);
-    } else {
-      EXPECT_FALSE(got_run_context_menu_);
-      EXPECT_FALSE(got_context_menu_dismissed_);
-    }
+    EXPECT_TRUE(got_run_context_menu_);
+    EXPECT_TRUE(got_context_menu_dismissed_);
 
     if (url_ == kPdfHtmlUrl) {
       // The HTML file will load the PDF twice in iframes.

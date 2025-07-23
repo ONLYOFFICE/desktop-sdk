@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,10 +9,11 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=e5112f59f64307d7059920de8a59527494dad903$
+// $hash=2bc5e0ea3095ce2944bb45ab64483ea4599ed0eb$
 //
 
 #include "libcef_dll/cpptoc/urlrequest_client_cpptoc.h"
+
 #include "libcef_dll/ctocpp/auth_callback_ctocpp.h"
 #include "libcef_dll/ctocpp/urlrequest_ctocpp.h"
 #include "libcef_dll/shutdown_checker.h"
@@ -23,71 +24,77 @@ namespace {
 
 void CEF_CALLBACK
 urlrequest_client_on_request_complete(struct _cef_urlrequest_client_t* self,
-                                      cef_urlrequest_t* request) {
+                                      struct _cef_urlrequest_t* request) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return;
+  }
   // Verify param: request; type: refptr_diff
   DCHECK(request);
-  if (!request)
+  if (!request) {
     return;
+  }
 
   // Execute
   CefURLRequestClientCppToC::Get(self)->OnRequestComplete(
-      CefURLRequestCToCpp::Wrap(request));
+      CefURLRequestCToCpp_Wrap(request));
 }
 
 void CEF_CALLBACK
 urlrequest_client_on_upload_progress(struct _cef_urlrequest_client_t* self,
-                                     cef_urlrequest_t* request,
-                                     int64 current,
-                                     int64 total) {
+                                     struct _cef_urlrequest_t* request,
+                                     int64_t current,
+                                     int64_t total) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return;
+  }
   // Verify param: request; type: refptr_diff
   DCHECK(request);
-  if (!request)
+  if (!request) {
     return;
+  }
 
   // Execute
   CefURLRequestClientCppToC::Get(self)->OnUploadProgress(
-      CefURLRequestCToCpp::Wrap(request), current, total);
+      CefURLRequestCToCpp_Wrap(request), current, total);
 }
 
 void CEF_CALLBACK
 urlrequest_client_on_download_progress(struct _cef_urlrequest_client_t* self,
-                                       cef_urlrequest_t* request,
-                                       int64 current,
-                                       int64 total) {
+                                       struct _cef_urlrequest_t* request,
+                                       int64_t current,
+                                       int64_t total) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return;
+  }
   // Verify param: request; type: refptr_diff
   DCHECK(request);
-  if (!request)
+  if (!request) {
     return;
+  }
 
   // Execute
   CefURLRequestClientCppToC::Get(self)->OnDownloadProgress(
-      CefURLRequestCToCpp::Wrap(request), current, total);
+      CefURLRequestCToCpp_Wrap(request), current, total);
 }
 
 void CEF_CALLBACK
 urlrequest_client_on_download_data(struct _cef_urlrequest_client_t* self,
-                                   cef_urlrequest_t* request,
+                                   struct _cef_urlrequest_t* request,
                                    const void* data,
                                    size_t data_length) {
   shutdown_checker::AssertNotShutdown();
@@ -95,20 +102,23 @@ urlrequest_client_on_download_data(struct _cef_urlrequest_client_t* self,
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return;
+  }
   // Verify param: request; type: refptr_diff
   DCHECK(request);
-  if (!request)
+  if (!request) {
     return;
+  }
   // Verify param: data; type: simple_byaddr
   DCHECK(data);
-  if (!data)
+  if (!data) {
     return;
+  }
 
   // Execute
   CefURLRequestClientCppToC::Get(self)->OnDownloadData(
-      CefURLRequestCToCpp::Wrap(request), data, data_length);
+      CefURLRequestCToCpp_Wrap(request), data, data_length);
 }
 
 int CEF_CALLBACK
@@ -118,32 +128,36 @@ urlrequest_client_get_auth_credentials(struct _cef_urlrequest_client_t* self,
                                        int port,
                                        const cef_string_t* realm,
                                        const cef_string_t* scheme,
-                                       cef_auth_callback_t* callback) {
+                                       struct _cef_auth_callback_t* callback) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return 0;
+  }
   // Verify param: host; type: string_byref_const
   DCHECK(host);
-  if (!host)
+  if (!host) {
     return 0;
+  }
   // Verify param: scheme; type: string_byref_const
   DCHECK(scheme);
-  if (!scheme)
+  if (!scheme) {
     return 0;
+  }
   // Verify param: callback; type: refptr_diff
   DCHECK(callback);
-  if (!callback)
+  if (!callback) {
     return 0;
+  }
   // Unverified params: realm
 
   // Execute
   bool _retval = CefURLRequestClientCppToC::Get(self)->GetAuthCredentials(
       isProxy ? true : false, CefString(host), port, CefString(realm),
-      CefString(scheme), CefAuthCallbackCToCpp::Wrap(callback));
+      CefString(scheme), CefAuthCallbackCToCpp_Wrap(callback));
 
   // Return type: bool
   return _retval;
@@ -173,7 +187,7 @@ CefRefPtr<CefURLRequestClient> CefCppToCRefCounted<
     CefURLRequestClient,
     cef_urlrequest_client_t>::UnwrapDerived(CefWrapperType type,
                                             cef_urlrequest_client_t* s) {
-  NOTREACHED() << "Unexpected class type: " << type;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
   return nullptr;
 }
 

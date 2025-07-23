@@ -2,12 +2,14 @@
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 
-#include "include/cef_v8.h"
 #include "tests/cefclient/renderer/performance_test.h"
+
+#include <array>
+
+#include "include/cef_v8.h"
 #include "tests/cefclient/renderer/performance_test_setup.h"
 
-namespace client {
-namespace performance_test {
+namespace client::performance_test {
 
 namespace {
 
@@ -92,12 +94,12 @@ PERF_TEST_FUNC(V8ArrayGetValue) {
 PERF_TEST_FUNC(V8FunctionCreate) {
   class Handler : public CefV8Handler {
    public:
-    Handler() {}
-    virtual bool Execute(const CefString& name,
-                         CefRefPtr<CefV8Value> object,
-                         const CefV8ValueList& arguments,
-                         CefRefPtr<CefV8Value>& retval,
-                         CefString& exception) override {
+    Handler() = default;
+    bool Execute(const CefString& name,
+                 CefRefPtr<CefV8Value> object,
+                 const CefV8ValueList& arguments,
+                 CefRefPtr<CefV8Value>& retval,
+                 CefString& exception) override {
       return false;
     }
     IMPLEMENT_REFCOUNTING(Handler);
@@ -114,12 +116,12 @@ PERF_TEST_FUNC(V8FunctionCreate) {
 PERF_TEST_FUNC(V8FunctionExecute) {
   class Handler : public CefV8Handler {
    public:
-    Handler() {}
-    virtual bool Execute(const CefString& name,
-                         CefRefPtr<CefV8Value> object,
-                         const CefV8ValueList& arguments,
-                         CefRefPtr<CefV8Value>& retval,
-                         CefString& exception) override {
+    Handler() = default;
+    bool Execute(const CefString& name,
+                 CefRefPtr<CefV8Value> object,
+                 const CefV8ValueList& arguments,
+                 CefRefPtr<CefV8Value>& retval,
+                 CefString& exception) override {
       return true;
     }
     IMPLEMENT_REFCOUNTING(Handler);
@@ -139,12 +141,12 @@ PERF_TEST_FUNC(V8FunctionExecute) {
 PERF_TEST_FUNC(V8FunctionExecuteWithContext) {
   class Handler : public CefV8Handler {
    public:
-    Handler() {}
-    virtual bool Execute(const CefString& name,
-                         CefRefPtr<CefV8Value> object,
-                         const CefV8ValueList& arguments,
-                         CefRefPtr<CefV8Value>& retval,
-                         CefString& exception) override {
+    Handler() = default;
+    bool Execute(const CefString& name,
+                 CefRefPtr<CefV8Value> object,
+                 const CefV8ValueList& arguments,
+                 CefRefPtr<CefV8Value>& retval,
+                 CefString& exception) override {
       return true;
     }
     IMPLEMENT_REFCOUNTING(Handler);
@@ -171,17 +173,17 @@ PERF_TEST_FUNC(V8ObjectCreate) {
 PERF_TEST_FUNC(V8ObjectCreateWithAccessor) {
   class Accessor : public CefV8Accessor {
    public:
-    Accessor() {}
-    virtual bool Get(const CefString& name,
-                     const CefRefPtr<CefV8Value> object,
-                     CefRefPtr<CefV8Value>& retval,
-                     CefString& exception) override {
+    Accessor() = default;
+    bool Get(const CefString& name,
+             const CefRefPtr<CefV8Value> object,
+             CefRefPtr<CefV8Value>& retval,
+             CefString& exception) override {
       return true;
     }
-    virtual bool Set(const CefString& name,
-                     const CefRefPtr<CefV8Value> object,
-                     const CefRefPtr<CefV8Value> value,
-                     CefString& exception) override {
+    bool Set(const CefString& name,
+             const CefRefPtr<CefV8Value> object,
+             const CefRefPtr<CefV8Value> value,
+             CefString& exception) override {
       return true;
     }
     IMPLEMENT_REFCOUNTING(Accessor);
@@ -197,29 +199,29 @@ PERF_TEST_FUNC(V8ObjectCreateWithAccessor) {
 PERF_TEST_FUNC(V8ObjectCreateWithInterceptor) {
   class Interceptor : public CefV8Interceptor {
    public:
-    Interceptor() {}
-    virtual bool Get(const CefString& name,
-                     const CefRefPtr<CefV8Value> object,
-                     CefRefPtr<CefV8Value>& retval,
-                     CefString& exception) override {
+    Interceptor() = default;
+    bool Get(const CefString& name,
+             const CefRefPtr<CefV8Value> object,
+             CefRefPtr<CefV8Value>& retval,
+             CefString& exception) override {
       return true;
     }
-    virtual bool Get(int index,
-                     const CefRefPtr<CefV8Value> object,
-                     CefRefPtr<CefV8Value>& retval,
-                     CefString& exception) override {
+    bool Get(int index,
+             const CefRefPtr<CefV8Value> object,
+             CefRefPtr<CefV8Value>& retval,
+             CefString& exception) override {
       return true;
     }
-    virtual bool Set(const CefString& name,
-                     const CefRefPtr<CefV8Value> object,
-                     const CefRefPtr<CefV8Value> value,
-                     CefString& exception) override {
+    bool Set(const CefString& name,
+             const CefRefPtr<CefV8Value> object,
+             const CefRefPtr<CefV8Value> value,
+             CefString& exception) override {
       return true;
     }
-    virtual bool Set(int index,
-                     const CefRefPtr<CefV8Value> object,
-                     const CefRefPtr<CefV8Value> value,
-                     CefString& exception) override {
+    bool Set(int index,
+             const CefRefPtr<CefV8Value> object,
+             const CefRefPtr<CefV8Value> value,
+             CefString& exception) override {
       return true;
     }
     IMPLEMENT_REFCOUNTING(Interceptor);
@@ -257,17 +259,17 @@ PERF_TEST_FUNC(V8ObjectGetValue) {
 PERF_TEST_FUNC(V8ObjectSetValueWithAccessor) {
   class Accessor : public CefV8Accessor {
    public:
-    Accessor() {}
-    virtual bool Get(const CefString& name,
-                     const CefRefPtr<CefV8Value> object,
-                     CefRefPtr<CefV8Value>& retval,
-                     CefString& exception) override {
+    Accessor() = default;
+    bool Get(const CefString& name,
+             const CefRefPtr<CefV8Value> object,
+             CefRefPtr<CefV8Value>& retval,
+             CefString& exception) override {
       return true;
     }
-    virtual bool Set(const CefString& name,
-                     const CefRefPtr<CefV8Value> object,
-                     const CefRefPtr<CefV8Value> value,
-                     CefString& exception) override {
+    bool Set(const CefString& name,
+             const CefRefPtr<CefV8Value> object,
+             const CefRefPtr<CefV8Value> value,
+             CefString& exception) override {
       val_ = value;
       return true;
     }
@@ -280,7 +282,7 @@ PERF_TEST_FUNC(V8ObjectSetValueWithAccessor) {
   CefString name = "name";
   CefRefPtr<CefV8Value> val = CefV8Value::CreateBool(true);
   CefRefPtr<CefV8Value> obj = CefV8Value::CreateObject(accessor, nullptr);
-  obj->SetValue(name, V8_ACCESS_CONTROL_DEFAULT, V8_PROPERTY_ATTRIBUTE_NONE);
+  obj->SetValue(name, V8_PROPERTY_ATTRIBUTE_NONE);
   obj->SetValue(name, val, V8_PROPERTY_ATTRIBUTE_NONE);
 
   PERF_ITERATIONS_START()
@@ -292,17 +294,17 @@ PERF_TEST_FUNC(V8ObjectGetValueWithAccessor) {
   class Accessor : public CefV8Accessor {
    public:
     Accessor() : val_(CefV8Value::CreateBool(true)) {}
-    virtual bool Get(const CefString& name,
-                     const CefRefPtr<CefV8Value> object,
-                     CefRefPtr<CefV8Value>& retval,
-                     CefString& exception) override {
+    bool Get(const CefString& name,
+             const CefRefPtr<CefV8Value> object,
+             CefRefPtr<CefV8Value>& retval,
+             CefString& exception) override {
       retval = val_;
       return true;
     }
-    virtual bool Set(const CefString& name,
-                     const CefRefPtr<CefV8Value> object,
-                     const CefRefPtr<CefV8Value> value,
-                     CefString& exception) override {
+    bool Set(const CefString& name,
+             const CefRefPtr<CefV8Value> object,
+             const CefRefPtr<CefV8Value> value,
+             CefString& exception) override {
       return true;
     }
     CefRefPtr<CefV8Value> val_;
@@ -314,7 +316,7 @@ PERF_TEST_FUNC(V8ObjectGetValueWithAccessor) {
   CefString name = "name";
   CefRefPtr<CefV8Value> val = CefV8Value::CreateBool(true);
   CefRefPtr<CefV8Value> obj = CefV8Value::CreateObject(accessor, nullptr);
-  obj->SetValue(name, V8_ACCESS_CONTROL_DEFAULT, V8_PROPERTY_ATTRIBUTE_NONE);
+  obj->SetValue(name, V8_PROPERTY_ATTRIBUTE_NONE);
   obj->SetValue(name, val, V8_PROPERTY_ATTRIBUTE_NONE);
 
   PERF_ITERATIONS_START()
@@ -322,6 +324,7 @@ PERF_TEST_FUNC(V8ObjectGetValueWithAccessor) {
   PERF_ITERATIONS_END()
 }
 
+#ifndef CEF_V8_ENABLE_SANDBOX
 PERF_TEST_FUNC(V8ArrayBufferCreate) {
   class ReleaseCallback : public CefV8ArrayBufferReleaseCallback {
    public:
@@ -337,6 +340,17 @@ PERF_TEST_FUNC(V8ArrayBufferCreate) {
   float* buffer = (float*)std::malloc(byte_len);
   CefRefPtr<CefV8Value> ret =
       CefV8Value::CreateArrayBuffer(buffer, byte_len, callback);
+  PERF_ITERATIONS_END()
+}
+#endif  // CEF_V8_ENABLE_SANDBOX
+
+PERF_TEST_FUNC(V8ArrayBufferCopy) {
+  constexpr size_t len = 1;
+  constexpr size_t byte_len = len * sizeof(float);
+  std::array<float, len> buffer = {0};
+  PERF_ITERATIONS_START()
+  CefRefPtr<CefV8Value> ret =
+      CefV8Value::CreateArrayBufferWithCopy(buffer.data(), byte_len);
   PERF_ITERATIONS_END()
 }
 
@@ -385,12 +399,14 @@ const PerfTestEntry kPerfTests[] = {
     PERF_TEST_ENTRY(V8ObjectGetValue),
     PERF_TEST_ENTRY(V8ObjectSetValueWithAccessor),
     PERF_TEST_ENTRY(V8ObjectGetValueWithAccessor),
+#ifndef CEF_V8_ENABLE_SANDBOX
     PERF_TEST_ENTRY(V8ArrayBufferCreate),
+#endif  // CEF_V8_ENABLE_SANDBOX
+    PERF_TEST_ENTRY(V8ArrayBufferCopy),
     PERF_TEST_ENTRY(V8ContextEnterExit),
     PERF_TEST_ENTRY(V8ContextEval),
 };
 
 const int kPerfTestsCount = (sizeof(kPerfTests) / sizeof(kPerfTests[0]));
 
-}  // namespace performance_test
-}  // namespace client
+}  // namespace client::performance_test

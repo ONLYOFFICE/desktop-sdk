@@ -21,7 +21,7 @@ TEST(RequestTest, SetGet) {
   EXPECT_TRUE(request.get() != nullptr);
   EXPECT_EQ(0U, request->GetIdentifier());
 
-  CefString url = "http://tests.com/run.html";
+  CefString url = "https://tests.com/run.html";
   CefString method = "POST";
   CefRequest::HeaderMap setHeaders, getHeaders;
   setHeaders.insert(std::make_pair("HeaderA", "ValueA"));
@@ -72,10 +72,11 @@ TEST(RequestTest, SetGet) {
   postData->GetElements(elements);
   CefPostData::ElementVector::const_iterator it = elements.begin();
   for (size_t i = 0; it != elements.end(); ++it, ++i) {
-    if (i == 0)
+    if (i == 0) {
       TestPostDataElementEqual(element1, (*it).get());
-    else if (i == 1)
+    } else if (i == 1) {
       TestPostDataElementEqual(element2, (*it).get());
+    }
   }
 
   // CefRequest SetURL
@@ -87,10 +88,10 @@ TEST(RequestTest, SetGet) {
   EXPECT_EQ(method, request->GetMethod());
 
   // CefRequest SetReferrer
-  CefString referrer = "http://tests.com/referrer.html";
+  CefString referrer = "https://tests.com/referrer.html";
   CefRequest::ReferrerPolicy policy = REFERRER_POLICY_ORIGIN;
   request->SetReferrer(referrer, policy);
-  EXPECT_STREQ("http://tests.com/",
+  EXPECT_STREQ("https://tests.com/",
                request->GetReferrerURL().ToString().c_str());
   EXPECT_EQ(policy, request->GetReferrerPolicy());
 
@@ -187,7 +188,7 @@ TEST(RequestTest, SetGetHeaderByName) {
 
 namespace {
 
-const char kTestUrl[] = "http://tests.com/run.html";
+const char kTestUrl[] = "https://tests.com/run.html";
 
 void CreateRequest(CefRefPtr<CefRequest>& request) {
   request = CefRequest::Create();
@@ -196,7 +197,7 @@ void CreateRequest(CefRefPtr<CefRequest>& request) {
   request->SetURL(kTestUrl);
   request->SetMethod("POST");
 
-  request->SetReferrer("http://tests.com/main.html", REFERRER_POLICY_DEFAULT);
+  request->SetReferrer("https://tests.com/main.html", REFERRER_POLICY_DEFAULT);
 
   CefRequest::HeaderMap headers;
   headers.insert(std::make_pair("HeaderA", "ValueA"));
@@ -217,14 +218,14 @@ void CreateRequest(CefRefPtr<CefRequest>& request) {
 
 class RequestSendRecvTestHandler : public TestHandler {
  public:
-  RequestSendRecvTestHandler() : response_length_(0), request_id_(0U) {}
+  RequestSendRecvTestHandler() = default;
 
   void RunTest() override {
     // Create the test request.
     CreateRequest(request_);
 
     const std::string& resource = "<html><body>SendRecv Test</body></html>";
-    response_length_ = static_cast<int64>(resource.size());
+    response_length_ = static_cast<int64_t>(resource.size());
     AddResource(kTestUrl, resource, "text/html");
 
     // Create the browser.
@@ -310,10 +311,10 @@ class RequestSendRecvTestHandler : public TestHandler {
                               CefRefPtr<CefRequest> request,
                               CefRefPtr<CefResponse> response,
                               URLRequestStatus status,
-                              int64 received_content_length) override {
+                              int64_t received_content_length) override {
     EXPECT_IO_THREAD();
 
-    if (IsChromeRuntimeEnabled() && request->GetResourceType() == RT_FAVICON) {
+    if (request->GetResourceType() == RT_FAVICON) {
       // Ignore favicon requests.
       return;
     }
@@ -355,8 +356,8 @@ class RequestSendRecvTestHandler : public TestHandler {
   }
 
   CefRefPtr<CefRequest> request_;
-  int64 response_length_;
-  uint64 request_id_;
+  int64_t response_length_ = 0;
+  uint64_t request_id_ = 0U;
 
   TrackCallback got_before_resource_load_;
   TrackCallback got_resource_handler_;
@@ -369,7 +370,7 @@ class RequestSendRecvTestHandler : public TestHandler {
 
 }  // namespace
 
-// Verify send and recieve
+// Verify send and receive
 TEST(RequestTest, SendRecv) {
   CefRefPtr<RequestSendRecvTestHandler> handler =
       new RequestSendRecvTestHandler();
@@ -379,7 +380,7 @@ TEST(RequestTest, SendRecv) {
 
 namespace {
 
-const char kTypeTestOrigin[] = "http://tests-requesttt.com/";
+const char kTypeTestOrigin[] = "https://tests-requesttt.com/";
 const cef_transition_type_t kTransitionExplicitLoad =
     static_cast<cef_transition_type_t>(TT_EXPLICIT | TT_DIRECT_LOAD_FLAG);
 
@@ -419,8 +420,9 @@ class TypeExpectations {
     for (int i = 0;
          i < static_cast<int>(sizeof(g_type_expected) / sizeof(TypeExpected));
          ++i) {
-      if (navigation_ && g_type_expected[i].navigation != navigation_)
+      if (navigation_ && g_type_expected[i].navigation != navigation_) {
         continue;
+      }
 
       request_count_.insert(std::make_pair(i, 0));
     }
@@ -430,8 +432,9 @@ class TypeExpectations {
   // something we care about.
   bool GotRequest(CefRefPtr<CefRequest> request) {
     const std::string& url = request->GetURL();
-    if (url.find(kTypeTestOrigin) != 0)
+    if (url.find(kTypeTestOrigin) != 0) {
       return false;
+    }
 
     const std::string& file = url.substr(sizeof(kTypeTestOrigin) - 1);
     cef_transition_type_t transition_type = request->GetTransitionType();
@@ -461,8 +464,9 @@ class TypeExpectations {
     for (int i = 0;
          i < static_cast<int>(sizeof(g_type_expected) / sizeof(TypeExpected));
          ++i) {
-      if (navigation_ && g_type_expected[i].navigation != navigation_)
+      if (navigation_ && g_type_expected[i].navigation != navigation_) {
         continue;
+      }
 
       RequestCount::const_iterator it = request_count_.find(i);
       EXPECT_TRUE(it != request_count_.end());
@@ -511,9 +515,7 @@ class TypeTestHandler : public TestHandler {
   TypeTestHandler()
       : browse_expectations_(true),
         load_expectations_(false),
-        get_expectations_(false),
-        completed_browser_side_(false),
-        destroyed_(false) {}
+        get_expectations_(false) {}
 
   void RunTest() override {
     AddResource(std::string(kTypeTestOrigin) + "main.html",
@@ -594,8 +596,9 @@ class TypeTestHandler : public TestHandler {
 
  private:
   void DestroyTest() override {
-    if (destroyed_)
+    if (destroyed_) {
       return;
+    }
     destroyed_ = true;
 
     // Verify test expectations.
@@ -611,8 +614,8 @@ class TypeTestHandler : public TestHandler {
   TypeExpectations load_expectations_;
   TypeExpectations get_expectations_;
 
-  bool completed_browser_side_;
-  bool destroyed_;
+  bool completed_browser_side_ = false;
+  bool destroyed_ = false;
 
   IMPLEMENT_REFCOUNTING(TypeTestHandler);
 };

@@ -7,7 +7,7 @@
 #include "include/base/cef_logging.h"
 
 namespace base {
-namespace internal {
+namespace cef_internal {
 
 namespace {
 
@@ -20,7 +20,7 @@ bool QueryCancellationTraitsForNonCancellables(
     case BindStateBase::MAYBE_VALID:
       return true;
   }
-  NOTREACHED();
+  DCHECK(false);
   return false;
 }
 
@@ -97,5 +97,5 @@ CallbackBaseCopyable& CallbackBaseCopyable::operator=(
 CallbackBaseCopyable& CallbackBaseCopyable::operator=(
     CallbackBaseCopyable&& c) noexcept = default;
 
-}  // namespace internal
+}  // namespace cef_internal
 }  // namespace base

@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,12 +33,16 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=64e9ebc0e01acca0333ca3419e379d4053892270$
+// $hash=ccb8dd9df0cd92e44f2a95bc6ee32cc66af6fd45$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_SERVER_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_SERVER_CAPI_H_
 #pragma once
+
+#if defined(BUILDING_CEF_SHARED)
+#error This file cannot be included DLL-side
+#endif
 
 #include "include/capi/cef_base_capi.h"
 #include "include/capi/cef_callback_capi.h"
@@ -57,6 +61,8 @@ struct _cef_server_handler_t;
 /// simultaneous connections (e.g. for communicating between applications on
 /// localhost). The functions of this structure are safe to call from any thread
 /// in the brower process unless otherwise indicated.
+///
+/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_server_t {
   ///
@@ -111,19 +117,19 @@ typedef struct _cef_server_t {
   /// of |data| in bytes. The contents of |data| will be copied. The connection
   /// will be closed automatically after the response is sent.
   ///
-  void(CEF_CALLBACK* send_http200response)(struct _cef_server_t* self,
-                                           int connection_id,
-                                           const cef_string_t* content_type,
-                                           const void* data,
-                                           size_t data_size);
+  void(CEF_CALLBACK* send_http200_response)(struct _cef_server_t* self,
+                                            int connection_id,
+                                            const cef_string_t* content_type,
+                                            const void* data,
+                                            size_t data_size);
 
   ///
   /// Send an HTTP 404 "Not Found" response to the connection identified by
   /// |connection_id|. The connection will be closed automatically after the
   /// response is sent.
   ///
-  void(CEF_CALLBACK* send_http404response)(struct _cef_server_t* self,
-                                           int connection_id);
+  void(CEF_CALLBACK* send_http404_response)(struct _cef_server_t* self,
+                                            int connection_id);
 
   ///
   /// Send an HTTP 500 "Internal Server Error" response to the connection
@@ -131,9 +137,9 @@ typedef struct _cef_server_t {
   /// message. The connection will be closed automatically after the response is
   /// sent.
   ///
-  void(CEF_CALLBACK* send_http500response)(struct _cef_server_t* self,
-                                           int connection_id,
-                                           const cef_string_t* error_message);
+  void(CEF_CALLBACK* send_http500_response)(struct _cef_server_t* self,
+                                            int connection_id,
+                                            const cef_string_t* error_message);
 
   ///
   /// Send a custom HTTP response to the connection identified by
@@ -153,7 +159,7 @@ typedef struct _cef_server_t {
                                          int connection_id,
                                          int response_code,
                                          const cef_string_t* content_type,
-                                         int64 content_length,
+                                         int64_t content_length,
                                          cef_string_multimap_t extra_headers);
 
   ///
@@ -203,7 +209,7 @@ typedef struct _cef_server_t {
 /// server lifespan.
 ///
 CEF_EXPORT void cef_server_create(const cef_string_t* address,
-                                  uint16 port,
+                                  uint16_t port,
                                   int backlog,
                                   struct _cef_server_handler_t* handler);
 
@@ -214,6 +220,8 @@ CEF_EXPORT void cef_server_create(const cef_string_t* address,
 /// It is therefore recommended to use a different cef_server_handler_t instance
 /// for each cef_server_t::CreateServer call to avoid thread safety issues in
 /// the cef_server_handler_t implementation.
+///
+/// NOTE: This struct is allocated client-side.
 ///
 typedef struct _cef_server_handler_t {
   ///

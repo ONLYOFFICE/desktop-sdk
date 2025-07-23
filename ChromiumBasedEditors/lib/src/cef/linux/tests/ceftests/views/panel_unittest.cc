@@ -2,6 +2,9 @@
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 
+#include <optional>
+
+#include "include/cef_color_ids.h"
 #include "include/views/cef_box_layout.h"
 #include "include/views/cef_fill_layout.h"
 #include "include/views/cef_layout.h"
@@ -17,7 +20,7 @@ namespace {
 
 class EmptyPanelDelegate : public CefPanelDelegate {
  public:
-  EmptyPanelDelegate() {}
+  EmptyPanelDelegate() = default;
 
  private:
   IMPLEMENT_REFCOUNTING(EmptyPanelDelegate);
@@ -37,10 +40,11 @@ void CreatePanel(CefRefPtr<CefPanelDelegate> delegate) {
   EXPECT_STREQ("Panel", panel->GetTypeString().ToString().c_str());
   EXPECT_TRUE(panel->IsValid());
   EXPECT_FALSE(panel->IsAttached());
-  if (delegate)
+  if (delegate) {
     EXPECT_EQ(delegate.get(), panel->GetDelegate().get());
-  else
+  } else {
     EXPECT_FALSE(panel->GetDelegate().get());
+  }
   EXPECT_EQ(0, panel->GetID());
   EXPECT_FALSE(panel->GetParentView().get());
   EXPECT_EQ(CefRect(0, 0, 0, 0), panel->GetBounds());
@@ -55,7 +59,15 @@ void CreatePanel(CefRefPtr<CefPanelDelegate> delegate) {
   EXPECT_TRUE(panel->IsEnabled());
   EXPECT_FALSE(panel->IsFocusable());
   EXPECT_FALSE(panel->IsAccessibilityFocusable());
-  EXPECT_EQ(CefColorSetARGB(255, 255, 255, 255), panel->GetBackgroundColor());
+
+  // Background color can be configured without a Window.
+  const cef_color_t default_color =
+      panel->GetThemeColor(CEF_ColorPrimaryBackground);
+  const cef_color_t new_color = CefColorSetARGB(255, 0, 0, 255);
+  EXPECT_NE(default_color, new_color);
+  EXPECT_EQ(default_color, panel->GetBackgroundColor());
+  panel->SetBackgroundColor(new_color);
+  EXPECT_EQ(new_color, panel->GetBackgroundColor());
 
   // Verify default Panel state.
   EXPECT_TRUE(panel->GetLayout().get());
@@ -88,7 +100,7 @@ namespace {
 
 class ParentPanelDelegate : public CefPanelDelegate {
  public:
-  ParentPanelDelegate() {}
+  ParentPanelDelegate() = default;
 
   void OnParentViewChanged(CefRefPtr<CefView> view,
                            bool added,
@@ -137,7 +149,7 @@ class ParentPanelDelegate : public CefPanelDelegate {
 
 class ChildPanelDelegate : public CefPanelDelegate {
  public:
-  ChildPanelDelegate() {}
+  ChildPanelDelegate() = default;
 
   void OnParentViewChanged(CefRefPtr<CefView> view,
                            bool added,
@@ -292,10 +304,11 @@ void ChildRemove(CefRefPtr<ParentPanelDelegate> parent_delegate,
   EXPECT_TRUE(child_delegate->IsReset());
 
   // Remove the child view.
-  if (remove_all)
+  if (remove_all) {
     parent_panel->RemoveAllChildViews();
-  else
+  } else {
     parent_panel->RemoveChildView(child_panel);
+  }
 
   // Verify final callback state.
   ChildVerifyFinalCallbackState(parent_delegate, parent_panel, child_delegate,
@@ -577,6 +590,179 @@ void ChildDrawnImpl() {
   window->Close();
 }
 
+class ThemePanelDelegate : public CefPanelDelegate {
+ public:
+  ThemePanelDelegate() = default;
+
+  void OnThemeChanged(CefRefPtr<CefView> view) override {
+    theme_changed_ct_++;
+
+    if (override_color_) {
+      view->SetBackgroundColor(*override_color_);
+    }
+  }
+
+  size_t theme_changed_ct_ = 0;
+  std::optional<cef_color_t> override_color_;
+
+ private:
+  IMPLEMENT_REFCOUNTING(ThemePanelDelegate);
+  DISALLOW_COPY_AND_ASSIGN(ThemePanelDelegate);
+};
+
+class ThemeWindowDelegate : public CefWindowDelegate {
+ public:
+  ThemeWindowDelegate() = default;
+
+  void OnThemeChanged(CefRefPtr<CefView> view) override { theme_changed_ct_++; }
+
+  void OnThemeColorsChanged(CefRefPtr<CefWindow> window,
+                            bool chrome_theme) override {
+    native_theme_changed_ct_++;
+  }
+
+  size_t theme_changed_ct_ = 0;
+  size_t native_theme_changed_ct_ = 0;
+
+ private:
+  IMPLEMENT_REFCOUNTING(ThemeWindowDelegate);
+  DISALLOW_COPY_AND_ASSIGN(ThemeWindowDelegate);
+};
+
+void ChildThemeImpl() {
+  CefRefPtr<ThemePanelDelegate> parent_panel_delegate =
+      new ThemePanelDelegate();
+  CefRefPtr<CefPanel> parent_panel =
+      CefPanel::CreatePanel(parent_panel_delegate.get());
+
+  CefRefPtr<ThemePanelDelegate> child_panel_delegate = new ThemePanelDelegate();
+  CefRefPtr<CefPanel> child_panel =
+      CefPanel::CreatePanel(child_panel_delegate.get());
+
+  // No calls to OnThemeChanged (no Window yet).
+  EXPECT_EQ(0U, parent_panel_delegate->theme_changed_ct_);
+  EXPECT_EQ(0U, child_panel_delegate->theme_changed_ct_);
+
+  parent_panel->AddChildView(child_panel);
+
+  // No calls to OnThemeChanged (no Window yet).
+  EXPECT_EQ(0U, parent_panel_delegate->theme_changed_ct_);
+  EXPECT_EQ(0U, child_panel_delegate->theme_changed_ct_);
+
+  // Create a Window. Triggers OnThemeChanged for the Window because it's also
+  // a View in the initial Window component hierarchy.
+  CefRefPtr<ThemeWindowDelegate> window_delegate = new ThemeWindowDelegate();
+  CefRefPtr<CefWindow> window =
+      CefWindow::CreateTopLevelWindow(window_delegate.get());
+
+  // OnThemeChanged called for |window_delegate|. No calls to
+  // OnThemeColorsChanged.
+  EXPECT_EQ(0U, parent_panel_delegate->theme_changed_ct_);
+  EXPECT_EQ(0U, child_panel_delegate->theme_changed_ct_);
+  EXPECT_EQ(1U, window_delegate->theme_changed_ct_);
+  EXPECT_EQ(0U, window_delegate->native_theme_changed_ct_);
+  window_delegate->theme_changed_ct_ = 0;
+
+  // Add |parent_panel| to the Window. Triggers OnThemeChanged for the component
+  // hierarchy starting with |parent_panel|.
+  window->AddChildView(parent_panel);
+
+  // OnThemeChanged called for |parent_panel| and |child_panel|. No calls to
+  // OnThemeColorsChanged.
+  EXPECT_EQ(1U, parent_panel_delegate->theme_changed_ct_);
+  EXPECT_EQ(1U, child_panel_delegate->theme_changed_ct_);
+  EXPECT_EQ(0U, window_delegate->theme_changed_ct_);
+  EXPECT_EQ(0U, window_delegate->native_theme_changed_ct_);
+  parent_panel_delegate->theme_changed_ct_ = 0;
+  child_panel_delegate->theme_changed_ct_ = 0;
+
+  // Verify that all components have the default background color.
+  const cef_color_t default_color =
+      window->GetThemeColor(CEF_ColorPrimaryBackground);
+  EXPECT_EQ(default_color, window->GetBackgroundColor());
+  EXPECT_EQ(default_color, parent_panel->GetBackgroundColor());
+  EXPECT_EQ(default_color,
+            parent_panel->GetThemeColor(CEF_ColorPrimaryBackground));
+  EXPECT_EQ(default_color, child_panel->GetBackgroundColor());
+  EXPECT_EQ(default_color,
+            child_panel->GetThemeColor(CEF_ColorPrimaryBackground));
+
+  // Change the default background color for the global theme.
+  const cef_color_t new_color = CefColorSetARGB(255, 0, 0, 255);
+  EXPECT_NE(default_color, new_color);
+  window->SetThemeColor(CEF_ColorPrimaryBackground, new_color);
+  EXPECT_EQ(new_color, window->GetThemeColor(CEF_ColorPrimaryBackground));
+
+  // Components don't get the change immediately.
+  EXPECT_EQ(default_color, window->GetBackgroundColor());
+  EXPECT_EQ(default_color, parent_panel->GetBackgroundColor());
+  EXPECT_EQ(default_color, child_panel->GetBackgroundColor());
+
+  // No calls to OnThemeChanged or OnThemeColorsChanged (pending ThemeChanged
+  // call).
+  EXPECT_EQ(0U, parent_panel_delegate->theme_changed_ct_);
+  EXPECT_EQ(0U, child_panel_delegate->theme_changed_ct_);
+  EXPECT_EQ(0U, window_delegate->theme_changed_ct_);
+  EXPECT_EQ(0U, window_delegate->native_theme_changed_ct_);
+
+  // Trigger OnThemeChanged calls.
+  window->ThemeChanged();
+
+  // OnThemeChanged called for the complete component hierarchy. No calls to
+  // OnThemeColorsChanged.
+  EXPECT_EQ(1U, parent_panel_delegate->theme_changed_ct_);
+  EXPECT_EQ(1U, child_panel_delegate->theme_changed_ct_);
+  EXPECT_EQ(1U, window_delegate->theme_changed_ct_);
+  EXPECT_EQ(0U, window_delegate->native_theme_changed_ct_);
+  parent_panel_delegate->theme_changed_ct_ = 0;
+  child_panel_delegate->theme_changed_ct_ = 0;
+  window_delegate->theme_changed_ct_ = 0;
+
+  // Verify that all components have the new background color.
+  EXPECT_EQ(new_color, window->GetBackgroundColor());
+  EXPECT_EQ(new_color, parent_panel->GetBackgroundColor());
+  EXPECT_EQ(new_color, parent_panel->GetThemeColor(CEF_ColorPrimaryBackground));
+  EXPECT_EQ(new_color, child_panel->GetBackgroundColor());
+  EXPECT_EQ(new_color, child_panel->GetThemeColor(CEF_ColorPrimaryBackground));
+
+  // Customize the background color for |child_panel| when OnThemeChanged is
+  // called next.
+  const cef_color_t child_color = CefColorSetARGB(255, 0, 255, 0);
+  child_panel_delegate->override_color_ = child_color;
+
+  // Trigger OnThemeChanged calls.
+  window->ThemeChanged();
+
+  // OnThemeChanged called for the complete component hierarchy. No calls to
+  // OnThemeColorsChanged.
+  EXPECT_EQ(1U, parent_panel_delegate->theme_changed_ct_);
+  EXPECT_EQ(1U, child_panel_delegate->theme_changed_ct_);
+  EXPECT_EQ(1U, window_delegate->theme_changed_ct_);
+  EXPECT_EQ(0U, window_delegate->native_theme_changed_ct_);
+  parent_panel_delegate->theme_changed_ct_ = 0;
+  child_panel_delegate->theme_changed_ct_ = 0;
+  window_delegate->theme_changed_ct_ = 0;
+
+  // Verify that all components have the expected background color.
+  EXPECT_EQ(new_color, window->GetBackgroundColor());
+  EXPECT_EQ(new_color, parent_panel->GetBackgroundColor());
+  EXPECT_EQ(new_color, parent_panel->GetThemeColor(CEF_ColorPrimaryBackground));
+  EXPECT_EQ(child_color, child_panel->GetBackgroundColor());
+  EXPECT_EQ(new_color, child_panel->GetThemeColor(CEF_ColorPrimaryBackground));
+
+  // New Window gets the same (new) background color.
+  CefRefPtr<CefWindow> new_window = CefWindow::CreateTopLevelWindow(nullptr);
+  EXPECT_EQ(new_color, new_window->GetBackgroundColor());
+
+  // Restore the default background color for the global theme.
+  window->SetThemeColor(CEF_ColorPrimaryBackground, default_color);
+  EXPECT_EQ(default_color, window->GetThemeColor(CEF_ColorPrimaryBackground));
+
+  // Close the windows to avoid dangling references.
+  window->Close();
+  new_window->Close();
+}
+
 }  // namespace
 
 // Test child behaviors.
@@ -585,12 +771,13 @@ PANEL_TEST(ChildAddRemoveMultiple)
 PANEL_TEST(ChildOrder)
 PANEL_TEST(ChildVisible)
 PANEL_TEST(ChildDrawn)
+PANEL_TEST(ChildTheme)
 
 namespace {
 
 class SizingPanelDelegate : public CefPanelDelegate {
  public:
-  SizingPanelDelegate() {}
+  SizingPanelDelegate() = default;
 
   CefSize GetPreferredSize(CefRefPtr<CefView> view) override {
     got_get_preferred_size_ = true;
@@ -850,10 +1037,11 @@ void FillLayoutSizeHierarchyWithDelegate(bool size_from_parent) {
   EXPECT_EQ(CefRect(0, 0, 0, 0), panel_child->GetBounds());
 
   // With delegates the size can come from either the parent or child.
-  if (size_from_parent)
+  if (size_from_parent) {
     delegate_parent->preferred_size_ = expected_size;
-  else
+  } else {
     delegate_child->preferred_size_ = expected_size;
+  }
 
   // FillLayout is the default Layout. Both panels should end up with the same
   // size.
@@ -944,8 +1132,9 @@ void BoxLayoutSizeHierarchy(bool with_delegate,
                             int child1_flex = 0,
                             int child2_flex = 0) {
   CefRefPtr<SizingPanelDelegate> delegate_parent;
-  if (with_delegate)
+  if (with_delegate) {
     delegate_parent = new SizingPanelDelegate();
+  }
   CefRefPtr<CefPanel> panel_parent = CefPanel::CreatePanel(delegate_parent);
 
   CefRefPtr<SizingPanelDelegate> delegate_child1, delegate_child2;
@@ -963,10 +1152,11 @@ void BoxLayoutSizeHierarchy(bool with_delegate,
 
   // Give the parent a size.
   CefSize initial_parent_size(kBLParentSize, kBLParentSize);
-  if (with_delegate)
+  if (with_delegate) {
     delegate_parent->preferred_size_ = initial_parent_size;
-  else
+  } else {
     panel_parent->SetSize(initial_parent_size);
+  }
 
   // Give the children a size smaller than the parent.
   CefSize initial_child_size(kBLChildSize, kBLChildSize);
@@ -987,10 +1177,12 @@ void BoxLayoutSizeHierarchy(bool with_delegate,
   if (child1_flex > 0 || child2_flex > 0) {
     // Flex will apply relative stretch in the main axis direction.
     CefRefPtr<CefBoxLayout> layout = panel_parent->GetLayout()->AsBoxLayout();
-    if (child1_flex > 0)
+    if (child1_flex > 0) {
       layout->SetFlexForView(panel_child1, child1_flex);
-    if (child2_flex > 0)
+    }
+    if (child2_flex > 0) {
       layout->SetFlexForView(panel_child2, child2_flex);
+    }
   }
 
   if (with_delegate) {
@@ -1116,7 +1308,7 @@ void BoxLayoutSizeHierarchyVerticalCenter(bool with_delegate) {
   // -----------
   //
   CefBoxLayoutSettings settings;
-  settings.cross_axis_alignment = CEF_CROSS_AXIS_ALIGNMENT_CENTER;
+  settings.cross_axis_alignment = CEF_AXIS_ALIGNMENT_CENTER;
 
   int xoffset = (kBLParentSize - kBLChildSize) / 2;
   CefRect expected_child1_bounds(xoffset, 0, kBLChildSize, kBLChildSize);
@@ -1148,7 +1340,7 @@ void BoxLayoutSizeHierarchyHorizontalCenter(bool with_delegate) {
   //
   CefBoxLayoutSettings settings;
   settings.horizontal = true;
-  settings.cross_axis_alignment = CEF_CROSS_AXIS_ALIGNMENT_CENTER;
+  settings.cross_axis_alignment = CEF_AXIS_ALIGNMENT_CENTER;
 
   int yoffset = (kBLParentSize - kBLChildSize) / 2;
   CefRect expected_child1_bounds(0, yoffset, kBLChildSize, kBLChildSize);
@@ -1179,8 +1371,8 @@ void BoxLayoutSizeHierarchyVerticalCenterCenter(bool with_delegate) {
   // -----------
   //
   CefBoxLayoutSettings settings;
-  settings.main_axis_alignment = CEF_MAIN_AXIS_ALIGNMENT_CENTER;
-  settings.cross_axis_alignment = CEF_CROSS_AXIS_ALIGNMENT_CENTER;
+  settings.main_axis_alignment = CEF_AXIS_ALIGNMENT_CENTER;
+  settings.cross_axis_alignment = CEF_AXIS_ALIGNMENT_CENTER;
 
   int xoffset = (kBLParentSize - kBLChildSize) / 2;
   int yoffset = (kBLParentSize - (kBLChildSize * 2)) / 2;
@@ -1214,8 +1406,8 @@ void BoxLayoutSizeHierarchyHorizontalCenterCenter(bool with_delegate) {
   //
   CefBoxLayoutSettings settings;
   settings.horizontal = true;
-  settings.main_axis_alignment = CEF_MAIN_AXIS_ALIGNMENT_CENTER;
-  settings.cross_axis_alignment = CEF_CROSS_AXIS_ALIGNMENT_CENTER;
+  settings.main_axis_alignment = CEF_AXIS_ALIGNMENT_CENTER;
+  settings.cross_axis_alignment = CEF_AXIS_ALIGNMENT_CENTER;
 
   int xoffset = (kBLParentSize - (kBLChildSize * 2)) / 2;
   int yoffset = (kBLParentSize - kBLChildSize) / 2;

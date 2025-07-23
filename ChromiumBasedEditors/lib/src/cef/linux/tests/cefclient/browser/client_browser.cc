@@ -3,22 +3,24 @@
 // can be found in the LICENSE file.
 
 #include "tests/cefclient/browser/client_browser.h"
-#include "tests/cefclient/browser/main_context.h"
 
+#include "include/base/cef_logging.h"
 #include "include/cef_command_line.h"
 #include "include/cef_crash_util.h"
 #include "include/cef_file_util.h"
 #include "tests/cefclient/browser/client_prefs.h"
+#include "tests/cefclient/browser/default_client_handler.h"
+#include "tests/cefclient/browser/main_context.h"
+#include "tests/cefclient/browser/root_window_manager.h"
 #include "tests/shared/common/client_switches.h"
 
-namespace client {
-namespace browser {
+namespace client::browser {
 
 namespace {
 
 class ClientBrowserDelegate : public ClientAppBrowser::Delegate {
  public:
-  ClientBrowserDelegate() {}
+  ClientBrowserDelegate() = default;
 
   void OnRegisterCustomPreferences(
       CefRefPtr<client::ClientAppBrowser> app,
@@ -55,8 +57,44 @@ class ClientBrowserDelegate : public ClientAppBrowser::Delegate {
       CefRefPtr<ClientAppBrowser> app,
       CefRefPtr<CefCommandLine> command_line) override {
     // Append Chromium command line parameters if touch events are enabled
-    if (client::MainContext::Get()->TouchEventsEnabled())
+    if (client::MainContext::Get()->TouchEventsEnabled()) {
       command_line->AppendSwitchWithValue("touch-events", "enabled");
+    }
+  }
+
+  bool OnAlreadyRunningAppRelaunch(
+      CefRefPtr<ClientAppBrowser> app,
+      CefRefPtr<CefCommandLine> command_line,
+      const CefString& current_directory) override {
+    // Add logging for some common switches that the user may attempt to use.
+    static const char* kIgnoredSwitches[] = {
+        switches::kMultiThreadedMessageLoop,
+        switches::kOffScreenRenderingEnabled,
+        switches::kUseViews,
+    };
+    for (auto& kIgnoredSwitche : kIgnoredSwitches) {
+      if (command_line->HasSwitch(kIgnoredSwitche)) {
+        LOG(WARNING) << "The --" << kIgnoredSwitche
+                     << " command-line switch is ignored on app relaunch.";
+      }
+    }
+
+    // Create a new root window based on |command_line|.
+    auto config = std::make_unique<RootWindowConfig>(command_line->Copy());
+
+    MainContext::Get()->GetRootWindowManager()->CreateRootWindow(
+        std::move(config));
+
+    // Relaunch was handled.
+    return true;
+  }
+
+  CefRefPtr<CefClient> GetDefaultClient(
+      CefRefPtr<ClientAppBrowser> app) override {
+    // Default client handler for unmanaged browser windows. Used with
+    // Chrome style only.
+    LOG(INFO) << "Creating a chrome browser with the default client";
+    return new DefaultClientHandler();
   }
 
  private:
@@ -70,5 +108,4 @@ void CreateDelegates(ClientAppBrowser::DelegateSet& delegates) {
   delegates.insert(new ClientBrowserDelegate);
 }
 
-}  // namespace browser
-}  // namespace client
+}  // namespace client::browser

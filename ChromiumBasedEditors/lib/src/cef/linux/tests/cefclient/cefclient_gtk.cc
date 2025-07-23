@@ -2,14 +2,14 @@
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 
-#include <gtk/gtk.h>
-
 #include <X11/Xlib.h>
+#include <gtk/gtk.h>
 #undef Success     // Definition conflicts with cef_message_router.h
 #undef RootWindow  // Definition conflicts with root_window.h
 
 #include <stdlib.h>
 #include <unistd.h>
+
 #include <memory>
 #include <string>
 
@@ -31,13 +31,11 @@ namespace client {
 namespace {
 
 int XErrorHandlerImpl(Display* display, XErrorEvent* event) {
-  LOG(WARNING) << "X error received: "
-               << "type " << event->type << ", "
-               << "serial " << event->serial << ", "
-               << "error_code " << static_cast<int>(event->error_code) << ", "
-               << "request_code " << static_cast<int>(event->request_code)
-               << ", "
-               << "minor_code " << static_cast<int>(event->minor_code);
+  LOG(WARNING) << "X error received: " << "type " << event->type << ", "
+               << "serial " << event->serial << ", " << "error_code "
+               << static_cast<int>(event->error_code) << ", " << "request_code "
+               << static_cast<int>(event->request_code) << ", " << "minor_code "
+               << static_cast<int>(event->minor_code);
   return 0;
 }
 
@@ -50,6 +48,7 @@ void TerminationSignalHandler(int signatl) {
   MainContext::Get()->GetRootWindowManager()->CloseAllWindows(true);
 }
 
+NO_STACK_PROTECTOR
 int RunMain(int argc, char* argv[]) {
   // Create a copy of |argv| on Linux because Chromium mangles the value
   // internally (see issue #620).
@@ -79,8 +78,9 @@ int RunMain(int argc, char* argv[]) {
 
   // Execute the secondary process, if any.
   int exit_code = CefExecuteProcess(main_args, app, nullptr);
-  if (exit_code >= 0)
+  if (exit_code >= 0) {
     return exit_code;
+  }
 
   // Create the main context object.
   auto context = std::make_unique<MainContextImpl>(command_line, true);
@@ -97,24 +97,22 @@ int RunMain(int argc, char* argv[]) {
   // Populate the settings based on command line arguments.
   context->PopulateSettings(&settings);
 
-  if (settings.windowless_rendering_enabled) {
-    // Force the app to use OpenGL <= 3.1 when off-screen rendering is enabled.
-    // TODO(cefclient): Rewrite OSRRenderer to use shaders instead of the
-    // fixed-function pipeline which was removed in OpenGL 3.2 (back in 2009).
-    setenv("MESA_GL_VERSION_OVERRIDE", "3.1", /*overwrite=*/0);
-  }
-
   // Create the main message loop object.
   std::unique_ptr<MainMessageLoop> message_loop;
-  if (settings.multi_threaded_message_loop)
+  if (settings.multi_threaded_message_loop) {
     message_loop.reset(new MainMessageLoopMultithreadedGtk);
-  else if (settings.external_message_pump)
+  } else if (settings.external_message_pump) {
     message_loop = MainMessageLoopExternalPump::Create();
-  else
+  } else {
     message_loop.reset(new MainMessageLoopStd);
+  }
 
-  // Initialize CEF.
-  context->Initialize(main_args, settings, app, nullptr);
+  // Initialize the CEF browser process. May return false if initialization
+  // fails or if early exit is desired (for example, due to process singleton
+  // relaunch behavior).
+  if (!context->Initialize(main_args, settings, app, nullptr)) {
+    return CefGetExitCode();
+  }
 
   // Force Gtk to use Xwayland (in case a Wayland compositor is being used).
   gdk_set_allowed_backends("x11");
@@ -138,8 +136,6 @@ int RunMain(int argc, char* argv[]) {
   auto window_config = std::make_unique<RootWindowConfig>();
   window_config->always_on_top =
       command_line->HasSwitch(switches::kAlwaysOnTop);
-  window_config->with_controls =
-      !command_line->HasSwitch(switches::kHideControls);
   window_config->with_osr =
       settings.windowless_rendering_enabled ? true : false;
 
@@ -163,6 +159,7 @@ int RunMain(int argc, char* argv[]) {
 }  // namespace client
 
 // Program entry point function.
+NO_STACK_PROTECTOR
 int main(int argc, char* argv[]) {
   return client::RunMain(argc, argv);
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=09c6bbd82ec82943b6f310c5ffb347bfbef2654c$
+// $hash=112ae6c018efd2807f6a716e714a7bc02fb62e6d$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_NAVIGATION_ENTRY_CTOCPP_H_
@@ -46,5 +46,9 @@ class CefNavigationEntryCToCpp
   int GetHttpStatusCode() override;
   CefRefPtr<CefSSLStatus> GetSSLStatus() override;
 };
+
+constexpr auto CefNavigationEntryCToCpp_Wrap = CefNavigationEntryCToCpp::Wrap;
+constexpr auto CefNavigationEntryCToCpp_Unwrap =
+    CefNavigationEntryCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_NAVIGATION_ENTRY_CTOCPP_H_

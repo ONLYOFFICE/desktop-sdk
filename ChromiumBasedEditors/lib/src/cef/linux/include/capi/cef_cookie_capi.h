@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,12 +33,16 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=598c6f530b2e2553197d8c6a72ad9e2bf72b5443$
+// $hash=3119b8cebf5b649a3418c2c17a770473663b16ce$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_COOKIE_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_COOKIE_CAPI_H_
 #pragma once
+
+#if defined(BUILDING_CEF_SHARED)
+#error This file cannot be included DLL-side
+#endif
 
 #include "include/capi/cef_base_capi.h"
 #include "include/capi/cef_callback_capi.h"
@@ -54,6 +58,8 @@ struct _cef_set_cookie_callback_t;
 ///
 /// Structure used for managing cookies. The functions of this structure may be
 /// called on any thread unless otherwise indicated.
+///
+/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_cookie_manager_t {
   ///
@@ -126,8 +132,8 @@ typedef struct _cef_cookie_manager_t {
 /// cef_settings_t.cache_path if specified or in memory otherwise. If |callback|
 /// is non-NULL it will be executed asnychronously on the UI thread after the
 /// manager's storage has been initialized. Using this function is equivalent to
-/// calling cef_request_context_t::cef_request_context_get_global_context()->Get
-/// DefaultCookieManager().
+/// calling cef_request_context_t::cef_request_context_get_global_context()-
+/// >GetDefaultCookieManager().
 ///
 CEF_EXPORT cef_cookie_manager_t* cef_cookie_manager_get_global_manager(
     struct _cef_completion_callback_t* callback);
@@ -135,6 +141,8 @@ CEF_EXPORT cef_cookie_manager_t* cef_cookie_manager_get_global_manager(
 ///
 /// Structure to implement for visiting cookie values. The functions of this
 /// structure will always be called on the UI thread.
+///
+/// NOTE: This struct is allocated client-side.
 ///
 typedef struct _cef_cookie_visitor_t {
   ///
@@ -160,6 +168,8 @@ typedef struct _cef_cookie_visitor_t {
 /// Structure to implement to be notified of asynchronous completion via
 /// cef_cookie_manager_t::set_cookie().
 ///
+/// NOTE: This struct is allocated client-side.
+///
 typedef struct _cef_set_cookie_callback_t {
   ///
   /// Base structure.
@@ -177,6 +187,8 @@ typedef struct _cef_set_cookie_callback_t {
 ///
 /// Structure to implement to be notified of asynchronous completion via
 /// cef_cookie_manager_t::delete_cookies().
+///
+/// NOTE: This struct is allocated client-side.
 ///
 typedef struct _cef_delete_cookies_callback_t {
   ///

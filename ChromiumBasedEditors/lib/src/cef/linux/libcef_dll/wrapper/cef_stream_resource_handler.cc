@@ -46,7 +46,7 @@ bool CefStreamResourceHandler::Open(CefRefPtr<CefRequest> request,
 
 void CefStreamResourceHandler::GetResponseHeaders(
     CefRefPtr<CefResponse> response,
-    int64& response_length,
+    int64_t& response_length,
     CefString& redirectUrl) {
   CEF_REQUIRE_IO_THREAD();
 
@@ -54,8 +54,9 @@ void CefStreamResourceHandler::GetResponseHeaders(
   response->SetStatusText(status_text_);
   response->SetMimeType(mime_type_);
 
-  if (!header_map_.empty())
+  if (!header_map_.empty()) {
     response->SetHeaderMap(header_map_);
+  }
 
   response_length = stream_ ? -1 : 0;
 }

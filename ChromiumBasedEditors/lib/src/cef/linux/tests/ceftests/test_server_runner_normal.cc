@@ -2,11 +2,10 @@
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 
-#include "tests/ceftests/test_server_runner.h"
-
 #include "include/cef_server.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "include/wrapper/cef_helpers.h"
+#include "tests/ceftests/test_server_runner.h"
 #include "tests/gtest/include/gtest/gtest.h"
 
 namespace test_server {
@@ -124,8 +123,10 @@ class ServerHandler : public CefServerHandler {
       return;
     }
 
-    // No response should be sent yet.
-    EXPECT_TRUE(server->IsValidConnection(connection_id));
+    if (!server->IsValidConnection(connection_id)) {
+      // This can occur if the connected browser has already closed.
+      return;
+    }
 
     const int response_code = response->GetStatus();
     if (response_code <= 0) {
@@ -134,7 +135,7 @@ class ServerHandler : public CefServerHandler {
     }
 
     const CefString& content_type = response->GetMimeType();
-    int64 content_length = static_cast<int64>(response_data.size());
+    int64_t content_length = static_cast<int64_t>(response_data.size());
 
     CefResponse::HeaderMap extra_headers;
     response->GetHeaderMap(extra_headers);

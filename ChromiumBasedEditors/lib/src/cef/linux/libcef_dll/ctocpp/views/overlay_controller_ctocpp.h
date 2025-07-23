@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=a8dd9d8eb796f499231143866c2d8f45e9b25d0c$
+// $hash=bb73cc443cc33cb2d5001ef2496f4925c0119490$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_VIEWS_OVERLAY_CONTROLLER_CTOCPP_H_
@@ -59,5 +59,10 @@ class CefOverlayControllerCToCpp
   bool IsVisible() override;
   bool IsDrawn() override;
 };
+
+constexpr auto CefOverlayControllerCToCpp_Wrap =
+    CefOverlayControllerCToCpp::Wrap;
+constexpr auto CefOverlayControllerCToCpp_Unwrap =
+    CefOverlayControllerCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_VIEWS_OVERLAY_CONTROLLER_CTOCPP_H_

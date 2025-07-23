@@ -161,16 +161,7 @@ bool g_ReadHandlerTesterDeleted = false;
 
 class ReadHandlerTester : public CefReadHandler {
  public:
-  ReadHandlerTester()
-      : read_called_(false),
-        read_ptr_(nullptr),
-        read_size_(0),
-        read_n_(0),
-        seek_called_(false),
-        seek_offset_(0),
-        seek_whence_(0),
-        tell_called_(false),
-        eof_called_(false) {}
+  ReadHandlerTester() = default;
   ~ReadHandlerTester() override { g_ReadHandlerTesterDeleted = true; }
 
   size_t Read(void* ptr, size_t size, size_t n) override {
@@ -181,14 +172,14 @@ class ReadHandlerTester : public CefReadHandler {
     return 10;
   }
 
-  int Seek(int64 offset, int whence) override {
+  int Seek(int64_t offset, int whence) override {
     seek_called_ = true;
     seek_offset_ = offset;
     seek_whence_ = whence;
     return 10;
   }
 
-  int64 Tell() override {
+  int64_t Tell() override {
     tell_called_ = true;
     return 10;
   }
@@ -200,18 +191,18 @@ class ReadHandlerTester : public CefReadHandler {
 
   bool MayBlock() override { return false; }
 
-  bool read_called_;
-  const void* read_ptr_;
-  size_t read_size_;
-  size_t read_n_;
+  bool read_called_ = false;
+  const void* read_ptr_ = nullptr;
+  size_t read_size_ = 0;
+  size_t read_n_ = 0;
 
-  bool seek_called_;
-  int64 seek_offset_;
-  int seek_whence_;
+  bool seek_called_ = false;
+  int64_t seek_offset_ = 0;
+  int seek_whence_ = 0;
 
-  bool tell_called_;
+  bool tell_called_ = false;
 
-  bool eof_called_;
+  bool eof_called_ = false;
 
   IMPLEMENT_REFCOUNTING(ReadHandlerTester);
 };
@@ -237,7 +228,7 @@ TEST(StreamTest, ReadHandler) {
   ASSERT_EQ(read_n, handler->read_n_);
 
   // CefReadHandler Seek
-  int64 seek_offset = 10;
+  int64_t seek_offset = 10;
   int seek_whence = SEEK_CUR;
   int seek_res = stream->Seek(seek_offset, seek_whence);
   ASSERT_TRUE(handler->seek_called_);
@@ -246,7 +237,7 @@ TEST(StreamTest, ReadHandler) {
   ASSERT_EQ(seek_whence, handler->seek_whence_);
 
   // CefReadHandler Tell
-  int64 tell_res = stream->Tell();
+  int64_t tell_res = stream->Tell();
   ASSERT_TRUE(handler->tell_called_);
   ASSERT_EQ(10, tell_res);
 
@@ -266,16 +257,7 @@ bool g_WriteHandlerTesterDeleted = false;
 
 class WriteHandlerTester : public CefWriteHandler {
  public:
-  WriteHandlerTester()
-      : write_called_(false),
-        write_ptr_(nullptr),
-        write_size_(0),
-        write_n_(0),
-        seek_called_(false),
-        seek_offset_(0),
-        seek_whence_(0),
-        tell_called_(false),
-        flush_called_(false) {}
+  WriteHandlerTester() = default;
   ~WriteHandlerTester() override { g_WriteHandlerTesterDeleted = true; }
 
   size_t Write(const void* ptr, size_t size, size_t n) override {
@@ -286,14 +268,14 @@ class WriteHandlerTester : public CefWriteHandler {
     return 10;
   }
 
-  int Seek(int64 offset, int whence) override {
+  int Seek(int64_t offset, int whence) override {
     seek_called_ = true;
     seek_offset_ = offset;
     seek_whence_ = whence;
     return 10;
   }
 
-  int64 Tell() override {
+  int64_t Tell() override {
     tell_called_ = true;
     return 10;
   }
@@ -305,18 +287,18 @@ class WriteHandlerTester : public CefWriteHandler {
 
   bool MayBlock() override { return false; }
 
-  bool write_called_;
-  const void* write_ptr_;
-  size_t write_size_;
-  size_t write_n_;
+  bool write_called_ = false;
+  const void* write_ptr_ = nullptr;
+  size_t write_size_ = 0;
+  size_t write_n_ = 0;
 
-  bool seek_called_;
-  int64 seek_offset_;
-  int seek_whence_;
+  bool seek_called_ = false;
+  int64_t seek_offset_ = 0;
+  int seek_whence_ = 0;
 
-  bool tell_called_;
+  bool tell_called_ = false;
 
-  bool flush_called_;
+  bool flush_called_ = false;
 
   IMPLEMENT_REFCOUNTING(WriteHandlerTester);
 };
@@ -341,7 +323,7 @@ TEST(StreamTest, WriteHandler) {
   ASSERT_EQ(write_n, handler->write_n_);
 
   // CefWriteHandler Seek
-  int64 seek_offset = 10;
+  int64_t seek_offset = 10;
   int seek_whence = SEEK_CUR;
   int seek_res = stream->Seek(seek_offset, seek_whence);
   ASSERT_TRUE(handler->seek_called_);
@@ -350,7 +332,7 @@ TEST(StreamTest, WriteHandler) {
   ASSERT_EQ(seek_whence, handler->seek_whence_);
 
   // CefWriteHandler Tell
-  int64 tell_res = stream->Tell();
+  int64_t tell_res = stream->Tell();
   ASSERT_TRUE(handler->tell_called_);
   ASSERT_EQ(10, tell_res);
 

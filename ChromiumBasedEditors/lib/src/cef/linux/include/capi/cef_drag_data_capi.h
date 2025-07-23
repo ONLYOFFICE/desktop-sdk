@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,12 +33,16 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=a1ce746f0dd97d21973d4c80d8ef46391c0fd463$
+// $hash=54a8ac1ecd79da5fe7a02bc176c9b9d9a480f0d1$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_DRAG_DATA_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_DRAG_DATA_CAPI_H_
 #pragma once
+
+#if defined(BUILDING_CEF_SHARED)
+#error This file cannot be included DLL-side
+#endif
 
 #include "include/capi/cef_base_capi.h"
 #include "include/capi/cef_image_capi.h"
@@ -51,6 +55,8 @@ extern "C" {
 ///
 /// Structure used to represent drag data. The functions of this structure may
 /// be called on any thread.
+///
+/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_drag_data_t {
   ///
@@ -148,6 +154,13 @@ typedef struct _cef_drag_data_t {
   ///
   int(CEF_CALLBACK* get_file_names)(struct _cef_drag_data_t* self,
                                     cef_string_list_t names);
+
+  ///
+  /// Retrieve the list of file paths that are being dragged into the browser
+  /// window.
+  ///
+  int(CEF_CALLBACK* get_file_paths)(struct _cef_drag_data_t* self,
+                                    cef_string_list_t paths);
 
   ///
   /// Set the link URL that is being dragged.

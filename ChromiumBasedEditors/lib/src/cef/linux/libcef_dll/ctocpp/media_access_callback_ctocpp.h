@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=44c5b964bd7f3953354c90ce10979b8612b05ae8$
+// $hash=08684ee0d1f8cd47c6cacb741a128978002ddace$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_MEDIA_ACCESS_CALLBACK_CTOCPP_H_
@@ -35,8 +35,13 @@ class CefMediaAccessCallbackCToCpp
   virtual ~CefMediaAccessCallbackCToCpp();
 
   // CefMediaAccessCallback methods.
-  void Continue(uint32 allowed_permissions) override;
+  void Continue(uint32_t allowed_permissions) override;
   void Cancel() override;
 };
+
+constexpr auto CefMediaAccessCallbackCToCpp_Wrap =
+    CefMediaAccessCallbackCToCpp::Wrap;
+constexpr auto CefMediaAccessCallbackCToCpp_Unwrap =
+    CefMediaAccessCallbackCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_MEDIA_ACCESS_CALLBACK_CTOCPP_H_

@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,12 +33,16 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=8d275bd73854b2b8d5a7a5bc55fa737e020705ee$
+// $hash=5e961bec40c2a8602d6625af303791e33aa16f8d$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_TRACE_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_TRACE_CAPI_H_
 #pragma once
+
+#if defined(BUILDING_CEF_SHARED)
+#error This file cannot be included DLL-side
+#endif
 
 #include "include/capi/cef_base_capi.h"
 #include "include/capi/cef_callback_capi.h"
@@ -51,6 +55,8 @@ extern "C" {
 /// Implement this structure to receive notification when tracing has completed.
 /// The functions of this structure will be called on the browser process UI
 /// thread.
+///
+/// NOTE: This struct is allocated client-side.
 ///
 typedef struct _cef_end_tracing_callback_t {
   ///
@@ -80,8 +86,10 @@ typedef struct _cef_end_tracing_callback_t {
 /// have an optional '-' prefix to make it an excluded category. Having both
 /// included and excluded categories in the same list is not supported.
 ///
-/// Examples: - "test_MyTest*" - "test_MyTest*,test_OtherStuff" -
-/// "-excluded_category1,-excluded_category2"
+/// Examples:
+/// - "test_MyTest*"
+/// - "test_MyTest*,test_OtherStuff"
+/// - "-excluded_category1,-excluded_category2"
 ///
 /// This function must be called on the browser process UI thread.
 ///
@@ -109,7 +117,7 @@ CEF_EXPORT int cef_end_tracing(const cef_string_t* tracing_file,
 /// high-res time. Can be used by clients to synchronize with the time
 /// information in trace events.
 ///
-CEF_EXPORT int64 cef_now_from_system_trace_time(void);
+CEF_EXPORT int64_t cef_now_from_system_trace_time(void);
 
 #ifdef __cplusplus
 }

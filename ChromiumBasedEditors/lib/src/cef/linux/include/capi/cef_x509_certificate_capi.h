@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,12 +33,16 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=7a541729b4ac664b22cdea625f19f1dba1b6a685$
+// $hash=2c9a65c33971ecb12e76d207894650ac53f024e5$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_X509_CERTIFICATE_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_X509_CERTIFICATE_CAPI_H_
 #pragma once
+
+#if defined(BUILDING_CEF_SHARED)
+#error This file cannot be included DLL-side
+#endif
 
 #include "include/capi/cef_base_capi.h"
 #include "include/capi/cef_values_capi.h"
@@ -50,7 +54,9 @@ extern "C" {
 ///
 /// Structure representing the issuer or subject field of an X.509 certificate.
 ///
-typedef struct _cef_x509cert_principal_t {
+/// NOTE: This struct is allocated DLL-side.
+///
+typedef struct _cef_x509_cert_principal_t {
   ///
   /// Base structure.
   ///
@@ -63,69 +69,57 @@ typedef struct _cef_x509cert_principal_t {
   ///
   // The resulting string must be freed by calling cef_string_userfree_free().
   cef_string_userfree_t(CEF_CALLBACK* get_display_name)(
-      struct _cef_x509cert_principal_t* self);
+      struct _cef_x509_cert_principal_t* self);
 
   ///
   /// Returns the common name.
   ///
   // The resulting string must be freed by calling cef_string_userfree_free().
   cef_string_userfree_t(CEF_CALLBACK* get_common_name)(
-      struct _cef_x509cert_principal_t* self);
+      struct _cef_x509_cert_principal_t* self);
 
   ///
   /// Returns the locality name.
   ///
   // The resulting string must be freed by calling cef_string_userfree_free().
   cef_string_userfree_t(CEF_CALLBACK* get_locality_name)(
-      struct _cef_x509cert_principal_t* self);
+      struct _cef_x509_cert_principal_t* self);
 
   ///
   /// Returns the state or province name.
   ///
   // The resulting string must be freed by calling cef_string_userfree_free().
   cef_string_userfree_t(CEF_CALLBACK* get_state_or_province_name)(
-      struct _cef_x509cert_principal_t* self);
+      struct _cef_x509_cert_principal_t* self);
 
   ///
   /// Returns the country name.
   ///
   // The resulting string must be freed by calling cef_string_userfree_free().
   cef_string_userfree_t(CEF_CALLBACK* get_country_name)(
-      struct _cef_x509cert_principal_t* self);
-
-  ///
-  /// Retrieve the list of street addresses.
-  ///
-  void(CEF_CALLBACK* get_street_addresses)(
-      struct _cef_x509cert_principal_t* self,
-      cef_string_list_t addresses);
+      struct _cef_x509_cert_principal_t* self);
 
   ///
   /// Retrieve the list of organization names.
   ///
   void(CEF_CALLBACK* get_organization_names)(
-      struct _cef_x509cert_principal_t* self,
+      struct _cef_x509_cert_principal_t* self,
       cef_string_list_t names);
 
   ///
   /// Retrieve the list of organization unit names.
   ///
   void(CEF_CALLBACK* get_organization_unit_names)(
-      struct _cef_x509cert_principal_t* self,
+      struct _cef_x509_cert_principal_t* self,
       cef_string_list_t names);
-
-  ///
-  /// Retrieve the list of domain components.
-  ///
-  void(CEF_CALLBACK* get_domain_components)(
-      struct _cef_x509cert_principal_t* self,
-      cef_string_list_t components);
-} cef_x509cert_principal_t;
+} cef_x509_cert_principal_t;
 
 ///
 /// Structure representing a X.509 certificate.
 ///
-typedef struct _cef_x509certificate_t {
+/// NOTE: This struct is allocated DLL-side.
+///
+typedef struct _cef_x509_certificate_t {
   ///
   /// Base structure.
   ///
@@ -136,54 +130,54 @@ typedef struct _cef_x509certificate_t {
   /// certificates this represents the web server.  The common name of the
   /// subject should match the host name of the web server.
   ///
-  struct _cef_x509cert_principal_t*(CEF_CALLBACK* get_subject)(
-      struct _cef_x509certificate_t* self);
+  struct _cef_x509_cert_principal_t*(CEF_CALLBACK* get_subject)(
+      struct _cef_x509_certificate_t* self);
 
   ///
   /// Returns the issuer of the X.509 certificate.
   ///
-  struct _cef_x509cert_principal_t*(CEF_CALLBACK* get_issuer)(
-      struct _cef_x509certificate_t* self);
+  struct _cef_x509_cert_principal_t*(CEF_CALLBACK* get_issuer)(
+      struct _cef_x509_certificate_t* self);
 
   ///
   /// Returns the DER encoded serial number for the X.509 certificate. The value
   /// possibly includes a leading 00 byte.
   ///
   struct _cef_binary_value_t*(CEF_CALLBACK* get_serial_number)(
-      struct _cef_x509certificate_t* self);
+      struct _cef_x509_certificate_t* self);
 
   ///
   /// Returns the date before which the X.509 certificate is invalid.
   /// CefBaseTime.GetTimeT() will return 0 if no date was specified.
   ///
   cef_basetime_t(CEF_CALLBACK* get_valid_start)(
-      struct _cef_x509certificate_t* self);
+      struct _cef_x509_certificate_t* self);
 
   ///
   /// Returns the date after which the X.509 certificate is invalid.
   /// CefBaseTime.GetTimeT() will return 0 if no date was specified.
   ///
   cef_basetime_t(CEF_CALLBACK* get_valid_expiry)(
-      struct _cef_x509certificate_t* self);
+      struct _cef_x509_certificate_t* self);
 
   ///
   /// Returns the DER encoded data for the X.509 certificate.
   ///
   struct _cef_binary_value_t*(CEF_CALLBACK* get_derencoded)(
-      struct _cef_x509certificate_t* self);
+      struct _cef_x509_certificate_t* self);
 
   ///
   /// Returns the PEM encoded data for the X.509 certificate.
   ///
   struct _cef_binary_value_t*(CEF_CALLBACK* get_pemencoded)(
-      struct _cef_x509certificate_t* self);
+      struct _cef_x509_certificate_t* self);
 
   ///
   /// Returns the number of certificates in the issuer chain. If 0, the
   /// certificate is self-signed.
   ///
   size_t(CEF_CALLBACK* get_issuer_chain_size)(
-      struct _cef_x509certificate_t* self);
+      struct _cef_x509_certificate_t* self);
 
   ///
   /// Returns the DER encoded data for the certificate issuer chain. If we
@@ -191,7 +185,7 @@ typedef struct _cef_x509certificate_t {
   /// array but is an NULL string.
   ///
   void(CEF_CALLBACK* get_derencoded_issuer_chain)(
-      struct _cef_x509certificate_t* self,
+      struct _cef_x509_certificate_t* self,
       size_t* chainCount,
       struct _cef_binary_value_t** chain);
 
@@ -201,10 +195,10 @@ typedef struct _cef_x509certificate_t {
   /// array but is an NULL string.
   ///
   void(CEF_CALLBACK* get_pemencoded_issuer_chain)(
-      struct _cef_x509certificate_t* self,
+      struct _cef_x509_certificate_t* self,
       size_t* chainCount,
       struct _cef_binary_value_t** chain);
-} cef_x509certificate_t;
+} cef_x509_certificate_t;
 
 #ifdef __cplusplus
 }

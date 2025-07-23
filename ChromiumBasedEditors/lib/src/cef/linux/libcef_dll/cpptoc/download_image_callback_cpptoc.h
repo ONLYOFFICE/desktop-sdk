@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=9a9250d7e4f3d2018c4b441e6616930627625b59$
+// $hash=34986878b6937770da89b6280809f5dc87d55d89$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_DOWNLOAD_IMAGE_CALLBACK_CPPTOC_H_
@@ -36,5 +36,10 @@ class CefDownloadImageCallbackCppToC
   CefDownloadImageCallbackCppToC();
   virtual ~CefDownloadImageCallbackCppToC();
 };
+
+constexpr auto CefDownloadImageCallbackCppToC_Wrap =
+    CefDownloadImageCallbackCppToC::Wrap;
+constexpr auto CefDownloadImageCallbackCppToC_Unwrap =
+    CefDownloadImageCallbackCppToC::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_DOWNLOAD_IMAGE_CALLBACK_CPPTOC_H_

@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,12 +33,16 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=1b8f7f620685c30b91c8fa656e1a01d182684ae6$
+// $hash=aab41106167d5748ab4d15e255ffd0b68160fd7e$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_VALUES_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_VALUES_CAPI_H_
 #pragma once
+
+#if defined(BUILDING_CEF_SHARED)
+#error This file cannot be included DLL-side
+#endif
 
 #include "include/capi/cef_base_capi.h"
 
@@ -54,6 +58,8 @@ struct _cef_list_value_t;
 /// Structure that wraps other data value types. Complex types (binary,
 /// dictionary and list) will be referenced but not owned by this object. Can be
 /// used on any process and thread.
+///
+/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_value_t {
   ///
@@ -225,6 +231,8 @@ CEF_EXPORT cef_value_t* cef_value_create(void);
 /// Structure representing a binary value. Can be used on any process and
 /// thread.
 ///
+/// NOTE: This struct is allocated DLL-side.
+///
 typedef struct _cef_binary_value_t {
   ///
   /// Base structure.
@@ -266,6 +274,12 @@ typedef struct _cef_binary_value_t {
       struct _cef_binary_value_t* self);
 
   ///
+  /// Returns a pointer to the beginning of the memory block. The returned
+  /// pointer is valid as long as the cef_binary_value_t is alive.
+  ///
+  const void*(CEF_CALLBACK* get_raw_data)(struct _cef_binary_value_t* self);
+
+  ///
   /// Returns the data size.
   ///
   size_t(CEF_CALLBACK* get_size)(struct _cef_binary_value_t* self);
@@ -290,6 +304,8 @@ CEF_EXPORT cef_binary_value_t* cef_binary_value_create(const void* data,
 ///
 /// Structure representing a dictionary value. Can be used on any process and
 /// thread.
+///
+/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_dictionary_value_t {
   ///
@@ -529,6 +545,8 @@ CEF_EXPORT cef_dictionary_value_t* cef_dictionary_value_create(void);
 
 ///
 /// Structure representing a list value. Can be used on any process and thread.
+///
+/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_list_value_t {
   ///

@@ -1,0 +1,286 @@
+# Copyright (c) 2024 The Chromium Embedded Framework Authors. All rights
+# reserved. Use of this source code is governed by a BSD-style license that
+# can be found in the LICENSE file.
+
+PRODUCT_NAME = "ceftests"
+PKG_NAME = "//tests/{}".format(PRODUCT_NAME)
+
+# Allow access from subpackages only.
+package(default_visibility = [
+    ":__subpackages__",
+])
+
+load("//bazel:library_helpers.bzl", "declare_cc_library", "declare_objc_library")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+#
+# Source file lists.
+#
+
+srcs_renderer_mac = [
+    "audio_output_unittest.cc",
+    "client_app_delegates.cc",
+    "cookie_unittest.cc",
+    "cors_unittest.cc",
+    "dom_unittest.cc",
+    "frame_unittest.cc",
+    "media_access_unittest.cc",
+    "message_router_binary_unittest.cc",
+    "message_router_harness_unittest.cc",
+    "message_router_multi_query_unittest.cc",
+    "message_router_single_query_unittest.cc",
+    "message_router_threshold_unittest.cc",
+    "message_router_unittest_utils.cc",
+    "message_router_unittest_utils.h",
+    "navigation_unittest.cc",
+    "pdf_viewer_unittest.cc",
+    "permission_prompt_unittest.cc",
+    "preference_unittest.cc",
+    "process_message_unittest.cc",
+    "request_handler_unittest.cc",
+    "request_unittest.cc",
+    "response_unittest.cc",
+    "resource_request_handler_unittest.cc",
+    "routing_test_handler.cc",
+    "routing_test_handler.h",
+    "scheme_handler_unittest.cc",
+    "send_shared_process_message_unittest.cc",
+    "shared_process_message_unittest.cc",
+    "urlrequest_unittest.cc",
+    "test_handler.cc",
+    "test_handler.h",
+    "test_request.cc",
+    "test_request.h",
+    "test_server.cc",
+    "test_server.h",
+    "test_server_observer.h",
+    "test_server_observer.cc",
+    "test_server_manager.h",
+    "test_server_manager.cc",
+    "test_server_runner.h",
+    "test_server_runner.cc",
+    "test_server_runner_normal.cc",
+    "test_server_runner_test.cc",
+    "test_suite.cc",
+    "test_suite.h",
+    "test_util.cc",
+    "test_util.h",
+    "track_callback.h",
+    "thread_helper.cc",
+    "thread_helper.h",
+    "thread_unittest.cc",
+    "tracing_unittest.cc",
+    "v8_unittest.cc"
+]
+
+srcs_browser = [
+    "api_version_unittest.cc",
+    "audio_output_unittest.cc",
+    "browser_info_map_unittest.cc",
+    "certificate_error_unittest.cc",
+    "command_line_unittest.cc",
+    "cookie_unittest.cc",
+    "cors_unittest.cc",
+    "devtools_message_unittest.cc",
+    "dialog_unittest.cc",
+    "display_unittest.cc",
+    "dom_unittest.cc",
+    "download_unittest.cc",
+    "draggable_regions_unittest.cc",
+    "file_util_unittest.cc",
+    "frame_handler_unittest.cc",
+    "frame_unittest.cc",
+    "hsts_redirect_unittest.cc",
+    "image_unittest.cc",
+    "image_util.cc",
+    "image_util.h",
+    "jsdialog_unittest.cc",
+    "life_span_unittest.cc",
+    "media_access_unittest.cc",
+    "message_router_binary_unittest.cc",
+    "message_router_harness_unittest.cc",
+    "message_router_multi_query_unittest.cc",
+    "message_router_single_query_unittest.cc",
+    "message_router_threshold_unittest.cc",
+    "message_router_unittest_utils.cc",
+    "message_router_unittest_utils.h",
+    "navigation_unittest.cc",
+    "os_rendering_unittest.cc",
+    "osr_accessibility_unittest.cc",
+    "osr_display_unittest.cc",
+    "parser_unittest.cc",
+    "pdf_viewer_unittest.cc",
+    "permission_prompt_unittest.cc",
+    "preference_unittest.cc",
+    "print_unittest.cc",
+    "print_to_pdf_unittest.cc",
+    "process_message_unittest.cc",
+    "request_context_unittest.cc",
+    "request_handler_unittest.cc",
+    "request_unittest.cc",
+    "response_unittest.cc",
+    "resource.h",
+    "resource_manager_unittest.cc",
+    "resource_request_handler_unittest.cc",
+    "routing_test_handler.cc",
+    "routing_test_handler.h",
+    "run_all_unittests.cc",
+    "scheme_handler_unittest.cc",
+    "scoped_temp_dir_unittest.cc",
+    "server_unittest.cc",
+    "send_shared_process_message_unittest.cc",
+    "shared_process_message_unittest.cc",
+    "stream_unittest.cc",
+    "stream_resource_handler_unittest.cc",
+    "string_unittest.cc",
+    "client_app_delegates.cc",
+    "task_unittest.cc",
+    "test_handler.cc",
+    "test_handler.h",
+    "test_request.cc",
+    "test_request.h",
+    "test_server.cc",
+    "test_server.h",
+    "test_server_observer.h",
+    "test_server_observer.cc",
+    "test_server_observer_unittest.cc",
+    "test_server_manager.h",
+    "test_server_manager.cc",
+    "test_server_runner.h",
+    "test_server_runner.cc",
+    "test_server_runner_normal.cc",
+    "test_server_runner_test.cc",
+    "test_server_unittest.cc",
+    "test_suite.cc",
+    "test_suite.h",
+    "test_util.cc",
+    "test_util.h",
+    "time_unittest.cc",
+    "thread_helper.cc",
+    "thread_helper.h",
+    "thread_unittest.cc",
+    "tracing_unittest.cc",
+    "track_callback.h",
+    "translator_unittest.cc",
+    "urlrequest_unittest.cc",
+    "v8_unittest.cc",
+    "values_unittest.cc",
+    "version_unittest.cc",
+    "views/button_unittest.cc",
+    "views/panel_unittest.cc",
+    "views/scroll_view_unittest.cc",
+    "views/test_window_delegate.cc",
+    "views/test_window_delegate.h",
+    "views/textfield_unittest.cc",
+    "views/window_unittest.cc",
+    "waitable_event_unittest.cc",
+    "webui_unittest.cc",
+    "xml_reader_unittest.cc",
+    "zip_reader_unittest.cc"
+]
+
+srcs_browser_linux = [
+    "resource_util_linux.cc"
+]
+
+srcs_browser_mac = [
+    "os_rendering_unittest_mac.h",
+    "os_rendering_unittest_mac.mm",
+    "run_all_unittests_mac.mm"
+]
+
+srcs_browser_win = [
+    "resource_util_win_dir.cc",
+    "resource_util_win_idmap.cc"
+]
+
+filegroup(
+    name = "Resources",
+    srcs = glob(["resources/**"]),
+)
+
+#
+# MacOS targets.
+#
+
+# Copy the 'net' folder into app bundle Resources.
+filegroup(
+    name = "ResourcesMac",
+    srcs = ["resources/net"],
+)
+
+declare_objc_library(
+    name = "BrowserLibMac",
+    srcs = srcs_browser + srcs_browser_mac,
+    target_compatible_with = [
+        "@platforms//os:macos",
+    ],
+    deps = [
+        "//:cef_wrapper",
+        "//tests/gtest",
+        "//tests/shared:BrowserLibMacCefTests",
+    ],
+)
+
+declare_objc_library(
+    name = "RendererLibMac",
+    srcs = srcs_renderer_mac,
+    target_compatible_with = [
+        "@platforms//os:macos",
+    ],
+    deps = [
+        "//:cef_wrapper",
+        "//tests/gtest",
+        "//tests/shared:RendererLibMacCefTests",
+    ],
+)
+
+#
+# Windows targets.
+#
+
+# Allow access to resource.h from the declare_exe target.
+cc_library(
+    name = "ResourceH",
+    hdrs = [
+        "resource.h"
+    ]
+)
+
+# Include files directly in the declare_exe target. This simplifies the build
+# configuration and avoids issues with Windows discarding symbols (like WinMain)
+# when linking libraries.
+filegroup(
+    name = "SrcsWin",
+    srcs = srcs_browser + srcs_browser_win,
+    target_compatible_with = [
+        "@platforms//os:windows",
+    ],
+)
+
+#
+# Linux targets.
+#
+
+# Include files directly in the declare_exe target. This simplifies the build
+# configuration.
+filegroup(
+    name = "SrcsLinux",
+    srcs = srcs_browser + srcs_browser_linux,
+    target_compatible_with = [
+        "@platforms//os:linux",
+    ],
+)
+
+#
+# Alias to platform-specific build targets.
+#
+
+alias(
+    name = PRODUCT_NAME,
+    actual = select({
+        "@platforms//os:linux": "{}/linux:{}".format(PKG_NAME, PRODUCT_NAME),
+        "@platforms//os:macos": "{}/mac:{}".format(PKG_NAME, PRODUCT_NAME),
+        "@platforms//os:windows": "{}/win:{}".format(PKG_NAME, PRODUCT_NAME),
+    }),
+)

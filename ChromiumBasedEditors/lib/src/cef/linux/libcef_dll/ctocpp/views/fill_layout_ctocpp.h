@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=5d52b0af136f7ac008cb89a29ce65942932b9f64$
+// $hash=1528f0f2912a73d4ad54672dac7c8084f595f1ab$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_VIEWS_FILL_LAYOUT_CTOCPP_H_
@@ -40,5 +40,8 @@ class CefFillLayoutCToCpp : public CefCToCppRefCounted<CefFillLayoutCToCpp,
   CefRefPtr<CefFillLayout> AsFillLayout() override;
   bool IsValid() override;
 };
+
+constexpr auto CefFillLayoutCToCpp_Wrap = CefFillLayoutCToCpp::Wrap;
+constexpr auto CefFillLayoutCToCpp_Unwrap = CefFillLayoutCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_VIEWS_FILL_LAYOUT_CTOCPP_H_

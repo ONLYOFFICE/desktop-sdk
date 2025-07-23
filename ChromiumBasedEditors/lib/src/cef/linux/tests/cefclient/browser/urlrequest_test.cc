@@ -13,8 +13,7 @@
 #include "include/wrapper/cef_helpers.h"
 #include "tests/cefclient/browser/test_runner.h"
 
-namespace client {
-namespace urlrequest_test {
+namespace client::urlrequest_test {
 
 namespace {
 
@@ -37,8 +36,9 @@ class RequestClient : public CefURLRequestClient {
 
   void Detach() {
     CEF_REQUIRE_UI_THREAD();
-    if (!callback_.is_null())
+    if (!callback_.is_null()) {
       callback_.Reset();
+    }
   }
 
   void OnRequestComplete(CefRefPtr<CefURLRequest> request) override {
@@ -49,12 +49,12 @@ class RequestClient : public CefURLRequestClient {
   }
 
   void OnUploadProgress(CefRefPtr<CefURLRequest> request,
-                        int64 current,
-                        int64 total) override {}
+                        int64_t current,
+                        int64_t total) override {}
 
   void OnDownloadProgress(CefRefPtr<CefURLRequest> request,
-                          int64 current,
-                          int64 total) override {}
+                          int64_t current,
+                          int64_t total) override {}
 
   void OnDownloadData(CefRefPtr<CefURLRequest> request,
                       const void* data,
@@ -85,12 +85,12 @@ class Handler : public CefMessageRouterBrowserSide::Handler {
  public:
   Handler() { CEF_REQUIRE_UI_THREAD(); }
 
-  ~Handler() { CancelPendingRequest(); }
+  ~Handler() override { CancelPendingRequest(); }
 
   // Called due to cefQuery execution in urlrequest.html.
   bool OnQuery(CefRefPtr<CefBrowser> browser,
                CefRefPtr<CefFrame> frame,
-               int64 query_id,
+               int64_t query_id,
                const CefString& request,
                bool persistent,
                CefRefPtr<Callback> callback) override {
@@ -98,8 +98,9 @@ class Handler : public CefMessageRouterBrowserSide::Handler {
 
     // Only handle messages from the test URL.
     const std::string& url = frame->GetURL();
-    if (!test_runner::IsTestURL(url, kTestUrlPath))
+    if (!test_runner::IsTestURL(url, kTestUrlPath)) {
       return false;
+    }
 
     const std::string& message_name = request;
     if (message_name.find(kTestMessageName) == 0) {
@@ -160,10 +161,11 @@ class Handler : public CefMessageRouterBrowserSide::Handler {
                          const std::string& download_data) {
     CEF_REQUIRE_UI_THREAD();
 
-    if (error_code == ERR_NONE)
+    if (error_code == ERR_NONE) {
       callback_->Success(download_data);
-    else
+    } else {
       callback_->Failure(error_code, test_runner::GetErrorString(error_code));
+    }
 
     callback_ = nullptr;
     urlrequest_ = nullptr;
@@ -181,5 +183,4 @@ void CreateMessageHandlers(test_runner::MessageHandlerSet& handlers) {
   handlers.insert(new Handler());
 }
 
-}  // namespace urlrequest_test
-}  // namespace client
+}  // namespace client::urlrequest_test

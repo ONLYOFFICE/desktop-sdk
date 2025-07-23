@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,12 +33,16 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=e8e8dd2730a47aad9414f7bfc2e6ad96aba2c875$
+// $hash=f47f2838ce9498bf79366713ae03573c3d0e50d5$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_RESOURCE_BUNDLE_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_RESOURCE_BUNDLE_CAPI_H_
 #pragma once
+
+#if defined(BUILDING_CEF_SHARED)
+#error This file cannot be included DLL-side
+#endif
 
 #include "include/capi/cef_base_capi.h"
 #include "include/capi/cef_values_capi.h"
@@ -54,6 +58,8 @@ extern "C" {
 /// additional options related to resource bundle loading. The functions of this
 /// structure may be called on any thread unless otherwise indicated.
 ///
+/// NOTE: This struct is allocated DLL-side.
+///
 typedef struct _cef_resource_bundle_t {
   ///
   /// Base structure.
@@ -62,8 +68,9 @@ typedef struct _cef_resource_bundle_t {
 
   ///
   /// Returns the localized string for the specified |string_id| or an NULL
-  /// string if the value is not found. Include cef_pack_strings.h for a listing
-  /// of valid string ID values.
+  /// string if the value is not found. Use the cef_id_for_pack_string_name()
+  /// function for version-safe mapping of string IDS names from
+  /// cef_pack_strings.h to version-specific numerical |string_id| values.
   ///
   // The resulting string must be freed by calling cef_string_userfree_free().
   cef_string_userfree_t(CEF_CALLBACK* get_localized_string)(
@@ -72,8 +79,10 @@ typedef struct _cef_resource_bundle_t {
 
   ///
   /// Returns a cef_binary_value_t containing the decompressed contents of the
-  /// specified scale independent |resource_id| or NULL if not found. Include
-  /// cef_pack_resources.h for a listing of valid resource ID values.
+  /// specified scale independent |resource_id| or NULL if not found. Use the
+  /// cef_id_for_pack_resource_name() function for version-safe mapping of
+  /// resource IDR names from cef_pack_resources.h to version-specific numerical
+  /// |resource_id| values.
   ///
   struct _cef_binary_value_t*(CEF_CALLBACK* get_data_resource)(
       struct _cef_resource_bundle_t* self,
@@ -83,8 +92,10 @@ typedef struct _cef_resource_bundle_t {
   /// Returns a cef_binary_value_t containing the decompressed contents of the
   /// specified |resource_id| nearest the scale factor |scale_factor| or NULL if
   /// not found. Use a |scale_factor| value of SCALE_FACTOR_NONE for scale
-  /// independent resources or call GetDataResource instead.Include
-  /// cef_pack_resources.h for a listing of valid resource ID values.
+  /// independent resources or call GetDataResource instead. Use the
+  /// cef_id_for_pack_resource_name() function for version-safe mapping of
+  /// resource IDR names from cef_pack_resources.h to version-specific numerical
+  /// |resource_id| values.
   ///
   struct _cef_binary_value_t*(CEF_CALLBACK* get_data_resource_for_scale)(
       struct _cef_resource_bundle_t* self,

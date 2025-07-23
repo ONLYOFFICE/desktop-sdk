@@ -8,11 +8,11 @@
 
 #include "include/base/cef_callback.h"
 #include "include/base/cef_logging.h"
+#include "include/wrapper/cef_closure_task.h"
 #include "include/wrapper/cef_helpers.h"
-#include "tests/cefclient/browser/client_handler_std.h"
+#include "tests/cefclient/browser/default_client_handler.h"
 #include "tests/cefclient/browser/main_context.h"
 #include "tests/cefclient/browser/test_runner.h"
-#include "tests/shared/browser/extension_util.h"
 #include "tests/shared/browser/file_util.h"
 #include "tests/shared/browser/resource_util.h"
 #include "tests/shared/common/client_switches.h"
@@ -21,73 +21,68 @@ namespace client {
 
 namespace {
 
-class ClientRequestContextHandler : public CefRequestContextHandler,
-                                    public CefExtensionHandler {
+class ClientRequestContextHandler : public CefRequestContextHandler {
  public:
-  ClientRequestContextHandler() {}
+  using CreateCallback = RootWindow::Delegate::RequestContextCallback;
+
+  explicit ClientRequestContextHandler(CreateCallback callback)
+      : create_callback_(std::move(callback)) {}
 
   // CefRequestContextHandler methods:
   void OnRequestContextInitialized(
       CefRefPtr<CefRequestContext> request_context) override {
     CEF_REQUIRE_UI_THREAD();
 
-    CefRefPtr<CefCommandLine> command_line =
-        CefCommandLine::GetGlobalCommandLine();
-    if (command_line->HasSwitch(switches::kLoadExtension)) {
-      if (MainContext::Get()
-              ->GetRootWindowManager()
-              ->request_context_per_browser()) {
-        // The example extension loading implementation requires all browsers to
-        // share the same request context.
-        LOG(ERROR)
-            << "Cannot mix --load-extension and --request-context-per-browser";
-        return;
-      }
+    // Allow the startup URL to create popups that bypass the popup blocker.
+    // For example, via Tests > New Popup from the top menu. This applies for
+    // for Chrome style only.
+    const auto& startup_url =
+        MainContext::Get()->GetMainURL(/*command_line=*/nullptr);
+    request_context->SetContentSetting(startup_url, startup_url,
+                                       CEF_CONTENT_SETTING_TYPE_POPUPS,
+                                       CEF_CONTENT_SETTING_VALUE_ALLOW);
 
-      // Load one or more extension paths specified on the command-line and
-      // delimited with semicolon.
-      const std::string& extension_path =
-          command_line->GetSwitchValue(switches::kLoadExtension);
-      if (!extension_path.empty()) {
-        std::string part;
-        std::istringstream f(extension_path);
-        while (getline(f, part, ';')) {
-          if (!part.empty())
-            extension_util::LoadExtension(request_context, part, this);
-        }
-      }
+    if (!create_callback_.is_null()) {
+      // Execute the callback asynchronously.
+      CefPostTask(TID_UI,
+                  base::BindOnce(std::move(create_callback_), request_context));
     }
-  }
-
-  // CefExtensionHandler methods:
-  void OnExtensionLoaded(CefRefPtr<CefExtension> extension) override {
-    CEF_REQUIRE_UI_THREAD();
-    MainContext::Get()->GetRootWindowManager()->AddExtension(extension);
-  }
-
-  CefRefPtr<CefBrowser> GetActiveBrowser(CefRefPtr<CefExtension> extension,
-                                         CefRefPtr<CefBrowser> browser,
-                                         bool include_incognito) override {
-    CEF_REQUIRE_UI_THREAD();
-
-    // Return the browser for the active/foreground window.
-    CefRefPtr<CefBrowser> active_browser =
-        MainContext::Get()->GetRootWindowManager()->GetActiveBrowser();
-    if (!active_browser) {
-      LOG(WARNING)
-          << "No active browser available for extension "
-          << browser->GetHost()->GetExtension()->GetIdentifier().ToString();
-    } else {
-      // The active browser should not be hosting an extension.
-      DCHECK(!active_browser->GetHost()->GetExtension());
-    }
-    return active_browser;
   }
 
  private:
+  CreateCallback create_callback_;
+
   IMPLEMENT_REFCOUNTING(ClientRequestContextHandler);
   DISALLOW_COPY_AND_ASSIGN(ClientRequestContextHandler);
 };
+
+// Ensure a compatible set of window creation attributes.
+void SanityCheckWindowConfig(const bool is_devtools,
+                             const bool use_views,
+                             bool& use_alloy_style,
+                             bool& with_osr) {
+  // This configuration is not supported by cefclient architecture and
+  // should use default window creation instead.
+  CHECK(!(is_devtools && !use_views));
+
+  if (is_devtools && use_alloy_style) {
+    LOG(WARNING) << "Alloy style is not supported with Chrome runtime DevTools;"
+                    " using Chrome style.";
+    use_alloy_style = false;
+  }
+
+  if (!use_alloy_style && with_osr) {
+    LOG(WARNING) << "Windowless rendering is not supported with Chrome style;"
+                    " using windowed rendering.";
+    with_osr = false;
+  }
+
+  if (use_views && with_osr) {
+    LOG(WARNING) << "Windowless rendering is not supported with Views;"
+                    " using windowed rendering.";
+    with_osr = false;
+  }
+}
 
 }  // namespace
 
@@ -112,8 +107,11 @@ scoped_refptr<RootWindow> RootWindowManager::CreateRootWindow(
   CefBrowserSettings settings;
   MainContext::Get()->PopulateBrowserSettings(&settings);
 
+  SanityCheckWindowConfig(/*is_devtools=*/false, config->use_views,
+                          config->use_alloy_style, config->with_osr);
+
   scoped_refptr<RootWindow> root_window =
-      RootWindow::Create(MainContext::Get()->UseViews());
+      RootWindow::Create(config->use_views, config->use_alloy_style);
   root_window->Init(this, std::move(config), settings);
 
   // Store a reference to the root window on the main thread.
@@ -123,31 +121,47 @@ scoped_refptr<RootWindow> RootWindowManager::CreateRootWindow(
 }
 
 scoped_refptr<RootWindow> RootWindowManager::CreateRootWindowAsPopup(
+    bool use_views,
+    bool use_alloy_style,
     bool with_controls,
     bool with_osr,
+    int opener_browser_id,
+    int popup_id,
+    bool is_devtools,
     const CefPopupFeatures& popupFeatures,
     CefWindowInfo& windowInfo,
     CefRefPtr<CefClient>& client,
     CefBrowserSettings& settings) {
   CEF_REQUIRE_UI_THREAD();
 
-  MainContext::Get()->PopulateBrowserSettings(&settings);
-
-  if (MainContext::Get()->UseDefaultPopup()) {
+  if (MainContext::Get()->UseDefaultPopup() || (is_devtools && !use_views)) {
     // Use default window creation for the popup. A new |client| instance is
-    // still required by cefclient architecture.
-    client = new ClientHandlerStd(/*delegate=*/nullptr, with_controls,
-                                  /*startup_url=*/CefString());
+    // required by cefclient architecture if the type is not already
+    // DefaultClientHandler.
+    if (!DefaultClientHandler::GetForClient(client)) {
+      client = new DefaultClientHandler(use_alloy_style);
+    }
     return nullptr;
   }
 
-  if (!temp_window_) {
-    // TempWindow must be created on the UI thread.
+  CHECK_GT(opener_browser_id, 0);
+  CHECK(popup_id > 0 || is_devtools);
+
+  SanityCheckWindowConfig(is_devtools, use_views, use_alloy_style, with_osr);
+
+  if (!temp_window_ && !use_views) {
+    // TempWindow must be created on the UI thread. It is only used with
+    // native (non-Views) parent windows.
     temp_window_.reset(new TempWindow());
   }
 
+  MainContext::Get()->PopulateBrowserSettings(&settings);
+
   scoped_refptr<RootWindow> root_window =
-      RootWindow::Create(MainContext::Get()->UseViews());
+      RootWindow::Create(use_views, use_alloy_style);
+  if (!is_devtools) {
+    root_window->SetPopupId(opener_browser_id, popup_id);
+  }
   root_window->InitAsPopup(this, with_controls, with_osr, popupFeatures,
                            windowInfo, client, settings);
 
@@ -157,54 +171,10 @@ scoped_refptr<RootWindow> RootWindowManager::CreateRootWindowAsPopup(
   return root_window;
 }
 
-scoped_refptr<RootWindow> RootWindowManager::CreateRootWindowAsExtension(
-    CefRefPtr<CefExtension> extension,
-    const CefRect& source_bounds,
-    CefRefPtr<CefWindow> parent_window,
-    base::OnceClosure close_callback,
-    bool with_controls,
-    bool with_osr) {
-  const std::string& extension_url = extension_util::GetExtensionURL(extension);
-  if (extension_url.empty()) {
-    NOTREACHED() << "Extension cannot be loaded directly.";
-    return nullptr;
-  }
-
-  // Create an initially hidden browser window that loads the extension URL.
-  // We'll show the window when the desired size becomes available via
-  // ClientHandler::OnAutoResize.
-  auto config = std::make_unique<RootWindowConfig>();
-  config->with_controls = with_controls;
-  config->with_osr = with_osr;
-  config->with_extension = true;
-  config->initially_hidden = true;
-  config->source_bounds = source_bounds;
-  config->parent_window = parent_window;
-  config->close_callback = std::move(close_callback);
-  config->url = extension_url;
-  return CreateRootWindow(std::move(config));
-}
-
-bool RootWindowManager::HasRootWindowAsExtension(
-    CefRefPtr<CefExtension> extension) {
-  REQUIRE_MAIN_THREAD();
-
-  for (auto root_window : root_windows_) {
-    if (!root_window->WithExtension())
-      continue;
-
-    CefRefPtr<CefBrowser> browser = root_window->GetBrowser();
-    if (!browser)
-      continue;
-
-    CefRefPtr<CefExtension> browser_extension =
-        browser->GetHost()->GetExtension();
-    DCHECK(browser_extension);
-    if (browser_extension->GetIdentifier() == extension->GetIdentifier())
-      return true;
-  }
-
-  return false;
+void RootWindowManager::AbortOrClosePopup(int opener_browser_id, int popup_id) {
+  CEF_REQUIRE_UI_THREAD();
+  // Continue on the main thread.
+  OnAbortOrClosePopup(opener_browser_id, popup_id);
 }
 
 scoped_refptr<RootWindow> RootWindowManager::GetWindowForBrowser(
@@ -213,8 +183,9 @@ scoped_refptr<RootWindow> RootWindowManager::GetWindowForBrowser(
 
   for (auto root_window : root_windows_) {
     CefRefPtr<CefBrowser> browser = root_window->GetBrowser();
-    if (browser.get() && browser->GetIdentifier() == browser_id)
+    if (browser.get() && browser->GetIdentifier() == browser_id) {
       return root_window;
+    }
   }
   return nullptr;
 }
@@ -222,11 +193,6 @@ scoped_refptr<RootWindow> RootWindowManager::GetWindowForBrowser(
 scoped_refptr<RootWindow> RootWindowManager::GetActiveRootWindow() const {
   REQUIRE_MAIN_THREAD();
   return active_root_window_;
-}
-
-CefRefPtr<CefBrowser> RootWindowManager::GetActiveBrowser() const {
-  base::AutoLock lock_scope(active_browser_lock_);
-  return active_browser_;
 }
 
 void RootWindowManager::CloseAllWindows(bool force) {
@@ -237,8 +203,9 @@ void RootWindowManager::CloseAllWindows(bool force) {
     return;
   }
 
-  if (root_windows_.empty())
+  if (root_windows_.empty()) {
     return;
+  }
 
   // Use a copy of |root_windows_| because the original set may be modified
   // in OnRootWindowDestroyed while iterating.
@@ -249,27 +216,50 @@ void RootWindowManager::CloseAllWindows(bool force) {
   }
 }
 
-void RootWindowManager::AddExtension(CefRefPtr<CefExtension> extension) {
+void RootWindowManager::OtherBrowserCreated(int browser_id,
+                                            int opener_browser_id) {
   if (!CURRENTLY_ON_MAIN_THREAD()) {
     // Execute this method on the main thread.
-    MAIN_POST_CLOSURE(base::BindOnce(&RootWindowManager::AddExtension,
-                                     base::Unretained(this), extension));
+    MAIN_POST_CLOSURE(base::BindOnce(&RootWindowManager::OtherBrowserCreated,
+                                     base::Unretained(this), browser_id,
+                                     opener_browser_id));
     return;
   }
 
-  // Don't track extensions that can't be loaded directly.
-  if (extension_util::GetExtensionURL(extension).empty())
-    return;
+  other_browser_ct_++;
 
-  // Don't add the same extension multiple times.
-  ExtensionSet::const_iterator it = extensions_.begin();
-  for (; it != extensions_.end(); ++it) {
-    if ((*it)->GetIdentifier() == extension->GetIdentifier())
-      return;
+  // Track ownership of popup browsers that don't have a RootWindow.
+  if (opener_browser_id > 0) {
+    other_browser_owners_[opener_browser_id].insert(browser_id);
+  }
+}
+
+void RootWindowManager::OtherBrowserClosed(int browser_id,
+                                           int opener_browser_id) {
+  if (!CURRENTLY_ON_MAIN_THREAD()) {
+    // Execute this method on the main thread.
+    MAIN_POST_CLOSURE(base::BindOnce(&RootWindowManager::OtherBrowserClosed,
+                                     base::Unretained(this), browser_id,
+                                     opener_browser_id));
+    return;
   }
 
-  extensions_.insert(extension);
-  NotifyExtensionsChanged();
+  DCHECK_GT(other_browser_ct_, 0);
+  other_browser_ct_--;
+
+  // Track ownership of popup browsers that don't have a RootWindow.
+  if (opener_browser_id > 0) {
+    DCHECK(other_browser_owners_.find(opener_browser_id) !=
+           other_browser_owners_.end());
+    auto& child_set = other_browser_owners_[opener_browser_id];
+    DCHECK(child_set.find(browser_id) != child_set.end());
+    child_set.erase(browser_id);
+    if (child_set.empty()) {
+      other_browser_owners_.erase(opener_browser_id);
+    }
+  }
+
+  MaybeCleanup();
 }
 
 void RootWindowManager::OnRootWindowCreated(
@@ -282,31 +272,89 @@ void RootWindowManager::OnRootWindowCreated(
   }
 
   root_windows_.insert(root_window);
-  if (!root_window->WithExtension()) {
-    root_window->OnExtensionsChanged(extensions_);
 
-    if (root_windows_.size() == 1U) {
-      // The first non-extension root window should be considered the active
-      // window.
-      OnRootWindowActivated(root_window.get());
+  if (root_windows_.size() == 1U) {
+    // The first root window should be considered the active window.
+    OnRootWindowActivated(root_window.get());
+  }
+}
+
+void RootWindowManager::OnAbortOrClosePopup(int opener_browser_id,
+                                            int popup_id) {
+  if (!CURRENTLY_ON_MAIN_THREAD()) {
+    // Execute this method on the main thread.
+    MAIN_POST_CLOSURE(base::BindOnce(&RootWindowManager::OnAbortOrClosePopup,
+                                     base::Unretained(this), opener_browser_id,
+                                     popup_id));
+    return;
+  }
+
+  // Use a copy of |root_windows_| because the original set may be modified
+  // in OnRootWindowDestroyed while iterating.
+  RootWindowSet root_windows = root_windows_;
+
+  // Close or destroy the associated RootWindow(s). This may be a specific popup
+  // (|popup_id| > 0), or all popups if the opener is closing (|popup_id| < 0).
+  for (auto root_window : root_windows) {
+    if (root_window->IsPopupIdMatch(opener_browser_id, popup_id)) {
+      const bool window_created = root_window->IsWindowCreated();
+      LOG(INFO) << (window_created ? "Closing" : "Aborting") << " popup "
+                << root_window->popup_id() << " of browser "
+                << opener_browser_id;
+      if (window_created) {
+        // Close the window in the usual way. Will result in a call to
+        // OnRootWindowDestroyed.
+        root_window->Close(/*force=*/false);
+      } else {
+        // The window was not created, so destroy directly.
+        OnRootWindowDestroyed(root_window.get());
+      }
+    }
+  }
+
+  // Close all other associated popups if the opener is closing. These popups
+  // don't have a RootWindow (e.g. when running with `--use-default-popup`).
+  if (popup_id < 0 && other_browser_owners_.find(opener_browser_id) !=
+                          other_browser_owners_.end()) {
+    // Use a copy as the original set may be modified in OtherBrowserClosed
+    // while iterating.
+    auto set = other_browser_owners_[opener_browser_id];
+    for (auto browser_id : set) {
+      if (auto browser = CefBrowserHost::GetBrowserByIdentifier(browser_id)) {
+        LOG(INFO) << "Closing popup browser " << browser_id << " of browser "
+                  << opener_browser_id;
+        browser->GetHost()->CloseBrowser(/*force=*/false);
+      }
     }
   }
 }
 
-void RootWindowManager::NotifyExtensionsChanged() {
+CefRefPtr<CefRequestContext> RootWindowManager::GetRequestContext() {
   REQUIRE_MAIN_THREAD();
+  return CreateRequestContext(RequestContextCallback());
+}
 
-  for (auto root_window : root_windows_) {
-    if (!root_window->WithExtension())
-      root_window->OnExtensionsChanged(extensions_);
+void RootWindowManager::GetRequestContext(RequestContextCallback callback) {
+  DCHECK(!callback.is_null());
+
+  if (!CURRENTLY_ON_MAIN_THREAD()) {
+    // Execute on the main thread.
+    MAIN_POST_CLOSURE(base::BindOnce(
+        base::IgnoreResult(&RootWindowManager::CreateRequestContext),
+        base::Unretained(this), std::move(callback)));
+  } else {
+    CreateRequestContext(std::move(callback));
   }
 }
 
-CefRefPtr<CefRequestContext> RootWindowManager::GetRequestContext(
-    RootWindow* root_window) {
+CefRefPtr<CefRequestContext> RootWindowManager::CreateRequestContext(
+    RequestContextCallback callback) {
   REQUIRE_MAIN_THREAD();
 
   if (request_context_per_browser_) {
+    // Synchronous use of non-global request contexts is not safe.
+    CHECK(!callback.is_null());
+
     // Create a new request context for each browser.
     CefRequestContextSettings settings;
 
@@ -328,15 +376,21 @@ CefRefPtr<CefRequestContext> RootWindowManager::GetRequestContext(
       }
     }
 
-    return CefRequestContext::CreateContext(settings,
-                                            new ClientRequestContextHandler);
+    return CefRequestContext::CreateContext(
+        settings, new ClientRequestContextHandler(std::move(callback)));
   }
 
   // All browsers will share the global request context.
-  if (!shared_request_context_.get()) {
+  if (!shared_request_context_) {
     shared_request_context_ = CefRequestContext::CreateContext(
-        CefRequestContext::GetGlobalContext(), new ClientRequestContextHandler);
+        CefRequestContext::GetGlobalContext(),
+        new ClientRequestContextHandler(std::move(callback)));
+  } else if (!callback.is_null()) {
+    // Execute the callback on the UI thread.
+    CefPostTask(TID_UI,
+                base::BindOnce(std::move(callback), shared_request_context_));
   }
+
   return shared_request_context_;
 }
 
@@ -366,65 +420,34 @@ void RootWindowManager::OnRootWindowDestroyed(RootWindow* root_window) {
 
   RootWindowSet::iterator it = root_windows_.find(root_window);
   DCHECK(it != root_windows_.end());
-  if (it != root_windows_.end())
+  if (it != root_windows_.end()) {
     root_windows_.erase(it);
+  }
 
   if (root_window == active_root_window_) {
     active_root_window_ = nullptr;
-
-    base::AutoLock lock_scope(active_browser_lock_);
-    active_browser_ = nullptr;
   }
 
-  if (terminate_when_all_windows_closed_ && root_windows_.empty()) {
-    // All windows have closed. Clean up on the UI thread.
-    CefPostTask(TID_UI, base::BindOnce(&RootWindowManager::CleanupOnUIThread,
-                                       base::Unretained(this)));
-  }
+  MaybeCleanup();
 }
 
 void RootWindowManager::OnRootWindowActivated(RootWindow* root_window) {
   REQUIRE_MAIN_THREAD();
 
-  if (root_window->WithExtension()) {
-    // We don't want extension apps to become the active RootWindow.
+  if (root_window == active_root_window_) {
     return;
   }
-
-  if (root_window == active_root_window_)
-    return;
 
   active_root_window_ = root_window;
-
-  {
-    base::AutoLock lock_scope(active_browser_lock_);
-    // May be nullptr at this point, in which case we'll make the association in
-    // OnBrowserCreated.
-    active_browser_ = active_root_window_->GetBrowser();
-  }
 }
 
-void RootWindowManager::OnBrowserCreated(RootWindow* root_window,
-                                         CefRefPtr<CefBrowser> browser) {
+void RootWindowManager::MaybeCleanup() {
   REQUIRE_MAIN_THREAD();
-
-  if (root_window == active_root_window_) {
-    base::AutoLock lock_scope(active_browser_lock_);
-    active_browser_ = browser;
-  }
-}
-
-void RootWindowManager::CreateExtensionWindow(
-    CefRefPtr<CefExtension> extension,
-    const CefRect& source_bounds,
-    CefRefPtr<CefWindow> parent_window,
-    base::OnceClosure close_callback,
-    bool with_osr) {
-  REQUIRE_MAIN_THREAD();
-
-  if (!HasRootWindowAsExtension(extension)) {
-    CreateRootWindowAsExtension(extension, source_bounds, parent_window,
-                                std::move(close_callback), false, with_osr);
+  if (terminate_when_all_windows_closed_ && root_windows_.empty() &&
+      other_browser_ct_ == 0) {
+    // All windows and browsers have closed. Clean up on the UI thread.
+    CefPostTask(TID_UI, base::BindOnce(&RootWindowManager::CleanupOnUIThread,
+                                       base::Unretained(this)));
   }
 }
 

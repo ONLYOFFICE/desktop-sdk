@@ -22,7 +22,6 @@ set(CEFSIMPLE_SRCS_MAC
   simple_handler_mac.mm
   )
 set(CEFSIMPLE_SRCS_WINDOWS
-  cefsimple.rc
   cefsimple_win.cc
   resource.h
   simple_handler_win.cc
@@ -30,8 +29,15 @@ set(CEFSIMPLE_SRCS_WINDOWS
 APPEND_PLATFORM_SOURCES(CEFSIMPLE_SRCS)
 source_group(cefsimple FILES ${CEFSIMPLE_SRCS})
 
+set(CEFSIMPLE_WIN_SRCS_WINDOWS
+  win/cefsimple.rc
+  )
+APPEND_PLATFORM_SOURCES(CEFSIMPLE_WIN_SRCS)
+source_group(cefsimple\\\\win FILES ${CEFSIMPLE_WIN_SRCS})
+
 set(CEFSIMPLE_SRCS
   ${CEFSIMPLE_SRCS}
+  ${CEFSIMPLE_WIN_SRCS}
   )
 
 # cefsimple helper sources.
@@ -43,7 +49,7 @@ source_group(cefsimple FILES ${CEFSIMPLE_HELPER_SRCS})
 
 # cefsimple resources.
 set(CEFSIMPLE_RESOURCES_MAC_SRCS_MAC
-  mac/Info.plist
+  mac/Info.plist.in
   mac/cefsimple.icns
   )
 APPEND_PLATFORM_SOURCES(CEFSIMPLE_RESOURCES_MAC_SRCS)
@@ -130,18 +136,13 @@ if(OS_MAC)
   set(EXECUTABLE_NAME "${CEF_TARGET}")
   set(PRODUCT_NAME "${CEF_TARGET}")
 
-  if(USE_SANDBOX)
-    # Logical target used to link the cef_sandbox library.
-    ADD_LOGICAL_TARGET("cef_sandbox_lib" "${CEF_SANDBOX_LIB_DEBUG}" "${CEF_SANDBOX_LIB_RELEASE}")
-  endif()
-
   # Main app bundle target.
   add_executable(${CEF_TARGET} MACOSX_BUNDLE ${CEFSIMPLE_RESOURCES_SRCS} ${CEFSIMPLE_SRCS})
   SET_EXECUTABLE_TARGET_PROPERTIES(${CEF_TARGET})
   add_dependencies(${CEF_TARGET} libcef_dll_wrapper)
   target_link_libraries(${CEF_TARGET} libcef_dll_wrapper ${CEF_STANDARD_LIBS})
   set_target_properties(${CEF_TARGET} PROPERTIES
-    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/mac/Info.plist
+    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/mac/Info.plist.in
     )
 
   # Copy the CEF framework into the Frameworks directory.
@@ -171,7 +172,7 @@ if(OS_MAC)
     # MACOSX_BUNDLE_INFO_PLIST) uses global env variables and would insert the
     # wrong values with multiple targets.
     set(_helper_info_plist "${CMAKE_CURRENT_BINARY_DIR}/helper-Info${_target_suffix}.plist")
-    file(READ "${CMAKE_CURRENT_SOURCE_DIR}/mac/helper-Info.plist" _plist_contents)
+    file(READ "${CMAKE_CURRENT_SOURCE_DIR}/mac/helper-Info.plist.in" _plist_contents)
     string(REPLACE "\${EXECUTABLE_NAME}" "${_helper_output_name}" _plist_contents ${_plist_contents})
     string(REPLACE "\${PRODUCT_NAME}" "${_helper_output_name}" _plist_contents ${_plist_contents})
     string(REPLACE "\${BUNDLE_ID_SUFFIX}" "${_plist_suffix}" _plist_contents ${_plist_contents})
@@ -186,10 +187,6 @@ if(OS_MAC)
       MACOSX_BUNDLE_INFO_PLIST ${_helper_info_plist}
       OUTPUT_NAME ${_helper_output_name}
       )
-
-    if(USE_SANDBOX)
-      target_link_libraries(${_helper_target} cef_sandbox_lib)
-    endif()
 
     # Add the Helper as a dependency of the main executable target.
     add_dependencies(${CEF_TARGET} "${_helper_target}")
@@ -219,22 +216,38 @@ endif()
 #
 
 if(OS_WINDOWS)
-  # Executable target.
-  add_executable(${CEF_TARGET} WIN32 ${CEFSIMPLE_SRCS})
-  add_dependencies(${CEF_TARGET} libcef_dll_wrapper)
-  SET_EXECUTABLE_TARGET_PROPERTIES(${CEF_TARGET})
-  target_link_libraries(${CEF_TARGET} libcef_lib libcef_dll_wrapper ${CEF_STANDARD_LIBS})
-
   if(USE_SANDBOX)
-    # Logical target used to link the cef_sandbox library.
-    ADD_LOGICAL_TARGET("cef_sandbox_lib" "${CEF_SANDBOX_LIB_DEBUG}" "${CEF_SANDBOX_LIB_RELEASE}")
-    target_link_libraries(${CEF_TARGET} cef_sandbox_lib ${CEF_SANDBOX_STANDARD_LIBS})
+    # Shared library (DLL) target.
+    add_library(${CEF_TARGET} SHARED ${CEFSIMPLE_SRCS})
+    SET_LIBRARY_TARGET_PROPERTIES(${CEF_TARGET})
+
+    # Copy and rename the bootstrap binary.
+    COPY_SINGLE_FILE(${CEF_TARGET} ${CEF_BINARY_DIR}/bootstrap.exe ${CEF_TARGET_OUT_DIR}/${CEF_TARGET}.exe)
+
+    if (CMAKE_GENERATOR MATCHES "Visual Studio")
+      # Make the bootstrap binary the default command for the Visual Studio debugger.
+      set_target_properties(${CEF_TARGET} PROPERTIES
+        VS_DEBUGGER_COMMAND "$<TARGET_FILE_DIR:${CEF_TARGET}>/${CEF_TARGET}.exe"
+      )
+    endif()
+  else()
+    # Executable target.
+    add_executable(${CEF_TARGET} WIN32 ${CEFSIMPLE_SRCS})
+    SET_EXECUTABLE_TARGET_PROPERTIES(${CEF_TARGET})
+
+    # Add the custom manifest files to the executable.
+    ADD_WINDOWS_MANIFEST("${CMAKE_CURRENT_SOURCE_DIR}/win" "${CEF_TARGET}" "exe")
   endif()
 
-  # Add the custom manifest files to the executable.
-  ADD_WINDOWS_MANIFEST("${CMAKE_CURRENT_SOURCE_DIR}" "${CEF_TARGET}" "exe")
+  add_dependencies(${CEF_TARGET} libcef_dll_wrapper)
+  target_link_libraries(${CEF_TARGET} libcef_lib libcef_dll_wrapper ${CEF_STANDARD_LIBS})
 
   # Copy binary and resource files to the target output directory.
   COPY_FILES("${CEF_TARGET}" "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" "${CEF_TARGET_OUT_DIR}")
   COPY_FILES("${CEF_TARGET}" "${CEF_RESOURCE_FILES}" "${CEF_RESOURCE_DIR}" "${CEF_TARGET_OUT_DIR}")
+
+  if(USE_SANDBOX)
+    # Set LPAC ACLs required for Windows sandbox support.
+    SET_LPAC_ACLS("${CEF_TARGET}")
+  endif()
 endif()

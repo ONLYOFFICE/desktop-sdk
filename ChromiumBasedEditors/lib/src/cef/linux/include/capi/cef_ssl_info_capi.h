@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,12 +33,16 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=99dff3042ea437ecf5771eff9b3cab4c22190534$
+// $hash=dce2233cf08d4c9a55470aa11e4f8fab3cb2bede$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_SSL_INFO_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_SSL_INFO_CAPI_H_
 #pragma once
+
+#if defined(BUILDING_CEF_SHARED)
+#error This file cannot be included DLL-side
+#endif
 
 #include "include/capi/cef_base_capi.h"
 #include "include/capi/cef_values_capi.h"
@@ -50,6 +54,8 @@ extern "C" {
 
 ///
 /// Structure representing SSL information.
+///
+/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_sslinfo_t {
   ///
@@ -66,7 +72,7 @@ typedef struct _cef_sslinfo_t {
   ///
   /// Returns the X.509 certificate.
   ///
-  struct _cef_x509certificate_t*(CEF_CALLBACK* get_x509certificate)(
+  struct _cef_x509_certificate_t*(CEF_CALLBACK* get_x509_certificate)(
       struct _cef_sslinfo_t* self);
 } cef_sslinfo_t;
 

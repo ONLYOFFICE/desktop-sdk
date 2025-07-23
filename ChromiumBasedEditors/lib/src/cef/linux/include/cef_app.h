@@ -59,7 +59,7 @@ class CefApp;
 /// |windows_sandbox_info| parameter is only used on Windows and may be NULL
 /// (see cef_sandbox_win.h for details).
 ///
-/*--cef(api_hash_check,optional_param=application,
+/*--cef(api_hash_check,no_stack_protector,optional_param=application,
         optional_param=windows_sandbox_info)--*/
 int CefExecuteProcess(const CefMainArgs& args,
                       CefRefPtr<CefApp> application,
@@ -67,10 +67,13 @@ int CefExecuteProcess(const CefMainArgs& args,
 
 ///
 /// This function should be called on the main application thread to initialize
-/// the CEF browser process. The |application| parameter may be empty. A return
-/// value of true indicates that it succeeded and false indicates that it
-/// failed. The |windows_sandbox_info| parameter is only used on Windows and may
-/// be NULL (see cef_sandbox_win.h for details).
+/// the CEF browser process. The |application| parameter may be empty. Returns
+/// true if initialization succeeds. Returns false if initialization fails or if
+/// early exit is desired (for example, due to process singleton relaunch
+/// behavior). If this function returns false then the application should exit
+/// immediately without calling any other CEF functions except, optionally,
+/// CefGetExitCode. The |windows_sandbox_info| parameter is only used on Windows
+/// and may be NULL (see cef_sandbox_win.h for details).
 ///
 /*--cef(api_hash_check,optional_param=application,
         optional_param=windows_sandbox_info)--*/
@@ -80,8 +83,21 @@ bool CefInitialize(const CefMainArgs& args,
                    void* windows_sandbox_info);
 
 ///
+/// This function can optionally be called on the main application thread after
+/// CefInitialize to retrieve the initialization exit code. When CefInitialize
+/// returns true the exit code will be 0 (CEF_RESULT_CODE_NORMAL_EXIT).
+/// Otherwise, see cef_resultcode_t for possible exit code values including
+/// browser process initialization errors and normal early exit conditions (such
+/// as CEF_RESULT_CODE_NORMAL_EXIT_PROCESS_NOTIFIED for process singleton
+/// relaunch behavior).
+///
+/*--cef()--*/
+int CefGetExitCode();
+
+///
 /// This function should be called on the main application thread to shut down
-/// the CEF browser process before the application exits.
+/// the CEF browser process before the application exits. Do not call any
+/// other CEF functions after calling this function.
 ///
 /*--cef()--*/
 void CefShutdown();
@@ -158,10 +174,9 @@ class CefApp : public virtual CefBaseRefCounted {
       CefRawPtr<CefSchemeRegistrar> registrar) {}
 
   ///
-  /// Return the handler for resource bundle events. If
-  /// cef_settings_t.pack_loading_disabled is true a handler must be returned.
-  /// If no handler is returned resources will be loaded from pack files. This
-  /// method is called by the browser and render processes on multiple threads.
+  /// Return the handler for resource bundle events. If no handler is returned
+  /// resources will be loaded from pack files. This method is called by the
+  /// browser and render processes on multiple threads.
   ///
   /*--cef()--*/
   virtual CefRefPtr<CefResourceBundleHandler> GetResourceBundleHandler() {

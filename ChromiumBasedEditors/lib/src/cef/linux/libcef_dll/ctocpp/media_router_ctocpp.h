@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=ef079450730cdf1b8720a84d83b361c6423a091a$
+// $hash=f5a521a542d41ade2f5a2ea89afb33585d6a1da9$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_MEDIA_ROUTER_CTOCPP_H_
@@ -43,5 +43,8 @@ class CefMediaRouterCToCpp : public CefCToCppRefCounted<CefMediaRouterCToCpp,
                    CefRefPtr<CefMediaRouteCreateCallback> callback) override;
   void NotifyCurrentRoutes() override;
 };
+
+constexpr auto CefMediaRouterCToCpp_Wrap = CefMediaRouterCToCpp::Wrap;
+constexpr auto CefMediaRouterCToCpp_Unwrap = CefMediaRouterCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_MEDIA_ROUTER_CTOCPP_H_

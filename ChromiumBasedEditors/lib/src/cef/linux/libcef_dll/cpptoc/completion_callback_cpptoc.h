@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=407df18b90244b245e73c4f69a199663df079f0d$
+// $hash=c357bc4c21a42cb206c67b27f253e0f81af859eb$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_COMPLETION_CALLBACK_CPPTOC_H_
@@ -34,5 +34,10 @@ class CefCompletionCallbackCppToC
   CefCompletionCallbackCppToC();
   virtual ~CefCompletionCallbackCppToC();
 };
+
+constexpr auto CefCompletionCallbackCppToC_Wrap =
+    CefCompletionCallbackCppToC::Wrap;
+constexpr auto CefCompletionCallbackCppToC_Unwrap =
+    CefCompletionCallbackCppToC::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_COMPLETION_CALLBACK_CPPTOC_H_

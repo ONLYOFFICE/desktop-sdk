@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,12 +33,16 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=f72e94f6bd63b6ea623c4d3170b5ad4333c136d6$
+// $hash=a3eb8a6dade40d321ec728f9cec5ba41d054c139$
 //
 
 #ifndef CEF_INCLUDE_CAPI_VIEWS_CEF_BROWSER_VIEW_CAPI_H_
 #define CEF_INCLUDE_CAPI_VIEWS_CEF_BROWSER_VIEW_CAPI_H_
 #pragma once
+
+#if defined(BUILDING_CEF_SHARED)
+#error This file cannot be included DLL-side
+#endif
 
 #include "include/capi/cef_browser_capi.h"
 #include "include/capi/views/cef_browser_view_delegate_capi.h"
@@ -51,6 +55,8 @@ extern "C" {
 ///
 /// A View hosting a cef_browser_t instance. Methods must be called on the
 /// browser process UI thread unless otherwise indicated.
+///
+/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_browser_view_t {
   ///
@@ -67,7 +73,7 @@ typedef struct _cef_browser_view_t {
 
   ///
   /// Returns the Chrome toolbar associated with this BrowserView. Only
-  /// supported when using the Chrome runtime. The cef_browser_view_delegate_t::
+  /// supported when using Chrome style. The cef_browser_view_delegate_t::
   /// get_chrome_toolbar_type() function must return a value other than
   /// CEF_CTT_NONE and the toolbar will not be available until after this
   /// BrowserView is added to a cef_window_t and
@@ -77,16 +83,29 @@ typedef struct _cef_browser_view_t {
       struct _cef_browser_view_t* self);
 
   ///
-  /// Sets whether accelerators registered with cef_window_t::SetAccelerator are
-  /// triggered before or after the event is sent to the cef_browser_t. If
-  /// |prefer_accelerators| is true (1) then the matching accelerator will be
-  /// triggered immediately and the event will not be sent to the cef_browser_t.
-  /// If |prefer_accelerators| is false (0) then the matching accelerator will
-  /// only be triggered if the event is not handled by web content or by
-  /// cef_keyboard_handler_t. The default value is false (0).
+  /// Sets whether normal priority accelerators are first forwarded to the web
+  /// content (`keydown` event handler) or cef_keyboard_handler_t. Normal
+  /// priority accelerators can be registered via cef_window_t::SetAccelerator
+  /// (with |high_priority|=false (0)) or internally for standard accelerators
+  /// supported by Chrome style. If |prefer_accelerators| is true (1) then the
+  /// matching accelerator will be triggered immediately (calling
+  /// cef_window_delegate_t::OnAccelerator or
+  /// cef_command_handler_t::OnChromeCommand respectively) and the event will
+  /// not be forwarded to the web content or cef_keyboard_handler_t first. If
+  /// |prefer_accelerators| is false (0) then the matching accelerator will only
+  /// be triggered if the event is not handled by web content (`keydown` event
+  /// handler that calls `event.preventDefault()`) or by cef_keyboard_handler_t.
+  /// The default value is false (0).
   ///
   void(CEF_CALLBACK* set_prefer_accelerators)(struct _cef_browser_view_t* self,
                                               int prefer_accelerators);
+
+  ///
+  /// Returns the runtime style for this BrowserView (ALLOY or CHROME). See
+  /// cef_runtime_style_t documentation for details.
+  ///
+  cef_runtime_style_t(CEF_CALLBACK* get_runtime_style)(
+      struct _cef_browser_view_t* self);
 } cef_browser_view_t;
 
 ///

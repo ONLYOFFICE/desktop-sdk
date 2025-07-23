@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=99b478c698261aa2aaf566b283fc938aacf3b2bf$
+// $hash=8338e5ea988b05c1257677646875aeafbc4d1b93$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_LIST_VALUE_CTOCPP_H_
@@ -64,5 +64,8 @@ class CefListValueCToCpp : public CefCToCppRefCounted<CefListValueCToCpp,
                      CefRefPtr<CefDictionaryValue> value) override;
   bool SetList(size_t index, CefRefPtr<CefListValue> value) override;
 };
+
+constexpr auto CefListValueCToCpp_Wrap = CefListValueCToCpp::Wrap;
+constexpr auto CefListValueCToCpp_Unwrap = CefListValueCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_LIST_VALUE_CTOCPP_H_

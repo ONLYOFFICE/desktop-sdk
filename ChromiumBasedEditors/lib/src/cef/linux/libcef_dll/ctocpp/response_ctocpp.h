@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=3ec4c709bcd18d24997d554134b1b01e17bbd0fb$
+// $hash=ca9efd62de0787de01609fb3fecd67cb06ae820d$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_RESPONSE_CTOCPP_H_
@@ -54,5 +54,8 @@ class CefResponseCToCpp : public CefCToCppRefCounted<CefResponseCToCpp,
   CefString GetURL() override;
   void SetURL(const CefString& url) override;
 };
+
+constexpr auto CefResponseCToCpp_Wrap = CefResponseCToCpp::Wrap;
+constexpr auto CefResponseCToCpp_Unwrap = CefResponseCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_RESPONSE_CTOCPP_H_

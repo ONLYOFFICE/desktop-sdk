@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=55d4dc0a6467d6d084de5e1114be0fcd36ae89b9$
+// $hash=e6d19214e59c15a2508e002e59a47c886cb4eb55$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_RESPONSE_FILTER_CPPTOC_H_
@@ -34,5 +34,8 @@ class CefResponseFilterCppToC
   CefResponseFilterCppToC();
   virtual ~CefResponseFilterCppToC();
 };
+
+constexpr auto CefResponseFilterCppToC_Wrap = CefResponseFilterCppToC::Wrap;
+constexpr auto CefResponseFilterCppToC_Unwrap = CefResponseFilterCppToC::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_RESPONSE_FILTER_CPPTOC_H_

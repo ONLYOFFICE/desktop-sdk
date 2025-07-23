@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,10 +9,11 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=e673b289ae45b277af9c33ee74fe9056cff6e265$
+// $hash=02b5a1a8921d5addc60a4cd88ae34d27b5df5e96$
 //
 
 #include "libcef_dll/cpptoc/test/translator_test_ref_ptr_client_child_cpptoc.h"
+
 #include "libcef_dll/shutdown_checker.h"
 
 namespace {
@@ -26,8 +27,9 @@ int CEF_CALLBACK translator_test_ref_ptr_client_child_get_other_value(
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return 0;
+  }
 
   // Execute
   int _retval =
@@ -44,8 +46,9 @@ int CEF_CALLBACK translator_test_ref_ptr_client_child_get_value(
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return 0;
+  }
 
   // Execute
   int _retval =
@@ -82,7 +85,7 @@ CefCppToCRefCounted<CefTranslatorTestRefPtrClientChildCppToC,
                     cef_translator_test_ref_ptr_client_child_t>::
     UnwrapDerived(CefWrapperType type,
                   cef_translator_test_ref_ptr_client_child_t* s) {
-  NOTREACHED() << "Unexpected class type: " << type;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
   return nullptr;
 }
 

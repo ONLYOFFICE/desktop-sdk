@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=c079137f43167df4c21e63f38cdd8c33f4423445$
+// $hash=dc91c62660c1ef79d952837270f1f33adf3004fa$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_RUN_QUICK_MENU_CALLBACK_CTOCPP_H_
@@ -38,5 +38,10 @@ class CefRunQuickMenuCallbackCToCpp
   void Continue(int command_id, cef_event_flags_t event_flags) override;
   void Cancel() override;
 };
+
+constexpr auto CefRunQuickMenuCallbackCToCpp_Wrap =
+    CefRunQuickMenuCallbackCToCpp::Wrap;
+constexpr auto CefRunQuickMenuCallbackCToCpp_Unwrap =
+    CefRunQuickMenuCallbackCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_RUN_QUICK_MENU_CALLBACK_CTOCPP_H_

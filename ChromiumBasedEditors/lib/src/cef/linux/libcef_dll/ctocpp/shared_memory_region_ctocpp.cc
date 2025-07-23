@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,10 +9,11 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=2c49e491a74bcd0d2689dabec0c42e5f8a4232de$
+// $hash=5a067ec411e53c8737406db0030b707f90d5f070$
 //
 
 #include "libcef_dll/ctocpp/shared_memory_region_ctocpp.h"
+
 #include "libcef_dll/shutdown_checker.h"
 
 // VIRTUAL METHODS - Body may be edited by hand.
@@ -20,9 +21,10 @@
 NO_SANITIZE("cfi-icall") bool CefSharedMemoryRegionCToCpp::IsValid() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_shared_memory_region_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, is_valid))
+  auto* _struct = GetStruct();
+  if (!_struct->is_valid) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -36,9 +38,10 @@ NO_SANITIZE("cfi-icall") bool CefSharedMemoryRegionCToCpp::IsValid() {
 NO_SANITIZE("cfi-icall") size_t CefSharedMemoryRegionCToCpp::Size() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_shared_memory_region_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, size))
+  auto* _struct = GetStruct();
+  if (!_struct->size) {
     return 0;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -49,17 +52,20 @@ NO_SANITIZE("cfi-icall") size_t CefSharedMemoryRegionCToCpp::Size() {
   return _retval;
 }
 
-NO_SANITIZE("cfi-icall") const void* CefSharedMemoryRegionCToCpp::Memory() {
+NO_SANITIZE("cfi-icall") void* CefSharedMemoryRegionCToCpp::Memory() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_shared_memory_region_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, memory))
+  auto* _struct = GetStruct();
+  if (!_struct->memory) {
     return nullptr;
+  }
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  const void* _retval = _struct->memory(_struct);
+  void* _retval = _struct->memory(_struct);
 
-  // Return type: simple
+  // Return type: simple_byaddr
   return _retval;
 }
 
@@ -79,7 +85,7 @@ cef_shared_memory_region_t* CefCToCppRefCounted<
     CefSharedMemoryRegion,
     cef_shared_memory_region_t>::UnwrapDerived(CefWrapperType type,
                                                CefSharedMemoryRegion* c) {
-  NOTREACHED() << "Unexpected class type: " << type;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
   return nullptr;
 }
 

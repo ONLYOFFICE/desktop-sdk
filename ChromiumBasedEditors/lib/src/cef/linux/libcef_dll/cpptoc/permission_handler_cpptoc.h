@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=85771f8c4169ad8465d7d53294a2da107ed1a03c$
+// $hash=0cd35ec8658e6c96e816efbe4075da89d6f6954d$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_PERMISSION_HANDLER_CPPTOC_H_
@@ -34,5 +34,10 @@ class CefPermissionHandlerCppToC
   CefPermissionHandlerCppToC();
   virtual ~CefPermissionHandlerCppToC();
 };
+
+constexpr auto CefPermissionHandlerCppToC_Wrap =
+    CefPermissionHandlerCppToC::Wrap;
+constexpr auto CefPermissionHandlerCppToC_Unwrap =
+    CefPermissionHandlerCppToC::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_PERMISSION_HANDLER_CPPTOC_H_

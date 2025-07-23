@@ -4,15 +4,15 @@
 
 #include "tests/ceftests/test_server.h"
 
-#include "tests/ceftests/test_server_manager.h"
-
 #include <vector>
+
+#include "tests/ceftests/test_server_manager.h"
 
 namespace test_server {
 
 // Must use a different port than server_unittest.cc.
 const char kHttpServerAddress[] = "127.0.0.1";
-const uint16 kHttpServerPort = 8098;
+const uint16_t kHttpServerPort = 8098;
 
 const char kIncompleteDoNotSendData[] = "DO NOT SEND";
 
@@ -47,8 +47,9 @@ std::string GetHost(bool https_server, bool include_port) {
 
   const auto scheme_offset = origin.find("//");
   const auto& origin_without_scheme = origin.substr(scheme_offset + 2);
-  if (include_port)
+  if (include_port) {
     return origin_without_scheme;
+  }
 
   const auto port_offset = origin_without_scheme.find(':');
   return origin_without_scheme.substr(0, port_offset);

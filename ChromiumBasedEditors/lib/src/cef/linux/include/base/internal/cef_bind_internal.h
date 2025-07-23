@@ -68,7 +68,6 @@
 #include "include/base/cef_build.h"
 #include "include/base/cef_compiler_specific.h"
 #include "include/base/cef_logging.h"
-#include "include/base/cef_template_util.h"
 #include "include/base/cef_weak_ptr.h"
 #include "include/base/internal/cef_callback_internal.h"
 #include "include/base/internal/cef_raw_scoped_refptr_mismatch_checker.h"
@@ -97,7 +96,7 @@ struct BindUnwrapTraits;
 template <typename Functor, typename BoundArgsTuple, typename SFINAE = void>
 struct CallbackCancellationTraits;
 
-namespace internal {
+namespace cef_internal {
 
 template <typename Functor, typename SFINAE = void>
 struct FunctorTraits;
@@ -356,14 +355,14 @@ template <typename Functor, typename SFINAE = void>
 struct IsCallableObject : std::false_type {};
 
 template <typename Callable>
-struct IsCallableObject<Callable, void_t<decltype(&Callable::operator())>>
+struct IsCallableObject<Callable, std::void_t<decltype(&Callable::operator())>>
     : std::true_type {};
 
 // HasRefCountedTypeAsRawPtr inherits from true_type when any of the |Args| is a
 // raw pointer to a RefCounted type.
 template <typename... Ts>
 struct HasRefCountedTypeAsRawPtr
-    : disjunction<NeedsScopedRefptrButGetsRawPtr<Ts>...> {};
+    : std::disjunction<NeedsScopedRefptrButGetsRawPtr<Ts>...> {};
 
 // ForceVoidReturn<>
 //
@@ -687,8 +686,9 @@ struct InvokeHelper<true, ReturnType> {
   static inline void MakeItSo(Functor&& functor,
                               BoundWeakPtr&& weak_ptr,
                               RunArgs&&... args) {
-    if (!weak_ptr)
+    if (!weak_ptr) {
       return;
+    }
     using Traits = MakeFunctorTraits<Functor>;
     Traits::Invoke(std::forward<Functor>(functor),
                    std::forward<BoundWeakPtr>(weak_ptr),
@@ -877,7 +877,7 @@ BanUnconstructedRefCountedReceiver(const Receiver& receiver, Unused&&...) {
 // This stores all the state passed into Bind().
 template <typename Functor, typename... BoundArgs>
 struct BindState final : BindStateBase {
-  using IsCancellable = bool_constant<
+  using IsCancellable = std::bool_constant<
       CallbackCancellationTraits<Functor,
                                  std::tuple<BoundArgs...>>::is_cancellable>;
   template <typename ForwardFunctor, typename... ForwardBoundArgs>
@@ -1251,7 +1251,7 @@ decltype(auto) BindImpl(Functor&& functor, Args&&... args) {
   // PolymorphicInvoke, to which CallbackType will cast back.
   using PolymorphicInvoke = typename CallbackType::PolymorphicInvoke;
   PolymorphicInvoke invoke_func =
-      GetInvokeFunc<Invoker>(bool_constant<kIsOnce>());
+      GetInvokeFunc<Invoker>(std::bool_constant<kIsOnce>());
 
   using InvokeFuncStorage = BindStateBase::InvokeFuncStorage;
   return CallbackType(BindState::Create(
@@ -1259,7 +1259,7 @@ decltype(auto) BindImpl(Functor&& functor, Args&&... args) {
       std::forward<Functor>(functor), std::forward<Args>(args)...));
 }
 
-}  // namespace internal
+}  // namespace cef_internal
 
 // An injection point to control |this| pointer behavior on a method invocation.
 // If IsWeakReceiver<> is true_type for |T| and |T| is used for a receiver of a
@@ -1303,30 +1303,36 @@ struct BindUnwrapTraits {
 };
 
 template <typename T>
-struct BindUnwrapTraits<internal::UnretainedWrapper<T>> {
-  static T* Unwrap(const internal::UnretainedWrapper<T>& o) { return o.get(); }
-};
-
-template <typename T>
-struct BindUnwrapTraits<internal::RetainedRefWrapper<T>> {
-  static T* Unwrap(const internal::RetainedRefWrapper<T>& o) { return o.get(); }
-};
-
-template <typename T, typename Deleter>
-struct BindUnwrapTraits<internal::OwnedWrapper<T, Deleter>> {
-  static T* Unwrap(const internal::OwnedWrapper<T, Deleter>& o) {
+struct BindUnwrapTraits<cef_internal::UnretainedWrapper<T>> {
+  static T* Unwrap(const cef_internal::UnretainedWrapper<T>& o) {
     return o.get();
   }
 };
 
 template <typename T>
-struct BindUnwrapTraits<internal::OwnedRefWrapper<T>> {
-  static T& Unwrap(const internal::OwnedRefWrapper<T>& o) { return o.get(); }
+struct BindUnwrapTraits<cef_internal::RetainedRefWrapper<T>> {
+  static T* Unwrap(const cef_internal::RetainedRefWrapper<T>& o) {
+    return o.get();
+  }
+};
+
+template <typename T, typename Deleter>
+struct BindUnwrapTraits<cef_internal::OwnedWrapper<T, Deleter>> {
+  static T* Unwrap(const cef_internal::OwnedWrapper<T, Deleter>& o) {
+    return o.get();
+  }
 };
 
 template <typename T>
-struct BindUnwrapTraits<internal::PassedWrapper<T>> {
-  static T Unwrap(const internal::PassedWrapper<T>& o) { return o.Take(); }
+struct BindUnwrapTraits<cef_internal::OwnedRefWrapper<T>> {
+  static T& Unwrap(const cef_internal::OwnedRefWrapper<T>& o) {
+    return o.get();
+  }
+};
+
+template <typename T>
+struct BindUnwrapTraits<cef_internal::PassedWrapper<T>> {
+  static T Unwrap(const cef_internal::PassedWrapper<T>& o) { return o.Take(); }
 };
 
 #if defined(OS_WIN)
@@ -1350,9 +1356,9 @@ template <typename Functor, typename... BoundArgs>
 struct CallbackCancellationTraits<
     Functor,
     std::tuple<BoundArgs...>,
-    std::enable_if_t<
-        internal::IsWeakMethod<internal::FunctorTraits<Functor>::is_method,
-                               BoundArgs...>::value>> {
+    std::enable_if_t<cef_internal::IsWeakMethod<
+        cef_internal::FunctorTraits<Functor>::is_method,
+        BoundArgs...>::value>> {
   static constexpr bool is_cancellable = true;
 
   template <typename Receiver, typename... Args>

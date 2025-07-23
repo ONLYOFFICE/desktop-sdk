@@ -20,6 +20,7 @@
 
 #include "include/base/cef_logging.h"
 #include "include/base/cef_macros.h"
+#include "include/views/cef_display.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "tests/cefclient/browser/util_gtk.h"
 #include "tests/shared/browser/geometry_util.h"
@@ -35,20 +36,27 @@ std::vector<BrowserWindowOsrGtk*> g_browser_windows;
 
 int GetCefStateModifiers(guint state) {
   int modifiers = 0;
-  if (state & GDK_SHIFT_MASK)
+  if (state & GDK_SHIFT_MASK) {
     modifiers |= EVENTFLAG_SHIFT_DOWN;
-  if (state & GDK_LOCK_MASK)
+  }
+  if (state & GDK_LOCK_MASK) {
     modifiers |= EVENTFLAG_CAPS_LOCK_ON;
-  if (state & GDK_CONTROL_MASK)
+  }
+  if (state & GDK_CONTROL_MASK) {
     modifiers |= EVENTFLAG_CONTROL_DOWN;
-  if (state & GDK_MOD1_MASK)
+  }
+  if (state & GDK_MOD1_MASK) {
     modifiers |= EVENTFLAG_ALT_DOWN;
-  if (state & GDK_BUTTON1_MASK)
+  }
+  if (state & GDK_BUTTON1_MASK) {
     modifiers |= EVENTFLAG_LEFT_MOUSE_BUTTON;
-  if (state & GDK_BUTTON2_MASK)
+  }
+  if (state & GDK_BUTTON2_MASK) {
     modifiers |= EVENTFLAG_MIDDLE_MOUSE_BUTTON;
-  if (state & GDK_BUTTON3_MASK)
+  }
+  if (state & GDK_BUTTON3_MASK) {
     modifiers |= EVENTFLAG_RIGHT_MOUSE_BUTTON;
+  }
   return modifiers;
 }
 
@@ -787,13 +795,15 @@ KeyboardCode GdkEventToWindowsKeyCode(const GdkEventKey* event) {
   // key and a caps-lock key, GTK doesn't swap their
   // |event->hardware_keycode| values but swap their |event->keyval| values.
   KeyboardCode windows_key_code = KeyboardCodeFromXKeysym(event->keyval);
-  if (windows_key_code)
+  if (windows_key_code) {
     return windows_key_code;
+  }
 
   if (event->hardware_keycode < std::size(kHardwareCodeToGDKKeyval)) {
     int keyval = kHardwareCodeToGDKKeyval[event->hardware_keycode];
-    if (keyval)
+    if (keyval) {
       return KeyboardCodeFromXKeysym(keyval);
+    }
   }
 
   // This key is one that keyboard-layout drivers cannot change.
@@ -868,14 +878,18 @@ CefBrowserHost::DragOperationsMask GetDragOperationsMask(
     GdkDragContext* drag_context) {
   int allowed_ops = DRAG_OPERATION_NONE;
   GdkDragAction drag_action = gdk_drag_context_get_actions(drag_context);
-  if (drag_action & GDK_ACTION_COPY)
+  if (drag_action & GDK_ACTION_COPY) {
     allowed_ops |= DRAG_OPERATION_COPY;
-  if (drag_action & GDK_ACTION_MOVE)
+  }
+  if (drag_action & GDK_ACTION_MOVE) {
     allowed_ops |= DRAG_OPERATION_MOVE;
-  if (drag_action & GDK_ACTION_LINK)
+  }
+  if (drag_action & GDK_ACTION_LINK) {
     allowed_ops |= DRAG_OPERATION_LINK;
-  if (drag_action & GDK_ACTION_PRIVATE)
+  }
+  if (drag_action & GDK_ACTION_PRIVATE) {
     allowed_ops |= DRAG_OPERATION_PRIVATE;
+  }
   return static_cast<CefBrowserHost::DragOperationsMask>(allowed_ops);
 }
 
@@ -892,8 +906,9 @@ class ScopedGLContext {
   }
 
   virtual ~ScopedGLContext() {
-    if (swap_buffers_ && is_valid_)
+    if (swap_buffers_ && is_valid_) {
       glFlush();
+    }
   }
 
   bool IsValid() const { return is_valid_; }
@@ -959,6 +974,9 @@ void BrowserWindowOsrGtk::CreateBrowser(
     CefRefPtr<CefRequestContext> request_context) {
   REQUIRE_MAIN_THREAD();
 
+  // Windowless rendering requires Alloy style.
+  DCHECK(delegate_->UseAlloyStyle());
+
   // Create the native window.
   Create(parent_handle);
 
@@ -973,6 +991,14 @@ void BrowserWindowOsrGtk::CreateBrowser(
   CefWindowInfo window_info;
   window_info.SetAsWindowless(handle);
 
+  window_info.shared_texture_enabled =
+      renderer_.settings().shared_texture_enabled;
+  window_info.external_begin_frame_enabled =
+      renderer_.settings().external_begin_frame_enabled;
+
+  // Windowless rendering requires Alloy style.
+  DCHECK_EQ(CEF_RUNTIME_STYLE_ALLOY, window_info.runtime_style);
+
   // Create the browser asynchronously.
   CefBrowserHost::CreateBrowser(window_info, client_handler_,
                                 client_handler_->startup_url(), settings,
@@ -986,6 +1012,15 @@ void BrowserWindowOsrGtk::GetPopupConfig(CefWindowHandle temp_handle,
   CEF_REQUIRE_UI_THREAD();
 
   windowInfo.SetAsWindowless(temp_handle);
+
+  // Windowless rendering requires Alloy style.
+  DCHECK_EQ(CEF_RUNTIME_STYLE_ALLOY, windowInfo.runtime_style);
+
+  windowInfo.shared_texture_enabled =
+      renderer_.settings().shared_texture_enabled;
+  windowInfo.external_begin_frame_enabled =
+      renderer_.settings().external_begin_frame_enabled;
+
   client = client_handler_;
 }
 
@@ -1023,8 +1058,9 @@ void BrowserWindowOsrGtk::Show() {
 void BrowserWindowOsrGtk::Hide() {
   REQUIRE_MAIN_THREAD();
 
-  if (!browser_)
+  if (!browser_) {
     return;
+  }
 
   // Remove focus from the browser.
   browser_->GetHost()->SetFocus(false);
@@ -1052,12 +1088,14 @@ void BrowserWindowOsrGtk::SetDeviceScaleFactor(float device_scale_factor) {
   REQUIRE_MAIN_THREAD();
   {
     base::AutoLock lock_scope(lock_);
-    if (device_scale_factor == device_scale_factor_)
+    if (device_scale_factor == device_scale_factor_) {
       return;
+    }
 
     // Apply some sanity checks.
-    if (device_scale_factor < 1.0f || device_scale_factor > 4.0f)
+    if (device_scale_factor < 0.5f || device_scale_factor > 4.0f) {
       return;
+    }
 
     device_scale_factor_ = device_scale_factor;
   }
@@ -1087,7 +1125,9 @@ void BrowserWindowOsrGtk::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
   CEF_REQUIRE_UI_THREAD();
 
   // Detach |this| from the ClientHandlerOsr.
-  static_cast<ClientHandlerOsr*>(client_handler_.get())->DetachOsrDelegate();
+  auto handler = ClientHandlerOsr::GetForClient(client_handler_);
+  CHECK(handler);
+  handler->DetachOsrDelegate();
 
   ScopedGdkThreadsEnter scoped_gdk_threads;
 
@@ -1103,14 +1143,35 @@ void BrowserWindowOsrGtk::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
 bool BrowserWindowOsrGtk::GetRootScreenRect(CefRefPtr<CefBrowser> browser,
                                             CefRect& rect) {
   CEF_REQUIRE_UI_THREAD();
-  return false;
+
+  if (!renderer_.settings().real_screen_bounds) {
+    return false;
+  }
+
+  if (!glarea_) {
+    return false;
+  }
+
+  float device_scale_factor;
+  {
+    base::AutoLock lock_scope(lock_);
+    device_scale_factor = device_scale_factor_;
+  }
+
+  ScopedGdkThreadsEnter scoped_gdk_threads;
+
+  GtkWidget* toplevel = gtk_widget_get_toplevel(glarea_);
+
+  // Convert to DIP coordinates.
+  rect = DeviceToLogical(
+      GetWindowBounds(GTK_WINDOW(toplevel), /*include_frame=*/true),
+      device_scale_factor);
+  return true;
 }
 
 void BrowserWindowOsrGtk::GetViewRect(CefRefPtr<CefBrowser> browser,
                                       CefRect& rect) {
   CEF_REQUIRE_UI_THREAD();
-
-  rect.x = rect.y = 0;
 
   if (!glarea_) {
     // Never return an empty rectangle.
@@ -1124,16 +1185,24 @@ void BrowserWindowOsrGtk::GetViewRect(CefRefPtr<CefBrowser> browser,
     device_scale_factor = device_scale_factor_;
   }
 
-  // The simulated screen and view rectangle are the same. This is necessary
-  // for popup menus to be located and sized inside the view.
-  GtkAllocation allocation;
+  ScopedGdkThreadsEnter scoped_gdk_threads;
+
+  GtkAllocation allocation = {};
   gtk_widget_get_allocation(glarea_, &allocation);
-  rect.width = DeviceToLogical(allocation.width, device_scale_factor);
-  if (rect.width == 0)
+
+  // Convert to DIP coordinates.
+  rect = DeviceToLogical(
+      {allocation.x, allocation.y, allocation.width, allocation.height},
+      device_scale_factor);
+  if (rect.width == 0) {
     rect.width = 1;
-  rect.height = DeviceToLogical(allocation.height, device_scale_factor);
-  if (rect.height == 0)
+  }
+  if (rect.height == 0) {
     rect.height = 1;
+  }
+  if (!renderer_.settings().real_screen_bounds) {
+    rect.x = rect.y = 0;
+  }
 }
 
 bool BrowserWindowOsrGtk::GetScreenPoint(CefRefPtr<CefBrowser> browser,
@@ -1163,9 +1232,6 @@ bool BrowserWindowOsrGtk::GetScreenInfo(CefRefPtr<CefBrowser> browser,
                                         CefScreenInfo& screen_info) {
   CEF_REQUIRE_UI_THREAD();
 
-  CefRect view_rect;
-  GetViewRect(browser, view_rect);
-
   float device_scale_factor;
   {
     base::AutoLock lock_scope(lock_);
@@ -1174,10 +1240,23 @@ bool BrowserWindowOsrGtk::GetScreenInfo(CefRefPtr<CefBrowser> browser,
 
   screen_info.device_scale_factor = device_scale_factor;
 
-  // The screen info rectangles are used by the renderer to create and position
-  // popups. Keep popups inside the view rectangle.
-  screen_info.rect = view_rect;
-  screen_info.available_rect = view_rect;
+  if (renderer_.settings().real_screen_bounds) {
+    CefRect root_rect;
+    GetRootScreenRect(browser, root_rect);
+
+    auto display = CefDisplay::GetDisplayMatchingBounds(
+        root_rect, /*input_pixel_coords=*/false);
+    screen_info.rect = display->GetBounds();
+    screen_info.available_rect = display->GetWorkArea();
+  } else {
+    CefRect view_rect;
+    GetViewRect(browser, view_rect);
+
+    // Keep HTML select popups inside the view rectangle.
+    screen_info.rect = view_rect;
+    screen_info.available_rect = view_rect;
+  }
+
   return true;
 }
 
@@ -1223,12 +1302,14 @@ void BrowserWindowOsrGtk::OnPaint(CefRefPtr<CefBrowser> browser,
     return;
   }
 
-  if (!gl_enabled_)
+  if (!gl_enabled_) {
     EnableGL();
+  }
 
   ScopedGLContext scoped_gl_context(glarea_, true);
-  if (!scoped_gl_context.IsValid())
+  if (!scoped_gl_context.IsValid()) {
     return;
+  }
 
   renderer_.OnPaint(browser, type, dirtyRects, buffer, width, height);
   if (type == PET_VIEW && !renderer_.popup_rect().IsEmpty()) {
@@ -1397,8 +1478,9 @@ gint BrowserWindowOsrGtk::ClickEvent(GtkWidget* widget,
                                      BrowserWindowOsrGtk* self) {
   REQUIRE_MAIN_THREAD();
 
-  if (!self->browser_.get())
+  if (!self->browser_.get()) {
     return TRUE;
+  }
 
   CefRefPtr<CefBrowserHost> host = self->browser_->GetHost();
 
@@ -1467,8 +1549,9 @@ gint BrowserWindowOsrGtk::KeyEvent(GtkWidget* widget,
                                    BrowserWindowOsrGtk* self) {
   REQUIRE_MAIN_THREAD();
 
-  if (!self->browser_.get())
+  if (!self->browser_.get()) {
     return TRUE;
+  }
 
   CefRefPtr<CefBrowserHost> host = self->browser_->GetHost();
 
@@ -1481,10 +1564,12 @@ gint BrowserWindowOsrGtk::KeyEvent(GtkWidget* widget,
   key_event.native_key_code = event->hardware_keycode;
 
   key_event.modifiers = GetCefStateModifiers(event->state);
-  if (event->keyval >= GDK_KP_Space && event->keyval <= GDK_KP_9)
+  if (event->keyval >= GDK_KP_Space && event->keyval <= GDK_KP_9) {
     key_event.modifiers |= EVENTFLAG_IS_KEY_PAD;
-  if (key_event.modifiers & EVENTFLAG_ALT_DOWN)
+  }
+  if (key_event.modifiers & EVENTFLAG_ALT_DOWN) {
     key_event.is_system_key = true;
+  }
 
   if (windows_key_code == VKEY_RETURN) {
     // We need to treat the enter key as a key press of character \r.  This
@@ -1521,8 +1606,9 @@ gint BrowserWindowOsrGtk::KeyEvent(GtkWidget* widget,
 gint BrowserWindowOsrGtk::MoveEvent(GtkWidget* widget,
                                     GdkEventMotion* event,
                                     BrowserWindowOsrGtk* self) {
-  if (!self->browser_.get())
+  if (!self->browser_.get()) {
     return TRUE;
+  }
 
   CefRefPtr<CefBrowserHost> host = self->browser_->GetHost();
 
@@ -1578,8 +1664,9 @@ gint BrowserWindowOsrGtk::ScrollEvent(GtkWidget* widget,
                                       BrowserWindowOsrGtk* self) {
   REQUIRE_MAIN_THREAD();
 
-  if (!self->browser_.get())
+  if (!self->browser_.get()) {
     return TRUE;
+  }
 
   CefRefPtr<CefBrowserHost> host = self->browser_->GetHost();
 
@@ -1595,6 +1682,7 @@ gint BrowserWindowOsrGtk::ScrollEvent(GtkWidget* widget,
   self->ApplyPopupOffset(mouse_event.x, mouse_event.y);
   DeviceToLogical(mouse_event, device_scale_factor);
   mouse_event.modifiers = GetCefStateModifiers(event->state);
+  mouse_event.modifiers |= EVENTFLAG_PRECISION_SCROLLING_DELTA;
 
   static const int scrollbarPixelsPerGtkTick = 40;
   int deltaX = 0;
@@ -1626,8 +1714,9 @@ gint BrowserWindowOsrGtk::FocusEvent(GtkWidget* widget,
                                      GdkEventFocus* event,
                                      BrowserWindowOsrGtk* self) {
   // May be called on the main thread and the UI thread.
-  if (self->browser_.get())
+  if (self->browser_.get()) {
     self->browser_->GetHost()->SetFocus(event->in == TRUE);
+  }
   return TRUE;
 }
 
@@ -1637,8 +1726,9 @@ gboolean BrowserWindowOsrGtk::TouchEvent(GtkWidget* widget,
                                          BrowserWindowOsrGtk* self) {
   REQUIRE_MAIN_THREAD();
 
-  if (!self->browser_.get())
+  if (!self->browser_.get()) {
     return TRUE;
+  }
 
   CefRefPtr<CefBrowserHost> host = self->browser_->GetHost();
 
@@ -1701,12 +1791,14 @@ void BrowserWindowOsrGtk::ApplyPopupOffset(int& x, int& y) const {
 void BrowserWindowOsrGtk::EnableGL() {
   CEF_REQUIRE_UI_THREAD();
 
-  if (gl_enabled_)
+  if (gl_enabled_) {
     return;
+  }
 
   ScopedGLContext scoped_gl_context(glarea_, false);
-  if (!scoped_gl_context.IsValid())
+  if (!scoped_gl_context.IsValid()) {
     return;
+  }
 
   renderer_.Initialize();
 
@@ -1716,12 +1808,14 @@ void BrowserWindowOsrGtk::EnableGL() {
 void BrowserWindowOsrGtk::DisableGL() {
   CEF_REQUIRE_UI_THREAD();
 
-  if (!gl_enabled_)
+  if (!gl_enabled_) {
     return;
+  }
 
   ScopedGLContext scoped_gl_context(glarea_, false);
-  if (!scoped_gl_context.IsValid())
+  if (!scoped_gl_context.IsValid()) {
     return;
+  }
 
   renderer_.Cleanup();
 

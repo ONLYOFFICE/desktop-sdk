@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,10 +9,11 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=abdd2d0fa144397975b87421805ceb056843d709$
+// $hash=2aff2d51154dddea48b2e6649b66b55856177936$
 //
 
 #include "libcef_dll/cpptoc/media_route_create_callback_cpptoc.h"
+
 #include "libcef_dll/ctocpp/media_route_ctocpp.h"
 #include "libcef_dll/shutdown_checker.h"
 
@@ -24,19 +25,20 @@ void CEF_CALLBACK media_route_create_callback_on_media_route_create_finished(
     struct _cef_media_route_create_callback_t* self,
     cef_media_route_create_result_t result,
     const cef_string_t* error,
-    cef_media_route_t* route) {
+    struct _cef_media_route_t* route) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return;
+  }
   // Unverified params: error, route
 
   // Execute
   CefMediaRouteCreateCallbackCppToC::Get(self)->OnMediaRouteCreateFinished(
-      result, CefString(error), CefMediaRouteCToCpp::Wrap(route));
+      result, CefString(error), CefMediaRouteCToCpp_Wrap(route));
 }
 
 }  // namespace
@@ -60,7 +62,7 @@ CefCppToCRefCounted<CefMediaRouteCreateCallbackCppToC,
                     CefMediaRouteCreateCallback,
                     cef_media_route_create_callback_t>::
     UnwrapDerived(CefWrapperType type, cef_media_route_create_callback_t* s) {
-  NOTREACHED() << "Unexpected class type: " << type;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
   return nullptr;
 }
 

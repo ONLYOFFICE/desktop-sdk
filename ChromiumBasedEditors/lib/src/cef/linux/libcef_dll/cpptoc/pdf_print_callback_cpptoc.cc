@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,10 +9,11 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=7f58256b38894ba0a8bf514cbdd2719e75bca5c3$
+// $hash=69ffdc620f4a2b35d6b6826b53e5329979f1890a$
 //
 
 #include "libcef_dll/cpptoc/pdf_print_callback_cpptoc.h"
+
 #include "libcef_dll/shutdown_checker.h"
 
 namespace {
@@ -28,12 +29,10 @@ pdf_print_callback_on_pdf_print_finished(struct _cef_pdf_print_callback_t* self,
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return;
-  // Verify param: path; type: string_byref_const
-  DCHECK(path);
-  if (!path)
-    return;
+  }
+  // Unverified params: path
 
   // Execute
   CefPdfPrintCallbackCppToC::Get(self)->OnPdfPrintFinished(CefString(path),
@@ -60,7 +59,7 @@ CefRefPtr<CefPdfPrintCallback> CefCppToCRefCounted<
     CefPdfPrintCallback,
     cef_pdf_print_callback_t>::UnwrapDerived(CefWrapperType type,
                                              cef_pdf_print_callback_t* s) {
-  NOTREACHED() << "Unexpected class type: " << type;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
   return nullptr;
 }
 

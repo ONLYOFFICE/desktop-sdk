@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,10 +9,11 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=4a25abd83bc92d02f65fc832eaed436a024842be$
+// $hash=a5cb14778694231600edbf78beb46f3316f82a09$
 //
 
 #include "libcef_dll/ctocpp/test/test_server_connection_ctocpp.h"
+
 #include "libcef_dll/shutdown_checker.h"
 #include "libcef_dll/transfer_util.h"
 
@@ -25,38 +26,42 @@ void CefTestServerConnectionCToCpp::SendHttp200Response(
     size_t data_size) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_test_server_connection_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, send_http200response))
+  auto* _struct = GetStruct();
+  if (!_struct->send_http200_response) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: content_type; type: string_byref_const
   DCHECK(!content_type.empty());
-  if (content_type.empty())
+  if (content_type.empty()) {
     return;
+  }
   // Verify param: data; type: simple_byaddr
   DCHECK(data);
-  if (!data)
+  if (!data) {
     return;
+  }
 
   // Execute
-  _struct->send_http200response(_struct, content_type.GetStruct(), data,
-                                data_size);
+  _struct->send_http200_response(_struct, content_type.GetStruct(), data,
+                                 data_size);
 }
 
 NO_SANITIZE("cfi-icall")
 void CefTestServerConnectionCToCpp::SendHttp404Response() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_test_server_connection_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, send_http404response))
+  auto* _struct = GetStruct();
+  if (!_struct->send_http404_response) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  _struct->send_http404response(_struct);
+  _struct->send_http404_response(_struct);
 }
 
 NO_SANITIZE("cfi-icall")
@@ -64,19 +69,21 @@ void CefTestServerConnectionCToCpp::SendHttp500Response(
     const CefString& error_message) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_test_server_connection_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, send_http500response))
+  auto* _struct = GetStruct();
+  if (!_struct->send_http500_response) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: error_message; type: string_byref_const
   DCHECK(!error_message.empty());
-  if (error_message.empty())
+  if (error_message.empty()) {
     return;
+  }
 
   // Execute
-  _struct->send_http500response(_struct, error_message.GetStruct());
+  _struct->send_http500_response(_struct, error_message.GetStruct());
 }
 
 NO_SANITIZE("cfi-icall")
@@ -88,35 +95,40 @@ void CefTestServerConnectionCToCpp::SendHttpResponse(
     const HeaderMap& extra_headers) {
   shutdown_checker::AssertNotShutdown();
 
-  cef_test_server_connection_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, send_http_response))
+  auto* _struct = GetStruct();
+  if (!_struct->send_http_response) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: content_type; type: string_byref_const
   DCHECK(!content_type.empty());
-  if (content_type.empty())
+  if (content_type.empty()) {
     return;
+  }
   // Verify param: data; type: simple_byaddr
   DCHECK(data);
-  if (!data)
+  if (!data) {
     return;
+  }
   // Unverified params: extra_headers
 
   // Translate param: extra_headers; type: string_map_multi_byref_const
   cef_string_multimap_t extra_headersMultimap = cef_string_multimap_alloc();
   DCHECK(extra_headersMultimap);
-  if (extra_headersMultimap)
+  if (extra_headersMultimap) {
     transfer_string_multimap_contents(extra_headers, extra_headersMultimap);
+  }
 
   // Execute
   _struct->send_http_response(_struct, response_code, content_type.GetStruct(),
                               data, data_size, extra_headersMultimap);
 
   // Restore param:extra_headers; type: string_map_multi_byref_const
-  if (extra_headersMultimap)
+  if (extra_headersMultimap) {
     cef_string_multimap_free(extra_headersMultimap);
+  }
 }
 
 // CONSTRUCTOR - Do not edit by hand.
@@ -135,7 +147,7 @@ cef_test_server_connection_t* CefCToCppRefCounted<
     CefTestServerConnection,
     cef_test_server_connection_t>::UnwrapDerived(CefWrapperType type,
                                                  CefTestServerConnection* c) {
-  NOTREACHED() << "Unexpected class type: " << type;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
   return nullptr;
 }
 

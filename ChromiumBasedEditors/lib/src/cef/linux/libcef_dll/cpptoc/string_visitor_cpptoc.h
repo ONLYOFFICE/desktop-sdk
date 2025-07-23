@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=8f717e4df178cef8f90d5af081094a4952fcc90e$
+// $hash=a274b417576f7ca6d1909a3706699707398d2217$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_STRING_VISITOR_CPPTOC_H_
@@ -34,5 +34,8 @@ class CefStringVisitorCppToC
   CefStringVisitorCppToC();
   virtual ~CefStringVisitorCppToC();
 };
+
+constexpr auto CefStringVisitorCppToC_Wrap = CefStringVisitorCppToC::Wrap;
+constexpr auto CefStringVisitorCppToC_Unwrap = CefStringVisitorCppToC::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_STRING_VISITOR_CPPTOC_H_

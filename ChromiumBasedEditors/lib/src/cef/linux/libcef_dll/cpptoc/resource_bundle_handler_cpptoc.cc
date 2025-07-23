@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,10 +9,11 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=d7cb40bc1f7bbdf092b3c80b162f134f24253359$
+// $hash=7edcf56322bf94e9dd904a225a191081f184732f$
 //
 
 #include "libcef_dll/cpptoc/resource_bundle_handler_cpptoc.h"
+
 #include "libcef_dll/shutdown_checker.h"
 
 namespace {
@@ -28,12 +29,14 @@ int CEF_CALLBACK resource_bundle_handler_get_localized_string(
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return 0;
+  }
   // Verify param: string; type: string_byref
   DCHECK(string);
-  if (!string)
+  if (!string) {
     return 0;
+  }
 
   // Translate param: string; type: string_byref
   CefString stringStr(string);
@@ -56,16 +59,19 @@ int CEF_CALLBACK resource_bundle_handler_get_data_resource(
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return 0;
+  }
   // Verify param: data; type: simple_byref
   DCHECK(data);
-  if (!data)
+  if (!data) {
     return 0;
+  }
   // Verify param: data_size; type: simple_byref
   DCHECK(data_size);
-  if (!data_size)
+  if (!data_size) {
     return 0;
+  }
 
   // Translate param: data; type: simple_byref
   void* dataVal = data ? *data : NULL;
@@ -77,11 +83,13 @@ int CEF_CALLBACK resource_bundle_handler_get_data_resource(
       resource_id, dataVal, data_sizeVal);
 
   // Restore param: data; type: simple_byref
-  if (data)
+  if (data) {
     *data = dataVal;
+  }
   // Restore param: data_size; type: simple_byref
-  if (data_size)
+  if (data_size) {
     *data_size = data_sizeVal;
+  }
 
   // Return type: bool
   return _retval;
@@ -98,16 +106,19 @@ int CEF_CALLBACK resource_bundle_handler_get_data_resource_for_scale(
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return 0;
+  }
   // Verify param: data; type: simple_byref
   DCHECK(data);
-  if (!data)
+  if (!data) {
     return 0;
+  }
   // Verify param: data_size; type: simple_byref
   DCHECK(data_size);
-  if (!data_size)
+  if (!data_size) {
     return 0;
+  }
 
   // Translate param: data; type: simple_byref
   void* dataVal = data ? *data : NULL;
@@ -120,11 +131,13 @@ int CEF_CALLBACK resource_bundle_handler_get_data_resource_for_scale(
           resource_id, scale_factor, dataVal, data_sizeVal);
 
   // Restore param: data; type: simple_byref
-  if (data)
+  if (data) {
     *data = dataVal;
+  }
   // Restore param: data_size; type: simple_byref
-  if (data_size)
+  if (data_size) {
     *data_size = data_sizeVal;
+  }
 
   // Return type: bool
   return _retval;
@@ -155,7 +168,7 @@ CefRefPtr<CefResourceBundleHandler> CefCppToCRefCounted<
     cef_resource_bundle_handler_t>::UnwrapDerived(CefWrapperType type,
                                                   cef_resource_bundle_handler_t*
                                                       s) {
-  NOTREACHED() << "Unexpected class type: " << type;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
   return nullptr;
 }
 

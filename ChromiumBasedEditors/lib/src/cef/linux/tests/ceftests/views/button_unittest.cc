@@ -97,7 +97,7 @@ void VerifyMenuButtonStyle(CefRefPtr<CefMenuButton> button) {
 
 class EmptyMenuButtonDelegate : public CefMenuButtonDelegate {
  public:
-  EmptyMenuButtonDelegate() {}
+  EmptyMenuButtonDelegate() = default;
 
   void OnMenuButtonPressed(
       CefRefPtr<CefMenuButton> menu_button,
@@ -166,7 +166,7 @@ const int kButtonID = 1;
 
 class TestButtonDelegate : public CefButtonDelegate {
  public:
-  TestButtonDelegate() {}
+  TestButtonDelegate() = default;
 
   void OnButtonPressed(CefRefPtr<CefButton> button) override {
     EXPECT_TRUE(button.get());
@@ -213,13 +213,15 @@ void RunLabelButtonClick(bool with_text,
   EXPECT_TRUE(button->IsVisible());
   EXPECT_FALSE(button->IsDrawn());
 
-  if (with_text)
+  if (with_text) {
     EXPECT_STREQ(kButtonText, button->GetText().ToString().c_str());
-  else
+  } else {
     EXPECT_TRUE(button->GetText().empty());
+  }
 
-  if (with_image)
+  if (with_image) {
     AddImage(button);
+  }
 
   window->AddChildView(button);
   window->Layout();
@@ -324,7 +326,7 @@ void ClickMenuItem(CefRefPtr<CefMenuButton> menu_button) {
 class TestMenuButtonDelegate : public CefMenuButtonDelegate,
                                public CefMenuModelDelegate {
  public:
-  TestMenuButtonDelegate() {}
+  TestMenuButtonDelegate() = default;
 
   void OnMenuButtonPressed(
       CefRefPtr<CefMenuButton> menu_button,
@@ -336,7 +338,7 @@ class TestMenuButtonDelegate : public CefMenuButtonDelegate,
     model->AddItem(kMenuItemID, kMenuItemLabel);
 
     // Verify color accessors.
-    for (int i = 0; i < CEF_MENU_COLOR_COUNT; ++i) {
+    for (int i = 0; i < CEF_MENU_COLOR_NUM_VALUES; ++i) {
       cef_menu_color_type_t color_type = static_cast<cef_menu_color_type_t>(i);
       cef_color_t color_out;
       cef_color_t color = CefColorSetARGB(255, 255, 255, i);
@@ -449,13 +451,15 @@ void RunMenuButtonClick(bool with_text,
   EXPECT_TRUE(button->IsVisible());
   EXPECT_FALSE(button->IsDrawn());
 
-  if (with_text)
+  if (with_text) {
     EXPECT_STREQ(kButtonText, button->GetText().ToString().c_str());
-  else
+  } else {
     EXPECT_TRUE(button->GetText().empty());
+  }
 
-  if (with_image)
+  if (with_image) {
     AddImage(button);
+  }
 
   window->AddChildView(button);
   window->Layout();
@@ -595,10 +599,11 @@ class TestMenuButtonCustomPopupDelegate : public CefMenuButtonDelegate,
   }
 
   void OnWindowDestroyed(CefRefPtr<CefWindow> window) override {
-    if (can_activate_)
+    if (can_activate_) {
       EXPECT_TRUE(got_focus_);
-    else
+    } else {
       EXPECT_FALSE(got_focus_);
+    }
 
     // Complete the test by closing the parent window.
     parent_window_->Close();

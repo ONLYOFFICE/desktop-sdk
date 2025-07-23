@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=343a5f84d09a6933f005c3915582c73c43bda406$
+// $hash=3dd1206386b7e7cd7d5f7170f17e01ce19ecb28b$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_DOMNODE_CTOCPP_H_
@@ -38,7 +38,7 @@ class CefDOMNodeCToCpp
   bool IsElement() override;
   bool IsEditable() override;
   bool IsFormControlElement() override;
-  CefString GetFormControlElementType() override;
+  FormControlType GetFormControlElementType() override;
   bool IsSame(CefRefPtr<CefDOMNode> that) override;
   CefString GetName() override;
   CefString GetValue() override;
@@ -61,5 +61,8 @@ class CefDOMNodeCToCpp
   CefString GetElementInnerText() override;
   CefRect GetElementBounds() override;
 };
+
+constexpr auto CefDOMNodeCToCpp_Wrap = CefDOMNodeCToCpp::Wrap;
+constexpr auto CefDOMNodeCToCpp_Unwrap = CefDOMNodeCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_DOMNODE_CTOCPP_H_

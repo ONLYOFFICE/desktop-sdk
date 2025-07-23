@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,12 +33,16 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=40d350f75893a1e4307b282317d55f0fceae3baf$
+// $hash=d2300aa8192add9e750c061c7225f0dbf7621783$
 //
 
 #ifndef CEF_INCLUDE_CAPI_VIEWS_CEF_PANEL_CAPI_H_
 #define CEF_INCLUDE_CAPI_VIEWS_CEF_PANEL_CAPI_H_
 #pragma once
+
+#if defined(BUILDING_CEF_SHARED)
+#error This file cannot be included DLL-side
+#endif
 
 #include "include/capi/views/cef_panel_delegate_capi.h"
 #include "include/capi/views/cef_view_capi.h"
@@ -56,6 +60,8 @@ struct _cef_window_t;
 /// A Panel is a container in the views hierarchy that can contain other Views
 /// as children. Methods must be called on the browser process UI thread unless
 /// otherwise indicated.
+///
+/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_panel_t {
   ///

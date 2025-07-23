@@ -49,7 +49,7 @@ build_xp {
         cef_version_107 {
             DEFINES += CEF_VERSION_107
             CEF_PROJECT_PRI=$$PWD/cef_pri_107
-        }
+			}
     }
 
     core_mac {
@@ -61,7 +61,7 @@ build_xp {
 
 
     !cef_version_107 {
-	    # DEFINES += CEF_VERSION_138
+	    DEFINES += CEF_VERSION_138
 	}
     include($$CEF_PROJECT_PRI/cef_base.pri)
     include($$CEF_PROJECT_PRI/cef_client.pri)

@@ -15,13 +15,11 @@
 namespace {
 
 int XErrorHandlerImpl(Display* display, XErrorEvent* event) {
-  LOG(WARNING) << "X error received: "
-               << "type " << event->type << ", "
-               << "serial " << event->serial << ", "
-               << "error_code " << static_cast<int>(event->error_code) << ", "
-               << "request_code " << static_cast<int>(event->request_code)
-               << ", "
-               << "minor_code " << static_cast<int>(event->minor_code);
+  LOG(WARNING) << "X error received: " << "type " << event->type << ", "
+               << "serial " << event->serial << ", " << "error_code "
+               << static_cast<int>(event->error_code) << ", " << "request_code "
+               << static_cast<int>(event->request_code) << ", " << "minor_code "
+               << static_cast<int>(event->minor_code);
   return 0;
 }
 
@@ -33,6 +31,7 @@ int XIOErrorHandlerImpl(Display* display) {
 #endif  // defined(CEF_X11)
 
 // Entry point function for all processes.
+NO_STACK_PROTECTOR
 int main(int argc, char* argv[]) {
   // Provide CEF with command-line arguments.
   CefMainArgs main_args(argc, argv);
@@ -60,11 +59,6 @@ int main(int argc, char* argv[]) {
   // Specify CEF global settings here.
   CefSettings settings;
 
-  if (command_line->HasSwitch("enable-chrome-runtime")) {
-    // Enable experimental Chrome runtime. See issue #2969 for details.
-    settings.chrome_runtime = true;
-  }
-
 // When generating projects with CMake the CEF_USE_SANDBOX value will be defined
 // automatically. Pass -DUSE_SANDBOX=OFF to the CMake command-line to disable
 // use of the sandbox.
@@ -77,8 +71,12 @@ int main(int argc, char* argv[]) {
   // CEF has initialized.
   CefRefPtr<SimpleApp> app(new SimpleApp);
 
-  // Initialize CEF for the browser process.
-  CefInitialize(main_args, settings, app.get(), nullptr);
+  // Initialize the CEF browser process. May return false if initialization
+  // fails or if early exit is desired (for example, due to process singleton
+  // relaunch behavior).
+  if (!CefInitialize(main_args, settings, app.get(), nullptr)) {
+    return CefGetExitCode();
+  }
 
   // Run the CEF message loop. This will block until CefQuitMessageLoop() is
   // called.

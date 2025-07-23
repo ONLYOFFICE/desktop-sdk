@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,10 +9,11 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=96fb6718f22acb2425f9fe31f64bd7c71531a2a8$
+// $hash=b0009ffcdf9609734d1afc0850c2094ad31cf710$
 //
 
 #include "libcef_dll/cpptoc/scheme_handler_factory_cpptoc.h"
+
 #include "libcef_dll/cpptoc/resource_handler_cpptoc.h"
 #include "libcef_dll/ctocpp/browser_ctocpp.h"
 #include "libcef_dll/ctocpp/frame_ctocpp.h"
@@ -22,35 +23,38 @@ namespace {
 
 // MEMBER FUNCTIONS - Body may be edited by hand.
 
-cef_resource_handler_t* CEF_CALLBACK
+struct _cef_resource_handler_t* CEF_CALLBACK
 scheme_handler_factory_create(struct _cef_scheme_handler_factory_t* self,
-                              cef_browser_t* browser,
-                              cef_frame_t* frame,
+                              struct _cef_browser_t* browser,
+                              struct _cef_frame_t* frame,
                               const cef_string_t* scheme_name,
-                              cef_request_t* request) {
+                              struct _cef_request_t* request) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return NULL;
+  }
   // Verify param: scheme_name; type: string_byref_const
   DCHECK(scheme_name);
-  if (!scheme_name)
+  if (!scheme_name) {
     return NULL;
+  }
   // Verify param: request; type: refptr_diff
   DCHECK(request);
-  if (!request)
+  if (!request) {
     return NULL;
+  }
   // Unverified params: browser, frame
 
   // Execute
   CefRefPtr<CefResourceHandler> _retval =
       CefSchemeHandlerFactoryCppToC::Get(self)->Create(
-          CefBrowserCToCpp::Wrap(browser), CefFrameCToCpp::Wrap(frame),
-          CefString(scheme_name), CefRequestCToCpp::Wrap(request));
+          CefBrowserCToCpp_Wrap(browser), CefFrameCToCpp_Wrap(frame),
+          CefString(scheme_name), CefRequestCToCpp_Wrap(request));
 
   // Return type: refptr_same
-  return CefResourceHandlerCppToC::Wrap(_retval);
+  return CefResourceHandlerCppToC_Wrap(_retval);
 }
 
 }  // namespace
@@ -72,7 +76,7 @@ CefRefPtr<CefSchemeHandlerFactory> CefCppToCRefCounted<
     cef_scheme_handler_factory_t>::UnwrapDerived(CefWrapperType type,
                                                  cef_scheme_handler_factory_t*
                                                      s) {
-  NOTREACHED() << "Unexpected class type: " << type;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
   return nullptr;
 }
 

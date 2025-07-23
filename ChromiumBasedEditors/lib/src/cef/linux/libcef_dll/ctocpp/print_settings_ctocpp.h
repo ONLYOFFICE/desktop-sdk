@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=75238f577e768438cead970fa7362e4b04856894$
+// $hash=38c105c9e5a14e03472bc0910117dff2bdd68bf8$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_PRINT_SETTINGS_CTOCPP_H_
@@ -60,5 +60,8 @@ class CefPrintSettingsCToCpp
   void SetDuplexMode(DuplexMode mode) override;
   DuplexMode GetDuplexMode() override;
 };
+
+constexpr auto CefPrintSettingsCToCpp_Wrap = CefPrintSettingsCToCpp::Wrap;
+constexpr auto CefPrintSettingsCToCpp_Unwrap = CefPrintSettingsCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_PRINT_SETTINGS_CTOCPP_H_

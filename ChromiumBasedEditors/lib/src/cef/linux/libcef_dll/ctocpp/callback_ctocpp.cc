@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,10 +9,11 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=669523b79dbdfe2fff4015e8a1b247e7f90e62e0$
+// $hash=ad313a5c2fef4d85fd6b42d6e1279b1d20b05eb7$
 //
 
 #include "libcef_dll/ctocpp/callback_ctocpp.h"
+
 #include "libcef_dll/shutdown_checker.h"
 
 // VIRTUAL METHODS - Body may be edited by hand.
@@ -20,9 +21,10 @@
 NO_SANITIZE("cfi-icall") void CefCallbackCToCpp::Continue() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_callback_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, cont))
+  auto* _struct = GetStruct();
+  if (!_struct->cont) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -33,9 +35,10 @@ NO_SANITIZE("cfi-icall") void CefCallbackCToCpp::Continue() {
 NO_SANITIZE("cfi-icall") void CefCallbackCToCpp::Cancel() {
   shutdown_checker::AssertNotShutdown();
 
-  cef_callback_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, cancel))
+  auto* _struct = GetStruct();
+  if (!_struct->cancel) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -57,7 +60,7 @@ template <>
 cef_callback_t*
 CefCToCppRefCounted<CefCallbackCToCpp, CefCallback, cef_callback_t>::
     UnwrapDerived(CefWrapperType type, CefCallback* c) {
-  NOTREACHED() << "Unexpected class type: " << type;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
   return nullptr;
 }
 

@@ -69,7 +69,27 @@
 #if defined(USING_CHROMIUM_INCLUDES)
 // When building CEF include the Chromium header directly.
 #include "build/build_config.h"
+#include "cef/libcef/features/features.h"
+
+// The following #defines are used in cef/include/ headers and CEF client-side
+// code. CEF library-side code should use BUILDFLAG checks directly instead of
+// these #defines. CEF client-side code will get these #defines from
+// cef_config.h so any changes must also be reflected in
+// tools/make_config_header.py.
+
+#if BUILDFLAG(IS_LINUX)
+#include "ui/base/ozone_buildflags.h"
+#if BUILDFLAG(IS_OZONE_X11)
+#define CEF_X11 1
+#endif
+#endif
+
 #else  // !USING_CHROMIUM_INCLUDES
+
+#if !defined(GENERATING_CEF_API_HASH)
+#include "include/cef_config.h"
+#endif
+
 // The following is substantially similar to the Chromium implementation.
 // If the Chromium implementation diverges the below implementation should be
 // updated to match.
@@ -232,19 +252,19 @@
 
 // Type detection for wchar_t.
 #if defined(OS_WIN)
-#define WCHAR_T_IS_UTF16
+#define WCHAR_T_IS_16_BIT
 #elif defined(OS_FUCHSIA)
-#define WCHAR_T_IS_UTF32
+#define WCHAR_T_IS_32_BIT
 #elif defined(OS_POSIX) && defined(COMPILER_GCC) && defined(__WCHAR_MAX__) && \
     (__WCHAR_MAX__ == 0x7fffffff || __WCHAR_MAX__ == 0xffffffff)
-#define WCHAR_T_IS_UTF32
+#define WCHAR_T_IS_32_BIT
 #elif defined(OS_POSIX) && defined(COMPILER_GCC) && defined(__WCHAR_MAX__) && \
     (__WCHAR_MAX__ == 0x7fff || __WCHAR_MAX__ == 0xffff)
 // On Posix, we'll detect short wchar_t, but projects aren't guaranteed to
 // compile in this mode (in particular, Chrome doesn't). This is intended for
 // other projects using base who manage their own dependencies and make sure
 // short wchar works for them.
-#define WCHAR_T_IS_UTF16
+#define WCHAR_T_IS_16_BIT
 #else
 #error Please add support for your compiler in include/base/cef_build.h
 #endif
@@ -253,7 +273,7 @@
 // The compiler thinks std::string::const_iterator and "const char*" are
 // equivalent types.
 #define STD_STRING_ITERATOR_IS_CHAR_POINTER
-// The compiler thinks std::u16string::const_iterator and "char16*" are
+// The compiler thinks std::u16string::const_iterator and "char16_t*" are
 // equivalent types.
 #define BASE_STRING16_ITERATOR_IS_CHAR16_POINTER
 #endif

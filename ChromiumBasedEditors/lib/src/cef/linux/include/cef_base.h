@@ -31,8 +31,11 @@
 #define CEF_INCLUDE_CEF_BASE_H_
 #pragma once
 
-#include "include/base/cef_atomic_ref_count.h"
+#if !defined(GENERATING_CEF_API_HASH)
 #include "include/base/cef_build.h"
+#endif
+
+#include "include/base/cef_atomic_ref_count.h"
 #include "include/base/cef_macros.h"
 
 // Bring in common C++ type definitions used by CEF consumers.
@@ -116,6 +119,14 @@ class CefRefCount {
   ///
   bool HasAtLeastOneRef() const { return !ref_count_.IsZero(); }
 
+  ///
+  /// Returns the current reference count (with no barriers). This is subtle,
+  /// and should be used only for debugging.
+  ///
+  int SubtleRefCountForDebug() const {
+    return ref_count_.SubtleRefCountForDebug();
+  }
+
  private:
   mutable base::AtomicRefCount ref_count_{0};
 };
@@ -124,22 +135,26 @@ class CefRefCount {
 /// Macro that provides a reference counting implementation for classes
 /// extending CefBase.
 ///
-#define IMPLEMENT_REFCOUNTING(ClassName)                             \
- public:                                                             \
-  void AddRef() const override { ref_count_.AddRef(); }              \
-  bool Release() const override {                                    \
-    if (ref_count_.Release()) {                                      \
-      delete static_cast<const ClassName*>(this);                    \
-      return true;                                                   \
-    }                                                                \
-    return false;                                                    \
-  }                                                                  \
-  bool HasOneRef() const override { return ref_count_.HasOneRef(); } \
-  bool HasAtLeastOneRef() const override {                           \
-    return ref_count_.HasAtLeastOneRef();                            \
-  }                                                                  \
-                                                                     \
- private:                                                            \
+#define IMPLEMENT_REFCOUNTING(ClassName)          \
+ public:                                          \
+  void AddRef() const override {                  \
+    ref_count_.AddRef();                          \
+  }                                               \
+  bool Release() const override {                 \
+    if (ref_count_.Release()) {                   \
+      delete static_cast<const ClassName*>(this); \
+      return true;                                \
+    }                                             \
+    return false;                                 \
+  }                                               \
+  bool HasOneRef() const override {               \
+    return ref_count_.HasOneRef();                \
+  }                                               \
+  bool HasAtLeastOneRef() const override {        \
+    return ref_count_.HasAtLeastOneRef();         \
+  }                                               \
+                                                  \
+ private:                                         \
   CefRefCount ref_count_
 
 #endif  // CEF_INCLUDE_CEF_BASE_H_
