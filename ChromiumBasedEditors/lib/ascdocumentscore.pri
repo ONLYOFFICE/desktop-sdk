@@ -59,6 +59,10 @@ build_xp {
         }
     }
 
+
+    !cef_version_107 {
+	    # DEFINES += CEF_VERSION_138
+	}
     include($$CEF_PROJECT_PRI/cef_base.pri)
     include($$CEF_PROJECT_PRI/cef_client.pri)
 }

@@ -337,7 +337,7 @@ public:
 #endif
 
 #ifndef CEF_2623
-	virtual void OnScheduleMessagePumpWork(int64 delay) OVERRIDE
+	virtual void OnScheduleMessagePumpWork(int64_t delay) OVERRIDE
 	{
 		client::ClientAppBrowser::OnScheduleMessagePumpWork(delay);
 	}

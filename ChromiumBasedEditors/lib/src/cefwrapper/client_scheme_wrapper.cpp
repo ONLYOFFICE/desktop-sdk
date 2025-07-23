@@ -272,7 +272,7 @@ public:
 	}
 
 	virtual void GetResponseHeaders(CefRefPtr<CefResponse> response,
-									int64& response_length,
+	                                int64_t& response_length,
 									CefString& redirectUrl) OVERRIDE
 	{
 		CEF_REQUIRE_IO_THREAD();

@@ -269,16 +269,59 @@ namespace NSCommon
 
 namespace NSArgumentList
 {
-	static int64 GetInt64(CefRefPtr<CefListValue> args, const int& index)
+	static int64_t GetInt64(CefRefPtr<CefListValue> args, const int& index)
 	{
 		std::string tmp = args->GetString(index).ToString();
-		return (int64)std::stoll(tmp);
+		return (int64_t)std::stoll(tmp);
 	}
-	static bool SetInt64(CefRefPtr<CefListValue> args, const int& index, const int64& value)
+	static bool SetInt64(CefRefPtr<CefListValue> args, const int& index, const int64_t& value)
 	{
 		std::string tmp = std::to_string(value);
 		return args->SetString(index, tmp);
 	}
+
+	static CefString GetIdentifier(CefRefPtr<CefFrame> frame)
+	{
+#ifdef CEF_VERSION_138
+		return frame->GetIdentifier();
+#else
+		return std::to_string(frame->GetIdentifier());
+#endif // CEF_VERSION_138
+	}
+
+#ifdef CEF_VERSION_138
+	static CefRefPtr<CefFrame> GetFrame(CefRefPtr<CefBrowser> browser, CefString name)
+	{
+		return browser->GetFrameByName(name);
+	}
+	static CefRefPtr<CefFrame> GetFrame(CefRefPtr<CefBrowser> browser, int64_t id)
+	{
+		return browser->GetFrameByIdentifier(std::to_string(id));
+	}
+	static std::vector<CefString> GetFrameIdentifiers(CefRefPtr<CefBrowser> browser)
+	{
+		std::vector<CefString> arIds;
+		browser->GetFrameIdentifiers(arIds);
+
+		// copy elision
+		return arIds;
+	}
+# else
+	template <class T>
+	static CefRefPtr<CefFrame> GetFrame(CefRefPtr<CefBrowser> browser, T&& value)
+	{
+		return browser->GetFrame(std::forward<T>(value));
+	}
+
+	static std::vector<int64_t> GetFrameIdentifiers(CefRefPtr<CefBrowser> browser)
+	{
+		std::vector<int64_t> arIds;
+		browser->GetFrameIdentifiers(arIds);
+
+		// copy elision
+		return arIds;
+	}
+#endif // CEF_VERSION_138
 }
 
 #ifdef CEF_SIMPLE_URL_REQUEST
@@ -404,15 +447,15 @@ namespace NSRequest
 		}
 
 		void OnUploadProgress(CefRefPtr<CefURLRequest> request,
-							  int64 current,
-							  int64 total) override
+		                      int64_t current,
+		                      int64_t total) override
 		{
 			m_upload_total = total;
 		}
 
 		void OnDownloadProgress(CefRefPtr<CefURLRequest> request,
-								int64 current,
-								int64 total) override
+		                        int64_t current,
+		                        int64_t total) override
 		{
 			m_download_total = total;
 		}
@@ -435,8 +478,8 @@ namespace NSRequest
 		}
 
 	private:
-		int64 m_upload_total;
-		int64 m_download_total;
+		int64_t m_upload_total;
+		int64_t m_download_total;
 		std::string m_download_data;
 
 	private:
