@@ -473,21 +473,20 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 	cef_string_t _cache_user;
 	memset(&_cache_user, 0, sizeof(_cache_user));
 	cef_string_from_wide(sCachePathUser.c_str(), sCachePathUser.length(), &_cache_user);
+	settings.root_cache_path = _cache_user;
 
 	std::wstring sCachePathLog = sCachePath + L"/log.log";
 	cef_string_t _cache_log;
 	memset(&_cache_log, 0, sizeof(_cache_log));
+
 	cef_string_from_wide(sCachePathLog.c_str(), sCachePathLog.length(), &_cache_log);
 	settings.log_file = _cache_log;
 
 	settings.persist_session_cookies = true;
 
 	// Initialize CEF.
-	{ // ScopedEarlySupport
-		cef::logging::ScopedEarlySupport scopred_early_support(config);
-		m_pInternal->context->Initialize(main_args, settings, m_pInternal->m_app.get(), NULL);
-		asc_scheme::InitScheme(pManager);
-	} // end of ScopedEarlySupport
+	m_pInternal->context->Initialize(main_args, settings, m_pInternal->m_app.get(), NULL);
+	asc_scheme::InitScheme(pManager);
 
 	// LOGGER_STRING("CApplicationCEF::Init_CEF::initialize");
 
