@@ -402,21 +402,21 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 	memset(&_subprocess, 0, sizeof(_subprocess));
 	cef_string_from_wide(sHelperPath.c_str(), sHelperPath.length(), &_subprocess);
 	settings.browser_subprocess_path = _subprocess;
-	// LOG(WARNING) << "Poo-poo"; // <-- PROBLEM HERE
 
 #if !defined(CEF_USE_SANDBOX)
 	settings.no_sandbox = true;
 #endif
-
+	{
+		cef::logging::ScopedEarlySupport scopred_early_support({});
 	// Populate the settings based on command line arguments.
 #if defined(CEF_VERSION_ABOVE_102)
-	m_pInternal->context = std::make_unique<client::MainContextImpl>(command_line, false);
+		m_pInternal->context = std::make_unique<client::MainContextImpl>(command_line, false);
 #elif defined(CEF_2623)
-	m_pInternal->context.reset(new client::MainContextImpl(command_line, false));
+		m_pInternal->context.reset(new client::MainContextImpl(command_line, false));
 #else
-	m_pInternal->context = new client::MainContextImpl(command_line, false);
+		m_pInternal->context = new client::MainContextImpl(command_line, false);
 #endif
-
+	}
 	m_pInternal->context->PopulateSettings(&settings);
 
 	bool isMultithreaded = false;
