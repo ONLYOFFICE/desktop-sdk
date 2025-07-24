@@ -403,11 +403,14 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 	cef_string_from_wide(sHelperPath.c_str(), sHelperPath.length(), &_subprocess);
 	settings.browser_subprocess_path = _subprocess;
 
+	cef::logging::ScopedEarlySupport::Config config;
+	config.min_log_level = cef::logging::LOG_INFO;
+
 #if !defined(CEF_USE_SANDBOX)
 	settings.no_sandbox = true;
 #endif
-	{
-		cef::logging::ScopedEarlySupport scopred_early_support({});
+	{ // ScopedEarlySupport
+		cef::logging::ScopedEarlySupport scopred_early_support(config);
 	// Populate the settings based on command line arguments.
 #if defined(CEF_VERSION_ABOVE_102)
 		m_pInternal->context = std::make_unique<client::MainContextImpl>(command_line, false);
@@ -416,7 +419,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 #else
 		m_pInternal->context = new client::MainContextImpl(command_line, false);
 #endif
-	}
+	} // end of ScopedEarlySupport
 	m_pInternal->context->PopulateSettings(&settings);
 
 	bool isMultithreaded = false;
@@ -458,12 +461,13 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 	}
 
 	std::wstring sCachePath = pManager->m_oSettings.cache_path;
-
 	cef_string_t _cache;
+
 	memset(&_cache, 0, sizeof(_cache));
 	cef_string_from_wide(sCachePath.c_str(), sCachePath.length(), &_cache);
+
 	settings.cache_path = _cache;
-	settings.log_severity = LOGSEVERITY_DISABLE;
+	settings.log_severity = LOGSEVERITY_INFO;
 
 	std::wstring sCachePathUser = sCachePath;
 	cef_string_t _cache_user;
@@ -479,8 +483,11 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 	settings.persist_session_cookies = true;
 
 	// Initialize CEF.
-	m_pInternal->context->Initialize(main_args, settings, m_pInternal->m_app.get(), NULL);
-	asc_scheme::InitScheme(pManager);
+	{ // ScopedEarlySupport
+		cef::logging::ScopedEarlySupport scopred_early_support(config);
+		m_pInternal->context->Initialize(main_args, settings, m_pInternal->m_app.get(), NULL);
+		asc_scheme::InitScheme(pManager);
+	} // end of ScopedEarlySupport
 
 	// LOGGER_STRING("CApplicationCEF::Init_CEF::initialize");
 
