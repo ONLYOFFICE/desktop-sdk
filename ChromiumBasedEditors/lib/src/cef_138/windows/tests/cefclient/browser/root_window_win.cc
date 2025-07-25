@@ -473,9 +473,7 @@ bool RootWindowWin::WithWindowlessRendering() const {
 
 void RootWindowWin::CreateBrowserWindow(const std::string& startup_url) {
   if (with_osr_) {
-    MainContext::Get()->PopulateOsrSettings(&osr_settings_);
-    browser_window_ = std::make_unique<BrowserWindowOsrWin>(
-        this, with_controls_, startup_url, osr_settings_);
+
   } else {
     browser_window_ = std::make_unique<BrowserWindowStdWin>(
         this, with_controls_, startup_url);

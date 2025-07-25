@@ -753,8 +753,8 @@ LIBS += \
     -lUrlmon \
     -lOpenGL32 \
     -lCrypt32 \
-    -lImm32
-
+    -lImm32 \
+    -lWintrust
 }
 
 core_linux {
