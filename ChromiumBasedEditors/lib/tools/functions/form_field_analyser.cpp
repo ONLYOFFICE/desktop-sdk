@@ -53,8 +53,8 @@ If you need to analyze document /home/user/document.docx, respond with: \
 		std::string result = keys.dump();
 		builder.CloseFile();
 
-		std::string prompt = "[prompt]Match the document fields by meaning with the values ​​in the array in javascript format. \
-And when you are asked to fill out a form, send not invented field values ​​to the function, but only those that are in the passed list: " + result;
+		std::string prompt = "[prompt]Match the document fields by meaning with the values in the array in javascript format. \
+And when you are asked to fill out a form, send not invented field values to the function, but only those that are in the passed list: " + result;
 
 		return prompt;
 	}
