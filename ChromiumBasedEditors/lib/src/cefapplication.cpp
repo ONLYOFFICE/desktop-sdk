@@ -403,15 +403,19 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 	cef_string_from_wide(sHelperPath.c_str(), sHelperPath.length(), &_subprocess);
 	settings.browser_subprocess_path = _subprocess;
 
-	cef::logging::ScopedEarlySupport::Config config;
-	config.min_log_level = cef::logging::LOG_INFO;
-
 #if !defined(CEF_USE_SANDBOX)
 	settings.no_sandbox = true;
 #endif
+
+// in new versions log should be used with ScopedEarlySupport before cef is initialized.
+#ifdef CEF_VERSION_138
+    cef::logging::ScopedEarlySupport::Config config;
+    config.min_log_level = cef::logging::LOG_INFO;
+
 	{ // ScopedEarlySupport
 		cef::logging::ScopedEarlySupport scopred_early_support(config);
-	// Populate the settings based on command line arguments.
+#endif // CEF_VERSION_138
+
 #if defined(CEF_VERSION_ABOVE_102)
 		m_pInternal->context = std::make_unique<client::MainContextImpl>(command_line, false);
 #elif defined(CEF_2623)
@@ -419,7 +423,11 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 #else
 		m_pInternal->context = new client::MainContextImpl(command_line, false);
 #endif
+
+#ifdef CEF_VERSION_138
 	} // end of ScopedEarlySupport
+#endif // CEF_VERSION_138
+
 	m_pInternal->context->PopulateSettings(&settings);
 
 	bool isMultithreaded = false;
