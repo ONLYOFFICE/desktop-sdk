@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=933203214621127a13e4680b89b1c5102deb5fec$
+// $hash=cf099f71fe1c451ca650912e7ba34ef54f2aa61b$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_PROCESS_MESSAGE_CTOCPP_H_
@@ -42,8 +42,5 @@ class CefProcessMessageCToCpp
   CefRefPtr<CefListValue> GetArgumentList() override;
   CefRefPtr<CefSharedMemoryRegion> GetSharedMemoryRegion() override;
 };
-
-constexpr auto CefProcessMessageCToCpp_Wrap = CefProcessMessageCToCpp::Wrap;
-constexpr auto CefProcessMessageCToCpp_Unwrap = CefProcessMessageCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_PROCESS_MESSAGE_CTOCPP_H_

@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,16 +33,12 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=9bcfb08e73653706d1c2f0ea9cab3fe41c4f5806$
+// $hash=70d6b393cbdc96a75864911d7ca3568cc8dcdebf$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_RESOURCE_REQUEST_HANDLER_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_RESOURCE_REQUEST_HANDLER_CAPI_H_
 #pragma once
-
-#if defined(BUILDING_CEF_SHARED)
-#error This file cannot be included DLL-side
-#endif
 
 #include "include/capi/cef_base_capi.h"
 #include "include/capi/cef_browser_capi.h"
@@ -63,8 +59,6 @@ struct _cef_cookie_access_filter_t;
 /// Implement this structure to handle events related to browser requests. The
 /// functions of this structure will be called on the IO thread unless otherwise
 /// indicated.
-///
-/// NOTE: This struct is allocated client-side.
 ///
 typedef struct _cef_resource_request_handler_t {
   ///
@@ -194,7 +188,7 @@ typedef struct _cef_resource_request_handler_t {
       struct _cef_request_t* request,
       struct _cef_response_t* response,
       cef_urlrequest_status_t status,
-      int64_t received_content_length);
+      int64 received_content_length);
 
   ///
   /// Called on the IO thread to handle requests for URLs with an unknown
@@ -218,8 +212,6 @@ typedef struct _cef_resource_request_handler_t {
 /// Implement this structure to filter cookies that may be sent or received from
 /// resource requests. The functions of this structure will be called on the IO
 /// thread unless otherwise indicated.
-///
-/// NOTE: This struct is allocated client-side.
 ///
 typedef struct _cef_cookie_access_filter_t {
   ///

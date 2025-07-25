@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,16 +33,12 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=b0b10042cc19c3120f0ee101ed86ab3e5bd9de9d$
+// $hash=b9b1308311999efcfd2aa678472f934ca783492c$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_FRAME_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_FRAME_CAPI_H_
 #pragma once
-
-#if defined(BUILDING_CEF_SHARED)
-#error This file cannot be included DLL-side
-#endif
 
 #include "include/capi/cef_base_capi.h"
 #include "include/capi/cef_dom_capi.h"
@@ -58,15 +54,13 @@ extern "C" {
 struct _cef_browser_t;
 struct _cef_urlrequest_client_t;
 struct _cef_urlrequest_t;
-struct _cef_v8_context_t;
+struct _cef_v8context_t;
 
 ///
 /// Structure used to represent a frame in the browser window. When used in the
 /// browser process the functions of this structure may be called on any thread
 /// unless otherwise indicated in the comments. When used in the render process
 /// the functions of this structure may only be called on the main thread.
-///
-/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_frame_t {
   ///
@@ -103,11 +97,6 @@ typedef struct _cef_frame_t {
   /// Execute paste in this frame.
   ///
   void(CEF_CALLBACK* paste)(struct _cef_frame_t* self);
-
-  ///
-  /// Execute paste and match style in this frame.
-  ///
-  void(CEF_CALLBACK* paste_and_match_style)(struct _cef_frame_t* self);
 
   ///
   /// Execute delete in this frame.
@@ -189,12 +178,10 @@ typedef struct _cef_frame_t {
   cef_string_userfree_t(CEF_CALLBACK* get_name)(struct _cef_frame_t* self);
 
   ///
-  /// Returns the globally unique identifier for this frame or NULL if the
+  /// Returns the globally unique identifier for this frame or < 0 if the
   /// underlying frame does not yet exist.
   ///
-  // The resulting string must be freed by calling cef_string_userfree_free().
-  cef_string_userfree_t(CEF_CALLBACK* get_identifier)(
-      struct _cef_frame_t* self);
+  int64(CEF_CALLBACK* get_identifier)(struct _cef_frame_t* self);
 
   ///
   /// Returns the parent of this frame or NULL if this is the main (top-level)
@@ -217,7 +204,7 @@ typedef struct _cef_frame_t {
   /// Get the V8 context associated with the frame. This function can only be
   /// called from the render process.
   ///
-  struct _cef_v8_context_t*(CEF_CALLBACK* get_v8_context)(
+  struct _cef_v8context_t*(CEF_CALLBACK* get_v8context)(
       struct _cef_frame_t* self);
 
   ///
@@ -229,15 +216,23 @@ typedef struct _cef_frame_t {
 
   ///
   /// Create a new URL request that will be treated as originating from this
-  /// frame and the associated browser. Use cef_urlrequest_t::Create instead if
-  /// you do not want the request to have this association, in which case it may
-  /// be handled differently (see documentation on that function). A request
-  /// created with this function may only originate from the browser process,
-  /// and will behave as follows:
-  ///   - It may be intercepted by the client via CefResourceRequestHandler or
-  ///     CefSchemeHandlerFactory.
+  /// frame and the associated browser. This request may be intercepted by the
+  /// client via cef_resource_request_handler_t or cef_scheme_handler_factory_t.
+  /// Use cef_urlrequest_t::Create instead if you do not want the request to
+  /// have this association, in which case it may be handled differently (see
+  /// documentation on that function). Requests may originate from both the
+  /// browser process and the render process.
+  ///
+  /// For requests originating from the browser process:
   ///   - POST data may only contain a single element of type PDE_TYPE_FILE or
   ///     PDE_TYPE_BYTES.
+  ///
+  /// For requests originating from the render process:
+  ///   - POST data may only contain a single element of type PDE_TYPE_BYTES.
+  ///   - If the response contains Content-Disposition or Mime-Type header
+  ///     values that would not normally be rendered then the response may
+  ///     receive special handling inside the browser (for example, via the
+  ///     file download code path instead of the URL request code path).
   ///
   /// The |request| object will be marked as read-only after calling this
   /// function.

@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=062c6f8c5cf4e9dd8c839e244b53f97b65442788$
+// $hash=72b035624f1edff425da000635d111f72186fffc$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_FRAME_HANDLER_CPPTOC_H_
@@ -33,8 +33,5 @@ class CefFrameHandlerCppToC : public CefCppToCRefCounted<CefFrameHandlerCppToC,
   CefFrameHandlerCppToC();
   virtual ~CefFrameHandlerCppToC();
 };
-
-constexpr auto CefFrameHandlerCppToC_Wrap = CefFrameHandlerCppToC::Wrap;
-constexpr auto CefFrameHandlerCppToC_Unwrap = CefFrameHandlerCppToC::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_FRAME_HANDLER_CPPTOC_H_

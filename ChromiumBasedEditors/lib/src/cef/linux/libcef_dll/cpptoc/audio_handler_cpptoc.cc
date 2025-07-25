@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,11 +9,10 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=1b2ae1f2618332a128e4c9a60afdaf88e92c7d4b$
+// $hash=56d4812b8f81cbda67550a8b03e8b7af911e5e28$
 //
 
 #include "libcef_dll/cpptoc/audio_handler_cpptoc.h"
-
 #include "libcef_dll/ctocpp/browser_ctocpp.h"
 #include "libcef_dll/shutdown_checker.h"
 
@@ -30,31 +29,27 @@ audio_handler_get_audio_parameters(struct _cef_audio_handler_t* self,
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return 0;
-  }
   // Verify param: browser; type: refptr_diff
   DCHECK(browser);
-  if (!browser) {
+  if (!browser)
     return 0;
-  }
   // Verify param: params; type: simple_byref
   DCHECK(params);
-  if (!params) {
+  if (!params)
     return 0;
-  }
 
   // Translate param: params; type: simple_byref
   CefAudioParameters paramsVal = params ? *params : CefAudioParameters();
 
   // Execute
   bool _retval = CefAudioHandlerCppToC::Get(self)->GetAudioParameters(
-      CefBrowserCToCpp_Wrap(browser), paramsVal);
+      CefBrowserCToCpp::Wrap(browser), paramsVal);
 
   // Restore param: params; type: simple_byref
-  if (params) {
+  if (params)
     *params = paramsVal;
-  }
 
   // Return type: bool
   return _retval;
@@ -70,26 +65,23 @@ audio_handler_on_audio_stream_started(struct _cef_audio_handler_t* self,
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return;
-  }
   // Verify param: browser; type: refptr_diff
   DCHECK(browser);
-  if (!browser) {
+  if (!browser)
     return;
-  }
   // Verify param: params; type: simple_byref_const
   DCHECK(params);
-  if (!params) {
+  if (!params)
     return;
-  }
 
   // Translate param: params; type: simple_byref_const
   CefAudioParameters paramsVal = params ? *params : CefAudioParameters();
 
   // Execute
   CefAudioHandlerCppToC::Get(self)->OnAudioStreamStarted(
-      CefBrowserCToCpp_Wrap(browser), paramsVal, channels);
+      CefBrowserCToCpp::Wrap(browser), paramsVal, channels);
 }
 
 void CEF_CALLBACK
@@ -97,29 +89,26 @@ audio_handler_on_audio_stream_packet(struct _cef_audio_handler_t* self,
                                      struct _cef_browser_t* browser,
                                      const float** data,
                                      int frames,
-                                     int64_t pts) {
+                                     int64 pts) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return;
-  }
   // Verify param: browser; type: refptr_diff
   DCHECK(browser);
-  if (!browser) {
+  if (!browser)
     return;
-  }
   // Verify param: data; type: simple_byaddr
   DCHECK(data);
-  if (!data) {
+  if (!data)
     return;
-  }
 
   // Execute
   CefAudioHandlerCppToC::Get(self)->OnAudioStreamPacket(
-      CefBrowserCToCpp_Wrap(browser), data, frames, pts);
+      CefBrowserCToCpp::Wrap(browser), data, frames, pts);
 }
 
 void CEF_CALLBACK
@@ -130,18 +119,16 @@ audio_handler_on_audio_stream_stopped(struct _cef_audio_handler_t* self,
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return;
-  }
   // Verify param: browser; type: refptr_diff
   DCHECK(browser);
-  if (!browser) {
+  if (!browser)
     return;
-  }
 
   // Execute
   CefAudioHandlerCppToC::Get(self)->OnAudioStreamStopped(
-      CefBrowserCToCpp_Wrap(browser));
+      CefBrowserCToCpp::Wrap(browser));
 }
 
 void CEF_CALLBACK
@@ -153,23 +140,20 @@ audio_handler_on_audio_stream_error(struct _cef_audio_handler_t* self,
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return;
-  }
   // Verify param: browser; type: refptr_diff
   DCHECK(browser);
-  if (!browser) {
+  if (!browser)
     return;
-  }
   // Verify param: message; type: string_byref_const
   DCHECK(message);
-  if (!message) {
+  if (!message)
     return;
-  }
 
   // Execute
   CefAudioHandlerCppToC::Get(self)->OnAudioStreamError(
-      CefBrowserCToCpp_Wrap(browser), CefString(message));
+      CefBrowserCToCpp::Wrap(browser), CefString(message));
 }
 
 }  // namespace
@@ -196,7 +180,7 @@ CefRefPtr<CefAudioHandler> CefCppToCRefCounted<
     CefAudioHandler,
     cef_audio_handler_t>::UnwrapDerived(CefWrapperType type,
                                         cef_audio_handler_t* s) {
-  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  NOTREACHED() << "Unexpected class type: " << type;
   return nullptr;
 }
 

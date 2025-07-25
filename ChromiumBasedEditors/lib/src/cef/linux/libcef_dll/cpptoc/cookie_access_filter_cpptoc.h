@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=2b86ba119653f1cd20a2181f9a0493cdfe8b0ee7$
+// $hash=e0b8da1120abbbb306c6cc789ec94e38dc07ceb0$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_COOKIE_ACCESS_FILTER_CPPTOC_H_
@@ -34,10 +34,5 @@ class CefCookieAccessFilterCppToC
   CefCookieAccessFilterCppToC();
   virtual ~CefCookieAccessFilterCppToC();
 };
-
-constexpr auto CefCookieAccessFilterCppToC_Wrap =
-    CefCookieAccessFilterCppToC::Wrap;
-constexpr auto CefCookieAccessFilterCppToC_Unwrap =
-    CefCookieAccessFilterCppToC::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_COOKIE_ACCESS_FILTER_CPPTOC_H_

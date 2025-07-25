@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,11 +9,10 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=cf9da7c6e72ad081fee8669176cc436742870a75$
+// $hash=94ef10ffc2921cf9d5f308632f081c086d7b2b65$
 //
 
 #include "libcef_dll/ctocpp/media_source_ctocpp.h"
-
 #include "libcef_dll/shutdown_checker.h"
 
 // VIRTUAL METHODS - Body may be edited by hand.
@@ -21,10 +20,9 @@
 NO_SANITIZE("cfi-icall") CefString CefMediaSourceCToCpp::GetId() {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->get_id) {
+  cef_media_source_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, get_id))
     return CefString();
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -40,10 +38,9 @@ NO_SANITIZE("cfi-icall") CefString CefMediaSourceCToCpp::GetId() {
 NO_SANITIZE("cfi-icall") bool CefMediaSourceCToCpp::IsCastSource() {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->is_cast_source) {
+  cef_media_source_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, is_cast_source))
     return false;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -57,10 +54,9 @@ NO_SANITIZE("cfi-icall") bool CefMediaSourceCToCpp::IsCastSource() {
 NO_SANITIZE("cfi-icall") bool CefMediaSourceCToCpp::IsDialSource() {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->is_dial_source) {
+  cef_media_source_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, is_dial_source))
     return false;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -85,7 +81,7 @@ template <>
 cef_media_source_t*
 CefCToCppRefCounted<CefMediaSourceCToCpp, CefMediaSource, cef_media_source_t>::
     UnwrapDerived(CefWrapperType type, CefMediaSource* c) {
-  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  NOTREACHED() << "Unexpected class type: " << type;
   return nullptr;
 }
 

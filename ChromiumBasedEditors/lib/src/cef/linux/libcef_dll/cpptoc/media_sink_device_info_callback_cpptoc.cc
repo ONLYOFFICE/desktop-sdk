@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,11 +9,10 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=8a3ff13b6e9f74486767ad95d767acfe680c5972$
+// $hash=dc0bcca015bc0d600b5429a8fc1fba988fe5ad95$
 //
 
 #include "libcef_dll/cpptoc/media_sink_device_info_callback_cpptoc.h"
-
 #include "libcef_dll/shutdown_checker.h"
 #include "libcef_dll/template_util.h"
 
@@ -29,24 +28,21 @@ void CEF_CALLBACK media_sink_device_info_callback_on_media_sink_device_info(
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return;
-  }
   // Verify param: device_info; type: struct_byref_const
   DCHECK(device_info);
-  if (!device_info) {
+  if (!device_info)
     return;
-  }
   if (!template_util::has_valid_size(device_info)) {
-    DCHECK(false) << "invalid device_info->[base.]size";
+    NOTREACHED() << "invalid device_info->[base.]size";
     return;
   }
 
   // Translate param: device_info; type: struct_byref_const
   CefMediaSinkDeviceInfo device_infoObj;
-  if (device_info) {
+  if (device_info)
     device_infoObj.Set(*device_info, false);
-  }
 
   // Execute
   CefMediaSinkDeviceInfoCallbackCppToC::Get(self)->OnMediaSinkDeviceInfo(
@@ -75,7 +71,7 @@ CefCppToCRefCounted<CefMediaSinkDeviceInfoCallbackCppToC,
                     cef_media_sink_device_info_callback_t>::
     UnwrapDerived(CefWrapperType type,
                   cef_media_sink_device_info_callback_t* s) {
-  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  NOTREACHED() << "Unexpected class type: " << type;
   return nullptr;
 }
 

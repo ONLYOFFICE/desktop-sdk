@@ -15,7 +15,7 @@
 
 namespace {
 
-const char kTestUrl[] = "https://tests-srh/test.html";
+const char kTestUrl[] = "http://tests-srh/test.html";
 const size_t kReadBlockSize = 1024U;  // 1k.
 
 // The usual network buffer size is about 32k. Choose a value that's larger.
@@ -23,7 +23,8 @@ const size_t kReadDesiredSize = 100U * 1024U;  // 100k
 
 class ReadHandler : public CefReadHandler {
  public:
-  explicit ReadHandler(bool may_block) : may_block_(may_block) {}
+  explicit ReadHandler(bool may_block)
+      : may_block_(may_block), offset_(0), expected_result_(0) {}
 
   void CreateContent() {
     // To verify that the data transers successfully we're going to make a big
@@ -57,12 +58,12 @@ class ReadHandler : public CefReadHandler {
     return read_bytes;
   }
 
-  int Seek(int64_t offset, int whence) override {
+  int Seek(int64 offset, int whence) override {
     EXPECT_TRUE(false);  // Not reached.
     return 0;
   }
 
-  int64_t Tell() override {
+  int64 Tell() override {
     EXPECT_TRUE(false);  // Not reached.
     return 0;
   }
@@ -77,15 +78,16 @@ class ReadHandler : public CefReadHandler {
  private:
   const bool may_block_;
   std::string content_;
-  size_t offset_ = 0;
-  int expected_result_ = 0;
+  size_t offset_;
+  int expected_result_;
 
   IMPLEMENT_REFCOUNTING(ReadHandler);
 };
 
 class ReadTestHandler : public RoutingTestHandler {
  public:
-  explicit ReadTestHandler(bool may_block) : may_block_(may_block) {}
+  explicit ReadTestHandler(bool may_block)
+      : may_block_(may_block), expected_result_(0) {}
 
   void RunTest() override {
     // Create the browser.
@@ -115,7 +117,7 @@ class ReadTestHandler : public RoutingTestHandler {
 
   bool OnQuery(CefRefPtr<CefBrowser> browser,
                CefRefPtr<CefFrame> frame,
-               int64_t query_id,
+               int64 query_id,
                const CefString& request,
                bool persistent,
                CefRefPtr<Callback> callback) override {
@@ -141,9 +143,8 @@ class ReadTestHandler : public RoutingTestHandler {
 
  private:
   void DestroyTestIfDone() {
-    if (got_on_query_ && got_on_loading_state_change_done_) {
+    if (got_on_query_ && got_on_loading_state_change_done_)
       DestroyTest();
-    }
   }
 
   void DestroyTest() override {
@@ -155,7 +156,7 @@ class ReadTestHandler : public RoutingTestHandler {
 
   const bool may_block_;
 
-  int expected_result_ = 0;
+  int expected_result_;
   TrackCallback got_resource_handler_;
   TrackCallback got_on_query_;
   TrackCallback got_on_loading_state_change_done_;

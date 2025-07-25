@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,16 +33,12 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=d075982ed273707bf193b608acabf26db8896303$
+// $hash=273a6abfd4ac030701be00c45811c19e74e128bd$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_TASK_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_TASK_CAPI_H_
 #pragma once
-
-#if defined(BUILDING_CEF_SHARED)
-#error This file cannot be included DLL-side
-#endif
 
 #include "include/capi/cef_base_capi.h"
 
@@ -57,8 +53,6 @@ extern "C" {
 /// fails to post then the task object may be destroyed on the source thread
 /// instead of the target thread. For this reason be cautious when performing
 /// work in the task object destructor.
-///
-/// NOTE: This struct is allocated client-side.
 ///
 typedef struct _cef_task_t {
   ///
@@ -80,8 +74,6 @@ typedef struct _cef_task_t {
 /// types of tasks in different processes. The cef_thread_id_t definitions in
 /// cef_types.h list the common CEF threads. Task runners are also available for
 /// other CEF threads as appropriate (for example, V8 WebWorker threads).
-///
-/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_task_runner_t {
   ///
@@ -122,7 +114,7 @@ typedef struct _cef_task_runner_t {
   ///
   int(CEF_CALLBACK* post_delayed_task)(struct _cef_task_runner_t* self,
                                        struct _cef_task_t* task,
-                                       int64_t delay_ms);
+                                       int64 delay_ms);
 } cef_task_runner_t;
 
 ///
@@ -157,7 +149,7 @@ CEF_EXPORT int cef_post_task(cef_thread_id_t threadId, cef_task_t* task);
 ///
 CEF_EXPORT int cef_post_delayed_task(cef_thread_id_t threadId,
                                      cef_task_t* task,
-                                     int64_t delay_ms);
+                                     int64 delay_ms);
 
 #ifdef __cplusplus
 }

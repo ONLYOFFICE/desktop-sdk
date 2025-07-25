@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=aa1eab590cc2d7e69ef12a5e5d481eb260ec9c3c$
+// $hash=75544d28b1d0f0cdfc2f8cb1bd3f521cfe676bce$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_FILE_DIALOG_CALLBACK_CTOCPP_H_
@@ -21,7 +21,6 @@
 #endif
 
 #include <vector>
-
 #include "include/capi/cef_dialog_handler_capi.h"
 #include "include/cef_dialog_handler.h"
 #include "libcef_dll/ctocpp/ctocpp_ref_counted.h"
@@ -40,10 +39,5 @@ class CefFileDialogCallbackCToCpp
   void Continue(const std::vector<CefString>& file_paths) override;
   void Cancel() override;
 };
-
-constexpr auto CefFileDialogCallbackCToCpp_Wrap =
-    CefFileDialogCallbackCToCpp::Wrap;
-constexpr auto CefFileDialogCallbackCToCpp_Unwrap =
-    CefFileDialogCallbackCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_FILE_DIALOG_CALLBACK_CTOCPP_H_

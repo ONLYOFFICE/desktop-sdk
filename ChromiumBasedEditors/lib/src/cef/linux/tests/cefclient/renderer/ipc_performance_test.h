@@ -8,10 +8,12 @@
 
 #include "tests/shared/renderer/client_app_renderer.h"
 
-namespace client::ipc_performance_test {
+namespace client {
+namespace ipc_performance_test {
 
 void CreateDelegates(ClientAppRenderer::DelegateSet& delegates);
 
-}  // namespace client::ipc_performance_test
+}  // namespace ipc_performance_test
+}  // namespace client
 
 #endif  // CEF_TESTS_CEFCLIENT_RENDERER_IPC_PERFORMANCE_TEST_H_

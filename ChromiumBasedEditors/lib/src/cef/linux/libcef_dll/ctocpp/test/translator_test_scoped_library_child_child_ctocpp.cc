@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=134906d9f5dd92cd0a8debff3490081224768545$
+// $hash=48599a7413e48d0e2f053aa6fdfdec866387e149$
 //
 
 #include "libcef_dll/ctocpp/test/translator_test_scoped_library_child_child_ctocpp.h"
@@ -17,27 +17,28 @@
 // STATIC METHODS - Body may be edited by hand.
 
 NO_SANITIZE("cfi-icall")
-CefOwnPtr<
-    CefTranslatorTestScopedLibraryChildChild> CefTranslatorTestScopedLibraryChildChild::
-    Create(int value, int other_value, int other_other_value) {
+CefOwnPtr<CefTranslatorTestScopedLibraryChildChild>
+CefTranslatorTestScopedLibraryChildChild::Create(int value,
+                                                 int other_value,
+                                                 int other_other_value) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  auto* _retval = cef_translator_test_scoped_library_child_child_create(
-      value, other_value, other_other_value);
+  cef_translator_test_scoped_library_child_child_t* _retval =
+      cef_translator_test_scoped_library_child_child_create(value, other_value,
+                                                            other_other_value);
 
   // Return type: ownptr_same
-  return CefTranslatorTestScopedLibraryChildChildCToCpp_Wrap(_retval);
+  return CefTranslatorTestScopedLibraryChildChildCToCpp::Wrap(_retval);
 }
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
 NO_SANITIZE("cfi-icall")
 int CefTranslatorTestScopedLibraryChildChildCToCpp::GetOtherOtherValue() {
-  auto* _struct = GetStruct();
-  if (!_struct->get_other_other_value) {
+  cef_translator_test_scoped_library_child_child_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, get_other_other_value))
     return 0;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -51,10 +52,9 @@ int CefTranslatorTestScopedLibraryChildChildCToCpp::GetOtherOtherValue() {
 NO_SANITIZE("cfi-icall")
 void CefTranslatorTestScopedLibraryChildChildCToCpp::SetOtherOtherValue(
     int value) {
-  auto* _struct = GetStruct();
-  if (!_struct->set_other_other_value) {
+  cef_translator_test_scoped_library_child_child_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, set_other_other_value))
     return;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -64,11 +64,11 @@ void CefTranslatorTestScopedLibraryChildChildCToCpp::SetOtherOtherValue(
 
 NO_SANITIZE("cfi-icall")
 int CefTranslatorTestScopedLibraryChildChildCToCpp::GetOtherValue() {
-  auto* _struct = reinterpret_cast<cef_translator_test_scoped_library_child_t*>(
-      GetStruct());
-  if (!_struct->get_other_value) {
+  cef_translator_test_scoped_library_child_t* _struct =
+      reinterpret_cast<cef_translator_test_scoped_library_child_t*>(
+          GetStruct());
+  if (CEF_MEMBER_MISSING(_struct, get_other_value))
     return 0;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -81,11 +81,11 @@ int CefTranslatorTestScopedLibraryChildChildCToCpp::GetOtherValue() {
 
 NO_SANITIZE("cfi-icall")
 void CefTranslatorTestScopedLibraryChildChildCToCpp::SetOtherValue(int value) {
-  auto* _struct = reinterpret_cast<cef_translator_test_scoped_library_child_t*>(
-      GetStruct());
-  if (!_struct->set_other_value) {
+  cef_translator_test_scoped_library_child_t* _struct =
+      reinterpret_cast<cef_translator_test_scoped_library_child_t*>(
+          GetStruct());
+  if (CEF_MEMBER_MISSING(_struct, set_other_value))
     return;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -95,11 +95,10 @@ void CefTranslatorTestScopedLibraryChildChildCToCpp::SetOtherValue(int value) {
 
 NO_SANITIZE("cfi-icall")
 int CefTranslatorTestScopedLibraryChildChildCToCpp::GetValue() {
-  auto* _struct =
+  cef_translator_test_scoped_library_t* _struct =
       reinterpret_cast<cef_translator_test_scoped_library_t*>(GetStruct());
-  if (!_struct->get_value) {
+  if (CEF_MEMBER_MISSING(_struct, get_value))
     return 0;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -112,11 +111,10 @@ int CefTranslatorTestScopedLibraryChildChildCToCpp::GetValue() {
 
 NO_SANITIZE("cfi-icall")
 void CefTranslatorTestScopedLibraryChildChildCToCpp::SetValue(int value) {
-  auto* _struct =
+  cef_translator_test_scoped_library_t* _struct =
       reinterpret_cast<cef_translator_test_scoped_library_t*>(GetStruct());
-  if (!_struct->set_value) {
+  if (CEF_MEMBER_MISSING(_struct, set_value))
     return;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -141,7 +139,7 @@ CefCToCppScoped<CefTranslatorTestScopedLibraryChildChildCToCpp,
                 cef_translator_test_scoped_library_child_child_t>::
     UnwrapDerivedOwn(CefWrapperType type,
                      CefOwnPtr<CefTranslatorTestScopedLibraryChildChild> c) {
-  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  NOTREACHED() << "Unexpected class type: " << type;
   return nullptr;
 }
 
@@ -152,7 +150,7 @@ CefCToCppScoped<CefTranslatorTestScopedLibraryChildChildCToCpp,
                 cef_translator_test_scoped_library_child_child_t>::
     UnwrapDerivedRaw(CefWrapperType type,
                      CefRawPtr<CefTranslatorTestScopedLibraryChildChild> c) {
-  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  NOTREACHED() << "Unexpected class type: " << type;
   return nullptr;
 }
 

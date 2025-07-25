@@ -32,8 +32,8 @@ enum NetNotifyTestType {
   NNTT_DELAYED_BROWSER,
 };
 
-const char kNetNotifyOrigin1[] = "https://tests-netnotify1/";
-const char kNetNotifyOrigin2[] = "https://tests-netnotify2/";
+const char kNetNotifyOrigin1[] = "http://tests-netnotify1/";
+const char kNetNotifyOrigin2[] = "http://tests-netnotify2/";
 const char kNetNotifyMsg[] = "RequestHandlerTest.NetNotify";
 const char kNetNotifyTestCmdKey[] = "rh-net-notify-test";
 
@@ -61,7 +61,7 @@ class NetNotifyTestHandler : public TestHandler {
         "<head><script>document.cookie='name1=value1';</script></head>"
         "<body>Nav1</body>"
         "</html>";
-    response_length1_ = static_cast<int64_t>(resource1.size());
+    response_length1_ = static_cast<int64>(resource1.size());
     AddResource(url1_, resource1, "text/html");
 
     const std::string& resource2 =
@@ -69,7 +69,7 @@ class NetNotifyTestHandler : public TestHandler {
         "<head><script>document.cookie='name2=value2';</script></head>"
         "<body>Nav2</body>"
         "</html>";
-    response_length2_ = static_cast<int64_t>(resource2.size());
+    response_length2_ = static_cast<int64>(resource2.size());
     AddResource(url2_, resource2, "text/html");
 
     // Create the request context that will use an in-memory cache.
@@ -101,17 +101,15 @@ class NetNotifyTestHandler : public TestHandler {
     EXPECT_TRUE(CefCurrentlyOn(TID_IO));
 
     const std::string& url = request->GetURL();
-    if (IgnoreURL(url)) {
+    if (IgnoreURL(url))
       return RV_CONTINUE;
-    }
 
-    if (url.find(url1_) == 0) {
+    if (url.find(url1_) == 0)
       got_before_resource_load1_.yes();
-    } else if (url.find(url2_) == 0) {
+    else if (url.find(url2_) == 0)
       got_before_resource_load2_.yes();
-    } else {
+    else
       EXPECT_TRUE(false);  // Not reached
-    }
 
     return RV_CONTINUE;
   }
@@ -123,17 +121,15 @@ class NetNotifyTestHandler : public TestHandler {
     EXPECT_TRUE(CefCurrentlyOn(TID_IO));
 
     const std::string& url = request->GetURL();
-    if (IgnoreURL(url)) {
+    if (IgnoreURL(url))
       return nullptr;
-    }
 
-    if (url.find(url1_) == 0) {
+    if (url.find(url1_) == 0)
       got_get_resource_handler1_.yes();
-    } else if (url.find(url2_) == 0) {
+    else if (url.find(url2_) == 0)
       got_get_resource_handler2_.yes();
-    } else {
+    else
       EXPECT_TRUE(false);  // Not reached
-    }
 
     return TestHandler::GetResourceHandler(browser, frame, request);
   }
@@ -143,13 +139,12 @@ class NetNotifyTestHandler : public TestHandler {
                               CefRefPtr<CefRequest> request,
                               CefRefPtr<CefResponse> response,
                               URLRequestStatus status,
-                              int64_t received_content_length) override {
+                              int64 received_content_length) override {
     EXPECT_TRUE(CefCurrentlyOn(TID_IO));
 
     const std::string& url = request->GetURL();
-    if (IgnoreURL(url)) {
+    if (IgnoreURL(url))
       return;
-    }
 
     EXPECT_EQ(UR_SUCCESS, status);
     if (url.find(url1_) == 0) {
@@ -259,16 +254,13 @@ class NetNotifyTestHandler : public TestHandler {
   }
 
   void OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser,
-                                 TerminationStatus status,
-                                 int error_code,
-                                 const CefString& error_string) override {
+                                 TerminationStatus status) override {
     got_process_terminated_ct_++;
 
     // Termination is expected for cross-origin requests initiated from the
     // renderer process.
     if (!(test_type_ == NNTT_DELAYED_RENDERER && !same_origin_)) {
-      TestHandler::OnRenderProcessTerminated(browser, status, error_code,
-                                             error_string);
+      TestHandler::OnRenderProcessTerminated(browser, status);
     }
 
     FinishTest();
@@ -276,15 +268,13 @@ class NetNotifyTestHandler : public TestHandler {
 
  protected:
   void SetupCompleteIfDone() {
-    if (got_load_end1_ && got_process_message1_) {
+    if (got_load_end1_ && got_process_message1_)
       SetupComplete();
-    }
   }
 
   void FinishTestIfDone() {
-    if (got_load_end2_ && got_process_message2_) {
+    if (got_load_end2_ && got_process_message2_)
       FinishTest();
-    }
   }
 
   void FinishTest() {
@@ -396,8 +386,8 @@ class NetNotifyTestHandler : public TestHandler {
   TrackCallback got_before_browse2_delayed_;
   int got_process_terminated_ct_ = 0;
 
-  int64_t response_length1_;
-  int64_t response_length2_;
+  int64 response_length1_;
+  int64 response_length2_;
 
   IMPLEMENT_REFCOUNTING(NetNotifyTestHandler);
 };
@@ -406,7 +396,7 @@ class NetNotifyTestHandler : public TestHandler {
 class NetNotifyRendererTest : public ClientAppRenderer::Delegate,
                               public CefLoadHandler {
  public:
-  NetNotifyRendererTest() = default;
+  NetNotifyRendererTest() : run_test_(false) {}
 
   void OnBrowserCreated(CefRefPtr<ClientAppRenderer> app,
                         CefRefPtr<CefBrowser> browser,
@@ -416,18 +406,16 @@ class NetNotifyRendererTest : public ClientAppRenderer::Delegate,
 
   CefRefPtr<CefLoadHandler> GetLoadHandler(
       CefRefPtr<ClientAppRenderer> app) override {
-    if (run_test_) {
+    if (run_test_)
       return this;
-    }
     return nullptr;
   }
 
   void OnLoadEnd(CefRefPtr<CefBrowser> browser,
                  CefRefPtr<CefFrame> frame,
                  int httpStatusCode) override {
-    if (!run_test_) {
+    if (!run_test_)
       return;
-    }
 
     const std::string& url = frame->GetURL();
 
@@ -464,7 +452,7 @@ class NetNotifyRendererTest : public ClientAppRenderer::Delegate,
   }
 
  private:
-  bool run_test_ = false;
+  bool run_test_;
 
   IMPLEMENT_REFCOUNTING(NetNotifyRendererTest);
 };

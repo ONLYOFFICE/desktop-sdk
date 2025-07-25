@@ -5,17 +5,16 @@
 #include "tests/cefclient/browser/client_handler.h"
 
 #include <stdio.h>
-
 #include <algorithm>
 #include <iomanip>
 #include <sstream>
-#include <memory>
+#include <string>
 #include <optional>
 
 #include "include/base/cef_callback.h"
 #include "include/cef_browser.h"
+#include "include/cef_command_ids.h"
 #include "include/cef_frame.h"
-#include "include/cef_id_mappers.h"
 #include "include/cef_parser.h"
 #include "include/cef_shared_process_message_builder.h"
 #include "include/cef_ssl_status.h"
@@ -24,6 +23,7 @@
 #include "tests/cefclient/browser/main_context.h"
 #include "tests/cefclient/browser/root_window_manager.h"
 #include "tests/cefclient/browser/test_runner.h"
+#include "tests/shared/browser/extension_util.h"
 #include "tests/shared/browser/resource_util.h"
 #include "tests/shared/common/binary_value_utils.h"
 #include "tests/shared/common/client_switches.h"
@@ -53,46 +53,23 @@ enum client_menu_ids {
   CLIENT_ID_TESTMENU_RADIOITEM1,
   CLIENT_ID_TESTMENU_RADIOITEM2,
   CLIENT_ID_TESTMENU_RADIOITEM3,
-
-  // Chrome theme selection.
-  CLIENT_ID_TESTMENU_THEME,
-  CLIENT_ID_TESTMENU_THEME_MODE_SYSTEM,
-  CLIENT_ID_TESTMENU_THEME_MODE_LIGHT,
-  CLIENT_ID_TESTMENU_THEME_MODE_DARK,
-  CLIENT_ID_TESTMENU_THEME_MODE_FIRST = CLIENT_ID_TESTMENU_THEME_MODE_SYSTEM,
-  CLIENT_ID_TESTMENU_THEME_MODE_LAST = CLIENT_ID_TESTMENU_THEME_MODE_DARK,
-  CLIENT_ID_TESTMENU_THEME_COLOR_DEFAULT,
-  CLIENT_ID_TESTMENU_THEME_COLOR_RED,
-  CLIENT_ID_TESTMENU_THEME_COLOR_GREEN,
-  CLIENT_ID_TESTMENU_THEME_COLOR_BLUE,
-  CLIENT_ID_TESTMENU_THEME_COLOR_FIRST = CLIENT_ID_TESTMENU_THEME_COLOR_DEFAULT,
-  CLIENT_ID_TESTMENU_THEME_COLOR_LAST = CLIENT_ID_TESTMENU_THEME_COLOR_BLUE,
-  CLIENT_ID_TESTMENU_THEME_CUSTOM,
 };
-
-// Constants for Chrome theme colors.
-constexpr cef_color_t kColorTransparent = 0;
-constexpr cef_color_t kColorRed = CefColorSetARGB(255, 255, 0, 0);
-constexpr cef_color_t kColorGreen = CefColorSetARGB(255, 0, 255, 0);
-constexpr cef_color_t kColorBlue = CefColorSetARGB(255, 0, 0, 255);
 
 // Must match the value in client_renderer.cc.
 const char kFocusedNodeChangedMessage[] = "ClientRenderer.FocusedNodeChanged";
 
 std::string GetTimeString(const CefTime& value) {
-  if (value.GetTimeT() == 0) {
+  if (value.GetTimeT() == 0)
     return "Unspecified";
-  }
 
   static const char* kMonths[] = {
       "January", "February", "March",     "April",   "May",      "June",
       "July",    "August",   "September", "October", "November", "December"};
   std::string month;
-  if (value.month >= 1 && value.month <= 12) {
+  if (value.month >= 1 && value.month <= 12)
     month = kMonths[value.month - 1];
-  } else {
+  else
     month = "Invalid";
-  }
 
   std::stringstream ss;
   ss << month << " " << value.day_of_month << ", " << value.year << " "
@@ -112,9 +89,8 @@ std::string GetTimeString(const CefBaseTime& value) {
 }
 
 std::string GetBinaryString(CefRefPtr<CefBinaryValue> value) {
-  if (!value.get()) {
+  if (!value.get())
     return "&nbsp;";
-  }
 
   // Retrieve the value.
   const size_t size = value->GetSize();
@@ -157,9 +133,8 @@ std::string GetCertStatusString(cef_cert_status_t status) {
   FLAG(CERT_STATUS_SHA1_SIGNATURE_PRESENT);
   FLAG(CERT_STATUS_CT_COMPLIANCE_FAILED);
 
-  if (result.empty()) {
+  if (result.empty())
     return "&nbsp;";
-  }
   return result;
 }
 
@@ -182,10 +157,30 @@ std::string GetContentStatusString(cef_ssl_content_status_t status) {
   FLAG(SSL_CONTENT_DISPLAYED_INSECURE_CONTENT);
   FLAG(SSL_CONTENT_RAN_INSECURE_CONTENT);
 
-  if (result.empty()) {
+  if (result.empty())
     return "&nbsp;";
-  }
   return result;
+}
+
+// Load a data: URI containing the error message.
+void LoadErrorPage(CefRefPtr<CefFrame> frame,
+                   const std::string& failed_url,
+                   cef_errorcode_t error_code,
+                   const std::string& other_info) {
+  std::stringstream ss;
+  ss << "<html><head><title>Page failed to load</title></head>"
+        "<body bgcolor=\"white\">"
+        "<h3>Page failed to load.</h3>"
+        "URL: <a href=\""
+     << failed_url << "\">" << failed_url
+     << "</a><br/>Error: " << test_runner::GetErrorString(error_code) << " ("
+     << error_code << ")";
+
+  if (!other_info.empty())
+    ss << "<br/>" << other_info;
+
+  ss << "</body></html>";
+  frame->LoadURL(test_runner::GetDataURI(ss.str(), "text/html"));
 }
 
 // Return HTML string with information about a certificate.
@@ -285,197 +280,20 @@ void OnTestSMRProcessMessageReceived(
       static_cast<const bv_utils::RendererMessage*>(region->Memory());
   const auto message_size =
       std::max(region->Size(), sizeof(bv_utils::BrowserMessage));
-
-  std::vector<uint8_t> data(message_size);
-  const auto browser_msg =
-      reinterpret_cast<bv_utils::BrowserMessage*>(data.data());
-  browser_msg->test_id = renderer_msg->test_id;
-  browser_msg->duration = finish_time - renderer_msg->start_time;
-  browser_msg->start_time = bv_utils::Now();
+  const auto renderer_time = renderer_msg->start_time;
+  const auto duration = finish_time - renderer_time;
+  const auto start_time = bv_utils::Now();
 
   auto builder = CefSharedProcessMessageBuilder::Create(
       bv_utils::kTestSendSMRProcessMessage, message_size);
 
-  bv_utils::CopyDataIntoMemory(data, builder->Memory());
+  const auto browser_msg =
+      static_cast<bv_utils::BrowserMessage*>(builder->Memory());
+  browser_msg->test_id = renderer_msg->test_id;
+  browser_msg->duration = duration;
+  browser_msg->start_time = start_time;
 
   frame->SendProcessMessage(PID_RENDERER, builder->Build());
-}
-
-bool IsAllowedPageActionIcon(cef_chrome_page_action_icon_type_t icon_type) {
-  // Only the specified icons will be allowed.
-  switch (icon_type) {
-    case CEF_CPAIT_FIND:
-    case CEF_CPAIT_ZOOM:
-      return true;
-    default:
-      break;
-  }
-  return false;
-}
-
-bool IsAllowedToolbarButton(cef_chrome_toolbar_button_type_t button_type) {
-  // All configurable buttons will be disabled.
-  return false;
-}
-
-bool IsAllowedAppMenuCommandId(int command_id) {
-  // Version-safe static declarations of IDC variables using names from
-  // cef_command_ids.h.
-  CEF_DECLARE_COMMAND_ID(IDC_NEW_WINDOW);
-  CEF_DECLARE_COMMAND_ID(IDC_NEW_INCOGNITO_WINDOW);
-  CEF_DECLARE_COMMAND_ID(IDC_ZOOM_MENU);
-  CEF_DECLARE_COMMAND_ID(IDC_ZOOM_PLUS);
-  CEF_DECLARE_COMMAND_ID(IDC_ZOOM_NORMAL);
-  CEF_DECLARE_COMMAND_ID(IDC_ZOOM_MINUS);
-  CEF_DECLARE_COMMAND_ID(IDC_FULLSCREEN);
-  CEF_DECLARE_COMMAND_ID(IDC_PRINT);
-  CEF_DECLARE_COMMAND_ID(IDC_FIND);
-  CEF_DECLARE_COMMAND_ID(IDC_FIND_NEXT);
-  CEF_DECLARE_COMMAND_ID(IDC_FIND_PREVIOUS);
-  CEF_DECLARE_COMMAND_ID(IDC_MORE_TOOLS_MENU);
-  CEF_DECLARE_COMMAND_ID(IDC_CLEAR_BROWSING_DATA);
-  CEF_DECLARE_COMMAND_ID(IDC_MANAGE_EXTENSIONS);
-  CEF_DECLARE_COMMAND_ID(IDC_PERFORMANCE);
-  CEF_DECLARE_COMMAND_ID(IDC_TASK_MANAGER);
-  CEF_DECLARE_COMMAND_ID(IDC_DEV_TOOLS);
-  CEF_DECLARE_COMMAND_ID(IDC_EDIT_MENU);
-  CEF_DECLARE_COMMAND_ID(IDC_CUT);
-  CEF_DECLARE_COMMAND_ID(IDC_COPY);
-  CEF_DECLARE_COMMAND_ID(IDC_PASTE);
-  CEF_DECLARE_COMMAND_ID(IDC_OPTIONS);
-  CEF_DECLARE_COMMAND_ID(IDC_EXIT);
-
-  // Only the commands in this array will be allowed.
-  static const int kAllowedCommandIds[] = {
-      IDC_NEW_WINDOW,
-      IDC_NEW_INCOGNITO_WINDOW,
-
-      // Zoom buttons.
-      IDC_ZOOM_MENU,
-      IDC_ZOOM_PLUS,
-      IDC_ZOOM_NORMAL,
-      IDC_ZOOM_MINUS,
-      IDC_FULLSCREEN,
-
-      IDC_PRINT,
-      IDC_FIND,
-      IDC_FIND_NEXT,
-      IDC_FIND_PREVIOUS,
-
-      // "More tools" sub-menu and contents.
-      IDC_MORE_TOOLS_MENU,
-      IDC_CLEAR_BROWSING_DATA,
-      IDC_MANAGE_EXTENSIONS,
-      IDC_PERFORMANCE,
-      IDC_TASK_MANAGER,
-      IDC_DEV_TOOLS,
-
-      // Edit buttons.
-      IDC_EDIT_MENU,
-      IDC_CUT,
-      IDC_COPY,
-      IDC_PASTE,
-
-      IDC_OPTIONS,
-      IDC_EXIT,
-  };
-  for (int kAllowedCommandId : kAllowedCommandIds) {
-    if (command_id == kAllowedCommandId) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool IsAllowedContextMenuCommandId(int command_id) {
-  // Version-safe static declarations of IDC variables using names from
-  // cef_command_ids.h.
-  CEF_DECLARE_COMMAND_ID(IDC_CONTENT_CONTEXT_CUSTOM_FIRST);
-  CEF_DECLARE_COMMAND_ID(IDC_CONTENT_CONTEXT_CUSTOM_LAST);
-  CEF_DECLARE_COMMAND_ID(IDC_EXTENSIONS_CONTEXT_CUSTOM_FIRST);
-  CEF_DECLARE_COMMAND_ID(IDC_EXTENSIONS_CONTEXT_CUSTOM_LAST);
-  CEF_DECLARE_COMMAND_ID(IDC_BACK);
-  CEF_DECLARE_COMMAND_ID(IDC_FORWARD);
-  CEF_DECLARE_COMMAND_ID(IDC_RELOAD);
-  CEF_DECLARE_COMMAND_ID(IDC_RELOAD_BYPASSING_CACHE);
-  CEF_DECLARE_COMMAND_ID(IDC_RELOAD_CLEARING_CACHE);
-  CEF_DECLARE_COMMAND_ID(IDC_STOP);
-  CEF_DECLARE_COMMAND_ID(IDC_PRINT);
-  CEF_DECLARE_COMMAND_ID(IDC_CONTENT_CONTEXT_CUT);
-  CEF_DECLARE_COMMAND_ID(IDC_CONTENT_CONTEXT_COPY);
-  CEF_DECLARE_COMMAND_ID(IDC_CONTENT_CONTEXT_PASTE);
-  CEF_DECLARE_COMMAND_ID(IDC_CONTENT_CONTEXT_PASTE_AND_MATCH_STYLE);
-  CEF_DECLARE_COMMAND_ID(IDC_CONTENT_CONTEXT_DELETE);
-  CEF_DECLARE_COMMAND_ID(IDC_CONTENT_CONTEXT_SELECTALL);
-  CEF_DECLARE_COMMAND_ID(IDC_CONTENT_CONTEXT_UNDO);
-  CEF_DECLARE_COMMAND_ID(IDC_CONTENT_CONTEXT_REDO);
-
-  // Allow commands added by web content.
-  if (command_id >= IDC_CONTENT_CONTEXT_CUSTOM_FIRST &&
-      command_id <= IDC_CONTENT_CONTEXT_CUSTOM_LAST) {
-    return true;
-  }
-
-  // Allow commands added by extensions.
-  if (command_id >= IDC_EXTENSIONS_CONTEXT_CUSTOM_FIRST &&
-      command_id <= IDC_EXTENSIONS_CONTEXT_CUSTOM_LAST) {
-    return true;
-  }
-
-  // Only the commands in this array will be allowed.
-  static const int kAllowedCommandIds[] = {
-      // Page navigation.
-      IDC_BACK,
-      IDC_FORWARD,
-      IDC_RELOAD,
-      IDC_RELOAD_BYPASSING_CACHE,
-      IDC_RELOAD_CLEARING_CACHE,
-      IDC_STOP,
-
-      // Printing.
-      IDC_PRINT,
-
-      // Edit controls.
-      IDC_CONTENT_CONTEXT_CUT,
-      IDC_CONTENT_CONTEXT_COPY,
-      IDC_CONTENT_CONTEXT_PASTE,
-      IDC_CONTENT_CONTEXT_PASTE_AND_MATCH_STYLE,
-      IDC_CONTENT_CONTEXT_DELETE,
-      IDC_CONTENT_CONTEXT_SELECTALL,
-      IDC_CONTENT_CONTEXT_UNDO,
-      IDC_CONTENT_CONTEXT_REDO,
-  };
-  for (int kAllowedCommandId : kAllowedCommandIds) {
-    if (command_id == kAllowedCommandId) {
-      return true;
-    }
-  }
-  return false;
-}
-
-void FilterContextMenuModel(CefRefPtr<CefMenuModel> model) {
-  // Evaluate from the bottom to the top because we'll be removing menu items.
-  for (size_t x = model->GetCount(); x > 0; --x) {
-    const auto i = x - 1;
-    const auto type = model->GetTypeAt(i);
-    if (type == MENUITEMTYPE_SUBMENU) {
-      // Filter sub-menu and remove if empty.
-      auto sub_model = model->GetSubMenuAt(i);
-      FilterContextMenuModel(sub_model);
-      if (sub_model->GetCount() == 0) {
-        model->RemoveAt(i);
-      }
-    } else if (type == MENUITEMTYPE_SEPARATOR) {
-      // A separator shouldn't be the first or last element in the menu, and
-      // there shouldn't be multiple in a row.
-      if (i == 0 || i == model->GetCount() - 1 ||
-          model->GetTypeAt(i + 1) == MENUITEMTYPE_SEPARATOR) {
-        model->RemoveAt(i);
-      }
-    } else if (!IsAllowedContextMenuCommandId(model->GetCommandIdAt(i))) {
-      model->RemoveAt(i);
-    }
-  }
 }
 
 }  // namespace
@@ -488,9 +306,8 @@ class ClientDownloadImageCallback : public CefDownloadImageCallback {
   void OnDownloadImageFinished(const CefString& image_url,
                                int http_status_code,
                                CefRefPtr<CefImage> image) override {
-    if (image) {
+    if (image)
       client_handler_->NotifyFavicon(image);
-    }
   }
 
  private:
@@ -504,20 +321,15 @@ ClientHandler::ClientHandler(Delegate* delegate,
                              bool is_osr,
                              bool with_controls,
                              const std::string& startup_url)
-    : use_views_(delegate ? delegate->UseViews()
-                          : MainContext::Get()->UseViewsGlobal()),
-      use_alloy_style_(delegate ? delegate->UseAlloyStyle()
-                                : MainContext::Get()->UseAlloyStyleGlobal()),
-      is_osr_(is_osr),
+    : is_osr_(is_osr),
       with_controls_(with_controls),
       startup_url_(startup_url),
       delegate_(delegate),
       console_log_file_(MainContext::Get()->GetConsoleLogPath()) {
-  // This handler is used with RootWindows that are explicitly tracked by
-  // RootWindowManager.
-  set_track_as_other_browser(false);
-
   DCHECK(!console_log_file_.empty());
+
+  resource_manager_ = new CefResourceManager();
+  test_runner::SetupResourceManager(resource_manager_, &string_resource_map_);
 
   // Read command line settings.
   CefRefPtr<CefCommandLine> command_line =
@@ -525,8 +337,6 @@ ClientHandler::ClientHandler(Delegate* delegate,
   mouse_cursor_change_disabled_ =
       command_line->HasSwitch(switches::kMouseCursorChangeDisabled);
   offline_ = command_line->HasSwitch(switches::kOffline);
-  filter_chrome_commands_ =
-      command_line->HasSwitch(switches::kFilterChromeCommands);
 
 #if defined(OS_LINUX)
   // Optionally use the client-provided GTK dialogs.
@@ -548,7 +358,7 @@ ClientHandler::ClientHandler(Delegate* delegate,
     require_client_dialogs = true;
   }
 
-  if (use_views_) {
+  if (MainContext::Get()->UseViews()) {
     // Client-provided GTK dialogs cannot be used in combination with Views
     // because the implementation of ClientDialogHandlerGtk requires a top-level
     // GtkWindow.
@@ -572,7 +382,12 @@ ClientHandler::ClientHandler(Delegate* delegate,
 }
 
 void ClientHandler::DetachDelegate() {
-  REQUIRE_MAIN_THREAD();
+  if (!CURRENTLY_ON_MAIN_THREAD()) {
+    // Execute this method on the main thread.
+    MAIN_POST_CLOSURE(base::BindOnce(&ClientHandler::DetachDelegate, this));
+    return;
+  }
+
   DCHECK(delegate_);
   delegate_ = nullptr;
 }
@@ -586,8 +401,8 @@ bool ClientHandler::OnProcessMessageReceived(
 
   const auto finish_time = bv_utils::Now();
 
-  if (BaseClientHandler::OnProcessMessageReceived(browser, frame,
-                                                  source_process, message)) {
+  if (message_router_->OnProcessMessageReceived(browser, frame, source_process,
+                                                message)) {
     return true;
   }
 
@@ -619,22 +434,12 @@ bool ClientHandler::OnChromeCommand(CefRefPtr<CefBrowser> browser,
                                     int command_id,
                                     cef_window_open_disposition_t disposition) {
   CEF_REQUIRE_UI_THREAD();
-  DCHECK(!use_alloy_style_);
+  DCHECK(MainContext::Get()->UseChromeRuntime());
 
-  const bool allowed = IsAllowedAppMenuCommandId(command_id) ||
-                       IsAllowedContextMenuCommandId(command_id);
-
-  bool block = false;
-  if (filter_chrome_commands_) {
-    // Block all commands that aren't specifically allowed.
-    block = !allowed;
-  } else if (!with_controls_) {
-    // If controls are hidden, block all commands that don't target the current
-    // tab or aren't specifically allowed.
-    block = disposition != CEF_WOD_CURRENT_TAB || !allowed;
-  }
-
-  if (block) {
+  if (!with_controls_ &&
+      (disposition != WOD_CURRENT_TAB || !IsAllowedCommandId(command_id))) {
+    // Block everything that doesn't target the current tab or isn't an
+    // allowed command ID.
     LOG(INFO) << "Blocking command " << command_id << " with disposition "
               << disposition;
     return true;
@@ -644,59 +449,28 @@ bool ClientHandler::OnChromeCommand(CefRefPtr<CefBrowser> browser,
   return false;
 }
 
-bool ClientHandler::IsChromeAppMenuItemVisible(CefRefPtr<CefBrowser> browser,
-                                               int command_id) {
-  CEF_REQUIRE_UI_THREAD();
-  DCHECK(!use_alloy_style_);
-  if (!filter_chrome_commands_) {
-    return true;
-  }
-  return IsAllowedAppMenuCommandId(command_id);
-}
-
-bool ClientHandler::IsChromePageActionIconVisible(
-    cef_chrome_page_action_icon_type_t icon_type) {
-  CEF_REQUIRE_UI_THREAD();
-  DCHECK(!use_alloy_style_);
-  if (!filter_chrome_commands_) {
-    return true;
-  }
-  return IsAllowedPageActionIcon(icon_type);
-}
-
-bool ClientHandler::IsChromeToolbarButtonVisible(
-    cef_chrome_toolbar_button_type_t button_type) {
-  CEF_REQUIRE_UI_THREAD();
-  DCHECK(!use_alloy_style_);
-  if (!filter_chrome_commands_) {
-    return true;
-  }
-  return IsAllowedToolbarButton(button_type);
-}
-
 void ClientHandler::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser,
                                         CefRefPtr<CefFrame> frame,
                                         CefRefPtr<CefContextMenuParams> params,
                                         CefRefPtr<CefMenuModel> model) {
   CEF_REQUIRE_UI_THREAD();
 
-  if (!use_alloy_style_ && (!with_controls_ || filter_chrome_commands_)) {
+  const bool use_chrome_runtime = MainContext::Get()->UseChromeRuntime();
+  if (use_chrome_runtime && !with_controls_) {
     // Remove all disallowed menu items.
-    FilterContextMenuModel(model);
+    FilterMenuModel(model);
   }
 
   if ((params->GetTypeFlags() & (CM_TYPEFLAG_PAGE | CM_TYPEFLAG_FRAME)) != 0) {
     // Add a separator if the menu already has items.
-    if (model->GetCount() > 0) {
+    if (model->GetCount() > 0)
       model->AddSeparator();
-    }
 
-    // Add DevTools items to all context menus.
-    model->AddItem(CLIENT_ID_SHOW_DEVTOOLS, "&Show DevTools");
-    model->AddItem(CLIENT_ID_CLOSE_DEVTOOLS, "Close DevTools");
-
-    if (use_alloy_style_) {
-      // Chrome style already gives us an "Inspect" menu item.
+    if (!use_chrome_runtime) {
+      // TODO(chrome-runtime): Add support for this.
+      // Add DevTools items to all context menus.
+      model->AddItem(CLIENT_ID_SHOW_DEVTOOLS, "&Show DevTools");
+      model->AddItem(CLIENT_ID_CLOSE_DEVTOOLS, "Close DevTools");
       model->AddSeparator();
       model->AddItem(CLIENT_ID_INSPECT_ELEMENT, "Inspect Element");
     }
@@ -706,36 +480,32 @@ void ClientHandler::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser,
       model->AddItem(CLIENT_ID_SHOW_SSL_INFO, "Show SSL information");
     }
 
-    if (use_alloy_style_) {
+    if (!use_chrome_runtime) {
       // TODO(chrome-runtime): Add support for this.
       model->AddSeparator();
       model->AddCheckItem(CLIENT_ID_CURSOR_CHANGE_DISABLED,
                           "Cursor change disabled");
-      if (mouse_cursor_change_disabled_) {
+      if (mouse_cursor_change_disabled_)
         model->SetChecked(CLIENT_ID_CURSOR_CHANGE_DISABLED, true);
-      }
 
       model->AddSeparator();
       model->AddCheckItem(CLIENT_ID_MEDIA_HANDLING_DISABLED,
                           "Media handling disabled");
-      if (media_handling_disabled_) {
+      if (media_handling_disabled_)
         model->SetChecked(CLIENT_ID_MEDIA_HANDLING_DISABLED, true);
-      }
     }
 
     model->AddSeparator();
     model->AddCheckItem(CLIENT_ID_OFFLINE, "Offline mode");
-    if (offline_) {
+    if (offline_)
       model->SetChecked(CLIENT_ID_OFFLINE, true);
-    }
 
     // Test context menu features.
-    BuildTestMenu(browser, model);
+    BuildTestMenu(model);
   }
 
-  if (delegate_) {
+  if (delegate_)
     delegate_->OnBeforeContextMenu(model);
-  }
 }
 
 bool ClientHandler::OnContextMenuCommand(CefRefPtr<CefBrowser> browser,
@@ -769,7 +539,7 @@ bool ClientHandler::OnContextMenuCommand(CefRefPtr<CefBrowser> browser,
       SetOfflineState(browser, offline_);
       return true;
     default:  // Allow default handling, if any.
-      return ExecuteTestMenu(browser, command_id);
+      return ExecuteTestMenu(command_id);
   }
 }
 
@@ -779,9 +549,8 @@ void ClientHandler::OnAddressChange(CefRefPtr<CefBrowser> browser,
   CEF_REQUIRE_UI_THREAD();
 
   // Only update the address for the main (top-level) frame.
-  if (frame->IsMain()) {
+  if (frame->IsMain())
     NotifyAddress(url);
-  }
 }
 
 void ClientHandler::OnTitleChange(CefRefPtr<CefBrowser> browser,
@@ -865,34 +634,22 @@ bool ClientHandler::OnCursorChange(CefRefPtr<CefBrowser> browser,
   return mouse_cursor_change_disabled_;
 }
 
-#if CEF_API_ADDED(13700)
-bool ClientHandler::OnContentsBoundsChange(CefRefPtr<CefBrowser> browser,
-                                           const CefRect& new_bounds) {
-  CEF_REQUIRE_UI_THREAD();
-  NotifyContentsBounds(new_bounds);
-  return true;
-}
-
-bool ClientHandler::GetRootWindowScreenRect(CefRefPtr<CefBrowser> browser,
-                                            CefRect& rect) {
-  CEF_REQUIRE_UI_THREAD();
-  if (delegate_) {
-    return delegate_->GetRootWindowScreenRect(rect);
-  }
-  return false;
-}
-#endif
-
 bool ClientHandler::CanDownload(CefRefPtr<CefBrowser> browser,
                                 const CefString& url,
                                 const CefString& request_method) {
   CEF_REQUIRE_UI_THREAD();
 
+  if (!with_controls_) {
+    // Block the download.
+    LOG(INFO) << "Blocking download";
+    return false;
+  }
+
   // Allow the download.
   return true;
 }
 
-bool ClientHandler::OnBeforeDownload(
+void ClientHandler::OnBeforeDownload(
     CefRefPtr<CefBrowser> browser,
     CefRefPtr<CefDownloadItem> download_item,
     const CefString& suggested_name,
@@ -901,7 +658,6 @@ bool ClientHandler::OnBeforeDownload(
 
   // Continue the download and show the "Save As" dialog.
   callback->Continue(MainContext::Get()->GetDownloadPath(suggested_name), true);
-  return true;
 }
 
 void ClientHandler::OnDownloadUpdated(
@@ -950,12 +706,13 @@ bool ClientHandler::OnSetFocus(CefRefPtr<CefBrowser> browser,
                                FocusSource source) {
   CEF_REQUIRE_UI_THREAD();
 
-  if (BaseClientHandler::OnSetFocus(browser, source)) {
-    return true;
-  }
-
-  if (delegate_ && delegate_->OnSetFocus(source)) {
-    return true;
+  if (initial_navigation_) {
+    CefRefPtr<CefCommandLine> command_line =
+        CefCommandLine::GetGlobalCommandLine();
+    if (command_line->HasSwitch(switches::kNoActivate)) {
+      // Don't give focus to the browser on creation.
+      return true;
+    }
   }
 
   return false;
@@ -986,7 +743,6 @@ bool ClientHandler::OnPreKeyEvent(CefRefPtr<CefBrowser> browser,
 bool ClientHandler::OnBeforePopup(
     CefRefPtr<CefBrowser> browser,
     CefRefPtr<CefFrame> frame,
-    int popup_id,
     const CefString& target_url,
     const CefString& target_frame_name,
     CefLifeSpanHandler::WindowOpenDisposition target_disposition,
@@ -999,58 +755,43 @@ bool ClientHandler::OnBeforePopup(
     bool* no_javascript_access) {
   CEF_REQUIRE_UI_THREAD();
 
-  if (target_disposition == CEF_WOD_NEW_PICTURE_IN_PICTURE) {
-    // Use default handling for document picture-in-picture popups.
-    client = nullptr;
-    return false;
-  }
-
-  // Potentially create a new RootWindow for the popup browser that will be
-  // created asynchronously.
-  CreatePopupWindow(browser, popup_id, /*is_devtools=*/false, popupFeatures,
-                    windowInfo, client, settings);
-
-  // Allow popup creation.
-  return false;
-}
-
-void ClientHandler::OnBeforePopupAborted(CefRefPtr<CefBrowser> browser,
-                                         int popup_id) {
-  CEF_REQUIRE_UI_THREAD();
-  MainContext::Get()->GetRootWindowManager()->AbortOrClosePopup(
-      browser->GetIdentifier(), popup_id);
-}
-
-void ClientHandler::OnBeforeDevToolsPopup(
-    CefRefPtr<CefBrowser> browser,
-    CefWindowInfo& windowInfo,
-    CefRefPtr<CefClient>& client,
-    CefBrowserSettings& settings,
-    CefRefPtr<CefDictionaryValue>& extra_info,
-    bool* use_default_window) {
-  CEF_REQUIRE_UI_THREAD();
-
-  // Potentially create a new RootWindow for the DevTools popup browser that
-  // will be created immediately after this method returns.
-  if (!CreatePopupWindow(browser, /*popup_id=*/-1, /*is_devtools=*/true,
-                         CefPopupFeatures(), windowInfo, client, settings)) {
-    *use_default_window = true;
-  }
+  // Return true to cancel the popup window.
+  return !CreatePopupWindow(browser, false, popupFeatures, windowInfo, client,
+                            settings);
 }
 
 void ClientHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
   CEF_REQUIRE_UI_THREAD();
 
-  // Sanity-check the configured runtime style.
-  CHECK_EQ(
-      use_alloy_style_ ? CEF_RUNTIME_STYLE_ALLOY : CEF_RUNTIME_STYLE_CHROME,
-      browser->GetHost()->GetRuntimeStyle());
+  browser_count_++;
 
-  BaseClientHandler::OnAfterCreated(browser);
+  if (!message_router_) {
+    // Create the browser-side router for query handling.
+    CefMessageRouterConfig config;
+    message_router_ = CefMessageRouterBrowserSide::Create(config);
+
+    // Register handlers with the router.
+    test_runner::CreateMessageHandlers(message_handler_set_);
+    MessageHandlerSet::const_iterator it = message_handler_set_.begin();
+    for (; it != message_handler_set_.end(); ++it)
+      message_router_->AddHandler(*(it), false);
+  }
 
   // Set offline mode if requested via the command-line flag.
-  if (offline_) {
+  if (offline_)
     SetOfflineState(browser, true);
+
+  if (browser->GetHost()->GetExtension()) {
+    // Browsers hosting extension apps should auto-resize.
+    browser->GetHost()->SetAutoResizeEnabled(true, CefSize(20, 20),
+                                             CefSize(1000, 1000));
+
+    CefRefPtr<CefExtension> extension = browser->GetHost()->GetExtension();
+    if (extension_util::IsInternalExtension(extension->GetPath())) {
+      // Register the internal handler for extension resources.
+      extension_util::AddInternalExtensionToResourceManager(extension,
+                                                            resource_manager_);
+    }
   }
 
   NotifyBrowserCreated(browser);
@@ -1069,10 +810,17 @@ bool ClientHandler::DoClose(CefRefPtr<CefBrowser> browser) {
 void ClientHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
   CEF_REQUIRE_UI_THREAD();
 
-  // Close all popups that have this browser as the opener.
-  OnBeforePopupAborted(browser, /*popup_id=*/-1);
+  if (--browser_count_ == 0) {
+    // Remove and delete message router handlers.
+    MessageHandlerSet::const_iterator it = message_handler_set_.begin();
+    for (; it != message_handler_set_.end(); ++it) {
+      message_router_->RemoveHandler(*(it));
+      delete *(it);
+    }
+    message_handler_set_.clear();
+    message_router_ = nullptr;
+  }
 
-  BaseClientHandler::OnBeforeClose(browser);
   NotifyBrowserClosed(browser);
 }
 
@@ -1082,21 +830,56 @@ void ClientHandler::OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
                                          bool canGoForward) {
   CEF_REQUIRE_UI_THREAD();
 
-  BaseClientHandler::OnLoadingStateChange(browser, isLoading, canGoBack,
-                                          canGoForward);
+  if (!isLoading && initial_navigation_) {
+    initial_navigation_ = false;
+  }
 
   NotifyLoadingState(isLoading, canGoBack, canGoForward);
+}
+
+void ClientHandler::OnLoadError(CefRefPtr<CefBrowser> browser,
+                                CefRefPtr<CefFrame> frame,
+                                ErrorCode errorCode,
+                                const CefString& errorText,
+                                const CefString& failedUrl) {
+  CEF_REQUIRE_UI_THREAD();
+
+  // Don't display an error for downloaded files.
+  if (errorCode == ERR_ABORTED)
+    return;
+
+  // Don't display an error for external protocols that we allow the OS to
+  // handle. See OnProtocolExecution().
+  if (errorCode == ERR_UNKNOWN_URL_SCHEME) {
+    std::string urlStr = frame->GetURL();
+    if (urlStr.find("spotify:") == 0)
+      return;
+  }
+
+  // Load the error page.
+  LoadErrorPage(frame, failedUrl, errorCode, errorText);
 }
 
 bool ClientHandler::OnRequestMediaAccessPermission(
     CefRefPtr<CefBrowser> browser,
     CefRefPtr<CefFrame> frame,
     const CefString& requesting_origin,
-    uint32_t requested_permissions,
+    uint32 requested_permissions,
     CefRefPtr<CefMediaAccessCallback> callback) {
   callback->Continue(media_handling_disabled_ ? CEF_MEDIA_PERMISSION_NONE
                                               : requested_permissions);
   return true;
+}
+
+bool ClientHandler::OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
+                                   CefRefPtr<CefFrame> frame,
+                                   CefRefPtr<CefRequest> request,
+                                   bool user_gesture,
+                                   bool is_redirect) {
+  CEF_REQUIRE_UI_THREAD();
+
+  message_router_->OnBeforeBrowse(browser, frame);
+  return false;
 }
 
 bool ClientHandler::OnOpenURLFromTab(
@@ -1105,8 +888,8 @@ bool ClientHandler::OnOpenURLFromTab(
     const CefString& target_url,
     CefRequestHandler::WindowOpenDisposition target_disposition,
     bool user_gesture) {
-  if (target_disposition == CEF_WOD_NEW_BACKGROUND_TAB ||
-      target_disposition == CEF_WOD_NEW_FOREGROUND_TAB) {
+  if (target_disposition == WOD_NEW_BACKGROUND_TAB ||
+      target_disposition == WOD_NEW_FOREGROUND_TAB) {
     // Handle middle-click and ctrl + left-click by opening the URL in a new
     // browser window.
     auto config = std::make_unique<RootWindowConfig>();
@@ -1175,6 +958,13 @@ bool ClientHandler::OnCertificateError(CefRefPtr<CefBrowser> browser,
     return true;
   }
 
+  CefRefPtr<CefX509Certificate> cert = ssl_info->GetX509Certificate();
+  if (cert.get()) {
+    // Load the error page.
+    LoadErrorPage(browser->GetMainFrame(), request_url, cert_error,
+                  GetCertificateInformation(cert, ssl_info->GetCertStatus()));
+  }
+
   return false;  // Cancel the request.
 }
 
@@ -1215,39 +1005,30 @@ bool ClientHandler::OnSelectClientCertificate(
 }
 
 void ClientHandler::OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser,
-                                              TerminationStatus status,
-                                              int error_code,
-                                              const CefString& error_string) {
+                                              TerminationStatus status) {
   CEF_REQUIRE_UI_THREAD();
-  BaseClientHandler::OnRenderProcessTerminated(browser, status, error_code,
-                                               error_string);
 
-  LOG(ERROR) << "Render process terminated with status "
-             << test_runner::GetErrorString(status) << " ("
-             << error_string.ToString() << ")";
+  message_router_->OnRenderProcessTerminated(browser);
 
   // Don't reload if there's no start URL, or if the crash URL was specified.
-  if (startup_url_.empty() || startup_url_ == "chrome://crash") {
+  if (startup_url_.empty() || startup_url_ == "chrome://crash")
     return;
-  }
 
   CefRefPtr<CefFrame> frame = browser->GetMainFrame();
   std::string url = frame->GetURL();
 
   // Don't reload if the termination occurred before any URL had successfully
   // loaded.
-  if (url.empty()) {
+  if (url.empty())
     return;
-  }
 
   // Convert URLs to lowercase for easier comparison.
   url = AsciiStrToLower(url);
   const std::string& start_url = AsciiStrToLower(startup_url_);
 
   // Don't reload the URL that just resulted in termination.
-  if (url.find(start_url) == 0) {
+  if (url.find(start_url) == 0)
     return;
-  }
 
   frame->LoadURL(startup_url_);
 }
@@ -1258,9 +1039,39 @@ void ClientHandler::OnDocumentAvailableInMainFrame(
 
   // Restore offline mode after main frame navigation. Otherwise, offline state
   // (e.g. `navigator.onLine`) might be wrong in the renderer process.
-  if (offline_) {
+  if (offline_)
     SetOfflineState(browser, true);
-  }
+}
+
+cef_return_value_t ClientHandler::OnBeforeResourceLoad(
+    CefRefPtr<CefBrowser> browser,
+    CefRefPtr<CefFrame> frame,
+    CefRefPtr<CefRequest> request,
+    CefRefPtr<CefCallback> callback) {
+  CEF_REQUIRE_IO_THREAD();
+
+  return resource_manager_->OnBeforeResourceLoad(browser, frame, request,
+                                                 callback);
+}
+
+CefRefPtr<CefResourceHandler> ClientHandler::GetResourceHandler(
+    CefRefPtr<CefBrowser> browser,
+    CefRefPtr<CefFrame> frame,
+    CefRefPtr<CefRequest> request) {
+  CEF_REQUIRE_IO_THREAD();
+
+  return resource_manager_->GetResourceHandler(browser, frame, request);
+}
+
+CefRefPtr<CefResponseFilter> ClientHandler::GetResourceResponseFilter(
+    CefRefPtr<CefBrowser> browser,
+    CefRefPtr<CefFrame> frame,
+    CefRefPtr<CefRequest> request,
+    CefRefPtr<CefResponse> response) {
+  CEF_REQUIRE_IO_THREAD();
+
+  return test_runner::GetResourceResponseFilter(browser, frame, request,
+                                                response);
 }
 
 void ClientHandler::OnProtocolExecution(CefRefPtr<CefBrowser> browser,
@@ -1272,9 +1083,13 @@ void ClientHandler::OnProtocolExecution(CefRefPtr<CefBrowser> browser,
   std::string urlStr = request->GetURL();
 
   // Allow OS execution of Spotify URIs.
-  if (urlStr.find("spotify:") == 0) {
+  if (urlStr.find("spotify:") == 0)
     allow_os_execution = true;
-  }
+}
+
+int ClientHandler::GetBrowserCount() const {
+  CEF_REQUIRE_UI_THREAD();
+  return browser_count_;
 }
 
 void ClientHandler::ShowDevTools(CefRefPtr<CefBrowser> browser,
@@ -1290,11 +1105,25 @@ void ClientHandler::ShowDevTools(CefRefPtr<CefBrowser> browser,
   CefRefPtr<CefClient> client;
   CefBrowserSettings settings;
 
-  // Create the DevTools browser if it doesn't already exist.
-  // Otherwise, focus the existing DevTools browser and inspect the element
-  // at |inspect_element_at| if non-empty.
-  browser->GetHost()->ShowDevTools(windowInfo, client, settings,
-                                   inspect_element_at);
+  MainContext::Get()->PopulateBrowserSettings(&settings);
+
+  CefRefPtr<CefBrowserHost> host = browser->GetHost();
+
+  // Test if the DevTools browser already exists.
+  bool has_devtools = host->HasDevTools();
+  if (!has_devtools) {
+    // Create a new RootWindow for the DevTools browser that will be created
+    // by ShowDevTools().
+    has_devtools = CreatePopupWindow(browser, true, CefPopupFeatures(),
+                                     windowInfo, client, settings);
+  }
+
+  if (has_devtools) {
+    // Create the DevTools browser if it doesn't already exist.
+    // Otherwise, focus the existing DevTools browser and inspect the element
+    // at |inspect_element_at| if non-empty.
+    host->ShowDevTools(windowInfo, client, settings, inspect_element_at);
+  }
 }
 
 void ClientHandler::CloseDevTools(CefRefPtr<CefBrowser> browser) {
@@ -1313,14 +1142,12 @@ void ClientHandler::ShowSSLInformation(CefRefPtr<CefBrowser> browser) {
   std::stringstream ss;
   CefRefPtr<CefNavigationEntry> nav =
       browser->GetHost()->GetVisibleNavigationEntry();
-  if (!nav) {
+  if (!nav)
     return;
-  }
 
   CefRefPtr<CefSSLStatus> ssl = nav->GetSSLStatus();
-  if (!ssl) {
+  if (!ssl)
     return;
-  }
 
   ss << "<html><head><title>SSL Information</title></head>"
         "<body bgcolor=\"white\">"
@@ -1331,9 +1158,8 @@ void ClientHandler::ShowSSLInformation(CefRefPtr<CefBrowser> browser) {
   if (CefParseURL(nav->GetURL(), urlparts)) {
     CefString port(&urlparts.port);
     ss << "<tr><td>Server</td><td>" << CefString(&urlparts.host).ToString();
-    if (!port.empty()) {
+    if (!port.empty())
       ss << ":" << port.ToString();
-    }
     ss << "</td></tr>";
   }
 
@@ -1345,9 +1171,8 @@ void ClientHandler::ShowSSLInformation(CefRefPtr<CefBrowser> browser) {
   ss << "</table>";
 
   CefRefPtr<CefX509Certificate> cert = ssl->GetX509Certificate();
-  if (cert.get()) {
+  if (cert.get())
     ss << GetCertificateInformation(cert, ssl->GetCertStatus());
-  }
 
   ss << "</body></html>";
 
@@ -1359,8 +1184,18 @@ void ClientHandler::ShowSSLInformation(CefRefPtr<CefBrowser> browser) {
       std::move(config));
 }
 
+void ClientHandler::SetStringResource(const std::string& page,
+                                      const std::string& data) {
+  if (!CefCurrentlyOn(TID_IO)) {
+    CefPostTask(TID_IO, base::BindOnce(&ClientHandler::SetStringResource, this,
+                                       page, data));
+    return;
+  }
+
+  string_resource_map_[page] = data;
+}
+
 bool ClientHandler::CreatePopupWindow(CefRefPtr<CefBrowser> browser,
-                                      int popup_id,
                                       bool is_devtools,
                                       const CefPopupFeatures& popupFeatures,
                                       CefWindowInfo& windowInfo,
@@ -1370,11 +1205,11 @@ bool ClientHandler::CreatePopupWindow(CefRefPtr<CefBrowser> browser,
 
   // The popup browser will be parented to a new native window.
   // Don't show URL bar and navigation buttons on DevTools windows.
-  // May return nullptr if UseDefaultPopup() returns true.
-  return !!MainContext::Get()->GetRootWindowManager()->CreateRootWindowAsPopup(
-      use_views_, use_alloy_style_, with_controls_ && !is_devtools, is_osr_,
-      browser->GetIdentifier(), popup_id, is_devtools, popupFeatures,
-      windowInfo, client, settings);
+  MainContext::Get()->GetRootWindowManager()->CreateRootWindowAsPopup(
+      with_controls_ && !is_devtools, is_osr_, popupFeatures, windowInfo,
+      client, settings);
+
+  return true;
 }
 
 void ClientHandler::NotifyBrowserCreated(CefRefPtr<CefBrowser> browser) {
@@ -1385,9 +1220,8 @@ void ClientHandler::NotifyBrowserCreated(CefRefPtr<CefBrowser> browser) {
     return;
   }
 
-  if (delegate_) {
+  if (delegate_)
     delegate_->OnBrowserCreated(browser);
-  }
 }
 
 void ClientHandler::NotifyBrowserClosing(CefRefPtr<CefBrowser> browser) {
@@ -1398,9 +1232,8 @@ void ClientHandler::NotifyBrowserClosing(CefRefPtr<CefBrowser> browser) {
     return;
   }
 
-  if (delegate_) {
+  if (delegate_)
     delegate_->OnBrowserClosing(browser);
-  }
 }
 
 void ClientHandler::NotifyBrowserClosed(CefRefPtr<CefBrowser> browser) {
@@ -1411,9 +1244,8 @@ void ClientHandler::NotifyBrowserClosed(CefRefPtr<CefBrowser> browser) {
     return;
   }
 
-  if (delegate_) {
+  if (delegate_)
     delegate_->OnBrowserClosed(browser);
-  }
 }
 
 void ClientHandler::NotifyAddress(const CefString& url) {
@@ -1423,9 +1255,8 @@ void ClientHandler::NotifyAddress(const CefString& url) {
     return;
   }
 
-  if (delegate_) {
+  if (delegate_)
     delegate_->OnSetAddress(url);
-  }
 }
 
 void ClientHandler::NotifyTitle(const CefString& title) {
@@ -1435,9 +1266,8 @@ void ClientHandler::NotifyTitle(const CefString& title) {
     return;
   }
 
-  if (delegate_) {
+  if (delegate_)
     delegate_->OnSetTitle(title);
-  }
 }
 
 void ClientHandler::NotifyFavicon(CefRefPtr<CefImage> image) {
@@ -1448,9 +1278,8 @@ void ClientHandler::NotifyFavicon(CefRefPtr<CefImage> image) {
     return;
   }
 
-  if (delegate_) {
+  if (delegate_)
     delegate_->OnSetFavicon(image);
-  }
 }
 
 void ClientHandler::NotifyFullscreen(bool fullscreen) {
@@ -1461,9 +1290,8 @@ void ClientHandler::NotifyFullscreen(bool fullscreen) {
     return;
   }
 
-  if (delegate_) {
+  if (delegate_)
     delegate_->OnSetFullscreen(fullscreen);
-  }
 }
 
 void ClientHandler::NotifyAutoResize(const CefSize& new_size) {
@@ -1474,22 +1302,8 @@ void ClientHandler::NotifyAutoResize(const CefSize& new_size) {
     return;
   }
 
-  if (delegate_) {
+  if (delegate_)
     delegate_->OnAutoResize(new_size);
-  }
-}
-
-void ClientHandler::NotifyContentsBounds(const CefRect& new_bounds) {
-  if (!CURRENTLY_ON_MAIN_THREAD()) {
-    // Execute this method on the main thread.
-    MAIN_POST_CLOSURE(
-        base::BindOnce(&ClientHandler::NotifyContentsBounds, this, new_bounds));
-    return;
-  }
-
-  if (delegate_) {
-    delegate_->OnContentsBounds(new_bounds);
-  }
 }
 
 void ClientHandler::NotifyLoadingState(bool isLoading,
@@ -1502,9 +1316,8 @@ void ClientHandler::NotifyLoadingState(bool isLoading,
     return;
   }
 
-  if (delegate_) {
+  if (delegate_)
     delegate_->OnSetLoadingState(isLoading, canGoBack, canGoForward);
-  }
 }
 
 void ClientHandler::NotifyDraggableRegions(
@@ -1516,9 +1329,8 @@ void ClientHandler::NotifyDraggableRegions(
     return;
   }
 
-  if (delegate_) {
+  if (delegate_)
     delegate_->OnSetDraggableRegions(regions);
-  }
 }
 
 void ClientHandler::NotifyTakeFocus(bool next) {
@@ -1529,16 +1341,13 @@ void ClientHandler::NotifyTakeFocus(bool next) {
     return;
   }
 
-  if (delegate_) {
+  if (delegate_)
     delegate_->OnTakeFocus(next);
-  }
 }
 
-void ClientHandler::BuildTestMenu(CefRefPtr<CefBrowser> browser,
-                                  CefRefPtr<CefMenuModel> model) {
-  if (model->GetCount() > 0) {
+void ClientHandler::BuildTestMenu(CefRefPtr<CefMenuModel> model) {
+  if (model->GetCount() > 0)
     model->AddSeparator();
-  }
 
   // Build the sub menu.
   CefRefPtr<CefMenuModel> submenu =
@@ -1549,81 +1358,15 @@ void ClientHandler::BuildTestMenu(CefRefPtr<CefBrowser> browser,
   submenu->AddRadioItem(CLIENT_ID_TESTMENU_RADIOITEM3, "Radio Item 3", 0);
 
   // Check the check item.
-  if (test_menu_state_.check_item) {
+  if (test_menu_state_.check_item)
     submenu->SetChecked(CLIENT_ID_TESTMENU_CHECKITEM, true);
-  }
 
   // Check the selected radio item.
   submenu->SetChecked(
       CLIENT_ID_TESTMENU_RADIOITEM1 + test_menu_state_.radio_item, true);
-
-  // Build the theme sub menu.
-  CefRefPtr<CefMenuModel> theme_menu =
-      model->AddSubMenu(CLIENT_ID_TESTMENU_THEME, "Theme");
-  theme_menu->AddRadioItem(CLIENT_ID_TESTMENU_THEME_MODE_SYSTEM, "System", 1);
-  theme_menu->AddRadioItem(CLIENT_ID_TESTMENU_THEME_MODE_LIGHT, "Light", 1);
-  theme_menu->AddRadioItem(CLIENT_ID_TESTMENU_THEME_MODE_DARK, "Dark", 1);
-  theme_menu->AddSeparator();
-  theme_menu->AddRadioItem(CLIENT_ID_TESTMENU_THEME_COLOR_DEFAULT, "Default",
-                           2);
-  theme_menu->AddRadioItem(CLIENT_ID_TESTMENU_THEME_COLOR_RED, "Red", 2);
-  theme_menu->AddRadioItem(CLIENT_ID_TESTMENU_THEME_COLOR_GREEN, "Green", 2);
-  theme_menu->AddRadioItem(CLIENT_ID_TESTMENU_THEME_COLOR_BLUE, "Blue", 2);
-
-  if (!use_alloy_style_) {
-    theme_menu->AddSeparator();
-    theme_menu->AddItem(CLIENT_ID_TESTMENU_THEME_CUSTOM, "Custom...");
-  }
-
-  auto request_context = browser->GetHost()->GetRequestContext();
-
-  int checked_mode_item = -1;
-  switch (request_context->GetChromeColorSchemeMode()) {
-    case CEF_COLOR_VARIANT_SYSTEM:
-      checked_mode_item = CLIENT_ID_TESTMENU_THEME_MODE_SYSTEM;
-      break;
-    case CEF_COLOR_VARIANT_LIGHT:
-      checked_mode_item = CLIENT_ID_TESTMENU_THEME_MODE_LIGHT;
-      break;
-    case CEF_COLOR_VARIANT_DARK:
-      checked_mode_item = CLIENT_ID_TESTMENU_THEME_MODE_DARK;
-      break;
-    default:
-      NOTREACHED();
-      break;
-  }
-
-  int checked_color_item = -1;
-  const cef_color_t color = request_context->GetChromeColorSchemeColor();
-  if (color == kColorTransparent) {
-    checked_color_item = CLIENT_ID_TESTMENU_THEME_COLOR_DEFAULT;
-  } else if (color == kColorRed) {
-    checked_color_item = CLIENT_ID_TESTMENU_THEME_COLOR_RED;
-  } else if (color == kColorGreen) {
-    checked_color_item = CLIENT_ID_TESTMENU_THEME_COLOR_GREEN;
-  } else if (color == kColorBlue) {
-    checked_color_item = CLIENT_ID_TESTMENU_THEME_COLOR_BLUE;
-  }
-
-  // Check the selected radio item, if any.
-  if (checked_mode_item != -1) {
-    theme_menu->SetChecked(checked_mode_item, true);
-
-    // Update the selected item.
-    test_menu_state_.chrome_theme_mode_item =
-        checked_mode_item - CLIENT_ID_TESTMENU_THEME_MODE_FIRST;
-  }
-  if (checked_color_item != -1) {
-    theme_menu->SetChecked(checked_color_item, true);
-
-    // Update the selected item.
-    test_menu_state_.chrome_theme_color_item =
-        checked_color_item - CLIENT_ID_TESTMENU_THEME_COLOR_FIRST;
-  }
 }
 
-bool ClientHandler::ExecuteTestMenu(CefRefPtr<CefBrowser> browser,
-                                    int command_id) {
+bool ClientHandler::ExecuteTestMenu(int command_id) {
   if (command_id == CLIENT_ID_TESTMENU_CHECKITEM) {
     // Toggle the check item.
     test_menu_state_.check_item ^= 1;
@@ -1632,70 +1375,6 @@ bool ClientHandler::ExecuteTestMenu(CefRefPtr<CefBrowser> browser,
              command_id <= CLIENT_ID_TESTMENU_RADIOITEM3) {
     // Store the selected radio item.
     test_menu_state_.radio_item = (command_id - CLIENT_ID_TESTMENU_RADIOITEM1);
-    return true;
-  } else if (command_id >= CLIENT_ID_TESTMENU_THEME_MODE_FIRST &&
-             command_id <= CLIENT_ID_TESTMENU_THEME_COLOR_LAST) {
-    int selected_mode_item = test_menu_state_.chrome_theme_mode_item;
-    if (command_id >= CLIENT_ID_TESTMENU_THEME_MODE_FIRST &&
-        command_id <= CLIENT_ID_TESTMENU_THEME_MODE_LAST) {
-      selected_mode_item = command_id - CLIENT_ID_TESTMENU_THEME_MODE_FIRST;
-      if (selected_mode_item != test_menu_state_.chrome_theme_mode_item) {
-        // Update the selected item.
-        test_menu_state_.chrome_theme_mode_item = selected_mode_item;
-      }
-    }
-
-    int selected_color_item = test_menu_state_.chrome_theme_color_item;
-    if (command_id >= CLIENT_ID_TESTMENU_THEME_COLOR_FIRST &&
-        command_id <= CLIENT_ID_TESTMENU_THEME_COLOR_LAST) {
-      selected_color_item = command_id - CLIENT_ID_TESTMENU_THEME_COLOR_FIRST;
-      if (selected_color_item != test_menu_state_.chrome_theme_color_item) {
-        // Udpate the selected item.
-        test_menu_state_.chrome_theme_color_item = selected_color_item;
-      }
-    }
-
-    // Don't change the color mode unless a selection has been made.
-    cef_color_variant_t variant = CEF_COLOR_VARIANT_TONAL_SPOT;
-    if (selected_mode_item != -1) {
-      switch (CLIENT_ID_TESTMENU_THEME_MODE_FIRST + selected_mode_item) {
-        case CLIENT_ID_TESTMENU_THEME_MODE_SYSTEM:
-          variant = CEF_COLOR_VARIANT_SYSTEM;
-          break;
-        case CLIENT_ID_TESTMENU_THEME_MODE_LIGHT:
-          variant = CEF_COLOR_VARIANT_LIGHT;
-          break;
-        case CLIENT_ID_TESTMENU_THEME_MODE_DARK:
-          variant = CEF_COLOR_VARIANT_DARK;
-          break;
-        default:
-          break;
-      }
-    }
-
-    // Don't change the user color unless a selection has been made.
-    cef_color_t color = kColorTransparent;
-    if (selected_color_item != -1) {
-      switch (CLIENT_ID_TESTMENU_THEME_COLOR_FIRST + selected_color_item) {
-        case CLIENT_ID_TESTMENU_THEME_COLOR_RED:
-          color = kColorRed;
-          break;
-        case CLIENT_ID_TESTMENU_THEME_COLOR_GREEN:
-          color = kColorGreen;
-          break;
-        case CLIENT_ID_TESTMENU_THEME_COLOR_BLUE:
-          color = kColorBlue;
-          break;
-        default:
-          break;
-      }
-    }
-
-    browser->GetHost()->GetRequestContext()->SetChromeColorScheme(variant,
-                                                                  color);
-    return true;
-  } else if (command_id == CLIENT_ID_TESTMENU_THEME_CUSTOM) {
-    browser->GetMainFrame()->LoadURL("chrome://settings/manageProfile");
     return true;
   }
 
@@ -1713,6 +1392,62 @@ void ClientHandler::SetOfflineState(CefRefPtr<CefBrowser> browser,
   params->SetDouble("uploadThroughput", 0);
   browser->GetHost()->ExecuteDevToolsMethod(
       /*message_id=*/0, "Network.emulateNetworkConditions", params);
+}
+
+void ClientHandler::FilterMenuModel(CefRefPtr<CefMenuModel> model) {
+  // Evaluate from the bottom to the top because we'll be removing menu items.
+  for (size_t x = model->GetCount(); x > 0; --x) {
+    const auto i = x - 1;
+    const auto type = model->GetTypeAt(i);
+    if (type == MENUITEMTYPE_SUBMENU) {
+      // Filter sub-menu and remove if empty.
+      auto sub_model = model->GetSubMenuAt(i);
+      FilterMenuModel(sub_model);
+      if (sub_model->GetCount() == 0) {
+        model->RemoveAt(i);
+      }
+    } else if (type == MENUITEMTYPE_SEPARATOR) {
+      // A separator shouldn't be the first or last element in the menu, and
+      // there shouldn't be multiple in a row.
+      if (i == 0 || i == model->GetCount() - 1 ||
+          model->GetTypeAt(i + 1) == MENUITEMTYPE_SEPARATOR) {
+        model->RemoveAt(i);
+      }
+    } else if (!IsAllowedCommandId(model->GetCommandIdAt(i))) {
+      model->RemoveAt(i);
+    }
+  }
+}
+
+bool ClientHandler::IsAllowedCommandId(int command_id) {
+  // Only the commands in this array will be allowed.
+  static const int kAllowedCommandIds[] = {
+      // Page navigation.
+      IDC_BACK,
+      IDC_FORWARD,
+      IDC_RELOAD,
+      IDC_RELOAD_BYPASSING_CACHE,
+      IDC_RELOAD_CLEARING_CACHE,
+      IDC_STOP,
+
+      // Printing.
+      IDC_PRINT,
+
+      // Edit controls.
+      IDC_CONTENT_CONTEXT_CUT,
+      IDC_CONTENT_CONTEXT_COPY,
+      IDC_CONTENT_CONTEXT_PASTE,
+      IDC_CONTENT_CONTEXT_PASTE_AND_MATCH_STYLE,
+      IDC_CONTENT_CONTEXT_DELETE,
+      IDC_CONTENT_CONTEXT_SELECTALL,
+      IDC_CONTENT_CONTEXT_UNDO,
+      IDC_CONTENT_CONTEXT_REDO,
+  };
+  for (size_t i = 0; i < std::size(kAllowedCommandIds); ++i) {
+    if (command_id == kAllowedCommandIds[i])
+      return true;
+  }
+  return false;
 }
 
 }  // namespace client

@@ -11,17 +11,18 @@
 #include "include/cef_devtools_message_observer.h"
 #include "include/cef_parser.h"
 #include "include/wrapper/cef_closure_task.h"
+
 #include "tests/ceftests/test_handler.h"
 #include "tests/gtest/include/gtest/gtest.h"
 
 namespace {
 
-const char kTestUrl1[] = "https://tests/DevToolsMessage1";
-const char kTestUrl2[] = "https://tests/DevToolsMessage2";
+const char kTestUrl1[] = "http://tests/DevToolsMessage1";
+const char kTestUrl2[] = "http://tests/DevToolsMessage2";
 
 class DevToolsMessageTestHandler : public TestHandler {
  public:
-  DevToolsMessageTestHandler() = default;
+  DevToolsMessageTestHandler() {}
 
   void RunTest() override {
     // Add HTML resources.
@@ -112,7 +113,7 @@ class DevToolsMessageTestHandler : public TestHandler {
     explicit TestMessageObserver(DevToolsMessageTestHandler* handler)
         : handler_(handler) {}
 
-    ~TestMessageObserver() override { handler_->observer_destroyed_.yes(); }
+    virtual ~TestMessageObserver() { handler_->observer_destroyed_.yes(); }
 
     bool OnDevToolsMessage(CefRefPtr<CefBrowser> browser,
                            const void* message,
@@ -232,9 +233,8 @@ class DevToolsMessageTestHandler : public TestHandler {
   void OnMethodResult(const MethodResult& result) {
     EXPECT_EQ(pending_result_.message_id, result.message_id)
         << "with message=" << pending_message_;
-    if (result.message_id != pending_result_.message_id) {
+    if (result.message_id != pending_result_.message_id)
       return;
-    }
 
     EXPECT_EQ(pending_result_.success, result.success)
         << "with message=" << pending_message_;
@@ -255,9 +255,8 @@ class DevToolsMessageTestHandler : public TestHandler {
   }
 
   void OnEvent(const Event& event) {
-    if (event.method != pending_event_.method) {
+    if (event.method != pending_event_.method)
       return;
-    }
 
     EXPECT_TRUE(event.params.find(pending_event_.params) == 0)
         << "with method=" << event.method

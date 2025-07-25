@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=28e1fe080ceafcd947ca1975031a5b8bbf925f44$
+// $hash=3a3c2eee1765f8a1d86044eadc75eca9c6fae25f$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_VIEWS_SCROLL_VIEW_CTOCPP_H_
@@ -84,11 +84,9 @@ class CefScrollViewCToCpp : public CefCToCppRefCounted<CefScrollViewCToCpp,
   void SetFocusable(bool focusable) override;
   bool IsFocusable() override;
   bool IsAccessibilityFocusable() override;
-  bool HasFocus() override;
   void RequestFocus() override;
   void SetBackgroundColor(cef_color_t color) override;
   cef_color_t GetBackgroundColor() override;
-  cef_color_t GetThemeColor(int color_id) override;
   bool ConvertPointToScreen(CefPoint& point) override;
   bool ConvertPointFromScreen(CefPoint& point) override;
   bool ConvertPointToWindow(CefPoint& point) override;
@@ -96,8 +94,5 @@ class CefScrollViewCToCpp : public CefCToCppRefCounted<CefScrollViewCToCpp,
   bool ConvertPointToView(CefRefPtr<CefView> view, CefPoint& point) override;
   bool ConvertPointFromView(CefRefPtr<CefView> view, CefPoint& point) override;
 };
-
-constexpr auto CefScrollViewCToCpp_Wrap = CefScrollViewCToCpp::Wrap;
-constexpr auto CefScrollViewCToCpp_Unwrap = CefScrollViewCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_VIEWS_SCROLL_VIEW_CTOCPP_H_

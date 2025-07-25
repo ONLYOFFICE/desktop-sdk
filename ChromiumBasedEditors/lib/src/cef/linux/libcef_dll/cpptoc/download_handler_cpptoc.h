@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=43efcad65a525c79f63c51049ab38f3c2ed4c56f$
+// $hash=1b301493e2f905a2761858e2d6623765a540f918$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_DOWNLOAD_HANDLER_CPPTOC_H_
@@ -34,9 +34,5 @@ class CefDownloadHandlerCppToC
   CefDownloadHandlerCppToC();
   virtual ~CefDownloadHandlerCppToC();
 };
-
-constexpr auto CefDownloadHandlerCppToC_Wrap = CefDownloadHandlerCppToC::Wrap;
-constexpr auto CefDownloadHandlerCppToC_Unwrap =
-    CefDownloadHandlerCppToC::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_DOWNLOAD_HANDLER_CPPTOC_H_

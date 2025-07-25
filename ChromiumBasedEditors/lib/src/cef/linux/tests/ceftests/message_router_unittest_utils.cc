@@ -9,7 +9,7 @@ extern const char kJSQueryCancelFunc[] = "mrtQueryCancel";
 
 namespace {
 
-const char kTestDomainRoot[] = "https://tests-mr";
+const char kTestDomainRoot[] = "http://tests-mr";
 const char kDoneMessageName[] = "mrtNotifyMsg";
 const char kJSNotifyFunc[] = "mrtNotify";
 const char kJSAssertTotalCountFunc[] = "mrtAssertTotalCount";
@@ -96,9 +96,8 @@ void MRRenderDelegate::OnContextCreated(CefRefPtr<ClientAppRenderer> app,
                                         CefRefPtr<CefFrame> frame,
                                         CefRefPtr<CefV8Context> context) {
   const std::string& url = frame->GetURL();
-  if (url.find(kTestDomainRoot) != 0) {
+  if (url.find(kTestDomainRoot) != 0)
     return;
-  }
 
   message_router_->OnContextCreated(browser, frame, context);
 
@@ -133,9 +132,8 @@ void MRRenderDelegate::OnContextReleased(CefRefPtr<ClientAppRenderer> app,
                                          CefRefPtr<CefFrame> frame,
                                          CefRefPtr<CefV8Context> context) {
   const std::string& url = frame->GetURL();
-  if (url.find(kTestDomainRoot) != 0) {
+  if (url.find(kTestDomainRoot) != 0)
     return;
-  }
 
   message_router_->OnContextReleased(browser, frame, context);
 }
@@ -147,9 +145,8 @@ bool MRRenderDelegate::OnProcessMessageReceived(
     CefProcessId source_process,
     CefRefPtr<CefProcessMessage> message) {
   const std::string& url = frame->GetURL();
-  if (url.find(kTestDomainRoot) != 0) {
+  if (url.find(kTestDomainRoot) != 0)
     return false;
-  }
 
   return message_router_->OnProcessMessageReceived(browser, frame,
                                                    source_process, message);
@@ -168,9 +165,8 @@ void MRTestHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
     CefMessageRouterConfig config;
 
     SetRouterConfig(config);
-    if (message_size_threshold_) {
+    if (message_size_threshold_)
       config.message_size_threshold = message_size_threshold_;
-    }
 
     message_router_ = CefMessageRouterBrowserSide::Create(config);
     AddHandlers(message_router_);
@@ -184,9 +180,7 @@ void MRTestHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
 }
 
 void MRTestHandler::OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser,
-                                              TerminationStatus status,
-                                              int error_code,
-                                              const CefString& error_string) {
+                                              TerminationStatus status) {
   message_router_->OnRenderProcessTerminated(browser);
 }
 
@@ -241,7 +235,7 @@ void MRTestHandler::AssertMainBrowser(CefRefPtr<CefBrowser> browser) {
 }
 
 SingleLoadTestHandler::SingleLoadTestHandler()
-    : main_url_("https://tests-mr.com/main.html") {}
+    : main_url_("http://tests-mr.com/main.html") {}
 
 void SingleLoadTestHandler::RunMRTest() {
   AddOtherResources();

@@ -60,9 +60,10 @@ build_xp {
     }
 
 
-    !cef_version_107 {
+    # cef_version_138 {
 	    DEFINES += CEF_VERSION_138
-	}
+		CEF_PROJECT_PRI=$$PWD/cef_pri_138
+	# }
     include($$CEF_PROJECT_PRI/cef_base.pri)
     include($$CEF_PROJECT_PRI/cef_client.pri)
 }

@@ -479,7 +479,7 @@ TEST(ParserTest, ParseJSONAndReturnErrorInvalid) {
   CefString error_msg;
   CefRefPtr<CefValue> value =
       CefParseJSONAndReturnError(data, JSON_PARSER_RFC, error_msg);
-  CefString expect_error_msg = "expected value at line 1 column 1";
+  CefString expect_error_msg = "Line: 1, column: 1, Unexpected token.";
   EXPECT_FALSE(value.get());
   EXPECT_EQ(expect_error_msg, error_msg);
 }
@@ -489,7 +489,8 @@ TEST(ParserTest, ParseJSONAndReturnErrorTrailingComma) {
   CefString error_msg;
   CefRefPtr<CefValue> value =
       CefParseJSONAndReturnError(data, JSON_PARSER_RFC, error_msg);
-  CefString expect_error_msg = "trailing comma at line 1 column 13";
+  CefString expect_error_msg =
+      "Line: 1, column: 13, Trailing comma not allowed.";
   EXPECT_FALSE(value.get());
   EXPECT_EQ(expect_error_msg, error_msg);
 }

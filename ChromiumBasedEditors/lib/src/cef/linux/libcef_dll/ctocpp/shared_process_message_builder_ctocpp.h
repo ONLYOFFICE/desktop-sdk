@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=a42e15445b57a794238ae642db5de385dc24bd32$
+// $hash=de0791f744ddb7e9e9256bb120f233cb64826188$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_SHARED_PROCESS_MESSAGE_BUILDER_CTOCPP_H_
@@ -40,10 +40,5 @@ class CefSharedProcessMessageBuilderCToCpp
   void* Memory() override;
   CefRefPtr<CefProcessMessage> Build() override;
 };
-
-constexpr auto CefSharedProcessMessageBuilderCToCpp_Wrap =
-    CefSharedProcessMessageBuilderCToCpp::Wrap;
-constexpr auto CefSharedProcessMessageBuilderCToCpp_Unwrap =
-    CefSharedProcessMessageBuilderCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_SHARED_PROCESS_MESSAGE_BUILDER_CTOCPP_H_

@@ -9,7 +9,8 @@
 #include "include/base/cef_logging.h"
 #include "include/base/cef_macros.h"
 
-namespace client::performance_test {
+namespace client {
+namespace performance_test {
 
 // Default number of iterations.
 extern const int kDefaultIterations;
@@ -23,7 +24,7 @@ extern const int kDefaultIterations;
 #define PERF_TEST_ENTRY(name) PERF_TEST_ENTRY_EX(name, kDefaultIterations)
 
 // Test function declaration.
-#define PERF_TEST_RESULT int64_t
+#define PERF_TEST_RESULT int64
 #define PERF_TEST_PARAM_ITERATIONS iterations
 #define PERF_TEST_PARAMS int PERF_TEST_PARAM_ITERATIONS
 #define PERF_TEST_FUNC(name) \
@@ -34,7 +35,7 @@ typedef PERF_TEST_RESULT(PerfTest(PERF_TEST_PARAMS));
 
 class CefTimer {
  public:
-  CefTimer() = default;
+  CefTimer() : running_(false) {}
 
   bool IsRunning() { return running_; }
 
@@ -50,13 +51,13 @@ class CefTimer {
     running_ = false;
   }
 
-  int64_t Delta() {
+  int64 Delta() {
     DCHECK(!running_);
     return start_.Delta(stop_);
   }
 
  private:
-  bool running_ = false;
+  bool running_;
   CefTime start_;
   CefTime stop_;
 
@@ -77,7 +78,7 @@ class CefTimer {
 
 // Perform test iterations and return the timing result.
 #define PERF_ITERATIONS_START() \
-  int64_t _result = 0;          \
+  int64 _result = 0;            \
   PERF_ITERATIONS_START_EX()
 
 #define PERF_ITERATIONS_END()     \
@@ -95,6 +96,7 @@ struct PerfTestEntry {
 extern const PerfTestEntry kPerfTests[];
 extern const int kPerfTestsCount;
 
-}  // namespace client::performance_test
+}  // namespace performance_test
+}  // namespace client
 
 #endif  // CEF_TESTS_CEFCLIENT_RENDERER_PERFORMANCE_TEST_H_

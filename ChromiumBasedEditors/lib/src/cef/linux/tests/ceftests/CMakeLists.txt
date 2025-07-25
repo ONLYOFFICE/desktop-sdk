@@ -8,7 +8,6 @@
 
 # ceftests sources.
 set(CEFTESTS_SRCS
-  api_version_unittest.cc
   audio_output_unittest.cc
   browser_info_map_unittest.cc
   certificate_error_unittest.cc
@@ -32,7 +31,6 @@ set(CEFTESTS_SRCS
   jsdialog_unittest.cc
   life_span_unittest.cc
   media_access_unittest.cc
-  message_router_binary_unittest.cc
   message_router_harness_unittest.cc
   message_router_multi_query_unittest.cc
   message_router_single_query_unittest.cc
@@ -47,7 +45,6 @@ set(CEFTESTS_SRCS
   pdf_viewer_unittest.cc
   permission_prompt_unittest.cc
   preference_unittest.cc
-  print_to_pdf_unittest.cc
   print_unittest.cc
   process_message_unittest.cc
   request_context_unittest.cc
@@ -120,9 +117,28 @@ set(CEFTESTS_SRCS_WINDOWS
 APPEND_PLATFORM_SOURCES(CEFTESTS_SRCS)
 source_group(ceftests FILES ${CEFTESTS_SRCS})
 
+set(CEFTESTS_EXTENSIONS_SRCS
+  extensions/background_unittest.cc
+  extensions/chrome_alarms_unittest.cc
+  extensions/chrome_storage_unittest.cc
+  extensions/chrome_tabs_unittest.cc
+  extensions/extension_test_handler.cc
+  extensions/extension_test_handler.h
+  extensions/view_unittest.cc
+  )
+source_group(ceftests\\\\extensions FILES ${CEFTESTS_EXTENSIONS_SRCS})
+
+set(CEFTESTS_RESOURCES_WIN_SRCS_WINDOWS
+  resources/win/ceftests.rc
+  )
+APPEND_PLATFORM_SOURCES(CEFTESTS_RESOURCES_WIN_SRCS)
+source_group(ceftests\\\\resources\\\\win FILES ${CEFTESTS_RESOURCES_WIN_SRCS})
+
 set(CEFTESTS_SHARED_BROWSER_SRCS
   ../shared/browser/client_app_browser.cc
   ../shared/browser/client_app_browser.h
+  ../shared/browser/extension_util.cc
+  ../shared/browser/extension_util.h
   ../shared/browser/file_util.cc
   ../shared/browser/file_util.h
   ../shared/browser/geometry_util.cc
@@ -189,19 +205,14 @@ set(CEFTESTS_VIEWS_SRCS
   )
 source_group(ceftests\\\\views FILES ${CEFTESTS_VIEWS_SRCS})
 
-set(CEFTESTS_WIN_SRCS_WINDOWS
-  win/ceftests.rc
-  )
-APPEND_PLATFORM_SOURCES(CEFTESTS_WIN_SRCS)
-source_group(ceftests\\\\win FILES ${CEFTESTS_WIN_SRCS})
-
 set(UNITTESTS_SRCS
   ${CEFTESTS_SRCS}
+  ${CEFTESTS_EXTENSIONS_SRCS}
+  ${CEFTESTS_RESOURCES_WIN_SRCS}
   ${CEFTESTS_SHARED_BROWSER_SRCS}
   ${CEFTESTS_SHARED_COMMON_SRCS}
   ${CEFTESTS_SHARED_RENDERER_SRCS}
   ${CEFTESTS_VIEWS_SRCS}
-  ${CEFTESTS_WIN_SRCS}
   )
 
 # ceftests helper sources.
@@ -213,7 +224,6 @@ set(CEFTESTS_HELPER_SRCS_MAC
   dom_unittest.cc
   frame_unittest.cc
   media_access_unittest.cc
-  message_router_binary_unittest.cc
   message_router_harness_unittest.cc
   message_router_multi_query_unittest.cc
   message_router_single_query_unittest.cc
@@ -270,7 +280,6 @@ APPEND_PLATFORM_SOURCES(CEFTESTS_HELPER_SHARED_SRCS)
 source_group(shared FILES ${CEFTESTS_HELPER_SHARED_SRCS})
 
 set(CEFTESTS_HELPER_SHARED_BROWSER_SRCS_MAC
-  ../shared/browser/client_app_browser.h
   ../shared/browser/file_util.cc
   ../shared/browser/file_util.h
   ../shared/browser/resource_util.h
@@ -309,19 +318,19 @@ set(UNITTESTS_HELPER_SRCS
   )
 
 # ceftests resources.
-set(CEFTESTS_RESOURCES_MAC_SRCS_MAC
-  mac/Info.plist.in
-  mac/ceftests.icns
+set(CEFTESTS_RESOURCES_RESOURCES_MAC_SRCS_MAC
+  resources/mac/Info.plist
+  resources/mac/ceftests.icns
   )
-APPEND_PLATFORM_SOURCES(CEFTESTS_RESOURCES_MAC_SRCS)
-source_group(ceftests\\\\mac FILES ${CEFTESTS_RESOURCES_MAC_SRCS})
+APPEND_PLATFORM_SOURCES(CEFTESTS_RESOURCES_RESOURCES_MAC_SRCS)
+source_group(ceftests\\\\resources\\\\mac FILES ${CEFTESTS_RESOURCES_RESOURCES_MAC_SRCS})
 
-set(CEFTESTS_RESOURCES_MAC_ENGLISH_LPROJ_SRCS_MAC
-  mac/English.lproj/InfoPlist.strings
-  mac/English.lproj/MainMenu.xib
+set(CEFTESTS_RESOURCES_RESOURCES_MAC_ENGLISH_LPROJ_SRCS_MAC
+  resources/mac/English.lproj/InfoPlist.strings
+  resources/mac/English.lproj/MainMenu.xib
   )
-APPEND_PLATFORM_SOURCES(CEFTESTS_RESOURCES_MAC_ENGLISH_LPROJ_SRCS)
-source_group(ceftests\\\\mac\\\\English.lproj FILES ${CEFTESTS_RESOURCES_MAC_ENGLISH_LPROJ_SRCS})
+APPEND_PLATFORM_SOURCES(CEFTESTS_RESOURCES_RESOURCES_MAC_ENGLISH_LPROJ_SRCS)
+source_group(ceftests\\\\resources\\\\mac\\\\English.lproj FILES ${CEFTESTS_RESOURCES_RESOURCES_MAC_ENGLISH_LPROJ_SRCS})
 
 set(CEFTESTS_RESOURCES_SHARED_RESOURCES_SRCS
   ../shared/resources/osr_test.html
@@ -333,8 +342,8 @@ set(CEFTESTS_RESOURCES_SHARED_RESOURCES_SRCS
 source_group(shared\\\\resources FILES ${CEFTESTS_RESOURCES_SHARED_RESOURCES_SRCS})
 
 set(UNITTESTS_RESOURCES_SRCS
-  ${CEFTESTS_RESOURCES_MAC_SRCS}
-  ${CEFTESTS_RESOURCES_MAC_ENGLISH_LPROJ_SRCS}
+  ${CEFTESTS_RESOURCES_RESOURCES_MAC_SRCS}
+  ${CEFTESTS_RESOURCES_RESOURCES_MAC_ENGLISH_LPROJ_SRCS}
   ${CEFTESTS_RESOURCES_SHARED_RESOURCES_SRCS}
   )
 
@@ -412,16 +421,6 @@ endif()
 #
 
 if(OS_MAC)
-  option(OPTION_USE_ARC "Build with ARC (automatic Reference Counting) on macOS." ON)
-  if(OPTION_USE_ARC)
-    list(APPEND CEF_COMPILER_FLAGS
-      -fobjc-arc
-      )
-    set_target_properties(${target} PROPERTIES
-      CLANG_ENABLE_OBJC_ARC "YES"
-      )
-  endif()
-
   # Output path for the main app bundle.
   set(CEF_APP "${CEF_TARGET_OUT_DIR}/${CEF_TARGET}.app")
 
@@ -429,13 +428,18 @@ if(OS_MAC)
   set(EXECUTABLE_NAME "${CEF_TARGET}")
   set(PRODUCT_NAME "${CEF_TARGET}")
 
+  if(USE_SANDBOX)
+    # Logical target used to link the cef_sandbox library.
+    ADD_LOGICAL_TARGET("cef_sandbox_lib" "${CEF_SANDBOX_LIB_DEBUG}" "${CEF_SANDBOX_LIB_RELEASE}")
+  endif()
+
   # Main app bundle target.
   add_executable(${CEF_TARGET} MACOSX_BUNDLE ${UNITTESTS_RESOURCES_SRCS} ${UNITTESTS_SRCS})
   SET_EXECUTABLE_TARGET_PROPERTIES(${CEF_TARGET})
   add_dependencies(${CEF_TARGET} libcef_dll_wrapper cef_gtest)
   target_link_libraries(${CEF_TARGET} libcef_dll_wrapper cef_gtest ${CEF_STANDARD_LIBS})
   set_target_properties(${CEF_TARGET} PROPERTIES
-    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/mac/Info.plist.in
+    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/resources/mac/Info.plist
     )
 
   # Copy the CEF framework into the Frameworks directory.
@@ -465,7 +469,7 @@ if(OS_MAC)
     # MACOSX_BUNDLE_INFO_PLIST) uses global env variables and would insert the
     # wrong values with multiple targets.
     set(_helper_info_plist "${CMAKE_CURRENT_BINARY_DIR}/helper-Info${_target_suffix}.plist")
-    file(READ "${CMAKE_CURRENT_SOURCE_DIR}/mac/helper-Info.plist.in" _plist_contents)
+    file(READ "${CMAKE_CURRENT_SOURCE_DIR}/resources/mac/helper-Info.plist" _plist_contents)
     string(REPLACE "\${EXECUTABLE_NAME}" "${_helper_output_name}" _plist_contents ${_plist_contents})
     string(REPLACE "\${PRODUCT_NAME}" "${_helper_output_name}" _plist_contents ${_plist_contents})
     string(REPLACE "\${BUNDLE_ID_SUFFIX}" "${_plist_suffix}" _plist_contents ${_plist_contents})
@@ -480,6 +484,10 @@ if(OS_MAC)
       MACOSX_BUNDLE_INFO_PLIST ${_helper_info_plist}
       OUTPUT_NAME ${_helper_output_name}
       )
+
+    if(USE_SANDBOX)
+      target_link_libraries(${_helper_target} cef_sandbox_lib)
+    endif()
 
     # Add the Helper as a dependency of the main executable target.
     add_dependencies(${CEF_TARGET} "${_helper_target}")
@@ -500,7 +508,7 @@ if(OS_MAC)
   # directive but that doesn't properly handle nested resource directories.
   # Remove these prefixes from input file paths.
   set(PREFIXES
-    "mac/"
+    "resources/mac/"
     "resources/"
     "../shared/resources/"
     )
@@ -514,34 +522,25 @@ endif()
 #
 
 if(OS_WINDOWS)
+  # Executable target.
+  add_executable(${CEF_TARGET} WIN32 ${UNITTESTS_SRCS} ${UNITTESTS_RESOURCES_SRCS})
+  add_dependencies(${CEF_TARGET} libcef_dll_wrapper cef_gtest)
+
+  list(APPEND CEF_EXE_LINKER_FLAGS
+    /SUBSYSTEM:CONSOLE  # Configure as a console application.
+  )
+
+  SET_EXECUTABLE_TARGET_PROPERTIES(${CEF_TARGET})
+  target_link_libraries(${CEF_TARGET} libcef_lib libcef_dll_wrapper cef_gtest ${CEF_STANDARD_LIBS})
+
   if(USE_SANDBOX)
-    # Shared library (DLL) target.
-    add_library(${CEF_TARGET} SHARED ${UNITTESTS_SRCS} ${UNITTESTS_RESOURCES_SRCS})
-    SET_LIBRARY_TARGET_PROPERTIES(${CEF_TARGET})
-
-    # Copy and rename the bootstrap binary.
-    COPY_SINGLE_FILE(${CEF_TARGET} ${CEF_BINARY_DIR}/bootstrapc.exe ${CEF_TARGET_OUT_DIR}/${CEF_TARGET}.exe)
-
-    if (CMAKE_GENERATOR MATCHES "Visual Studio")
-      # Make the bootstrap binary the default command for the Visual Studio debugger.
-      set_target_properties(${CEF_TARGET} PROPERTIES
-        VS_DEBUGGER_COMMAND "$<TARGET_FILE_DIR:${CEF_TARGET}>/${CEF_TARGET}.exe"
-      )
-    endif()
-  else()
-    # Executable target.
-    list(APPEND CEF_EXE_LINKER_FLAGS
-      /SUBSYSTEM:CONSOLE  # Configure as a console application.
-    )
-    add_executable(${CEF_TARGET} WIN32 ${UNITTESTS_SRCS} ${UNITTESTS_RESOURCES_SRCS})
-    SET_EXECUTABLE_TARGET_PROPERTIES(${CEF_TARGET})
-
-    # Add the custom manifest files to the executable.
-    ADD_WINDOWS_MANIFEST("${CMAKE_CURRENT_SOURCE_DIR}/win" "${CEF_TARGET}" "exe")
+    # Logical target used to link the cef_sandbox library.
+    ADD_LOGICAL_TARGET("cef_sandbox_lib" "${CEF_SANDBOX_LIB_DEBUG}" "${CEF_SANDBOX_LIB_RELEASE}")
+    target_link_libraries(${CEF_TARGET} cef_sandbox_lib ${CEF_SANDBOX_STANDARD_LIBS})
   endif()
 
-  add_dependencies(${CEF_TARGET} libcef_dll_wrapper cef_gtest)
-  target_link_libraries(${CEF_TARGET} libcef_lib libcef_dll_wrapper cef_gtest ${CEF_STANDARD_LIBS})
+  # Add the custom manifest files to the executable.
+  ADD_WINDOWS_MANIFEST("${CMAKE_CURRENT_SOURCE_DIR}/resources/win" "${CEF_TARGET}" "exe")
 
   # Copy CEF binary and resource files to the target output directory.
   COPY_FILES("${CEF_TARGET}" "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" "${CEF_TARGET_OUT_DIR}")
@@ -553,9 +552,4 @@ if(OS_WINDOWS)
     "resources/"
     )
   COPY_RESOURCES("${CEF_TARGET}" "${UNITTESTS_DATA_RESOURCES_SRCS}" "${PREFIXES}" "${CMAKE_CURRENT_SOURCE_DIR}" "${CEF_TARGET_OUT_DIR}/ceftests_files")
-
-  if(USE_SANDBOX)
-    # Set LPAC ACLs required for Windows sandbox support.
-    SET_LPAC_ACLS("${CEF_TARGET}")
-  endif()
 endif()

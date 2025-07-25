@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=98aa6485423d9433a2ff6178e25698271a6f40d8$
+// $hash=6dd8a3977d8a7d75da7399a9c15a160afbfcf744$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_CLIENT_CPPTOC_H_
@@ -32,8 +32,5 @@ class CefClientCppToC
   CefClientCppToC();
   virtual ~CefClientCppToC();
 };
-
-constexpr auto CefClientCppToC_Wrap = CefClientCppToC::Wrap;
-constexpr auto CefClientCppToC_Unwrap = CefClientCppToC::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_CLIENT_CPPTOC_H_

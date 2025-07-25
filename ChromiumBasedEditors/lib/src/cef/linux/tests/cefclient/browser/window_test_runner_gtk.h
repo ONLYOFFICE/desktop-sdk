@@ -16,6 +16,11 @@ class WindowTestRunnerGtk : public WindowTestRunner {
  public:
   WindowTestRunnerGtk();
 
+  void SetPos(CefRefPtr<CefBrowser> browser,
+              int x,
+              int y,
+              int width,
+              int height) override;
   void Minimize(CefRefPtr<CefBrowser> browser) override;
   void Maximize(CefRefPtr<CefBrowser> browser) override;
   void Restore(CefRefPtr<CefBrowser> browser) override;

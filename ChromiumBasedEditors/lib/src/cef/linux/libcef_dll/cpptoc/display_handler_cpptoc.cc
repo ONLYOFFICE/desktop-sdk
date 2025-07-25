@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,11 +9,10 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=3dee3de0ee989b208b7d3aa573bb54ef677d8062$
+// $hash=ad895bb923f6cafe08126e21b204acf6c336d956$
 //
 
 #include "libcef_dll/cpptoc/display_handler_cpptoc.h"
-
 #include "libcef_dll/ctocpp/browser_ctocpp.h"
 #include "libcef_dll/ctocpp/frame_ctocpp.h"
 #include "libcef_dll/shutdown_checker.h"
@@ -25,7 +24,7 @@ namespace {
 
 void CEF_CALLBACK
 display_handler_on_address_change(struct _cef_display_handler_t* self,
-                                  struct _cef_browser_t* browser,
+                                  cef_browser_t* browser,
                                   struct _cef_frame_t* frame,
                                   const cef_string_t* url) {
   shutdown_checker::AssertNotShutdown();
@@ -33,72 +32,64 @@ display_handler_on_address_change(struct _cef_display_handler_t* self,
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return;
-  }
   // Verify param: browser; type: refptr_diff
   DCHECK(browser);
-  if (!browser) {
+  if (!browser)
     return;
-  }
   // Verify param: frame; type: refptr_diff
   DCHECK(frame);
-  if (!frame) {
+  if (!frame)
     return;
-  }
   // Verify param: url; type: string_byref_const
   DCHECK(url);
-  if (!url) {
+  if (!url)
     return;
-  }
 
   // Execute
   CefDisplayHandlerCppToC::Get(self)->OnAddressChange(
-      CefBrowserCToCpp_Wrap(browser), CefFrameCToCpp_Wrap(frame),
+      CefBrowserCToCpp::Wrap(browser), CefFrameCToCpp::Wrap(frame),
       CefString(url));
 }
 
 void CEF_CALLBACK
 display_handler_on_title_change(struct _cef_display_handler_t* self,
-                                struct _cef_browser_t* browser,
+                                cef_browser_t* browser,
                                 const cef_string_t* title) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return;
-  }
   // Verify param: browser; type: refptr_diff
   DCHECK(browser);
-  if (!browser) {
+  if (!browser)
     return;
-  }
   // Unverified params: title
 
   // Execute
   CefDisplayHandlerCppToC::Get(self)->OnTitleChange(
-      CefBrowserCToCpp_Wrap(browser), CefString(title));
+      CefBrowserCToCpp::Wrap(browser), CefString(title));
 }
 
 void CEF_CALLBACK
 display_handler_on_favicon_urlchange(struct _cef_display_handler_t* self,
-                                     struct _cef_browser_t* browser,
+                                     cef_browser_t* browser,
                                      cef_string_list_t icon_urls) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return;
-  }
   // Verify param: browser; type: refptr_diff
   DCHECK(browser);
-  if (!browser) {
+  if (!browser)
     return;
-  }
   // Unverified params: icon_urls
 
   // Translate param: icon_urls; type: string_vec_byref_const
@@ -107,48 +98,44 @@ display_handler_on_favicon_urlchange(struct _cef_display_handler_t* self,
 
   // Execute
   CefDisplayHandlerCppToC::Get(self)->OnFaviconURLChange(
-      CefBrowserCToCpp_Wrap(browser), icon_urlsList);
+      CefBrowserCToCpp::Wrap(browser), icon_urlsList);
 }
 
 void CEF_CALLBACK
 display_handler_on_fullscreen_mode_change(struct _cef_display_handler_t* self,
-                                          struct _cef_browser_t* browser,
+                                          cef_browser_t* browser,
                                           int fullscreen) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return;
-  }
   // Verify param: browser; type: refptr_diff
   DCHECK(browser);
-  if (!browser) {
+  if (!browser)
     return;
-  }
 
   // Execute
   CefDisplayHandlerCppToC::Get(self)->OnFullscreenModeChange(
-      CefBrowserCToCpp_Wrap(browser), fullscreen ? true : false);
+      CefBrowserCToCpp::Wrap(browser), fullscreen ? true : false);
 }
 
 int CEF_CALLBACK display_handler_on_tooltip(struct _cef_display_handler_t* self,
-                                            struct _cef_browser_t* browser,
+                                            cef_browser_t* browser,
                                             cef_string_t* text) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return 0;
-  }
   // Verify param: browser; type: refptr_diff
   DCHECK(browser);
-  if (!browser) {
+  if (!browser)
     return 0;
-  }
   // Unverified params: text
 
   // Translate param: text; type: string_byref
@@ -156,7 +143,7 @@ int CEF_CALLBACK display_handler_on_tooltip(struct _cef_display_handler_t* self,
 
   // Execute
   bool _retval = CefDisplayHandlerCppToC::Get(self)->OnTooltip(
-      CefBrowserCToCpp_Wrap(browser), textStr);
+      CefBrowserCToCpp::Wrap(browser), textStr);
 
   // Return type: bool
   return _retval;
@@ -164,31 +151,29 @@ int CEF_CALLBACK display_handler_on_tooltip(struct _cef_display_handler_t* self,
 
 void CEF_CALLBACK
 display_handler_on_status_message(struct _cef_display_handler_t* self,
-                                  struct _cef_browser_t* browser,
+                                  cef_browser_t* browser,
                                   const cef_string_t* value) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return;
-  }
   // Verify param: browser; type: refptr_diff
   DCHECK(browser);
-  if (!browser) {
+  if (!browser)
     return;
-  }
   // Unverified params: value
 
   // Execute
   CefDisplayHandlerCppToC::Get(self)->OnStatusMessage(
-      CefBrowserCToCpp_Wrap(browser), CefString(value));
+      CefBrowserCToCpp::Wrap(browser), CefString(value));
 }
 
 int CEF_CALLBACK
 display_handler_on_console_message(struct _cef_display_handler_t* self,
-                                   struct _cef_browser_t* browser,
+                                   cef_browser_t* browser,
                                    cef_log_severity_t level,
                                    const cef_string_t* message,
                                    const cef_string_t* source,
@@ -198,19 +183,17 @@ display_handler_on_console_message(struct _cef_display_handler_t* self,
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return 0;
-  }
   // Verify param: browser; type: refptr_diff
   DCHECK(browser);
-  if (!browser) {
+  if (!browser)
     return 0;
-  }
   // Unverified params: message, source
 
   // Execute
   bool _retval = CefDisplayHandlerCppToC::Get(self)->OnConsoleMessage(
-      CefBrowserCToCpp_Wrap(browser), level, CefString(message),
+      CefBrowserCToCpp::Wrap(browser), level, CefString(message),
       CefString(source), line);
 
   // Return type: bool
@@ -219,33 +202,30 @@ display_handler_on_console_message(struct _cef_display_handler_t* self,
 
 int CEF_CALLBACK
 display_handler_on_auto_resize(struct _cef_display_handler_t* self,
-                               struct _cef_browser_t* browser,
+                               cef_browser_t* browser,
                                const cef_size_t* new_size) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return 0;
-  }
   // Verify param: browser; type: refptr_diff
   DCHECK(browser);
-  if (!browser) {
+  if (!browser)
     return 0;
-  }
   // Verify param: new_size; type: simple_byref_const
   DCHECK(new_size);
-  if (!new_size) {
+  if (!new_size)
     return 0;
-  }
 
   // Translate param: new_size; type: simple_byref_const
   CefSize new_sizeVal = new_size ? *new_size : CefSize();
 
   // Execute
   bool _retval = CefDisplayHandlerCppToC::Get(self)->OnAutoResize(
-      CefBrowserCToCpp_Wrap(browser), new_sizeVal);
+      CefBrowserCToCpp::Wrap(browser), new_sizeVal);
 
   // Return type: bool
   return _retval;
@@ -253,30 +233,28 @@ display_handler_on_auto_resize(struct _cef_display_handler_t* self,
 
 void CEF_CALLBACK
 display_handler_on_loading_progress_change(struct _cef_display_handler_t* self,
-                                           struct _cef_browser_t* browser,
+                                           cef_browser_t* browser,
                                            double progress) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return;
-  }
   // Verify param: browser; type: refptr_diff
   DCHECK(browser);
-  if (!browser) {
+  if (!browser)
     return;
-  }
 
   // Execute
   CefDisplayHandlerCppToC::Get(self)->OnLoadingProgressChange(
-      CefBrowserCToCpp_Wrap(browser), progress);
+      CefBrowserCToCpp::Wrap(browser), progress);
 }
 
 int CEF_CALLBACK
 display_handler_on_cursor_change(struct _cef_display_handler_t* self,
-                                 struct _cef_browser_t* browser,
+                                 cef_browser_t* browser,
                                  cef_cursor_handle_t cursor,
                                  cef_cursor_type_t type,
                                  const cef_cursor_info_t* custom_cursor_info) {
@@ -285,19 +263,16 @@ display_handler_on_cursor_change(struct _cef_display_handler_t* self,
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return 0;
-  }
   // Verify param: browser; type: refptr_diff
   DCHECK(browser);
-  if (!browser) {
+  if (!browser)
     return 0;
-  }
   // Verify param: custom_cursor_info; type: simple_byref_const
   DCHECK(custom_cursor_info);
-  if (!custom_cursor_info) {
+  if (!custom_cursor_info)
     return 0;
-  }
 
   // Translate param: custom_cursor_info; type: simple_byref_const
   CefCursorInfo custom_cursor_infoVal =
@@ -305,7 +280,7 @@ display_handler_on_cursor_change(struct _cef_display_handler_t* self,
 
   // Execute
   bool _retval = CefDisplayHandlerCppToC::Get(self)->OnCursorChange(
-      CefBrowserCToCpp_Wrap(browser), cursor, type, custom_cursor_infoVal);
+      CefBrowserCToCpp::Wrap(browser), cursor, type, custom_cursor_infoVal);
 
   // Return type: bool
   return _retval;
@@ -313,7 +288,7 @@ display_handler_on_cursor_change(struct _cef_display_handler_t* self,
 
 void CEF_CALLBACK
 display_handler_on_media_access_change(struct _cef_display_handler_t* self,
-                                       struct _cef_browser_t* browser,
+                                       cef_browser_t* browser,
                                        int has_video_access,
                                        int has_audio_access) {
   shutdown_checker::AssertNotShutdown();
@@ -321,97 +296,18 @@ display_handler_on_media_access_change(struct _cef_display_handler_t* self,
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return;
-  }
   // Verify param: browser; type: refptr_diff
   DCHECK(browser);
-  if (!browser) {
+  if (!browser)
     return;
-  }
 
   // Execute
   CefDisplayHandlerCppToC::Get(self)->OnMediaAccessChange(
-      CefBrowserCToCpp_Wrap(browser), has_video_access ? true : false,
+      CefBrowserCToCpp::Wrap(browser), has_video_access ? true : false,
       has_audio_access ? true : false);
 }
-
-#if CEF_API_ADDED(13700)
-int CEF_CALLBACK
-display_handler_on_contents_bounds_change(struct _cef_display_handler_t* self,
-                                          struct _cef_browser_t* browser,
-                                          const cef_rect_t* new_bounds) {
-  shutdown_checker::AssertNotShutdown();
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  DCHECK(self);
-  if (!self) {
-    return 0;
-  }
-  // Verify param: browser; type: refptr_diff
-  DCHECK(browser);
-  if (!browser) {
-    return 0;
-  }
-  // Verify param: new_bounds; type: simple_byref_const
-  DCHECK(new_bounds);
-  if (!new_bounds) {
-    return 0;
-  }
-
-  // Translate param: new_bounds; type: simple_byref_const
-  CefRect new_boundsVal = new_bounds ? *new_bounds : CefRect();
-
-  // Execute
-  bool _retval = CefDisplayHandlerCppToC::Get(self)->OnContentsBoundsChange(
-      CefBrowserCToCpp_Wrap(browser), new_boundsVal);
-
-  // Return type: bool
-  return _retval;
-}
-#endif  // CEF_API_ADDED(13700)
-
-#if CEF_API_ADDED(13700)
-int CEF_CALLBACK
-display_handler_get_root_window_screen_rect(struct _cef_display_handler_t* self,
-                                            struct _cef_browser_t* browser,
-                                            cef_rect_t* rect) {
-  shutdown_checker::AssertNotShutdown();
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  DCHECK(self);
-  if (!self) {
-    return 0;
-  }
-  // Verify param: browser; type: refptr_diff
-  DCHECK(browser);
-  if (!browser) {
-    return 0;
-  }
-  // Verify param: rect; type: simple_byref
-  DCHECK(rect);
-  if (!rect) {
-    return 0;
-  }
-
-  // Translate param: rect; type: simple_byref
-  CefRect rectVal = rect ? *rect : CefRect();
-
-  // Execute
-  bool _retval = CefDisplayHandlerCppToC::Get(self)->GetRootWindowScreenRect(
-      CefBrowserCToCpp_Wrap(browser), rectVal);
-
-  // Restore param: rect; type: simple_byref
-  if (rect) {
-    *rect = rectVal;
-  }
-
-  // Return type: bool
-  return _retval;
-}
-#endif  // CEF_API_ADDED(13700)
 
 }  // namespace
 
@@ -431,14 +327,6 @@ CefDisplayHandlerCppToC::CefDisplayHandlerCppToC() {
       display_handler_on_loading_progress_change;
   GetStruct()->on_cursor_change = display_handler_on_cursor_change;
   GetStruct()->on_media_access_change = display_handler_on_media_access_change;
-#if CEF_API_ADDED(13700)
-  GetStruct()->on_contents_bounds_change =
-      display_handler_on_contents_bounds_change;
-#endif
-#if CEF_API_ADDED(13700)
-  GetStruct()->get_root_window_screen_rect =
-      display_handler_get_root_window_screen_rect;
-#endif
 }
 
 // DESTRUCTOR - Do not edit by hand.
@@ -453,7 +341,7 @@ CefRefPtr<CefDisplayHandler> CefCppToCRefCounted<
     CefDisplayHandler,
     cef_display_handler_t>::UnwrapDerived(CefWrapperType type,
                                           cef_display_handler_t* s) {
-  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  NOTREACHED() << "Unexpected class type: " << type;
   return nullptr;
 }
 

@@ -4,6 +4,7 @@
 
 #include "include/base/cef_callback.h"
 #include "include/wrapper/cef_closure_task.h"
+
 #include "tests/ceftests/routing_test_handler.h"
 #include "tests/gtest/include/gtest/gtest.h"
 
@@ -19,7 +20,7 @@ const int kOsrHeight = 400;
 
 class DisplayTestHandler : public RoutingTestHandler, public CefRenderHandler {
  public:
-  DisplayTestHandler() = default;
+  DisplayTestHandler() : status_(START) {}
 
   CefRefPtr<CefRenderHandler> GetRenderHandler() override { return this; }
 
@@ -68,7 +69,7 @@ class DisplayTestHandler : public RoutingTestHandler, public CefRenderHandler {
 
   bool OnQuery(CefRefPtr<CefBrowser> browser,
                CefRefPtr<CefFrame> frame,
-               int64_t query_id,
+               int64 query_id,
                const CefString& request,
                bool persistent,
                CefRefPtr<Callback> callback) override {
@@ -157,7 +158,7 @@ class DisplayTestHandler : public RoutingTestHandler, public CefRenderHandler {
     SHOW,
     STATUS_COUNT,
   };
-  Status status_ = START;
+  Status status_;
 
   TrackCallback got_paint_[STATUS_COUNT];
   TrackCallback got_start_msg_;
@@ -183,22 +184,25 @@ const char kOsrPopupJSOtherClientMainUrl[] =
 class OsrPopupJSOtherClientTestHandler : public TestHandler,
                                          public CefRenderHandler {
  public:
-  explicit OsrPopupJSOtherClientTestHandler(CefRefPtr<CefClient> other) {
+  OsrPopupJSOtherClientTestHandler(CefRefPtr<CefClient> other) {
     other_ = other;
   }
 
-  CefRefPtr<CefRenderHandler> GetRenderHandler() override { return this; }
+  virtual CefRefPtr<CefRenderHandler> GetRenderHandler() override {
+    return this;
+  }
 
-  void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override {
+  virtual void GetViewRect(CefRefPtr<CefBrowser> browser,
+                           CefRect& rect) override {
     rect = CefRect(0, 0, kOsrWidth, kOsrHeight);
   }
 
-  void OnPaint(CefRefPtr<CefBrowser> browser,
-               PaintElementType type,
-               const RectList& dirtyRects,
-               const void* buffer,
-               int width,
-               int height) override {}
+  virtual void OnPaint(CefRefPtr<CefBrowser> browser,
+                       PaintElementType type,
+                       const RectList& dirtyRects,
+                       const void* buffer,
+                       int width,
+                       int height) override {}
 
   void RunTest() override {
     AddResource(kOsrPopupJSOtherClientMainUrl, "<html>Main</html>",
@@ -213,7 +217,6 @@ class OsrPopupJSOtherClientTestHandler : public TestHandler,
 
   bool OnBeforePopup(CefRefPtr<CefBrowser> browser,
                      CefRefPtr<CefFrame> frame,
-                     int popup_id,
                      const CefString& target_url,
                      const CefString& target_frame_name,
                      cef_window_open_disposition_t target_disposition,
@@ -252,9 +255,8 @@ class OsrPopupJSOtherClientTestHandler : public TestHandler,
                             bool isLoading,
                             bool canGoBack,
                             bool canGoForward) override {
-    if (isLoading) {
+    if (isLoading)
       return;
-    }
 
     if (browser->IsPopup()) {
       got_load_end_popup_.yes();
@@ -320,57 +322,61 @@ class OsrPopupJSOtherCefClient : public CefClient,
     handler_ = handler;
   }
 
-  CefRefPtr<CefLoadHandler> GetLoadHandler() override { return this; }
+  virtual CefRefPtr<CefLoadHandler> GetLoadHandler() override { return this; }
 
-  CefRefPtr<CefRenderHandler> GetRenderHandler() override { return this; }
+  virtual CefRefPtr<CefRenderHandler> GetRenderHandler() override {
+    return this;
+  }
 
-  CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override { return this; }
+  virtual CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override {
+    return this;
+  }
 
-  void OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
-                            bool isLoading,
-                            bool canGoBack,
-                            bool canGoForward) override {
+  virtual void OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
+                                    bool isLoading,
+                                    bool canGoBack,
+                                    bool canGoForward) override {
     if (handler_) {
       handler_->OnLoadingStateChange(browser, isLoading, canGoBack,
                                      canGoForward);
     }
   }
 
-  void OnAfterCreated(CefRefPtr<CefBrowser> browser) override {
+  virtual void OnAfterCreated(CefRefPtr<CefBrowser> browser) override {
     handler_->OnAfterCreated(browser);
   }
 
-  void OnBeforeClose(CefRefPtr<CefBrowser> browser) override {
+  virtual void OnBeforeClose(CefRefPtr<CefBrowser> browser) override {
     handler_->OnBeforeClose(browser);
     handler_ = nullptr;
   }
 
-  bool OnBeforePopup(CefRefPtr<CefBrowser> browser,
-                     CefRefPtr<CefFrame> frame,
-                     int popup_id,
-                     const CefString& target_url,
-                     const CefString& target_frame_name,
-                     cef_window_open_disposition_t target_disposition,
-                     bool user_gesture,
-                     const CefPopupFeatures& popupFeatures,
-                     CefWindowInfo& windowInfo,
-                     CefRefPtr<CefClient>& client,
-                     CefBrowserSettings& settings,
-                     CefRefPtr<CefDictionaryValue>& extra_info,
-                     bool* no_javascript_access) override {
+  virtual bool OnBeforePopup(CefRefPtr<CefBrowser> browser,
+                             CefRefPtr<CefFrame> frame,
+                             const CefString& target_url,
+                             const CefString& target_frame_name,
+                             cef_window_open_disposition_t target_disposition,
+                             bool user_gesture,
+                             const CefPopupFeatures& popupFeatures,
+                             CefWindowInfo& windowInfo,
+                             CefRefPtr<CefClient>& client,
+                             CefBrowserSettings& settings,
+                             CefRefPtr<CefDictionaryValue>& extra_info,
+                             bool* no_javascript_access) override {
     return true;
   }
 
-  void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override {
+  virtual void GetViewRect(CefRefPtr<CefBrowser> browser,
+                           CefRect& rect) override {
     rect = CefRect(0, 0, kOsrWidth, kOsrHeight);
   }
 
-  void OnPaint(CefRefPtr<CefBrowser> browser,
-               PaintElementType type,
-               const RectList& dirtyRects,
-               const void* buffer,
-               int width,
-               int height) override {}
+  virtual void OnPaint(CefRefPtr<CefBrowser> browser,
+                       PaintElementType type,
+                       const RectList& dirtyRects,
+                       const void* buffer,
+                       int width,
+                       int height) override {}
 
  private:
   CefRefPtr<OsrPopupJSOtherClientTestHandler> handler_;

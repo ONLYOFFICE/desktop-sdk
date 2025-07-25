@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,16 +33,12 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=2f44c2870fbce537e0c3ec1c82c30686f7d3c7e9$
+// $hash=e3aa3fbb265a600d498884b0fbb852fc5bbf8856$
 //
 
 #ifndef CEF_INCLUDE_CAPI_VIEWS_CEF_SCROLL_VIEW_CAPI_H_
 #define CEF_INCLUDE_CAPI_VIEWS_CEF_SCROLL_VIEW_CAPI_H_
 #pragma once
-
-#if defined(BUILDING_CEF_SHARED)
-#error This file cannot be included DLL-side
-#endif
 
 #include "include/capi/views/cef_view_capi.h"
 
@@ -54,8 +50,6 @@ extern "C" {
 /// A ScrollView will show horizontal and/or vertical scrollbars when necessary
 /// based on the size of the attached content view. Methods must be called on
 /// the browser process UI thread unless otherwise indicated.
-///
-/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_scroll_view_t {
   ///

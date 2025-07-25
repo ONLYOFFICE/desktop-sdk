@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=d627e5b7ba5aad879ba07a96a9139c08b39ea19d$
+// $hash=1b1c5e3e3cca0da704d30c6577a0c083c3fb389b$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_MENU_MODEL_CTOCPP_H_
@@ -127,8 +127,5 @@ class CefMenuModelCToCpp : public CefCToCppRefCounted<CefMenuModelCToCpp,
   bool SetFontList(int command_id, const CefString& font_list) override;
   bool SetFontListAt(int index, const CefString& font_list) override;
 };
-
-constexpr auto CefMenuModelCToCpp_Wrap = CefMenuModelCToCpp::Wrap;
-constexpr auto CefMenuModelCToCpp_Unwrap = CefMenuModelCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_MENU_MODEL_CTOCPP_H_

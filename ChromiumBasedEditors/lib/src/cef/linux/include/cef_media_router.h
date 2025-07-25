@@ -39,7 +39,6 @@
 #pragma once
 
 #include <vector>
-
 #include "include/cef_base.h"
 #include "include/cef_callback.h"
 #include "include/cef_registration.h"
@@ -146,7 +145,7 @@ class CefMediaObserver : public virtual CefBaseRefCounted {
                                    ConnectionState state) = 0;
 
   ///
-  /// A message was received over |route|. |message| is only valid for
+  /// A message was recieved over |route|. |message| is only valid for
   /// the scope of this callback and should be copied if necessary.
   ///
   /*--cef()--*/
@@ -239,6 +238,12 @@ class CefMediaSink : public virtual CefBaseRefCounted {
   ///
   /*--cef()--*/
   virtual CefString GetName() = 0;
+
+  ///
+  /// Returns the description of this sink.
+  ///
+  /*--cef()--*/
+  virtual CefString GetDescription() = 0;
 
   ///
   /// Returns the icon type for this sink.

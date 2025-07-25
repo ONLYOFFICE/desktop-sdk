@@ -14,7 +14,8 @@
 #include "include/wrapper/cef_message_router.h"
 #include "include/wrapper/cef_resource_manager.h"
 
-namespace client::test_runner {
+namespace client {
+namespace test_runner {
 
 // Run a test.
 void RunTest(CefRefPtr<CefBrowser> browser, int id);
@@ -33,9 +34,8 @@ std::string GetDataURI(const std::string& data, const std::string& mime_type);
 
 // Returns the string representation of the specified error code.
 std::string GetErrorString(cef_errorcode_t code);
-std::string GetErrorString(cef_termination_status_t status);
 
-using StringResourceMap = std::map<std::string, std::string>;
+typedef std::map<std::string, std::string> StringResourceMap;
 
 // Set up the resource manager for tests.
 void SetupResourceManager(CefRefPtr<CefResourceManager> resource_manager,
@@ -44,16 +44,13 @@ void SetupResourceManager(CefRefPtr<CefResourceManager> resource_manager,
 // Show a JS alert message.
 void Alert(CefRefPtr<CefBrowser> browser, const std::string& message);
 
-// Returns "https://tests/<path>".
-std::string GetTestURL(const std::string& path);
-
 // Returns true if |url| is a test URL with the specified |path|. This matches
-// both "https://tests/<path>" and "http://localhost:xxxx/<path>".
+// both http://tests/<path> and http://localhost:xxxx/<path>.
 bool IsTestURL(const std::string& url, const std::string& path);
 
 // Create all CefMessageRouterBrowserSide::Handler objects. They will be
 // deleted when the ClientHandler is destroyed.
-using MessageHandlerSet = std::set<CefMessageRouterBrowserSide::Handler*>;
+typedef std::set<CefMessageRouterBrowserSide::Handler*> MessageHandlerSet;
 void CreateMessageHandlers(MessageHandlerSet& handlers);
 
 // Register scheme handlers for tests.
@@ -66,6 +63,7 @@ CefRefPtr<CefResponseFilter> GetResourceResponseFilter(
     CefRefPtr<CefRequest> request,
     CefRefPtr<CefResponse> response);
 
-}  // namespace client::test_runner
+}  // namespace test_runner
+}  // namespace client
 
 #endif  // CEF_TESTS_CEFCLIENT_BROWSER_TEST_RUNNER_H_

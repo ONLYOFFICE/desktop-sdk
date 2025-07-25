@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=6d012fb834c6500416aae0444ee68946d7d57b19$
+// $hash=af612f99d0ccc287b152a20b3e9956af223f82e0$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_SSLSTATUS_CTOCPP_H_
@@ -40,8 +40,5 @@ class CefSSLStatusCToCpp : public CefCToCppRefCounted<CefSSLStatusCToCpp,
   cef_ssl_content_status_t GetContentStatus() override;
   CefRefPtr<CefX509Certificate> GetX509Certificate() override;
 };
-
-constexpr auto CefSSLStatusCToCpp_Wrap = CefSSLStatusCToCpp::Wrap;
-constexpr auto CefSSLStatusCToCpp_Unwrap = CefSSLStatusCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_SSLSTATUS_CTOCPP_H_

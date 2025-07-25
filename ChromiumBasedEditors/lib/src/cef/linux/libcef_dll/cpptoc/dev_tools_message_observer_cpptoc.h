@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=45c3d2339c5b88ce8b82fea429072ed52a07383f$
+// $hash=4f034b01b5709e8012ff089e000216008f6232b6$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_DEV_TOOLS_MESSAGE_OBSERVER_CPPTOC_H_
@@ -36,10 +36,5 @@ class CefDevToolsMessageObserverCppToC
   CefDevToolsMessageObserverCppToC();
   virtual ~CefDevToolsMessageObserverCppToC();
 };
-
-constexpr auto CefDevToolsMessageObserverCppToC_Wrap =
-    CefDevToolsMessageObserverCppToC::Wrap;
-constexpr auto CefDevToolsMessageObserverCppToC_Unwrap =
-    CefDevToolsMessageObserverCppToC::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_DEV_TOOLS_MESSAGE_OBSERVER_CPPTOC_H_

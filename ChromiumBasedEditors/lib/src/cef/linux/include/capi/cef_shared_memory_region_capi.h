@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,16 +33,12 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=70d9aba509f824a05c705e07fd008185a41e3ad9$
+// $hash=08f64795d78bdad29a45222a7263e795ce77a52d$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_SHARED_MEMORY_REGION_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_SHARED_MEMORY_REGION_CAPI_H_
 #pragma once
-
-#if defined(BUILDING_CEF_SHARED)
-#error This file cannot be included DLL-side
-#endif
 
 #include "include/capi/cef_base_capi.h"
 
@@ -52,8 +48,6 @@ extern "C" {
 
 ///
 /// Structure that wraps platform-dependent share memory region mapping.
-///
-/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_shared_memory_region_t {
   ///
@@ -75,7 +69,7 @@ typedef struct _cef_shared_memory_region_t {
   /// Returns the pointer to the memory. Returns nullptr for invalid instances.
   /// The returned pointer is only valid for the life span of this object.
   ///
-  void*(CEF_CALLBACK* memory)(struct _cef_shared_memory_region_t* self);
+  const void*(CEF_CALLBACK* memory)(struct _cef_shared_memory_region_t* self);
 } cef_shared_memory_region_t;
 
 #ifdef __cplusplus

@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=6773a9bd270ff5f6b699f4e9a36cd20599b18264$
+// $hash=b6fc182f3444ce3926bff6d2b30d14aeca4cb9ba$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_TEST_TRANSLATOR_TEST_SCOPED_LIBRARY_CHILD_CHILD_CTOCPP_H_
@@ -46,12 +46,5 @@ class CefTranslatorTestScopedLibraryChildChildCToCpp
   int GetValue() override;
   void SetValue(int value) override;
 };
-
-constexpr auto CefTranslatorTestScopedLibraryChildChildCToCpp_Wrap =
-    CefTranslatorTestScopedLibraryChildChildCToCpp::Wrap;
-constexpr auto CefTranslatorTestScopedLibraryChildChildCToCpp_UnwrapOwn =
-    CefTranslatorTestScopedLibraryChildChildCToCpp::UnwrapOwn;
-constexpr auto CefTranslatorTestScopedLibraryChildChildCToCpp_UnwrapRaw =
-    CefTranslatorTestScopedLibraryChildChildCToCpp::UnwrapRaw;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_TEST_TRANSLATOR_TEST_SCOPED_LIBRARY_CHILD_CHILD_CTOCPP_H_

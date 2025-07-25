@@ -31,7 +31,7 @@
 #define CEF_INCLUDE_INTERNAL_CEF_STRING_WRAPPERS_H_
 #pragma once
 
-#include <cstring>
+#include <memory.h>
 #include <string>
 
 #include "include/internal/cef_string_types.h"
@@ -74,9 +74,8 @@ struct CefStringTraitsWide {
     memset(&cstr, 0, sizeof(cstr));
     cef_string_wide_to_utf8(s->str, s->length, &cstr);
     std::string str;
-    if (cstr.length > 0) {
+    if (cstr.length > 0)
       str = std::string(cstr.str, cstr.length);
-    }
     cef_string_utf8_clear(&cstr);
     return str;
   }
@@ -99,7 +98,7 @@ struct CefStringTraitsWide {
   static inline bool from_wstring(const std::wstring& str, struct_type* s) {
     return from_wstring(str.data(), str.length(), s);
   }
-#if defined(WCHAR_T_IS_32_BIT)
+#if defined(WCHAR_T_IS_UTF32)
   static inline std::u16string to_string16(const struct_type* s) {
     cef_string_utf16_t cstr;
     memset(&cstr, 0, sizeof(cstr));
@@ -115,12 +114,12 @@ struct CefStringTraitsWide {
   static inline bool from_string16(const std::u16string::value_type* data,
                                    size_t length,
                                    struct_type* s) {
-    return cef_string_utf16_to_wide(reinterpret_cast<const char16_t*>(data),
+    return cef_string_utf16_to_wide(reinterpret_cast<const char16*>(data),
                                     length, s)
                ? true
                : false;
   }
-#elif defined(WCHAR_T_IS_16_BIT)
+#else   // WCHAR_T_IS_UTF32
   static inline std::u16string to_string16(const struct_type* s) {
     return std::u16string(
         reinterpret_cast<const std::u16string::value_type*>(s->str), s->length);
@@ -133,7 +132,7 @@ struct CefStringTraitsWide {
                ? true
                : false;
   }
-#endif  // WCHAR_T_IS_16_BIT
+#endif  // WCHAR_T_IS_UTF32
   static inline bool from_string16(const std::u16string& str, struct_type* s) {
     return from_string16(str.data(), str.length(), s);
   }
@@ -184,9 +183,8 @@ struct CefStringTraitsUTF8 {
     memset(&cstr, 0, sizeof(cstr));
     cef_string_utf8_to_wide(s->str, s->length, &cstr);
     std::wstring str;
-    if (cstr.length > 0) {
+    if (cstr.length > 0)
       str = std::wstring(cstr.str, cstr.length);
-    }
     cef_string_wide_clear(&cstr);
     return str;
   }
@@ -213,7 +211,7 @@ struct CefStringTraitsUTF8 {
   static inline bool from_string16(const std::u16string::value_type* data,
                                    size_t length,
                                    struct_type* s) {
-    return cef_string_utf16_to_utf8(reinterpret_cast<const char16_t*>(data),
+    return cef_string_utf16_to_utf8(reinterpret_cast<const char16*>(data),
                                     length, s)
                ? true
                : false;
@@ -227,7 +225,7 @@ struct CefStringTraitsUTF8 {
 /// Traits implementation for utf16 character strings.
 ///
 struct CefStringTraitsUTF16 {
-  typedef char16_t char_type;
+  typedef char16 char_type;
   typedef cef_string_utf16_t struct_type;
   typedef cef_string_userfree_utf16_t userfree_struct_type;
 
@@ -257,9 +255,8 @@ struct CefStringTraitsUTF16 {
     memset(&cstr, 0, sizeof(cstr));
     cef_string_utf16_to_utf8(s->str, s->length, &cstr);
     std::string str;
-    if (cstr.length > 0) {
+    if (cstr.length > 0)
       str = std::string(cstr.str, cstr.length);
-    }
     cef_string_utf8_clear(&cstr);
     return str;
   }
@@ -271,15 +268,14 @@ struct CefStringTraitsUTF16 {
   static inline bool from_string(const std::string& str, struct_type* s) {
     return from_string(str.data(), str.length(), s);
   }
-#if defined(WCHAR_T_IS_32_BIT)
+#if defined(WCHAR_T_IS_UTF32)
   static inline std::wstring to_wstring(const struct_type* s) {
     cef_string_wide_t cstr;
     memset(&cstr, 0, sizeof(cstr));
     cef_string_utf16_to_wide(s->str, s->length, &cstr);
     std::wstring str;
-    if (cstr.length > 0) {
+    if (cstr.length > 0)
       str = std::wstring(cstr.str, cstr.length);
-    }
     cef_string_wide_clear(&cstr);
     return str;
   }
@@ -288,19 +284,16 @@ struct CefStringTraitsUTF16 {
                                   struct_type* s) {
     return cef_string_wide_to_utf16(data, length, s) ? true : false;
   }
-#elif defined(WCHAR_T_IS_16_BIT)
+#else   // WCHAR_T_IS_UTF32
   static inline std::wstring to_wstring(const struct_type* s) {
-    return std::wstring(reinterpret_cast<wchar_t*>(s->str), s->length);
+    return std::wstring(s->str, s->length);
   }
   static inline bool from_wstring(const std::wstring::value_type* data,
                                   size_t length,
                                   struct_type* s) {
-    return cef_string_utf16_set(reinterpret_cast<const char16_t*>(data), length,
-                                s, true)
-               ? true
-               : false;
+    return cef_string_utf16_set(data, length, s, true) ? true : false;
   }
-#endif  // WCHAR_T_IS_16_BIT
+#endif  // WCHAR_T_IS_UTF32
   static inline bool from_wstring(const std::wstring& str, struct_type* s) {
     return from_wstring(str.data(), str.length(), s);
   }
@@ -311,7 +304,7 @@ struct CefStringTraitsUTF16 {
   static inline bool from_string16(const std::u16string::value_type* data,
                                    size_t length,
                                    struct_type* s) {
-    return cef_string_utf16_set(reinterpret_cast<const char16_t*>(data), length,
+    return cef_string_utf16_set(reinterpret_cast<const char16*>(data), length,
                                 s, true)
                ? true
                : false;
@@ -353,7 +346,7 @@ struct CefStringTraitsUTF16 {
 /// modifying CEF strings from multiple threads.
 ///
 template <class traits>
-class CefStringBase final {
+class CefStringBase {
  public:
   typedef typename traits::char_type char_type;
   typedef typename traits::struct_type struct_type;
@@ -381,9 +374,8 @@ class CefStringBase final {
   }
   CefStringBase(const char* src, size_t length = 0)
       : string_(NULL), owner_(false) {
-    if (src) {
+    if (src)
       FromString(src, length);
-    }
   }
 
   ///
@@ -396,9 +388,8 @@ class CefStringBase final {
   }
   CefStringBase(const wchar_t* src, size_t length = 0)
       : string_(NULL), owner_(false) {
-    if (src) {
+    if (src)
       FromWString(src, length);
-    }
   }
 
   ///
@@ -411,10 +402,18 @@ class CefStringBase final {
   }
   CefStringBase(const std::u16string::value_type* src, size_t length = 0)
       : string_(NULL), owner_(false) {
-    if (src) {
+    if (src)
       FromString16(src, length);
+  }
+#if defined(WCHAR_T_IS_UTF32)
+  CefStringBase(const char16* src, size_t length = 0)
+      : string_(NULL), owner_(false) {
+    if (src) {
+      FromString16(reinterpret_cast<const std::u16string::value_type*>(src),
+                   length);
     }
   }
+#endif  // WCHAR_T_IS_UTF32
 
   ///
   /// Create a new string from an existing character array. If |copy| is true
@@ -424,9 +423,8 @@ class CefStringBase final {
   ///
   CefStringBase(const char_type* src, size_t src_len, bool copy)
       : string_(NULL), owner_(false) {
-    if (src && src_len > 0) {
+    if (src && src_len > 0)
       FromString(src, src_len, copy);
-    }
   }
 
   ///
@@ -435,14 +433,13 @@ class CefStringBase final {
   /// this class and will not be freed by this class.
   ///
   CefStringBase(const struct_type* src) : string_(NULL), owner_(false) {
-    if (!src) {
+    if (!src)
       return;
-    }
     // Reference the existing structure without taking ownership.
     Attach(const_cast<struct_type*>(src), false);
   }
 
-  ~CefStringBase() { ClearAndFree(); }
+  virtual ~CefStringBase() { ClearAndFree(); }
 
   /// The following methods are named for compatibility with the standard
   /// library string template types.
@@ -471,15 +468,12 @@ class CefStringBase final {
   /// Compare this string to the specified string.
   ///
   int compare(const CefStringBase& str) const {
-    if (empty() && str.empty()) {
+    if (empty() && str.empty())
       return 0;
-    }
-    if (empty()) {
+    if (empty())
       return -1;
-    }
-    if (str.empty()) {
+    if (str.empty())
       return 1;
-    }
     return traits::compare(string_, str.GetStruct());
   }
 
@@ -487,9 +481,8 @@ class CefStringBase final {
   /// Clear the string data.
   ///
   void clear() {
-    if (string_) {
+    if (string_)
       traits::clear(string_);
-    }
   }
 
   ///
@@ -531,9 +524,8 @@ class CefStringBase final {
   /// will be freed if this class owns the structure.
   ///
   void ClearAndFree() {
-    if (!string_) {
+    if (!string_)
       return;
-    }
     if (owner_) {
       clear();
       delete string_;
@@ -563,9 +555,8 @@ class CefStringBase final {
     // Free the previous structure and data, if any.
     ClearAndFree();
 
-    if (!str) {
+    if (!str)
       return;
-    }
 
     AllocIfNeeded();
     owner_ = true;
@@ -592,9 +583,8 @@ class CefStringBase final {
   /// this string class currently contains no data.
   ///
   userfree_struct_type DetachToUserFree() {
-    if (empty()) {
+    if (empty())
       return NULL;
-    }
 
     userfree_struct_type str = traits::userfree_alloc();
     if (owner_) {
@@ -647,9 +637,8 @@ class CefStringBase final {
   /// necessary based on the underlying string type.
   ///
   std::string ToString() const {
-    if (empty()) {
+    if (empty())
       return std::string();
-    }
     return traits::to_string(string_);
   }
 
@@ -689,9 +678,8 @@ class CefStringBase final {
   /// necessary based on the underlying string type.
   ///
   std::wstring ToWString() const {
-    if (empty()) {
+    if (empty())
       return std::wstring();
-    }
     return traits::to_wstring(string_);
   }
 
@@ -731,9 +719,8 @@ class CefStringBase final {
   /// necessary based on the underlying string type.
   ///
   std::u16string ToString16() const {
-    if (empty()) {
+    if (empty())
       return std::u16string();
-    }
     return traits::to_string16(string_);
   }
 
@@ -820,6 +807,12 @@ class CefStringBase final {
     FromString16(str);
     return *this;
   }
+#if defined(WCHAR_T_IS_UTF32)
+  CefStringBase& operator=(const char16* str) {
+    FromString16(reinterpret_cast<const std::u16string::value_type*>(str));
+    return *this;
+  }
+#endif  // WCHAR_T_IS_UTF32
 #if defined(USING_CHROMIUM_INCLUDES)
   // The base::FilePath constructor is marked as explicit so provide the
   // conversion here for convenience.

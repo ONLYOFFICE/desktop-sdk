@@ -4,9 +4,6 @@
 
 #include "tests/ceftests/test_handler.h"
 
-#include <memory>
-#include <sstream>
-
 #include "include/base/cef_callback.h"
 #include "include/base/cef_logging.h"
 #include "include/cef_command_line.h"
@@ -16,39 +13,19 @@
 #include "include/wrapper/cef_closure_task.h"
 #include "include/wrapper/cef_stream_resource_handler.h"
 #include "tests/ceftests/test_request.h"
-#include "tests/ceftests/test_util.h"
-
-// Set to 1 to enable verbose debugging info logging.
-#define VERBOSE_DEBUGGING 0
+#include "tests/shared/common/client_switches.h"
 
 namespace {
-
-cef_runtime_style_t GetExpectedRuntimeStyle(TestHandler* handler,
-                                            bool is_devtools_popup,
-                                            bool is_window) {
-  const bool alloy_requested = is_window ? handler->use_alloy_style_window()
-                                         : handler->use_alloy_style_browser();
-
-  // Alloy style is not supported with Chrome DevTools popups.
-  if (alloy_requested && !is_devtools_popup) {
-    return CEF_RUNTIME_STYLE_ALLOY;
-  }
-  return CEF_RUNTIME_STYLE_CHROME;
-}
 
 // Delegate implementation for the CefWindow that will host the Views-based
 // browser.
 class TestWindowDelegate : public CefWindowDelegate {
  public:
   // Create a new top-level Window hosting |browser_view|.
-  static void CreateBrowserWindow(TestHandler* handler,
-                                  CefRefPtr<CefBrowserView> browser_view,
-                                  bool is_devtools_popup) {
-    auto window = CefWindow::CreateTopLevelWindow(
-        new TestWindowDelegate(handler, browser_view, is_devtools_popup));
-    EXPECT_EQ(
-        GetExpectedRuntimeStyle(handler, is_devtools_popup, /*is_window=*/true),
-        window->GetRuntimeStyle());
+  static void CreateBrowserWindow(CefRefPtr<CefBrowserView> browser_view,
+                                  const std::string& title) {
+    CefWindow::CreateTopLevelWindow(
+        new TestWindowDelegate(browser_view, "CefUnitTestViews " + title));
   }
 
   // CefWindowDelegate methods:
@@ -56,51 +33,30 @@ class TestWindowDelegate : public CefWindowDelegate {
   void OnWindowCreated(CefRefPtr<CefWindow> window) override {
     // Add the browser view and show the window.
     window->CenterWindow(CefSize(800, 600));
-    window->SetTitle(ComputeViewsWindowTitle(window, browser_view_));
+    window->SetTitle(title_);
     window->AddChildView(browser_view_);
     window->Show();
-
-    // With Chrome style, the Browser is not created until after the
-    // BrowserView is assigned to the Window.
-    browser_id_ = browser_view_->GetBrowser()->GetIdentifier();
-    handler_->OnWindowCreated(browser_id_);
   }
 
   void OnWindowDestroyed(CefRefPtr<CefWindow> window) override {
-    auto browser = browser_view_->GetBrowser();
     browser_view_ = nullptr;
-    handler_->OnWindowDestroyed(browser_id_);
   }
 
   bool CanClose(CefRefPtr<CefWindow> window) override {
     // Allow the window to close if the browser says it's OK.
     CefRefPtr<CefBrowser> browser = browser_view_->GetBrowser();
-    if (browser) {
+    if (browser)
       return browser->GetHost()->TryCloseBrowser();
-    }
     return true;
   }
 
-  cef_runtime_style_t GetWindowRuntimeStyle() override {
-    // Alloy style is not supported with Chrome DevTools popups.
-    if (handler_->use_alloy_style_window() && !is_devtools_popup_) {
-      return CEF_RUNTIME_STYLE_ALLOY;
-    }
-    return CEF_RUNTIME_STYLE_DEFAULT;
-  }
-
  private:
-  TestWindowDelegate(TestHandler* handler,
-                     CefRefPtr<CefBrowserView> browser_view,
-                     bool is_devtools_popup)
-      : handler_(handler),
-        browser_view_(browser_view),
-        is_devtools_popup_(is_devtools_popup) {}
+  TestWindowDelegate(CefRefPtr<CefBrowserView> browser_view,
+                     const CefString& title)
+      : browser_view_(browser_view), title_(title) {}
 
-  TestHandler* const handler_;
   CefRefPtr<CefBrowserView> browser_view_;
-  const bool is_devtools_popup_;
-  int browser_id_ = 0;
+  CefString title_;
 
   IMPLEMENT_REFCOUNTING(TestWindowDelegate);
   DISALLOW_COPY_AND_ASSIGN(TestWindowDelegate);
@@ -109,71 +65,20 @@ class TestWindowDelegate : public CefWindowDelegate {
 // Delegate implementation for the CefBrowserView.
 class TestBrowserViewDelegate : public CefBrowserViewDelegate {
  public:
-  TestBrowserViewDelegate(TestHandler* handler, bool is_devtools_popup)
-      : handler_(handler), is_devtools_popup_(is_devtools_popup) {}
+  TestBrowserViewDelegate() {}
 
   // CefBrowserViewDelegate methods:
-
-  void OnBrowserDestroyed(CefRefPtr<CefBrowserView> browser_view,
-                          CefRefPtr<CefBrowser> browser) override {
-#if VERBOSE_DEBUGGING
-    LOG(INFO) << handler_->debug_string_prefix() << browser->GetIdentifier()
-              << ": OnBrowserDestroyed";
-#endif
-    // Always close the containing Window when the browser is destroyed.
-    if (auto window = browser_view->GetWindow()) {
-#if VERBOSE_DEBUGGING
-      LOG(INFO) << handler_->debug_string_prefix() << browser->GetIdentifier()
-                << ": OnBrowserDestroyed Close";
-#endif
-      window->Close();
-    }
-  }
-
-  CefRefPtr<CefBrowserViewDelegate> GetDelegateForPopupBrowserView(
-      CefRefPtr<CefBrowserView> browser_view,
-      const CefBrowserSettings& settings,
-      CefRefPtr<CefClient> client,
-      bool is_devtools) override {
-    auto* handler = static_cast<TestHandler*>(client.get());
-    if (handler == handler_) {
-      // Use the same Delegate when using the same TestHandler instance if
-      // allowed (e.g. runtime style is also the same).
-      if (GetExpectedRuntimeStyle(handler_, is_devtools, /*is_window=*/false) ==
-          browser_view->GetRuntimeStyle()) {
-        return this;
-      }
-    }
-
-    // Otherwise return a new Delegate instance.
-    return new TestBrowserViewDelegate(handler, is_devtools);
-  }
 
   bool OnPopupBrowserViewCreated(CefRefPtr<CefBrowserView> browser_view,
                                  CefRefPtr<CefBrowserView> popup_browser_view,
                                  bool is_devtools) override {
-    // The popup may use a different TestHandler instance.
-    auto* handler = static_cast<TestHandler*>(
-        popup_browser_view->GetBrowser()->GetHost()->GetClient().get());
-
     // Create our own Window for popups. It will show itself after creation.
-    TestWindowDelegate::CreateBrowserWindow(handler, popup_browser_view,
-                                            is_devtools);
+    TestWindowDelegate::CreateBrowserWindow(popup_browser_view,
+                                            is_devtools ? "DevTools" : "Popup");
     return true;
   }
 
-  cef_runtime_style_t GetBrowserRuntimeStyle() override {
-    // Alloy style is not supported with Chrome DevTools popups.
-    if (handler_->use_alloy_style_browser() && !is_devtools_popup_) {
-      return CEF_RUNTIME_STYLE_ALLOY;
-    }
-    return CEF_RUNTIME_STYLE_DEFAULT;
-  }
-
  private:
-  TestHandler* const handler_;
-  const bool is_devtools_popup_;
-
   IMPLEMENT_REFCOUNTING(TestBrowserViewDelegate);
   DISALLOW_COPY_AND_ASSIGN(TestBrowserViewDelegate);
 };
@@ -182,7 +87,8 @@ class TestBrowserViewDelegate : public CefBrowserViewDelegate {
 
 // TestHandler::CompletionState
 
-TestHandler::CompletionState::CompletionState(int total) : total_(total) {
+TestHandler::CompletionState::CompletionState(int total)
+    : total_(total), count_(0) {
   event_ = CefWaitableEvent::CreateWaitableEvent(true, false);
 }
 
@@ -222,16 +128,14 @@ void TestHandler::Collection::ExecuteTests() {
   TestHandlerList::const_iterator it;
 
   it = handler_list_.begin();
-  for (; it != handler_list_.end(); ++it) {
+  for (; it != handler_list_.end(); ++it)
     (*it)->SetupTest();
-  }
 
   completion_state_->WaitForTests();
 
   it = handler_list_.begin();
-  for (; it != handler_list_.end(); ++it) {
+  for (; it != handler_list_.end(); ++it)
     (*it)->RunTest();
-  }
 
   completion_state_->WaitForTests();
 }
@@ -264,16 +168,14 @@ void TestHandler::UIThreadHelper::TaskHelper(base::OnceClosure task) {
 
 // TestHandler
 
-// static
-std::atomic<size_t> TestHandler::test_handler_count_{0U};
+int TestHandler::browser_count_ = 0;
 
 TestHandler::TestHandler(CompletionState* completion_state)
-    : debug_string_prefix_(MakeDebugStringPrefix()),
-      use_views_(UseViewsGlobal()),
-      use_alloy_style_browser_(UseAlloyStyleBrowserGlobal()),
-      use_alloy_style_window_(UseAlloyStyleWindowGlobal()) {
-  test_handler_count_++;
-
+    : first_browser_id_(0),
+      signal_completion_when_all_browsers_close_(true),
+      destroy_event_(nullptr),
+      destroy_test_expected_(true),
+      destroy_test_called_(false) {
   if (completion_state) {
     completion_state_ = completion_state;
     completion_state_owned_ = false;
@@ -285,27 +187,23 @@ TestHandler::TestHandler(CompletionState* completion_state)
 
 TestHandler::~TestHandler() {
   DCHECK(!ui_thread_helper_.get());
-  if (destroy_test_expected_) {
+  if (destroy_test_expected_)
     EXPECT_TRUE(destroy_test_called_);
-  } else {
+  else
     EXPECT_FALSE(destroy_test_called_);
-  }
   EXPECT_TRUE(browser_map_.empty());
-  EXPECT_TRUE(browser_status_map_.empty());
 
-  if (completion_state_owned_) {
+  if (completion_state_owned_)
     delete completion_state_;
-  }
 
-  if (destroy_event_) {
+  if (destroy_event_)
     destroy_event_->Signal();
-  }
-
-  test_handler_count_--;
 }
 
 void TestHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
   EXPECT_UI_THREAD();
+
+  browser_count_++;
 
   const int browser_id = browser->GetIdentifier();
   EXPECT_EQ(browser_map_.find(browser_id), browser_map_.end());
@@ -314,15 +212,10 @@ void TestHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
     first_browser_ = browser;
   }
   browser_map_.insert(std::make_pair(browser_id, browser));
-
-  const bool views_hosted = !!CefBrowserView::GetForBrowser(browser);
-  OnCreated(browser_id, NT_BROWSER, views_hosted);
 }
 
 void TestHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
   EXPECT_UI_THREAD();
-
-  EXPECT_TRUE(browser->GetHost()->IsReadyToBeClosed());
 
   // Free the browser pointer so that the browser can be destroyed.
   const int browser_id = browser->GetIdentifier();
@@ -335,103 +228,12 @@ void TestHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
     first_browser_ = nullptr;
   }
 
-  OnClosed(browser_id, NT_BROWSER);
-}
-
-void TestHandler::OnWindowCreated(int browser_id) {
-  CHECK(use_views_);
-  EXPECT_UI_THREAD();
-  OnCreated(browser_id, NT_WINDOW, /*views_hosted=*/true);
-}
-
-void TestHandler::OnWindowDestroyed(int browser_id) {
-  CHECK(use_views_);
-  EXPECT_UI_THREAD();
-  OnClosed(browser_id, NT_WINDOW);
-}
-
-void TestHandler::OnCreated(int browser_id,
-                            NotifyType type,
-                            bool views_hosted) {
-  CHECK(use_views_ || !views_hosted);
-
-  const bool has_value =
-      browser_status_map_.find(browser_id) != browser_status_map_.end();
-
-  auto& browser_status = browser_status_map_[browser_id];
-  if (has_value) {
-    CHECK_EQ(browser_status.views_hosted, views_hosted);
-  } else {
-    browser_status.views_hosted = views_hosted;
+  if (browser_map_.empty() && signal_completion_when_all_browsers_close_) {
+    // Signal that the test is now complete.
+    TestComplete();
   }
 
-  EXPECT_FALSE(browser_status.got_created[type])
-      << "Duplicate call to OnCreated(" << browser_id << ", "
-      << (type == NT_BROWSER ? "BROWSER" : "WINDOW") << ")";
-  browser_status.got_created[type].yes();
-
-#if VERBOSE_DEBUGGING
-  bool creation_complete = false;
-
-  // When using Views, wait for both Browser and Window notifications.
-  if (browser_status.views_hosted) {
-    creation_complete = browser_status.got_created[NT_BROWSER] &&
-                        browser_status.got_created[NT_WINDOW];
-  } else {
-    creation_complete = browser_status.got_created[NT_BROWSER];
-  }
-
-  LOG(INFO) << debug_string_prefix_ << browser_id << ": OnCreated type="
-            << (type == NT_BROWSER ? "BROWSER" : "WINDOW")
-            << " creation_complete=" << creation_complete;
-#endif  // VERBOSE_DEBUGGING
-}
-
-void TestHandler::OnClosed(int browser_id, NotifyType type) {
-  bool close_complete = false;
-
-  auto& browser_status = browser_status_map_[browser_id];
-  EXPECT_FALSE(browser_status.got_closed[type])
-      << "Duplicate call to OnClosed(" << browser_id << ", "
-      << (type == NT_BROWSER ? "BROWSER" : "WINDOW") << ")";
-  browser_status.got_closed[type].yes();
-
-  // When using Views, wait for both Browser and Window notifications.
-  if (browser_status.views_hosted) {
-    close_complete = browser_status.got_closed[NT_BROWSER] &&
-                     browser_status.got_closed[NT_WINDOW];
-  } else {
-    close_complete = browser_status.got_closed[NT_BROWSER];
-  }
-
-  if (close_complete) {
-    browser_status_map_.erase(browser_id);
-  }
-
-  // Test may be complete if no Browsers/Windows are remaining.
-  const bool all_browsers_closed = AllBrowsersClosed();
-
-#if VERBOSE_DEBUGGING
-  LOG(INFO) << debug_string_prefix_ << browser_id
-            << ": OnClosed type=" << (type == NT_BROWSER ? "BROWSER" : "WINDOW")
-            << " close_complete=" << close_complete
-            << " all_browsers_closed=" << all_browsers_closed;
-#endif
-
-  if (all_browsers_closed) {
-    // May result in |this| being deleted.
-    MaybeTestComplete();
-  }
-}
-
-std::string TestHandler::MakeDebugStringPrefix() const {
-#if VERBOSE_DEBUGGING
-  std::stringstream ss;
-  ss << "TestHandler [0x" << std::hex << this << "]: ";
-  return ss.str();
-#else
-  return std::string();
-#endif
+  browser_count_--;
 }
 
 namespace {
@@ -472,11 +274,8 @@ CefRefPtr<CefResourceHandler> TestHandler::GetResourceHandler(
 }
 
 void TestHandler::OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser,
-                                            TerminationStatus status,
-                                            int error_code,
-                                            const CefString& error_string) {
-  LOG(WARNING) << "OnRenderProcessTerminated: status = " << status
-               << ", error = " << error_string.ToString() << ".";
+                                            TerminationStatus status) {
+  LOG(WARNING) << "OnRenderProcessTerminated: status = " << status << ".";
 }
 
 CefRefPtr<CefBrowser> TestHandler::GetBrowser() const {
@@ -497,12 +296,8 @@ void TestHandler::ExecuteTest() {
   EXPECT_EQ(completion_state_->total(), 1);
 
   // Reset any state from the previous run.
-  if (test_timeout_called_) {
-    test_timeout_called_ = false;
-  }
-  if (destroy_test_called_) {
+  if (destroy_test_called_)
     destroy_test_called_ = false;
-  }
 
   // Run the test.
   RunTest();
@@ -523,9 +318,8 @@ void TestHandler::DestroyTest() {
   }
 
   EXPECT_TRUE(destroy_test_expected_);
-  if (destroy_test_called_) {
+  if (destroy_test_called_)
     return;
-  }
   destroy_test_called_ = true;
 
   if (!browser_map_.empty()) {
@@ -535,42 +329,29 @@ void TestHandler::DestroyTest() {
 
     // Tell all browsers to close.
     BrowserMap::const_iterator it = browser_map.begin();
-    for (; it != browser_map.end(); ++it) {
+    for (; it != browser_map.end(); ++it)
       CloseBrowser(it->second, false);
-    }
   }
+
+  if (ui_thread_helper_.get())
+    ui_thread_helper_.reset(nullptr);
 }
 
 void TestHandler::OnTestTimeout(int timeout_ms, bool treat_as_error) {
   EXPECT_UI_THREAD();
-
-  EXPECT_FALSE(test_timeout_called_);
-  test_timeout_called_ = true;
-
   if (treat_as_error) {
     EXPECT_TRUE(false) << "Test timed out after " << timeout_ms << "ms";
   }
-
-  EXPECT_FALSE(AllBrowsersClosed() && AllowTestCompletionWhenAllBrowsersClose())
-      << "Test timed out unexpectedly; should be complete";
-
-  // Keep |this| alive until after the method completes.
-  CefRefPtr<TestHandler> self(this);
-
-  // Close any remaining browsers.
   DestroyTest();
-
-  // Reset signal completion count.
-  if (signal_completion_count_ > 0) {
-    signal_completion_count_ = 0;
-    MaybeTestComplete();
-  }
 }
 
 void TestHandler::CreateBrowser(const CefString& url,
                                 CefRefPtr<CefRequestContext> request_context,
                                 CefRefPtr<CefDictionaryValue> extra_info) {
-  if (!CefCurrentlyOn(TID_UI)) {
+  const bool use_views = CefCommandLine::GetGlobalCommandLine()->HasSwitch(
+      client::switches::kUseViews);
+  if (use_views && !CefCurrentlyOn(TID_UI)) {
+    // Views classes must be accessed on the UI thread.
     CefPostTask(TID_UI, base::BindOnce(&TestHandler::CreateBrowser, this, url,
                                        request_context, extra_info));
     return;
@@ -578,28 +359,21 @@ void TestHandler::CreateBrowser(const CefString& url,
 
   CefWindowInfo windowInfo;
   CefBrowserSettings settings;
+  PopulateBrowserSettings(&settings);
 
-  if (use_views_) {
+  if (use_views) {
     // Create the BrowserView.
     CefRefPtr<CefBrowserView> browser_view = CefBrowserView::CreateBrowserView(
         this, url, settings, extra_info, request_context,
-        new TestBrowserViewDelegate(this, /*is_devtools_popup=*/false));
-    EXPECT_EQ(GetExpectedRuntimeStyle(this, /*is_devtools_popup=*/false,
-                                      /*is_window=*/false),
-              browser_view->GetRuntimeStyle());
+        new TestBrowserViewDelegate());
 
     // Create the Window. It will show itself after creation.
-    TestWindowDelegate::CreateBrowserWindow(this, browser_view,
-                                            /*is_devtools_popup=*/false);
+    TestWindowDelegate::CreateBrowserWindow(browser_view, std::string());
   } else {
 #if defined(OS_WIN)
-    windowInfo.SetAsPopup(nullptr,
-                          ComputeNativeWindowTitle(use_alloy_style_browser_));
+    windowInfo.SetAsPopup(nullptr, "CefUnitTest");
     windowInfo.style |= WS_VISIBLE;
 #endif
-    if (use_alloy_style_browser_) {
-      windowInfo.runtime_style = CEF_RUNTIME_STYLE_ALLOY;
-    }
     CefBrowserHost::CreateBrowser(windowInfo, this, url, settings, extra_info,
                                   request_context);
   }
@@ -608,10 +382,6 @@ void TestHandler::CreateBrowser(const CefString& url,
 // static
 void TestHandler::CloseBrowser(CefRefPtr<CefBrowser> browser,
                                bool force_close) {
-#if VERBOSE_DEBUGGING
-  LOG(INFO) << "TestHandler: " << browser->GetIdentifier()
-            << ": CloseBrowser force_close=" << force_close;
-#endif
   browser->GetHost()->CloseBrowser(force_close);
 }
 
@@ -634,9 +404,8 @@ void TestHandler::AddResourceEx(const std::string& url,
   // Ignore the query component, if any.
   std::string urlStr = url;
   size_t idx = urlStr.find('?');
-  if (idx > 0) {
+  if (idx > 0)
     urlStr = urlStr.substr(0, idx);
-  }
 
   resource_map_.insert(std::make_pair(urlStr, content));
 }
@@ -662,8 +431,8 @@ void TestHandler::SetTestTimeout(int timeout_ms, bool treat_as_error) {
     return;
   }
 
-  const auto timeout = GetConfiguredTestTimeout(timeout_ms);
-  if (treat_as_error && !timeout) {
+  if (treat_as_error && CefCommandLine::GetGlobalCommandLine()->HasSwitch(
+                            "disable-test-timeout")) {
     return;
   }
 
@@ -671,106 +440,17 @@ void TestHandler::SetTestTimeout(int timeout_ms, bool treat_as_error) {
   // can be destroyed before the timeout expires.
   GetUIThreadHelper()->PostDelayedTask(
       base::BindOnce(&TestHandler::OnTestTimeout, base::Unretained(this),
-                     *timeout, treat_as_error),
-      *timeout);
-}
-
-void TestHandler::SetUseViews(bool use_views) {
-  if (!CefCurrentlyOn(TID_UI)) {
-    CefPostTask(TID_UI,
-                base::BindOnce(&TestHandler::SetUseViews, this, use_views));
-    return;
-  }
-
-  use_views_ = use_views;
-}
-
-void TestHandler::SetUseAlloyStyle(bool use_alloy_style_browser,
-                                   bool use_alloy_style_window) {
-  if (!CefCurrentlyOn(TID_UI)) {
-    CefPostTask(TID_UI, base::BindOnce(&TestHandler::SetUseAlloyStyle, this,
-                                       use_alloy_style_browser,
-                                       use_alloy_style_window));
-    return;
-  }
-
-  use_alloy_style_browser_ = use_alloy_style_browser;
-  use_alloy_style_window_ = use_alloy_style_window;
-}
-
-void TestHandler::SetSignalTestCompletionCount(size_t count) {
-#if VERBOSE_DEBUGGING
-  LOG(INFO) << debug_string_prefix_
-            << "SetSignalTestCompletionCount count=" << count;
-#endif
-  signal_completion_count_ = count;
-}
-
-void TestHandler::SignalTestCompletion() {
-  if (!CefCurrentlyOn(TID_UI)) {
-    CefPostTask(TID_UI,
-                base::BindOnce(&TestHandler::SignalTestCompletion, this));
-    return;
-  }
-
-  if (test_timeout_called_) {
-    // Ignore any signals that arrive after test timeout.
-    return;
-  }
-
-  CHECK_GT(signal_completion_count_, 0U);
-  signal_completion_count_--;
-
-#if VERBOSE_DEBUGGING
-  LOG(INFO) << debug_string_prefix_
-            << "SignalTestComplete remaining=" << signal_completion_count_;
-#endif
-
-  if (signal_completion_count_ == 0) {
-    // May result in |this| being deleted.
-    MaybeTestComplete();
-  }
-}
-
-bool TestHandler::AllowTestCompletionWhenAllBrowsersClose() const {
-  EXPECT_UI_THREAD();
-  return signal_completion_count_ == 0U;
-}
-
-bool TestHandler::AllBrowsersClosed() const {
-  EXPECT_UI_THREAD();
-  return browser_status_map_.empty();
-}
-
-void TestHandler::MaybeTestComplete() {
-  EXPECT_UI_THREAD();
-
-  const bool all_browsers_closed = AllBrowsersClosed();
-  const bool allow_test_completion = AllowTestCompletionWhenAllBrowsersClose();
-
-#if VERBOSE_DEBUGGING
-  LOG(INFO) << debug_string_prefix_
-            << "MaybeTestComplete all_browsers_closed=" << all_browsers_closed
-            << " allow_test_completion=" << allow_test_completion;
-#endif
-
-  if (all_browsers_closed && allow_test_completion) {
-    TestComplete();
-  }
+                     timeout_ms, treat_as_error),
+      timeout_ms);
 }
 
 void TestHandler::TestComplete() {
-  EXPECT_UI_THREAD();
-  EXPECT_TRUE(AllBrowsersClosed());
-  EXPECT_TRUE(AllowTestCompletionWhenAllBrowsersClose());
+  if (!CefCurrentlyOn(TID_UI)) {
+    CefPostTask(TID_UI, base::BindOnce(&TestHandler::TestComplete, this));
+    return;
+  }
 
-#if VERBOSE_DEBUGGING
-  LOG(INFO) << debug_string_prefix_ << "TestComplete";
-#endif
-
-  // Cancel any pending tasks posted via UIThreadHelper.
-  ui_thread_helper_.reset();
-
+  EXPECT_TRUE(browser_map_.empty());
   completion_state_->TestComplete();
 }
 
@@ -778,9 +458,8 @@ TestHandler::UIThreadHelper* TestHandler::GetUIThreadHelper() {
   EXPECT_UI_THREAD();
   CHECK(!destroy_test_called_);
 
-  if (!ui_thread_helper_.get()) {
-    ui_thread_helper_ = std::make_unique<UIThreadHelper>();
-  }
+  if (!ui_thread_helper_.get())
+    ui_thread_helper_.reset(new UIThreadHelper());
   return ui_thread_helper_.get();
 }
 

@@ -21,9 +21,7 @@ namespace client {
 // Implements a menu bar which is composed of CefMenuButtons positioned in a
 // row with automatic switching between them via mouse/keyboard. All methods
 // must be called on the browser process UI thread.
-class ViewsMenuBar : public CefMenuButtonDelegate,
-                     public CefMenuModelDelegate,
-                     public CefPanelDelegate {
+class ViewsMenuBar : public CefMenuButtonDelegate, public CefMenuModelDelegate {
  public:
   // Delegate methods will be called on the browser process UI thread.
   class Delegate {
@@ -34,14 +32,14 @@ class ViewsMenuBar : public CefMenuButtonDelegate,
                                        cef_event_flags_t event_flags) = 0;
 
    protected:
-    virtual ~Delegate() = default;
+    virtual ~Delegate() {}
   };
 
   // |delegate| must outlive this object.
   // |menu_id_start| is the ID for the first CefMenuButton in the bar. An ID
   // range starting with |menu_id_start| and extending for a reasonable distance
   // should be reserved in the client for MenuBar usage.
-  ViewsMenuBar(Delegate* delegate, int menu_id_start, bool use_bottom_controls);
+  ViewsMenuBar(Delegate* delegate, int menu_id_start);
 
   // Returns true if |menu_id| exists in the menu bar.
   bool HasMenuId(int menu_id) const;
@@ -92,9 +90,6 @@ class ViewsMenuBar : public CefMenuButtonDelegate,
                              bool is_rtl) override;
   void MenuClosed(CefRefPtr<CefMenuModel> menu_model) override;
 
-  // CefViewDelegate methods:
-  void OnThemeChanged(CefRefPtr<CefView> view) override;
-
  private:
   // Creates the menu panel if it doesn't already exist.
   void EnsureMenuPanel();
@@ -111,14 +106,13 @@ class ViewsMenuBar : public CefMenuButtonDelegate,
 
   Delegate* delegate_;  // Not owned by this object.
   const int id_start_;
-  const bool use_bottom_controls_;
   int id_next_;
   CefRefPtr<CefPanel> panel_;
   std::vector<CefRefPtr<CefMenuModel>> models_;
-  bool last_nav_with_keyboard_ = false;
+  bool last_nav_with_keyboard_;
 
   // Map of mnemonic to MenuButton ID.
-  typedef std::map<char16_t, int> MnemonicMap;
+  typedef std::map<char16, int> MnemonicMap;
   MnemonicMap mnemonics_;
 
   IMPLEMENT_REFCOUNTING(ViewsMenuBar);

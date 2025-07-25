@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,16 +33,12 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=bf1dd4b8e83fc885c5d035597b248fb1866ada9a$
+// $hash=1d0a15624fec8ca8bd1a5cdf7195b9b553dde44f$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_COMMAND_LINE_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_COMMAND_LINE_CAPI_H_
 #pragma once
-
-#if defined(BUILDING_CEF_SHARED)
-#error This file cannot be included DLL-side
-#endif
 
 #include "include/capi/cef_base_capi.h"
 
@@ -60,8 +56,6 @@ extern "C" {
 /// arguments. Switch names should be lowercase ASCII and will be converted to
 /// such if necessary. Switch values will retain the original case and UTF8
 /// encoding. This structure can be used before cef_initialize() is called.
-///
-/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_command_line_t {
   ///
@@ -165,14 +159,14 @@ typedef struct _cef_command_line_t {
                                    cef_string_map_t switches);
 
   ///
-  /// Add a switch to the end of the command line.
+  /// Add a switch to the end of the command line. If the switch has no value
+  /// pass an NULL value string.
   ///
   void(CEF_CALLBACK* append_switch)(struct _cef_command_line_t* self,
                                     const cef_string_t* name);
 
   ///
-  /// Add a switch with the specified value to the end of the command line. If
-  /// the switch has no value pass an NULL value string.
+  /// Add a switch with the specified value to the end of the command line.
   ///
   void(CEF_CALLBACK* append_switch_with_value)(struct _cef_command_line_t* self,
                                                const cef_string_t* name,

@@ -39,7 +39,6 @@
 #pragma once
 
 #include <map>
-
 #include "include/cef_base.h"
 #include "include/cef_callback.h"
 #include "include/cef_request.h"
@@ -75,7 +74,7 @@ class CefServer : public CefBaseRefCounted {
   ///
   /*--cef()--*/
   static void CreateServer(const CefString& address,
-                           uint16_t port,
+                           uint16 port,
                            int backlog,
                            CefRefPtr<CefServerHandler> handler);
 
@@ -171,7 +170,7 @@ class CefServer : public CefBaseRefCounted {
   virtual void SendHttpResponse(int connection_id,
                                 int response_code,
                                 const CefString& content_type,
-                                int64_t content_length,
+                                int64 content_length,
                                 const HeaderMap& extra_headers) = 0;
 
   ///

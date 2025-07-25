@@ -12,7 +12,8 @@
 #include "include/cef_parser.h"
 #include "tests/cefclient/browser/test_runner.h"
 
-namespace client::media_router_test {
+namespace client {
+namespace media_router_test {
 
 namespace {
 
@@ -92,7 +93,10 @@ class MediaObserver : public CefMediaObserver {
   MediaObserver(CefRefPtr<CefMediaRouter> media_router,
                 CefRefPtr<CallbackType> subscription_callback)
       : media_router_(media_router),
-        subscription_callback_(subscription_callback) {}
+        subscription_callback_(subscription_callback),
+        next_sink_query_id_(0),
+        pending_sink_query_id_(-1),
+        pending_sink_callbacks_(0U) {}
 
   ~MediaObserver() override { ClearSinkInfoMap(); }
 
@@ -250,17 +254,15 @@ class MediaObserver : public CefMediaObserver {
  private:
   CefRefPtr<CefMediaSource> GetSource(const std::string& source_urn) {
     CefRefPtr<CefMediaSource> source = media_router_->GetSource(source_urn);
-    if (!source) {
+    if (!source)
       return nullptr;
-    }
     return source;
   }
 
   CefRefPtr<CefMediaSink> GetSink(const std::string& sink_id) {
     SinkInfoMap::const_iterator it = sink_info_map_.find(sink_id);
-    if (it != sink_info_map_.end()) {
+    if (it != sink_info_map_.end())
       return it->second->sink;
-    }
     return nullptr;
   }
 
@@ -276,9 +278,8 @@ class MediaObserver : public CefMediaObserver {
                         const std::string& sink_id,
                         const CefMediaSinkDeviceInfo& device_info) {
     // Discard callbacks that arrive after a new call to OnSinks().
-    if (sink_query_id != pending_sink_query_id_) {
+    if (sink_query_id != pending_sink_query_id_)
       return;
-    }
 
     SinkInfoMap::const_iterator it = sink_info_map_.find(sink_id);
     if (it != sink_info_map_.end()) {
@@ -294,9 +295,8 @@ class MediaObserver : public CefMediaObserver {
 
   CefRefPtr<CefMediaRoute> GetRoute(const std::string& route_id) {
     RouteMap::const_iterator it = route_map_.find(route_id);
-    if (it != route_map_.end()) {
+    if (it != route_map_.end())
       return it->second;
-    }
     return nullptr;
   }
 
@@ -320,15 +320,17 @@ class MediaObserver : public CefMediaObserver {
       CefRefPtr<CefDictionaryValue> sink_dict = CefDictionaryValue::Create();
       sink_dict->SetString("id", it->first);
       sink_dict->SetString("name", info->sink->GetName());
+      sink_dict->SetString("desc", info->sink->GetDescription());
       sink_dict->SetInt("icon", info->sink->GetIconType());
       sink_dict->SetString("ip_address",
                            CefString(&info->device_info.ip_address));
       sink_dict->SetInt("port", info->device_info.port);
       sink_dict->SetString("model_name",
                            CefString(&info->device_info.model_name));
-      sink_dict->SetString("type", info->sink->IsCastSink()   ? "cast"
-                                   : info->sink->IsDialSink() ? "dial"
-                                                              : "unknown");
+      sink_dict->SetString("type",
+                           info->sink->IsCastSink()
+                               ? "cast"
+                               : info->sink->IsDialSink() ? "dial" : "unknown");
       sinks_list->SetDictionary(idx, sink_dict);
     }
 
@@ -347,12 +349,12 @@ class MediaObserver : public CefMediaObserver {
 
   // Used to uniquely identify a call to OnSinks(), for the purpose of
   // associating OnMediaSinkDeviceInfo() callbacks.
-  int next_sink_query_id_ = 0;
+  int next_sink_query_id_;
 
   // State from the most recent call to OnSinks().
   SinkInfoMap sink_info_map_;
-  int pending_sink_query_id_ = -1;
-  size_t pending_sink_callbacks_ = 0U;
+  int pending_sink_query_id_;
+  size_t pending_sink_callbacks_;
 
   // State from the most recent call to OnRoutes().
   typedef std::map<std::string, CefRefPtr<CefMediaRoute>> RouteMap;
@@ -369,7 +371,7 @@ class Handler : public CefMessageRouterBrowserSide::Handler {
 
   Handler() { CEF_REQUIRE_UI_THREAD(); }
 
-  ~Handler() override {
+  virtual ~Handler() {
     SubscriptionStateMap::iterator it = subscription_state_map_.begin();
     for (; it != subscription_state_map_.end(); ++it) {
       delete it->second;
@@ -379,7 +381,7 @@ class Handler : public CefMessageRouterBrowserSide::Handler {
   // Called due to cefQuery execution in media_router.html.
   bool OnQuery(CefRefPtr<CefBrowser> browser,
                CefRefPtr<CefFrame> frame,
-               int64_t query_id,
+               int64 query_id,
                const CefString& request,
                bool persistent,
                CefRefPtr<Callback> callback) override {
@@ -387,9 +389,8 @@ class Handler : public CefMessageRouterBrowserSide::Handler {
 
     // Only handle messages from the test URL.
     const std::string& url = frame->GetURL();
-    if (!test_runner::IsTestURL(url, kTestUrlPath)) {
+    if (!test_runner::IsTestURL(url, kTestUrlPath))
       return false;
-    }
 
     // Parse |request| as a JSON dictionary.
     CefRefPtr<CefDictionaryValue> request_dict = ParseJSON(request);
@@ -399,9 +400,8 @@ class Handler : public CefMessageRouterBrowserSide::Handler {
     }
 
     // Verify the "name" key.
-    if (!VerifyKey(request_dict, kNameKey, VTYPE_STRING, callback)) {
+    if (!VerifyKey(request_dict, kNameKey, VTYPE_STRING, callback))
       return true;
-    }
 
     const std::string& message_name = request_dict->GetString(kNameKey);
     if (message_name == kNameValueSubscribe) {
@@ -432,13 +432,11 @@ class Handler : public CefMessageRouterBrowserSide::Handler {
       // Create a new route.
 
       // Verify the "source_urn" key.
-      if (!VerifyKey(request_dict, kSourceKey, VTYPE_STRING, callback)) {
+      if (!VerifyKey(request_dict, kSourceKey, VTYPE_STRING, callback))
         return true;
-      }
       // Verify the "sink_id" key.
-      if (!VerifyKey(request_dict, kSinkKey, VTYPE_STRING, callback)) {
+      if (!VerifyKey(request_dict, kSinkKey, VTYPE_STRING, callback))
         return true;
-      }
 
       const std::string& source_urn = request_dict->GetString(kSourceKey);
       const std::string& sink_id = request_dict->GetString(kSinkKey);
@@ -453,9 +451,8 @@ class Handler : public CefMessageRouterBrowserSide::Handler {
       // Terminate an existing route.
 
       // Verify the "route" key.
-      if (!VerifyKey(request_dict, kRouteKey, VTYPE_STRING, callback)) {
+      if (!VerifyKey(request_dict, kRouteKey, VTYPE_STRING, callback))
         return true;
-      }
 
       const std::string& route_id = request_dict->GetString(kRouteKey);
       std::string error;
@@ -469,13 +466,11 @@ class Handler : public CefMessageRouterBrowserSide::Handler {
       // Send a route message.
 
       // Verify the "route_id" key.
-      if (!VerifyKey(request_dict, kRouteKey, VTYPE_STRING, callback)) {
+      if (!VerifyKey(request_dict, kRouteKey, VTYPE_STRING, callback))
         return true;
-      }
       // Verify the "message" key.
-      if (!VerifyKey(request_dict, kMessageKey, VTYPE_STRING, callback)) {
+      if (!VerifyKey(request_dict, kMessageKey, VTYPE_STRING, callback))
         return true;
-      }
 
       const std::string& route_id = request_dict->GetString(kRouteKey);
       const std::string& message = request_dict->GetString(kMessageKey);
@@ -493,7 +488,7 @@ class Handler : public CefMessageRouterBrowserSide::Handler {
 
   void OnQueryCanceled(CefRefPtr<CefBrowser> browser,
                        CefRefPtr<CefFrame> frame,
-                       int64_t query_id) override {
+                       int64 query_id) override {
     CEF_REQUIRE_UI_THREAD();
     RemoveSubscription(browser->GetIdentifier(), query_id);
   }
@@ -508,9 +503,8 @@ class Handler : public CefMessageRouterBrowserSide::Handler {
   // Convert a JSON string to a dictionary value.
   static CefRefPtr<CefDictionaryValue> ParseJSON(const CefString& string) {
     CefRefPtr<CefValue> value = CefParseJSON(string, JSON_PARSER_RFC);
-    if (value.get() && value->GetType() == VTYPE_DICTIONARY) {
+    if (value.get() && value->GetType() == VTYPE_DICTIONARY)
       return value->GetDictionary();
-    }
     return nullptr;
   }
 
@@ -531,13 +525,13 @@ class Handler : public CefMessageRouterBrowserSide::Handler {
 
   // Subscription state associated with a single browser.
   struct SubscriptionState {
-    int64_t query_id;
+    int64 query_id;
     CefRefPtr<MediaObserver> observer;
     CefRefPtr<CefRegistration> registration;
   };
 
   bool CreateSubscription(CefRefPtr<CefBrowser> browser,
-                          int64_t query_id,
+                          int64 query_id,
                           CefRefPtr<Callback> callback) {
     const int browser_id = browser->GetIdentifier();
     if (subscription_state_map_.find(browser_id) !=
@@ -562,7 +556,7 @@ class Handler : public CefMessageRouterBrowserSide::Handler {
     return true;
   }
 
-  void RemoveSubscription(int browser_id, int64_t query_id) {
+  void RemoveSubscription(int browser_id, int64 query_id) {
     SubscriptionStateMap::iterator it =
         subscription_state_map_.find(browser_id);
     if (it != subscription_state_map_.end() &&
@@ -594,4 +588,5 @@ void CreateMessageHandlers(test_runner::MessageHandlerSet& handlers) {
   handlers.insert(new Handler());
 }
 
-}  // namespace client::media_router_test
+}  // namespace media_router_test
+}  // namespace client

@@ -2,8 +2,6 @@
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 
-#include <array>
-
 #include "include/base/cef_callback.h"
 #include "include/cef_shared_process_message_builder.h"
 #include "include/cef_task.h"
@@ -11,6 +9,8 @@
 #include "tests/ceftests/test_handler.h"
 #include "tests/gtest/include/gtest/gtest.h"
 #include "tests/shared/renderer/client_app_renderer.h"
+
+#include <array>
 
 using client::ClientAppRenderer;
 
@@ -23,7 +23,7 @@ struct TestData {
   std::array<size_t, 50> buffer{};
 };
 
-const char kSharedMessageUrl[] = "https://tests/SendSharedProcessMessageTest";
+const char kSharedMessageUrl[] = "http://tests/SendSharedProcessMessageTest";
 const char kSharedMessageName[] = "SendSharedProcessMessageTest";
 
 CefRefPtr<CefProcessMessage> CreateTestMessage(const TestData& data) {
@@ -109,7 +109,7 @@ class SharedMessageTestHandler final : public TestHandler {
     EXPECT_TRUE(message->IsReadOnly());
     EXPECT_EQ(message->GetArgumentList(), nullptr);
 
-    // Verify that the received message is the same as the sent message.
+    // Verify that the recieved message is the same as the sent message.
     auto region = message->GetSharedMemoryRegion();
     const TestData* received = static_cast<const TestData*>(region->Memory());
     EXPECT_EQ(data_.flag, received->flag);

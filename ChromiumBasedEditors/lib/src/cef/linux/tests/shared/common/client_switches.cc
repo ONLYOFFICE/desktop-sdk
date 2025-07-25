@@ -4,7 +4,8 @@
 
 #include "tests/shared/common/client_switches.h"
 
-namespace client::switches {
+namespace client {
+namespace switches {
 
 // CEF and Chromium support a wide range of command-line switches. This file
 // only contains command-line switches specific to the cefclient application.
@@ -24,12 +25,10 @@ const char kOffScreenRenderingEnabled[] = "off-screen-rendering-enabled";
 const char kOffScreenFrameRate[] = "off-screen-frame-rate";
 const char kTransparentPaintingEnabled[] = "transparent-painting-enabled";
 const char kShowUpdateRect[] = "show-update-rect";
-const char kFakeScreenBounds[] = "fake-screen-bounds";
 const char kSharedTextureEnabled[] = "shared-texture-enabled";
 const char kExternalBeginFrameEnabled[] = "external-begin-frame-enabled";
 const char kMouseCursorChangeDisabled[] = "mouse-cursor-change-disabled";
 const char kOffline[] = "offline";
-const char kFilterChromeCommands[] = "filter-chrome-commands";
 const char kRequestContextPerBrowser[] = "request-context-per-browser";
 const char kRequestContextSharedCache[] = "request-context-shared-cache";
 const char kBackgroundColor[] = "background-color";
@@ -44,22 +43,15 @@ const char kAlwaysOnTop[] = "always-on-top";
 const char kHideTopMenu[] = "hide-top-menu";
 const char kSslClientCertificate[] = "ssl-client-certificate";
 const char kCRLSetsPath[] = "crl-sets-path";
+const char kLoadExtension[] = "load-extension";
 const char kNoActivate[] = "no-activate";
+const char kEnableChromeRuntime[] = "enable-chrome-runtime";
 const char kShowChromeToolbar[] = "show-chrome-toolbar";
 const char kInitialShowState[] = "initial-show-state";
+const char kHideChromeStatusBubble[] = "hide-chrome-status-bubble";
 const char kUseDefaultPopup[] = "use-default-popup";
 const char kUseClientDialogs[] = "use-client-dialogs";
 const char kUseTestHttpServer[] = "use-test-http-server";
-const char kShowWindowButtons[] = "show-window-buttons";
-const char kUseWindowModalDialog[] = "use-window-modal-dialog";
-const char kUseBottomControls[] = "use-bottom-controls";
-const char kHidePipFrame[] = "hide-pip-frame";
-const char kMovePipEnabled[] = "move-pip-enabled";
-const char kHideChromeBubbles[] = "hide-chrome-bubbles";
-const char kHideWindowOnClose[] = "hide-window-on-close";
-const char kAcceptsFirstMouse[] = "accepts-first-mouse";
-const char kUseAlloyStyle[] = "use-alloy-style";
-const char kUseChromeStyleWindow[] = "use-chrome-style-window";
-const char kShowOverlayBrowser[] = "show-overlay-browser";
 
-}  // namespace client::switches
+}  // namespace switches
+}  // namespace client

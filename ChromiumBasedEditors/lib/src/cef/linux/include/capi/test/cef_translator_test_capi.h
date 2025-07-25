@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,18 +33,15 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=6746ab08caedbd0fd40ecac40ff41cd03e088255$
+// $hash=58809bc0a16010773cf11b5165e65b32ec4b4793$
 //
 
 #ifndef CEF_INCLUDE_CAPI_TEST_CEF_TRANSLATOR_TEST_CAPI_H_
 #define CEF_INCLUDE_CAPI_TEST_CEF_TRANSLATOR_TEST_CAPI_H_
 #pragma once
 
-#if defined(BUILDING_CEF_SHARED)
-#error This file cannot be included DLL-side
-#endif
-
-#if !defined(WRAPPING_CEF_SHARED) && !defined(UNIT_TEST)
+#if !defined(BUILDING_CEF_SHARED) && !defined(WRAPPING_CEF_SHARED) && \
+    !defined(UNIT_TEST)
 #error This file can be included for unit tests only
 #endif
 
@@ -65,8 +62,6 @@ struct _cef_translator_test_scoped_library_t;
 
 ///
 /// Structure for testing all of the possible data transfer types.
-///
-/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_translator_test_t {
   ///
@@ -522,8 +517,6 @@ CEF_EXPORT cef_translator_test_t* cef_translator_test_create(void);
 ///
 /// Library-side test object for RefPtr.
 ///
-/// NOTE: This struct is allocated DLL-side.
-///
 typedef struct _cef_translator_test_ref_ptr_library_t {
   ///
   /// Base structure.
@@ -553,8 +546,6 @@ cef_translator_test_ref_ptr_library_create(int value);
 ///
 /// Library-side child test object for RefPtr.
 ///
-/// NOTE: This struct is allocated DLL-side.
-///
 typedef struct _cef_translator_test_ref_ptr_library_child_t {
   ///
   /// Base structure.
@@ -583,8 +574,6 @@ cef_translator_test_ref_ptr_library_child_create(int value, int other_value);
 
 ///
 /// Another library-side child test object for RefPtr.
-///
-/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_translator_test_ref_ptr_library_child_child_t {
   ///
@@ -617,8 +606,6 @@ cef_translator_test_ref_ptr_library_child_child_create(int value,
 ///
 /// Client-side test object for RefPtr.
 ///
-/// NOTE: This struct is allocated client-side.
-///
 typedef struct _cef_translator_test_ref_ptr_client_t {
   ///
   /// Base structure.
@@ -635,8 +622,6 @@ typedef struct _cef_translator_test_ref_ptr_client_t {
 ///
 /// Client-side child test object for RefPtr.
 ///
-/// NOTE: This struct is allocated client-side.
-///
 typedef struct _cef_translator_test_ref_ptr_client_child_t {
   ///
   /// Base structure.
@@ -652,8 +637,6 @@ typedef struct _cef_translator_test_ref_ptr_client_child_t {
 
 ///
 /// Library-side test object for OwnPtr/RawPtr.
-///
-/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_translator_test_scoped_library_t {
   ///
@@ -684,8 +667,6 @@ cef_translator_test_scoped_library_create(int value);
 ///
 /// Library-side child test object for OwnPtr/RawPtr.
 ///
-/// NOTE: This struct is allocated DLL-side.
-///
 typedef struct _cef_translator_test_scoped_library_child_t {
   ///
   /// Base structure.
@@ -714,8 +695,6 @@ cef_translator_test_scoped_library_child_create(int value, int other_value);
 
 ///
 /// Another library-side child test object for OwnPtr/RawPtr.
-///
-/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_translator_test_scoped_library_child_child_t {
   ///
@@ -748,8 +727,6 @@ cef_translator_test_scoped_library_child_child_create(int value,
 ///
 /// Client-side test object for OwnPtr/RawPtr.
 ///
-/// NOTE: This struct is allocated client-side.
-///
 typedef struct _cef_translator_test_scoped_client_t {
   ///
   /// Base structure.
@@ -765,8 +742,6 @@ typedef struct _cef_translator_test_scoped_client_t {
 
 ///
 /// Client-side child test object for OwnPtr/RawPtr.
-///
-/// NOTE: This struct is allocated client-side.
 ///
 typedef struct _cef_translator_test_scoped_client_child_t {
   ///

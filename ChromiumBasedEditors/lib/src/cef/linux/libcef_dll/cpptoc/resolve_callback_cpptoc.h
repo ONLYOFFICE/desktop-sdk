@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=35a830e36d25a880d40a06568c071fe0685af135$
+// $hash=aea5c318f99d23b06478b765f81720890aa098b3$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_RESOLVE_CALLBACK_CPPTOC_H_
@@ -38,9 +38,5 @@ class CefResolveCallbackCppToC
   CefResolveCallbackCppToC();
   virtual ~CefResolveCallbackCppToC();
 };
-
-constexpr auto CefResolveCallbackCppToC_Wrap = CefResolveCallbackCppToC::Wrap;
-constexpr auto CefResolveCallbackCppToC_Unwrap =
-    CefResolveCallbackCppToC::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_RESOLVE_CALLBACK_CPPTOC_H_

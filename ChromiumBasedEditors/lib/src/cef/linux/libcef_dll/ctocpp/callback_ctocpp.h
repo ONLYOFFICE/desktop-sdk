@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=cc79a0374b0ac57e6918e3ff7380e999fbb0309c$
+// $hash=33a36c40703e1a794c2d8365f0ed692bad529e4b$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_CALLBACK_CTOCPP_H_
@@ -37,8 +37,5 @@ class CefCallbackCToCpp : public CefCToCppRefCounted<CefCallbackCToCpp,
   void Continue() override;
   void Cancel() override;
 };
-
-constexpr auto CefCallbackCToCpp_Wrap = CefCallbackCToCpp::Wrap;
-constexpr auto CefCallbackCToCpp_Unwrap = CefCallbackCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_CALLBACK_CTOCPP_H_

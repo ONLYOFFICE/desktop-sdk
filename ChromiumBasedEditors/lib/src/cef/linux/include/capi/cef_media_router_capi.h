@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,16 +33,12 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=4874cf5e01fff48e265cba12720148f4a2355123$
+// $hash=333350f8141cc925d16df2edc8c21a720a1008f0$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_MEDIA_ROUTER_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_MEDIA_ROUTER_CAPI_H_
 #pragma once
-
-#if defined(BUILDING_CEF_SHARED)
-#error This file cannot be included DLL-side
-#endif
 
 #include "include/capi/cef_base_capi.h"
 #include "include/capi/cef_callback_capi.h"
@@ -63,8 +59,6 @@ struct _cef_media_source_t;
 /// Supports discovery of and communication with media devices on the local
 /// network via the Cast and DIAL protocols. The functions of this structure may
 /// be called on any browser process thread unless otherwise indicated.
-///
-/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_media_router_t {
   ///
@@ -120,8 +114,8 @@ typedef struct _cef_media_router_t {
 /// Returns the MediaRouter object associated with the global request context.
 /// If |callback| is non-NULL it will be executed asnychronously on the UI
 /// thread after the manager's storage has been initialized. Equivalent to
-/// calling cef_request_context_t::cef_request_context_get_global_context()-
-/// >get_media_router().
+/// calling cef_request_context_t::cef_request_context_get_global_context()->get
+/// _media_router().
 ///
 CEF_EXPORT cef_media_router_t* cef_media_router_get_global(
     struct _cef_completion_callback_t* callback);
@@ -130,8 +124,6 @@ CEF_EXPORT cef_media_router_t* cef_media_router_get_global(
 /// Implemented by the client to observe MediaRouter events and registered via
 /// cef_media_router_t::AddObserver. The functions of this structure will be
 /// called on the browser process UI thread.
-///
-/// NOTE: This struct is allocated client-side.
 ///
 typedef struct _cef_media_observer_t {
   ///
@@ -164,7 +156,7 @@ typedef struct _cef_media_observer_t {
       cef_media_route_connection_state_t state);
 
   ///
-  /// A message was received over |route|. |message| is only valid for the scope
+  /// A message was recieved over |route|. |message| is only valid for the scope
   /// of this callback and should be copied if necessary.
   ///
   void(CEF_CALLBACK* on_route_message_received)(
@@ -180,8 +172,6 @@ typedef struct _cef_media_observer_t {
 /// cef_media_observer_t::OnRoutes. Contains the status and metadata of a
 /// routing operation. The functions of this structure may be called on any
 /// browser process thread unless otherwise indicated.
-///
-/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_media_route_t {
   ///
@@ -225,8 +215,6 @@ typedef struct _cef_media_route_t {
 /// Callback structure for cef_media_router_t::CreateRoute. The functions of
 /// this structure will be called on the browser process UI thread.
 ///
-/// NOTE: This struct is allocated client-side.
-///
 typedef struct _cef_media_route_create_callback_t {
   ///
   /// Base structure.
@@ -251,8 +239,6 @@ typedef struct _cef_media_route_create_callback_t {
 /// retrieved via cef_media_observer_t::OnSinks. The functions of this structure
 /// may be called on any browser process thread unless otherwise indicated.
 ///
-/// NOTE: This struct is allocated DLL-side.
-///
 typedef struct _cef_media_sink_t {
   ///
   /// Base structure.
@@ -270,6 +256,13 @@ typedef struct _cef_media_sink_t {
   ///
   // The resulting string must be freed by calling cef_string_userfree_free().
   cef_string_userfree_t(CEF_CALLBACK* get_name)(struct _cef_media_sink_t* self);
+
+  ///
+  /// Returns the description of this sink.
+  ///
+  // The resulting string must be freed by calling cef_string_userfree_free().
+  cef_string_userfree_t(CEF_CALLBACK* get_description)(
+      struct _cef_media_sink_t* self);
 
   ///
   /// Returns the icon type for this sink.
@@ -305,8 +298,6 @@ typedef struct _cef_media_sink_t {
 /// Callback structure for cef_media_sink_t::GetDeviceInfo. The functions of
 /// this structure will be called on the browser process UI thread.
 ///
-/// NOTE: This struct is allocated client-side.
-///
 typedef struct _cef_media_sink_device_info_callback_t {
   ///
   /// Base structure.
@@ -327,8 +318,6 @@ typedef struct _cef_media_sink_device_info_callback_t {
 /// are retrieved via cef_media_router_t::GetSource. The functions of this
 /// structure may be called on any browser process thread unless otherwise
 /// indicated.
-///
-/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_media_source_t {
   ///

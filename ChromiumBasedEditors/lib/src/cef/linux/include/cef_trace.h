@@ -106,6 +106,6 @@ bool CefEndTracing(const CefString& tracing_file,
 /// information in trace events.
 ///
 /*--cef()--*/
-int64_t CefNowFromSystemTraceTime();
+int64 CefNowFromSystemTraceTime();
 
 #endif  // CEF_INCLUDE_CEF_TRACE_H_

@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,16 +33,12 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=dedc73aa9a27ee614d17cf1f15670675c31351ac$
+// $hash=8149c82dd6671d676ee62cb6749bf30b32a5832c$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_FIND_HANDLER_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_FIND_HANDLER_CAPI_H_
 #pragma once
-
-#if defined(BUILDING_CEF_SHARED)
-#error This file cannot be included DLL-side
-#endif
 
 #include "include/capi/cef_base_capi.h"
 #include "include/capi/cef_browser_capi.h"
@@ -54,8 +50,6 @@ extern "C" {
 ///
 /// Implement this structure to handle events related to find results. The
 /// functions of this structure will be called on the UI thread.
-///
-/// NOTE: This struct is allocated client-side.
 ///
 typedef struct _cef_find_handler_t {
   ///

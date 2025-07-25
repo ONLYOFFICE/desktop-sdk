@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,23 +9,21 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=dd51c6575bb9f80f3003cdc691f5cafcf283d5ca$
+// $hash=91946337612dd212dfcba794d6843b6dbe64fb69$
 //
 
 #include "libcef_dll/ctocpp/media_access_callback_ctocpp.h"
-
 #include "libcef_dll/shutdown_checker.h"
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
 NO_SANITIZE("cfi-icall")
-void CefMediaAccessCallbackCToCpp::Continue(uint32_t allowed_permissions) {
+void CefMediaAccessCallbackCToCpp::Continue(uint32 allowed_permissions) {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->cont) {
+  cef_media_access_callback_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, cont))
     return;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -36,10 +34,9 @@ void CefMediaAccessCallbackCToCpp::Continue(uint32_t allowed_permissions) {
 NO_SANITIZE("cfi-icall") void CefMediaAccessCallbackCToCpp::Cancel() {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->cancel) {
+  cef_media_access_callback_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, cancel))
     return;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -63,7 +60,7 @@ cef_media_access_callback_t* CefCToCppRefCounted<
     CefMediaAccessCallback,
     cef_media_access_callback_t>::UnwrapDerived(CefWrapperType type,
                                                 CefMediaAccessCallback* c) {
-  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  NOTREACHED() << "Unexpected class type: " << type;
   return nullptr;
 }
 

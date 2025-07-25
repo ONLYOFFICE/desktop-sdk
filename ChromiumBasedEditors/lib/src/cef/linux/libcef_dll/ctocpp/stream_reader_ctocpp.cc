@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,11 +9,10 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=ef079baa8eb823a977368d61700ee4e8994a22fe$
+// $hash=7a5ee0caa0def472edae4f8fee336bf1db392071$
 //
 
 #include "libcef_dll/ctocpp/stream_reader_ctocpp.h"
-
 #include "libcef_dll/cpptoc/read_handler_cpptoc.h"
 #include "libcef_dll/shutdown_checker.h"
 
@@ -28,15 +27,15 @@ CefRefPtr<CefStreamReader> CefStreamReader::CreateForFile(
 
   // Verify param: fileName; type: string_byref_const
   DCHECK(!fileName.empty());
-  if (fileName.empty()) {
+  if (fileName.empty())
     return nullptr;
-  }
 
   // Execute
-  auto* _retval = cef_stream_reader_create_for_file(fileName.GetStruct());
+  cef_stream_reader_t* _retval =
+      cef_stream_reader_create_for_file(fileName.GetStruct());
 
   // Return type: refptr_same
-  return CefStreamReaderCToCpp_Wrap(_retval);
+  return CefStreamReaderCToCpp::Wrap(_retval);
 }
 
 NO_SANITIZE("cfi-icall")
@@ -48,15 +47,14 @@ CefRefPtr<CefStreamReader> CefStreamReader::CreateForData(void* data,
 
   // Verify param: data; type: simple_byaddr
   DCHECK(data);
-  if (!data) {
+  if (!data)
     return nullptr;
-  }
 
   // Execute
-  auto* _retval = cef_stream_reader_create_for_data(data, size);
+  cef_stream_reader_t* _retval = cef_stream_reader_create_for_data(data, size);
 
   // Return type: refptr_same
-  return CefStreamReaderCToCpp_Wrap(_retval);
+  return CefStreamReaderCToCpp::Wrap(_retval);
 }
 
 NO_SANITIZE("cfi-icall")
@@ -68,16 +66,15 @@ CefRefPtr<CefStreamReader> CefStreamReader::CreateForHandler(
 
   // Verify param: handler; type: refptr_diff
   DCHECK(handler.get());
-  if (!handler.get()) {
+  if (!handler.get())
     return nullptr;
-  }
 
   // Execute
-  auto* _retval =
-      cef_stream_reader_create_for_handler(CefReadHandlerCppToC_Wrap(handler));
+  cef_stream_reader_t* _retval =
+      cef_stream_reader_create_for_handler(CefReadHandlerCppToC::Wrap(handler));
 
   // Return type: refptr_same
-  return CefStreamReaderCToCpp_Wrap(_retval);
+  return CefStreamReaderCToCpp::Wrap(_retval);
 }
 
 // VIRTUAL METHODS - Body may be edited by hand.
@@ -86,18 +83,16 @@ NO_SANITIZE("cfi-icall")
 size_t CefStreamReaderCToCpp::Read(void* ptr, size_t size, size_t n) {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->read) {
+  cef_stream_reader_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, read))
     return 0;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: ptr; type: simple_byaddr
   DCHECK(ptr);
-  if (!ptr) {
+  if (!ptr)
     return 0;
-  }
 
   // Execute
   size_t _retval = _struct->read(_struct, ptr, size, n);
@@ -107,13 +102,12 @@ size_t CefStreamReaderCToCpp::Read(void* ptr, size_t size, size_t n) {
 }
 
 NO_SANITIZE("cfi-icall")
-int CefStreamReaderCToCpp::Seek(int64_t offset, int whence) {
+int CefStreamReaderCToCpp::Seek(int64 offset, int whence) {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->seek) {
+  cef_stream_reader_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, seek))
     return 0;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -124,18 +118,17 @@ int CefStreamReaderCToCpp::Seek(int64_t offset, int whence) {
   return _retval;
 }
 
-NO_SANITIZE("cfi-icall") int64_t CefStreamReaderCToCpp::Tell() {
+NO_SANITIZE("cfi-icall") int64 CefStreamReaderCToCpp::Tell() {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->tell) {
+  cef_stream_reader_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, tell))
     return 0;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  int64_t _retval = _struct->tell(_struct);
+  int64 _retval = _struct->tell(_struct);
 
   // Return type: simple
   return _retval;
@@ -144,10 +137,9 @@ NO_SANITIZE("cfi-icall") int64_t CefStreamReaderCToCpp::Tell() {
 NO_SANITIZE("cfi-icall") int CefStreamReaderCToCpp::Eof() {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->eof) {
+  cef_stream_reader_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, eof))
     return 0;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -161,10 +153,9 @@ NO_SANITIZE("cfi-icall") int CefStreamReaderCToCpp::Eof() {
 NO_SANITIZE("cfi-icall") bool CefStreamReaderCToCpp::MayBlock() {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->may_block) {
+  cef_stream_reader_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, may_block))
     return false;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -191,7 +182,7 @@ CefCToCppRefCounted<CefStreamReaderCToCpp,
                     CefStreamReader,
                     cef_stream_reader_t>::UnwrapDerived(CefWrapperType type,
                                                         CefStreamReader* c) {
-  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  NOTREACHED() << "Unexpected class type: " << type;
   return nullptr;
 }
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,11 +9,10 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=badfeedcf74b6a9e0a01eb5437529655ba25ffa5$
+// $hash=534e899f94d04db4b44deecc71ab9c95f6729f22$
 //
 
 #include "libcef_dll/ctocpp/drag_data_ctocpp.h"
-
 #include "libcef_dll/ctocpp/image_ctocpp.h"
 #include "libcef_dll/ctocpp/stream_writer_ctocpp.h"
 #include "libcef_dll/shutdown_checker.h"
@@ -27,10 +26,10 @@ NO_SANITIZE("cfi-icall") CefRefPtr<CefDragData> CefDragData::Create() {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  auto* _retval = cef_drag_data_create();
+  cef_drag_data_t* _retval = cef_drag_data_create();
 
   // Return type: refptr_same
-  return CefDragDataCToCpp_Wrap(_retval);
+  return CefDragDataCToCpp::Wrap(_retval);
 }
 
 // VIRTUAL METHODS - Body may be edited by hand.
@@ -38,27 +37,25 @@ NO_SANITIZE("cfi-icall") CefRefPtr<CefDragData> CefDragData::Create() {
 NO_SANITIZE("cfi-icall") CefRefPtr<CefDragData> CefDragDataCToCpp::Clone() {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->clone) {
+  cef_drag_data_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, clone))
     return nullptr;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  auto* _retval = _struct->clone(_struct);
+  cef_drag_data_t* _retval = _struct->clone(_struct);
 
   // Return type: refptr_same
-  return CefDragDataCToCpp_Wrap(_retval);
+  return CefDragDataCToCpp::Wrap(_retval);
 }
 
 NO_SANITIZE("cfi-icall") bool CefDragDataCToCpp::IsReadOnly() {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->is_read_only) {
+  cef_drag_data_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, is_read_only))
     return false;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -72,10 +69,9 @@ NO_SANITIZE("cfi-icall") bool CefDragDataCToCpp::IsReadOnly() {
 NO_SANITIZE("cfi-icall") bool CefDragDataCToCpp::IsLink() {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->is_link) {
+  cef_drag_data_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, is_link))
     return false;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -89,10 +85,9 @@ NO_SANITIZE("cfi-icall") bool CefDragDataCToCpp::IsLink() {
 NO_SANITIZE("cfi-icall") bool CefDragDataCToCpp::IsFragment() {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->is_fragment) {
+  cef_drag_data_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, is_fragment))
     return false;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -106,10 +101,9 @@ NO_SANITIZE("cfi-icall") bool CefDragDataCToCpp::IsFragment() {
 NO_SANITIZE("cfi-icall") bool CefDragDataCToCpp::IsFile() {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->is_file) {
+  cef_drag_data_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, is_file))
     return false;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -123,10 +117,9 @@ NO_SANITIZE("cfi-icall") bool CefDragDataCToCpp::IsFile() {
 NO_SANITIZE("cfi-icall") CefString CefDragDataCToCpp::GetLinkURL() {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->get_link_url) {
+  cef_drag_data_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, get_link_url))
     return CefString();
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -142,10 +135,9 @@ NO_SANITIZE("cfi-icall") CefString CefDragDataCToCpp::GetLinkURL() {
 NO_SANITIZE("cfi-icall") CefString CefDragDataCToCpp::GetLinkTitle() {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->get_link_title) {
+  cef_drag_data_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, get_link_title))
     return CefString();
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -161,10 +153,9 @@ NO_SANITIZE("cfi-icall") CefString CefDragDataCToCpp::GetLinkTitle() {
 NO_SANITIZE("cfi-icall") CefString CefDragDataCToCpp::GetLinkMetadata() {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->get_link_metadata) {
+  cef_drag_data_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, get_link_metadata))
     return CefString();
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -180,10 +171,9 @@ NO_SANITIZE("cfi-icall") CefString CefDragDataCToCpp::GetLinkMetadata() {
 NO_SANITIZE("cfi-icall") CefString CefDragDataCToCpp::GetFragmentText() {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->get_fragment_text) {
+  cef_drag_data_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, get_fragment_text))
     return CefString();
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -199,10 +189,9 @@ NO_SANITIZE("cfi-icall") CefString CefDragDataCToCpp::GetFragmentText() {
 NO_SANITIZE("cfi-icall") CefString CefDragDataCToCpp::GetFragmentHtml() {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->get_fragment_html) {
+  cef_drag_data_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, get_fragment_html))
     return CefString();
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -218,10 +207,9 @@ NO_SANITIZE("cfi-icall") CefString CefDragDataCToCpp::GetFragmentHtml() {
 NO_SANITIZE("cfi-icall") CefString CefDragDataCToCpp::GetFragmentBaseURL() {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->get_fragment_base_url) {
+  cef_drag_data_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, get_fragment_base_url))
     return CefString();
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -237,10 +225,9 @@ NO_SANITIZE("cfi-icall") CefString CefDragDataCToCpp::GetFragmentBaseURL() {
 NO_SANITIZE("cfi-icall") CefString CefDragDataCToCpp::GetFileName() {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->get_file_name) {
+  cef_drag_data_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, get_file_name))
     return CefString();
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -257,18 +244,17 @@ NO_SANITIZE("cfi-icall")
 size_t CefDragDataCToCpp::GetFileContents(CefRefPtr<CefStreamWriter> writer) {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->get_file_contents) {
+  cef_drag_data_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, get_file_contents))
     return 0;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Unverified params: writer
 
   // Execute
-  size_t _retval =
-      _struct->get_file_contents(_struct, CefStreamWriterCToCpp_Unwrap(writer));
+  size_t _retval = _struct->get_file_contents(
+      _struct, CefStreamWriterCToCpp::Unwrap(writer));
 
   // Return type: simple
   return _retval;
@@ -278,19 +264,17 @@ NO_SANITIZE("cfi-icall")
 bool CefDragDataCToCpp::GetFileNames(std::vector<CefString>& names) {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->get_file_names) {
+  cef_drag_data_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, get_file_names))
     return false;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Translate param: names; type: string_vec_byref
   cef_string_list_t namesList = cef_string_list_alloc();
   DCHECK(namesList);
-  if (namesList) {
+  if (namesList)
     transfer_string_list_contents(names, namesList);
-  }
 
   // Execute
   int _retval = _struct->get_file_names(_struct, namesList);
@@ -307,45 +291,12 @@ bool CefDragDataCToCpp::GetFileNames(std::vector<CefString>& names) {
 }
 
 NO_SANITIZE("cfi-icall")
-bool CefDragDataCToCpp::GetFilePaths(std::vector<CefString>& paths) {
-  shutdown_checker::AssertNotShutdown();
-
-  auto* _struct = GetStruct();
-  if (!_struct->get_file_paths) {
-    return false;
-  }
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Translate param: paths; type: string_vec_byref
-  cef_string_list_t pathsList = cef_string_list_alloc();
-  DCHECK(pathsList);
-  if (pathsList) {
-    transfer_string_list_contents(paths, pathsList);
-  }
-
-  // Execute
-  int _retval = _struct->get_file_paths(_struct, pathsList);
-
-  // Restore param:paths; type: string_vec_byref
-  if (pathsList) {
-    paths.clear();
-    transfer_string_list_contents(pathsList, paths);
-    cef_string_list_free(pathsList);
-  }
-
-  // Return type: bool
-  return _retval ? true : false;
-}
-
-NO_SANITIZE("cfi-icall")
 void CefDragDataCToCpp::SetLinkURL(const CefString& url) {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->set_link_url) {
+  cef_drag_data_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, set_link_url))
     return;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -359,10 +310,9 @@ NO_SANITIZE("cfi-icall")
 void CefDragDataCToCpp::SetLinkTitle(const CefString& title) {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->set_link_title) {
+  cef_drag_data_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, set_link_title))
     return;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -376,10 +326,9 @@ NO_SANITIZE("cfi-icall")
 void CefDragDataCToCpp::SetLinkMetadata(const CefString& data) {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->set_link_metadata) {
+  cef_drag_data_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, set_link_metadata))
     return;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -393,10 +342,9 @@ NO_SANITIZE("cfi-icall")
 void CefDragDataCToCpp::SetFragmentText(const CefString& text) {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->set_fragment_text) {
+  cef_drag_data_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, set_fragment_text))
     return;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -410,10 +358,9 @@ NO_SANITIZE("cfi-icall")
 void CefDragDataCToCpp::SetFragmentHtml(const CefString& html) {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->set_fragment_html) {
+  cef_drag_data_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, set_fragment_html))
     return;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -427,10 +374,9 @@ NO_SANITIZE("cfi-icall")
 void CefDragDataCToCpp::SetFragmentBaseURL(const CefString& base_url) {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->set_fragment_base_url) {
+  cef_drag_data_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, set_fragment_base_url))
     return;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -443,10 +389,9 @@ void CefDragDataCToCpp::SetFragmentBaseURL(const CefString& base_url) {
 NO_SANITIZE("cfi-icall") void CefDragDataCToCpp::ResetFileContents() {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->reset_file_contents) {
+  cef_drag_data_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, reset_file_contents))
     return;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -459,18 +404,16 @@ void CefDragDataCToCpp::AddFile(const CefString& path,
                                 const CefString& display_name) {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->add_file) {
+  cef_drag_data_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, add_file))
     return;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: path; type: string_byref_const
   DCHECK(!path.empty());
-  if (path.empty()) {
+  if (path.empty())
     return;
-  }
   // Unverified params: display_name
 
   // Execute
@@ -480,10 +423,9 @@ void CefDragDataCToCpp::AddFile(const CefString& path,
 NO_SANITIZE("cfi-icall") void CefDragDataCToCpp::ClearFilenames() {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->clear_filenames) {
+  cef_drag_data_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, clear_filenames))
     return;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -494,27 +436,25 @@ NO_SANITIZE("cfi-icall") void CefDragDataCToCpp::ClearFilenames() {
 NO_SANITIZE("cfi-icall") CefRefPtr<CefImage> CefDragDataCToCpp::GetImage() {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->get_image) {
+  cef_drag_data_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, get_image))
     return nullptr;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  auto* _retval = _struct->get_image(_struct);
+  cef_image_t* _retval = _struct->get_image(_struct);
 
   // Return type: refptr_same
-  return CefImageCToCpp_Wrap(_retval);
+  return CefImageCToCpp::Wrap(_retval);
 }
 
 NO_SANITIZE("cfi-icall") CefPoint CefDragDataCToCpp::GetImageHotspot() {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->get_image_hotspot) {
+  cef_drag_data_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, get_image_hotspot))
     return CefPoint();
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -528,10 +468,9 @@ NO_SANITIZE("cfi-icall") CefPoint CefDragDataCToCpp::GetImageHotspot() {
 NO_SANITIZE("cfi-icall") bool CefDragDataCToCpp::HasImage() {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->has_image) {
+  cef_drag_data_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, has_image))
     return false;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -556,7 +495,7 @@ template <>
 cef_drag_data_t*
 CefCToCppRefCounted<CefDragDataCToCpp, CefDragData, cef_drag_data_t>::
     UnwrapDerived(CefWrapperType type, CefDragData* c) {
-  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  NOTREACHED() << "Unexpected class type: " << type;
   return nullptr;
 }
 

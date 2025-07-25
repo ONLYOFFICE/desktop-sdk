@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=aafd3dfc5322b81f16e005be3b608d37361caddd$
+// $hash=06d5fbd145898540f060616efbd6f81e1bee7498$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_TEST_TEST_SERVER_CTOCPP_H_
@@ -37,8 +37,5 @@ class CefTestServerCToCpp : public CefCToCppRefCounted<CefTestServerCToCpp,
   void Stop() override;
   CefString GetOrigin() override;
 };
-
-constexpr auto CefTestServerCToCpp_Wrap = CefTestServerCToCpp::Wrap;
-constexpr auto CefTestServerCToCpp_Unwrap = CefTestServerCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_TEST_TEST_SERVER_CTOCPP_H_

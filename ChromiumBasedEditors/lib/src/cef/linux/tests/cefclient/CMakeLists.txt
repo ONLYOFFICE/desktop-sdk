@@ -8,10 +8,6 @@
 
 # cefclient browser sources.
 set(CEFCLIENT_BROWSER_BROWSER_SRCS
-  browser/base_client_handler.cc
-  browser/base_client_handler.h
-  browser/binary_transfer_test.cc
-  browser/binary_transfer_test.h
   browser/binding_test.cc
   browser/binding_test.h
   browser/browser_window.cc
@@ -30,14 +26,8 @@ set(CEFCLIENT_BROWSER_BROWSER_SRCS
   browser/client_prefs.cc
   browser/client_prefs.h
   browser/client_types.h
-  browser/config_test.cc
-  browser/config_test.h
-  browser/default_client_handler.cc
-  browser/default_client_handler.h
   browser/dialog_test.cc
   browser/dialog_test.h
-  browser/hang_test.cc
-  browser/hang_test.h
   browser/image_cache.cc
   browser/image_cache.h
   browser/main_context.cc
@@ -66,8 +56,6 @@ set(CEFCLIENT_BROWSER_BROWSER_SRCS
   browser/scheme_test.h
   browser/server_test.cc
   browser/server_test.h
-  browser/task_manager_test.cc
-  browser/task_manager_test.h
   browser/temp_window.h
   browser/test_runner.cc
   browser/test_runner.h
@@ -75,8 +63,6 @@ set(CEFCLIENT_BROWSER_BROWSER_SRCS
   browser/urlrequest_test.h
   browser/views_menu_bar.cc
   browser/views_menu_bar.h
-  browser/views_overlay_browser.cc
-  browser/views_overlay_browser.h
   browser/views_overlay_controls.cc
   browser/views_overlay_controls.h
   browser/views_style.cc
@@ -95,6 +81,8 @@ source_group(cefclient\\\\browser FILES ${CEFCLIENT_BROWSER_BROWSER_SRCS})
 set(CEFCLIENT_BROWSER_SHARED_BROWSER_SRCS
   ../shared/browser/client_app_browser.cc
   ../shared/browser/client_app_browser.h
+  ../shared/browser/extension_util.cc
+  ../shared/browser/extension_util.h
   ../shared/browser/file_util.cc
   ../shared/browser/file_util.h
   ../shared/browser/geometry_util.cc
@@ -231,9 +219,6 @@ set(CEFCLIENT_MACOSX_BROWSER_SRCS
   browser/temp_window_mac.mm
   browser/text_input_client_osr_mac.h
   browser/text_input_client_osr_mac.mm
-  browser/util_mac.h
-  browser/util_mac.mm
-  browser/views_window_mac.mm
   browser/window_test_runner_mac.h
   browser/window_test_runner_mac.mm
   )
@@ -305,6 +290,11 @@ set(CEFCLIENT_WINDOWS_BROWSER_SRCS
   )
 source_group(cefclient\\\\browser FILES ${CEFCLIENT_WINDOWS_BROWSER_SRCS})
 
+set(CEFCLIENT_WINDOWS_RESOURCES_WIN_SRCS
+  resources/win/cefclient.rc
+  )
+source_group(cefclient\\\\resources\\\\win FILES ${CEFCLIENT_WINDOWS_RESOURCES_WIN_SRCS})
+
 set(CEFCLIENT_WINDOWS_SHARED_BROWSER_SRCS
   ../shared/browser/main_message_loop_external_pump_win.cc
   ../shared/browser/resource_util_win.cc
@@ -313,40 +303,18 @@ set(CEFCLIENT_WINDOWS_SHARED_BROWSER_SRCS
   )
 source_group(shared\\\\browser FILES ${CEFCLIENT_WINDOWS_SHARED_BROWSER_SRCS})
 
-set(CEFCLIENT_WINDOWS_WIN_SRCS
-  win/cefclient.rc
-  )
-source_group(cefclient\\\\win FILES ${CEFCLIENT_WINDOWS_WIN_SRCS})
-
 set(CEFCLIENT_WINDOWS_SRCS
   ${CEFCLIENT_WINDOWS_SRCS}
   ${CEFCLIENT_WINDOWS_BROWSER_SRCS}
+  ${CEFCLIENT_WINDOWS_RESOURCES_WIN_SRCS}
   ${CEFCLIENT_WINDOWS_SHARED_BROWSER_SRCS}
-  ${CEFCLIENT_WINDOWS_WIN_SRCS}
   )
 
 # cefclient resources.
-set(CEFCLIENT_RESOURCES_MAC_SRCS_MAC
-  mac/Info.plist.in
-  mac/cefclient.icns
-  )
-APPEND_PLATFORM_SOURCES(CEFCLIENT_RESOURCES_MAC_SRCS)
-source_group(cefclient\\\\mac FILES ${CEFCLIENT_RESOURCES_MAC_SRCS})
-
-set(CEFCLIENT_RESOURCES_MAC_ENGLISH_LPROJ_SRCS_MAC
-  mac/English.lproj/InfoPlist.strings
-  mac/English.lproj/MainMenu.xib
-  )
-APPEND_PLATFORM_SOURCES(CEFCLIENT_RESOURCES_MAC_ENGLISH_LPROJ_SRCS)
-source_group(cefclient\\\\mac\\\\English.lproj FILES ${CEFCLIENT_RESOURCES_MAC_ENGLISH_LPROJ_SRCS})
-
 set(CEFCLIENT_RESOURCES_RESOURCES_SRCS
-  resources/binary_transfer.html
   resources/binding.html
-  resources/config.html
   resources/dialogs.html
   resources/draggable.html
-  resources/hang.html
   resources/ipc_performance.html
   resources/localstorage.html
   resources/logo.png
@@ -359,7 +327,6 @@ set(CEFCLIENT_RESOURCES_RESOURCES_SRCS
   resources/preferences.html
   resources/response_filter.html
   resources/server.html
-  resources/task_manager.html
   resources/transparency.html
   resources/urlrequest.html
   resources/websocket.html
@@ -367,6 +334,29 @@ set(CEFCLIENT_RESOURCES_RESOURCES_SRCS
   resources/xmlhttprequest.html
   )
 source_group(cefclient\\\\resources FILES ${CEFCLIENT_RESOURCES_RESOURCES_SRCS})
+
+set(CEFCLIENT_RESOURCES_RESOURCES_EXTENSIONS_SET_PAGE_COLOR_SRCS
+  resources/extensions/set_page_color/README.md
+  resources/extensions/set_page_color/icon.png
+  resources/extensions/set_page_color/manifest.json
+  resources/extensions/set_page_color/popup.html
+  resources/extensions/set_page_color/popup.js
+  )
+source_group(cefclient\\\\resources\\\\extensions\\\\set_page_color FILES ${CEFCLIENT_RESOURCES_RESOURCES_EXTENSIONS_SET_PAGE_COLOR_SRCS})
+
+set(CEFCLIENT_RESOURCES_RESOURCES_MAC_SRCS_MAC
+  resources/mac/Info.plist
+  resources/mac/cefclient.icns
+  )
+APPEND_PLATFORM_SOURCES(CEFCLIENT_RESOURCES_RESOURCES_MAC_SRCS)
+source_group(cefclient\\\\resources\\\\mac FILES ${CEFCLIENT_RESOURCES_RESOURCES_MAC_SRCS})
+
+set(CEFCLIENT_RESOURCES_RESOURCES_MAC_ENGLISH_LPROJ_SRCS_MAC
+  resources/mac/English.lproj/InfoPlist.strings
+  resources/mac/English.lproj/MainMenu.xib
+  )
+APPEND_PLATFORM_SOURCES(CEFCLIENT_RESOURCES_RESOURCES_MAC_ENGLISH_LPROJ_SRCS)
+source_group(cefclient\\\\resources\\\\mac\\\\English.lproj FILES ${CEFCLIENT_RESOURCES_RESOURCES_MAC_ENGLISH_LPROJ_SRCS})
 
 set(CEFCLIENT_RESOURCES_SHARED_RESOURCES_SRCS
   ../shared/resources/osr_test.html
@@ -378,9 +368,10 @@ set(CEFCLIENT_RESOURCES_SHARED_RESOURCES_SRCS
 source_group(shared\\\\resources FILES ${CEFCLIENT_RESOURCES_SHARED_RESOURCES_SRCS})
 
 set(CEFCLIENT_RESOURCES_SRCS
-  ${CEFCLIENT_RESOURCES_MAC_SRCS}
-  ${CEFCLIENT_RESOURCES_MAC_ENGLISH_LPROJ_SRCS}
   ${CEFCLIENT_RESOURCES_RESOURCES_SRCS}
+  ${CEFCLIENT_RESOURCES_RESOURCES_EXTENSIONS_SET_PAGE_COLOR_SRCS}
+  ${CEFCLIENT_RESOURCES_RESOURCES_MAC_SRCS}
+  ${CEFCLIENT_RESOURCES_RESOURCES_MAC_ENGLISH_LPROJ_SRCS}
   ${CEFCLIENT_RESOURCES_SHARED_RESOURCES_SRCS}
   )
 
@@ -486,13 +477,18 @@ if(OS_MAC)
   set(EXECUTABLE_NAME "${CEF_TARGET}")
   set(PRODUCT_NAME "${CEF_TARGET}")
 
+  if(USE_SANDBOX)
+    # Logical target used to link the cef_sandbox library.
+    ADD_LOGICAL_TARGET("cef_sandbox_lib" "${CEF_SANDBOX_LIB_DEBUG}" "${CEF_SANDBOX_LIB_RELEASE}")
+  endif()
+
   # Main app bundle target.
   add_executable(${CEF_TARGET} MACOSX_BUNDLE ${CEFCLIENT_RESOURCES_SRCS} ${CEFCLIENT_SRCS})
   SET_EXECUTABLE_TARGET_PROPERTIES(${CEF_TARGET})
   add_dependencies(${CEF_TARGET} libcef_dll_wrapper)
   target_link_libraries(${CEF_TARGET} libcef_dll_wrapper ${CEF_STANDARD_LIBS} "-framework OpenGL")
   set_target_properties(${CEF_TARGET} PROPERTIES
-    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/mac/Info.plist.in
+    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/resources/mac/Info.plist
     )
 
   # Copy the CEF framework into the Frameworks directory.
@@ -522,7 +518,7 @@ if(OS_MAC)
     # MACOSX_BUNDLE_INFO_PLIST) uses global env variables and would insert the
     # wrong values with multiple targets.
     set(_helper_info_plist "${CMAKE_CURRENT_BINARY_DIR}/helper-Info${_target_suffix}.plist")
-    file(READ "${CMAKE_CURRENT_SOURCE_DIR}/mac/helper-Info.plist.in" _plist_contents)
+    file(READ "${CMAKE_CURRENT_SOURCE_DIR}/resources/mac/helper-Info.plist" _plist_contents)
     string(REPLACE "\${EXECUTABLE_NAME}" "${_helper_output_name}" _plist_contents ${_plist_contents})
     string(REPLACE "\${PRODUCT_NAME}" "${_helper_output_name}" _plist_contents ${_plist_contents})
     string(REPLACE "\${BUNDLE_ID_SUFFIX}" "${_plist_suffix}" _plist_contents ${_plist_contents})
@@ -537,6 +533,10 @@ if(OS_MAC)
       MACOSX_BUNDLE_INFO_PLIST ${_helper_info_plist}
       OUTPUT_NAME ${_helper_output_name}
       )
+
+    if(USE_SANDBOX)
+      target_link_libraries(${_helper_target} cef_sandbox_lib)
+    endif()
 
     # Add the Helper as a dependency of the main executable target.
     add_dependencies(${CEF_TARGET} "${_helper_target}")
@@ -557,7 +557,7 @@ if(OS_MAC)
   # directive but that doesn't properly handle nested resource directories.
   # Remove these prefixes from input file paths.
   set(PREFIXES
-    "mac/"
+    "resources/mac/"
     "resources/"
     "../shared/resources/"
     )
@@ -580,42 +580,9 @@ if(OS_WINDOWS)
     ${CEFCLIENT_WINDOWS_SRCS}
     )
 
-  # Additional flags not listed in CEF_DELAYLOAD_FLAGS.
-  set(ADDITIONAL_DELAYLOAD_FLAGS
-    /DELAYLOAD:glu32.dll
-    /DELAYLOAD:oleaut32.dll
-    /DELAYLOAD:opengl32.dll
-    )
-
-  if(USE_SANDBOX)
-    # Shared library (DLL) target.
-    list(APPEND CEF_SHARED_LINKER_FLAGS
-      ${ADDITIONAL_DELAYLOAD_FLAGS}
-    )
-    add_library(${CEF_TARGET} SHARED ${CEFCLIENT_SRCS})
-    SET_LIBRARY_TARGET_PROPERTIES(${CEF_TARGET})
-
-    # Copy and rename the bootstrap binary.
-    COPY_SINGLE_FILE(${CEF_TARGET} ${CEF_BINARY_DIR}/bootstrap.exe ${CEF_TARGET_OUT_DIR}/${CEF_TARGET}.exe)
-
-    if (CMAKE_GENERATOR MATCHES "Visual Studio")
-      # Make the bootstrap binary the default command for the Visual Studio debugger.
-      set_target_properties(${CEF_TARGET} PROPERTIES
-        VS_DEBUGGER_COMMAND "$<TARGET_FILE_DIR:${CEF_TARGET}>/${CEF_TARGET}.exe"
-      )
-    endif()
-  else()
-    # Executable target.
-    list(APPEND CEF_EXE_LINKER_FLAGS
-      ${ADDITIONAL_DELAYLOAD_FLAGS}
-    )
-    add_executable(${CEF_TARGET} WIN32 ${CEFCLIENT_SRCS})
-    SET_EXECUTABLE_TARGET_PROPERTIES(${CEF_TARGET})
-
-    # Add the custom manifest files to the executable.
-    ADD_WINDOWS_MANIFEST("${CMAKE_CURRENT_SOURCE_DIR}/win" "${CEF_TARGET}" "exe")
-  endif()
-
+  # Executable target.
+  add_executable(${CEF_TARGET} WIN32 ${CEFCLIENT_SRCS})
+  SET_EXECUTABLE_TARGET_PROPERTIES(${CEF_TARGET})
   add_dependencies(${CEF_TARGET} libcef_dll_wrapper)
   target_link_libraries(${CEF_TARGET} libcef_lib libcef_dll_wrapper ${CEF_STANDARD_LIBS} d3d11.lib glu32.lib imm32.lib opengl32.lib)
 
@@ -624,12 +591,16 @@ if(OS_WINDOWS)
     target_link_libraries(${CEF_TARGET} oleacc.lib)
   endif()
 
+  if(USE_SANDBOX)
+    # Logical target used to link the cef_sandbox library.
+    ADD_LOGICAL_TARGET("cef_sandbox_lib" "${CEF_SANDBOX_LIB_DEBUG}" "${CEF_SANDBOX_LIB_RELEASE}")
+    target_link_libraries(${CEF_TARGET} cef_sandbox_lib ${CEF_SANDBOX_STANDARD_LIBS})
+  endif()
+
+  # Add the custom manifest files to the executable.
+  ADD_WINDOWS_MANIFEST("${CMAKE_CURRENT_SOURCE_DIR}/resources/win" "${CEF_TARGET}" "exe")
+
   # Copy CEF binary and resource files to the target output directory.
   COPY_FILES("${CEF_TARGET}" "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" "${CEF_TARGET_OUT_DIR}")
   COPY_FILES("${CEF_TARGET}" "${CEF_RESOURCE_FILES}" "${CEF_RESOURCE_DIR}" "${CEF_TARGET_OUT_DIR}")
-
-  if(USE_SANDBOX)
-    # Set LPAC ACLs required for Windows sandbox support.
-    SET_LPAC_ACLS("${CEF_TARGET}")
-  endif()
 endif()

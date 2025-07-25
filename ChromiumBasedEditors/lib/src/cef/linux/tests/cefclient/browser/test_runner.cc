@@ -8,22 +8,16 @@
 #include <map>
 #include <set>
 #include <sstream>
-#include <string>
 
 #include "include/base/cef_callback.h"
-#include "include/base/cef_dump_without_crashing.h"
 #include "include/cef_parser.h"
 #include "include/cef_task.h"
 #include "include/cef_trace.h"
-#include "include/views/cef_browser_view.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "include/wrapper/cef_stream_resource_handler.h"
-#include "tests/cefclient/browser/base_client_handler.h"
-#include "tests/cefclient/browser/binary_transfer_test.h"
 #include "tests/cefclient/browser/binding_test.h"
-#include "tests/cefclient/browser/config_test.h"
+#include "tests/cefclient/browser/client_handler.h"
 #include "tests/cefclient/browser/dialog_test.h"
-#include "tests/cefclient/browser/hang_test.h"
 #include "tests/cefclient/browser/main_context.h"
 #include "tests/cefclient/browser/media_router_test.h"
 #include "tests/cefclient/browser/preferences_test.h"
@@ -32,19 +26,19 @@
 #include "tests/cefclient/browser/root_window_manager.h"
 #include "tests/cefclient/browser/scheme_test.h"
 #include "tests/cefclient/browser/server_test.h"
-#include "tests/cefclient/browser/task_manager_test.h"
 #include "tests/cefclient/browser/urlrequest_test.h"
 #include "tests/cefclient/browser/window_test.h"
 #include "tests/shared/browser/resource_util.h"
 #include "tests/shared/common/string_util.h"
 
-namespace client::test_runner {
+namespace client {
+namespace test_runner {
 
 namespace {
 
 const char kTestHost[] = "tests";
 const char kLocalHost[] = "localhost";
-const char kTestOrigin[] = "https://tests/";
+const char kTestOrigin[] = "http://tests/";
 
 // Pages handled via StringResourceProvider.
 const char kTestGetSourcePage[] = "get_source.html";
@@ -55,7 +49,9 @@ const char kTestGetTextPage[] = "get_text.html";
 void LoadStringResourcePage(CefRefPtr<CefBrowser> browser,
                             const std::string& page,
                             const std::string& data) {
-  BaseClientHandler::GetForBrowser(browser)->SetStringResource(page, data);
+  CefRefPtr<CefClient> client = browser->GetHost()->GetClient();
+  ClientHandler* client_handler = static_cast<ClientHandler*>(client.get());
+  client_handler->SetStringResource(page, data);
   browser->GetMainFrame()->LoadURL(kTestOrigin + page);
 }
 
@@ -63,7 +59,7 @@ void RunGetSourceTest(CefRefPtr<CefBrowser> browser) {
   class Visitor : public CefStringVisitor {
    public:
     explicit Visitor(CefRefPtr<CefBrowser> browser) : browser_(browser) {}
-    void Visit(const CefString& string) override {
+    virtual void Visit(const CefString& string) override {
       std::string source = AsciiStrReplace(string, "<", "&lt;");
       source = AsciiStrReplace(source, ">", "&gt;");
       std::stringstream ss;
@@ -84,7 +80,7 @@ void RunGetTextTest(CefRefPtr<CefBrowser> browser) {
   class Visitor : public CefStringVisitor {
    public:
     explicit Visitor(CefRefPtr<CefBrowser> browser) : browser_(browser) {}
-    void Visit(const CefString& string) override {
+    virtual void Visit(const CefString& string) override {
       std::string text = AsciiStrReplace(string, "<", "&lt;");
       text = AsciiStrReplace(text, ">", "&gt;");
       std::stringstream ss;
@@ -105,18 +101,18 @@ void RunRequestTest(CefRefPtr<CefBrowser> browser) {
   // Create a new request
   CefRefPtr<CefRequest> request(CefRequest::Create());
 
-  if (browser->GetMainFrame()->GetURL().ToString().find(kTestOrigin) != 0) {
+  if (browser->GetMainFrame()->GetURL().ToString().find("http://tests/") != 0) {
     // The LoadRequest method will fail with "bad IPC message" reason
     // INVALID_INITIATOR_ORIGIN (213) unless you first navigate to the
     // request origin using some other mechanism (LoadURL, link click, etc).
-    Alert(browser, "Please first navigate to a " + std::string(kTestOrigin) +
-                       " URL. "
-                       "For example, first load Tests > Other Tests.");
+    Alert(browser,
+          "Please first navigate to a http://tests/ URL. "
+          "For example, first load Tests > Other Tests.");
     return;
   }
 
   // Set the request URL
-  request->SetURL(GetTestURL("request"));
+  request->SetURL("http://tests/request");
 
   // Add post data to the request.  The correct method and content-
   // type headers will be set by CEF.
@@ -146,23 +142,17 @@ void RunNewWindowTest(CefRefPtr<CefBrowser> browser) {
 
 void RunPopupWindowTest(CefRefPtr<CefBrowser> browser) {
   browser->GetMainFrame()->ExecuteJavaScript(
-      "window.open('https://www.google.com', 'google', "
-      "'left=100,top=100,width=600,height=400');",
-      "about:blank", 0);
+      "window.open('https://www.google.com');", "about:blank", 0);
 }
 
-void RunDialogWindowTest(CefRefPtr<CefBrowser> browser) {
-  auto browser_view = CefBrowserView::GetForBrowser(browser);
-  if (!browser_view) {
-    LOG(ERROR) << "Dialog windows require Views";
+void ModifyZoom(CefRefPtr<CefBrowser> browser, double delta) {
+  if (!CefCurrentlyOn(TID_UI)) {
+    // Execute on the UI thread.
+    CefPostTask(TID_UI, base::BindOnce(&ModifyZoom, browser, delta));
     return;
   }
 
-  auto config = std::make_unique<RootWindowConfig>();
-  config->window_type = WindowType::DIALOG;
-  config->parent_window = browser_view->GetWindow();
-  MainContext::Get()->GetRootWindowManager()->CreateRootWindow(
-      std::move(config));
+  browser->GetHost()->SetZoomLevel(browser->GetHost()->GetZoomLevel() + delta);
 }
 
 const char kPrompt[] = "Prompt.";
@@ -172,37 +162,34 @@ const char kPromptDSF[] = "DSF";
 // Handles execution of prompt results.
 class PromptHandler : public CefMessageRouterBrowserSide::Handler {
  public:
-  PromptHandler() = default;
+  PromptHandler() {}
 
   // Called due to cefQuery execution.
-  bool OnQuery(CefRefPtr<CefBrowser> browser,
-               CefRefPtr<CefFrame> frame,
-               int64_t query_id,
-               const CefString& request,
-               bool persistent,
-               CefRefPtr<Callback> callback) override {
+  virtual bool OnQuery(CefRefPtr<CefBrowser> browser,
+                       CefRefPtr<CefFrame> frame,
+                       int64 query_id,
+                       const CefString& request,
+                       bool persistent,
+                       CefRefPtr<Callback> callback) override {
     // Parse |request| which takes the form "Prompt.[type]:[value]".
     const std::string& request_str = request;
-    if (request_str.find(kPrompt) != 0) {
+    if (request_str.find(kPrompt) != 0)
       return false;
-    }
 
     std::string type = request_str.substr(sizeof(kPrompt) - 1);
     size_t delim = type.find(':');
-    if (delim == std::string::npos) {
+    if (delim == std::string::npos)
       return false;
-    }
 
     const std::string& value = type.substr(delim + 1);
     type = type.substr(0, delim);
 
     // Canceling the prompt dialog returns a value of "null".
     if (value != "null") {
-      if (type == kPromptFPS) {
+      if (type == kPromptFPS)
         SetFPS(browser, atoi(value.c_str()));
-      } else if (type == kPromptDSF) {
+      else if (type == kPromptDSF)
         SetDSF(browser, static_cast<float>(atof(value.c_str())));
-      }
     }
 
     // Nothing is done with the response.
@@ -271,8 +258,8 @@ void PromptDSF(CefRefPtr<CefBrowser> browser) {
 
   // Format the default value string.
   std::stringstream ss;
-  ss << *RootWindow::GetForBrowser(browser->GetIdentifier())
-             ->GetDeviceScaleFactor();
+  ss << RootWindow::GetForBrowser(browser->GetIdentifier())
+            ->GetDeviceScaleFactor();
 
   Prompt(browser, kPromptDSF, "Enter Device Scale Factor", ss.str());
 }
@@ -303,9 +290,8 @@ void EndTracing(CefRefPtr<CefBrowser> browser) {
     void RunDialog() {
       static const char kDefaultFileName[] = "trace.txt";
       std::string path = MainContext::Get()->GetDownloadPath(kDefaultFileName);
-      if (path.empty()) {
+      if (path.empty())
         path = kDefaultFileName;
-      }
 
       // Results in a call to OnFileDialogDismissed.
       browser_->GetHost()->RunFileDialog(
@@ -355,9 +341,8 @@ void PrintToPDF(CefRefPtr<CefBrowser> browser) {
     void RunDialog() {
       static const char kDefaultFileName[] = "output.pdf";
       std::string path = MainContext::Get()->GetDownloadPath(kDefaultFileName);
-      if (path.empty()) {
+      if (path.empty())
         path = kDefaultFileName;
-      }
 
       std::vector<CefString> accept_filters;
       accept_filters.push_back(".pdf");
@@ -414,7 +399,7 @@ void MuteAudio(CefRefPtr<CefBrowser> browser, bool mute) {
 }
 
 void RunOtherTests(CefRefPtr<CefBrowser> browser) {
-  browser->GetMainFrame()->LoadURL(GetTestURL("other_tests"));
+  browser->GetMainFrame()->LoadURL("http://tests/other_tests");
 }
 
 // Provider that dumps the request contents.
@@ -507,9 +492,8 @@ std::string RequestUrlFilter(const std::string& url) {
 
   // Identify where the query or fragment component, if any, begins.
   size_t suffix_pos = url.find('?');
-  if (suffix_pos == std::string::npos) {
+  if (suffix_pos == std::string::npos)
     suffix_pos = url.find('#');
-  }
 
   std::string url_base, url_suffix;
   if (suffix_pos == std::string::npos) {
@@ -521,17 +505,15 @@ std::string RequestUrlFilter(const std::string& url) {
 
   // Identify the last path component.
   size_t path_pos = url_base.rfind('/');
-  if (path_pos == std::string::npos) {
+  if (path_pos == std::string::npos)
     return url;
-  }
 
   const std::string& path_component = url_base.substr(path_pos);
 
   // Identify if a file extension is currently specified.
   size_t ext_pos = path_component.rfind(".");
-  if (ext_pos != std::string::npos) {
+  if (ext_pos != std::string::npos)
     return url;
-  }
 
   // Rebuild the URL with a file extension.
   return url_base + ".html" + url_suffix;
@@ -540,9 +522,8 @@ std::string RequestUrlFilter(const std::string& url) {
 }  // namespace
 
 void RunTest(CefRefPtr<CefBrowser> browser, int id) {
-  if (!browser) {
+  if (!browser)
     return;
-  }
 
   switch (id) {
     case ID_TESTS_GETSOURCE:
@@ -557,20 +538,17 @@ void RunTest(CefRefPtr<CefBrowser> browser, int id) {
     case ID_TESTS_WINDOW_POPUP:
       RunPopupWindowTest(browser);
       break;
-    case ID_TESTS_WINDOW_DIALOG:
-      RunDialogWindowTest(browser);
-      break;
     case ID_TESTS_REQUEST:
       RunRequestTest(browser);
       break;
     case ID_TESTS_ZOOM_IN:
-      browser->GetHost()->Zoom(CEF_ZOOM_COMMAND_IN);
+      ModifyZoom(browser, 0.5);
       break;
     case ID_TESTS_ZOOM_OUT:
-      browser->GetHost()->Zoom(CEF_ZOOM_COMMAND_OUT);
+      ModifyZoom(browser, -0.5);
       break;
     case ID_TESTS_ZOOM_RESET:
-      browser->GetHost()->Zoom(CEF_ZOOM_COMMAND_RESET);
+      browser->GetHost()->SetZoomLevel(0.0);
       break;
     case ID_TESTS_OSR_FPS:
       PromptFPS(browser);
@@ -598,9 +576,6 @@ void RunTest(CefRefPtr<CefBrowser> browser, int id) {
       break;
     case ID_TESTS_OTHER_TESTS:
       RunOtherTests(browser);
-      break;
-    case ID_TESTS_DUMP_WITHOUT_CRASHING:
-      CefDumpWithoutCrashing();
       break;
   }
 }
@@ -677,7 +652,7 @@ CefRefPtr<CefStreamReader> GetDumpResponse(
   }
 
   if (!origin.empty() &&
-      (origin.find("https://" + std::string(kTestHost)) == 0 ||
+      (origin.find("http://" + std::string(kTestHost)) == 0 ||
        origin.find("http://" + std::string(kLocalHost)) == 0)) {
     // Allow cross-origin XMLHttpRequests from test origins.
     response_headers.insert(
@@ -760,29 +735,8 @@ std::string GetErrorString(cef_errorcode_t code) {
     CASE(ERR_CACHE_MISS);
     CASE(ERR_INSECURE_RESPONSE);
     default:
-      return std::to_string(static_cast<int>(code));
+      return "UNKNOWN";
   }
-}
-
-std::string GetErrorString(cef_termination_status_t status) {
-  switch (status) {
-    case TS_ABNORMAL_TERMINATION:
-      return "ABNORMAL_TERMINATION";
-    case TS_PROCESS_WAS_KILLED:
-      return "PROCESS_WAS_KILLED";
-    case TS_PROCESS_CRASHED:
-      return "PROCESS_CRASHED";
-    case TS_PROCESS_OOM:
-      return "PROCESS_OOM";
-    case TS_LAUNCH_FAILED:
-      return "LAUNCH_FAILED";
-    case TS_INTEGRITY_FAILURE:
-      return "INTEGRITY_FAILURE";
-    case TS_NUM_VALUES:
-      break;
-  }
-  NOTREACHED();
-  return std::string();
 }
 
 void SetupResourceManager(CefRefPtr<CefResourceManager> resource_manager,
@@ -809,12 +763,10 @@ void SetupResourceManager(CefRefPtr<CefResourceManager> resource_manager,
   string_pages.insert(kTestGetSourcePage);
   string_pages.insert(kTestGetTextPage);
 
-  if (string_resource_map) {
-    // Add provider for string resources.
-    resource_manager->AddProvider(
-        new StringResourceProvider(string_pages, string_resource_map), 0,
-        std::string());
-  }
+  // Add provider for string resources.
+  resource_manager->AddProvider(
+      new StringResourceProvider(string_pages, string_resource_map), 0,
+      std::string());
 
 // Add provider for bundled resource files.
 #if defined(OS_WIN)
@@ -833,6 +785,14 @@ void SetupResourceManager(CefRefPtr<CefResourceManager> resource_manager,
 }
 
 void Alert(CefRefPtr<CefBrowser> browser, const std::string& message) {
+  if (browser->GetHost()->GetExtension()) {
+    // Alerts originating from extension hosts should instead be displayed in
+    // the active browser.
+    browser = MainContext::Get()->GetRootWindowManager()->GetActiveBrowser();
+    if (!browser)
+      return;
+  }
+
   // Escape special characters in the message.
   std::string msg = AsciiStrReplace(message, "\\", "\\\\");
   msg = AsciiStrReplace(msg, "'", "\\'");
@@ -842,18 +802,13 @@ void Alert(CefRefPtr<CefBrowser> browser, const std::string& message) {
   frame->ExecuteJavaScript("alert('" + msg + "');", frame->GetURL(), 0);
 }
 
-std::string GetTestURL(const std::string& path) {
-  return kTestOrigin + path;
-}
-
 bool IsTestURL(const std::string& url, const std::string& path) {
   CefURLParts parts;
   CefParseURL(url, parts);
 
   const std::string& url_host = CefString(&parts.host);
-  if (url_host != kTestHost && url_host != kLocalHost) {
+  if (url_host != kTestHost && url_host != kLocalHost)
     return false;
-  }
 
   const std::string& url_path = CefString(&parts.path);
   return url_path.find(path) == 0;
@@ -862,20 +817,11 @@ bool IsTestURL(const std::string& url, const std::string& path) {
 void CreateMessageHandlers(MessageHandlerSet& handlers) {
   handlers.insert(new PromptHandler);
 
-  // Create the binary trasfer test handlers.
-  binary_transfer_test::CreateMessageHandlers(handlers);
-
   // Create the binding test handlers.
   binding_test::CreateMessageHandlers(handlers);
 
-  // Create the config test handlers.
-  config_test::CreateMessageHandlers(handlers);
-
   // Create the dialog test handlers.
   dialog_test::CreateMessageHandlers(handlers);
-
-  // Create the hang test handlers.
-  hang_test::CreateMessageHandlers(handlers);
 
   // Create the media router test handlers.
   media_router_test::CreateMessageHandlers(handlers);
@@ -885,9 +831,6 @@ void CreateMessageHandlers(MessageHandlerSet& handlers) {
 
   // Create the server test handlers.
   server_test::CreateMessageHandlers(handlers);
-
-  // Create the task manager handlers.
-  task_manager_test::CreateMessageHandlers(handlers);
 
   // Create the urlrequest test handlers.
   urlrequest_test::CreateMessageHandlers(handlers);
@@ -911,4 +854,5 @@ CefRefPtr<CefResponseFilter> GetResourceResponseFilter(
                                                          request, response);
 }
 
-}  // namespace client::test_runner
+}  // namespace test_runner
+}  // namespace client

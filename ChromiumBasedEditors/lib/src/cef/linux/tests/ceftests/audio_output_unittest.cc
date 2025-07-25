@@ -11,7 +11,7 @@
 using client::ClientAppBrowser;
 
 // Taken from:
-// https://www.iandevlin.com/blog/2012/09/html5/html5-media-and-data-uri/
+// http://www.iandevlin.com/blog/2012/09/html5/html5-media-and-data-uri/
 #define AUDIO_DATA                                                             \
   "data:audio/"                                                                \
   "ogg;base64,T2dnUwACAAAAAAAAAAA+"                                            \
@@ -801,10 +801,10 @@ const int kSampleRate = 44100;
 const int kFramesPerBuffer = 882;  // 10ms
 const CefAudioHandler::ChannelLayout kChannelLayout = CEF_CHANNEL_LAYOUT_STEREO;
 
-const char kAudioOutputTestUrl[] = "https://tests/audiooutputtest";
-const char kAudioCloseBrowserTestUrl[] = "https://tests/audioclosebrowsertest";
+const char kAudioOutputTestUrl[] = "http://tests/audiooutputtest";
+const char kAudioCloseBrowserTestUrl[] = "http://tests/audioclosebrowsertest";
 const char kAudioTogglePlaybackTestUrl[] =
-    "https://tests/audiotoggleplaybacktest";
+    "http://tests/audiotoggleplaybacktest";
 
 const char kTestHtml[] =
     "<!DOCTYPE html><html><head><meta "
@@ -854,7 +854,7 @@ const char kToggleTestHtml[] =
 
 class AudioOutputTest : public ClientAppBrowser::Delegate {
  public:
-  AudioOutputTest() = default;
+  AudioOutputTest() {}
 
   void OnBeforeCommandLineProcessing(
       CefRefPtr<ClientAppBrowser> app,
@@ -870,7 +870,7 @@ class AudioOutputTest : public ClientAppBrowser::Delegate {
 
 class AudioTestHandler : public TestHandler, public CefAudioHandler {
  public:
-  AudioTestHandler() = default;
+  AudioTestHandler() {}
 
   void SetupAudioTest(const std::string& testUrl) {
     // Add the resource.
@@ -916,7 +916,7 @@ class AudioTestHandler : public TestHandler, public CefAudioHandler {
   void OnAudioStreamPacket(CefRefPtr<CefBrowser> browser,
                            const float** data,
                            int frames,
-                           int64_t pts) override {
+                           int64 pts) override {
     EXPECT_TRUE(got_on_audio_stream_started_);
     EXPECT_TRUE(browser_->IsSame(browser));
     EXPECT_EQ(frames, kFramesPerBuffer);
@@ -934,14 +934,9 @@ class AudioTestHandler : public TestHandler, public CefAudioHandler {
 
   void OnAudioStreamError(CefRefPtr<CefBrowser> browser,
                           const CefString& message) override {
-    // Since 7c88225, when Chromium closes a socket, the following error is
-    // propagated to the audio capturer. Ignore this error for test destruction.
-    const CefString& socket_error("Socket closed unexpectedly");
-    if (message.compare(socket_error) != 0) {
-      LOG(WARNING) << "OnAudioStreamError: message = " << message << ".";
-      got_on_audio_stream_error_.yes();
-      DestroyTest();
-    }
+    LOG(WARNING) << "OnAudioStreamError: message = " << message << ".";
+    got_on_audio_stream_error_.yes();
+    DestroyTest();
   }
 
  protected:
@@ -950,6 +945,8 @@ class AudioTestHandler : public TestHandler, public CefAudioHandler {
     EXPECT_TRUE(got_audio_parameters_);
     EXPECT_TRUE(got_on_audio_stream_started_);
     EXPECT_TRUE(got_on_audio_stream_packet_);
+    EXPECT_TRUE(got_on_audio_stream_stopped_);
+    EXPECT_FALSE(got_on_audio_stream_error_);
     TestHandler::DestroyTest();
   }
 
@@ -964,7 +961,7 @@ class AudioTestHandler : public TestHandler, public CefAudioHandler {
 // A common base class for audio output tests.
 class AudioOutputTestHandler : public AudioTestHandler {
  public:
-  AudioOutputTestHandler() = default;
+  AudioOutputTestHandler() {}
 
   void RunTest() override {
     // Setup the resource.
@@ -974,7 +971,7 @@ class AudioOutputTestHandler : public AudioTestHandler {
   void OnAudioStreamPacket(CefRefPtr<CefBrowser> browser,
                            const float** data,
                            int frames,
-                           int64_t pts) override {
+                           int64 pts) override {
     if (!got_on_audio_stream_packet_.isSet()) {
       browser->GetMainFrame()->ExecuteJavaScript(
           "var ifr = document.getElementById(\"audio_output_frame\"); "
@@ -990,7 +987,7 @@ class AudioOutputTestHandler : public AudioTestHandler {
 
 class AudioCloseBrowserTest : public AudioTestHandler {
  public:
-  AudioCloseBrowserTest() = default;
+  AudioCloseBrowserTest() {}
 
   void RunTest() override {
     // Setup the resource.
@@ -1005,7 +1002,7 @@ class AudioCloseBrowserTest : public AudioTestHandler {
   void OnAudioStreamPacket(CefRefPtr<CefBrowser> browser,
                            const float** data,
                            int frames,
-                           int64_t pts) override {
+                           int64 pts) override {
     if (!got_on_audio_stream_packet_.isSet()) {
       CloseBrowser(browser, true);
     }
@@ -1031,7 +1028,7 @@ class AudioCloseBrowserTest : public AudioTestHandler {
 // this nearly 15 seconds test run.
 class AudioTogglePlaybackTest : public AudioTestHandler {
  public:
-  AudioTogglePlaybackTest() = default;
+  AudioTogglePlaybackTest() {}
 
   void RunTest() override {
     // Add the resource.
@@ -1058,9 +1055,8 @@ class AudioTogglePlaybackTest : public AudioTestHandler {
 
   void OnAudioStreamStopped(CefRefPtr<CefBrowser> browser) override {
     EXPECT_EQ(start_count_, ++stop_count_);
-    if (stop_count_ == kToggleCount) {
+    if (stop_count_ == kToggleCount)
       AudioTestHandler::OnAudioStreamStopped(browser);
-    }
   }
 
  protected:

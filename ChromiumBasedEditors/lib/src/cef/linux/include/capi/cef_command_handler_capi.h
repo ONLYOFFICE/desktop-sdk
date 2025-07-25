@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,16 +33,12 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=979f6d810588e94c86b94cd204f27175bd5b85aa$
+// $hash=46817ef557307a55a9b7138134c4f5c32562f2d7$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_COMMAND_HANDLER_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_COMMAND_HANDLER_CAPI_H_
 #pragma once
-
-#if defined(BUILDING_CEF_SHARED)
-#error This file cannot be included DLL-side
-#endif
 
 #include "include/capi/cef_base_capi.h"
 #include "include/capi/cef_browser_capi.h"
@@ -55,8 +51,6 @@ extern "C" {
 /// Implement this structure to handle events related to commands. The functions
 /// of this structure will be called on the UI thread.
 ///
-/// NOTE: This struct is allocated client-side.
-///
 typedef struct _cef_command_handler_t {
   ///
   /// Base structure.
@@ -65,62 +59,18 @@ typedef struct _cef_command_handler_t {
 
   ///
   /// Called to execute a Chrome command triggered via menu selection or
-  /// keyboard shortcut. Use the cef_id_for_command_id_name() function for
-  /// version-safe mapping of command IDC names from cef_command_ids.h to
-  /// version-specific numerical |command_id| values. |disposition| provides
-  /// information about the intended command target. Return true (1) if the
-  /// command was handled or false (0) for the default implementation. For
-  /// context menu commands this will be called after
-  /// cef_context_menu_handler_t::OnContextMenuCommand. Only used with Chrome
-  /// style.
+  /// keyboard shortcut. Values for |command_id| can be found in the
+  /// cef_command_ids.h file. |disposition| provides information about the
+  /// intended command target. Return true (1) if the command was handled or
+  /// false (0) for the default implementation. For context menu commands this
+  /// will be called after cef_context_menu_handler_t::OnContextMenuCommand.
+  /// Only used with the Chrome runtime.
   ///
   int(CEF_CALLBACK* on_chrome_command)(
       struct _cef_command_handler_t* self,
       struct _cef_browser_t* browser,
       int command_id,
       cef_window_open_disposition_t disposition);
-
-  ///
-  /// Called to check if a Chrome app menu item should be visible. Use the
-  /// cef_id_for_command_id_name() function for version-safe mapping of command
-  /// IDC names from cef_command_ids.h to version-specific numerical
-  /// |command_id| values. Only called for menu items that would be visible by
-  /// default. Only used with Chrome style.
-  ///
-  int(CEF_CALLBACK* is_chrome_app_menu_item_visible)(
-      struct _cef_command_handler_t* self,
-      struct _cef_browser_t* browser,
-      int command_id);
-
-  ///
-  /// Called to check if a Chrome app menu item should be enabled. Use the
-  /// cef_id_for_command_id_name() function for version-safe mapping of command
-  /// IDC names from cef_command_ids.h to version-specific numerical
-  /// |command_id| values. Only called for menu items that would be enabled by
-  /// default. Only used with Chrome style.
-  ///
-  int(CEF_CALLBACK* is_chrome_app_menu_item_enabled)(
-      struct _cef_command_handler_t* self,
-      struct _cef_browser_t* browser,
-      int command_id);
-
-  ///
-  /// Called during browser creation to check if a Chrome page action icon
-  /// should be visible. Only called for icons that would be visible by default.
-  /// Only used with Chrome style.
-  ///
-  int(CEF_CALLBACK* is_chrome_page_action_icon_visible)(
-      struct _cef_command_handler_t* self,
-      cef_chrome_page_action_icon_type_t icon_type);
-
-  ///
-  /// Called during browser creation to check if a Chrome toolbar button should
-  /// be visible. Only called for buttons that would be visible by default. Only
-  /// used with Chrome style.
-  ///
-  int(CEF_CALLBACK* is_chrome_toolbar_button_visible)(
-      struct _cef_command_handler_t* self,
-      cef_chrome_toolbar_button_type_t button_type);
 } cef_command_handler_t;
 
 #ifdef __cplusplus

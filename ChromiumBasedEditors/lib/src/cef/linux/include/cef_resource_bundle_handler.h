@@ -53,10 +53,8 @@ class CefResourceBundleHandler : public virtual CefBaseRefCounted {
   ///
   /// Called to retrieve a localized translation for the specified |string_id|.
   /// To provide the translation set |string| to the translation string and
-  /// return true. To use the default translation return false. Use the
-  /// cef_id_for_pack_string_name() function for version-safe mapping of string
-  /// IDS names from cef_pack_strings.h to version-specific numerical
-  /// |string_id| values.
+  /// return true. To use the default translation return false. Include
+  /// cef_pack_strings.h for a listing of valid string ID values.
   ///
   /*--cef()--*/
   virtual bool GetLocalizedString(int string_id, CefString& string) = 0;
@@ -66,9 +64,8 @@ class CefResourceBundleHandler : public virtual CefBaseRefCounted {
   /// To provide the resource data set |data| and |data_size| to the data
   /// pointer and size respectively and return true. To use the default resource
   /// data return false. The resource data will not be copied and must remain
-  /// resident in memory. Use the cef_id_for_pack_resource_name() function for
-  /// version-safe mapping of resource IDR names from cef_pack_resources.h to
-  /// version-specific numerical |resource_id| values.
+  /// resident in memory. Include cef_pack_resources.h for a listing of valid
+  /// resource ID values.
   ///
   /*--cef()--*/
   virtual bool GetDataResource(int resource_id,
@@ -80,10 +77,8 @@ class CefResourceBundleHandler : public virtual CefBaseRefCounted {
   /// factor |scale_factor|. To provide the resource data set |data| and
   /// |data_size| to the data pointer and size respectively and return true. To
   /// use the default resource data return false. The resource data will not be
-  /// copied and must remain resident in memory. Use the
-  /// cef_id_for_pack_resource_name() function for version-safe mapping of
-  /// resource IDR names from cef_pack_resources.h to version-specific numerical
-  /// |resource_id| values.
+  /// copied and must remain resident in memory. Include cef_pack_resources.h
+  /// for a listing of valid resource ID values.
   ///
   /*--cef()--*/
   virtual bool GetDataResourceForScale(int resource_id,

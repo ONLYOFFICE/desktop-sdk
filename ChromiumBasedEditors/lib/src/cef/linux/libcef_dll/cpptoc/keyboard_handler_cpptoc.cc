@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,11 +9,10 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=7a74999fbd77d44539965479d005eda42f1edc14$
+// $hash=56ee3469e52f521b142de927ab9d8067d25078f2$
 //
 
 #include "libcef_dll/cpptoc/keyboard_handler_cpptoc.h"
-
 #include "libcef_dll/ctocpp/browser_ctocpp.h"
 #include "libcef_dll/shutdown_checker.h"
 
@@ -23,7 +22,7 @@ namespace {
 
 int CEF_CALLBACK
 keyboard_handler_on_pre_key_event(struct _cef_keyboard_handler_t* self,
-                                  struct _cef_browser_t* browser,
+                                  cef_browser_t* browser,
                                   const cef_key_event_t* event,
                                   cef_event_handle_t os_event,
                                   int* is_keyboard_shortcut) {
@@ -32,24 +31,20 @@ keyboard_handler_on_pre_key_event(struct _cef_keyboard_handler_t* self,
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return 0;
-  }
   // Verify param: browser; type: refptr_diff
   DCHECK(browser);
-  if (!browser) {
+  if (!browser)
     return 0;
-  }
   // Verify param: event; type: simple_byref_const
   DCHECK(event);
-  if (!event) {
+  if (!event)
     return 0;
-  }
   // Verify param: is_keyboard_shortcut; type: bool_byaddr
   DCHECK(is_keyboard_shortcut);
-  if (!is_keyboard_shortcut) {
+  if (!is_keyboard_shortcut)
     return 0;
-  }
 
   // Translate param: event; type: simple_byref_const
   CefKeyEvent eventVal = event ? *event : CefKeyEvent();
@@ -59,13 +54,12 @@ keyboard_handler_on_pre_key_event(struct _cef_keyboard_handler_t* self,
 
   // Execute
   bool _retval = CefKeyboardHandlerCppToC::Get(self)->OnPreKeyEvent(
-      CefBrowserCToCpp_Wrap(browser), eventVal, os_event,
+      CefBrowserCToCpp::Wrap(browser), eventVal, os_event,
       &is_keyboard_shortcutBool);
 
   // Restore param: is_keyboard_shortcut; type: bool_byaddr
-  if (is_keyboard_shortcut) {
+  if (is_keyboard_shortcut)
     *is_keyboard_shortcut = is_keyboard_shortcutBool ? true : false;
-  }
 
   // Return type: bool
   return _retval;
@@ -73,7 +67,7 @@ keyboard_handler_on_pre_key_event(struct _cef_keyboard_handler_t* self,
 
 int CEF_CALLBACK
 keyboard_handler_on_key_event(struct _cef_keyboard_handler_t* self,
-                              struct _cef_browser_t* browser,
+                              cef_browser_t* browser,
                               const cef_key_event_t* event,
                               cef_event_handle_t os_event) {
   shutdown_checker::AssertNotShutdown();
@@ -81,26 +75,23 @@ keyboard_handler_on_key_event(struct _cef_keyboard_handler_t* self,
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return 0;
-  }
   // Verify param: browser; type: refptr_diff
   DCHECK(browser);
-  if (!browser) {
+  if (!browser)
     return 0;
-  }
   // Verify param: event; type: simple_byref_const
   DCHECK(event);
-  if (!event) {
+  if (!event)
     return 0;
-  }
 
   // Translate param: event; type: simple_byref_const
   CefKeyEvent eventVal = event ? *event : CefKeyEvent();
 
   // Execute
   bool _retval = CefKeyboardHandlerCppToC::Get(self)->OnKeyEvent(
-      CefBrowserCToCpp_Wrap(browser), eventVal, os_event);
+      CefBrowserCToCpp::Wrap(browser), eventVal, os_event);
 
   // Return type: bool
   return _retval;
@@ -127,7 +118,7 @@ CefRefPtr<CefKeyboardHandler> CefCppToCRefCounted<
     CefKeyboardHandler,
     cef_keyboard_handler_t>::UnwrapDerived(CefWrapperType type,
                                            cef_keyboard_handler_t* s) {
-  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  NOTREACHED() << "Unexpected class type: " << type;
   return nullptr;
 }
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,16 +33,12 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=c3f11f751b3bb100d0c756563292870874a15adf$
+// $hash=04aa6e193cc5d5658c0ef28a42c0777c0a955409$
 //
 
 #ifndef CEF_INCLUDE_CAPI_VIEWS_CEF_WINDOW_CAPI_H_
 #define CEF_INCLUDE_CAPI_VIEWS_CEF_WINDOW_CAPI_H_
 #pragma once
-
-#if defined(BUILDING_CEF_SHARED)
-#error This file cannot be included DLL-side
-#endif
 
 #include "include/capi/cef_image_capi.h"
 #include "include/capi/cef_menu_model_capi.h"
@@ -55,17 +51,12 @@
 extern "C" {
 #endif
 
-struct _cef_browser_view_t;
-struct _cef_view_t;
-
 ///
 /// A Window is a top-level Window/widget in the Views hierarchy. By default it
 /// will have a non-client area with title bar, icon and buttons that supports
 /// moving and resizing. All size and position values are in density independent
 /// pixels (DIP) unless otherwise indicated. Methods must be called on the
 /// browser process UI thread unless otherwise indicated.
-///
-/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_window_t {
   ///
@@ -77,21 +68,6 @@ typedef struct _cef_window_t {
   /// Show the Window.
   ///
   void(CEF_CALLBACK* show)(struct _cef_window_t* self);
-
-  ///
-  /// Show the Window as a browser modal dialog relative to |browser_view|. A
-  /// parent Window must be returned via
-  /// cef_window_delegate_t::get_parent_window() and |browser_view| must belong
-  /// to that parent Window. While this Window is visible, |browser_view| will
-  /// be disabled while other controls in the parent Window remain enabled.
-  /// Navigating or destroying the |browser_view| will close this Window
-  /// automatically. Alternately, use show() and return true (1) from
-  /// cef_window_delegate_t::is_window_modal_dialog() for a window modal dialog
-  /// where all controls in the parent Window are disabled.
-  ///
-  void(CEF_CALLBACK* show_as_browser_modal_dialog)(
-      struct _cef_window_t* self,
-      struct _cef_browser_view_t* browser_view);
 
   ///
   /// Hide the Window.
@@ -162,9 +138,7 @@ typedef struct _cef_window_t {
   void(CEF_CALLBACK* restore)(struct _cef_window_t* self);
 
   ///
-  /// Set fullscreen Window state. The
-  /// cef_window_delegate_t::OnWindowFullscreenTransition function will be
-  /// called during the fullscreen transition for notification purposes.
+  /// Set fullscreen Window state.
   ///
   void(CEF_CALLBACK* set_fullscreen)(struct _cef_window_t* self,
                                      int fullscreen);
@@ -183,15 +157,6 @@ typedef struct _cef_window_t {
   /// Returns true (1) if the Window is fullscreen.
   ///
   int(CEF_CALLBACK* is_fullscreen)(struct _cef_window_t* self);
-
-  ///
-  /// Returns the View that currently has focus in this Window, or nullptr if no
-  /// View currently has focus. A Window may have a focused View even if it is
-  /// not currently active. Any focus changes while a Window is not active may
-  /// be applied after that Window next becomes active.
-  ///
-  struct _cef_view_t*(CEF_CALLBACK* get_focused_view)(
-      struct _cef_window_t* self);
 
   ///
   /// Set the Window title.
@@ -236,9 +201,8 @@ typedef struct _cef_window_t {
   ///
   /// Add a View that will be overlayed on the Window contents with absolute
   /// positioning and high z-order. Positioning is controlled by |docking_mode|
-  /// as described below. Setting |can_activate| to true (1) will allow the
-  /// overlay view to receive input focus. The returned cef_overlay_controller_t
-  /// object is used to control the overlay. Overlays are hidden by default.
+  /// as described below. The returned cef_overlay_controller_t object is used
+  /// to control the overlay. Overlays are hidden by default.
   ///
   /// With CEF_DOCKING_MODE_CUSTOM:
   ///   1. The overlay is initially hidden, sized to |view|'s preferred size,
@@ -266,8 +230,7 @@ typedef struct _cef_window_t {
   struct _cef_overlay_controller_t*(CEF_CALLBACK* add_overlay_view)(
       struct _cef_window_t* self,
       struct _cef_view_t* view,
-      cef_docking_mode_t docking_mode,
-      int can_activate);
+      cef_docking_mode_t docking_mode);
 
   ///
   /// Show a menu with contents |menu_model|. |screen_point| specifies the menu
@@ -323,7 +286,7 @@ typedef struct _cef_window_t {
   ///
   void(CEF_CALLBACK* send_key_press)(struct _cef_window_t* self,
                                      int key_code,
-                                     uint32_t event_flags);
+                                     uint32 event_flags);
 
   ///
   /// Simulate a mouse move. The mouse cursor will be moved to the specified
@@ -350,25 +313,16 @@ typedef struct _cef_window_t {
 
   ///
   /// Set the keyboard accelerator for the specified |command_id|. |key_code|
-  /// can be any virtual key or character value. Required modifier keys are
-  /// specified by |shift_pressed|, |ctrl_pressed| and/or |alt_pressed|.
+  /// can be any virtual key or character value.
   /// cef_window_delegate_t::OnAccelerator will be called if the keyboard
   /// combination is triggered while this window has focus.
-  ///
-  /// The |high_priority| value will be considered if a child cef_browser_view_t
-  /// has focus when the keyboard combination is triggered. If |high_priority|
-  /// is true (1) then the key event will not be forwarded to the web content
-  /// (`keydown` event handler) or cef_keyboard_handler_t first. If
-  /// |high_priority| is false (0) then the behavior will depend on the
-  /// cef_browser_view_t::SetPreferAccelerators configuration.
   ///
   void(CEF_CALLBACK* set_accelerator)(struct _cef_window_t* self,
                                       int command_id,
                                       int key_code,
                                       int shift_pressed,
                                       int ctrl_pressed,
-                                      int alt_pressed,
-                                      int high_priority);
+                                      int alt_pressed);
 
   ///
   /// Remove the keyboard accelerator for the specified |command_id|.
@@ -380,50 +334,6 @@ typedef struct _cef_window_t {
   /// Remove all keyboard accelerators.
   ///
   void(CEF_CALLBACK* remove_all_accelerators)(struct _cef_window_t* self);
-
-  ///
-  /// Override a standard theme color or add a custom color associated with
-  /// |color_id|. See cef_color_ids.h for standard ID values. Recommended usage
-  /// is as follows:
-  ///
-  /// 1. Customize the default native/OS theme by calling SetThemeColor before
-  ///    showing the first Window. When done setting colors call
-  ///    CefWindow::ThemeChanged to trigger CefViewDelegate::OnThemeChanged
-  ///    notifications.
-  /// 2. Customize the current native/OS or Chrome theme after it changes by
-  ///    calling SetThemeColor from the CefWindowDelegate::OnThemeColorsChanged
-  ///    callback. CefViewDelegate::OnThemeChanged notifications will then be
-  ///    triggered automatically.
-  ///
-  /// The configured color will be available immediately via
-  /// cef_view_t::GetThemeColor and will be applied to each View in this
-  /// Window's component hierarchy when cef_view_delegate_t::OnThemeChanged is
-  /// called. See OnThemeColorsChanged documentation for additional details.
-  ///
-  /// Clients wishing to add custom colors should use |color_id| values >=
-  /// CEF_ChromeColorsEnd.
-  ///
-  void(CEF_CALLBACK* set_theme_color)(struct _cef_window_t* self,
-                                      int color_id,
-                                      cef_color_t color);
-
-  ///
-  /// Trigger cef_view_delegate_t::OnThemeChanged callbacks for each View in
-  /// this Window's component hierarchy. Unlike a native/OS or Chrome theme
-  /// change this function does not reset theme colors to standard values and
-  /// does not result in a call to cef_window_delegate_t::OnThemeColorsChanged.
-  ///
-  /// Do not call this function from cef_window_delegate_t::OnThemeColorsChanged
-  /// or cef_view_delegate_t::OnThemeChanged.
-  ///
-  void(CEF_CALLBACK* theme_changed)(struct _cef_window_t* self);
-
-  ///
-  /// Returns the runtime style for this Window (ALLOY or CHROME). See
-  /// cef_runtime_style_t documentation for details.
-  ///
-  cef_runtime_style_t(CEF_CALLBACK* get_runtime_style)(
-      struct _cef_window_t* self);
 } cef_window_t;
 
 ///

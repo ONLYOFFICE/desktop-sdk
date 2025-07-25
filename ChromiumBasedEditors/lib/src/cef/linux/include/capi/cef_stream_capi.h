@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,16 +33,12 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=650f1218832c4b81610ba0ddc8c77d307ce2a993$
+// $hash=bbb4153d5d7325ac9a410d7f85a8d47eadcfaf6e$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_STREAM_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_STREAM_CAPI_H_
 #pragma once
-
-#if defined(BUILDING_CEF_SHARED)
-#error This file cannot be included DLL-side
-#endif
 
 #include "include/capi/cef_base_capi.h"
 
@@ -53,8 +49,6 @@ extern "C" {
 ///
 /// Structure the client can implement to provide a custom stream reader. The
 /// functions of this structure may be called on any thread.
-///
-/// NOTE: This struct is allocated client-side.
 ///
 typedef struct _cef_read_handler_t {
   ///
@@ -76,13 +70,13 @@ typedef struct _cef_read_handler_t {
   /// failure.
   ///
   int(CEF_CALLBACK* seek)(struct _cef_read_handler_t* self,
-                          int64_t offset,
+                          int64 offset,
                           int whence);
 
   ///
   /// Return the current offset position.
   ///
-  int64_t(CEF_CALLBACK* tell)(struct _cef_read_handler_t* self);
+  int64(CEF_CALLBACK* tell)(struct _cef_read_handler_t* self);
 
   ///
   /// Return non-zero if at end of file.
@@ -100,8 +94,6 @@ typedef struct _cef_read_handler_t {
 ///
 /// Structure used to read data from a stream. The functions of this structure
 /// may be called on any thread.
-///
-/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_stream_reader_t {
   ///
@@ -123,13 +115,13 @@ typedef struct _cef_stream_reader_t {
   /// failure.
   ///
   int(CEF_CALLBACK* seek)(struct _cef_stream_reader_t* self,
-                          int64_t offset,
+                          int64 offset,
                           int whence);
 
   ///
   /// Return the current offset position.
   ///
-  int64_t(CEF_CALLBACK* tell)(struct _cef_stream_reader_t* self);
+  int64(CEF_CALLBACK* tell)(struct _cef_stream_reader_t* self);
 
   ///
   /// Return non-zero if at end of file.
@@ -166,8 +158,6 @@ CEF_EXPORT cef_stream_reader_t* cef_stream_reader_create_for_handler(
 /// Structure the client can implement to provide a custom stream writer. The
 /// functions of this structure may be called on any thread.
 ///
-/// NOTE: This struct is allocated client-side.
-///
 typedef struct _cef_write_handler_t {
   ///
   /// Base structure.
@@ -188,13 +178,13 @@ typedef struct _cef_write_handler_t {
   /// failure.
   ///
   int(CEF_CALLBACK* seek)(struct _cef_write_handler_t* self,
-                          int64_t offset,
+                          int64 offset,
                           int whence);
 
   ///
   /// Return the current offset position.
   ///
-  int64_t(CEF_CALLBACK* tell)(struct _cef_write_handler_t* self);
+  int64(CEF_CALLBACK* tell)(struct _cef_write_handler_t* self);
 
   ///
   /// Flush the stream.
@@ -212,8 +202,6 @@ typedef struct _cef_write_handler_t {
 ///
 /// Structure used to write data to a stream. The functions of this structure
 /// may be called on any thread.
-///
-/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_stream_writer_t {
   ///
@@ -235,13 +223,13 @@ typedef struct _cef_stream_writer_t {
   /// failure.
   ///
   int(CEF_CALLBACK* seek)(struct _cef_stream_writer_t* self,
-                          int64_t offset,
+                          int64 offset,
                           int whence);
 
   ///
   /// Return the current offset position.
   ///
-  int64_t(CEF_CALLBACK* tell)(struct _cef_stream_writer_t* self);
+  int64(CEF_CALLBACK* tell)(struct _cef_stream_writer_t* self);
 
   ///
   /// Flush the stream.

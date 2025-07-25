@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,98 +9,42 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=c36ecde486c5a65d509aafb803f5e9d67e029431$
+// $hash=df52ba5e5d1dea0ab26d5a977ea716b94e63d57c$
 //
 
 #include "libcef_dll/ctocpp/preference_manager_ctocpp.h"
-
-#include "libcef_dll/cpptoc/preference_observer_cpptoc.h"
 #include "libcef_dll/ctocpp/dictionary_value_ctocpp.h"
-#include "libcef_dll/ctocpp/registration_ctocpp.h"
 #include "libcef_dll/ctocpp/request_context_ctocpp.h"
 #include "libcef_dll/ctocpp/value_ctocpp.h"
-#include "libcef_dll/transfer_util.h"
 
 // STATIC METHODS - Body may be edited by hand.
 
-#if CEF_API_ADDED(13401)
 NO_SANITIZE("cfi-icall")
-void CefPreferenceManager::GetChromeVariationsAsSwitches(
-    std::vector<CefString>& switches) {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Translate param: switches; type: string_vec_byref
-  cef_string_list_t switchesList = cef_string_list_alloc();
-  DCHECK(switchesList);
-  if (switchesList) {
-    transfer_string_list_contents(switches, switchesList);
-  }
-
-  // Execute
-  cef_preference_manager_get_chrome_variations_as_switches(switchesList);
-
-  // Restore param:switches; type: string_vec_byref
-  if (switchesList) {
-    switches.clear();
-    transfer_string_list_contents(switchesList, switches);
-    cef_string_list_free(switchesList);
-  }
-}
-#endif  // CEF_API_ADDED(13401)
-
-#if CEF_API_ADDED(13401)
-NO_SANITIZE("cfi-icall")
-void CefPreferenceManager::GetChromeVariationsAsStrings(
-    std::vector<CefString>& strings) {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Translate param: strings; type: string_vec_byref
-  cef_string_list_t stringsList = cef_string_list_alloc();
-  DCHECK(stringsList);
-  if (stringsList) {
-    transfer_string_list_contents(strings, stringsList);
-  }
-
-  // Execute
-  cef_preference_manager_get_chrome_variations_as_strings(stringsList);
-
-  // Restore param:strings; type: string_vec_byref
-  if (stringsList) {
-    strings.clear();
-    transfer_string_list_contents(stringsList, strings);
-    cef_string_list_free(stringsList);
-  }
-}
-#endif  // CEF_API_ADDED(13401)
-
-NO_SANITIZE("cfi-icall")
-CefRefPtr<
-    CefPreferenceManager> CefPreferenceManager::GetGlobalPreferenceManager() {
+CefRefPtr<CefPreferenceManager>
+CefPreferenceManager::GetGlobalPreferenceManager() {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  auto* _retval = cef_preference_manager_get_global();
+  cef_preference_manager_t* _retval = cef_preference_manager_get_global();
 
   // Return type: refptr_same
-  return CefPreferenceManagerCToCpp_Wrap(_retval);
+  return CefPreferenceManagerCToCpp::Wrap(_retval);
 }
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
 NO_SANITIZE("cfi-icall")
 bool CefPreferenceManagerCToCpp::HasPreference(const CefString& name) {
-  auto* _struct = GetStruct();
-  if (!_struct->has_preference) {
+  cef_preference_manager_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, has_preference))
     return false;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: name; type: string_byref_const
   DCHECK(!name.empty());
-  if (name.empty()) {
+  if (name.empty())
     return false;
-  }
 
   // Execute
   int _retval = _struct->has_preference(_struct, name.GetStruct());
@@ -112,57 +56,53 @@ bool CefPreferenceManagerCToCpp::HasPreference(const CefString& name) {
 NO_SANITIZE("cfi-icall")
 CefRefPtr<CefValue> CefPreferenceManagerCToCpp::GetPreference(
     const CefString& name) {
-  auto* _struct = GetStruct();
-  if (!_struct->get_preference) {
+  cef_preference_manager_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, get_preference))
     return nullptr;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: name; type: string_byref_const
   DCHECK(!name.empty());
-  if (name.empty()) {
+  if (name.empty())
     return nullptr;
-  }
 
   // Execute
-  auto* _retval = _struct->get_preference(_struct, name.GetStruct());
+  cef_value_t* _retval = _struct->get_preference(_struct, name.GetStruct());
 
   // Return type: refptr_same
-  return CefValueCToCpp_Wrap(_retval);
+  return CefValueCToCpp::Wrap(_retval);
 }
 
 NO_SANITIZE("cfi-icall")
 CefRefPtr<CefDictionaryValue> CefPreferenceManagerCToCpp::GetAllPreferences(
     bool include_defaults) {
-  auto* _struct = GetStruct();
-  if (!_struct->get_all_preferences) {
+  cef_preference_manager_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, get_all_preferences))
     return nullptr;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  auto* _retval = _struct->get_all_preferences(_struct, include_defaults);
+  cef_dictionary_value_t* _retval =
+      _struct->get_all_preferences(_struct, include_defaults);
 
   // Return type: refptr_same
-  return CefDictionaryValueCToCpp_Wrap(_retval);
+  return CefDictionaryValueCToCpp::Wrap(_retval);
 }
 
 NO_SANITIZE("cfi-icall")
 bool CefPreferenceManagerCToCpp::CanSetPreference(const CefString& name) {
-  auto* _struct = GetStruct();
-  if (!_struct->can_set_preference) {
+  cef_preference_manager_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, can_set_preference))
     return false;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: name; type: string_byref_const
   DCHECK(!name.empty());
-  if (name.empty()) {
+  if (name.empty())
     return false;
-  }
 
   // Execute
   int _retval = _struct->can_set_preference(_struct, name.GetStruct());
@@ -175,56 +115,26 @@ NO_SANITIZE("cfi-icall")
 bool CefPreferenceManagerCToCpp::SetPreference(const CefString& name,
                                                CefRefPtr<CefValue> value,
                                                CefString& error) {
-  auto* _struct = GetStruct();
-  if (!_struct->set_preference) {
+  cef_preference_manager_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, set_preference))
     return false;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: name; type: string_byref_const
   DCHECK(!name.empty());
-  if (name.empty()) {
+  if (name.empty())
     return false;
-  }
   // Unverified params: value
 
   // Execute
   int _retval = _struct->set_preference(_struct, name.GetStruct(),
-                                        CefValueCToCpp_Unwrap(value),
+                                        CefValueCToCpp::Unwrap(value),
                                         error.GetWritableStruct());
 
   // Return type: bool
   return _retval ? true : false;
 }
-
-#if CEF_API_ADDED(13401)
-NO_SANITIZE("cfi-icall")
-CefRefPtr<CefRegistration> CefPreferenceManagerCToCpp::AddPreferenceObserver(
-    const CefString& name,
-    CefRefPtr<CefPreferenceObserver> observer) {
-  auto* _struct = GetStruct();
-  if (!_struct->add_preference_observer) {
-    return nullptr;
-  }
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Verify param: observer; type: refptr_diff
-  DCHECK(observer.get());
-  if (!observer.get()) {
-    return nullptr;
-  }
-  // Unverified params: name
-
-  // Execute
-  auto* _retval = _struct->add_preference_observer(
-      _struct, name.GetStruct(), CefPreferenceObserverCppToC_Wrap(observer));
-
-  // Return type: refptr_same
-  return CefRegistrationCToCpp_Wrap(_retval);
-}
-#endif  // CEF_API_ADDED(13401)
 
 // CONSTRUCTOR - Do not edit by hand.
 
@@ -242,10 +152,10 @@ cef_preference_manager_t* CefCToCppRefCounted<
                                              CefPreferenceManager* c) {
   if (type == WT_REQUEST_CONTEXT) {
     return reinterpret_cast<cef_preference_manager_t*>(
-        CefRequestContextCToCpp_Unwrap(
+        CefRequestContextCToCpp::Unwrap(
             reinterpret_cast<CefRequestContext*>(c)));
   }
-  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  NOTREACHED() << "Unexpected class type: " << type;
   return nullptr;
 }
 

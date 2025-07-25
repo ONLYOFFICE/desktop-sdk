@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,16 +33,12 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=142a3f70bf67cc526ac7d6d88e878e8954d9e5fe$
+// $hash=91c121d4353a80d7fff3ef582c5a56ac86e0a34c$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_URLREQUEST_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_URLREQUEST_CAPI_H_
 #pragma once
-
-#if defined(BUILDING_CEF_SHARED)
-#error This file cannot be included DLL-side
-#endif
 
 #include "include/capi/cef_auth_callback_capi.h"
 #include "include/capi/cef_base_capi.h"
@@ -62,8 +58,6 @@ struct _cef_urlrequest_client_t;
 /// can be created on any valid CEF thread in either the browser or render
 /// process. Once created the functions of the URL request object must be
 /// accessed on the same thread that created it.
-///
-/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_urlrequest_t {
   ///
@@ -142,8 +136,6 @@ CEF_EXPORT cef_urlrequest_t* cef_urlrequest_create(
 /// functions of this structure will be called on the same thread that created
 /// the request unless otherwise documented.
 ///
-/// NOTE: This struct is allocated client-side.
-///
 typedef struct _cef_urlrequest_client_t {
   ///
   /// Base structure.
@@ -166,8 +158,8 @@ typedef struct _cef_urlrequest_client_t {
   ///
   void(CEF_CALLBACK* on_upload_progress)(struct _cef_urlrequest_client_t* self,
                                          struct _cef_urlrequest_t* request,
-                                         int64_t current,
-                                         int64_t total);
+                                         int64 current,
+                                         int64 total);
 
   ///
   /// Notifies the client of download progress. |current| denotes the number of
@@ -177,8 +169,8 @@ typedef struct _cef_urlrequest_client_t {
   void(CEF_CALLBACK* on_download_progress)(
       struct _cef_urlrequest_client_t* self,
       struct _cef_urlrequest_t* request,
-      int64_t current,
-      int64_t total);
+      int64 current,
+      int64 total);
 
   ///
   /// Called when some part of the response is read. |data| contains the current

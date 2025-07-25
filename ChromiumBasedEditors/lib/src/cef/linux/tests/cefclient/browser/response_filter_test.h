@@ -11,7 +11,8 @@
 #include "include/cef_response.h"
 #include "include/cef_response_filter.h"
 
-namespace client::response_filter_test {
+namespace client {
+namespace response_filter_test {
 
 // Create a resource response filter. Called from test_runner.cc.
 CefRefPtr<CefResponseFilter> GetResourceResponseFilter(
@@ -20,6 +21,7 @@ CefRefPtr<CefResponseFilter> GetResourceResponseFilter(
     CefRefPtr<CefRequest> request,
     CefRefPtr<CefResponse> response);
 
-}  // namespace client::response_filter_test
+}  // namespace response_filter_test
+}  // namespace client
 
 #endif  // CEF_TESTS_CEFCLIENT_BROWSER_RESPONSE_FILTER_TEST_H_

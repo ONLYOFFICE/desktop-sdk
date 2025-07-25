@@ -67,7 +67,7 @@
 
 #if defined(USING_CHROMIUM_INCLUDES)
 // When building CEF include the Chromium header directly.
-#include "base/functional/callback.h"
+#include "base/callback.h"
 #else  // !USING_CHROMIUM_INCLUDES
 // The following is substantially similar to the Chromium implementation.
 // If the Chromium implementation diverges the below implementation should be
@@ -83,18 +83,18 @@
 namespace base {
 
 template <typename R, typename... Args>
-class OnceCallback<R(Args...)> : public cef_internal::CallbackBase {
+class OnceCallback<R(Args...)> : public internal::CallbackBase {
  public:
   using ResultType = R;
   using RunType = R(Args...);
-  using PolymorphicInvoke = R (*)(cef_internal::BindStateBase*,
-                                  cef_internal::PassingType<Args>...);
+  using PolymorphicInvoke = R (*)(internal::BindStateBase*,
+                                  internal::PassingType<Args>...);
 
   constexpr OnceCallback() = default;
   OnceCallback(std::nullptr_t) = delete;
 
-  explicit OnceCallback(cef_internal::BindStateBase* bind_state)
-      : cef_internal::CallbackBase(bind_state) {}
+  explicit OnceCallback(internal::BindStateBase* bind_state)
+      : internal::CallbackBase(bind_state) {}
 
   OnceCallback(const OnceCallback&) = delete;
   OnceCallback& operator=(const OnceCallback&) = delete;
@@ -103,10 +103,10 @@ class OnceCallback<R(Args...)> : public cef_internal::CallbackBase {
   OnceCallback& operator=(OnceCallback&&) noexcept = default;
 
   OnceCallback(RepeatingCallback<RunType> other)
-      : cef_internal::CallbackBase(std::move(other)) {}
+      : internal::CallbackBase(std::move(other)) {}
 
   OnceCallback& operator=(RepeatingCallback<RunType> other) {
-    static_cast<cef_internal::CallbackBase&>(*this) = std::move(other);
+    static_cast<internal::CallbackBase&>(*this) = std::move(other);
     return *this;
   }
 
@@ -142,7 +142,7 @@ class OnceCallback<R(Args...)> : public cef_internal::CallbackBase {
   OnceCallback<ThenR(Args...)> Then(OnceCallback<ThenR(ThenArgs...)> then) && {
     CHECK(then);
     return BindOnce(
-        cef_internal::ThenHelper<
+        internal::ThenHelper<
             OnceCallback, OnceCallback<ThenR(ThenArgs...)>>::CreateTrampoline(),
         std::move(*this), std::move(then));
   }
@@ -155,7 +155,7 @@ class OnceCallback<R(Args...)> : public cef_internal::CallbackBase {
       RepeatingCallback<ThenR(ThenArgs...)> then) && {
     CHECK(then);
     return BindOnce(
-        cef_internal::ThenHelper<
+        internal::ThenHelper<
             OnceCallback,
             RepeatingCallback<ThenR(ThenArgs...)>>::CreateTrampoline(),
         std::move(*this), std::move(then));
@@ -163,19 +163,18 @@ class OnceCallback<R(Args...)> : public cef_internal::CallbackBase {
 };
 
 template <typename R, typename... Args>
-class RepeatingCallback<R(Args...)>
-    : public cef_internal::CallbackBaseCopyable {
+class RepeatingCallback<R(Args...)> : public internal::CallbackBaseCopyable {
  public:
   using ResultType = R;
   using RunType = R(Args...);
-  using PolymorphicInvoke = R (*)(cef_internal::BindStateBase*,
-                                  cef_internal::PassingType<Args>...);
+  using PolymorphicInvoke = R (*)(internal::BindStateBase*,
+                                  internal::PassingType<Args>...);
 
   constexpr RepeatingCallback() = default;
   RepeatingCallback(std::nullptr_t) = delete;
 
-  explicit RepeatingCallback(cef_internal::BindStateBase* bind_state)
-      : cef_internal::CallbackBaseCopyable(bind_state) {}
+  explicit RepeatingCallback(internal::BindStateBase* bind_state)
+      : internal::CallbackBaseCopyable(bind_state) {}
 
   // Copyable and movable.
   RepeatingCallback(const RepeatingCallback&) = default;
@@ -225,7 +224,7 @@ class RepeatingCallback<R(Args...)>
       RepeatingCallback<ThenR(ThenArgs...)> then) const& {
     CHECK(then);
     return BindRepeating(
-        cef_internal::ThenHelper<
+        internal::ThenHelper<
             RepeatingCallback,
             RepeatingCallback<ThenR(ThenArgs...)>>::CreateTrampoline(),
         *this, std::move(then));
@@ -236,7 +235,7 @@ class RepeatingCallback<R(Args...)>
       RepeatingCallback<ThenR(ThenArgs...)> then) && {
     CHECK(then);
     return BindRepeating(
-        cef_internal::ThenHelper<
+        internal::ThenHelper<
             RepeatingCallback,
             RepeatingCallback<ThenR(ThenArgs...)>>::CreateTrampoline(),
         std::move(*this), std::move(then));

@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,16 +33,12 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=00ff7f42df5625ed0767ed1b956caf462666126a$
+// $hash=e8bdae70e1f16fba3a5e01d9e215a02f13291ff5$
 //
 
 #ifndef CEF_INCLUDE_CAPI_VIEWS_CEF_PANEL_DELEGATE_CAPI_H_
 #define CEF_INCLUDE_CAPI_VIEWS_CEF_PANEL_DELEGATE_CAPI_H_
 #pragma once
-
-#if defined(BUILDING_CEF_SHARED)
-#error This file cannot be included DLL-side
-#endif
 
 #include "include/capi/views/cef_view_delegate_capi.h"
 
@@ -54,8 +50,6 @@ extern "C" {
 /// Implement this structure to handle Panel events. The functions of this
 /// structure will be called on the browser process UI thread unless otherwise
 /// indicated.
-///
-/// NOTE: This struct is allocated client-side.
 ///
 typedef struct _cef_panel_delegate_t {
   ///

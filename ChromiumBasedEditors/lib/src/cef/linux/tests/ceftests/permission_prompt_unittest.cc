@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "include/base/cef_callback.h"
+#include "include/base/cef_bind.h"
 #include "include/cef_parser.h"
 #include "include/cef_permission_handler.h"
 #include "include/cef_request_context_handler.h"
@@ -13,7 +13,6 @@
 #include "include/wrapper/cef_stream_resource_handler.h"
 #include "tests/ceftests/test_handler.h"
 #include "tests/ceftests/test_suite.h"
-#include "tests/ceftests/test_util.h"
 #include "tests/gtest/include/gtest/gtest.h"
 #include "tests/shared/browser/client_app_browser.h"
 
@@ -27,7 +26,7 @@ constexpr char kPromptNavUrl[] = "https://permission-prompt-test/nav.html";
 
 class TestSetup {
  public:
-  TestSetup() = default;
+  TestSetup() {}
 
   // CONFIGURATION
 
@@ -67,7 +66,7 @@ class PermissionPromptTestHandler : public TestHandler,
                                     public CefPermissionHandler {
  public:
   PermissionPromptTestHandler(TestSetup* tr,
-                              uint32_t request,
+                              uint32 request,
                               cef_permission_request_result_t result)
       : test_setup_(tr), request_(request), result_(result) {}
 
@@ -113,7 +112,7 @@ class PermissionPromptTestHandler : public TestHandler,
         "   data = {};"
         " }"
         " document.location = "
-        "`https://tests/"
+        "`http://tests/"
         "exit?result=${val}&data=${encodeURIComponent(JSON.stringify(data))}`;"
         "}"
         "function makeRequest() {";
@@ -181,9 +180,8 @@ class PermissionPromptTestHandler : public TestHandler,
   void OnLoadEnd(CefRefPtr<CefBrowser> browser,
                  CefRefPtr<CefFrame> frame,
                  int httpStatusCode) override {
-    if (test_setup_->deny_no_gesture) {
+    if (test_setup_->deny_no_gesture)
       return;
-    }
 
     if (test_setup_->deny_with_navigation) {
       if (frame->GetURL().ToString() == kPromptNavUrl) {
@@ -200,9 +198,9 @@ class PermissionPromptTestHandler : public TestHandler,
 
   bool OnShowPermissionPrompt(
       CefRefPtr<CefBrowser> browser,
-      uint64_t prompt_id,
+      uint64 prompt_id,
       const CefString& requesting_origin,
-      uint32_t requested_permissions,
+      uint32 requested_permissions,
       CefRefPtr<CefPermissionPromptCallback> callback) override {
     EXPECT_UI_THREAD();
 
@@ -236,7 +234,7 @@ class PermissionPromptTestHandler : public TestHandler,
 
   void OnDismissPermissionPrompt(
       CefRefPtr<CefBrowser> browser,
-      uint64_t prompt_id,
+      uint64 prompt_id,
       cef_permission_request_result_t result) override {
     EXPECT_UI_THREAD();
     EXPECT_EQ(prompt_id_, prompt_id);
@@ -265,7 +263,18 @@ class PermissionPromptTestHandler : public TestHandler,
     CefMouseEvent mouse_event;
     mouse_event.x = 20;
     mouse_event.y = 20;
-    SendMouseClickEvent(browser, mouse_event);
+
+    // Add some delay to avoid having events dropped or rate limited.
+    CefPostDelayedTask(
+        TID_UI,
+        base::BindOnce(&CefBrowserHost::SendMouseClickEvent, browser->GetHost(),
+                       mouse_event, MBT_LEFT, false, 1),
+        50);
+    CefPostDelayedTask(
+        TID_UI,
+        base::BindOnce(&CefBrowserHost::SendMouseClickEvent, browser->GetHost(),
+                       mouse_event, MBT_LEFT, true, 1),
+        100);
   }
 
   CefRefPtr<CefDictionaryValue> ParseURLData(const std::string& url) {
@@ -282,9 +291,9 @@ class PermissionPromptTestHandler : public TestHandler,
   }
 
   TestSetup* const test_setup_;
-  const uint32_t request_;
+  const uint32 request_;
   const cef_permission_request_result_t result_;
-  uint64_t prompt_id_ = 0U;
+  uint64 prompt_id_ = 0U;
 
   IMPLEMENT_REFCOUNTING(PermissionPromptTestHandler);
 };
@@ -324,10 +333,8 @@ TEST(PermissionPromptTest, WindowManagementNoGesture) {
   // prompts that are blocked.
   EXPECT_FALSE(test_setup.got_prompt);
   EXPECT_TRUE(test_setup.got_js_error);
-  EXPECT_STREQ(
-      "NotAllowedError: Transient activation is required to request "
-      "permission.",
-      test_setup.js_error_str.c_str());
+  EXPECT_STREQ("NotAllowedError: Permission decision deferred.",
+               test_setup.js_error_str.c_str());
   EXPECT_FALSE(test_setup.got_dismiss);
 }
 
@@ -427,7 +434,7 @@ TEST(PermissionPromptTest, WindowManagementResultDismiss) {
 
   EXPECT_TRUE(test_setup.got_prompt);
   EXPECT_TRUE(test_setup.got_js_error);
-  EXPECT_STREQ("NotAllowedError: Permission denied.",
+  EXPECT_STREQ("NotAllowedError: Permission decision deferred.",
                test_setup.js_error_str.c_str());
   EXPECT_TRUE(test_setup.got_dismiss);
 }
@@ -445,7 +452,7 @@ TEST(PermissionPromptTest, WindowManagementResultDismissAsync) {
 
   EXPECT_TRUE(test_setup.got_prompt);
   EXPECT_TRUE(test_setup.got_js_error);
-  EXPECT_STREQ("NotAllowedError: Permission denied.",
+  EXPECT_STREQ("NotAllowedError: Permission decision deferred.",
                test_setup.js_error_str.c_str());
   EXPECT_TRUE(test_setup.got_dismiss);
 }
@@ -462,7 +469,7 @@ TEST(PermissionPromptTest, WindowManagementResultIgnore) {
 
   EXPECT_TRUE(test_setup.got_prompt);
   EXPECT_TRUE(test_setup.got_js_error);
-  EXPECT_STREQ("NotAllowedError: Permission denied.",
+  EXPECT_STREQ("NotAllowedError: Permission decision deferred.",
                test_setup.js_error_str.c_str());
   EXPECT_TRUE(test_setup.got_dismiss);
 }
@@ -480,7 +487,7 @@ TEST(PermissionPromptTest, WindowManagementResultIgnoreAsync) {
 
   EXPECT_TRUE(test_setup.got_prompt);
   EXPECT_TRUE(test_setup.got_js_error);
-  EXPECT_STREQ("NotAllowedError: Permission denied.",
+  EXPECT_STREQ("NotAllowedError: Permission decision deferred.",
                test_setup.js_error_str.c_str());
   EXPECT_TRUE(test_setup.got_dismiss);
 }

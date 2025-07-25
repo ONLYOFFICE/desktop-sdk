@@ -6,11 +6,13 @@
 
 #include "include/cef_scheme.h"
 
-namespace client::scheme_test {
+namespace client {
+namespace scheme_test {
 
 void RegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar) {
   registrar->AddCustomScheme(
       "client", CEF_SCHEME_OPTION_STANDARD | CEF_SCHEME_OPTION_CORS_ENABLED);
 }
 
-}  // namespace client::scheme_test
+}  // namespace scheme_test
+}  // namespace client

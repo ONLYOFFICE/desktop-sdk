@@ -28,9 +28,8 @@ ScopedClosureRunner::~ScopedClosureRunner() {
 }
 
 void ScopedClosureRunner::RunAndReset() {
-  if (closure_) {
+  if (closure_)
     std::move(closure_).Run();
-  }
 }
 
 void ScopedClosureRunner::ReplaceClosure(OnceClosure closure) {

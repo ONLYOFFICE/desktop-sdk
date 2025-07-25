@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=9d81eb1a454ecc55b0767224f064880dadf853af$
+// $hash=33ba2bd44c946bf204f2f7a929b8d208768ca3dd$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_VIEWS_TEXTFIELD_DELEGATE_CPPTOC_H_
@@ -36,10 +36,5 @@ class CefTextfieldDelegateCppToC
   CefTextfieldDelegateCppToC();
   virtual ~CefTextfieldDelegateCppToC();
 };
-
-constexpr auto CefTextfieldDelegateCppToC_Wrap =
-    CefTextfieldDelegateCppToC::Wrap;
-constexpr auto CefTextfieldDelegateCppToC_Unwrap =
-    CefTextfieldDelegateCppToC::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_VIEWS_TEXTFIELD_DELEGATE_CPPTOC_H_

@@ -7,17 +7,16 @@
 #include "include/cef_task.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "tests/ceftests/test_handler.h"
-#include "tests/ceftests/test_util.h"
 #include "tests/gtest/include/gtest/gtest.h"
 
 namespace {
 
 void WaitForEvent(CefRefPtr<CefWaitableEvent> event) {
-  const auto timeout = GetConfiguredTestTimeout(/*timeout_ms=*/1000);
-  if (!timeout) {
+  if (CefCommandLine::GetGlobalCommandLine()->HasSwitch(
+          "disable-test-timeout")) {
     event->Wait();
   } else {
-    EXPECT_TRUE(event->TimedWait(*timeout));
+    EXPECT_TRUE(event->TimedWait(1000));
   }
 }
 

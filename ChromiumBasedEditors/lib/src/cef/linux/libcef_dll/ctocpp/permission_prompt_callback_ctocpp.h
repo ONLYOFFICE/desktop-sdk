@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=5a9a00d10d684fdceceb874b1d379c0003dc1402$
+// $hash=8b2ed4405822451f9bae6ae35d589611b6c8e0f3$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_PERMISSION_PROMPT_CALLBACK_CTOCPP_H_
@@ -37,10 +37,5 @@ class CefPermissionPromptCallbackCToCpp
   // CefPermissionPromptCallback methods.
   void Continue(cef_permission_request_result_t result) override;
 };
-
-constexpr auto CefPermissionPromptCallbackCToCpp_Wrap =
-    CefPermissionPromptCallbackCToCpp::Wrap;
-constexpr auto CefPermissionPromptCallbackCToCpp_Unwrap =
-    CefPermissionPromptCallbackCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_PERMISSION_PROMPT_CALLBACK_CTOCPP_H_

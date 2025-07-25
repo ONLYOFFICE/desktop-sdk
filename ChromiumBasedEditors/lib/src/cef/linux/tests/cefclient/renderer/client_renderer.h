@@ -9,11 +9,13 @@
 #include "include/cef_base.h"
 #include "tests/shared/renderer/client_app_renderer.h"
 
-namespace client::renderer {
+namespace client {
+namespace renderer {
 
 // Create the renderer delegate. Called from client_app_delegates_renderer.cc.
 void CreateDelegates(ClientAppRenderer::DelegateSet& delegates);
 
-}  // namespace client::renderer
+}  // namespace renderer
+}  // namespace client
 
 #endif  // CEF_TESTS_CEFCLIENT_RENDERER_CLIENT_RENDERER_H_

@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=d897bb2cf6469de3868812a2fb26ed9e36e33c5a$
+// $hash=4a05f4583cacc076519f6505f8f8952c5e471a49$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_REQUEST_CONTEXT_CTOCPP_H_
@@ -20,6 +20,7 @@
 #error This file can be included wrapper-side only
 #endif
 
+#include <vector>
 #include "include/capi/cef_request_context_capi.h"
 #include "include/capi/cef_request_context_handler_capi.h"
 #include "include/capi/cef_scheme_capi.h"
@@ -58,33 +59,15 @@ class CefRequestContextCToCpp
   void CloseAllConnections(CefRefPtr<CefCompletionCallback> callback) override;
   void ResolveHost(const CefString& origin,
                    CefRefPtr<CefResolveCallback> callback) override;
+  void LoadExtension(const CefString& root_directory,
+                     CefRefPtr<CefDictionaryValue> manifest,
+                     CefRefPtr<CefExtensionHandler> handler) override;
+  bool DidLoadExtension(const CefString& extension_id) override;
+  bool HasExtension(const CefString& extension_id) override;
+  bool GetExtensions(std::vector<CefString>& extension_ids) override;
+  CefRefPtr<CefExtension> GetExtension(const CefString& extension_id) override;
   CefRefPtr<CefMediaRouter> GetMediaRouter(
       CefRefPtr<CefCompletionCallback> callback) override;
-  CefRefPtr<CefValue> GetWebsiteSetting(
-      const CefString& requesting_url,
-      const CefString& top_level_url,
-      cef_content_setting_types_t content_type) override;
-  void SetWebsiteSetting(const CefString& requesting_url,
-                         const CefString& top_level_url,
-                         cef_content_setting_types_t content_type,
-                         CefRefPtr<CefValue> value) override;
-  cef_content_setting_values_t GetContentSetting(
-      const CefString& requesting_url,
-      const CefString& top_level_url,
-      cef_content_setting_types_t content_type) override;
-  void SetContentSetting(const CefString& requesting_url,
-                         const CefString& top_level_url,
-                         cef_content_setting_types_t content_type,
-                         cef_content_setting_values_t value) override;
-#if CEF_API_ADDED(13401)
-  CefRefPtr<CefRegistration> AddSettingObserver(
-      CefRefPtr<CefSettingObserver> observer) override;
-#endif
-  void SetChromeColorScheme(cef_color_variant_t variant,
-                            cef_color_t user_color) override;
-  cef_color_variant_t GetChromeColorSchemeMode() override;
-  cef_color_t GetChromeColorSchemeColor() override;
-  cef_color_variant_t GetChromeColorSchemeVariant() override;
 
   // CefPreferenceManager methods.
   bool HasPreference(const CefString& name) override;
@@ -95,14 +78,6 @@ class CefRequestContextCToCpp
   bool SetPreference(const CefString& name,
                      CefRefPtr<CefValue> value,
                      CefString& error) override;
-#if CEF_API_ADDED(13401)
-  CefRefPtr<CefRegistration> AddPreferenceObserver(
-      const CefString& name,
-      CefRefPtr<CefPreferenceObserver> observer) override;
-#endif
 };
-
-constexpr auto CefRequestContextCToCpp_Wrap = CefRequestContextCToCpp::Wrap;
-constexpr auto CefRequestContextCToCpp_Unwrap = CefRequestContextCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_REQUEST_CONTEXT_CTOCPP_H_

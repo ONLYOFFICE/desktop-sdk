@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,11 +9,10 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=90ecb7cf96775fa6ad61f043ab2a1d4b6c65b660$
+// $hash=8ac944f0c572916a56506165359595f4c607a66c$
 //
 
 #include "libcef_dll/ctocpp/resource_bundle_ctocpp.h"
-
 #include "libcef_dll/ctocpp/binary_value_ctocpp.h"
 
 // STATIC METHODS - Body may be edited by hand.
@@ -23,20 +22,19 @@ CefRefPtr<CefResourceBundle> CefResourceBundle::GetGlobal() {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  auto* _retval = cef_resource_bundle_get_global();
+  cef_resource_bundle_t* _retval = cef_resource_bundle_get_global();
 
   // Return type: refptr_same
-  return CefResourceBundleCToCpp_Wrap(_retval);
+  return CefResourceBundleCToCpp::Wrap(_retval);
 }
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
 NO_SANITIZE("cfi-icall")
 CefString CefResourceBundleCToCpp::GetLocalizedString(int string_id) {
-  auto* _struct = GetStruct();
-  if (!_struct->get_localized_string) {
+  cef_resource_bundle_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, get_localized_string))
     return CefString();
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -53,37 +51,36 @@ CefString CefResourceBundleCToCpp::GetLocalizedString(int string_id) {
 NO_SANITIZE("cfi-icall")
 CefRefPtr<CefBinaryValue> CefResourceBundleCToCpp::GetDataResource(
     int resource_id) {
-  auto* _struct = GetStruct();
-  if (!_struct->get_data_resource) {
+  cef_resource_bundle_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, get_data_resource))
     return nullptr;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  auto* _retval = _struct->get_data_resource(_struct, resource_id);
+  cef_binary_value_t* _retval =
+      _struct->get_data_resource(_struct, resource_id);
 
   // Return type: refptr_same
-  return CefBinaryValueCToCpp_Wrap(_retval);
+  return CefBinaryValueCToCpp::Wrap(_retval);
 }
 
 NO_SANITIZE("cfi-icall")
 CefRefPtr<CefBinaryValue> CefResourceBundleCToCpp::GetDataResourceForScale(
     int resource_id,
     ScaleFactor scale_factor) {
-  auto* _struct = GetStruct();
-  if (!_struct->get_data_resource_for_scale) {
+  cef_resource_bundle_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, get_data_resource_for_scale))
     return nullptr;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  auto* _retval =
+  cef_binary_value_t* _retval =
       _struct->get_data_resource_for_scale(_struct, resource_id, scale_factor);
 
   // Return type: refptr_same
-  return CefBinaryValueCToCpp_Wrap(_retval);
+  return CefBinaryValueCToCpp::Wrap(_retval);
 }
 
 // CONSTRUCTOR - Do not edit by hand.
@@ -100,7 +97,7 @@ cef_resource_bundle_t* CefCToCppRefCounted<
     CefResourceBundle,
     cef_resource_bundle_t>::UnwrapDerived(CefWrapperType type,
                                           CefResourceBundle* c) {
-  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  NOTREACHED() << "Unexpected class type: " << type;
   return nullptr;
 }
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,11 +9,10 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=701860e91e77c795595aea922912f9f4c0b985a9$
+// $hash=d9c0deec7bd18b2e759ff9616fae5252230e009d$
 //
 
 #include "libcef_dll/ctocpp/media_router_ctocpp.h"
-
 #include "libcef_dll/cpptoc/completion_callback_cpptoc.h"
 #include "libcef_dll/cpptoc/media_observer_cpptoc.h"
 #include "libcef_dll/cpptoc/media_route_create_callback_cpptoc.h"
@@ -34,11 +33,11 @@ CefRefPtr<CefMediaRouter> CefMediaRouter::GetGlobalMediaRouter(
   // Unverified params: callback
 
   // Execute
-  auto* _retval =
-      cef_media_router_get_global(CefCompletionCallbackCppToC_Wrap(callback));
+  cef_media_router_t* _retval =
+      cef_media_router_get_global(CefCompletionCallbackCppToC::Wrap(callback));
 
   // Return type: refptr_same
-  return CefMediaRouterCToCpp_Wrap(_retval);
+  return CefMediaRouterCToCpp::Wrap(_retval);
 }
 
 // VIRTUAL METHODS - Body may be edited by hand.
@@ -48,25 +47,23 @@ CefRefPtr<CefRegistration> CefMediaRouterCToCpp::AddObserver(
     CefRefPtr<CefMediaObserver> observer) {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->add_observer) {
+  cef_media_router_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, add_observer))
     return nullptr;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: observer; type: refptr_diff
   DCHECK(observer.get());
-  if (!observer.get()) {
+  if (!observer.get())
     return nullptr;
-  }
 
   // Execute
-  auto* _retval =
-      _struct->add_observer(_struct, CefMediaObserverCppToC_Wrap(observer));
+  cef_registration_t* _retval =
+      _struct->add_observer(_struct, CefMediaObserverCppToC::Wrap(observer));
 
   // Return type: refptr_same
-  return CefRegistrationCToCpp_Wrap(_retval);
+  return CefRegistrationCToCpp::Wrap(_retval);
 }
 
 NO_SANITIZE("cfi-icall")
@@ -74,33 +71,30 @@ CefRefPtr<CefMediaSource> CefMediaRouterCToCpp::GetSource(
     const CefString& urn) {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->get_source) {
+  cef_media_router_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, get_source))
     return nullptr;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: urn; type: string_byref_const
   DCHECK(!urn.empty());
-  if (urn.empty()) {
+  if (urn.empty())
     return nullptr;
-  }
 
   // Execute
-  auto* _retval = _struct->get_source(_struct, urn.GetStruct());
+  cef_media_source_t* _retval = _struct->get_source(_struct, urn.GetStruct());
 
   // Return type: refptr_same
-  return CefMediaSourceCToCpp_Wrap(_retval);
+  return CefMediaSourceCToCpp::Wrap(_retval);
 }
 
 NO_SANITIZE("cfi-icall") void CefMediaRouterCToCpp::NotifyCurrentSinks() {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->notify_current_sinks) {
+  cef_media_router_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, notify_current_sinks))
     return;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -115,42 +109,37 @@ void CefMediaRouterCToCpp::CreateRoute(
     CefRefPtr<CefMediaRouteCreateCallback> callback) {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->create_route) {
+  cef_media_router_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, create_route))
     return;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: source; type: refptr_same
   DCHECK(source.get());
-  if (!source.get()) {
+  if (!source.get())
     return;
-  }
   // Verify param: sink; type: refptr_same
   DCHECK(sink.get());
-  if (!sink.get()) {
+  if (!sink.get())
     return;
-  }
   // Verify param: callback; type: refptr_diff
   DCHECK(callback.get());
-  if (!callback.get()) {
+  if (!callback.get())
     return;
-  }
 
   // Execute
-  _struct->create_route(_struct, CefMediaSourceCToCpp_Unwrap(source),
-                        CefMediaSinkCToCpp_Unwrap(sink),
-                        CefMediaRouteCreateCallbackCppToC_Wrap(callback));
+  _struct->create_route(_struct, CefMediaSourceCToCpp::Unwrap(source),
+                        CefMediaSinkCToCpp::Unwrap(sink),
+                        CefMediaRouteCreateCallbackCppToC::Wrap(callback));
 }
 
 NO_SANITIZE("cfi-icall") void CefMediaRouterCToCpp::NotifyCurrentRoutes() {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->notify_current_routes) {
+  cef_media_router_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, notify_current_routes))
     return;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -172,7 +161,7 @@ template <>
 cef_media_router_t*
 CefCToCppRefCounted<CefMediaRouterCToCpp, CefMediaRouter, cef_media_router_t>::
     UnwrapDerived(CefWrapperType type, CefMediaRouter* c) {
-  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  NOTREACHED() << "Unexpected class type: " << type;
   return nullptr;
 }
 

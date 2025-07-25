@@ -8,16 +8,14 @@
 
 class TrackCallback {
  public:
-  TrackCallback() = default;
+  TrackCallback() : gotit_(false) {}
   void yes() { gotit_ = true; }
   bool isSet() { return gotit_; }
   void reset() { gotit_ = false; }
-
-  // Code relies on this not being marked explicit. NOLINTNEXTLINE
   operator bool() const { return gotit_; }
 
  protected:
-  bool gotit_ = false;
+  bool gotit_;
 };
 
 #endif  // CEF_TESTS_CEFTESTS_TRACK_CALLBACK_H_

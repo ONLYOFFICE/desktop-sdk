@@ -6,32 +6,32 @@
 #define CEF_TESTS_CEFCLIENT_BROWSER_WINDOW_TEST_RUNNER_H_
 #pragma once
 
-#include <optional>
-
 #include "include/cef_browser.h"
 
-namespace client::window_test {
+namespace client {
+namespace window_test {
 
 // Implement this interface for different platforms. Methods will be called on
-// the browser process main thread unless otherwise indicated.
+// the browser process UI thread unless otherwise indicated.
 class WindowTestRunner {
  public:
-  virtual ~WindowTestRunner() = default;
-
-  void SetPos(CefRefPtr<CefBrowser> browser,
-              int x,
-              int y,
-              int width,
-              int height);
+  virtual void SetPos(CefRefPtr<CefBrowser> browser,
+                      int x,
+                      int y,
+                      int width,
+                      int height) = 0;
   virtual void Minimize(CefRefPtr<CefBrowser> browser) = 0;
   virtual void Maximize(CefRefPtr<CefBrowser> browser) = 0;
   virtual void Restore(CefRefPtr<CefBrowser> browser) = 0;
-  virtual void Fullscreen(CefRefPtr<CefBrowser> browser);
 
-  virtual void SetTitleBarHeight(CefRefPtr<CefBrowser> browser,
-                                 const std::optional<float>& height);
+  // Fit |window| inside |display|. Coordinates are relative to the upper-left
+  // corner of the display.
+  static void ModifyBounds(const CefRect& display, CefRect& window);
+
+  virtual ~WindowTestRunner() {}
 };
 
-}  // namespace client::window_test
+}  // namespace window_test
+}  // namespace client
 
 #endif  // CEF_TESTS_CEFCLIENT_BROWSER_WINDOW_TEST_RUNNER_H_

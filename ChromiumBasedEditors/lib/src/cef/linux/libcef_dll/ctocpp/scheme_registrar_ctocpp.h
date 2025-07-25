@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=0529005f0459e9ead75d9d028fbd339e624abe02$
+// $hash=a30e0b019ab6b34998563c8bf46f7b0c8089c3ba$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_SCHEME_REGISTRAR_CTOCPP_H_
@@ -37,11 +37,5 @@ class CefSchemeRegistrarCToCpp
   // CefSchemeRegistrar methods.
   bool AddCustomScheme(const CefString& scheme_name, int options) override;
 };
-
-constexpr auto CefSchemeRegistrarCToCpp_Wrap = CefSchemeRegistrarCToCpp::Wrap;
-constexpr auto CefSchemeRegistrarCToCpp_UnwrapOwn =
-    CefSchemeRegistrarCToCpp::UnwrapOwn;
-constexpr auto CefSchemeRegistrarCToCpp_UnwrapRaw =
-    CefSchemeRegistrarCToCpp::UnwrapRaw;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_SCHEME_REGISTRAR_CTOCPP_H_

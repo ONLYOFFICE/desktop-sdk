@@ -5,7 +5,6 @@
 #include "tests/cefclient/browser/views_overlay_controls.h"
 
 #include <algorithm>
-#include <array>
 #include <string>
 
 #include "include/views/cef_box_layout.h"
@@ -35,43 +34,9 @@ std::string GetLabel(ViewsOverlayControls::Command command, bool maximized) {
   return std::string();
 }
 
-std::array<ViewsOverlayControls::Command, 3> GetButtons() {
-#if defined(OS_MAC)
-  return {ViewsOverlayControls::Command::kClose,
-          ViewsOverlayControls::Command::kMaximize,
-          ViewsOverlayControls::Command::kMinimize};
-#else
-  return {ViewsOverlayControls::Command::kMinimize,
-          ViewsOverlayControls::Command::kMaximize,
-          ViewsOverlayControls::Command::kClose};
-#endif
-}
-
-cef_docking_mode_t GetPanelDockingMode(bool use_bottom_controls) {
-#if defined(OS_MAC)
-  return use_bottom_controls ? CEF_DOCKING_MODE_BOTTOM_LEFT
-                             : CEF_DOCKING_MODE_TOP_LEFT;
-#else
-  return use_bottom_controls ? CEF_DOCKING_MODE_BOTTOM_RIGHT
-                             : CEF_DOCKING_MODE_TOP_RIGHT;
-#endif
-}
-cef_docking_mode_t GetMenuDockingMode(bool use_bottom_controls) {
-#if defined(OS_MAC)
-  return use_bottom_controls ? CEF_DOCKING_MODE_BOTTOM_RIGHT
-                             : CEF_DOCKING_MODE_TOP_RIGHT;
-#else
-  return use_bottom_controls ? CEF_DOCKING_MODE_BOTTOM_LEFT
-                             : CEF_DOCKING_MODE_TOP_LEFT;
-#endif
-}
-
 }  // namespace
 
-ViewsOverlayControls::ViewsOverlayControls(bool with_window_buttons,
-                                           bool use_bottom_controls)
-    : with_window_buttons_(with_window_buttons),
-      use_bottom_controls_(use_bottom_controls) {}
+ViewsOverlayControls::ViewsOverlayControls() = default;
 
 void ViewsOverlayControls::Initialize(CefRefPtr<CefWindow> window,
                                       CefRefPtr<CefMenuButton> menu_button,
@@ -84,41 +49,30 @@ void ViewsOverlayControls::Initialize(CefRefPtr<CefWindow> window,
   window_ = window;
   window_maximized_ = window_->IsMaximized();
 
-  CefInsets insets;
-  if (use_bottom_controls_) {
-    insets.Set(0, kInsets, kInsets, kInsets);
-  } else {
-    insets.Set(kInsets, kInsets, 0, kInsets);
-  }
+  // Window control buttons. These controls are currently text which means that
+  // we can't use a transparent background because subpixel text rendering will
+  // break. See comments on the related DCHECK in Label::PaintText.
+  panel_ = CefPanel::CreatePanel(nullptr);
+  views_style::ApplyTo(panel_);
 
-  if (with_window_buttons_) {
-    // Window control buttons. These controls are currently text which means
-    // that we can't use a transparent background because subpixel text
-    // rendering will break.
-    // See comments on the related DCHECK in Label::PaintText.
-    panel_ = CefPanel::CreatePanel(this);
+  // Use a horizontal box layout.
+  CefBoxLayoutSettings panel_layout_settings;
+  panel_layout_settings.horizontal = true;
+  panel_->SetToBoxLayout(panel_layout_settings);
 
-    // Use a horizontal box layout.
-    CefBoxLayoutSettings panel_layout_settings;
-    panel_layout_settings.horizontal = true;
-    panel_->SetToBoxLayout(panel_layout_settings);
+  panel_->AddChildView(CreateButton(ViewsOverlayControls::Command::kMinimize));
+  panel_->AddChildView(CreateButton(ViewsOverlayControls::Command::kMaximize));
+  panel_->AddChildView(CreateButton(ViewsOverlayControls::Command::kClose));
 
-    for (auto button : GetButtons()) {
-      panel_->AddChildView(CreateButton(button));
-    }
-    panel_controller_ = window->AddOverlayView(
-        panel_, GetPanelDockingMode(use_bottom_controls_),
-        /*can_activate=*/false);
-    panel_controller_->SetInsets(insets);
-    panel_controller_->SetVisible(true);
-  }
+  panel_controller_ =
+      window->AddOverlayView(panel_, CEF_DOCKING_MODE_TOP_RIGHT);
+  panel_controller_->SetVisible(true);
 
   // Menu button.
   menu_button->SetBackgroundColor(kBackgroundColor);
-  menu_controller_ = window_->AddOverlayView(
-      menu_button, GetMenuDockingMode(use_bottom_controls_),
-      /*can_activate=*/false);
-  menu_controller_->SetInsets(insets);
+  menu_controller_ =
+      window_->AddOverlayView(menu_button, CEF_DOCKING_MODE_TOP_LEFT);
+  menu_controller_->SetInsets(CefInsets(kInsets, kInsets, 0, 0));
   menu_controller_->SetVisible(true);
 
   // Location bar. Will be made visible in UpdateControls().
@@ -126,17 +80,15 @@ void ViewsOverlayControls::Initialize(CefRefPtr<CefWindow> window,
   is_chrome_toolbar_ = is_chrome_toolbar;
   // Use a 100% transparent background for the Chrome toolbar.
   location_bar_->SetBackgroundColor(is_chrome_toolbar_ ? 0 : kBackgroundColor);
-  location_controller_ = window_->AddOverlayView(
-      location_bar_, CEF_DOCKING_MODE_CUSTOM, /*can_activate=*/false);
+  location_controller_ =
+      window_->AddOverlayView(location_bar_, CEF_DOCKING_MODE_CUSTOM);
 }
 
 void ViewsOverlayControls::Destroy() {
   window_ = nullptr;
   panel_ = nullptr;
-  if (panel_controller_) {
-    panel_controller_->Destroy();
-    panel_controller_ = nullptr;
-  }
+  panel_controller_->Destroy();
+  panel_controller_ = nullptr;
   menu_controller_->Destroy();
   menu_controller_ = nullptr;
   location_bar_ = nullptr;
@@ -146,11 +98,10 @@ void ViewsOverlayControls::Destroy() {
 
 void ViewsOverlayControls::UpdateControls() {
   // Update location bar size, position and visibility.
-  const auto window_bounds = window_->GetBounds();
-  auto bounds = window_bounds;
+  auto bounds = window_->GetBounds();
   bounds.x = kLocationBarPadding;
   bounds.width -= kLocationBarPadding * 2;
-
+  bounds.y = kInsets;
   if (is_chrome_toolbar_) {
     // Fit the standard Chrome toolbar.
     const auto preferred_size = location_bar_->GetPreferredSize();
@@ -159,13 +110,6 @@ void ViewsOverlayControls::UpdateControls() {
   } else {
     bounds.height = menu_controller_->GetSize().height;
   }
-
-  if (use_bottom_controls_) {
-    bounds.y = window_bounds.height - bounds.height - kInsets;
-  } else {
-    bounds.y = kInsets;
-  }
-
   if (bounds.width < kLocationBarPadding * 2) {
     // Not enough space.
     location_controller_->SetVisible(false);
@@ -181,18 +125,18 @@ void ViewsOverlayControls::UpdateControls() {
 void ViewsOverlayControls::UpdateDraggableRegions(
     std::vector<CefDraggableRegion>& window_regions) {
   if (panel_controller_ && panel_controller_->IsVisible()) {
-    window_regions.emplace_back(panel_controller_->GetBounds(),
-                                /*draggable=*/false);
+    window_regions.push_back(CefDraggableRegion(panel_controller_->GetBounds(),
+                                                /*draggable=*/false));
   }
 
   if (menu_controller_ && menu_controller_->IsVisible()) {
-    window_regions.emplace_back(menu_controller_->GetBounds(),
-                                /*draggable=*/false);
+    window_regions.push_back(
+        CefDraggableRegion(menu_controller_->GetBounds(), /*draggable=*/false));
   }
 
   if (location_controller_ && location_controller_->IsVisible()) {
-    window_regions.emplace_back(location_controller_->GetBounds(),
-                                /*draggable=*/false);
+    window_regions.push_back(CefDraggableRegion(
+        location_controller_->GetBounds(), /*draggable=*/false));
   }
 }
 
@@ -203,11 +147,10 @@ void ViewsOverlayControls::OnButtonPressed(CefRefPtr<CefButton> button) {
       window_->Minimize();
       break;
     case ViewsOverlayControls::Command::kMaximize:
-      if (window_->IsMaximized()) {
+      if (window_->IsMaximized())
         window_->Restore();
-      } else {
+      else
         window_->Maximize();
-      }
       break;
     case ViewsOverlayControls::Command::kClose:
       window_->Close();
@@ -220,29 +163,23 @@ void ViewsOverlayControls::OnButtonPressed(CefRefPtr<CefButton> button) {
   button->SetInkDropEnabled(false);
   button->SetInkDropEnabled(true);
 
-  if (command == Command::kMaximize) {
+  if (command == Command::kMaximize)
     MaybeUpdateMaximizeButton();
-  }
-}
-
-void ViewsOverlayControls::OnThemeChanged(CefRefPtr<CefView> view) {
-  // Apply colors when the theme changes.
-  views_style::OnThemeChanged(view);
 }
 
 CefRefPtr<CefLabelButton> ViewsOverlayControls::CreateButton(Command command) {
   CefRefPtr<CefLabelButton> button = CefLabelButton::CreateLabelButton(
       this, GetLabel(command, window_maximized_));
   button->SetID(static_cast<int>(command));
+  views_style::ApplyTo(button);
   button->SetInkDropEnabled(true);
   button->SetFocusable(false);  // Don't give focus to the button.
   return button;
 }
 
 void ViewsOverlayControls::MaybeUpdateMaximizeButton() {
-  if (!with_window_buttons_ || window_->IsMaximized() == window_maximized_) {
+  if (window_->IsMaximized() == window_maximized_)
     return;
-  }
   window_maximized_ = !window_maximized_;
 
   auto max_button = panel_->GetChildViewAt(1);

@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,11 +9,10 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=b0a045358d00bcab88b8fb28445e32ddc9815008$
+// $hash=dead2ddfaea0555af195b8bb7bb858a57e96f25b$
 //
 
 #include "libcef_dll/cpptoc/read_handler_cpptoc.h"
-
 #include "libcef_dll/shutdown_checker.h"
 
 namespace {
@@ -29,14 +28,12 @@ size_t CEF_CALLBACK read_handler_read(struct _cef_read_handler_t* self,
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return 0;
-  }
   // Verify param: ptr; type: simple_byaddr
   DCHECK(ptr);
-  if (!ptr) {
+  if (!ptr)
     return 0;
-  }
 
   // Execute
   size_t _retval = CefReadHandlerCppToC::Get(self)->Read(ptr, size, n);
@@ -46,16 +43,15 @@ size_t CEF_CALLBACK read_handler_read(struct _cef_read_handler_t* self,
 }
 
 int CEF_CALLBACK read_handler_seek(struct _cef_read_handler_t* self,
-                                   int64_t offset,
+                                   int64 offset,
                                    int whence) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return 0;
-  }
 
   // Execute
   int _retval = CefReadHandlerCppToC::Get(self)->Seek(offset, whence);
@@ -64,18 +60,17 @@ int CEF_CALLBACK read_handler_seek(struct _cef_read_handler_t* self,
   return _retval;
 }
 
-int64_t CEF_CALLBACK read_handler_tell(struct _cef_read_handler_t* self) {
+int64 CEF_CALLBACK read_handler_tell(struct _cef_read_handler_t* self) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return 0;
-  }
 
   // Execute
-  int64_t _retval = CefReadHandlerCppToC::Get(self)->Tell();
+  int64 _retval = CefReadHandlerCppToC::Get(self)->Tell();
 
   // Return type: simple
   return _retval;
@@ -87,9 +82,8 @@ int CEF_CALLBACK read_handler_eof(struct _cef_read_handler_t* self) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return 0;
-  }
 
   // Execute
   int _retval = CefReadHandlerCppToC::Get(self)->Eof();
@@ -104,9 +98,8 @@ int CEF_CALLBACK read_handler_may_block(struct _cef_read_handler_t* self) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return 0;
-  }
 
   // Execute
   bool _retval = CefReadHandlerCppToC::Get(self)->MayBlock();
@@ -137,7 +130,7 @@ template <>
 CefRefPtr<CefReadHandler>
 CefCppToCRefCounted<CefReadHandlerCppToC, CefReadHandler, cef_read_handler_t>::
     UnwrapDerived(CefWrapperType type, cef_read_handler_t* s) {
-  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  NOTREACHED() << "Unexpected class type: " << type;
   return nullptr;
 }
 

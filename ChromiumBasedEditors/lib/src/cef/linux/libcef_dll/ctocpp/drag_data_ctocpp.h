@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=cb5fee4e9cce6753f899b7ee7e7dca5631a6ce66$
+// $hash=7a8ec7b7c1010725596b1a64eb325b0e75ea34b7$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_DRAG_DATA_CTOCPP_H_
@@ -21,7 +21,6 @@
 #endif
 
 #include <vector>
-
 #include "include/capi/cef_drag_data_capi.h"
 #include "include/cef_drag_data.h"
 #include "libcef_dll/ctocpp/ctocpp_ref_counted.h"
@@ -50,7 +49,6 @@ class CefDragDataCToCpp : public CefCToCppRefCounted<CefDragDataCToCpp,
   CefString GetFileName() override;
   size_t GetFileContents(CefRefPtr<CefStreamWriter> writer) override;
   bool GetFileNames(std::vector<CefString>& names) override;
-  bool GetFilePaths(std::vector<CefString>& paths) override;
   void SetLinkURL(const CefString& url) override;
   void SetLinkTitle(const CefString& title) override;
   void SetLinkMetadata(const CefString& data) override;
@@ -64,8 +62,5 @@ class CefDragDataCToCpp : public CefCToCppRefCounted<CefDragDataCToCpp,
   CefPoint GetImageHotspot() override;
   bool HasImage() override;
 };
-
-constexpr auto CefDragDataCToCpp_Wrap = CefDragDataCToCpp::Wrap;
-constexpr auto CefDragDataCToCpp_Unwrap = CefDragDataCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_DRAG_DATA_CTOCPP_H_

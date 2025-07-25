@@ -12,22 +12,21 @@
 namespace client {
 
 BytesWriteHandler::BytesWriteHandler(size_t grow)
-    : grow_(grow), datasize_(grow) {
+    : grow_(grow), datasize_(grow), offset_(0) {
   DCHECK_GT(grow, 0U);
   data_ = malloc(grow);
   DCHECK(data_ != nullptr);
 }
 
 BytesWriteHandler::~BytesWriteHandler() {
-  if (data_) {
+  if (data_)
     free(data_);
-  }
 }
 
 size_t BytesWriteHandler::Write(const void* ptr, size_t size, size_t n) {
   base::AutoLock lock_scope(lock_);
   size_t rv;
-  if (offset_ + static_cast<int64_t>(size * n) >= datasize_ &&
+  if (offset_ + static_cast<int64>(size * n) >= datasize_ &&
       Grow(size * n) == 0) {
     rv = 0;
   } else {
@@ -39,30 +38,27 @@ size_t BytesWriteHandler::Write(const void* ptr, size_t size, size_t n) {
   return rv;
 }
 
-int BytesWriteHandler::Seek(int64_t offset, int whence) {
+int BytesWriteHandler::Seek(int64 offset, int whence) {
   int rv = -1L;
   base::AutoLock lock_scope(lock_);
   switch (whence) {
     case SEEK_CUR:
-      if (offset_ + offset > datasize_ || offset_ + offset < 0) {
+      if (offset_ + offset > datasize_ || offset_ + offset < 0)
         break;
-      }
       offset_ += offset;
       rv = 0;
       break;
     case SEEK_END: {
-      int64_t offset_abs = std::abs(offset);
-      if (offset_abs > datasize_) {
+      int64 offset_abs = std::abs(offset);
+      if (offset_abs > datasize_)
         break;
-      }
       offset_ = datasize_ - offset_abs;
       rv = 0;
       break;
     }
     case SEEK_SET:
-      if (offset > datasize_ || offset < 0) {
+      if (offset > datasize_ || offset < 0)
         break;
-      }
       offset_ = offset;
       rv = 0;
       break;
@@ -71,7 +67,7 @@ int BytesWriteHandler::Seek(int64_t offset, int whence) {
   return rv;
 }
 
-int64_t BytesWriteHandler::Tell() {
+int64 BytesWriteHandler::Tell() {
   base::AutoLock lock_scope(lock_);
   return offset_;
 }

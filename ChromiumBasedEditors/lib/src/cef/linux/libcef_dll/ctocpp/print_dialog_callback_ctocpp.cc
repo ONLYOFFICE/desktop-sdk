@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,11 +9,10 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=05b7c9cd25da8503d25b47febdfa171f6f05e836$
+// $hash=a251f867872c76ea64f247d745b7eb895f24e477$
 //
 
 #include "libcef_dll/ctocpp/print_dialog_callback_ctocpp.h"
-
 #include "libcef_dll/ctocpp/print_settings_ctocpp.h"
 #include "libcef_dll/shutdown_checker.h"
 
@@ -24,30 +23,27 @@ void CefPrintDialogCallbackCToCpp::Continue(
     CefRefPtr<CefPrintSettings> settings) {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->cont) {
+  cef_print_dialog_callback_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, cont))
     return;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: settings; type: refptr_same
   DCHECK(settings.get());
-  if (!settings.get()) {
+  if (!settings.get())
     return;
-  }
 
   // Execute
-  _struct->cont(_struct, CefPrintSettingsCToCpp_Unwrap(settings));
+  _struct->cont(_struct, CefPrintSettingsCToCpp::Unwrap(settings));
 }
 
 NO_SANITIZE("cfi-icall") void CefPrintDialogCallbackCToCpp::Cancel() {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->cancel) {
+  cef_print_dialog_callback_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, cancel))
     return;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -71,7 +67,7 @@ cef_print_dialog_callback_t* CefCToCppRefCounted<
     CefPrintDialogCallback,
     cef_print_dialog_callback_t>::UnwrapDerived(CefWrapperType type,
                                                 CefPrintDialogCallback* c) {
-  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  NOTREACHED() << "Unexpected class type: " << type;
   return nullptr;
 }
 

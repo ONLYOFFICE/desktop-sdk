@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=cefbb92840f5ef28778ad0cbd8fcf7c3e2fd2d4e$
+// $hash=915917340262b6243b06022fe96cc1e96625cac9$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_TEST_TRANSLATOR_TEST_CTOCPP_H_
@@ -22,7 +22,6 @@
 
 #include <map>
 #include <vector>
-
 #include "include/capi/test/cef_translator_test_capi.h"
 #include "include/test/cef_translator_test.h"
 #include "libcef_dll/ctocpp/ctocpp_ref_counted.h"
@@ -133,8 +132,5 @@ class CefTranslatorTestCToCpp
       int val1,
       int val2) override;
 };
-
-constexpr auto CefTranslatorTestCToCpp_Wrap = CefTranslatorTestCToCpp::Wrap;
-constexpr auto CefTranslatorTestCToCpp_Unwrap = CefTranslatorTestCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_TEST_TRANSLATOR_TEST_CTOCPP_H_

@@ -177,7 +177,7 @@
 // 8. Handle the query in your Handler::OnQuery implementation and execute the
 //    appropriate callback either immediately or asynchronously.
 //
-//    void MyHandler::OnQuery(int64_t query_id,
+//    void MyHandler::OnQuery(int64 query_id,
 //                            CefRefPtr<CefBrowser> browser,
 //                            CefRefPtr<CefFrame> frame,
 //                            const CefString& request,
@@ -220,38 +220,6 @@ struct CefMessageRouterConfig {
 };
 
 ///
-/// This class acts as a container for managing binary data. It retains
-/// references to the underlying backing store, ensuring it is valid as long as
-/// the CefBinaryBuffer exists. This allows efficient, zero-copy access to data
-/// received from another process.
-///
-/// This class is not designed to be thread-safe, and it is the user's
-/// responsibility to synchronize access from multiple threads to ensure data
-/// integrity.
-///
-class CefBinaryBuffer : public CefBaseRefCounted {
- public:
-  ///
-  /// Returns the read-only pointer to the memory. Returns nullptr if
-  /// |GetSize()| returns zero. The returned pointer is only valid for the life
-  /// span of this object.
-  ///
-  virtual const void* GetData() const = 0;
-
-  ///
-  /// Returns the writable pointer to the memory. Returns nullptr if
-  /// |GetSize()| returns zero. The returned pointer is only valid for the life
-  /// span of this object.
-  ///
-  virtual void* GetData() = 0;
-
-  ///
-  /// Returns the size of the data.
-  ///
-  virtual size_t GetSize() const = 0;
-};
-
-///
 /// Implements the browser side of query routing. The methods of this class may
 /// be called on any browser process thread unless otherwise indicated.
 ///
@@ -270,16 +238,9 @@ class CefMessageRouterBrowserSide
    public:
     ///
     /// Notify the associated JavaScript onSuccess callback that the query has
-    /// completed successfully with the specified string |response|.
+    /// completed successfully with the specified |response|.
     ///
     virtual void Success(const CefString& response) = 0;
-
-    ///
-    /// Notify the associated JavaScript onSuccess callback that the query has
-    /// completed successfully with binary data. A |data| pointer to the binary
-    /// data can be nullptr only if the |size| is 0.
-    ///
-    virtual void Success(const void* data, size_t size) = 0;
 
     ///
     /// Notify the associated JavaScript onFailure callback that the query has
@@ -308,27 +269,8 @@ class CefMessageRouterBrowserSide
     ///
     virtual bool OnQuery(CefRefPtr<CefBrowser> browser,
                          CefRefPtr<CefFrame> frame,
-                         int64_t query_id,
+                         int64 query_id,
                          const CefString& request,
-                         bool persistent,
-                         CefRefPtr<Callback> callback) {
-      return false;
-    }
-
-    ///
-    /// Executed when a new query is received. |query_id| uniquely identifies
-    /// the query for the life span of the router. Return true to handle the
-    /// query or false to propagate the query to other registered handlers, if
-    /// any. If no handlers return true from this method then the query will be
-    /// automatically canceled with an error code of -1 delivered to the
-    /// JavaScript onFailure callback. If this method returns true then a
-    /// Callback method must be executed either in this method or asynchronously
-    /// to complete the query.
-    ///
-    virtual bool OnQuery(CefRefPtr<CefBrowser> browser,
-                         CefRefPtr<CefFrame> frame,
-                         int64_t query_id,
-                         CefRefPtr<const CefBinaryBuffer> request,
                          bool persistent,
                          CefRefPtr<Callback> callback) {
       return false;
@@ -345,9 +287,9 @@ class CefMessageRouterBrowserSide
     ///
     virtual void OnQueryCanceled(CefRefPtr<CefBrowser> browser,
                                  CefRefPtr<CefFrame> frame,
-                                 int64_t query_id) {}
+                                 int64 query_id) {}
 
-    virtual ~Handler() = default;
+    virtual ~Handler() {}
   };
 
   ///
@@ -435,7 +377,7 @@ class CefMessageRouterBrowserSide
  protected:
   // Protect against accidental deletion of this object.
   friend class base::RefCountedThreadSafe<CefMessageRouterBrowserSide>;
-  virtual ~CefMessageRouterBrowserSide() = default;
+  virtual ~CefMessageRouterBrowserSide() {}
 };
 
 ///
@@ -491,7 +433,7 @@ class CefMessageRouterRendererSide
  protected:
   // Protect against accidental deletion of this object.
   friend class base::RefCountedThreadSafe<CefMessageRouterRendererSide>;
-  virtual ~CefMessageRouterRendererSide() = default;
+  virtual ~CefMessageRouterRendererSide() {}
 };
 
 #endif  // CEF_INCLUDE_WRAPPER_CEF_MESSAGE_ROUTER_H_

@@ -7,14 +7,12 @@
 #pragma once
 
 #include <memory>
-#include <optional>
 #include <set>
 #include <string>
 
 #include "include/base/cef_callback_forward.h"
 #include "include/base/cef_ref_counted.h"
 #include "include/cef_browser.h"
-#include "include/cef_command_line.h"
 #include "include/views/cef_window.h"
 #include "tests/cefclient/browser/client_types.h"
 #include "tests/cefclient/browser/image_cache.h"
@@ -22,35 +20,9 @@
 
 namespace client {
 
-enum class WindowType {
-  NORMAL,
-
-  // The window is a modal dialog.
-  DIALOG,
-
-  // The window is a DevTools popup.
-  DEVTOOLS,
-};
-
 // Used to configure how a RootWindow is created.
 struct RootWindowConfig {
-  // |command_line| will be non-nullptr when used for new window creation via
-  // OnAlreadyRunningAppRelaunch. Otherwise, the global command-line will be
-  // used.
-  explicit RootWindowConfig(CefRefPtr<CefCommandLine> command_line = nullptr);
-
-  // Associated command-line.
-  CefRefPtr<CefCommandLine> command_line;
-
-  // If true the Views framework will be used.
-  bool use_views;
-
-  // If true Alloy style will be used. Alloy style is optional. Windowless
-  // rendering requires Alloy style.
-  bool use_alloy_style;
-
-  // Configure the window type.
-  WindowType window_type = WindowType::NORMAL;
+  RootWindowConfig();
 
   // If true the window will always display above other windows.
   bool always_on_top = false;
@@ -58,8 +30,11 @@ struct RootWindowConfig {
   // If true the window will show controls.
   bool with_controls = true;
 
-  // If true the window will use windowless (off-screen) rendering.
+  // If true the window will use off-screen rendering.
   bool with_osr = false;
+
+  // If true the window is hosting an extension app.
+  bool with_extension = false;
 
   // If true the window will be created initially hidden.
   bool initially_hidden = false;
@@ -71,23 +46,25 @@ struct RootWindowConfig {
   // Position of the UI element that triggered the window creation. If |bounds|
   // is empty and |source_bounds| is non-empty the new window will be positioned
   // relative to |source_bounds|. This is currently only implemented for Views-
-  // hosted windows when |initially_hidden| is also true.
+  // based windows when |initially_hidden| is also true.
   CefRect source_bounds;
 
   // Requested window show state. Only used when |bounds| is non-empty and
   // |initially_hidden| is false.
   cef_show_state_t show_state = CEF_SHOW_STATE_NORMAL;
 
-  // Parent window. Only used for Views-hosted windows.
+  // Parent window. Only used for Views-based windows.
   CefRefPtr<CefWindow> parent_window;
 
   // Callback to be executed when the window is closed. Will be executed on the
-  // main thread. This is currently only implemented for Views-hosted windows.
+  // main thread. This is currently only implemented for Views-based windows.
   base::OnceClosure close_callback;
 
   // Initial URL to load.
   std::string url;
 };
+
+typedef std::set<CefRefPtr<CefExtension>> ExtensionSet;
 
 // Represents a top-level native window in the browser process. While references
 // to this object are thread-safe the methods must be called on the main thread
@@ -99,20 +76,10 @@ class RootWindow
   // of this class will be called on the main thread.
   class Delegate {
    public:
-    // Called to synchronously retrieve the CefRequestContext for browser. Only
-    // called for non-popup browsers. Must be called on the main thread. This
-    // method is only safe when using the global request context.
-    // TODO: Delete this method and use the async version instead.
-    virtual CefRefPtr<CefRequestContext> GetRequestContext() = 0;
-
-    using RequestContextCallback =
-        base::OnceCallback<void(CefRefPtr<CefRequestContext>)>;
-
-    // Called to asynchronously retrieve the CefRequestContext for browser. Only
-    // called for non-popup browsers. Save to call on any thread. |callback|
-    // will be executed on the UI thread after the request context is
-    // initialized.
-    virtual void GetRequestContext(RequestContextCallback callback) = 0;
+    // Called to retrieve the CefRequestContext for browser. Only called for
+    // non-popup browsers. May return nullptr.
+    virtual CefRefPtr<CefRequestContext> GetRequestContext(
+        RootWindow* root_window) = 0;
 
     // Returns the ImageCache.
     virtual scoped_refptr<ImageCache> GetImageCache() = 0;
@@ -129,26 +96,31 @@ class RootWindow
     // Called when the RootWindow is activated (becomes the foreground window).
     virtual void OnRootWindowActivated(RootWindow* root_window) = 0;
 
+    // Called when the browser is created for the RootWindow.
+    virtual void OnBrowserCreated(RootWindow* root_window,
+                                  CefRefPtr<CefBrowser> browser) = 0;
+
+    // Create a window for |extension|. |source_bounds| are the bounds of the
+    // UI element, like a button, that triggered the extension.
+    virtual void CreateExtensionWindow(CefRefPtr<CefExtension> extension,
+                                       const CefRect& source_bounds,
+                                       CefRefPtr<CefWindow> parent_window,
+                                       base::OnceClosure close_callback,
+                                       bool with_osr) = 0;
+
    protected:
-    virtual ~Delegate() = default;
+    virtual ~Delegate() {}
   };
 
   // Create a new RootWindow object. This method may be called on any thread.
   // Use RootWindowManager::CreateRootWindow() or CreateRootWindowAsPopup()
   // instead of calling this method directly. |use_views| will be true if the
-  // Views framework should be used. |use_alloy_style| will be true if Alloy
-  // style should be used.
-  static scoped_refptr<RootWindow> Create(bool use_views, bool use_alloy_style);
+  // Views framework should be used.
+  static scoped_refptr<RootWindow> Create(bool use_views);
 
   // Returns the RootWindow associated with the specified |browser_id|. Must be
   // called on the main thread.
   static scoped_refptr<RootWindow> GetForBrowser(int browser_id);
-
-  // Returns true if the RootWindow is Views-hosted.
-  virtual bool IsViewsHosted() const { return false; }
-
-  // Returns true if the RootWindow is Alloy style, otherwise Chrome style.
-  bool IsAlloyStyle() const { return use_alloy_style_; }
 
   // Initialize as a normal window. This will create and show a native window
   // hosting a single browser instance. This method may be called on any thread.
@@ -186,23 +158,8 @@ class RootWindow
   // Hide the window.
   virtual void Hide() = 0;
 
-  // Set bounds in DIP screen coordinates. If |content_bounds| is true then the
-  // specified bounds are for the browser's content area and will be expanded to
-  // appropriate containing window bounds. Otherwise, the specified bounds are
-  // for the containing window directly. Bounds will be constrained to the
-  // containing display work area. Specific behavioral expectations depend on
-  // platform and run mode. See the https://tests/window example for details.
-  virtual void SetBounds(int x,
-                         int y,
-                         size_t width,
-                         size_t height,
-                         bool content_bounds) = 0;
-  void SetBounds(const CefRect& bounds, bool content_bounds) {
-    SetBounds(bounds.x, bounds.y, bounds.width, bounds.height, content_bounds);
-  }
-
-  // Returns true if this RootWindow should default to sizing by content bounds.
-  virtual bool DefaultToContentBounds() const = 0;
+  // Set the window bounds in screen coordinates.
+  virtual void SetBounds(int x, int y, size_t width, size_t height) = 0;
 
   // Close the window. If |force| is true onunload handlers will not be
   // executed.
@@ -214,7 +171,7 @@ class RootWindow
 
   // Returns the device scale factor. Only used in combination with off-screen
   // rendering.
-  virtual std::optional<float> GetDeviceScaleFactor() const = 0;
+  virtual float GetDeviceScaleFactor() const = 0;
 
   // Returns the browser that this window contains, if any.
   virtual CefRefPtr<CefBrowser> GetBrowser() const = 0;
@@ -225,40 +182,22 @@ class RootWindow
   // Returns true if this window is using windowless rendering (osr).
   virtual bool WithWindowlessRendering() const = 0;
 
-  // Returns true if this object has been initialized.
-  bool IsInitialized() const { return initialized_; }
+  // Returns true if this window is hosting an extension app.
+  virtual bool WithExtension() const = 0;
 
-  // Returns true if the platform window has been created.
-  bool IsWindowCreated() const;
-
-  // Used to uniquely identify popup windows.
-  void SetPopupId(int opener_browser_id, int popup_id);
-  // If |popup_id| is -1 only match |opener_browser_id|.
-  bool IsPopupIdMatch(int opener_browser_id, int popup_id) const;
-  int opener_browser_id() const { return opener_browser_id_; }
-  int popup_id() const { return popup_id_; }
+  // Called when the set of loaded extensions changes. The default
+  // implementation will create a single window instance for each extension.
+  virtual void OnExtensionsChanged(const ExtensionSet& extensions);
 
  protected:
   // Allow deletion via scoped_refptr only.
   friend struct DeleteOnMainThread;
   friend class base::RefCountedThreadSafe<RootWindow, DeleteOnMainThread>;
 
-  explicit RootWindow(bool use_alloy_style);
+  RootWindow();
   virtual ~RootWindow();
 
-  // Members set during initialization. Safe to access from any thread.
-  Delegate* delegate_ = nullptr;
-  bool initialized_ = false;
-
-  // Only accessed on the main thread.
-  bool window_created_ = false;
-
- private:
-  const bool use_alloy_style_;
-
-  // Members set during initialization. Safe to access from any thread.
-  int opener_browser_id_ = 0;
-  int popup_id_ = 0;
+  Delegate* delegate_;
 };
 
 }  // namespace client

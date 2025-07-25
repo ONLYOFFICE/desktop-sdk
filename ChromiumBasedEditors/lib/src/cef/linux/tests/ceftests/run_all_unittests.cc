@@ -2,10 +2,8 @@
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 
-#include <memory>
-
 #include "include/base/cef_build.h"
-#include "include/cef_version_info.h"
+#include "include/cef_config.h"
 
 #if defined(OS_LINUX) && defined(CEF_X11)
 #include <X11/Xlib.h>
@@ -19,7 +17,6 @@
 #endif
 
 #include "include/base/cef_callback.h"
-#include "include/cef_api_hash.h"
 #include "include/cef_app.h"
 #include "include/cef_task.h"
 #include "include/cef_thread.h"
@@ -29,7 +26,6 @@
 #include "tests/ceftests/test_handler.h"
 #include "tests/ceftests/test_server.h"
 #include "tests/ceftests/test_suite.h"
-#include "tests/ceftests/test_util.h"
 #include "tests/shared/browser/client_app_browser.h"
 #include "tests/shared/browser/main_message_loop_external_pump.h"
 #include "tests/shared/browser/main_message_loop_std.h"
@@ -40,15 +36,15 @@
 #include "include/wrapper/cef_library_loader.h"
 #endif
 
-#if defined(OS_WIN)
+// When generating projects with CMake the CEF_USE_SANDBOX value will be defined
+// automatically if using the required compiler version. Pass -DUSE_SANDBOX=OFF
+// to the CMake command-line to disable use of the sandbox.
+#if defined(OS_WIN) && defined(CEF_USE_SANDBOX)
 #include "include/cef_sandbox_win.h"
-#include "tests/shared/browser/util_win.h"
-#endif
 
-#if defined(OS_MAC)
-// Platform-specific initialization and cleanup.
-extern void PlatformInit();
-extern void PlatformCleanup();
+// The cef_sandbox.lib static library may not link successfully with all VS
+// versions.
+#pragma comment(lib, "cef_sandbox.lib")
 #endif
 
 namespace {
@@ -56,14 +52,13 @@ namespace {
 void QuitMessageLoop() {
   CEF_REQUIRE_UI_THREAD();
   client::MainMessageLoop* message_loop = client::MainMessageLoop::Get();
-  if (message_loop) {
+  if (message_loop)
     message_loop->Quit();
-  } else {
+  else
     CefQuitMessageLoop();
-  }
 }
 
-void sleep(int64_t ms) {
+void sleep(int64 ms) {
 #if defined(OS_WIN)
   Sleep(ms);
 #elif defined(OS_POSIX)
@@ -78,20 +73,9 @@ void RunTestsOnTestThread() {
   // Run the test suite.
   CefTestSuite::GetInstance()->Run();
 
-  // Wait for all TestHandlers to be destroyed.
-  size_t loop_count = 0;
-  while (true) {
-    const size_t handler_count = TestHandler::GetTestHandlerCount();
-    if (handler_count == 0) {
-      break;
-    }
-    if (++loop_count == 20) {
-      LOG(ERROR) << "Terminating with " << handler_count
-                 << " leaked TestHandler objects";
-      break;
-    }
+  // Wait for all browsers to exit.
+  while (TestHandler::HasBrowser())
     sleep(100);
-  }
 
   // Wait for the test server to stop, and then quit the CEF message loop.
   test_server::Stop(base::BindOnce(QuitMessageLoop));
@@ -106,11 +90,13 @@ void ContinueOnUIThread(CefRefPtr<CefTaskRunner> test_task_runner) {
 
 #if defined(OS_LINUX) && defined(CEF_X11)
 int XErrorHandlerImpl(Display* display, XErrorEvent* event) {
-  LOG(WARNING) << "X error received: " << "type " << event->type << ", "
-               << "serial " << event->serial << ", " << "error_code "
-               << static_cast<int>(event->error_code) << ", " << "request_code "
-               << static_cast<int>(event->request_code) << ", " << "minor_code "
-               << static_cast<int>(event->minor_code);
+  LOG(WARNING) << "X error received: "
+               << "type " << event->type << ", "
+               << "serial " << event->serial << ", "
+               << "error_code " << static_cast<int>(event->error_code) << ", "
+               << "request_code " << static_cast<int>(event->request_code)
+               << ", "
+               << "minor_code " << static_cast<int>(event->minor_code);
   return 0;
 }
 
@@ -119,39 +105,56 @@ int XIOErrorHandlerImpl(Display* display) {
 }
 #endif  // defined(OS_LINUX) && defined(CEF_X11)
 
-#if defined(OS_MAC)
-class ScopedPlatformSetup final {
- public:
-  ScopedPlatformSetup() { PlatformInit(); }
-  ~ScopedPlatformSetup() { PlatformCleanup(); }
-};
-#endif  // defined(OS_MAC)
+}  // namespace
 
-int RunMain(int argc,
-            char* argv[],
-            void* sandbox_info) {
+int main(int argc, char* argv[]) {
+#if !defined(OS_MAC)
   int exit_code;
+#endif
 
-#if CEF_API_VERSION != CEF_EXPERIMENTAL
-  printf("Running with configured CEF API version %d\n", CEF_API_VERSION);
+#if defined(OS_WIN) && defined(ARCH_CPU_32_BITS)
+  // Run the main thread on 32-bit Windows using a fiber with the preferred 4MiB
+  // stack size. This function must be called at the top of the executable entry
+  // point function (`main()` or `wWinMain()`). It is used in combination with
+  // the initial stack size of 0.5MiB configured via the `/STACK:0x80000` linker
+  // flag on executable targets. This saves significant memory on threads (like
+  // those in the Windows thread pool, and others) whose stack size can only be
+  // controlled via the linker flag.
+  exit_code = CefRunMainWithPreferredStackSize(main, argc, argv);
+  if (exit_code >= 0) {
+    // The fiber has completed so return here.
+    return exit_code;
+  }
 #endif
 
 #if defined(OS_MAC)
   // Load the CEF framework library at runtime instead of linking directly
   // as required by the macOS sandbox implementation.
   CefScopedLibraryLoader library_loader;
-  if (!library_loader.LoadInMain()) {
+  if (!library_loader.LoadInMain())
     return 1;
-  }
 #endif
 
   // Create the singleton test suite object.
   CefTestSuite test_suite(argc, argv);
 
 #if defined(OS_WIN)
-  CefMainArgs main_args(client::GetCodeModuleHandle());
+  if (test_suite.command_line()->HasSwitch("enable-high-dpi-support")) {
+    // Enable High-DPI support on Windows 7 and newer.
+    CefEnableHighDPISupport();
+  }
+
+  CefMainArgs main_args(::GetModuleHandle(nullptr));
 #else
   CefMainArgs main_args(argc, argv);
+#endif
+
+  void* windows_sandbox_info = nullptr;
+
+#if defined(OS_WIN) && defined(CEF_USE_SANDBOX)
+  // Manages the life span of the sandbox information object.
+  CefScopedSandboxInfo scoped_sandbox;
+  windows_sandbox_info = scoped_sandbox.sandbox_info();
 #endif
 
   // Create a ClientApp of the correct type.
@@ -169,24 +172,19 @@ int RunMain(int argc,
   }
 
   // Execute the secondary process, if any.
-  exit_code = CefExecuteProcess(main_args, app, sandbox_info);
-  if (exit_code >= 0) {
+  exit_code = CefExecuteProcess(main_args, app, windows_sandbox_info);
+  if (exit_code >= 0)
     return exit_code;
-  }
 #else
   } else {
-    // On MacOS this executable is only used for the main process.
+    // On OS X this executable is only used for the main process.
     NOTREACHED();
   }
 #endif
 
   CefSettings settings;
 
-#if defined(OS_WIN)
-  if (!sandbox_info) {
-    settings.no_sandbox = true;
-  }
-#elif !defined(CEF_USE_SANDBOX)
+#if !defined(CEF_USE_SANDBOX)
   settings.no_sandbox = true;
 #endif
 
@@ -195,7 +193,9 @@ int RunMain(int argc,
   test_suite.GetSettings(settings);
 
 #if defined(OS_MAC)
-  ScopedPlatformSetup scoped_platform_setup;
+  // Platform-specific initialization.
+  extern void PlatformInit();
+  PlatformInit();
 #endif
 
 #if defined(OS_LINUX) && defined(CEF_X11)
@@ -205,24 +205,17 @@ int RunMain(int argc,
   XSetIOErrorHandler(XIOErrorHandlerImpl);
 #endif
 
-  // Initialize CEF.
-  if (!CefInitialize(main_args, settings, app, sandbox_info)) {
-    exit_code = CefGetExitCode();
-    LOG(ERROR) << "CefInitialize exited with code " << exit_code;
-    return exit_code;
+  // Create the MessageLoop.
+  std::unique_ptr<client::MainMessageLoop> message_loop;
+  if (!settings.multi_threaded_message_loop) {
+    if (settings.external_message_pump)
+      message_loop = client::MainMessageLoopExternalPump::Create();
+    else
+      message_loop.reset(new client::MainMessageLoopStd);
   }
 
-  // Log the current configuration.
-  LOG(WARNING)
-      << "Using " << (UseAlloyStyleBrowserGlobal() ? "Alloy" : "Chrome")
-      << " style browser; "
-      << (UseViewsGlobal()
-              ? (std::string(UseAlloyStyleWindowGlobal() ? "Alloy" : "Chrome") +
-                 " style window; ")
-              : "")
-      << (UseViewsGlobal() ? "Views" : "Native") << "-hosted (not a warning)";
-
-  std::unique_ptr<client::MainMessageLoop> message_loop;
+  // Initialize CEF.
+  CefInitialize(main_args, settings, app, windows_sandbox_info);
 
   // Initialize the testing framework.
   test_suite.InitMainProcess();
@@ -241,22 +234,13 @@ int RunMain(int argc,
   } else {
     // Create and start the test thread.
     CefRefPtr<CefThread> thread = CefThread::CreateThread("test_thread");
-    if (!thread) {
-      LOG(ERROR) << "test_thread creation failed";
+    if (!thread)
       return 1;
-    }
 
     // Start the tests from the UI thread so that any pending UI tasks get a
     // chance to execute first.
     CefPostTask(TID_UI,
                 base::BindOnce(&ContinueOnUIThread, thread->GetTaskRunner()));
-
-    // Create the CEF message loop.
-    if (settings.external_message_pump) {
-      message_loop = client::MainMessageLoopExternalPump::Create();
-    } else {
-      message_loop = std::make_unique<client::MainMessageLoopStd>();
-    }
 
     // Run the CEF message loop.
     message_loop->Run();
@@ -274,53 +258,14 @@ int RunMain(int argc,
 
   test_suite.DeleteTempDirectories();
 
-  // Destroy the CEF message loop, if any.
+  // Destroy the MessageLoop.
   message_loop.reset(nullptr);
+
+#if defined(OS_MAC)
+  // Platform-specific cleanup.
+  extern void PlatformCleanup();
+  PlatformCleanup();
+#endif
 
   return retval;
 }
-
-}  // namespace
-
-#if defined(OS_WIN) && defined(CEF_USE_BOOTSTRAP)
-
-// Entry point called by bootstrapc.exe when built as a DLL.
-CEF_BOOTSTRAP_EXPORT int RunConsoleMain(int argc,
-                                        char* argv[],
-                                        void* sandbox_info,
-                                        cef_version_info_t* /*version_info*/) {
-  return ::RunMain(argc, argv, sandbox_info);
-}
-
-#else  // !(defined(OS_WIN) && defined(CEF_USE_BOOTSTRAP))
-
-// Program entry point function.
-NO_STACK_PROTECTOR
-int main(int argc, char* argv[]) {
-#if defined(OS_WIN) && defined(ARCH_CPU_32_BITS)
-  // Run the main thread on 32-bit Windows using a fiber with the preferred 4MiB
-  // stack size. This function must be called at the top of the executable entry
-  // point function (`main()` or `wWinMain()`). It is used in combination with
-  // the initial stack size of 0.5MiB configured via the `/STACK:0x80000` linker
-  // flag on executable targets. This saves significant memory on threads (like
-  // those in the Windows thread pool, and others) whose stack size can only be
-  // controlled via the linker flag.
-  exit_code = CefRunMainWithPreferredStackSize(main, argc, argv);
-  if (exit_code >= 0) {
-    // The fiber has completed so return here.
-    return exit_code;
-  }
-#endif
-
-  void* sandbox_info = nullptr;
-
-#if defined(OS_WIN) && defined(CEF_USE_SANDBOX)
-  // Manages the life span of the sandbox information object.
-  CefScopedSandboxInfo scoped_sandbox;
-  sandbox_info = scoped_sandbox.sandbox_info();
-#endif
-
-  return ::RunMain(argc, argv, sandbox_info);
-}
-
-#endif  // !(defined(OS_WIN) && defined(CEF_USE_BOOTSTRAP))

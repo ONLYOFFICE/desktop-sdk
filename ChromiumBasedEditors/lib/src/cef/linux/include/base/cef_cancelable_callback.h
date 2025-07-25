@@ -133,9 +133,8 @@ class CancelableCallbackImpl {
 
   // Returns a callback that can be disabled by calling Cancel().
   CallbackType callback() const {
-    if (!callback_) {
+    if (!callback_)
       return CallbackType();
-    }
     CallbackType forwarder;
     MakeForwarder(&forwarder);
     return forwarder;

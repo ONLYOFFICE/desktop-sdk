@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,16 +33,12 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=48b607ec385e08b767b6ac1ab132121204f075fc$
+// $hash=7fbcd399c08dc39e33a7d0400a49f2e3a551bd02$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_RESPONSE_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_RESPONSE_CAPI_H_
 #pragma once
-
-#if defined(BUILDING_CEF_SHARED)
-#error This file cannot be included DLL-side
-#endif
 
 #include "include/capi/cef_base_capi.h"
 
@@ -53,8 +49,6 @@ extern "C" {
 ///
 /// Structure used to represent a web response. The functions of this structure
 /// may be called on any thread.
-///
-/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_response_t {
   ///

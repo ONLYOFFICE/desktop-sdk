@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,11 +9,10 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=34c21edf0ddb3d28717f7e5d4727ea3f3f31e912$
+// $hash=6761de400c13847367a2fa811493d97c50a8962b$
 //
 
 #include "libcef_dll/ctocpp/preference_registrar_ctocpp.h"
-
 #include "libcef_dll/ctocpp/value_ctocpp.h"
 
 // VIRTUAL METHODS - Body may be edited by hand.
@@ -22,27 +21,24 @@ NO_SANITIZE("cfi-icall")
 bool CefPreferenceRegistrarCToCpp::AddPreference(
     const CefString& name,
     CefRefPtr<CefValue> default_value) {
-  auto* _struct = GetStruct();
-  if (!_struct->add_preference) {
+  cef_preference_registrar_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, add_preference))
     return false;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: name; type: string_byref_const
   DCHECK(!name.empty());
-  if (name.empty()) {
+  if (name.empty())
     return false;
-  }
   // Verify param: default_value; type: refptr_same
   DCHECK(default_value.get());
-  if (!default_value.get()) {
+  if (!default_value.get())
     return false;
-  }
 
   // Execute
   int _retval = _struct->add_preference(_struct, name.GetStruct(),
-                                        CefValueCToCpp_Unwrap(default_value));
+                                        CefValueCToCpp::Unwrap(default_value));
 
   // Return type: bool
   return _retval ? true : false;
@@ -61,7 +57,7 @@ cef_preference_registrar_t* CefCToCppScoped<CefPreferenceRegistrarCToCpp,
                                             CefPreferenceRegistrar,
                                             cef_preference_registrar_t>::
     UnwrapDerivedOwn(CefWrapperType type, CefOwnPtr<CefPreferenceRegistrar> c) {
-  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  NOTREACHED() << "Unexpected class type: " << type;
   return nullptr;
 }
 
@@ -70,7 +66,7 @@ cef_preference_registrar_t* CefCToCppScoped<CefPreferenceRegistrarCToCpp,
                                             CefPreferenceRegistrar,
                                             cef_preference_registrar_t>::
     UnwrapDerivedRaw(CefWrapperType type, CefRawPtr<CefPreferenceRegistrar> c) {
-  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  NOTREACHED() << "Unexpected class type: " << type;
   return nullptr;
 }
 

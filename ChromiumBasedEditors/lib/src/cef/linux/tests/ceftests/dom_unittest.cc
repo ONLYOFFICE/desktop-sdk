@@ -11,7 +11,7 @@ using client::ClientAppRenderer;
 
 namespace {
 
-const char* kTestUrl = "https://tests/DOMTest.Test";
+const char* kTestUrl = "http://tests/DOMTest.Test";
 const char* kTestMessage = "DOMTest.Message";
 
 enum DOMTestType {
@@ -149,7 +149,7 @@ class TestDOMVisitor : public CefDOMVisitor {
   void TestStructure(CefRefPtr<CefDOMDocument> document) {
     EXPECT_EQ(document->GetTitle(), "The Title");
     EXPECT_EQ(document->GetBaseURL(), kTestUrl);
-    EXPECT_EQ(document->GetCompleteURL("foo.html"), "https://tests/foo.html");
+    EXPECT_EQ(document->GetCompleteURL("foo.html"), "http://tests/foo.html");
 
     // Navigate the complete document structure.
     CefRefPtr<CefDOMNode> docNode = document->GetDocument();
@@ -211,11 +211,10 @@ class TestDOMVisitor : public CefDOMVisitor {
   }
 
   void Visit(CefRefPtr<CefDOMDocument> document) override {
-    if (test_type_ == DOM_TEST_STRUCTURE) {
+    if (test_type_ == DOM_TEST_STRUCTURE)
       TestStructure(document);
-    } else if (test_type_ == DOM_TEST_MODIFY) {
+    else if (test_type_ == DOM_TEST_MODIFY)
       TestModify(document);
-    }
 
     DestroyTest();
   }
@@ -264,7 +263,7 @@ class TestDOMVisitor : public CefDOMVisitor {
 // Used in the render process.
 class DOMRendererTest : public ClientAppRenderer::Delegate {
  public:
-  DOMRendererTest() = default;
+  DOMRendererTest() {}
 
   bool OnProcessMessageReceived(CefRefPtr<ClientAppRenderer> app,
                                 CefRefPtr<CefBrowser> browser,
@@ -331,9 +330,8 @@ class TestDOMHandler : public TestHandler {
 
     got_message_.yes();
 
-    if (message->GetArgumentList()->GetBool(0)) {
+    if (message->GetArgumentList()->GetBool(0))
       got_success_.yes();
-    }
 
     // Test is complete.
     DestroyTest();

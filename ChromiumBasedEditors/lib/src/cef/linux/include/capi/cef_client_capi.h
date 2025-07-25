@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,16 +33,12 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=89798b8a3a9a4ae14a57e81dfaad1e05a2c23639$
+// $hash=eb9dcb574252483dfab12834af93ba14138d4089$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_CLIENT_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_CLIENT_CAPI_H_
 #pragma once
-
-#if defined(BUILDING_CEF_SHARED)
-#error This file cannot be included DLL-side
-#endif
 
 #include "include/capi/cef_audio_handler_capi.h"
 #include "include/capi/cef_base_capi.h"
@@ -71,8 +67,6 @@ extern "C" {
 
 ///
 /// Implement this structure to provide handler implementations.
-///
-/// NOTE: This struct is allocated client-side.
 ///
 typedef struct _cef_client_t {
   ///

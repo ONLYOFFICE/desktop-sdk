@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,16 +33,12 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=5f9161db67adb86dc477f51aa775956c5ebbdf36$
+// $hash=d807c7566ce3085243e9e7ea279fee7241acfc5f$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_RENDER_PROCESS_HANDLER_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_RENDER_PROCESS_HANDLER_CAPI_H_
 #pragma once
-
-#if defined(BUILDING_CEF_SHARED)
-#error This file cannot be included DLL-side
-#endif
 
 #include "include/capi/cef_base_capi.h"
 #include "include/capi/cef_browser_capi.h"
@@ -61,8 +57,6 @@ extern "C" {
 /// Structure used to implement render process callbacks. The functions of this
 /// structure will be called on the render process main thread (TID_RENDERER)
 /// unless otherwise indicated.
-///
-/// NOTE: This struct is allocated client-side.
 ///
 typedef struct _cef_render_process_handler_t {
   ///
@@ -106,16 +100,16 @@ typedef struct _cef_render_process_handler_t {
   ///
   /// Called immediately after the V8 context for a frame has been created. To
   /// retrieve the JavaScript 'window' object use the
-  /// cef_v8_context_t::get_global() function. V8 handles can only be accessed
+  /// cef_v8context_t::get_global() function. V8 handles can only be accessed
   /// from the thread on which they are created. A task runner for posting tasks
   /// on the associated thread can be retrieved via the
-  /// cef_v8_context_t::get_task_runner() function.
+  /// cef_v8context_t::get_task_runner() function.
   ///
   void(CEF_CALLBACK* on_context_created)(
       struct _cef_render_process_handler_t* self,
       struct _cef_browser_t* browser,
       struct _cef_frame_t* frame,
-      struct _cef_v8_context_t* context);
+      struct _cef_v8context_t* context);
 
   ///
   /// Called immediately before the V8 context for a frame is released. No
@@ -125,7 +119,7 @@ typedef struct _cef_render_process_handler_t {
       struct _cef_render_process_handler_t* self,
       struct _cef_browser_t* browser,
       struct _cef_frame_t* frame,
-      struct _cef_v8_context_t* context);
+      struct _cef_v8context_t* context);
 
   ///
   /// Called for global uncaught exceptions in a frame. Execution of this
@@ -136,9 +130,9 @@ typedef struct _cef_render_process_handler_t {
       struct _cef_render_process_handler_t* self,
       struct _cef_browser_t* browser,
       struct _cef_frame_t* frame,
-      struct _cef_v8_context_t* context,
-      struct _cef_v8_exception_t* exception,
-      struct _cef_v8_stack_trace_t* stackTrace);
+      struct _cef_v8context_t* context,
+      struct _cef_v8exception_t* exception,
+      struct _cef_v8stack_trace_t* stackTrace);
 
   ///
   /// Called when a new node in the the browser gets focus. The |node| value may

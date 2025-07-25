@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=566c0f33dc496c8213f4dc054acb1bf16561bba3$
+// $hash=47bcf17fac9734852100b8e44bbead84b4ef78dc$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_COOKIE_MANAGER_CTOCPP_H_
@@ -47,8 +47,5 @@ class CefCookieManagerCToCpp
                      CefRefPtr<CefDeleteCookiesCallback> callback) override;
   bool FlushStore(CefRefPtr<CefCompletionCallback> callback) override;
 };
-
-constexpr auto CefCookieManagerCToCpp_Wrap = CefCookieManagerCToCpp::Wrap;
-constexpr auto CefCookieManagerCToCpp_Unwrap = CefCookieManagerCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_COOKIE_MANAGER_CTOCPP_H_

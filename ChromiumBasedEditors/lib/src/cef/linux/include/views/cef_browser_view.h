@@ -82,7 +82,7 @@ class CefBrowserView : public CefView {
 
   ///
   /// Returns the Chrome toolbar associated with this BrowserView. Only
-  /// supported when using Chrome style. The CefBrowserViewDelegate::
+  /// supported when using the Chrome runtime. The CefBrowserViewDelegate::
   /// GetChromeToolbarType() method must return a value other than
   /// CEF_CTT_NONE and the toolbar will not be available until after this
   /// BrowserView is added to a CefWindow and CefViewDelegate::OnWindowChanged()
@@ -92,28 +92,16 @@ class CefBrowserView : public CefView {
   virtual CefRefPtr<CefView> GetChromeToolbar() = 0;
 
   ///
-  /// Sets whether normal priority accelerators are first forwarded to the web
-  /// content (`keydown` event handler) or CefKeyboardHandler. Normal priority
-  /// accelerators can be registered via CefWindow::SetAccelerator (with
-  /// |high_priority|=false) or internally for standard accelerators supported
-  /// by Chrome style. If |prefer_accelerators| is true then the matching
-  /// accelerator will be triggered immediately (calling
-  /// CefWindowDelegate::OnAccelerator or CefCommandHandler::OnChromeCommand
-  /// respectively) and the event will not be forwarded to the web content or
-  /// CefKeyboardHandler first. If |prefer_accelerators| is false then the
-  /// matching accelerator will only be triggered if the event is not handled by
-  /// web content (`keydown` event handler that calls `event.preventDefault()`)
-  /// or by CefKeyboardHandler. The default value is false.
+  /// Sets whether accelerators registered with CefWindow::SetAccelerator are
+  /// triggered before or after the event is sent to the CefBrowser. If
+  /// |prefer_accelerators| is true then the matching accelerator will be
+  /// triggered immediately and the event will not be sent to the CefBrowser. If
+  /// |prefer_accelerators| is false then the matching accelerator will only be
+  /// triggered if the event is not handled by web content or by
+  /// CefKeyboardHandler. The default value is false.
   ///
   /*--cef()--*/
   virtual void SetPreferAccelerators(bool prefer_accelerators) = 0;
-
-  ///
-  /// Returns the runtime style for this BrowserView (ALLOY or CHROME). See
-  /// cef_runtime_style_t documentation for details.
-  ///
-  /*--cef(default_retval=CEF_RUNTIME_STYLE_DEFAULT)--*/
-  virtual cef_runtime_style_t GetRuntimeStyle() = 0;
 };
 
 #endif  // CEF_INCLUDE_VIEWS_CEF_BROWSER_VIEW_H_

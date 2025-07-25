@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,11 +9,10 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=e3d8479eda4010ed380bf84780a167623fc85a42$
+// $hash=869a0291457438cf60cb7464dcc63dd0ac7a8cfc$
 //
 
 #include "libcef_dll/cpptoc/views/menu_button_delegate_cpptoc.h"
-
 #include "libcef_dll/ctocpp/views/button_ctocpp.h"
 #include "libcef_dll/ctocpp/views/menu_button_ctocpp.h"
 #include "libcef_dll/ctocpp/views/menu_button_pressed_lock_ctocpp.h"
@@ -26,109 +25,99 @@ namespace {
 
 void CEF_CALLBACK menu_button_delegate_on_menu_button_pressed(
     struct _cef_menu_button_delegate_t* self,
-    struct _cef_menu_button_t* menu_button,
+    cef_menu_button_t* menu_button,
     const cef_point_t* screen_point,
-    struct _cef_menu_button_pressed_lock_t* button_pressed_lock) {
+    cef_menu_button_pressed_lock_t* button_pressed_lock) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return;
-  }
   // Verify param: menu_button; type: refptr_diff
   DCHECK(menu_button);
-  if (!menu_button) {
+  if (!menu_button)
     return;
-  }
   // Verify param: screen_point; type: simple_byref_const
   DCHECK(screen_point);
-  if (!screen_point) {
+  if (!screen_point)
     return;
-  }
   // Verify param: button_pressed_lock; type: refptr_diff
   DCHECK(button_pressed_lock);
-  if (!button_pressed_lock) {
+  if (!button_pressed_lock)
     return;
-  }
 
   // Translate param: screen_point; type: simple_byref_const
   CefPoint screen_pointVal = screen_point ? *screen_point : CefPoint();
 
   // Execute
   CefMenuButtonDelegateCppToC::Get(self)->OnMenuButtonPressed(
-      CefMenuButtonCToCpp_Wrap(menu_button), screen_pointVal,
-      CefMenuButtonPressedLockCToCpp_Wrap(button_pressed_lock));
+      CefMenuButtonCToCpp::Wrap(menu_button), screen_pointVal,
+      CefMenuButtonPressedLockCToCpp::Wrap(button_pressed_lock));
 }
 
 void CEF_CALLBACK
 menu_button_delegate_on_button_pressed(struct _cef_button_delegate_t* self,
-                                       struct _cef_button_t* button) {
+                                       cef_button_t* button) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return;
-  }
   // Verify param: button; type: refptr_diff
   DCHECK(button);
-  if (!button) {
+  if (!button)
     return;
-  }
 
   // Execute
   CefMenuButtonDelegateCppToC::Get(
       reinterpret_cast<cef_menu_button_delegate_t*>(self))
-      ->OnButtonPressed(CefButtonCToCpp_Wrap(button));
+      ->OnButtonPressed(CefButtonCToCpp::Wrap(button));
 }
 
 void CEF_CALLBACK menu_button_delegate_on_button_state_changed(
     struct _cef_button_delegate_t* self,
-    struct _cef_button_t* button) {
+    cef_button_t* button) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return;
-  }
   // Verify param: button; type: refptr_diff
   DCHECK(button);
-  if (!button) {
+  if (!button)
     return;
-  }
 
   // Execute
   CefMenuButtonDelegateCppToC::Get(
       reinterpret_cast<cef_menu_button_delegate_t*>(self))
-      ->OnButtonStateChanged(CefButtonCToCpp_Wrap(button));
+      ->OnButtonStateChanged(CefButtonCToCpp::Wrap(button));
 }
 
 cef_size_t CEF_CALLBACK
 menu_button_delegate_get_preferred_size(struct _cef_view_delegate_t* self,
-                                        struct _cef_view_t* view) {
+                                        cef_view_t* view) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return CefSize();
-  }
   // Verify param: view; type: refptr_diff
   DCHECK(view);
-  if (!view) {
+  if (!view)
     return CefSize();
-  }
 
   // Execute
   cef_size_t _retval = CefMenuButtonDelegateCppToC::Get(
                            reinterpret_cast<cef_menu_button_delegate_t*>(self))
-                           ->GetPreferredSize(CefViewCToCpp_Wrap(view));
+                           ->GetPreferredSize(CefViewCToCpp::Wrap(view));
 
   // Return type: simple
   return _retval;
@@ -136,25 +125,23 @@ menu_button_delegate_get_preferred_size(struct _cef_view_delegate_t* self,
 
 cef_size_t CEF_CALLBACK
 menu_button_delegate_get_minimum_size(struct _cef_view_delegate_t* self,
-                                      struct _cef_view_t* view) {
+                                      cef_view_t* view) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return CefSize();
-  }
   // Verify param: view; type: refptr_diff
   DCHECK(view);
-  if (!view) {
+  if (!view)
     return CefSize();
-  }
 
   // Execute
   cef_size_t _retval = CefMenuButtonDelegateCppToC::Get(
                            reinterpret_cast<cef_menu_button_delegate_t*>(self))
-                           ->GetMinimumSize(CefViewCToCpp_Wrap(view));
+                           ->GetMinimumSize(CefViewCToCpp::Wrap(view));
 
   // Return type: simple
   return _retval;
@@ -162,25 +149,23 @@ menu_button_delegate_get_minimum_size(struct _cef_view_delegate_t* self,
 
 cef_size_t CEF_CALLBACK
 menu_button_delegate_get_maximum_size(struct _cef_view_delegate_t* self,
-                                      struct _cef_view_t* view) {
+                                      cef_view_t* view) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return CefSize();
-  }
   // Verify param: view; type: refptr_diff
   DCHECK(view);
-  if (!view) {
+  if (!view)
     return CefSize();
-  }
 
   // Execute
   cef_size_t _retval = CefMenuButtonDelegateCppToC::Get(
                            reinterpret_cast<cef_menu_button_delegate_t*>(self))
-                           ->GetMaximumSize(CefViewCToCpp_Wrap(view));
+                           ->GetMaximumSize(CefViewCToCpp::Wrap(view));
 
   // Return type: simple
   return _retval;
@@ -188,26 +173,24 @@ menu_button_delegate_get_maximum_size(struct _cef_view_delegate_t* self,
 
 int CEF_CALLBACK
 menu_button_delegate_get_height_for_width(struct _cef_view_delegate_t* self,
-                                          struct _cef_view_t* view,
+                                          cef_view_t* view,
                                           int width) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return 0;
-  }
   // Verify param: view; type: refptr_diff
   DCHECK(view);
-  if (!view) {
+  if (!view)
     return 0;
-  }
 
   // Execute
   int _retval = CefMenuButtonDelegateCppToC::Get(
                     reinterpret_cast<cef_menu_button_delegate_t*>(self))
-                    ->GetHeightForWidth(CefViewCToCpp_Wrap(view), width);
+                    ->GetHeightForWidth(CefViewCToCpp::Wrap(view), width);
 
   // Return type: simple
   return _retval;
@@ -215,112 +198,101 @@ menu_button_delegate_get_height_for_width(struct _cef_view_delegate_t* self,
 
 void CEF_CALLBACK
 menu_button_delegate_on_parent_view_changed(struct _cef_view_delegate_t* self,
-                                            struct _cef_view_t* view,
+                                            cef_view_t* view,
                                             int added,
-                                            struct _cef_view_t* parent) {
+                                            cef_view_t* parent) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return;
-  }
   // Verify param: view; type: refptr_diff
   DCHECK(view);
-  if (!view) {
+  if (!view)
     return;
-  }
   // Verify param: parent; type: refptr_diff
   DCHECK(parent);
-  if (!parent) {
+  if (!parent)
     return;
-  }
 
   // Execute
   CefMenuButtonDelegateCppToC::Get(
       reinterpret_cast<cef_menu_button_delegate_t*>(self))
-      ->OnParentViewChanged(CefViewCToCpp_Wrap(view), added ? true : false,
-                            CefViewCToCpp_Wrap(parent));
+      ->OnParentViewChanged(CefViewCToCpp::Wrap(view), added ? true : false,
+                            CefViewCToCpp::Wrap(parent));
 }
 
 void CEF_CALLBACK
 menu_button_delegate_on_child_view_changed(struct _cef_view_delegate_t* self,
-                                           struct _cef_view_t* view,
+                                           cef_view_t* view,
                                            int added,
-                                           struct _cef_view_t* child) {
+                                           cef_view_t* child) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return;
-  }
   // Verify param: view; type: refptr_diff
   DCHECK(view);
-  if (!view) {
+  if (!view)
     return;
-  }
   // Verify param: child; type: refptr_diff
   DCHECK(child);
-  if (!child) {
+  if (!child)
     return;
-  }
 
   // Execute
   CefMenuButtonDelegateCppToC::Get(
       reinterpret_cast<cef_menu_button_delegate_t*>(self))
-      ->OnChildViewChanged(CefViewCToCpp_Wrap(view), added ? true : false,
-                           CefViewCToCpp_Wrap(child));
+      ->OnChildViewChanged(CefViewCToCpp::Wrap(view), added ? true : false,
+                           CefViewCToCpp::Wrap(child));
 }
 
 void CEF_CALLBACK
 menu_button_delegate_on_window_changed(struct _cef_view_delegate_t* self,
-                                       struct _cef_view_t* view,
+                                       cef_view_t* view,
                                        int added) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return;
-  }
   // Verify param: view; type: refptr_diff
   DCHECK(view);
-  if (!view) {
+  if (!view)
     return;
-  }
 
   // Execute
   CefMenuButtonDelegateCppToC::Get(
       reinterpret_cast<cef_menu_button_delegate_t*>(self))
-      ->OnWindowChanged(CefViewCToCpp_Wrap(view), added ? true : false);
+      ->OnWindowChanged(CefViewCToCpp::Wrap(view), added ? true : false);
 }
 
 void CEF_CALLBACK
 menu_button_delegate_on_layout_changed(struct _cef_view_delegate_t* self,
-                                       struct _cef_view_t* view,
+                                       cef_view_t* view,
                                        const cef_rect_t* new_bounds) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return;
-  }
   // Verify param: view; type: refptr_diff
   DCHECK(view);
-  if (!view) {
+  if (!view)
     return;
-  }
   // Verify param: new_bounds; type: simple_byref_const
   DCHECK(new_bounds);
-  if (!new_bounds) {
+  if (!new_bounds)
     return;
-  }
 
   // Translate param: new_bounds; type: simple_byref_const
   CefRect new_boundsVal = new_bounds ? *new_bounds : CefRect();
@@ -328,76 +300,49 @@ menu_button_delegate_on_layout_changed(struct _cef_view_delegate_t* self,
   // Execute
   CefMenuButtonDelegateCppToC::Get(
       reinterpret_cast<cef_menu_button_delegate_t*>(self))
-      ->OnLayoutChanged(CefViewCToCpp_Wrap(view), new_boundsVal);
+      ->OnLayoutChanged(CefViewCToCpp::Wrap(view), new_boundsVal);
 }
 
 void CEF_CALLBACK
 menu_button_delegate_on_focus(struct _cef_view_delegate_t* self,
-                              struct _cef_view_t* view) {
+                              cef_view_t* view) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return;
-  }
   // Verify param: view; type: refptr_diff
   DCHECK(view);
-  if (!view) {
+  if (!view)
     return;
-  }
 
   // Execute
   CefMenuButtonDelegateCppToC::Get(
       reinterpret_cast<cef_menu_button_delegate_t*>(self))
-      ->OnFocus(CefViewCToCpp_Wrap(view));
+      ->OnFocus(CefViewCToCpp::Wrap(view));
 }
 
 void CEF_CALLBACK
 menu_button_delegate_on_blur(struct _cef_view_delegate_t* self,
-                             struct _cef_view_t* view) {
+                             cef_view_t* view) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return;
-  }
   // Verify param: view; type: refptr_diff
   DCHECK(view);
-  if (!view) {
+  if (!view)
     return;
-  }
 
   // Execute
   CefMenuButtonDelegateCppToC::Get(
       reinterpret_cast<cef_menu_button_delegate_t*>(self))
-      ->OnBlur(CefViewCToCpp_Wrap(view));
-}
-
-void CEF_CALLBACK
-menu_button_delegate_on_theme_changed(struct _cef_view_delegate_t* self,
-                                      struct _cef_view_t* view) {
-  shutdown_checker::AssertNotShutdown();
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  DCHECK(self);
-  if (!self) {
-    return;
-  }
-  // Verify param: view; type: refptr_diff
-  DCHECK(view);
-  if (!view) {
-    return;
-  }
-
-  // Execute
-  CefMenuButtonDelegateCppToC::Get(
-      reinterpret_cast<cef_menu_button_delegate_t*>(self))
-      ->OnThemeChanged(CefViewCToCpp_Wrap(view));
+      ->OnBlur(CefViewCToCpp::Wrap(view));
 }
 
 }  // namespace
@@ -428,8 +373,6 @@ CefMenuButtonDelegateCppToC::CefMenuButtonDelegateCppToC() {
       menu_button_delegate_on_layout_changed;
   GetStruct()->base.base.on_focus = menu_button_delegate_on_focus;
   GetStruct()->base.base.on_blur = menu_button_delegate_on_blur;
-  GetStruct()->base.base.on_theme_changed =
-      menu_button_delegate_on_theme_changed;
 }
 
 // DESTRUCTOR - Do not edit by hand.
@@ -444,7 +387,7 @@ CefRefPtr<CefMenuButtonDelegate> CefCppToCRefCounted<
     CefMenuButtonDelegate,
     cef_menu_button_delegate_t>::UnwrapDerived(CefWrapperType type,
                                                cef_menu_button_delegate_t* s) {
-  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  NOTREACHED() << "Unexpected class type: " << type;
   return nullptr;
 }
 

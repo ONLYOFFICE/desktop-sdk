@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,16 +33,12 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=216c996b71739319038d4edfbe44c11da2b2cdfa$
+// $hash=38177cad78713d382b81f8b8aa4372402c62fac7$
 //
 
 #ifndef CEF_INCLUDE_CAPI_VIEWS_CEF_MENU_BUTTON_DELEGATE_CAPI_H_
 #define CEF_INCLUDE_CAPI_VIEWS_CEF_MENU_BUTTON_DELEGATE_CAPI_H_
 #pragma once
-
-#if defined(BUILDING_CEF_SHARED)
-#error This file cannot be included DLL-side
-#endif
 
 #include "include/capi/views/cef_button_delegate_capi.h"
 
@@ -55,8 +51,6 @@ struct _cef_menu_button_t;
 ///
 /// MenuButton pressed lock is released when this object is destroyed.
 ///
-/// NOTE: This struct is allocated DLL-side.
-///
 typedef struct _cef_menu_button_pressed_lock_t {
   ///
   /// Base structure.
@@ -68,8 +62,6 @@ typedef struct _cef_menu_button_pressed_lock_t {
 /// Implement this structure to handle MenuButton events. The functions of this
 /// structure will be called on the browser process UI thread unless otherwise
 /// indicated.
-///
-/// NOTE: This struct is allocated client-side.
 ///
 typedef struct _cef_menu_button_delegate_t {
   ///

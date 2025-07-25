@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,16 +33,12 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=dcc85bc129a43eca533e2f6cce32d04926f1efae$
+// $hash=93e5c4f5e93f56b63b5944208300669dcecba972$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_RESOURCE_HANDLER_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_RESOURCE_HANDLER_CAPI_H_
 #pragma once
-
-#if defined(BUILDING_CEF_SHARED)
-#error This file cannot be included DLL-side
-#endif
 
 #include "include/capi/cef_base_capi.h"
 #include "include/capi/cef_browser_capi.h"
@@ -58,8 +54,6 @@ extern "C" {
 ///
 /// Callback for asynchronous continuation of cef_resource_handler_t::skip().
 ///
-/// NOTE: This struct is allocated DLL-side.
-///
 typedef struct _cef_resource_skip_callback_t {
   ///
   /// Base structure.
@@ -73,13 +67,11 @@ typedef struct _cef_resource_skip_callback_t {
   /// 0 the request will fail with ERR_REQUEST_RANGE_NOT_SATISFIABLE.
   ///
   void(CEF_CALLBACK* cont)(struct _cef_resource_skip_callback_t* self,
-                           int64_t bytes_skipped);
+                           int64 bytes_skipped);
 } cef_resource_skip_callback_t;
 
 ///
 /// Callback for asynchronous continuation of cef_resource_handler_t::read().
-///
-/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_resource_read_callback_t {
   ///
@@ -102,8 +94,6 @@ typedef struct _cef_resource_read_callback_t {
 /// Structure used to implement a custom request handler structure. The
 /// functions of this structure will be called on the IO thread unless otherwise
 /// indicated.
-///
-/// NOTE: This struct is allocated client-side.
 ///
 typedef struct _cef_resource_handler_t {
   ///
@@ -156,7 +146,7 @@ typedef struct _cef_resource_handler_t {
   ///
   void(CEF_CALLBACK* get_response_headers)(struct _cef_resource_handler_t* self,
                                            struct _cef_response_t* response,
-                                           int64_t* response_length,
+                                           int64* response_length,
                                            cef_string_t* redirectUrl);
 
   ///
@@ -169,8 +159,8 @@ typedef struct _cef_resource_handler_t {
   /// function will be called in sequence but not from a dedicated thread.
   ///
   int(CEF_CALLBACK* skip)(struct _cef_resource_handler_t* self,
-                          int64_t bytes_to_skip,
-                          int64_t* bytes_skipped,
+                          int64 bytes_to_skip,
+                          int64* bytes_skipped,
                           struct _cef_resource_skip_callback_t* callback);
 
   ///

@@ -10,7 +10,6 @@
 
 #include "include/base/cef_macros.h"
 #include "include/base/cef_ref_counted.h"
-#include "include/cef_command_line.h"
 #include "include/internal/cef_types_wrappers.h"
 #include "tests/cefclient/browser/osr_renderer_settings.h"
 
@@ -25,9 +24,6 @@ class MainContext {
   // Returns the singleton instance of this object.
   static MainContext* Get();
 
-  // Returns the global command-line.
-  virtual CefRefPtr<CefCommandLine> GetCommandLine() = 0;
-
   // Returns the full path to the console log file.
   virtual std::string GetConsoleLogPath() = 0;
 
@@ -37,18 +33,20 @@ class MainContext {
   // Returns the app working directory including trailing path separator.
   virtual std::string GetAppWorkingDirectory() = 0;
 
-  // Returns the main application URL based on |command_line| and global state.
-  virtual std::string GetMainURL(CefRefPtr<CefCommandLine> command_line) = 0;
+  // Returns the main application URL.
+  virtual std::string GetMainURL() = 0;
 
   // Returns the background color.
   virtual cef_color_t GetBackgroundColor() = 0;
 
-  // Returns true if the Views framework will be used as the global default.
-  virtual bool UseViewsGlobal() = 0;
+  // Returns true if the Chrome runtime will be used.
+  virtual bool UseChromeRuntime() = 0;
 
-  // Returns true if Alloy style will be used as the global default. Alloy style
-  // is optional. Windowless rendering requires Alloy style.
-  virtual bool UseAlloyStyleGlobal() = 0;
+  // Returns true if the Views framework will be used.
+  virtual bool UseViews() = 0;
+
+  // Returns true if windowless (off-screen) rendering will be used.
+  virtual bool UseWindowlessRendering() = 0;
 
   // Returns true if touch events are enabled.
   virtual bool TouchEventsEnabled() = 0;

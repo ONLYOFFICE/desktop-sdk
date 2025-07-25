@@ -32,15 +32,13 @@
 #define CEF_INCLUDE_INTERNAL_CEF_EXPORT_H_
 #pragma once
 
-#if !defined(GENERATING_CEF_API_HASH)
 #include "include/base/cef_build.h"
-#endif
 
 #if defined(COMPILER_MSVC)
 
-#if defined(BUILDING_CEF_SHARED)
+#ifdef BUILDING_CEF_SHARED
 #define CEF_EXPORT __declspec(dllexport)
-#elif defined(USING_CEF_SHARED)
+#elif USING_CEF_SHARED
 #define CEF_EXPORT __declspec(dllimport)
 #else
 #define CEF_EXPORT

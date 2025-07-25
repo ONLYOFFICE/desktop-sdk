@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,11 +9,10 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=cd6035ccbb05420388ed02d5064c333b22757ffe$
+// $hash=9d7c60f524e97dfb4ef831ee5c00037372d42673$
 //
 
 #include "libcef_dll/cpptoc/test/translator_test_scoped_client_cpptoc.h"
-
 #include "libcef_dll/cpptoc/test/translator_test_scoped_client_child_cpptoc.h"
 
 namespace {
@@ -25,9 +24,8 @@ int CEF_CALLBACK translator_test_scoped_client_get_value(
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return 0;
-  }
 
   // Execute
   int _retval = CefTranslatorTestScopedClientCppToC::Get(self)->GetValue();
@@ -56,11 +54,11 @@ CefCppToCScoped<CefTranslatorTestScopedClientCppToC,
     UnwrapDerivedOwn(CefWrapperType type,
                      cef_translator_test_scoped_client_t* s) {
   if (type == WT_TRANSLATOR_TEST_SCOPED_CLIENT_CHILD) {
-    return CefTranslatorTestScopedClientChildCppToC_UnwrapOwn(
+    return CefTranslatorTestScopedClientChildCppToC::UnwrapOwn(
         reinterpret_cast<cef_translator_test_scoped_client_child_t*>(s));
   }
-  CHECK(false) << __func__ << " called with unexpected class type " << type;
-  return nullptr;
+  NOTREACHED() << "Unexpected class type: " << type;
+  return CefOwnPtr<CefTranslatorTestScopedClient>();
 }
 
 template <>
@@ -71,10 +69,10 @@ CefCppToCScoped<CefTranslatorTestScopedClientCppToC,
     UnwrapDerivedRaw(CefWrapperType type,
                      cef_translator_test_scoped_client_t* s) {
   if (type == WT_TRANSLATOR_TEST_SCOPED_CLIENT_CHILD) {
-    return CefTranslatorTestScopedClientChildCppToC_UnwrapRaw(
+    return CefTranslatorTestScopedClientChildCppToC::UnwrapRaw(
         reinterpret_cast<cef_translator_test_scoped_client_child_t*>(s));
   }
-  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  NOTREACHED() << "Unexpected class type: " << type;
   return nullptr;
 }
 

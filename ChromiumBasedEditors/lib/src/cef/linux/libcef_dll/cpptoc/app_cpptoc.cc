@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,11 +9,10 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=cf6e46e8dab4acfcb0b07220ecc22e989854466d$
+// $hash=04b98a2d9c374132d2149fd8e3cf8b110acba86f$
 //
 
 #include "libcef_dll/cpptoc/app_cpptoc.h"
-
 #include "libcef_dll/cpptoc/browser_process_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/render_process_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/resource_bundle_handler_cpptoc.h"
@@ -31,19 +30,17 @@ void CEF_CALLBACK app_on_before_command_line_processing(
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return;
-  }
   // Verify param: command_line; type: refptr_diff
   DCHECK(command_line);
-  if (!command_line) {
+  if (!command_line)
     return;
-  }
   // Unverified params: process_type
 
   // Execute
   CefAppCppToC::Get(self)->OnBeforeCommandLineProcessing(
-      CefString(process_type), CefCommandLineCToCpp_Wrap(command_line));
+      CefString(process_type), CefCommandLineCToCpp::Wrap(command_line));
 }
 
 void CEF_CALLBACK
@@ -52,18 +49,16 @@ app_on_register_custom_schemes(struct _cef_app_t* self,
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return;
-  }
   // Verify param: registrar; type: rawptr_diff
   DCHECK(registrar);
-  if (!registrar) {
+  if (!registrar)
     return;
-  }
 
   // Translate param: registrar; type: rawptr_diff
   CefOwnPtr<CefSchemeRegistrar> registrarPtr(
-      CefSchemeRegistrarCToCpp_Wrap(registrar));
+      CefSchemeRegistrarCToCpp::Wrap(registrar));
 
   // Execute
   CefAppCppToC::Get(self)->OnRegisterCustomSchemes(registrarPtr.get());
@@ -74,16 +69,15 @@ app_get_resource_bundle_handler(struct _cef_app_t* self) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return NULL;
-  }
 
   // Execute
   CefRefPtr<CefResourceBundleHandler> _retval =
       CefAppCppToC::Get(self)->GetResourceBundleHandler();
 
   // Return type: refptr_same
-  return CefResourceBundleHandlerCppToC_Wrap(_retval);
+  return CefResourceBundleHandlerCppToC::Wrap(_retval);
 }
 
 struct _cef_browser_process_handler_t* CEF_CALLBACK
@@ -91,16 +85,15 @@ app_get_browser_process_handler(struct _cef_app_t* self) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return NULL;
-  }
 
   // Execute
   CefRefPtr<CefBrowserProcessHandler> _retval =
       CefAppCppToC::Get(self)->GetBrowserProcessHandler();
 
   // Return type: refptr_same
-  return CefBrowserProcessHandlerCppToC_Wrap(_retval);
+  return CefBrowserProcessHandlerCppToC::Wrap(_retval);
 }
 
 struct _cef_render_process_handler_t* CEF_CALLBACK
@@ -108,16 +101,15 @@ app_get_render_process_handler(struct _cef_app_t* self) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return NULL;
-  }
 
   // Execute
   CefRefPtr<CefRenderProcessHandler> _retval =
       CefAppCppToC::Get(self)->GetRenderProcessHandler();
 
   // Return type: refptr_same
-  return CefRenderProcessHandlerCppToC_Wrap(_retval);
+  return CefRenderProcessHandlerCppToC::Wrap(_retval);
 }
 
 }  // namespace
@@ -142,7 +134,7 @@ CefRefPtr<CefApp>
 CefCppToCRefCounted<CefAppCppToC, CefApp, cef_app_t>::UnwrapDerived(
     CefWrapperType type,
     cef_app_t* s) {
-  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  NOTREACHED() << "Unexpected class type: " << type;
   return nullptr;
 }
 

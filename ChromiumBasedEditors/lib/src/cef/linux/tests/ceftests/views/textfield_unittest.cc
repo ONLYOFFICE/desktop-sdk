@@ -3,6 +3,7 @@
 // can be found in the LICENSE file.
 
 #include "include/base/cef_callback.h"
+#include "include/cef_pack_strings.h"
 #include "include/views/cef_textfield.h"
 #include "include/views/cef_textfield_delegate.h"
 #include "include/wrapper/cef_closure_task.h"
@@ -63,12 +64,12 @@ void RunTextfieldContents(CefRefPtr<CefWindow> window) {
 
   // Test select range.
   EXPECT_FALSE(textfield->HasSelection());
-  EXPECT_EQ(CefRange(static_cast<uint32_t>(cursor_pos),
-                     static_cast<uint32_t>(cursor_pos)),
-            textfield->GetSelectedRange());
-  textfield->SelectRange(CefRange(0, static_cast<uint32_t>(cursor_pos)));
+  EXPECT_EQ(
+      CefRange(static_cast<int>(cursor_pos), static_cast<int>(cursor_pos)),
+      textfield->GetSelectedRange());
+  textfield->SelectRange(CefRange(0, static_cast<int>(cursor_pos)));
   EXPECT_TRUE(textfield->HasSelection());
-  EXPECT_EQ(CefRange(0, static_cast<uint32_t>(cursor_pos)),
+  EXPECT_EQ(CefRange(0, static_cast<int>(cursor_pos)),
             textfield->GetSelectedRange());
   EXPECT_STREQ(kText, textfield->GetSelectedText().ToString().c_str());
   EXPECT_EQ(cursor_pos, textfield->GetCursorPosition());
@@ -88,23 +89,23 @@ void RunTextfieldContents(CefRefPtr<CefWindow> window) {
   EXPECT_TRUE(textfield->HasSelection());
 
   cursor_pos = sizeof(kReplaceText) + sizeof(kAppendText) - 2;
-  EXPECT_EQ(CefRange(0, static_cast<uint32_t>(cursor_pos)),
+  EXPECT_EQ(CefRange(0, static_cast<int>(cursor_pos)),
             textfield->GetSelectedRange());
   EXPECT_EQ(cursor_pos, textfield->GetCursorPosition());
 
   // Test clear selection.
   textfield->ClearSelection();
   EXPECT_FALSE(textfield->HasSelection());
-  EXPECT_EQ(CefRange(static_cast<uint32_t>(cursor_pos),
-                     static_cast<uint32_t>(cursor_pos)),
-            textfield->GetSelectedRange());
+  EXPECT_EQ(
+      CefRange(static_cast<int>(cursor_pos), static_cast<int>(cursor_pos)),
+      textfield->GetSelectedRange());
   EXPECT_EQ(cursor_pos, textfield->GetCursorPosition());
 
   // Test selection with command.
   EXPECT_TRUE(textfield->IsCommandEnabled(CEF_TFC_SELECT_ALL));
   textfield->ExecuteCommand(CEF_TFC_SELECT_ALL);
   EXPECT_TRUE(textfield->HasSelection());
-  EXPECT_EQ(CefRange(0, static_cast<uint32_t>(cursor_pos)),
+  EXPECT_EQ(CefRange(0, static_cast<int>(cursor_pos)),
             textfield->GetSelectedRange());
   EXPECT_EQ(cursor_pos, textfield->GetCursorPosition());
 
@@ -194,7 +195,7 @@ const int kTextfieldID = 1;
 // Contents need to be supported by the TranslateKey function.
 const char kTestInputMessage[] = "Test Message";
 
-void TranslateKey(int c, int* keycode, uint32_t* modifiers) {
+void TranslateKey(int c, int* keycode, uint32* modifiers) {
   *keycode = VKEY_UNKNOWN;
   *modifiers = 0;
 
@@ -210,7 +211,7 @@ void TranslateKey(int c, int* keycode, uint32_t* modifiers) {
 
 class TestTextfieldDelegate : public CefTextfieldDelegate {
  public:
-  TestTextfieldDelegate() = default;
+  TestTextfieldDelegate() {}
 
   bool OnKeyEvent(CefRefPtr<CefTextfield> textfield,
                   const CefKeyEvent& event) override {
@@ -227,7 +228,7 @@ class TestTextfieldDelegate : public CefTextfieldDelegate {
 
     if (event.type == KEYEVENT_CHAR) {
       int keycode;
-      uint32_t modifiers;
+      uint32 modifiers;
       TranslateKey(kTestInputMessage[index_++], &keycode, &modifiers);
 
       EXPECT_EQ(keycode, event.windows_key_code);
@@ -287,7 +288,7 @@ void RunTextfieldKeyEvent(CefRefPtr<CefWindow> window) {
   // Send the contents of |kTestInputMessage| to the textfield.
   for (size_t i = 0; i < sizeof(kTestInputMessage) - 1; ++i) {
     int keycode;
-    uint32_t modifiers;
+    uint32 modifiers;
     TranslateKey(kTestInputMessage[i], &keycode, &modifiers);
     window->SendKeyPress(keycode, modifiers);
   }

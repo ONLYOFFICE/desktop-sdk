@@ -85,19 +85,6 @@ class CefWindowDelegate : public CefPanelDelegate {
                                      const CefRect& new_bounds) {}
 
   ///
-  /// Called when |window| is transitioning to or from fullscreen mode. On MacOS
-  /// the transition occurs asynchronously with |is_competed| set to false when
-  /// the transition starts and true after the transition completes. On other
-  /// platforms the transition occurs synchronously with |is_completed| set to
-  /// true after the transition completes. With Alloy style you must also
-  /// implement CefDisplayHandler::OnFullscreenModeChange to handle fullscreen
-  /// transitions initiated by browser content.
-  ///
-  /*--cef()--*/
-  virtual void OnWindowFullscreenTransition(CefRefPtr<CefWindow> window,
-                                            bool is_completed) {}
-
-  ///
   /// Return the parent for |window| or NULL if the |window| does not have a
   /// parent. Windows with parents will not get a taskbar button. Set |is_menu|
   /// to true if |window| will be displayed as a menu, in which case it will not
@@ -110,19 +97,6 @@ class CefWindowDelegate : public CefPanelDelegate {
                                                bool* is_menu,
                                                bool* can_activate_menu) {
     return nullptr;
-  }
-
-  ///
-  /// Return true if |window| should be created as a window modal dialog. Only
-  /// called when a Window is returned via GetParentWindow() with |is_menu| set
-  /// to false. All controls in the parent Window will be disabled while
-  /// |window| is visible. This functionality is not supported by all Linux
-  /// window managers. Alternately, use CefWindow::ShowAsBrowserModalDialog()
-  /// for a browser modal dialog that works on all platforms.
-  ///
-  /*--cef()--*/
-  virtual bool IsWindowModalDialog(CefRefPtr<CefWindow> window) {
-    return false;
   }
 
   ///
@@ -153,43 +127,6 @@ class CefWindowDelegate : public CefPanelDelegate {
   ///
   /*--cef()--*/
   virtual bool IsFrameless(CefRefPtr<CefWindow> window) { return false; }
-
-  ///
-  /// Return true if |window| should be created with standard window buttons
-  /// like close, minimize and zoom. This method is only supported on macOS.
-  ///
-  /*--cef()--*/
-  virtual bool WithStandardWindowButtons(CefRefPtr<CefWindow> window) {
-    return !IsFrameless(window);
-  }
-
-  ///
-  /// Return whether the titlebar height should be overridden, and sets the
-  /// height of the titlebar in |titlebar_height|. On macOS, it can also be used
-  /// to adjust the vertical position of the traffic light buttons in frameless
-  /// windows. The buttons will be positioned halfway down the titlebar at a
-  /// height of |titlebar_height| / 2.
-  ///
-  /*--cef()--*/
-  virtual bool GetTitlebarHeight(CefRefPtr<CefWindow> window,
-                                 float* titlebar_height) {
-    return false;
-  }
-
-  ///
-  /// Return whether the view should accept the initial mouse-down event,
-  /// allowing it to respond to click-through behavior. If STATE_ENABLED is
-  /// returned, the view will be sent a mouseDown: message for an initial
-  /// mouse-down event, activating the view with one click, instead of clicking
-  /// first to make the window active and then clicking the view.
-  ///
-  /// This method is only supported on macOS. For more details, refer to the
-  /// documentation of acceptsFirstMouse.
-  ///
-  /*--cef(default_retval=STATE_DEFAULT)--*/
-  virtual cef_state_t AcceptsFirstMouse(CefRefPtr<CefWindow> window) {
-    return STATE_DEFAULT;
-  }
 
   ///
   /// Return true if |window| can be resized.
@@ -234,58 +171,6 @@ class CefWindowDelegate : public CefPanelDelegate {
   /*--cef()--*/
   virtual bool OnKeyEvent(CefRefPtr<CefWindow> window,
                           const CefKeyEvent& event) {
-    return false;
-  }
-
-  ///
-  /// Called after the native/OS or Chrome theme for |window| has changed.
-  /// |chrome_theme| will be true if the notification is for a Chrome theme.
-  ///
-  /// Native/OS theme colors are configured globally and do not need to be
-  /// customized for each Window individually. An example of a native/OS theme
-  /// change that triggers this callback is when the user switches between dark
-  /// and light mode during application lifespan. Native/OS theme changes can be
-  /// disabled by passing the `--force-dark-mode` or `--force-light-mode`
-  /// command-line flag.
-  ///
-  /// Chrome theme colors will be applied and this callback will be triggered
-  /// if/when a BrowserView is added to the Window's component hierarchy. Chrome
-  /// theme colors can be configured on a per-RequestContext basis using
-  /// CefRequestContext::SetChromeColorScheme or (Chrome style only) by
-  /// visiting chrome://settings/manageProfile. Any theme changes using those
-  /// mechanisms will also trigger this callback. Chrome theme colors will be
-  /// persisted and restored from disk cache.
-  ///
-  /// This callback is not triggered on Window creation so clients that wish to
-  /// customize the initial native/OS theme must call CefWindow::SetThemeColor
-  /// and CefWindow::ThemeChanged before showing the first Window.
-  ///
-  /// Theme colors will be reset to standard values before this callback is
-  /// called for the first affected Window. Call CefWindow::SetThemeColor from
-  /// inside this callback to override a standard color or add a custom color.
-  /// CefViewDelegate::OnThemeChanged will be called after this callback for the
-  /// complete |window| component hierarchy.
-  ///
-  /*--cef()--*/
-  virtual void OnThemeColorsChanged(CefRefPtr<CefWindow> window,
-                                    bool chrome_theme) {}
-
-  ///
-  /// Optionally change the runtime style for this Window. See
-  /// cef_runtime_style_t documentation for details.
-  ///
-  /*--cef(default_retval=CEF_RUNTIME_STYLE_DEFAULT)--*/
-  virtual cef_runtime_style_t GetWindowRuntimeStyle() {
-    return CEF_RUNTIME_STYLE_DEFAULT;
-  }
-
-  ///
-  /// Return Linux-specific window properties for correctly handling by window
-  /// managers
-  ///
-  /*--cef()--*/
-  virtual bool GetLinuxWindowProperties(CefRefPtr<CefWindow> window,
-                                        CefLinuxWindowProperties& properties) {
     return false;
   }
 };

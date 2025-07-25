@@ -7,24 +7,26 @@
 namespace {
 
 constexpr int kSingleQueryErrorCode = 5;
-constexpr size_t kMsgSizeThresholdInBytes = 16000;
-constexpr auto kCharSize = sizeof(CefString::char_type);
+constexpr size_t kMessageSizeThreshold = 16000;
 
 enum class TestType { SUCCESS, FAILURE };
 
-CefString GenerateResponse(size_t count, char ch) {
-  return std::string(count, ch);
+CefString GenerateResponse(size_t size, char ch) {
+  return CefString(std::string(size, ch));
 }
 
-CefString GenerateResponse(size_t count, wchar_t ch) {
-  return std::wstring(count, ch);
+CefString GenerateResponse(size_t size, wchar_t ch) {
+  return CefString(std::wstring(size, ch));
 }
 
 template <class CharType>
 class ThresholdTestHandler final : public SingleLoadTestHandler {
  public:
-  ThresholdTestHandler(TestType type, size_t string_length, CharType symbol)
-      : test_type_(type), string_length_(string_length), symbol_(symbol) {}
+  ThresholdTestHandler(TestType type, size_t message_size, CharType symbol)
+      : test_type_(type),
+        message_size_(message_size),
+        message_size_str_(std::to_string(message_size)),
+        symbol_(symbol) {}
 
   std::string GetMainHTML() override {
     const std::string& errorCodeStr = std::to_string(kSingleQueryErrorCode);
@@ -33,8 +35,7 @@ class ThresholdTestHandler final : public SingleLoadTestHandler {
         "<html><body><script>\n"
         // Send the query.
         "var request_id = window." +
-        std::string(kJSQueryFunc) + "({\n request: '" +
-        std::to_string(string_length_) +
+        std::string(kJSQueryFunc) + "({\n request: '" + message_size_str_ +
         "',\n persistent: false,\n"
         "  onSuccess: function(response) {\n"
         "      window.mrtNotify(response);\n"
@@ -62,7 +63,7 @@ class ThresholdTestHandler final : public SingleLoadTestHandler {
     EXPECT_FALSE(got_notify_);
     got_notify_.yes();
 
-    auto expected = GenerateResponse(string_length_, symbol_);
+    auto expected = GenerateResponse(message_size_, symbol_);
 
     switch (test_type_) {
       case TestType::SUCCESS:
@@ -99,7 +100,7 @@ class ThresholdTestHandler final : public SingleLoadTestHandler {
 
   bool OnQuery(CefRefPtr<CefBrowser> browser,
                CefRefPtr<CefFrame> frame,
-               int64_t query_id,
+               int64 query_id,
                const CefString& request,
                bool persistent,
                CefRefPtr<Callback> callback) override {
@@ -107,7 +108,7 @@ class ThresholdTestHandler final : public SingleLoadTestHandler {
     AssertMainFrame(frame);
     EXPECT_NE(0, query_id);
     EXPECT_FALSE(persistent);
-    EXPECT_EQ(std::to_string(string_length_), request.ToString());
+    EXPECT_EQ(message_size_str_, request.ToString());
 
     const size_t message_size =
         static_cast<size_t>(std::stoi(request.ToString()));
@@ -129,7 +130,8 @@ class ThresholdTestHandler final : public SingleLoadTestHandler {
 
  private:
   const TestType test_type_;
-  const size_t string_length_;
+  const size_t message_size_;
+  const std::string message_size_str_;
   const CharType symbol_;
 
   CefRefPtr<Callback> callback_;
@@ -147,22 +149,20 @@ using WCharTestHandlerPtr = CefRefPtr<WCharTestHandler>;
 }  // namespace
 
 TEST(MessageRouterTest, ThresholdMessageUnderSuccessCallback) {
-  const auto under_threshold = kMsgSizeThresholdInBytes - kCharSize;
-  const auto string_length = under_threshold / kCharSize;
+  const auto UnderThreshold = kMessageSizeThreshold - 1;
   CharTestHandlerPtr handler =
-      new CharTestHandler(TestType::SUCCESS, string_length, 'A');
-  handler->SetMessageSizeThreshold(kMsgSizeThresholdInBytes);
+      new CharTestHandler(TestType::SUCCESS, UnderThreshold, 'A');
+  handler->SetMessageSizeThreshold(kMessageSizeThreshold);
 
   handler->ExecuteTest();
 
   ReleaseAndWaitForDestructor(handler);
 }
 
-TEST(MessageRouterTest, ThresholdMessageExactSuccessCallback) {
-  const auto string_length = kMsgSizeThresholdInBytes / kCharSize;
+TEST(MessageRouterTest, ThresholMessageExactdSuccessCallback) {
   CharTestHandlerPtr handler =
-      new CharTestHandler(TestType::SUCCESS, string_length, 'A');
-  handler->SetMessageSizeThreshold(kMsgSizeThresholdInBytes);
+      new CharTestHandler(TestType::SUCCESS, kMessageSizeThreshold, 'A');
+  handler->SetMessageSizeThreshold(kMessageSizeThreshold);
 
   handler->ExecuteTest();
 
@@ -170,11 +170,10 @@ TEST(MessageRouterTest, ThresholdMessageExactSuccessCallback) {
 }
 
 TEST(MessageRouterTest, ThresholdMessageOverSuccessCallback) {
-  const auto over_threshold = kMsgSizeThresholdInBytes + kCharSize;
-  const auto string_length = over_threshold / kCharSize;
+  const auto OverThreshold = kMessageSizeThreshold + 1;
   CharTestHandlerPtr handler =
-      new CharTestHandler(TestType::SUCCESS, string_length, 'A');
-  handler->SetMessageSizeThreshold(kMsgSizeThresholdInBytes);
+      new CharTestHandler(TestType::SUCCESS, OverThreshold, 'A');
+  handler->SetMessageSizeThreshold(kMessageSizeThreshold);
 
   handler->ExecuteTest();
 
@@ -182,23 +181,21 @@ TEST(MessageRouterTest, ThresholdMessageOverSuccessCallback) {
 }
 
 TEST(MessageRouterTest, ThresholdMessageUnderFailureCallback) {
-  const auto under_threshold = kMsgSizeThresholdInBytes - kCharSize;
-  const auto string_length = under_threshold / kCharSize;
+  const auto UnderThreshold = kMessageSizeThreshold - 1;
   CharTestHandlerPtr handler =
-      new CharTestHandler(TestType::FAILURE, string_length, 'A');
-  handler->SetMessageSizeThreshold(kMsgSizeThresholdInBytes);
+      new CharTestHandler(TestType::FAILURE, UnderThreshold, 'A');
+  handler->SetMessageSizeThreshold(kMessageSizeThreshold);
 
   handler->ExecuteTest();
 
   ReleaseAndWaitForDestructor(handler);
 }
 
-TEST(MessageRouterTest, ThresholdMessageOverFailureCallback) {
-  const auto over_threshold = kMsgSizeThresholdInBytes + kCharSize;
-  const auto string_length = over_threshold / kCharSize;
+TEST(MessageRouterTest, ThresholMessageOverdFailureCallback) {
+  const auto OverThreshold = kMessageSizeThreshold + 1;
   CharTestHandlerPtr handler =
-      new CharTestHandler(TestType::FAILURE, string_length, 'A');
-  handler->SetMessageSizeThreshold(kMsgSizeThresholdInBytes);
+      new CharTestHandler(TestType::FAILURE, OverThreshold, 'A');
+  handler->SetMessageSizeThreshold(kMessageSizeThreshold);
 
   handler->ExecuteTest();
 
@@ -206,11 +203,10 @@ TEST(MessageRouterTest, ThresholdMessageOverFailureCallback) {
 }
 
 TEST(MessageRouterTest, ThresholdUtf8MessageUnderSuccessCallback) {
-  const auto under_threshold = kMsgSizeThresholdInBytes - kCharSize;
-  const auto string_length = under_threshold / kCharSize;
+  const auto UnderThreshold = kMessageSizeThreshold - 1;
   WCharTestHandlerPtr handler =
-      new WCharTestHandler(TestType::SUCCESS, string_length, L'\u304B');
-  handler->SetMessageSizeThreshold(kMsgSizeThresholdInBytes);
+      new WCharTestHandler(TestType::SUCCESS, UnderThreshold, L'\u304B');
+  handler->SetMessageSizeThreshold(kMessageSizeThreshold);
 
   handler->ExecuteTest();
 
@@ -218,11 +214,10 @@ TEST(MessageRouterTest, ThresholdUtf8MessageUnderSuccessCallback) {
 }
 
 TEST(MessageRouterTest, ThresholdUtf8MessageOverSuccessCallback) {
-  const auto over_threshold = kMsgSizeThresholdInBytes + kCharSize;
-  const auto string_length = over_threshold / kCharSize;
+  const auto OverThreshold = kMessageSizeThreshold + 1;
   WCharTestHandlerPtr handler =
-      new WCharTestHandler(TestType::SUCCESS, string_length, L'\u304B');
-  handler->SetMessageSizeThreshold(kMsgSizeThresholdInBytes);
+      new WCharTestHandler(TestType::SUCCESS, OverThreshold, L'\u304B');
+  handler->SetMessageSizeThreshold(kMessageSizeThreshold);
 
   handler->ExecuteTest();
 

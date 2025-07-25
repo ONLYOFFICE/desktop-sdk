@@ -18,14 +18,15 @@
 #include "tests/cefclient/browser/test_runner.h"
 #include "tests/shared/browser/resource_util.h"
 
-namespace client::scheme_test {
+namespace client {
+namespace scheme_test {
 
 namespace {
 
 // Implementation of the schema handler for client:// requests.
 class ClientSchemeHandler : public CefResourceHandler {
  public:
-  ClientSchemeHandler() = default;
+  ClientSchemeHandler() : offset_(0) {}
 
   bool Open(CefRefPtr<CefRequest> request,
             bool& handle_request,
@@ -77,7 +78,7 @@ class ClientSchemeHandler : public CefResourceHandler {
   }
 
   void GetResponseHeaders(CefRefPtr<CefResponse> response,
-                          int64_t& response_length,
+                          int64& response_length,
                           CefString& redirectUrl) override {
     CEF_REQUIRE_IO_THREAD();
 
@@ -118,7 +119,7 @@ class ClientSchemeHandler : public CefResourceHandler {
  private:
   std::string data_;
   std::string mime_type_;
-  size_t offset_ = 0;
+  size_t offset_;
 
   IMPLEMENT_REFCOUNTING(ClientSchemeHandler);
   DISALLOW_COPY_AND_ASSIGN(ClientSchemeHandler);
@@ -127,7 +128,7 @@ class ClientSchemeHandler : public CefResourceHandler {
 // Implementation of the factory for for creating schema handlers.
 class ClientSchemeHandlerFactory : public CefSchemeHandlerFactory {
  public:
-  ClientSchemeHandlerFactory() = default;
+  ClientSchemeHandlerFactory() {}
 
   // Return a new scheme handler instance to handle the request.
   CefRefPtr<CefResourceHandler> Create(CefRefPtr<CefBrowser> browser,
@@ -149,4 +150,5 @@ void RegisterSchemeHandlers() {
                                   new ClientSchemeHandlerFactory());
 }
 
-}  // namespace client::scheme_test
+}  // namespace scheme_test
+}  // namespace client

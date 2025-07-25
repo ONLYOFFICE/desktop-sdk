@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=241a28f354d2c0a3c1172096b36f16c52d4c7dee$
+// $hash=c91f76be5a60016fa78afe2813b0d4df3bb422e7$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_COMMAND_LINE_CTOCPP_H_
@@ -21,7 +21,6 @@
 #endif
 
 #include <vector>
-
 #include "include/capi/cef_command_line_capi.h"
 #include "include/cef_command_line.h"
 #include "libcef_dll/ctocpp/ctocpp_ref_counted.h"
@@ -58,8 +57,5 @@ class CefCommandLineCToCpp : public CefCToCppRefCounted<CefCommandLineCToCpp,
   void AppendArgument(const CefString& argument) override;
   void PrependWrapper(const CefString& wrapper) override;
 };
-
-constexpr auto CefCommandLineCToCpp_Wrap = CefCommandLineCToCpp::Wrap;
-constexpr auto CefCommandLineCToCpp_Unwrap = CefCommandLineCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_COMMAND_LINE_CTOCPP_H_

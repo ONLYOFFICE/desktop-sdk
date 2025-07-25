@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=21061d249680a1edd730d0275a411b27632cab69$
+// $hash=d4a3ee70f42b74bd849215f0f569d07164bf29a7$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_CONTEXT_MENU_PARAMS_CTOCPP_H_
@@ -21,7 +21,6 @@
 #endif
 
 #include <vector>
-
 #include "include/capi/cef_context_menu_handler_capi.h"
 #include "include/cef_context_menu_handler.h"
 #include "libcef_dll/ctocpp/ctocpp_ref_counted.h"
@@ -58,10 +57,5 @@ class CefContextMenuParamsCToCpp
   EditStateFlags GetEditStateFlags() override;
   bool IsCustomMenu() override;
 };
-
-constexpr auto CefContextMenuParamsCToCpp_Wrap =
-    CefContextMenuParamsCToCpp::Wrap;
-constexpr auto CefContextMenuParamsCToCpp_Unwrap =
-    CefContextMenuParamsCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_CONTEXT_MENU_PARAMS_CTOCPP_H_

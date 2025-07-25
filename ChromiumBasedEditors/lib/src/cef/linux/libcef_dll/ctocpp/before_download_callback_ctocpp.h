@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=87b501cfc780ac5206251d73f6680b0e16798895$
+// $hash=743f5b5893055b96eb373b93368c727b3d36d3c6$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_BEFORE_DOWNLOAD_CALLBACK_CTOCPP_H_
@@ -37,10 +37,5 @@ class CefBeforeDownloadCallbackCToCpp
   // CefBeforeDownloadCallback methods.
   void Continue(const CefString& download_path, bool show_dialog) override;
 };
-
-constexpr auto CefBeforeDownloadCallbackCToCpp_Wrap =
-    CefBeforeDownloadCallbackCToCpp::Wrap;
-constexpr auto CefBeforeDownloadCallbackCToCpp_Unwrap =
-    CefBeforeDownloadCallbackCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_BEFORE_DOWNLOAD_CALLBACK_CTOCPP_H_

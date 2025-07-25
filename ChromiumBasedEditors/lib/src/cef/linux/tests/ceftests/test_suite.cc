@@ -43,14 +43,12 @@ void RouteStdioToConsole(bool create_console_if_not_found) {
   if (!AttachConsole(ATTACH_PARENT_PROCESS)) {
     unsigned int result = GetLastError();
     // Was probably already attached.
-    if (result == ERROR_ACCESS_DENIED) {
+    if (result == ERROR_ACCESS_DENIED)
       return;
-    }
     // Don't bother creating a new console for each child process if the
     // parent process is invalid (eg: crashed).
-    if (result == ERROR_GEN_FAILURE) {
+    if (result == ERROR_GEN_FAILURE)
       return;
-    }
     if (create_console_if_not_found) {
       // Make a new console if attaching to parent fails with any other error.
       // It should be ERROR_INVALID_HANDLE at this point, which means the
@@ -89,7 +87,7 @@ void RouteStdioToConsole(bool create_console_if_not_found) {
 }  // namespace
 
 CefTestSuite::CefTestSuite(int argc, char** argv)
-    : argc_(argc), argv_(argc, argv) {
+    : argc_(argc), argv_(argc, argv), retval_(0) {
   g_test_suite = this;
 
   // Keep a representation of the original command-line.
@@ -144,8 +142,13 @@ int CefTestSuite::Run() {
 }
 
 void CefTestSuite::GetSettings(CefSettings& settings) const {
+  // Enable the experimental Chrome runtime. See issue #2969 for details.
+  settings.chrome_runtime =
+      command_line_->HasSwitch(client::switches::kEnableChromeRuntime);
+
   CefString(&settings.cache_path) = root_cache_path_;
   CefString(&settings.root_cache_path) = root_cache_path_;
+  CefString(&settings.user_data_path) = root_cache_path_;
 
   // Always expose the V8 gc() function to give tests finer-grained control over
   // memory management.
@@ -153,9 +156,8 @@ void CefTestSuite::GetSettings(CefSettings& settings) const {
   // Value of kJavascriptFlags switch.
   std::string other_javascript_flags =
       command_line_->GetSwitchValue("js-flags");
-  if (!other_javascript_flags.empty()) {
+  if (!other_javascript_flags.empty())
     javascript_flags += " " + other_javascript_flags;
-  }
   CefString(&settings.javascript_flags) = javascript_flags;
 
   // Necessary for V8Test.OnUncaughtException tests.
@@ -175,8 +177,8 @@ void CefTestSuite::RegisterTempDirectory(const CefString& directory) {
 
 void CefTestSuite::DeleteTempDirectories() {
   base::AutoLock lock_scope(temp_directories_lock_);
-  for (const auto& temp_directory : temp_directories_) {
-    CefDeleteFile(temp_directory, true);
+  for (size_t i = 0U; i < temp_directories_.size(); ++i) {
+    CefDeleteFile(temp_directories_[i], true);
   }
   temp_directories_.clear();
 }

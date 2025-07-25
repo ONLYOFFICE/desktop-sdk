@@ -31,7 +31,6 @@ set(LIBCEF_BASE_SRCS
   base/cef_atomic_flag.cc
   base/cef_callback_helpers.cc
   base/cef_callback_internal.cc
-  base/cef_dump_without_crashing.cc
   base/cef_lock.cc
   base/cef_lock_impl.cc
   base/cef_logging.cc
@@ -86,6 +85,8 @@ set(LIBCEF_CPPTOC_SRCS
   cpptoc/drag_handler_cpptoc.h
   cpptoc/end_tracing_callback_cpptoc.cc
   cpptoc/end_tracing_callback_cpptoc.h
+  cpptoc/extension_handler_cpptoc.cc
+  cpptoc/extension_handler_cpptoc.h
   cpptoc/find_handler_cpptoc.cc
   cpptoc/find_handler_cpptoc.h
   cpptoc/focus_handler_cpptoc.cc
@@ -114,8 +115,6 @@ set(LIBCEF_CPPTOC_SRCS
   cpptoc/pdf_print_callback_cpptoc.h
   cpptoc/permission_handler_cpptoc.cc
   cpptoc/permission_handler_cpptoc.h
-  cpptoc/preference_observer_cpptoc.cc
-  cpptoc/preference_observer_cpptoc.h
   cpptoc/print_handler_cpptoc.cc
   cpptoc/print_handler_cpptoc.h
   cpptoc/read_handler_cpptoc.cc
@@ -146,40 +145,26 @@ set(LIBCEF_CPPTOC_SRCS
   cpptoc/server_handler_cpptoc.h
   cpptoc/set_cookie_callback_cpptoc.cc
   cpptoc/set_cookie_callback_cpptoc.h
-  cpptoc/setting_observer_cpptoc.cc
-  cpptoc/setting_observer_cpptoc.h
   cpptoc/string_visitor_cpptoc.cc
   cpptoc/string_visitor_cpptoc.h
   cpptoc/task_cpptoc.cc
   cpptoc/task_cpptoc.h
   cpptoc/urlrequest_client_cpptoc.cc
   cpptoc/urlrequest_client_cpptoc.h
-  cpptoc/v8_accessor_cpptoc.cc
-  cpptoc/v8_accessor_cpptoc.h
-  cpptoc/v8_array_buffer_release_callback_cpptoc.cc
-  cpptoc/v8_array_buffer_release_callback_cpptoc.h
-  cpptoc/v8_handler_cpptoc.cc
-  cpptoc/v8_handler_cpptoc.h
-  cpptoc/v8_interceptor_cpptoc.cc
-  cpptoc/v8_interceptor_cpptoc.h
+  cpptoc/v8accessor_cpptoc.cc
+  cpptoc/v8accessor_cpptoc.h
+  cpptoc/v8array_buffer_release_callback_cpptoc.cc
+  cpptoc/v8array_buffer_release_callback_cpptoc.h
+  cpptoc/v8handler_cpptoc.cc
+  cpptoc/v8handler_cpptoc.h
+  cpptoc/v8interceptor_cpptoc.cc
+  cpptoc/v8interceptor_cpptoc.h
   cpptoc/write_handler_cpptoc.cc
   cpptoc/write_handler_cpptoc.h
   )
 source_group(libcef_dll\\\\cpptoc FILES ${LIBCEF_CPPTOC_SRCS})
 
 set(LIBCEF_CPPTOC_TEST_SRCS
-  cpptoc/test/api_version_test_ref_ptr_client_child_cpptoc.cc
-  cpptoc/test/api_version_test_ref_ptr_client_child_cpptoc.h
-  cpptoc/test/api_version_test_ref_ptr_client_child_v2_cpptoc.cc
-  cpptoc/test/api_version_test_ref_ptr_client_child_v2_cpptoc.h
-  cpptoc/test/api_version_test_ref_ptr_client_cpptoc.cc
-  cpptoc/test/api_version_test_ref_ptr_client_cpptoc.h
-  cpptoc/test/api_version_test_scoped_client_child_cpptoc.cc
-  cpptoc/test/api_version_test_scoped_client_child_cpptoc.h
-  cpptoc/test/api_version_test_scoped_client_child_v2_cpptoc.cc
-  cpptoc/test/api_version_test_scoped_client_child_v2_cpptoc.h
-  cpptoc/test/api_version_test_scoped_client_cpptoc.cc
-  cpptoc/test/api_version_test_scoped_client_cpptoc.h
   cpptoc/test/test_server_handler_cpptoc.cc
   cpptoc/test/test_server_handler_cpptoc.h
   cpptoc/test/translator_test_ref_ptr_client_child_cpptoc.cc
@@ -244,10 +229,14 @@ set(LIBCEF_CTOCPP_SRCS
   ctocpp/download_item_ctocpp.h
   ctocpp/drag_data_ctocpp.cc
   ctocpp/drag_data_ctocpp.h
+  ctocpp/extension_ctocpp.cc
+  ctocpp/extension_ctocpp.h
   ctocpp/file_dialog_callback_ctocpp.cc
   ctocpp/file_dialog_callback_ctocpp.h
   ctocpp/frame_ctocpp.cc
   ctocpp/frame_ctocpp.h
+  ctocpp/get_extension_resource_callback_ctocpp.cc
+  ctocpp/get_extension_resource_callback_ctocpp.h
   ctocpp/image_ctocpp.cc
   ctocpp/image_ctocpp.h
   ctocpp/jsdialog_callback_ctocpp.cc
@@ -322,34 +311,30 @@ set(LIBCEF_CTOCPP_SRCS
   ctocpp/stream_reader_ctocpp.h
   ctocpp/stream_writer_ctocpp.cc
   ctocpp/stream_writer_ctocpp.h
-  ctocpp/task_manager_ctocpp.cc
-  ctocpp/task_manager_ctocpp.h
   ctocpp/task_runner_ctocpp.cc
   ctocpp/task_runner_ctocpp.h
   ctocpp/thread_ctocpp.cc
   ctocpp/thread_ctocpp.h
-  ctocpp/unresponsive_process_callback_ctocpp.cc
-  ctocpp/unresponsive_process_callback_ctocpp.h
   ctocpp/urlrequest_ctocpp.cc
   ctocpp/urlrequest_ctocpp.h
-  ctocpp/v8_context_ctocpp.cc
-  ctocpp/v8_context_ctocpp.h
-  ctocpp/v8_exception_ctocpp.cc
-  ctocpp/v8_exception_ctocpp.h
-  ctocpp/v8_stack_frame_ctocpp.cc
-  ctocpp/v8_stack_frame_ctocpp.h
-  ctocpp/v8_stack_trace_ctocpp.cc
-  ctocpp/v8_stack_trace_ctocpp.h
-  ctocpp/v8_value_ctocpp.cc
-  ctocpp/v8_value_ctocpp.h
+  ctocpp/v8context_ctocpp.cc
+  ctocpp/v8context_ctocpp.h
+  ctocpp/v8exception_ctocpp.cc
+  ctocpp/v8exception_ctocpp.h
+  ctocpp/v8stack_frame_ctocpp.cc
+  ctocpp/v8stack_frame_ctocpp.h
+  ctocpp/v8stack_trace_ctocpp.cc
+  ctocpp/v8stack_trace_ctocpp.h
+  ctocpp/v8value_ctocpp.cc
+  ctocpp/v8value_ctocpp.h
   ctocpp/value_ctocpp.cc
   ctocpp/value_ctocpp.h
   ctocpp/waitable_event_ctocpp.cc
   ctocpp/waitable_event_ctocpp.h
-  ctocpp/x509_cert_principal_ctocpp.cc
-  ctocpp/x509_cert_principal_ctocpp.h
-  ctocpp/x509_certificate_ctocpp.cc
-  ctocpp/x509_certificate_ctocpp.h
+  ctocpp/x509cert_principal_ctocpp.cc
+  ctocpp/x509cert_principal_ctocpp.h
+  ctocpp/x509certificate_ctocpp.cc
+  ctocpp/x509certificate_ctocpp.h
   ctocpp/xml_reader_ctocpp.cc
   ctocpp/xml_reader_ctocpp.h
   ctocpp/zip_reader_ctocpp.cc
@@ -358,28 +343,6 @@ set(LIBCEF_CTOCPP_SRCS
 source_group(libcef_dll\\\\ctocpp FILES ${LIBCEF_CTOCPP_SRCS})
 
 set(LIBCEF_CTOCPP_TEST_SRCS
-  ctocpp/test/api_version_test_ctocpp.cc
-  ctocpp/test/api_version_test_ctocpp.h
-  ctocpp/test/api_version_test_ref_ptr_library_child_child_ctocpp.cc
-  ctocpp/test/api_version_test_ref_ptr_library_child_child_ctocpp.h
-  ctocpp/test/api_version_test_ref_ptr_library_child_child_v1_ctocpp.cc
-  ctocpp/test/api_version_test_ref_ptr_library_child_child_v1_ctocpp.h
-  ctocpp/test/api_version_test_ref_ptr_library_child_child_v2_ctocpp.cc
-  ctocpp/test/api_version_test_ref_ptr_library_child_child_v2_ctocpp.h
-  ctocpp/test/api_version_test_ref_ptr_library_child_ctocpp.cc
-  ctocpp/test/api_version_test_ref_ptr_library_child_ctocpp.h
-  ctocpp/test/api_version_test_ref_ptr_library_ctocpp.cc
-  ctocpp/test/api_version_test_ref_ptr_library_ctocpp.h
-  ctocpp/test/api_version_test_scoped_library_child_child_ctocpp.cc
-  ctocpp/test/api_version_test_scoped_library_child_child_ctocpp.h
-  ctocpp/test/api_version_test_scoped_library_child_child_v1_ctocpp.cc
-  ctocpp/test/api_version_test_scoped_library_child_child_v1_ctocpp.h
-  ctocpp/test/api_version_test_scoped_library_child_child_v2_ctocpp.cc
-  ctocpp/test/api_version_test_scoped_library_child_child_v2_ctocpp.h
-  ctocpp/test/api_version_test_scoped_library_child_ctocpp.cc
-  ctocpp/test/api_version_test_scoped_library_child_ctocpp.h
-  ctocpp/test/api_version_test_scoped_library_ctocpp.cc
-  ctocpp/test/api_version_test_scoped_library_ctocpp.h
   ctocpp/test/test_server_connection_ctocpp.cc
   ctocpp/test/test_server_connection_ctocpp.h
   ctocpp/test/test_server_ctocpp.cc
@@ -459,13 +422,14 @@ set(LIBCEF_INCLUDE_SRCS
   ../include/cef_download_item.h
   ../include/cef_drag_data.h
   ../include/cef_drag_handler.h
+  ../include/cef_extension.h
+  ../include/cef_extension_handler.h
   ../include/cef_file_util.h
   ../include/cef_find_handler.h
   ../include/cef_focus_handler.h
   ../include/cef_frame.h
   ../include/cef_frame_handler.h
   ../include/cef_i18n_util.h
-  ../include/cef_id_mappers.h
   ../include/cef_image.h
   ../include/cef_jsdialog_handler.h
   ../include/cef_keyboard_handler.h
@@ -506,14 +470,12 @@ set(LIBCEF_INCLUDE_SRCS
   ../include/cef_stream.h
   ../include/cef_string_visitor.h
   ../include/cef_task.h
-  ../include/cef_task_manager.h
   ../include/cef_thread.h
   ../include/cef_trace.h
-  ../include/cef_unresponsive_process_callback.h
   ../include/cef_urlrequest.h
   ../include/cef_v8.h
   ../include/cef_values.h
-  ../include/cef_version_info.h
+  ../include/cef_version.h
   ../include/cef_waitable_event.h
   ../include/cef_x509_certificate.h
   ../include/cef_xml_reader.h
@@ -533,6 +495,7 @@ set(LIBCEF_INCLUDE_BASE_SRCS
   ../include/base/cef_atomic_flag.h
   ../include/base/cef_atomic_ref_count.h
   ../include/base/cef_auto_reset.h
+  ../include/base/cef_basictypes.h
   ../include/base/cef_bind.h
   ../include/base/cef_build.h
   ../include/base/cef_callback.h
@@ -541,14 +504,14 @@ set(LIBCEF_INCLUDE_BASE_SRCS
   ../include/base/cef_callback_list.h
   ../include/base/cef_cancelable_callback.h
   ../include/base/cef_compiler_specific.h
-  ../include/base/cef_dump_without_crashing.h
-  ../include/base/cef_immediate_crash.h
   ../include/base/cef_lock.h
   ../include/base/cef_logging.h
   ../include/base/cef_macros.h
   ../include/base/cef_platform_thread.h
+  ../include/base/cef_ptr_util.h
   ../include/base/cef_ref_counted.h
   ../include/base/cef_scoped_refptr.h
+  ../include/base/cef_template_util.h
   ../include/base/cef_thread_checker.h
   ../include/base/cef_trace_event.h
   ../include/base/cef_tuple.h
@@ -563,7 +526,6 @@ source_group(include\\\\base FILES ${LIBCEF_INCLUDE_BASE_SRCS})
 set(LIBCEF_INCLUDE_BASE_INTERNAL_SRCS
   ../include/base/internal/cef_bind_internal.h
   ../include/base/internal/cef_callback_internal.h
-  ../include/base/internal/cef_color_id_macros.inc
   ../include/base/internal/cef_lock_impl.h
   ../include/base/internal/cef_raw_scoped_refptr_mismatch_checker.h
   ../include/base/internal/cef_scoped_policy.h
@@ -598,6 +560,8 @@ set(LIBCEF_INCLUDE_CAPI_SRCS
   ../include/capi/cef_download_item_capi.h
   ../include/capi/cef_drag_data_capi.h
   ../include/capi/cef_drag_handler_capi.h
+  ../include/capi/cef_extension_capi.h
+  ../include/capi/cef_extension_handler_capi.h
   ../include/capi/cef_file_util_capi.h
   ../include/capi/cef_find_handler_capi.h
   ../include/capi/cef_focus_handler_capi.h
@@ -644,10 +608,8 @@ set(LIBCEF_INCLUDE_CAPI_SRCS
   ../include/capi/cef_stream_capi.h
   ../include/capi/cef_string_visitor_capi.h
   ../include/capi/cef_task_capi.h
-  ../include/capi/cef_task_manager_capi.h
   ../include/capi/cef_thread_capi.h
   ../include/capi/cef_trace_capi.h
-  ../include/capi/cef_unresponsive_process_callback_capi.h
   ../include/capi/cef_urlrequest_capi.h
   ../include/capi/cef_v8_capi.h
   ../include/capi/cef_values_capi.h
@@ -659,7 +621,6 @@ set(LIBCEF_INCLUDE_CAPI_SRCS
 source_group(include\\\\capi FILES ${LIBCEF_INCLUDE_CAPI_SRCS})
 
 set(LIBCEF_INCLUDE_CAPI_TEST_SRCS
-  ../include/capi/test/cef_api_version_test_capi.h
   ../include/capi/test/cef_test_helpers_capi.h
   ../include/capi/test/cef_test_server_capi.h
   ../include/capi/test/cef_translator_test_capi.h
@@ -692,7 +653,6 @@ set(LIBCEF_INCLUDE_CAPI_VIEWS_SRCS
 source_group(include\\\\capi\\\\views FILES ${LIBCEF_INCLUDE_CAPI_VIEWS_SRCS})
 
 set(LIBCEF_INCLUDE_INTERNAL_SRCS
-  ../include/internal/cef_dump_without_crashing_internal.h
   ../include/internal/cef_export.h
   ../include/internal/cef_logging_internal.h
   ../include/internal/cef_ptr.h
@@ -707,11 +667,7 @@ set(LIBCEF_INCLUDE_INTERNAL_SRCS
   ../include/internal/cef_time_wrappers.h
   ../include/internal/cef_trace_event_internal.h
   ../include/internal/cef_types.h
-  ../include/internal/cef_types_color.h
-  ../include/internal/cef_types_content_settings.h
   ../include/internal/cef_types_geometry.h
-  ../include/internal/cef_types_osr.h
-  ../include/internal/cef_types_runtime.h
   ../include/internal/cef_types_wrappers.h
   )
 set(LIBCEF_INCLUDE_INTERNAL_SRCS_LINUX
@@ -731,7 +687,6 @@ LIBCEF_APPEND_PLATFORM_SOURCES(LIBCEF_INCLUDE_INTERNAL_SRCS)
 source_group(include\\\\internal FILES ${LIBCEF_INCLUDE_INTERNAL_SRCS})
 
 set(LIBCEF_INCLUDE_TEST_SRCS
-  ../include/test/cef_api_version_test.h
   ../include/test/cef_test_helpers.h
   ../include/test/cef_test_server.h
   ../include/test/cef_translator_test.h
@@ -777,11 +732,6 @@ set(LIBCEF_INCLUDE_WRAPPER_SRCS
 set(LIBCEF_INCLUDE_WRAPPER_SRCS_MAC
   ../include/wrapper/cef_library_loader.h
   )
-set(LIBCEF_INCLUDE_WRAPPER_SRCS_WINDOWS
-  ../include/wrapper/cef_certificate_util_win.h
-  ../include/wrapper/cef_library_loader.h
-  ../include/wrapper/cef_util_win.h
-  )
 LIBCEF_APPEND_PLATFORM_SOURCES(LIBCEF_INCLUDE_WRAPPER_SRCS)
 source_group(include\\\\wrapper FILES ${LIBCEF_INCLUDE_WRAPPER_SRCS})
 
@@ -790,8 +740,6 @@ set(LIBCEF_WRAPPER_SRCS
   wrapper/cef_byte_read_handler.cc
   wrapper/cef_closure_task.cc
   wrapper/cef_message_router.cc
-  wrapper/cef_message_router_utils.cc
-  wrapper/cef_message_router_utils.h
   wrapper/cef_resource_manager.cc
   wrapper/cef_scoped_temp_dir.cc
   wrapper/cef_stream_resource_handler.cc
@@ -801,14 +749,8 @@ set(LIBCEF_WRAPPER_SRCS
   wrapper/libcef_dll_wrapper2.cc
   )
 set(LIBCEF_WRAPPER_SRCS_MAC
-  wrapper/cef_scoped_library_loader_mac.mm
-  wrapper/cef_scoped_sandbox_context_mac.mm
+  wrapper/cef_library_loader_mac.mm
   wrapper/libcef_dll_dylib.cc
-  )
-set(LIBCEF_WRAPPER_SRCS_WINDOWS
-  wrapper/cef_certificate_util_win.cc
-  wrapper/cef_scoped_library_loader_win.cc
-  wrapper/cef_util_win.cc
   )
 LIBCEF_APPEND_PLATFORM_SOURCES(LIBCEF_WRAPPER_SRCS)
 source_group(libcef_dll\\\\wrapper FILES ${LIBCEF_WRAPPER_SRCS})

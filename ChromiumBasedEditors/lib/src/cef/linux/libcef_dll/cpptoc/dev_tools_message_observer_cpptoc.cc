@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,11 +9,10 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=7f89b1c3455efbf3b9380edf3ebb84122895647c$
+// $hash=c39b7ad0cee7f051f5b2f374917910aae6e9a96a$
 //
 
 #include "libcef_dll/cpptoc/dev_tools_message_observer_cpptoc.h"
-
 #include "libcef_dll/ctocpp/browser_ctocpp.h"
 #include "libcef_dll/shutdown_checker.h"
 
@@ -23,7 +22,7 @@ namespace {
 
 int CEF_CALLBACK dev_tools_message_observer_on_dev_tools_message(
     struct _cef_dev_tools_message_observer_t* self,
-    struct _cef_browser_t* browser,
+    cef_browser_t* browser,
     const void* message,
     size_t message_size) {
   shutdown_checker::AssertNotShutdown();
@@ -31,23 +30,20 @@ int CEF_CALLBACK dev_tools_message_observer_on_dev_tools_message(
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return 0;
-  }
   // Verify param: browser; type: refptr_diff
   DCHECK(browser);
-  if (!browser) {
+  if (!browser)
     return 0;
-  }
   // Verify param: message; type: simple_byaddr
   DCHECK(message);
-  if (!message) {
+  if (!message)
     return 0;
-  }
 
   // Execute
   bool _retval = CefDevToolsMessageObserverCppToC::Get(self)->OnDevToolsMessage(
-      CefBrowserCToCpp_Wrap(browser), message, message_size);
+      CefBrowserCToCpp::Wrap(browser), message, message_size);
 
   // Return type: bool
   return _retval;
@@ -55,7 +51,7 @@ int CEF_CALLBACK dev_tools_message_observer_on_dev_tools_message(
 
 void CEF_CALLBACK dev_tools_message_observer_on_dev_tools_method_result(
     struct _cef_dev_tools_message_observer_t* self,
-    struct _cef_browser_t* browser,
+    cef_browser_t* browser,
     int message_id,
     int success,
     const void* result,
@@ -65,25 +61,23 @@ void CEF_CALLBACK dev_tools_message_observer_on_dev_tools_method_result(
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return;
-  }
   // Verify param: browser; type: refptr_diff
   DCHECK(browser);
-  if (!browser) {
+  if (!browser)
     return;
-  }
   // Unverified params: result
 
   // Execute
   CefDevToolsMessageObserverCppToC::Get(self)->OnDevToolsMethodResult(
-      CefBrowserCToCpp_Wrap(browser), message_id, success ? true : false,
+      CefBrowserCToCpp::Wrap(browser), message_id, success ? true : false,
       result, result_size);
 }
 
 void CEF_CALLBACK dev_tools_message_observer_on_dev_tools_event(
     struct _cef_dev_tools_message_observer_t* self,
-    struct _cef_browser_t* browser,
+    cef_browser_t* browser,
     const cef_string_t* method,
     const void* params,
     size_t params_size) {
@@ -92,68 +86,61 @@ void CEF_CALLBACK dev_tools_message_observer_on_dev_tools_event(
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return;
-  }
   // Verify param: browser; type: refptr_diff
   DCHECK(browser);
-  if (!browser) {
+  if (!browser)
     return;
-  }
   // Verify param: method; type: string_byref_const
   DCHECK(method);
-  if (!method) {
+  if (!method)
     return;
-  }
   // Unverified params: params
 
   // Execute
   CefDevToolsMessageObserverCppToC::Get(self)->OnDevToolsEvent(
-      CefBrowserCToCpp_Wrap(browser), CefString(method), params, params_size);
+      CefBrowserCToCpp::Wrap(browser), CefString(method), params, params_size);
 }
 
 void CEF_CALLBACK dev_tools_message_observer_on_dev_tools_agent_attached(
     struct _cef_dev_tools_message_observer_t* self,
-    struct _cef_browser_t* browser) {
+    cef_browser_t* browser) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return;
-  }
   // Verify param: browser; type: refptr_diff
   DCHECK(browser);
-  if (!browser) {
+  if (!browser)
     return;
-  }
 
   // Execute
   CefDevToolsMessageObserverCppToC::Get(self)->OnDevToolsAgentAttached(
-      CefBrowserCToCpp_Wrap(browser));
+      CefBrowserCToCpp::Wrap(browser));
 }
 
 void CEF_CALLBACK dev_tools_message_observer_on_dev_tools_agent_detached(
     struct _cef_dev_tools_message_observer_t* self,
-    struct _cef_browser_t* browser) {
+    cef_browser_t* browser) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return;
-  }
   // Verify param: browser; type: refptr_diff
   DCHECK(browser);
-  if (!browser) {
+  if (!browser)
     return;
-  }
 
   // Execute
   CefDevToolsMessageObserverCppToC::Get(self)->OnDevToolsAgentDetached(
-      CefBrowserCToCpp_Wrap(browser));
+      CefBrowserCToCpp::Wrap(browser));
 }
 
 }  // namespace
@@ -185,7 +172,7 @@ CefCppToCRefCounted<CefDevToolsMessageObserverCppToC,
                     CefDevToolsMessageObserver,
                     cef_dev_tools_message_observer_t>::
     UnwrapDerived(CefWrapperType type, cef_dev_tools_message_observer_t* s) {
-  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  NOTREACHED() << "Unexpected class type: " << type;
   return nullptr;
 }
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,11 +9,10 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=5180bd0e954014fe861789404ca7d3829e0930bc$
+// $hash=f090fd5026cecf6e847f27909418f1dd76fec64f$
 //
 
 #include "libcef_dll/ctocpp/waitable_event_ctocpp.h"
-
 #include "libcef_dll/shutdown_checker.h"
 
 // STATIC METHODS - Body may be edited by hand.
@@ -27,11 +26,11 @@ CefRefPtr<CefWaitableEvent> CefWaitableEvent::CreateWaitableEvent(
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  auto* _retval =
+  cef_waitable_event_t* _retval =
       cef_waitable_event_create(automatic_reset, initially_signaled);
 
   // Return type: refptr_same
-  return CefWaitableEventCToCpp_Wrap(_retval);
+  return CefWaitableEventCToCpp::Wrap(_retval);
 }
 
 // VIRTUAL METHODS - Body may be edited by hand.
@@ -39,10 +38,9 @@ CefRefPtr<CefWaitableEvent> CefWaitableEvent::CreateWaitableEvent(
 NO_SANITIZE("cfi-icall") void CefWaitableEventCToCpp::Reset() {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->reset) {
+  cef_waitable_event_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, reset))
     return;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -53,10 +51,9 @@ NO_SANITIZE("cfi-icall") void CefWaitableEventCToCpp::Reset() {
 NO_SANITIZE("cfi-icall") void CefWaitableEventCToCpp::Signal() {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->signal) {
+  cef_waitable_event_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, signal))
     return;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -67,10 +64,9 @@ NO_SANITIZE("cfi-icall") void CefWaitableEventCToCpp::Signal() {
 NO_SANITIZE("cfi-icall") bool CefWaitableEventCToCpp::IsSignaled() {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->is_signaled) {
+  cef_waitable_event_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, is_signaled))
     return false;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -84,10 +80,9 @@ NO_SANITIZE("cfi-icall") bool CefWaitableEventCToCpp::IsSignaled() {
 NO_SANITIZE("cfi-icall") void CefWaitableEventCToCpp::Wait() {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->wait) {
+  cef_waitable_event_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, wait))
     return;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -95,14 +90,12 @@ NO_SANITIZE("cfi-icall") void CefWaitableEventCToCpp::Wait() {
   _struct->wait(_struct);
 }
 
-NO_SANITIZE("cfi-icall")
-bool CefWaitableEventCToCpp::TimedWait(int64_t max_ms) {
+NO_SANITIZE("cfi-icall") bool CefWaitableEventCToCpp::TimedWait(int64 max_ms) {
   shutdown_checker::AssertNotShutdown();
 
-  auto* _struct = GetStruct();
-  if (!_struct->timed_wait) {
+  cef_waitable_event_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, timed_wait))
     return false;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -129,7 +122,7 @@ CefCToCppRefCounted<CefWaitableEventCToCpp,
                     CefWaitableEvent,
                     cef_waitable_event_t>::UnwrapDerived(CefWrapperType type,
                                                          CefWaitableEvent* c) {
-  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  NOTREACHED() << "Unexpected class type: " << type;
   return nullptr;
 }
 

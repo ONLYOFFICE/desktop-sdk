@@ -82,6 +82,12 @@ class CefX509CertPrincipal : public virtual CefBaseRefCounted {
   virtual CefString GetCountryName() = 0;
 
   ///
+  /// Retrieve the list of street addresses.
+  ///
+  /*--cef()--*/
+  virtual void GetStreetAddresses(std::vector<CefString>& addresses) = 0;
+
+  ///
   /// Retrieve the list of organization names.
   ///
   /*--cef()--*/
@@ -92,6 +98,12 @@ class CefX509CertPrincipal : public virtual CefBaseRefCounted {
   ///
   /*--cef()--*/
   virtual void GetOrganizationUnitNames(std::vector<CefString>& names) = 0;
+
+  ///
+  /// Retrieve the list of domain components.
+  ///
+  /*--cef()--*/
+  virtual void GetDomainComponents(std::vector<CefString>& components) = 0;
 };
 
 ///

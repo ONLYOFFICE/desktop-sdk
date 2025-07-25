@@ -52,7 +52,7 @@ class CefTestSuite {
 
   CefString root_cache_path_;
 
-  int retval_ = 0;
+  int retval_;
 };
 
 #define CEF_SETTINGS_ACCEPT_LANGUAGE "en-GB"

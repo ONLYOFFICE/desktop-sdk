@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=4df4c2f8b678cb071cb1873cdeced5adb4d032cb$
+// $hash=cd0bb4e9c12f53896be544b28ae3c6f38b3504e2$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_PRINT_HANDLER_CPPTOC_H_
@@ -33,8 +33,5 @@ class CefPrintHandlerCppToC : public CefCppToCRefCounted<CefPrintHandlerCppToC,
   CefPrintHandlerCppToC();
   virtual ~CefPrintHandlerCppToC();
 };
-
-constexpr auto CefPrintHandlerCppToC_Wrap = CefPrintHandlerCppToC::Wrap;
-constexpr auto CefPrintHandlerCppToC_Unwrap = CefPrintHandlerCppToC::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_PRINT_HANDLER_CPPTOC_H_

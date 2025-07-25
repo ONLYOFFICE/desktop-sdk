@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,16 +33,12 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=76d89f9af92afd53c32f711d9f48528f52b071e9$
+// $hash=5d6dad4bfaeef0117d068b6e67a8da7490fe7c2d$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_PARSER_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_PARSER_CAPI_H_
 #pragma once
-
-#if defined(BUILDING_CEF_SHARED)
-#error This file cannot be included DLL-side
-#endif
 
 #include "include/capi/cef_base_capi.h"
 
@@ -108,14 +104,14 @@ CEF_EXPORT void cef_get_extensions_for_mime_type(const cef_string_t* mime_type,
 /// Encodes |data| as a base64 string.
 ///
 // The resulting string must be freed by calling cef_string_userfree_free().
-CEF_EXPORT cef_string_userfree_t cef_base64_encode(const void* data,
-                                                   size_t data_size);
+CEF_EXPORT cef_string_userfree_t cef_base64encode(const void* data,
+                                                  size_t data_size);
 
 ///
 /// Decodes the base64 encoded string |data|. The returned value will be NULL if
 /// the decoding fails.
 ///
-CEF_EXPORT struct _cef_binary_value_t* cef_base64_decode(
+CEF_EXPORT struct _cef_binary_value_t* cef_base64decode(
     const cef_string_t* data);
 
 ///

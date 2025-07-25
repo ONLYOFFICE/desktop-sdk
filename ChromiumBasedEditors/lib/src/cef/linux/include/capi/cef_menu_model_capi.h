@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,16 +33,12 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=3faec922bbb345e8bc5429dabe8ebdc2275253dd$
+// $hash=d70b78b8108bb08b4f53b2627ed4ebfdffece7c1$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_MENU_MODEL_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_MENU_MODEL_CAPI_H_
 #pragma once
-
-#if defined(BUILDING_CEF_SHARED)
-#error This file cannot be included DLL-side
-#endif
 
 #include "include/capi/cef_base_capi.h"
 #include "include/capi/cef_menu_model_delegate_capi.h"
@@ -56,8 +52,6 @@ extern "C" {
 /// command ids that have default implementations. All user-defined command ids
 /// should be between MENU_ID_USER_FIRST and MENU_ID_USER_LAST. The functions of
 /// this structure can only be accessed on the browser process the UI thread.
-///
-/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_menu_model_t {
   ///
@@ -479,15 +473,14 @@ typedef struct _cef_menu_model_t {
   ///
   /// Sets the font list for the specified |command_id|. If |font_list| is NULL
   /// the system font will be used. Returns true (1) on success. The format is
-  /// "<FONT_FAMILY_LIST>,[STYLES] <SIZE>", where:
-  /// - FONT_FAMILY_LIST is a comma-separated list of font family names,
-  /// - STYLES is an optional space-separated list of style names (case-
-  ///   sensitive "Bold" and "Italic" are supported), and
+  /// "<FONT_FAMILY_LIST>,[STYLES] <SIZE>", where: - FONT_FAMILY_LIST is a
+  /// comma-separated list of font family names, - STYLES is an optional space-
+  /// separated list of style names
+  ///   (case-sensitive "Bold" and "Italic" are supported), and
   /// - SIZE is an integer font size in pixels with the suffix "px".
   ///
-  /// Here are examples of valid font description strings:
-  /// - "Arial, Helvetica, Bold Italic 14px"
-  /// - "Arial, 14px"
+  /// Here are examples of valid font description strings: - "Arial, Helvetica,
+  /// Bold Italic 14px" - "Arial, 14px"
   ///
   int(CEF_CALLBACK* set_font_list)(struct _cef_menu_model_t* self,
                                    int command_id,
@@ -495,15 +488,16 @@ typedef struct _cef_menu_model_t {
 
   ///
   /// Sets the font list for the specified |index|. Specify an |index| value of
-  /// - 1 to set the default font. If |font_list| is NULL the system font will
-  /// - FONT_FAMILY_LIST is a comma-separated list of font family names,
-  /// - STYLES is an optional space-separated list of style names (case-
-  ///   sensitive "Bold" and "Italic" are supported), and
+  /// -1 to set the default font. If |font_list| is NULL the system font will be
+  /// used. Returns true (1) on success. The format is
+  /// "<FONT_FAMILY_LIST>,[STYLES] <SIZE>", where: - FONT_FAMILY_LIST is a
+  /// comma-separated list of font family names, - STYLES is an optional space-
+  /// separated list of style names
+  ///   (case-sensitive "Bold" and "Italic" are supported), and
   /// - SIZE is an integer font size in pixels with the suffix "px".
   ///
-  /// Here are examples of valid font description strings:
-  /// - "Arial, Helvetica, Bold Italic 14px"
-  /// - "Arial, 14px"
+  /// Here are examples of valid font description strings: - "Arial, Helvetica,
+  /// Bold Italic 14px" - "Arial, 14px"
   ///
   int(CEF_CALLBACK* set_font_list_at)(struct _cef_menu_model_t* self,
                                       int index,

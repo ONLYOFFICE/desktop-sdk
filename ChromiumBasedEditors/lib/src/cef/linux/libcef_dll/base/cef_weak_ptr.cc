@@ -5,7 +5,7 @@
 #include "include/base/cef_weak_ptr.h"
 
 namespace base {
-namespace cef_internal {
+namespace internal {
 
 WeakReference::Flag::Flag() {
   // Flags only become bound when checked for validity, or invalidated,
@@ -68,9 +68,8 @@ WeakReferenceOwner::~WeakReferenceOwner() {
 
 WeakReference WeakReferenceOwner::GetRef() const {
   // If we hold the last reference to the Flag then detach the ThreadChecker.
-  if (!HasRefs()) {
+  if (!HasRefs())
     flag_->DetachFromThread();
-  }
 
   return WeakReference(flag_);
 }
@@ -97,5 +96,5 @@ WeakPtrFactoryBase::~WeakPtrFactoryBase() {
   ptr_ = 0;
 }
 
-}  // namespace cef_internal
+}  // namespace internal
 }  // namespace base

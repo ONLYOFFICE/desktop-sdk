@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,11 +9,10 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=c087a8d2882e99ef486eaa6bb55d0d76d845e1c3$
+// $hash=38506c58f563553f9c81c653da90c2057c705106$
 //
 
 #include "libcef_dll/cpptoc/client_cpptoc.h"
-
 #include "libcef_dll/cpptoc/audio_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/command_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/context_menu_handler_cpptoc.h"
@@ -40,21 +39,20 @@ namespace {
 
 // MEMBER FUNCTIONS - Body may be edited by hand.
 
-struct _cef_audio_handler_t* CEF_CALLBACK
+cef_audio_handler_t* CEF_CALLBACK
 client_get_audio_handler(struct _cef_client_t* self) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return NULL;
-  }
 
   // Execute
   CefRefPtr<CefAudioHandler> _retval =
       CefClientCppToC::Get(self)->GetAudioHandler();
 
   // Return type: refptr_same
-  return CefAudioHandlerCppToC_Wrap(_retval);
+  return CefAudioHandlerCppToC::Wrap(_retval);
 }
 
 struct _cef_command_handler_t* CEF_CALLBACK
@@ -62,16 +60,15 @@ client_get_command_handler(struct _cef_client_t* self) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return NULL;
-  }
 
   // Execute
   CefRefPtr<CefCommandHandler> _retval =
       CefClientCppToC::Get(self)->GetCommandHandler();
 
   // Return type: refptr_same
-  return CefCommandHandlerCppToC_Wrap(_retval);
+  return CefCommandHandlerCppToC::Wrap(_retval);
 }
 
 struct _cef_context_menu_handler_t* CEF_CALLBACK
@@ -79,16 +76,15 @@ client_get_context_menu_handler(struct _cef_client_t* self) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return NULL;
-  }
 
   // Execute
   CefRefPtr<CefContextMenuHandler> _retval =
       CefClientCppToC::Get(self)->GetContextMenuHandler();
 
   // Return type: refptr_same
-  return CefContextMenuHandlerCppToC_Wrap(_retval);
+  return CefContextMenuHandlerCppToC::Wrap(_retval);
 }
 
 struct _cef_dialog_handler_t* CEF_CALLBACK
@@ -96,16 +92,15 @@ client_get_dialog_handler(struct _cef_client_t* self) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return NULL;
-  }
 
   // Execute
   CefRefPtr<CefDialogHandler> _retval =
       CefClientCppToC::Get(self)->GetDialogHandler();
 
   // Return type: refptr_same
-  return CefDialogHandlerCppToC_Wrap(_retval);
+  return CefDialogHandlerCppToC::Wrap(_retval);
 }
 
 struct _cef_display_handler_t* CEF_CALLBACK
@@ -113,16 +108,15 @@ client_get_display_handler(struct _cef_client_t* self) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return NULL;
-  }
 
   // Execute
   CefRefPtr<CefDisplayHandler> _retval =
       CefClientCppToC::Get(self)->GetDisplayHandler();
 
   // Return type: refptr_same
-  return CefDisplayHandlerCppToC_Wrap(_retval);
+  return CefDisplayHandlerCppToC::Wrap(_retval);
 }
 
 struct _cef_download_handler_t* CEF_CALLBACK
@@ -130,16 +124,15 @@ client_get_download_handler(struct _cef_client_t* self) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return NULL;
-  }
 
   // Execute
   CefRefPtr<CefDownloadHandler> _retval =
       CefClientCppToC::Get(self)->GetDownloadHandler();
 
   // Return type: refptr_same
-  return CefDownloadHandlerCppToC_Wrap(_retval);
+  return CefDownloadHandlerCppToC::Wrap(_retval);
 }
 
 struct _cef_drag_handler_t* CEF_CALLBACK
@@ -147,16 +140,15 @@ client_get_drag_handler(struct _cef_client_t* self) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return NULL;
-  }
 
   // Execute
   CefRefPtr<CefDragHandler> _retval =
       CefClientCppToC::Get(self)->GetDragHandler();
 
   // Return type: refptr_same
-  return CefDragHandlerCppToC_Wrap(_retval);
+  return CefDragHandlerCppToC::Wrap(_retval);
 }
 
 struct _cef_find_handler_t* CEF_CALLBACK
@@ -164,16 +156,15 @@ client_get_find_handler(struct _cef_client_t* self) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return NULL;
-  }
 
   // Execute
   CefRefPtr<CefFindHandler> _retval =
       CefClientCppToC::Get(self)->GetFindHandler();
 
   // Return type: refptr_same
-  return CefFindHandlerCppToC_Wrap(_retval);
+  return CefFindHandlerCppToC::Wrap(_retval);
 }
 
 struct _cef_focus_handler_t* CEF_CALLBACK
@@ -181,16 +172,15 @@ client_get_focus_handler(struct _cef_client_t* self) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return NULL;
-  }
 
   // Execute
   CefRefPtr<CefFocusHandler> _retval =
       CefClientCppToC::Get(self)->GetFocusHandler();
 
   // Return type: refptr_same
-  return CefFocusHandlerCppToC_Wrap(_retval);
+  return CefFocusHandlerCppToC::Wrap(_retval);
 }
 
 struct _cef_frame_handler_t* CEF_CALLBACK
@@ -198,16 +188,15 @@ client_get_frame_handler(struct _cef_client_t* self) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return NULL;
-  }
 
   // Execute
   CefRefPtr<CefFrameHandler> _retval =
       CefClientCppToC::Get(self)->GetFrameHandler();
 
   // Return type: refptr_same
-  return CefFrameHandlerCppToC_Wrap(_retval);
+  return CefFrameHandlerCppToC::Wrap(_retval);
 }
 
 struct _cef_permission_handler_t* CEF_CALLBACK
@@ -215,16 +204,15 @@ client_get_permission_handler(struct _cef_client_t* self) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return NULL;
-  }
 
   // Execute
   CefRefPtr<CefPermissionHandler> _retval =
       CefClientCppToC::Get(self)->GetPermissionHandler();
 
   // Return type: refptr_same
-  return CefPermissionHandlerCppToC_Wrap(_retval);
+  return CefPermissionHandlerCppToC::Wrap(_retval);
 }
 
 struct _cef_jsdialog_handler_t* CEF_CALLBACK
@@ -232,16 +220,15 @@ client_get_jsdialog_handler(struct _cef_client_t* self) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return NULL;
-  }
 
   // Execute
   CefRefPtr<CefJSDialogHandler> _retval =
       CefClientCppToC::Get(self)->GetJSDialogHandler();
 
   // Return type: refptr_same
-  return CefJSDialogHandlerCppToC_Wrap(_retval);
+  return CefJSDialogHandlerCppToC::Wrap(_retval);
 }
 
 struct _cef_keyboard_handler_t* CEF_CALLBACK
@@ -249,16 +236,15 @@ client_get_keyboard_handler(struct _cef_client_t* self) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return NULL;
-  }
 
   // Execute
   CefRefPtr<CefKeyboardHandler> _retval =
       CefClientCppToC::Get(self)->GetKeyboardHandler();
 
   // Return type: refptr_same
-  return CefKeyboardHandlerCppToC_Wrap(_retval);
+  return CefKeyboardHandlerCppToC::Wrap(_retval);
 }
 
 struct _cef_life_span_handler_t* CEF_CALLBACK
@@ -266,16 +252,15 @@ client_get_life_span_handler(struct _cef_client_t* self) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return NULL;
-  }
 
   // Execute
   CefRefPtr<CefLifeSpanHandler> _retval =
       CefClientCppToC::Get(self)->GetLifeSpanHandler();
 
   // Return type: refptr_same
-  return CefLifeSpanHandlerCppToC_Wrap(_retval);
+  return CefLifeSpanHandlerCppToC::Wrap(_retval);
 }
 
 struct _cef_load_handler_t* CEF_CALLBACK
@@ -283,16 +268,15 @@ client_get_load_handler(struct _cef_client_t* self) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return NULL;
-  }
 
   // Execute
   CefRefPtr<CefLoadHandler> _retval =
       CefClientCppToC::Get(self)->GetLoadHandler();
 
   // Return type: refptr_same
-  return CefLoadHandlerCppToC_Wrap(_retval);
+  return CefLoadHandlerCppToC::Wrap(_retval);
 }
 
 struct _cef_print_handler_t* CEF_CALLBACK
@@ -300,16 +284,15 @@ client_get_print_handler(struct _cef_client_t* self) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return NULL;
-  }
 
   // Execute
   CefRefPtr<CefPrintHandler> _retval =
       CefClientCppToC::Get(self)->GetPrintHandler();
 
   // Return type: refptr_same
-  return CefPrintHandlerCppToC_Wrap(_retval);
+  return CefPrintHandlerCppToC::Wrap(_retval);
 }
 
 struct _cef_render_handler_t* CEF_CALLBACK
@@ -317,16 +300,15 @@ client_get_render_handler(struct _cef_client_t* self) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return NULL;
-  }
 
   // Execute
   CefRefPtr<CefRenderHandler> _retval =
       CefClientCppToC::Get(self)->GetRenderHandler();
 
   // Return type: refptr_same
-  return CefRenderHandlerCppToC_Wrap(_retval);
+  return CefRenderHandlerCppToC::Wrap(_retval);
 }
 
 struct _cef_request_handler_t* CEF_CALLBACK
@@ -334,50 +316,45 @@ client_get_request_handler(struct _cef_client_t* self) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return NULL;
-  }
 
   // Execute
   CefRefPtr<CefRequestHandler> _retval =
       CefClientCppToC::Get(self)->GetRequestHandler();
 
   // Return type: refptr_same
-  return CefRequestHandlerCppToC_Wrap(_retval);
+  return CefRequestHandlerCppToC::Wrap(_retval);
 }
 
 int CEF_CALLBACK
 client_on_process_message_received(struct _cef_client_t* self,
-                                   struct _cef_browser_t* browser,
+                                   cef_browser_t* browser,
                                    struct _cef_frame_t* frame,
                                    cef_process_id_t source_process,
                                    struct _cef_process_message_t* message) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return 0;
-  }
   // Verify param: browser; type: refptr_diff
   DCHECK(browser);
-  if (!browser) {
+  if (!browser)
     return 0;
-  }
   // Verify param: frame; type: refptr_diff
   DCHECK(frame);
-  if (!frame) {
+  if (!frame)
     return 0;
-  }
   // Verify param: message; type: refptr_diff
   DCHECK(message);
-  if (!message) {
+  if (!message)
     return 0;
-  }
 
   // Execute
   bool _retval = CefClientCppToC::Get(self)->OnProcessMessageReceived(
-      CefBrowserCToCpp_Wrap(browser), CefFrameCToCpp_Wrap(frame),
-      source_process, CefProcessMessageCToCpp_Wrap(message));
+      CefBrowserCToCpp::Wrap(browser), CefFrameCToCpp::Wrap(frame),
+      source_process, CefProcessMessageCToCpp::Wrap(message));
 
   // Return type: bool
   return _retval;
@@ -418,7 +395,7 @@ CefRefPtr<CefClient>
 CefCppToCRefCounted<CefClientCppToC, CefClient, cef_client_t>::UnwrapDerived(
     CefWrapperType type,
     cef_client_t* s) {
-  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  NOTREACHED() << "Unexpected class type: " << type;
   return nullptr;
 }
 

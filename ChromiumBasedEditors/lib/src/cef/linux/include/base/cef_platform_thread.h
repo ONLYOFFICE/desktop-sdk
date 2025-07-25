@@ -43,6 +43,7 @@
 // If the Chromium implementation diverges the below implementation should be
 // updated to match.
 
+#include "include/base/cef_basictypes.h"
 #include "include/base/cef_build.h"
 #include "include/internal/cef_thread_internal.h"
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=a11fdc9f24bc921c5de1d6c4643ed747da2d4011$
+// $hash=722531dae407df607f2454823d375a34db168075$
 //
 
 #include "libcef_dll/ctocpp/scheme_registrar_ctocpp.h"
@@ -19,18 +19,16 @@
 NO_SANITIZE("cfi-icall")
 bool CefSchemeRegistrarCToCpp::AddCustomScheme(const CefString& scheme_name,
                                                int options) {
-  auto* _struct = GetStruct();
-  if (!_struct->add_custom_scheme) {
+  cef_scheme_registrar_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, add_custom_scheme))
     return false;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: scheme_name; type: string_byref_const
   DCHECK(!scheme_name.empty());
-  if (scheme_name.empty()) {
+  if (scheme_name.empty())
     return false;
-  }
 
   // Execute
   int _retval =
@@ -54,7 +52,7 @@ cef_scheme_registrar_t* CefCToCppScoped<
     CefSchemeRegistrar,
     cef_scheme_registrar_t>::UnwrapDerivedOwn(CefWrapperType type,
                                               CefOwnPtr<CefSchemeRegistrar> c) {
-  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  NOTREACHED() << "Unexpected class type: " << type;
   return nullptr;
 }
 
@@ -64,7 +62,7 @@ cef_scheme_registrar_t* CefCToCppScoped<
     CefSchemeRegistrar,
     cef_scheme_registrar_t>::UnwrapDerivedRaw(CefWrapperType type,
                                               CefRawPtr<CefSchemeRegistrar> c) {
-  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  NOTREACHED() << "Unexpected class type: " << type;
   return nullptr;
 }
 

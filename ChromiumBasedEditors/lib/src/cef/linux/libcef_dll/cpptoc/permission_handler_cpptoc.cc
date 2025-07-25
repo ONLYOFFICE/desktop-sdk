@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,11 +9,10 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=b05e167e58bd236ea86b1b60bf0fe69e251395aa$
+// $hash=5544100adb45af05db53727baeb0824d0a025b2e$
 //
 
 #include "libcef_dll/cpptoc/permission_handler_cpptoc.h"
-
 #include "libcef_dll/ctocpp/browser_ctocpp.h"
 #include "libcef_dll/ctocpp/frame_ctocpp.h"
 #include "libcef_dll/ctocpp/media_access_callback_ctocpp.h"
@@ -26,46 +25,41 @@ namespace {
 
 int CEF_CALLBACK permission_handler_on_request_media_access_permission(
     struct _cef_permission_handler_t* self,
-    struct _cef_browser_t* browser,
-    struct _cef_frame_t* frame,
+    cef_browser_t* browser,
+    cef_frame_t* frame,
     const cef_string_t* requesting_origin,
-    uint32_t requested_permissions,
-    struct _cef_media_access_callback_t* callback) {
+    uint32 requested_permissions,
+    cef_media_access_callback_t* callback) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return 0;
-  }
   // Verify param: browser; type: refptr_diff
   DCHECK(browser);
-  if (!browser) {
+  if (!browser)
     return 0;
-  }
   // Verify param: frame; type: refptr_diff
   DCHECK(frame);
-  if (!frame) {
+  if (!frame)
     return 0;
-  }
   // Verify param: requesting_origin; type: string_byref_const
   DCHECK(requesting_origin);
-  if (!requesting_origin) {
+  if (!requesting_origin)
     return 0;
-  }
   // Verify param: callback; type: refptr_diff
   DCHECK(callback);
-  if (!callback) {
+  if (!callback)
     return 0;
-  }
 
   // Execute
   bool _retval =
       CefPermissionHandlerCppToC::Get(self)->OnRequestMediaAccessPermission(
-          CefBrowserCToCpp_Wrap(browser), CefFrameCToCpp_Wrap(frame),
+          CefBrowserCToCpp::Wrap(browser), CefFrameCToCpp::Wrap(frame),
           CefString(requesting_origin), requested_permissions,
-          CefMediaAccessCallbackCToCpp_Wrap(callback));
+          CefMediaAccessCallbackCToCpp::Wrap(callback));
 
   // Return type: bool
   return _retval;
@@ -73,39 +67,35 @@ int CEF_CALLBACK permission_handler_on_request_media_access_permission(
 
 int CEF_CALLBACK permission_handler_on_show_permission_prompt(
     struct _cef_permission_handler_t* self,
-    struct _cef_browser_t* browser,
-    uint64_t prompt_id,
+    cef_browser_t* browser,
+    uint64 prompt_id,
     const cef_string_t* requesting_origin,
-    uint32_t requested_permissions,
-    struct _cef_permission_prompt_callback_t* callback) {
+    uint32 requested_permissions,
+    cef_permission_prompt_callback_t* callback) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return 0;
-  }
   // Verify param: browser; type: refptr_diff
   DCHECK(browser);
-  if (!browser) {
+  if (!browser)
     return 0;
-  }
   // Verify param: requesting_origin; type: string_byref_const
   DCHECK(requesting_origin);
-  if (!requesting_origin) {
+  if (!requesting_origin)
     return 0;
-  }
   // Verify param: callback; type: refptr_diff
   DCHECK(callback);
-  if (!callback) {
+  if (!callback)
     return 0;
-  }
 
   // Execute
   bool _retval = CefPermissionHandlerCppToC::Get(self)->OnShowPermissionPrompt(
-      CefBrowserCToCpp_Wrap(browser), prompt_id, CefString(requesting_origin),
-      requested_permissions, CefPermissionPromptCallbackCToCpp_Wrap(callback));
+      CefBrowserCToCpp::Wrap(browser), prompt_id, CefString(requesting_origin),
+      requested_permissions, CefPermissionPromptCallbackCToCpp::Wrap(callback));
 
   // Return type: bool
   return _retval;
@@ -113,26 +103,24 @@ int CEF_CALLBACK permission_handler_on_show_permission_prompt(
 
 void CEF_CALLBACK permission_handler_on_dismiss_permission_prompt(
     struct _cef_permission_handler_t* self,
-    struct _cef_browser_t* browser,
-    uint64_t prompt_id,
+    cef_browser_t* browser,
+    uint64 prompt_id,
     cef_permission_request_result_t result) {
   shutdown_checker::AssertNotShutdown();
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self) {
+  if (!self)
     return;
-  }
   // Verify param: browser; type: refptr_diff
   DCHECK(browser);
-  if (!browser) {
+  if (!browser)
     return;
-  }
 
   // Execute
   CefPermissionHandlerCppToC::Get(self)->OnDismissPermissionPrompt(
-      CefBrowserCToCpp_Wrap(browser), prompt_id, result);
+      CefBrowserCToCpp::Wrap(browser), prompt_id, result);
 }
 
 }  // namespace
@@ -160,7 +148,7 @@ CefRefPtr<CefPermissionHandler> CefCppToCRefCounted<
     CefPermissionHandler,
     cef_permission_handler_t>::UnwrapDerived(CefWrapperType type,
                                              cef_permission_handler_t* s) {
-  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  NOTREACHED() << "Unexpected class type: " << type;
   return nullptr;
 }
 

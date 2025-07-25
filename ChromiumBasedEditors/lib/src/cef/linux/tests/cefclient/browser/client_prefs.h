@@ -11,7 +11,8 @@
 #include "include/cef_base.h"
 #include "include/cef_preference.h"
 
-namespace client::prefs {
+namespace client {
+namespace prefs {
 
 // Register global preferences with default values.
 void RegisterGlobalPreferences(CefRawPtr<CefPreferenceRegistrar> registrar);
@@ -22,6 +23,7 @@ bool LoadWindowRestorePreferences(cef_show_state_t& show_state,
 bool SaveWindowRestorePreferences(cef_show_state_t show_state,
                                   std::optional<CefRect> dip_bounds);
 
-}  // namespace client::prefs
+}  // namespace prefs
+}  // namespace client
 
 #endif  // CEF_TESTS_CEFCLIENT_BROWSER_CLIENT_PREFS_H_

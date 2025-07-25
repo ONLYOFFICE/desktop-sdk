@@ -10,7 +10,7 @@
 namespace {
 
 struct MyObject {
-  explicit MyObject(int val = 0) : member(val) {}
+  MyObject(int val = 0) : member(val) {}
   int member;
 };
 
@@ -24,9 +24,9 @@ typedef CefBrowserInfoMap<int, MyObject, MyObjectTraits> MyObjectMap;
 
 class MyVisitor : public MyObjectMap::Visitor {
  public:
-  explicit MyVisitor(bool remove = false,
-                     int remove_browser_id = 0,
-                     InfoIdType remove_info_id = 0)
+  MyVisitor(bool remove = false,
+            int remove_browser_id = 0,
+            InfoIdType remove_info_id = 0)
       : remove_(remove),
         remove_browser_id_(remove_browser_id),
         remove_info_id_(remove_info_id) {}
@@ -680,7 +680,7 @@ namespace {
 
 class MyHeapObject {
  public:
-  explicit MyHeapObject(int* destroy_ct) : destroy_ct_(destroy_ct) {}
+  MyHeapObject(int* destroy_ct) : destroy_ct_(destroy_ct) {}
   ~MyHeapObject() { (*destroy_ct_)++; }
 
  private:

@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,16 +33,12 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=524f53a1411035ac6050853e6c52f17f9bd4eaa9$
+// $hash=c82f41d81f5afa5ed6995693e012c13d2a609f88$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_CONTEXT_MENU_HANDLER_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_CONTEXT_MENU_HANDLER_CAPI_H_
 #pragma once
-
-#if defined(BUILDING_CEF_SHARED)
-#error This file cannot be included DLL-side
-#endif
 
 #include "include/capi/cef_base_capi.h"
 #include "include/capi/cef_browser_capi.h"
@@ -57,8 +53,6 @@ struct _cef_context_menu_params_t;
 
 ///
 /// Callback structure used for continuation of custom context menu display.
-///
-/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_run_context_menu_callback_t {
   ///
@@ -83,8 +77,6 @@ typedef struct _cef_run_context_menu_callback_t {
 ///
 /// Callback structure used for continuation of custom quick menu display.
 ///
-/// NOTE: This struct is allocated DLL-side.
-///
 typedef struct _cef_run_quick_menu_callback_t {
   ///
   /// Base structure.
@@ -108,8 +100,6 @@ typedef struct _cef_run_quick_menu_callback_t {
 ///
 /// Implement this structure to handle context menu events. The functions of
 /// this structure will be called on the UI thread.
-///
-/// NOTE: This struct is allocated client-side.
 ///
 typedef struct _cef_context_menu_handler_t {
   ///
@@ -217,8 +207,6 @@ typedef struct _cef_context_menu_handler_t {
 ///
 /// Provides information about the context menu state. The functions of this
 /// structure can only be accessed on browser process the UI thread.
-///
-/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_context_menu_params_t {
   ///

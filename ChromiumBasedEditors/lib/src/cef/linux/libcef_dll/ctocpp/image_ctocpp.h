@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=fff2fcd904e4e50f8ffd37a91591fdf5636ebe6b$
+// $hash=13afe421110fa07e94c1724d21302b018a71a633$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_IMAGE_CTOCPP_H_
@@ -70,8 +70,5 @@ class CefImageCToCpp
                                       int& pixel_width,
                                       int& pixel_height) override;
 };
-
-constexpr auto CefImageCToCpp_Wrap = CefImageCToCpp::Wrap;
-constexpr auto CefImageCToCpp_Unwrap = CefImageCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_IMAGE_CTOCPP_H_

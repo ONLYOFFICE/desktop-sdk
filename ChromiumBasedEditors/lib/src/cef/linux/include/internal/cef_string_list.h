@@ -41,7 +41,7 @@ extern "C" {
 ///
 /// CEF string maps are a set of key/value string pairs.
 ///
-typedef struct _cef_string_list_t* cef_string_list_t;
+typedef void* cef_string_list_t;
 
 ///
 /// Allocate a new string map.

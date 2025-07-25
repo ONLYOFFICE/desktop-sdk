@@ -25,8 +25,6 @@ class ClientDialogHandlerGtk : public CefDialogHandler,
                     const CefString& title,
                     const CefString& default_file_path,
                     const std::vector<CefString>& accept_filters,
-                    const std::vector<CefString>& accept_extensions,
-                    const std::vector<CefString>& accept_descriptions,
                     CefRefPtr<CefFileDialogCallback> callback) override;
 
   // CefJSDialogHandler methods.
@@ -50,8 +48,6 @@ class ClientDialogHandlerGtk : public CefDialogHandler,
     CefString title;
     CefString default_file_path;
     std::vector<CefString> accept_filters;
-    std::vector<CefString> accept_extensions;
-    std::vector<CefString> accept_descriptions;
     CefRefPtr<CefFileDialogCallback> callback;
   };
   void OnFileDialogContinue(const OnFileDialogParams& params,

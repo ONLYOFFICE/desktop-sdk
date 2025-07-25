@@ -4,10 +4,11 @@
 
 #include "tests/cefclient/browser/browser_window_std_gtk.h"
 
-#include <X11/Xlib.h>
 #include <gdk/gdk.h>
 #include <gdk/gdkx.h>
 #include <gtk/gtk.h>
+
+#include <X11/Xlib.h>
 #undef Success     // Definition conflicts with cef_message_router.h
 #undef RootWindow  // Definition conflicts with root_window.h
 
@@ -37,9 +38,8 @@ void SetXWindowVisible(XDisplay* xdisplay, ::Window xwindow, bool visible) {
   Atom atoms[3];
   int result =
       XInternAtoms(xdisplay, const_cast<char**>(kAtoms), 3, false, atoms);
-  if (!result) {
+  if (!result)
     NOTREACHED();
-  }
 
   if (!visible) {
     // Set the hidden property state value.
@@ -105,10 +105,6 @@ void BrowserWindowStdGtk::CreateBrowser(
   CefWindowInfo window_info;
   window_info.SetAsChild(GetXWindowForWidget(parent_handle), rect);
 
-  if (delegate_->UseAlloyStyle()) {
-    window_info.runtime_style = CEF_RUNTIME_STYLE_ALLOY;
-  }
-
   CefBrowserHost::CreateBrowser(window_info, client_handler_,
                                 client_handler_->startup_url(), settings,
                                 extra_info, request_context);
@@ -122,11 +118,6 @@ void BrowserWindowStdGtk::GetPopupConfig(CefWindowHandle temp_handle,
 
   // The window will be properly sized after the browser is created.
   windowInfo.SetAsChild(temp_handle, CefRect());
-
-  if (delegate_->UseAlloyStyle()) {
-    windowInfo.runtime_style = CEF_RUNTIME_STYLE_ALLOY;
-  }
-
   client = client_handler_;
 }
 
@@ -183,9 +174,8 @@ void BrowserWindowStdGtk::SetBounds(int x, int y, size_t width, size_t height) {
 void BrowserWindowStdGtk::SetFocus(bool focus) {
   REQUIRE_MAIN_THREAD();
 
-  if (browser_) {
+  if (browser_)
     browser_->GetHost()->SetFocus(focus);
-  }
 }
 
 ClientWindowHandle BrowserWindowStdGtk::GetWindowHandle() const {

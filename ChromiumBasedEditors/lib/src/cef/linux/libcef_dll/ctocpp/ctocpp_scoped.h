@@ -8,7 +8,6 @@
 
 #include "include/base/cef_logging.h"
 #include "include/capi/cef_base_capi.h"
-#include "include/cef_api_hash.h"
 #include "include/cef_base.h"
 #include "libcef_dll/wrapper_types.h"
 
@@ -76,6 +75,8 @@ class CefCToCppScoped : public BaseName {
   // If returning the structure across the DLL boundary use Unwrap() instead.
   StructName* GetStruct() const {
     WrapperStruct* wrapperStruct = GetWrapperStruct(this);
+    // Verify that the wrapper offset was calculated correctly.
+    DCHECK_EQ(kWrapperType, wrapperStruct->type_);
     return wrapperStruct->struct_;
   }
 
@@ -84,8 +85,7 @@ class CefCToCppScoped : public BaseName {
   // from the other side.
   struct WrapperStruct;
 
-  static WrapperStruct* GetWrapperStruct(const BaseName* obj,
-                                         bool require_exact_type = true);
+  static WrapperStruct* GetWrapperStruct(const BaseName* obj);
 
   // Unwrap as the derived type.
   static StructName* UnwrapDerivedOwn(CefWrapperType type,
@@ -106,21 +106,8 @@ struct CefCToCppScoped<ClassName, BaseName, StructName>::WrapperStruct {
 template <class ClassName, class BaseName, class StructName>
 CefOwnPtr<BaseName> CefCToCppScoped<ClassName, BaseName, StructName>::Wrap(
     StructName* s) {
-  if (!s) {
-    return nullptr;
-  }
-
-  const auto size = reinterpret_cast<cef_base_ref_counted_t*>(s)->size;
-  if (size != sizeof(StructName)) {
-    LOG(FATAL) << "Cannot wrap struct with invalid base.size value (got "
-               << size << ", expected " << sizeof(StructName)
-               << ") at API version "
-#if defined(WRAPPING_CEF_SHARED)
-               << CEF_API_VERSION;
-#else
-               << cef_api_version();
-#endif
-  }
+  if (!s)
+    return CefOwnPtr<BaseName>();
 
   // Wrap their structure with the CefCToCpp object.
   WrapperStruct* wrapperStruct = new WrapperStruct;
@@ -133,18 +120,15 @@ CefOwnPtr<BaseName> CefCToCppScoped<ClassName, BaseName, StructName>::Wrap(
 template <class ClassName, class BaseName, class StructName>
 StructName* CefCToCppScoped<ClassName, BaseName, StructName>::UnwrapOwn(
     CefOwnPtr<BaseName> c) {
-  if (!c.get()) {
+  if (!c.get())
     return nullptr;
-  }
 
-  WrapperStruct* wrapperStruct =
-      GetWrapperStruct(c.get(), /*require_exact_type=*/false);
+  WrapperStruct* wrapperStruct = GetWrapperStruct(c.get());
 
   // If the type does not match this object then we need to unwrap as the
   // derived type.
-  if (wrapperStruct->type_ != kWrapperType) {
+  if (wrapperStruct->type_ != kWrapperType)
     return UnwrapDerivedOwn(wrapperStruct->type_, std::move(c));
-  }
 
   StructName* orig_struct = wrapperStruct->struct_;
 
@@ -165,18 +149,15 @@ StructName* CefCToCppScoped<ClassName, BaseName, StructName>::UnwrapOwn(
 template <class ClassName, class BaseName, class StructName>
 StructName* CefCToCppScoped<ClassName, BaseName, StructName>::UnwrapRaw(
     CefRawPtr<BaseName> c) {
-  if (!c) {
+  if (!c)
     return nullptr;
-  }
 
-  WrapperStruct* wrapperStruct =
-      GetWrapperStruct(c, /*require_exact_type=*/false);
+  WrapperStruct* wrapperStruct = GetWrapperStruct(c);
 
   // If the type does not match this object then we need to unwrap as the
   // derived type.
-  if (wrapperStruct->type_ != kWrapperType) {
+  if (wrapperStruct->type_ != kWrapperType)
     return UnwrapDerivedRaw(wrapperStruct->type_, c);
-  }
 
   // Return the original structure.
   return wrapperStruct->struct_;
@@ -187,6 +168,8 @@ NO_SANITIZE("cfi-icall")
 void CefCToCppScoped<ClassName, BaseName, StructName>::operator delete(
     void* ptr) {
   WrapperStruct* wrapperStruct = GetWrapperStruct(static_cast<BaseName*>(ptr));
+  // Verify that the wrapper offset was calculated correctly.
+  DCHECK_EQ(kWrapperType, wrapperStruct->type_);
 
   // May be NULL if UnwrapOwn() was called.
   cef_base_scoped_t* base =
@@ -194,9 +177,8 @@ void CefCToCppScoped<ClassName, BaseName, StructName>::operator delete(
 
   // If we own the object (base->del != NULL) then notify the other side that
   // the object has been deleted.
-  if (base && base->del) {
+  if (base && base->del)
     base->del(base);
-  }
 
   // Delete the wrapper structure without executing ~CefCToCppScoped() an
   // additional time.
@@ -206,20 +188,12 @@ void CefCToCppScoped<ClassName, BaseName, StructName>::operator delete(
 template <class ClassName, class BaseName, class StructName>
 typename CefCToCppScoped<ClassName, BaseName, StructName>::WrapperStruct*
 CefCToCppScoped<ClassName, BaseName, StructName>::GetWrapperStruct(
-    const BaseName* obj,
-    bool require_exact_type) {
+    const BaseName* obj) {
   // Offset using the WrapperStruct size instead of individual member sizes to
   // avoid problems due to platform/compiler differences in structure padding.
-  auto* wrapperStruct = reinterpret_cast<WrapperStruct*>(
+  return reinterpret_cast<WrapperStruct*>(
       reinterpret_cast<char*>(const_cast<BaseName*>(obj)) -
       (sizeof(WrapperStruct) - sizeof(ClassName)));
-
-  if (require_exact_type) {
-    // Verify that the wrapper offset was calculated correctly.
-    CHECK_EQ(kWrapperType, wrapperStruct->type_);
-  }
-
-  return wrapperStruct;
 }
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_CTOCPP_SCOPED_H_

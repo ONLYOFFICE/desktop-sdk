@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,16 +33,12 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=69993ccc7b3ffcb04b8a892d6607a005b6e8dcc9$
+// $hash=46508464579e797d4684f4a7facdb39f9bdb312b$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_PRINT_SETTINGS_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_PRINT_SETTINGS_CAPI_H_
 #pragma once
-
-#if defined(BUILDING_CEF_SHARED)
-#error This file cannot be included DLL-side
-#endif
 
 #include "include/capi/cef_base_capi.h"
 
@@ -52,8 +48,6 @@ extern "C" {
 
 ///
 /// Structure representing print settings.
-///
-/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_print_settings_t {
   ///

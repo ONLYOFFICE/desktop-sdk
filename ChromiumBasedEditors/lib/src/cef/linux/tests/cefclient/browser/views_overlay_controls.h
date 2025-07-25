@@ -17,7 +17,7 @@ namespace client {
 // Implements window overlay controls that receive absolute positioning on top
 // of the browser view. All methods must be called on the browser process UI
 // thread.
-class ViewsOverlayControls : public CefButtonDelegate, public CefPanelDelegate {
+class ViewsOverlayControls : public CefButtonDelegate {
  public:
   enum class Command {
     kMinimize = 1,
@@ -25,7 +25,7 @@ class ViewsOverlayControls : public CefButtonDelegate, public CefPanelDelegate {
     kClose,
   };
 
-  ViewsOverlayControls(bool with_window_buttons, bool use_bottom_controls);
+  ViewsOverlayControls();
 
   void Initialize(CefRefPtr<CefWindow> window,
                   CefRefPtr<CefMenuButton> menu_button,
@@ -43,9 +43,6 @@ class ViewsOverlayControls : public CefButtonDelegate, public CefPanelDelegate {
   // CefButtonDelegate methods:
   void OnButtonPressed(CefRefPtr<CefButton> button) override;
 
-  // CefViewDelegate methods:
-  void OnThemeChanged(CefRefPtr<CefView> view) override;
-
   CefRefPtr<CefLabelButton> CreateButton(Command command);
 
   void MaybeUpdateMaximizeButton();
@@ -56,8 +53,6 @@ class ViewsOverlayControls : public CefButtonDelegate, public CefPanelDelegate {
   // Window control buttons.
   CefRefPtr<CefPanel> panel_;
   CefRefPtr<CefOverlayController> panel_controller_;
-  const bool with_window_buttons_;
-  const bool use_bottom_controls_;
 
   // Location bar.
   CefRefPtr<CefView> location_bar_;

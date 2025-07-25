@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=2a681818ff8bd9b9c990e52191f71e85afba5268$
+// $hash=0985ec29d8f7825abf5542f7bff3a0477431fc1a$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_REQUEST_CONTEXT_HANDLER_CPPTOC_H_
@@ -34,10 +34,5 @@ class CefRequestContextHandlerCppToC
   CefRequestContextHandlerCppToC();
   virtual ~CefRequestContextHandlerCppToC();
 };
-
-constexpr auto CefRequestContextHandlerCppToC_Wrap =
-    CefRequestContextHandlerCppToC::Wrap;
-constexpr auto CefRequestContextHandlerCppToC_Unwrap =
-    CefRequestContextHandlerCppToC::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_REQUEST_CONTEXT_HANDLER_CPPTOC_H_

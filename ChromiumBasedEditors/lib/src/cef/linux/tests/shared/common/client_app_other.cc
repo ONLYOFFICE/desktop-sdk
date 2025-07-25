@@ -8,6 +8,6 @@
 
 namespace client {
 
-ClientAppOther::ClientAppOther() = default;
+ClientAppOther::ClientAppOther() {}
 
 }  // namespace client

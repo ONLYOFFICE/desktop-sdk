@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2023 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,16 +33,12 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=2adcd54540e4dd2e4488e5325e1c93c9fcab7084$
+// $hash=9b523fbf312a8a0cb1c743a3c8aca7bc9cc22bbc$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_APP_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_APP_CAPI_H_
 #pragma once
-
-#if defined(BUILDING_CEF_SHARED)
-#error This file cannot be included DLL-side
-#endif
 
 #include "include/capi/cef_base_capi.h"
 #include "include/capi/cef_browser_process_handler_capi.h"
@@ -60,8 +56,6 @@ struct _cef_app_t;
 ///
 /// Implement this structure to provide handler implementations. Methods will be
 /// called by the process and/or thread indicated.
-///
-/// NOTE: This struct is allocated client-side.
 ///
 typedef struct _cef_app_t {
   ///
@@ -97,9 +91,11 @@ typedef struct _cef_app_t {
       struct _cef_scheme_registrar_t* registrar);
 
   ///
-  /// Return the handler for resource bundle events. If no handler is returned
-  /// resources will be loaded from pack files. This function is called by the
-  /// browser and render processes on multiple threads.
+  /// Return the handler for resource bundle events. If
+  /// cef_settings_t.pack_loading_disabled is true (1) a handler must be
+  /// returned. If no handler is returned resources will be loaded from pack
+  /// files. This function is called by the browser and render processes on
+  /// multiple threads.
   ///
   struct _cef_resource_bundle_handler_t*(
       CEF_CALLBACK* get_resource_bundle_handler)(struct _cef_app_t* self);
@@ -137,13 +133,10 @@ CEF_EXPORT int cef_execute_process(const cef_main_args_t* args,
 
 ///
 /// This function should be called on the main application thread to initialize
-/// the CEF browser process. The |application| parameter may be NULL. Returns
-/// true (1) if initialization succeeds. Returns false (0) if initialization
-/// fails or if early exit is desired (for example, due to process singleton
-/// relaunch behavior). If this function returns false (0) then the application
-/// should exit immediately without calling any other CEF functions except,
-/// optionally, CefGetExitCode. The |windows_sandbox_info| parameter is only
-/// used on Windows and may be NULL (see cef_sandbox_win.h for details).
+/// the CEF browser process. The |application| parameter may be NULL. A return
+/// value of true (1) indicates that it succeeded and false (0) indicates that
+/// it failed. The |windows_sandbox_info| parameter is only used on Windows and
+/// may be NULL (see cef_sandbox_win.h for details).
 ///
 CEF_EXPORT int cef_initialize(const cef_main_args_t* args,
                               const struct _cef_settings_t* settings,
@@ -151,20 +144,8 @@ CEF_EXPORT int cef_initialize(const cef_main_args_t* args,
                               void* windows_sandbox_info);
 
 ///
-/// This function can optionally be called on the main application thread after
-/// CefInitialize to retrieve the initialization exit code. When CefInitialize
-/// returns true (1) the exit code will be 0 (CEF_RESULT_CODE_NORMAL_EXIT).
-/// Otherwise, see cef_resultcode_t for possible exit code values including
-/// browser process initialization errors and normal early exit conditions (such
-/// as CEF_RESULT_CODE_NORMAL_EXIT_PROCESS_NOTIFIED for process singleton
-/// relaunch behavior).
-///
-CEF_EXPORT int cef_get_exit_code(void);
-
-///
 /// This function should be called on the main application thread to shut down
-/// the CEF browser process before the application exits. Do not call any other
-/// CEF functions after calling this function.
+/// the CEF browser process before the application exits.
 ///
 CEF_EXPORT void cef_shutdown(void);
 

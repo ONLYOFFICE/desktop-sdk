@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=1a393f7897c3eda0c2c9eeba31bea222c7510ee4$
+// $hash=89ee6916279697654c516137ee56f5cbef07e4c0$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_PREFERENCE_MANAGER_CTOCPP_H_
@@ -43,16 +43,6 @@ class CefPreferenceManagerCToCpp
   bool SetPreference(const CefString& name,
                      CefRefPtr<CefValue> value,
                      CefString& error) override;
-#if CEF_API_ADDED(13401)
-  CefRefPtr<CefRegistration> AddPreferenceObserver(
-      const CefString& name,
-      CefRefPtr<CefPreferenceObserver> observer) override;
-#endif
 };
-
-constexpr auto CefPreferenceManagerCToCpp_Wrap =
-    CefPreferenceManagerCToCpp::Wrap;
-constexpr auto CefPreferenceManagerCToCpp_Unwrap =
-    CefPreferenceManagerCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_PREFERENCE_MANAGER_CTOCPP_H_

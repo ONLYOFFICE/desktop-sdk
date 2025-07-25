@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=8da0d82efcc234e26d7eeb9e2dcdf8b490a580dc$
+// $hash=9fa8897ee5081b7cd95a6cb791fb69871f61406e$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_TEST_TRANSLATOR_TEST_REF_PTR_LIBRARY_CTOCPP_H_
@@ -38,10 +38,5 @@ class CefTranslatorTestRefPtrLibraryCToCpp
   int GetValue() override;
   void SetValue(int value) override;
 };
-
-constexpr auto CefTranslatorTestRefPtrLibraryCToCpp_Wrap =
-    CefTranslatorTestRefPtrLibraryCToCpp::Wrap;
-constexpr auto CefTranslatorTestRefPtrLibraryCToCpp_Unwrap =
-    CefTranslatorTestRefPtrLibraryCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_TEST_TRANSLATOR_TEST_REF_PTR_LIBRARY_CTOCPP_H_

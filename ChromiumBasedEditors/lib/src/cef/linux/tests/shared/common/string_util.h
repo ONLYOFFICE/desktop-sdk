@@ -7,7 +7,6 @@
 #pragma once
 
 #include <string>
-#include <vector>
 
 namespace client {
 
@@ -18,9 +17,6 @@ std::string AsciiStrToLower(const std::string& str);
 std::string AsciiStrReplace(const std::string& str,
                             const std::string& from,
                             const std::string& to);
-
-// Split |str| at character |delim|.
-std::vector<std::string> AsciiStrSplit(const std::string& str, char delim);
 
 }  // namespace client
 

@@ -10,7 +10,8 @@
 
 #include "include/cef_scheme.h"
 
-namespace client::scheme_test {
+namespace client {
+namespace scheme_test {
 
 // Register the custom scheme name/type. This must be done in all processes.
 // See browser/scheme_test.h for creation/registration of the custom scheme
@@ -18,6 +19,7 @@ namespace client::scheme_test {
 // client_app_delegates_common.cc.
 void RegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar);
 
-}  // namespace client::scheme_test
+}  // namespace scheme_test
+}  // namespace client
 
 #endif  // CEF_TESTS_CEFCLIENT_COMMON_SCHEME_TEST_COMMON_H_

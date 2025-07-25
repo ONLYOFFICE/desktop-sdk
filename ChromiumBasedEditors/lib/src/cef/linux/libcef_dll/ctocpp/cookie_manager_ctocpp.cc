@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,11 +9,10 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=68b9138b3ae01d8f5e32c63ba28b709754390e58$
+// $hash=879e1a8bba4d19e69d680005d0da9328713cf0bc$
 //
 
 #include "libcef_dll/ctocpp/cookie_manager_ctocpp.h"
-
 #include "libcef_dll/cpptoc/completion_callback_cpptoc.h"
 #include "libcef_dll/cpptoc/cookie_visitor_cpptoc.h"
 #include "libcef_dll/cpptoc/delete_cookies_callback_cpptoc.h"
@@ -29,11 +28,11 @@ CefRefPtr<CefCookieManager> CefCookieManager::GetGlobalManager(
   // Unverified params: callback
 
   // Execute
-  auto* _retval = cef_cookie_manager_get_global_manager(
-      CefCompletionCallbackCppToC_Wrap(callback));
+  cef_cookie_manager_t* _retval = cef_cookie_manager_get_global_manager(
+      CefCompletionCallbackCppToC::Wrap(callback));
 
   // Return type: refptr_same
-  return CefCookieManagerCToCpp_Wrap(_retval);
+  return CefCookieManagerCToCpp::Wrap(_retval);
 }
 
 // VIRTUAL METHODS - Body may be edited by hand.
@@ -41,22 +40,20 @@ CefRefPtr<CefCookieManager> CefCookieManager::GetGlobalManager(
 NO_SANITIZE("cfi-icall")
 bool CefCookieManagerCToCpp::VisitAllCookies(
     CefRefPtr<CefCookieVisitor> visitor) {
-  auto* _struct = GetStruct();
-  if (!_struct->visit_all_cookies) {
+  cef_cookie_manager_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, visit_all_cookies))
     return false;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: visitor; type: refptr_diff
   DCHECK(visitor.get());
-  if (!visitor.get()) {
+  if (!visitor.get())
     return false;
-  }
 
   // Execute
-  int _retval =
-      _struct->visit_all_cookies(_struct, CefCookieVisitorCppToC_Wrap(visitor));
+  int _retval = _struct->visit_all_cookies(
+      _struct, CefCookieVisitorCppToC::Wrap(visitor));
 
   // Return type: bool
   return _retval ? true : false;
@@ -67,28 +64,25 @@ bool CefCookieManagerCToCpp::VisitUrlCookies(
     const CefString& url,
     bool includeHttpOnly,
     CefRefPtr<CefCookieVisitor> visitor) {
-  auto* _struct = GetStruct();
-  if (!_struct->visit_url_cookies) {
+  cef_cookie_manager_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, visit_url_cookies))
     return false;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: url; type: string_byref_const
   DCHECK(!url.empty());
-  if (url.empty()) {
+  if (url.empty())
     return false;
-  }
   // Verify param: visitor; type: refptr_diff
   DCHECK(visitor.get());
-  if (!visitor.get()) {
+  if (!visitor.get())
     return false;
-  }
 
   // Execute
   int _retval =
       _struct->visit_url_cookies(_struct, url.GetStruct(), includeHttpOnly,
-                                 CefCookieVisitorCppToC_Wrap(visitor));
+                                 CefCookieVisitorCppToC::Wrap(visitor));
 
   // Return type: bool
   return _retval ? true : false;
@@ -99,23 +93,21 @@ bool CefCookieManagerCToCpp::SetCookie(
     const CefString& url,
     const CefCookie& cookie,
     CefRefPtr<CefSetCookieCallback> callback) {
-  auto* _struct = GetStruct();
-  if (!_struct->set_cookie) {
+  cef_cookie_manager_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, set_cookie))
     return false;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: url; type: string_byref_const
   DCHECK(!url.empty());
-  if (url.empty()) {
+  if (url.empty())
     return false;
-  }
   // Unverified params: callback
 
   // Execute
   int _retval = _struct->set_cookie(_struct, url.GetStruct(), &cookie,
-                                    CefSetCookieCallbackCppToC_Wrap(callback));
+                                    CefSetCookieCallbackCppToC::Wrap(callback));
 
   // Return type: bool
   return _retval ? true : false;
@@ -126,10 +118,9 @@ bool CefCookieManagerCToCpp::DeleteCookies(
     const CefString& url,
     const CefString& cookie_name,
     CefRefPtr<CefDeleteCookiesCallback> callback) {
-  auto* _struct = GetStruct();
-  if (!_struct->delete_cookies) {
+  cef_cookie_manager_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, delete_cookies))
     return false;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -138,7 +129,7 @@ bool CefCookieManagerCToCpp::DeleteCookies(
   // Execute
   int _retval =
       _struct->delete_cookies(_struct, url.GetStruct(), cookie_name.GetStruct(),
-                              CefDeleteCookiesCallbackCppToC_Wrap(callback));
+                              CefDeleteCookiesCallbackCppToC::Wrap(callback));
 
   // Return type: bool
   return _retval ? true : false;
@@ -147,18 +138,17 @@ bool CefCookieManagerCToCpp::DeleteCookies(
 NO_SANITIZE("cfi-icall")
 bool CefCookieManagerCToCpp::FlushStore(
     CefRefPtr<CefCompletionCallback> callback) {
-  auto* _struct = GetStruct();
-  if (!_struct->flush_store) {
+  cef_cookie_manager_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, flush_store))
     return false;
-  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Unverified params: callback
 
   // Execute
-  int _retval =
-      _struct->flush_store(_struct, CefCompletionCallbackCppToC_Wrap(callback));
+  int _retval = _struct->flush_store(
+      _struct, CefCompletionCallbackCppToC::Wrap(callback));
 
   // Return type: bool
   return _retval ? true : false;
@@ -178,7 +168,7 @@ CefCToCppRefCounted<CefCookieManagerCToCpp,
                     CefCookieManager,
                     cef_cookie_manager_t>::UnwrapDerived(CefWrapperType type,
                                                          CefCookieManager* c) {
-  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  NOTREACHED() << "Unexpected class type: " << type;
   return nullptr;
 }
 

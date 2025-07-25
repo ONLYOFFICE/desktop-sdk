@@ -33,18 +33,7 @@
 
 #include <stddef.h>
 
-#ifdef __clang__
-// On macOS, <uchar.h> is only available with Xcode 14.3+.
-#if __has_include(<uchar.h>)
-#include <uchar.h>
-#elif !defined(__cplusplus)
-#include <stdint.h>
-typedef uint_least16_t char16_t;
-#endif
-#else
-#include <uchar.h>
-#endif
-
+#include "include/base/cef_basictypes.h"
 #include "include/internal/cef_export.h"
 
 ///
@@ -81,9 +70,9 @@ typedef struct _cef_string_utf8_t {
 } cef_string_utf8_t;
 
 typedef struct _cef_string_utf16_t {
-  char16_t* str;
+  char16* str;
   size_t length;
-  void (*dtor)(char16_t* str);
+  void (*dtor)(char16* str);
 } cef_string_utf16_t;
 
 ///
@@ -100,7 +89,7 @@ CEF_EXPORT int cef_string_utf8_set(const char* src,
                                    size_t src_len,
                                    cef_string_utf8_t* output,
                                    int copy);
-CEF_EXPORT int cef_string_utf16_set(const char16_t* src,
+CEF_EXPORT int cef_string_utf16_set(const char16* src,
                                     size_t src_len,
                                     cef_string_utf16_t* output,
                                     int copy);
@@ -152,14 +141,14 @@ CEF_EXPORT int cef_string_utf8_to_wide(const char* src,
 CEF_EXPORT int cef_string_wide_to_utf16(const wchar_t* src,
                                         size_t src_len,
                                         cef_string_utf16_t* output);
-CEF_EXPORT int cef_string_utf16_to_wide(const char16_t* src,
+CEF_EXPORT int cef_string_utf16_to_wide(const char16* src,
                                         size_t src_len,
                                         cef_string_wide_t* output);
 
 CEF_EXPORT int cef_string_utf8_to_utf16(const char* src,
                                         size_t src_len,
                                         cef_string_utf16_t* output);
-CEF_EXPORT int cef_string_utf16_to_utf8(const char16_t* src,
+CEF_EXPORT int cef_string_utf16_to_utf8(const char16* src,
                                         size_t src_len,
                                         cef_string_utf8_t* output);
 
@@ -209,10 +198,10 @@ CEF_EXPORT void cef_string_userfree_utf16_free(cef_string_userfree_utf16_t str);
 /// may change the length of the string in some cases.
 ///
 
-CEF_EXPORT int cef_string_utf16_to_lower(const char16_t* src,
+CEF_EXPORT int cef_string_utf16_to_lower(const char16* src,
                                          size_t src_len,
                                          cef_string_utf16_t* output);
-CEF_EXPORT int cef_string_utf16_to_upper(const char16_t* src,
+CEF_EXPORT int cef_string_utf16_to_upper(const char16* src,
                                          size_t src_len,
                                          cef_string_utf16_t* output);
 

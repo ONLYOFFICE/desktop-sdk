@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=d0de072d44054ce6d6a8982190bccfff720922f1$
+// $hash=e54619e16a7a8f21cdeeb4ddfcedf3504c258d35$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_VIEWS_LABEL_BUTTON_CTOCPP_H_
@@ -99,11 +99,9 @@ class CefLabelButtonCToCpp : public CefCToCppRefCounted<CefLabelButtonCToCpp,
   void SetFocusable(bool focusable) override;
   bool IsFocusable() override;
   bool IsAccessibilityFocusable() override;
-  bool HasFocus() override;
   void RequestFocus() override;
   void SetBackgroundColor(cef_color_t color) override;
   cef_color_t GetBackgroundColor() override;
-  cef_color_t GetThemeColor(int color_id) override;
   bool ConvertPointToScreen(CefPoint& point) override;
   bool ConvertPointFromScreen(CefPoint& point) override;
   bool ConvertPointToWindow(CefPoint& point) override;
@@ -111,8 +109,5 @@ class CefLabelButtonCToCpp : public CefCToCppRefCounted<CefLabelButtonCToCpp,
   bool ConvertPointToView(CefRefPtr<CefView> view, CefPoint& point) override;
   bool ConvertPointFromView(CefRefPtr<CefView> view, CefPoint& point) override;
 };
-
-constexpr auto CefLabelButtonCToCpp_Wrap = CefLabelButtonCToCpp::Wrap;
-constexpr auto CefLabelButtonCToCpp_Unwrap = CefLabelButtonCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_VIEWS_LABEL_BUTTON_CTOCPP_H_

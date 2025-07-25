@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=1010b5eaa1ac77f9bd7f8a4682963539c2963811$
+// $hash=c6a25a7ceb346f562302df398305f3d09a7c587d$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_JSDIALOG_HANDLER_CPPTOC_H_
@@ -34,9 +34,5 @@ class CefJSDialogHandlerCppToC
   CefJSDialogHandlerCppToC();
   virtual ~CefJSDialogHandlerCppToC();
 };
-
-constexpr auto CefJSDialogHandlerCppToC_Wrap = CefJSDialogHandlerCppToC::Wrap;
-constexpr auto CefJSDialogHandlerCppToC_Unwrap =
-    CefJSDialogHandlerCppToC::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_JSDIALOG_HANDLER_CPPTOC_H_

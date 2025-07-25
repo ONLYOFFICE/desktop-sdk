@@ -1,4 +1,4 @@
-// Copyright (c) 2025 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2023 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=8dc743ed7abc7dff5e750a75d106e90251233535$
+// $hash=a81732545889a9d401edb7f5540e0762bb787526$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_POST_DATA_ELEMENT_CTOCPP_H_
@@ -44,9 +44,5 @@ class CefPostDataElementCToCpp
   size_t GetBytesCount() override;
   size_t GetBytes(size_t size, void* bytes) override;
 };
-
-constexpr auto CefPostDataElementCToCpp_Wrap = CefPostDataElementCToCpp::Wrap;
-constexpr auto CefPostDataElementCToCpp_Unwrap =
-    CefPostDataElementCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_POST_DATA_ELEMENT_CTOCPP_H_
