@@ -696,6 +696,27 @@ SOURCES += \
 #    $$CEF_SRC_PATH/include/internal/cef_types_osr.h
 
 core_windows {
+HEADERS += \
+    $$CEF_SRC_PATH/include/internal/cef_types_win.h \
+    $$CEF_SRC_PATH/include/internal/cef_win.h \
+    $$CEF_SRC_PATH/include/internal/cef_app_win.h \
+    $$CEF_SRC_PATH/include/cef_sandbox_win.h \
+    $$CEF_SRC_PATH/include/wrapper/cef_library_loader.h \
+    $$CEF_SRC_PATH/include/wrapper/cef_certificate_util_win.h \
+    $$CEF_SRC_PATH/include/wrapper/cef_util_win.h
+SOURCES += \
+    $$CEF_SRC_PATH/libcef_dll/wrapper/cef_scoped_library_loader_win.cc \
+    $$CEF_SRC_PATH/libcef_dll/wrapper/cef_util_win.cc \
+    $$CEF_SRC_PATH/libcef_dll/wrapper/cef_certificate_util_win.cc
+}
+
+core_linux {
+HEADERS += \
+    $$CEF_SRC_PATH/include/internal/cef_linux.h \
+    $$CEF_SRC_PATH/include/internal/cef_types_linux.h
+}
+
+core_windows {
 
 DEFINES += NOMINMAX _WINDOWS
 

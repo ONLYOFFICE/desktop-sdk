@@ -20,7 +20,6 @@ HEADERS += \
     $$CEF_SRC_PATH/tests/cefclient/browser/views_menu_bar.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/client_prefs.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/views_overlay_controls.h \
-    $$CEF_SRC_PATH/tests/cefclient/browser/temp_window_x11.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/window_test_runner.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/window_test_runner_views.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/main_context_impl.h \
@@ -28,25 +27,19 @@ HEADERS += \
     $$CEF_SRC_PATH/tests/cefclient/browser/temp_window.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/urlrequest_test.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/default_client_handler.h \
-    $$CEF_SRC_PATH/tests/cefclient/browser/window_test_runner_gtk.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/task_manager_test.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/views_window.h \
-    $$CEF_SRC_PATH/tests/cefclient/browser/util_gtk.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/views_overlay_browser.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/hang_test.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/client_types.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/scheme_test.h \
-    $$CEF_SRC_PATH/tests/cefclient/browser/root_window_gtk.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/client_handler_std.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/preferences_test.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/views_style.h \
-    $$CEF_SRC_PATH/tests/cefclient/browser/dialog_handler_gtk.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/response_filter_test.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/root_window.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/dialog_test.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/client_browser.h \
-    $$CEF_SRC_PATH/tests/cefclient/browser/main_message_loop_multithreaded_gtk.h \
-    $$CEF_SRC_PATH/tests/cefclient/browser/browser_window_std_gtk.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/root_window_views.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/root_window_manager.h \
     $$CEF_SRC_PATH/tests/cefclient/browser/server_test.h \
@@ -72,8 +65,6 @@ SOURCES += \
     $$CEF_SRC_PATH/tests/shared/browser/main_message_loop_external_pump.cc \
     $$CEF_SRC_PATH/tests/shared/browser/main_message_loop.cc \
     $$CEF_SRC_PATH/tests/shared/browser/geometry_util.cc \
-    $$CEF_SRC_PATH/tests/shared/browser/resource_util_posix.cc \
-    $$CEF_SRC_PATH/tests/shared/browser/main_message_loop_external_pump_linux.cc \
     $$CEF_SRC_PATH/tests/shared/browser/main_message_loop_std.cc \
     $$CEF_SRC_PATH/tests/shared/browser/file_util.cc \
     $$CEF_SRC_PATH/tests/shared/browser/client_app_browser.cc \
@@ -86,13 +77,10 @@ SOURCES += \
     $$CEF_SRC_PATH/tests/cefclient/browser/test_runner.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/views_window.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/main_context_impl.cc \
-    $$CEF_SRC_PATH/tests/cefclient/browser/main_message_loop_multithreaded_gtk.cc \
-    $$CEF_SRC_PATH/tests/cefclient/browser/dialog_handler_gtk.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/client_app_delegates_browser.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/views_overlay_controls.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/client_prefs.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/root_window_create.cc \
-    $$CEF_SRC_PATH/tests/cefclient/browser/root_window_gtk.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/response_filter_test.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/client_handler_std.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/binding_test.cc \
@@ -107,23 +95,17 @@ SOURCES += \
     $$CEF_SRC_PATH/tests/cefclient/browser/client_handler.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/root_window_views.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/default_client_handler.cc \
-    $$CEF_SRC_PATH/tests/cefclient/browser/browser_window_std_gtk.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/main_context.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/views_overlay_browser.cc \
-    $$CEF_SRC_PATH/tests/cefclient/browser/temp_window_x11.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/image_cache.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/scheme_test.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/config_test.cc \
-    $$CEF_SRC_PATH/tests/cefclient/browser/main_context_impl_posix.cc \
-    $$CEF_SRC_PATH/tests/cefclient/browser/util_gtk.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/dialog_test.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/root_window_manager.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/task_manager_test.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/media_router_test.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/urlrequest_test.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/preferences_test.cc \
-    $$CEF_SRC_PATH/tests/cefclient/browser/window_test_runner_gtk.cc \
-    $$CEF_SRC_PATH/tests/cefclient/browser/resource_util_linux.cc \
     $$CEF_SRC_PATH/tests/cefclient/browser/bytes_write_handler.cc \
     $$CEF_SRC_PATH/tests/cefclient/renderer/performance_test_tests.cc \
     $$CEF_SRC_PATH/tests/cefclient/renderer/ipc_performance_test.cc \
@@ -133,17 +115,87 @@ SOURCES += \
 #HEADERS += \
 #    $$CEF_SRC_PATH/tests/cefclient/browser/osr_renderer.h \
 #    $$CEF_SRC_PATH/tests/cefclient/browser/osr_renderer_settings.h \
-#    $$CEF_SRC_PATH/tests/cefclient/browser/browser_window_osr_gtk.h \
 #    $$CEF_SRC_PATH/tests/cefclient/browser/client_handler_osr.h \
-#    $$CEF_SRC_PATH/tests/cefclient/browser/osr_dragdrop_events.h \
-#    $$CEF_SRC_PATH/tests/cefclient/browser/print_handler_gtk.h
+#    $$CEF_SRC_PATH/tests/cefclient/browser/osr_dragdrop_events.h
 
 #SOURCES += \
 #    $$CEF_SRC_PATH/tests/cefclient/common/client_app_delegates_common.cc \
-#    $$CEF_SRC_PATH/tests/cefclient/cefclient_gtk.cc \
 #    $$CEF_SRC_PATH/tests/cefclient/browser/client_handler_osr.cc \
-#    $$CEF_SRC_PATH/tests/cefclient/browser/browser_window_osr_gtk.cc \
 #    $$CEF_SRC_PATH/tests/cefclient/browser/osr_renderer.cc \
-#    $$CEF_SRC_PATH/tests/cefclient/browser/print_handler_gtk.cc \
 #    $$CEF_SRC_PATH/tests/cefclient/renderer/client_app_delegates_renderer.cc
+
+core_windows {
+HEADERS += \
+    $$CEF_SRC_PATH/tests/shared/browser/util_win.h \
+    $$CEF_SRC_PATH/tests/cefclient/browser/browser_window_std_win.h \
+    $$CEF_SRC_PATH/tests/cefclient/browser/window_test_runner_win.h \
+    $$CEF_SRC_PATH/tests/cefclient/browser/temp_window_win.h \
+    $$CEF_SRC_PATH/tests/cefclient/browser/main_message_loop_multithreaded_win.h \
+    $$CEF_SRC_PATH/tests/cefclient/browser/root_window_win.h
+SOURCES += \
+    $$CEF_SRC_PATH/tests/shared/browser/main_message_loop_external_pump_win.cc \
+    $$CEF_SRC_PATH/tests/shared/browser/resource_util_win.cc \
+    $$CEF_SRC_PATH/tests/shared/browser/util_win.cc \
+    $$CEF_SRC_PATH/tests/cefclient/browser/resource_util_win_idmap.cc \
+    $$CEF_SRC_PATH/tests/cefclient/browser/main_message_loop_multithreaded_win.cc \
+    $$CEF_SRC_PATH/tests/cefclient/browser/root_window_win.cc \
+    $$CEF_SRC_PATH/tests/cefclient/browser/browser_window_std_win.cc \
+    $$CEF_SRC_PATH/tests/cefclient/browser/main_context_impl_win.cc \
+    $$CEF_SRC_PATH/tests/cefclient/browser/window_test_runner_win.cc \
+    $$CEF_SRC_PATH/tests/cefclient/browser/temp_window_win.cc
+#HEADERS += \
+#    $$CEF_SRC_PATH/tests/cefclient/browser/osr_render_handler_win_gl.h \
+#    $$CEF_SRC_PATH/tests/cefclient/browser/osr_render_handler_win_d3d11.h \
+#    $$CEF_SRC_PATH/tests/cefclient/browser/osr_dragdrop_win.h \
+#    $$CEF_SRC_PATH/tests/cefclient/browser/osr_accessibility_helper.h \
+#    $$CEF_SRC_PATH/tests/cefclient/browser/osr_window_win.h \
+#    $$CEF_SRC_PATH/tests/cefclient/browser/osr_accessibility_node.h \
+#    $$CEF_SRC_PATH/tests/cefclient/browser/osr_d3d11_win.h \
+#    $$CEF_SRC_PATH/tests/cefclient/browser/osr_render_handler_win.h \
+#    $$CEF_SRC_PATH/tests/cefclient/browser/browser_window_osr_win.h \
+#    $$CEF_SRC_PATH/tests/cefclient/browser/osr_ime_handler_win.h
+#SOURCES += \
+#    $$CEF_SRC_PATH/tests/cefclient/cefclient_win.cc \
+#    $$CEF_SRC_PATH/tests/cefclient/browser/browser_window_osr_win.cc \
+#    $$CEF_SRC_PATH/tests/cefclient/browser/osr_d3d11_win.cc \
+#    $$CEF_SRC_PATH/tests/cefclient/browser/osr_accessibility_helper.cc \
+#    $$CEF_SRC_PATH/tests/cefclient/browser/osr_accessibility_node.cc \
+#    $$CEF_SRC_PATH/tests/cefclient/browser/osr_render_handler_win_d3d11.cc \
+#    $$CEF_SRC_PATH/tests/cefclient/browser/osr_dragdrop_win.cc \
+#    $$CEF_SRC_PATH/tests/cefclient/browser/osr_ime_handler_win.cc \
+#    $$CEF_SRC_PATH/tests/cefclient/browser/osr_render_handler_win_gl.cc \
+#    $$CEF_SRC_PATH/tests/cefclient/browser/osr_accessibility_node_win.cc \
+#    $$CEF_SRC_PATH/tests/cefclient/browser/osr_window_win.cc \
+#    $$CEF_SRC_PATH/tests/cefclient/browser/osr_render_handler_win.cc
+}
+
+core_linux {
+HEADERS += \
+    $$CEF_SRC_PATH/tests/cefclient/browser/temp_window_x11.h \
+    $$CEF_SRC_PATH/tests/cefclient/browser/window_test_runner_gtk.h \
+    $$CEF_SRC_PATH/tests/cefclient/browser/util_gtk.h \
+    $$CEF_SRC_PATH/tests/cefclient/browser/root_window_gtk.h \
+    $$CEF_SRC_PATH/tests/cefclient/browser/dialog_handler_gtk.h \
+    $$CEF_SRC_PATH/tests/cefclient/browser/main_message_loop_multithreaded_gtk.h \
+    $$CEF_SRC_PATH/tests/cefclient/browser/browser_window_std_gtk.h
+SOURCES += \
+    $$CEF_SRC_PATH/tests/shared/browser/resource_util_posix.cc \
+    $$CEF_SRC_PATH/tests/shared/browser/main_message_loop_external_pump_linux.cc \
+    $$CEF_SRC_PATH/tests/cefclient/browser/main_message_loop_multithreaded_gtk.cc \
+    $$CEF_SRC_PATH/tests/cefclient/browser/dialog_handler_gtk.cc \
+    $$CEF_SRC_PATH/tests/cefclient/browser/root_window_gtk.cc \
+    $$CEF_SRC_PATH/tests/cefclient/browser/browser_window_std_gtk.cc \
+    $$CEF_SRC_PATH/tests/cefclient/browser/temp_window_x11.cc \
+    $$CEF_SRC_PATH/tests/cefclient/browser/main_context_impl_posix.cc \
+    $$CEF_SRC_PATH/tests/cefclient/browser/util_gtk.cc \
+    $$CEF_SRC_PATH/tests/cefclient/browser/window_test_runner_gtk.cc \
+    $$CEF_SRC_PATH/tests/cefclient/browser/resource_util_linux.cc
+#HEADERS += \
+#    $$CEF_SRC_PATH/tests/cefclient/browser/browser_window_osr_gtk.h \
+#    $$CEF_SRC_PATH/tests/cefclient/browser/print_handler_gtk.h
+#SOURCES += \
+#    $$CEF_SRC_PATH/tests/cefclient/cefclient_gtk.cc \
+#    $$CEF_SRC_PATH/tests/cefclient/browser/browser_window_osr_gtk.cc \
+#    $$CEF_SRC_PATH/tests/cefclient/browser/print_handler_gtk.cc
+}
 
