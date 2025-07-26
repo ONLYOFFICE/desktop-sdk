@@ -5690,7 +5690,7 @@ virtual void OnBrowserCreated(CefRefPtr<CefBrowser> browser) OVERRIDE {}
 virtual bool UseViews() const OVERRIDE {return false;}
 virtual bool UseAlloyStyle() const OVERRIDE {return false;}
 virtual void OnContentsBounds(const CefRect& new_bounds) OVERRIDE {return;}
-virtual const void* GetTypeKey() const {return 0;}
+virtual const void* GetTypeKey() const OVERRIDE {return 0;}
 
 #endif // CEF_VERSION_138
 

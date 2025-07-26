@@ -283,7 +283,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 	m_pInternal->m_pManager = pManager;
 
 #if defined(WIN32) && !defined(CEF_VERSION_138)
-	// Enable High-DPI support on Windows 7 or newer.
+	// Enable High-DPI support on Windows 7 or newer. New version enabled by default.
 	CefEnableHighDPISupport();
 #endif
 
