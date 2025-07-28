@@ -216,7 +216,7 @@ core_mac {
 	# add button icons to framework's bundle resources
 	ICONS_DIR = $$PWD/../videoplayerlib/icons
 	PLAYER_BUTTON_ICONS.files = $$files($$ICONS_DIR/*)
-	PLAYER_BUTTON_ICONS.path = Versions/$$MAJOR_VERSION/Resources
+	PLAYER_BUTTON_ICONS.path = Versions/$$QMAKE_FRAMEWORK_VERSION/Resources
 	QMAKE_BUNDLE_DATA += PLAYER_BUTTON_ICONS
 }
 
