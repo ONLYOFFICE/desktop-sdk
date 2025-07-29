@@ -96,7 +96,7 @@ namespace NSSupport
 
 			id = static_cast<int64_t>(std::stoll(other));
 		}
-		FrameIdType& operator=(const std::string& other)
+		CFrameIdImpl& operator=(const std::string& other)
 		{
 			// just in case
 			static_assert(std::is_same<FrameIdType, int64_t>::value,

@@ -6098,7 +6098,7 @@ catch (err) {}\n\
                             #ifdef CEF_VERSION_138
 							bool is_frame_not_same = frameId.ToString() != i.ToString();
                             #else
-							bool is_frame_not_same = frameId.GetId() != i
+							bool is_frame_not_same = frameId.GetId() != i;
                             #endif // CEF_VERSION_138
 							CefRefPtr<CefFrame> _frameOP = NSSupport::GetFrame(browser, i);
 							if (_frameOP && is_frame_not_same && (_frameOP->GetName().ToString().find("iframe_asc.{") == 0))
