@@ -269,6 +269,7 @@ namespace NSCommon
 
 #ifdef CEF_SIMPLE_URL_REQUEST
 #include "include/cef_urlrequest.h"
+#include "support.h"
 
 class CCefView_Private;
 namespace NSRequest
@@ -2103,7 +2104,7 @@ public:
 				{
 					pEvent->AddRef();
 
-					pData->put_FrameId((*it).FrameId);
+					pData->put_FrameId((*it).FrameId.ToString());
 					pView->Apply(pEvent);
 				}
 			}

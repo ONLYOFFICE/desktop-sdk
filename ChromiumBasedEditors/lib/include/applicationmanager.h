@@ -201,7 +201,7 @@ public:
 	// spell check
 	void StartSpellChecker();
 	void StopSpellChecker();
-	void SpellCheck(const int& nEditorId, const std::string& sTask, NSSupport::CFrameId nId);
+	void SpellCheck(const int& nEditorId, const std::string& sTask,std::string frameId);
 
 	// keyboard layout check
 	void StartKeyboardChecker();

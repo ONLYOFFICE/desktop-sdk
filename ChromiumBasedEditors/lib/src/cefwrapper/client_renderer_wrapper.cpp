@@ -5373,7 +5373,7 @@ return this.split(str).join(newStr);\
 			}
 			else if (sMessageName == "spell_check_response")
 			{
-				NSSupport::CFrameId frameId = message->GetArgumentList()->GetString(1).ToString();
+				NSSupport::CFrameId frameId = message->GetArgumentList()->GetString(1);
 				CefRefPtr<CefFrame> _frame = NSSupport::GetFrame(browser, frameId.GetId());
 				if (_frame)
 				{
@@ -5455,7 +5455,7 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 			}
 			else if (sMessageName == "on_load_js")
 			{
-				NSSupport::CFrameId frameId = message->GetArgumentList()->GetString(2).ToString();
+				NSSupport::CFrameId frameId = message->GetArgumentList()->GetString(2);
 				CefRefPtr<CefFrame> _frame = NSSupport::GetFrame(browser, frameId.GetId());
 				if (_frame)
 				{
@@ -5879,7 +5879,7 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 					_frame = GetEditorFrame(browser);
 				else
 				{
-					NSSupport::CFrameId frameId = sId.ToString();
+					NSSupport::CFrameId frameId = sId;
 					_frame = NSSupport::GetFrame(browser, frameId.GetId());
 				}
 				bool bIsMulti = message->GetArgumentList()->GetBool(1);
@@ -5930,7 +5930,7 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 					_frame = GetEditorFrame(browser);
 				else
 				{
-					NSSupport::CFrameId frameId = sId.ToString();
+					NSSupport::CFrameId frameId = sId;
 					_frame = _frame = NSSupport::GetFrame(browser, frameId.GetId());
 				}
 
@@ -6018,7 +6018,7 @@ _editor && _editor.local_sendEvent && _editor.local_sendEvent(\"asc_onError\", \
 			}
 			else if (sMessageName == "file_get_hash_callback")
 			{
-				NSSupport::CFrameId frameId = message->GetArgumentList()->GetString(1).ToString();
+				NSSupport::CFrameId frameId = message->GetArgumentList()->GetString(1);
 				CefRefPtr<CefFrame> _frame = NSSupport::GetFrame(browser, frameId.GetId());
 
 				if (_frame)
@@ -6072,7 +6072,7 @@ delete window.AscDesktopEditor.isSendSystemMessage;\n\
 				}
 				else
 				{
-					NSSupport::CFrameId frameId = message->GetArgumentList()->GetString(1).ToString();
+					NSSupport::CFrameId frameId = message->GetArgumentList()->GetString(1);
 					CefRefPtr<CefFrame> _frame = NSSupport::GetFrame(browser, frameId.GetId());
 
 					if (_frame)
@@ -6213,7 +6213,7 @@ window.AscDesktopEditor.openFileCryptCallback = null;\n\
 				if (_frame)
 				{
 					int nType = message->GetArgumentList()->GetInt(0);
-					NSSupport::CFrameId frameId = message->GetArgumentList()->GetString(1).ToString();
+					NSSupport::CFrameId frameId = message->GetArgumentList()->GetString(1);
 					if (frameId.IsEmpty())
 					{
 						CefRefPtr<CefFrame> _frameID = NSSupport::GetFrame(browser, frameId.GetId());
@@ -6281,7 +6281,7 @@ delete window[\"crypto_images_map\"][_url];\n\
 			{
 				int nCount = message->GetArgumentList()->GetSize();
 				int nIndex = 0;
-				NSSupport::CFrameId frameId = message->GetArgumentList()->GetString(nIndex++).ToString();
+				NSSupport::CFrameId frameId = message->GetArgumentList()->GetString(nIndex++);
 				CefRefPtr<CefFrame> _frame = NSSupport::GetFrame(browser, frameId.GetId());
 				if (!_frame)
 					_frame = GetEditorFrame(browser);
@@ -6310,7 +6310,7 @@ delete window[\"crypto_images_map\"][_url];\n\
 			else if (sMessageName == "set_crypto_mode")
 			{
 				int nError = message->GetArgumentList()->GetInt(0);
-				NSSupport::CFrameId frameId = message->GetArgumentList()->GetString(1).ToString();
+				NSSupport::CFrameId frameId = message->GetArgumentList()->GetString(1);
 				CefRefPtr<CefFrame> _frame = NSSupport::GetFrame(browser, frameId.GetId());
 				if (_frame)
 					_frame->ExecuteJavaScript(
@@ -6319,7 +6319,7 @@ delete window[\"crypto_images_map\"][_url];\n\
 			}
 			else if (sMessageName == "get_advanced_encrypted_data")
 			{
-				NSSupport::CFrameId frameId = message->GetArgumentList()->GetString(0).ToString();
+				NSSupport::CFrameId frameId = message->GetArgumentList()->GetString(0);
 				CefRefPtr<CefFrame> _frame = NSSupport::GetFrame(browser, frameId.GetId());
 
 				std::string sRet = message->GetArgumentList()->GetString(1);
@@ -6333,7 +6333,7 @@ delete window[\"crypto_images_map\"][_url];\n\
 			}
 			else if (sMessageName == "set_advanced_encrypted_data")
 			{
-				NSSupport::CFrameId frameId = message->GetArgumentList()->GetString(0).ToString();
+				NSSupport::CFrameId frameId = message->GetArgumentList()->GetString(0);
 				CefRefPtr<CefFrame> _frame = NSSupport::GetFrame(browser, frameId.GetId());
 
 				std::string sRet = message->GetArgumentList()->GetString(1);
@@ -6412,7 +6412,7 @@ delete window[\"crypto_images_map\"][_url];\n\
 			else if (sMessageName == "on_convert_local_file")
 			{
 				std::string sFolder = message->GetArgumentList()->GetString(0).ToString();
-				NSSupport::CFrameId frameId = message->GetArgumentList()->GetString(1).ToString();
+				NSSupport::CFrameId frameId = message->GetArgumentList()->GetString(1);
 				NSStringUtils::string_replaceA(sFolder, "\\", "\\\\");
 				NSStringUtils::string_replaceA(sFolder, "\"", "\\\"");
 

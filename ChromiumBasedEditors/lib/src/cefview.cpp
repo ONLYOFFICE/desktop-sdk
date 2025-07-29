@@ -2477,12 +2477,12 @@ public:
 		}
 		else if (message_name == "spell_check_task")
 		{
-			NSSupport::CFrameId argFrameId = args->GetString(2).ToString();
+			NSSupport::CFrameId argFrameId = args->GetString(2);
 
 			// задача для проверки орфографии
 			m_pParent->GetAppManager()->SpellCheck(args->GetInt(0),
 												   args->GetString(1).ToString(),
-			                                       argFrameId);
+			                                       argFrameId.ToString());
 			return true;
 		}
 		else if (message_name == "create_editor_api")
@@ -3616,7 +3616,7 @@ public:
 		{
 			std::wstring sUrl1 = args->GetString(0).ToWString();
 			std::wstring sUrl2 = args->GetString(1).ToWString();
-			NSSupport::CFrameId frameId = args->GetString(2).ToString();
+			NSSupport::CFrameId frameId = args->GetString(2);
 
 			if (sUrl2.empty() && ((0 == sUrl1.find(L"image")) || (0 == sUrl1.find(L"display"))))
 			{
@@ -3666,7 +3666,7 @@ public:
 
 			int nIndex = 0;
 			int nParams = args->GetInt(nIndex++);
-			NSSupport::CFrameId frameId = args->GetString(nIndex++).ToString();
+			NSSupport::CFrameId frameId = args->GetString(nIndex++);
 			m_pParent->m_pInternal->m_nDownloadedFilesFrameId = frameId;
 
 			while (nIndex < nCount)
@@ -3779,7 +3779,7 @@ public:
 			std::string sPass = args->GetString(0).ToString();
 			int nMode = args->GetInt(1);
 			bool bIsCallback = args->GetBool(2);
-			NSSupport::CFrameId frameId = args->GetString(3).ToString();
+			NSSupport::CFrameId frameId = args->GetString(3);
 
 			if (!bIsCallback)
 			{
@@ -4334,7 +4334,7 @@ public:
 
 		std::wstring sFilePath = args->GetString(0).ToWString();
 		int nFileType = args->GetInt(1);
-		NSSupport::CFrameId frameId = args->GetString(2).ToString();
+		NSSupport::CFrameId frameId = args->GetString(2);
 
 		if (0 == sFilePath.find(L"file:///"))
 		{
@@ -6899,7 +6899,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 
 		CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("spell_check_response");
 		message->GetArgumentList()->SetString(0, pData->get_Result());
-		message->GetArgumentList()->SetString(1, pData->get_FrameId().ToString());
+		message->GetArgumentList()->SetString(1, pData->get_FrameId());
 		SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
 		break;
 	}
@@ -7124,7 +7124,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 		CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_load_js");
 		message->GetArgumentList()->SetString(0, pData->get_Destination());
 		message->GetArgumentList()->SetString(1, pData->get_Url());
-		message->GetArgumentList()->SetString(2, pData->get_FrameId().ToString());
+		message->GetArgumentList()->SetString(2, pData->get_FrameId());
 		SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
 		break;
 	}

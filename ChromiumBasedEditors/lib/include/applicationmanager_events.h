@@ -155,7 +155,6 @@
 
 #include <string>
 #include <vector>
-#include "frame_id_wrapper.h"
 
 namespace NSEditorApi
 {
@@ -670,9 +669,9 @@ namespace NSEditorApi
 	class CAscSpellCheckType : public IMenuEventDataBase
 	{
 	private:
-		std::string           m_sResult;
-		int                   m_nEditorId;
-		NSSupport::CFrameId   m_nFrameId{};
+		std::string m_sResult;
+		int         m_nEditorId;
+		std::string m_nFrameId{};
 
 	public:
 		CAscSpellCheckType()
@@ -686,11 +685,11 @@ namespace NSEditorApi
 		LINK_PROPERTY_STRINGA(Result)
 		LINK_PROPERTY_INT(EditorId)
 
-		inline NSSupport::CFrameId get_FrameId()
+		inline std::string get_FrameId()
 		{
 			return m_nFrameId;
 		}
-		inline void put_FrameId(const NSSupport::CFrameId& newVal)
+		inline void put_FrameId(const std::string& newVal)
 		{
 			m_nFrameId = newVal;
 		}
@@ -912,7 +911,7 @@ namespace NSEditorApi
 		std::wstring m_sUrl;
 		std::wstring m_sDestination;
 		int m_nId;
-		NSSupport::CFrameId m_nFrameId{};
+		std::string m_nFrameId{};
 
 	public:
 		CAscEditorScript()
@@ -927,11 +926,11 @@ namespace NSEditorApi
 		LINK_PROPERTY_STRING(Url)
 		LINK_PROPERTY_STRING(Destination)
 
-		inline NSSupport::CFrameId get_FrameId()
+		inline std::string get_FrameId()
 		{
 			return m_nFrameId;
 		}
-		inline void put_FrameId(const NSSupport::CFrameId& newVal)
+		inline void put_FrameId(const std::string& newVal)
 		{
 			m_nFrameId = newVal;
 		}

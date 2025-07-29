@@ -35,7 +35,6 @@
 
 #include <string>
 #include "base.h"
-#include "frame_id_wrapper.h"
 
 class CAscApplicationManager;
 class CAscSpellChecker_Private;
@@ -50,7 +49,7 @@ public:
 
 public:
     void SetApplicationManager(CAscApplicationManager* );
-	void AddTask(const int& nEditorId, const std::string& sTask, NSSupport::CFrameId nId); // utf8
+	void AddTask(const int& nEditorId, const std::string& sTask, std::string frameId); // utf8
 
     void Init(const std::wstring& sDirectory, const std::wstring& sUserDirectory = L"");
 

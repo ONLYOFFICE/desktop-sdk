@@ -102,7 +102,6 @@ SOURCES += \
 HEADERS += \
     $$PWD/include/base.h \
     $$PWD/include/applicationmanager.h \
-    $$PWD/include/frame_id_wrapper.h \
     $$PWD/include/keyboardchecker.h \
     $$PWD/include/spellchecker.h \
     $$PWD/include/cefapplication.h \

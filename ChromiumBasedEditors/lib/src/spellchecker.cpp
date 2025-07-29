@@ -380,7 +380,7 @@ public:
 
 	std::list<std::string>         m_arTask;
 	std::list<int>                 m_arTaskParent;
-	std::list<NSSupport::CFrameId> m_arTaskParentFrameId;
+	std::list<std::string>         m_arTaskParentFrameId;
 
 	std::wstring                m_sUserDictionaries;
 	Hunhandle*                  m_pUserAllDict;
@@ -421,7 +421,7 @@ public:
 		m_oCS.DeleteCriticalSection();
 	}
 
-	void AddTask(const int& nParentId, const std::string& sTask, NSSupport::CFrameId nId)
+	void AddTask(const int& nParentId, const std::string& sTask, std::string frameId)
 	{
 		CTemporaryCS oCS(&m_oCS);
 
@@ -430,7 +430,7 @@ public:
 			// нужно удалить все задачи для этого редактора
 			std::list<std::string>::iterator iterTask = m_arTask.begin();
 			std::list<int>::iterator iterTaskParent = m_arTaskParent.begin();
-			std::list<NSSupport::CFrameId>::iterator iterTaskParentFrame = m_arTaskParentFrameId.begin();
+			std::list<std::string>::iterator iterTaskParentFrame = m_arTaskParentFrameId.begin();
 
 			while (iterTaskParent != m_arTaskParent.end())
 			{
@@ -451,13 +451,13 @@ public:
 
 		m_arTask.push_back(sTask);
 		m_arTaskParent.push_back(nParentId);
-		m_arTaskParentFrameId.push_back(nId);
+		m_arTaskParentFrameId.push_back(frameId);
 
 #ifdef DEBUG_SPELL_CHECKER
 		FILE* ff = fopen(DEBUG_SPELL_CHECKER_PATH, "a+");
 		fprintf(ff, "add_task: %d, task: ", m_nAddTaskCounter++);
 		fprintf(ff, sTask.c_str());
-		fprintf(ff, ", parent_id: %d, id: %d\n", nParentId, nId);
+		// fprintf(ff, ", parent_id: %d, id: %d\n", nParentId, nId);
 		fclose(ff);
 #endif
 	}
@@ -847,10 +847,10 @@ void CAscSpellChecker::SetApplicationManager(CAscApplicationManager* pManager)
 	m_pInternal->m_pManager = pManager;
 }
 
-void CAscSpellChecker::AddTask(const int& nEditorId, const std::string& sTask, NSSupport::CFrameId nId)
+void CAscSpellChecker::AddTask(const int& nEditorId, const std::string& sTask, std::string frameId)
 {
 	if (m_pInternal->IsRunned())
-		m_pInternal->AddTask(nEditorId, sTask, nId);
+		m_pInternal->AddTask(nEditorId, sTask, frameId);
 }
 
 void CAscSpellChecker::Start()
