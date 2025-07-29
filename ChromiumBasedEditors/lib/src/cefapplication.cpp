@@ -303,6 +303,14 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 
 #if defined(_LINUX) && !defined(_MAC)
 	CefMainArgs main_args(argc, argv_copy);
+	CefSettings settings;
+
+// in new versions log should be used with ScopedEarlySupport before cef is initialized.
+#ifdef CEF_VERSION_138
+	cef::logging::ScopedEarlySupport::Config config;
+	config.min_log_level = cef::logging::LOG_INFO;
+
+	{ // ScopedEarlySupport
 
 	// Parse command-line arguments.
 	CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
@@ -387,8 +395,6 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 
 	// LOGGER_STRING("CApplicationCEF::Init_CEF::main");
 
-	CefSettings settings;
-
 	std::wstring sHelperPath = NSFile::GetProcessDirectory();
 #ifdef _MAC
 	sHelperPath += L"/../Frameworks/editors_helper.app/Contents/MacOS";
@@ -406,13 +412,6 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 #if !defined(CEF_USE_SANDBOX)
 	settings.no_sandbox = true;
 #endif
-
-// in new versions log should be used with ScopedEarlySupport before cef is initialized.
-#ifdef CEF_VERSION_138
-    cef::logging::ScopedEarlySupport::Config config;
-    config.min_log_level = cef::logging::LOG_INFO;
-
-	{ // ScopedEarlySupport
 		cef::logging::ScopedEarlySupport scopred_early_support(config);
 #endif // CEF_VERSION_138
 
