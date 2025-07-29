@@ -294,6 +294,8 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 	char** argv_copy = m_pInternal->argc_copy->array();
 #endif
 
+	CefSettings settings;
+
 #ifdef WIN32
 	CefMainArgs main_args((HINSTANCE)GetModuleHandle(NULL));
 	// Parse command-line arguments.
@@ -303,14 +305,6 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 
 #if defined(_LINUX) && !defined(_MAC)
 	CefMainArgs main_args(argc, argv_copy);
-	CefSettings settings;
-
-// in new versions log should be used with ScopedEarlySupport before cef is initialized.
-#ifdef CEF_VERSION_138
-	cef::logging::ScopedEarlySupport::Config config;
-	config.min_log_level = cef::logging::LOG_INFO;
-
-	{ // ScopedEarlySupport
 
 	// Parse command-line arguments.
 	CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
@@ -325,6 +319,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 	command_line->InitFromArgv(argc, argv);
 
 #endif
+
 
 	client::ClientApp::ProcessType process_type = client::ClientApp::GetProcessType(command_line);
 
@@ -412,8 +407,6 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 #if !defined(CEF_USE_SANDBOX)
 	settings.no_sandbox = true;
 #endif
-		cef::logging::ScopedEarlySupport scopred_early_support(config);
-#endif // CEF_VERSION_138
 
 #if defined(CEF_VERSION_ABOVE_102)
 		m_pInternal->context = std::make_unique<client::MainContextImpl>(command_line, false);
@@ -422,10 +415,6 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 #else
 		m_pInternal->context = new client::MainContextImpl(command_line, false);
 #endif
-
-#ifdef CEF_VERSION_138
-	} // end of ScopedEarlySupport
-#endif // CEF_VERSION_138
 
 	m_pInternal->context->PopulateSettings(&settings);
 
