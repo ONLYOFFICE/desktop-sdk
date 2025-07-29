@@ -295,6 +295,15 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 #endif
 
 	CefSettings settings;
+	CefMainArgs _main_args;
+
+	// in new versions log should be used with ScopedEarlySupport before cef is initialized.
+#ifdef CEF_VERSION_138
+	cef::logging::ScopedEarlySupport::Config config;
+	config.min_log_level = cef::logging::LOG_INFO;
+
+	{ // ScopedEarlySupport
+#endif // CEF_VERSION_138
 
 #ifdef WIN32
 	CefMainArgs main_args((HINSTANCE)GetModuleHandle(NULL));
@@ -480,8 +489,13 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 
 	settings.persist_session_cookies = true;
 
+	_main_args = main_args;
+
+#ifdef CEF_VERSION_138
+	} // ScopedEarlySupport
+#endif // CEF_VERSION_138
 	// Initialize CEF.
-	m_pInternal->context->Initialize(main_args, settings, m_pInternal->m_app.get(), NULL);
+	m_pInternal->context->Initialize(_main_args, settings, m_pInternal->m_app.get(), NULL);
 	asc_scheme::InitScheme(pManager);
 
 	// LOGGER_STRING("CApplicationCEF::Init_CEF::initialize");
