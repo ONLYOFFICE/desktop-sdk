@@ -89,6 +89,7 @@ HEADERS += \
     $$PWD/src/cefwrapper/client_renderer_params.h \
     $$PWD/src/cefwrapper/client_scheme.h \
     $$PWD/src/fileconverter.h \
+    $$PWD/src/support.h \
 	$$PWD/src/x2t.h \
 	$$PWD/src/templatesmanager.h \
     $$PWD/src/cefwrapper/client_resource_handler_async.h
@@ -101,6 +102,7 @@ SOURCES += \
 HEADERS += \
     $$PWD/include/base.h \
     $$PWD/include/applicationmanager.h \
+    $$PWD/include/frame_id_wrapper.h \
     $$PWD/include/keyboardchecker.h \
     $$PWD/include/spellchecker.h \
     $$PWD/include/cefapplication.h \

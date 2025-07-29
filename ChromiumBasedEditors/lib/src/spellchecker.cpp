@@ -378,9 +378,9 @@ public:
 
 	NSCriticalSection::CRITICAL_SECTION m_oCS;
 
-	std::list<std::string>      m_arTask;
-	std::list<int>              m_arTaskParent;
-	std::list<int_64_type>      m_arTaskParentFrameId;
+	std::list<std::string>         m_arTask;
+	std::list<int>                 m_arTaskParent;
+	std::list<NSSupport::CFrameId> m_arTaskParentFrameId;
 
 	std::wstring                m_sUserDictionaries;
 	Hunhandle*                  m_pUserAllDict;
@@ -421,7 +421,7 @@ public:
 		m_oCS.DeleteCriticalSection();
 	}
 
-	void AddTask(const int& nParentId, const std::string& sTask, int_64_type nId)
+	void AddTask(const int& nParentId, const std::string& sTask, NSSupport::CFrameId nId)
 	{
 		CTemporaryCS oCS(&m_oCS);
 
@@ -430,7 +430,7 @@ public:
 			// нужно удалить все задачи для этого редактора
 			std::list<std::string>::iterator iterTask = m_arTask.begin();
 			std::list<int>::iterator iterTaskParent = m_arTaskParent.begin();
-			std::list<int_64_type>::iterator iterTaskParentFrame = m_arTaskParentFrameId.begin();
+			std::list<NSSupport::CFrameId>::iterator iterTaskParentFrame = m_arTaskParentFrameId.begin();
 
 			while (iterTaskParent != m_arTaskParent.end())
 			{
@@ -478,7 +478,7 @@ public:
 		int nParentId = *m_arTaskParent.begin();
 		m_arTaskParent.pop_front();
 
-		int_64_type nFrameId = *m_arTaskParentFrameId.begin();
+		auto nFrameId = *m_arTaskParentFrameId.begin();
 		m_arTaskParentFrameId.pop_front();
 
 		m_oCS.Leave();
@@ -847,7 +847,7 @@ void CAscSpellChecker::SetApplicationManager(CAscApplicationManager* pManager)
 	m_pInternal->m_pManager = pManager;
 }
 
-void CAscSpellChecker::AddTask(const int& nEditorId, const std::string& sTask, int_64_type nId)
+void CAscSpellChecker::AddTask(const int& nEditorId, const std::string& sTask, NSSupport::CFrameId nId)
 {
 	if (m_pInternal->IsRunned())
 		m_pInternal->AddTask(nEditorId, sTask, nId);

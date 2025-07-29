@@ -270,7 +270,7 @@ void CAscApplicationManager::StopSpellChecker()
 	m_pInternal->m_oSpellChecker.End();
 }
 
-void CAscApplicationManager::SpellCheck(const int& nEditorId, const std::string& sTask, int_64_type nId)
+void CAscApplicationManager::SpellCheck(const int& nEditorId, const std::string& sTask, NSSupport::CFrameId nId)
 {
 	m_pInternal->m_oSpellChecker.AddTask(nEditorId, sTask, nId);
 }

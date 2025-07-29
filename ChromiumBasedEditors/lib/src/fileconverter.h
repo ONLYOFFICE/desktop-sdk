@@ -1224,7 +1224,7 @@ public:
 class CTextDocxConverter : public NSThreads::CBaseThread
 {
 public:
-	int_64_type m_nFrameId;
+	NSSupport::CFrameId m_nFrameId{};
 
 	std::wstring m_sData;
 	std::wstring m_sPassword;
@@ -1238,7 +1238,6 @@ public:
 public:
 	CTextDocxConverter() : NSThreads::CBaseThread()
 	{
-		m_nFrameId = 0;
 		m_pManager = NULL;
 		m_bIsToDocx = false;
 		m_pCallback = NULL;
@@ -1372,7 +1371,7 @@ public:
 
 		m_pCallback->CTextDocxConverterCallback_OnConvert(m_sData);
 
-		m_nFrameId = 0;
+		m_nFrameId.Clear();
 		m_sData = L"";
 		m_sPassword = L"";
 
@@ -1520,7 +1519,7 @@ public:
 	std::wstring m_sSrcFilePath;
 	int m_nOutputFormat;
 	std::string m_sOutputParams;
-	int_64_type m_nFrameId;
+	NSSupport::CFrameId m_nFrameId;
 
 	bool m_bIsApplyChanges;
 	std::wstring m_sDstFilePath;
@@ -1535,7 +1534,6 @@ public:
 		m_nOutputFormat = -1;
 		m_pEvents = NULL;
 		m_pManager = NULL;
-		m_nFrameId = 0;
 		m_bIsApplyChanges = false;
 	}
 

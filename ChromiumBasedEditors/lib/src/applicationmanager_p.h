@@ -267,63 +267,6 @@ namespace NSCommon
 	};
 }
 
-namespace NSArgumentList
-{
-	static int64_t GetInt64(CefRefPtr<CefListValue> args, const int& index)
-	{
-		std::string tmp = args->GetString(index).ToString();
-		return (int64_t)std::stoll(tmp);
-	}
-	static bool SetInt64(CefRefPtr<CefListValue> args, const int& index, const int64_t& value)
-	{
-		std::string tmp = std::to_string(value);
-		return args->SetString(index, tmp);
-	}
-
-	static CefString GetIdentifier(CefRefPtr<CefFrame> frame)
-	{
-#ifdef CEF_VERSION_138
-		return frame->GetIdentifier();
-#else
-		return std::to_string(frame->GetIdentifier());
-#endif // CEF_VERSION_138
-	}
-
-#ifdef CEF_VERSION_138
-	static CefRefPtr<CefFrame> GetFrame(CefRefPtr<CefBrowser> browser, CefString name)
-	{
-		return browser->GetFrameByName(name);
-	}
-	static CefRefPtr<CefFrame> GetFrame(CefRefPtr<CefBrowser> browser, int64_t id)
-	{
-		return browser->GetFrameByIdentifier(std::to_string(id));
-	}
-	static std::vector<CefString> GetFrameIdentifiers(CefRefPtr<CefBrowser> browser)
-	{
-		std::vector<CefString> arIds;
-		browser->GetFrameIdentifiers(arIds);
-
-		// copy elision
-		return arIds;
-	}
-# else
-	template <class T>
-	static CefRefPtr<CefFrame> GetFrame(CefRefPtr<CefBrowser> browser, T&& value)
-	{
-		return browser->GetFrame(std::forward<T>(value));
-	}
-
-	static std::vector<int64_t> GetFrameIdentifiers(CefRefPtr<CefBrowser> browser)
-	{
-		std::vector<int64_t> arIds;
-		browser->GetFrameIdentifiers(arIds);
-
-		// copy elision
-		return arIds;
-	}
-#endif // CEF_VERSION_138
-}
-
 #ifdef CEF_SIMPLE_URL_REQUEST
 #include "include/cef_urlrequest.h"
 
@@ -335,7 +278,7 @@ namespace NSRequest
 	private:
 		CefRefPtr<CefRequest> m_request;
 		int m_requestId;
-		int_64_type m_frameId;
+		NSSupport::CFrameId m_frameId;
 
 		CCefView_Private* m_view;
 
@@ -343,7 +286,7 @@ namespace NSRequest
 		CSimpleRequestClient(CefRefPtr<CefListValue>& args)
 		{
 			m_request = CefRequest::Create();
-			m_frameId = NSArgumentList::GetInt64(args, 0);
+			m_frameId = args->GetString(0);
 			m_requestId = args->GetInt(1);
 			m_request->SetURL(args->GetString(2));
 
@@ -385,7 +328,7 @@ namespace NSRequest
 		}
 
 		void StartInternal();
-		void SendToRenderer(const int_64_type& frameId, const std::string& sCode);
+		void SendToRenderer(const NSSupport::CFrameId& frameId, const std::string& sCode);
 
 		void OnRequestComplete(CefRefPtr<CefURLRequest> request) override
 		{
@@ -1413,7 +1356,7 @@ class CEditorFrameId
 {
 public:
 	int EditorId;
-	int_64_type FrameId;
+	NSSupport::CFrameId FrameId;
 	std::wstring Url;
 };
 

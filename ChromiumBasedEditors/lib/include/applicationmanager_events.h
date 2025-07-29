@@ -155,6 +155,7 @@
 
 #include <string>
 #include <vector>
+#include "frame_id_wrapper.h"
 
 namespace NSEditorApi
 {
@@ -669,15 +670,14 @@ namespace NSEditorApi
 	class CAscSpellCheckType : public IMenuEventDataBase
 	{
 	private:
-		std::string m_sResult;
-		int         m_nEditorId;
-		long long   m_nFrameId;
+		std::string           m_sResult;
+		int                   m_nEditorId;
+		NSSupport::CFrameId   m_nFrameId{};
 
 	public:
 		CAscSpellCheckType()
 		{
 			m_nEditorId = 0;
-			m_nFrameId = 0;
 		}
 		virtual ~CAscSpellCheckType()
 		{
@@ -686,11 +686,11 @@ namespace NSEditorApi
 		LINK_PROPERTY_STRINGA(Result)
 		LINK_PROPERTY_INT(EditorId)
 
-		inline long long get_FrameId()
+		inline NSSupport::CFrameId get_FrameId()
 		{
 			return m_nFrameId;
 		}
-		inline void put_FrameId(const long long& newVal)
+		inline void put_FrameId(const NSSupport::CFrameId& newVal)
 		{
 			m_nFrameId = newVal;
 		}
@@ -912,13 +912,12 @@ namespace NSEditorApi
 		std::wstring m_sUrl;
 		std::wstring m_sDestination;
 		int m_nId;
-		long long m_nFrameId;
+		NSSupport::CFrameId m_nFrameId{};
 
 	public:
 		CAscEditorScript()
 		{
 			m_nId = -1;
-			m_nFrameId = -1;
 		}
 		virtual ~CAscEditorScript()
 		{
@@ -928,11 +927,11 @@ namespace NSEditorApi
 		LINK_PROPERTY_STRING(Url)
 		LINK_PROPERTY_STRING(Destination)
 
-		inline long long get_FrameId()
+		inline NSSupport::CFrameId get_FrameId()
 		{
 			return m_nFrameId;
 		}
-		inline void put_FrameId(const long long& newVal)
+		inline void put_FrameId(const NSSupport::CFrameId& newVal)
 		{
 			m_nFrameId = newVal;
 		}
