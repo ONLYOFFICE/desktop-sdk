@@ -61,6 +61,11 @@
 #include "../../../../core/DesktopEditor/common/SystemUtils.h"
 #include "../../../../core/DesktopEditor/common/StringBuilder.h"
 
+#if defined(_LINUX) && !defined(_MAC)
+#include <gio/gio.h>
+#define LOCKER_USE_GIO
+#endif
+
 namespace NSSystem
 {
 	CLockFileTemp::CLockFileTemp(const std::wstring& file)
@@ -100,7 +105,7 @@ namespace NSSystem
 			GetUserNameW(user_name, &user_name_len);
 			m_user = NSFile::CUtf8Converter::GetUtf8StringFromUnicode2(user_name, user_name_len - 1);
 #else
-			m_user = NSSystemUtils::GetEGetEnvVariableA("USER");
+			m_user = NSSystemUtils::GetEnvVariableA("USER");
 #endif
 		}
 
@@ -176,14 +181,53 @@ namespace NSSystem
 		NSStringUtils::string_replaceA(m_user_dir, ",", "&#39;");
 	}
 
-	void CLockFileTemp::Save()
+	void CLockFileTemp::Save(int type)
 	{
 		std::string content = "," + m_user + "," + m_host + "," + m_date + "," + m_user_dir + ";";
-		NSFile::CFileBinary oFile;
-		if (oFile.CreateFile(m_file))
+
+		switch (type)
 		{
-			oFile.WriteFile((BYTE*)content.c_str(), (DWORD)content.length());
-			oFile.CloseFile();
+		case 0:
+		{
+			NSFile::CFileBinary oFile;
+			if (oFile.CreateFile(m_file))
+			{
+				oFile.WriteFile((BYTE*)content.c_str(), (DWORD)content.length());
+				oFile.CloseFile();
+			}
+			break;
+		}
+		case 1:
+		{
+#ifdef LOCKER_USE_GIO
+			GError* error = NULL;
+			std::string sFileA = U_TO_UTF8(m_file);
+			GFile* file = g_file_new_for_commandline_arg(sFileA.c_str());
+
+			GFileOutputStream* outputStream = g_file_create(file, G_FILE_CREATE_NONE, NULL, &error);
+			if (!outputStream)
+			{
+				g_error_free(error);
+				g_object_unref(file);
+				return;
+			}
+
+			gsize bytesWritten = 0;
+			gboolean writeResult = g_output_stream_write_all(G_OUTPUT_STREAM(outputStream), content.c_str(), content.length(), &bytesWritten, NULL, &error);
+
+			if (!writeResult)
+			{
+				g_error_free(error);
+			}
+
+			g_output_stream_close(G_OUTPUT_STREAM(outputStream), NULL, NULL);
+			g_object_unref(outputStream);
+			g_object_unref(file);
+#endif
+			break;
+		}
+		default:
+			break;
 		}
 	}
 
@@ -445,6 +489,7 @@ namespace NSSystem
 
 		virtual bool Lock()
 		{
+			CLockFileTemp lockFile(L"");
 			if (IsUseLockFile())
 			{
 				lockFile = CheckLockFilePath(m_sFile);
@@ -650,7 +695,7 @@ namespace NSSystem
 	};
 }
 
-#if defined(_LINUX) && !defined(_MAC)
+#ifdef LOCKER_USE_GIO
 
 #include <gio/gio.h>
 
@@ -661,7 +706,7 @@ namespace NSSystem
 		GFile* m_pFile;
 		char* m_pFileUri;
 		GOutputStream* m_pOutputStream;
-		bool m_bIsReplace;s
+		bool m_bIsReplace;
 
 	public:
 		CFileLockerGIO(const std::wstring& file) : CFileLocker(file)
@@ -717,7 +762,7 @@ namespace NSSystem
 			if (bResult && !lockFile.GetPath().empty())
 			{
 				m_sLockFilePath = lockFile.GetPath();
-				lockFile.Save();
+				lockFile.Save(1);
 			}
 
 			return  bResult;
@@ -942,10 +987,43 @@ namespace NSSystem
 	{
 	}
 
-	CLockFileTemp CFileLocker::CheckLockFilePath(const std::wstring& file)
+	CLockFileTemp CFileLocker::CheckLockFilePath(const std::wstring& file, const int& flags)
 	{
 		std::wstring sDirectory = NSFile::GetDirectoryName(file);
 		std::wstring sFilename = NSFile::GetFileName(file);
+
+#ifdef LOCKER_USE_GIO
+		if (flags == 1)
+		{
+			std::string fileA = U_TO_UTF8(file);
+			GFile* file = g_file_new_for_path(fileA.c_str());
+			if (file)
+			{
+				GError* error = NULL;
+				GFileInfo* info = g_file_query_info(file,
+													G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME ","
+													G_FILE_ATTRIBUTE_STANDARD_NAME,
+													G_FILE_QUERY_INFO_NONE,
+													NULL, &error);
+
+				if (info && !error)
+				{
+					const char* displayName = g_file_info_get_display_name(info);
+					if (displayName)
+					{
+						std::string result = displayName;
+						sFilename = UTF8_TO_U(result);
+					}
+					g_object_unref(info);
+				}
+
+				if (error)
+					g_error_free(error);
+
+				g_object_unref(file);
+			}
+		}
+#endif
 
 		std::wstring sLockFile = sDirectory + L"/.~lock." + sFilename + L"#";
 

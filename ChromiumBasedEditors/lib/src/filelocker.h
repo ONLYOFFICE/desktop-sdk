@@ -65,7 +65,7 @@ namespace NSSystem
 
 	public:
 		void Generate();
-		void Save();
+		void Save(int type = 0);
 		void Load();
 		bool IsEqual(const CLockFileTemp& lock);
 
@@ -81,7 +81,7 @@ namespace NSSystem
 		CFileLocker(const std::wstring& file);
 		virtual ~CFileLocker();
 
-		static CLockFileTemp CheckLockFilePath(const std::wstring& file);
+		static CLockFileTemp CheckLockFilePath(const std::wstring& file, const int& flags = 0);
 		virtual void DeleteLockFile();
 
 		virtual bool Lock()   = 0;
