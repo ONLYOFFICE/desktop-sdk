@@ -32,6 +32,216 @@
 
 #include "./filelocker.h"
 #include <set>
+#include <chrono>
+#include <sstream>
+#include <iomanip>
+
+#ifdef _WIN32
+#include <windows.h>
+
+#if defined(CreateFile)
+#undef CreateFile
+#endif
+
+#if defined(CopyFile)
+#undef CopyFile
+#endif
+
+#if defined(DeleteFile)
+#undef DeleteFile
+#endif
+
+#else
+#include <unistd.h>
+#include <pwd.h>
+#include <sys/types.h>
+#include <limits.h>
+#endif
+
+#include "../../../../core/DesktopEditor/common/SystemUtils.h"
+#include "../../../../core/DesktopEditor/common/StringBuilder.h"
+
+namespace NSSystem
+{
+	CLockFileTemp::CLockFileTemp(const std::wstring& file)
+	{
+		m_file = file;
+	}
+	CLockFileTemp::~CLockFileTemp()
+	{
+	}
+
+	CLockFileTemp::CLockFileTemp(const CLockFileTemp& src)
+	{
+		m_file = src.m_file;
+		m_user = src.m_user;
+		m_host = src.m_host;
+		m_date = src.m_date;
+		m_user_dir = src.m_user_dir;
+	}
+
+	CLockFileTemp& CLockFileTemp::operator=(const CLockFileTemp& src)
+	{
+		m_file = src.m_file;
+		m_user = src.m_user;
+		m_host = src.m_host;
+		m_date = src.m_date;
+		m_user_dir = src.m_user_dir;
+		return *this;
+	}
+
+	void CLockFileTemp::Generate()
+	{
+		if (true)
+		{
+#ifdef _WIN32
+			wchar_t user_name[1000];
+			DWORD user_name_len = 1000 + 1;
+			GetUserNameW(user_name, &user_name_len);
+			m_user = NSFile::CUtf8Converter::GetUtf8StringFromUnicode2(user_name, user_name_len - 1);
+#else
+			m_user = NSSystemUtils::GetEGetEnvVariableA("USER");
+#endif
+		}
+
+		if (true)
+		{
+#ifdef _WIN32
+			wchar_t hostname[MAX_COMPUTERNAME_LENGTH + 1];
+			DWORD hostname_len = MAX_COMPUTERNAME_LENGTH + 1;
+
+			if (GetComputerNameExW(ComputerNamePhysicalDnsFullyQualified, hostname, &hostname_len))
+			{
+				m_host = NSFile::CUtf8Converter::GetUtf8StringFromUnicode2(hostname, hostname_len);
+			}
+			else if (GetComputerNameW(hostname, &hostname_len))
+			{
+				m_host = NSFile::CUtf8Converter::GetUtf8StringFromUnicode2(hostname, hostname_len);
+			}
+			else
+			{
+				m_host = "Unknown";
+			}
+#else
+			char hostname[HOST_NAME_MAX + 1];
+
+			if (gethostname(hostname, sizeof(hostname)) == 0)
+			{
+				hostname[HOST_NAME_MAX] = '\0';
+				m_host = std::string(hostname);
+			}
+			else
+			{
+				m_host = "Unknown";
+			}
+#endif
+		}
+
+		if (true)
+		{
+			auto now = std::chrono::system_clock::now();
+			std::time_t time_t = std::chrono::system_clock::to_time_t(now);
+			std::tm utc_tm = {};
+
+#ifdef _WIN32
+			gmtime_s(&utc_tm, &time_t);
+#else
+			gmtime_r(&time_t, &utc_tm);
+
+#endif
+			std::ostringstream stream;
+			stream << std::setfill('0')
+				<< std::setw(2) << utc_tm.tm_mday << "."
+				<< std::setw(2) << (utc_tm.tm_mon + 1) << "."
+				<< (utc_tm.tm_year + 1900) << " "
+				<< std::setw(2) << utc_tm.tm_hour << ":"
+				<< std::setw(2) << utc_tm.tm_min;
+
+			m_date = stream.str();
+		}
+
+		if (true)
+		{
+			std::wstring user_dir = NSSystemUtils::GetAppDataDir();
+			m_user_dir = U_TO_UTF8(user_dir);
+
+#ifdef _WIN32
+			NSStringUtils::string_replaceA(m_user_dir, "\\", "/");
+#endif
+		}
+
+		NSStringUtils::string_replaceA(m_user, ",", "&#39;");
+		NSStringUtils::string_replaceA(m_host, ",", "&#39;");
+		NSStringUtils::string_replaceA(m_date, ",", "&#39;");
+		NSStringUtils::string_replaceA(m_user_dir, ",", "&#39;");
+	}
+
+	void CLockFileTemp::Save()
+	{
+		std::string content = "," + m_user + "," + m_host + "," + m_date + "," + m_user_dir + ";";
+		NSFile::CFileBinary oFile;
+		if (oFile.CreateFile(m_file))
+		{
+			oFile.WriteFile((BYTE*)content.c_str(), (DWORD)content.length());
+			oFile.CloseFile();
+		}
+	}
+
+	void CLockFileTemp::Load()
+	{
+		std::string content;
+		if (NSFile::CFileBinary::ReadAllTextUtf8A(m_file, content))
+		{
+			std::string::size_type pos1 = 1;
+
+			std::string::size_type pos2 = content.find(',', pos1);
+			if (std::string::npos != pos2)
+			{
+				m_user = content.substr(pos1, pos2 - pos1);
+				pos1 = pos2 + 1;
+			}
+
+			pos2 = content.find(',', pos1);
+			if (std::string::npos != pos2)
+			{
+				m_host = content.substr(pos1, pos2 - pos1);
+				pos1 = pos2 + 1;
+			}
+
+			pos2 = content.find(',', pos1);
+			if (std::string::npos != pos2)
+			{
+				m_date = content.substr(pos1, pos2 - pos1);
+				pos1 = pos2 + 1;
+			}
+
+			pos2 = content.find(';', pos1);
+			if (std::string::npos != pos2)
+			{
+				m_user_dir = content.substr(pos1);
+			}
+		}
+	}
+
+	bool CLockFileTemp::IsEqual(const CLockFileTemp& lock)
+	{
+		if (m_user != lock.m_user)
+			return false;
+
+		if (m_host != lock.m_host)
+			return false;
+
+		if (m_user_dir != lock.m_user_dir)
+			return false;
+
+		return true;
+	}
+
+	std::wstring CLockFileTemp::GetPath()
+	{
+		return m_file;
+	}
+}
 
 class CHandlesMonitor
 {
@@ -91,6 +301,14 @@ namespace NSSystem
 
 		virtual bool Lock()
 		{
+			CLockFileTemp lockFile(L"");
+			if (IsUseLockFile())
+			{
+				lockFile = CheckLockFilePath(m_sFile);
+				if (lockFile.GetPath().empty())
+					return false;
+			}
+
 			bool bResult = true;
 			std::wstring sFileFull = CorrectPathW(m_sFile);
 			DWORD dwFileAttributes = 0; //GetFileAttributesW(sFileFull.c_str());
@@ -106,6 +324,12 @@ namespace NSSystem
 			{
 				m_nDescriptor = INVALID_HANDLE_VALUE;
 				bResult = false;
+			}
+
+			if (bResult && !lockFile.GetPath().empty())
+			{
+				m_sLockFilePath = lockFile.GetPath();
+				lockFile.Save();
 			}
 			return bResult;
 		}
@@ -125,6 +349,7 @@ namespace NSSystem
 				bResult = true;
 			}
 
+			DeleteLockFile();
 			return bResult;
 		}
 
@@ -153,6 +378,11 @@ namespace NSSystem
 		}
 
 	public:
+		static bool IsUseLockFile()
+		{
+			return true;
+		}
+
 		static LockType IsLockedInternal(const std::wstring& file)
 		{
 			LockType lockType = LockType::ltNone;
@@ -175,6 +405,14 @@ namespace NSSystem
 				}
 			}
 			CloseHandle(hFile);
+
+			if (lockType == LockType::ltNone && IsUseLockFile())
+			{
+				CLockFileTemp tmp = CheckLockFilePath(file);
+				if (tmp.GetPath().empty())
+					return LockType::ltLocked;
+			}
+
 			return lockType;
 		}
 	};
@@ -207,15 +445,30 @@ namespace NSSystem
 
 		virtual bool Lock()
 		{
+			if (IsUseLockFile())
+			{
+				lockFile = CheckLockFilePath(m_sFile);
+				if (lockFile.GetPath().empty())
+					return false;
+			}
+
+			if (!lockFile.GetPath().empty())
+			{
+				m_sLockFilePath = lockFile.GetPath();
+				lockFile.Save();
+			}
+
 			std::string sFileA = U_TO_UTF8(m_sFile);
 			m_nDescriptor = open(sFileA.c_str(), O_RDWR | O_EXCL);
 			if (-1 == m_nDescriptor)
 				return true;
+
 			return true;
 		}
 
 		virtual bool Unlock()
 		{
+			DeleteLockFile();
 			if (-1 == m_nDescriptor)
 				return true;
 			close(m_nDescriptor);
@@ -266,6 +519,25 @@ namespace NSSystem
 		{
 			return true;
 		}
+
+		static bool IsUseLockFile()
+		{
+			return true;
+		}
+
+		static LockType IsLockedInternal(const std::wstring& file)
+		{
+			LockType lockType = LockType::ltNone;
+
+			if (lockType == LockType::ltNone && IsUseLockFile())
+			{
+				CLockFileTemp tmp = CheckLockFilePath(file);
+				if (tmp.GetPath().empty())
+					return LockType::ltLocked;
+			}
+
+			return lockType;
+		}
 	};
 
 	class CFileLockerFCNTL : public CFileLockerEmpty
@@ -281,6 +553,14 @@ namespace NSSystem
 
 		virtual bool Lock()
 		{
+			CLockFileTemp lockFile(L"");
+			if (IsUseLockFile())
+			{
+				lockFile = CheckLockFilePath(m_sFile);
+				if (lockFile.GetPath().empty())
+					return false;
+			}
+
 			bool bResult = true;
 			std::string sFileA = U_TO_UTF8(m_sFile);
 
@@ -298,12 +578,19 @@ namespace NSSystem
 
 			bResult = (0 == fcntl(m_nDescriptor, F_SETLKW, &_lock));
 
+			if (bResult && !lockFile.GetPath().empty())
+			{
+				m_sLockFilePath = lockFile.GetPath();
+				lockFile.Save();
+			}
+
 			CHandlesMonitor::Instance().Add(m_sFile);
 			return  bResult;
 		}
 
 		virtual bool Unlock()
 		{
+			DeleteLockFile();
 			if (-1 == m_nDescriptor)
 				return true;
 
@@ -324,6 +611,11 @@ namespace NSSystem
 		}
 
 	public:
+		static bool IsUseLockFile()
+		{
+			return true;
+		}
+
 		static LockType IsLockedInternal(const std::wstring& file)
 		{
 			LockType lockType = LockType::ltNone;
@@ -345,6 +637,14 @@ namespace NSSystem
 			if (F_WRLCK == (_lock.l_type & F_WRLCK))
 				lockType = LockType::ltLocked;
 			close(nDescriptor);
+
+			if (lockType == LockType::ltNone && IsUseLockFile())
+			{
+				CLockFileTemp tmp = CheckLockFilePath(file);
+				if (tmp.GetPath().empty())
+					return LockType::ltLocked;
+			}
+
 			return lockType;
 		}
 	};
@@ -361,6 +661,7 @@ namespace NSSystem
 		GFile* m_pFile;
 		char* m_pFileUri;
 		GOutputStream* m_pOutputStream;
+		bool m_bIsReplace;s
 
 	public:
 		CFileLockerGIO(const std::wstring& file) : CFileLocker(file)
@@ -368,6 +669,7 @@ namespace NSSystem
 			m_pFile = NULL;
 			m_pFileUri = NULL;
 			m_pOutputStream = NULL;
+			m_bIsReplace = false;
 		}
 		virtual ~CFileLockerGIO()
 		{
@@ -376,6 +678,14 @@ namespace NSSystem
 
 		virtual bool Lock()
 		{
+			CLockFileTemp lockFile(L"");
+			if (IsUseLockFile())
+			{
+				lockFile = CheckLockFilePath(m_sFile);
+				if (lockFile.GetPath().empty())
+					return false;
+			}
+
 			bool bResult = true;
 			std::string sFileA = U_TO_UTF8(m_sFile);
 
@@ -385,10 +695,29 @@ namespace NSSystem
 				m_pFileUri = g_file_get_uri(m_pFile);
 				GError* err = NULL;
 				m_pOutputStream = G_OUTPUT_STREAM(g_file_append_to(m_pFile, G_FILE_CREATE_PRIVATE, NULL, &err));
+				if (err && err->code == G_IO_ERROR_NOT_SUPPORTED)
+				{
+					g_error_free(err);
+					err = NULL;
+
+					if (m_pOutputStream)
+					{
+						g_output_stream_close(m_pOutputStream, NULL, NULL);
+						g_object_unref(m_pOutputStream);
+						m_pOutputStream = NULL;
+					}
+					m_bIsReplace = true;
+				}
 				bResult = !err;
 
 				if (err)
 					g_error_free (err);
+			}
+
+			if (bResult && !lockFile.GetPath().empty())
+			{
+				m_sLockFilePath = lockFile.GetPath();
+				lockFile.Save();
 			}
 
 			return  bResult;
@@ -405,6 +734,7 @@ namespace NSSystem
 					GError* err = NULL;
 					g_output_stream_close(m_pOutputStream, NULL, &err);
 					g_object_unref(m_pOutputStream);
+					m_pOutputStream = NULL;
 
 					if (err)
 						g_error_free (err);
@@ -422,6 +752,7 @@ namespace NSSystem
 				bResult = true;
 			}
 
+			DeleteLockFile();
 			return bResult;
 		}
 
@@ -448,17 +779,48 @@ namespace NSSystem
 			bool bResult = false;
 			if (m_pFile && m_pOutputStream)
 			{
-				if (g_seekable_can_truncate((GSeekable*)m_pOutputStream))
+				if (!m_bIsReplace)
 				{
-					GError* err = NULL;
-					if (g_seekable_truncate((GSeekable*)m_pOutputStream, dwPosition, NULL, &err))
-						bResult = !err;
+					if (g_seekable_can_truncate((GSeekable*)m_pOutputStream))
+					{
+						GError* err = NULL;
+						if (g_seekable_truncate((GSeekable*)m_pOutputStream, dwPosition, NULL, &err))
+							bResult = !err;
 
-					if (err)
-						g_error_free (err);
+						if (err)
+							g_error_free (err);
+					}
+				}
+				else
+				{
+					g_output_stream_close(m_pOutputStream, NULL, NULL);
+					g_object_unref(m_pOutputStream);
+					m_pOutputStream = NULL;
 				}
 			}
 			return bResult;
+		}
+
+		virtual bool StartWrite()
+		{
+			if (!m_pOutputStream && m_bIsReplace)
+			{
+				GError* err = NULL;
+				m_pOutputStream = G_OUTPUT_STREAM(g_file_replace(m_pFile, nullptr, false, G_FILE_CREATE_PRIVATE, nullptr, &err));
+				if (err)
+				{
+					if (m_pOutputStream)
+					{
+						g_output_stream_close(m_pOutputStream, NULL, NULL);
+						g_object_unref(m_pOutputStream);
+						m_pOutputStream = NULL;
+					}
+
+					g_error_free(err);
+					return false;
+				}
+			}
+			return true;
 		}
 
 		virtual bool WriteFile(const void* pData, DWORD dwBytesToWrite, DWORD& dwSizeWrite)
@@ -474,6 +836,11 @@ namespace NSSystem
 			return bResult;
 		}
 
+		static bool IsUseLockFile()
+		{
+			return false;
+		}
+
 		static LockType IsLockedInternal(const std::wstring& file)
 		{
 			LockType lockType = LockType::ltNone;
@@ -481,6 +848,14 @@ namespace NSSystem
 			if (!pLocker->Lock())
 				lockType = LockType::ltReadOnly;	// ltLocked
 			delete pLocker;
+
+			if (lockType == LockType::ltNone && IsUseLockFile())
+			{
+				CLockFileTemp tmp = CheckLockFilePath(file);
+				if (tmp.GetPath().empty())
+					return LockType::ltLocked;
+			}
+
 			return lockType;
 		}
 	};
@@ -530,6 +905,8 @@ namespace NSSystem
 			lockType = NSSystem::CFileLockerFCNTL::IsLockedInternal(file);
 		else
 			lockType = NSSystem::CFileLockerGIO::IsLockedInternal(file);
+#else
+		lockType = NSSystem::CFileLockerEmpty::IsLockedInternal(file);
 #endif
 #endif
 		return lockType;
@@ -559,9 +936,37 @@ namespace NSSystem
 	CFileLocker::CFileLocker(const std::wstring& file)
 	{
 		m_sFile = file;
+		m_sLockFilePath = L"";
 	}
 	CFileLocker::~CFileLocker()
 	{
+	}
+
+	CLockFileTemp CFileLocker::CheckLockFilePath(const std::wstring& file)
+	{
+		std::wstring sDirectory = NSFile::GetDirectoryName(file);
+		std::wstring sFilename = NSFile::GetFileName(file);
+
+		std::wstring sLockFile = sDirectory + L"/.~lock." + sFilename + L"#";
+
+		CLockFileTemp tempCur(sLockFile);
+		tempCur.Generate();
+
+		if (NSFile::CFileBinary::Exists(sLockFile))
+		{
+			CLockFileTemp tempSaved(sLockFile);
+			tempSaved.Load();
+
+			if (!tempCur.IsEqual(tempSaved))
+				return CLockFileTemp(L"");
+		}
+		return tempCur;
+	}
+	void CFileLocker::DeleteLockFile()
+	{
+		if (!m_sLockFilePath.empty())
+			NSFile::CFileBinary::Remove(m_sLockFilePath);
+		m_sLockFilePath = L"";
 	}
 
 	bool CFileLocker::IsEmpty()
@@ -610,5 +1015,10 @@ namespace NSSystem
 		return true;
 #endif
 
+	}
+
+	bool CFileLocker::StartWrite()
+	{
+		return true;
 	}
 }

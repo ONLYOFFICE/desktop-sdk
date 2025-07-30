@@ -594,6 +594,7 @@ namespace NSSystem
 
 			bool bRes = true;
 
+			m_pLocker->StartWrite();
 			m_pLocker->SeekFile(0);
 
 			DWORD dwRead = 0;
