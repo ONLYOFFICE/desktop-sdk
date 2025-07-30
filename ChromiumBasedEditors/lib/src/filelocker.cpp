@@ -105,7 +105,7 @@ namespace NSSystem
 			GetUserNameW(user_name, &user_name_len);
 			m_user = NSFile::CUtf8Converter::GetUtf8StringFromUnicode2(user_name, user_name_len - 1);
 #else
-			m_user = NSSystemUtils::GetEnvVariableA("USER");
+			m_user = NSSystemUtils::GetEnvVariableA(L"USER");
 #endif
 		}
 
@@ -883,7 +883,7 @@ namespace NSSystem
 
 		static bool IsUseLockFile()
 		{
-			return false;
+			return true;
 		}
 
 		static LockType IsLockedInternal(const std::wstring& file)
