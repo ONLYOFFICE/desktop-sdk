@@ -726,7 +726,7 @@ namespace NSSystem
 			CLockFileTemp lockFile(L"");
 			if (IsUseLockFile())
 			{
-				lockFile = CheckLockFilePath(m_sFile);
+				lockFile = CheckLockFilePath(m_sFile, 1);
 				if (lockFile.GetPath().empty())
 					return false;
 			}
@@ -896,7 +896,7 @@ namespace NSSystem
 
 			if (lockType == LockType::ltNone && IsUseLockFile())
 			{
-				CLockFileTemp tmp = CheckLockFilePath(file);
+				CLockFileTemp tmp = CheckLockFilePath(file, 1);
 				if (tmp.GetPath().empty())
 					return LockType::ltLocked;
 			}
