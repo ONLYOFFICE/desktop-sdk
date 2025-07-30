@@ -329,6 +329,11 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 
 #endif
 
+#ifdef CEF_VERSION_138
+	// forcing use native
+	command_line->AppendSwitch("use-native");
+#endif // CEF_VERSION_138
+
 
 	client::ClientApp::ProcessType process_type = client::ClientApp::GetProcessType(command_line);
 
