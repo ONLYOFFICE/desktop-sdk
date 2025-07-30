@@ -3639,10 +3639,10 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
 			}
 			else if (name == "CallInFrame")
 			{
-				std::string sId = arguments[0]->GetStringValue().ToString();
+			    CefString sId = arguments[0]->GetStringValue();
 				std::string sCode = arguments[1]->GetStringValue().ToString();
-				int64_t frameId = (int64_t)(std::stoull(sId));
-				CefRefPtr<CefFrame> frame = NSSupport::GetFrame(CefV8Context::GetCurrentContext()->GetBrowser(), frameId);
+				NSSupport::CFrameId frameId = sId;
+				CefRefPtr<CefFrame> frame = NSSupport::GetFrame(CefV8Context::GetCurrentContext()->GetBrowser(), frameId.GetId());
 				if (frame)
 					frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
 				return true;
