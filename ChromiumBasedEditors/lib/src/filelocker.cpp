@@ -56,6 +56,10 @@
 #include <pwd.h>
 #include <sys/types.h>
 #include <limits.h>
+
+#ifndef HOST_NAME_MAX
+#define HOST_NAME_MAX 1000
+#endif
 #endif
 
 #include "../../../../core/DesktopEditor/common/SystemUtils.h"
