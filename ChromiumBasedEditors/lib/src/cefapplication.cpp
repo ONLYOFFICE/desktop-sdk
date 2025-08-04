@@ -296,19 +296,20 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 
 	CefSettings settings;
 	CefMainArgs _main_args;
+	CefRefPtr<CefCommandLine> command_line;
 
 	// in new versions log should be used with ScopedEarlySupport before cef is initialized.
 #ifdef CEF_VERSION_138
 	cef::logging::ScopedEarlySupport::Config config;
 	config.min_log_level = cef::logging::LOG_INFO;
 
-	{ // ScopedEarlySupport
+	{ /* ScopedEarlySupport begin */ cef::logging::ScopedEarlySupport scoped_early_support(config);
 #endif // CEF_VERSION_138
 
 #ifdef WIN32
 	CefMainArgs main_args((HINSTANCE)GetModuleHandle(NULL));
 	// Parse command-line arguments.
-	CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
+	command_line = CefCommandLine::CreateCommandLine();
 	command_line->InitFromString(::GetCommandLineW());
 #endif
 
@@ -316,7 +317,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 	CefMainArgs main_args(argc, argv_copy);
 
 	// Parse command-line arguments.
-	CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
+	command_line = CefCommandLine::CreateCommandLine();
 	command_line->InitFromArgv(argc, argv_copy);
 #endif
 
@@ -324,7 +325,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 	CefMainArgs main_args(argc, argv);
 
 	// Parse command-line arguments.
-	CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
+	command_line = CefCommandLine::CreateCommandLine();
 	command_line->InitFromArgv(argc, argv);
 
 #endif
@@ -395,8 +396,14 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 	}
 	}
 
+	_main_args = main_args;
+
+#ifdef CEF_VERSION_138
+	} /* ScopedEarlySupport end */
+#endif // CEF_VERSION_138
+
 	// Execute the secondary process, if any.
-	m_pInternal->m_nReturnCodeInitCef = CefExecuteProcess(main_args, m_pInternal->m_app.get(), NULL);
+	m_pInternal->m_nReturnCodeInitCef = CefExecuteProcess(_main_args, m_pInternal->m_app.get(), NULL);
 	if (m_pInternal->m_nReturnCodeInitCef >= 0)
 	{
 		return m_pInternal->m_nReturnCodeInitCef;
@@ -421,6 +428,11 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 #if !defined(CEF_USE_SANDBOX)
 	settings.no_sandbox = true;
 #endif
+
+
+#ifdef CEF_VERSION_138
+	{ /* ScopedEarlySupport begin */ cef::logging::ScopedEarlySupport scoped_early_support(config);
+#endif // CEF_VERSION_138
 
 #if defined(CEF_VERSION_ABOVE_102)
 		m_pInternal->context = std::make_unique<client::MainContextImpl>(command_line, false);
@@ -470,6 +482,10 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 #endif
 	}
 
+#ifdef CEF_VERSION_138
+	} /* ScopedEarlySupport end */
+#endif // CEF_VERSION_138
+
 	std::wstring sCachePath = pManager->m_oSettings.cache_path;
 	cef_string_t _cache;
 
@@ -494,11 +510,6 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 
 	settings.persist_session_cookies = true;
 
-	_main_args = main_args;
-
-#ifdef CEF_VERSION_138
-	} // ScopedEarlySupport
-#endif // CEF_VERSION_138
 	// Initialize CEF.
 	m_pInternal->context->Initialize(_main_args, settings, m_pInternal->m_app.get(), NULL);
 	asc_scheme::InitScheme(pManager);

@@ -1400,7 +1400,7 @@ public:
 
 			if (this->GetBrowser())
 			{
-				CefRefPtr<CefFrame> _frame = NSSupport::GetFrame(this->GetBrowser(), "frameEditor");
+				CefRefPtr<CefFrame> _frame = NSSupport::GetFrameByName(this->GetBrowser(), "frameEditor");
 				if (_frame)
 				{
 					std::string sCode = "window.Asc.editor.onLocalSaveToDrawingFormat(" + std::to_string(nError) + ");";
@@ -1436,7 +1436,7 @@ public:
 				}
 				else
 				{
-					CefRefPtr<CefFrame> _frame = NSSupport::GetFrame(this->GetBrowser(), "frameEditor");
+					CefRefPtr<CefFrame> _frame = NSSupport::GetFrameByName(this->GetBrowser(), "frameEditor");
 					if (_frame)
 					{
 						std::wstring sCode = L"(function(){ if (window.Asc && window.Asc.editor) window.Asc.editor.endExternalConvertation(); })();";
@@ -3683,7 +3683,7 @@ public:
 
 			if (nParams == 1)
 			{
-				CefRefPtr<CefFrame> frame = NSSupport::GetFrame(browser, frameId.GetId());
+				CefRefPtr<CefFrame> frame = NSSupport::GetFrameByIdentifier(browser, frameId.GetId());
 				if (frame)
 					frame->ExecuteJavaScript("window.onSystemMessage && window.onSystemMessage({ type : \"operation\", block : true, opType : 0 });", frame->GetURL(), 0);
 			}
@@ -4162,7 +4162,7 @@ public:
 				}
 				else
 				{
-					CefRefPtr<CefFrame> _frame = NSSupport::GetFrame(browser, "frameEditor");
+					CefRefPtr<CefFrame> _frame = NSSupport::GetFrameByName(browser, "frameEditor");
 					if (_frame)
 					{
 						std::wstring sCode = L"(function(){ if (window.Asc && window.Asc.editor) window.Asc.editor.startExternalConvertation('sendTo'); })();";
@@ -6148,7 +6148,7 @@ void CCefView_Private::LocalSendTo(const std::wstring& sUrlFile)
 #endif
 		if (GetBrowser())
 		{
-			CefRefPtr<CefFrame> _frame = NSSupport::GetFrame(GetBrowser(), "frameEditor");
+			CefRefPtr<CefFrame> _frame = NSSupport::GetFrameByName(GetBrowser(), "frameEditor");
 			if (_frame)
 			{
 				std::wstring sCode = L"(function(){ \n\
@@ -7139,7 +7139,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 			{
 				if (this->m_pInternal->GetBrowser())
 				{
-					CefRefPtr<CefFrame> _frame = NSSupport::GetFrame(this->m_pInternal->GetBrowser(), "frameEditor");
+					CefRefPtr<CefFrame> _frame = NSSupport::GetFrameByName(this->m_pInternal->GetBrowser(), "frameEditor");
 					if (_frame)
 					{
 						std::string sCode = "window.Asc.editor.onLocalSaveToDrawingFormat(0);";
@@ -7585,7 +7585,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 
 			for (auto& val : arIds)
 			{
-				CefRefPtr<CefFrame> frame = NSSupport::GetFrame(pBrowser, val);
+				CefRefPtr<CefFrame> frame = NSSupport::GetFrameByIdentifier(pBrowser, val);
 				if (frame)
 					frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
 			}
@@ -7800,7 +7800,7 @@ void CCefView::SetParentWidgetInfo(const std::wstring& json)
 
 	for (auto& i : identifiers)
 	{
-		CefRefPtr<CefFrame> pFrame = NSSupport::GetFrame(pBrowser, i);
+		CefRefPtr<CefFrame> pFrame = NSSupport::GetFrameByIdentifier(pBrowser, i);
 		if (pFrame)
 		{
 			pFrame->ExecuteJavaScript(sCode, pFrame->GetURL(), 0);
@@ -7819,7 +7819,7 @@ CefRefPtr<CefFrame> CCefView_Private::CCloudCryptoUpload::GetFrame()
 {
 	if (!View->m_handler || !View->m_handler->GetBrowser())
 		return nullptr;
-	return NSSupport::GetFrame(View->m_handler->GetBrowser(), FrameID.GetId());
+	return NSSupport::GetFrameByIdentifier(View->m_handler->GetBrowser(), FrameID.GetId());
 }
 
 // CefViewEditor --------------------------------------------------------------------------
@@ -8404,7 +8404,7 @@ void CCefViewEditor::UpdatePlugins()
 	if (!pBrowser)
 		return;
 
-	CefRefPtr<CefFrame> pFrame = NSSupport::GetFrame(pBrowser, "frameEditor");
+	CefRefPtr<CefFrame> pFrame = NSSupport::GetFrameByName(pBrowser, "frameEditor");
 	if (pFrame)
 		pFrame->ExecuteJavaScript("if (window.UpdateInstallPlugins) window.UpdateInstallPlugins();", pFrame->GetURL(), 0);
 }
@@ -8525,7 +8525,7 @@ void CAscApplicationManager_Private::ChangeEditorViewsCount()
 
 	for (auto& i : identifiers)
 	{
-		auto pFrame = NSSupport::GetFrame(pView->m_pInternal->GetBrowser(), i);
+		auto pFrame = NSSupport::GetFrameByIdentifier(pView->m_pInternal->GetBrowser(), i);
 		if (pFrame)
 		{
 			pFrame->ExecuteJavaScript(sCode, pFrame->GetURL(), 0);
@@ -8548,7 +8548,7 @@ namespace NSRequest
 
 		if (m_view->GetBrowser())
 		{
-			CefRefPtr<CefFrame> frame = NSSupport::GetFrame(m_view->GetBrowser(), frameId.GetId());
+			CefRefPtr<CefFrame> frame = NSSupport::GetFrameByIdentifier(m_view->GetBrowser(), frameId.GetId());
 			if (frame)
 				frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
 		}
