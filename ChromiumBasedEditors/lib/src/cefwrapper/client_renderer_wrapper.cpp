@@ -6053,7 +6053,7 @@ _editor && _editor.local_sendEvent && _editor.local_sendEvent(\"asc_onError\", \
 					// main view
 					auto identifiers = NSSupport::GetFrameIdentifiers(browser);
 					for (auto& i : identifiers)
-					{;
+					{
 					    CefRefPtr<CefFrame> frame = NSSupport::GetFrameByIdentifier(browser, i);
 
 						if (frame && (frame->GetName().ToString().find("system_asc") == 0))
