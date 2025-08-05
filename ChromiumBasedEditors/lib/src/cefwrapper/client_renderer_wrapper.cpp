@@ -60,6 +60,8 @@
 
 #include <boost/filesystem.hpp>
 
+#include "../../tools/tools.h"
+
 std::wstring GetTmpFileFromBase64(const std::string& sData, const std::wstring& sTmpFolder)
 {
 	if (sData.empty())
@@ -2394,11 +2396,13 @@ window.AscDesktopEditor._convertFile(path, format);\n\
 window.AscDesktopEditor.getPortalsList = function() { var ret = []; try { var portals = JSON.parse(localStorage.getItem(\"portals\")); for (var i = 0, len = portals.length; i < len; i++) { ret.push(portals[i].portal); ret.push(portals[i].provider); } } catch(err) { ret = []; } console.log(ret);window.AscDesktopEditor.setPortalsList(ret); };\n\
 ";
 #ifdef CEF_VERSION_ABOVE_102
-					sCodeInitJS += "!function(){window.AscSimpleRequest=window.AscSimpleRequest||{};var r=0,o={};window.AscSimpleRequest.createRequest=function(e){var "
-								   "t;o[++r]={id:r,complete:e.complete,error:e.error},e.timeout&&(o[t=r].timer=setTimeout(function(){o[t]&&(o[t].error&&o[t].error({status:\"error\",statusCode:404},"
-								   "\"error\"),delete o[t])},e.timeout)),window.AscDesktopEditor.sendSimpleRequest(r,e)},window.AscSimpleRequest._onSuccess=function(e,t){let "
-								   "r=o[e];r&&(r.timer&&clearTimeout(r.timer),r.complete&&r.complete(t,t.status),delete o[e])},window.AscSimpleRequest._onError=function(e,t){let "
-								   "r=o[e];r&&(r.timer&&clearTimeout(r.timer),r.error&&r.error(t,t.status),delete o[e])}}();\n";
+					sCodeInitJS += "!function(){window.AscSimpleRequest=window.AscSimpleRequest||{};var r=0,o={};window.AscSimpleRequest.createRequest=function(e)"
+								   "{var t;o[++r]={id:r,complete:e.complete,error:e.error,progress:e.progress},e.timeout&&(o[t=r].timer=setTimeout(function()"
+								   "{o[t]&&(o[t].error&&o[t].error({status:\"error\",statusCode:404},\"error\"),delete o[t])},e.timeout)),"
+								   "window.AscDesktopEditor.sendSimpleRequest(r,e)},window.AscSimpleRequest._onSuccess=function(e,t){"
+								   "let r=o[e];r&&(r.timer&&clearTimeout(r.timer),r.complete&&r.complete(t,t.status),delete o[e])},"
+								   "window.AscSimpleRequest._onError=function(e,t){let r=o[e];r&&(r.timer&&clearTimeout(r.timer),r.error&&r.error(t,t.status),delete o[e])},"
+								   "window.AscSimpleRequest._onProgress=function(e,t){let r=o[e];r&&(r.timer&&clearTimeout(r.timer),r.progress&&r.progress(t,t.status))}}();";
 #endif
 					sCodeInitJS += "\
 window.AscDesktopEditor.getViewportSettings=function(){return JSON.parse(window.AscDesktopEditor._getViewportSettings());};\
@@ -4408,6 +4412,32 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				retval = CefV8Value::CreateInt(nVersion);
 				return true;
 			}
+			else if (name == "getToolFunctions")
+			{
+				CAITools& tools = CAITools::getInstance();
+				if (tools.getWorkDirectory().empty())
+				{
+					tools.setFontsDirectory(m_sFontsData);
+					tools.setWorkDirectory(m_sSystemPlugins + L"/../../converter");
+				}
+
+				retval = CefV8Value::CreateString(tools.getFunctions());
+				return true;
+			}
+			else if (name == "callToolFunction")
+			{
+				CAITools& tools = CAITools::getInstance();
+				if (tools.getWorkDirectory().empty())
+				{
+					tools.setFontsDirectory(m_sFontsData);
+					tools.setWorkDirectory(m_sSystemPlugins + L"/../../converter");
+				}
+
+				std::string name = arguments[0]->GetStringValue().ToString();
+				std::string param = arguments[1]->GetStringValue().ToString();
+				retval = CefV8Value::CreateString(tools.callFunc(name, param));
+				return true;
+			}
 
 			// Function does not exist.
 			return false;
@@ -4983,7 +5013,7 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 			CefRefPtr<CefV8Handler> handler = pWrapper;
 
-#define EXTEND_METHODS_COUNT 186
+#define EXTEND_METHODS_COUNT 188
 			const char* methods[EXTEND_METHODS_COUNT] = {
 				"Copy",
 				"Paste",
@@ -5241,6 +5271,9 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 				"onFileLockedClose",
 
 				"getEngineVersion",
+
+				"getToolFunctions",
+				"callToolFunction",
 
 				NULL};
 
