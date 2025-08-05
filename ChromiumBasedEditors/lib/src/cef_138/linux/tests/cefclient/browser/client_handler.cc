@@ -504,10 +504,8 @@ ClientHandler::ClientHandler(Delegate* delegate,
                              bool is_osr,
                              bool with_controls,
                              const std::string& startup_url)
-    : use_views_(delegate ? delegate->UseViews()
-                          : MainContext::Get()->UseViewsGlobal()),
-      use_alloy_style_(delegate ? delegate->UseAlloyStyle()
-                                : MainContext::Get()->UseAlloyStyleGlobal()),
+    : use_views_(false),
+      use_alloy_style_(false),
       is_osr_(is_osr),
       with_controls_(with_controls),
       startup_url_(startup_url),
