@@ -293,12 +293,14 @@ namespace NSRequest
 		CefRefPtr<CefRequest> m_request;
 		int m_requestId;
 		int_64_type m_frameId;
+		bool m_isProgress;
 
 		CCefView_Private* m_view;
 
 	public:
 		CSimpleRequestClient(CefRefPtr<CefListValue>& args)
 		{
+			m_isProgress = false;
 			m_request = CefRequest::Create();
 			m_frameId = NSArgumentList::GetInt64(args, 0);
 			m_requestId = args->GetInt(1);
@@ -306,6 +308,18 @@ namespace NSRequest
 
 			std::string sMethod = args->GetString(3).ToString();
 			m_request->SetMethod(sMethod);
+
+			std::string::size_type posMethodParams = sMethod.find(":");
+			std::string sParams = "";
+
+			if (posMethodParams != std::string::npos)
+			{
+				sParams = sMethod.substr(posMethodParams + 1);
+				sMethod = sMethod.substr(0, posMethodParams);
+
+				if (std::string::npos != sParams.find("stream"))
+					m_isProgress = true;
+			}
 
 			if ("POST" == sMethod)
 			{
@@ -422,6 +436,28 @@ namespace NSRequest
 							size_t data_length) override
 		{
 			m_download_data += std::string(static_cast<const char*>(data), data_length);
+
+			if (m_isProgress)
+			{
+				CefURLRequest::Status status = request->GetRequestStatus();
+				CefURLRequest::ErrorCode error_code = request->GetRequestError();
+
+				std::string sReturnObject = "{ status: " + std::to_string((int)status) + ", statusCode: " + std::to_string((int)error_code)  + ", responseText : \"";
+
+				char* base64 = NULL;
+				int base64Len = 0;
+				NSFile::CBase64Converter::Encode(static_cast<const BYTE*>(data), (int)data_length, base64, base64Len, NSBase64::B64_BASE64_FLAG_NOCRLF);
+
+				sReturnObject += std::string(base64, base64Len);
+				RELEASEARRAYOBJECTS(base64);
+
+				sReturnObject += "\"}";
+
+				std::string sCode = "try { window.AscSimpleRequest._onProgress(" + std::to_string(m_requestId) + ", " +
+									sReturnObject + "); } catch (err) { window.AscSimpleRequest._onError(" +
+									std::to_string(m_requestId) + ", { status : \"error\", statusCode : 404, responseText : \"\" }); }";
+				this->SendToRenderer(m_frameId, sCode);
+			}
 		}
 
 		bool GetAuthCredentials(bool isProxy,
@@ -558,6 +594,7 @@ namespace NSSystem
 
 			bool bRes = true;
 
+			m_pLocker->StartWrite();
 			m_pLocker->SeekFile(0);
 
 			DWORD dwRead = 0;
@@ -1510,6 +1547,8 @@ public:
 	// показывать ли консоль для дебага
 	bool m_bDebugInfoSupport;
 
+	bool m_bSupportMultiplugins;
+
 	// экспериментальные возможности
 	bool m_bExperimentalFeatures;
 
@@ -1642,6 +1681,7 @@ public:
 		m_sLogFile = "";
 		m_bDebugInfoSupport = false;
 		m_bExperimentalFeatures = false;
+		m_bSupportMultiplugins = false;
 
 		m_bIsUseExternalMessageLoop = false;
 		m_pExternalMessageLoop = NULL;
@@ -1897,6 +1937,10 @@ public:
 		std::map<std::string, std::string>::iterator pairDEBUG = _map->find("ascdesktop-support-debug-info-keep");
 		if (pairDEBUG != _map->end() && "1" == pairDEBUG->second)
 			m_bDebugInfoSupport = true;
+
+		std::map<std::string, std::string>::iterator pairComplexPlugins = _map->find("support-complex-plugins");
+		if (pairComplexPlugins != _map->end() && "1" == pairComplexPlugins->second)
+			m_bSupportMultiplugins = true;
 
 		if (!NSCommon::CSystemWindowScale::IsInit())
 		{

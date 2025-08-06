@@ -4689,8 +4689,10 @@ virtual void OnLoadEnd(CefRefPtr<CefBrowser> browser,
 					sGuidA = sGuidA.substr(4);
 				std::wstring sGuid = UTF8_TO_U(sGuidA);
 
-				std::wstring sSrc = (iterExt->isUser ? sUserPluginsPath : sSystemPluginsPath) + L"/" + sGuid + L"/index.html" + m_pParent->m_pInternal->m_pManager->m_pInternal->m_mainPostFix;
+				std::wstring sSrc = (iterExt->isUser ? sUserPluginsPath : sSystemPluginsPath) + L"/" + sGuid + L"/" + UTF8_TO_U(iterExt->sUrl) + m_pParent->m_pInternal->m_pManager->m_pInternal->m_mainPostFix;
 				NSCommon::url_correct(sSrc);
+				if (iterExt->isOnlyofficeScheme)
+					sSrc = L"onlyoffice://plugin/" + sSrc;
 
 				std::wstring sNameG = UTF8_TO_U((iterExt->sName));
 				std::wstring sNameLocal = UTF8_TO_U((iterExt->sNameObject));
