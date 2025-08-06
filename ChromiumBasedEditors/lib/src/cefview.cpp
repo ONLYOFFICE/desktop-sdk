@@ -2441,9 +2441,9 @@ public:
 #if !defined(CEF_2623) && !defined(CEF_VERSION_103)
 	virtual bool OnShowPermissionPrompt(
 		CefRefPtr<CefBrowser> browser,
-		uint64 prompt_id,
+	    uint64_t prompt_id,
 		const CefString& requesting_origin,
-		uint32 requested_permissions,
+	    uint32_t requested_permissions,
 		CefRefPtr<CefPermissionPromptCallback> callback) OVERRIDE
 	{
 		if ((requested_permissions & CEF_PERMISSION_TYPE_CLIPBOARD) != 0)
