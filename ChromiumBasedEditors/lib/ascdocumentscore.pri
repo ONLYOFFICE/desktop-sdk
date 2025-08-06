@@ -133,6 +133,18 @@ SOURCES += \
     $$CORE_ROOT_DIR/Common/3dParty/pole/pole.cpp \
 	$$CORE_ROOT_DIR/OOXML/Base/unicode_util.cpp
 
+AI_TOOLS_PATH = $$PWD/tools
+HEADERS += \
+	$$AI_TOOLS_PATH/tools.h
+
+SOURCES += \
+	$$AI_TOOLS_PATH/tools.cpp
+
+AI_TOOLS_FUNCS_PATH = $$/AI_TOOLS_PATH/functions
+HEADERS += \
+	AI_TOOLS_FUNCS_PATH/internal/base.h \
+	AI_TOOLS_FUNCS_PATH/internal/funcs.h
+
 # crypto ----------------------------------
 LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lCryptoPPLib
 LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lCompoundFileLib
@@ -184,4 +196,4 @@ core_linux {
     LIBS += -lX11 -lX11-xcb -lxkbcommon-x11 -lxkbcommon
 }
 
-ADD_DEPENDENCY(graphics, kernel, UnicodeConverter, kernel_network, PdfFile, XpsFile, DjVuFile, hunspell, ooxmlsignature)
+ADD_DEPENDENCY(graphics, kernel, UnicodeConverter, kernel_network, PdfFile, XpsFile, DjVuFile, hunspell, ooxmlsignature, doctrenderer)

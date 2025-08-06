@@ -2438,6 +2438,23 @@ public:
 		return ret;
 	}
 
+#if !defined(CEF_2623) && !defined(CEF_VERSION_103)
+	virtual bool OnShowPermissionPrompt(
+		CefRefPtr<CefBrowser> browser,
+		uint64 prompt_id,
+		const CefString& requesting_origin,
+		uint32 requested_permissions,
+		CefRefPtr<CefPermissionPromptCallback> callback) OVERRIDE
+	{
+		if ((requested_permissions & CEF_PERMISSION_TYPE_CLIPBOARD) != 0)
+		{
+			callback->Continue(CEF_PERMISSION_RESULT_ACCEPT);
+			return true;
+		}
+		return false;
+	}
+#endif
+
 	virtual bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
 									  #ifndef MESSAGE_IN_BROWSER
 										  CefRefPtr<CefFrame> frame,
@@ -4708,8 +4725,10 @@ virtual void OnLoadEnd(CefRefPtr<CefBrowser> browser,
 					sGuidA = sGuidA.substr(4);
 				std::wstring sGuid = UTF8_TO_U(sGuidA);
 
-				std::wstring sSrc = (iterExt->isUser ? sUserPluginsPath : sSystemPluginsPath) + L"/" + sGuid + L"/index.html" + m_pParent->m_pInternal->m_pManager->m_pInternal->m_mainPostFix;
+				std::wstring sSrc = (iterExt->isUser ? sUserPluginsPath : sSystemPluginsPath) + L"/" + sGuid + L"/" + UTF8_TO_U(iterExt->sUrl) + m_pParent->m_pInternal->m_pManager->m_pInternal->m_mainPostFix;
 				NSCommon::url_correct(sSrc);
+				if (iterExt->isOnlyofficeScheme)
+					sSrc = L"onlyoffice://plugin/" + sSrc;
 
 				std::wstring sNameG = UTF8_TO_U((iterExt->sName));
 				std::wstring sNameLocal = UTF8_TO_U((iterExt->sNameObject));
@@ -6694,6 +6713,7 @@ void CCefView::load(const std::wstring& urlInputSrc)
 
 	CefBrowserSettings _settings;
 	_settings.javascript_access_clipboard = STATE_ENABLED;
+	_settings.javascript_dom_paste = STATE_ENABLED;
 
 #ifndef CEF_VERSION_ABOVE_102
 	_settings.file_access_from_file_urls = STATE_ENABLED;

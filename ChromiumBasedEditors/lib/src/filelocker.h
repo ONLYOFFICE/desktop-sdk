@@ -47,17 +47,47 @@ namespace NSSystem
 		ltNosafe   = 0x04
 	};
 
+	class CLockFileTemp
+	{
+	private:
+		std::string m_user;
+		std::string m_host;
+		std::string m_date;
+		std::string m_user_dir;
+
+		std::wstring m_file;
+
+	public:
+		CLockFileTemp(const std::wstring& file);
+		~CLockFileTemp();
+		CLockFileTemp(const CLockFileTemp& file);
+		CLockFileTemp& operator=(const CLockFileTemp& file);
+
+	public:
+		void Generate();
+		void Save(int type = 0);
+		void Load();
+		bool IsEqual(const CLockFileTemp& lock);
+
+		std::wstring GetPath();
+	};
+
 	class CFileLocker
 	{
 	public:
 		std::wstring m_sFile;
+		std::wstring m_sLockFilePath;
 
 		CFileLocker(const std::wstring& file);
 		virtual ~CFileLocker();
 
+		static CLockFileTemp CheckLockFilePath(const std::wstring& file, const int& flags = 0);
+		virtual void DeleteLockFile();
+
 		virtual bool Lock()   = 0;
 		virtual bool Unlock() = 0;
 
+		virtual bool StartWrite();
 		virtual bool SeekFile(DWORD dwPosition) = 0;
 		virtual bool Truncate(DWORD dwPosition) = 0;
 		virtual bool WriteFile(const void* pData, DWORD dwBytesToWrite, DWORD& dwSizeWrite) = 0;

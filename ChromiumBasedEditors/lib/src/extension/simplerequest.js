@@ -26,7 +26,8 @@
 		simpleRequestCallback[simpleRequestCounter] = {
 			id : simpleRequestCounter,
 			complete : obj.complete,
-			error : obj.error
+			error : obj.error,
+			progress : obj.progress
 		};
 
 		if (obj.timeout)
@@ -79,6 +80,19 @@
 				obj.error(e, e.status);
 
 			delete simpleRequestCallback[counter];
+		}
+	};
+
+	window.AscSimpleRequest._onProgress = function(counter, e)
+	{
+		let obj = simpleRequestCallback[counter];
+		if (obj)
+		{
+			if (obj.timer)
+				clearTimeout(obj.timer);
+
+			if (obj.progress)
+				obj.progress(e, e.status);
 		}
 	};
 
