@@ -310,6 +310,7 @@ public:
 	void SetRecentPin(const int& nId, const bool& bIsPin);
 
 	void SetRendererProcessVariable(const std::wstring& sVariable);
+	void SetSkin(const std::wstring& sJson);
 
 	static bool IsUseSystemScaling();
 

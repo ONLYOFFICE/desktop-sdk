@@ -1278,6 +1278,10 @@ void CAscApplicationManager::SetRendererProcessVariable(const std::wstring& sVar
 	m_pInternal->m_sRendererJSON = sVariable;
 }
 
+void CAscApplicationManager::SetSkin(const std::wstring& json)
+{
+}
+
 void CAscApplicationManager::SetRecentPin(const int& nId, const bool& bIsPin)
 {
 	m_pInternal->Recents_Pin(nId, bIsPin);
