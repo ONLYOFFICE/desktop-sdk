@@ -82,6 +82,8 @@ public:
 		cef_height = 0;
 	}
 
+	virtual ~CCefViewWidgetImpl() {}
+
 public:
 	virtual void UpdateSize() {}
 	virtual void AfterCreate() {}
