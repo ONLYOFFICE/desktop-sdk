@@ -22,8 +22,7 @@ class AnthropicProvider
   implements BaseProvider<ToolUnion, MessageParam, Anthropic>
 {
   modelKey: string = "claude-3-7-sonnet-latest";
-  apiKey: string =
-    "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";
+  apiKey: string = "";
   url?: string = "";
   system?: string = `You are an AI assistant with access to a set of MCP tools.
 Your default behavior is to act as a helpful, conversational LLM assistant: answer questions, explain concepts, brainstorm, or chat naturally.
