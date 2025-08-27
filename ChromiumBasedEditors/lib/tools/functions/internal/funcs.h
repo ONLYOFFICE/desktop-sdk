@@ -1,7 +1,7 @@
 #pragma once
 #include "./base.h"
-#include "../form_field_analyser.cpp"
-#include "../form_field_filler.cpp"
+#include "../form_field_analyser/main.cpp"
+#include "../form_field_filler/main.cpp"
 
 struct TFuncInstance
 {

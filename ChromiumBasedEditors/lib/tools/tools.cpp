@@ -82,14 +82,18 @@ std::wstring CAITools::getTempFile()
 
 std::string CAITools::getFunctions()
 {
-	std::string sResult = "";
+	if (m_funcs->m_funcs.empty())
+		return "[]";
+
+	std::string sResult = "[";
 
 	for (std::map<std::string, TFuncInstance>::iterator iter = m_funcs->m_funcs.begin(); iter != m_funcs->m_funcs.end(); iter++)
 	{
 		sResult += iter->second.name;
-		sResult += "\n";
+		sResult += ",";
 	}
 
+	sResult[sResult.length() - 1] = ']';
 	return sResult;
 }
 
