@@ -1278,7 +1278,7 @@ void CAscApplicationManager::SetRendererProcessVariable(const std::wstring& sVar
 	m_pInternal->m_sRendererJSON = sVariable;
 }
 
-void CAscApplicationManager::SetSkin(const std::wstring& json)
+void CAscApplicationManager::UpdatePlugins(const std::wstring& json)
 {
 }
 
