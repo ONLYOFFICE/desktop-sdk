@@ -266,7 +266,7 @@ namespace NSSystem
 			pos2 = content.find(';', pos1);
 			if (std::string::npos != pos2)
 			{
-				m_user_dir = content.substr(pos1);
+				m_user_dir = content.substr(pos1, pos2 - pos1);
 			}
 		}
 	}
