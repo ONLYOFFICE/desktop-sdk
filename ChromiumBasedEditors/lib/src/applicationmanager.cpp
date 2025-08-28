@@ -1280,6 +1280,13 @@ void CAscApplicationManager::SetRendererProcessVariable(const std::wstring& sVar
 
 void CAscApplicationManager::UpdatePlugins(const std::wstring& json)
 {
+	CCefView* pMainView = m_pInternal->GetViewForSystemMessages();
+	if (!pMainView)
+		return;
+
+	std::string value = U_TO_UTF8(json);
+	std::string sCode = "(function(){window.on_update_plugin_info && window.on_update_plugin_info(" + value + ");})();";
+	pMainView->ExecuteInAllFrames(sCode, false);
 }
 
 void CAscApplicationManager::SetRecentPin(const int& nId, const bool& bIsPin)

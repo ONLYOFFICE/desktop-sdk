@@ -145,6 +145,8 @@ public:
 
 	int GetRecentId();
 
+	void ExecuteInAllFrames(const std::string& sCode, const bool& isMain = true);
+
 protected:
 	int m_nId;
 	CefViewWrapperType m_eWrapperType;

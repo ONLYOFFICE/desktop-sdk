@@ -7778,6 +7778,27 @@ CefRefPtr<CefFrame> CCefView_Private::CCloudCryptoUpload::GetFrame()
 	return View->m_handler->GetBrowser()->GetFrame(FrameID);
 }
 
+void CCefView::ExecuteInAllFrames(const std::string& sCode, const bool& isMain)
+{
+	CefRefPtr<CefBrowser> pBrowser = m_pInternal->GetBrowser();
+	if (!pBrowser)
+		return;
+
+	std::vector<int64> identifiers;
+	pBrowser->GetFrameIdentifiers(identifiers);
+
+	for (std::vector<int64>::iterator iter = identifiers.begin(); iter != identifiers.end(); iter++)
+	{
+		CefRefPtr<CefFrame> pFrame = pBrowser->GetFrame(*iter);
+		if (!pFrame)
+			continue;
+		if (!isMain && pFrame->IsMain())
+			continue;
+
+		pFrame->ExecuteJavaScript(sCode, pFrame->GetURL(), 0);
+	}
+}
+
 // CefViewEditor --------------------------------------------------------------------------
 CCefViewEditor::CCefViewEditor(CCefViewWidgetImpl* parent, int nId) : CCefView(parent, nId)
 {
