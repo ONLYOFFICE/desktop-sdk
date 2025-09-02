@@ -35,6 +35,14 @@
 #include <map>
 #include <functional>
 
+class CAIToolsHelper
+{
+public:
+	virtual void OpenTemplate(const std::wstring& path, const std::wstring& name = L"") = 0;
+	virtual void OpenFile(const std::wstring& path) = 0;
+	virtual std::vector<std::wstring> GetRecents() = 0;
+};
+
 class CFunctions;
 class CAITools
 {
@@ -58,6 +66,6 @@ public:
 
 	std::wstring getTempFile();
 
-	std::string callFunc(const std::string& name, const std::string& arg);
+	std::string callFunc(const std::string& name, const std::string& arg, CAIToolsHelper* helper);
 	std::string getFunctions();
 };

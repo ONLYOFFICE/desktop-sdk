@@ -58,7 +58,7 @@ namespace form_field_filler
 }";
 	}
 
-	std::string main(const std::string& arg)
+	std::string main(const std::string& arg, CAIToolsHelper* helper)
 	{
 		json returnValue = json::object();
 		returnValue["role"] = "tool";

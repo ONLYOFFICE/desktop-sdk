@@ -592,7 +592,7 @@ namespace asc_client_renderer
 		IMPLEMENT_REFCOUNTING(CLocalFileConvertV8Handler);
 	};
 
-	class CAscEditorNativeV8Handler : public CefV8Handler
+	class CAscEditorNativeV8Handler : public CefV8Handler, public CAIToolsHelper
 	{
 		class CSavedPageInfo
 		{
@@ -2276,9 +2276,9 @@ window.AscDesktopEditor.OpenFilenameDialog = function(filter, ismulti, callback)
   window.on_native_open_filename_dialog = callback;\n\
   window.AscDesktopEditor._OpenFilenameDialog(filter, ismulti);\n\
 };\n\
-window.AscDesktopEditor.SaveFilenameDialog = function(filter, callback) {\n\
+window.AscDesktopEditor.SaveFilenameDialog = function(filter, callback, content) {\n\
   window.on_native_save_filename_dialog = callback;\n\
-  window.AscDesktopEditor._SaveFilenameDialog(filter);\n\
+  window.AscDesktopEditor._SaveFilenameDialog(filter, content);\n\
 };\n\
 window.AscDesktopEditor.DownloadFiles = function(filesSrc, filesDst, callback, params) {\n\
   if (filesSrc.length == 0) return callback({});\n\
@@ -2391,6 +2391,20 @@ window.AscDesktopEditor._convertFile((files && files[0]) ? files[0] : '', format
 });\n\
 } else {\n\
 window.AscDesktopEditor._convertFile(path, format);\n\
+}\n\
+};\n\
+window.AscDesktopEditor.convertFileExternal = function(path, format, callback) {\n\
+if (!window._external_converter_counter) window._external_converter_counter = 0;\n\
+window._external_converter_counter++;\n\
+window._external_converters = window._external_converters || {};\n\
+window._external_converters[window._external_converter_counter] = function(path, code) { callback(window.AscDesktopEditor._onConvertFileExternal(path, code)); };\n\
+if (path && path.indexOf && (0 === path.indexOf('https://') || 0 === path.indexOf('http://') || 0 === path.indexOf('www.'))) {\n\
+window.AscDesktopEditor.DownloadFiles([path], [], function(_files) {\n\
+var files = []; for (var _elem in _files) { files.push(_files[_elem]); }\n\
+window.AscDesktopEditor._convertFileExternal((files && files[0]) ? files[0] : '', format, window._external_converter_counter);\n\
+});\n\
+} else {\n\
+window.AscDesktopEditor._convertFileExternal(path, format, window._external_converter_counter);\n\
 }\n\
 };\n\
 window.AscDesktopEditor.getPortalsList = function() { var ret = []; try { var portals = JSON.parse(localStorage.getItem(\"portals\")); for (var i = 0, len = portals.length; i < len; i++) { ret.push(portals[i].portal); ret.push(portals[i].provider); } } catch(err) { ret = []; } console.log(ret);window.AscDesktopEditor.setPortalsList(ret); };\n\
@@ -3419,6 +3433,10 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_save_filename_dialog");
 				message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
 				message->GetArgumentList()->SetString(1, std::to_string(CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier()));
+
+				if (arguments.size() > 1 && arguments[1]->IsString())
+					message->GetArgumentList()->SetString(2, arguments[1]->GetStringValue());
+
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 				return true;
 			}
@@ -4432,8 +4450,60 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				}
 
 				std::string name = arguments[0]->GetStringValue().ToString();
-				std::string param = arguments[1]->GetStringValue().ToString();
-				retval = CefV8Value::CreateString(tools.callFunc(name, param));
+				std::string param = (arguments.size() > 1) ? arguments[1]->GetStringValue().ToString() : "{}";
+				retval = CefV8Value::CreateString(tools.callFunc(name, param, this));
+				return true;
+			}
+			else if (name == "_convertFileExternal")
+			{
+				if (arguments.size() < 2)
+					return true;
+
+				std::wstring sFileUrl = arguments[0]->GetStringValue();
+				if (!g_pLocalResolver->Check(sFileUrl))
+					return true;
+
+				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("convert_file_external");
+				message->GetArgumentList()->SetString(0, sFileUrl);
+				NSArgumentList::SetInt64(message->GetArgumentList(), 1, CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
+				message->GetArgumentList()->SetInt(2, arguments[1]->GetIntValue());
+				message->GetArgumentList()->SetInt(3, arguments[2]->GetIntValue());
+
+				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+				return true;
+			}
+			else if (name == "_onConvertFileExternal")
+			{
+#ifdef CEF_2623
+				retval = CefV8Value::CreateObject(NULL);
+#else
+				retval = CefV8Value::CreateObject(nullptr, nullptr);
+#endif
+				std::wstring sFile = arguments[0]->GetStringValue().ToWString();
+				int nError = arguments[1]->GetIntValue();
+
+				retval = CefV8Value::CreateObject(nullptr, nullptr);
+				retval->SetValue("code", CefV8Value::CreateInt(nError), V8_PROPERTY_ATTRIBUTE_NONE);
+
+				if (true)
+				{
+					BYTE* pData = NULL;
+					DWORD dwFileLen = 0;
+					NSFile::CFileBinary::ReadAllBytes(sFile, &pData, dwFileLen);
+
+					if (0 != dwFileLen)
+					{
+#ifndef CEF_V8_SUPPORT_TYPED_ARRAYS
+						CefRefPtr<CefV8Value> arr = CefV8Value::CreateArray(dwFileLen);
+						for (DWORD i = 0; i < dwFileLen; ++i)
+							arr->SetValue(i, CefV8Value::CreateInt(pData[i]));
+						retval->SetValue("content", arr, V8_PROPERTY_ATTRIBUTE_NONE);
+#else
+						retval->SetValue("content", CefV8Value::CreateArrayBuffer((void*)pData, (size_t)dwFileLen, new CAscCefV8ArrayBufferReleaseCallback()), V8_PROPERTY_ATTRIBUTE_NONE);
+#endif
+					}
+				}
+
 				return true;
 			}
 
@@ -4888,6 +4958,45 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			return true;
 		}
 
+		// AIHelper
+		virtual void OpenTemplate(const std::wstring& path, const std::wstring& name = L"")
+		{
+			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("open_template");
+			message->GetArgumentList()->SetString(0, path);
+
+			if (!name.empty())
+				message->GetArgumentList()->SetString(1, name);
+
+			SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+		}
+		virtual void OpenFile(const std::wstring& path)
+		{
+			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("open_file");
+			message->GetArgumentList()->SetString(0, path);
+			SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+		}
+
+		virtual std::vector<std::wstring> GetRecents()
+		{
+			std::vector<std::wstring> files;
+			std::wstring sXmlPath = m_sRecoversFolder + L"/../recents.xml";
+			XmlUtils::CXmlNode oNodeRecents;
+			if (!oNodeRecents.FromXmlFile(sXmlPath))
+				return files;
+			std::vector<XmlUtils::CXmlNode> oNodes = oNodeRecents.GetNodes(L"file");
+			size_t nCount = oNodes.size();
+
+			for (size_t i = 0; i < nCount; ++i)
+			{
+				XmlUtils::CXmlNode &oFile = oNodes[i];
+				std::wstring path = oFile.GetAttribute(L"path");
+				if (!path.empty())
+					files.push_back(path);
+			}
+
+			return files;
+		}
+
 		// Provide the reference counting implementation for this class.
 		IMPLEMENT_REFCOUNTING(CAscEditorNativeV8Handler);
 	};
@@ -5011,7 +5120,7 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 			CefRefPtr<CefV8Handler> handler = pWrapper;
 
-#define EXTEND_METHODS_COUNT 188
+#define EXTEND_METHODS_COUNT 190
 			const char* methods[EXTEND_METHODS_COUNT] = {
 				"Copy",
 				"Paste",
@@ -5272,6 +5381,9 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 				"getToolFunctions",
 				"callToolFunction",
+
+				"_convertFileExternal",
+				"_onConvertFileExternal",
 
 				NULL};
 
@@ -6482,6 +6594,30 @@ delete window[\"crypto_images_map\"][_url];\n\
 					return true;
 
 				_frame->ExecuteJavaScript("window.on_convert_file_callback(\"" + sFolder + "\");", _frame->GetURL(), 0);
+				return true;
+			}
+			else if (sMessageName == "on_convert_local_file_external")
+			{
+				std::string sFile = message->GetArgumentList()->GetString(0).ToString();
+				int64 nFrameId = NSArgumentList::GetInt64(message->GetArgumentList(), 1);
+				NSStringUtils::string_replaceA(sFile, "\\", "\\\\");
+				NSStringUtils::string_replaceA(sFile, "\"", "\\\"");
+
+				int nReturnCode = message->GetArgumentList()->GetInt(2);
+				int nConvertId = message->GetArgumentList()->GetInt(3);
+
+				CefRefPtr<CefFrame> _frame = browser->GetFrame(nFrameId);
+				if (!_frame)
+					return true;
+
+				std::string sCode = "(function(){\n\
+if (!window._external_converters) return;\n\
+if (!window._external_converters[" + std::to_string(nConvertId) + "]) return;\n\
+window._external_converters[" + std::to_string(nConvertId) + "](\"" + sFile + "\", " + std::to_string(nReturnCode) + ");\n\
+delete window._external_converters[" + std::to_string(nConvertId) + "];\n\
+})();";
+				_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+
 				return true;
 			}
 

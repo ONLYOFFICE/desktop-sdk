@@ -1654,6 +1654,122 @@ public:
 	}
 };
 
+class CSimpleConverterExternal;
+class IASCFileConverterExternalEvents
+{
+public:
+	virtual void OnFileConvert(const int& error, CSimpleConverterExternal* converter) = 0;
+};
+
+class CSimpleConverterExternal : public NSThreads::CBaseThread
+{
+public:
+	std::wstring m_sInputFile;
+
+	std::wstring m_sTempDirectory;
+	std::wstring m_sOutputFile;
+
+	std::wstring m_sOutputParams;
+	int m_nOutputFormat;
+
+	CAscApplicationManager* m_pManager;
+	IASCFileConverterExternalEvents* m_pEvents;
+
+	int_64_type m_nFrameId;
+	int m_nId;
+
+public:
+	CSimpleConverterExternal()
+	{
+		m_sTempDirectory = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"CV");
+		if (NSFile::CFileBinary::Exists(m_sTempDirectory))
+			NSFile::CFileBinary::Remove(m_sTempDirectory);
+
+		NSDirectory::CreateDirectory(m_sTempDirectory);
+
+		m_sOutputFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"CV");
+		if (NSFile::CFileBinary::Exists(m_sOutputFile))
+			NSFile::CFileBinary::Remove(m_sOutputFile);
+
+		m_nOutputFormat = -1;
+		m_pManager = NULL;
+		m_pEvents = NULL;
+		m_nFrameId = 0;
+		m_nId = 0;
+	}
+
+	virtual ~CSimpleConverterExternal()
+	{
+		NSDirectory::DeleteDirectory(m_sTempDirectory);
+	}
+
+	void Convert()
+	{
+		Start(0);
+	}
+
+	virtual DWORD ThreadProc()
+	{
+		int nReturnCode = 0;
+
+		NSStringUtils::CStringBuilder oBuilder;
+		oBuilder.WriteString(L"<?xml version=\"1.0\" encoding=\"utf-8\"?><TaskQueueDataConvert><m_sFileFrom>");
+		oBuilder.WriteEncodeXmlString(m_sInputFile);
+		oBuilder.WriteString(L"</m_sFileFrom><m_sFileTo>");
+		oBuilder.WriteEncodeXmlString(m_sOutputFile);
+		oBuilder.WriteString(L"</m_sFileTo><m_nFormatTo>");
+
+		std::wstring sAdditionXml = L"";
+		if (AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA == m_nOutputFormat)
+		{
+			m_nOutputFormat = AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF;
+			sAdditionXml = L"<m_bIsPDFA>true</m_bIsPDFA>";
+		}
+
+		oBuilder.WriteString(std::to_wstring(m_nOutputFormat));
+		oBuilder.WriteString(L"</m_nFormatTo><m_sFontDir>");
+		oBuilder.WriteEncodeXmlString(m_pManager->m_oSettings.fonts_cache_info_path);
+		oBuilder.WriteString(L"</m_sFontDir>");
+		oBuilder.WriteString(m_sOutputParams);
+		oBuilder.WriteString(L"<m_bIsNoBase64>false</m_bIsNoBase64>");
+		oBuilder.WriteString(L"<m_sAllFontsPath>");
+		oBuilder.WriteEncodeXmlString(m_pManager->m_oSettings.fonts_cache_info_path);
+		oBuilder.WriteString(L"/AllFonts.js</m_sAllFontsPath>");
+
+		oBuilder.WriteString(L"<m_sTempDir>");
+		oBuilder.WriteEncodeXmlString(m_sTempDirectory);
+		oBuilder.WriteString(L"</m_sTempDir>");
+
+		if (!sAdditionXml.empty())
+			oBuilder.WriteString(sAdditionXml);
+
+		if (m_nOutputFormat & AVS_OFFICESTUDIO_FILE_IMAGE)
+		{
+			oBuilder.WriteString(L"<m_oThumbnail><first>false</first>");
+
+			if (m_nOutputFormat == AVS_OFFICESTUDIO_FILE_IMAGE_JPG)
+				oBuilder.WriteString(L"<format>3</format>");
+
+			oBuilder.WriteString(L"</m_oThumbnail>");
+		}
+
+		oBuilder.WriteString(L"</TaskQueueDataConvert>");
+
+		std::wstring sTempFileForParams = m_sTempDirectory + L"/params_simple_converter.xml";
+		NSFile::CFileBinary::SaveToFile(sTempFileForParams, oBuilder.GetData(), true);
+
+		nReturnCode = NSX2T::Convert(m_pManager->m_oSettings.file_converter_path + L"/x2t", sTempFileForParams, m_pManager, false);
+
+		NSFile::CFileBinary::Remove(sTempFileForParams);
+		NSDirectory::DeleteDirectory(m_sTempDirectory);
+
+		m_pEvents->OnFileConvert(nReturnCode, this);
+
+		m_bRunThread = FALSE;
+		return 0;
+	}
+};
+
 bool GetTemplateImage(CAscApplicationManager* pManager, const std::wstring sTempDir,
 					  const int& w, const int& h,
 					  const std::wstring& sFile, const std::wstring& sImagesDir, const std::wstring& sOutput)

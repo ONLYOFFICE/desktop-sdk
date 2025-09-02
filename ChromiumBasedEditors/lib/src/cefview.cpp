@@ -528,7 +528,7 @@ public:
 };
 
 class CAscClientHandler;
-class CCefView_Private : public NSEditorApi::IMenuEventDataBase, public IASCFileConverterEvents, public CTextDocxConverterCallback//, public virtual CefBaseRefCounted
+class CCefView_Private : public NSEditorApi::IMenuEventDataBase, public IASCFileConverterEvents, public IASCFileConverterExternalEvents, public CTextDocxConverterCallback//, public virtual CefBaseRefCounted
 {
 public:
 	class CSystemMessage
@@ -895,6 +895,7 @@ public:
 
 	// id фрейма, из которого пришел евент (для коллбэка)
 	std::string m_sIFrameIDMethod;
+	std::string m_sSaveFileContent;
 
 	// криптование облачных файлов
 	bool m_bIsCloudCryptFile;
@@ -978,6 +979,8 @@ public:
 
 	CConvertFileInEditor* m_pLocalFileConverter;
 	CCloudPDFSaver* m_pCloudSaveToDrawing;
+
+	std::vector<CSimpleConverterExternal*> m_arExternalConverters;
 
 	// информация о view (type, caption...)
 	std::wstring m_sViewportSettings;
@@ -1076,6 +1079,9 @@ public:
 			m_pLocalFileConverter->Stop();
 			m_pLocalFileConverter = NULL;
 		}
+
+		while (!m_arExternalConverters.empty())
+			NSThreads::Sleep(100);
 
 		RELEASEOBJECT(m_pCloudSaveToDrawing);
 
@@ -1444,6 +1450,28 @@ public:
 		}
 
 		LocalFile_SaveEnd(nError, sPass);
+	}
+
+	virtual void OnFileConvert(const int& error, CSimpleConverterExternal* converter)
+	{
+		if (this->GetBrowser())
+		{
+			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_convert_local_file_external");
+			message->GetArgumentList()->SetString(0, converter->m_sOutputFile);
+			NSArgumentList::SetInt64(message->GetArgumentList(), 1, converter->m_nFrameId);
+			message->GetArgumentList()->SetInt(2, error);
+			message->GetArgumentList()->SetInt(3, converter->m_nId);
+			SEND_MESSAGE_TO_RENDERER_PROCESS(GetBrowser(), message);
+		}
+
+		for (std::vector<CSimpleConverterExternal*>::iterator i = m_arExternalConverters.begin(); i != m_arExternalConverters.end(); i++)
+		{
+			if (*i == converter)
+			{
+				m_arExternalConverters.erase(i);
+				break;
+			}
+		}
 	}
 
 	void LocalFile_GetSupportSaveFormats(std::vector<int>& arFormats)
@@ -3360,6 +3388,11 @@ public:
 			pData->put_IdDownload(0);
 			pEvent->m_pData = pData;
 			m_pParent->m_pInternal->m_sIFrameIDMethod = args->GetString(1);
+
+			m_pParent->m_pInternal->m_sSaveFileContent = "";
+			if (args->GetSize() > 2)
+				m_pParent->m_pInternal->m_sSaveFileContent = args->GetString(2);
+
 			m_pParent->GetAppManager()->Apply(pEvent);
 			return true;
 		}
@@ -4383,6 +4416,27 @@ public:
 
 		return true;
 	}
+	else if ("convert_file_external" == message_name)
+	{
+		if (4 > args->GetSize())
+			return true;
+
+		CSimpleConverterExternal* pConverter = new CSimpleConverterExternal();
+		pConverter->m_pManager = m_pParent->GetAppManager();
+		pConverter->m_pEvents = m_pParent->m_pInternal;
+
+		pConverter->m_sInputFile = args->GetString(0).ToWString();
+		pConverter->m_nFrameId = NSArgumentList::GetInt64(args, 1);
+		pConverter->m_nOutputFormat  = args->GetInt(2);
+		pConverter->m_nId = args->GetInt(3);
+
+		m_pParent->m_pInternal->m_arExternalConverters.push_back(pConverter);
+
+		pConverter->DestroyOnFinish();
+		pConverter->Start(0);
+
+		return true;
+	}
 	else if ("send_simple_request" == message_name)
 	{
 #ifdef CEF_SIMPLE_URL_REQUEST
@@ -4514,6 +4568,25 @@ public:
 	else if ("on_file_locked_close" == message_name)
 	{
 		m_pParent->m_pInternal->m_bIsLockedSave = args->GetBool(0);
+		return true;
+	}
+	else if ("open_file" == message_name)
+	{
+		NSEditorApi::CAscLocalOpenFiles* pData = new NSEditorApi::CAscLocalOpenFiles();
+
+		int nCount = (int)args->GetSize();
+		std::vector<std::wstring>& arFolder = pData->get_Files();
+
+		for (int i = 0; i < nCount; i++)
+		{
+			std::wstring sValue = args->GetString(i).ToWString();
+			arFolder.push_back(sValue);
+		}
+
+		NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILES_OPEN);
+		pEvent->m_pData = pData;
+
+		pListener->OnEvent(pEvent);
 		return true;
 	}
 
@@ -7142,9 +7215,26 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 		}
 		else
 		{
+			std::wstring sSavePath = pData->get_FilePath();
+
+			if (!sSavePath.empty() && !m_pInternal->m_sSaveFileContent.empty())
+			{
+				NSFile::CFileBinary oFile;
+				if (oFile.CreateFile(sSavePath))
+				{
+					oFile.WriteFile((BYTE*)m_pInternal->m_sSaveFileContent.c_str(), (DWORD)m_pInternal->m_sSaveFileContent.length());
+					oFile.CloseFile();
+				}
+				else
+				{
+					sSavePath = L"";
+				}
+			}
+
+			m_pInternal->m_sSaveFileContent = "";
 			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_save_filename_dialog");
 			message->GetArgumentList()->SetString(0, m_pInternal->m_sIFrameIDMethod);
-			message->GetArgumentList()->SetString(1, pData->get_FilePath());
+			message->GetArgumentList()->SetString(1, sSavePath);
 			SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
 			m_pInternal->m_sIFrameIDMethod = "";
 		}
