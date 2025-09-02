@@ -1,25 +1,7 @@
 #include "./../internal/base.h"
 #include "../../../../../../core/DesktopEditor/common/StringBuilder.h"
 #include "../../../../../../core/DesktopEditor/common/Directory.h"
-
-#if defined(_WIN32) && !defined(WIN_XP_OR_VISTA)
-#include <windows.h>
-#include <shlobj.h>
-#include <comdef.h>
-#endif
-
-#ifdef _LINUX
-#ifdef _MAC
-#include <pwd.h>
-#include <unistd.h>
-#include <CoreServices/CoreServices.h>
-#include <Foundation/Foundation.h>
-#else
-#include <pwd.h>
-#include <unistd.h>
-#include <cstdlib>
-#endif
-#endif
+#include "../../../../../../core/DesktopEditor/common/SystemUtils.h"
 
 namespace folder_content_reader
 {
@@ -63,84 +45,22 @@ namespace folder_content_reader
 
 		if (std::wstring::npos == path.find(L"/"))
 		{
-			int nDirType = -1;
+			NSSystemUtils::SystemDirectoryType dirType = NSSystemUtils::SystemDirectoryType::Undefined;
 			if ("Documents" == pathA)
-				nDirType = 0;
+				dirType = NSSystemUtils::SystemDirectoryType::Documents;
 			else if ("Downloads" == pathA)
-				nDirType = 1;
+				dirType = NSSystemUtils::SystemDirectoryType::Downloads;
 			else if ("Desktop" == pathA)
-				nDirType = 2;
+				dirType = NSSystemUtils::SystemDirectoryType::Desktop;
 
-			if (nDirType == -1)
+			if (dirType == NSSystemUtils::SystemDirectoryType::Undefined)
 			{
 				returnValue["status"] = "error";
 				returnValue["error_message"] = "Folder not found";
 				return returnValue.dump();
 			}
 
-#if defined(_WIN32) && !defined(WIN_XP_OR_VISTA)
-			KNOWNFOLDERID folderId = FOLDERID_Documents;
-			if (nDirType == 1)
-				folderId = FOLDERID_Downloads;
-			else if (nDirType == 2)
-				folderId = FOLDERID_Desktop;
-
-			PWSTR dirPath = NULL;
-			HRESULT hr = SHGetKnownFolderPath(folderId, 0, NULL, &dirPath);
-
-			if (SUCCEEDED(hr))
-				path = std::wstring(dirPath);
-			else
-				path = L"";
-
-			if (dirPath)
-				CoTaskMemFree(dirPath);
-#endif
-
-#ifdef _LINUX
-#ifdef _MAC
-			NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-
-			NSSearchPathDirectory searchPath = NSDocumentDirectory;
-
-			switch (nDirType) {
-			case 1:
-				searchPath = NSDownloadsDirectory;
-				break;
-			case 2:
-				searchPath = NSDesktopDirectory;
-				break;
-			default:
-				break;
-			}
-
-			NSArray* paths = NSSearchPathForDirectoriesInDomains(searchPath, NSUserDomainMask, YES);
-			std::string result = "";
-
-			if ([paths count] > 0) {
-				NSString* path = [paths objectAtIndex:0];
-				result = std::string([path UTF8String]);
-			}
-
-			[pool release];
-
-			path = UTF8_TO_U(result);
-#else
-			std::wstring home_dir = NSSystemUtils::GetEnvVariable(L"HOME");
-			path = home_dir + L"/Documents";
-
-			switch (nDirType) {
-			case 1:
-				path = home_dir + L"/Downloads";
-				break;
-			case 2:
-				path = home_dir + L"/Desktop";
-				break;
-			default:
-				break;
-			}
-#endif
-#endif
+			path = NSSystemUtils::GetSystemDirectory(dirType);
 		}
 
 		if (path.empty())
