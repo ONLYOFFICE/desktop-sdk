@@ -1,11 +1,12 @@
 import { Plus } from "lucide-react";
+
+import useThreadsStore from "@/store/useThreadsStore";
+
 import { Button } from "../../button";
 
-export type UseNewChatProps = {
-  onSwitchToNewThread: () => void;
-};
+export const useNewChat = () => {
+  const { onSwitchToNewThread } = useThreadsStore();
 
-export const useNewChat = ({ onSwitchToNewThread }: UseNewChatProps) => {
   const newChatComponent = (
     <Button variant="outline" onClick={onSwitchToNewThread}>
       <Plus />

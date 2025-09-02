@@ -1,5 +1,15 @@
-import type { ContentBlockParam } from "@anthropic-ai/sdk/resources/index.mjs";
-import type { CompleteAttachment } from "@assistant-ui/react";
+import type {
+  ContentBlockParam,
+  MessageParam,
+  ToolResultBlockParam,
+  ToolUnion,
+} from "@anthropic-ai/sdk/resources/index.mjs";
+import type {
+  CompleteAttachment,
+  ThreadMessageLike,
+} from "@assistant-ui/react";
+
+import type { TMCPItem } from "@/lib/types";
 
 export const convertImageAttachmentsToContent = (
   attachments: readonly CompleteAttachment[]
@@ -46,4 +56,95 @@ export const convertImageAttachmentsToContent = (
   });
 
   return contentBlock;
+};
+
+export const convertToolsToModelFormat = (tools: TMCPItem[]): ToolUnion[] => {
+  return tools.map((tool) => ({
+    name: tool.name,
+    description: tool.description,
+    input_schema: {
+      type: "object",
+      ...tool.inputSchema,
+    },
+  }));
+};
+
+export const convertMessagesToModelFormat = (
+  messages: ThreadMessageLike[]
+): MessageParam[] => {
+  const convertedMessages: MessageParam[] = [];
+
+  messages.forEach((message) => {
+    if (message.role === "user") {
+      const content: MessageParam["content"] =
+        typeof message.content === "string"
+          ? message.content
+          : message.content.map((part) => {
+              if (part.type === "text") {
+                return { type: "text", text: part.text };
+              }
+
+              return { type: "text", text: "" };
+            });
+
+      if (message.attachments?.length) {
+        const imageContent = convertImageAttachmentsToContent(
+          message.attachments
+        );
+
+        if (Array.isArray(content)) {
+          content.push(...imageContent);
+        }
+      }
+
+      convertedMessages.push({
+        role: "user",
+        content,
+      });
+    } else {
+      const content: MessageParam["content"] =
+        typeof message.content === "string" ? message.content : [];
+
+      const toolsResults: ToolResultBlockParam[] = [];
+
+      if (Array.isArray(message.content)) {
+        message.content.forEach((part) => {
+          if (!Array.isArray(content)) return;
+
+          if (part.type === "text") {
+            content.push({ type: "text", text: part.text });
+          }
+
+          if (part.type === "tool-call") {
+            if (part.result) {
+              toolsResults.push({
+                type: "tool_result",
+                content: part.result,
+                tool_use_id: part.toolCallId!,
+              });
+            }
+
+            content.push({
+              type: "tool_use",
+              id: part.toolCallId!,
+              name: part.toolName,
+              input: part.args || {},
+            });
+            return;
+          }
+        });
+      }
+
+      convertedMessages.push({
+        role: "assistant",
+        content,
+      });
+
+      if (toolsResults.length) {
+        convertedMessages.push({ role: "user", content: toolsResults });
+      }
+    }
+  });
+
+  return convertedMessages;
 };

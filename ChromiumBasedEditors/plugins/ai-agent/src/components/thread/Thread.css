@@ -1,0 +1,24 @@
+.composer-root {
+    border-color: var(--composer-input-border-color);
+}
+
+.composer-root:hover {
+    border-color: var(--composer-input-hover-border-color);
+}
+
+.composer-root:focus-within {
+    border-color: var(--composer-input-focus-border-color);
+}
+
+.composer-input {
+    font-size: 14px;
+    line-height: 15px;
+
+    font-family: Arial;
+
+    color: var(--composer-input-text-color);
+}
+
+.composer-input::placeholder {
+    color: var(--composer-input-placeholder-color);
+}

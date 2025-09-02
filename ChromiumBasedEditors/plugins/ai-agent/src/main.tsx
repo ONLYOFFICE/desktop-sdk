@@ -1,7 +1,8 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import "./index.css";
+
 import App from "./App.tsx";
+import "./index.css";
 
 const initializeApp = () => {
   // Try to find root element in current document

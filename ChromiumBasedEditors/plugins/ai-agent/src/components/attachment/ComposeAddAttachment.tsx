@@ -1,18 +1,17 @@
-import { PaperclipIcon } from "lucide-react";
 import { ComposerPrimitive } from "@assistant-ui/react";
 
-import { TooltipIconButton } from "../tooltip-icon-button";
+import AttachmentIconUrl from "@/assets/attachment.svg?url";
+
+import { IconButton } from "../icon-button";
 
 export const ComposerAddAttachment = () => {
   return (
     <ComposerPrimitive.AddAttachment asChild>
-      <TooltipIconButton
-        className="my-2.5 size-8 p-2 transition-opacity ease-in"
-        tooltip="Add Attachment"
-        variant="ghost"
-      >
-        <PaperclipIcon />
-      </TooltipIconButton>
+      <IconButton
+        iconName={AttachmentIconUrl}
+        size={24}
+        className="cursor-pointer rounded-[4px] bg-[var(--attachment-trigger-background-color)] hover:bg-[var(--attachment-trigger-background-hover-color)] active:bg-[var(--attachment-trigger-background-active-color)]"
+      />
     </ComposerPrimitive.AddAttachment>
   );
 };

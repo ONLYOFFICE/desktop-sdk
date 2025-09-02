@@ -2,6 +2,7 @@ export type TMCPItem = {
   name: string;
   description: string;
   inputSchema: Record<string, unknown>;
+  enabled?: boolean;
 };
 
 export type Thread = {
@@ -10,8 +11,10 @@ export type Thread = {
   lastEditDate?: number;
 };
 
+export type ProviderType = "anthropic" | "ollama";
+
 export type Model = {
   id: string;
   name: string;
-  provider: "anthropic";
+  provider: ProviderType;
 };

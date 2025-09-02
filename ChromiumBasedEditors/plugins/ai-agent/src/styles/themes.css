@@ -1,0 +1,55 @@
+/* Theme system using CSS custom properties */
+
+.theme-light {
+    /* welcome */
+    --welcome-title-color: #333333;
+    --welcome-description-color: #333333;
+
+    /* composer */
+    --composer-input-background-color: #FFFFFF;
+    --composer-input-border-color: #00000014;
+    --composer-input-hover-border-color: #CECECE;
+    --composer-input-focus-border-color: #4A87E7;
+    --composer-input-text-color: #000000CC;
+    --composer-input-placeholder-color: #686868;
+    --composer-input-box-shadow: 0px 4px 9px 0px #00000005, 0px 16px 16px 0px #00000005, 0px 37px 22px 0px #00000003, 0px 66px 26px 0px #00000000, 0px 103px 29px 0px #00000000;
+
+    /* attacment */
+    --attachment-trigger-background-color: transparent;
+    --attachment-trigger-background-hover-color: #EAEAEA;
+    --attachment-trigger-background-active-color: #E1E1E1;
+    --attachment-trigger-icon-color: #444444;
+
+    /* select-models */
+    --select-models-trigger-background-color: transparent;
+    --select-models-trigger-background-hover-color: #EAEAEA;
+    --select-models-trigger-background-active-color: #E1E1E1;
+    --select-models-trigger-icon-color: #383838;
+    --select-models-trigger-text-color: #000000CC;
+
+    /* tools-settings */
+    --tools-settings-trigger-background-color: transparent;
+    --tools-settings-trigger-background-hover-color: #EAEAEA;
+    --tools-settings-trigger-background-active-color: #E1E1E1;
+    --tools-settings-trigger-icon-color: #383838;
+    --tools-settings-trigger-label-color: #000000CC;
+
+    /* primary-button */
+    --primary-button-color: #FFFFFF;
+    --primary-button-background-color:#4A87E7;
+    --primary-button-hover-color:#FFFFFF;
+    --primary-button-background-hover-color:#2566D5;
+    --primary-button-pressed-color:#FFFFFF;
+    --primary-button-background-pressed-color:#1E53AE;
+    --primary-button-background-disabled-opacity:0.5;
+    
+
+    /* dropdown */
+    --dropdown-background-color: #FFFFFF;
+    --dropdown-border-color: #0000001A;
+    --dropdown-box-shadow: 0px 8px 16px 0px #040F1B14;
+
+    /* dropdown-item */
+    --dropdown-item-text-color: #484848;
+    --dropdown-item-separator-color: #CBCBCB;
+}

@@ -1,55 +1,69 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 
 import type { AppendMessage, ThreadMessageLike } from "@assistant-ui/react";
 
 import { provider, type SendMessageReturnType } from "@/providers";
-import {
-  createMessage,
-  readMessages,
-  updateMessage,
-} from "@/database/messages";
-
-import useTools from "./useTools";
+import { createMessage, updateMessage } from "@/database/messages";
+import useModelsStore from "@/store/useModelsStore";
+import useMessageStore from "@/store/useMessageStore";
+import useThreadsStore from "@/store/useThreadsStore";
+import useServersStore from "@/store/useServersStore";
 
 type UseMessagesProps = {
-  threadId: string;
   isReady: boolean;
-  insertThread: (title: string) => void;
-  insertNewMessageToThread: () => void;
 };
 
-const useMessages = ({
-  threadId,
-  isReady,
-  insertThread,
-  insertNewMessageToThread,
-}: UseMessagesProps) => {
-  const [messages, setMessages] = useState<ThreadMessageLike[]>([]);
+const useMessages = ({ isReady }: UseMessagesProps) => {
+  const { currentModel } = useModelsStore();
+  const {
+    messages,
+    setIsStreamRunning,
+    addMessage,
+    updateLastMessage,
+    fetchPrevMessages,
+    getCurrentProviderModel,
+    setCurrentProvider,
+    updateCurrentProvider,
+  } = useMessageStore();
+  const { threadId, insertThread, insertNewMessageToThread } =
+    useThreadsStore();
+  const { tools, callTools } = useServersStore();
 
-  const { tools, callTools } = useTools({
-    isReady,
-  });
+  useEffect(() => {
+    if (!currentModel) return;
+
+    const currentProviderModel = getCurrentProviderModel();
+
+    if (currentProviderModel === currentModel.id) return;
+
+    if (currentModel.provider === provider.currentProviderType) {
+      updateCurrentProvider(currentModel.id);
+
+      return;
+    }
+
+    setCurrentProvider(currentModel.provider);
+    updateCurrentProvider(currentModel.id, tools, messages);
+  }, [
+    tools,
+    currentModel,
+    messages,
+    getCurrentProviderModel,
+    updateCurrentProvider,
+    setCurrentProvider,
+  ]);
 
   useEffect(() => {
     if (!isReady) return;
 
-    if (!provider) return;
-
-    if (tools.length === 0) return;
-
-    provider.setTools(tools);
-  }, [isReady, tools]);
+    updateCurrentProvider(undefined, tools);
+  }, [tools, isReady, updateCurrentProvider]);
 
   useEffect(() => {
     if (!isReady) return;
 
-    readMessages(threadId).then((messages) => {
-      if (messages?.length === 0) {
-        setMessages([]);
-      }
-      setMessages(messages);
-    });
-  }, [threadId, isReady]);
+    fetchPrevMessages(threadId);
+  }, [threadId, isReady, fetchPrevMessages]);
 
   const convertMessage = (message: ThreadMessageLike) => {
     return message;
@@ -60,6 +74,7 @@ const useMessages = ({
     afterToolCall?: boolean,
     messageUIDProp?: string
   ) => {
+    setIsStreamRunning(true);
     let initedMessage = afterToolCall ? true : false;
     const messageUID =
       afterToolCall && messageUIDProp ? messageUIDProp : crypto.randomUUID();
@@ -85,33 +100,30 @@ const useMessages = ({
 
             lastMessage.content[toolCallIdx] = toolCall;
 
-            setMessages((currentMessages) => [
-              ...currentMessages.slice(0, -1),
-              lastMessage,
-            ]);
+            updateLastMessage(lastMessage);
 
             if (!provider) return;
 
             const streamAfterToolCall =
               provider.sendMessageAfterToolCall(lastMessage);
 
-            handleStream(streamAfterToolCall, true, messageUID);
+            if (streamAfterToolCall)
+              handleStream(streamAfterToolCall, true, messageUID);
           }
         }
+
+        setIsStreamRunning(false);
 
         return;
       }
 
       if (!initedMessage) {
-        setMessages((currentMessages) => [...currentMessages, message]);
+        addMessage(message);
         createMessage(threadId, messageUID, message);
         initedMessage = true;
       } else {
         updateMessage(messageUID, message);
-        setMessages((currentMessages) => [
-          ...currentMessages.slice(0, -1),
-          message,
-        ]);
+        updateLastMessage(message);
       }
     }
   };
@@ -134,14 +146,18 @@ const useMessages = ({
 
     createMessage(threadId, crypto.randomUUID(), userMessage);
 
-    setMessages((currentMessages) => [...currentMessages, userMessage]);
+    addMessage(userMessage);
 
-    const stream = await provider.sendMessage([userMessage]);
+    const stream = provider.sendMessage([userMessage]);
 
-    handleStream(stream);
+    if (stream) handleStream(stream);
   };
 
-  return { messages, setMessages, convertMessage, onNew };
+  return {
+    convertMessage,
+    onNew,
+    handleStream,
+  };
 };
 
 export default useMessages;

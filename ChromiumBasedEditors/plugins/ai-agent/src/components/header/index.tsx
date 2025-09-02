@@ -1,26 +1,11 @@
-import { useThreads, type UseThreadsProps } from "./hooks/useThreads";
-import { useNewChat, type UseNewChatProps } from "./hooks/useNewChat";
+import { useThreads } from "./hooks/useThreads";
+import { useNewChat } from "./hooks/useNewChat";
 import { useSelectModel } from "./hooks/useSelectModel";
 
-type HeaderProps = UseThreadsProps & UseNewChatProps;
+const Header = () => {
+  const { threadsComponent } = useThreads();
 
-const Header = ({
-  threadId,
-  threads,
-  onSwitchToNewThread,
-  onSwitchToThread,
-  onDelete,
-}: HeaderProps) => {
-  const { threadsComponent } = useThreads({
-    threadId,
-    threads,
-    onSwitchToThread,
-    onDelete,
-  });
-
-  const { newChatComponent } = useNewChat({
-    onSwitchToNewThread,
-  });
+  const { newChatComponent } = useNewChat();
 
   const { useSelectModelComponent } = useSelectModel();
 

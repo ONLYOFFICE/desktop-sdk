@@ -1,93 +1,110 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
 
-import type { Model, TMCPItem } from "@/lib/types";
+import type { Model, ProviderType, TMCPItem } from "@/lib/types";
 
 import { anthropicProvider, AnthropicProvider } from "./anthropic";
+import { ollamaProvider, OllamaProvider } from "./ollama";
 
-type ProviderType = AnthropicProvider;
+import { SYSTEM_PROMPT } from "./Providers.utils";
 
-export type SendMessageReturnType = ReturnType<ProviderType["sendMessage"]>;
+export type SendMessageReturnType = AsyncGenerator<
+  | ThreadMessageLike
+  | {
+      isEnd: true;
+      responseMessage: ThreadMessageLike;
+    }
+>;
 
 class Provider {
-  currentProvider: AnthropicProvider;
+  currentProvider?: AnthropicProvider | OllamaProvider;
+  currentProviderType?: ProviderType;
 
-  system: string;
-  tools: TMCPItem[];
-
-  currentModel: Model;
-  models: Model[];
-
-  modelsLoading: boolean = true;
+  anthropicProvider: AnthropicProvider;
+  ollamaProvider: OllamaProvider;
 
   constructor() {
-    this.currentProvider = anthropicProvider;
-    this.system = "";
-    this.tools = [];
-
-    this.currentModel = {
-      id: "claude-3-7-sonnet-20250219",
-      name: "Claude Sonnet 3.7",
-      provider: "anthropic",
-    };
-    this.models = [];
-
-    this.getModels();
+    this.anthropicProvider = anthropicProvider;
+    this.ollamaProvider = ollamaProvider;
   }
 
-  setSystem = (system: string) => {
-    this.system = system;
+  setCurrentProvider = (providerType: ProviderType) => {
+    if (!providerType) return;
+
+    switch (providerType) {
+      case "anthropic":
+        this.currentProvider = anthropicProvider;
+        this.currentProviderType = "anthropic";
+        break;
+
+      case "ollama":
+        this.currentProvider = ollamaProvider;
+        this.currentProviderType = "ollama";
+        break;
+
+      default:
+        this.currentProvider = undefined;
+        this.currentProviderType = undefined;
+    }
   };
 
-  setTools = (tools: TMCPItem[]) => {
-    this.tools = tools;
+  getCurrentProviderModel = () => {
+    if (!this.currentProvider) return;
 
-    this.updateProvider();
-  };
-
-  updateProvider = () => {
-    this.currentProvider.setSystem(this.system);
-
-    const tools = this.currentProvider.convertToolsToModelFormat(this.tools);
-
-    this.currentProvider.setTools(tools);
-
-    this.currentProvider.setModelKey(this.currentModel.id);
-  };
-
-  selectModel = (modelId: string) => {
-    this.currentModel = this.models.find((model) => model.id === modelId) || {
-      id: "claude-3-7-sonnet-20250219",
-      name: "Claude Sonnet 3.7",
-      provider: "anthropic",
-    };
-
-    console.log(this.currentModel.id);
-
-    this.updateProvider();
+    return this.currentProvider.modelKey;
   };
 
   getModels = async () => {
-    this.modelsLoading = true;
+    const promiseModels = await Promise.allSettled([
+      this.anthropicProvider.getModels(),
+      this.ollamaProvider.getModels(),
+    ]);
 
-    const models = await this.currentProvider.getModels();
+    const fulfilledModels = promiseModels.filter(
+      (model) => model.status === "fulfilled"
+    );
 
-    this.models = models;
+    const models: Model[] = [];
 
-    this.modelsLoading = false;
+    fulfilledModels.forEach((model) => {
+      models.push(...model.value);
+    });
 
     return models;
   };
 
-  setAnthropicProvider = () => {
-    this.currentProvider = anthropicProvider;
+  updateCurrentProvider = (
+    modelKey?: string,
+    tools?: TMCPItem[],
+    prevMessages?: ThreadMessageLike[]
+  ) => {
+    if (!this.currentProvider) return;
+
+    this.currentProvider.setSystemPrompt(SYSTEM_PROMPT);
+    if (modelKey) this.currentProvider.setModelKey(modelKey);
+    if (tools) this.currentProvider.setTools(tools);
+    if (prevMessages) this.currentProvider.setPrevMessages(prevMessages);
   };
 
-  sendMessage = (messages: ThreadMessageLike[]) => {
+  sendMessage = (
+    messages: ThreadMessageLike[]
+  ): SendMessageReturnType | undefined => {
+    if (!this.currentProvider) return;
+
     return this.currentProvider.sendMessage(messages);
   };
 
-  sendMessageAfterToolCall = (message: ThreadMessageLike) => {
+  sendMessageAfterToolCall = (
+    message: ThreadMessageLike
+  ): SendMessageReturnType | undefined => {
+    if (!this.currentProvider) return;
+
     return this.currentProvider.sendMessageAfterToolCall(message);
+  };
+
+  stopMessage = () => {
+    if (!this.currentProvider) return;
+
+    this.currentProvider.stopMessage();
   };
 }
 

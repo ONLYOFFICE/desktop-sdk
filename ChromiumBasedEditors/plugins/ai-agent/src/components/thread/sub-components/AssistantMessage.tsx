@@ -3,7 +3,7 @@ import {
   ActionBarPrimitive,
   ErrorPrimitive,
 } from "@assistant-ui/react";
-import { CopyIcon, CheckIcon, RefreshCwIcon } from "lucide-react";
+import { CopyIcon, CheckIcon } from "lucide-react";
 import { motion } from "framer-motion";
 
 import { MarkdownText } from "../../markdown";
@@ -40,29 +40,14 @@ const AssistantActionBar = () => {
           </MessagePrimitive.If>
         </TooltipIconButton>
       </ActionBarPrimitive.Copy>
-      <ActionBarPrimitive.Reload asChild>
+      {/* <ActionBarPrimitive.Reload asChild>
         <TooltipIconButton tooltip="Refresh">
           <RefreshCwIcon />
         </TooltipIconButton>
-      </ActionBarPrimitive.Reload>
+      </ActionBarPrimitive.Reload> */}
     </ActionBarPrimitive.Root>
   );
 };
-
-const StarIcon = ({ size = 14 }: { size?: number }) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 16 16"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M8 0L9.79611 6.20389L16 8L9.79611 9.79611L8 16L6.20389 9.79611L0 8L6.20389 6.20389L8 0Z"
-      fill="currentColor"
-    />
-  </svg>
-);
 
 export const AssistantMessage = () => {
   return (
@@ -73,10 +58,6 @@ export const AssistantMessage = () => {
         animate={{ y: 0, opacity: 1 }}
         data-role="assistant"
       >
-        <div className="ring-border bg-background col-start-1 row-start-1 flex size-8 shrink-0 items-center justify-center rounded-full ring-1">
-          <StarIcon size={14} />
-        </div>
-
         <div className="text-foreground col-span-2 col-start-2 row-start-1 ml-4 break-words leading-7">
           <MessagePrimitive.Content
             components={{

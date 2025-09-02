@@ -1,30 +1,30 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
+
 import type { TMCPItem, Model } from "@/lib/types";
 
-export interface BaseProvider<TOOLS, MESSAGES, CLIENT> {
-  modelKey: string;
-  apiKey: string;
-  url?: string;
-  system?: string;
-  prevMessages: MESSAGES[];
-  tools: TOOLS[];
+export interface BaseProvider<TOOL, MESSAGE, CLIENT> {
   client: CLIENT;
+
+  tools: TOOL[];
+
+  prevMessages: MESSAGE[];
+
+  modelKey: string;
+  systemPrompt: string;
+  apiKey?: string;
+  url?: string;
 
   setModelKey(modelKey: string): void;
 
-  setApiKey(apiKey: string): void;
+  setSystemPrompt(systemPrompt: string): void;
 
-  setUrl(url: string): void;
+  setAPIKey?(apiKey: string): void;
 
-  setSystem(system: string): void;
+  setURL?(url: string): void;
 
-  setPrevMessages(prevMessages: MESSAGES[]): void;
+  setPrevMessages(prevMessages: ThreadMessageLike[]): void;
 
-  setTools(tools: TOOLS[]): void;
-
-  convertToolsToModelFormat(tools: TMCPItem[]): TOOLS[];
-
-  convertMessagesToModelFormat(messages: ThreadMessageLike[]): MESSAGES[];
+  setTools(tools: TMCPItem[]): void;
 
   getModels(): Promise<Model[]>;
 
@@ -42,4 +42,6 @@ export interface BaseProvider<TOOLS, MESSAGES, CLIENT> {
         ThreadMessageLike | { isEnd: true; responseMessage: ThreadMessageLike }
       >
     | ThreadMessageLike;
+
+  stopMessage(): void;
 }

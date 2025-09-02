@@ -1,6 +1,6 @@
 import { DesktopEditorTool } from "./DesktopEditor";
 
-class Tools {
+class Servers {
   desktopEditorTool: DesktopEditorTool;
 
   constructor() {
@@ -11,8 +11,14 @@ class Tools {
     this.desktopEditorTool.initTools();
   };
 
-  getTools = () => {
-    return this.desktopEditorTool.getTools();
+  getTools = async () => {
+    const [desktopEditorTools] = await Promise.all([
+      this.desktopEditorTool.getTools(),
+    ]);
+
+    return {
+      "Desktop Editor": desktopEditorTools,
+    };
   };
 
   callTools = (name: string, args: Record<string, unknown>) => {
@@ -20,4 +26,6 @@ class Tools {
   };
 }
 
-export default Tools;
+const servers = new Servers();
+
+export default servers;

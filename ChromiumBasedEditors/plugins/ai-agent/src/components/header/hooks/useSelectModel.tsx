@@ -1,19 +1,26 @@
 import React from "react";
 
-import { provider } from "@/providers";
+import useModelsStore from "@/store/useModelsStore";
 
 import { DropdownMenu } from "../../dropdown";
 
 export const useSelectModel = () => {
-  const { models, modelsLoading, currentModel } = provider;
+  const { models, currentModel, selectModel } = useModelsStore();
 
-  const onSelectModel = React.useCallback((modelId: string) => {
-    provider.selectModel(modelId);
-  }, []);
+  const onSelectModel = React.useCallback(
+    (modelId: string) => {
+      const model = models.find((model) => model.id === modelId);
 
-  const useSelectModelComponent = modelsLoading ? null : (
+      if (!model) return;
+
+      selectModel(model);
+    },
+    [models, selectModel]
+  );
+
+  const useSelectModelComponent = (
     <DropdownMenu
-      trigger={<p>{currentModel.name}</p>}
+      trigger={<p>{currentModel ? currentModel.name : "Select model"}</p>}
       align="start"
       side="bottom"
       maxWidth="300px"

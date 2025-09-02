@@ -1,23 +1,16 @@
+import React from "react";
+
 import { Menu, TextCursorIcon, SaveIcon, TrashIcon } from "lucide-react";
 
 import type { Thread } from "@/lib/types";
+import useThreadsStore from "@/store/useThreadsStore";
 
 import { DropdownMenu } from "../../dropdown";
-import React from "react";
 
-export type UseThreadsProps = {
-  threadId: string;
-  threads: Thread[];
-  onSwitchToThread: (id: string) => void;
-  onDelete: (id: string) => void;
-};
+export const useThreads = () => {
+  const { threadId, threads, onSwitchToThread, onDeleteThread } =
+    useThreadsStore();
 
-export const useThreads = ({
-  threadId,
-  threads,
-  onSwitchToThread,
-  onDelete,
-}: UseThreadsProps) => {
   const onClickThread = React.useCallback(
     (thread: Thread) => {
       onSwitchToThread(thread.threadId);
@@ -30,12 +23,12 @@ export const useThreads = ({
       {
         icon: <TextCursorIcon className="w-4 h-4" />,
         text: "Rename",
-        onClick: () => onDelete(thread.threadId),
+        onClick: () => onDeleteThread(thread.threadId),
       },
       {
         icon: <SaveIcon className="w-4 h-4" />,
         text: "Save to file",
-        onClick: () => onDelete(thread.threadId),
+        onClick: () => onDeleteThread(thread.threadId),
       },
       {
         text: "",
@@ -45,10 +38,10 @@ export const useThreads = ({
       {
         icon: <TrashIcon className="w-4 h-4" />,
         text: "Delete",
-        onClick: () => onDelete(thread.threadId),
+        onClick: () => onDeleteThread(thread.threadId),
       },
     ],
-    [onDelete]
+    [onDeleteThread]
   );
 
   const items = React.useMemo(() => {

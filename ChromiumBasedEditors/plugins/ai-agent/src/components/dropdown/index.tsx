@@ -1,5 +1,7 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { cn } from "../../lib/utils";
+
+import { cn } from "@/lib/utils";
+
 import { DropDownItem } from "../dropdown-item";
 
 import type { DropdownMenuProps } from "./DropDown.types";
@@ -9,43 +11,36 @@ const DropdownMenuComponent = ({
   items,
   side,
   align,
+  sideOffset,
   contentClassName,
   maxWidth,
+  open,
+  containerRef,
+  dropdownRef,
+  onOpenChange,
 }: DropdownMenuProps) => {
+  const portalContainer = document.getElementById("app");
+
   return (
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild>
-        <button
-          type="button"
-          className="cursor-pointer appearance-none outline-none outline-offset-0 focus:outline-none focus-visible:outline-none focus:outline-offset-0 ring-0 ring-offset-0 focus:ring-0 focus:ring-transparent focus-visible:ring-0 focus-visible:ring-transparent border-0 focus:border-transparent focus-visible:border-transparent bg-transparent p-0 m-0 shadow-none focus:shadow-none focus-visible:shadow-none"
-        >
-          {trigger}
-        </button>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Portal>
+    <DropdownMenu.Root open={open} onOpenChange={onOpenChange}>
+      <DropdownMenu.Trigger asChild>{trigger}</DropdownMenu.Trigger>
+      <DropdownMenu.Portal container={containerRef ?? portalContainer}>
         <DropdownMenu.Content
+          ref={dropdownRef}
           side={side ?? "bottom"}
           align={align ?? "start"}
+          sideOffset={sideOffset ?? 6}
           data-side={side}
           data-align={align}
           data-orientation="vertical"
-          sideOffset={4}
           className={cn(
-            "z-50 w-fit border border-border rounded-md shadow-md bg-white py-[8px] max-h-56 overflow-y-auto",
+            "z-50 w-fit border border-[var(--dropdown-border-color)] rounded-[8px] shadow-[var(--dropdown-box-shadow)] bg-[var(--dropdown-background-color)] py-[4px] max-h-56 overflow-y-auto",
             contentClassName
           )}
           style={maxWidth ? { maxWidth } : undefined}
         >
-          {items.map((item, index) => (
-            <DropDownItem
-              key={index}
-              onClick={item.onClick}
-              text={item.text}
-              icon={item.icon}
-              actionsMenu={item.actionsMenu}
-              isActive={item.isActive}
-              isSeparator={item.isSeparator}
-            />
+          {items.map((item) => (
+            <DropDownItem key={item.text} {...item} />
           ))}
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
