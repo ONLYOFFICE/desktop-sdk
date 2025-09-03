@@ -4482,7 +4482,6 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				std::wstring sFile = arguments[0]->GetStringValue().ToWString();
 				int nError = arguments[1]->GetIntValue();
 
-				retval = CefV8Value::CreateObject(nullptr, nullptr);
 				retval->SetValue("code", CefV8Value::CreateInt(nError), V8_PROPERTY_ATTRIBUTE_NONE);
 
 				if (true)
