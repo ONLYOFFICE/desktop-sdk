@@ -35,7 +35,9 @@
 #include "./cefwrapper/client_resource_handler_async.h"
 #include "./cefwrapper/monitor_info.h"
 
-#if !defined(_MAC)
+#if defined(_MAC)
+# include "mac_keyboardlayout.h"
+#else
 # include "keyboardlayout.h"
 #endif
 
@@ -925,13 +927,11 @@ void CAscApplicationManager::EndSaveDialog(const std::wstring& sPath, unsigned i
 
 bool CAscApplicationManager::IsPlatformKeyboardSupport()
 {
-#ifdef WIN32
+#if defined(WIN32) || defined(_MAC)
 	return true;
-#endif
-
-#if defined(_LINUX) && !defined(_MAC)
-	KeyboardLayout kl;
-	return kl.IsKeyboardSupport();
+#elif defined(_LINUX)
+    KeyboardLayout kl;
+    return kl.IsKeyboardSupport();
 #endif
 
 	return false;
@@ -939,16 +939,18 @@ bool CAscApplicationManager::IsPlatformKeyboardSupport()
 
 int CAscApplicationManager::GetPlatformKeyboardLayout()
 {
-#ifdef WIN32
+#if defined(WIN32)
 	HWND wFocus = GetFocus();
 	DWORD dwThread = GetWindowThreadProcessId(wFocus, 0);
 	HKL hkl = GetKeyboardLayout(dwThread);
 	int nLang = LOWORD(hkl);
 	return nLang;
-#endif
-
-#if defined(_LINUX) && !defined(_MAC)
-	KeyboardLayout kl;
+#elif defined(_MAC)
+    uint16_t nLang = GetKeyboardLayout();
+    if (nLang != 0)
+        return nLang;
+#elif defined(_LINUX)
+    KeyboardLayout kl;
     uint16_t layout = kl.GetKeyboardLayout();
     if (layout != 0)
         return layout;
