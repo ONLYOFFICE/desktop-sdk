@@ -29,6 +29,7 @@
  * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
  *
  */
+#include "./external_process.h"
 
 #include "./client_renderer.h"
 
@@ -592,7 +593,7 @@ namespace asc_client_renderer
 		IMPLEMENT_REFCOUNTING(CLocalFileConvertV8Handler);
 	};
 
-	class CAscEditorNativeV8Handler : public CefV8Handler, public CAIToolsHelper
+	class CAscEditorNativeV8Handler : public CefV8Handler, public CAIToolsHelper, public NSProcesses::CProcessRunnerCallback
 	{
 		class CSavedPageInfo
 		{
@@ -717,6 +718,10 @@ namespace asc_client_renderer
 		bool m_bIsMacrosesSupport;
 		bool m_bIsPluginsSupport;
 
+		// External processes
+		CefRefPtr<CefFrame> m_frame;
+		NSProcesses::CProcessManager* m_external_processes;
+
 		CAscEditorNativeV8Handler(const std::wstring& sUrl)
 		{
 			m_etType = AscEditorType::etUndefined;
@@ -767,6 +772,8 @@ namespace asc_client_renderer
 
 			m_bEditorsCloudFeaturesCheck = false;
 			m_arCloudFeaturesBlackList.push_back("personal.onlyoffice.com");
+
+			m_external_processes = NULL;
 		}
 
 		void CheckDefaults()
@@ -811,6 +818,9 @@ namespace asc_client_renderer
 
 		virtual ~CAscEditorNativeV8Handler()
 		{
+			RELEASEOBJECT(m_external_processes);
+			m_frame.reset();
+
 			if (m_pAES_Key)
 				NSOpenSSL::openssl_free(m_pAES_Key);
 			NSBase::Release(m_pLocalApplicationFonts);
@@ -937,6 +947,33 @@ return undefined; \n\
 			message->GetArgumentList()->SetInt(0, (int)m_etType);
 			SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 			return true;
+		}
+
+		virtual void process_callback(const int& id, const NSProcesses::StreamType& type, const std::string& message) OVERRIDE
+		{
+			if (m_frame && m_external_processes)
+			{
+				std::string sMessageDst = message;
+				NSStringUtils::string_replaceA(sMessageDst, "\\", "\\\\");
+				NSStringUtils::string_replaceA(sMessageDst, "\"", "\\\"");
+				NSStringUtils::string_replaceA(sMessageDst, "\r", "");
+				NSStringUtils::string_replaceA(sMessageDst, "\n", "");
+
+				std::string sCode = "(function(){\n\
+if (!window._external_process_callback) return;\n\
+if (!window._external_process_callback[" + std::to_string(id) + "]) return;\n\
+window._external_process_callback[" + std::to_string(id) + "]._onprocess(" + std::to_string((int)type) + ", \"" + sMessageDst + "\");\n\
+})();";
+
+				CefPostTask(TID_RENDERER, base::BindOnce([](CefRefPtr<CefFrame> frame, const std::string& code) {
+					if (frame) {
+						frame->ExecuteJavaScript(
+							code,
+							frame->GetURL(), 0);
+					}
+				},
+				m_frame, sCode));
+			}
 		}
 
 		virtual bool Execute(const CefString& sMessageName, CefRefPtr<CefV8Value> object, const CefV8ValueList& arguments, CefRefPtr<CefV8Value>& retval, CefString& exception) OVERRIDE
@@ -2425,6 +2462,35 @@ window.AscDesktopEditor.attachEvent=function(name,callback){if(undefined===windo
 window.AscDesktopEditor.LocalFileTemplates=function(e){window.__lang_checker_templates__=e||\"\",window.__resize_checker_templates__||(window.__resize_checker_templates__=!0,window.addEventListener(\"resize\",function(){window.AscDesktopEditor._LocalFileTemplates(window.__lang_checker_templates__,(100*window.devicePixelRatio)>>0)})),window.AscDesktopEditor._LocalFileTemplates(window.__lang_checker_templates__,(100*window.devicePixelRatio)>>0)};";
 
 					_frame->ExecuteJavaScript(sCodeInitJS, _frame->GetURL(), 0);
+
+					std::string sUrl = _frame->GetURL().ToString();
+					if (0 == sUrl.find("file:///") || 0 == sUrl.find("onlyoffice://"))
+					{
+						std::string sCode = "function ExternalProcess(command)\n\
+{\n\
+this.command = command;this.id = -1;\n\
+this.start = function() {\n\
+this.id = AscDesktopEditor._createProcess(this.command);\n\
+window._external_process_callback[this.id] = this;\n\
+};\n\
+this.end = function() {\n\
+if (window._external_process_callback[this.id])\n\
+delete window._external_process_callback[this.id];\n\
+AscDesktopEditor._endProcess(this.id);\n\
+};\n\
+this._onprocess = function(type, message) {\n\
+if (2 === type && window._external_process_callback[this.id])\n\
+delete window._external_process_callback[this.id];\n\
+if (this.onprocess)\n\
+this.onprocess(type, message);\n\
+};\n\
+if (!window._external_process_callback) {\n\
+window._external_process_callback = {};\n\
+}\n\
+}";
+
+						_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+					}
 				}
 
 				return true;
@@ -4505,6 +4571,24 @@ window.AscDesktopEditor.CallInFrame(\"" +
 
 				return true;
 			}
+			else if (name == "_createProcess")
+			{
+				if (!m_external_processes)
+					m_external_processes = new NSProcesses::CProcessManager(this);
+
+				std::string command = arguments[0]->GetStringValue().ToString();
+				int process_id = m_external_processes->Start(command);
+
+				retval = CefV8Value::CreateInt(process_id);
+				return true;
+			}
+			else if (name == "_endProcess")
+			{
+				int process_id = arguments[0]->GetIntValue();
+				if (m_external_processes)
+					m_external_processes->End(process_id);
+				return true;
+			}
 
 			// Function does not exist.
 			return false;
@@ -5097,6 +5181,17 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 			message_router_ = CefMessageRouterRendererSide::Create(config);
 		}
 
+		virtual void OnBrowserCreated(CefRefPtr<client::ClientAppRenderer> app,
+									  CefRefPtr<CefBrowser> browser,
+									  CefRefPtr<CefDictionaryValue> extra_info) OVERRIDE
+		{
+		}
+
+		virtual void OnBrowserDestroyed(CefRefPtr<client::ClientAppRenderer> app,
+										CefRefPtr<CefBrowser> browser) OVERRIDE
+		{
+		}
+
 		virtual void OnContextCreated(CefRefPtr<client::ClientAppRenderer> app, CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefV8Context> context) OVERRIDE
 		{
 			message_router_->OnContextCreated(browser, frame, context);
@@ -5119,7 +5214,7 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 			CefRefPtr<CefV8Handler> handler = pWrapper;
 
-#define EXTEND_METHODS_COUNT 190
+#define EXTEND_METHODS_COUNT 192
 			const char* methods[EXTEND_METHODS_COUNT] = {
 				"Copy",
 				"Paste",
@@ -5384,6 +5479,9 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 				"_convertFileExternal",
 				"_onConvertFileExternal",
 
+				"_createProcess",
+				"_endProcess",
+
 				NULL};
 
 			ExtendObject(obj, handler, methods);
@@ -5453,6 +5551,8 @@ return this.split(str).join(newStr);\
 #else
 			browser->SendProcessMessage(PID_BROWSER, message);
 #endif
+
+			pWrapper->m_frame = curFrame;
 		}
 
 		virtual void OnContextReleased(CefRefPtr<client::ClientAppRenderer> app, CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefV8Context> context) OVERRIDE

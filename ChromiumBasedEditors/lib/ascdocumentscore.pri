@@ -121,6 +121,9 @@ SOURCES += \
     $$PWD/src/keychain.cpp \
     $$PWD/src/filelocker.cpp
 
+HEADERS += \
+     $$PWD/src/cefwrapper/external_process.h
+
 SOURCES += \
     $$CORE_ROOT_DIR/Common/OfficeFileFormatChecker2.cpp \
     $$CORE_ROOT_DIR/Common/3dParty/pole/pole.cpp \
