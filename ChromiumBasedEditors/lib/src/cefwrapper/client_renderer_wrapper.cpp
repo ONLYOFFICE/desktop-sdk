@@ -63,6 +63,10 @@
 
 #include "../../tools/tools.h"
 
+#ifndef CEF_VERSION_ABOVE_102
+#include "include/cef_runnable.h"
+#endif
+
 std::wstring GetTmpFileFromBase64(const std::string& sData, const std::wstring& sTmpFolder)
 {
 	if (sData.empty())
@@ -819,7 +823,12 @@ namespace asc_client_renderer
 		virtual ~CAscEditorNativeV8Handler()
 		{
 			RELEASEOBJECT(m_external_processes);
+
+#ifdef CEF_2623
+			m_frame = NULL;
+#else
 			m_frame.reset();
+#endif
 
 			if (m_pAES_Key)
 				NSOpenSSL::openssl_free(m_pAES_Key);
@@ -965,16 +974,24 @@ if (!window._external_process_callback[" + std::to_string(id) + "]) return;\n\
 window._external_process_callback[" + std::to_string(id) + "]._onprocess(" + std::to_string((int)type) + ", \"" + sMessageDst + "\");\n\
 })();";
 
+#ifdef CEF_VERSION_ABOVE_102
 				CefPostTask(TID_RENDERER, base::BindOnce([](CefRefPtr<CefFrame> frame, const std::string& code) {
-					if (frame) {
-						frame->ExecuteJavaScript(
-							code,
-							frame->GetURL(), 0);
-					}
-				},
-				m_frame, sCode));
+					if (frame) frame->ExecuteJavaScript(code, frame->GetURL(), 0);
+				}, m_frame, sCode));
+#else
+				CefPostTask(TID_RENDERER,
+						NewCefRunnableMethod(this, &CAscEditorNativeV8Handler::OLD_CEF_POST_TASK, sCode));
+#endif
 			}
 		}
+
+#ifndef CEF_VERSION_ABOVE_102
+		void OLD_CEF_POST_TASK(const std::string& code)
+		{
+			if (m_frame)
+				m_frame->ExecuteJavaScript(code, m_frame->GetURL(), 0);
+		}
+#endif
 
 		virtual bool Execute(const CefString& sMessageName, CefRefPtr<CefV8Value> object, const CefV8ValueList& arguments, CefRefPtr<CefV8Value>& retval, CefString& exception) OVERRIDE
 		{
@@ -5179,17 +5196,6 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 			// Create the renderer-side router for query handling.
 			CefMessageRouterConfig config;
 			message_router_ = CefMessageRouterRendererSide::Create(config);
-		}
-
-		virtual void OnBrowserCreated(CefRefPtr<client::ClientAppRenderer> app,
-									  CefRefPtr<CefBrowser> browser,
-									  CefRefPtr<CefDictionaryValue> extra_info) OVERRIDE
-		{
-		}
-
-		virtual void OnBrowserDestroyed(CefRefPtr<client::ClientAppRenderer> app,
-										CefRefPtr<CefBrowser> browser) OVERRIDE
-		{
 		}
 
 		virtual void OnContextCreated(CefRefPtr<client::ClientAppRenderer> app, CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefV8Context> context) OVERRIDE
