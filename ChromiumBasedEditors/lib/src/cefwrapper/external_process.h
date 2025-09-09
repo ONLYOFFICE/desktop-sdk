@@ -9,6 +9,7 @@
 #include <atomic>
 #include <string>
 #include <iostream>
+#include <map>
 
 #include "../../../../../core/DesktopEditor/common/File.h"
 #include "../../../../../core/DesktopEditor/graphics/TemporaryCS.h"
@@ -34,8 +35,8 @@ namespace NSProcesses
 	class CProcessRunner
 	{
 	public:
-		CProcessRunner(const int& id, const std::string& command, CProcessRunnerCallback* cb)
-			: m_command(command), m_callback(cb), m_running(false), m_id(id)
+		CProcessRunner(const int& id, const std::string& command, std::map<std::string, std::string>&& map, CProcessRunnerCallback* cb)
+			: m_command(command), m_env(map), m_callback(cb), m_running(false), m_id(id)
 		{
 		}
 
@@ -82,11 +83,15 @@ namespace NSProcesses
 
 			try
 			{
+				boost::process::environment env = boost::this_process::environment();
+				for (auto& item : m_env)
+					env[item.first] = item.second;
+
 	#ifdef _WIN32
 				std::wstring commandW = UTF8_TO_U(m_command);
-				m_proc = boost::process::child(commandW, boost::process::std_out > out, boost::process::std_err > err);
+				m_proc = boost::process::child(commandW, boost::process::std_out > out, boost::process::std_err > err, env);
 	#else
-				m_proc = boost::process::child(m_command, boost::process::std_out > out, boost::process::std_err > err);
+				m_proc = boost::process::child(m_command, boost::process::std_out > out, boost::process::std_err > err, env);
 	#endif
 			}
 			catch (const std::exception& ex)
@@ -122,6 +127,8 @@ namespace NSProcesses
 
 	private:
 		std::string				m_command;
+		std::map<std::string, std::string> m_env;
+
 		CProcessRunnerCallback* m_callback;
 		std::thread				m_worker;
 		std::atomic<bool>		m_running;
@@ -153,11 +160,11 @@ namespace NSProcesses
 			m_cs.DeleteCriticalSection();
 		}
 
-		int Start(const std::string& command)
+		int Start(const std::string& command, std::map<std::string, std::string>&& env)
 		{
 			m_cs.Enter();
 			int cur_id = m_counter++;
-			CProcessRunner* runner = new CProcessRunner(cur_id, command, this);
+			CProcessRunner* runner = new CProcessRunner(cur_id, command, std::move(env), this);
 			m_processes.push_back(runner);
 			m_cs.Leave();
 			runner->start();

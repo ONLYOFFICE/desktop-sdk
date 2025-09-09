@@ -2483,11 +2483,12 @@ window.AscDesktopEditor.LocalFileTemplates=function(e){window.__lang_checker_tem
 					std::string sUrl = _frame->GetURL().ToString();
 					if (0 == sUrl.find("file:///") || 0 == sUrl.find("onlyoffice://"))
 					{
-						std::string sCode = "function ExternalProcess(command)\n\
+						std::string sCode = "function ExternalProcess(command, env)\n\
 {\n\
 this.command = command;this.id = -1;\n\
+this.env = env;\n\
 this.start = function() {\n\
-this.id = AscDesktopEditor._createProcess(this.command);\n\
+this.id = AscDesktopEditor._createProcess(this.command, this.env);\n\
 window._external_process_callback[this.id] = this;\n\
 };\n\
 this.end = function() {\n\
@@ -4594,7 +4595,25 @@ window.AscDesktopEditor.CallInFrame(\"" +
 					m_external_processes = new NSProcesses::CProcessManager(this);
 
 				std::string command = arguments[0]->GetStringValue().ToString();
-				int process_id = m_external_processes->Start(command);
+				std::map<std::string, std::string> env;
+
+				if (arguments.size() > 1)
+				{
+					CefRefPtr<CefV8Value> envJS = arguments[1];
+					if (envJS->IsObject())
+					{
+						std::vector<CefString> arKeys;
+						if (envJS->GetKeys(arKeys))
+						{
+							for (int i = 0, len = arKeys.size(); i < len; ++i)
+							{
+								env.insert(std::pair<std::string, std::string>(arKeys[i].ToString(), envJS->GetValue(arKeys[i])->GetStringValue().ToString()));
+							}
+						}
+					}
+				}
+
+				int process_id = m_external_processes->Start(command, std::move(env));
 
 				retval = CefV8Value::CreateInt(process_id);
 				return true;
@@ -5076,9 +5095,9 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 		}
 
-		virtual std::vector<std::wstring> GetRecents()
+		virtual std::vector<CRecentFileInfo> GetRecents()
 		{
-			std::vector<std::wstring> files;
+			std::vector<CRecentFileInfo> files;
 			std::wstring sXmlPath = m_sRecoversFolder + L"/../recents.xml";
 			XmlUtils::CXmlNode oNodeRecents;
 			if (!oNodeRecents.FromXmlFile(sXmlPath))
@@ -5091,7 +5110,9 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				XmlUtils::CXmlNode &oFile = oNodes[i];
 				std::wstring path = oFile.GetAttribute(L"path");
 				if (!path.empty())
-					files.push_back(path);
+				{
+					files.push_back(CRecentFileInfo(path, oFile.GetAttributeInt("type")));
+				}
 			}
 
 			return files;

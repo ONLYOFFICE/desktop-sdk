@@ -76,8 +76,8 @@ def generate_header_content(cpp_files):
 struct TFuncInstance
 {
 \tstd::string name;
-\tstd::function<std::string(std::string)> func;
-\tTFuncInstance(const std::string& n, std::function<std::string(const std::string&)> f)
+\tstd::function<std::string(std::string, CAIToolsHelper*)> func;
+\tTFuncInstance(const std::string& n, std::function<std::string(const std::string&, CAIToolsHelper*)> f)
 \t\t: name(n), func(f) {}
 };
 

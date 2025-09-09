@@ -36,12 +36,33 @@
 #include <vector>
 #include <functional>
 
+class CRecentFileInfo
+{
+public:
+	std::wstring Path;
+	int Type;
+
+public:
+	CRecentFileInfo() : Path(L""), Type(0)
+	{
+	}
+	CRecentFileInfo(const std::wstring& path, int type) : Path(path), Type(type)
+	{
+	}
+	CRecentFileInfo& operator=(const CRecentFileInfo& s)
+	{
+		Path = s.Path;
+		Type = s.Type;
+		return *this;
+	}
+};
+
 class CAIToolsHelper
 {
 public:
 	virtual void OpenTemplate(const std::wstring& path, const std::wstring& name = L"") = 0;
 	virtual void OpenFile(const std::wstring& path) = 0;
-	virtual std::vector<std::wstring> GetRecents() = 0;
+	virtual std::vector<CRecentFileInfo> GetRecents() = 0;
 };
 
 class CFunctions;

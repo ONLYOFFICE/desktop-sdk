@@ -1,13 +1,13 @@
 {
   "type": "function",
   "name": "folder_content_reader",
-  "description": "Use this function to list the contents of a folder. Input: folder name or path. Standard folder names include: 'Documents', 'Downloads', 'Desktop', 'Pictures', 'Music', 'Videos'. Output: an object describing the result of the operation.\n\nReturn value:\n{\n\"role\": \"tool\",\n\"status\": \"success\" | \"error\",\n\"files\": [ \"array of file names\" ],\n\"error_message\": \"string | null\"\n}\n\nExample function call parameter: { \"folder\": \"Documents\" }\n\nExample successful response:\n{\n\"role\": \"tool\",\n\"status\": \"success\",\n\"files\": [ \"file1.txt\", \"file2.docx\" ],\n\"error_message\": null\n}\n\nExample error response:\n{\n\"role\": \"tool\",\n\"status\": \"error\",\n\"files\": [],\n\"error_message\": \"Folder not found.\"\n}",
+  "description": "Use this function to list the contents of a folder. Input: folder name or path. Standard folder names include: 'Documents', 'Downloads', 'Desktop'. Output: an object describing the result of the operation.\n\nReturn value:\n{\n\"role\": \"tool\",\n\"status\": \"success\" | \"error\",\n\"files\": [ \"array of file names\" ],\n\"error_message\": \"string | null\"\n}\n\nExample function call parameter: { \"folder\": \"Documents\" }\n\nExample successful response:\n{\n\"role\": \"tool\",\n\"status\": \"success\",\n\"files\": [ \"file1.txt\", \"file2.docx\" ],\n\"error_message\": null\n}\n\nExample error response:\n{\n\"role\": \"tool\",\n\"status\": \"error\",\n\"files\": [],\n\"error_message\": \"Folder not found.\"\n}",
   "parameters": {
     "type": "object",
     "properties": {
       "folder": {
         "type": "string",
-        "description": "Name or path of the folder to be listed. Standard names: 'Documents', 'Downloads', 'Desktop', 'Pictures', 'Music', 'Videos'."
+        "description": "Name or path of the folder to be listed. Standard names: 'Documents', 'Downloads', 'Desktop'."
       }
     },
     "required": ["folder"]
