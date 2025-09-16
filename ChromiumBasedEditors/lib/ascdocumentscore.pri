@@ -14,6 +14,7 @@ CONFIG += plugin
 
 CORE_ROOT_DIR = $$PWD/../../../core
 include($$CORE_ROOT_DIR/Common/base.pri)
+include($$CORE_ROOT_DIR/Common/3dParty/icu/icu.pri)
 
 DEFINES += \
     PDFFILE_USE_DYNAMIC_LIBRARY \
@@ -161,7 +162,6 @@ SOURCES += \
 }
 
 !core_mac {
-    include($$CORE_ROOT_DIR/Common/3dParty/icu/icu.pri)
 
     HEADERS += \
         $$PWD/src/keyboardlayout.h
@@ -174,14 +174,17 @@ core_mac {
     LIBS += -framework Security
 	LIBS += -framework AVFoundation
 	LIBS += -framework CoreMedia
+	LIBS += -framework Carbon
 
 	HEADERS += \
+		$$PWD/src/mac_keyboardlayout.h \
 		./include/mac_cefview.h \
 		./include/mac_application.h \
 		./include/mac_cefviewmedia.h
 
     OBJECTIVE_SOURCES += \
         $$PWD/src/widget_impl.mm \
+		$$PWD/src/mac_keyboardlayout.mm \
 		$$PWD/src/mac_application.mm \
 		$$PWD/src/mac_cefview.mm \
 		$$PWD/src/mac_cefviewmedia.mm
