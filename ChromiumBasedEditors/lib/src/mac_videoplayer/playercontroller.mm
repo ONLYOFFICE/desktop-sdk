@@ -213,6 +213,10 @@
 }
 
 - (void)play {
+	// if playback has already ended, play video from the beginning
+	if ([self isPlaybackEnded]) {
+		[m_player seekToTime:kCMTimeZero toleranceBefore:kCMTimeZero toleranceAfter:kCMTimeZero];
+	}
 	[m_player play];
 }
 
@@ -241,6 +245,21 @@
 	[m_video_view setHidden:YES];
 	[m_player pause];
 	[m_player seekToTime:kCMTimeZero toleranceBefore:kCMTimeZero toleranceAfter:kCMTimeZero];
+}
+
+- (BOOL)isPlaybackEnded {
+	// player should be ready to play
+	if (m_player.status != AVPlayerStatusReadyToPlay) {
+		return NO;
+	}
+	// the media item duration should be correct
+	if (m_duration_sec == 0.0 || !std::isfinite(m_duration_sec)) {
+		return NO;
+	}
+	// check if current time is at the media end
+	CMTime curr_time = m_player.currentTime;
+	CMTime duration_time = CMTimeMakeWithSeconds(m_duration_sec, NSEC_PER_SEC);
+	return (CMTimeCompare(curr_time, duration_time) >= 0);
 }
 
 - (void)dealloc {

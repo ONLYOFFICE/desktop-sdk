@@ -22,6 +22,8 @@
 - (void)setVolume:(CGFloat)value;
 - (void)toggleMute;
 - (void)stop;
+// playback state
+- (BOOL)isPlaybackEnded;
 @end
 
 #endif	// PLAYER_CONTROLLER_BRIDGE_H_
