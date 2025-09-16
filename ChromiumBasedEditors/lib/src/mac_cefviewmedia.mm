@@ -43,7 +43,7 @@ void CCefViewMedia::showMediaControl(NSEditorApi::CAscExternalMediaPlayerCommand
 		return;
 
 	// calculate rects
-	NSRect video_view_rect = NSMakeRect(data->get_FrameRectX(), cef_height - data->get_FrameRectH() - data->get_FrameRectY(), data->get_FrameRectW(), data->get_FrameRectH());
+	NSRect video_view_rect = NSMakeRect(data->get_FrameBoundsX(), cef_height - data->get_FrameBoundsH() - data->get_FrameBoundsY(), data->get_FrameBoundsW(), data->get_FrameBoundsH());
 	NSRect footer_panel_rect = NSMakeRect(data->get_ControlRectX(), cef_height - data->get_ControlRectH() - data->get_ControlRectY(), data->get_ControlRectW(), data->get_ControlRectH());
 	// create and initialize player view
 	m_player_view = new CPlayerView(video_view_rect, footer_panel_rect, m_pParent);
@@ -81,7 +81,7 @@ void CCefViewMedia::updateGeometry(NSEditorApi::CAscExternalMediaPlayerCommand* 
 		return;
 
 	// update frame of the video view
-	NSRect video_view_rect = NSMakeRect(data->get_FrameRectX(), cef_height - data->get_FrameRectH() - data->get_FrameRectY(), data->get_FrameRectW(), data->get_FrameRectH());
+	NSRect video_view_rect = NSMakeRect(data->get_FrameBoundsX(), cef_height - data->get_FrameBoundsH() - data->get_FrameBoundsY(), data->get_FrameBoundsW(), data->get_FrameBoundsH());
 	[m_player_view->VideoView() setFrame:video_view_rect];
 	// update frame of the footer panel
 	NSRect footer_panel_rect = NSMakeRect(data->get_ControlRectX(), cef_height - data->get_ControlRectH() - data->get_ControlRectY(), data->get_ControlRectW(), data->get_ControlRectH());
