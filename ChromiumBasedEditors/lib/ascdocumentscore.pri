@@ -177,7 +177,7 @@ core_mac {
 	LIBS += -framework Carbon
 
 	HEADERS += \
-	$$PWD/src/mac_keyboardlayout.h \
+		$$PWD/src/mac_keyboardlayout.h \
 		./include/mac_cefview.h \
 		./include/mac_application.h \
 		./include/mac_cefviewmedia.h
