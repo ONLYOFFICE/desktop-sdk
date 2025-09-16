@@ -174,17 +174,17 @@ core_mac {
     LIBS += -framework Security
 	LIBS += -framework AVFoundation
 	LIBS += -framework CoreMedia
-  LIBS += -framework Carbon
+	LIBS += -framework Carbon
 
 	HEADERS += \
-    $$PWD/src/mac_keyboardlayout.h \
+	$$PWD/src/mac_keyboardlayout.h \
 		./include/mac_cefview.h \
 		./include/mac_application.h \
 		./include/mac_cefviewmedia.h
 
     OBJECTIVE_SOURCES += \
         $$PWD/src/widget_impl.mm \
-    $$PWD/src/mac_keyboardlayout.mm \
+		$$PWD/src/mac_keyboardlayout.mm \
 		$$PWD/src/mac_application.mm \
 		$$PWD/src/mac_cefview.mm \
 		$$PWD/src/mac_cefviewmedia.mm
