@@ -20,6 +20,15 @@
 #include <iomanip>
 #endif
 
+#ifdef _MAC
+#ifdef __APPLE__
+#include <crt_externs.h>
+#define environ (*_NSGetEnviron())
+#else
+extern char **environ;
+#endif
+#endif
+
 #include "../../../../../core/DesktopEditor/common/File.h"
 #include "../../../../../core/DesktopEditor/graphics/TemporaryCS.h"
 #include "../../../../../core/DesktopEditor/graphics/BaseThread.h"
