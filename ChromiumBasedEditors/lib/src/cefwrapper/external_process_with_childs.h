@@ -5,6 +5,7 @@
 #include <string>
 #include <thread>
 #include <atomic>
+#include <vector>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -15,6 +16,8 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <sstream>
+#include <iomanip>
 #endif
 
 #include "../../../../../core/DesktopEditor/common/File.h"
@@ -113,9 +116,29 @@ namespace NSProcesses
 			WaitForSingleObject(m_pi.hProcess, INFINITE);
 #else
 			int status;
-			while (waitpid(-pid, &status, 0) > 0)
+			pid_t wpid;
+
+			while (true)
 			{
-				NSThreads::Sleep(500);
+				wpid = waitpid(-m_pid, &status, 0);
+				if (wpid > 0)
+				{
+					NSThreads::Sleep(500);
+					continue;
+				}
+				else if (wpid == -1)
+				{
+					if (errno == EINTR)
+					{
+						NSThreads::Sleep(500);
+						continue;
+					}
+					break;
+				}
+				else
+				{
+					break;
+				}
 			}
 #endif
 		}
@@ -145,7 +168,7 @@ namespace NSProcesses
 				size_t pos;
 				while ((pos = lineBuf.find('\n')) != std::string::npos)
 				{
-					m_callback->process_callback(m_id, type, lineBuf.substr(0, pos + 1));
+					m_callback->process_callback(m_id, type, lineBuf.substr(0, pos));
 					lineBuf.erase(0, pos + 1);
 				}
 
@@ -154,6 +177,28 @@ namespace NSProcesses
 			if (!lineBuf.empty())
 				m_callback->process_callback(m_id, type, lineBuf);
 		}
+
+#ifdef _LINUX
+		std::string findBinary(const std::string& cmd)
+		{
+			if (!cmd.empty() && access(cmd.c_str(), X_OK) == 0)
+				return cmd;
+
+			const char* pathEnv = std::getenv("PATH");
+			if (!pathEnv)
+				return cmd;
+
+			std::istringstream iss(pathEnv);
+			std::string dir;
+			while (std::getline(iss, dir, ':'))
+			{
+				std::string full = dir + "/" + cmd;
+				if (access(full.c_str(), X_OK) == 0)
+					return full;
+			}
+			return cmd;
+		}
+#endif
 
 		void run()
 		{
@@ -205,52 +250,72 @@ namespace NSProcesses
 			m_hStdErrWr = nullptr;
 
 			std::thread t_out = std::thread([this]()
-				{
-					readOutLoop(m_hStdOutRd, StreamType::StdOut);
-				});
+											{
+												readOutLoop(m_hStdOutRd, StreamType::StdOut);
+											});
 			std::thread t_err = std::thread([this]()
-				{
-					readOutLoop(m_hStdErrRd, StreamType::StdErr);
-				});
+											{
+												readOutLoop(m_hStdErrRd, StreamType::StdErr);
+											});
 #else
-			if (pipe(stdoutPipe) < 0 || pipe(stderrPipe) < 0)
+			if (pipe(m_stdinPipe) < 0 || pipe(m_stdoutPipe) < 0 || pipe(m_stderrPipe) < 0)
 			{
 				m_callback->process_callback(m_id, StreamType::Terminate, "");
 				return;
 			}
 
-			pid = fork();
-			if (pid == 0)
+			m_pid = fork();
+			if (m_pid == 0)
 			{
-				// child
 				setsid();
+				setpgid(0, 0);
 
+				dup2(m_stdinPipe[0], STDIN_FILENO);
 				dup2(m_stdoutPipe[1], STDOUT_FILENO);
 				dup2(m_stderrPipe[1], STDERR_FILENO);
-				close(m_stdoutPipe[0]);
-				close(m_stdoutPipe[1]);
-				close(m_stderrPipe[0]);
-				close(m_stderrPipe[1]);
+
+				close(m_stdinPipe[0]); close(m_stdinPipe[1]);
+				close(m_stdoutPipe[0]); close(m_stdoutPipe[1]);
+				close(m_stderrPipe[0]); close(m_stderrPipe[1]);
+
+				std::vector<std::string> args;
+				{
+					std::istringstream iss(m_command);
+					std::string token;
+					while (iss >> std::quoted(token)) // "..."
+						args.push_back(token);
+				}
+				if (args.empty())
+					_exit(127);
+
+				std::vector<char*> argv;
+				for (auto& s : args)
+					argv.push_back(const_cast<char*>(s.c_str()));
+				argv.push_back(nullptr);
 
 				std::vector<std::string> envStrings;
 				std::vector<char*> envp;
+				for (char** env = environ; *env; ++env)
+					envStrings.push_back(*env);
 				for (auto& kv : m_env)
-				{
 					envStrings.push_back(kv.first + "=" + kv.second);
-				}
 				for (auto& s : envStrings)
 					envp.push_back(const_cast<char*>(s.c_str()));
 				envp.push_back(nullptr);
 
-				execlpe("/bin/sh", "sh", "-c", command.c_str(), (char*)nullptr, envp.data());
+				std::string sProgramm(argv[0]);
+				sProgramm = findBinary(sProgramm);
+
+				execve(sProgramm.c_str(), argv.data(), envp.data());
 				_exit(127);
 			}
-			else if (pid < 0)
+			else if (m_pid < 0)
 			{
 				m_callback->process_callback(m_id, StreamType::Stop, "");
 				return;
 			}
 
+			close(m_stdinPipe[0]);
 			close(m_stdoutPipe[1]);
 			close(m_stderrPipe[1]);
 
@@ -295,6 +360,7 @@ namespace NSProcesses
 		HANDLE m_hStdErrRd{nullptr}, m_hStdErrWr{nullptr};
 #else
 		pid_t m_pid{-1};
+		int m_stdinPipe[2];
 		int m_stdoutPipe[2];
 		int m_stderrPipe[2];
 #endif
