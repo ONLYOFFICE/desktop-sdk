@@ -29,7 +29,7 @@
  * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
  *
  */
-#include "./external_process.h"
+#include "./external_process_with_childs.h"
 
 #include "./client_renderer.h"
 

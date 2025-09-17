@@ -116,7 +116,7 @@ namespace NSProcesses
 				}
 			});
 
-			if (m_proc.running())
+			if (m_proc.valid())
 				m_proc.wait();
 
 			m_callback->process_callback(m_id, StreamType::Stop, "");
