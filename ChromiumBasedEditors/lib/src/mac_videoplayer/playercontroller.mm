@@ -256,10 +256,11 @@
 	if (m_duration_sec == 0.0 || !std::isfinite(m_duration_sec)) {
 		return NO;
 	}
-	// check if current time is at the media end
+	// check if current time is at the media end (with tolerance = 0.1 sec)
+	static const CMTime tolerance = CMTimeMakeWithSeconds(0.1, NSEC_PER_SEC);
 	CMTime curr_time = m_player.currentTime;
 	CMTime duration_time = CMTimeMakeWithSeconds(m_duration_sec, NSEC_PER_SEC);
-	return (CMTimeCompare(curr_time, duration_time) >= 0);
+	return (CMTimeCompare(curr_time, CMTimeSubtract(duration_time, tolerance)) >= 0);
 }
 
 - (void)dealloc {
