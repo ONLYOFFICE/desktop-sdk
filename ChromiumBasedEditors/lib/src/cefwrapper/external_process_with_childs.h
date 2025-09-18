@@ -129,17 +129,16 @@ namespace NSProcesses
 
 			while (true)
 			{
+				NSThreads::Sleep(500);
 				wpid = waitpid(-m_pid, &status, 0);
 				if (wpid > 0)
 				{
-					NSThreads::Sleep(500);
 					continue;
 				}
 				else if (wpid == -1)
 				{
 					if (errno == EINTR)
 					{
-						NSThreads::Sleep(500);
 						continue;
 					}
 					break;
@@ -302,14 +301,31 @@ namespace NSProcesses
 					argv.push_back(const_cast<char*>(s.c_str()));
 				argv.push_back(nullptr);
 
+				std::map<std::string, std::string> mergedEnv;
+				for (char **env = environ; *env; ++env)
+				{
+					std::string s(*env);
+					auto pos = s.find('=');
+					if (pos != std::string::npos)
+					{
+						mergedEnv[s.substr(0, pos)] = s.substr(pos + 1);
+					}
+				}
+				for (auto &kv : m_env)
+				{
+					mergedEnv[kv.first] = kv.second;
+				}
+
 				std::vector<std::string> envStrings;
 				std::vector<char*> envp;
-				for (char** env = environ; *env; ++env)
-					envStrings.push_back(*env);
-				for (auto& kv : m_env)
+				for (auto &kv : mergedEnv)
+				{
 					envStrings.push_back(kv.first + "=" + kv.second);
-				for (auto& s : envStrings)
+				}
+				for (auto &s : envStrings)
+				{
 					envp.push_back(const_cast<char*>(s.c_str()));
+				}
 				envp.push_back(nullptr);
 
 				std::string sProgramm(argv[0]);
@@ -330,11 +346,11 @@ namespace NSProcesses
 
 			std::thread t_out = std::thread([this]()
 											{
-												readOutLoop(m_stdoutPipe[0], StreamType::StdOut);
+				                                readOutLoop(m_stdoutPipe[0], StreamType::StdOut);
 											});
 			std::thread t_err = std::thread([this]()
 											{
-												readOutLoop(m_stderrPipe[0], StreamType::StdErr);
+				                                readOutLoop(m_stderrPipe[0], StreamType::StdErr);
 											});
 
 #endif
