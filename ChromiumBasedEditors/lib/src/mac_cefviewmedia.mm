@@ -43,8 +43,8 @@ void CCefViewMedia::showMediaControl(NSEditorApi::CAscExternalMediaPlayerCommand
 		return;
 
 	// calculate rects
-	NSRect video_view_rect = NSMakeRect(data->get_FrameBoundsX(), cef_height - data->get_FrameBoundsH() - data->get_FrameBoundsY(), data->get_FrameBoundsW(), data->get_FrameBoundsH());
-	NSRect footer_panel_rect = NSMakeRect(data->get_ControlRectX(), cef_height - data->get_ControlRectH() - data->get_ControlRectY(), data->get_ControlRectW(), data->get_ControlRectH());
+	NSRect video_view_rect = NSMakeRect(data->get_FrameBoundsX(), (int)cef_height - data->get_FrameBoundsH() - data->get_FrameBoundsY(), data->get_FrameBoundsW(), data->get_FrameBoundsH());
+	NSRect footer_panel_rect = NSMakeRect(data->get_ControlRectX(), (int)cef_height - data->get_ControlRectH() - data->get_ControlRectY(), data->get_ControlRectW(), data->get_ControlRectH());
 	// create and initialize player view
 	m_player_view = new CPlayerView(video_view_rect, footer_panel_rect, m_pParent);
 
@@ -81,9 +81,9 @@ void CCefViewMedia::updateGeometry(NSEditorApi::CAscExternalMediaPlayerCommand* 
 		return;
 
 	// update frame of the video view
-	NSRect video_view_rect = NSMakeRect(data->get_FrameBoundsX(), cef_height - data->get_FrameBoundsH() - data->get_FrameBoundsY(), data->get_FrameBoundsW(), data->get_FrameBoundsH());
+	NSRect video_view_rect = NSMakeRect(data->get_FrameBoundsX(), (int)cef_height - data->get_FrameBoundsH() - data->get_FrameBoundsY(), data->get_FrameBoundsW(), data->get_FrameBoundsH());
 	[m_player_view->VideoView() setFrame:video_view_rect];
 	// update frame of the footer panel
-	NSRect footer_panel_rect = NSMakeRect(data->get_ControlRectX(), cef_height - data->get_ControlRectH() - data->get_ControlRectY(), data->get_ControlRectW(), data->get_ControlRectH());
+	NSRect footer_panel_rect = NSMakeRect(data->get_ControlRectX(), (int)cef_height - data->get_ControlRectH() - data->get_ControlRectY(), data->get_ControlRectW(), data->get_ControlRectH());
 	[m_player_view->Footer() setFrame:footer_panel_rect];
 }
