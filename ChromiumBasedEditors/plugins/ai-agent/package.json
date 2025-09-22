@@ -36,6 +36,7 @@
     "i18next": "^25.5.2",
     "lodash.clonedeep": "^4.5.0",
     "ollama": "^0.5.17",
+    "openai": "^5.22.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-i18next": "^15.7.3",
