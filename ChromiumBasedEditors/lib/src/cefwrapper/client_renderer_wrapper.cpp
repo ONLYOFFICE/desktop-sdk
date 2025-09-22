@@ -4624,13 +4624,16 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			else if (name == "_endProcess")
 			{
 				int process_id = arguments[0]->GetIntValue();
-				std::string data = arguments[1]->GetStringValue().ToString();
 				if (m_external_processes)
-					m_external_processes->SendStdIn(process_id, data);
+					m_external_processes->End(process_id);
 				return true;
 			}
 			else if (name == "_stdin")
 			{
+				int process_id = arguments[0]->GetIntValue();
+				std::string data = arguments[1]->GetStringValue().ToString();
+				if (m_external_processes)
+					m_external_processes->SendStdIn(process_id, data);
 				return true;
 			}
 
