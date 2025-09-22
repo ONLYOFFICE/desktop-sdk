@@ -1,0 +1,22 @@
+.aui-shiki-base {
+    background-color: var(--chat-message-code-block-background-color) !important;
+
+    padding: 0 12px 12px !important;
+
+    border-radius: 0 0 12px 12px !important;
+}
+
+.aui-shiki-base >pre {
+    background-color: var(--chat-message-code-block-pre-background-color) !important;
+    border: 1px solid var(--chat-message-code-block-border-color) !important;
+    border-radius: 4px !important;
+    padding: 6px !important;
+}
+
+.theme-light .line span {
+    color: var(--shiki-light) !important; 
+}
+
+.theme-dark .line span {
+    color: var(--shiki-dark) !important; 
+}
