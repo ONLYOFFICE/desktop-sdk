@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 import useModelsStore from "@/store/useModelsStore";
 import useProviders from "@/store/useProviders";
@@ -13,9 +14,12 @@ import { ComboBox } from "@/components/combo-box";
 
 const SelectModel = () => {
   const { currentModel, selectModel } = useModelsStore();
-  const { providers, providersModels, setCurrentProvider } = useProviders();
+  const { providers, providersModels, currentProvider, setCurrentProvider } =
+    useProviders();
   const { tools } = useServersStore();
   const { messages } = useMessageStore();
+
+  const { t } = useTranslation();
 
   const onSelectModel = React.useCallback(
     (providerInfo: TProvider, modelId: string) => {
@@ -71,8 +75,8 @@ const SelectModel = () => {
 
   return (
     <ComboBox
-      placeholder="Select model"
-      value={currentModel?.name || ""}
+      placeholder={t("SelectModel")}
+      value={currentProvider ? currentModel?.name || "" : ""}
       items={items}
       withoutBg
     />
