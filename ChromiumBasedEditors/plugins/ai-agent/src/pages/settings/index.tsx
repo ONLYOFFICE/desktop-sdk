@@ -1,45 +1,55 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 
-import useProviders from "@/store/useProviders";
+// import useProviders from "@/store/useProviders";
 
 import { RadioButton } from "@/components/radio-button";
 import { Tabs } from "@/components/tabs";
 
 import { Providers } from "./sub-components/providers";
 import { Wallet } from "./sub-components/wallet";
-import { Servers } from "./sub-components/servers";
+// import { Servers } from "./sub-components/servers";
+
+import config from "@/config.json";
+
+const showWallet = config.showWallet;
 
 const Settings = () => {
   const { t } = useTranslation();
 
-  const [selectedSection, setSelectedSection] = React.useState("wallet");
+  const [selectedSection, setSelectedSection] = React.useState(
+    showWallet ? "wallet" : "providers"
+  );
 
-  const { providers } = useProviders();
+  // const { providers } = useProviders();
 
   const aiSettingsTab = (
     <div className="flex flex-col gap-[16px] select-none">
-      <div>
-        <h3 className="font-bold text-[20px] leading-[28px] text-[var(--settings-header-color)]">
-          {t("ChooseHowConnect")}
-        </h3>
-        <p className="text-[14px] leading-[20px] text-[var(--settings-description-color)] mt-[4px]">
-          {t("SelectHowConnect")}
-          <br />
-          {t("SelectHowConnectDescription")}
-        </p>
-      </div>
-      {["wallet", "providers"].map((item) => {
+      {showWallet ? (
+        <div>
+          <h3 className="font-bold text-[20px] leading-[28px] text-[var(--settings-header-color)]">
+            {t("ChooseHowConnect")}
+          </h3>
+          <p className="text-[14px] leading-[20px] text-[var(--settings-description-color)] mt-[4px]">
+            {t("SelectHowConnect")}
+            <br />
+            {t("SelectHowConnectDescription")}
+          </p>
+        </div>
+      ) : null}
+      {(showWallet ? ["wallet", "providers"] : ["providers"]).map((item) => {
         const isWallet = item === "wallet";
 
         return (
           <div key={item} className="flex gap-[12px]">
-            <div className="flex items-start w-[20px] flex-shrink-0">
-              <RadioButton
-                checked={selectedSection === item}
-                onChange={() => setSelectedSection(item)}
-              />
-            </div>
+            {showWallet ? (
+              <div className="flex items-start w-[20px] flex-shrink-0">
+                <RadioButton
+                  checked={selectedSection === item}
+                  onChange={() => setSelectedSection(item)}
+                />
+              </div>
+            ) : null}
             <div className="select-none flex flex-col gap-[12px]">
               <div className="flex flex-col gap-[4px]">
                 <h2
@@ -80,12 +90,12 @@ const Settings = () => {
                 label: t("Connection"),
                 content: aiSettingsTab,
               },
-              {
-                value: "mcp-servers",
-                label: t("MCPServers"),
-                content: <Servers />,
-                disabled: !providers.length,
-              },
+              // {
+              //   value: "mcp-servers",
+              //   label: t("MCPServers"),
+              //   content: <Servers />,
+              //   disabled: !providers.length,
+              // },
             ]}
           />
         </div>
