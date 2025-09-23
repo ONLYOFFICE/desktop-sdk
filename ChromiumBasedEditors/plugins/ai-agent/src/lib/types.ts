@@ -11,7 +11,7 @@ export type Thread = {
   lastEditDate?: number;
 };
 
-export type ProviderType = "anthropic" | "ollama";
+export type ProviderType = "anthropic" | "ollama" | "openai";
 
 export type Model = {
   id: string;

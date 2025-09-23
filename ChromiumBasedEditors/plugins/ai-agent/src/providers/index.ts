@@ -6,6 +6,7 @@ import type { TData } from "./settings";
 
 import { anthropicProvider, AnthropicProvider } from "./anthropic";
 import { ollamaProvider, OllamaProvider } from "./ollama";
+import { openaiProvider, OpenAIProvider } from "./openai";
 
 import { SYSTEM_PROMPT } from "./Providers.utils";
 
@@ -18,16 +19,18 @@ export type SendMessageReturnType = AsyncGenerator<
 >;
 
 class Provider {
-  currentProvider?: AnthropicProvider | OllamaProvider;
+  currentProvider?: AnthropicProvider | OllamaProvider | OpenAIProvider;
   currentProviderInfo?: TProvider;
   currentProviderType?: ProviderType;
 
   anthropicProvider: AnthropicProvider;
   ollamaProvider: OllamaProvider;
+  openaiProvider: OpenAIProvider;
 
   constructor() {
     this.anthropicProvider = anthropicProvider;
     this.ollamaProvider = ollamaProvider;
+    this.openaiProvider = openaiProvider;
   }
 
   setCurrentProvider = (provider?: TProvider) => {
@@ -49,6 +52,11 @@ class Provider {
       case "ollama":
         this.currentProvider = ollamaProvider;
         this.currentProviderType = "ollama";
+        break;
+
+      case "openai":
+        this.currentProvider = openaiProvider;
+        this.currentProviderType = "openai";
         break;
 
       default:
@@ -121,7 +129,13 @@ class Provider {
       baseUrl: this.ollamaProvider.getBaseUrl(),
     };
 
-    return [anthropic, ollama];
+    const openai = {
+      type: "openai" as ProviderType,
+      name: this.openaiProvider.getName(),
+      baseUrl: this.openaiProvider.getBaseUrl(),
+    };
+
+    return [anthropic, ollama, openai];
   };
 
   getProviderInfo = (type: ProviderType) => {
@@ -139,6 +153,13 @@ class Provider {
         baseUrl: this.ollamaProvider.getBaseUrl(),
       };
 
+    if (type === "openai")
+      return {
+        type,
+        name: this.openaiProvider.getName(),
+        baseUrl: this.openaiProvider.getBaseUrl(),
+      };
+
     return {
       name: "",
       baseUrl: "",
@@ -149,6 +170,8 @@ class Provider {
     if (type === "anthropic") return this.anthropicProvider.checkProvider(data);
 
     if (type === "ollama") return this.ollamaProvider.checkProvider(data);
+
+    if (type === "openai") return this.openaiProvider.checkProvider(data);
 
     return false;
   };
@@ -170,6 +193,12 @@ class Provider {
             apiKey: p.key,
           });
 
+        if (p.type === "openai")
+          return this.openaiProvider.getProviderModels({
+            url: p.baseUrl,
+            apiKey: p.key,
+          });
+
         return null; // Explicitly return null for unsupported types
       })
       .filter((action): action is Promise<Model[]> => action !== null); // Filter out null values
@@ -179,7 +208,11 @@ class Provider {
     let actionIndex = 0;
     providers.forEach((provider) => {
       // Only process providers that have supported types
-      if (provider.type === "anthropic" || provider.type === "ollama") {
+      if (
+        provider.type === "anthropic" ||
+        provider.type === "ollama" ||
+        provider.type === "openai"
+      ) {
         const model = fetchedModels[actionIndex];
         if (
           model.status === "fulfilled" &&

@@ -34,18 +34,34 @@ const useProviders = create<ProvidersState>()((set, get) => ({
     if (!saved) return null;
     const parsed: TProvider = JSON.parse(saved);
 
-    const result = provider.checkNewProvider(parsed.type, {
+    // Since checkNewProvider is async, we need to handle this differently
+    // For now, just set the provider and validate it asynchronously
+    provider.setCurrentProvider(parsed);
+
+    // Validate the provider asynchronously
+    const validationResult = provider.checkNewProvider(parsed.type, {
       url: parsed.baseUrl,
       apiKey: parsed.key,
     });
 
-    if (typeof result === "boolean" && result) {
-      provider.setCurrentProvider(parsed);
-
-      return parsed;
+    // Handle both sync (false) and async (Promise) results
+    if (validationResult instanceof Promise) {
+      validationResult
+        .then((result: boolean | TErrorData) => {
+          if (typeof result !== "boolean" || !result) {
+            localStorage.removeItem(CURRENT_PROVIDER_KEY);
+          }
+        })
+        .catch((error: unknown) => {
+          console.error("Provider validation error:", error);
+          localStorage.removeItem(CURRENT_PROVIDER_KEY);
+        });
+    } else if (!validationResult) {
+      localStorage.removeItem(CURRENT_PROVIDER_KEY);
+      return null;
     }
 
-    return null;
+    return parsed;
   })(),
   providersModels: new Map<string, Model[]>(),
 
