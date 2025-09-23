@@ -7,6 +7,7 @@ import type { TData } from "./settings";
 import { anthropicProvider, AnthropicProvider } from "./anthropic";
 import { ollamaProvider, OllamaProvider } from "./ollama";
 import { openaiProvider, OpenAIProvider } from "./openai";
+import { togetherProvider, TogetherProvider } from "./together";
 
 import { SYSTEM_PROMPT } from "./Providers.utils";
 
@@ -19,18 +20,24 @@ export type SendMessageReturnType = AsyncGenerator<
 >;
 
 class Provider {
-  currentProvider?: AnthropicProvider | OllamaProvider | OpenAIProvider;
+  currentProvider?:
+    | AnthropicProvider
+    | OllamaProvider
+    | OpenAIProvider
+    | TogetherProvider;
   currentProviderInfo?: TProvider;
   currentProviderType?: ProviderType;
 
   anthropicProvider: AnthropicProvider;
   ollamaProvider: OllamaProvider;
   openaiProvider: OpenAIProvider;
+  togetherProvider: TogetherProvider;
 
   constructor() {
     this.anthropicProvider = anthropicProvider;
     this.ollamaProvider = ollamaProvider;
     this.openaiProvider = openaiProvider;
+    this.togetherProvider = togetherProvider;
   }
 
   setCurrentProvider = (provider?: TProvider) => {
@@ -57,6 +64,11 @@ class Provider {
       case "openai":
         this.currentProvider = openaiProvider;
         this.currentProviderType = "openai";
+        break;
+
+      case "together":
+        this.currentProvider = togetherProvider;
+        this.currentProviderType = "together";
         break;
 
       default:
@@ -135,7 +147,13 @@ class Provider {
       baseUrl: this.openaiProvider.getBaseUrl(),
     };
 
-    return [anthropic, ollama, openai];
+    const together = {
+      type: "together" as ProviderType,
+      name: this.togetherProvider.getName(),
+      baseUrl: this.togetherProvider.getBaseUrl(),
+    };
+
+    return [anthropic, ollama, openai, together];
   };
 
   getProviderInfo = (type: ProviderType) => {
@@ -160,6 +178,13 @@ class Provider {
         baseUrl: this.openaiProvider.getBaseUrl(),
       };
 
+    if (type === "together")
+      return {
+        type,
+        name: this.togetherProvider.getName(),
+        baseUrl: this.togetherProvider.getBaseUrl(),
+      };
+
     return {
       name: "",
       baseUrl: "",
@@ -172,6 +197,8 @@ class Provider {
     if (type === "ollama") return this.ollamaProvider.checkProvider(data);
 
     if (type === "openai") return this.openaiProvider.checkProvider(data);
+
+    if (type === "together") return this.togetherProvider.checkProvider(data);
 
     return false;
   };
@@ -199,6 +226,12 @@ class Provider {
             apiKey: p.key,
           });
 
+        if (p.type === "together")
+          return this.togetherProvider.getProviderModels({
+            url: p.baseUrl,
+            apiKey: p.key,
+          });
+
         return null; // Explicitly return null for unsupported types
       })
       .filter((action): action is Promise<Model[]> => action !== null); // Filter out null values
@@ -211,7 +244,8 @@ class Provider {
       if (
         provider.type === "anthropic" ||
         provider.type === "ollama" ||
-        provider.type === "openai"
+        provider.type === "openai" ||
+        provider.type === "together"
       ) {
         const model = fetchedModels[actionIndex];
         if (
