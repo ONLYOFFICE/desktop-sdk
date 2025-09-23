@@ -2496,6 +2496,9 @@ if (window._external_process_callback[this.id])\n\
 delete window._external_process_callback[this.id];\n\
 AscDesktopEditor._endProcess(this.id);\n\
 };\n\
+this.stdin = function(data) {\n\
+AscDesktopEditor._stdin(this.id, data);\n\
+};\n\
 this._onprocess = function(type, message) {\n\
 if (2 === type && window._external_process_callback[this.id])\n\
 delete window._external_process_callback[this.id];\n\
@@ -4625,6 +4628,14 @@ window.AscDesktopEditor.CallInFrame(\"" +
 					m_external_processes->End(process_id);
 				return true;
 			}
+			else if (name == "_stdin")
+			{
+				int process_id = arguments[0]->GetIntValue();
+				std::string data = arguments[1]->GetStringValue().ToString();
+				if (m_external_processes)
+					m_external_processes->SendStdIn(process_id, data);
+				return true;
+			}
 
 			// Function does not exist.
 			return false;
@@ -5241,7 +5252,7 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 			CefRefPtr<CefV8Handler> handler = pWrapper;
 
-#define EXTEND_METHODS_COUNT 192
+#define EXTEND_METHODS_COUNT 193
 			const char* methods[EXTEND_METHODS_COUNT] = {
 				"Copy",
 				"Paste",
@@ -5508,6 +5519,7 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 				"_createProcess",
 				"_endProcess",
+				"_stdin",
 
 				NULL};
 

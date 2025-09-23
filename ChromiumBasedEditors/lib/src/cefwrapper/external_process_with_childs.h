@@ -100,11 +100,19 @@ namespace NSProcesses
 				if (m_hStdOutWr) { CloseHandle(m_hStdOutWr); m_hStdOutWr = nullptr; }
 				if (m_hStdErrRd) { CloseHandle(m_hStdErrRd); m_hStdErrRd = nullptr; }
 				if (m_hStdErrWr) { CloseHandle(m_hStdErrWr); m_hStdErrWr = nullptr; }
+				if (m_hStdInRd)  { CloseHandle(m_hStdInRd);  m_hStdInRd  = nullptr; }
+				if (m_hStdInWr)  { CloseHandle(m_hStdInWr);  m_hStdInWr  = nullptr; }
 #else
 				if (m_pid > 0)
 				{
 					killpg(m_pid, SIGTERM);
 					m_pid = -1;
+
+					if (m_stdinPipe[1] >= 0)
+					{
+						close(m_stdinPipe[1]);
+						m_stdinPipe[1] = -1;
+					}
 				}
 #endif
 			}
@@ -147,6 +155,22 @@ namespace NSProcesses
 				{
 					break;
 				}
+			}
+#endif
+		}
+
+		void write_stdin(const std::string& data)
+		{
+#ifdef _WIN32
+			if (m_hStdInWr)
+			{
+				DWORD written = 0;
+				WriteFile(m_hStdInWr, data.c_str(), static_cast<DWORD>(data.size()), &written, nullptr);
+			}
+#else
+			if (m_stdinPipe[1] >= 0)
+			{
+				::write(m_stdinPipe[1], data.c_str(), data.size());
 			}
 #endif
 		}
@@ -219,9 +243,13 @@ namespace NSProcesses
 			CreatePipe(&m_hStdErrRd, &m_hStdErrWr, &sa, 0);
 			SetHandleInformation(m_hStdErrRd, HANDLE_FLAG_INHERIT, 0);
 
+			CreatePipe(&m_hStdInRd, &m_hStdInWr, &sa, 0);
+			SetHandleInformation(m_hStdInWr, HANDLE_FLAG_INHERIT, 0);
+
 			STARTUPINFOW si{};
 			memset(&si, 0, sizeof(si));
 			si.cb = sizeof(si);
+			si.hStdInput  = m_hStdInRd;
 			si.hStdOutput = m_hStdOutWr;
 			si.hStdError = m_hStdErrWr;
 			si.dwFlags |= STARTF_USESTDHANDLES;
@@ -232,11 +260,12 @@ namespace NSProcesses
 				envBlock += (UTF8_TO_U((kv.first)) + L"=" + UTF8_TO_U((kv.second)));
 				envBlock.push_back(L'\0');
 			}
+			envBlock += L"LANG=C.UTF-8\0";
 			envBlock.push_back(L'\0');
 
 			std::wstring commandW = UTF8_TO_U(m_command);
 			if (!CreateProcessW(nullptr, (LPWSTR)commandW.c_str(), nullptr, nullptr, TRUE, CREATE_SUSPENDED | CREATE_NO_WINDOW | CREATE_UNICODE_ENVIRONMENT,
-								m_env.empty() ? nullptr : (LPVOID)(envBlock.c_str()), nullptr, &si, &m_pi))
+								(LPVOID)(envBlock.c_str()), nullptr, &si, &m_pi))
 			{
 				DWORD dwError = GetLastError();
 
@@ -254,8 +283,10 @@ namespace NSProcesses
 
 			CloseHandle(m_hStdOutWr);
 			CloseHandle(m_hStdErrWr);
+			CloseHandle(m_hStdInRd);
 			m_hStdOutWr = nullptr;
 			m_hStdErrWr = nullptr;
+			m_hStdInRd = nullptr;
 
 			std::thread t_out = std::thread([this]()
 											{
@@ -383,6 +414,7 @@ namespace NSProcesses
 		HANDLE m_hJob{nullptr};
 		HANDLE m_hStdOutRd{nullptr}, m_hStdOutWr{nullptr};
 		HANDLE m_hStdErrRd{nullptr}, m_hStdErrWr{nullptr};
+		HANDLE m_hStdInRd{ nullptr },  m_hStdInWr{ nullptr };
 #else
 		pid_t m_pid{-1};
 		int m_stdinPipe[2];
@@ -441,6 +473,21 @@ namespace NSProcesses
 					m_processes.erase(iter);
 					runner->set_ended();
 					delete runner;
+					return;
+				}
+			}
+		}
+
+		void SendStdIn(const int& id, const std::string& data)
+		{
+			CTemporaryCS oCS(&m_cs);
+
+			for (std::vector<CProcessRunner*>::iterator iter = m_processes.begin(); iter != m_processes.end(); iter++)
+			{
+				CProcessRunner* runner = *iter;
+				if (runner->get_id() == id)
+				{
+					runner->write_stdin(data);
 					return;
 				}
 			}

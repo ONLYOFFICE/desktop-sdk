@@ -4,7 +4,6 @@
 #ifdef USE_VLC_LIBRARY
 
 #ifdef _WIN32
-#include <QSysInfo>
 #include <windows.h>
 
 LONG WINAPI vlc_exception_filter(struct _EXCEPTION_POINTERS *lpExceptionInfo)
@@ -13,6 +12,20 @@ LONG WINAPI vlc_exception_filter(struct _EXCEPTION_POINTERS *lpExceptionInfo)
 	return EXCEPTION_CONTINUE_EXECUTION;
 }
 
+#ifdef QT_VERSION_6
+#include <QOperatingSystemVersion>
+static void CheckWindowsOld()
+{
+	QOperatingSystemVersion osVersion = QOperatingSystemVersion::current();
+
+	if ((osVersion.majorVersion() == 5) || (osVersion.majorVersion() == 6 && osVersion.minorVersion() == 0))
+	{
+		SetErrorMode(SEM_FAILCRITICALERRORS);
+		SetUnhandledExceptionFilter(vlc_exception_filter);
+	}
+}
+#else
+#include <QSysInfo>
 static void CheckWindowsOld()
 {
 	switch (QSysInfo::windowsVersion())
@@ -30,6 +43,7 @@ static void CheckWindowsOld()
 		break;
 	}
 }
+#endif
 
 #endif
 
