@@ -101,13 +101,10 @@ const useServersStore = create<UseServersStoreProps>((set, get) => ({
     if (!tool) return;
 
     if (enabled) {
-      console.log("enabled");
-      console.log(enabled);
       const newDisabledTools = {
         ...thisStore.disabledTools,
         [type]: thisStore.disabledTools[type].filter((tool) => tool !== name),
       };
-      console.log(newDisabledTools);
       set({
         tools: [...thisStore.tools, { ...tool, name: `${type}_${tool.name}` }],
         disabledTools: newDisabledTools,
@@ -117,13 +114,11 @@ const useServersStore = create<UseServersStoreProps>((set, get) => ({
         JSON.stringify(newDisabledTools)
       );
     } else {
-      console.log("disabled");
       const disabled = [...thisStore.disabledTools[type], name];
       const allDisabledTools = {
         ...thisStore.disabledTools,
         [type]: disabled,
       };
-      console.log(allDisabledTools);
       const tools = thisStore.tools.filter(
         (tool) => tool.name !== `${type}_${name}`
       );
