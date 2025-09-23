@@ -95,9 +95,7 @@ class OllamaProvider
         stream: true,
       });
 
-      if (!afterToolCall) {
-        this.prevMessages.push(...convertedMessages);
-      }
+      this.prevMessages.push(...convertedMessages);
 
       const responseMessage: ThreadMessageLike =
         afterToolCall && message
@@ -203,21 +201,7 @@ class OllamaProvider
       content: toolResultStr,
     });
 
-    yield* this.sendMessage(
-      [
-        {
-          role: "system",
-          content: [
-            {
-              type: "text",
-              text: "What should I do next?",
-            },
-          ],
-        },
-      ],
-      true,
-      message
-    );
+    yield* this.sendMessage([], true, message);
 
     return message;
   }

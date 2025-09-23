@@ -56,5 +56,6 @@
   "ToolCallArguments": "Tool call arguments",
   "ToolCallResult": "Tool call result",
   "ToolExecuted": "Tool executed",
-  "Confirmation": "Confirmation"
+  "Confirmation": "Confirmation",
+  "SelectModel": "Select model"
 }

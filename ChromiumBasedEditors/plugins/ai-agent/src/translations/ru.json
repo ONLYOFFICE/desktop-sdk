@@ -56,5 +56,6 @@
   "ToolCallArguments": "Аргументы вызова функции",
   "ToolCallResult": "Результат вызова функции",
   "ToolExecuted": "Функция выполняется",
-  "Confirmation": "Подтверждение"
+  "Confirmation": "Подтверждение",
+  "SelectModel": "Выберите модель"
 }

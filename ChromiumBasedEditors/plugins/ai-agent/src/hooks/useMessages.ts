@@ -13,6 +13,8 @@ import useMessageStore from "@/store/useMessageStore";
 import useAttachmentsStore from "@/store/useAttachmentsStore";
 import useThreadsStore from "@/store/useThreadsStore";
 import useServersStore from "@/store/useServersStore";
+import useProviders from "@/store/useProviders";
+import useModelsStore from "@/store/useModelsStore";
 
 type UseMessagesProps = {
   isReady: boolean;
@@ -38,6 +40,8 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     setManageToolData,
   } = useServersStore();
   const { attachmentFiles, clearAttachmentFiles } = useAttachmentsStore();
+  const { currentProvider } = useProviders();
+  const { currentModel } = useModelsStore();
 
   useEffect(() => {
     if (!isReady) return;
@@ -194,6 +198,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
 
   const onNew = async (message: AppendMessage) => {
     if (!provider) return;
+    if (!currentProvider || !currentModel) return;
     if (message.content[0].type !== "text") return;
 
     let fileContent: FileMessagePart[] = [];

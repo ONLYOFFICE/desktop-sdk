@@ -9,11 +9,15 @@ const __dirname = path.dirname(__filename);
 const sourceDir = path.join(
   __dirname,
   "..",
+  "deploy",
   "{9DC93CDB-B576-4F0C-B55E-FCC9C48DD777}"
 );
 
 // Default path - can be overridden via command line argument
-const defaultTargetPath = "";
+const defaultTargetPath = path.join(
+  process.env.HOME || "~",
+  "Library/Application Support/asc.onlyoffice.ONLYOFFICE/data/sdkjs-plugins"
+);
 
 // Get target path from command line argument or use default
 const customPath = process.argv[2] || defaultTargetPath;

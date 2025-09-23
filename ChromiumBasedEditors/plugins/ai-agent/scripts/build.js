@@ -9,6 +9,7 @@ const distDir = path.join(__dirname, "..", "dist");
 const targetDir = path.join(
   __dirname,
   "..",
+  "deploy",
   "{9DC93CDB-B576-4F0C-B55E-FCC9C48DD777}"
 );
 

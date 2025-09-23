@@ -89,8 +89,6 @@ class AnthropicProvider
     try {
       if (!this.client) return;
 
-      const isSystem = messages[0].role === "system";
-
       const convertedMessage = convertMessagesToModelFormat(messages);
 
       const stream = await this.client.messages.create({
@@ -102,9 +100,7 @@ class AnthropicProvider
         max_tokens: 2048,
       });
 
-      if (!isSystem) {
-        this.prevMessages.push(...convertedMessage);
-      }
+      this.prevMessages.push(...convertedMessage);
 
       let responseMessage: ThreadMessageLike =
         afterToolCall && message
@@ -215,21 +211,7 @@ class AnthropicProvider
       content: [toolResult],
     });
 
-    yield* this.sendMessage(
-      [
-        {
-          role: "system",
-          content: [
-            {
-              type: "text",
-              text: "What should I do next?",
-            },
-          ],
-        },
-      ],
-      true,
-      message
-    );
+    yield* this.sendMessage([], true, message);
 
     return message;
   }
