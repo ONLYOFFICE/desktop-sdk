@@ -2593,6 +2593,10 @@ window._external_process_callback = {};\n\
 						sPluginName.erase(std::remove(sPluginName.begin(), sPluginName.end(), L'/'), sPluginName.end());
 
 						std::wstring sPackageUrl = sBaseUrl + L"/deploy/" + sPluginName + L".plugin";
+						if (0 == sBaseUrl.find(L"https://onlyoffice.github.io"))
+							sPackageUrl = L"https://github.com/ONLYOFFICE/onlyoffice.github.io/releases/latest/download/" + sPluginName + L".plugin";
+						else if (0 == sBaseUrl.find(L"https://onlyoffice-plugins.github.io/onlyoffice.github.io"))
+							sPackageUrl = L"https://github.com/ONLYOFFICE-PLUGINS/onlyoffice.github.io/releases/latest/download/" + sPluginName + L".plugin";
 
 						std::wstring sTmpFile = NSFile::CFileBinary::GetTempPath() + L"/temp_asc_plugin.plugin";
 						if (NSFile::CFileBinary::Exists(sTmpFile))
