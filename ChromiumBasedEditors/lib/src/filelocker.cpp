@@ -233,6 +233,12 @@ namespace NSSystem
 		default:
 			break;
 		}
+
+#ifdef _WIN32
+		DWORD attrs = GetFileAttributesW(m_file.c_str());
+		if (attrs != INVALID_FILE_ATTRIBUTES)
+			SetFileAttributesW(m_file.c_str(), attrs | FILE_ATTRIBUTE_HIDDEN);
+#endif
 	}
 
 	void CLockFileTemp::Load()
