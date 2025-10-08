@@ -14,6 +14,7 @@ CONFIG += plugin
 
 CORE_ROOT_DIR = $$PWD/../../../core
 include($$CORE_ROOT_DIR/Common/base.pri)
+include($$CORE_ROOT_DIR/Common/3dParty/icu/icu.pri)
 
 DEFINES += \
     PDFFILE_USE_DYNAMIC_LIBRARY \
@@ -121,6 +122,9 @@ SOURCES += \
     $$PWD/src/keychain.cpp \
     $$PWD/src/filelocker.cpp
 
+HEADERS += \
+     $$PWD/src/cefwrapper/external_process.h
+
 SOURCES += \
     $$CORE_ROOT_DIR/Common/OfficeFileFormatChecker2.cpp \
     $$CORE_ROOT_DIR/Common/3dParty/pole/pole.cpp \
@@ -158,7 +162,6 @@ SOURCES += \
 }
 
 !core_mac {
-    include($$CORE_ROOT_DIR/Common/3dParty/icu/icu.pri)
 
     HEADERS += \
         $$PWD/src/keyboardlayout.h
@@ -169,16 +172,58 @@ SOURCES += \
 
 core_mac {
     LIBS += -framework Security
+	LIBS += -framework AVFoundation
+	LIBS += -framework CoreMedia
+	LIBS += -framework Carbon
 
-    HEADERS += ./include/mac_cefview.h
+	HEADERS += \
+		$$PWD/src/mac_keyboardlayout.h \
+		./include/mac_cefview.h \
+		./include/mac_application.h \
+		./include/mac_cefviewmedia.h
 
     OBJECTIVE_SOURCES += \
         $$PWD/src/widget_impl.mm \
-        $$PWD/src/mac_application.mm
+		$$PWD/src/mac_keyboardlayout.mm \
+		$$PWD/src/mac_application.mm \
+		$$PWD/src/mac_cefview.mm \
+		$$PWD/src/mac_cefviewmedia.mm
 
     use_v8:DEFINES += OLD_MACOS_SYSTEM
 
-	DEFINES += NO_SUPPORT_MEDIA_PLAYER
+	INCLUDEPATH += $$CORE_ROOT_DIR/DesktopEditor/common/Mac
+	OBJECTIVE_SOURCES += $$CORE_ROOT_DIR/DesktopEditor/common/Mac/NSString+StringUtils.mm
+
+	# player
+	OBJECTIVE_HEADERS += \
+		src/mac_videoplayer/footerpanel.h \
+		src/mac_videoplayer/subpanel.h \
+		src/mac_videoplayer/iconpushbutton.h \
+		src/mac_videoplayer/playerview.h \
+		src/mac_videoplayer/playercontroller.h \
+		src/mac_videoplayer/slider.h \
+		src/mac_videoplayer/videoview.h \
+		src/mac_videoplayer/utils.h \
+		src/mac_videoplayer/timelabel.h \
+		src/mac_videoplayer/footerskin.h
+
+	OBJECTIVE_SOURCES += \
+		src/mac_videoplayer/footerpanel.mm \
+		src/mac_videoplayer/subpanel.mm \
+		src/mac_videoplayer/iconpushbutton.mm \
+		src/mac_videoplayer/playerview.mm \
+		src/mac_videoplayer/playercontroller.mm \
+		src/mac_videoplayer/slider.mm \
+		src/mac_videoplayer/videoview.mm \
+		src/mac_videoplayer/utils.mm \
+		src/mac_videoplayer/timelabel.mm \
+		src/mac_videoplayer/footerskin.mm
+
+	# add button icons to framework's bundle resources
+	ICONS_DIR = $$PWD/../videoplayerlib/icons
+	PLAYER_BUTTON_ICONS.files = $$files($$ICONS_DIR/*)
+	PLAYER_BUTTON_ICONS.path = Versions/$$QMAKE_FRAMEWORK_VERSION/Resources
+	QMAKE_BUNDLE_DATA += PLAYER_BUTTON_ICONS
 }
 
 core_linux {

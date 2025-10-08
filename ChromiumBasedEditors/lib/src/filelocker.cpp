@@ -233,6 +233,12 @@ namespace NSSystem
 		default:
 			break;
 		}
+
+#ifdef _WIN32
+		DWORD attrs = GetFileAttributesW(m_file.c_str());
+		if (attrs != INVALID_FILE_ATTRIBUTES)
+			SetFileAttributesW(m_file.c_str(), attrs | FILE_ATTRIBUTE_HIDDEN);
+#endif
 	}
 
 	void CLockFileTemp::Load()
@@ -266,7 +272,7 @@ namespace NSSystem
 			pos2 = content.find(';', pos1);
 			if (std::string::npos != pos2)
 			{
-				m_user_dir = content.substr(pos1);
+				m_user_dir = content.substr(pos1, pos2 - pos1);
 			}
 		}
 	}

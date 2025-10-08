@@ -35,6 +35,10 @@
 #include "../../../../core/DesktopEditor/common/File.h"
 #include "./functions/internal/funcs.h"
 
+#ifdef GetTempPath
+#undef GetTempPath
+#endif
+
 CAITools::CAITools()
 {
 	m_funcs = new CFunctions();
@@ -82,21 +86,25 @@ std::wstring CAITools::getTempFile()
 
 std::string CAITools::getFunctions()
 {
-	std::string sResult = "";
+	if (m_funcs->m_funcs.empty())
+		return "[]";
+
+	std::string sResult = "[";
 
 	for (std::map<std::string, TFuncInstance>::iterator iter = m_funcs->m_funcs.begin(); iter != m_funcs->m_funcs.end(); iter++)
 	{
 		sResult += iter->second.name;
-		sResult += "\n";
+		sResult += ",";
 	}
 
+	sResult[sResult.length() - 1] = ']';
 	return sResult;
 }
 
-std::string CAITools::callFunc(const std::string& name, const std::string& arg)
+std::string CAITools::callFunc(const std::string& name, const std::string& arg, CAIToolsHelper* helper)
 {
 	auto find = m_funcs->m_funcs.find(name);
 	if (find !=m_funcs->m_funcs.end())
-		return find->second.func(arg);
+		return find->second.func(arg, helper);
 	return "";
 }

@@ -35,7 +35,9 @@
 #include "./cefwrapper/client_resource_handler_async.h"
 #include "./cefwrapper/monitor_info.h"
 
-#if !defined(_MAC)
+#if defined(_MAC)
+# include "mac_keyboardlayout.h"
+#else
 # include "keyboardlayout.h"
 #endif
 
@@ -925,11 +927,9 @@ void CAscApplicationManager::EndSaveDialog(const std::wstring& sPath, unsigned i
 
 bool CAscApplicationManager::IsPlatformKeyboardSupport()
 {
-#ifdef WIN32
+#if defined(WIN32) || defined(_MAC)
 	return true;
-#endif
-
-#if defined(_LINUX) && !defined(_MAC)
+#elif defined(_LINUX)
 	KeyboardLayout kl;
 	return kl.IsKeyboardSupport();
 #endif
@@ -939,15 +939,17 @@ bool CAscApplicationManager::IsPlatformKeyboardSupport()
 
 int CAscApplicationManager::GetPlatformKeyboardLayout()
 {
-#ifdef WIN32
+#if defined(WIN32)
 	HWND wFocus = GetFocus();
 	DWORD dwThread = GetWindowThreadProcessId(wFocus, 0);
 	HKL hkl = GetKeyboardLayout(dwThread);
 	int nLang = LOWORD(hkl);
 	return nLang;
-#endif
-
-#if defined(_LINUX) && !defined(_MAC)
+#elif defined(_MAC)
+    uint16_t nLang = GetKeyboardLayout();
+    if (nLang != 0)
+        return nLang;
+#elif defined(_LINUX)
 	KeyboardLayout kl;
     uint16_t layout = kl.GetKeyboardLayout();
     if (layout != 0)
@@ -1276,6 +1278,17 @@ void CAscApplicationManager::AddFileToLocalResolver(const std::wstring& sFile)
 void CAscApplicationManager::SetRendererProcessVariable(const std::wstring& sVariable)
 {
 	m_pInternal->m_sRendererJSON = sVariable;
+}
+
+void CAscApplicationManager::UpdatePlugins(const std::wstring& json)
+{
+	CCefView* pMainView = m_pInternal->GetViewForSystemMessages();
+	if (!pMainView)
+		return;
+
+	std::string value = U_TO_UTF8(json);
+	std::string sCode = "(function(){window.on_update_plugin_info && window.on_update_plugin_info(" + value + ");})();";
+	pMainView->ExecuteInAllFrames(sCode, false);
 }
 
 void CAscApplicationManager::SetRecentPin(const int& nId, const bool& bIsPin)

@@ -33,7 +33,37 @@
 #include <string>
 #include <string.h>
 #include <map>
+#include <vector>
 #include <functional>
+
+class CRecentFileInfo
+{
+public:
+	std::wstring Path;
+	int Type;
+
+public:
+	CRecentFileInfo() : Path(L""), Type(0)
+	{
+	}
+	CRecentFileInfo(const std::wstring& path, int type) : Path(path), Type(type)
+	{
+	}
+	CRecentFileInfo& operator=(const CRecentFileInfo& s)
+	{
+		Path = s.Path;
+		Type = s.Type;
+		return *this;
+	}
+};
+
+class CAIToolsHelper
+{
+public:
+	virtual void OpenTemplate(const std::wstring& path, const std::wstring& name = L"") = 0;
+	virtual void OpenFile(const std::wstring& path) = 0;
+	virtual std::vector<CRecentFileInfo> GetRecents() = 0;
+};
 
 class CFunctions;
 class CAITools
@@ -58,6 +88,6 @@ public:
 
 	std::wstring getTempFile();
 
-	std::string callFunc(const std::string& name, const std::string& arg);
+	std::string callFunc(const std::string& name, const std::string& arg, CAIToolsHelper* helper);
 	std::string getFunctions();
 };

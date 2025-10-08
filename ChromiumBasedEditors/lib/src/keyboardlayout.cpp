@@ -183,8 +183,8 @@ static std::string getNativeLanguageName(const std::string &localeName)
     icu::UnicodeString uname;
     loc.getDisplayLanguage(loc, uname);
     if (!uname.isEmpty()) {
-        UnicodeString first = uname.tempSubString(0, 1);
-        UnicodeString rest = uname.tempSubString(1);
+        icu::UnicodeString first = uname.tempSubString(0, 1);
+        icu::UnicodeString rest = uname.tempSubString(1);
         first.toUpper();
         uname = first + rest;
         uname.toUTF8String(displayName);

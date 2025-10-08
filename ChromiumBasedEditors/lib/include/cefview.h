@@ -82,6 +82,8 @@ public:
 		cef_height = 0;
 	}
 
+	virtual ~CCefViewWidgetImpl() {}
+
 public:
 	virtual void UpdateSize() {}
 	virtual void AfterCreate() {}
@@ -142,6 +144,8 @@ public:
 	void SetParentWidgetInfo(const std::wstring& json);
 
 	int GetRecentId();
+
+	void ExecuteInAllFrames(const std::string& sCode, const bool& isMain = true);
 
 protected:
 	int m_nId;

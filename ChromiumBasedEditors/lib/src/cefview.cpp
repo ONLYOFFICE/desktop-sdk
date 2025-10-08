@@ -528,7 +528,7 @@ public:
 };
 
 class CAscClientHandler;
-class CCefView_Private : public NSEditorApi::IMenuEventDataBase, public IASCFileConverterEvents, public CTextDocxConverterCallback//, public virtual CefBaseRefCounted
+class CCefView_Private : public NSEditorApi::IMenuEventDataBase, public IASCFileConverterEvents, public IASCFileConverterExternalEvents, public CTextDocxConverterCallback//, public virtual CefBaseRefCounted
 {
 public:
 	class CSystemMessage
@@ -895,6 +895,7 @@ public:
 
 	// id фрейма, из которого пришел евент (для коллбэка)
 	std::string m_sIFrameIDMethod;
+	std::string m_sSaveFileContent;
 
 	// криптование облачных файлов
 	bool m_bIsCloudCryptFile;
@@ -978,6 +979,8 @@ public:
 
 	CConvertFileInEditor* m_pLocalFileConverter;
 	CCloudPDFSaver* m_pCloudSaveToDrawing;
+
+	std::vector<CSimpleConverterExternal*> m_arExternalConverters;
 
 	// информация о view (type, caption...)
 	std::wstring m_sViewportSettings;
@@ -1076,6 +1079,9 @@ public:
 			m_pLocalFileConverter->Stop();
 			m_pLocalFileConverter = NULL;
 		}
+
+		while (!m_arExternalConverters.empty())
+			NSThreads::Sleep(100);
 
 		RELEASEOBJECT(m_pCloudSaveToDrawing);
 
@@ -1444,6 +1450,28 @@ public:
 		}
 
 		LocalFile_SaveEnd(nError, sPass);
+	}
+
+	virtual void OnFileConvert(const int& error, CSimpleConverterExternal* converter)
+	{
+		if (this->GetBrowser())
+		{
+			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_convert_local_file_external");
+			message->GetArgumentList()->SetString(0, converter->m_sOutputFile);
+			NSArgumentList::SetInt64(message->GetArgumentList(), 1, converter->m_nFrameId);
+			message->GetArgumentList()->SetInt(2, error);
+			message->GetArgumentList()->SetInt(3, converter->m_nId);
+			SEND_MESSAGE_TO_RENDERER_PROCESS(GetBrowser(), message);
+		}
+
+		for (std::vector<CSimpleConverterExternal*>::iterator i = m_arExternalConverters.begin(); i != m_arExternalConverters.end(); i++)
+		{
+			if (*i == converter)
+			{
+				m_arExternalConverters.erase(i);
+				break;
+			}
+		}
 	}
 
 	void LocalFile_GetSupportSaveFormats(std::vector<int>& arFormats)
@@ -3360,6 +3388,11 @@ public:
 			pData->put_IdDownload(0);
 			pEvent->m_pData = pData;
 			m_pParent->m_pInternal->m_sIFrameIDMethod = args->GetString(1);
+
+			m_pParent->m_pInternal->m_sSaveFileContent = "";
+			if (args->GetSize() > 2)
+				m_pParent->m_pInternal->m_sSaveFileContent = args->GetString(2);
+
 			m_pParent->GetAppManager()->Apply(pEvent);
 			return true;
 		}
@@ -4310,6 +4343,19 @@ public:
 		pListener->OnEvent(pEvent);
 		return true;
 	}
+	else if ("generate_new" == message_name)
+	{
+		std::wstring ext = args->GetString(0).ToWString();
+		std::wstring gen = args->GetString(1).ToWString();
+
+		NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_CREATETAB);
+		NSEditorApi::CAscCreateTab* pData = new NSEditorApi::CAscCreateTab();
+		pData->put_Url(L"ascdesktop://generate/" + ext + L"/" + gen);
+		pData->put_Name(L"new." + ext);
+		pEvent->m_pData = pData;
+		pListener->OnEvent(pEvent);
+		return true;
+	}
 	else if ("convert_file" == message_name)
 	{
 		if (3 > args->GetSize())
@@ -4380,6 +4426,27 @@ public:
 		pConv->m_nFrameId = nFrameId;
 
 		pConv->Start(0);
+
+		return true;
+	}
+	else if ("convert_file_external" == message_name)
+	{
+		if (4 > args->GetSize())
+			return true;
+
+		CSimpleConverterExternal* pConverter = new CSimpleConverterExternal();
+		pConverter->m_pManager = m_pParent->GetAppManager();
+		pConverter->m_pEvents = m_pParent->m_pInternal;
+
+		pConverter->m_sInputFile = args->GetString(0).ToWString();
+		pConverter->m_nFrameId = NSArgumentList::GetInt64(args, 1);
+		pConverter->m_nOutputFormat  = args->GetInt(2);
+		pConverter->m_nId = args->GetInt(3);
+
+		m_pParent->m_pInternal->m_arExternalConverters.push_back(pConverter);
+
+		pConverter->DestroyOnFinish();
+		pConverter->Start(0);
 
 		return true;
 	}
@@ -4514,6 +4581,25 @@ public:
 	else if ("on_file_locked_close" == message_name)
 	{
 		m_pParent->m_pInternal->m_bIsLockedSave = args->GetBool(0);
+		return true;
+	}
+	else if ("open_file" == message_name)
+	{
+		NSEditorApi::CAscLocalOpenFiles* pData = new NSEditorApi::CAscLocalOpenFiles();
+
+		int nCount = (int)args->GetSize();
+		std::vector<std::wstring>& arFolder = pData->get_Files();
+
+		for (int i = 0; i < nCount; i++)
+		{
+			std::wstring sValue = args->GetString(i).ToWString();
+			arFolder.push_back(sValue);
+		}
+
+		NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_LOCALFILES_OPEN);
+		pEvent->m_pData = pData;
+
+		pListener->OnEvent(pEvent);
 		return true;
 	}
 
@@ -6466,6 +6552,43 @@ void CCefView::load(const std::wstring& urlInputSrc)
 
 		return;
 	}
+	else if (0 == urlInput.find(L"ascdesktop://generate"))
+	{
+		if (this->GetType() == cvwtEditor)
+		{
+			std::wstring::size_type nPosExt = urlInput.find(L"/", 22);
+			std::wstring sExt = urlInput.substr(22, nPosExt - 22);
+			std::wstring sContent = (nPosExt + 1 < urlInput.length()) ? urlInput.substr(nPosExt + 1) : L"";
+
+			std::wstring sName = L"new." + sExt;
+			int nFormat = CAscApplicationManager::GetFileFormatByExtentionForSave(sName);
+
+			if (nFormat == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF)
+				nFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF;
+
+			AscEditorType nEditorFormat = AscEditorType::etPdf;
+			if (-1 != nFormat)
+			{
+				nEditorFormat = AscEditorType::etDocument;
+				if (nFormat & AVS_OFFICESTUDIO_FILE_PRESENTATION)
+					nEditorFormat = AscEditorType::etPresentation;
+				else if (nFormat & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
+					nEditorFormat = AscEditorType::etSpreadsheet;
+				else if (nFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF)
+					nEditorFormat = AscEditorType::etDocumentMasterForm;
+				else if (nFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM ||
+						 nFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF)
+					nEditorFormat = AscEditorType::etDocumentMasterOForm;
+				else if (nFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
+					nEditorFormat = AscEditorType::etPdf;
+			}
+
+			((CCefViewEditor*)this)->CreateLocalFile(nEditorFormat, sName);
+
+			NSFile::CFileBinary::Move(sContent, m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/.generate");
+		}
+		return;
+	}
 	else if (0 == urlInput.find(L"ascdesktop://external/"))
 	{
 		if (this->GetType() == cvwtEditor)
@@ -6688,6 +6811,9 @@ void CCefView::load(const std::wstring& urlInputSrc)
 	{
 		extra_info->SetString(std::to_string(++nCount), *iter);
 	}
+
+	if (!m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir.empty())
+		extra_info->SetString(std::to_string(++nCount), "recovery_file_folder=" + U_TO_UTF8(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir));
 	extra_info->SetString(std::to_string(++nCount), "viewport_settings=" + U_TO_UTF8(m_pInternal->m_sViewportSettings));
 #endif
 
@@ -7142,9 +7268,26 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 		}
 		else
 		{
+			std::wstring sSavePath = pData->get_FilePath();
+
+			if (!sSavePath.empty() && !m_pInternal->m_sSaveFileContent.empty())
+			{
+				NSFile::CFileBinary oFile;
+				if (oFile.CreateFile(sSavePath))
+				{
+					oFile.WriteFile((BYTE*)m_pInternal->m_sSaveFileContent.c_str(), (DWORD)m_pInternal->m_sSaveFileContent.length());
+					oFile.CloseFile();
+				}
+				else
+				{
+					sSavePath = L"";
+				}
+			}
+
+			m_pInternal->m_sSaveFileContent = "";
 			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_save_filename_dialog");
 			message->GetArgumentList()->SetString(0, m_pInternal->m_sIFrameIDMethod);
-			message->GetArgumentList()->SetString(1, pData->get_FilePath());
+			message->GetArgumentList()->SetString(1, sSavePath);
 			SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
 			m_pInternal->m_sIFrameIDMethod = "";
 		}
@@ -7707,8 +7850,11 @@ double CCefView::GetDeviceScale()
 	Core_GetMonitorRawDpi(hwnd, &_dx, &_dy);
 	dDeviceScale = Core_GetMonitorScale(_dx, _dy);
 #else
+// TODO: fix GetDpiCheker() for mac
+#ifndef MAC
 	int nDeviceScaleTmp = CAscApplicationManager::GetDpiChecker()->GetWidgetImplDpi(GetWidgetImpl(), &_dx, &_dy);
 	dDeviceScale = CAscApplicationManager::GetDpiChecker()->GetScale(_dx, _dy);
+#endif
 #endif
 
 	return dDeviceScale;
@@ -7773,6 +7919,27 @@ CefRefPtr<CefFrame> CCefView_Private::CCloudCryptoUpload::GetFrame()
 	if (!View->m_handler || !View->m_handler->GetBrowser())
 		return nullptr;
 	return View->m_handler->GetBrowser()->GetFrame(FrameID);
+}
+
+void CCefView::ExecuteInAllFrames(const std::string& sCode, const bool& isMain)
+{
+	CefRefPtr<CefBrowser> pBrowser = m_pInternal->GetBrowser();
+	if (!pBrowser)
+		return;
+
+	std::vector<int64> identifiers;
+	pBrowser->GetFrameIdentifiers(identifiers);
+
+	for (std::vector<int64>::iterator iter = identifiers.begin(); iter != identifiers.end(); iter++)
+	{
+		CefRefPtr<CefFrame> pFrame = pBrowser->GetFrame(*iter);
+		if (!pFrame)
+			continue;
+		if (!isMain && pFrame->IsMain())
+			continue;
+
+		pFrame->ExecuteJavaScript(sCode, pFrame->GetURL(), 0);
+	}
 }
 
 // CefViewEditor --------------------------------------------------------------------------
