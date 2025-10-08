@@ -4343,6 +4343,19 @@ public:
 		pListener->OnEvent(pEvent);
 		return true;
 	}
+	else if ("generate_new" == message_name)
+	{
+		std::wstring ext = args->GetString(0).ToWString();
+		std::wstring gen = args->GetString(1).ToWString();
+
+		NSEditorApi::CAscCefMenuEvent* pEvent = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_CREATETAB);
+		NSEditorApi::CAscCreateTab* pData = new NSEditorApi::CAscCreateTab();
+		pData->put_Url(L"ascdesktop://generate/" + ext + L"/" + gen);
+		pData->put_Name(L"new." + ext);
+		pEvent->m_pData = pData;
+		pListener->OnEvent(pEvent);
+		return true;
+	}
 	else if ("convert_file" == message_name)
 	{
 		if (3 > args->GetSize())
@@ -6539,6 +6552,43 @@ void CCefView::load(const std::wstring& urlInputSrc)
 
 		return;
 	}
+	else if (0 == urlInput.find(L"ascdesktop://generate"))
+	{
+		if (this->GetType() == cvwtEditor)
+		{
+			std::wstring::size_type nPosExt = urlInput.find(L"/", 22);
+			std::wstring sExt = urlInput.substr(22, nPosExt - 22);
+			std::wstring sContent = (nPosExt + 1 < urlInput.length()) ? urlInput.substr(nPosExt + 1) : L"";
+
+			std::wstring sName = L"new." + sExt;
+			int nFormat = CAscApplicationManager::GetFileFormatByExtentionForSave(sName);
+
+			if (nFormat == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF)
+				nFormat = AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF;
+
+			AscEditorType nEditorFormat = AscEditorType::etPdf;
+			if (-1 != nFormat)
+			{
+				nEditorFormat = AscEditorType::etDocument;
+				if (nFormat & AVS_OFFICESTUDIO_FILE_PRESENTATION)
+					nEditorFormat = AscEditorType::etPresentation;
+				else if (nFormat & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
+					nEditorFormat = AscEditorType::etSpreadsheet;
+				else if (nFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCXF)
+					nEditorFormat = AscEditorType::etDocumentMasterForm;
+				else if (nFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM ||
+						 nFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF)
+					nEditorFormat = AscEditorType::etDocumentMasterOForm;
+				else if (nFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM)
+					nEditorFormat = AscEditorType::etPdf;
+			}
+
+			((CCefViewEditor*)this)->CreateLocalFile(nEditorFormat, sName);
+
+			NSFile::CFileBinary::Move(sContent, m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/.generate");
+		}
+		return;
+	}
 	else if (0 == urlInput.find(L"ascdesktop://external/"))
 	{
 		if (this->GetType() == cvwtEditor)
@@ -6761,6 +6811,9 @@ void CCefView::load(const std::wstring& urlInputSrc)
 	{
 		extra_info->SetString(std::to_string(++nCount), *iter);
 	}
+
+	if (!m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir.empty())
+		extra_info->SetString(std::to_string(++nCount), "recovery_file_folder=" + U_TO_UTF8(m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir));
 	extra_info->SetString(std::to_string(++nCount), "viewport_settings=" + U_TO_UTF8(m_pInternal->m_sViewportSettings));
 #endif
 

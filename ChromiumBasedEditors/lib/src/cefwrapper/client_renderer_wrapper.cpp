@@ -815,6 +815,8 @@ namespace asc_client_renderer
 
 			m_sViewportSettings = default_params.GetValue("viewport_settings");
 
+			m_sLocalFileFolderWithoutFile = default_params.GetValueW("recovery_file_folder");
+
 #if 0
 		default_params.Print();
 #endif
@@ -4640,6 +4642,79 @@ window.AscDesktopEditor.CallInFrame(\"" +
 					m_external_processes->SendStdIn(process_id, data);
 				return true;
 			}
+			else if (name == "generateNew")
+			{
+				if (arguments.empty())
+					return false;
+
+				std::string ext = arguments[0]->GetStringValue().ToString();
+				std::wstring gen = L"";
+
+				if (arguments.size() == 3)
+				{
+					std::string type = arguments[1]->GetStringValue().ToString();
+					std::string content = arguments[2]->GetStringValue().ToString();
+
+					std::wstring tempFileContent = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"GEN");
+					if (NSFile::CFileBinary::Exists(tempFileContent))
+						NSFile::CFileBinary::Remove(tempFileContent);
+
+					NSFile::CFileBinary oFile;
+					if (oFile.CreateFile(tempFileContent))
+					{
+						type += "\n";
+						oFile.WriteFile(type.c_str(), (DWORD)type.length());
+						oFile.WriteFile(content.c_str(), (DWORD)content.length());
+						oFile.CloseFile();
+					}
+
+					gen = tempFileContent;
+				}
+
+				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("generate_new");
+				message->GetArgumentList()->SetString(0, ext);
+				message->GetArgumentList()->SetString(1, gen);
+
+				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+				return true;
+			}
+			else if (name == "getGenerationInfo")
+			{
+				std::wstring sFile = m_sLocalFileFolderWithoutFile + L"/.generate";
+				if (!NSFile::CFileBinary::Exists(sFile))
+				{
+					retval = CefV8Value::CreateUndefined();
+					return true;
+				}
+
+				BYTE* data = NULL;
+				DWORD dwDataSize = 0;
+				if (NSFile::CFileBinary::ReadAllBytes(sFile, &data, dwDataSize))
+				{
+					DWORD dwPosType = 0;
+					while (dwPosType < dwDataSize && data[dwPosType] != '\n')
+						dwPosType++;
+
+					if (dwPosType == dwDataSize)
+					{
+						retval = CefV8Value::CreateUndefined();
+						return true;
+					}
+
+#ifdef CEF_2623
+					retval = CefV8Value::CreateObject(NULL);
+#else
+					retval = CefV8Value::CreateObject(nullptr, nullptr);
+#endif
+
+					retval->SetValue("type", CefV8Value::CreateString(std::string((char*)data, dwPosType)), V8_PROPERTY_ATTRIBUTE_NONE);
+					retval->SetValue("value", CefV8Value::CreateString(std::string((char*)data + dwPosType + 1, dwDataSize - (dwPosType + 1))), V8_PROPERTY_ATTRIBUTE_NONE);
+
+				}
+
+				RELEASEARRAYOBJECTS(data);
+				return true;
+			}
 
 			// Function does not exist.
 			return false;
@@ -5256,7 +5331,7 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 			CefRefPtr<CefV8Handler> handler = pWrapper;
 
-#define EXTEND_METHODS_COUNT 193
+#define EXTEND_METHODS_COUNT 195
 			const char* methods[EXTEND_METHODS_COUNT] = {
 				"Copy",
 				"Paste",
@@ -5524,6 +5599,9 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 				"_createProcess",
 				"_endProcess",
 				"_stdin",
+
+				"generateNew",
+				"getGenerationInfo",
 
 				NULL};
 
