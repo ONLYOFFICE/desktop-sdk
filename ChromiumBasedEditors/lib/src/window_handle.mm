@@ -38,6 +38,13 @@ void CWindowHandleChecker::Hide(CefWindowInfo& info, CefWindowHandle& handle)
 	m_hidden = true;
 	info.hidden = 1;
 }
+void CWindowHandleChecker::Hide(CefRefPtr<CefBrowser> browser)
+{
+	m_hidden = true;
+	CefWindowHandle handle = browser->GetHost()->GetWindowHandle();
+	NSView* view = (NSView*)handle;
+	[view setHidden:YES];
+}
 void CWindowHandleChecker::Show(CefRefPtr<CefBrowser> browser)
 {
 	if (!m_hidden)

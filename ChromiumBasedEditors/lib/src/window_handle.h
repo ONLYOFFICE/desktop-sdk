@@ -51,6 +51,7 @@ public:
 	}
 
 	void Hide(CefWindowInfo& info, CefWindowHandle& handle);
+	void Hide(CefRefPtr<CefBrowser> browser);
 	void Show(CefRefPtr<CefBrowser> browser);
 };
 

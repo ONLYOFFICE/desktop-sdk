@@ -121,8 +121,12 @@ SOURCES += \
     $$PWD/src/fileprinter.cpp \
     $$PWD/src/crypto_mode.cpp \
     $$PWD/src/keychain.cpp \
-    $$PWD/src/filelocker.cpp \
+    $$PWD/src/filelocker.cpp
+
+!core_mac {
+SOURCES += \
     $$PWD/src/window_handle.cpp
+}
 
 HEADERS += \
      $$PWD/src/cefwrapper/external_process.h

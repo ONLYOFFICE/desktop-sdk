@@ -4632,6 +4632,10 @@ virtual void OnAfterCreated(CefRefPtr<CefBrowser> browser) OVERRIDE
 		browser_ = browser;
 		browser_id_ = browser->GetIdentifier();
 	}
+    
+#if defined(_MAC) && defined(CEF_VERSION_ABOVE_102)
+	m_pParent->m_pInternal->m_hideChecker.Hide(browser);
+#endif
 }
 
 virtual void OnBeforeClose(CefRefPtr<CefBrowser> browser) OVERRIDE

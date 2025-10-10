@@ -47,6 +47,10 @@ void CWindowHandleChecker::Hide(CefWindowInfo& info, CefWindowHandle& handle)
 	XFlush(dpy);
 #endif
 }
+void CWindowHandleChecker::Hide(CefRefPtr<CefBrowser> browser)
+{
+	m_hidden = true;
+}
 void CWindowHandleChecker::Show(CefRefPtr<CefBrowser> browser)
 {
 	if (!m_hidden)
