@@ -36,6 +36,8 @@
 #include "include/wrapper/cef_closure_task.h"
 #include "include/cef_parser.h"
 
+#include "./window_handle.h"
+
 #ifdef CEF_2623
 #include "cefclient/browser/client_handler.h"
 #include "cefclient/common/client_switches.h"
@@ -932,6 +934,8 @@ public:
 #if defined(_LINUX) && !defined(_MAC)
 	WindowHandleId m_lNaturalParent;
 #endif
+
+	CWindowHandleChecker m_hideChecker;
 
 	// прерывание скачивания у проблемных ссылок
 	CDownloadFilesAborted m_oDownloaderAbortChecker;
@@ -4735,6 +4739,8 @@ virtual void OnLoadEnd(CefRefPtr<CefBrowser> browser,
 					   CefRefPtr<CefFrame> frame,
 					   int httpStatusCode)
 {
+	m_pParent->m_pInternal->m_hideChecker.Show(browser);
+
 	bool bIsCryptoSupport = true;
 	if (m_pParent->m_pInternal->m_bIsExternalCloud)
 	{
@@ -6783,6 +6789,8 @@ void CCefView::load(const std::wstring& urlInputSrc)
 
 #ifdef CEF_VERSION_ABOVE_102
 	info.SetAsChild(_handle, CefRect(0, 0, _w, _h));
+
+	m_pInternal->m_hideChecker.Hide(info, _handle);
 #else
 
 #ifdef WIN32

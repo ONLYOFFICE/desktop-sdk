@@ -84,9 +84,10 @@ HEADERS += \
     $$PWD/src/cefwrapper/client_renderer_params.h \
     $$PWD/src/cefwrapper/client_scheme.h \
     $$PWD/src/fileconverter.h \
-	$$PWD/src/x2t.h \
-	$$PWD/src/templatesmanager.h \
-    $$PWD/src/cefwrapper/client_resource_handler_async.h
+    $$PWD/src/x2t.h \
+    $$PWD/src/templatesmanager.h \
+    $$PWD/src/cefwrapper/client_resource_handler_async.h \
+    $$PWD/src/window_handle.h
 
 SOURCES += \
     $$PWD/src/cefwrapper/client_scheme_wrapper.cpp \
@@ -120,7 +121,8 @@ SOURCES += \
     $$PWD/src/fileprinter.cpp \
     $$PWD/src/crypto_mode.cpp \
     $$PWD/src/keychain.cpp \
-    $$PWD/src/filelocker.cpp
+    $$PWD/src/filelocker.cpp \
+    $$PWD/src/window_handle.cpp
 
 HEADERS += \
      $$PWD/src/cefwrapper/external_process.h
@@ -187,7 +189,8 @@ core_mac {
 		$$PWD/src/mac_keyboardlayout.mm \
 		$$PWD/src/mac_application.mm \
 		$$PWD/src/mac_cefview.mm \
-		$$PWD/src/mac_cefviewmedia.mm
+        $$PWD/src/mac_cefviewmedia.mm \
+        $$PWD/src/window_handle.mm
 
     use_v8:DEFINES += OLD_MACOS_SYSTEM
 
