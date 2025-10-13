@@ -44,7 +44,9 @@ const Navigation = () => {
           color="var(--header-color)"
           isStroke
           isActive={currentPage === "settings"}
-          onClick={() => setCurrentPage("settings")}
+          onClick={() =>
+            setCurrentPage(currentPage === "settings" ? "chat" : "settings")
+          }
         />
       </TooltipIconButton>
     </nav>

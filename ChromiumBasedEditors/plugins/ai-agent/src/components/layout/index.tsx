@@ -1,6 +1,8 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 
+import useRouter from "@/store/useRouter";
+
 import { Navigation } from "./sub-components/Header";
 import { ChatList } from "./sub-components/ChatList";
 
@@ -8,6 +10,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const [theme, setTheme] = React.useState(
     `theme-${window.RendererProcessVariable?.theme.type ?? "light"}`
   );
+
+  const { currentPage } = useRouter();
 
   const { i18n } = useTranslation();
 
@@ -55,6 +59,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     };
   }, [i18n]);
 
+  const isSettings = currentPage === "settings";
+
   return (
     <div className={`h-dvh ${theme}`}>
       <main
@@ -66,7 +72,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
           className="flex flex-row flex-1"
           style={{ height: "calc(100dvh - 56px)" }}
         >
-          <ChatList />
+          {!isSettings ? <ChatList /> : null}
           <div className="w-full">{children}</div>
         </div>
       </main>
