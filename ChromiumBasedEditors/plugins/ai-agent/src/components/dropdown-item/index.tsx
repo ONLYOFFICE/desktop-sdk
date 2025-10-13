@@ -99,7 +99,12 @@ const DropDownItem = ({
     >
       <div className="flex items-center gap-[8px]">
         {icon && typeof icon === "string" ? (
-          <IconButton iconName={icon} size={iconSize} color={iconColor} />
+          <IconButton
+            iconName={icon}
+            size={iconSize}
+            color={iconColor}
+            disableHover
+          />
         ) : (
           icon ?? null
         )}

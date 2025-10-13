@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import MoreIconSvgUrl from "@/assets/more.svg?url";
 import RemoveIconSvgUrl from "@/assets/btn-remove.svg?url";
+import EditIconSvgUrl from "@/assets/btn-edit.svg?url";
 
 import type { TProvider } from "@/lib/types";
 
@@ -59,10 +60,27 @@ const ProviderItem = ({ provider }: ProviderItemProps) => {
               />
             }
             items={[
-              { text: t("Edit"), onClick: () => setEditProviderVisible(true) },
+              {
+                icon: (
+                  <IconButton
+                    iconName={EditIconSvgUrl}
+                    size={20}
+                    disableHover
+                    isStroke
+                  />
+                ),
+                text: t("Edit"),
+                onClick: () => setEditProviderVisible(true),
+              },
               { text: "", onClick: () => {}, isSeparator: true },
               {
-                icon: <IconButton iconName={RemoveIconSvgUrl} size={20} />,
+                icon: (
+                  <IconButton
+                    iconName={RemoveIconSvgUrl}
+                    size={20}
+                    disableHover
+                  />
+                ),
                 text: t("Delete"),
                 onClick: () => setDeleteProviderVisible(true),
               },

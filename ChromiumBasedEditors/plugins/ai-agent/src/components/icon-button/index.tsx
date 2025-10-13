@@ -13,6 +13,7 @@ const IconButton = ({
   isActive,
   className,
   insideElement,
+  disableHover,
   ...props
 }: IconButtonProps) => {
   return (
@@ -20,9 +21,11 @@ const IconButton = ({
       className={cn(
         `border-none cursor-pointer rounded-[4px] cursor-pointer bg-none p-0 m-0 `,
         `flex items-center justify-center `,
-        insideElement
-          ? "hover:enabled:bg-[var(--icon-button-hover-on-active-background-color)"
-          : `hover:enabled:bg-[var(--icon-button-hover-background-color)]`,
+        !disableHover
+          ? insideElement
+            ? "hover:enabled:bg-[var(--icon-button-hover-on-active-background-color)]"
+            : `hover:enabled:bg-[var(--icon-button-hover-background-color)]`
+          : undefined,
         `active:enabled:bg-[var(--icon-button-pressed-background-color)]`,
         `disabled:cursor-not-allowed disabled:opacity-[0.5]`,
         `outline-none focus:outline-none focus-visible:outline-none`,
