@@ -30,22 +30,27 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     }
 
     window.on_update_plugin_info = (info) => {
-      if (info?.lang?.includes("en")) {
-        i18n.changeLanguage("en");
-      } else if (info?.lang?.includes("ru")) {
-        i18n.changeLanguage("ru");
-      } else {
-        i18n.changeLanguage("en");
+      if (info.lang) {
+        if (info?.lang?.includes("en")) {
+          i18n.changeLanguage("en");
+        } else if (info?.lang?.includes("ru")) {
+          i18n.changeLanguage("ru");
+        } else {
+          i18n.changeLanguage("en");
+        }
       }
-      if (
-        info?.theme === "theme-white" ||
-        info?.theme === "theme-gray" ||
-        info?.theme === "theme-classic-light" ||
-        info?.theme === "theme-light"
-      ) {
-        setTheme("theme-light");
-      } else {
-        setTheme("theme-dark");
+
+      if (info.theme) {
+        if (
+          info?.theme === "theme-white" ||
+          info?.theme === "theme-gray" ||
+          info?.theme === "theme-classic-light" ||
+          info?.theme === "theme-light"
+        ) {
+          setTheme("theme-light");
+        } else {
+          setTheme("theme-dark");
+        }
       }
     };
   }, [i18n]);
