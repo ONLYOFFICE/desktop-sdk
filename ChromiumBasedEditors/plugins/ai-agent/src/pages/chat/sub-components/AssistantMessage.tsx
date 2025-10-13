@@ -41,7 +41,7 @@ const AssistantActionBar = () => {
 
   const onDownload = () => {
     window.AscDesktopEditor.SaveFilenameDialog(
-      "Message.md",
+      "Message.docx",
       (path) => {
         if (path) {
           const name = path.split("/").pop() ?? "";

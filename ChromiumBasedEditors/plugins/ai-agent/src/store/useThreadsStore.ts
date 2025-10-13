@@ -80,7 +80,7 @@ const useThreadsStore = create<UseThreadsStoreProps>((set, get) => ({
     content += convertMessagesToMd(messages);
 
     window.AscDesktopEditor.SaveFilenameDialog(
-      `${title}.md`,
+      `${title}.docx`,
       (path) => {
         if (path === "") return;
 
