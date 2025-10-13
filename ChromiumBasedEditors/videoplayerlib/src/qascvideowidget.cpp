@@ -95,7 +95,7 @@ QAscVideoWidget::QAscVideoWidget(QWidget *parent)
 #endif
 
 
-	QObject::connect(m_pEngine, SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(slotChangeState(QMediaPlayer::State)));
+	QObject::connect(m_pEngine, &QMediaPlayer::stateChanged, this, &QAscVideoWidget::slotChangeState);
 	QObject::connect(m_pEngine, SIGNAL(positionChanged(qint64)), this, SLOT(slotPositionChange(qint64)));
 	QObject::connect(m_pEngine, SIGNAL(videoAvailableChanged(bool)), this, SLOT(slotVideoAvailableChanged(bool)));
 	QObject::connect(m_pEngine, SIGNAL(durationChanged(qint64)), this, SLOT(slotMediaDurationParsed(qint64)));
