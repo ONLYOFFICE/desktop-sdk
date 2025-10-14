@@ -112,7 +112,7 @@ public slots:
 	void slotVlcPositionChanged(float position);
 	void slotVlcVideoOutputChanged(int nVoutCount);
 #else
-	void slotChangeState(QMediaPlayer::State state);
+	void slotChangeState(QMediaPlayer_State state);
 	void slotPositionChange(qint64 pos);
 	void slotVideoAvailableChanged(bool isAvailable);
 	void slotMediaDurationParsed(qint64 duration);

@@ -310,7 +310,7 @@ public:
 
 	bool InstallPluginFromStore(const std::wstring& name)
 	{
-		std::wstring sPackageUrl = L"https://onlyoffice.github.io/sdkjs-plugins/content/" + name + L"/deploy/" + name + L".plugin";
+		std::wstring sPackageUrl = L"https://github.com/ONLYOFFICE/onlyoffice.github.io/releases/latest/download/" + name + L".plugin";
 
 		std::wstring sTmpFile = NSDirectory::GetTempPath() + L"/temp_asc_plugin.plugin";
 		if (NSFile::CFileBinary::Exists(sTmpFile))

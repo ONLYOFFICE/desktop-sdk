@@ -85,9 +85,17 @@ QAscVideoWidget::QAscVideoWidget(QWidget *parent)
 #else
 	m_pEngine->setVideoOutput(this);
 #endif
-	m_pEngine->setNotifyInterval(500);
 
-	QObject::connect(m_pEngine, SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(slotChangeState(QMediaPlayer::State)));
+#ifndef USE_VLC_LIBRARY
+#ifndef QT_VERSION_6
+	m_pEngine->setNotifyInterval(500);
+#endif
+#else
+	m_pEngine->setNotifyInterval(500);
+#endif
+
+
+	QObject::connect(m_pEngine, &QMediaPlayer::stateChanged, this, &QAscVideoWidget::slotChangeState);
 	QObject::connect(m_pEngine, SIGNAL(positionChanged(qint64)), this, SLOT(slotPositionChange(qint64)));
 	QObject::connect(m_pEngine, SIGNAL(videoAvailableChanged(bool)), this, SLOT(slotVideoAvailableChanged(bool)));
 	QObject::connect(m_pEngine, SIGNAL(durationChanged(qint64)), this, SLOT(slotMediaDurationParsed(qint64)));
@@ -266,7 +274,7 @@ void QAscVideoWidget::stepBack(int nStep)
 	}
 	else
 	{
-		qint64 curPos = m_pEngine->state() == QMediaPlayer::StoppedState ? 0 : m_pEngine->position();
+		qint64 curPos = getPlayerState(m_pEngine) == QMediaPlayer::StoppedState ? 0 : m_pEngine->position();
 		qint64 targetPos = curPos - nStep;
 		if (targetPos < 0)
 			targetPos = 0;
@@ -305,7 +313,7 @@ void QAscVideoWidget::stepForward(int nStep)
 	}
 	else
 	{
-		qint64 curPos = m_pEngine->state() == QMediaPlayer::StoppedState ? 0 : m_pEngine->position();
+		qint64 curPos = getPlayerState(m_pEngine) == QMediaPlayer::StoppedState ? 0 : m_pEngine->position();
 		qint64 targetPos = curPos + nStep;
 		qint64 duration = m_pEngine->duration();
 		if (targetPos >= duration)
@@ -537,7 +545,7 @@ void QAscVideoWidget::slotMediaDurationParsed(qint64 duration)
 void QAscVideoWidget::slotMediaStatusChanged(QMediaPlayer::MediaStatus mediaStatus)
 {
 	if (mediaStatus == QMediaPlayer::LoadedMedia)
-		emit videoOutputChanged(m_pEngine->isVideoAvailable());
+		emit videoOutputChanged(isVideoAvailable(m_pEngine));
 }
 
 QMediaPlayer* QAscVideoWidget::getEngine()

@@ -29,6 +29,7 @@
  * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
  *
  */
+#include "./external_process_with_childs.h"
 
 #include "./client_renderer.h"
 
@@ -61,6 +62,10 @@
 #include <boost/filesystem.hpp>
 
 #include "../../tools/tools.h"
+
+#ifndef CEF_VERSION_ABOVE_102
+#include "include/cef_runnable.h"
+#endif
 
 std::wstring GetTmpFileFromBase64(const std::string& sData, const std::wstring& sTmpFolder)
 {
@@ -592,7 +597,7 @@ namespace asc_client_renderer
 		IMPLEMENT_REFCOUNTING(CLocalFileConvertV8Handler);
 	};
 
-	class CAscEditorNativeV8Handler : public CefV8Handler
+	class CAscEditorNativeV8Handler : public CefV8Handler, public CAIToolsHelper, public NSProcesses::CProcessRunnerCallback
 	{
 		class CSavedPageInfo
 		{
@@ -717,6 +722,10 @@ namespace asc_client_renderer
 		bool m_bIsMacrosesSupport;
 		bool m_bIsPluginsSupport;
 
+		// External processes
+		CefRefPtr<CefFrame> m_frame;
+		NSProcesses::CProcessManager* m_external_processes;
+
 		CAscEditorNativeV8Handler(const std::wstring& sUrl)
 		{
 			m_etType = AscEditorType::etUndefined;
@@ -767,6 +776,8 @@ namespace asc_client_renderer
 
 			m_bEditorsCloudFeaturesCheck = false;
 			m_arCloudFeaturesBlackList.push_back("personal.onlyoffice.com");
+
+			m_external_processes = NULL;
 		}
 
 		void CheckDefaults()
@@ -804,6 +815,8 @@ namespace asc_client_renderer
 
 			m_sViewportSettings = default_params.GetValue("viewport_settings");
 
+			m_sLocalFileFolderWithoutFile = default_params.GetValueW("recovery_file_folder");
+
 #if 0
 		default_params.Print();
 #endif
@@ -811,6 +824,14 @@ namespace asc_client_renderer
 
 		virtual ~CAscEditorNativeV8Handler()
 		{
+			RELEASEOBJECT(m_external_processes);
+
+#ifdef CEF_2623
+			m_frame = NULL;
+#else
+			m_frame.reset();
+#endif
+
 			if (m_pAES_Key)
 				NSOpenSSL::openssl_free(m_pAES_Key);
 			NSBase::Release(m_pLocalApplicationFonts);
@@ -938,6 +959,41 @@ return undefined; \n\
 			SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 			return true;
 		}
+
+		virtual void process_callback(const int& id, const NSProcesses::StreamType& type, const std::string& message) OVERRIDE
+		{
+			if (m_frame && m_external_processes)
+			{
+				std::string sMessageDst = message;
+				NSStringUtils::string_replaceA(sMessageDst, "\\", "\\\\");
+				NSStringUtils::string_replaceA(sMessageDst, "\"", "\\\"");
+				NSStringUtils::string_replaceA(sMessageDst, "\r", "");
+				NSStringUtils::string_replaceA(sMessageDst, "\n", "");
+
+				std::string sCode = "(function(){\n\
+if (!window._external_process_callback) return;\n\
+if (!window._external_process_callback[" + std::to_string(id) + "]) return;\n\
+window._external_process_callback[" + std::to_string(id) + "]._onprocess(" + std::to_string((int)type) + ", \"" + sMessageDst + "\");\n\
+})();";
+
+#ifdef CEF_VERSION_ABOVE_102
+				CefPostTask(TID_RENDERER, base::BindOnce([](CefRefPtr<CefFrame> frame, const std::string& code) {
+					if (frame) frame->ExecuteJavaScript(code, frame->GetURL(), 0);
+				}, m_frame, sCode));
+#else
+				CefPostTask(TID_RENDERER,
+						NewCefRunnableMethod(this, &CAscEditorNativeV8Handler::OLD_CEF_POST_TASK, sCode));
+#endif
+			}
+		}
+
+#ifndef CEF_VERSION_ABOVE_102
+		void OLD_CEF_POST_TASK(const std::string& code)
+		{
+			if (m_frame)
+				m_frame->ExecuteJavaScript(code, m_frame->GetURL(), 0);
+		}
+#endif
 
 		virtual bool Execute(const CefString& sMessageName, CefRefPtr<CefV8Value> object, const CefV8ValueList& arguments, CefRefPtr<CefV8Value>& retval, CefString& exception) OVERRIDE
 		{
@@ -2276,9 +2332,9 @@ window.AscDesktopEditor.OpenFilenameDialog = function(filter, ismulti, callback)
   window.on_native_open_filename_dialog = callback;\n\
   window.AscDesktopEditor._OpenFilenameDialog(filter, ismulti);\n\
 };\n\
-window.AscDesktopEditor.SaveFilenameDialog = function(filter, callback) {\n\
+window.AscDesktopEditor.SaveFilenameDialog = function(filter, callback, content) {\n\
   window.on_native_save_filename_dialog = callback;\n\
-  window.AscDesktopEditor._SaveFilenameDialog(filter);\n\
+  window.AscDesktopEditor._SaveFilenameDialog(filter, content);\n\
 };\n\
 window.AscDesktopEditor.DownloadFiles = function(filesSrc, filesDst, callback, params) {\n\
   if (filesSrc.length == 0) return callback({});\n\
@@ -2393,6 +2449,20 @@ window.AscDesktopEditor._convertFile((files && files[0]) ? files[0] : '', format
 window.AscDesktopEditor._convertFile(path, format);\n\
 }\n\
 };\n\
+window.AscDesktopEditor.convertFileExternal = function(path, format, callback) {\n\
+if (!window._external_converter_counter) window._external_converter_counter = 0;\n\
+window._external_converter_counter++;\n\
+window._external_converters = window._external_converters || {};\n\
+window._external_converters[window._external_converter_counter] = function(path, code) { callback(window.AscDesktopEditor._onConvertFileExternal(path, code)); };\n\
+if (path && path.indexOf && (0 === path.indexOf('https://') || 0 === path.indexOf('http://') || 0 === path.indexOf('www.'))) {\n\
+window.AscDesktopEditor.DownloadFiles([path], [], function(_files) {\n\
+var files = []; for (var _elem in _files) { files.push(_files[_elem]); }\n\
+window.AscDesktopEditor._convertFileExternal((files && files[0]) ? files[0] : '', format, window._external_converter_counter);\n\
+});\n\
+} else {\n\
+window.AscDesktopEditor._convertFileExternal(path, format, window._external_converter_counter);\n\
+}\n\
+};\n\
 window.AscDesktopEditor.getPortalsList = function() { var ret = []; try { var portals = JSON.parse(localStorage.getItem(\"portals\")); for (var i = 0, len = portals.length; i < len; i++) { ret.push(portals[i].portal); ret.push(portals[i].provider); } } catch(err) { ret = []; } console.log(ret);window.AscDesktopEditor.setPortalsList(ret); };\n\
 ";
 #ifdef CEF_VERSION_ABOVE_102
@@ -2411,6 +2481,39 @@ window.AscDesktopEditor.attachEvent=function(name,callback){if(undefined===windo
 window.AscDesktopEditor.LocalFileTemplates=function(e){window.__lang_checker_templates__=e||\"\",window.__resize_checker_templates__||(window.__resize_checker_templates__=!0,window.addEventListener(\"resize\",function(){window.AscDesktopEditor._LocalFileTemplates(window.__lang_checker_templates__,(100*window.devicePixelRatio)>>0)})),window.AscDesktopEditor._LocalFileTemplates(window.__lang_checker_templates__,(100*window.devicePixelRatio)>>0)};";
 
 					_frame->ExecuteJavaScript(sCodeInitJS, _frame->GetURL(), 0);
+
+					std::string sUrl = _frame->GetURL().ToString();
+					if (0 == sUrl.find("file:///") || 0 == sUrl.find("onlyoffice://"))
+					{
+						std::string sCode = "function ExternalProcess(command, env)\n\
+{\n\
+this.command = command;this.id = -1;\n\
+this.env = env;\n\
+this.start = function() {\n\
+this.id = AscDesktopEditor._createProcess(this.command, this.env);\n\
+window._external_process_callback[this.id] = this;\n\
+};\n\
+this.end = function() {\n\
+if (window._external_process_callback[this.id])\n\
+delete window._external_process_callback[this.id];\n\
+AscDesktopEditor._endProcess(this.id);\n\
+};\n\
+this.stdin = function(data) {\n\
+AscDesktopEditor._stdin(this.id, data);\n\
+};\n\
+this._onprocess = function(type, message) {\n\
+if (2 === type && window._external_process_callback[this.id])\n\
+delete window._external_process_callback[this.id];\n\
+if (this.onprocess)\n\
+this.onprocess(type, message);\n\
+};\n\
+if (!window._external_process_callback) {\n\
+window._external_process_callback = {};\n\
+}\n\
+}";
+
+						_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+					}
 				}
 
 				return true;
@@ -2492,6 +2595,10 @@ window.AscDesktopEditor.LocalFileTemplates=function(e){window.__lang_checker_tem
 						sPluginName.erase(std::remove(sPluginName.begin(), sPluginName.end(), L'/'), sPluginName.end());
 
 						std::wstring sPackageUrl = sBaseUrl + L"/deploy/" + sPluginName + L".plugin";
+						if (0 == sBaseUrl.find(L"https://onlyoffice.github.io"))
+							sPackageUrl = L"https://github.com/ONLYOFFICE/onlyoffice.github.io/releases/latest/download/" + sPluginName + L".plugin";
+						else if (0 == sBaseUrl.find(L"https://onlyoffice-plugins.github.io/onlyoffice.github.io"))
+							sPackageUrl = L"https://github.com/ONLYOFFICE-PLUGINS/onlyoffice.github.io/releases/latest/download/" + sPluginName + L".plugin";
 
 						std::wstring sTmpFile = NSFile::CFileBinary::GetTempPath() + L"/temp_asc_plugin.plugin";
 						if (NSFile::CFileBinary::Exists(sTmpFile))
@@ -3419,6 +3526,10 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_save_filename_dialog");
 				message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
 				message->GetArgumentList()->SetString(1, std::to_string(CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier()));
+
+				if (arguments.size() > 1 && arguments[1]->IsString())
+					message->GetArgumentList()->SetString(2, arguments[1]->GetStringValue());
+
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 				return true;
 			}
@@ -3494,9 +3605,7 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
 			else if (name == "IsSupportMedia")
 			{
 				bool bIsLocal = IsLocalFile(true);
-#ifdef _MAC
-				bIsLocal = false;
-#endif
+
 				retval = CefV8Value::CreateBool(bIsLocal);
 				return true;
 			}
@@ -4434,8 +4543,176 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				}
 
 				std::string name = arguments[0]->GetStringValue().ToString();
-				std::string param = arguments[1]->GetStringValue().ToString();
-				retval = CefV8Value::CreateString(tools.callFunc(name, param));
+				std::string param = (arguments.size() > 1) ? arguments[1]->GetStringValue().ToString() : "{}";
+				retval = CefV8Value::CreateString(tools.callFunc(name, param, this));
+				return true;
+			}
+			else if (name == "_convertFileExternal")
+			{
+				if (arguments.size() < 2)
+					return true;
+
+				std::wstring sFileUrl = arguments[0]->GetStringValue();
+				if (!g_pLocalResolver->Check(sFileUrl))
+					return true;
+
+				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("convert_file_external");
+				message->GetArgumentList()->SetString(0, sFileUrl);
+				NSArgumentList::SetInt64(message->GetArgumentList(), 1, CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
+				message->GetArgumentList()->SetInt(2, arguments[1]->GetIntValue());
+				message->GetArgumentList()->SetInt(3, arguments[2]->GetIntValue());
+
+				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+				return true;
+			}
+			else if (name == "_onConvertFileExternal")
+			{
+#ifdef CEF_2623
+				retval = CefV8Value::CreateObject(NULL);
+#else
+				retval = CefV8Value::CreateObject(nullptr, nullptr);
+#endif
+				std::wstring sFile = arguments[0]->GetStringValue().ToWString();
+				int nError = arguments[1]->GetIntValue();
+
+				retval->SetValue("code", CefV8Value::CreateInt(nError), V8_PROPERTY_ATTRIBUTE_NONE);
+
+				if (true)
+				{
+					BYTE* pData = NULL;
+					DWORD dwFileLen = 0;
+					NSFile::CFileBinary::ReadAllBytes(sFile, &pData, dwFileLen);
+
+					if (0 != dwFileLen)
+					{
+#ifndef CEF_V8_SUPPORT_TYPED_ARRAYS
+						CefRefPtr<CefV8Value> arr = CefV8Value::CreateArray(dwFileLen);
+						for (DWORD i = 0; i < dwFileLen; ++i)
+							arr->SetValue(i, CefV8Value::CreateInt(pData[i]));
+						retval->SetValue("content", arr, V8_PROPERTY_ATTRIBUTE_NONE);
+#else
+						retval->SetValue("content", CefV8Value::CreateArrayBuffer((void*)pData, (size_t)dwFileLen, new CAscCefV8ArrayBufferReleaseCallback()), V8_PROPERTY_ATTRIBUTE_NONE);
+#endif
+					}
+				}
+
+				return true;
+			}
+			else if (name == "_createProcess")
+			{
+				if (!m_external_processes)
+					m_external_processes = new NSProcesses::CProcessManager(this);
+
+				std::string command = arguments[0]->GetStringValue().ToString();
+				std::map<std::string, std::string> env;
+
+				if (arguments.size() > 1)
+				{
+					CefRefPtr<CefV8Value> envJS = arguments[1];
+					if (envJS->IsObject())
+					{
+						std::vector<CefString> arKeys;
+						if (envJS->GetKeys(arKeys))
+						{
+							for (int i = 0, len = arKeys.size(); i < len; ++i)
+							{
+								env.insert(std::pair<std::string, std::string>(arKeys[i].ToString(), envJS->GetValue(arKeys[i])->GetStringValue().ToString()));
+							}
+						}
+					}
+				}
+
+				int process_id = m_external_processes->Start(command, std::move(env));
+
+				retval = CefV8Value::CreateInt(process_id);
+				return true;
+			}
+			else if (name == "_endProcess")
+			{
+				int process_id = arguments[0]->GetIntValue();
+				if (m_external_processes)
+					m_external_processes->End(process_id);
+				return true;
+			}
+			else if (name == "_stdin")
+			{
+				int process_id = arguments[0]->GetIntValue();
+				std::string data = arguments[1]->GetStringValue().ToString();
+				if (m_external_processes)
+					m_external_processes->SendStdIn(process_id, data);
+				return true;
+			}
+			else if (name == "generateNew")
+			{
+				if (arguments.empty())
+					return false;
+
+				std::string ext = arguments[0]->GetStringValue().ToString();
+				std::wstring gen = L"";
+
+				if (arguments.size() == 3)
+				{
+					std::string type = arguments[1]->GetStringValue().ToString();
+					std::string content = arguments[2]->GetStringValue().ToString();
+
+					std::wstring tempFileContent = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"GEN");
+					if (NSFile::CFileBinary::Exists(tempFileContent))
+						NSFile::CFileBinary::Remove(tempFileContent);
+
+					NSFile::CFileBinary oFile;
+					if (oFile.CreateFile(tempFileContent))
+					{
+						type += "\n";
+						oFile.WriteFile(type.c_str(), (DWORD)type.length());
+						oFile.WriteFile(content.c_str(), (DWORD)content.length());
+						oFile.CloseFile();
+					}
+
+					gen = tempFileContent;
+				}
+
+				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("generate_new");
+				message->GetArgumentList()->SetString(0, ext);
+				message->GetArgumentList()->SetString(1, gen);
+
+				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+				return true;
+			}
+			else if (name == "getGenerationInfo")
+			{
+				std::wstring sFile = m_sLocalFileFolderWithoutFile + L"/.generate";
+				if (!NSFile::CFileBinary::Exists(sFile))
+				{
+					retval = CefV8Value::CreateUndefined();
+					return true;
+				}
+
+				BYTE* data = NULL;
+				DWORD dwDataSize = 0;
+				if (NSFile::CFileBinary::ReadAllBytes(sFile, &data, dwDataSize))
+				{
+					DWORD dwPosType = 0;
+					while (dwPosType < dwDataSize && data[dwPosType] != '\n')
+						dwPosType++;
+
+					if (dwPosType == dwDataSize)
+					{
+						retval = CefV8Value::CreateUndefined();
+						return true;
+					}
+
+#ifdef CEF_2623
+					retval = CefV8Value::CreateObject(NULL);
+#else
+					retval = CefV8Value::CreateObject(nullptr, nullptr);
+#endif
+
+					retval->SetValue("type", CefV8Value::CreateString(std::string((char*)data, dwPosType)), V8_PROPERTY_ATTRIBUTE_NONE);
+					retval->SetValue("value", CefV8Value::CreateString(std::string((char*)data + dwPosType + 1, dwDataSize - (dwPosType + 1))), V8_PROPERTY_ATTRIBUTE_NONE);
+
+				}
+
+				RELEASEARRAYOBJECTS(data);
 				return true;
 			}
 
@@ -4890,6 +5167,47 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			return true;
 		}
 
+		// AIHelper
+		virtual void OpenTemplate(const std::wstring& path, const std::wstring& name = L"")
+		{
+			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("open_template");
+			message->GetArgumentList()->SetString(0, path);
+
+			if (!name.empty())
+				message->GetArgumentList()->SetString(1, name);
+
+			SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+		}
+		virtual void OpenFile(const std::wstring& path)
+		{
+			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("open_file");
+			message->GetArgumentList()->SetString(0, path);
+			SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+		}
+
+		virtual std::vector<CRecentFileInfo> GetRecents()
+		{
+			std::vector<CRecentFileInfo> files;
+			std::wstring sXmlPath = m_sRecoversFolder + L"/../recents.xml";
+			XmlUtils::CXmlNode oNodeRecents;
+			if (!oNodeRecents.FromXmlFile(sXmlPath))
+				return files;
+			std::vector<XmlUtils::CXmlNode> oNodes = oNodeRecents.GetNodes(L"file");
+			size_t nCount = oNodes.size();
+
+			for (size_t i = 0; i < nCount; ++i)
+			{
+				XmlUtils::CXmlNode &oFile = oNodes[i];
+				std::wstring path = oFile.GetAttribute(L"path");
+				if (!path.empty())
+				{
+					files.push_back(CRecentFileInfo(path, oFile.GetAttributeInt("type")));
+				}
+			}
+
+			return files;
+		}
+
 		// Provide the reference counting implementation for this class.
 		IMPLEMENT_REFCOUNTING(CAscEditorNativeV8Handler);
 	};
@@ -5013,7 +5331,7 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 			CefRefPtr<CefV8Handler> handler = pWrapper;
 
-#define EXTEND_METHODS_COUNT 188
+#define EXTEND_METHODS_COUNT 195
 			const char* methods[EXTEND_METHODS_COUNT] = {
 				"Copy",
 				"Paste",
@@ -5275,6 +5593,16 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 				"getToolFunctions",
 				"callToolFunction",
 
+				"_convertFileExternal",
+				"_onConvertFileExternal",
+
+				"_createProcess",
+				"_endProcess",
+				"_stdin",
+
+				"generateNew",
+				"getGenerationInfo",
+
 				NULL};
 
 			ExtendObject(obj, handler, methods);
@@ -5344,6 +5672,8 @@ return this.split(str).join(newStr);\
 #else
 			browser->SendProcessMessage(PID_BROWSER, message);
 #endif
+
+			pWrapper->m_frame = curFrame;
 		}
 
 		virtual void OnContextReleased(CefRefPtr<client::ClientAppRenderer> app, CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefV8Context> context) OVERRIDE
@@ -6484,6 +6814,30 @@ delete window[\"crypto_images_map\"][_url];\n\
 					return true;
 
 				_frame->ExecuteJavaScript("window.on_convert_file_callback(\"" + sFolder + "\");", _frame->GetURL(), 0);
+				return true;
+			}
+			else if (sMessageName == "on_convert_local_file_external")
+			{
+				std::string sFile = message->GetArgumentList()->GetString(0).ToString();
+				int64 nFrameId = NSArgumentList::GetInt64(message->GetArgumentList(), 1);
+				NSStringUtils::string_replaceA(sFile, "\\", "\\\\");
+				NSStringUtils::string_replaceA(sFile, "\"", "\\\"");
+
+				int nReturnCode = message->GetArgumentList()->GetInt(2);
+				int nConvertId = message->GetArgumentList()->GetInt(3);
+
+				CefRefPtr<CefFrame> _frame = browser->GetFrame(nFrameId);
+				if (!_frame)
+					return true;
+
+				std::string sCode = "(function(){\n\
+if (!window._external_converters) return;\n\
+if (!window._external_converters[" + std::to_string(nConvertId) + "]) return;\n\
+window._external_converters[" + std::to_string(nConvertId) + "](\"" + sFile + "\", " + std::to_string(nReturnCode) + ");\n\
+delete window._external_converters[" + std::to_string(nConvertId) + "];\n\
+})();";
+				_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
+
 				return true;
 			}
 

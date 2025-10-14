@@ -1,0 +1,19 @@
+{
+  "type": "function",
+  "name": "form_field_filler",
+  "description": "Use this function if you are asked to fill out a document or form. Provide only those keys that were obtained during the document/form analysis, unless a specific key was explicitly requested.\n\nSpecial rules for dates:\n- If you are asked for a date, then give it in the format dd.mm.yyyy.\n- Convert any given date range or time period (e.g. \"summer 2025\", \"fall 2024\", \"January 2023\", \"second half 2026\", \"first quarter 2022\") to two dates: start and end, represented as timestamp in format dd.mm.yyyy. Use exact calendar dates to define period boundaries (taking into account leap years, number of days in months, etc.)).\n\nReturn value:\nAn object describing the result of the operation.\n{\n\"role\": \"tool\", // Required constant field\n\"status\": \"success\" | \"error\",\n\"document\": \"string\", // Path or link to the newly filled document\n\"error_message\": \"string | null\" // Error details if status = 'error'\n}\n\nExample function call:\n{\n\"document\": \"/home/user/document.docx\",\n\"fields\": {\n\"Full Name\": \"John Doe\",\n\"Date of Birth\": \"15.03.1990\",\n\"startDate\": \"01.06.2025\",\n\"endDate\": \"31.08.2025\"\n}\n\nExample successful response:\n{\n\"role\": \"tool\",\n\"status\": \"success\",\n\"document\": \"/home/user/document_filled.docx\",\n\"error_message\": null\n}\n\nExample error response:\n{\n\"role\": \"tool\",\n\"status\": \"error\",\n\"document\": null,\n\"error_message\": \"One or more required fields are missing.\"\n}",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "document": {
+        "type": "string",
+        "description": "Path to the file or URL of the document to be filled."
+      },
+      "fields": {
+        "type": "object",
+        "description": "Key-value pairs of fields to fill in the document. Dates must follow the dd.mm.yyyy format."
+      }
+    },
+    "required": ["document", "fields"]
+  }
+}
