@@ -34,6 +34,7 @@ export type TAttachmentFile = {
 };
 
 export type TProcess = {
+  stdin: (data: string) => void;
   onprocess: (type: number, message: string) => void;
   end: () => void;
   start: () => void;

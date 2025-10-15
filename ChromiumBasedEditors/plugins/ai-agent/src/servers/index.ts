@@ -1,41 +1,43 @@
-import type { TMCPItem, TProcess } from "@/lib/types";
+import type { TMCPItem } from "@/lib/types";
 
 import { DesktopEditorTool } from "./DesktopEditor";
+import { CustomServers } from "./CustomServers";
 
 class Servers {
   desktopEditorTool: DesktopEditorTool;
-  customServers: Record<string, Record<string, unknown>>;
-  startedCustomServers: Record<string, string>;
-  customServersProcesses: Record<string, TProcess>;
-  customServersLogs: Record<string, string[]>;
+  customServers: CustomServers;
 
   constructor() {
     this.desktopEditorTool = new DesktopEditorTool();
-    this.customServers = {};
-    this.startedCustomServers = {};
-    this.customServersProcesses = {};
-    this.customServersLogs = {};
+    this.customServers = new CustomServers();
   }
 
-  init = () => {
-    this.desktopEditorTool.initTools();
+  checkAllowAlways = (type: string) => {
+    if (type === "desktop-editor") {
+      return this.desktopEditorTool.getAllowAlways();
+    }
+
+    return this.customServers.checkAllowAlways(type);
   };
 
-  checkAllowAlways = () => {
-    return this.desktopEditorTool.getAllowAlways();
-  };
+  setAllowAlways = (value: boolean, type: string) => {
+    if (type === "desktop-editor") {
+      this.desktopEditorTool.setAllowAlways(value);
+      return;
+    }
 
-  setAllowAlways = (value: boolean) => {
-    this.desktopEditorTool.setAllowAlways(value);
+    this.customServers.setAllowAlways(value, type);
   };
 
   getTools = async () => {
-    const [desktopEditorTools] = await Promise.all([
+    const [desktopEditorTools, customServersTools] = await Promise.all([
       this.desktopEditorTool.getTools(),
+      this.customServers.getTools(),
     ]);
 
     const items: Record<string, TMCPItem[]> = {
       "desktop-editor": desktopEditorTools,
+      ...customServersTools,
     };
 
     return items;
@@ -50,110 +52,34 @@ class Servers {
       return this.desktopEditorTool.callTools(name, args);
     }
 
-    return this.desktopEditorTool.callTools(name, args);
-
-    // return this.customServers[type][toolName](args);
+    // Call MCP server tool
+    return this.customServers.callToolFromMCP(type, name, args);
   };
 
   setCustomServers = (servers: {
     mcpServers: Record<string, Record<string, unknown>>;
   }) => {
-    this.customServers = servers.mcpServers;
+    this.customServers.setCustomServers(servers);
   };
 
   startCustomServers = () => {
-    const servers: string[] = [];
-    Object.entries(this.customServers).forEach(([type, config]) => {
-      servers.push(type);
-      let command = "";
-      const env: Record<string, string> = {};
-      let args = "";
+    this.customServers.startCustomServers();
+  };
 
-      Object.entries(config).map(([key, value]) => {
-        if (key == "env") {
-          Object.entries(value as Record<string, string>).forEach(([k, v]) => {
-            env[k] = v;
-          });
-        }
+  restartCustomServer = (type: string) => {
+    this.customServers.restartCustomServer(type);
+  };
 
-        if (key === "command") {
-          command = value as string;
-        }
+  deleteCustomServer = (type: string) => {
+    this.customServers.deleteCustomServer(type);
+  };
 
-        if (key == "args") {
-          args = (value as string[]).join(" ");
-        }
-      });
+  getCustomServers = () => {
+    return this.customServers.customServers;
+  };
 
-      const commandLine = command + " " + args;
-
-      if (
-        this.startedCustomServers[type] &&
-        this.startedCustomServers[type] === commandLine
-      ) {
-        return;
-      }
-
-      if (this.customServersProcesses[type]) {
-        console.log("stop server");
-        // this.customServersProcesses[type].end();
-      }
-
-      this.customServersLogs[type] = [
-        `${new Date().toLocaleString()}: ${commandLine}\n`,
-      ];
-
-      const process = new window.ExternalProcess(commandLine, env);
-
-      process.onprocess = (t: number, message: string) => {
-        switch (t) {
-          case 0: {
-            this.customServersLogs[type].push(
-              `${new Date().toLocaleString()}: ${message}\n`
-            );
-            break;
-          }
-          case 1: {
-            this.customServersLogs[type].push(
-              `${new Date().toLocaleString()}: ${message}\n`
-            );
-            break;
-          }
-          case 2: {
-            this.customServersLogs[type].push(
-              `${new Date().toLocaleString()}: [stop] ${message}\n`
-            );
-            // delete this.customServersProcesses[type];
-            break;
-          }
-          default:
-            break;
-        }
-      };
-
-      this.customServersProcesses[type] = process;
-
-      process.start();
-    });
-
-    Object.keys(this.customServersProcesses).forEach((type) => {
-      if (!servers.includes(type)) {
-        if (this.customServersProcesses[type]) {
-          console.log("stop");
-          // this.customServersProcesses[type]?.end();
-          delete this.customServersProcesses[type];
-        }
-        if (this.customServersLogs[type]) {
-          delete this.customServersLogs[type];
-        }
-        if (this.startedCustomServers[type]) {
-          delete this.startedCustomServers[type];
-        }
-        if (this.customServers[type]) {
-          delete this.customServers[type];
-        }
-      }
-    });
+  getCustomServersLogs = () => {
+    return this.customServers.customServersLogs;
   };
 }
 

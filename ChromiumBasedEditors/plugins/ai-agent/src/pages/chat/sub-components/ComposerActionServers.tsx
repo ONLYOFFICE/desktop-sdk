@@ -34,45 +34,48 @@ const ServersSettings = () => {
     () =>
       Object.entries(servers)
         .map(([type, tools]) => {
+          const isAllEnabled = tools.some((tool) => tool.enabled);
           return {
             text: type,
             onClick: () => {},
-            subMenu: tools.map((tool) => {
-              return {
-                text: tool.name,
+            subMenu: [
+              {
+                text: "All tools",
                 onClick: () => {},
                 withToggle: true,
-                toggleChecked: tool.enabled,
-                onToggleChange: (checked: boolean) => {
-                  changeToolStatus(type, tool.name, checked);
+                toggleChecked: isAllEnabled,
+                onToggleChange: () => {
+                  if (isAllEnabled) {
+                    tools.forEach((tool) => {
+                      changeToolStatus(type, tool.name, false);
+                    });
+                  } else {
+                    tools.forEach((tool) => {
+                      changeToolStatus(type, tool.name, true);
+                    });
+                  }
                 },
-              };
-            }),
+              },
+              { text: "", onClick: () => {}, isSeparator: true },
+              ...tools.map((tool) => {
+                return {
+                  text: tool.name,
+                  onClick: () => {},
+                  withToggle: true,
+                  toggleChecked: tool.enabled,
+                  onToggleChange: (checked: boolean) => {
+                    changeToolStatus(type, tool.name, checked);
+                  },
+                };
+              }),
+            ],
           };
         })
-        .filter((item) => item.subMenu.length > 0),
+        .filter((item) => item.subMenu.length > 2),
     [servers, changeToolStatus]
   );
 
-  const actions = useMemo(
-    () => [
-      ...toolsActions,
-
-      // {
-      //   text: "",
-      //   onClick: () => {},
-      //   isSeparator: true,
-      // },
-      // {
-      //   text: "Manage connection",
-      //   icon: ToolsIconUrl,
-      //   iconSize: 16,
-      //   iconColor: "var(--tools-settings-trigger-icon-color)",
-      //   onClick: () => {},
-      // },
-    ],
-    [toolsActions]
-  );
+  const actions = useMemo(() => [...toolsActions], [toolsActions]);
 
   if (!servers) return null;
 

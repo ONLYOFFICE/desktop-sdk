@@ -43,8 +43,8 @@ const DropdownMenuComponent = ({
           )}
           style={maxWidth ? { maxWidth } : undefined}
         >
-          {items.map((item) => (
-            <DropDownItem key={item.text} {...item} />
+          {items.map((item, index) => (
+            <DropDownItem key={item.id || item.text || `item-${index}`} {...item} />
           ))}
         </DropdownMenu.Content>
       </DropdownMenu.Portal>

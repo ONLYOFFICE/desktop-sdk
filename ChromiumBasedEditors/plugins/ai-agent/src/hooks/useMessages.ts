@@ -57,8 +57,22 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
   const approveToolCall = (allowAlways: boolean) => {
     if (!manageToolData) return;
 
+    const toolCall = manageToolData?.message?.content[manageToolData.idx];
+
+    if (
+      !toolCall ||
+      typeof toolCall !== "object" ||
+      !("type" in toolCall) ||
+      toolCall.type !== "tool-call"
+    )
+      return;
+
+    const toolName = toolCall.toolName;
+
+    const type = toolName.split("_")[0];
+
     if (allowAlways) {
-      setAllowAlways();
+      setAllowAlways(true, type);
     }
 
     handleToolCall(
@@ -103,7 +117,11 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     )
       return;
 
-    if (checkAllowAlways() || accept || deny) {
+    const toolName = toolCall.toolName;
+
+    const type = toolName.split("_")[0];
+
+    if (checkAllowAlways(type) || accept || deny) {
       const result = deny
         ? "User deny tool call"
         : await callTools(

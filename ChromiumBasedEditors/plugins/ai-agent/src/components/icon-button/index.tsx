@@ -26,7 +26,9 @@ const IconButton = ({
             ? "hover:enabled:bg-[var(--icon-button-hover-on-active-background-color)]"
             : `hover:enabled:bg-[var(--icon-button-hover-background-color)]`
           : undefined,
-        `active:enabled:bg-[var(--icon-button-pressed-background-color)]`,
+        !disableHover
+          ? `active:enabled:bg-[var(--icon-button-pressed-background-color)]`
+          : undefined,
         `disabled:cursor-not-allowed disabled:opacity-[0.5]`,
         `outline-none focus:outline-none focus-visible:outline-none`,
         `${className}`

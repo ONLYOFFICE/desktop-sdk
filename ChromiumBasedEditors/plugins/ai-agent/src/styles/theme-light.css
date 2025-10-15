@@ -203,6 +203,26 @@
     --ai-provider-item-icon-color: #1C1B1F;
     --ai-provider-item-shadow: 0px 1px 2px 0px #0000000F, 0px 1px 3px 0px #0000001A;
 
+    /* settings servers */
+    --servers-description-color: #969696;
+    --servers-edit-config-json-background-color: #F9F9F9;
+    --servers-edit-config-json-header-color: #00000099;
+    --servers-edit-config-json-lang-color: #00000066;
+    --servers-edit-config-json-editor-border-color: #EAEAEA;
+    --servers-edit-config-json-editor-background-color: #FFFFFF;
+    --servers-edit-config-buttons-border-color: #DFDFDF;
+    --servers-available-tools-border-color: #F3F3F3;
+    --servers-available-tools-header-color: #484848;
+    --servers-available-tools-sub-header-color: #00000066;
+    --servers-available-tools-current-tool-color: #383838;
+    --servers-available-tools-item-background-color: #F9F9F9;
+    --servers-available-tools-item-hover-background-color: #EAEAEA;
+    --servers-available-tools-item-active-background-color: #E1E1E1;
+    --servers-available-tools-item-name-color:#000000CC;
+    --servers-available-tools-item-icon-color: #383838;
+    --servers-logs-dialog-border-color:#EAEAEA;
+    --servers-logs-dialog-log-color:#000000CC;
+
     /* chat */
     --chat-welcome-color: #333333;
     --chat-welcome-description-color: #00000099;

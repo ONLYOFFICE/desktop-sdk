@@ -17,16 +17,18 @@ type UseServersStoreProps = {
     messageUID: string;
   };
 
-  initServers: () => Promise<void>;
+  initServers: () => void;
+  getTools: () => Promise<void>;
   changeToolStatus: (type: string, name: string, enabled: boolean) => void;
   callTools: (name: string, args: Record<string, unknown>) => unknown;
-  checkAllowAlways: () => boolean;
-  setAllowAlways: () => void;
+  checkAllowAlways: (type: string) => boolean;
+  setAllowAlways: (value: boolean, type: string) => void;
   setManageToolData: (data: UseServersStoreProps["manageToolData"]) => void;
   saveConfig: (config: {
     mcpServers: Record<string, Record<string, unknown>>;
   }) => void;
   getConfig: () => Record<string, Record<string, unknown>>;
+  deleteCustomServer: (name: string) => void;
   getCustomServersLogs: () => Record<string, string[]>;
 };
 
@@ -36,7 +38,7 @@ const useServersStore = create<UseServersStoreProps>((set, get) => ({
   disabledTools: {},
   manageToolData: undefined,
 
-  initServers: async () => {
+  initServers: () => {
     const customServers = localStorage.getItem(MCP_SERVERS_NAME);
 
     if (customServers) {
@@ -44,7 +46,9 @@ const useServersStore = create<UseServersStoreProps>((set, get) => ({
       client.setCustomServers(parsedCustomServers);
       client.startCustomServers();
     }
+  },
 
+  getTools: async () => {
     const allTools = await client.getTools();
     const disabledToolsNamesStr = localStorage.getItem(DISABLED_TOOLS_NAME);
 
@@ -150,12 +154,12 @@ const useServersStore = create<UseServersStoreProps>((set, get) => ({
     });
   },
 
-  checkAllowAlways: () => {
-    return client.checkAllowAlways();
+  checkAllowAlways: (type: string) => {
+    return client.checkAllowAlways(type);
   },
 
-  setAllowAlways: () => {
-    client.setAllowAlways(true);
+  setAllowAlways: (value: boolean, type: string) => {
+    client.setAllowAlways(value, type);
   },
 
   callTools: (name: string, args: Record<string, unknown>) => {
@@ -189,8 +193,15 @@ const useServersStore = create<UseServersStoreProps>((set, get) => ({
     client.startCustomServers();
   },
 
+  deleteCustomServer: (name: string) => {
+    client.deleteCustomServer(name);
+    const config = get().getConfig();
+    delete config.mcpServers[name];
+    localStorage.setItem(MCP_SERVERS_NAME, JSON.stringify(config));
+  },
+
   getCustomServersLogs: () => {
-    return client.customServersLogs;
+    return client.getCustomServersLogs();
   },
 }));
 

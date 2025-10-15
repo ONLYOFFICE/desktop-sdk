@@ -1,14 +1,14 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 
-// import useProviders from "@/store/useProviders";
+import useProviders from "@/store/useProviders";
 
 import { RadioButton } from "@/components/radio-button";
 import { Tabs } from "@/components/tabs";
 
 import { Providers } from "./sub-components/providers";
 import { Wallet } from "./sub-components/wallet";
-// import { Servers } from "./sub-components/servers";
+import { Servers } from "./sub-components/servers";
 
 import config from "@/config.json";
 
@@ -21,7 +21,7 @@ const Settings = () => {
     showWallet ? "wallet" : "providers"
   );
 
-  // const { providers } = useProviders();
+  const { providers } = useProviders();
 
   const aiSettingsTab = (
     <div className="flex flex-col gap-[16px] select-none">
@@ -90,12 +90,12 @@ const Settings = () => {
                 label: t("Connection"),
                 content: aiSettingsTab,
               },
-              // {
-              //   value: "mcp-servers",
-              //   label: t("MCPServers"),
-              //   content: <Servers />,
-              //   disabled: !providers.length,
-              // },
+              {
+                value: "mcp-servers",
+                label: t("MCPServers"),
+                content: <Servers />,
+                disabled: !providers.length,
+              },
             ]}
           />
         </div>

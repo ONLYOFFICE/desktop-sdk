@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Item, Separator } from "@radix-ui/react-dropdown-menu";
+import { Item } from "@radix-ui/react-dropdown-menu";
 import { ReactSVG } from "react-svg";
 
 import { cn } from "@/lib/utils";
@@ -34,15 +34,22 @@ const DropDownItem = ({
 
   if (isSeparator)
     return (
-      <Separator className="h-px w-full bg-[var(--drop-down-menu-separator-color)] my-[4px]" />
+      <div className="h-px min-h-[1px] w-full bg-[var(--drop-down-menu-separator-color)] my-[4px] flex-shrink-0" />
     );
 
   const onSelect = (e: Event) => {
     if (withToggle) {
       e.stopPropagation();
       e.preventDefault();
+      return;
     }
     onClick(e);
+  };
+
+  const handleToggleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    onToggleChange?.(!toggleChecked);
   };
 
   const handleMouseMove = (e: MouseEvent) => {
@@ -87,13 +94,14 @@ const DropDownItem = ({
         "flex items-center justify-between gap-[16px] min-w-0 w-full max-w-full min-h-[32px] h-[32px] px-[12px] select-none cursor-pointer",
         "outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 border-0",
         "hover:bg-[var(--drop-down-menu-item-hover-color)] hover:text-[var(--drop-down-menu-item-hover-color)]",
-        "data-[highlighted]:bg-[var(--drop-down-menu-item-active-color)] data-[highlighted]:text-[var(--drop-down-menu-item-active-color)]",
+        // "data-[highlighted]:bg-[var(--drop-down-menu-item-active-color)] data-[highlighted]:text-[var(--drop-down-menu-item-active-color)]",
         "data-[disabled]:opacity-50 data-[disabled]:pointer-events-none",
-        isActive
+        isActive || (subMenu && isSubMenuOpen)
           ? "bg-[var(--drop-down-menu-item-active-color)] text-[var(--drop-down-menu-item-active-color)]"
           : ""
       )}
-      onSelect={onSelect}
+      onSelect={withToggle ? (e) => e.preventDefault() : onSelect}
+      onClick={withToggle ? handleToggleClick : undefined}
       onMouseEnter={handleMouseEnter}
       ref={itemRef}
     >
