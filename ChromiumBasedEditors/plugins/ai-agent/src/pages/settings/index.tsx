@@ -9,6 +9,7 @@ import { Tabs } from "@/components/tabs";
 import { Providers } from "./sub-components/providers";
 import { Wallet } from "./sub-components/wallet";
 import { Servers } from "./sub-components/servers";
+import { WebSearch } from "./sub-components/web-search";
 
 import config from "@/config.json";
 
@@ -94,6 +95,12 @@ const Settings = () => {
                 value: "mcp-servers",
                 label: t("MCPServers"),
                 content: <Servers />,
+                disabled: !providers.length,
+              },
+              {
+                value: "web-search",
+                label: t("WebSearch"),
+                content: <WebSearch />,
                 disabled: !providers.length,
               },
             ]}

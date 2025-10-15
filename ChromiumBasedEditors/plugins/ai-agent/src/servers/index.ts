@@ -2,19 +2,26 @@ import type { TMCPItem } from "@/lib/types";
 
 import { DesktopEditorTool } from "./DesktopEditor";
 import { CustomServers } from "./CustomServers";
+import { WebSearch, type WebSearchData } from "./WebSearch";
 
 class Servers {
   desktopEditorTool: DesktopEditorTool;
   customServers: CustomServers;
+  webSearch: WebSearch;
 
   constructor() {
     this.desktopEditorTool = new DesktopEditorTool();
     this.customServers = new CustomServers();
+    this.webSearch = new WebSearch();
   }
 
   checkAllowAlways = (type: string) => {
     if (type === "desktop-editor") {
       return this.desktopEditorTool.getAllowAlways();
+    }
+
+    if (type === "web-search") {
+      return this.webSearch.getAllowAlways();
     }
 
     return this.customServers.checkAllowAlways(type);
@@ -26,18 +33,26 @@ class Servers {
       return;
     }
 
+    if (type === "web-search") {
+      this.webSearch.setAllowAlways();
+      return;
+    }
+
     this.customServers.setAllowAlways(value, type);
   };
 
   getTools = async () => {
-    const [desktopEditorTools, customServersTools] = await Promise.all([
-      this.desktopEditorTool.getTools(),
-      this.customServers.getTools(),
-    ]);
+    const [desktopEditorTools, customServersTools, webSearchTools] =
+      await Promise.all([
+        this.desktopEditorTool.getTools(),
+        this.customServers.getTools(),
+        this.webSearch.getTools(),
+      ]);
 
     const items: Record<string, TMCPItem[]> = {
       "desktop-editor": desktopEditorTools,
       ...customServersTools,
+      "web-search": webSearchTools,
     };
 
     return items;
@@ -52,8 +67,12 @@ class Servers {
       return this.desktopEditorTool.callTools(name, args);
     }
 
+    if (type === "web-search") {
+      return await this.webSearch.callTools(name, args);
+    }
+
     // Call MCP server tool
-    return this.customServers.callToolFromMCP(type, name, args);
+    return await this.customServers.callToolFromMCP(type, name, args);
   };
 
   setCustomServers = (servers: {
@@ -80,6 +99,14 @@ class Servers {
 
   getCustomServersLogs = () => {
     return this.customServers.customServersLogs;
+  };
+
+  setWebSearchData = (data: WebSearchData) => {
+    this.webSearch.setWebSearchData(data);
+  };
+
+  getWebSearchData = () => {
+    return this.webSearch.getWebSearchData();
   };
 }
 

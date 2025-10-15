@@ -20,7 +20,7 @@ type UseServersStoreProps = {
   initServers: () => void;
   getTools: () => Promise<void>;
   changeToolStatus: (type: string, name: string, enabled: boolean) => void;
-  callTools: (name: string, args: Record<string, unknown>) => unknown;
+  callTools: (name: string, args: Record<string, unknown>) => Promise<unknown>;
   checkAllowAlways: (type: string) => boolean;
   setAllowAlways: (value: boolean, type: string) => void;
   setManageToolData: (data: UseServersStoreProps["manageToolData"]) => void;
@@ -162,7 +162,7 @@ const useServersStore = create<UseServersStoreProps>((set, get) => ({
     client.setAllowAlways(value, type);
   },
 
-  callTools: (name: string, args: Record<string, unknown>) => {
+  callTools: async (name: string, args: Record<string, unknown>) => {
     const thisStore = get();
 
     const type = name.split("_")[0];
@@ -174,7 +174,7 @@ const useServersStore = create<UseServersStoreProps>((set, get) => ({
 
     if (tool) return;
 
-    return client.callTools(type, toolName, args);
+    return await client.callTools(type, toolName, args);
   },
 
   setManageToolData: (data: UseServersStoreProps["manageToolData"]) => {
