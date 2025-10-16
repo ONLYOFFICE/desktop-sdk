@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 import client from "@/servers";
 
@@ -8,6 +9,8 @@ import { Input } from "@/components/input";
 import { FieldContainer } from "@/components/field-container";
 
 const WebSearch = () => {
+  const { t } = useTranslation();
+
   const [selectedProvider, setSelectedProvider] = React.useState<string>("");
   const [apiKey, setApiKey] = React.useState<string>("");
   const [saved, setSaved] = React.useState<boolean>(false);
@@ -42,35 +45,43 @@ const WebSearch = () => {
     <>
       <div className="flex flex-col gap-[16px] mt-[16px]">
         <p className="font-normal text-[14px] leading-[20px] text-[var(--servers-description-color)]">
-          Connect a web search engine to enhance AI chats with real-time
-          information from the internet.
+          {t("WebSearchDescription")}
         </p>
         <div className="flex flex-col gap-[16px]">
-          <FieldContainer header={"Web Search Engine"}>
+          <FieldContainer header={t("WebSearchEngine")}>
             <ComboBox
               className="w-[260px]"
-              value={selectedProvider || "Select provider"}
-              items={[
-                {
-                  text: "Exa",
-                  id: "exa",
-                  onClick: () => setSelectedProvider("exa"),
-                },
-              ]}
+              value={selectedProvider || t("SelectEngine")}
+              items={
+                saved
+                  ? []
+                  : [
+                      {
+                        text: "Exa",
+                        id: "exa",
+                        onClick: () => setSelectedProvider("exa"),
+                      },
+                    ]
+              }
             />
           </FieldContainer>
-          <FieldContainer header={"API Key"}>
+          <FieldContainer header={t("APIKey")}>
             <Input
               className="w-[260px]"
               type="password"
               value={apiKey}
+              disabled={saved}
               onChange={(e) => setApiKey(e.target.value)}
             />
           </FieldContainer>
         </div>
         <div className="flex flex-row gap-[8px]">
-          <Button className="w-fit" onClick={saveWebSearchData}>
-            Save
+          <Button
+            className="w-fit"
+            onClick={saveWebSearchData}
+            disabled={!selectedProvider || !apiKey || saved}
+          >
+            {t("Save")}
           </Button>
           <Button
             className="w-fit"
@@ -78,7 +89,7 @@ const WebSearch = () => {
             onClick={resetSettings}
             variant="default"
           >
-            Reset settings
+            {t("ResetSettings")}
           </Button>
         </div>
       </div>

@@ -1,0 +1,222 @@
+.theme-white {
+    /* base colors */
+    --background-normal: #FFFFFF;
+    --background-normal-element-light:#F9F9F9;
+
+    --background-primary-dialog-button: #4A87E7;
+
+    --highlight-primary-dialog-button-hover: #2566D5;
+    --highlight-primary-dialog-button-pressed: #1E53AE;
+
+    --text-normal: #000000CC;
+    --text-secondary:#00000099;
+    --text-tertiary: #00000066;
+    --text-contrast-background:#FFFFFF;
+
+    --icon-normal: #444444;
+    --icon-gray-primary: #383838;
+
+    --border-divider: #EAEAEA;
+    
+    /* components */
+
+    /* layout */
+    --layout-background-color: var(--background-normal);
+
+    /* header */
+    --header-color: var(--icon-gray-primary);
+    --header-background-color: var(--background-normal);
+    --header-border-color: var(--border-divider);
+
+    /* chat list */
+    --chat-list-color: var(--icon-gray-primary);
+    --chat-list-border-right: #f3f3f3;
+    --chat-list-empty-color: #00000066;
+
+    /* chat list item */
+    --chat-list-item-color: #000000CC;
+    --chat-list-item-icon-color: #383838;
+    --chat-list-item-hover-background-color: #CECECE;
+    --chat-list-item-active-background-color: #f3f3f3;
+
+    /* icon button */
+    --icon-button-color: #383838;
+    --icon-button-background-color: transparent;
+    --icon-button-hover-background-color: #eaeaea;
+    --icon-button-pressed-background-color: #e1e1e1;
+    --icon-button-hover-on-active-background-color: #D4D4D4;
+    --icon-button-pressed-on-active-background-color: #e1e1e1;
+
+    /* button */
+    --button-color: var(--text-contrast-background);
+    --button-background-color: var(--background-primary-dialog-button);
+    --button-background-hover-color: var(--highlight-primary-dialog-button-hover);
+    --button-background-pressed-color: var(--highlight-primary-dialog-button-pressed);
+    --button-border-focus-color: var(--text-contrast-background);
+    --button-shadow-focus: 0px 0px 0px 2px #4781D1BF;
+    --button-background-disabled-color: #EAEAEA;
+    --button-disabled-color: #B2B2B2;
+
+    --button-default-color: #383838;
+    --button-default-background-color: #FFFFFF;
+    --button-default-border-color: #E1E1E1;
+    --button-default-hover-background-color:#F9F9F9;
+    --button-default-pressed-background-color:#EAEAEA;
+    --button-default-focus-background-color: 0px 0px 0px 2px #4781D180;
+    --button-default-focus-background-color:#E8E8E8;
+    --button-default-disabled-border-color:#C0C0C0;
+    --button-default-disabled-color:#000000CC;
+
+    /* input */
+    --input-background-color: #F3F3F3;
+    --input-placeholder-color: #686868;
+    --input-color: #484848;
+    --input-border-color: #F3F3F3;
+    --input-hover-background-color: #EAEAEA;
+    --input-hover-border-color: #CECECE;
+    --input-active-border-color: #4A87E7;
+    --input-active-background-color: #FFFFFF;
+    --input-error-color: #991b1b;
+
+    /* tabs */
+    --tabs-color: #484848;
+    --tabs-border-color: #EAEAEA;
+    --tabs-hover-border-color: #CECECE;
+    --tabs-active-border-color: #4A87E7;
+
+    /* modal dialog */
+    --modal-dialog-background-color: #FFFFFF;
+    --modal-dialog-footer-border-color: #DFDFDF;
+    --modal-dialog-header-color:#484848;
+    --modal-dialog-close-color: #1C1B1F;
+    --modal-dialog-shadows: 0px 8px 16px 0px #040F1B29, 0px 0px 4px 0px #040F1B1F;
+    --modal-dialog-overlay-background: #7F7F7F1A;
+
+    /* field container */
+    --field-container-header-color: #484848;
+    --field-container-error-color: #991b1b;
+
+    /* drop down menu */
+    --drop-down-menu-background-color: #FFFFFF;
+    --drop-down-menu-border-color: #0000001A;
+    --drop-down-menu-shadow: 0px 8px 16px 0px #040F1B14, 0px 0px 4px 0px #040F1B0A;
+
+    /* drop down menu item */
+    --drop-down-menu-item-color: #484848;
+    --drop-down-menu-separator-color: #EAEAEA;
+    --drop-down-menu-item-hover-color: #EAEAEA;
+    --drop-down-menu-item-active-color: #E1E1E1;
+
+    /* radio button */
+    --radio-button-color: #969696;
+    --radio-button-active-color: #4A87E7;
+
+    /* toggle button */
+    --toggle-button-backround-color: #4A87E7;
+    --toggle-button-off-backround-color: #B2B2B2;
+    --toggle-button-circle-color: #ffffff;
+
+    /* file-items */
+    --file-items-background-color: #FFFFFF;
+    --file-items-color: #000000CC;
+    --file-items-ext-color: #00000099;
+    --file-items-border-color: #E0E0E0;
+    --file-items-icon-color: #444444;
+    --file-items-chat-background-color:#EFEFEF;
+    --file-items-chat-hover-background-color:#EAEAEA;
+    --file-items-chat-pressed-background-color:#E1E1E1;
+
+    /* tooltip */
+    --tooltip-background-color: #cccccc;
+    --tooltip-text-color: #000000CC;
+
+    /* loader */
+    --loader-border-color: #4A87E7;
+    
+    /* tool fallback */
+    --tool-fallback-color: #000000CC;
+
+    /* checkbox */
+    --checkbox-color: #969696;
+    --checkbox-active-color: #4A87E7;
+    --сheckbox-active-icon-color: #ffffff;
+    
+    /* pages */
+
+    /* empty-screen */
+    --empty-screen-color: var(--text-normal);
+    --empty-screen-description-color: var(--text-secondary);
+
+    /* settings */
+    --settings-header-color: #484848;
+    --settings-description-color: #969696;
+
+    /* ai provider item */
+    --ai-provider-item-color: #000000CC;
+    --ai-provider-item-description-color: #686868;
+    --ai-provider-item-background-color: #ffffff;
+    --ai-provider-item-icon-color: #1C1B1F;
+    --ai-provider-item-shadow: 0px 1px 2px 0px #0000000F, 0px 1px 3px 0px #0000001A;
+
+    /* settings servers */
+    --servers-description-color: #969696;
+    --servers-edit-config-json-background-color: #F9F9F9;
+    --servers-edit-config-json-header-color: #00000099;
+    --servers-edit-config-json-lang-color: #00000066;
+    --servers-edit-config-json-editor-border-color: #EAEAEA;
+    --servers-edit-config-json-editor-background-color: #FFFFFF;
+    --servers-edit-config-buttons-border-color: #DFDFDF;
+    --servers-available-tools-border-color: #F3F3F3;
+    --servers-available-tools-header-color: #484848;
+    --servers-available-tools-sub-header-color: #00000066;
+    --servers-available-tools-current-tool-color: #383838;
+    --servers-available-tools-item-background-color: #F9F9F9;
+    --servers-available-tools-item-hover-background-color: #EAEAEA;
+    --servers-available-tools-item-active-background-color: #E1E1E1;
+    --servers-available-tools-item-name-color:#000000CC;
+    --servers-available-tools-item-icon-color: #383838;
+    --servers-logs-dialog-border-color:#EAEAEA;
+    --servers-logs-dialog-log-color:#000000CC;
+
+    /* chat */
+    --chat-welcome-color: #333333;
+    --chat-welcome-description-color: #00000099;
+
+    --chat-composer-background-color: #F9F9F9;
+    --chat-composer-border-color: #EAEAEA;
+    --chat-composer-hover-border-color: #E1E1E1;
+    --chat-composer-active-border-color: #4A87E7;
+    --chat-composer-text-color: #000000CC;
+    --chat-composer-placeholder-color: #686868;
+
+    --chat-composer-action-attachments-color: #444444;
+    --chat-composer-action-servers-color: #444444;
+
+    --chat-composer-action-send-color: #ffffff;
+    --chat-composer-action-send-background-color: #4A87E7;
+    --chat-composer-action-send-background-hover-color: #2566D5;
+    --chat-composer-action-send-background-pressed-color: #1E53AE;
+
+    --chat-user-message-background: #EFEFEF;
+    --chat-message-color: #444444;
+    --chat-message-blockquote-color: #848484;
+    --chat-message-link-color: #446ECA;
+    --chat-message-divider-color: #EAEAEA;
+    --chat-message-th-color: #000000CC;
+    --chat-message-td-color: #000000CC;
+    --chat-message-code-block-background-color: #F9F9F9;
+    --chat-message-code-block-border-color: #EAEAEA;
+    --chat-message-code-block-header-color: #00000099;
+    --chat-message-code-block-pre-background-color: #FFFFFF;
+    --chat-message-error-color: #991b1b;
+    --chat-message-error-border-color: #f62211;
+    --chat-message-tool-call-header-color: #444444;
+    --chat-message-tool-call-name-color: #000000CC;
+    --chat-message-tool-call-name-background-color: #F3F3F3;
+    --chat-message-tool-call-body-background-color: #F9F9F9;
+    --chat-message-tool-call-body-color:#00000099;
+    --chat-message-tool-call-pre-border-color: #EAEAEA;
+    --chat-message-tool-call-pre-background-color:#FFFFFF;
+    --chat-message-tool-call-pre-color:#000000CC;
+    --chat-message-analyze-color: #000000CC;
+}   

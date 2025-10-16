@@ -44,7 +44,7 @@ const ComboBox = ({
               ? "hover:bg-[var(--input-hover-background-color)] hover:border-[var(--input-hover-border-color)]"
               : "border bg-[var(--input-background-color)] border-[var(--input-border-color)] hover:bg-[var(--input-hover-background-color)] hover:border-[var(--input-hover-border-color)]",
             className,
-            items.length === 0 ? "cursor-not-allowed pointer-events-none" : ""
+            items.length === 0 ? "cursor-not-allowed pointer-events-none opacity-50" : ""
           )}
           style={{
             borderColor: isError ? "var(--border-error)" : undefined,
@@ -71,6 +71,7 @@ const ComboBox = ({
       align="start"
       side="bottom"
       containerRef={containerRef.current}
+      matchTriggerWidth={true}
       items={items}
     />
   );

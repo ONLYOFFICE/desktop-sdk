@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 import useServersStore from "@/store/useServersStore";
 
@@ -24,6 +25,7 @@ type AvailableToolsItemProps = {
   mcpItems: TMCPItem[];
   isLoading: boolean;
   isSystem: boolean;
+  disableEnable: boolean;
 };
 
 const AvailableToolsItem = ({
@@ -31,7 +33,10 @@ const AvailableToolsItem = ({
   mcpItems,
   isLoading,
   isSystem,
+  disableEnable,
 }: AvailableToolsItemProps) => {
+  const { t } = useTranslation();
+
   const [opened, setOpened] = React.useState(false);
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
   const [openLogsDialog, setOpenLogsDialog] = React.useState(false);
@@ -95,7 +100,7 @@ const AvailableToolsItem = ({
               <span className="text-[var(--servers-available-tools-current-tool-color)]">
                 {mcpItems.filter((tool) => tool.enabled).length}
               </span>
-              /{mcpItems.length} tools enabled
+              /{mcpItems.length} {t("ToolsEnabled")}
             </p>
           )}
         </div>
@@ -119,11 +124,11 @@ const AvailableToolsItem = ({
                   ? []
                   : [
                       {
-                        text: "Enable all tools",
+                        text: t("EnableAllTools"),
                         onClick: onEnableAllTools,
                       },
                       {
-                        text: "Disable all tools",
+                        text: t("DisableAllTools"),
                         onClick: onDisableAllTools,
                       },
                     ]),
@@ -140,7 +145,7 @@ const AvailableToolsItem = ({
                             isStroke
                           />
                         ),
-                        text: "Restart",
+                        text: t("Restart"),
                         onClick: () => {
                           client.restartCustomServer(name);
                         },
@@ -153,7 +158,7 @@ const AvailableToolsItem = ({
                             disableHover
                           />
                         ),
-                        text: "Logs",
+                        text: t("Logs"),
                         onClick: openLogs,
                       },
                       { text: "", onClick: () => {}, isSeparator: true },
@@ -165,7 +170,7 @@ const AvailableToolsItem = ({
                             disableHover
                           />
                         ),
-                        text: "Delete",
+                        text: t("Delete"),
                         onClick: () => {
                           deleteCustomServer(name);
                         },
@@ -192,8 +197,9 @@ const AvailableToolsItem = ({
               <p>{tool.name}</p>
               <ToggleButton
                 checked={tool.enabled ?? false}
+                disabled={disableEnable && !tool.enabled}
                 onCheckedChange={() => {
-                  changeToolStatus(name, tool.name, !tool.enabled);
+                  // empty change because change will be applied in onClick at div element
                 }}
               />
             </div>

@@ -1,4 +1,6 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
+
 import { EditorView, basicSetup } from "codemirror";
 import { json } from "@codemirror/lang-json";
 import { EditorState } from "@codemirror/state";
@@ -14,6 +16,7 @@ type ConfigDialogProps = {
 };
 
 const ConfigDialog = ({ open, onClose }: ConfigDialogProps) => {
+  const { t } = useTranslation();
   const { saveConfig, getConfig } = useServersStore();
 
   const editorRef = React.useRef<HTMLDivElement>(null);
@@ -109,7 +112,7 @@ const ConfigDialog = ({ open, onClose }: ConfigDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent
-        header="Edit configuration"
+        header={t("EditConfiguration")}
         onClose={onClose}
         className="w-[564px] h-[400px]"
       >
@@ -117,7 +120,7 @@ const ConfigDialog = ({ open, onClose }: ConfigDialogProps) => {
           <div className="flex flex-col gap-[8px] h-[256px] p-[12px] bg-[var(--servers-edit-config-json-background-color)] rounded-[12px]">
             <div className="flex flex-row justify-between">
               <p className="font-bold text-[14px] leading-[20px] text-[var(--servers-edit-config-json-header-color)]">
-                Enter your JSON configuration:
+                {t("EnterYourJSONConfiguration")}
               </p>
               <p className="font-normal text-[14px] leading-[20px] text-[var(--servers-edit-config-json-lang-color)]">
                 json
@@ -131,7 +134,7 @@ const ConfigDialog = ({ open, onClose }: ConfigDialogProps) => {
         </div>
         <div className="flex flex-row items-center justify-end gap-[16px] h-[64px] border-t border-[var(--servers-edit-config-buttons-border-color)] mx-[-32px] px-[32px]">
           <Button onClick={onClose} variant="default">
-            Cancel
+            {t("Cancel")}
           </Button>
           <Button
             disabled={!isValidJson}
@@ -140,7 +143,7 @@ const ConfigDialog = ({ open, onClose }: ConfigDialogProps) => {
               onClose();
             }}
           >
-            Save
+            {t("Save")}
           </Button>
         </div>
       </DialogContent>

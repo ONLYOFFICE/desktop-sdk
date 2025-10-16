@@ -7,9 +7,13 @@ import { Navigation } from "./sub-components/Header";
 import { ChatList } from "./sub-components/ChatList";
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
-  const [theme, setTheme] = React.useState(
-    `theme-${window.RendererProcessVariable?.theme.type ?? "light"}`
-  );
+  const [theme, setTheme] = React.useState(() => {
+    if (window.RendererProcessVariable) {
+      return window.RendererProcessVariable.theme.id;
+    } else {
+      return "theme-light";
+    }
+  });
 
   const { currentPage } = useRouter();
 
@@ -27,13 +31,12 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       } else {
         i18n.changeLanguage("en");
       }
-      setTheme(`theme-${window.RendererProcessVariable.theme.type}`);
     } else {
       i18n.changeLanguage("en");
-      setTheme("theme-light");
     }
 
     window.on_update_plugin_info = (info) => {
+      console.log(info);
       if (info.lang) {
         if (info?.lang?.includes("en")) {
           i18n.changeLanguage("en");
@@ -45,15 +48,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       }
 
       if (info.theme) {
-        if (
-          info?.theme === "theme-white" ||
-          info?.theme === "theme-gray" ||
-          info?.theme === "theme-classic-light" ||
-          info?.theme === "theme-light"
-        ) {
-          setTheme("theme-light");
+        if (info.theme === "theme-system") {
+          setTheme(`theme-${window.RendererProcessVariable.theme.system}`);
         } else {
-          setTheme("theme-dark");
+          setTheme(info.theme);
         }
       }
     };

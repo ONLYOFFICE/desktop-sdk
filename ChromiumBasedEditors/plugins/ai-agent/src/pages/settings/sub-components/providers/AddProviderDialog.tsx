@@ -126,6 +126,7 @@ const AddProviderDialog = ({ onClose }: AddProviderDialogProps) => {
                 isError={!!error.key}
                 placeholder={t("EnterKey")}
                 className="w-full"
+                type="password"
               />
             </FieldContainer>
           </div>

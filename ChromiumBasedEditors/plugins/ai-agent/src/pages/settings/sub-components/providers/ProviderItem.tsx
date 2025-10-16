@@ -34,9 +34,9 @@ const ProviderItem = ({ provider }: ProviderItemProps) => {
 
   return (
     <>
-      <div className="flex flex-row justify-between gap-[12px] px-[16px] py-[12px] w-[274px] rounded-[8px] bg-[var(--ai-provider-item-background-color)] shadow-[var(--ai-provider-item-shadow)]">
-        <div className="flex flex-col">
-          <p className="font-normal text-[14px] leading-[20px] text-[var(--ai-provider-item-color)]">
+      <div className="flex flex-row justify-between gap-[12px] px-[16px] py-[12px] min-w-[274px] max-w-[312px] flex-1 rounded-[8px] bg-[var(--ai-provider-item-background-color)] shadow-[var(--ai-provider-item-shadow)]">
+        <div className="flex flex-col min-w-0 flex-1">
+          <p className="font-normal text-[14px] leading-[20px] text-[var(--ai-provider-item-color)] truncate">
             {provider.name}
           </p>
           <p className="text-[12px] leading-[14px] text-[var(--ai-provider-item-description-color)]">
@@ -46,7 +46,7 @@ const ProviderItem = ({ provider }: ProviderItemProps) => {
           </p>
         </div>
         <div
-          className="flex items-center justify-end flex-1"
+          className="flex items-center justify-end"
           ref={containerRef}
         >
           <DropdownMenu

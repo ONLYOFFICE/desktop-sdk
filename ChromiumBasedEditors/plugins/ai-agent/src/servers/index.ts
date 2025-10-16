@@ -42,17 +42,17 @@ class Servers {
   };
 
   getTools = async () => {
-    const [desktopEditorTools, customServersTools, webSearchTools] =
+    const [desktopEditorTools, webSearchTools, customServersTools] =
       await Promise.all([
         this.desktopEditorTool.getTools(),
-        this.customServers.getTools(),
         this.webSearch.getTools(),
+        this.customServers.getTools(),
       ]);
 
     const items: Record<string, TMCPItem[]> = {
       "desktop-editor": desktopEditorTools,
-      ...customServersTools,
       "web-search": webSearchTools,
+      ...customServersTools,
     };
 
     return items;

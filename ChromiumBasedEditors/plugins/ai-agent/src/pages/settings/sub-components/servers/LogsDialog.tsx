@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 import useServersStore from "@/store/useServersStore";
 
@@ -12,6 +13,8 @@ type LogsDialogProps = {
 };
 
 const LogsDialog = ({ type, open, onClose }: LogsDialogProps) => {
+  const { t } = useTranslation();
+
   const [logs, setLogs] = React.useState<string[]>([]);
 
   const { getCustomServersLogs } = useServersStore();
@@ -39,7 +42,7 @@ const LogsDialog = ({ type, open, onClose }: LogsDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent
-        header={`${type} logs`}
+        header={`${type} ${t("logs").toLowerCase()}`}
         onClose={onClose}
         className="w-[720px] h-[520px]"
       >
@@ -57,9 +60,9 @@ const LogsDialog = ({ type, open, onClose }: LogsDialogProps) => {
         </div>
         <div className="flex flex-row items-center justify-end gap-[16px] h-[64px] border-t border-[var(--servers-edit-config-buttons-border-color)] mx-[-32px] px-[32px]">
           <Button onClick={copyToClipboard} variant="default">
-            Copy to clipboard
+            {t("CopyToClipboard")}
           </Button>
-          <Button onClick={onClose}>Close</Button>
+          <Button onClick={onClose}>{t("Close")}</Button>
         </div>
       </DialogContent>
     </Dialog>
