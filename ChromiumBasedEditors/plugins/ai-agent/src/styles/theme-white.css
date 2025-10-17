@@ -8,6 +8,11 @@
     --highlight-primary-dialog-button-hover: #2566D5;
     --highlight-primary-dialog-button-pressed: #1E53AE;
 
+    --highlight-button-hover:#EAEAEA;
+    --highlight-button-pressed:#E1E1E1;
+    --highlight-button-hover-on-active:#D4D4D4;
+    --highlight-button-pressed-on-active:#E1E1E1;
+
     --text-normal: #000000CC;
     --text-secondary:#00000099;
     --text-tertiary: #00000066;
@@ -40,12 +45,12 @@
     --chat-list-item-active-background-color: #f3f3f3;
 
     /* icon button */
-    --icon-button-color: #383838;
+    --icon-button-color: var(--icon-gray-primary);
     --icon-button-background-color: transparent;
-    --icon-button-hover-background-color: #eaeaea;
-    --icon-button-pressed-background-color: #e1e1e1;
-    --icon-button-hover-on-active-background-color: #D4D4D4;
-    --icon-button-pressed-on-active-background-color: #e1e1e1;
+    --icon-button-hover-background-color: var(--highlight-button-hover);
+    --icon-button-pressed-background-color: var(--highlight-button-pressed);
+    --icon-button-hover-on-active-background-color: var(--highlight-button-hover-on-active);
+    --icon-button-pressed-on-active-background-color: var(--highlight-button-pressed-on-active);
 
     /* button */
     --button-color: var(--text-contrast-background);

@@ -1,82 +1,40 @@
 .theme-night {
-    --background-normal: #222222;
-    --background-normal-element: #4b4b4b;
-    --background-normal-element-light: #4b4b4b;
-    --background-tabbar: #404040;
-    --background-accent-button: #3483db;
-    --background-primary-button: #dddddd;
-    --background-scrim: #00000099;
-    --background-scroll-thumb: #555555;
-    --background-action-panel: #404040;
-    --background-icon-normal: #404040;
+    /* base colors */
+    --background-normal: #404040;
+    --background-normal-element-light:#F9F9F9;
 
-    /* Highlight colors */
-    --highlight-button-hover: #585858;
-    --highlight-button-pressed: #686868;
-    --highlight-accent-button-hover: #5293e2;
-    --highlight-accent-button-pressed: #3475c5;
-    --highlight-primary-button-hover: #e5e5e5;
-    --highlight-primary-button-pressed: #e5e5e5;
-    --highlight-header-button-hover: #00000033;
-    --highlight-text-select: #96c8fd;
-    --highlight-scroll-thumb-hover: #606060;
-    --highlight-scroll-track-hover: #ffffff08;
-    --highlight-sidebar-item-pressed: #EAEAEA;
-    --highlight-toolbar-tab-underline-document: #4a87e7;
+    --background-primary-dialog-button: #6E9FEC;
 
-    /* Border colors */
-    --border-tabbar: #2a2a2a;
-    --border-divider: #505050;
-    --border-regular-control: #585858;
-    --border-control-focus: #cccccc;
-    --border-error: #f62211;
-    --border-sidebar: #2a2a2a;
-    --border-sidebar-item: #ffffff00;
-    --border-sidebar-icon: #585858;
+    --highlight-primary-dialog-button-hover: #4A87E7;
 
-    /* Text colors */
-    --text-normal: #ffffffcc;
-    --text-normal-pressed: #ffffffcc;
-    --text-secondary: #ffffff99;
-    --text-tertiary: #ffffff66;
-    --text-link: #acbfff;
-    --text-inverse: #333333;
-    --text-contrast-background: #ffffff;
-    --text-negative: #f87171;
+    --highlight-button-hover:#585858;
+    --highlight-button-pressed:#686868;
+    --highlight-button-hover-on-active:#818181;
+    --highlight-button-pressed-on-active:#686868;
 
-    /* Icon colors */
-    --icon-normal: #ffffffcc;
-    --icon-success: #009900;
+    --text-normal: #F3F3F3;
+    --text-secondary:#969696;
+    --text-tertiary: #CECECE;
+    --text-contrast-background:#FFFFFF;
 
-    /* Checkbox colors */
-    --chb-check-mark-background: #ffffffcc;
-    --chb-background-normal: #222222;
-    --chb-background-checked: #222222;
-    --chb-border-normal: #585858;
-    --chb-border-checked: #585858;
+    --icon-normal: #444444;
+    --icon-gray-primary: #EAEAEA;
 
-    /* System colors */
-    --system-background: #EAEAEA;
-    --system-icon: #ffffff;
-    --system-hover: #555555;
-    --system-pressed: #606060;
-    --system-divider: #505050;
-    --system-scroll-track: #222222;
-
+    --border-divider: #585858;
      /* components */
 
     /* layout */
-    --layout-background-color: #404040;
+    --layout-background-color: var(--background-normal);
 
     /* header */
-    --header-color: #EAEAEA;
-    --header-background-color: #404040;
-    --header-border-color: #4B4B4B;
+    --header-color: var(--icon-gray-primary);
+    --header-background-color: var(--background-normal);
+    --header-border-color: var(--border-divider);
 
     /* chat list */
-    --chat-list-color: #EAEAEA;
-    --chat-list-border-right: #4B4B4B;
-    --chat-list-empty-color: #00000066;
+    --chat-list-color: var(--icon-gray-primary);
+    --chat-list-border-right: var(--border-divider);
+    --chat-list-empty-color: var(--text-tertiary);
 
     /* chat list item */
     --chat-list-item-color: #F3F3F3;
@@ -85,12 +43,12 @@
     --chat-list-item-active-background-color: #686868;
 
     /* icon button */
-    --icon-button-color: #EAEAEA;
+    --icon-button-color: var(--icon-gray-primary);
     --icon-button-background-color: transparent;
-    --icon-button-hover-background-color: #585858;
-    --icon-button-pressed-background-color: #686868;
-    --icon-button-hover-on-active-background-color: #818181;
-    --icon-button-pressed-on-active-background-color: #686868;
+    --icon-button-hover-background-color: var(--highlight-button-hover);
+    --icon-button-pressed-background-color: var(--highlight-button-pressed);
+    --icon-button-hover-on-active-background-color: var(--highlight-button-hover-on-active);
+    --icon-button-pressed-on-active-background-color: var(--highlight-button-pressed-on-active);
 
     /* button */
     --button-color: #FFFFFF;
@@ -189,8 +147,8 @@
     /* pages */
 
     /* empty-screen */
-    --empty-screen-color: #F3F3F3;
-    --empty-screen-description-color: #00000099;
+    --empty-screen-color: var(--text-normal);
+    --empty-screen-description-color: var(--text-secondary);
 
     /* settings */
     --settings-header-color: #F3F3F3;

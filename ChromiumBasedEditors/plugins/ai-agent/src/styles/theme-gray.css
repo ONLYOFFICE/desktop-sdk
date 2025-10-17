@@ -1,0 +1,18 @@
+.theme-gray {
+    /* base colors */
+
+    --icon-gray-primary: #383838;
+
+    --highlight-button-hover:#E0E0E0;
+    --highlight-button-pressed:#BABABA;
+    --highlight-button-hover-on-active:#CBCBCB;
+    --highlight-button-pressed-on-active:#BABABA;
+
+     /* icon button */
+    --icon-button-color: var(--icon-gray-primary);
+    --icon-button-background-color: transparent;
+    --icon-button-hover-background-color: var(--highlight-button-hover);
+    --icon-button-pressed-background-color: var(--highlight-button-pressed);
+    --icon-button-hover-on-active-background-color: var(--highlight-button-hover-on-active);
+    --icon-button-pressed-on-active-background-color: var(--highlight-button-pressed-on-active);
+}

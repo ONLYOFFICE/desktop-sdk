@@ -7,6 +7,10 @@ import { Navigation } from "./sub-components/Header";
 import { ChatList } from "./sub-components/ChatList";
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
+  const { currentPage } = useRouter();
+
+  const { i18n } = useTranslation();
+
   const [theme, setTheme] = React.useState(() => {
     if (window.RendererProcessVariable) {
       return window.RendererProcessVariable.theme.id;
@@ -14,10 +18,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       return "theme-light";
     }
   });
-
-  const { currentPage } = useRouter();
-
-  const { i18n } = useTranslation();
 
   React.useLayoutEffect(() => {
     if (window.RendererProcessVariable) {

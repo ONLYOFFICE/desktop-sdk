@@ -4,7 +4,6 @@ import BtnSettingsUrl from "@/assets/btn-settings.svg?url";
 import BtnAddUrl from "@/assets/btn-zoomup.svg?url";
 
 import useRouter from "@/store/useRouter";
-import useProviders from "@/store/useProviders";
 import useThreadsStore from "@/store/useThreadsStore";
 
 import { IconButton } from "@/components/icon-button";
@@ -14,7 +13,6 @@ const Navigation = () => {
   const { t } = useTranslation();
 
   const { currentPage, setCurrentPage } = useRouter();
-  const { providers } = useProviders();
   const { onSwitchToNewThread } = useThreadsStore();
 
   return (
@@ -29,7 +27,6 @@ const Navigation = () => {
             size={24}
             color="var(--header-color)"
             isStroke
-            disabled={!providers.length}
             onClick={() => {
               setCurrentPage("chat");
               onSwitchToNewThread();
