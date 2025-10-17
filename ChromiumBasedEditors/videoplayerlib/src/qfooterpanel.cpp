@@ -47,7 +47,6 @@ QFooterPanel::QFooterPanel(QWidget* parent, QAscVideoView* pView) : QWidget(pare
 	// set default style options
 	m_pInternal->m_oStyleOpt.m_sBgColor = "#333";
 	m_pInternal->m_oStyleOpt.m_sVolumeControlBgColor = "#333";
-	updateStyle();
 
 	// connect signals
 	QObject::connect(m_pInternal->m_pPlayPause, SIGNAL(clicked(bool)), this, SLOT(onPlayPauseBtnClicked()));
