@@ -21,12 +21,7 @@ const ServersSettings = () => {
   const trigger = useMemo(
     () => (
       <TooltipIconButton visible={!isOpen} tooltip={t("MCPServers")}>
-        <IconButton
-          iconName={ToolsIconUrl}
-          size={24}
-          color="var(--chat-composer-action-servers-color)"
-          isActive={isOpen}
-        />
+        <IconButton iconName={ToolsIconUrl} size={24} isActive={isOpen} />
       </TooltipIconButton>
     ),
     [isOpen, t]
@@ -37,14 +32,7 @@ const ServersSettings = () => {
       {
         text: t("WebSearch"),
         onClick: () => {},
-        icon: (
-          <IconButton
-            iconName={SearchIconUrl}
-            size={24}
-            disableHover
-            disableApplyColor
-          />
-        ),
+        icon: <IconButton iconName={SearchIconUrl} size={24} disableHover />,
         withToggle: true,
         toggleChecked: getWebSearchEnabled() ? webSearchEnabled : false,
         toggleDisabled: !getWebSearchEnabled(),

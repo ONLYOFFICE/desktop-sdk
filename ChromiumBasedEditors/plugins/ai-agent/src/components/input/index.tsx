@@ -6,11 +6,10 @@ import { cn } from "@/lib/utils";
 type InputProps = React.InputHTMLAttributes<HTMLInputElement> & {
   isError?: boolean;
   icon?: string;
-  iconColor?: string;
 };
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, isError, icon, iconColor, ...props }, ref) => {
+  ({ className, isError, icon, ...props }, ref) => {
     return (
       <div className={`relative ${className}`}>
         {icon && (
@@ -20,7 +19,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             beforeInjection={(svg) => {
               const path = svg.querySelector("path");
               if (path) {
-                path.setAttribute("stroke", iconColor || "var(--input-color)");
+                path.setAttribute("stroke", "var(--input-color)");
               }
             }}
           />

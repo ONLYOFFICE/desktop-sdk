@@ -45,16 +45,12 @@ const ProviderItem = ({ provider }: ProviderItemProps) => {
             {provider.baseUrl}
           </p>
         </div>
-        <div
-          className="flex items-center justify-end"
-          ref={containerRef}
-        >
+        <div className="flex items-center justify-end" ref={containerRef}>
           <DropdownMenu
             onOpenChange={setIsOpen}
             trigger={
               <IconButton
                 iconName={MoreIconSvgUrl}
-                color="var(--ai-provider-item-icon-color)"
                 size={20}
                 isActive={isOpen}
               />

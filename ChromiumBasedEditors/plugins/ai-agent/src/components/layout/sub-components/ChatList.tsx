@@ -58,7 +58,6 @@ const ChatList = () => {
         <IconButton
           iconName={ArrowLeftUrl}
           size={24}
-          color="var(--chat-list-color)"
           isStroke
           onClick={() => setIsOpen(false)}
         />
@@ -78,7 +77,6 @@ const ChatList = () => {
               type="search"
               placeholder={t("Search")}
               icon={SearchUrl}
-              iconColor=""
               value={searchValue}
               onChange={onChangeSearchValue}
             />
@@ -117,7 +115,6 @@ const ChatList = () => {
         <IconButton
           iconName={OpenChatListUrl}
           size={24}
-          color="var(--chat-list-color)"
           isStroke
           onClick={() => {
             setCurrentPage("chat");

@@ -124,7 +124,6 @@ const AvailableToolsItem = ({
               trigger={
                 <IconButton
                   iconName={MoreIconSvgUrl}
-                  color="var(--ai-provider-item-icon-color)"
                   size={20}
                   isActive={dropdownOpen}
                   insideElement

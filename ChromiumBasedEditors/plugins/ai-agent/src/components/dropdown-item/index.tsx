@@ -17,7 +17,6 @@ const DropDownItem = ({
   text,
   icon,
   iconSize = 16,
-  iconColor,
   onClick,
   isActive,
   isSeparator,
@@ -111,12 +110,7 @@ const DropDownItem = ({
     >
       <div className="flex items-center gap-[8px] min-w-0 flex-1">
         {icon && typeof icon === "string" ? (
-          <IconButton
-            iconName={icon}
-            size={iconSize}
-            color={iconColor}
-            disableHover
-          />
+          <IconButton iconName={icon} size={iconSize} disableHover />
         ) : (
           icon ?? null
         )}
@@ -151,7 +145,6 @@ const DropDownItem = ({
           <ToggleButton
             checked={toggleChecked ?? false}
             onCheckedChange={onToggleChange}
-            size="small"
             disabled={toggleDisabled}
           />
         </div>

@@ -175,7 +175,6 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
                                     iconName={SearchIconUrl}
                                     size={24}
                                     disableHover
-                                    disableApplyColor
                                   />
                                   <h4 className="text-[14px] font-bold text-[var(--chat-message-tool-call-pre-color)]">
                                     {item.title}
@@ -185,7 +184,6 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
                                   iconName={ExternalIconUrl}
                                   size={24}
                                   disableHover
-                                  disableApplyColor
                                 />
                               </div>
                             )

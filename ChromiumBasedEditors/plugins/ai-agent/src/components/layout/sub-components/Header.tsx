@@ -25,7 +25,6 @@ const Navigation = () => {
           <IconButton
             iconName={BtnAddUrl}
             size={24}
-            color="var(--header-color)"
             isStroke
             onClick={() => {
               setCurrentPage("chat");
@@ -38,7 +37,6 @@ const Navigation = () => {
         <IconButton
           iconName={BtnSettingsUrl}
           size={24}
-          color="var(--header-color)"
           isStroke
           isActive={currentPage === "settings"}
           onClick={() =>

@@ -122,7 +122,6 @@ const ComposerActionAttachment = () => {
         iconName={AttachmentIconUrl}
         size={24}
         className="cursor-pointer rounded-[4px] outline-none"
-        color="var(--chat-composer-action-attachments-color)"
         isStroke
         isActive={isOpen}
       />

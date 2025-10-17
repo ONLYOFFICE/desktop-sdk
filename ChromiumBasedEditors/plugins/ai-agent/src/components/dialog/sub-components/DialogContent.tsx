@@ -95,12 +95,7 @@ const DialogContent = ({
               {header}
             </DialogTitle>
           </div>
-          <IconButton
-            iconName={CloseIconUrl}
-            size={24}
-            color={"var(--modal-dialog-close-color)"}
-            onClick={onClose}
-          />
+          <IconButton iconName={CloseIconUrl} size={24} onClick={onClose} />
         </div>
         <div
           className={cn(

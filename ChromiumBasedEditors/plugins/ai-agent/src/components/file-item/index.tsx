@@ -75,7 +75,6 @@ const FileItem = ({ file, withoutClose }: FileItemProps) => {
           iconName={BtnCloseIconUrl}
           size={16}
           onClick={handleDelete}
-          color="var(--file-items-icon-color)"
         />
       ) : null}
     </div>
