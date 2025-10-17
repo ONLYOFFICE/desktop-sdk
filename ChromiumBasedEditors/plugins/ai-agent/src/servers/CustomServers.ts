@@ -26,8 +26,6 @@ const getParams = (config: Record<string, unknown>) => {
   return { commandLine, env };
 };
 
-const ALLOW_ALWAYS_CUSTOM_SERVERS = "allowAlwaysCustomServers";
-
 class CustomServers {
   customServers: Record<string, Record<string, unknown>>;
   startedCustomServers: Record<string, string>;
@@ -46,14 +44,6 @@ class CustomServers {
     this.tools = {};
     this.stopedCustomServers = [];
   }
-
-  checkAllowAlways = (type: string) => {
-    return localStorage.getItem(ALLOW_ALWAYS_CUSTOM_SERVERS + type) === "true";
-  };
-
-  setAllowAlways = (value: boolean, type: string) => {
-    localStorage.setItem(ALLOW_ALWAYS_CUSTOM_SERVERS + type, value.toString());
-  };
 
   onProcess = (type: string, t: number, message: string) => {
     try {

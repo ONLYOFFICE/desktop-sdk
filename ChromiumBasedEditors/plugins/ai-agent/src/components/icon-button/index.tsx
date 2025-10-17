@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { ReactSVG } from "react-svg";
 
 import { cn } from "@/lib/utils";
@@ -32,6 +33,20 @@ const IconButton = ({
   const focusStyles =
     "outline-none focus:outline-none focus-visible:outline-none";
 
+  const handleBeforeInjection = useCallback(
+    (svg: SVGSVGElement) => {
+      const paths = svg.querySelectorAll("path");
+      paths.forEach((path) => {
+        if (!isStroke) {
+          path.setAttribute("fill", color || "var(--icon-button-color)");
+        } else {
+          path.setAttribute("stroke", color || "var(--icon-button-color)");
+        }
+      });
+    },
+    [isStroke, color]
+  );
+
   return (
     <button
       className={cn(
@@ -59,16 +74,7 @@ const IconButton = ({
         className={`flex items-center justify-center ${
           isTransform ? "rotate-90" : ""
         }`}
-        beforeInjection={(svg) => {
-          const paths = svg.querySelectorAll("path");
-          paths.forEach((path) => {
-            if (!isStroke) {
-              path.setAttribute("fill", color || "var(--icon-button-color)");
-            } else {
-              path.setAttribute("stroke", color || "var(--icon-button-color)");
-            }
-          });
-        }}
+        beforeInjection={handleBeforeInjection}
       />
     </button>
   );

@@ -26,14 +26,6 @@ class WebSearch {
     this.initTools();
   }
 
-  setAllowAlways = () => {
-    //skip
-  };
-
-  getAllowAlways = () => {
-    return true;
-  };
-
   setWebSearchData = (data: WebSearchData) => {
     this.webSearchData = data;
     localStorage.setItem(WEB_SEARCH_DATA, data ? JSON.stringify(data) : "");

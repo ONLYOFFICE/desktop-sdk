@@ -9,6 +9,7 @@ import CheckedIconUrl from "@/assets/checked.svg?url";
 
 import { DropdownMenu } from "../dropdown";
 import { IconButton } from "../icon-button";
+import { Tooltip, TooltipTrigger, TooltipContent } from "../tooltip";
 
 import type { DropDownItemProps } from "./DropDownItem.types";
 import { ToggleButton } from "../toggle-button";
@@ -26,6 +27,7 @@ const DropDownItem = ({
   toggleDisabled,
   subMenu,
   checked,
+  tooltipText,
 }: DropDownItemProps) => {
   const [isSubMenuOpen, setIsSubMenuOpen] = useState(false);
 
@@ -90,7 +92,7 @@ const DropDownItem = ({
     window.addEventListener("mousemove", handleMouseMove);
   };
 
-  return (
+  const itemContent = (
     <Item
       className={cn(
         "dropdown-menu-item",
@@ -151,6 +153,17 @@ const DropDownItem = ({
       ) : null}
     </Item>
   );
+
+  if (tooltipText) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>{itemContent}</TooltipTrigger>
+        <TooltipContent>{tooltipText}</TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return itemContent;
 };
 
 export { DropDownItem };

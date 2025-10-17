@@ -26,8 +26,8 @@ type UseServersStoreProps = {
   getTools: () => Promise<void>;
   changeToolStatus: (type: string, name: string, enabled: boolean) => void;
   callTools: (name: string, args: Record<string, unknown>) => Promise<unknown>;
-  checkAllowAlways: (type: string) => boolean;
-  setAllowAlways: (value: boolean, type: string) => void;
+  checkAllowAlways: (type: string, name: string) => boolean;
+  setAllowAlways: (value: boolean, type: string, name: string) => void;
   setManageToolData: (data: UseServersStoreProps["manageToolData"]) => void;
   saveConfig: (config: {
     mcpServers: Record<string, Record<string, unknown>>;
@@ -279,12 +279,12 @@ const useServersStore = create<UseServersStoreProps>((set, get) => ({
     });
   },
 
-  checkAllowAlways: (type: string) => {
-    return client.checkAllowAlways(type);
+  checkAllowAlways: (type: string, name: string) => {
+    return client.checkAllowAlways(type, name);
   },
 
-  setAllowAlways: (value: boolean, type: string) => {
-    client.setAllowAlways(value, type);
+  setAllowAlways: (value: boolean, type: string, name: string) => {
+    client.setAllowAlways(value, type, name);
   },
 
   callTools: async (name: string, args: Record<string, unknown>) => {

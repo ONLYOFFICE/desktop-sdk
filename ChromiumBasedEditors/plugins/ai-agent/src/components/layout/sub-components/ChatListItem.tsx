@@ -26,37 +26,45 @@ type ChatListItemProps = {
   setCurrentPage: (page: Page) => void;
 };
 
+const handleDownloadIconInjection = (svg: SVGSVGElement) => {
+  const path = svg.querySelector("path");
+  if (path) {
+    path.setAttribute("stroke", "var(--icon-button-color)");
+  }
+};
+
+const handleRenameIconInjection = (svg: SVGSVGElement) => {
+  const path = svg.querySelector("path");
+  if (path) {
+    path.setAttribute("fill", "var(--icon-button-color)");
+  }
+};
+
+const handleRemoveIconInjection = (svg: SVGSVGElement) => {
+  const path = svg.querySelector("path");
+  if (path) {
+    path.setAttribute("fill", "var(--icon-button-color)");
+  }
+};
+
 const DownloadIcon = () => (
   <ReactSVG
     src={DownloadIconSvgUrl}
-    beforeInjection={(svg) => {
-      const path = svg.querySelector("path");
-      if (path) {
-        path.setAttribute("stroke", "var(--chat-list-item-icon-color)");
-      }
-    }}
+    beforeInjection={handleDownloadIconInjection}
   />
 );
+
 const RenameIcon = () => (
   <ReactSVG
     src={RenameIconSvgUrl}
-    beforeInjection={(svg) => {
-      const path = svg.querySelector("path");
-      if (path) {
-        path.setAttribute("fill", "var(--chat-list-item-icon-color)");
-      }
-    }}
+    beforeInjection={handleRenameIconInjection}
   />
 );
+
 const RemoveIcon = () => (
   <ReactSVG
     src={RemoveIconSvgUrl}
-    beforeInjection={(svg) => {
-      const path = svg.querySelector("path");
-      if (path) {
-        path.setAttribute("fill", "var(--chat-list-item-icon-color)");
-      }
-    }}
+    beforeInjection={handleRemoveIconInjection}
   />
 );
 

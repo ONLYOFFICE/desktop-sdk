@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { ReactSVG } from "react-svg";
 
 import CheckedIconUrl from "@/assets/checked.svg?url";
@@ -24,6 +24,13 @@ const Checkbox = ({
       onChange(event.target.checked);
     }
   };
+
+  const handleBeforeInjection = useCallback((svg: SVGSVGElement) => {
+    const path = svg.querySelector("path");
+    if (path) {
+      path.setAttribute("stroke", "var(--checkbox-active-icon-color)");
+    }
+  }, []);
 
   // Container styles
   const containerStyles = "inline-flex items-center relative group";
@@ -83,15 +90,7 @@ const Checkbox = ({
             <ReactSVG
               src={CheckedIconUrl}
               className={iconStyles}
-              beforeInjection={(svg) => {
-                const path = svg.querySelector("path");
-                if (path) {
-                  path.setAttribute(
-                    "stroke",
-                    "var(--checkbox-active-icon-color)"
-                  );
-                }
-              }}
+              beforeInjection={handleBeforeInjection}
             />
           ) : null}
         </div>

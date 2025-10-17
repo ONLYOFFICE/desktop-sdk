@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 import type {
   AppendMessage,
@@ -43,8 +43,12 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
   const { currentProvider } = useProviders();
   const { currentModel } = useModelsStore();
 
+  const threadIdRef = useRef(threadId);
+
   useEffect(() => {
     if (!isReady) return;
+
+    threadIdRef.current = threadId;
 
     fetchPrevMessages(threadId);
     clearAttachmentFiles();
@@ -70,9 +74,10 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     const toolName = toolCall.toolName;
 
     const type = toolName.split("_")[0];
+    const name = toolName.replace(type + "_", "");
 
     if (allowAlways) {
-      setAllowAlways(true, type);
+      setAllowAlways(true, type, name);
     }
 
     handleToolCall(
@@ -120,8 +125,9 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     const toolName = toolCall.toolName;
 
     const type = toolName.split("_")[0];
+    const name = toolName.replace(type + "_", "");
 
-    if (checkAllowAlways(type) || accept || deny) {
+    if (checkAllowAlways(type, name) || accept || deny) {
       const result = deny
         ? "User deny tool call"
         : await callTools(
@@ -171,6 +177,12 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     if (messages)
       for await (const message of stream) {
         if ("isEnd" in message) {
+          if (threadIdRef.current !== threadId) {
+            setIsStreamRunning(false);
+            setIsRequestRunning(false);
+
+            return;
+          }
           if (message.responseMessage.status?.type === "incomplete") {
             addMessage(message.responseMessage);
 
@@ -209,7 +221,10 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
           initedMessage = true;
         } else {
           updateMessage(messageUID, message);
-          updateLastMessage(message);
+
+          if (threadIdRef.current === threadId) {
+            updateLastMessage(message);
+          }
         }
       }
   };

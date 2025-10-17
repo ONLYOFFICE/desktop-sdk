@@ -138,8 +138,11 @@
     --file-items-chat-pressed-background-color:var(--highlight-button-pressed);
 
     /* tooltip */
-    --tooltip-background-color: #cccccc;
+    --tooltip-background-color: var(--background-normal);
     --tooltip-text-color: var(--text-normal);
+    --tooltip-border-color: var(--border-divider);
+    --tooltip-shadow: 0px 1px 4px -1px #00000033;
+
 
     /* loader */
     --loader-border-color: var(--background-primary-dialog-button);

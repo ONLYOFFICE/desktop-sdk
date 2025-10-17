@@ -4,41 +4,50 @@ import { DesktopEditorTool } from "./DesktopEditor";
 import { CustomServers } from "./CustomServers";
 import { WebSearch, type WebSearchData } from "./WebSearch";
 
+const ALLOW_ALWAYS_TOOLS = "allowAlwaysTools";
+
 class Servers {
   desktopEditorTool: DesktopEditorTool;
   customServers: CustomServers;
   webSearch: WebSearch;
 
+  allowAlways: string[];
+
   constructor() {
     this.desktopEditorTool = new DesktopEditorTool();
     this.customServers = new CustomServers();
     this.webSearch = new WebSearch();
+
+    this.allowAlways =
+      localStorage.getItem(ALLOW_ALWAYS_TOOLS)?.split(",") ?? [];
   }
 
-  checkAllowAlways = (type: string) => {
-    if (type === "desktop-editor") {
-      return this.desktopEditorTool.getAllowAlways();
-    }
-
+  checkAllowAlways = (type: string, name: string) => {
     if (type === "web-search") {
-      return this.webSearch.getAllowAlways();
+      return true;
     }
 
-    return this.customServers.checkAllowAlways(type);
+    if (this.allowAlways.includes(`${type}_${name}`)) {
+      return true;
+    }
+
+    return false;
   };
 
-  setAllowAlways = (value: boolean, type: string) => {
-    if (type === "desktop-editor") {
-      this.desktopEditorTool.setAllowAlways(value);
-      return;
-    }
-
+  setAllowAlways = (value: boolean, type: string, name: string) => {
     if (type === "web-search") {
-      this.webSearch.setAllowAlways();
       return;
     }
 
-    this.customServers.setAllowAlways(value, type);
+    if (value) {
+      this.allowAlways.push(`${type}_${name}`);
+    } else {
+      this.allowAlways = this.allowAlways.filter(
+        (tool) => tool !== `${type}_${name}`
+      );
+    }
+
+    localStorage.setItem(ALLOW_ALWAYS_TOOLS, this.allowAlways.join(","));
   };
 
   getTools = async () => {

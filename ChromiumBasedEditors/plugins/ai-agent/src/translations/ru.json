@@ -75,5 +75,6 @@
   "ResetSettings": "Сбросить настройки",
   "WebSearchEngine": "Поисковый движок",
   "SelectEngine": "Выберите движок",
-  "AllTools": "Все функции"
+  "AllTools": "Все функции",
+  "EnableWebSearch": "Включите поиск в интернете в настройках"
 }

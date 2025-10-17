@@ -75,5 +75,6 @@
   "ResetSettings": "Reset settings",
   "WebSearchEngine": "Web Search Engine",
   "SelectEngine": "Select engine",
-  "AllTools": "All tools"
+  "AllTools": "All tools",
+  "EnableWebSearch": "Enable web search in settings"
 }

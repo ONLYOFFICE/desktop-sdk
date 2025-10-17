@@ -64,12 +64,11 @@ const ManageToolDialog = ({
           <p className="font-[14px] leading-[20px] font-normal text-[var(--tool-fallback-color)]">
             {t("ReviewEachAction")}
           </p>
-          <p className="flex items-center gap-[8px] mt-[24px] font-[14px] leading-[20px] font-normal text-[var(--tool-fallback-color)]">
-            <Checkbox
-              checked={isAllowAlways}
-              onChange={setIsAllowAlways}
-              id="allow-always-checkbox"
-            />
+          <p
+            onClick={() => setIsAllowAlways((val) => !val)}
+            className="cursor-pointer flex items-center gap-[8px] mt-[24px] font-[14px] leading-[20px] font-normal text-[var(--tool-fallback-color)]"
+          >
+            <Checkbox checked={isAllowAlways} id="allow-always-checkbox" />
             {t("AlwaysAllow")}
           </p>
         </div>

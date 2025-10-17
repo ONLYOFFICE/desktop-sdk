@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { ReactSVG } from "react-svg";
 
 import { cn } from "@/lib/utils";
@@ -10,18 +10,20 @@ type InputProps = React.InputHTMLAttributes<HTMLInputElement> & {
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, isError, icon, ...props }, ref) => {
+    const handleBeforeInjection = useCallback((svg: SVGSVGElement) => {
+      const path = svg.querySelector("path");
+      if (path) {
+        path.setAttribute("stroke", "var(--input-color)");
+      }
+    }, []);
+
     return (
       <div className={`relative ${className}`}>
         {icon && (
           <ReactSVG
             className="absolute left-[10px] top-[50%] translate-y-[-50%] w-[20px] h-[20px] flex items-center justify-center"
             src={icon}
-            beforeInjection={(svg) => {
-              const path = svg.querySelector("path");
-              if (path) {
-                path.setAttribute("stroke", "var(--input-color)");
-              }
-            }}
+            beforeInjection={handleBeforeInjection}
           />
         )}
         <input
@@ -36,6 +38,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             "focus:bg-[var(--input-active-background-color)] focus:border focus:border-[var(--input-active-border-color)]",
             "outline-none",
             "placeholder:text-[var(--input-placeholder-color)] text-[var(--input-color)]",
+            "[&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden",
             icon ? "ps-[40px]" : "ps-[12px]",
             className
           )}

@@ -20,4 +20,6 @@ export type DropDownItemProps = {
   subMenu?: DropDownItemProps[];
 
   checked?: boolean;
+
+  tooltipText?: string;
 };

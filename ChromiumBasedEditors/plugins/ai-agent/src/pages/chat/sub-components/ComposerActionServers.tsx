@@ -36,6 +36,7 @@ const ServersSettings = () => {
         withToggle: true,
         toggleChecked: getWebSearchEnabled() ? webSearchEnabled : false,
         toggleDisabled: !getWebSearchEnabled(),
+        tooltipText: getWebSearchEnabled() ? "" : t("EnableWebSearch"),
         onToggleChange: () => {
           changeToolStatus(
             "web-search",
