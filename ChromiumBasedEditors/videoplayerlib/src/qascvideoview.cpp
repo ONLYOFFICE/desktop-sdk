@@ -595,6 +595,10 @@ void QAscVideoView::slotVideoAvailableChanged(bool isVideoAvailable)
 		{
 			this->show();
 			Footer()->show();
+			// raise all widgets in order to prevent weird behavior with footer being rendered above the video but still being inactive
+			this->raise();
+			Footer()->raise();
+			Footer()->VolumeControls()->raise();
 		}
 	}
 }
