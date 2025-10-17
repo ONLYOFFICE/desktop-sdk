@@ -97,6 +97,10 @@ class Servers {
     return this.customServers.customServers;
   };
 
+  getCustomServersStoped = () => {
+    return this.customServers.stopedCustomServers;
+  };
+
   getCustomServersLogs = () => {
     return this.customServers.customServersLogs;
   };
@@ -107,6 +111,10 @@ class Servers {
 
   getWebSearchData = () => {
     return this.webSearch.getWebSearchData();
+  };
+
+  getWebSearchEnabled = () => {
+    return this.webSearch.getWebSearchEnabled();
   };
 }
 

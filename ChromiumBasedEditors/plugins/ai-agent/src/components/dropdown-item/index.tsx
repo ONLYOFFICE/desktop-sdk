@@ -24,6 +24,7 @@ const DropDownItem = ({
   withToggle,
   toggleChecked,
   onToggleChange,
+  toggleDisabled,
   subMenu,
   checked,
 }: DropDownItemProps) => {
@@ -49,6 +50,9 @@ const DropDownItem = ({
   const handleToggleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
+
+    if (toggleDisabled) return;
+
     onToggleChange?.(!toggleChecked);
   };
 
@@ -105,7 +109,7 @@ const DropDownItem = ({
       onMouseEnter={handleMouseEnter}
       ref={itemRef}
     >
-      <div className="flex items-center gap-[8px]">
+      <div className="flex items-center gap-[8px] min-w-0 flex-1">
         {icon && typeof icon === "string" ? (
           <IconButton
             iconName={icon}
@@ -116,7 +120,7 @@ const DropDownItem = ({
         ) : (
           icon ?? null
         )}
-        <span className="flex-1 basis-0 min-w-0 truncate font-normal text-[14px] leading-[20px] text-[var(--drop-down-menu-item-color)]">
+        <span className="truncate font-normal text-[14px] leading-[20px] text-[var(--drop-down-menu-item-color)]">
           {text}
         </span>
       </div>
@@ -148,6 +152,7 @@ const DropDownItem = ({
             checked={toggleChecked ?? false}
             onCheckedChange={onToggleChange}
             size="small"
+            disabled={toggleDisabled}
           />
         </div>
       ) : null}

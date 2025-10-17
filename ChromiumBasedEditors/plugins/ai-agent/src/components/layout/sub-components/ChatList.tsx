@@ -83,7 +83,7 @@ const ChatList = () => {
               onChange={onChangeSearchValue}
             />
             <div
-              className="flex flex-col mt-[16px] overflow-y-scroll"
+              className="flex flex-col mt-[16px] overflow-y-auto"
               style={{ maxHeight: "calc(100% - 24px)" }}
             >
               {showingThreads.length ? (

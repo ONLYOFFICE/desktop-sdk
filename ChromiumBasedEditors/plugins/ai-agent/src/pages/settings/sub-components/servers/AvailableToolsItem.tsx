@@ -40,6 +40,7 @@ const AvailableToolsItem = ({
   const [opened, setOpened] = React.useState(false);
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
   const [openLogsDialog, setOpenLogsDialog] = React.useState(false);
+  const [isStoped, setIsStoped] = React.useState(false);
 
   const containerRef = React.useRef<HTMLDivElement>(null);
 
@@ -67,11 +68,21 @@ const AvailableToolsItem = ({
     if (isLoading) setOpened(false);
   }, [isLoading]);
 
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setIsStoped(client.getCustomServersStoped().includes(name));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [name]);
+
+  const isLoadingAction = isStoped ? false : isLoading;
+
   return (
     <div className="flex flex-col">
       <div
         className={`h-[36px] px-[8px] rounded-[4px] flex items-center justify-between ${
-          isLoading ? "" : "cursor-pointer"
+          isLoadingAction ? "" : "cursor-pointer"
         } ${
           opened
             ? "bg-[var(--servers-available-tools-item-active-background-color)]"
@@ -105,7 +116,7 @@ const AvailableToolsItem = ({
           )}
         </div>
         <div ref={containerRef}>
-          {isLoading ? (
+          {isLoadingAction ? (
             <Loader />
           ) : (
             <DropdownMenu
@@ -131,11 +142,13 @@ const AvailableToolsItem = ({
                         text: t("DisableAllTools"),
                         onClick: onDisableAllTools,
                       },
+                      ...(!isSystem
+                        ? [{ text: "", onClick: () => {}, isSeparator: true }]
+                        : []),
                     ]),
                 ...(isSystem
                   ? []
                   : [
-                      { text: "", onClick: () => {}, isSeparator: true },
                       {
                         icon: (
                           <IconButton

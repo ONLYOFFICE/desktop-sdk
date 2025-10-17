@@ -32,6 +32,7 @@ class CustomServers {
   customServers: Record<string, Record<string, unknown>>;
   startedCustomServers: Record<string, string>;
   initedCustomServers: Record<string, boolean>;
+  stopedCustomServers: string[];
   customServersProcesses: Record<string, TProcess>;
   customServersLogs: Record<string, string[]>;
   tools: Record<string, TMCPItem[]>;
@@ -43,6 +44,7 @@ class CustomServers {
     this.customServersProcesses = {};
     this.customServersLogs = {};
     this.tools = {};
+    this.stopedCustomServers = [];
   }
 
   checkAllowAlways = (type: string) => {
@@ -63,6 +65,9 @@ class CustomServers {
         correctJson.id.includes("init-" + type)
       ) {
         this.initedCustomServers[type] = true;
+        this.stopedCustomServers = this.stopedCustomServers.filter(
+          (s) => s !== type
+        );
       }
 
       if (
@@ -93,6 +98,7 @@ class CustomServers {
         this.customServersLogs[type].push(
           `${new Date().toLocaleString()}: [stop] ${message}\n`
         );
+        this.stopedCustomServers.push(type);
         break;
       }
       default:

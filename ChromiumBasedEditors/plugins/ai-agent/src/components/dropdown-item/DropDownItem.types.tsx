@@ -15,6 +15,7 @@ export type DropDownItemProps = {
   withToggle?: boolean;
   toggleChecked?: boolean;
   onToggleChange?: (checked: boolean) => void;
+  toggleDisabled?: boolean;
 
   subMenu?: DropDownItemProps[];
 

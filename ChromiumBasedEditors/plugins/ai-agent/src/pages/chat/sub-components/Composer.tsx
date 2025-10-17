@@ -18,7 +18,7 @@ const Composer = () => {
     <div className="relative mx-auto flex w-full max-w-[var(--thread-max-width)] flex-col gap-4 px-[var(--thread-padding-x)] pb-4 md:pb-6">
       <ComposerPrimitive.Root className="composer-root relative flex w-full flex-col gap-[16px] rounded-[16px] border px-[24px] py-[16px] box-border">
         {attachmentFiles.length ? (
-          <div className="flex flex-row gap-[8px]">
+          <div className="flex flex-row gap-[8px] overflow-x-auto">
             {attachmentFiles.map((file) => (
               <FileItem key={file.path} file={file} />
             ))}

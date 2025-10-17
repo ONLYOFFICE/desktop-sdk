@@ -14,6 +14,7 @@ const IconButton = ({
   className,
   insideElement,
   disableHover,
+  disableApplyColor,
   ...props
 }: IconButtonProps) => {
   return (
@@ -48,6 +49,8 @@ const IconButton = ({
           isTransform ? "rotate-90" : ""
         }`}
         beforeInjection={(svg) => {
+          if (disableApplyColor) return;
+
           const paths = svg.querySelectorAll("path");
           paths.forEach((path) => {
             if (!isStroke) {

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import SearchIconUrl from "@/assets/btn-menu-search.svg?url";
 import ToolsIconUrl from "@/assets/tools.svg?url";
 
 import useServersStore from "@/store/useServersStore";
@@ -10,7 +11,8 @@ import { DropdownMenu } from "@/components/dropdown";
 import { TooltipIconButton } from "@/components/tooltip-icon-button";
 
 const ServersSettings = () => {
-  const { servers, changeToolStatus } = useServersStore();
+  const { servers, changeToolStatus, webSearchEnabled, getWebSearchEnabled } =
+    useServersStore();
 
   const [isOpen, setIsOpen] = useState(false);
 
@@ -31,9 +33,35 @@ const ServersSettings = () => {
   );
 
   const toolsActions = useMemo(
-    () =>
-      Object.entries(servers)
+    () => [
+      {
+        text: t("WebSearch"),
+        onClick: () => {},
+        icon: (
+          <IconButton
+            iconName={SearchIconUrl}
+            size={24}
+            disableHover
+            disableApplyColor
+          />
+        ),
+        withToggle: true,
+        toggleChecked: getWebSearchEnabled() ? webSearchEnabled : false,
+        toggleDisabled: !getWebSearchEnabled(),
+        onToggleChange: () => {
+          changeToolStatus(
+            "web-search",
+            servers["web-search"][0].name,
+            !webSearchEnabled
+          );
+        },
+      },
+      { text: "", onClick: () => {}, isSeparator: true },
+      ...Object.entries(servers)
         .map(([type, tools]) => {
+          if (type === "web-search")
+            return { text: type, onClick: () => {}, subMenu: [] };
+
           const isAllEnabled = tools.some((tool) => tool.enabled);
           return {
             text: type,
@@ -72,7 +100,8 @@ const ServersSettings = () => {
           };
         })
         .filter((item) => item.subMenu.length > 2),
-    [servers, changeToolStatus]
+    ],
+    [servers, changeToolStatus, t, webSearchEnabled, getWebSearchEnabled]
   );
 
   const actions = useMemo(() => [...toolsActions], [toolsActions]);

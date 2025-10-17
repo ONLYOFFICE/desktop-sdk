@@ -70,6 +70,8 @@ class WebSearch {
             body: JSON.stringify({
               query: args.query,
               text: true,
+              numResults: 5,
+              livecrawl: "preferred",
             }),
             complete: function (e: { responseText: string }) {
               const data = JSON.parse(e.responseText).results;
@@ -180,6 +182,10 @@ class WebSearch {
         },
       },
     ]);
+  };
+
+  getWebSearchEnabled = () => {
+    return !!this.webSearchData;
   };
 }
 

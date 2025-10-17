@@ -74,5 +74,6 @@
   "WebSearchDescription": "Connect a web search engine to enhance AI chats with real-time information from the internet.",
   "ResetSettings": "Reset settings",
   "WebSearchEngine": "Web Search Engine",
-  "SelectEngine": "Select engine"
+  "SelectEngine": "Select engine",
+  "AllTools": "All tools"
 }

@@ -65,7 +65,7 @@ const ComposerActionAttachment = () => {
 
                   addAttachmentFile({
                     path: file,
-                    content: stringData,
+                    content: stringData || "",
                     type:
                       extension === "pdf"
                         ? 87

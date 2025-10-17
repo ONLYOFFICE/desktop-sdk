@@ -73,10 +73,14 @@ const SelectModel = () => {
     }))
     .filter((item) => item.subMenu.length > 0);
 
+  const currentProviderExists = providers.some(
+    (p) => p.name === currentProvider?.name
+  );
+
   return (
     <ComboBox
       placeholder={t("SelectModel")}
-      value={currentProvider ? currentModel?.name || "" : ""}
+      value={currentProviderExists ? currentModel?.name || "" : ""}
       items={items}
       withoutBg
     />

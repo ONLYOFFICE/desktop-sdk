@@ -35,6 +35,7 @@ type UseServersStoreProps = {
   getConfig: () => Record<string, Record<string, unknown>>;
   deleteCustomServer: (name: string) => void;
   getCustomServersLogs: () => Record<string, string[]>;
+  getWebSearchEnabled: () => boolean;
 };
 
 const useServersStore = create<UseServersStoreProps>((set, get) => ({
@@ -189,6 +190,21 @@ const useServersStore = create<UseServersStoreProps>((set, get) => ({
         };
         set({ disabledTools: newDisabledTools });
         set({ webSearchEnabled: true });
+        set({
+          servers: {
+            ...servers,
+            [type]: servers[type].map((tool) => {
+              return {
+                ...tool,
+                enabled: true,
+              };
+            }),
+          },
+        });
+        localStorage.setItem(
+          DISABLED_TOOLS_NAME,
+          JSON.stringify(newDisabledTools)
+        );
         return;
       }
 
@@ -314,6 +330,10 @@ const useServersStore = create<UseServersStoreProps>((set, get) => ({
 
   getCustomServersLogs: () => {
     return client.getCustomServersLogs();
+  },
+
+  getWebSearchEnabled: () => {
+    return client.getWebSearchEnabled();
   },
 }));
 

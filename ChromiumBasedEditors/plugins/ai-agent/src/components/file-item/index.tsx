@@ -61,7 +61,7 @@ const FileItem = ({ file, withoutClose }: FileItemProps) => {
       ) : (
         <div className="flex flex-row items-center h-[36px] gap-[4px]">
           <ReactSVG className="" src={icon} />
-          <p className="text-[var(--file-items-color)]">
+          <p className="text-[var(--file-items-color)] whitespace-nowrap overflow-hidden text-ellipsis">
             {nameWithoutExtension}
             <span className="text-[var(--file-items-ext-color)]">
               .{extension}

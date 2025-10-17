@@ -9,8 +9,11 @@ import ArrowBottomIconUrl from "@/assets/arrow.bottom.svg?url";
 import ArrowRightIconUrl from "@/assets/arrow.right.svg?url";
 import CopyIconUrl from "@/assets/btn-copy.svg?url";
 import CheckedIconUrl from "@/assets/checked.svg?url";
+import SearchIconUrl from "@/assets/btn-menu-search.svg?url";
+import ExternalIconUrl from "@/assets/btn-external.svg?url";
 
 import { Loader } from "../loader";
+import { IconButton } from "../icon-button";
 
 export const ToolFallback: ToolCallMessagePartComponent = ({
   toolName,
@@ -46,11 +49,19 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
   const isWebSearch = name === "web_search";
   const isWebCrawling = name === "web_crawling";
 
-  const webSearchName = isWebSearch
-    ? JSON.parse(argsText).query
-    : isWebCrawling
-    ? JSON.parse(argsText).urls[0]
-    : "";
+  let webSearchName = "";
+
+  try {
+    webSearchName = argsText
+      ? isWebSearch
+        ? JSON.parse(argsText).query
+        : isWebCrawling
+        ? JSON.parse(argsText).urls[0]
+        : ""
+      : "";
+  } catch {
+    //ignore
+  }
 
   return (
     <div className="my-[16px] flex w-full flex-col gap-3">
@@ -58,6 +69,7 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
         className="flex items-center gap-[10px] cursor-pointer"
         onClick={() => {
           if (isWebCrawling) {
+            window.open(webSearchName, "_blank");
             return;
           }
 
@@ -73,21 +85,28 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
         ) : (
           <Loader size={16} />
         )}
-        {isLoading ? (
+        {isLoading && !isWebSearch && !isWebCrawling ? (
           <p className="text-[var(--chat-message-tool-call-header-color)] text-[14px] font-normal leading-[16px]">
             {t("ToolExecuted")}
           </p>
         ) : null}
         <span className="flex items-center gap-[8px] rounded-[4px] ps-[4px] pe-[8px] text-[14px] leading-[20px] font-normal text-[var(--chat-message-tool-call-name-color)] bg-[var(--chat-message-tool-call-name-background-color)] min-w-0 flex-grow">
-          {!isWebSearch && !isWebCrawling ? (
+          {isWebSearch ? (
+            <ReactSVG src={SearchIconUrl} />
+          ) : !isWebCrawling ? (
             <ReactSVG src={CodeIconUrl} />
           ) : null}
           <span className="truncate">
-            {name}
-            {isWebSearch || isWebCrawling ? ` | ${webSearchName}` : null}
+            {isWebSearch
+              ? webSearchName
+              : isWebCrawling
+              ? `${name} | ${webSearchName}`
+              : name}
           </span>
         </span>
-        {isWebCrawling || (isWebSearch && result === undefined) ? null : (
+        {isWebCrawling ? (
+          <ReactSVG src={ExternalIconUrl} />
+        ) : isWebSearch && result === undefined ? null : (
           <ReactSVG
             src={!isCollapsed ? ArrowBottomIconUrl : ArrowRightIconUrl}
           />
@@ -112,17 +131,29 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
           {result !== undefined && (
             <div className="">
               {isWebSearch ? (
-                <div className="max-h-[400px] overflow-y-auto">
+                <div>
                   {(() => {
                     try {
                       const parsedResult =
                         typeof result === "string"
                           ? JSON.parse(result)
                           : result;
+
+                      // Check if there's an error in the result
+                      if (parsedResult?.error) {
+                        return (
+                          <pre className="max-h-[200px] overflow-y-auto whitespace-pre-wrap text-[var(--chat-message-tool-call-pre-color)] border border-[var(--chat-message-tool-call-pre-border-color)] bg-[var(--chat-message-tool-call-pre-background-color)] px-[8px] py-[2px] rounded-[4px]">
+                            {typeof result === "string"
+                              ? result
+                              : JSON.stringify(result, null, 2)}
+                          </pre>
+                        );
+                      }
+
                       const searchResults = parsedResult?.data || [];
 
                       return searchResults.length > 0 ? (
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-[10px]">
                           {searchResults.map(
                             (
                               item: {
@@ -136,30 +167,36 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
                             ) => (
                               <div
                                 key={index}
-                                className="p-3 border border-[var(--chat-message-tool-call-pre-border-color)] bg-[var(--chat-message-tool-call-pre-background-color)] rounded-[4px] cursor-pointer hover:bg-[var(--drop-down-menu-item-hover-color)] transition-colors"
+                                className="h-[36px] px-[8px] rounded-[4px] flex flex-row items-center justify-between cursor-pointer hover:bg-[var(--drop-down-menu-item-hover-color)] transition-colors"
                                 onClick={() => window.open(item.url, "_blank")}
                               >
-                                <h4 className="text-[14px] font-medium text-[var(--chat-message-tool-call-pre-color)] mb-1 line-clamp-2">
-                                  {item.title}
-                                </h4>
-                                <p className="text-[12px] text-[var(--chat-message-tool-call-header-color)] opacity-70 truncate">
-                                  {item.url}
-                                </p>
-                                {item.publishedDate && (
-                                  <p className="text-[11px] text-[var(--chat-message-tool-call-header-color)] opacity-50 mt-1">
-                                    {new Date(
-                                      item.publishedDate
-                                    ).toLocaleDateString()}
-                                  </p>
-                                )}
+                                <div className="flex flex-row items-center gap-[8px]">
+                                  <IconButton
+                                    iconName={SearchIconUrl}
+                                    size={24}
+                                    disableHover
+                                    disableApplyColor
+                                  />
+                                  <h4 className="text-[14px] font-bold text-[var(--chat-message-tool-call-pre-color)]">
+                                    {item.title}
+                                  </h4>
+                                </div>
+                                <IconButton
+                                  iconName={ExternalIconUrl}
+                                  size={24}
+                                  disableHover
+                                  disableApplyColor
+                                />
                               </div>
                             )
                           )}
                         </div>
                       ) : (
-                        <p className="text-[var(--chat-message-tool-call-pre-color)] text-[14px] p-3">
-                          No search results found
-                        </p>
+                        <pre className="max-h-[200px] overflow-y-auto whitespace-pre-wrap text-[var(--chat-message-tool-call-pre-color)] border border-[var(--chat-message-tool-call-pre-border-color)] bg-[var(--chat-message-tool-call-pre-background-color)] px-[8px] py-[2px] rounded-[4px]">
+                          {typeof result === "string"
+                            ? result
+                            : JSON.stringify(result, null, 2)}
+                        </pre>
                       );
                     } catch {
                       return (
