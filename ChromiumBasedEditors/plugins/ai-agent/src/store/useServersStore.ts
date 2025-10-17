@@ -85,8 +85,8 @@ const useServersStore = create<UseServersStoreProps>((set, get) => ({
           disabledTools[type] = [];
 
           tools.push(...items);
-          set({ webSearchEnabled: true });
-          webSearchEnabled = true;
+          set({ webSearchEnabled: serverTools.length > 0 });
+          webSearchEnabled = serverTools.length > 0;
 
           return;
         }
@@ -140,8 +140,8 @@ const useServersStore = create<UseServersStoreProps>((set, get) => ({
           });
 
           tools.push(...items);
-          set({ webSearchEnabled: true });
-          webSearchEnabled = true;
+          set({ webSearchEnabled: serverTools.length > 0 });
+          webSearchEnabled = serverTools.length > 0;
 
           return;
         }
