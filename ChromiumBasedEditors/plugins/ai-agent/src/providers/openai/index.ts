@@ -103,7 +103,7 @@ class OpenAIProvider
         tools: this.tools,
         stream: true,
 
-        max_tokens: 2048,
+        max_completion_tokens: 2048,
       });
 
       this.prevMessages.push(...convertedMessage);

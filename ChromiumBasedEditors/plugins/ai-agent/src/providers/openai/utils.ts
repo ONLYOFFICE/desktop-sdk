@@ -13,17 +13,20 @@ import type { TMCPItem } from "@/lib/types";
 export const convertToolsToModelFormat = (
   tools: TMCPItem[]
 ): ChatCompletionTool[] => {
-  return tools.map((tool) => ({
-    type: "function",
-    function: {
-      name: tool.name,
-      description: tool.description,
-      input_schema: {
-        type: "object",
-        ...tool.inputSchema,
+  return tools.map((tool) => {
+    const t: ChatCompletionTool = {
+      type: "function",
+      function: {
+        name: tool.name,
+        description: tool.description,
+        parameters: {
+          ...tool.inputSchema,
+        },
       },
-    },
-  }));
+    };
+
+    return t;
+  });
 };
 
 export const convertMessagesToModelFormat = (

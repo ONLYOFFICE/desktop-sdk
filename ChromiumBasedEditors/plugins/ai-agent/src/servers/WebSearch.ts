@@ -153,9 +153,12 @@ class WebSearch {
         description:
           "The search endpoint lets you intelligently search the web and extract contents from the results.",
         inputSchema: {
-          query: {
-            type: "string",
-            description: "The query string for the search.",
+          type: "object",
+          properties: {
+            query: {
+              type: "string",
+              description: "The query string for the search.",
+            },
           },
         },
       },
@@ -164,12 +167,15 @@ class WebSearch {
         description:
           "Get the full page contents, summaries, and metadata for a list of URLs.",
         inputSchema: {
-          urls: {
-            type: "array",
-            items: {
-              type: "string",
+          type: "object",
+          properties: {
+            urls: {
+              type: "array",
+              items: {
+                type: "string",
+              },
+              description: "Array of URLs to crawl",
             },
-            description: "Array of URLs to crawl",
           },
         },
       },

@@ -34,7 +34,7 @@ const primaryDisabledStyles =
 // Size styles
 
 const defaultSizeStyles =
-  "h-[32px] px-[12px] text-[14px] font-semibold leading-[16px]";
+  "h-[32px] min-w-[40px] px-[12px] text-[14px] font-semibold leading-[16px]";
 
 const buttonVariants = cva(`${baseStyles} ${focusStyles}`, {
   variants: {
