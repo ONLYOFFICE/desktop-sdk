@@ -7,17 +7,23 @@ import type { TMCPItem } from "@/lib/types";
 export type TogetherMessageParam = CompletionCreateParams["messages"][number];
 
 export const convertToolsToModelFormat = (tools: TMCPItem[]): Tools[] => {
-  return tools.map((tool) => ({
-    type: "function",
-    function: {
-      name: tool.name,
-      description: tool.description,
-      parameters: {
-        type: "object",
-        ...tool.inputSchema,
+  const toolsToReturn: Tools[] = [];
+
+  tools.forEach((tool) => {
+    toolsToReturn.push({
+      type: "function",
+      function: {
+        name: tool.name,
+        description: tool.description,
+        parameters: {
+          type: "object",
+          ...tool.inputSchema,
+        },
       },
-    },
-  }));
+    });
+  });
+
+  return toolsToReturn;
 };
 
 export const convertMessagesToModelFormat = (

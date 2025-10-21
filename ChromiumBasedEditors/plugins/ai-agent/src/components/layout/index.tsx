@@ -36,7 +36,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     }
 
     window.on_update_plugin_info = (info) => {
-      console.log(info);
       if (info.lang) {
         if (info?.lang?.includes("en")) {
           i18n.changeLanguage("en");

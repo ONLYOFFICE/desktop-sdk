@@ -118,7 +118,6 @@ class CustomServers {
 
       if (this.customServersProcesses[type]) {
         this.customServersProcesses[type].end();
-        console.log("stop server", type);
       }
 
       this.customServersLogs[type] = [

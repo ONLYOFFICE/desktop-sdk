@@ -90,9 +90,16 @@ export const handleToolCall = (
     const name = toolCall.toolName || toolCallDelta?.function?.name || "";
     const toolCallId = toolCall.toolCallId || toolCallDelta?.id || "";
 
+    let parsedArgs = {};
+    try {
+      parsedArgs = JSON.parse(argsText ?? "{}");
+    } catch {
+      // ignore
+    }
+
     const newToolCall: ToolCallMessagePart = {
       ...toolCall,
-      args: {},
+      args: parsedArgs,
       argsText,
       toolName: name,
       toolCallId,

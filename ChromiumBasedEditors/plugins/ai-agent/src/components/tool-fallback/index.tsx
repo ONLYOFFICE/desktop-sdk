@@ -51,12 +51,20 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
 
   let webSearchName = "";
 
+  let argsTextFinal = argsText;
+
   try {
-    webSearchName = argsText
+    const parsedArgs = JSON.parse(argsTextFinal);
+
+    if (parsedArgs.args) {
+      argsTextFinal = JSON.stringify(parsedArgs.args);
+    }
+
+    webSearchName = argsTextFinal
       ? isWebSearch
-        ? JSON.parse(argsText).query
+        ? JSON.parse(argsTextFinal).query
         : isWebCrawling
-        ? JSON.parse(argsText).urls[0]
+        ? JSON.parse(argsTextFinal).urls[0]
         : ""
       : "";
   } catch {
@@ -124,7 +132,7 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
                 />
               </p>
               <pre className="max-h-[200px] overflow-y-auto whitespace-pre-wrap text-[var(--chat-message-tool-call-pre-color)] border border-[var(--chat-message-tool-call-pre-border-color)] bg-[var(--chat-message-tool-call-pre-background-color)] px-[8px] py-[2px] rounded-[4px]">
-                {argsText ? argsText : "{}"}
+                {argsTextFinal ? argsTextFinal : "{}"}
               </pre>
             </div>
           )}
