@@ -185,6 +185,7 @@ const ChatListItem = ({
                   iconName={MoreIconSvgUrl}
                   size={20}
                   isActive={isOpen}
+                  insideElement
                 />
               }
               items={[

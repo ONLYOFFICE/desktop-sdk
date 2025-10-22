@@ -28,6 +28,14 @@ const ComboBox = ({
   const [isOpen, setIsOpen] = React.useState(false);
 
   const containerRef = React.useRef<HTMLDivElement>(null);
+
+  const handleBeforeInjection = React.useCallback((svg: SVGSVGElement) => {
+    const paths = svg.querySelectorAll("path");
+    paths.forEach((path) => {
+      path.setAttribute("stroke", "var(--input-color)");
+    });
+  }, []);
+
   return (
     <DropdownMenu
       onOpenChange={(value: boolean) => setIsOpen(value)}
@@ -44,7 +52,9 @@ const ComboBox = ({
               ? "hover:bg-[var(--input-hover-background-color)] hover:border-[var(--input-hover-border-color)]"
               : "border bg-[var(--input-background-color)] border-[var(--input-border-color)] hover:bg-[var(--input-hover-background-color)] hover:border-[var(--input-hover-border-color)]",
             className,
-            items.length === 0 ? "cursor-not-allowed pointer-events-none opacity-50" : ""
+            items.length === 0
+              ? "cursor-not-allowed pointer-events-none opacity-50"
+              : ""
           )}
           style={{
             borderColor: isError ? "var(--border-error)" : undefined,
@@ -65,6 +75,7 @@ const ComboBox = ({
               "w-[15px] h-[24px] flex items-center justify-center transition-transform",
               isOpen ? "rotate-180" : ""
             )}
+            beforeInjection={handleBeforeInjection}
           />
         </div>
       }

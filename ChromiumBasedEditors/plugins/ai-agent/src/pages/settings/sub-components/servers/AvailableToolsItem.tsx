@@ -105,7 +105,9 @@ const AvailableToolsItem = ({
             isStroke
             isTransform={opened}
           />
-          <p>{name}</p>
+          <p className="text-[var(--servers-available-tools-item-name-color)]">
+            {name}
+          </p>
           {isLoading ? null : (
             <p className="font-normal text-[14px] text-[var(--servers-available-tools-sub-header-color)]">
               <span className="text-[var(--servers-available-tools-current-tool-color)]">
@@ -206,7 +208,9 @@ const AvailableToolsItem = ({
                 changeToolStatus(name, tool.name, !tool.enabled);
               }}
             >
-              <p>{tool.name}</p>
+              <p className="text-[var(--servers-available-tools-item-name-color)]">
+                {tool.name}
+              </p>
               <ToggleButton
                 checked={tool.enabled ?? false}
                 disabled={disableEnable && !tool.enabled}

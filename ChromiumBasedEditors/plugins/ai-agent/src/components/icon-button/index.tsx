@@ -43,6 +43,14 @@ const IconButton = ({
           path.setAttribute("stroke", color || "var(--icon-button-color)");
         }
       });
+      const circles = svg.querySelectorAll("circle");
+      circles.forEach((circle) => {
+        if (!isStroke) {
+          circle.setAttribute("fill", color || "var(--icon-button-color)");
+        } else {
+          circle.setAttribute("stroke", color || "var(--icon-button-color)");
+        }
+      });
     },
     [isStroke, color]
   );

@@ -1,0 +1,15 @@
+.ͼ2 .cm-gutters,
+.ͼ2 .cm-activeLineGutter  {
+    background-color: var(--background-normal) !important;
+    color: var(--text-secondary) !important;
+    border: 0px solid var(--border-divider) !important;
+}
+
+.ͼe,
+.ͼ2 .cm-line {
+    color: var(--text-normal) !important;
+}
+
+.ͼ2 .cm-activeLine {
+    background-color: var(--highlight-button-pressed) !important;
+}

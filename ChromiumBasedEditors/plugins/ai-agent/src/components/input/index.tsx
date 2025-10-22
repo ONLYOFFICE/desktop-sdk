@@ -11,10 +11,14 @@ type InputProps = React.InputHTMLAttributes<HTMLInputElement> & {
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, isError, icon, ...props }, ref) => {
     const handleBeforeInjection = useCallback((svg: SVGSVGElement) => {
-      const path = svg.querySelector("path");
-      if (path) {
+      const paths = svg.querySelectorAll("path");
+      paths.forEach((path) => {
         path.setAttribute("stroke", "var(--input-color)");
-      }
+      });
+      const circles = svg.querySelectorAll("circle");
+      circles.forEach((circle) => {
+        circle.setAttribute("fill", "var(--input-color)");
+      });
     }, []);
 
     return (

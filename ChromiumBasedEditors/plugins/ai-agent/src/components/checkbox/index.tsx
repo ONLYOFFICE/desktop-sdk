@@ -26,10 +26,14 @@ const Checkbox = ({
   };
 
   const handleBeforeInjection = useCallback((svg: SVGSVGElement) => {
-    const path = svg.querySelector("path");
-    if (path) {
+    const paths = svg.querySelectorAll("path");
+    paths.forEach((path) => {
       path.setAttribute("stroke", "var(--checkbox-active-icon-color)");
-    }
+    });
+    const circles = svg.querySelectorAll("circle");
+    circles.forEach((circle) => {
+      circle.setAttribute("stroke", "var(--checkbox-active-icon-color)");
+    });
   }, []);
 
   // Container styles

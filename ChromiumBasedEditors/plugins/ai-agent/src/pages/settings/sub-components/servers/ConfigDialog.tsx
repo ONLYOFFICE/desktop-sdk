@@ -10,6 +10,8 @@ import { Dialog, DialogContent } from "@/components/dialog";
 import { Button } from "@/components/button";
 import useServersStore from "@/store/useServersStore";
 
+import "./ConfigDialog.css";
+
 type ConfigDialogProps = {
   open: boolean;
   onClose: () => void;

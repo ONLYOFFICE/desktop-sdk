@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import type { ToolCallMessagePartComponent } from "@assistant-ui/react";
 import { ReactSVG } from "react-svg";
 import { useTranslation } from "react-i18next";
@@ -71,6 +71,28 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
     //ignore
   }
 
+  const handleBeforeInjectionFill = useCallback((svg: SVGSVGElement) => {
+    const paths = svg.querySelectorAll("path");
+    paths.forEach((path) => {
+      path.setAttribute("fill", "var(--chat-message-tool-call-name-color)");
+    });
+    const circles = svg.querySelectorAll("circle");
+    circles.forEach((circle) => {
+      circle.setAttribute("fill", "var(--chat-message-tool-call-name-color)");
+    });
+  }, []);
+
+  const handleBeforeInjection = useCallback((svg: SVGSVGElement) => {
+    const paths = svg.querySelectorAll("path");
+    paths.forEach((path) => {
+      path.setAttribute("stroke", "var(--chat-message-tool-call-name-color)");
+    });
+    const circles = svg.querySelectorAll("circle");
+    circles.forEach((circle) => {
+      circle.setAttribute("stroke", "var(--chat-message-tool-call-name-color)");
+    });
+  }, []);
+
   return (
     <div className="my-[16px] flex w-full flex-col gap-3">
       <div
@@ -100,9 +122,15 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
         ) : null}
         <span className="flex items-center gap-[8px] rounded-[4px] ps-[4px] pe-[8px] text-[14px] leading-[20px] font-normal text-[var(--chat-message-tool-call-name-color)] bg-[var(--chat-message-tool-call-name-background-color)] min-w-0 flex-grow">
           {isWebSearch ? (
-            <ReactSVG src={SearchIconUrl} />
+            <ReactSVG
+              src={SearchIconUrl}
+              beforeInjection={handleBeforeInjectionFill}
+            />
           ) : !isWebCrawling ? (
-            <ReactSVG src={CodeIconUrl} />
+            <ReactSVG
+              src={CodeIconUrl}
+              beforeInjection={handleBeforeInjection}
+            />
           ) : null}
           <span className="truncate">
             {isWebSearch
@@ -113,10 +141,14 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
           </span>
         </span>
         {isWebCrawling ? (
-          <ReactSVG src={ExternalIconUrl} />
+          <ReactSVG
+            src={ExternalIconUrl}
+            beforeInjection={handleBeforeInjection}
+          />
         ) : isWebSearch && result === undefined ? null : (
           <ReactSVG
             src={!isCollapsed ? ArrowBottomIconUrl : ArrowRightIconUrl}
+            beforeInjection={handleBeforeInjection}
           />
         )}
       </div>
@@ -129,6 +161,11 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
                 <ReactSVG
                   src={isArgsCopied ? CheckedIconUrl : CopyIconUrl}
                   onClick={() => setIsArgsCopied(true)}
+                  beforeInjection={
+                    !isArgsCopied
+                      ? handleBeforeInjectionFill
+                      : handleBeforeInjection
+                  }
                 />
               </p>
               <pre className="max-h-[200px] overflow-y-auto whitespace-pre-wrap text-[var(--chat-message-tool-call-pre-color)] border border-[var(--chat-message-tool-call-pre-border-color)] bg-[var(--chat-message-tool-call-pre-background-color)] px-[8px] py-[2px] rounded-[4px]">
@@ -222,6 +259,11 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
                     <ReactSVG
                       src={isResultCopied ? CheckedIconUrl : CopyIconUrl}
                       onClick={() => setIsResultCopied(true)}
+                      beforeInjection={
+                        !isResultCopied
+                          ? handleBeforeInjectionFill
+                          : handleBeforeInjection
+                      }
                     />
                   </p>
                   <pre className="max-h-[200px] overflow-y-auto whitespace-pre-wrap text-[var(--chat-message-tool-call-pre-color)] border border-[var(--chat-message-tool-call-pre-border-color)] bg-[var(--chat-message-tool-call-pre-background-color)] px-[8px] py-[2px] rounded-[4px]">
