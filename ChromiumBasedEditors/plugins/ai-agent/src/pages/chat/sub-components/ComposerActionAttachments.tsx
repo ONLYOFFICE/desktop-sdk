@@ -14,7 +14,7 @@ import { DropdownMenu } from "@/components/dropdown";
 import type { DropDownItemProps } from "@/components/dropdown-item/DropDownItem.types";
 import { TooltipIconButton } from "@/components/tooltip-icon-button";
 
-const FILE_FORMATS = [".docx", ".pdf", ".xlsx"];
+const FILE_FORMATS = ["*.docx", "*.pdf", "*.xlsx"];
 
 const ComposerActionAttachment = () => {
   const [isOpen, setIsOpen] = React.useState(false);
@@ -49,7 +49,7 @@ const ComposerActionAttachment = () => {
           file.forEach((file) => {
             const extension = file.split(".").pop() ?? "";
 
-            if (FILE_FORMATS.includes(`.${extension}`)) {
+            if (FILE_FORMATS.includes(`*.${extension}`)) {
               window.AscDesktopEditor.convertFileExternal(
                 file,
                 69,
