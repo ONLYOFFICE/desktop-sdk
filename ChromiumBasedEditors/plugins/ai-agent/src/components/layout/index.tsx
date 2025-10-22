@@ -21,29 +21,12 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   React.useLayoutEffect(() => {
     if (window.RendererProcessVariable) {
-      const lang =
-        window.RendererProcessVariable.lang ??
-        new URLSearchParams(window.location.search).get("lang");
-      if (lang?.includes("en")) {
-        i18n.changeLanguage("en");
-      } else if (lang?.includes("ru")) {
-        i18n.changeLanguage("ru");
-      } else {
-        i18n.changeLanguage("en");
-      }
-    } else {
       i18n.changeLanguage("en");
     }
 
     window.on_update_plugin_info = (info) => {
       if (info.lang) {
-        if (info?.lang?.includes("en")) {
-          i18n.changeLanguage("en");
-        } else if (info?.lang?.includes("ru")) {
-          i18n.changeLanguage("ru");
-        } else {
-          i18n.changeLanguage("en");
-        }
+        i18n.changeLanguage("en");
       }
 
       if (info.theme) {
