@@ -44,7 +44,9 @@ const AssistantActionBar = () => {
       "Message.docx",
       (path) => {
         if (path) {
-          const name = path.split("/").pop() ?? "";
+          const name = path.includes("\\")
+            ? path.split("\\").pop() ?? ""
+            : path.split("/").pop() ?? "";
           window.AscDesktopEditor.openTemplate(path, name);
         }
       },

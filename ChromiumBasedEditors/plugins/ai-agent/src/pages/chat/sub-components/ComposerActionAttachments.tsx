@@ -46,7 +46,9 @@ const ComposerActionAttachment = () => {
       true,
       (file) => {
         if (Array.isArray(file)) {
-          file.forEach((file) => {
+          file.forEach((file, index) => {
+            if (index > 3) return;
+
             const extension = file.split(".").pop() ?? "";
 
             if (FILE_FORMATS.includes(`*.${extension}`)) {

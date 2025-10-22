@@ -24,7 +24,9 @@ const FileItem = ({ file, withoutClose }: FileItemProps) => {
     deleteAttachmentFile(file.path);
   };
 
-  const name = file.path.split("/").pop() ?? "";
+  const name = file.path.includes("\\")
+    ? file.path.split("\\").pop() ?? ""
+    : file.path.split("/").pop() ?? "";
   const extension = name.split(".").pop() ?? "";
   const nameWithoutExtension = name.replace(`.${extension}`, "");
 

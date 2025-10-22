@@ -65,9 +65,11 @@ export const convertMessagesToModelFormat = (
                 if (part.type === "file") {
                   const path = JSON.parse(part.mimeType).path;
 
-                  const fileContent = `File: ${path
-                    .split("/")
-                    .pop()}\nFile content:\n${part.data}`;
+                  const fileContent = `File: ${
+                    path.includes("\\")
+                      ? path.split("\\").pop()
+                      : path.split("/").pop()
+                  }\nFile content:\n${part.data}`;
                   return fileContent;
                 }
 

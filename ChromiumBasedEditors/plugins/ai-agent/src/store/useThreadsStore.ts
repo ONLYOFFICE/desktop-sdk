@@ -84,7 +84,9 @@ const useThreadsStore = create<UseThreadsStoreProps>((set, get) => ({
       (path) => {
         if (path === "") return;
 
-        const name = path.split("/").pop();
+        const name = path.includes("\\")
+          ? path.split("\\").pop()
+          : path.split("/").pop();
 
         if (!name) return;
 

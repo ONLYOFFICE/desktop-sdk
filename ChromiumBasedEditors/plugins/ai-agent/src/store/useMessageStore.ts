@@ -8,7 +8,6 @@ type UseMessageStoreProps = {
   messages: ThreadMessageLike[];
   isStreamRunning: boolean;
   isRequestRunning: boolean;
-  attachmentFiles: { path: string; content: string }[];
 
   setIsStreamRunning: (value: boolean) => void;
   setIsRequestRunning: (value: boolean) => void;
@@ -22,7 +21,6 @@ const useMessageStore = create<UseMessageStoreProps>((set, get) => ({
   messages: [],
   isStreamRunning: false,
   isRequestRunning: false,
-  attachmentFiles: [],
   fetchPrevMessages: async (threadId: string) => {
     const messages = await readMessages(threadId);
 
@@ -57,12 +55,7 @@ const useMessageStore = create<UseMessageStoreProps>((set, get) => ({
     const thisStore = get();
     set({ messages: [...thisStore.messages.slice(0, -1), message] });
   },
-  addAttachmentFile: (file: { path: string; content: string }) => {
-    set({ attachmentFiles: [...get().attachmentFiles, file] });
-  },
-  clearAttachmentFiles: () => {
-    set({ attachmentFiles: [] });
-  },
+
   stopMessage: () => {
     const thisStore = get();
 
