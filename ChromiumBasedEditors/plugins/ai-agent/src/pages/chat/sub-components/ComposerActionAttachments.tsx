@@ -47,7 +47,7 @@ const ComposerActionAttachment = () => {
       (file) => {
         if (Array.isArray(file)) {
           file.forEach((file, index) => {
-            if (index > 3) return;
+            if (index > 5) return;
 
             const extension = file.split(".").pop() ?? "";
 
@@ -107,7 +107,9 @@ const ComposerActionAttachment = () => {
       }
 
       return {
-        text: file.path.split("/").pop() ?? "",
+        text: file.path.includes("\\")
+          ? file.path.split("\\").pop() ?? ""
+          : file.path.split("/").pop() ?? "",
         key: file.path,
         id: file.path,
         icon: <ReactSVG src={icon} />,
