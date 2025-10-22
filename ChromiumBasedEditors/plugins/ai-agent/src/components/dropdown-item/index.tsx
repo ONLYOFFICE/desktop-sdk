@@ -136,7 +136,7 @@ const DropDownItem = ({
           align="start"
           sideOffset={0}
           open={isSubMenuOpen}
-          contentClassName="ms-[12px] mt-[-15px]"
+          contentClassName="ms-[12px] mt-[-15px] max-w-[300px]"
           containerRef={itemRef.current}
           dropdownRef={submenuRef}
         />
