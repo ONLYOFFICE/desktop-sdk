@@ -36,6 +36,8 @@
 #include "include/wrapper/cef_closure_task.h"
 #include "include/cef_parser.h"
 
+#include "./window_handle.h"
+
 #ifdef CEF_2623
 #include "cefclient/browser/client_handler.h"
 #include "cefclient/common/client_switches.h"
@@ -887,6 +889,8 @@ public:
 	int m_nReporterChildId; // id репортера у parent
 	std::string m_sCloudCryptoReporter;
 
+	bool m_bIsLoaded;
+
 	// sso
 	bool m_bIsSSO;
 	bool m_bIsFirstLoadSSO;
@@ -932,6 +936,8 @@ public:
 #if defined(_LINUX) && !defined(_MAC)
 	WindowHandleId m_lNaturalParent;
 #endif
+
+	CWindowHandleChecker m_hideChecker;
 
 	// прерывание скачивания у проблемных ссылок
 	CDownloadFilesAborted m_oDownloaderAbortChecker;
@@ -991,6 +997,8 @@ public:
 		m_pManager = NULL;
 		m_pWidgetImpl = NULL;
 		m_pCefView = NULL;
+
+		m_bIsLoaded = false;
 
 		m_sPrintParameters = "";
 
@@ -1358,12 +1366,21 @@ public:
 		if (!sPath.empty())
 			m_oConverterFromEditor.m_oInfo.m_sFileSrc = sPath;
 
+		if (nType != -1)
+			m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat = nType;
+
 		if (m_pLocalFileLocker)
 		{
 			if (m_pLocalFileLocker->GetFileLocked() != m_oConverterFromEditor.m_oInfo.m_sFileSrc)
 			{
 				// сохраняем не в тот же файл
-				RELEASEOBJECT(m_pLocalFileLocker);
+
+				bool isSaveToEditFormat = true;
+				if (nType != -1)
+					isSaveToEditFormat = LocalFileSaveEnd_CheckSaveAs();
+
+				if (isSaveToEditFormat)
+					RELEASEOBJECT(m_pLocalFileLocker);
 			}
 			else if (m_sCloudCryptSrc.empty())
 			{
@@ -1371,9 +1388,6 @@ public:
 				m_oConverterFromEditor.m_pLocker = m_pLocalFileLocker;
 			}
 		}
-
-		if (nType != -1)
-			m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat = nType;
 
 		m_oConverterFromEditor.m_bIsRetina = m_oLocalInfo.m_bIsRetina;
 
@@ -1383,6 +1397,8 @@ public:
 
 	void LocalFile_End();
 	void LocalFile_SaveEnd(int nError, const std::wstring& sPass = L"");
+
+	bool LocalFileSaveEnd_CheckSaveAs();
 
 	void LocalFile_IncrementCounter();
 
@@ -2429,7 +2445,8 @@ public:
 
 			if (!m_bIsLoaded)
 			{
-				m_pParent->GetWidgetImpl()->OnLoaded();
+				if (m_pParent->GetWidgetImpl())
+					m_pParent->GetWidgetImpl()->OnLoaded();
 				m_bIsLoaded = true;
 			}
 		}
@@ -4627,7 +4644,18 @@ virtual void OnAfterCreated(CefRefPtr<CefBrowser> browser) OVERRIDE
 		// We need to keep the main child window, but not popup windows
 		browser_ = browser;
 		browser_id_ = browser->GetIdentifier();
+
+		if (m_pParent->m_pInternal->m_bIsDestroying)
+		{
+			NSEditorApi::CAscMenuEvent* pEventD = new NSEditorApi::CAscMenuEvent();
+			pEventD->m_nType = ASC_MENU_EVENT_TYPE_CEF_DESTROY;
+			m_pParent->Apply(pEventD);
+		}
 	}
+
+#if defined(_MAC) && defined(CEF_VERSION_ABOVE_102)
+	m_pParent->m_pInternal->m_hideChecker.Hide(browser);
+#endif
 }
 
 virtual void OnBeforeClose(CefRefPtr<CefBrowser> browser) OVERRIDE
@@ -4735,6 +4763,8 @@ virtual void OnLoadEnd(CefRefPtr<CefBrowser> browser,
 					   CefRefPtr<CefFrame> frame,
 					   int httpStatusCode)
 {
+	m_pParent->m_pInternal->m_hideChecker.Show(browser);
+
 	bool bIsCryptoSupport = true;
 	if (m_pParent->m_pInternal->m_bIsExternalCloud)
 	{
@@ -5841,15 +5871,11 @@ void CCefView_Private::LocalFile_End()
 
 	m_oLocalInfo.m_oInfo.m_nCounterConvertion = 1; // for reload enable
 }
-void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
+
+bool CCefView_Private::LocalFileSaveEnd_CheckSaveAs()
 {
-	m_oConverterFromEditor.m_nTypeEditorFormat = -1;
-	m_oLocalInfo.m_bIsRetina = false;
-
-	std::wstring sNotEditableLocal;
-	int nError_Old = nError;
-
 	bool bIsSavedFileCurrent = true;
+
 	int nOldFormat = m_oLocalInfo.m_oInfo.m_nCurrentFileFormat;
 	if ((nOldFormat & AVS_OFFICESTUDIO_FILE_CROSSPLATFORM || nOldFormat == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF) &&
 		nOldFormat != m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat)
@@ -5874,6 +5900,18 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
 		bIsSavedFileCurrent = false;
 	}
 
+	return bIsSavedFileCurrent;
+}
+
+void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
+{
+	m_oConverterFromEditor.m_nTypeEditorFormat = -1;
+	m_oLocalInfo.m_bIsRetina = false;
+
+	std::wstring sNotEditableLocal;
+	int nError_Old = nError;
+
+	bool bIsSavedFileCurrent = LocalFileSaveEnd_CheckSaveAs();
 	if (!bIsSavedFileCurrent)
 	{
 		if (0 == nError && LocalFile_IsSupportOpenFormat(m_oConverterFromEditor.m_oInfo.m_nCurrentFileFormat))
@@ -6761,7 +6799,8 @@ void CCefView::load(const std::wstring& urlInputSrc)
 	if (pAscCEfJSDialogHandler)
 		pAscCEfJSDialogHandler->SetAppManager(m_pInternal->m_pManager);
 
-	CefWindowHandle hWnd = (CefWindowHandle)m_pInternal->m_pWidgetImpl->cef_handle;
+	CCefViewWidgetImpl* pWidgetImpl = m_pInternal->m_pWidgetImpl;
+	CefWindowHandle hWnd = (CefWindowHandle)pWidgetImpl->cef_handle;
 	//m_pInternal->m_handler->SetMainWindowHandle(hWnd);
 
 	CefBrowserSettings _settings;
@@ -6774,7 +6813,7 @@ void CCefView::load(const std::wstring& urlInputSrc)
 	_settings.plugins = STATE_DISABLED;
 #endif
 
-	_settings.background_color = (m_eWrapperType == cvwtEditor) ? 0xFFF4F4F4 : 0xFFFFFFFF;
+	_settings.background_color = CefColorSetARGB(0xFF, pWidgetImpl->backgroundR, pWidgetImpl->backgroundG, pWidgetImpl->backgroundB);
 
 	CefWindowInfo info;
 	CefWindowHandle _handle = (CefWindowHandle)m_pInternal->m_pWidgetImpl->cef_handle;
@@ -6783,6 +6822,8 @@ void CCefView::load(const std::wstring& urlInputSrc)
 
 #ifdef CEF_VERSION_ABOVE_102
 	info.SetAsChild(_handle, CefRect(0, 0, _w, _h));
+
+	m_pInternal->m_hideChecker.Hide(info, _handle);
 #else
 
 #ifdef WIN32
@@ -6817,7 +6858,10 @@ void CCefView::load(const std::wstring& urlInputSrc)
 	extra_info->SetString(std::to_string(++nCount), "viewport_settings=" + U_TO_UTF8(m_pInternal->m_sViewportSettings));
 #endif
 
-	// Creat the new child browser window
+	// Create the new child browser window
+
+	m_pInternal->m_bIsLoaded = true;
+
 #ifdef _WIN32
 	// need after window->show
 	CefBrowserHost::CreateBrowser(
@@ -6944,9 +6988,18 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 		if (pEvent->m_nType == ASC_MENU_EVENT_TYPE_CEF_DESTROY ||
 				pEvent->m_nType == ASC_MENU_EVENT_TYPE_CEF_DESTROY_SAFE)
 		{
-			m_pInternal->m_bIsDestroying = true;
-			if (m_pInternal->m_pManager)
-				m_pInternal->m_pManager->OnDestroyWindow();
+			if (!m_pInternal->m_bIsDestroying)
+			{
+				m_pInternal->m_bIsDestroying = true;
+				if (m_pInternal->m_pManager)
+					m_pInternal->m_pManager->OnDestroyWindow();
+
+				if (!m_pInternal->m_bIsLoaded)
+				{
+					NSEditorApi::CAscCefMenuEvent* pEvent = CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_DESTROYWINDOW);
+					GetAppManager()->GetEventListener()->OnEvent(pEvent);
+				}
+			}
 		}
 
 		CApplicationManagerAdditionalBase* pAdditional = GetAppManager()->m_pInternal->m_pAdditional;
@@ -7027,6 +7080,9 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 	case ASC_MENU_EVENT_TYPE_CEF_DESTROY:
 	case ASC_MENU_EVENT_TYPE_CEF_DESTROY_SAFE:
 	{
+		if (m_pInternal->m_bIsDestroying)
+			break;
+
 		if (m_pInternal && pEvent->m_nType == ASC_MENU_EVENT_TYPE_CEF_DESTROY_SAFE && m_pInternal->m_bIsReceiveOnce_OnDocumentModified)
 			m_pInternal->m_bIsRemoveRecoveryOnClose = true;
 

@@ -40,9 +40,9 @@ uint16_t GetKeyboardLayout(void)
     NSLocale *locale = [[NSLocale alloc] initWithLocaleIdentifier:(__bridge NSString*)lang];
     CFRelease(src);
 
-    std::string language = NSStringToStdString([locale languageCode]);
-    std::string region = NSStringToStdString([locale countryCode]);
-    std::string script = NSStringToStdString([locale scriptCode]);
+    std::string language = NSStringToStdString([locale objectForKey:NSLocaleLanguageCode]);
+    std::string region = NSStringToStdString([locale objectForKey:NSLocaleCountryCode]);
+    std::string script = NSStringToStdString([locale objectForKey:NSLocaleScriptCode]);
     
    if (!language.empty()) {
         if (!script.empty())
