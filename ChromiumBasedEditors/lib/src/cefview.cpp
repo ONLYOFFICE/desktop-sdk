@@ -6799,7 +6799,8 @@ void CCefView::load(const std::wstring& urlInputSrc)
 	if (pAscCEfJSDialogHandler)
 		pAscCEfJSDialogHandler->SetAppManager(m_pInternal->m_pManager);
 
-	CefWindowHandle hWnd = (CefWindowHandle)m_pInternal->m_pWidgetImpl->cef_handle;
+	CCefViewWidgetImpl* pWidgetImpl = m_pInternal->m_pWidgetImpl;
+	CefWindowHandle hWnd = (CefWindowHandle)pWidgetImpl->cef_handle;
 	//m_pInternal->m_handler->SetMainWindowHandle(hWnd);
 
 	CefBrowserSettings _settings;
@@ -6812,7 +6813,7 @@ void CCefView::load(const std::wstring& urlInputSrc)
 	_settings.plugins = STATE_DISABLED;
 #endif
 
-	_settings.background_color = (m_eWrapperType == cvwtEditor) ? 0xFFF4F4F4 : 0xFFFFFFFF;
+	_settings.background_color = CefColorSetARGB(0xFF, pWidgetImpl->backgroundR, pWidgetImpl->backgroundG, pWidgetImpl->backgroundB);
 
 	CefWindowInfo info;
 	CefWindowHandle _handle = (CefWindowHandle)m_pInternal->m_pWidgetImpl->cef_handle;

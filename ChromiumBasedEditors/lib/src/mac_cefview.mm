@@ -14,6 +14,9 @@ CCefViewWrapper::~CCefViewWrapper()
 
 void CCefViewWrapper::SetBackgroundCefColor(unsigned char r, unsigned char g, unsigned char b)
 {
+	backgroundR = r;
+	backgroundG = g;
+	backgroundB = b;
 }
 
 CCefView* CCefViewWrapper::GetCefView()

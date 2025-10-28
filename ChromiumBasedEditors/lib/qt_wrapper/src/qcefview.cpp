@@ -213,6 +213,10 @@ QWidget* QCefView::GetViewWidget()
 // background color
 void QCefView::SetBackgroundCefColor(unsigned char r, unsigned char g, unsigned char b)
 {
+	backgroundR = r;
+	backgroundG = g;
+	backgroundB = b;
+
 	QString sR = QString::number((int)r, 16);
 	QString sG = QString::number((int)g, 16);
 	QString sB = QString::number((int)b, 16);
