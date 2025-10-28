@@ -1488,6 +1488,16 @@ public:
 				break;
 			}
 		}
+
+		if (converter->m_bIsOpenResult && 0 == error)
+		{
+			NSEditorApi::CAscCefMenuEvent* pEvent = m_pCefView->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_CREATETAB);
+			NSEditorApi::CAscCreateTab* pData = new NSEditorApi::CAscCreateTab();
+			pData->put_Url(L"ascdesktop://external/" + converter->m_sOutputFile);
+			pData->put_Name(NSFile::GetFileName(converter->m_sOutputFile));
+			pEvent->m_pData = pData;
+			m_pManager->GetEventListener()->OnEvent(pEvent);
+		}
 	}
 
 	void LocalFile_GetSupportSaveFormats(std::vector<int>& arFormats)
@@ -4459,6 +4469,28 @@ public:
 		pConverter->m_nFrameId = NSArgumentList::GetInt64(args, 1);
 		pConverter->m_nOutputFormat  = args->GetInt(2);
 		pConverter->m_nId = args->GetInt(3);
+
+		m_pParent->m_pInternal->m_arExternalConverters.push_back(pConverter);
+
+		pConverter->DestroyOnFinish();
+		pConverter->Start(0);
+
+		return true;
+	}
+	else if ("convert_file_external_and_open" == message_name)
+	{
+		if (5 > args->GetSize())
+			return true;
+
+		CSimpleConverterExternal* pConverter = new CSimpleConverterExternal(args->GetString(2).ToWString());
+		pConverter->m_pManager = m_pParent->GetAppManager();
+		pConverter->m_pEvents = m_pParent->m_pInternal;
+
+		pConverter->m_sInputFile = args->GetString(0).ToWString();
+		pConverter->m_nFrameId = NSArgumentList::GetInt64(args, 1);
+		pConverter->m_nOutputFormat  = args->GetInt(3);
+		pConverter->m_nId = args->GetInt(4);
+		pConverter->m_bIsOpenResult = true;
 
 		m_pParent->m_pInternal->m_arExternalConverters.push_back(pConverter);
 
