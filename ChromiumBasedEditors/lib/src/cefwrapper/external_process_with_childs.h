@@ -188,9 +188,11 @@ namespace NSProcesses
 		{
 			std::string lineBuf;
 			char buf[4096];
+            
+#ifdef _WIN32
 			DWORD n;
-
-#ifndef _WIN32
+#else
+			ssize_t n;
 			int flags = fcntl(fd, F_GETFL, 0);
 			fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 #endif
