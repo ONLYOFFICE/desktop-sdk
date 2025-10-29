@@ -249,7 +249,13 @@ namespace NSProcesses
 			if (!pathEnv)
 				return cmd;
 
-			std::istringstream iss(pathEnv);
+			std::string sPathEnv(pathEnv);
+			if (!sPathEnv.empty())
+				sPathEnv += ":";
+
+			sPathEnv += "/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin";
+
+			std::istringstream iss(sPathEnv);
 			std::string dir;
 			while (std::getline(iss, dir, ':'))
 			{
