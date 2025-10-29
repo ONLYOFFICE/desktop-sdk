@@ -8762,6 +8762,19 @@ namespace NSRequest
 				frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
 		}
 	}
+
+	void CSimpleRequestClient::SendAboutRetry()
+	{
+		if (m_view->m_bIsDestroying || m_view->m_bIsDestroy)
+			return;
+
+		if (m_view->GetBrowser())
+		{
+			CefRefPtr<CefFrame> frame = m_view->GetBrowser()->GetFrame(m_frameId);
+			if (frame)
+				frame->ExecuteJavaScript("console.log('[simplerequest]: attept " + std::to_string(m_nRetryCount + 1) + "');", frame->GetURL(), 0);
+		}
+	}
 }
 #endif
 
