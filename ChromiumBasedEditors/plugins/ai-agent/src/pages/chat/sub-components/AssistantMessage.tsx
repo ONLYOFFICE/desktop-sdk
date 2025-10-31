@@ -41,16 +41,20 @@ const AssistantActionBar = () => {
 
   const onDownload = () => {
     window.AscDesktopEditor.SaveFilenameDialog(
-      "Message.docx",
+      mdValue.replace(`## **Assistant**\n\n`, "").substring(0, 30),
       (path) => {
-        if (path) {
-          const name = path.includes("\\")
-            ? path.split("\\").pop() ?? ""
-            : path.split("/").pop() ?? "";
-          window.AscDesktopEditor.openTemplate(path, name);
-        }
-      },
-      mdValue
+        if (!path) return;
+
+        window.AscDesktopEditor.saveAndOpen(
+          mdValue.replace(`## **Assistant**\n\n`, ""),
+          0x5c,
+          path,
+          0x41,
+          (code) => {
+            if (!code) console.log("Conversion error");
+          }
+        );
+      }
     );
   };
 
