@@ -122,9 +122,9 @@
     --radio-button-active-color: var(--background-primary-dialog-button);
 
     /* toggle button */
-    --toggle-button-backround-color: var(--background-primary-dialog-button);
-    --toggle-button-backround-hover-color: var(--highlight-primary-dialog-button-hover);
-    --toggle-button-off-backround-color: var(--gray-300);
+    --toggle-button-background-color: var(--background-primary-dialog-button);
+    --toggle-button-background-hover-color: var(--highlight-primary-dialog-button-hover);
+    --toggle-button-off-background-color: var(--gray-300);
     --toggle-button-off-background-hover-color: var(--gray-350);
     --toggle-button-circle-color: var(--background-normal);
 
@@ -174,7 +174,6 @@
     --ai-provider-item-color: var(--text-normal);
     --ai-provider-item-description-color: var(--text-secondary);
     --ai-provider-item-background-color: var(--background-normal);
-    --ai-provider-item-icon-color: #1C1B1F;
     --ai-provider-item-shadow: 0px 1px 2px 0px #0000000F, 0px 1px 3px 0px #0000001A;
 
     /* settings servers */

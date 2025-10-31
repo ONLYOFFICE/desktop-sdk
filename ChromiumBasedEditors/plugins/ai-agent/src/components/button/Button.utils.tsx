@@ -14,8 +14,7 @@ const defaultHoverStyles =
   "hover:enabled:bg-[var(--button-default-hover-background-color)]";
 const defaultActiveStyles =
   "active:enabled:bg-[var(--button-default-pressed-background-color)]";
-const defaultFocusStyles =
-  "focus:enabled:bg-[var(--button-default-focus-background-color)] focus:shadow-[var(--button-default-focus-shadow)]";
+const defaultFocusStyles = "focus:shadow-[var(--button-default-focus-shadow)]";
 const defaultDisabledStyles =
   "disabled:bg-[var(--button-default-disabled-background-color)] disabled:text-[var(--button-default-disabled-color)] disabled:opacity-40 disabled:cursor-not-allowed";
 
@@ -28,8 +27,7 @@ const primaryActiveStyles =
   "active:enabled:bg-[var(--button-background-pressed-color)]";
 const primaryFocusStyles =
   "focus:bg-[var(--button-background-color)] focus:border-[var(--button-border-focus-color)] focus:shadow-[var(--button-shadow-focus)]";
-const primaryDisabledStyles =
-  "disabled:bg-[var(--button-background-disabled-color)] disabled:text-[var(--button-disabled-color)] disabled:cursor-not-allowed";
+const primaryDisabledStyles = "disabled:opacity-50 disabled:cursor-not-allowed";
 
 // Size styles
 

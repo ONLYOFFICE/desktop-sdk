@@ -19,9 +19,9 @@ const ToggleButton = ({
 
   // State styles
   const backgroundStyles =
-    "bg-[var(--toggle-button-off-backround-color)] data-[state=checked]:bg-[var(--toggle-button-backround-color)]";
+    "bg-[var(--toggle-button-off-background-color)] data-[state=checked]:bg-[var(--toggle-button-background-color)]";
   const hoverStyles =
-    "hover:enabled:bg-[var(--toggle-button-off-background-hover-color)] data-[state=checked]:hover:enabled:bg-[var(--toggle-button-backround-hover-color)]";
+    "data-[state=checked]:hover:enabled:bg-[var(--toggle-button-background-hover-color)]";
 
   // Size styles
   const sizeStyles = "w-[24px] h-[14px]";
