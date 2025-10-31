@@ -9,6 +9,7 @@ import type { TProvider } from "@/lib/types";
 
 import { IconButton } from "@/components/icon-button";
 import { DropdownMenu } from "@/components/dropdown";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/tooltip";
 
 import { EditProviderDialog } from "./EditProviderDialog";
 import { DeleteProviderDialog } from "./DeleteProviderDialog";
@@ -36,9 +37,14 @@ const ProviderItem = ({ provider }: ProviderItemProps) => {
     <>
       <div className="flex flex-row justify-between gap-[12px] px-[16px] py-[12px] min-w-[274px] max-w-[312px] flex-1 rounded-[8px] bg-[var(--ai-provider-item-background-color)] shadow-[var(--ai-provider-item-shadow)]">
         <div className="flex flex-col min-w-0 flex-1">
-          <p className="font-normal text-[14px] leading-[20px] text-[var(--ai-provider-item-color)] truncate">
-            {provider.name}
-          </p>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <p className="font-normal text-[14px] leading-[20px] text-[var(--ai-provider-item-color)] truncate w-fit">
+                {provider.name}
+              </p>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">{provider.name}</TooltipContent>
+          </Tooltip>
           <p className="text-[12px] leading-[14px] text-[var(--ai-provider-item-description-color)]">
             {provider.type}
             <br />

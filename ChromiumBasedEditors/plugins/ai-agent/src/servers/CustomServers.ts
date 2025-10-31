@@ -147,6 +147,8 @@ class CustomServers {
     Object.entries(this.customServers).forEach(([serverType, config]) => {
       if (type !== serverType) return;
 
+      this.customServersProcesses[type].end();
+
       const { commandLine, env } = getParams(config);
 
       this.customServersLogs[type] = [

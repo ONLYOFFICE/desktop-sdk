@@ -120,7 +120,7 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
             {t("ToolExecuted")}
           </p>
         ) : null}
-        <span className="flex items-center gap-[8px] rounded-[4px] ps-[4px] pe-[8px] text-[14px] leading-[20px] font-normal text-[var(--chat-message-tool-call-name-color)] bg-[var(--chat-message-tool-call-name-background-color)] min-w-0 flex-grow">
+        <span className="flex items-center gap-[8px] rounded-[4px] ps-[4px] pe-[8px] text-[14px] leading-[20px] font-normal text-[var(--chat-message-tool-call-name-color)] bg-[var(--chat-message-tool-call-name-background-color)] min-w-0 w-fit">
           {isWebSearch ? (
             <ReactSVG
               src={SearchIconUrl}
@@ -212,24 +212,26 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
                             ) => (
                               <div
                                 key={index}
-                                className="h-[36px] px-[8px] rounded-[4px] flex flex-row items-center justify-between cursor-pointer hover:bg-[var(--drop-down-menu-item-hover-color)] transition-colors"
+                                className="group h-[36px] px-[8px] rounded-[4px] flex flex-row items-center justify-between cursor-pointer hover:bg-[var(--drop-down-menu-item-hover-color)] transition-colors"
                                 onClick={() => window.open(item.url, "_blank")}
                               >
-                                <div className="flex flex-row items-center gap-[8px]">
+                                <div className="flex flex-row items-center gap-[8px] min-w-0 flex-1">
                                   <IconButton
                                     iconName={SearchIconUrl}
                                     size={24}
                                     disableHover
                                   />
-                                  <h4 className="text-[14px] font-bold text-[var(--chat-message-tool-call-pre-color)]">
+                                  <h4 className="text-[14px] font-bold text-[var(--chat-message-tool-call-pre-color)] truncate">
                                     {item.title}
                                   </h4>
                                 </div>
-                                <IconButton
-                                  iconName={ExternalIconUrl}
-                                  size={24}
-                                  disableHover
-                                />
+                                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <IconButton
+                                    iconName={ExternalIconUrl}
+                                    size={24}
+                                    disableHover
+                                  />
+                                </div>
                               </div>
                             )
                           )}

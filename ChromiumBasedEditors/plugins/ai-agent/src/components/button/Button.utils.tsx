@@ -3,7 +3,8 @@ import { cva } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 // Base styles
-const baseStyles = "inline-flex items-center justify-center rounded-[4px]";
+const baseStyles =
+  "inline-flex items-center justify-center rounded-[4px] min-w-[40px]";
 const focusStyles =
   "outline-none focus:outline-none focus-visible:outline-none";
 

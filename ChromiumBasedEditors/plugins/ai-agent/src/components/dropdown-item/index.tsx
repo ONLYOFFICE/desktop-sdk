@@ -28,6 +28,7 @@ const DropDownItem = ({
   subMenu,
   checked,
   tooltipText,
+  withSpace,
 }: DropDownItemProps) => {
   const [isSubMenuOpen, setIsSubMenuOpen] = useState(false);
 
@@ -116,7 +117,10 @@ const DropDownItem = ({
         ) : (
           icon ?? null
         )}
-        <span className="truncate font-normal text-[14px] leading-[20px] text-[var(--drop-down-menu-item-color)]">
+        <span className={cn(
+          "truncate font-normal text-[14px] leading-[20px] text-[var(--drop-down-menu-item-color)]",
+          withSpace ? "ms-[28px]" : ""
+        )}>
           {text}
         </span>
       </div>

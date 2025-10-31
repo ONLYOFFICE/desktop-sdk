@@ -316,8 +316,9 @@ const useServersStore = create<UseServersStoreProps>((set, get) => ({
   saveConfig: (config: {
     mcpServers: Record<string, Record<string, unknown>>;
   }) => {
-    localStorage.setItem(MCP_SERVERS_NAME, JSON.stringify(config));
-    client.setCustomServers(config);
+    const currConfig = config.mcpServers ? config : { mcpServers: {} };
+    localStorage.setItem(MCP_SERVERS_NAME, JSON.stringify(currConfig));
+    client.setCustomServers(currConfig);
     client.startCustomServers();
   },
 

@@ -9,6 +9,8 @@ import PdfIconSvg from "@/assets/formats/24/pdf.svg?url";
 
 import useAttachmentsStore from "@/store/useAttachmentsStore";
 
+import { isDocument, isPdf, isSpreadsheet } from "@/lib/utils";
+
 import { IconButton } from "@/components/icon-button";
 import { DropdownMenu } from "@/components/dropdown";
 import type { DropDownItemProps } from "@/components/dropdown-item/DropDownItem.types";
@@ -39,37 +41,41 @@ const ComposerActionAttachment = () => {
   };
 
   const selectLocalFile = () => {
-    window.AscDesktopEditor.OpenFilenameDialog("", true, (file) => {
-      if (Array.isArray(file)) {
-        file.forEach((file, index) => {
-          if (index > 5) return;
+    window.AscDesktopEditor.OpenFilenameDialog(
+      "*.docx , *.pdf , *.xlsx",
+      true,
+      (file) => {
+        if (Array.isArray(file)) {
+          file.forEach((file, index) => {
+            if (index > 5) return;
 
-          const extension = file.split(".").pop() ?? "";
+            const extension = file.split(".").pop() ?? "";
 
-          window.AscDesktopEditor.convertFileExternal(
-            file,
-            69,
-            (data, error) => {
-              if (error) {
-                console.log("Error:", error);
-                return;
+            window.AscDesktopEditor.convertFileExternal(
+              file,
+              69,
+              (data, error) => {
+                if (error) {
+                  console.log("Error:", error);
+                  return;
+                }
+
+                const uint8Array = new Uint8Array(data.content);
+                const textDecoder = new TextDecoder("utf-8");
+                const stringData = textDecoder.decode(uint8Array);
+
+                addAttachmentFile({
+                  path: file,
+                  content: stringData || "",
+                  type:
+                    extension === "pdf" ? 87 : extension === "docx" ? 65 : 257,
+                });
               }
-
-              const uint8Array = new Uint8Array(data.content);
-              const textDecoder = new TextDecoder("utf-8");
-              const stringData = textDecoder.decode(uint8Array);
-
-              addAttachmentFile({
-                path: file,
-                content: stringData || "",
-                type:
-                  extension === "pdf" ? 87 : extension === "docx" ? 65 : 257,
-              });
-            }
-          );
-        });
+            );
+          });
+        }
       }
-    });
+    );
   };
 
   const recentFiles = (
@@ -81,10 +87,12 @@ const ComposerActionAttachment = () => {
     ?.map((file) => {
       let icon = DocumentsIconSvg;
 
-      if (file.type === 87) {
+      if (isPdf(file.type)) {
         icon = PdfIconSvg;
-      } else if (file.type === 257) {
+      } else if (isSpreadsheet(file.type)) {
         icon = SpreadsheetsIconSvg;
+      } else if (isDocument(file.type)) {
+        icon = DocumentsIconSvg;
       }
 
       return {

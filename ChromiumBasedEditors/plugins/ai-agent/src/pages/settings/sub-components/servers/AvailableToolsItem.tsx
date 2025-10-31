@@ -138,10 +138,12 @@ const AvailableToolsItem = ({
                       {
                         text: t("EnableAllTools"),
                         onClick: onEnableAllTools,
+                        withSpace: !isSystem,
                       },
                       {
                         text: t("DisableAllTools"),
                         onClick: onDisableAllTools,
+                        withSpace: !isSystem,
                       },
                       ...(!isSystem
                         ? [{ text: "", onClick: () => {}, isSeparator: true }]
