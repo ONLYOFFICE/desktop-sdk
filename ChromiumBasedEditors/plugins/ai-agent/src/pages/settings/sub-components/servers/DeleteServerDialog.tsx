@@ -24,7 +24,7 @@ const DeleteServerDialog = ({ name, onClose }: DeleteServerDialogProps) => {
     <Dialog open={true}>
       <DialogContent header={t("Warning")} onClose={onClose} withWarningIcon>
         <div className="flex flex-col justify-between h-full">
-          <p className="select-none h-[40px] flex items-center text-[12px] leading-[16px]">
+          <p className="select-none h-[40px] flex items-center text-[12px] leading-[16px] text-[var(--text-normal)]">
             {t("WantDeleteServer")}
           </p>
           <div className="flex flex-row justify-end items-center gap-[8px] h-[48px]">
