@@ -4,6 +4,7 @@ import type {
   ChatCompletionToolMessageParam,
   ChatCompletionMessageFunctionToolCall,
   ChatCompletionAssistantMessageParam,
+  ChatCompletionContentPart,
 } from "openai/resources/chat/completions";
 import type { ThreadMessageLike } from "@assistant-ui/react";
 
@@ -12,17 +13,20 @@ import type { TMCPItem } from "@/lib/types";
 export const convertToolsToModelFormat = (
   tools: TMCPItem[]
 ): ChatCompletionTool[] => {
-  return tools.map((tool) => ({
-    type: "function",
-    function: {
-      name: tool.name,
-      description: tool.description,
-      input_schema: {
-        type: "object",
-        ...tool.inputSchema,
+  return tools.map((tool) => {
+    const t: ChatCompletionTool = {
+      type: "function",
+      function: {
+        name: tool.name,
+        description: tool.description,
+        parameters: {
+          ...tool.inputSchema,
+        },
       },
-    },
-  }));
+    };
+
+    return t;
+  });
 };
 
 export const convertMessagesToModelFormat = (
@@ -32,21 +36,22 @@ export const convertMessagesToModelFormat = (
 
   messages.forEach((message) => {
     if (message.role === "user" || message.role === "system") {
-      const content: ChatCompletionMessageParam["content"] =
+      const content: string | ChatCompletionContentPart[] =
         typeof message.content === "string"
           ? message.content
-          : message.content.map((part) => {
+          : message.content.map((part): ChatCompletionContentPart => {
               if (part.type === "text") {
                 return { type: "text", text: part.text };
               }
 
               if (part.type === "file") {
                 return {
-                  type: "file",
-                  file: {
+                  type: "text",
+                  text: JSON.stringify({
                     file_data: part.data,
-                    file_name: JSON.parse(part.mimeType).path,
-                  },
+                    filename: JSON.parse(part.mimeType).path,
+                    file_id: JSON.parse(part.mimeType).path,
+                  }),
                 };
               }
 
@@ -66,7 +71,7 @@ export const convertMessagesToModelFormat = (
       convertedMessages.push({
         role: "user",
         content,
-      });
+      } as ChatCompletionMessageParam);
     } else {
       const content: ChatCompletionAssistantMessageParam["content"] =
         typeof message.content === "string" ? message.content : [];

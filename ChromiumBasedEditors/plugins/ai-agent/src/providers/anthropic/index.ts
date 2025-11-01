@@ -98,6 +98,10 @@ class AnthropicProvider
         tools: this.tools,
         stream: true,
         max_tokens: 2048,
+        tool_choice: {
+          disable_parallel_tool_use: true,
+          type: "auto",
+        },
       });
 
       this.prevMessages.push(...convertedMessage);

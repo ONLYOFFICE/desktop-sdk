@@ -163,6 +163,7 @@ const EditProviderDialog = ({ name, onClose }: EditProviderDialogProps) => {
                 isError={!!error.key}
                 placeholder={t("EnterKey")}
                 className="w-full"
+                type="password"
               />
             </FieldContainer>
           </div>

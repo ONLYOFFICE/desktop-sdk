@@ -1,54 +1,45 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 
+import useRouter from "@/store/useRouter";
+
 import { Navigation } from "./sub-components/Header";
 import { ChatList } from "./sub-components/ChatList";
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
-  const [theme, setTheme] = React.useState(
-    `theme-${window.RendererProcessVariable?.theme.type ?? "light"}`
-  );
+  const { currentPage } = useRouter();
 
   const { i18n } = useTranslation();
 
+  const [theme, setTheme] = React.useState(() => {
+    if (window.RendererProcessVariable) {
+      return window.RendererProcessVariable.theme.id;
+    } else {
+      return "theme-light";
+    }
+  });
+
   React.useLayoutEffect(() => {
     if (window.RendererProcessVariable) {
-      const lang =
-        window.RendererProcessVariable.lang ??
-        new URLSearchParams(window.location.search).get("lang");
-      if (lang?.includes("en")) {
-        i18n.changeLanguage("en");
-      } else if (lang?.includes("ru")) {
-        i18n.changeLanguage("ru");
-      } else {
-        i18n.changeLanguage("en");
-      }
-      setTheme(`theme-${window.RendererProcessVariable.theme.type}`);
-    } else {
       i18n.changeLanguage("en");
-      setTheme("theme-light");
     }
 
     window.on_update_plugin_info = (info) => {
-      if (info?.lang?.includes("en")) {
-        i18n.changeLanguage("en");
-      } else if (info?.lang?.includes("ru")) {
-        i18n.changeLanguage("ru");
-      } else {
+      if (info.lang) {
         i18n.changeLanguage("en");
       }
-      if (
-        info?.theme === "theme-white" ||
-        info?.theme === "theme-gray" ||
-        info?.theme === "theme-classic-light" ||
-        info?.theme === "theme-light"
-      ) {
-        setTheme("theme-light");
-      } else {
-        setTheme("theme-dark");
+
+      if (info.theme) {
+        if (info.theme === "theme-system") {
+          setTheme(`theme-${window.RendererProcessVariable.theme.system}`);
+        } else {
+          setTheme(info.theme);
+        }
       }
     };
   }, [i18n]);
+
+  const isSettings = currentPage === "settings";
 
   return (
     <div className={`h-dvh ${theme}`}>
@@ -61,7 +52,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
           className="flex flex-row flex-1"
           style={{ height: "calc(100dvh - 56px)" }}
         >
-          <ChatList />
+          {!isSettings ? <ChatList /> : null}
           <div className="w-full">{children}</div>
         </div>
       </main>

@@ -1,26 +1,27 @@
 {
-    "name" : "New AI Agent",
-    "nameLocale" : { "ru" : "Новый ИИ агент",
-                    "it" : "New AI Agent",
-                    "fr" : "New AI Agent",
-                    "es" : "New AI Agent",
-                    "de" : "New AI Agent",
-                    "pt" : "New AI Agent",
-                    "pl" : "New AI Agent",
-                    "cs" : "New AI Agent",
-                    "sk" : "New AI Agent"
-                    },
-    "guid" : "asc.{9DC93CDB-B576-4F0C-B55E-FCC9C48DD777}",
+  "name": "AI agent",
+  "nameLocale": {
+    "ru": "ИИ агент",
+    "it": "AI agent",
+    "fr": "AI agent",
+    "es": "AI agent",
+    "de": "AI agent",
+    "pt": "AI agent",
+    "pl": "AI agent",
+    "cs": "AI agent",
+    "sk": "AI agent"
+  },
+  "guid": "asc.{9DC93CDB-B576-4F0C-B55E-FCC9C48DD777}",
 
-    "variations" : [
-        {
-            "description" 	: "ai-agent",
-            "url"         	: "index.html",
-			
-			"initDataType"	: "desktop-external",
-            "initData"		: "none"
-        }
-    ],
+  "variations": [
+    {
+      "description": "ai-agent",
+      "url": "index.html",
 
-    "onlyofficeScheme": true
+      "initDataType": "desktop-external",
+      "initData": "none"
+    }
+  ],
+
+  "onlyofficeScheme": true
 }

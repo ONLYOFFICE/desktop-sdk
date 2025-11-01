@@ -130,10 +130,10 @@ export const convertMessagesToModelFormat = (
         content,
       });
     } else {
-      const content: MessageParam["content"] =
+      let content: MessageParam["content"] =
         typeof message.content === "string" ? message.content : [];
 
-      const toolsResults: ToolResultBlockParam[] = [];
+      let toolsResults: ToolResultBlockParam[] = [];
 
       if (Array.isArray(message.content)) {
         message.content.forEach((part) => {
@@ -158,18 +158,29 @@ export const convertMessagesToModelFormat = (
               name: part.toolName,
               input: part.args || {},
             });
+
+            convertedMessages.push({
+              role: "assistant",
+              content,
+            });
+
+            if (toolsResults.length) {
+              convertedMessages.push({ role: "user", content: toolsResults });
+
+              toolsResults = [];
+            }
+
+            content = [];
             return;
           }
         });
       }
 
-      convertedMessages.push({
-        role: "assistant",
-        content,
-      });
-
-      if (toolsResults.length) {
-        convertedMessages.push({ role: "user", content: toolsResults });
+      if (content.length) {
+        convertedMessages.push({
+          role: "assistant",
+          content,
+        });
       }
     }
   });

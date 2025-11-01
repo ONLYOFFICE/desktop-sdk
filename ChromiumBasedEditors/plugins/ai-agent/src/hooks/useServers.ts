@@ -9,14 +9,19 @@ type UseServersProps = {
 };
 
 const useServers = ({ isReady }: UseServersProps) => {
-  const { initServers, tools } = useServersStore();
+  const { initServers, getTools, tools } = useServersStore();
   const { currentProvider } = useProviders();
 
   useEffect(() => {
     if (!isReady) return;
 
     initServers();
-  }, [isReady, initServers]);
+    getTools();
+
+    setInterval(() => {
+      getTools();
+    }, 1000);
+  }, [isReady, initServers, getTools]);
 
   useEffect(() => {
     if (!tools || !currentProvider) return;

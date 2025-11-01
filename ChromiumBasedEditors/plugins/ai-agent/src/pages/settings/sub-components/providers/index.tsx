@@ -34,7 +34,7 @@ const Providers = ({ isActive }: ProvidersProps) => {
 
       <div
         className={cn(
-          "grid grid-cols-2 gap-[16px]",
+          "flex flex-wrap gap-[16px]",
           isActive ? "" : "opacity-70 pointer-events-none"
         )}
       >

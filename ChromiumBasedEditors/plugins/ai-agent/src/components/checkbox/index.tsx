@@ -1,16 +1,16 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { ReactSVG } from "react-svg";
 
 import CheckedIconUrl from "@/assets/checked.svg?url";
+import { cn } from "@/lib/utils";
 
-interface CheckboxProps {
+type CheckboxProps = {
   checked?: boolean;
   onChange?: (checked: boolean) => void;
   disabled?: boolean;
   id?: string;
   className?: string;
-  "aria-label"?: string;
-}
+};
 
 const Checkbox = ({
   checked = false,
@@ -18,7 +18,6 @@ const Checkbox = ({
   disabled = false,
   id,
   className = "",
-  "aria-label": ariaLabel,
 }: CheckboxProps) => {
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (onChange && !disabled) {
@@ -26,40 +25,78 @@ const Checkbox = ({
     }
   };
 
+  const handleBeforeInjection = useCallback((svg: SVGSVGElement) => {
+    const paths = svg.querySelectorAll("path");
+    paths.forEach((path) => {
+      path.setAttribute("stroke", "var(--checkbox-active-icon-color)");
+    });
+    const circles = svg.querySelectorAll("circle");
+    circles.forEach((circle) => {
+      circle.setAttribute("stroke", "var(--checkbox-active-icon-color)");
+    });
+  }, []);
+
+  // Container styles
+  const containerStyles = "inline-flex items-center relative group";
+
+  // Input styles
+  const inputBaseStyles = "absolute opacity-0 cursor-pointer w-4 h-4 m-0";
+  const inputDisabledStyles = "disabled:cursor-not-allowed";
+
+  // Label styles
+  const labelBaseStyles = "inline-flex items-center select-none";
+  const labelCursorStyles = disabled
+    ? "cursor-not-allowed opacity-60"
+    : "cursor-pointer";
+
+  // Checkbox box styles
+  const boxBaseStyles =
+    "w-4 h-4 rounded-[2px] flex items-center justify-center transition-all duration-200 box-border";
+  const boxFocusStyles = "focus-within:outline-none";
+
+  // Unchecked state styles
+  const boxUncheckedBaseStyles =
+    "bg-[var(--checkbox-bg-color)] border border-[var(--checkbox-color)]";
+  const boxUncheckedHoverStyles = !disabled
+    ? "group-hover:!bg-[var(--checkbox-bg-hover-color)] group-active:!bg-[var(--checkbox-bg-pressed-color)]"
+    : "";
+
+  // Checked state styles
+  const boxCheckedBaseStyles = "bg-[var(--checkbox-active-color)]";
+  const boxCheckedHoverStyles = !disabled
+    ? "group-hover:!bg-[var(--checkbox-active-hover-color)] group-active:!bg-[var(--checkbox-active-pressed-color)]"
+    : "";
+
+  // Icon styles
+  const iconStyles = "flex items-center justify-center";
+
   return (
-    <div className={`inline-flex items-center relative ${className}`}>
+    <div className={cn(containerStyles, className)}>
       <input
         type="checkbox"
         id={id}
         checked={checked}
         onChange={handleChange}
         disabled={disabled}
-        className="absolute opacity-0 cursor-pointer w-4 h-4 m-0 disabled:cursor-not-allowed"
-        aria-label={ariaLabel}
+        className={cn(inputBaseStyles, inputDisabledStyles)}
       />
-      <label
-        htmlFor={id}
-        className="inline-flex items-center cursor-pointer select-none disabled:cursor-not-allowed disabled:opacity-60"
-      >
+      <label htmlFor={id} className={cn(labelBaseStyles, labelCursorStyles)}>
         <div
-          className={`w-4 h-4 rounded-[2px] flex items-center justify-center transition-all duration-200 box-border ${
+          className={cn(
+            boxBaseStyles,
+            boxFocusStyles,
             checked
-              ? "bg-[var(--checkbox-active-color)]"
-              : "bg-transparent border border-[var(--checkbox-color)]"
-          } focus-within:outline-none`}
+              ? cn(boxCheckedBaseStyles, boxCheckedHoverStyles)
+              : cn(boxUncheckedBaseStyles, boxUncheckedHoverStyles)
+          )}
         >
-          {checked && (
+          {checked ? (
             <ReactSVG
               src={CheckedIconUrl}
-              className="flex items-center justify-center"
-              beforeInjection={(svg) => {
-                const path = svg.querySelector("path");
-                if (path) {
-                  path.setAttribute("stroke", "var(--сheckbox-active-icon-color)");
-                }
-              }}
+              className={iconStyles}
+              beforeInjection={handleBeforeInjection}
             />
-          )}
+          ) : null}
         </div>
       </label>
     </div>

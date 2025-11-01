@@ -65,26 +65,6 @@ const DialogContent = ({
     };
   }, [onClose]);
 
-  React.useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const elem = document.getElementById("dialog-content");
-
-      if (
-        elem &&
-        event.target instanceof Node &&
-        !elem.contains(event.target)
-      ) {
-        onClose();
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [onClose]);
-
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay />
@@ -98,6 +78,7 @@ const DialogContent = ({
           "flex flex-col",
           className
         )}
+        onInteractOutside={(e) => e.preventDefault()}
         {...props}
       >
         <HiddenComponents />
@@ -114,12 +95,7 @@ const DialogContent = ({
               {header}
             </DialogTitle>
           </div>
-          <IconButton
-            iconName={CloseIconUrl}
-            size={24}
-            color={"var(--modal-dialog-close-color)"}
-            onClick={onClose}
-          />
+          <IconButton iconName={CloseIconUrl} size={24} onClick={onClose} />
         </div>
         <div
           className={cn(

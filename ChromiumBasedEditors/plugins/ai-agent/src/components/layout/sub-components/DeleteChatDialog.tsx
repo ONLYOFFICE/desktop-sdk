@@ -41,16 +41,14 @@ const DeleteChatDialog = ({ id, onClose }: DeleteChatDialogProps) => {
     <Dialog open={true}>
       <DialogContent header={t("Warning")} onClose={onClose} withWarningIcon>
         <div className="flex flex-col justify-between h-full">
-          <p className="select-none h-[40px] flex items-center text-[12px] leading-[16px]">
-            {t("WantDeleteChat?")}
+          <p className="select-none h-[40px] flex items-center text-[12px] leading-[16px] text-[var(--text-normal)]">
+            {t("WantDeleteChat")}
           </p>
           <div className="flex flex-row justify-end items-center gap-[8px] h-[48px]">
-            <Button size="small" variant="default" onClick={onClose}>
+            <Button variant="default" onClick={onClose}>
               {t("No")}
             </Button>
-            <Button size="small" onClick={onSubmitAction}>
-              {t("Yes")}
-            </Button>
+            <Button onClick={onSubmitAction}>{t("Yes")}</Button>
           </div>
         </div>
       </DialogContent>

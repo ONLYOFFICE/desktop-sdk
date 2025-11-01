@@ -41,14 +41,20 @@ const AssistantActionBar = () => {
 
   const onDownload = () => {
     window.AscDesktopEditor.SaveFilenameDialog(
-      "Message.md",
+      mdValue.replace(`## **Assistant**\n\n`, "").substring(0, 30),
       (path) => {
-        if (path) {
-          const name = path.split("/").pop() ?? "";
-          window.AscDesktopEditor.openTemplate(path, name);
-        }
-      },
-      mdValue
+        if (!path) return;
+
+        window.AscDesktopEditor.saveAndOpen(
+          mdValue.replace(`## **Assistant**\n\n`, ""),
+          0x5c,
+          path,
+          0x41,
+          (code) => {
+            if (!code) console.log("Conversion error");
+          }
+        );
+      }
     );
   };
 
@@ -102,7 +108,7 @@ export const AssistantMessage = () => {
         animate={{ y: 0, opacity: 1 }}
         data-role="assistant"
       >
-        <div className="leading-[20px] text-[14px] col-span-2 col-start-2 row-start-1 ml-4 break-words leading-7">
+        <div className="leading-[20px] text-[14px] col-span-2 col-start-2 row-start-1 ml-4 break-words leading-7 text-[var(--chat-message-color)]">
           <MessagePrimitive.Content
             components={{
               Text: MarkdownText,

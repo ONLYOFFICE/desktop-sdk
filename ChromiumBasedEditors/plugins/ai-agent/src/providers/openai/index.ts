@@ -103,7 +103,7 @@ class OpenAIProvider
         tools: this.tools,
         stream: true,
 
-        max_tokens: 2048,
+        max_completion_tokens: 2048,
       });
 
       this.prevMessages.push(...convertedMessage);
@@ -146,9 +146,16 @@ class OpenAIProvider
             const curMsg = afterToolCall
               ? {
                   ...responseMessage,
-                  content: responseMessage.content.slice(
-                    message?.content.length ?? 0
-                  ),
+                  content:
+                    typeof responseMessage.content === "string"
+                      ? responseMessage.content
+                      : responseMessage.content.filter((part, index) => {
+                          // Keep tool-call parts and new text parts added after tool execution
+                          if (part.type === "tool-call") return true;
+                          // Only keep text parts that were added after the original message
+                          const originalLength = message?.content.length ?? 0;
+                          return index >= originalLength;
+                        }),
                 }
               : responseMessage;
 

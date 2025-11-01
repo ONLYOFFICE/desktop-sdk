@@ -28,10 +28,12 @@ export const UserMessage = () => {
         data-role="user"
       >
         {files.length > 0 ? (
-          <div className="flex w-full flex-row gap-[8px] col-span-full col-start-1 row-start-1 justify-end mb-[8px]">
-            {files.map((file) => (
-              <FileItem key={file.path} file={file} withoutClose />
-            ))}
+          <div className="col-span-full col-start-1 row-start-1 mb-[8px] overflow-x-auto">
+            <div className="flex flex-row gap-[8px] justify-end w-max ml-auto">
+              {files.map((file) => (
+                <FileItem key={file.path} file={file} withoutClose />
+              ))}
+            </div>
           </div>
         ) : null}
 

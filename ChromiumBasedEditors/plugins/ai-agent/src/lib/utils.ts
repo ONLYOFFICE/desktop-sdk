@@ -25,20 +25,7 @@ export const convertMessagesToMd = (messages: ThreadMessageLike[]) => {
         if (part.type === "text" && "text" in part) {
           content += `${part.text}\n\n`;
         } else if (part.type === "tool-call" && "toolName" in part) {
-          content += `*Tool Call: ${part.toolName}*\n`;
-
-          if ("args" in part && part.args) {
-            content += `\`\`\`json\n${JSON.stringify(
-              part.args,
-              null,
-              2
-            )}\n\`\`\`\n\n`;
-          }
-
-          if ("result" in part && part.result !== undefined) {
-            content += `*Tool Result:*\n`;
-            content += `\`\`\`json\n${part.result}\n\`\`\`\n\n`;
-          }
+          return;
         }
       });
     } else if (typeof message.content === "string") {
@@ -51,4 +38,20 @@ export const convertMessagesToMd = (messages: ThreadMessageLike[]) => {
   });
 
   return content;
+};
+
+export const isDocument = (type: number) => {
+  return !!(type & 0x40);
+};
+
+export const isPresentation = (type: number) => {
+  return !!(type & 0x80);
+};
+
+export const isSpreadsheet = (type: number) => {
+  return !!(type & 0x0100);
+};
+
+export const isPdf = (type: number) => {
+  return type === 0x0201 || type === 0x0209;
 };

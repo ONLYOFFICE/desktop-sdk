@@ -143,9 +143,16 @@ class TogetherProvider
             const curMsg = afterToolCall
               ? {
                   ...responseMessage,
-                  content: responseMessage.content.slice(
-                    message?.content.length ?? 0
-                  ),
+                  content:
+                    typeof responseMessage.content === "string"
+                      ? responseMessage.content
+                      : responseMessage.content.filter((part, index) => {
+                          // Keep tool-call parts and new text parts added after tool execution
+                          if (part.type === "tool-call") return true;
+                          // Only keep text parts that were added after the original message
+                          const originalLength = message?.content.length ?? 0;
+                          return index >= originalLength;
+                        }),
                 }
               : responseMessage;
 

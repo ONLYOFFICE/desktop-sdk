@@ -24,7 +24,9 @@ const FileItem = ({ file, withoutClose }: FileItemProps) => {
     deleteAttachmentFile(file.path);
   };
 
-  const name = file.path.split("/").pop() ?? "";
+  const name = file.path.includes("\\")
+    ? file.path.split("\\").pop() ?? ""
+    : file.path.split("/").pop() ?? "";
   const extension = name.split(".").pop() ?? "";
   const nameWithoutExtension = name.replace(`.${extension}`, "");
 
@@ -61,7 +63,7 @@ const FileItem = ({ file, withoutClose }: FileItemProps) => {
       ) : (
         <div className="flex flex-row items-center h-[36px] gap-[4px]">
           <ReactSVG className="" src={icon} />
-          <p className="text-[var(--file-items-color)]">
+          <p className="text-[var(--file-items-color)] whitespace-nowrap overflow-hidden text-ellipsis">
             {nameWithoutExtension}
             <span className="text-[var(--file-items-ext-color)]">
               .{extension}
@@ -75,7 +77,6 @@ const FileItem = ({ file, withoutClose }: FileItemProps) => {
           iconName={BtnCloseIconUrl}
           size={16}
           onClick={handleDelete}
-          color="var(--file-items-icon-color)"
         />
       ) : null}
     </div>
