@@ -32,8 +32,8 @@
   "Edit": "Edit",
   "Delete": "Delete",
   "Warning": "Warning",
-  "WantDeleteProvider?": "Are you sure you want to delete this provider?",
-  "WantDeleteChat?": "Are you sure you want to delete this chat?",
+  "WantDeleteProvider": "Are you sure you want to delete this provider?",
+  "WantDeleteChat": "Are you sure you want to delete this chat?",
   "Yes": "Yes",
   "No": "No",
   "WelcomeTitle": "How can I help?",
@@ -76,5 +76,7 @@
   "WebSearchEngine": "Web Search Engine",
   "SelectEngine": "Select engine",
   "AllTools": "All tools",
-  "EnableWebSearch": "Enable web search in settings"
+  "EnableWebSearch": "Enable web search in settings",
+  "WantDeleteServer": "This server will be deleted from your list. Continue?",
+  "NoModelsAvailable": "Provider not available"
 }

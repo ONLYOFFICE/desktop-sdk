@@ -15,6 +15,7 @@ const IconButton = ({
   insideElement,
   disableHover,
   color,
+  noColor,
   ...props
 }: IconButtonProps) => {
   const hoverStyles = !disableHover
@@ -35,6 +36,9 @@ const IconButton = ({
 
   const handleBeforeInjection = useCallback(
     (svg: SVGSVGElement) => {
+      if (noColor) {
+        return;
+      }
       const paths = svg.querySelectorAll("path");
       paths.forEach((path) => {
         if (!isStroke) {
@@ -52,7 +56,7 @@ const IconButton = ({
         }
       });
     },
-    [isStroke, color]
+    [isStroke, color, noColor]
   );
 
   return (

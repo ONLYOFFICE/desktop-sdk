@@ -19,6 +19,7 @@ import NavigationIconSvgUrl from "@/assets/btn-menu-navigation.svg?url";
 import type { TMCPItem } from "@/lib/types";
 
 import LogsDialog from "./LogsDialog";
+import DeleteServerDialog from "./DeleteServerDialog";
 
 type AvailableToolsItemProps = {
   name: string;
@@ -41,10 +42,11 @@ const AvailableToolsItem = ({
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
   const [openLogsDialog, setOpenLogsDialog] = React.useState(false);
   const [isStoped, setIsStoped] = React.useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
 
   const containerRef = React.useRef<HTMLDivElement>(null);
 
-  const { changeToolStatus, deleteCustomServer } = useServersStore();
+  const { changeToolStatus } = useServersStore();
 
   const onEnableAllTools = () => {
     mcpItems
@@ -188,7 +190,7 @@ const AvailableToolsItem = ({
                         ),
                         text: t("Delete"),
                         onClick: () => {
-                          deleteCustomServer(name);
+                          setDeleteDialogOpen(true);
                         },
                       },
                     ]),
@@ -229,6 +231,12 @@ const AvailableToolsItem = ({
           type={name}
           open={openLogsDialog}
           onClose={() => setOpenLogsDialog(false)}
+        />
+      ) : null}
+      {deleteDialogOpen ? (
+        <DeleteServerDialog
+          name={name}
+          onClose={() => setDeleteDialogOpen(false)}
         />
       ) : null}
     </div>

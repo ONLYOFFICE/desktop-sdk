@@ -97,7 +97,7 @@
     --input-hover-border-color: var(--checkbox-border-normal);
     --input-active-border-color: var(--background-accent-button);
     --input-active-background-color: var(--background-normal);
-    --input-error-color: var(--text-negative);
+    --input-error-color: var(--border-error);
 
     /* tabs */
     --tabs-color: var(--text-normal);

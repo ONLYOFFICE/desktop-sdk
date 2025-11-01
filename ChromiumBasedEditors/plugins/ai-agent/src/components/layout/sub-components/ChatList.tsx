@@ -70,6 +70,7 @@ const ChatList = () => {
               icon={SearchUrl}
               value={searchValue}
               onChange={onChangeSearchValue}
+              onClear={() => setSearchValue("")}
             />
           </div>
         )}
