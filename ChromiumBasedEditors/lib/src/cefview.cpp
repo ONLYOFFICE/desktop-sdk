@@ -1488,6 +1488,16 @@ public:
 				break;
 			}
 		}
+
+		if (converter->m_bIsOpenResult && 0 == error)
+		{
+			NSEditorApi::CAscCefMenuEvent* pEvent = m_pCefView->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_CREATETAB);
+			NSEditorApi::CAscCreateTab* pData = new NSEditorApi::CAscCreateTab();
+			pData->put_Url(L"ascdesktop://external/" + converter->m_sOutputFile);
+			pData->put_Name(NSFile::GetFileName(converter->m_sOutputFile));
+			pEvent->m_pData = pData;
+			m_pManager->GetEventListener()->OnEvent(pEvent);
+		}
 	}
 
 	void LocalFile_GetSupportSaveFormats(std::vector<int>& arFormats)
@@ -4467,6 +4477,28 @@ public:
 
 		return true;
 	}
+	else if ("convert_file_external_and_open" == message_name)
+	{
+		if (5 > args->GetSize())
+			return true;
+
+		CSimpleConverterExternal* pConverter = new CSimpleConverterExternal(args->GetString(2).ToWString());
+		pConverter->m_pManager = m_pParent->GetAppManager();
+		pConverter->m_pEvents = m_pParent->m_pInternal;
+
+		pConverter->m_sInputFile = args->GetString(0).ToWString();
+		pConverter->m_nFrameId = NSArgumentList::GetInt64(args, 1);
+		pConverter->m_nOutputFormat  = args->GetInt(3);
+		pConverter->m_nId = args->GetInt(4);
+		pConverter->m_bIsOpenResult = true;
+
+		m_pParent->m_pInternal->m_arExternalConverters.push_back(pConverter);
+
+		pConverter->DestroyOnFinish();
+		pConverter->Start(0);
+
+		return true;
+	}
 	else if ("send_simple_request" == message_name)
 	{
 #ifdef CEF_SIMPLE_URL_REQUEST
@@ -6799,7 +6831,8 @@ void CCefView::load(const std::wstring& urlInputSrc)
 	if (pAscCEfJSDialogHandler)
 		pAscCEfJSDialogHandler->SetAppManager(m_pInternal->m_pManager);
 
-	CefWindowHandle hWnd = (CefWindowHandle)m_pInternal->m_pWidgetImpl->cef_handle;
+	CCefViewWidgetImpl* pWidgetImpl = m_pInternal->m_pWidgetImpl;
+	CefWindowHandle hWnd = (CefWindowHandle)pWidgetImpl->cef_handle;
 	//m_pInternal->m_handler->SetMainWindowHandle(hWnd);
 
 	CefBrowserSettings _settings;
@@ -6812,7 +6845,7 @@ void CCefView::load(const std::wstring& urlInputSrc)
 	_settings.plugins = STATE_DISABLED;
 #endif
 
-	_settings.background_color = (m_eWrapperType == cvwtEditor) ? 0xFFF4F4F4 : 0xFFFFFFFF;
+	_settings.background_color = CefColorSetARGB(0xFF, pWidgetImpl->backgroundR, pWidgetImpl->backgroundG, pWidgetImpl->backgroundB);
 
 	CefWindowInfo info;
 	CefWindowHandle _handle = (CefWindowHandle)m_pInternal->m_pWidgetImpl->cef_handle;
@@ -8727,6 +8760,19 @@ namespace NSRequest
 			CefRefPtr<CefFrame> frame = m_view->GetBrowser()->GetFrame(frameId);
 			if (frame)
 				frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
+		}
+	}
+
+	void CSimpleRequestClient::SendAboutRetry()
+	{
+		if (m_view->m_bIsDestroying || m_view->m_bIsDestroy)
+			return;
+
+		if (m_view->GetBrowser())
+		{
+			CefRefPtr<CefFrame> frame = m_view->GetBrowser()->GetFrame(m_frameId);
+			if (frame)
+				frame->ExecuteJavaScript("console.log('[simplerequest]: attept " + std::to_string(m_nRetryCount + 1) + "');", frame->GetURL(), 0);
 		}
 	}
 }

@@ -1678,8 +1678,10 @@ public:
 	int_64_type m_nFrameId;
 	int m_nId;
 
+	bool m_bIsOpenResult;
+
 public:
-	CSimpleConverterExternal()
+	CSimpleConverterExternal(const std::wstring& sOutputFile = L"")
 	{
 		m_sTempDirectory = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"CV");
 		if (NSFile::CFileBinary::Exists(m_sTempDirectory))
@@ -1687,15 +1689,22 @@ public:
 
 		NSDirectory::CreateDirectory(m_sTempDirectory);
 
-		m_sOutputFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"CV");
-		if (NSFile::CFileBinary::Exists(m_sOutputFile))
-			NSFile::CFileBinary::Remove(m_sOutputFile);
+		m_sOutputFile = sOutputFile;
+
+		if (m_sOutputFile.empty())
+		{
+			m_sOutputFile = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSDirectory::GetTempPath(), L"CV");
+			if (NSFile::CFileBinary::Exists(m_sOutputFile))
+				NSFile::CFileBinary::Remove(m_sOutputFile);
+		}
 
 		m_nOutputFormat = -1;
 		m_pManager = NULL;
 		m_pEvents = NULL;
 		m_nFrameId = 0;
 		m_nId = 0;
+
+		m_bIsOpenResult = false;
 	}
 
 	virtual ~CSimpleConverterExternal()

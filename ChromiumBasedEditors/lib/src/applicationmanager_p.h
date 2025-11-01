@@ -287,6 +287,9 @@ namespace NSArgumentList
 class CCefView_Private;
 namespace NSRequest
 {
+	#define SIMPLE_REQUEST_MAX_RETRIES 3
+	#define SIMPLE_REQUEST_RETRY_DELAY_MS 100
+
 	class CSimpleRequestClient : public CefURLRequestClient
 	{
 	private:
@@ -297,9 +300,75 @@ namespace NSRequest
 
 		CCefView_Private* m_view;
 
+		CefRefPtr<CefListValue> m_originalArgs;
+		int m_nRetryCount;
+
 	public:
 		CSimpleRequestClient(CefRefPtr<CefListValue>& args)
 		{
+			m_nRetryCount = 0;
+			m_originalArgs = args->Copy();
+
+			InitializeRequest(m_originalArgs);
+		}
+
+		~CSimpleRequestClient()
+		{
+		}
+
+		void Start(CCefView_Private* view)
+		{
+			m_view = view;
+			StartInternal();
+		}
+
+		bool IsShouldRetry(CefURLRequest::Status status,
+						 CefURLRequest::ErrorCode error_code,
+						 int responseStatus)
+		{
+			if (m_nRetryCount >= SIMPLE_REQUEST_MAX_RETRIES)
+				return false;
+
+			if (error_code == ERR_SOCKET_NOT_CONNECTED ||      // -15
+				error_code == ERR_CONNECTION_RESET ||          // -101
+				error_code == ERR_CONNECTION_CLOSED ||         // -100
+				error_code == ERR_CONNECTION_TIMED_OUT ||      // -118
+				error_code == ERR_NETWORK_CHANGED ||           // -21
+				error_code == ERR_TEMPORARILY_THROTTLED)       // -32
+			{
+				return true;
+			}
+
+			if (false)
+			{
+				if (responseStatus == 502 || responseStatus == 503 || responseStatus == 504)
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		void RetryRequest()
+		{
+			m_nRetryCount++;
+			SendAboutRetry();
+
+			InitializeRequest(m_originalArgs);
+
+			if (SIMPLE_REQUEST_RETRY_DELAY_MS > 0)
+				NSThreads::Sleep(SIMPLE_REQUEST_RETRY_DELAY_MS);
+
+			StartInternal();
+		}
+
+		void InitializeRequest(CefRefPtr<CefListValue>& args)
+		{
+			m_download_data.clear();
+			m_upload_total = 0;
+			m_download_total = 0;
+
 			m_isProgress = false;
 			m_request = CefRequest::Create();
 			m_frameId = NSArgumentList::GetInt64(args, 0);
@@ -332,6 +401,7 @@ namespace NSRequest
 				m_request->SetPostData(postData);
 			}
 
+			m_request->SetHeaderByName("Connection", "close", true);
 			m_request->SetHeaderByName("Accept", "*/*", true);
 			int nHeadersCount = args->GetSize();
 			for (int i = 5; i < nHeadersCount; i += 2)
@@ -345,18 +415,9 @@ namespace NSRequest
 			m_request->SetFlags(UR_FLAG_STOP_ON_REDIRECT);
 		}
 
-		~CSimpleRequestClient()
-		{
-		}
-
-		void Start(CCefView_Private* view)
-		{
-			m_view = view;
-			StartInternal();
-		}
-
 		void StartInternal();
 		void SendToRenderer(const int_64_type& frameId, const std::string& sCode);
+		void SendAboutRetry();
 
 		void OnRequestComplete(CefRefPtr<CefURLRequest> request) override
 		{
@@ -366,6 +427,12 @@ namespace NSRequest
 
 			int responseStatus = response->GetStatus();
 			std::string sStatusText = response->GetStatusText().ToString();
+
+			if (IsShouldRetry(status, error_code, responseStatus))
+			{
+				RetryRequest();
+				return;
+			}
 
 			// TODO: https://bugzilla.onlyoffice.com/show_bug.cgi?id=63094
 			if (404 == responseStatus)

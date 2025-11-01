@@ -69,6 +69,10 @@ public:
 	unsigned int cef_width;
 	unsigned int cef_height;
 
+	unsigned char backgroundR;
+	unsigned char backgroundG;
+	unsigned char backgroundB;
+
 public:
 	CCefViewWidgetImpl()
 	{
@@ -80,6 +84,10 @@ public:
 		cef_y = 0;
 		cef_width = 0;
 		cef_height = 0;
+
+		backgroundR = 255;
+		backgroundG = 255;
+		backgroundB = 255;
 	}
 
 	virtual ~CCefViewWidgetImpl() {}

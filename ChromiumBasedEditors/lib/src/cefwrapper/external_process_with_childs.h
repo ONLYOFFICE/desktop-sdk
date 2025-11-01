@@ -187,15 +187,45 @@ namespace NSProcesses
 			)
 		{
 			std::string lineBuf;
-			char buf[256]; DWORD n;
-			while (m_running.load() &&
+			char buf[4096];
+            
 #ifdef _WIN32
-				   ReadFile(handle, buf, sizeof(buf), &n, nullptr) && n > 0
+			DWORD n;
 #else
-				   (n = read(fd, buf, sizeof(buf))) > 0
+			ssize_t n;
+			int flags = fcntl(fd, F_GETFL, 0);
+			fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 #endif
-				   )
+
+			while (m_running.load())
 			{
+#ifdef _WIN32
+				DWORD available = 0;
+				PeekNamedPipe(handle, nullptr, 0, nullptr, &available, nullptr);
+
+				if (available == 0)
+				{
+					NSThreads::Sleep(100);
+					continue;
+				}
+
+				if (!ReadFile(handle, buf, sizeof(buf), &n, nullptr) || n == 0)
+					break;
+#else
+				n = read(fd, buf, sizeof(buf));
+				if (n < 0)
+				{
+					if (errno == EAGAIN || errno == EWOULDBLOCK)
+					{
+						NSThreads::Sleep(100);
+						continue;
+					}
+					break;
+				}
+				if (n == 0)
+					break;
+#endif
+
 				lineBuf.append(buf, n);
 				size_t pos;
 				while ((pos = lineBuf.find('\n')) != std::string::npos)
@@ -203,9 +233,8 @@ namespace NSProcesses
 					m_callback->process_callback(m_id, type, lineBuf.substr(0, pos));
 					lineBuf.erase(0, pos + 1);
 				}
-
-				NSThreads::Sleep(500);
 			}
+
 			if (!lineBuf.empty())
 				m_callback->process_callback(m_id, type, lineBuf);
 		}
@@ -220,7 +249,13 @@ namespace NSProcesses
 			if (!pathEnv)
 				return cmd;
 
-			std::istringstream iss(pathEnv);
+			std::string sPathEnv(pathEnv);
+			if (!sPathEnv.empty())
+				sPathEnv += ":";
+
+			sPathEnv += "/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin";
+
+			std::istringstream iss(sPathEnv);
 			std::string dir;
 			while (std::getline(iss, dir, ':'))
 			{
