@@ -1,6 +1,6 @@
 {
-  "AIAgent": "AI Agent",
-  "AIAgentSettings": "AI Agent Settings",
+  "AIAgent": "AI agent",
+  "AIAgentSettings": "AI agent Settings",
   "Settings": "Settings",
   "ConnectAIModel": "Connect an AI Model to Get Started",
   "ConnectAIModelDescription": "No AI model is connected yet. Link a model to start interacting with it right here in the interface.",
@@ -58,7 +58,7 @@
   "ToolExecuted": "Tool executed",
   "Confirmation": "Confirmation",
   "SelectModel": "Select model",
-  "CustomServersDescription": " This section allows you to configure MCP servers for use within the AI Agent. You can edit the configuration to add new MCP servers and enable tools as needed.",
+  "CustomServersDescription": "This section allows you to configure MCP servers for use within the AI agent. You can edit the configuration to add new MCP servers and enable tools as needed.",
   "EditConfiguration": "Edit configuration",
   "EnterYourJSONConfiguration": "Enter your JSON configuration:",
   "AvailableTools": "Available tools",
@@ -78,5 +78,6 @@
   "AllTools": "All tools",
   "EnableWebSearch": "Enable web search in settings",
   "WantDeleteServer": "This server will be deleted from your list. Continue?",
-  "NoModelsAvailable": "Provider not available"
+  "NoModelsAvailable": "Provider not available",
+  "CheckInfo": "AI Chat can make mistakes. Check important info."
 }

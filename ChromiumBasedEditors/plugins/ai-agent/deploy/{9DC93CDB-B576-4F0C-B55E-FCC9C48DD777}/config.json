@@ -1,14 +1,14 @@
 {
   "name": "AI agent",
   "nameLocale": {
-    "ru": "ИИ агент",
-    "it": "AI agent",
-    "fr": "AI agent",
-    "es": "AI agent",
-    "de": "AI agent",
-    "pt": "AI agent",
+    "ru": "ИИ-агент",
+    "it": "Agente AI",
+    "fr": "Agent IA",
+    "es": "Agente de IA",
+    "de": "KI-Agent",
+    "pt": "Agente de IA",
     "pl": "AI agent",
-    "cs": "AI agent",
+    "cs": "Agent AI",
     "sk": "AI agent"
   },
   "guid": "asc.{9DC93CDB-B576-4F0C-B55E-FCC9C48DD777}",
