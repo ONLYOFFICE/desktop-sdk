@@ -174,6 +174,7 @@ const AvailableToolsItem = ({
                             iconName={NavigationIconSvgUrl}
                             size={20}
                             disableHover
+                            isStroke
                           />
                         ),
                         text: t("Logs"),
