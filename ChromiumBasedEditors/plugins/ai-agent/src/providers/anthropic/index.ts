@@ -207,7 +207,7 @@ class AnthropicProvider
     const toolResult: ToolResultBlockParam = {
       type: "tool_result",
       content: result.result,
-      tool_use_id: result.toolCallId!,
+      tool_use_id: result.toolCallId ?? "",
     };
 
     this.prevMessages.push({

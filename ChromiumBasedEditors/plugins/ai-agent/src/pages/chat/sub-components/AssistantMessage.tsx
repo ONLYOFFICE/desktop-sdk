@@ -1,9 +1,8 @@
 import {
-  MessagePrimitive,
   ActionBarPrimitive,
   ErrorPrimitive,
   useMessage,
-  type ThreadMessageLike,
+  MessagePrimitive,
 } from "@assistant-ui/react";
 import { motion } from "framer-motion";
 
@@ -35,18 +34,16 @@ const AssistantActionBar = () => {
 
   const message = useMessage();
 
-  const msg: ThreadMessageLike = message;
-
-  const mdValue = convertMessagesToMd([msg]);
+  const mdValue = convertMessagesToMd([message]);
 
   const onDownload = () => {
     window.AscDesktopEditor.SaveFilenameDialog(
-      mdValue.replace(`## **Assistant**\n\n`, "").substring(0, 30),
+      `${mdValue.substring(0, 30)}.docx`,
       (path) => {
         if (!path) return;
 
         window.AscDesktopEditor.saveAndOpen(
-          mdValue.replace(`## **Assistant**\n\n`, ""),
+          mdValue,
           0x5c,
           path,
           0x41,
