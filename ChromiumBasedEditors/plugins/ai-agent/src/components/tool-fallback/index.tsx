@@ -9,7 +9,7 @@ import ArrowBottomIconUrl from "@/assets/arrow.bottom.svg?url";
 import ArrowRightIconUrl from "@/assets/arrow.right.svg?url";
 import CopyIconUrl from "@/assets/btn-copy.svg?url";
 import CheckedIconUrl from "@/assets/checked.svg?url";
-import SearchIconUrl from "@/assets/btn-menu-search.svg?url";
+import SearchIconUrl from "@/assets/btn-web-search.svg?url";
 import ExternalIconUrl from "@/assets/btn-external.svg?url";
 
 import { Loader } from "../loader";
@@ -221,7 +221,7 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
                                     size={24}
                                     disableHover
                                   />
-                                  <h4 className="text-[14px] font-bold text-[var(--chat-message-tool-call-pre-color)] truncate">
+                                  <h4 className="text-[14px] font-normal text-[var(--chat-message-tool-call-pre-color)] truncate">
                                     {item.title}
                                   </h4>
                                 </div>

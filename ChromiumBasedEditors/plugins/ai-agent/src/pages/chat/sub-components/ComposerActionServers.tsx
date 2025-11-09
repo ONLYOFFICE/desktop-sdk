@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import SearchIconUrl from "@/assets/btn-menu-search.svg?url";
+import SearchIconUrl from "@/assets/btn-web-search.svg?url";
 import ToolsIconUrl from "@/assets/tools.svg?url";
 
 import useServersStore from "@/store/useServersStore";
