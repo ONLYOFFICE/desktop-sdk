@@ -20,8 +20,21 @@ const useServers = ({ isReady }: UseServersProps) => {
 
     setInterval(() => {
       getTools();
-    }, 1000);
+      // update tools every 5 minutes
+    }, 1000 * 60 * 5);
   }, [isReady, initServers, getTools]);
+
+  useEffect(() => {
+    const handler = () => {
+      getTools();
+    };
+
+    window.addEventListener("tools-changed", handler);
+
+    return () => {
+      window.removeEventListener("tools-changed", handler);
+    };
+  }, [getTools]);
 
   useEffect(() => {
     if (!tools || !currentProvider) return;

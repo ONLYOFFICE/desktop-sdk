@@ -66,6 +66,7 @@ class CustomServers {
         correctJson.id.includes("tools-" + type)
       ) {
         this.tools[type] = correctJson.result.tools;
+        window.dispatchEvent(new CustomEvent("tools-changed"));
       }
     } catch {
       // ignore
