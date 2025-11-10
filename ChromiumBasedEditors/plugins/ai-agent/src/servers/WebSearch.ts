@@ -45,7 +45,7 @@ class WebSearch {
   };
 
   webSearch = async (args: Record<string, unknown>) => {
-    if (this.webSearchData?.provider === "exa") {
+    if (this.webSearchData?.provider === "Exa") {
       try {
         const result = await new Promise<{
           error?: number;
@@ -89,7 +89,7 @@ class WebSearch {
   };
 
   webCrawling = async (args: Record<string, unknown>) => {
-    if (this.webSearchData?.provider === "exa") {
+    if (this.webSearchData?.provider === "Exa") {
       try {
         const result = await new Promise<{
           error?: number;
