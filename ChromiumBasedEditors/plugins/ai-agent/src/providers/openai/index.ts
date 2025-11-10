@@ -143,25 +143,10 @@ class OpenAIProvider
       let stop = false;
 
       for await (const messageStreamEvent of stream) {
-        if (this.stopStream) {
-          stream.controller.abort();
-
-          this.stopStream = false;
-
-          return;
-        }
         const chunks: ChatCompletionChunk["choices"] =
           messageStreamEvent.choices;
 
         chunks.forEach((chunk) => {
-          if (this.stopStream) {
-            stream.controller.abort();
-
-            this.stopStream = false;
-
-            return;
-          }
-
           if (stop) return;
 
           if (chunk.finish_reason) {
@@ -205,6 +190,23 @@ class OpenAIProvider
             responseMessage = handleToolCall(responseMessage, chunk);
           }
         });
+
+        if (this.stopStream) {
+          const providerMsg = convertMessagesToModelFormat([responseMessage]);
+
+          this.prevMessages.push(...providerMsg);
+
+          stream.controller.abort();
+
+          this.stopStream = false;
+
+          yield {
+            isEnd: true,
+            responseMessage,
+          };
+
+          continue;
+        }
 
         if (stop) {
           yield {

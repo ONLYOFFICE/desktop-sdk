@@ -34,6 +34,8 @@ class OllamaProvider
   tools: Tool[] = [];
   client?: Ollama;
 
+  messageStopped: boolean = false;
+
   constructor() {}
 
   setProvider = (provider: TProvider) => {
@@ -184,6 +186,21 @@ class OllamaProvider
           };
         }
 
+        if (this.messageStopped) {
+          this.messageStopped = false;
+
+          this.prevMessages.push({
+            role: "assistant",
+            content: msg,
+          });
+
+          yield { isEnd: true, responseMessage };
+
+          this.client.abort();
+
+          continue;
+        }
+
         yield responseMessage;
       }
     } catch (e) {
@@ -233,7 +250,9 @@ class OllamaProvider
   stopMessage = () => {
     if (!this.client) return;
 
-    this.client.abort();
+    this.messageStopped = true;
+
+    // this.client.abort();
   };
 
   getName = () => {

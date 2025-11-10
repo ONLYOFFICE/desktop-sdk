@@ -74,7 +74,7 @@ export const convertMessagesToModelFormat = (
       let idx = 0;
 
       const msgContent = message.content;
-      if (typeof msgContent !== "string" && typeof content !== "string") {
+      if (typeof msgContent !== "string") {
         msgContent.forEach((part) => {
           if (part.type === "text") {
             content += part.text;

@@ -141,24 +141,9 @@ class TogetherProvider
       let stop = false;
 
       for await (const messageStreamEvent of stream) {
-        if (this.stopStream) {
-          stream.controller.abort();
-
-          this.stopStream = false;
-
-          return;
-        }
         const chunks = messageStreamEvent.choices;
 
         chunks.forEach((chunk) => {
-          if (this.stopStream) {
-            stream.controller.abort();
-
-            this.stopStream = false;
-
-            return;
-          }
-
           if (stop) return;
 
           if (chunk.finish_reason) {
@@ -203,7 +188,28 @@ class TogetherProvider
           }
         });
 
-        if (stop) {
+        if (this.stopStream) {
+          // Only push to prevMessages if there's actual content
+          const hasContent =
+            typeof responseMessage.content === "string"
+              ? responseMessage.content.length > 0
+              : responseMessage.content.length > 0;
+
+          if (hasContent) {
+            const providerMsg = convertMessagesToModelFormat([responseMessage]);
+            this.prevMessages.push(...providerMsg);
+          }
+
+          stream.controller.abort();
+
+          this.stopStream = false;
+
+          yield {
+            isEnd: true,
+            responseMessage,
+          };
+          continue;
+        } else if (stop) {
           yield {
             isEnd: true,
             responseMessage,

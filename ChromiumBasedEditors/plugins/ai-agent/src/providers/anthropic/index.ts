@@ -139,12 +139,6 @@ class AnthropicProvider
       for await (const messageStreamEvent of stream) {
         const { type } = messageStreamEvent;
 
-        if (this.messageStopped) {
-          this.messageStopped = false;
-
-          stream.controller.abort();
-        }
-
         if (type === "message_start") {
           if (afterToolCall && message) {
             yield message;
@@ -192,6 +186,20 @@ class AnthropicProvider
           this.prevMessages.push(...providerMsg);
 
           yield { isEnd: true, responseMessage };
+          continue;
+        }
+
+        if (this.messageStopped) {
+          this.messageStopped = false;
+
+          const providerMsg = convertMessagesToModelFormat([responseMessage]);
+
+          this.prevMessages.push(...providerMsg);
+
+          stream.controller.abort();
+
+          yield { isEnd: true, responseMessage };
+
           continue;
         }
 
