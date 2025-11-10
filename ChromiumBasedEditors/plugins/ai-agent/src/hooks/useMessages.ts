@@ -258,7 +258,9 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     };
 
     if (messages.length === 0) {
-      insertThread(message.content[0].text.substring(0, 25));
+      provider.createChatName(message.content[0].text).then((title) => {
+        insertThread(title);
+      });
     } else {
       insertNewMessageToThread();
     }

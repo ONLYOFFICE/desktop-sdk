@@ -10,26 +10,29 @@ export const convertMessagesToMd = (messages: ThreadMessageLike[]) => {
   let content = "";
 
   messages.forEach((message, index) => {
-    const role = message.role === "user" ? "**User**" : "**Assistant**";
-    content += `## ${role}\n\n`;
-
     if (Array.isArray(message.content)) {
       message.content.forEach((part: ThreadMessageLike["content"]) => {
         if (typeof part === "string") {
-          content += `${part}\n\n`;
+          content += message.role === "user" ? `## ${part}\n\n` : `${part}\n\n`;
           return;
         }
 
         if (!part || typeof part !== "object" || !("type" in part)) return;
 
         if (part.type === "text" && "text" in part) {
-          content += `${part.text}\n\n`;
+          content +=
+            message.role === "user"
+              ? `## ${part.text}\n\n`
+              : `${part.text}\n\n`;
         } else if (part.type === "tool-call" && "toolName" in part) {
           return;
         }
       });
     } else if (typeof message.content === "string") {
-      content += `${message.content}\n\n`;
+      content +=
+        message.role === "user"
+          ? `## ${message.content}\n\n`
+          : `${message.content}\n\n`;
     }
 
     if (index < messages.length - 1) {

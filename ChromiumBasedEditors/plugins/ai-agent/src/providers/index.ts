@@ -106,6 +106,12 @@ class Provider {
     return this.currentProvider.modelKey;
   };
 
+  createChatName = async (message: string) => {
+    if (!this.currentProvider) return message.substring(0, 25);
+
+    return this.currentProvider.createChatName(message);
+  };
+
   sendMessage = (
     messages: ThreadMessageLike[]
   ): SendMessageReturnType | undefined => {

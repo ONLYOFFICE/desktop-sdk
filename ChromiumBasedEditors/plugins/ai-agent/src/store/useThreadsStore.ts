@@ -73,11 +73,7 @@ const useThreadsStore = create<UseThreadsStoreProps>((set, get) => ({
 
     const title = thread?.title || "Chat Export";
 
-    let content = `# ${title}\n\n`;
-    content += `*Exported on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}*\n\n`;
-    content += `---\n\n`;
-
-    content += convertMessagesToMd(messages);
+    const content = convertMessagesToMd(messages);
 
     window.AscDesktopEditor.SaveFilenameDialog(`${title}.docx`, (path) => {
       if (!path) return;

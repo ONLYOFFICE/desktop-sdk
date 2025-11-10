@@ -78,5 +78,6 @@
   "AllTools": "All tools",
   "EnableWebSearch": "Enable web search in settings",
   "WantDeleteServer": "This server will be deleted from your list. Continue?",
-  "NoModelsAvailable": "Provider not available"
+  "NoModelsAvailable": "Provider not available",
+  "CheckInfo": "AI Chat can make mistakes. Check important info."
 }

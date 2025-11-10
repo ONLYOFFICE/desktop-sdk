@@ -13,6 +13,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   const [theme, setTheme] = React.useState(() => {
     if (window.RendererProcessVariable) {
+      if (window.RendererProcessVariable.theme.id === "theme-system") {
+        return `theme-${window.RendererProcessVariable.theme.system}`;
+      }
+
       return window.RendererProcessVariable.theme.id;
     } else {
       return "theme-light";

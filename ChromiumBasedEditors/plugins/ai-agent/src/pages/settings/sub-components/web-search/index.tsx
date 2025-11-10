@@ -58,8 +58,8 @@ const WebSearch = () => {
                   : [
                       {
                         text: "Exa",
-                        id: "exa",
-                        onClick: () => setSelectedProvider("exa"),
+                        id: "Exa",
+                        onClick: () => setSelectedProvider("Exa"),
                       },
                     ]
               }

@@ -9,6 +9,7 @@ import { IconButton } from "@/components/icon-button";
 import { DropdownMenu } from "@/components/dropdown";
 import { Loader } from "@/components/loader";
 import { ToggleButton } from "@/components/toggle-button";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/tooltip";
 
 import ArrowBottomIconSvgUrl from "@/assets/arrow.right.svg?url";
 import MoreIconSvgUrl from "@/assets/more.svg?url";
@@ -174,6 +175,7 @@ const AvailableToolsItem = ({
                             iconName={NavigationIconSvgUrl}
                             size={20}
                             disableHover
+                            isStroke
                           />
                         ),
                         text: t("Logs"),
@@ -207,21 +209,44 @@ const AvailableToolsItem = ({
         <div className="flex flex-col gap-[2px] mt-[4px]">
           {mcpItems.map((tool) => (
             <div
-              className="h-[36px] rounded-[4px] cursor-pointer flex items-center justify-between ps-[40px] pe-[8px] hover:bg-[var(--servers-available-tools-item-hover-background-color)]"
+              key={tool.name}
+              className="rounded-[4px] cursor-pointer flex flex-col ps-[40px] pe-[8px] hover:bg-[var(--servers-available-tools-item-hover-background-color)]"
               onClick={() => {
                 changeToolStatus(name, tool.name, !tool.enabled);
               }}
             >
-              <p className="text-[var(--servers-available-tools-item-name-color)]">
-                {tool.name}
-              </p>
-              <ToggleButton
-                checked={tool.enabled ?? false}
-                disabled={disableEnable && !tool.enabled}
-                onCheckedChange={() => {
-                  // empty change because change will be applied in onClick at div element
-                }}
-              />
+              <div className="flex items-center justify-between w-full">
+                <p className="text-[var(--servers-available-tools-item-name-color)]">
+                  {tool.name}
+                </p>
+                <ToggleButton
+                  checked={tool.enabled ?? false}
+                  disabled={disableEnable && !tool.enabled}
+                  onCheckedChange={() => {
+                    // empty change because change will be applied in onClick at div element
+                  }}
+                />
+              </div>
+              {tool.description && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <p
+                      className="text-[13px] leading-[18px] line-clamp-2 text-[var(--servers-available-tools-sub-header-color)]"
+                      style={{
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                      }}
+                    >
+                      {tool.description}
+                    </p>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <div className="max-w-[300px]">{tool.description}</div>
+                  </TooltipContent>
+                </Tooltip>
+              )}
             </div>
           ))}
         </div>

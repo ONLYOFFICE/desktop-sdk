@@ -20,6 +20,7 @@ import {
   convertMessagesToModelFormat,
 } from "./utils";
 import { handleTextMessage, handleToolCall } from "./handlers";
+import { CREATE_TITLE_SYSTEM_PROMPT } from "../Providers.utils";
 
 class OpenAIProvider
   implements
@@ -80,6 +81,29 @@ class OpenAIProvider
     this.tools = convertToolsToModelFormat(tools);
   };
 
+  async createChatName(message: string) {
+    try {
+      if (!this.client) return message.substring(0, 25);
+
+      const systemMessage: ChatCompletionSystemMessageParam = {
+        role: "system",
+        content: CREATE_TITLE_SYSTEM_PROMPT,
+      };
+
+      const response = await this.client.chat.completions.create({
+        messages: [systemMessage, { role: "user", content: message }],
+        model: this.modelKey,
+        stream: false,
+      });
+
+      const title = response.choices[0].message.content;
+
+      return title ?? message.substring(0, 25);
+    } catch {
+      return message.substring(0, 25);
+    }
+  }
+
   async *sendMessage(
     messages: ThreadMessageLike[],
     afterToolCall?: boolean,
@@ -119,25 +143,10 @@ class OpenAIProvider
       let stop = false;
 
       for await (const messageStreamEvent of stream) {
-        if (this.stopStream) {
-          stream.controller.abort();
-
-          this.stopStream = false;
-
-          return;
-        }
         const chunks: ChatCompletionChunk["choices"] =
           messageStreamEvent.choices;
 
         chunks.forEach((chunk) => {
-          if (this.stopStream) {
-            stream.controller.abort();
-
-            this.stopStream = false;
-
-            return;
-          }
-
           if (stop) return;
 
           if (chunk.finish_reason) {
@@ -181,6 +190,23 @@ class OpenAIProvider
             responseMessage = handleToolCall(responseMessage, chunk);
           }
         });
+
+        if (this.stopStream) {
+          const providerMsg = convertMessagesToModelFormat([responseMessage]);
+
+          this.prevMessages.push(...providerMsg);
+
+          stream.controller.abort();
+
+          this.stopStream = false;
+
+          yield {
+            isEnd: true,
+            responseMessage,
+          };
+
+          continue;
+        }
 
         if (stop) {
           yield {

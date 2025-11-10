@@ -1,7 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 
-import OpenChatListUrl from "@/assets/show-chat.svg?url";
+import OpenChatListUrl from "@/assets/btn-list-search.svg?url";
 import ArrowLeftUrl from "@/assets/btn-previtem.svg?url";
 import SearchUrl from "@/assets/search.svg?url";
 
