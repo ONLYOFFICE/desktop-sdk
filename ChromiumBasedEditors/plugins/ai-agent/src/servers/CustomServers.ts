@@ -66,6 +66,7 @@ class CustomServers {
         correctJson.id.includes("tools-" + type)
       ) {
         this.tools[type] = correctJson.result.tools;
+        window.dispatchEvent(new CustomEvent("tools-changed"));
       }
     } catch {
       // ignore
@@ -166,6 +167,7 @@ class CustomServers {
       process.start();
 
       this.initCustomServer(type);
+      window.dispatchEvent(new CustomEvent("tools-changed"));
     });
   };
 
@@ -186,6 +188,7 @@ class CustomServers {
     if (this.tools[type]) {
       delete this.tools[type];
     }
+    window.dispatchEvent(new CustomEvent("tools-changed"));
   };
 
   initCustomServer = (type: string) => {
