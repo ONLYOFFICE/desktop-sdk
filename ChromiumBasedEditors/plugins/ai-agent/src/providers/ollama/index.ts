@@ -18,6 +18,7 @@ import {
 } from "./utils";
 import { handleToolCall } from "./handlers";
 import type { SettingsProvider, TData, TErrorData } from "../settings";
+import { CREATE_TITLE_SYSTEM_PROMPT } from "../Providers.utils";
 
 class OllamaProvider
   implements BaseProvider<Tool, Message, Ollama>, SettingsProvider
@@ -69,6 +70,29 @@ class OllamaProvider
   setTools = (tools: TMCPItem[]) => {
     this.tools = convertToolsToModelFormat(tools);
   };
+
+  async createChatName(message: string) {
+    try {
+      if (!this.client) return message.substring(0, 25);
+
+      const systemMsg = {
+        role: "system",
+        content: CREATE_TITLE_SYSTEM_PROMPT,
+      };
+
+      const response = await this.client.chat({
+        messages: [systemMsg, { role: "user", content: message }],
+        model: this.modelKey,
+        stream: false,
+      });
+
+      const title = response.message.content;
+
+      return title ?? message.substring(0, 25);
+    } catch {
+      return message.substring(0, 25);
+    }
+  }
 
   async *sendMessage(
     messages: ThreadMessageLike[],

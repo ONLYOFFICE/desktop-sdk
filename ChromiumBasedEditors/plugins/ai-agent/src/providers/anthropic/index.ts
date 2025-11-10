@@ -12,6 +12,8 @@ import type { Model, TMCPItem, TProvider } from "@/lib/types";
 import type { BaseProvider } from "../base";
 import type { SettingsProvider, TData, TErrorData } from "../settings";
 
+import { CREATE_TITLE_SYSTEM_PROMPT } from "../Providers.utils";
+
 import {
   convertMessagesToModelFormat,
   convertToolsToModelFormat,
@@ -78,6 +80,26 @@ class AnthropicProvider
   setTools = (tools: TMCPItem[]) => {
     this.tools = convertToolsToModelFormat(tools);
   };
+
+  async createChatName(message: string) {
+    try {
+      if (!this.client) return message.substring(0, 25);
+
+      const response = await this.client.messages.create({
+        messages: [{ role: "user", content: message }],
+        model: this.modelKey,
+        system: CREATE_TITLE_SYSTEM_PROMPT,
+        max_tokens: 2048,
+        stream: false,
+      });
+
+      const title = response.content.find((c) => c.type === "text")?.text;
+
+      return title ?? message.substring(0, 25);
+    } catch {
+      return message.substring(0, 25);
+    }
+  }
 
   async *sendMessage(
     messages: ThreadMessageLike[],
