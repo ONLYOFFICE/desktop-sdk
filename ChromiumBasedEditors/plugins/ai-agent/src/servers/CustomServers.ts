@@ -167,6 +167,7 @@ class CustomServers {
       process.start();
 
       this.initCustomServer(type);
+      window.dispatchEvent(new CustomEvent("tools-changed"));
     });
   };
 
@@ -187,6 +188,7 @@ class CustomServers {
     if (this.tools[type]) {
       delete this.tools[type];
     }
+    window.dispatchEvent(new CustomEvent("tools-changed"));
   };
 
   initCustomServer = (type: string) => {
