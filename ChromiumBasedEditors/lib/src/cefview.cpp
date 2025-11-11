@@ -2271,6 +2271,15 @@ public:
 	{
 		std::wstring sUrl = request->GetURL().ToWString();
 
+		if (m_pParent->m_pInternal->m_pManager->m_pInternal->m_bLoggingBrowserUrls)
+		{
+			CCefView* pMainView = m_pParent->m_pInternal->m_pManager->m_pInternal->GetViewForSystemMessages();
+			if (pMainView)
+			{
+				pMainView->ExecuteInAllFrames("console.log(\"" + U_TO_UTF8(sUrl) + "\");", true);
+			}
+		}
+
 		if (0 == sUrl.find(L"mailto"))
 		{
 			// disable navigation

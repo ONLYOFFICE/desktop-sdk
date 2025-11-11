@@ -1614,6 +1614,9 @@ public:
 	// показывать ли консоль для дебага
 	bool m_bDebugInfoSupport;
 
+	// логгировать ли урлы
+	bool m_bLoggingBrowserUrls;
+
 	bool m_bSupportMultiplugins;
 
 	// экспериментальные возможности
@@ -1749,6 +1752,7 @@ public:
 		m_bDebugInfoSupport = false;
 		m_bExperimentalFeatures = false;
 		m_bSupportMultiplugins = false;
+		m_bLoggingBrowserUrls = false;
 
 		m_bIsUseExternalMessageLoop = false;
 		m_pExternalMessageLoop = NULL;
@@ -2008,6 +2012,10 @@ public:
 		std::map<std::string, std::string>::iterator pairComplexPlugins = _map->find("support-complex-plugins");
 		if (pairComplexPlugins != _map->end() && "1" == pairComplexPlugins->second)
 			m_bSupportMultiplugins = true;
+
+		std::map<std::string, std::string>::iterator pairLogUrls = _map->find("log-browser-urls");
+		if (pairLogUrls != _map->end() && "1" == pairLogUrls->second)
+			m_bLoggingBrowserUrls = true;
 
 		if (!NSCommon::CSystemWindowScale::IsInit())
 		{
