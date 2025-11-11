@@ -5279,6 +5279,11 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			return files;
 		}
 
+		virtual void ExecuteJS(const std::string& code)
+		{
+			CefV8Context::GetCurrentContext()->GetFrame()->ExecuteJavaScript(code, "", 0);
+		}
+
 		// Provide the reference counting implementation for this class.
 		IMPLEMENT_REFCOUNTING(CAscEditorNativeV8Handler);
 	};
