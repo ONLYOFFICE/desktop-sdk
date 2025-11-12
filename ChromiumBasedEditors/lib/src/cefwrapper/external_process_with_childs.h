@@ -240,6 +240,52 @@ namespace NSProcesses
 		}
 
 #ifdef _LINUX
+		std::string getShellPath()
+		{
+			std::array<char, 1024> buffer;
+			std::string result;
+			
+			const char* shell = getenv("SHELL");
+			if (!shell) {
+				#ifdef _MAC
+					shell = "/bin/zsh";
+				#else
+					shell = "/bin/bash";
+				#endif
+			}
+			
+			std::string shellPath = shell;
+			std::string cmd;
+			
+			// fish
+			if (shellPath.find("fish") != std::string::npos) 
+			{
+				cmd = std::string(shell) + " -l -c 'echo $PATH' 2>/dev/null";
+			} 
+			else 
+			{
+				cmd = std::string(shell) + " -l -i -c 'echo $PATH' 2>/dev/null";
+			}
+			
+			FILE* pipe = popen(cmd.c_str(), "r");
+			if (!pipe)
+				return "";
+			
+			while (fgets(buffer.data(), buffer.size(), pipe) != nullptr)
+			{
+				result += buffer.data();
+			}
+			
+			pclose(pipe);
+			
+			if (!result.empty() && result.back() == '\n')
+			{
+				result.pop_back();
+			}
+			
+			return result;
+		}
+
 		std::string getPathVariable()
 		{
 			std::string pathEnv = "";
@@ -248,18 +294,7 @@ namespace NSProcesses
 			if (pathEnvPtr)
 				pathEnv = std::string(pathEnvPtr);
 
-			std::string systemPath = "";
-			FILE* fp = popen("bash -l -c 'echo $PATH'", "r");
-			if (fp)
-			{
-				char buffer[1024];
-				while (fgets(buffer, sizeof(buffer), fp))
-					systemPath += buffer;
-				fclose(fp);
-			}
-
-			if (!systemPath.empty() && systemPath[systemPath.size() - 1] == '\n')
-				systemPath.pop_back();
+			std::string systemPath = getShellPath();
 			
 			std::string pathValue = systemPath;
 			if (!pathEnv.empty())
