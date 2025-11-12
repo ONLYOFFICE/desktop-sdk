@@ -4604,6 +4604,13 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			}
 			else if (name == "_createProcess")
 			{
+				std::string sCurrentUrl = CefV8Context::GetCurrentContext()->GetFrame()->GetURL().ToString();
+				if (0 != sCurrentUrl.find("onlyoffice://"))
+				{
+					retval = CefV8Value::CreateInt(-1);
+					return true;
+				}
+
 				if (!m_external_processes)
 					m_external_processes = new NSProcesses::CProcessManager(this);
 

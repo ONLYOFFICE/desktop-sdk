@@ -6,6 +6,7 @@
 #include <thread>
 #include <atomic>
 #include <vector>
+#include <sstream>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -16,7 +17,6 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <sstream>
 #include <iomanip>
 #endif
 
@@ -32,6 +32,7 @@ extern char **environ;
 #include "../../../../../core/DesktopEditor/common/File.h"
 #include "../../../../../core/DesktopEditor/graphics/TemporaryCS.h"
 #include "../../../../../core/DesktopEditor/graphics/BaseThread.h"
+#include "../../../../../core/DesktopEditor/common/SystemUtils.h"
 
 namespace NSProcesses
 {
@@ -239,6 +240,181 @@ namespace NSProcesses
 				m_callback->process_callback(m_id, type, lineBuf);
 		}
 
+#ifdef _WIN32
+		std::wstring getPathVariable()
+		{
+			std::wstring pathEnv = NSSystemUtils::GetEnvVariable(L"PATH");
+			std::wstring systemEnv = L"";
+			std::wstring userEnv = L"";
+
+			if (true)
+			{
+				HKEY hKey;
+				if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Environment", 0, KEY_READ, &hKey) == ERROR_SUCCESS)
+				{
+					DWORD size = 0;
+					RegQueryValueExW(hKey, L"PATH", nullptr, nullptr, nullptr, &size);
+
+					if (size > 0)
+					{
+						int charCount = (size / sizeof(wchar_t)) + 1;
+						wchar_t* buffer = new wchar_t[charCount];
+						if (RegQueryValueExW(hKey, L"PATH", nullptr, nullptr, (LPBYTE)buffer, &size) == ERROR_SUCCESS)
+						{
+							buffer[charCount - 1] = '\0';
+							userEnv = std::wstring(buffer);
+						}
+						delete [] buffer;
+					}
+
+					RegCloseKey(hKey);
+				}
+			}
+
+			if (true)
+			{
+				HKEY hKey;
+				if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment", 0, KEY_READ, &hKey) == ERROR_SUCCESS)
+				{
+					DWORD size = 0;
+					RegQueryValueExW(hKey, L"PATH", nullptr, nullptr, nullptr, &size);
+
+					if (size > 0)
+					{
+						int charCount = (size / sizeof(wchar_t)) + 1;
+						wchar_t* buffer = new wchar_t[charCount];
+						if (RegQueryValueExW(hKey, L"PATH", nullptr, nullptr, (LPBYTE)buffer, &size) == ERROR_SUCCESS)
+						{
+							buffer[charCount - 1] = '\0';
+							systemEnv = std::wstring(buffer);
+						}
+						delete [] buffer;
+					}
+
+					RegCloseKey(hKey);
+				}
+			}
+
+			std::wstring result;
+
+			if (!userEnv.empty())
+				result = userEnv;
+
+			if (!systemEnv.empty())
+			{
+				if (!result.empty())
+					result += L";";
+
+				result += systemEnv;
+			}
+
+			if (!pathEnv.empty())
+			{
+				if (!result.empty())
+					result += L";";
+
+				result += pathEnv;
+			}
+
+			return result;
+		}
+
+		std::map<std::wstring, std::wstring> getEnv()
+		{
+			std::map<std::wstring, std::wstring> env;
+
+			wchar_t* envStrings = GetEnvironmentStringsW();
+			if (!envStrings)
+				return env;
+
+			wchar_t* current = envStrings;
+
+			while (*current != L'\0')
+			{
+				size_t len = wcslen(current) + 1; // +1 for \0
+
+				std::wstring all(current, len - 1);
+				auto pos = all.find('=');
+				if (pos != std::wstring::npos)
+				{
+					std::wstring keyName = all.substr(0, pos);
+					std::wstring value = all.substr(pos + 1);
+
+					if (keyName == L"PATH" || keyName == L"Path")
+					{
+						std::wstring systemPath = getPathVariable();
+
+						if (!systemPath.empty())
+						{
+							if (!value.empty())
+								value += L";";
+							value += systemPath;
+						}
+					}
+
+					if (!keyName.empty())
+						env[keyName] = value;
+				}
+
+				current += len;
+			}
+
+			FreeEnvironmentStringsW(envStrings);
+
+			return env;
+		}
+
+		std::wstring findBinary(const std::wstring& cmd)
+		{
+			if (cmd.empty())
+				return cmd;
+
+			std::vector<std::wstring> extensions = {L"", L".exe", L".bat"};
+
+			if (true)
+			{
+				for (const auto& ext : extensions)
+				{
+					std::wstring test = cmd + ext;
+					DWORD attr = GetFileAttributesW(test.c_str());
+
+					if (attr != INVALID_FILE_ATTRIBUTES && !(attr & FILE_ATTRIBUTE_DIRECTORY))
+						return test;
+				}
+			}
+
+			std::wstring pathEnv = getPathVariable();
+			std::wistringstream iss(pathEnv);
+			std::wstring dir;
+
+			while (std::getline(iss, dir, L';'))
+			{
+				if (dir.empty())
+					continue;
+
+				if (!dir.empty() && dir.front() == '"')
+					dir = dir.substr(1);
+				if (!dir.empty() && dir.back() == '"')
+					dir.pop_back();
+
+				if (!dir.empty() && dir.back() != '\\' && dir.back() != '/')
+					dir += L"\\";
+
+				// Проверяем с разными расширениями
+				for (const auto& ext : extensions)
+				{
+					std::wstring test = dir + cmd + ext;
+					DWORD attr = GetFileAttributesW(test.c_str());
+
+					if (attr != INVALID_FILE_ATTRIBUTES && !(attr & FILE_ATTRIBUTE_DIRECTORY))
+						return test;
+				}
+			}
+
+			return cmd;
+		}
+#endif
+
 #ifdef _LINUX
 		std::string getShellPath()
 		{
@@ -352,21 +528,35 @@ namespace NSProcesses
 			si.hStdError = m_hStdErrWr;
 			si.dwFlags |= STARTF_USESTDHANDLES;
 
-			std::wstring envBlock;
+			std::map<std::wstring, std::wstring> env = getEnv();
 			for (auto& kv : m_env)
 			{
-				envBlock += (UTF8_TO_U((kv.first)) + L"=" + UTF8_TO_U((kv.second)));
+				env[UTF8_TO_U((kv.first))] = UTF8_TO_U((kv.second));
+			}
+
+			env[L"LANG"] = L"C.UTF-8";
+
+			std::wstring envBlock;
+			for (auto& kv : env)
+			{
+				envBlock += kv.first + L"=" + kv.second;
 				envBlock.push_back(L'\0');
 			}
-			envBlock += L"LANG=C.UTF-8\0";
 			envBlock.push_back(L'\0');
 
 			std::wstring commandW = UTF8_TO_U(m_command);
-			if (!CreateProcessW(nullptr, (LPWSTR)commandW.c_str(), nullptr, nullptr, TRUE, CREATE_SUSPENDED | CREATE_NO_WINDOW | CREATE_UNICODE_ENVIRONMENT,
+			std::wstring prog = commandW;
+			std::wstring::size_type posProg = commandW.find(L" ");
+			if (posProg != std::wstring::npos)
+				prog = commandW.substr(0, posProg);
+			prog = findBinary(prog);
+			if (prog == commandW)
+				prog = L"";
+
+			if (!CreateProcessW(prog.empty() ? nullptr : prog.c_str(), (LPWSTR)commandW.c_str(), nullptr, nullptr, TRUE, CREATE_SUSPENDED | CREATE_NO_WINDOW | CREATE_UNICODE_ENVIRONMENT,
 								(LPVOID)(envBlock.c_str()), nullptr, &si, &m_pi))
 			{
 				DWORD dwError = GetLastError();
-
 				m_callback->process_callback(m_id, StreamType::Terminate, "");
 				return;
 			}
