@@ -188,7 +188,7 @@ namespace NSProcesses
 		{
 			std::string lineBuf;
 			char buf[4096];
-            
+			
 #ifdef _WIN32
 			DWORD n;
 #else
@@ -240,21 +240,49 @@ namespace NSProcesses
 		}
 
 #ifdef _LINUX
+		std::string getPathVariable()
+		{
+			std::string pathEnv = "";
+			
+			const char* pathEnvPtr = std::getenv("PATH");
+			if (pathEnvPtr)
+				pathEnv = std::string(pathEnvPtr);
+
+			std::string systemPath = "";
+			FILE* fp = popen("bash -l -c 'echo $PATH'", "r");
+			if (fp)
+			{
+				char buffer[1024];
+				while (fgets(buffer, sizeof(buffer), fp))
+					systemPath += buffer;
+				fclose(fp);
+			}
+
+			if (!systemPath.empty() && systemPath[systemPath.size() - 1] == '\n')
+				systemPath.pop_back();
+			
+			std::string pathValue = systemPath;
+			if (!pathEnv.empty())
+			{
+				if (!pathValue.empty())
+					pathValue += ":";
+				pathValue += pathEnv;
+			}
+			
+			if (!pathValue.empty())
+				pathValue += ":";
+				
+			pathValue += "/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin";
+			return pathValue;
+		}
+		
 		std::string findBinary(const std::string& cmd)
 		{
 			if (!cmd.empty() && access(cmd.c_str(), X_OK) == 0)
 				return cmd;
 
-			const char* pathEnv = std::getenv("PATH");
-			if (!pathEnv)
-				return cmd;
-
-			std::string sPathEnv(pathEnv);
-			if (!sPathEnv.empty())
-				sPathEnv += ":";
-
-			sPathEnv += "/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin";
-
+			std::string sPathEnv = getPathVariable();
+			
 			std::istringstream iss(sPathEnv);
 			std::string dir;
 			while (std::getline(iss, dir, ':'))
@@ -366,7 +394,9 @@ namespace NSProcesses
 				for (auto& s : args)
 					argv.push_back(const_cast<char*>(s.c_str()));
 				argv.push_back(nullptr);
-
+				
+				std::string systemPath = getPathVariable();
+				
 				std::map<std::string, std::string> mergedEnv;
 				for (char **env = environ; *env; ++env)
 				{
@@ -374,7 +404,17 @@ namespace NSProcesses
 					auto pos = s.find('=');
 					if (pos != std::string::npos)
 					{
-						mergedEnv[s.substr(0, pos)] = s.substr(pos + 1);
+						std::string keyName = s.substr(0, pos);
+						std::string value = s.substr(pos + 1);
+						
+						if (keyName == "PATH" && !systemPath.empty())
+						{
+							if (!value.empty())
+								value += ":";
+							value += systemPath;
+						}
+						
+						mergedEnv[keyName] = value;
 					}
 				}
 				for (auto &kv : m_env)
@@ -412,11 +452,11 @@ namespace NSProcesses
 
 			std::thread t_out = std::thread([this]()
 											{
-				                                readOutLoop(m_stdoutPipe[0], StreamType::StdOut);
+												readOutLoop(m_stdoutPipe[0], StreamType::StdOut);
 											});
 			std::thread t_err = std::thread([this]()
 											{
-				                                readOutLoop(m_stderrPipe[0], StreamType::StdErr);
+												readOutLoop(m_stderrPipe[0], StreamType::StdErr);
 											});
 
 #endif
