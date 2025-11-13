@@ -5,6 +5,9 @@
 #include "../folder_content_reader/main.cpp"
 #include "../form_field_analyser/main.cpp"
 #include "../form_field_filler/main.cpp"
+#include "../generate_docx/main.cpp"
+#include "../generate_form/main.cpp"
+#include "../generate_pptx/main.cpp"
 #include "../recent_files_reader/main.cpp"
 
 struct TFuncInstance
@@ -26,6 +29,9 @@ public:
 		m_funcs.insert(std::make_pair("folder_content_reader", TFuncInstance(folder_content_reader::description(), folder_content_reader::main)));
 		m_funcs.insert(std::make_pair("form_field_analyser", TFuncInstance(form_field_analyser::description(), form_field_analyser::main)));
 		m_funcs.insert(std::make_pair("form_field_filler", TFuncInstance(form_field_filler::description(), form_field_filler::main)));
+		m_funcs.insert(std::make_pair("generate_docx", TFuncInstance(generate_docx::description(), generate_docx::main)));
+		m_funcs.insert(std::make_pair("generate_form", TFuncInstance(generate_form::description(), generate_form::main)));
+		m_funcs.insert(std::make_pair("generate_pptx", TFuncInstance(generate_pptx::description(), generate_pptx::main)));
 		m_funcs.insert(std::make_pair("recent_files_reader", TFuncInstance(recent_files_reader::description(), recent_files_reader::main)));
 	}
 };

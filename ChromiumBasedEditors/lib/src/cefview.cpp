@@ -1979,7 +1979,7 @@ public:
 		if (0 == sTest.find(L"regex:"))
 		{
 			std::wstring sTestRegex = sTest.substr(6);
-			boost::wregex oRegEx(sTestRegex);
+			boost::wregex oRegEx(sTestRegex, boost::regex::icase);
 			if (boost::regex_search(sUrl, oRegEx))
 				return true;
 		}
@@ -2242,6 +2242,16 @@ public:
 		std::wstring sFrameUrl = L"";
 		if (frame)
 			sFrameUrl = frame->GetURL().ToWString();
+
+		if (m_pParent->m_pInternal->m_pManager->m_pInternal->m_bLoggingBrowserUrls)
+		{
+			CCefView* pMainView = m_pParent->m_pInternal->m_pManager->m_pInternal->GetViewForSystemMessages();
+			if (pMainView)
+			{
+				pMainView->ExecuteInAllFrames("console.log(\"" + target_url.ToString() + "\");", true);
+			}
+		}
+
 		CheckPopup(target_url.ToWString(), false, (WOD_NEW_BACKGROUND_TAB == target_disposition) ? true : false, false, sFrameUrl);
 		return true;
 	}
@@ -2270,6 +2280,15 @@ public:
 								bool is_redirect) OVERRIDE
 	{
 		std::wstring sUrl = request->GetURL().ToWString();
+
+		if (m_pParent->m_pInternal->m_pManager->m_pInternal->m_bLoggingBrowserUrls)
+		{
+			CCefView* pMainView = m_pParent->m_pInternal->m_pManager->m_pInternal->GetViewForSystemMessages();
+			if (pMainView)
+			{
+				pMainView->ExecuteInAllFrames("console.log(\"" + U_TO_UTF8(sUrl) + "\");", true);
+			}
+		}
 
 		if (0 == sUrl.find(L"mailto"))
 		{
