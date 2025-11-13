@@ -12,6 +12,8 @@ import CheckedIconUrl from "@/assets/checked.svg?url";
 import SearchIconUrl from "@/assets/btn-web-search.svg?url";
 import ExternalIconUrl from "@/assets/btn-external.svg?url";
 
+import server from "@/servers";
+
 import { Loader } from "../loader";
 import { IconButton } from "../icon-button";
 
@@ -41,7 +43,7 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
     }
   }, [isResultCopied]);
 
-  const type = toolName.split("_")[0];
+  const type = server.getServerType(toolName);
   const name = toolName.replace(type + "_", "");
 
   const isLoading = result === undefined;

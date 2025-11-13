@@ -7,6 +7,7 @@ import type {
 } from "@assistant-ui/react";
 
 import { provider, type SendMessageReturnType } from "@/providers";
+import server from "@/servers";
 import { createMessage, updateMessage } from "@/database/messages";
 
 import useMessageStore from "@/store/useMessageStore";
@@ -74,7 +75,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
 
     const toolName = toolCall.toolName;
 
-    const type = toolName.split("_")[0];
+    const type = server.getServerType(toolName);
     const name = toolName.replace(type + "_", "");
 
     if (allowAlways) {
@@ -125,7 +126,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
 
     const toolName = toolCall.toolName;
 
-    const type = toolName.split("_")[0];
+    const type = server.getServerType(toolName);
     const name = toolName.replace(type + "_", "");
 
     if (checkAllowAlways(type, name) || accept || deny) {

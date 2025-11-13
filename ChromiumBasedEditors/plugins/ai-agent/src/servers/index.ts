@@ -84,6 +84,17 @@ class Servers {
     return await this.customServers.callToolFromMCP(type, name, args);
   };
 
+  getServerType = (name: string) => {
+    if (name.includes("desktop-editor_")) {
+      return "desktop-editor";
+    }
+
+    if (name.includes("web-search_")) {
+      return "web-search";
+    }
+    return this.customServers.getServerType(name);
+  };
+
   setCustomServers = (servers: {
     mcpServers: Record<string, Record<string, unknown>>;
   }) => {
