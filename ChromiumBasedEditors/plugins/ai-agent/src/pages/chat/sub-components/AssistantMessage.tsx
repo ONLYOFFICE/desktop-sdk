@@ -12,7 +12,7 @@ import BtnCheckIconUrl from "@/assets/checked.svg?url";
 
 import useMessageStore from "@/store/useMessageStore";
 
-import { convertMessagesToMd } from "@/lib/utils";
+import { convertMessagesToMd, getMessageTitleFromMd } from "@/lib/utils";
 
 import { MarkdownText } from "@/components/markdown";
 import { TooltipIconButton } from "@/components/tooltip-icon-button";
@@ -30,29 +30,24 @@ const MessageError = () => {
 };
 
 const AssistantActionBar = () => {
-  const { isStreamRunning } = useMessageStore();
+  const { isStreamRunning, messages } = useMessageStore();
 
   const message = useMessage();
 
-  const mdValue = convertMessagesToMd([message]);
+  const parentMessage = messages[Number(message.parentId)];
+
+  const mdValue = convertMessagesToMd([parentMessage, message]);
+
+  const title = getMessageTitleFromMd(mdValue);
 
   const onDownload = () => {
-    window.AscDesktopEditor.SaveFilenameDialog(
-      `${mdValue.substring(0, 30)}.docx`,
-      (path) => {
-        if (!path) return;
+    window.AscDesktopEditor.SaveFilenameDialog(`${title}.docx`, (path) => {
+      if (!path) return;
 
-        window.AscDesktopEditor.saveAndOpen(
-          mdValue,
-          0x5c,
-          path,
-          0x41,
-          (code) => {
-            if (!code) console.log("Conversion error");
-          }
-        );
-      }
-    );
+      window.AscDesktopEditor.saveAndOpen(mdValue, 0x5c, path, 0x41, (code) => {
+        if (!code) console.log("Conversion error");
+      });
+    });
   };
 
   return (

@@ -9,7 +9,7 @@ export const cn = (...inputs: ClassValue[]) => {
 export const convertMessagesToMd = (messages: ThreadMessageLike[]) => {
   let content = "";
 
-  messages.forEach((message, index) => {
+  messages.forEach((message) => {
     if (Array.isArray(message.content)) {
       message.content.forEach((part: ThreadMessageLike["content"]) => {
         if (typeof part === "string") {
@@ -34,13 +34,17 @@ export const convertMessagesToMd = (messages: ThreadMessageLike[]) => {
           ? `## ${message.content}\n\n`
           : `${message.content}\n\n`;
     }
-
-    if (index < messages.length - 1) {
-      content += `---\n\n`;
-    }
   });
 
   return content;
+};
+
+export const getMessageTitleFromMd = (md: string) => {
+  const lines = md.split("\n");
+
+  const title = lines[0].replace("## ", "");
+
+  return title.substring(0, 30);
 };
 
 export const isDocument = (type: number) => {
