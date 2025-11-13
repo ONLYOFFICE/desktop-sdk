@@ -34,13 +34,15 @@ const AssistantActionBar = () => {
 
   const message = useMessage();
 
-  const parentMessage = messages[Number(message.parentId)];
-
-  const mdValue = convertMessagesToMd([parentMessage, message]);
-
-  const title = getMessageTitleFromMd(mdValue);
+  if (message.status?.type === "incomplete" && message.status?.error) return;
 
   const onDownload = () => {
+    const parentMessage = messages[Number(message.parentId)];
+
+    const mdValue = convertMessagesToMd([parentMessage, message]);
+
+    const title = getMessageTitleFromMd(mdValue);
+
     window.AscDesktopEditor.SaveFilenameDialog(`${title}.docx`, (path) => {
       if (!path) return;
 
