@@ -83,7 +83,7 @@ class AnthropicProvider
 
   async createChatName(message: string) {
     try {
-      if (!this.client) return message.substring(0, 25);
+      if (!this.client) return "";
 
       const response = await this.client.messages.create({
         messages: [{ role: "user", content: message }],
@@ -97,7 +97,7 @@ class AnthropicProvider
 
       return title ?? message.substring(0, 25);
     } catch {
-      return message.substring(0, 25);
+      return "";
     }
   }
 

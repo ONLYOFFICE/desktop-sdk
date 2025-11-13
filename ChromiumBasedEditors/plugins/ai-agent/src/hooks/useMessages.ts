@@ -15,6 +15,7 @@ import useThreadsStore from "@/store/useThreadsStore";
 import useServersStore from "@/store/useServersStore";
 import useProviders from "@/store/useProviders";
 import useModelsStore from "@/store/useModelsStore";
+import { getThread } from "@/database/metadata";
 
 type UseMessagesProps = {
   isReady: boolean;
@@ -257,15 +258,52 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       attachments: message.attachments,
     };
 
-    if (messages.length === 0) {
-      provider.createChatName(message.content[0].text).then((title) => {
+    const existingThread = await getThread(threadId);
+
+    if (!existingThread) {
+      let textForTitle = "";
+
+      for (const msg of messages) {
+        // Skip messages with errors
+        if (msg.status?.type === "incomplete" && msg.status?.error) continue;
+
+        textForTitle +=
+          typeof msg.content === "string"
+            ? msg.content
+            : msg.content[0].type === "text"
+            ? msg.content[0].text
+            : "";
+
+        textForTitle += "\n\n";
+      }
+
+      textForTitle += "\n\n" + message.content[0].text;
+
+      provider.createChatName(textForTitle).then(async (title) => {
+        if (!title) return;
+
         insertThread(title);
+
+        // Save all messages from the store to the database (skip error messages)
+        for (const msg of messages) {
+          // Skip messages with errors
+          if (msg.status?.type === "incomplete" && msg.status?.error) continue;
+
+          await createMessage(threadId, crypto.randomUUID(), msg);
+        }
+
+        // Save the new user message
+        await createMessage(threadId, crypto.randomUUID(), userMessage);
       });
     } else {
       insertNewMessageToThread();
-    }
 
-    createMessage(threadId, crypto.randomUUID(), userMessage);
+      const createMessages = async () => {
+        await createMessage(threadId, crypto.randomUUID(), userMessage);
+      };
+
+      createMessages();
+    }
 
     addMessage(userMessage);
 

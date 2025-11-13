@@ -14,7 +14,7 @@ export const saveThread = async (
   thread: Omit<Thread, "createdAt" | "updatedAt">
 ): Promise<void> => {
   const db = chatDB.getDB();
-  
+
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(["threads"], "readwrite");
     const store = transaction.objectStore("threads");
@@ -34,12 +34,12 @@ export const saveThread = async (
 export const getThread = async (threadId: string): Promise<Thread | null> => {
   const db = chatDB.getDB();
 
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const transaction = db.transaction(["threads"], "readonly");
     const store = transaction.objectStore("threads");
     const request = store.get(threadId);
 
-    request.onerror = () => reject(request.error);
+    request.onerror = () => resolve(null);
     request.onsuccess = () => resolve(request.result || null);
   });
 };
@@ -56,9 +56,7 @@ export const getAllThreads = async (): Promise<Thread[]> => {
 
     request.onerror = () => reject(request.error);
     request.onsuccess = () => {
-      const threads = request.result.sort(
-        (a, b) => b.updatedAt - a.updatedAt
-      );
+      const threads = request.result.sort((a, b) => b.updatedAt - a.updatedAt);
       resolve(threads);
     };
   });
@@ -74,10 +72,10 @@ export const updateThread = async (
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(["threads"], "readwrite");
     const store = transaction.objectStore("threads");
-    
+
     // First get the existing thread
     const getRequest = store.get(threadId);
-    
+
     getRequest.onerror = () => reject(getRequest.error);
     getRequest.onsuccess = () => {
       const existingThread = getRequest.result;

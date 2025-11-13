@@ -83,7 +83,7 @@ class OpenAIProvider
 
   async createChatName(message: string) {
     try {
-      if (!this.client) return message.substring(0, 25);
+      if (!this.client) return "";
 
       const systemMessage: ChatCompletionSystemMessageParam = {
         role: "system",
@@ -100,7 +100,7 @@ class OpenAIProvider
 
       return title ?? message.substring(0, 25);
     } catch {
-      return message.substring(0, 25);
+      return "";
     }
   }
 
