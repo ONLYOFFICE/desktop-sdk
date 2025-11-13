@@ -557,6 +557,14 @@ namespace NSProcesses
 								(LPVOID)(envBlock.c_str()), nullptr, &si, &m_pi))
 			{
 				DWORD dwError = GetLastError();
+
+				CloseHandle(m_hStdOutWr);
+				CloseHandle(m_hStdErrWr);
+				CloseHandle(m_hStdInRd);
+				m_hStdOutWr = nullptr;
+				m_hStdErrWr = nullptr;
+				m_hStdInRd = nullptr;
+
 				m_callback->process_callback(m_id, StreamType::Terminate, "");
 				return;
 			}
