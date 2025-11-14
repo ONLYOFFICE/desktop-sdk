@@ -6,10 +6,11 @@ import AttachmentIconUrl from "@/assets/attachment.svg?url";
 import DocumentsIconSvg from "@/assets/formats/24/documents.svg?url";
 import SpreadsheetsIconSvg from "@/assets/formats/24/spreadsheets.svg?url";
 import PdfIconSvg from "@/assets/formats/24/pdf.svg?url";
+import PresentationsIconSvg from "@/assets/formats/24/presentations.svg?url";
 
 import useAttachmentsStore from "@/store/useAttachmentsStore";
 
-import { isDocument, isPdf, isSpreadsheet } from "@/lib/utils";
+import { isDocument, isPdf, isPresentation, isSpreadsheet } from "@/lib/utils";
 
 import { IconButton } from "@/components/icon-button";
 import { DropdownMenu } from "@/components/dropdown";
@@ -85,7 +86,7 @@ const ComposerActionAttachment = () => {
   )?.files
     ?.filter((file) => !file.url)
     ?.map((file) => {
-      let icon = DocumentsIconSvg;
+      let icon: null | string = DocumentsIconSvg;
 
       if (isPdf(file.type)) {
         icon = PdfIconSvg;
@@ -93,6 +94,10 @@ const ComposerActionAttachment = () => {
         icon = SpreadsheetsIconSvg;
       } else if (isDocument(file.type)) {
         icon = DocumentsIconSvg;
+      } else if (isPresentation(file.type)) {
+        icon = PresentationsIconSvg;
+      } else {
+        icon = null;
       }
 
       return {
@@ -101,7 +106,7 @@ const ComposerActionAttachment = () => {
           : file.path.split("/").pop() ?? "",
         key: file.path,
         id: file.path,
-        icon: <ReactSVG src={icon} />,
+        icon: icon ? <ReactSVG src={icon} /> : null,
         onClick: () => selectRecentFile(file.path, file.type),
       };
     })
