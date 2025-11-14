@@ -112,7 +112,7 @@ const ChatList = () => {
         <IconButton
           iconName={OpenChatListUrl}
           size={24}
-          isStroke
+          // isStroke
           onClick={() => {
             setCurrentPage("chat");
             setIsOpen(true);
