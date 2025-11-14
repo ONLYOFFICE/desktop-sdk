@@ -37,14 +37,17 @@ const DropdownMenuComponent = ({
           className={cn(
             "dropdown-menu z-50 border border-[var(--drop-down-menu-border-color)] rounded-[8px] shadow-[var(--drop-down-menu-shadow)] bg-[var(--drop-down-menu-background-color)] py-[8px] max-h-56 overflow-y-auto flex flex-col gap-[4px]",
             matchTriggerWidth
-              ? "w-[var(--radix-dropdown-menu-trigger-width)]"
+              ? "min-w-[150px] w-[var(--radix-dropdown-menu-trigger-width)]"
               : "w-fit",
             contentClassName
           )}
           style={maxWidth ? { maxWidth } : undefined}
         >
           {items.map((item, index) => (
-            <DropDownItem key={item.id || item.text || `item-${index}`} {...item} />
+            <DropDownItem
+              key={item.id || item.text || `item-${index}`}
+              {...item}
+            />
           ))}
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
