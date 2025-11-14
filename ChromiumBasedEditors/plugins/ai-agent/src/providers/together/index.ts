@@ -318,11 +318,17 @@ class TogetherProvider
       (m) => m.type === "chat"
     );
 
-    return response.map((model) => ({
-      id: model.id,
-      name: model.display_name ?? model.id,
-      provider: "openai" as const,
-    }));
+    return response
+      .filter(
+        (m) =>
+          m.id === "Qwen/Qwen3-235B-A22B-fp8-tput" ||
+          m.id === "deepseek-ai/DeepSeek-V3.1"
+      )
+      .map((model) => ({
+        id: model.id,
+        name: model.display_name ?? model.id,
+        provider: "openai" as const,
+      }));
   };
 }
 
