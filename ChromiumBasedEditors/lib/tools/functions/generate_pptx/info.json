@@ -1,0 +1,23 @@
+{
+  "type": "function",
+  "name": "generate_pptx",
+  "description": "Use this function if you are asked to generate a complete presentation with a custom theme, fonts, and streaming content. Input: a detailed description of the presentation to create, including topic, number of slides, and style.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "topic": {
+        "type": "string",
+        "description": "Presentation topic."
+      },
+      "slideCount": {
+        "type": "string",
+        "description": "Number of slides to generate."
+      },
+      "style": {
+        "type": "string",
+        "description": "Visual style of the presentation: modern, classic, minimal, or corporate."
+      }
+    },
+    "required": []
+  }
+}

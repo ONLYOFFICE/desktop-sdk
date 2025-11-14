@@ -65,6 +65,8 @@ public:
 	virtual void OpenTemplate(const std::wstring& path, const std::wstring& name = L"") = 0;
 	virtual void OpenFile(const std::wstring& path) = 0;
 	virtual std::vector<CRecentFileInfo> GetRecents() = 0;
+
+	virtual void ExecuteJS(const std::string& code) = 0;
 };
 
 class CFunctions;
