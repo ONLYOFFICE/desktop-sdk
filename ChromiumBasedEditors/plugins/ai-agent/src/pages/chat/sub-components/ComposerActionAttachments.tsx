@@ -9,8 +9,6 @@ import PdfIconSvg from "@/assets/formats/24/pdf.svg?url";
 import PresentationsIconSvg from "@/assets/formats/24/presentations.svg?url";
 
 import useAttachmentsStore from "@/store/useAttachmentsStore";
-import useProviders from "@/store/useProviders";
-import useModelsStore from "@/store/useModelsStore";
 
 import { isDocument, isPdf, isPresentation, isSpreadsheet } from "@/lib/utils";
 
@@ -23,8 +21,6 @@ const ComposerActionAttachment = () => {
   const [isOpen, setIsOpen] = React.useState(false);
 
   const { addAttachmentFile } = useAttachmentsStore();
-  const { currentProvider } = useProviders();
-  const { currentModel } = useModelsStore();
 
   const onOpenChange = (open: boolean) => {
     setIsOpen(open);
@@ -126,7 +122,6 @@ const ComposerActionAttachment = () => {
         className="cursor-pointer rounded-[4px] outline-none"
         isStroke
         isActive={isOpen}
-        disabled={!currentProvider || !currentModel}
       />
     </TooltipIconButton>
   );

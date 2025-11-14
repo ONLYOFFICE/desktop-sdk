@@ -5,8 +5,6 @@ import SearchIconUrl from "@/assets/btn-web-search.svg?url";
 import ToolsIconUrl from "@/assets/tools.svg?url";
 
 import useServersStore from "@/store/useServersStore";
-import useProviders from "@/store/useProviders";
-import useModelsStore from "@/store/useModelsStore";
 
 import { IconButton } from "@/components/icon-button";
 import { DropdownMenu } from "@/components/dropdown";
@@ -15,8 +13,6 @@ import { TooltipIconButton } from "@/components/tooltip-icon-button";
 const ServersSettings = () => {
   const { servers, changeToolStatus, webSearchEnabled, getWebSearchEnabled } =
     useServersStore();
-  const { currentProvider } = useProviders();
-  const { currentModel } = useModelsStore();
 
   const [isOpen, setIsOpen] = useState(false);
 
@@ -25,15 +21,10 @@ const ServersSettings = () => {
   const trigger = useMemo(
     () => (
       <TooltipIconButton visible={!isOpen} tooltip={t("MCPServers")}>
-        <IconButton
-          iconName={ToolsIconUrl}
-          size={24}
-          isActive={isOpen}
-          disabled={!currentProvider || !currentModel}
-        />
+        <IconButton iconName={ToolsIconUrl} size={24} isActive={isOpen} />
       </TooltipIconButton>
     ),
-    [isOpen, t, currentProvider, currentModel]
+    [isOpen, t]
   );
 
   const toolsActions = useMemo(
