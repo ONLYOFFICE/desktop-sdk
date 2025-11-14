@@ -1735,6 +1735,21 @@ public:
 			sAdditionXml = L"<m_bIsPDFA>true</m_bIsPDFA>";
 		}
 
+		COfficeFileFormatChecker oChecker;
+		if (oChecker.isOfficeFile(m_sInputFile))
+		{
+			if (oChecker.nFileType == m_nOutputFormat)
+			{
+				NSFile::CFileBinary::Copy(m_sInputFile, m_sOutputFile);
+
+				NSDirectory::DeleteDirectory(m_sTempDirectory);
+				m_pEvents->OnFileConvert(nReturnCode, this);
+
+				m_bRunThread = FALSE;
+				return 0;
+			}
+		}
+
 		oBuilder.WriteString(std::to_wstring(m_nOutputFormat));
 		oBuilder.WriteString(L"</m_nFormatTo><m_sFontDir>");
 		oBuilder.WriteEncodeXmlString(m_pManager->m_oSettings.fonts_cache_info_path);
@@ -1751,6 +1766,12 @@ public:
 
 		if (!sAdditionXml.empty())
 			oBuilder.WriteString(sAdditionXml);
+
+		if (std::wstring::npos == sAdditionXml.find(L"m_nCsvTxtEncoding"))
+			oBuilder.WriteString(L"<m_nCsvTxtEncoding>46</m_nCsvTxtEncoding>");
+
+		if (std::wstring::npos == sAdditionXml.find(L"m_nCsvDelimiter"))
+			oBuilder.WriteString(L"<m_nCsvDelimiter>4</m_nCsvDelimiter>");
 
 		if (m_nOutputFormat & AVS_OFFICESTUDIO_FILE_IMAGE)
 		{
