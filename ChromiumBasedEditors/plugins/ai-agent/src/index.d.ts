@@ -15,6 +15,7 @@ declare global {
       }) => void;
     };
     AscDesktopEditor: {
+      getOfficeFileType: (file: string) => number;
       getToolFunctions: () => string;
       callToolFunction: (name: string, args?: string) => string;
       openTemplate: (file: string, name: string) => void;

@@ -6,6 +6,14 @@ import useRouter from "@/store/useRouter";
 import { Navigation } from "./sub-components/Header";
 import { ChatList } from "./sub-components/ChatList";
 
+const getSystemTheme = (system: "dark" | "light") => {
+  if (system === "dark") {
+    return "theme-night";
+  }
+
+  return "theme-white";
+};
+
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const { currentPage } = useRouter();
 
@@ -14,7 +22,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const [theme, setTheme] = React.useState(() => {
     if (window.RendererProcessVariable) {
       if (window.RendererProcessVariable.theme.id === "theme-system") {
-        return `theme-${window.RendererProcessVariable.theme.system}`;
+        return getSystemTheme(
+          window.RendererProcessVariable.theme.system as "dark" | "light"
+        );
       }
 
       return window.RendererProcessVariable.theme.id;
@@ -35,7 +45,11 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
       if (info.theme) {
         if (info.theme === "theme-system") {
-          setTheme(`theme-${window.RendererProcessVariable.theme.system}`);
+          setTheme(
+            getSystemTheme(
+              window.RendererProcessVariable.theme.system as "dark" | "light"
+            )
+          );
         } else {
           setTheme(info.theme);
         }

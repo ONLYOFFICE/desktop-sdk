@@ -1,14 +1,21 @@
 import { ReactSVG } from "react-svg";
 
 import type { TAttachmentFile } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import {
+  cn,
+  isDocument,
+  isPdf,
+  isPresentation,
+  isSpreadsheet,
+} from "@/lib/utils";
 
 import useAttachmentsStore from "@/store/useAttachmentsStore";
 
 import BtnCloseIconUrl from "@/assets/btn-close.small.svg?url";
-import DocumentsIconUrl from "@/assets/formats/32/documents.svg?url";
-import PdfIconUrl from "@/assets/formats/32/pdf.svg?url";
-import SpreadsheetsIconUrl from "@/assets/formats/32//spreadsheets.svg?url";
+import DocumentsIconUrl from "@/assets/formats/24/documents.svg?url";
+import PdfIconUrl from "@/assets/formats/24/pdf.svg?url";
+import SpreadsheetsIconUrl from "@/assets/formats/24/spreadsheets.svg?url";
+import PresentationsIconUrl from "@/assets/formats/24/presentations.svg?url";
 
 import { IconButton } from "../icon-button";
 
@@ -30,17 +37,25 @@ const FileItem = ({ file, withoutClose }: FileItemProps) => {
   const extension = name.split(".").pop() ?? "";
   const nameWithoutExtension = name.replace(`.${extension}`, "");
 
-  const icon =
-    extension === "pdf"
-      ? PdfIconUrl
-      : extension === "docx"
-      ? DocumentsIconUrl
-      : SpreadsheetsIconUrl;
+  const isDocumentFile = isDocument(file.type);
+  const isPDFFile = isPdf(file.type);
+  const isSpreadsheetFile = isSpreadsheet(file.type);
+  const isPresentationFile = isPresentation(file.type);
+
+  const icon = isPDFFile
+    ? PdfIconUrl
+    : isDocumentFile
+    ? DocumentsIconUrl
+    : isSpreadsheetFile
+    ? SpreadsheetsIconUrl
+    : isPresentationFile
+    ? PresentationsIconUrl
+    : null;
 
   return (
     <div
       className={cn(
-        " w-fit flex flex-row gap-[12px] h-[44px] rounded-[8px] p-[4px] box-border border-[var(--file-items-border-color)]",
+        " w-fit flex flex-row items-center gap-[12px] h-[36px] rounded-[8px] p-[4px] box-border border-[var(--file-items-border-color)]",
         withoutClose ? "cursor-pointer pe-[24px]" : "",
         withoutClose
           ? "bg-[var(--file-items-chat-background-color)]"
@@ -59,11 +74,11 @@ const FileItem = ({ file, withoutClose }: FileItemProps) => {
       }}
     >
       {file.isImage ? (
-        <img className="h-[31px]" src={file.content} alt="" />
+        <img className="h-[24px]" src={file.content} alt="" />
       ) : (
-        <div className="flex flex-row items-center h-[36px] gap-[4px]">
-          <ReactSVG className="" src={icon} />
-          <p className="text-[var(--file-items-color)] whitespace-nowrap overflow-hidden text-ellipsis">
+        <div className="flex flex-row items-center h-[24px] gap-[4px]">
+          {icon ? <ReactSVG className="" src={icon} /> : null}
+          <p className="text-[var(--file-items-color)] font-normal text-[14px] leading-[20px] whitespace-nowrap overflow-hidden text-ellipsis">
             {nameWithoutExtension}
             <span className="text-[var(--file-items-ext-color)]">
               .{extension}

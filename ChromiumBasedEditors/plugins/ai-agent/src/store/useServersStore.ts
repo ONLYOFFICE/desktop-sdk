@@ -290,7 +290,7 @@ const useServersStore = create<UseServersStoreProps>((set, get) => ({
   callTools: async (name: string, args: Record<string, unknown>) => {
     const thisStore = get();
 
-    const type = name.split("_")[0];
+    const type = client.getServerType(name);
     const toolName = name.replace(type + "_", "");
 
     const tool = thisStore.disabledTools[type].find(

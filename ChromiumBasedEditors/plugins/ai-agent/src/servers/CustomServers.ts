@@ -103,6 +103,18 @@ class CustomServers {
     this.customServers = servers.mcpServers;
   };
 
+  getServerType = (name: string) => {
+    let type: string = "";
+
+    Object.keys(this.customServers).forEach((serverType) => {
+      if (name.includes(`${serverType}_`)) {
+        type = serverType;
+      }
+    });
+
+    return type;
+  };
+
   startCustomServers = () => {
     const servers: string[] = [];
     Object.entries(this.customServers).forEach(([type, config]) => {

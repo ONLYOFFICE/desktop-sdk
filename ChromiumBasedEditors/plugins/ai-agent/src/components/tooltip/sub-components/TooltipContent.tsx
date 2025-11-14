@@ -17,6 +17,7 @@ const TooltipContent = ({
         className={cn(
           "mt-[4px] z-[9999]",
           "bg-[var(--tooltip-background-color)] text-[var(--tooltip-text-color)] border border-[var(--tooltip-border-color)] shadow-[var(--tooltip-shadow)] p-[4px] rounded-[4px] text-[12px] font-[400] leading-[16px]",
+          "whitespace-pre-line",
           className
         )}
         {...props}

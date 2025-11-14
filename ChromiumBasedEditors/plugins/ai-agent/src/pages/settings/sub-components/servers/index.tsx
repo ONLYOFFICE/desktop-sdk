@@ -12,7 +12,7 @@ const Servers = () => {
 
   return (
     <>
-      <div className="flex flex-col gap-[16px] mt-[16px]">
+      <div className="flex flex-col gap-[16px] mt-[16px] pb-[32px]">
         <p className="font-normal text-[14px] leading-[20px] text-[var(--servers-description-color)]">
           {t("CustomServersDescription")}
         </p>

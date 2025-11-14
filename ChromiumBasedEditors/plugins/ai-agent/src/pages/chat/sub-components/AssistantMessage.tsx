@@ -5,14 +5,15 @@ import {
   MessagePrimitive,
 } from "@assistant-ui/react";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
-import DownloadIconUrl from "@/assets/btn-download.svg?url";
+import DownloadIconUrl from "@/assets/btn-save.svg?url";
 import BtnCopyIconUrl from "@/assets/btn-copy.svg?url";
 import BtnCheckIconUrl from "@/assets/checked.svg?url";
 
 import useMessageStore from "@/store/useMessageStore";
 
-import { convertMessagesToMd } from "@/lib/utils";
+import { convertMessagesToMd, getMessageTitleFromMd } from "@/lib/utils";
 
 import { MarkdownText } from "@/components/markdown";
 import { TooltipIconButton } from "@/components/tooltip-icon-button";
@@ -30,29 +31,28 @@ const MessageError = () => {
 };
 
 const AssistantActionBar = () => {
-  const { isStreamRunning } = useMessageStore();
+  const { t } = useTranslation();
+
+  const { isStreamRunning, messages } = useMessageStore();
 
   const message = useMessage();
 
-  const mdValue = convertMessagesToMd([message]);
+  if (message.status?.type === "incomplete" && message.status?.error) return;
 
   const onDownload = () => {
-    window.AscDesktopEditor.SaveFilenameDialog(
-      `${mdValue.substring(0, 30)}.docx`,
-      (path) => {
-        if (!path) return;
+    const parentMessage = messages[Number(message.parentId)];
 
-        window.AscDesktopEditor.saveAndOpen(
-          mdValue,
-          0x5c,
-          path,
-          0x41,
-          (code) => {
-            if (!code) console.log("Conversion error");
-          }
-        );
-      }
-    );
+    const mdValue = convertMessagesToMd([parentMessage, message]);
+
+    const title = getMessageTitleFromMd(mdValue);
+
+    window.AscDesktopEditor.SaveFilenameDialog(`${title}.docx`, (path) => {
+      if (!path) return;
+
+      window.AscDesktopEditor.saveAndOpen(mdValue, 0x5c, path, 0x41, (code) => {
+        if (!code) console.log("Conversion error");
+      });
+    });
   };
 
   return (
@@ -78,10 +78,10 @@ const AssistantActionBar = () => {
         </TooltipIconButton>
       </ActionBarPrimitive.Copy>
       <div>
-        <TooltipIconButton tooltip="Download">
+        <TooltipIconButton tooltip={t("Save")}>
           <IconButton
             iconName={DownloadIconUrl}
-            size={20}
+            size={24}
             onClick={onDownload}
             isStroke
           />

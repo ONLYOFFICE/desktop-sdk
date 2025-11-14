@@ -85,7 +85,7 @@ const App = () => {
     },
   });
 
-  if (currentPage !== "settings" && !providers.length)
+  if (currentPage !== "settings" && !providers.length && !messages.length)
     return (
       <Layout>
         <EmptyScreen />

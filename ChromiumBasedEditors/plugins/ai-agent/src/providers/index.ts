@@ -107,7 +107,7 @@ class Provider {
   };
 
   createChatName = async (message: string) => {
-    if (!this.currentProvider) return message.substring(0, 25);
+    if (!this.currentProvider) return "";
 
     return this.currentProvider.createChatName(message);
   };

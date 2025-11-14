@@ -206,49 +206,54 @@ const AvailableToolsItem = ({
         </div>
       </div>
       {opened ? (
-        <div className="flex flex-col gap-[2px] mt-[4px]">
-          {mcpItems.map((tool) => (
-            <div
-              key={tool.name}
-              className="rounded-[4px] cursor-pointer flex flex-col ps-[40px] pe-[8px] hover:bg-[var(--servers-available-tools-item-hover-background-color)]"
-              onClick={() => {
-                changeToolStatus(name, tool.name, !tool.enabled);
-              }}
-            >
-              <div className="flex items-center justify-between w-full">
-                <p className="text-[var(--servers-available-tools-item-name-color)]">
-                  {tool.name}
-                </p>
-                <ToggleButton
-                  checked={tool.enabled ?? false}
-                  disabled={disableEnable && !tool.enabled}
-                  onCheckedChange={() => {
-                    // empty change because change will be applied in onClick at div element
-                  }}
-                />
+        <div className="flex flex-col gap-[12px] mt-[4px]">
+          {mcpItems.map((tool) => {
+            const description = isSystem
+              ? tool.description?.split(". ")[0] + "."
+              : tool.description;
+            return (
+              <div
+                key={tool.name}
+                className="rounded-[4px] cursor-pointer flex flex-col ps-[40px] pe-[8px] hover:bg-[var(--servers-available-tools-item-hover-background-color)]"
+                onClick={() => {
+                  changeToolStatus(name, tool.name, !tool.enabled);
+                }}
+              >
+                <div className="flex items-center justify-between w-full">
+                  <p className="text-[var(--servers-available-tools-item-name-color)]">
+                    {tool.name}
+                  </p>
+                  <ToggleButton
+                    checked={tool.enabled ?? false}
+                    disabled={disableEnable && !tool.enabled}
+                    onCheckedChange={() => {
+                      // empty change because change will be applied in onClick at div element
+                    }}
+                  />
+                </div>
+                {description && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <p
+                        className="text-[13px] leading-[18px] line-clamp-2 text-[var(--servers-available-tools-sub-header-color)]"
+                        style={{
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                        }}
+                      >
+                        {description}
+                      </p>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <div className="max-w-[300px]">{description}</div>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
               </div>
-              {tool.description && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <p
-                      className="text-[13px] leading-[18px] line-clamp-2 text-[var(--servers-available-tools-sub-header-color)]"
-                      style={{
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                        overflow: "hidden",
-                      }}
-                    >
-                      {tool.description}
-                    </p>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <div className="max-w-[300px]">{tool.description}</div>
-                  </TooltipContent>
-                </Tooltip>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : null}
       {openLogsDialog ? (

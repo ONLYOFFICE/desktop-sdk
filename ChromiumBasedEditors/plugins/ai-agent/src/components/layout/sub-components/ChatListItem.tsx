@@ -5,7 +5,7 @@ import { ReactSVG } from "react-svg";
 import MoreIconSvgUrl from "@/assets/more.svg?url";
 import RemoveIconSvgUrl from "@/assets/btn-remove.svg?url";
 import RenameIconSvgUrl from "@/assets/btn-rename.svg?url";
-import DownloadIconSvgUrl from "@/assets/btn-download.svg?url";
+import DownloadIconSvgUrl from "@/assets/btn-save.svg?url";
 
 import type { Page } from "@/store/useRouter";
 
@@ -191,7 +191,7 @@ const ChatListItem = ({
               items={[
                 {
                   icon: <DownloadIcon />,
-                  text: t("Download"),
+                  text: t("Save"),
                   onClick: onDownloadClick,
                 },
                 {
