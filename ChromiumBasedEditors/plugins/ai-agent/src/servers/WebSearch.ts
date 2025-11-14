@@ -180,6 +180,8 @@ class WebSearch {
         },
       },
     ]);
+
+    window.dispatchEvent(new CustomEvent("tools-changed"));
   };
 
   getWebSearchEnabled = () => {
