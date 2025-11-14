@@ -27,56 +27,58 @@ const ComposerActionAttachment = () => {
   };
 
   const selectRecentFile = (path: string, type: number) => {
-    window.AscDesktopEditor.convertFileExternal(path, 69, (data, error) => {
-      if (error) {
-        console.log("Error:", error);
-        return;
+    const isSpreadsheetFile = isSpreadsheet(type);
+    window.AscDesktopEditor.convertFileExternal(
+      path,
+      isSpreadsheetFile ? 260 : 69,
+      (data, error) => {
+        if (error) {
+          console.log("Error:", error);
+          return;
+        }
+
+        const uint8Array = new Uint8Array(data.content);
+        const textDecoder = new TextDecoder("utf-8");
+        const stringData = textDecoder.decode(uint8Array);
+
+        addAttachmentFile({ path, content: stringData, type });
       }
-
-      const uint8Array = new Uint8Array(data.content);
-      const textDecoder = new TextDecoder("utf-8");
-      const stringData = textDecoder.decode(uint8Array);
-
-      addAttachmentFile({ path, content: stringData, type });
-    });
+    );
   };
 
   const selectLocalFile = () => {
-    window.AscDesktopEditor.OpenFilenameDialog(
-      "*.docx , *.pdf , *.xlsx",
-      true,
-      (file) => {
-        if (Array.isArray(file)) {
-          file.forEach((file, index) => {
-            if (index > 5) return;
+    window.AscDesktopEditor.OpenFilenameDialog("", true, (file) => {
+      if (Array.isArray(file)) {
+        file.forEach((file, index) => {
+          if (index > 5) return;
 
-            const extension = file.split(".").pop() ?? "";
+          const type = window.AscDesktopEditor.getOfficeFileType(file);
 
-            window.AscDesktopEditor.convertFileExternal(
-              file,
-              69,
-              (data, error) => {
-                if (error) {
-                  console.log("Error:", error);
-                  return;
-                }
+          const isSpreadsheetFile = isSpreadsheet(type);
 
-                const uint8Array = new Uint8Array(data.content);
-                const textDecoder = new TextDecoder("utf-8");
-                const stringData = textDecoder.decode(uint8Array);
-
-                addAttachmentFile({
-                  path: file,
-                  content: stringData || "",
-                  type:
-                    extension === "pdf" ? 87 : extension === "docx" ? 65 : 257,
-                });
+          window.AscDesktopEditor.convertFileExternal(
+            file,
+            isSpreadsheetFile ? 260 : 69,
+            (data, error) => {
+              if (error) {
+                console.log("Error:", error);
+                return;
               }
-            );
-          });
-        }
+
+              const uint8Array = new Uint8Array(data.content);
+              const textDecoder = new TextDecoder("utf-8");
+              const stringData = textDecoder.decode(uint8Array);
+
+              addAttachmentFile({
+                path: file,
+                content: stringData || "",
+                type,
+              });
+            }
+          );
+        });
       }
-    );
+    });
   };
 
   const recentFiles = (
