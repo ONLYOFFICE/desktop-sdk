@@ -4793,6 +4793,30 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 				return true;
 			}
+			else if (name == "getOfficeFileType")
+			{
+				if (arguments.size() < 1)
+				{
+					retval = CefV8Value::CreateInt(-1);
+					return true;
+				}
+
+				int nFileType = 0;
+				std::wstring sFileUrl = arguments[0]->GetStringValue().ToWString();
+
+				if (g_pLocalResolver->Check(sFileUrl))
+				{
+					COfficeFileFormatChecker oChecker;
+					bool bIsOfficeFile = oChecker.isOfficeFile(sFileUrl);
+					if (bIsOfficeFile)
+					{
+						nFileType = oChecker.nFileType;
+					}
+				}
+
+				retval = CefV8Value::CreateInt(nFileType);
+				return true;
+			}
 
 			// Function does not exist.
 			return false;
@@ -5414,7 +5438,7 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 			CefRefPtr<CefV8Handler> handler = pWrapper;
 
-#define EXTEND_METHODS_COUNT 196
+#define EXTEND_METHODS_COUNT 197
 			const char* methods[EXTEND_METHODS_COUNT] = {
 				"Copy",
 				"Paste",
@@ -5687,6 +5711,8 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 				"getGenerationInfo",
 
 				"_saveAndOpen",
+
+				"getOfficeFileType",
 
 				NULL};
 
