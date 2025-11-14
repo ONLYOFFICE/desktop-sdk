@@ -77,6 +77,23 @@ const SelectModel = () => {
     (p) => p.name === currentProvider?.name
   );
 
+  React.useEffect(() => {
+    if ((!currentModel || !currentProvider) && providers.length > 0) {
+      const providerInfo = providers[0];
+      const model = providersModels.get(providerInfo.name)?.[0];
+
+      if (!model) return;
+
+      onSelectModel(providerInfo, model.id);
+    }
+  }, [
+    currentModel,
+    currentProvider,
+    providers,
+    providersModels,
+    onSelectModel,
+  ]);
+
   return (
     <ComboBox
       placeholder={t("SelectModel")}

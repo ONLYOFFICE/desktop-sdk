@@ -16,6 +16,7 @@ import MoreIconSvgUrl from "@/assets/more.svg?url";
 import RemoveIconSvgUrl from "@/assets/btn-remove.svg?url";
 import ResetIconSvgUrl from "@/assets/btn-reset.svg?url";
 import NavigationIconSvgUrl from "@/assets/btn-menu-navigation.svg?url";
+import StatusErrorIconUrl from "@/assets/status.error.svg?url";
 
 import type { TMCPItem } from "@/lib/types";
 
@@ -111,6 +112,14 @@ const AvailableToolsItem = ({
           <p className="text-[var(--servers-available-tools-item-name-color)]">
             {name}
           </p>
+          {!isLoadingAction && isStoped ? (
+            <IconButton
+              iconName={StatusErrorIconUrl}
+              size={16}
+              disableHover
+              noColor
+            />
+          ) : null}
           {isLoading ? null : (
             <p className="font-normal text-[14px] text-[var(--servers-available-tools-sub-header-color)]">
               <span className="text-[var(--servers-available-tools-current-tool-color)]">

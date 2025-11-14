@@ -16,6 +16,7 @@ import DocumentsIconUrl from "@/assets/formats/24/documents.svg?url";
 import PdfIconUrl from "@/assets/formats/24/pdf.svg?url";
 import SpreadsheetsIconUrl from "@/assets/formats/24/spreadsheets.svg?url";
 import PresentationsIconUrl from "@/assets/formats/24/presentations.svg?url";
+import UnknownFormatIconUrl from "@/assets/formats/24/unknown-format.svg?url";
 
 import { IconButton } from "../icon-button";
 
@@ -50,7 +51,7 @@ const FileItem = ({ file, withoutClose }: FileItemProps) => {
     ? SpreadsheetsIconUrl
     : isPresentationFile
     ? PresentationsIconUrl
-    : null;
+    : UnknownFormatIconUrl;
 
   return (
     <div

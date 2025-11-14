@@ -35,12 +35,12 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   React.useLayoutEffect(() => {
     if (window.RendererProcessVariable) {
-      i18n.changeLanguage("en");
+      i18n.changeLanguage(window.RendererProcessVariable.lang);
     }
 
     window.on_update_plugin_info = (info) => {
       if (info.lang) {
-        i18n.changeLanguage("en");
+        i18n.changeLanguage(info.lang);
       }
 
       if (info.theme) {

@@ -119,7 +119,7 @@ class AnthropicProvider
         system: this.systemPrompt,
         tools: this.tools,
         stream: true,
-        max_tokens: 2048,
+        max_tokens: 30000,
         tool_choice: {
           disable_parallel_tool_use: true,
           type: "auto",
@@ -315,11 +315,18 @@ class AnthropicProvider
 
       const body = modelsRes.data;
 
-      return body.map((model) => ({
-        id: model.id,
-        name: model.display_name,
-        provider: "anthropic" as const,
-      }));
+      return body
+        .filter(
+          (model) =>
+            model.id.includes("claude-haiku-4-5") ||
+            model.id.includes("claude-sonnet-4-5") ||
+            model.id.includes("claude-opus-4-1")
+        )
+        .map((model) => ({
+          id: model.id,
+          name: model.display_name,
+          provider: "anthropic" as const,
+        }));
     } catch (error) {
       console.log(error);
       return [];

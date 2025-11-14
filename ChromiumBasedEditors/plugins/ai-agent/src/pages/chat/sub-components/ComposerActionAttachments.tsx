@@ -7,6 +7,7 @@ import DocumentsIconSvg from "@/assets/formats/24/documents.svg?url";
 import SpreadsheetsIconSvg from "@/assets/formats/24/spreadsheets.svg?url";
 import PdfIconSvg from "@/assets/formats/24/pdf.svg?url";
 import PresentationsIconSvg from "@/assets/formats/24/presentations.svg?url";
+import UnknownFormatIconSvg from "@/assets/formats/24/unknown-format.svg?url";
 
 import useAttachmentsStore from "@/store/useAttachmentsStore";
 
@@ -99,7 +100,7 @@ const ComposerActionAttachment = () => {
       } else if (isPresentation(file.type)) {
         icon = PresentationsIconSvg;
       } else {
-        icon = null;
+        icon = UnknownFormatIconSvg;
       }
 
       return {

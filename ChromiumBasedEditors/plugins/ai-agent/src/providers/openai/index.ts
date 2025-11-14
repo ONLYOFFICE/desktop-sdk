@@ -126,8 +126,6 @@ class OpenAIProvider
         model: this.modelKey,
         tools: this.tools,
         stream: true,
-
-        max_completion_tokens: 2048,
       });
 
       this.prevMessages.push(...convertedMessage);
@@ -317,11 +315,21 @@ class OpenAIProvider
 
     const response: OpenAIModel[] = (await newClient.models.list()).data;
 
-    return response.map((model) => ({
-      id: model.id,
-      name: model.id,
-      provider: "openai" as const,
-    }));
+    return response
+      .filter(
+        (model) =>
+          model.id === "gpt-4.1" ||
+          model.id === "gpt-5" ||
+          model.id === "gpt-5.1-2025-11-13"
+      )
+      .map((model) => ({
+        id: model.id,
+        name:
+          model.id === "gpt-5.1-2025-11-13"
+            ? "GPT-5.1"
+            : model.id.toUpperCase(),
+        provider: "openai" as const,
+      }));
   };
 }
 
