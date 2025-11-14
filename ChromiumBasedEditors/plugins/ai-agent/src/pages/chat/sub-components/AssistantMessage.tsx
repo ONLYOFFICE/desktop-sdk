@@ -5,8 +5,9 @@ import {
   MessagePrimitive,
 } from "@assistant-ui/react";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
-import DownloadIconUrl from "@/assets/btn-download.svg?url";
+import DownloadIconUrl from "@/assets/btn-save.svg?url";
 import BtnCopyIconUrl from "@/assets/btn-copy.svg?url";
 import BtnCheckIconUrl from "@/assets/checked.svg?url";
 
@@ -30,6 +31,8 @@ const MessageError = () => {
 };
 
 const AssistantActionBar = () => {
+  const { t } = useTranslation();
+
   const { isStreamRunning, messages } = useMessageStore();
 
   const message = useMessage();
@@ -75,10 +78,10 @@ const AssistantActionBar = () => {
         </TooltipIconButton>
       </ActionBarPrimitive.Copy>
       <div>
-        <TooltipIconButton tooltip="Download">
+        <TooltipIconButton tooltip={t("Save")}>
           <IconButton
             iconName={DownloadIconUrl}
-            size={20}
+            size={24}
             onClick={onDownload}
             isStroke
           />
