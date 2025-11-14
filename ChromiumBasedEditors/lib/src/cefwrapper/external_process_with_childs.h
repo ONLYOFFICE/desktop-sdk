@@ -369,7 +369,8 @@ namespace NSProcesses
 			if (cmd.empty())
 				return cmd;
 
-			std::vector<std::wstring> extensions = {L"", L".exe", L".bat"};
+			// https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/path
+			std::vector<std::wstring> extensions = {L".exe", L".com", L".bat", L".cmd", L""};
 
 			if (true)
 			{
