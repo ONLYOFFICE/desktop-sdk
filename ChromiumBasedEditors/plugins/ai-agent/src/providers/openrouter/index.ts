@@ -319,8 +319,8 @@ class OpenRouterProvider
           model.id === "anthropic/claude-haiku-4.5" ||
           model.id === "anthropic/claude-sonnet-4.5" ||
           model.id === "x-ai/grok-4" ||
-          model.id === "google/gemini-2.5-flash" ||
-          model.id === "google/gemini-2.5-pro" ||
+          // model.id === "google/gemini-2.5-flash" ||
+          // model.id === "google/gemini-2.5-pro" ||
           model.id === "deepseek/deepseek-chat-v3.1" ||
           model.id === "qwen/qwen3-235b-a22b-2507"
       )
