@@ -23,7 +23,7 @@ const CodeHeader = ({ language, code }: CodeHeaderProps) => {
     <div className="mt-4 flex items-center justify-between gap-4 rounded-t-lg bg-[var(--chat-message-code-block-background-color)] text-[var(--chat-message-code-block-header-color)] text-[14px] leading-[20px] px-[12px] pt-[12px] pb-[8px]">
       <span className="lowercase">{language}</span>
       <TooltipIconButton
-        tooltip={t("Copy")}
+        tooltip={t("CopyToClipboard")}
         onClick={onCopy}
         visible={!isCopied}
       >
