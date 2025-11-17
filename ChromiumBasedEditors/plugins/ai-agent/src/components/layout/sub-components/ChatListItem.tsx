@@ -170,6 +170,7 @@ const ChatListItem = ({
           }}
           autoFocus
           className="w-full"
+          maxLength={128}
         />
       ) : (
         <>

@@ -63,7 +63,7 @@ const AssistantActionBar = () => {
       className="col-start-3 row-start-2 ml-3 mt-3 flex gap-[8px]"
     >
       <ActionBarPrimitive.Copy asChild>
-        <TooltipIconButton tooltip="Copy">
+        <TooltipIconButton tooltip={t("CopyToClipboard")}>
           <MessagePrimitive.If copied>
             <IconButton
               iconName={BtnCheckIconUrl}
