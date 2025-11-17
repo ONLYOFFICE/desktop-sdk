@@ -1,12 +1,14 @@
-import Together from "together-ai";
-
-import cloneDeep from "lodash.clonedeep";
-import type { ModelListResponse, Tools } from "together-ai/resources";
-import type { ThreadMessageLike } from "@assistant-ui/react";
+import OpenAI from "openai";
 import type {
+  ChatCompletionChunk,
+  ChatCompletionMessageParam,
   ChatCompletionSystemMessageParam,
-  CompletionCreateParams,
-} from "together-ai/resources/chat/completions";
+  ChatCompletionTool,
+  ChatCompletionToolMessageParam,
+} from "openai/resources/chat/completions";
+import cloneDeep from "lodash.clonedeep";
+import type { Model as OpenAIModel } from "openai/resources/models";
+import type { ThreadMessageLike } from "@assistant-ui/react";
 
 import type { Model, TMCPItem, TProvider } from "@/lib/types";
 
@@ -14,16 +16,15 @@ import type { BaseProvider } from "../base";
 import type { SettingsProvider, TData, TErrorData } from "../settings";
 
 import {
-  type TogetherMessageParam,
   convertToolsToModelFormat,
   convertMessagesToModelFormat,
 } from "./utils";
 import { handleTextMessage, handleToolCall } from "./handlers";
 import { CREATE_TITLE_SYSTEM_PROMPT } from "../Providers.utils";
 
-class TogetherProvider
+class OpenRouterProvider
   implements
-    BaseProvider<Tools, TogetherMessageParam, Together>,
+    BaseProvider<ChatCompletionTool, ChatCompletionMessageParam, OpenAI>,
     SettingsProvider
 {
   modelKey: string = "";
@@ -33,9 +34,9 @@ class TogetherProvider
   url?: string;
   provider?: TProvider;
 
-  prevMessages: TogetherMessageParam[] = [];
-  tools: Tools[] = [];
-  client?: Together;
+  prevMessages: ChatCompletionMessageParam[] = [];
+  tools: ChatCompletionTool[] = [];
+  client?: OpenAI;
 
   stopStream = false;
 
@@ -44,9 +45,10 @@ class TogetherProvider
   setProvider = (provider: TProvider) => {
     this.provider = provider;
 
-    this.client = new Together({
+    this.client = new OpenAI({
       apiKey: provider.key,
       baseURL: provider.baseUrl,
+      dangerouslyAllowBrowser: true,
     });
 
     if (provider.key) this.setApiKey(provider.key);
@@ -94,7 +96,7 @@ class TogetherProvider
         stream: false,
       });
 
-      const title = response.choices[0].message?.content;
+      const title = response.choices[0].message.content;
 
       return title ?? message.substring(0, 25);
     } catch {
@@ -124,6 +126,7 @@ class TogetherProvider
         model: this.modelKey,
         tools: this.tools,
         stream: true,
+        temperature: 0,
       });
 
       this.prevMessages.push(...convertedMessage);
@@ -139,7 +142,8 @@ class TogetherProvider
       let stop = false;
 
       for await (const messageStreamEvent of stream) {
-        const chunks = messageStreamEvent.choices;
+        const chunks: ChatCompletionChunk["choices"] =
+          messageStreamEvent.choices;
 
         chunks.forEach((chunk) => {
           if (stop) return;
@@ -187,16 +191,9 @@ class TogetherProvider
         });
 
         if (this.stopStream) {
-          // Only push to prevMessages if there's actual content
-          const hasContent =
-            typeof responseMessage.content === "string"
-              ? responseMessage.content.length > 0
-              : responseMessage.content.length > 0;
+          const providerMsg = convertMessagesToModelFormat([responseMessage]);
 
-          if (hasContent) {
-            const providerMsg = convertMessagesToModelFormat([responseMessage]);
-            this.prevMessages.push(...providerMsg);
-          }
+          this.prevMessages.push(...providerMsg);
 
           stream.controller.abort();
 
@@ -206,8 +203,11 @@ class TogetherProvider
             isEnd: true,
             responseMessage,
           };
+
           continue;
-        } else if (stop) {
+        }
+
+        if (stop) {
           yield {
             isEnd: true,
             responseMessage,
@@ -247,9 +247,9 @@ class TogetherProvider
 
     if (!result) return message;
 
-    const toolResult: CompletionCreateParams.ChatCompletionToolMessageParam = {
+    const toolResult: ChatCompletionToolMessageParam = {
       role: "tool",
-      content: result.result || "",
+      content: result.result,
       tool_call_id: result.toolCallId!,
     };
 
@@ -265,71 +265,90 @@ class TogetherProvider
   };
 
   getName = () => {
-    return "TogetherAI";
+    return "OpenRouter";
   };
 
   getBaseUrl = () => {
-    return "https://api.together.xyz/v1";
+    return "https://openrouter.ai/api/v1";
   };
 
   checkProvider = async (data: TData): Promise<boolean | TErrorData> => {
-    const checkClient = new Together({
-      baseURL: data.url,
-      apiKey: data.apiKey,
-    });
-
     try {
-      await checkClient.models.list();
+      const response = await fetch(`${data.url}/models/user`, {
+        headers: {
+          Authorization: `Bearer ${data.apiKey}`,
+        },
+      });
 
-      return true;
-    } catch (error) {
-      console.log(error);
-      const errorObj = error as { code: string; status: number };
-
-      if (errorObj.status === 401) {
-        return {
-          field: "key",
-          message: "Invalid API Key",
-        };
-      }
-
-      if (data.apiKey) {
+      if (!response.ok) {
+        if (response.status === 401 || !data.apiKey) {
+          return {
+            field: "key",
+            message: "Invalid API Key",
+          };
+        }
         return {
           field: "url",
           message: "Invalid URL",
         };
       }
+
+      return true;
+    } catch (error) {
+      console.log(error);
+      return {
+        field: "url",
+        message: "Failed to connect",
+      };
     }
-    return {
-      field: "key",
-      message: "Empty key",
-    };
   };
 
   getProviderModels = async (data: TData): Promise<Model[]> => {
-    const newClient = new Together({
+    const newClient = new OpenAI({
       baseURL: data.url,
       apiKey: data.apiKey,
+      dangerouslyAllowBrowser: true,
     });
 
-    const response: ModelListResponse = (await newClient.models.list()).filter(
-      (m) => m.type === "chat"
-    );
+    const response: OpenAIModel[] = (await newClient.models.list()).data;
 
     return response
       .filter(
-        (m) =>
-          m.id === "Qwen/Qwen3-235B-A22B-fp8-tput" ||
-          m.id === "deepseek-ai/DeepSeek-V3.1"
+        (model) =>
+          model.id === "openai/gpt-5.1" ||
+          model.id === "anthropic/claude-haiku-4.5" ||
+          model.id === "anthropic/claude-sonnet-4.5" ||
+          model.id === "x-ai/grok-4" ||
+          model.id === "google/gemini-2.5-flash" ||
+          model.id === "google/gemini-2.5-pro" ||
+          model.id === "deepseek/deepseek-chat-v3.1" ||
+          model.id === "qwen/qwen3-235b-a22b-2507"
       )
       .map((model) => ({
         id: model.id,
-        name: model.display_name ?? model.id,
-        provider: "together" as const,
+        name:
+          model.id === "openai/gpt-5.1"
+            ? "GPT-5.1"
+            : model.id === "anthropic/claude-haiku-4.5"
+            ? "Claude Haiku 4.5"
+            : model.id === "anthropic/claude-sonnet-4.5"
+            ? "Claude Sonnet 4.5"
+            : model.id === "x-ai/grok-4"
+            ? "Grok 4"
+            : model.id === "google/gemini-2.5-flash"
+            ? "Gemini 2.5 Flash"
+            : model.id === "google/gemini-2.5-pro"
+            ? "Gemini 2.5 Pro"
+            : model.id === "deepseek/deepseek-chat-v3.1"
+            ? "DeepSeek V3.1"
+            : model.id === "qwen/qwen3-235b-a22b-2507"
+            ? "Qwen 3"
+            : model.id.toUpperCase(),
+        provider: "openrouter" as const,
       }));
   };
 }
 
-const togetherProvider = new TogetherProvider();
+const openrouterProvider = new OpenRouterProvider();
 
-export { TogetherProvider, togetherProvider };
+export { OpenRouterProvider, openrouterProvider };
