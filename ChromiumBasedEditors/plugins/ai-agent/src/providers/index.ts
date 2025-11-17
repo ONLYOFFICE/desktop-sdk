@@ -109,7 +109,9 @@ class Provider {
   createChatName = async (message: string) => {
     if (!this.currentProvider) return "";
 
-    return this.currentProvider.createChatName(message);
+    const title = await this.currentProvider.createChatName(message);
+
+    return title.slice(0, 128);
   };
 
   sendMessage = (
