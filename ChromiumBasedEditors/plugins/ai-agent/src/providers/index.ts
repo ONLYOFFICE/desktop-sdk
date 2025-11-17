@@ -8,6 +8,7 @@ import { anthropicProvider, AnthropicProvider } from "./anthropic";
 import { ollamaProvider, OllamaProvider } from "./ollama";
 import { openaiProvider, OpenAIProvider } from "./openai";
 import { togetherProvider, TogetherProvider } from "./together";
+import { openrouterProvider, OpenRouterProvider } from "./openrouter";
 
 import { SYSTEM_PROMPT } from "./Providers.utils";
 
@@ -24,7 +25,8 @@ class Provider {
     | AnthropicProvider
     | OllamaProvider
     | OpenAIProvider
-    | TogetherProvider;
+    | TogetherProvider
+    | OpenRouterProvider;
   currentProviderInfo?: TProvider;
   currentProviderType?: ProviderType;
 
@@ -32,12 +34,14 @@ class Provider {
   ollamaProvider: OllamaProvider;
   openaiProvider: OpenAIProvider;
   togetherProvider: TogetherProvider;
+  openrouterProvider: OpenRouterProvider;
 
   constructor() {
     this.anthropicProvider = anthropicProvider;
     this.ollamaProvider = ollamaProvider;
     this.openaiProvider = openaiProvider;
     this.togetherProvider = togetherProvider;
+    this.openrouterProvider = openrouterProvider;
   }
 
   setCurrentProvider = (provider?: TProvider) => {
@@ -69,6 +73,11 @@ class Provider {
       case "together":
         this.currentProvider = togetherProvider;
         this.currentProviderType = "together";
+        break;
+
+      case "openrouter":
+        this.currentProvider = openrouterProvider;
+        this.currentProviderType = "openrouter";
         break;
 
       default:
@@ -161,7 +170,13 @@ class Provider {
       baseUrl: this.togetherProvider.getBaseUrl(),
     };
 
-    return [anthropic, ollama, openai, together];
+    const openrouter = {
+      type: "openrouter" as ProviderType,
+      name: this.openrouterProvider.getName(),
+      baseUrl: this.openrouterProvider.getBaseUrl(),
+    };
+
+    return [anthropic, ollama, openai, together, openrouter];
   };
 
   getProviderInfo = (type: ProviderType) => {
@@ -193,6 +208,13 @@ class Provider {
         baseUrl: this.togetherProvider.getBaseUrl(),
       };
 
+    if (type === "openrouter")
+      return {
+        type,
+        name: this.openrouterProvider.getName(),
+        baseUrl: this.openrouterProvider.getBaseUrl(),
+      };
+
     return {
       name: "",
       baseUrl: "",
@@ -207,6 +229,9 @@ class Provider {
     if (type === "openai") return this.openaiProvider.checkProvider(data);
 
     if (type === "together") return this.togetherProvider.checkProvider(data);
+
+    if (type === "openrouter")
+      return this.openrouterProvider.checkProvider(data);
 
     return false;
   };
@@ -240,6 +265,12 @@ class Provider {
             apiKey: p.key,
           });
 
+        if (p.type === "openrouter")
+          return this.openrouterProvider.getProviderModels({
+            url: p.baseUrl,
+            apiKey: p.key,
+          });
+
         return null; // Explicitly return null for unsupported types
       })
       .filter((action): action is Promise<Model[]> => action !== null); // Filter out null values
@@ -253,7 +284,8 @@ class Provider {
         provider.type === "anthropic" ||
         provider.type === "ollama" ||
         provider.type === "openai" ||
-        provider.type === "together"
+        provider.type === "together" ||
+        provider.type === "openrouter"
       ) {
         const model = fetchedModels[actionIndex];
         if (

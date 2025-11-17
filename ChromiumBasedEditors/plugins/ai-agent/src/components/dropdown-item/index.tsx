@@ -1,6 +1,5 @@
 import { useRef, useState } from "react";
 import { Item } from "@radix-ui/react-dropdown-menu";
-import { ReactSVG } from "react-svg";
 
 import { cn } from "@/lib/utils";
 
@@ -117,10 +116,12 @@ const DropDownItem = ({
         ) : (
           icon ?? null
         )}
-        <span className={cn(
-          "truncate font-normal text-[14px] leading-[20px] text-[var(--drop-down-menu-item-color)]",
-          withSpace ? "ms-[28px]" : ""
-        )}>
+        <span
+          className={cn(
+            "truncate font-normal text-[14px] leading-[20px] text-[var(--drop-down-menu-item-color)]",
+            withSpace ? "ms-[28px]" : ""
+          )}
+        >
           {text}
         </span>
       </div>
@@ -145,7 +146,9 @@ const DropDownItem = ({
           dropdownRef={submenuRef}
         />
       ) : null}
-      {checked ? <ReactSVG src={CheckedIconUrl} /> : null}
+      {checked ? (
+        <IconButton iconName={CheckedIconUrl} size={16} disableHover isStroke />
+      ) : null}
       {withToggle && onToggleChange ? (
         <div onClick={(e) => e.stopPropagation()}>
           <ToggleButton

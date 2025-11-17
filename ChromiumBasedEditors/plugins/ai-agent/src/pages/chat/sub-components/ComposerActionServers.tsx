@@ -43,6 +43,7 @@ const ServersSettings = () => {
             servers["web-search"][0].name,
             !webSearchEnabled
           );
+          window.dispatchEvent(new CustomEvent("tools-changed"));
         },
       },
       { text: "", onClick: () => {}, isSeparator: true },
