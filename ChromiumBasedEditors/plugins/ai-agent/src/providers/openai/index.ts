@@ -126,7 +126,6 @@ class OpenAIProvider
         model: this.modelKey,
         tools: this.tools,
         stream: true,
-        temperature: 0,
       });
 
       this.prevMessages.push(...convertedMessage);

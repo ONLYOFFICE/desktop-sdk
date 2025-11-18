@@ -318,11 +318,14 @@ class OpenRouterProvider
           model.id === "openai/gpt-5.1" ||
           model.id === "anthropic/claude-haiku-4.5" ||
           model.id === "anthropic/claude-sonnet-4.5" ||
+          model.id === "anthropic/claude-opus-4.1" ||
           model.id === "x-ai/grok-4" ||
           // model.id === "google/gemini-2.5-flash" ||
           // model.id === "google/gemini-2.5-pro" ||
-          model.id === "deepseek/deepseek-chat-v3.1" ||
-          model.id === "qwen/qwen3-235b-a22b-2507"
+          // model.id === "deepseek/deepseek-chat-v3.1" ||
+          model.id === "qwen/qwen3-235b-a22b-2507" ||
+          model.id === "deepseek/deepseek-v3.1-terminus" ||
+          model.id === "qwen/qwen3-max"
       )
       .map((model) => ({
         id: model.id,
@@ -333,16 +336,20 @@ class OpenRouterProvider
             ? "Claude Haiku 4.5"
             : model.id === "anthropic/claude-sonnet-4.5"
             ? "Claude Sonnet 4.5"
+            : model.id === "anthropic/claude-opus-4.1"
+            ? "Claude Opus 4.1"
             : model.id === "x-ai/grok-4"
             ? "Grok 4"
             : model.id === "google/gemini-2.5-flash"
             ? "Gemini 2.5 Flash"
             : model.id === "google/gemini-2.5-pro"
             ? "Gemini 2.5 Pro"
-            : model.id === "deepseek/deepseek-chat-v3.1"
-            ? "DeepSeek V3.1"
             : model.id === "qwen/qwen3-235b-a22b-2507"
             ? "Qwen 3"
+            : model.id === "deepseek/deepseek-v3.1-terminus"
+            ? "DeepSeek V3.1 Terminus"
+            : model.id === "qwen/qwen3-max"
+            ? "Qwen 3 Max"
             : model.id.toUpperCase(),
         provider: "openrouter" as const,
       }));
