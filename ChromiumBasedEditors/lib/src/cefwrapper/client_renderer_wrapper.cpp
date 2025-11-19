@@ -3039,7 +3039,7 @@ window._external_process_callback = {};\n\
 				CPluginsManager oPlugins;
 				oPlugins.m_strDirectory = m_sSystemPlugins;
 				oPlugins.m_strUserDirectory = m_sUserPlugins;
-				oPlugins.GetInstalledPlugins();
+				oPlugins.CheckInstalledPlugins();
 
 				int nCount = (int)oPlugins.m_arCryptoModes.size();
 				retval = CefV8Value::CreateArray(nCount);

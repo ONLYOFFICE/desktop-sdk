@@ -1137,7 +1137,7 @@ std::vector<int> CAscApplicationManager::GetSupportCryptoModes()
 	oPlugins.m_strDirectory = m_oSettings.system_plugins_path;
 	oPlugins.m_strUserDirectory = m_oSettings.user_plugins_path;
 
-	oPlugins.GetInstalledPlugins();
+	oPlugins.CheckInstalledPlugins();
 	std::vector<int> retValue;
 
 	for (std::map<int, std::string>::iterator iter = oPlugins.m_arCryptoModes.begin(); iter != oPlugins.m_arCryptoModes.end(); iter++)

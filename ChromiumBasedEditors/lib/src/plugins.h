@@ -37,6 +37,7 @@
 #include "../../../../core/OfficeUtils/src/OfficeUtils.h"
 #include "../../../../core/DesktopEditor/common/StringBuilder.h"
 #include "./utils.h"
+#include <sstream>
 
 //#include "./plugins_resources.h"
 #include <map>
@@ -106,17 +107,8 @@ public:
 
 		if (bActivePlugins)
 		{
-			for (int i = 0; i < 2; i++)
-			{
-				std::wstring sDir = (i == 0) ? m_strDirectory : m_strUserDirectory;
-
-				std::string sPlugins = ParsePluginDir(sDir, bCheckCrypto, false, bIsSupportMacroses, bIsSupportPlugins);
-
-				sPluginsJSON += sPlugins;
-
-				if (i == 0)
-					sPluginsJSON += ", ";
-			}
+			std::string sPlugins = ParsePluginDir(L"", bCheckCrypto, false, bIsSupportMacroses, bIsSupportPlugins);
+			sPluginsJSON += sPlugins;
 		}
 		else
 		{
@@ -135,52 +127,9 @@ public:
 		return sPluginsJSON;
 	}
 
-	std::vector<std::string> GetInstalledPlugins()
+	void CheckInstalledPlugins()
 	{
-		std::vector<std::string> arCongigs;
-		std::vector<std::string> arUserPlugins = GetDirPlugins(m_strUserDirectory);
-
-		for (int i = 0; i < 2; i++)
-		{
-			std::wstring sDir = (i == 0) ? m_strDirectory : m_strUserDirectory;
-			std::vector<std::wstring> _arPlugins = NSDirectory::GetDirectories(sDir);
-
-			for (size_t j = 0; j < _arPlugins.size(); j++)
-			{
-				std::string sJson;
-				bool bIsExternal = false;
-				if (NSFile::CFileBinary::ReadAllTextUtf8A(_arPlugins[j] + L"/config.json", sJson))
-				{
-					CheckEncryption(sJson, false);
-
-					// !!! это надо обсудить, т.к. возможны такие плагины в папке пользователя
-					bIsExternal = CheckExternal(sJson, i == 0);
-
-					std::string::size_type pos1 = sJson.find("asc.{");
-					std::string::size_type pos2 = sJson.find('}', pos1);
-
-					if (pos1 != std::string::npos && pos2 != std::string::npos && pos2 > pos1)
-					{
-						std::string sGuid = sJson.substr(pos1, pos2 - pos1 + 1);
-
-						// Пропускаем обновлённые системные плагины
-						if ( m_isSupportSystemUpdate && sDir == m_strDirectory &&
-							 std::find(arUserPlugins.begin(), arUserPlugins.end(), sGuid) == arUserPlugins.end() )
-						{
-							arCongigs.push_back(sGuid);
-						}
-					}
-				}
-
-				// check for desktop
-				if (m_bIsSupportMultiplugins && !bIsExternal && NSFile::CFileBinary::ReadAllTextUtf8A(_arPlugins[j] + L"/configDesktop.json", sJson))
-				{
-					CheckExternal(sJson, i == 0);
-				}
-			}
-		}
-
-		return arCongigs;
+		ParsePluginDir(L"", true, false, true, true, true);
 	}
 
 	bool AddPlugin(const std::wstring& sFilePlugin)
@@ -390,7 +339,7 @@ private:
 
 				if (pos1 != std::string::npos && pos2 != std::string::npos && pos2 > pos1)
 				{
-					arPlugins.push_back(sJson.substr(pos1, pos2 - pos1 + 1));
+					arPlugins.push_back(sJson.substr(pos1 + 4, pos2 - pos1 + 1 - 4));
 				}
 			}
 		}
@@ -398,95 +347,217 @@ private:
 		return arPlugins;
 	}
 
-	std::string ParsePluginDir(const std::wstring& sDir, const bool& bCheckCrypto = false, const bool& bIsBackup = false,
-							   const bool& bIsSupportMacroses = true, const bool& bIsSupportPlugins = true)
+	int GetIntVersion(const std::string& version)
 	{
-		std::wstring sParam = sDir + L"/";
-		if (0 == sParam.find('/'))
-			sParam = L"file://" + sParam;
-		else
-			sParam = L"file:///" + sParam;
+		int major = 0, minor = 0, patch = 0;
+		int* out = &major;
+		int count = 0;
 
-		std::string sPlugins = "{ \"url\" : \"" + U_TO_UTF8(sParam) + "\", \"pluginsData\" : [";
-		std::string sData = "";
-		int nCountPlugins = 0;
+		for (size_t i = 0, len = version.length(); i < len; ++i)
+		{
+			char c = version[i];
+			if (c >= '0' && c <= '9')
+			{
+				*out = (*out * 10) + (c - '0');
+			}
+			else if (c == '.')
+			{
+				++count;
+				if (count == 1)
+					out = &minor;
+				else if (count == 2)
+					out = &patch;
+				else
+					break;
+			}
+			else
+			{
+				// skip
+			}
+		}
 
+		return major * 1000000 + minor * 1000 + patch;
+
+	}
+
+	std::string ParsePluginDir(const std::wstring& sDir, const bool& bCheckCrypto = false, const bool& bIsBackup = false,
+							   const bool& bIsSupportMacroses = true, const bool& bIsSupportPlugins = true, const bool& isFullInfos = false)
+	{
+		int nSystemPluginsCount = 0;
 		std::vector<std::wstring> _arPlugins;
 		if (bIsSupportPlugins)
-			_arPlugins = NSDirectory::GetDirectories(sDir);
-
-		std::vector<std::string> arSysPlugins = GetDirPlugins(m_strDirectory);
-		std::vector<std::string> arUserPlugins = GetDirPlugins(m_strUserDirectory);
-
-		for (size_t i = 0; i < _arPlugins.size(); ++i)
 		{
-			if (!bIsSupportMacroses && (std::wstring::npos != _arPlugins[i].find(L"{E6978D28-0441-4BD7-8346-82FAD68BCA3B}")))
-				continue;
-
-			std::string sJson = "";
-			if (NSFile::CFileBinary::ReadAllTextUtf8A(_arPlugins[i] + L"/config.json", sJson))
+			if (sDir.empty())
 			{
-				// Получаем GUID
-				std::string sGuid = "";
-				std::string::size_type pos1 = sJson.find("asc.{");
-				std::string::size_type pos2 = sJson.find('}', pos1);
+				std::vector<std::string> arSysPlugins = GetDirPlugins(m_strDirectory);
+				std::vector<std::string> arUserPlugins = GetDirPlugins(m_strUserDirectory);
 
-				if (pos1 != std::string::npos && pos2 != std::string::npos && pos2 > pos1)
+				if (!bIsSupportMacroses)
 				{
-					sGuid = sJson.substr(pos1, pos2 - pos1 + 1);
-
-					// Пропускаем обновлённые системные плагины
-					if ( m_isSupportSystemUpdate && sDir == m_strDirectory )
+					for (std::vector<std::string>::iterator i = arSysPlugins.begin(); i != arSysPlugins.end(); i++)
 					{
-						if ( std::find(arUserPlugins.begin(), arUserPlugins.end(), sGuid) != arUserPlugins.end() )
-							continue;
+						if (*i ==  "{E6978D28-0441-4BD7-8346-82FAD68BCA3B}")
+						{
+							arSysPlugins.erase(i);
+							break;
+						}
+					}
+					for (std::vector<std::string>::iterator i = arUserPlugins.begin(); i != arUserPlugins.end(); i++)
+					{
+						if (*i ==  "{E6978D28-0441-4BD7-8346-82FAD68BCA3B}")
+						{
+							arUserPlugins.erase(i);
+							break;
+						}
 					}
 				}
 
-				if (!CheckEncryption(sJson, bCheckCrypto))
-					continue;
-
-				// !!! это надо обсудить, т.к. возможны такие плагины в папке пользователя
-				if (CheckExternal(sJson, i == 0))
-					continue;
-
-				pos1 = sJson.find('{');
-				pos2 = sJson.find_last_of('}');
-
-				if (pos1 != std::string::npos && pos2 != std::string::npos && pos2 > pos1)
+				for (std::vector<std::string>::iterator i = arSysPlugins.begin(); i != arSysPlugins.end(); i++)
 				{
-					if (nCountPlugins > 0)
-						sData += ",";
-
-					nCountPlugins++;
-					std::string sConfigContent = sJson.substr(pos1, pos2 - pos1 + 1);
-
-					// Если это обновленный системный плагин в папке пользователя,
-					// то нужно запретить его удаление как и было до обновления,
-					// выставляем свойство и парсим в pluginMethod_GetInstalledPlugins
-					if ( m_isSupportSystemUpdate && sDir == m_strUserDirectory )
+					std::string sGuidSys = *i;
+					bool bIsAdd = true;
+					for (std::vector<std::string>::iterator j = arUserPlugins.begin(); j != arUserPlugins.end(); j++)
 					{
-						if ( std::find(arSysPlugins.begin(), arSysPlugins.end(), sGuid) != arSysPlugins.end() )
+						std::string sGuidUser = *j;
+						if (sGuidSys == sGuidUser)
 						{
-							pos2 = sConfigContent.find_last_of('}');
-							sConfigContent = sConfigContent.substr(0, pos2) + ", \"canRemoved\": false }";
+							std::string sJSONSys;
+							NSFile::CFileBinary::ReadAllTextUtf8A(m_strDirectory + L"/" + UTF8_TO_U(sGuidSys) + L"/config.json", sJSONSys);
+
+							std::string sJSONUser;
+							NSFile::CFileBinary::ReadAllTextUtf8A(m_strUserDirectory + L"/" + UTF8_TO_U(sGuidUser) + L"/config.json", sJSONUser);
+
+							std::string sVersionSys = GetStringValue(sJSONSys, "version");
+							std::string sVersionUser = GetStringValue(sJSONUser, "version");
+
+							int nVersionSys = GetIntVersion(sVersionSys);
+							int nVersionUser = GetIntVersion(sVersionUser);
+
+							if (m_isSupportSystemUpdate && nVersionSys < nVersionUser)
+							{
+								bIsAdd = false;
+							}
+							else
+							{
+								arUserPlugins.erase(j);
+							}
+							break;
 						}
 					}
-
-					if (bIsBackup)
+					if (bIsAdd)
 					{
-						// устанавливаем свойство для дальнейших действий
-						pos2 = sConfigContent.find_last_of('}');
-						sConfigContent = sConfigContent.substr(0, pos2) + ", \"backup\": true }";
+						_arPlugins.push_back(m_strDirectory + L"/" + UTF8_TO_U(sGuidSys));
+					}
+				}
+
+				nSystemPluginsCount = (int)_arPlugins.size();
+				for (std::vector<std::string>::iterator j = arUserPlugins.begin(); j != arUserPlugins.end(); j++)
+				{
+					_arPlugins.push_back(m_strUserDirectory + L"/" + UTF8_TO_U((*j)));
+				}
+			}
+			else
+			{
+				_arPlugins = NSDirectory::GetDirectories(sDir);
+				nSystemPluginsCount = (int)_arPlugins.size();
+			}
+		}
+
+		std::vector<std::string> arSystem;
+		std::vector<std::string> arUser;
+
+		for (size_t i = 0; i < _arPlugins.size(); ++i)
+		{
+			std::string sJson = "";
+			if (NSFile::CFileBinary::ReadAllTextUtf8A(_arPlugins[i] + L"/config.json", sJson))
+			{
+				bool isSystem = i < nSystemPluginsCount ? true : false;
+				if (isFullInfos)
+				{
+					CheckEncryption(sJson, false);
+					bool bIsExternal = CheckExternal(sJson, isSystem);
+
+					// check for desktop
+					if (m_bIsSupportMultiplugins && !bIsExternal && NSFile::CFileBinary::ReadAllTextUtf8A(_arPlugins[i] + L"/configDesktop.json", sJson))
+					{
+						CheckExternal(sJson, isSystem);
+					}
+				}
+				else
+				{
+					// Получаем GUID
+					std::string sGuid = "";
+					std::string::size_type pos1 = sJson.find("asc.{");
+					std::string::size_type pos2 = sJson.find('}', pos1);
+
+					if (pos1 != std::string::npos && pos2 != std::string::npos && pos2 > pos1)
+					{
+						sGuid = sJson.substr(pos1, pos2 - pos1 + 1);
 					}
 
-					sData += sConfigContent;
+					if (!CheckEncryption(sJson, bCheckCrypto))
+						continue;
+
+					// !!! это надо обсудить, т.к. возможны такие плагины в папке пользователя
+					if (CheckExternal(sJson, i == 0))
+						continue;
+
+					pos1 = sJson.find('{');
+					pos2 = sJson.find_last_of('}');
+
+					if (pos1 != std::string::npos && pos2 != std::string::npos && pos2 > pos1)
+					{
+						std::string sConfigContent = sJson.substr(pos1, pos2 - pos1 + 1);
+
+						if (bIsBackup)
+						{
+							// устанавливаем свойство для дальнейших действий
+							pos2 = sConfigContent.find_last_of('}');
+							sConfigContent = sConfigContent.substr(0, pos2) + ", \"backup\": true }";
+						}
+
+						if (isSystem)
+							arSystem.push_back(sConfigContent);
+						else
+							arUser.push_back(sConfigContent);
+					}
 				}
 			}
 		}
 
-		sPlugins += sData;
-		sPlugins += "] }";
+		auto serializePlugins = [](const std::wstring& dir, const std::vector<std::string>& data) {
+			std::wstring ret = dir + L"/";
+			if (0 == ret.find('/'))
+				ret = L"file://" + ret;
+			else
+				ret = L"file:///" + ret;
+
+			std::string serializeData = "{ \"url\" : \"" + U_TO_UTF8(ret) + "\", \"pluginsData\" : [";
+
+			int nCount = 0;
+			for (std::vector<std::string>::const_iterator i = data.cbegin(); i != data.cend(); i++)
+			{
+				if (nCount > 0)
+					serializeData += ",";
+
+				++nCount;
+				serializeData += *i;
+			}
+
+			serializeData += "] }";
+
+			return serializeData;
+		};
+
+		std::string sPlugins;
+		if (sDir.empty())
+		{
+			sPlugins = serializePlugins(m_strDirectory, arSystem) + "," + serializePlugins(m_strUserDirectory, arUser);
+		}
+		else
+		{
+			sPlugins = serializePlugins(sDir, arSystem);
+		}
 
 		NSStringUtils::string_replaceA(sPlugins, "\r\n", "");
 		NSStringUtils::string_replaceA(sPlugins, "\n", "");
