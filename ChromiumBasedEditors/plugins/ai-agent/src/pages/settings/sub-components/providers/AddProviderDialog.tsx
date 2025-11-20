@@ -41,6 +41,8 @@ const AddProviderDialog = ({ onClose }: AddProviderDialogProps) => {
     url: "",
     name: "",
   });
+  const [isRequestRunning, setIsRequestRunning] = React.useState(false);
+  const isRequestRunningRef = React.useRef(isRequestRunning);
 
   const dialogRef = React.useRef<HTMLDivElement>(null);
 
@@ -56,6 +58,10 @@ const AddProviderDialog = ({ onClose }: AddProviderDialogProps) => {
   };
 
   const onSubmitAction = async () => {
+    if (isRequestRunningRef.current) return;
+    isRequestRunningRef.current = true;
+    setIsRequestRunning(true);
+
     const result = await addProvider({
       type: selectedProviderInfo.type,
       name: value.name,
@@ -71,6 +77,8 @@ const AddProviderDialog = ({ onClose }: AddProviderDialogProps) => {
         [result.field]: result.message,
       }));
     }
+    isRequestRunningRef.current = false;
+    setIsRequestRunning(false);
   };
 
   React.useEffect(() => {
@@ -134,7 +142,10 @@ const AddProviderDialog = ({ onClose }: AddProviderDialogProps) => {
             <Button variant="default" onClick={onClose}>
               {t("Cancel")}
             </Button>
-            <Button onClick={onSubmitAction} disabled={isDisabled}>
+            <Button
+              onClick={onSubmitAction}
+              disabled={isDisabled || isRequestRunning}
+            >
               {t("AddProvider")}
             </Button>
           </div>
