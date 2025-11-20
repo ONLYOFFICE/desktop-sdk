@@ -329,7 +329,8 @@ class OpenAIProvider
             ? "GPT-5.1"
             : model.id.toUpperCase(),
         provider: "openai" as const,
-      }));
+      }))
+      .reverse();
   };
 }
 

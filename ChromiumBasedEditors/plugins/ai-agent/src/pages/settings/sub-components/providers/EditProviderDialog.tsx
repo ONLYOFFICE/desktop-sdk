@@ -8,8 +8,11 @@ import { Button } from "@/components/button";
 import { FieldContainer } from "@/components/field-container";
 import { ComboBox } from "@/components/combo-box";
 import { Input } from "@/components/input";
+import { Loader } from "@/components/loader";
 
 import useProviders from "@/store/useProviders";
+
+import { provider as providerInstance } from "@/providers";
 
 import {
   dialogMainContainerStyles,
@@ -25,7 +28,8 @@ type EditProviderDialogProps = {
 const EditProviderDialog = ({ name, onClose }: EditProviderDialogProps) => {
   const { t } = useTranslation();
 
-  const { providers, editProvider } = useProviders();
+  const { providers, editProvider, currentProvider, setCurrentProvider } =
+    useProviders();
 
   const [provider, setProvider] = React.useState<TProvider>(() => {
     const provider = providers.find((p) => p.name === name);
@@ -53,6 +57,13 @@ const EditProviderDialog = ({ name, onClose }: EditProviderDialogProps) => {
     url: "",
     name: "",
   });
+  const [isRequestRunning, setIsRequestRunning] = React.useState(false);
+  const isRequestRunningRef = React.useRef(isRequestRunning);
+
+  const buttonRef = React.useRef<HTMLButtonElement>(null);
+  const [buttonWidth, setButtonWidth] = React.useState<number | undefined>(
+    undefined
+  );
 
   React.useEffect(() => {
     const provider = providers.find((p) => p.name === name);
@@ -103,19 +114,30 @@ const EditProviderDialog = ({ name, onClose }: EditProviderDialogProps) => {
     !!error.name;
 
   const onSubmitAction = React.useCallback(async () => {
-    if (isDisabled) return;
+    if (isRequestRunningRef.current || isDisabled) return;
+    isRequestRunningRef.current = true;
+    setIsRequestRunning(true);
 
-    const result = await editProvider(
-      {
-        type: provider!.type,
-        name: value.name,
-        key: value.key,
-        baseUrl: value.url,
-      },
-      provider.name
-    );
+    const updatedProviderInfo = {
+      type: provider!.type,
+      name: value.name,
+      key: value.key,
+      baseUrl: value.url,
+    };
+
+    const result = await editProvider(updatedProviderInfo, provider.name);
 
     if (typeof result === "boolean" && result) {
+      // Check if the edited provider is the current provider
+      if (currentProvider?.name === provider.name) {
+        // Update current provider with new info
+        const updatedProvider = {
+          ...provider,
+          ...updatedProviderInfo,
+        };
+        setCurrentProvider(updatedProvider);
+        providerInstance.setCurrentProvider(updatedProvider);
+      }
       onClose();
     } else if (result) {
       setError((prev) => ({
@@ -123,7 +145,24 @@ const EditProviderDialog = ({ name, onClose }: EditProviderDialogProps) => {
         [result.field]: result.message,
       }));
     }
-  }, [isDisabled, editProvider, provider, value, onClose]);
+    isRequestRunningRef.current = false;
+    setIsRequestRunning(false);
+  }, [
+    isDisabled,
+    editProvider,
+    provider,
+    value,
+    onClose,
+    currentProvider,
+    setCurrentProvider,
+  ]);
+
+  React.useEffect(() => {
+    if (buttonRef.current && buttonWidth === undefined) {
+      const width = buttonRef.current.offsetWidth + 1;
+      setButtonWidth(width);
+    }
+  }, [buttonWidth]);
 
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -189,8 +228,17 @@ const EditProviderDialog = ({ name, onClose }: EditProviderDialogProps) => {
             <Button variant="default" onClick={onClose}>
               {t("Cancel")}
             </Button>
-            <Button onClick={onSubmitAction} disabled={isDisabled}>
-              {t("Save")}
+            <Button
+              ref={buttonRef}
+              onClick={onSubmitAction}
+              disabled={isDisabled || isRequestRunning}
+              style={buttonWidth ? { width: `${buttonWidth}px` } : undefined}
+            >
+              {isRequestRunning ? (
+                <Loader className="border-[var(--text-contrast-background)] border-r-transparent" />
+              ) : (
+                t("Save")
+              )}
             </Button>
           </div>
         </div>

@@ -114,12 +114,10 @@ const DropDownItem = ({
             submenuRef.current.style.position = "fixed";
             // submenuRef.current.style.top = `${itemRect.top}px`;
 
-            console.log(viewportWidth, itemRect.left);
-
             if (side === "left") {
               // Position to the left of the item
               submenuRef.current.style.left = "unset";
-              submenuRef.current.style.right = `${itemRect.width - 30}px`;
+              submenuRef.current.style.right = `${itemRect.width - 20}px`;
             }
           }
         }, 0);
