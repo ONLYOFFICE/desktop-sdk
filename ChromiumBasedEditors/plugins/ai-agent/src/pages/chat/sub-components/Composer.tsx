@@ -27,7 +27,7 @@ const Composer = () => {
 
         <ComposerPrimitive.Input
           placeholder={t("AskAI")}
-          className="composer-input max-h-[calc(50dvh)] min-h-[16px] w-full resize-none outline-none"
+          className="composer-input max-h-[calc(50vh)] min-h-[16px] w-full resize-none outline-none"
           rows={1}
           autoFocus
           aria-label="Message input"
