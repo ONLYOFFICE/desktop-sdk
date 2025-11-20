@@ -16,6 +16,7 @@ import {
   dialogButtonContainerStyles,
 } from "./Providers.styles";
 import { Input } from "@/components/input";
+import { Loader } from "@/components/loader";
 
 type AddProviderDialogProps = {
   onClose: VoidFunction;
@@ -45,6 +46,10 @@ const AddProviderDialog = ({ onClose }: AddProviderDialogProps) => {
   const isRequestRunningRef = React.useRef(isRequestRunning);
 
   const dialogRef = React.useRef<HTMLDivElement>(null);
+  const buttonRef = React.useRef<HTMLButtonElement>(null);
+  const [buttonWidth, setButtonWidth] = React.useState<number | undefined>(
+    undefined
+  );
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setValue((prevValue) => ({
@@ -64,7 +69,7 @@ const AddProviderDialog = ({ onClose }: AddProviderDialogProps) => {
 
     const result = await addProvider({
       type: selectedProviderInfo.type,
-      name: value.name,
+      name: value.name.trim(),
       key: value.key,
       baseUrl: value.url,
     });
@@ -87,6 +92,13 @@ const AddProviderDialog = ({ onClose }: AddProviderDialogProps) => {
       url: selectedProviderInfo.baseUrl,
     }));
   }, [selectedProviderInfo]);
+
+  React.useEffect(() => {
+    if (buttonRef.current && buttonWidth === undefined) {
+      const width = buttonRef.current.offsetWidth + 1;
+      setButtonWidth(width);
+    }
+  }, [buttonWidth]);
 
   const isDisabled =
     !value.name || !value.url || !!error.key || !!error.url || !!error.name;
@@ -114,6 +126,7 @@ const AddProviderDialog = ({ onClose }: AddProviderDialogProps) => {
                 isError={!!error.name}
                 placeholder={t("EnterName")}
                 className="w-full"
+                maxLength={128}
               />
             </FieldContainer>
             <FieldContainer header={t("URL")} error={error.url}>
@@ -143,10 +156,16 @@ const AddProviderDialog = ({ onClose }: AddProviderDialogProps) => {
               {t("Cancel")}
             </Button>
             <Button
+              ref={buttonRef}
               onClick={onSubmitAction}
               disabled={isDisabled || isRequestRunning}
+              style={buttonWidth ? { width: `${buttonWidth}px` } : undefined}
             >
-              {t("AddProvider")}
+              {isRequestRunning ? (
+                <Loader className="border-[var(--text-contrast-background)] border-r-transparent" />
+              ) : (
+                t("AddProvider")
+              )}
             </Button>
           </div>
         </div>
