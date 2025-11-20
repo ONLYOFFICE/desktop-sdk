@@ -91,7 +91,20 @@ const EditProviderDialog = ({ name, onClose }: EditProviderDialogProps) => {
     }));
   };
 
-  const onSubmitAction = async () => {
+  const isSameUrlAndName =
+    value.name === provider.name && value.url === provider.baseUrl;
+
+  const isSameKey = value.key === provider.key;
+
+  const isDisabled =
+    (isSameKey && isSameUrlAndName) ||
+    !!error.key ||
+    !!error.url ||
+    !!error.name;
+
+  const onSubmitAction = React.useCallback(async () => {
+    if (isDisabled) return;
+
     const result = await editProvider(
       {
         type: provider!.type,
@@ -110,18 +123,22 @@ const EditProviderDialog = ({ name, onClose }: EditProviderDialogProps) => {
         [result.field]: result.message,
       }));
     }
-  };
+  }, [isDisabled, editProvider, provider, value, onClose]);
 
-  const isSameUrlAndName =
-    value.name === provider.name && value.url === provider.baseUrl;
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        onSubmitAction();
+      }
+    };
 
-  const isSameKey = value.key === provider.key;
+    window.addEventListener("keydown", handleKeyDown);
 
-  const isDisabled =
-    (isSameKey && isSameUrlAndName) ||
-    !!error.key ||
-    !!error.url ||
-    !!error.name;
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onSubmitAction]);
 
   return (
     <Dialog open={true}>

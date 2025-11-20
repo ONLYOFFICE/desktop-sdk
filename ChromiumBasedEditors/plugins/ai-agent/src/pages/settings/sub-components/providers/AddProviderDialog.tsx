@@ -62,8 +62,11 @@ const AddProviderDialog = ({ onClose }: AddProviderDialogProps) => {
     }));
   };
 
-  const onSubmitAction = async () => {
-    if (isRequestRunningRef.current) return;
+  const isDisabled =
+    !value.name || !value.url || !!error.key || !!error.url || !!error.name;
+
+  const onSubmitAction = React.useCallback(async () => {
+    if (isRequestRunningRef.current || isDisabled) return;
     isRequestRunningRef.current = true;
     setIsRequestRunning(true);
 
@@ -84,7 +87,7 @@ const AddProviderDialog = ({ onClose }: AddProviderDialogProps) => {
     }
     isRequestRunningRef.current = false;
     setIsRequestRunning(false);
-  };
+  }, [addProvider, selectedProviderInfo, value, onClose, isDisabled]);
 
   React.useEffect(() => {
     setValue((prevValue) => ({
@@ -100,8 +103,20 @@ const AddProviderDialog = ({ onClose }: AddProviderDialogProps) => {
     }
   }, [buttonWidth]);
 
-  const isDisabled =
-    !value.name || !value.url || !!error.key || !!error.url || !!error.name;
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        onSubmitAction();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onSubmitAction]);
 
   return (
     <Dialog open={true}>

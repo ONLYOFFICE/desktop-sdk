@@ -111,6 +111,29 @@ const ConfigDialog = ({ open, onClose }: ConfigDialogProps) => {
     };
   }, [open, getConfig]);
 
+  const onSubmitAction = React.useCallback(() => {
+    if (!isValidJson) return;
+    saveConfig(JSON.parse(value));
+    onClose();
+  }, [isValidJson, saveConfig, value, onClose]);
+
+  React.useEffect(() => {
+    if (!open) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        onSubmitAction();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open, onSubmitAction]);
+
   return (
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent
@@ -138,13 +161,7 @@ const ConfigDialog = ({ open, onClose }: ConfigDialogProps) => {
           <Button onClick={onClose} variant="default">
             {t("Cancel")}
           </Button>
-          <Button
-            disabled={!isValidJson}
-            onClick={() => {
-              saveConfig(JSON.parse(value));
-              onClose();
-            }}
-          >
+          <Button disabled={!isValidJson} onClick={onSubmitAction}>
             {t("Save")}
           </Button>
         </div>
