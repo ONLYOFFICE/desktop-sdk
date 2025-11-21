@@ -112,12 +112,11 @@ const DropDownItem = ({
         setTimeout(() => {
           if (submenuRef.current) {
             submenuRef.current.style.position = "fixed";
-            // submenuRef.current.style.top = `${itemRect.top}px`;
 
             if (side === "left") {
-              // Position to the left of the item
               submenuRef.current.style.left = "unset";
-              submenuRef.current.style.right = `${itemRect.width - 20}px`;
+              submenuRef.current.style.bottom = "-19px";
+              submenuRef.current.style.right = `121px`;
             }
           }
         }, 0);
