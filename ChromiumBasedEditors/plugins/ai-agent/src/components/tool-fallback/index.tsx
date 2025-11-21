@@ -48,6 +48,8 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
 
   const isLoading = result === undefined;
 
+  console.log(result);
+
   const isWebSearch = name === "web_search";
   const isWebCrawling = name === "web_crawling";
 

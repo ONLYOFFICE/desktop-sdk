@@ -66,7 +66,12 @@ class WebSearch {
               livecrawl: "preferred",
             }),
             complete: function (e: { responseText: string }) {
-              const data = JSON.parse(e.responseText).results;
+              const parsedData = JSON.parse(e.responseText);
+              const data = parsedData.error
+                ? {
+                    error: parsedData.error,
+                  }
+                : parsedData.results;
               resolve({ data });
             },
             error: function (e: { statusCode: number }) {
@@ -79,6 +84,8 @@ class WebSearch {
             },
           });
         });
+
+        console.log();
 
         return JSON.stringify(result);
       } catch (e) {
@@ -108,7 +115,12 @@ class WebSearch {
               text: true,
             }),
             complete: function (e: { responseText: string }) {
-              const data = JSON.parse(e.responseText).results;
+              const parsedData = JSON.parse(e.responseText);
+              const data = parsedData.error
+                ? {
+                    error: parsedData.error,
+                  }
+                : parsedData.results;
               resolve({ data });
             },
             error: function (e: { statusCode: number }) {
