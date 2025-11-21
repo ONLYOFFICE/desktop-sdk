@@ -30,6 +30,7 @@ const DropDownItem = ({
   withSpace,
 }: DropDownItemProps) => {
   const [isSubMenuOpen, setIsSubMenuOpen] = useState(false);
+  const [submenuSide, setSubmenuSide] = useState<"left" | "right">("right");
 
   const itemRef = useRef<HTMLDivElement | null>(null);
   const submenuRef = useRef<HTMLDivElement | null>(null);
@@ -88,6 +89,39 @@ const DropDownItem = ({
   const handleMouseEnter = () => {
     if (isSubMenuOpen || !subMenu) return;
 
+    // Calculate which side has more space
+    if (itemRef.current) {
+      const itemRect = itemRef.current.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+
+      const spaceOnRight = viewportWidth - itemRect.right;
+
+      // Assume submenu width is around 300px (max-w-[300px]) + 4px offset
+      const estimatedSubmenuWidth = 304;
+
+      // Open on left if there's not enough space on right but enough on left
+      let side: "left" | "right" = "right";
+      if (spaceOnRight < estimatedSubmenuWidth) {
+        side = "left";
+      }
+
+      setSubmenuSide(side);
+
+      if (side === "left")
+        // Apply positioning after a short delay to ensure the submenu is rendered
+        setTimeout(() => {
+          if (submenuRef.current) {
+            submenuRef.current.style.position = "fixed";
+
+            if (side === "left") {
+              submenuRef.current.style.left = "unset";
+              submenuRef.current.style.bottom = "-19px";
+              submenuRef.current.style.right = `121px`;
+            }
+          }
+        }, 0);
+    }
+
     setIsSubMenuOpen(true);
     window.addEventListener("mousemove", handleMouseMove);
   };
@@ -137,11 +171,11 @@ const DropDownItem = ({
             />
           }
           items={subMenu}
-          side="right"
+          side={submenuSide}
           align="start"
-          sideOffset={0}
+          sideOffset={4}
           open={isSubMenuOpen}
-          contentClassName="ms-[12px] mt-[-15px] max-w-[300px]"
+          contentClassName="mt-[-15px] max-w-[300px]"
           containerRef={itemRef.current}
           dropdownRef={submenuRef}
         />

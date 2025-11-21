@@ -9,7 +9,7 @@ import {
 } from "@/database/threads";
 import { readMessages } from "@/database/messages";
 import type { Thread } from "@/lib/types";
-import { convertMessagesToMd } from "@/lib/utils";
+import { convertMessagesToMd, removeSpecialCharacter } from "@/lib/utils";
 
 type UseThreadsStoreProps = {
   threadId: string;
@@ -71,7 +71,7 @@ const useThreadsStore = create<UseThreadsStoreProps>((set, get) => ({
     const thread = thisStore.threads.find((t) => t.threadId === id);
     const messages = await readMessages(id);
 
-    const title = thread?.title || "Chat Export";
+    const title = removeSpecialCharacter(thread?.title || "Chat Export");
 
     const content = convertMessagesToMd(messages);
 

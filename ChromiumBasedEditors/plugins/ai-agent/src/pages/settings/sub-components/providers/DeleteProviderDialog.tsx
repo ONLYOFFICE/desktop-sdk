@@ -44,10 +44,25 @@ const DeleteProviderDialog = ({ name, onClose }: DeleteProviderDialogProps) => {
     setProvider(provider);
   }, [providers, name]);
 
-  const onSubmitAction = async () => {
+  const onSubmitAction = React.useCallback(async () => {
     await deleteProvider(provider);
     onClose();
-  };
+  }, [deleteProvider, provider, onClose]);
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        onSubmitAction();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onSubmitAction]);
 
   return (
     <Dialog open={true}>

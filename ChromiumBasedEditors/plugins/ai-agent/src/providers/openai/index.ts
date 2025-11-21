@@ -283,7 +283,7 @@ class OpenAIProvider
 
       return true;
     } catch (error) {
-      console.log(error);
+      console.log(JSON.stringify(error));
       const errorObj = error as { code: string };
 
       if (errorObj.code === "invalid_api_key") {
@@ -292,14 +292,15 @@ class OpenAIProvider
           message: "Invalid API Key",
         };
       }
-
-      if (data.apiKey) {
-        return {
-          field: "url",
-          message: "Invalid URL",
-        };
-      }
     }
+
+    if (data.apiKey) {
+      return {
+        field: "url",
+        message: "Invalid URL",
+      };
+    }
+
     return {
       field: "key",
       message: "Empty key",
@@ -329,7 +330,8 @@ class OpenAIProvider
             ? "GPT-5.1"
             : model.id.toUpperCase(),
         provider: "openai" as const,
-      }));
+      }))
+      .reverse();
   };
 }
 

@@ -39,12 +39,16 @@ export const convertMessagesToMd = (messages: ThreadMessageLike[]) => {
   return content;
 };
 
+export const removeSpecialCharacter = (str: string) => {
+  return str.replace(/[\\/:*"<>|?]/g, "");
+};
+
 export const getMessageTitleFromMd = (md: string) => {
   const lines = md.split("\n");
 
   const title = lines[0].replace("## ", "");
 
-  return title.substring(0, 30);
+  return removeSpecialCharacter(title).substring(0, 30);
 };
 
 export const isDocument = (type: number) => {

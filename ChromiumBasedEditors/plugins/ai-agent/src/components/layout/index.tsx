@@ -60,15 +60,15 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const isSettings = currentPage === "settings";
 
   return (
-    <div className={`h-dvh ${theme}`}>
+    <div className={`h-[100vh] ${theme}`}>
       <main
         id="app"
-        className="h-dvh bg-[var(--layout-background-color)] flex flex-col"
+        className="h-[100vh] bg-[var(--layout-background-color)] flex flex-col"
       >
         <Navigation />
         <div
           className="flex flex-row flex-1"
-          style={{ height: "calc(100dvh - 56px)" }}
+          style={{ height: "calc(100vh - 56px)" }}
         >
           {!isSettings ? <ChatList /> : null}
           <div className="w-full">{children}</div>

@@ -286,20 +286,21 @@ class TogetherProvider
       console.log(error);
       const errorObj = error as { code: string; status: number };
 
-      if (errorObj.status === 401) {
+      if (errorObj.status === 401 || data.apiKey) {
         return {
           field: "key",
           message: "Invalid API Key",
         };
       }
-
-      if (data.apiKey) {
-        return {
-          field: "url",
-          message: "Invalid URL",
-        };
-      }
     }
+
+    if (data.apiKey) {
+      return {
+        field: "url",
+        message: "Invalid URL",
+      };
+    }
+
     return {
       field: "key",
       message: "Empty key",

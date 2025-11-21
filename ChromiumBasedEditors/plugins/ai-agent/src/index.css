@@ -7,3 +7,12 @@
 :root {
   font-family: Arial, "Segoe UI", system-ui, Avenir, Helvetica, sans-serif;
 }
+
+
+*::-webkit-scrollbar-track {
+  background-color: var(--background-normal-element) !important;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--background-scroll-thumb) !important;
+}

@@ -25,14 +25,14 @@ const WebSearch = () => {
     }
   }, []);
 
-  const saveWebSearchData = () => {
+  const saveWebSearchData = React.useCallback(() => {
     if (!selectedProvider || !apiKey) return;
     client.setWebSearchData({
       provider: selectedProvider,
       key: apiKey,
     });
     setSaved(true);
-  };
+  }, [selectedProvider, apiKey]);
 
   const resetSettings = () => {
     setSelectedProvider("");
@@ -40,6 +40,21 @@ const WebSearch = () => {
     setSaved(false);
     client.setWebSearchData(null);
   };
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        saveWebSearchData();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [saveWebSearchData]);
 
   return (
     <>

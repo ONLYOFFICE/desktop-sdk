@@ -274,11 +274,23 @@ class AnthropicProvider
 
       return true;
     } catch (error) {
+      console.log(JSON.stringify(error));
       if (typeof error === "object" && error) {
         if ("status" in error && error.status === 401) {
+          const errorMessage =
+            "error" in error &&
+            typeof error.error === "object" &&
+            error.error &&
+            "error" in error.error &&
+            typeof error.error.error === "object" &&
+            error.error.error &&
+            "message" in error.error.error
+              ? error.error.error.message
+              : "Invalid API key";
+
           return {
             field: "key",
-            message: "Invalid API key",
+            message: errorMessage as string,
           };
         }
 
@@ -288,14 +300,15 @@ class AnthropicProvider
             message: "Invalid URL",
           };
         }
-
-        if (data.apiKey) {
-          return {
-            field: "url",
-            message: "Invalid URL",
-          };
-        }
       }
+
+      if (data.apiKey) {
+        return {
+          field: "key",
+          message: "Invalid API key",
+        };
+      }
+
       return {
         field: "key",
         message: "Empty key",
