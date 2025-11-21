@@ -120,7 +120,7 @@ class Provider {
 
     const title = await this.currentProvider.createChatName(message);
 
-    return title.slice(0, 128);
+    return title.split("</think>")[1].slice(0, 128);
   };
 
   sendMessage = (

@@ -79,5 +79,6 @@
   "EnableWebSearch": "Enable web search in settings",
   "WantDeleteServer": "This server will be deleted from your list. Continue?",
   "NoModelsAvailable": "Provider not available",
-  "CheckInfo": "AI Chat can make mistakes. Check important info."
+  "CheckInfo": "AI Chat can make mistakes. Check important info.",
+  "ConfigurationError": "Configuration must be placed inside 'mcpServers' property"
 }
