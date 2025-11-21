@@ -93,7 +93,13 @@ const AddProviderDialog = ({ onClose }: AddProviderDialogProps) => {
     setValue((prevValue) => ({
       ...prevValue,
       url: selectedProviderInfo.baseUrl,
+      key: "",
     }));
+    setError({
+      key: "",
+      url: "",
+      name: "",
+    });
   }, [selectedProviderInfo]);
 
   React.useEffect(() => {
@@ -120,7 +126,11 @@ const AddProviderDialog = ({ onClose }: AddProviderDialogProps) => {
 
   return (
     <Dialog open={true}>
-      <DialogContent header={t("AIProvider")} onClose={onClose} ref={dialogRef}>
+      <DialogContent
+        header={t("AddProvider")}
+        onClose={onClose}
+        ref={dialogRef}
+      >
         <div className={dialogMainContainerStyles}>
           <div className={dialogContentContainerStyles}>
             <FieldContainer header={t("Provider")}>

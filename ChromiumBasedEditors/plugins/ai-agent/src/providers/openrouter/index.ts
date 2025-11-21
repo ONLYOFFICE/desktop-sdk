@@ -281,12 +281,20 @@ class OpenRouterProvider
       });
 
       if (!response.ok) {
-        if (response.status === 401 || !data.apiKey) {
+        if (!data.apiKey) {
+          return {
+            field: "key",
+            message: "Empty key",
+          };
+        }
+
+        if (response.status === 401 || data.apiKey) {
           return {
             field: "key",
             message: "Invalid API Key",
           };
         }
+
         return {
           field: "url",
           message: "Invalid URL",
@@ -345,11 +353,11 @@ class OpenRouterProvider
             : model.id === "google/gemini-2.5-pro"
             ? "Gemini 2.5 Pro"
             : model.id === "qwen/qwen3-235b-a22b-2507"
-            ? "Qwen 3"
+            ? "Qwen3"
             : model.id === "deepseek/deepseek-v3.1-terminus"
             ? "DeepSeek V3.1 Terminus"
             : model.id === "qwen/qwen3-max"
-            ? "Qwen 3 Max"
+            ? "Qwen3 Max"
             : model.id.toUpperCase(),
         provider: "openrouter" as const,
       }));
