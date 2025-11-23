@@ -8277,7 +8277,12 @@ void CCefViewEditor::CreateLocalFile(const AscEditorType& nFileFormatSrc, const 
 					oChecker.nFileType = CAscApplicationManager::GetFileFormatByExtentionForSave(sTemplatePath);
 
 				if (oChecker.nFileType & AVS_OFFICESTUDIO_FILE_DOCUMENT)
-					nFileFormat = AscEditorType::etDocument;
+				{
+					if (oChecker.nFileType == AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF)
+						nFileFormat = AscEditorType::etDocumentMasterForm;
+					else
+						nFileFormat = AscEditorType::etDocument;
+				}
 				else if (oChecker.nFileType & AVS_OFFICESTUDIO_FILE_PRESENTATION)
 					nFileFormat = AscEditorType::etPresentation;
 				else if (oChecker.nFileType & AVS_OFFICESTUDIO_FILE_SPREADSHEET)
