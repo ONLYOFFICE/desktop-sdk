@@ -45,6 +45,6 @@ namespace recent_files_reader
 		returnValue["status"] = "success";
 		returnValue["files"] = jFiles;
 
-		return returnValue.dump();
+		return JSON_serialize(returnValue);
 	}
 }

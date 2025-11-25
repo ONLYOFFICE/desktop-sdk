@@ -179,7 +179,7 @@ namespace file_content_reader
 
 			returnValue["content"] = content;
 
-			return returnValue.dump();
+			return JSON_serialize(returnValue);
 		}
 	}
 }

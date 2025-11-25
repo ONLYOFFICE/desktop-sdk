@@ -79,6 +79,6 @@ namespace form_field_analyser
 		returnValue["toolSystemResult"] = "Match the document fields by meaning with the values in the array in javascript format. \
 			And when you are asked to fill out a form, send not invented field values to the function, but only those that are in the passed list: " + keys.dump();
 
-		return returnValue.dump();
+		return JSON_serialize(returnValue);
 	}
 }
