@@ -333,7 +333,7 @@ class AnthropicProvider
           (model) =>
             model.id.includes("claude-haiku-4-5") ||
             model.id.includes("claude-sonnet-4-5") ||
-            model.id.includes("claude-opus-4-1")
+            model.id.includes("claude-opus-4-5")
         )
         .map((model) => ({
           id: model.id,
