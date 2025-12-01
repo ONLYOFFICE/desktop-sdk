@@ -41,18 +41,20 @@ class CRecentFileInfo
 public:
 	std::wstring Path;
 	int Type;
+	std::wstring Url;
 
 public:
 	CRecentFileInfo() : Path(L""), Type(0)
 	{
 	}
-	CRecentFileInfo(const std::wstring& path, int type) : Path(path), Type(type)
+	CRecentFileInfo(const std::wstring& path, const int& type, const std::wstring& url) : Path(path), Type(type), Url(url)
 	{
 	}
 	CRecentFileInfo& operator=(const CRecentFileInfo& s)
 	{
 		Path = s.Path;
 		Type = s.Type;
+		Url = s.Url;
 		return *this;
 	}
 };
@@ -63,6 +65,8 @@ public:
 	virtual void OpenTemplate(const std::wstring& path, const std::wstring& name = L"") = 0;
 	virtual void OpenFile(const std::wstring& path) = 0;
 	virtual std::vector<CRecentFileInfo> GetRecents() = 0;
+
+	virtual void ExecuteJS(const std::string& code) = 0;
 };
 
 class CFunctions;

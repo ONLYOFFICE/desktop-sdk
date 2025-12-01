@@ -37,7 +37,7 @@ const App = () => {
 
   const { messages, stopMessage } = useMessageStore();
   const { providers, fetchProvidersModels } = useProviders();
-  const { currentPage, setCurrentPage } = useRouter();
+  const { currentPage } = useRouter();
   const { manageToolData } = useServersStore();
 
   useThread({
@@ -85,14 +85,10 @@ const App = () => {
     },
   });
 
-  if (currentPage !== "settings" && !providers.length)
+  if (currentPage !== "settings" && !providers.length && !messages.length)
     return (
       <Layout>
-        <EmptyScreen
-          onConnect={() => {
-            setCurrentPage("settings");
-          }}
-        />
+        <EmptyScreen />
       </Layout>
     );
 

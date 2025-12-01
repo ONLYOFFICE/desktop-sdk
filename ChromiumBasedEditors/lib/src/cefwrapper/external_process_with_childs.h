@@ -6,6 +6,7 @@
 #include <thread>
 #include <atomic>
 #include <vector>
+#include <sstream>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -16,7 +17,6 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <sstream>
 #include <iomanip>
 #endif
 
@@ -32,6 +32,7 @@ extern char **environ;
 #include "../../../../../core/DesktopEditor/common/File.h"
 #include "../../../../../core/DesktopEditor/graphics/TemporaryCS.h"
 #include "../../../../../core/DesktopEditor/graphics/BaseThread.h"
+#include "../../../../../core/DesktopEditor/common/SystemUtils.h"
 
 namespace NSProcesses
 {
@@ -187,15 +188,45 @@ namespace NSProcesses
 			)
 		{
 			std::string lineBuf;
-			char buf[256]; DWORD n;
-			while (m_running.load() &&
+			char buf[4096];
+			
 #ifdef _WIN32
-				   ReadFile(handle, buf, sizeof(buf), &n, nullptr) && n > 0
+			DWORD n;
 #else
-				   (n = read(fd, buf, sizeof(buf))) > 0
+			ssize_t n;
+			int flags = fcntl(fd, F_GETFL, 0);
+			fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 #endif
-				   )
+
+			while (m_running.load())
 			{
+#ifdef _WIN32
+				DWORD available = 0;
+				PeekNamedPipe(handle, nullptr, 0, nullptr, &available, nullptr);
+
+				if (available == 0)
+				{
+					NSThreads::Sleep(100);
+					continue;
+				}
+
+				if (!ReadFile(handle, buf, sizeof(buf), &n, nullptr) || n == 0)
+					break;
+#else
+				n = read(fd, buf, sizeof(buf));
+				if (n < 0)
+				{
+					if (errno == EAGAIN || errno == EWOULDBLOCK)
+					{
+						NSThreads::Sleep(100);
+						continue;
+					}
+					break;
+				}
+				if (n == 0)
+					break;
+#endif
+
 				lineBuf.append(buf, n);
 				size_t pos;
 				while ((pos = lineBuf.find('\n')) != std::string::npos)
@@ -203,24 +234,268 @@ namespace NSProcesses
 					m_callback->process_callback(m_id, type, lineBuf.substr(0, pos));
 					lineBuf.erase(0, pos + 1);
 				}
-
-				NSThreads::Sleep(500);
 			}
+
 			if (!lineBuf.empty())
 				m_callback->process_callback(m_id, type, lineBuf);
 		}
 
+#ifdef _WIN32
+		std::wstring getPathVariable()
+		{
+			std::wstring pathEnv = NSSystemUtils::GetEnvVariable(L"PATH");
+			std::wstring systemEnv = L"";
+			std::wstring userEnv = L"";
+
+			if (true)
+			{
+				HKEY hKey;
+				if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Environment", 0, KEY_READ, &hKey) == ERROR_SUCCESS)
+				{
+					DWORD size = 0;
+					RegQueryValueExW(hKey, L"PATH", nullptr, nullptr, nullptr, &size);
+
+					if (size > 0)
+					{
+						int charCount = (size / sizeof(wchar_t)) + 1;
+						wchar_t* buffer = new wchar_t[charCount];
+						if (RegQueryValueExW(hKey, L"PATH", nullptr, nullptr, (LPBYTE)buffer, &size) == ERROR_SUCCESS)
+						{
+							buffer[charCount - 1] = '\0';
+							userEnv = std::wstring(buffer);
+						}
+						delete [] buffer;
+					}
+
+					RegCloseKey(hKey);
+				}
+			}
+
+			if (true)
+			{
+				HKEY hKey;
+				if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment", 0, KEY_READ, &hKey) == ERROR_SUCCESS)
+				{
+					DWORD size = 0;
+					RegQueryValueExW(hKey, L"PATH", nullptr, nullptr, nullptr, &size);
+
+					if (size > 0)
+					{
+						int charCount = (size / sizeof(wchar_t)) + 1;
+						wchar_t* buffer = new wchar_t[charCount];
+						if (RegQueryValueExW(hKey, L"PATH", nullptr, nullptr, (LPBYTE)buffer, &size) == ERROR_SUCCESS)
+						{
+							buffer[charCount - 1] = '\0';
+							systemEnv = std::wstring(buffer);
+						}
+						delete [] buffer;
+					}
+
+					RegCloseKey(hKey);
+				}
+			}
+
+			std::wstring result;
+
+			if (!userEnv.empty())
+				result = userEnv;
+
+			if (!systemEnv.empty())
+			{
+				if (!result.empty())
+					result += L";";
+
+				result += systemEnv;
+			}
+
+			if (!pathEnv.empty())
+			{
+				if (!result.empty())
+					result += L";";
+
+				result += pathEnv;
+			}
+
+			return result;
+		}
+
+		std::map<std::wstring, std::wstring> getEnv()
+		{
+			std::map<std::wstring, std::wstring> env;
+
+			wchar_t* envStrings = GetEnvironmentStringsW();
+			if (!envStrings)
+				return env;
+
+			wchar_t* current = envStrings;
+
+			while (*current != L'\0')
+			{
+				size_t len = wcslen(current) + 1; // +1 for \0
+
+				std::wstring all(current, len - 1);
+				auto pos = all.find('=');
+				if (pos != std::wstring::npos)
+				{
+					std::wstring keyName = all.substr(0, pos);
+					std::wstring value = all.substr(pos + 1);
+
+					if (keyName == L"PATH" || keyName == L"Path")
+					{
+						std::wstring systemPath = getPathVariable();
+
+						if (!systemPath.empty())
+						{
+							if (!value.empty())
+								value += L";";
+							value += systemPath;
+						}
+					}
+
+					if (!keyName.empty())
+						env[keyName] = value;
+				}
+
+				current += len;
+			}
+
+			FreeEnvironmentStringsW(envStrings);
+
+			return env;
+		}
+
+		std::wstring findBinary(const std::wstring& cmd)
+		{
+			if (cmd.empty())
+				return cmd;
+
+			// https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/path
+			std::vector<std::wstring> extensions = {L".exe", L".com", L".bat", L".cmd", L""};
+
+			if (true)
+			{
+				for (const auto& ext : extensions)
+				{
+					std::wstring test = cmd + ext;
+					DWORD attr = GetFileAttributesW(test.c_str());
+
+					if (attr != INVALID_FILE_ATTRIBUTES && !(attr & FILE_ATTRIBUTE_DIRECTORY))
+						return test;
+				}
+			}
+
+			std::wstring pathEnv = getPathVariable();
+			std::wistringstream iss(pathEnv);
+			std::wstring dir;
+
+			while (std::getline(iss, dir, L';'))
+			{
+				if (dir.empty())
+					continue;
+
+				if (!dir.empty() && dir.front() == '"')
+					dir = dir.substr(1);
+				if (!dir.empty() && dir.back() == '"')
+					dir.pop_back();
+
+				if (!dir.empty() && dir.back() != '\\' && dir.back() != '/')
+					dir += L"\\";
+
+				// Проверяем с разными расширениями
+				for (const auto& ext : extensions)
+				{
+					std::wstring test = dir + cmd + ext;
+					DWORD attr = GetFileAttributesW(test.c_str());
+
+					if (attr != INVALID_FILE_ATTRIBUTES && !(attr & FILE_ATTRIBUTE_DIRECTORY))
+						return test;
+				}
+			}
+
+			return cmd;
+		}
+#endif
+
 #ifdef _LINUX
+		std::string getShellPath()
+		{
+			std::array<char, 1024> buffer;
+			std::string result;
+			
+			const char* shell = getenv("SHELL");
+			if (!shell) {
+				#ifdef _MAC
+					shell = "/bin/zsh";
+				#else
+					shell = "/bin/bash";
+				#endif
+			}
+			
+			std::string shellPath = shell;
+			std::string cmd;
+			
+			// fish
+			if (shellPath.find("fish") != std::string::npos) 
+			{
+				cmd = std::string(shell) + " -l -c 'echo $PATH' 2>/dev/null";
+			} 
+			else 
+			{
+				cmd = std::string(shell) + " -l -i -c 'echo $PATH' 2>/dev/null";
+			}
+			
+			FILE* pipe = popen(cmd.c_str(), "r");
+			if (!pipe)
+				return "";
+			
+			while (fgets(buffer.data(), buffer.size(), pipe) != nullptr)
+			{
+				result += buffer.data();
+			}
+			
+			pclose(pipe);
+			
+			if (!result.empty() && result.back() == '\n')
+			{
+				result.pop_back();
+			}
+			
+			return result;
+		}
+
+		std::string getPathVariable()
+		{
+			std::string pathEnv = "";
+			
+			const char* pathEnvPtr = std::getenv("PATH");
+			if (pathEnvPtr)
+				pathEnv = std::string(pathEnvPtr);
+
+			std::string systemPath = getShellPath();
+			
+			std::string pathValue = systemPath;
+			if (!pathEnv.empty())
+			{
+				if (!pathValue.empty())
+					pathValue += ":";
+				pathValue += pathEnv;
+			}
+			
+			if (!pathValue.empty())
+				pathValue += ":";
+				
+			pathValue += "/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin";
+			return pathValue;
+		}
+		
 		std::string findBinary(const std::string& cmd)
 		{
 			if (!cmd.empty() && access(cmd.c_str(), X_OK) == 0)
 				return cmd;
 
-			const char* pathEnv = std::getenv("PATH");
-			if (!pathEnv)
-				return cmd;
-
-			std::istringstream iss(pathEnv);
+			std::string sPathEnv = getPathVariable();
+			
+			std::istringstream iss(sPathEnv);
 			std::string dir;
 			while (std::getline(iss, dir, ':'))
 			{
@@ -254,20 +529,42 @@ namespace NSProcesses
 			si.hStdError = m_hStdErrWr;
 			si.dwFlags |= STARTF_USESTDHANDLES;
 
-			std::wstring envBlock;
+			std::map<std::wstring, std::wstring> env = getEnv();
 			for (auto& kv : m_env)
 			{
-				envBlock += (UTF8_TO_U((kv.first)) + L"=" + UTF8_TO_U((kv.second)));
+				env[UTF8_TO_U((kv.first))] = UTF8_TO_U((kv.second));
+			}
+
+			env[L"LANG"] = L"C.UTF-8";
+
+			std::wstring envBlock;
+			for (auto& kv : env)
+			{
+				envBlock += kv.first + L"=" + kv.second;
 				envBlock.push_back(L'\0');
 			}
-			envBlock += L"LANG=C.UTF-8\0";
 			envBlock.push_back(L'\0');
 
 			std::wstring commandW = UTF8_TO_U(m_command);
-			if (!CreateProcessW(nullptr, (LPWSTR)commandW.c_str(), nullptr, nullptr, TRUE, CREATE_SUSPENDED | CREATE_NO_WINDOW | CREATE_UNICODE_ENVIRONMENT,
+			std::wstring prog = commandW;
+			std::wstring::size_type posProg = commandW.find(L" ");
+			if (posProg != std::wstring::npos)
+				prog = commandW.substr(0, posProg);
+			prog = findBinary(prog);
+			if (prog == commandW)
+				prog = L"";
+
+			if (!CreateProcessW(prog.empty() ? nullptr : prog.c_str(), (LPWSTR)commandW.c_str(), nullptr, nullptr, TRUE, CREATE_SUSPENDED | CREATE_NO_WINDOW | CREATE_UNICODE_ENVIRONMENT,
 								(LPVOID)(envBlock.c_str()), nullptr, &si, &m_pi))
 			{
 				DWORD dwError = GetLastError();
+
+				CloseHandle(m_hStdOutWr);
+				CloseHandle(m_hStdErrWr);
+				CloseHandle(m_hStdInRd);
+				m_hStdOutWr = nullptr;
+				m_hStdErrWr = nullptr;
+				m_hStdInRd = nullptr;
 
 				m_callback->process_callback(m_id, StreamType::Terminate, "");
 				return;
@@ -331,7 +628,9 @@ namespace NSProcesses
 				for (auto& s : args)
 					argv.push_back(const_cast<char*>(s.c_str()));
 				argv.push_back(nullptr);
-
+				
+				std::string systemPath = getPathVariable();
+				
 				std::map<std::string, std::string> mergedEnv;
 				for (char **env = environ; *env; ++env)
 				{
@@ -339,7 +638,17 @@ namespace NSProcesses
 					auto pos = s.find('=');
 					if (pos != std::string::npos)
 					{
-						mergedEnv[s.substr(0, pos)] = s.substr(pos + 1);
+						std::string keyName = s.substr(0, pos);
+						std::string value = s.substr(pos + 1);
+						
+						if (keyName == "PATH" && !systemPath.empty())
+						{
+							if (!value.empty())
+								value += ":";
+							value += systemPath;
+						}
+						
+						mergedEnv[keyName] = value;
 					}
 				}
 				for (auto &kv : m_env)
@@ -377,11 +686,11 @@ namespace NSProcesses
 
 			std::thread t_out = std::thread([this]()
 											{
-				                                readOutLoop(m_stdoutPipe[0], StreamType::StdOut);
+												readOutLoop(m_stdoutPipe[0], StreamType::StdOut);
 											});
 			std::thread t_err = std::thread([this]()
 											{
-				                                readOutLoop(m_stderrPipe[0], StreamType::StdErr);
+												readOutLoop(m_stderrPipe[0], StreamType::StdErr);
 											});
 
 #endif

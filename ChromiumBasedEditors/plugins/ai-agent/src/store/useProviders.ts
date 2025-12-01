@@ -158,6 +158,7 @@ const useProviders = create<ProvidersState>()((set, get) => ({
 
       if (state.currentProvider?.name === providerInfo.name) {
         state.currentProvider = null;
+        localStorage.removeItem(CURRENT_PROVIDER_KEY);
         provider.setCurrentProvider();
       }
 

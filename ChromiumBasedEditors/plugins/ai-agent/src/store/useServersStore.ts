@@ -2,6 +2,10 @@ import { create } from "zustand";
 import type { ThreadMessageLike } from "@assistant-ui/react";
 
 import type { TMCPItem } from "@/lib/types";
+import {
+  MAX_TOOL_COUNT,
+  MAX_TOOL_COUNT_WITH_WEB_SEARCH,
+} from "@/lib/constants";
 import client from "@/servers";
 
 const DISABLED_TOOLS_NAME = "disabledTools";
@@ -16,18 +20,22 @@ type UseServersStoreProps = {
     idx: number;
     messageUID: string;
   };
+  webSearchEnabled: boolean;
 
-  initServers: () => Promise<void>;
+  initServers: () => void;
+  getTools: () => Promise<void>;
   changeToolStatus: (type: string, name: string, enabled: boolean) => void;
-  callTools: (name: string, args: Record<string, unknown>) => unknown;
-  checkAllowAlways: () => boolean;
-  setAllowAlways: () => void;
+  callTools: (name: string, args: Record<string, unknown>) => Promise<unknown>;
+  checkAllowAlways: (type: string, name: string) => boolean;
+  setAllowAlways: (value: boolean, type: string, name: string) => void;
   setManageToolData: (data: UseServersStoreProps["manageToolData"]) => void;
   saveConfig: (config: {
     mcpServers: Record<string, Record<string, unknown>>;
   }) => void;
   getConfig: () => Record<string, Record<string, unknown>>;
+  deleteCustomServer: (name: string) => void;
   getCustomServersLogs: () => Record<string, string[]>;
+  getWebSearchEnabled: () => boolean;
 };
 
 const useServersStore = create<UseServersStoreProps>((set, get) => ({
@@ -35,8 +43,9 @@ const useServersStore = create<UseServersStoreProps>((set, get) => ({
   tools: [],
   disabledTools: {},
   manageToolData: undefined,
+  webSearchEnabled: false,
 
-  initServers: async () => {
+  initServers: () => {
     const customServers = localStorage.getItem(MCP_SERVERS_NAME);
 
     if (customServers) {
@@ -44,22 +53,62 @@ const useServersStore = create<UseServersStoreProps>((set, get) => ({
       client.setCustomServers(parsedCustomServers);
       client.startCustomServers();
     }
+  },
 
+  getTools: async () => {
     const allTools = await client.getTools();
     const disabledToolsNamesStr = localStorage.getItem(DISABLED_TOOLS_NAME);
 
     const tools: TMCPItem[] = [];
     const servers: Record<string, TMCPItem[]> = {};
+    let webSearchEnabled = false;
 
     if (disabledToolsNamesStr) {
       const disabledTools = JSON.parse(disabledToolsNamesStr);
 
       Object.entries(allTools).map(([type, serverTools]) => {
+        if (type === "web-search") {
+          servers[type] = [...serverTools];
+
+          if (disabledTools["web-search"].length) {
+            set({ webSearchEnabled: false });
+            return;
+          }
+
+          const items = serverTools.map((tool) => {
+            return {
+              ...tool,
+              name: `${type}_${tool.name}`,
+            };
+          });
+
+          disabledTools[type] = [];
+
+          tools.push(...items);
+          set({ webSearchEnabled: serverTools.length > 0 });
+          webSearchEnabled = serverTools.length > 0;
+
+          return;
+        }
+
         servers[type] = serverTools.map((tool) => {
           if (!disabledTools[type]) {
             disabledTools[type] = [];
           }
           const enabled = !disabledTools[type].includes(tool.name);
+
+          if (
+            enabled && webSearchEnabled
+              ? tools.length === MAX_TOOL_COUNT_WITH_WEB_SEARCH
+              : tools.length === MAX_TOOL_COUNT
+          ) {
+            disabledTools[type].push(tool.name);
+
+            return {
+              ...tool,
+              enabled: false,
+            };
+          }
 
           if (enabled) tools.push({ ...tool, name: `${type}_${tool.name}` });
 
@@ -73,12 +122,45 @@ const useServersStore = create<UseServersStoreProps>((set, get) => ({
       set({ disabledTools });
     } else {
       const disabledTools: Record<string, string[]> = {};
+
+      let webSearchEnabled = false;
+
       Object.entries(allTools).map(([type, serverTools]) => {
-        const enabledTools = serverTools.map((t) => ({ ...t, enabled: true }));
         disabledTools[type] = [];
-        servers[type] = enabledTools;
+
+        if (type === "web-search") {
+          servers[type] = [...serverTools];
+
+          const items = serverTools.map((tool) => {
+            return {
+              ...tool,
+              name: `${type}_${tool.name}`,
+              enabled: true,
+            };
+          });
+
+          tools.push(...items);
+          set({ webSearchEnabled: serverTools.length > 0 });
+          webSearchEnabled = serverTools.length > 0;
+
+          return;
+        }
+
+        const serverToolsWithStatus = serverTools.map((t, index) => {
+          if (
+            tools.length + index >=
+            (webSearchEnabled ? MAX_TOOL_COUNT_WITH_WEB_SEARCH : MAX_TOOL_COUNT)
+          ) {
+            disabledTools[type].push(t.name);
+
+            return { ...t, enabled: false };
+          }
+          return { ...t, enabled: true };
+        });
+
+        servers[type] = serverToolsWithStatus;
         tools.push(
-          ...enabledTools.map((tool) => ({
+          ...serverToolsWithStatus.map((tool) => ({
             ...tool,
             name: `${type}_${tool.name}`,
           }))
@@ -101,6 +183,40 @@ const useServersStore = create<UseServersStoreProps>((set, get) => ({
     if (!tool) return;
 
     if (enabled) {
+      if (type === "web-search") {
+        const newDisabledTools = {
+          ...thisStore.disabledTools,
+          [type]: [],
+        };
+        set({ disabledTools: newDisabledTools });
+        set({ webSearchEnabled: true });
+        set({
+          servers: {
+            ...servers,
+            [type]: servers[type].map((tool) => {
+              return {
+                ...tool,
+                enabled: true,
+              };
+            }),
+          },
+        });
+        localStorage.setItem(
+          DISABLED_TOOLS_NAME,
+          JSON.stringify(newDisabledTools)
+        );
+        return;
+      }
+
+      if (
+        thisStore.tools.length >=
+        (thisStore.webSearchEnabled
+          ? MAX_TOOL_COUNT_WITH_WEB_SEARCH
+          : MAX_TOOL_COUNT)
+      ) {
+        return;
+      }
+
       const newDisabledTools = {
         ...thisStore.disabledTools,
         [type]: thisStore.disabledTools[type].filter((tool) => tool !== name),
@@ -115,13 +231,26 @@ const useServersStore = create<UseServersStoreProps>((set, get) => ({
       );
     } else {
       const disabled = [...thisStore.disabledTools[type], name];
+
       const allDisabledTools = {
         ...thisStore.disabledTools,
         [type]: disabled,
       };
-      const tools = thisStore.tools.filter(
-        (tool) => tool.name !== `${type}_${name}`
-      );
+
+      let tools: TMCPItem[] = [];
+
+      if (type === "web-search") {
+        allDisabledTools[type] = [
+          ...thisStore.servers[type].map((tool) => tool.name),
+        ];
+        set({ webSearchEnabled: false });
+        tools = thisStore.tools.filter((tool) => !tool.name.includes(type));
+      } else {
+        tools = thisStore.tools.filter(
+          (tool) => tool.name !== `${type}_${name}`
+        );
+      }
+
       set({
         tools,
         disabledTools: allDisabledTools,
@@ -150,18 +279,18 @@ const useServersStore = create<UseServersStoreProps>((set, get) => ({
     });
   },
 
-  checkAllowAlways: () => {
-    return client.checkAllowAlways();
+  checkAllowAlways: (type: string, name: string) => {
+    return client.checkAllowAlways(type, name);
   },
 
-  setAllowAlways: () => {
-    client.setAllowAlways(true);
+  setAllowAlways: (value: boolean, type: string, name: string) => {
+    client.setAllowAlways(value, type, name);
   },
 
-  callTools: (name: string, args: Record<string, unknown>) => {
+  callTools: async (name: string, args: Record<string, unknown>) => {
     const thisStore = get();
 
-    const type = name.split("_")[0];
+    const type = client.getServerType(name);
     const toolName = name.replace(type + "_", "");
 
     const tool = thisStore.disabledTools[type].find(
@@ -170,7 +299,7 @@ const useServersStore = create<UseServersStoreProps>((set, get) => ({
 
     if (tool) return;
 
-    return client.callTools(type, toolName, args);
+    return await client.callTools(type, toolName, args);
   },
 
   setManageToolData: (data: UseServersStoreProps["manageToolData"]) => {
@@ -178,19 +307,34 @@ const useServersStore = create<UseServersStoreProps>((set, get) => ({
   },
 
   getConfig: () => {
-    return JSON.parse(localStorage.getItem(MCP_SERVERS_NAME) || "{}");
+    return JSON.parse(
+      localStorage.getItem(MCP_SERVERS_NAME) ||
+        JSON.stringify({ mcpServers: {} })
+    );
   },
 
   saveConfig: (config: {
     mcpServers: Record<string, Record<string, unknown>>;
   }) => {
-    localStorage.setItem(MCP_SERVERS_NAME, JSON.stringify(config));
-    client.setCustomServers(config);
+    const currConfig = config.mcpServers ? config : { mcpServers: {} };
+    localStorage.setItem(MCP_SERVERS_NAME, JSON.stringify(currConfig));
+    client.setCustomServers(currConfig);
     client.startCustomServers();
   },
 
+  deleteCustomServer: (name: string) => {
+    client.deleteCustomServer(name);
+    const config = get().getConfig();
+    delete config.mcpServers[name];
+    localStorage.setItem(MCP_SERVERS_NAME, JSON.stringify(config));
+  },
+
   getCustomServersLogs: () => {
-    return client.customServersLogs;
+    return client.getCustomServersLogs();
+  },
+
+  getWebSearchEnabled: () => {
+    return client.getWebSearchEnabled();
   },
 }));
 

@@ -12,6 +12,8 @@ import type { Model, TMCPItem, TProvider } from "@/lib/types";
 import type { BaseProvider } from "../base";
 import type { SettingsProvider, TData, TErrorData } from "../settings";
 
+import { CREATE_TITLE_SYSTEM_PROMPT } from "../Providers.utils";
+
 import {
   convertMessagesToModelFormat,
   convertToolsToModelFormat,
@@ -79,6 +81,26 @@ class AnthropicProvider
     this.tools = convertToolsToModelFormat(tools);
   };
 
+  async createChatName(message: string) {
+    try {
+      if (!this.client) return "";
+
+      const response = await this.client.messages.create({
+        messages: [{ role: "user", content: message }],
+        model: this.modelKey,
+        system: CREATE_TITLE_SYSTEM_PROMPT,
+        max_tokens: 2048,
+        stream: false,
+      });
+
+      const title = response.content.find((c) => c.type === "text")?.text;
+
+      return title ?? message.substring(0, 25);
+    } catch {
+      return "";
+    }
+  }
+
   async *sendMessage(
     messages: ThreadMessageLike[],
     afterToolCall?: boolean,
@@ -97,7 +119,11 @@ class AnthropicProvider
         system: this.systemPrompt,
         tools: this.tools,
         stream: true,
-        max_tokens: 2048,
+        max_tokens: 30000,
+        tool_choice: {
+          disable_parallel_tool_use: true,
+          type: "auto",
+        },
       });
 
       this.prevMessages.push(...convertedMessage);
@@ -112,12 +138,6 @@ class AnthropicProvider
 
       for await (const messageStreamEvent of stream) {
         const { type } = messageStreamEvent;
-
-        if (this.messageStopped) {
-          this.messageStopped = false;
-
-          stream.controller.abort();
-        }
 
         if (type === "message_start") {
           if (afterToolCall && message) {
@@ -169,6 +189,20 @@ class AnthropicProvider
           continue;
         }
 
+        if (this.messageStopped) {
+          this.messageStopped = false;
+
+          const providerMsg = convertMessagesToModelFormat([responseMessage]);
+
+          this.prevMessages.push(...providerMsg);
+
+          stream.controller.abort();
+
+          yield { isEnd: true, responseMessage };
+
+          continue;
+        }
+
         yield responseMessage;
       }
     } catch (e) {
@@ -203,7 +237,7 @@ class AnthropicProvider
     const toolResult: ToolResultBlockParam = {
       type: "tool_result",
       content: result.result,
-      tool_use_id: result.toolCallId!,
+      tool_use_id: result.toolCallId ?? "",
     };
 
     this.prevMessages.push({
@@ -240,11 +274,23 @@ class AnthropicProvider
 
       return true;
     } catch (error) {
+      console.log(JSON.stringify(error));
       if (typeof error === "object" && error) {
         if ("status" in error && error.status === 401) {
+          const errorMessage =
+            "error" in error &&
+            typeof error.error === "object" &&
+            error.error &&
+            "error" in error.error &&
+            typeof error.error.error === "object" &&
+            error.error.error &&
+            "message" in error.error.error
+              ? error.error.error.message
+              : "Invalid API key";
+
           return {
             field: "key",
-            message: "Invalid API key",
+            message: errorMessage as string,
           };
         }
 
@@ -254,14 +300,15 @@ class AnthropicProvider
             message: "Invalid URL",
           };
         }
-
-        if (data.apiKey) {
-          return {
-            field: "url",
-            message: "Invalid URL",
-          };
-        }
       }
+
+      if (data.apiKey) {
+        return {
+          field: "key",
+          message: "Invalid API key",
+        };
+      }
+
       return {
         field: "key",
         message: "Empty key",
@@ -281,11 +328,18 @@ class AnthropicProvider
 
       const body = modelsRes.data;
 
-      return body.map((model) => ({
-        id: model.id,
-        name: model.display_name,
-        provider: "anthropic" as const,
-      }));
+      return body
+        .filter(
+          (model) =>
+            model.id.includes("claude-haiku-4-5") ||
+            model.id.includes("claude-sonnet-4-5") ||
+            model.id.includes("claude-opus-4-5")
+        )
+        .map((model) => ({
+          id: model.id,
+          name: model.display_name,
+          provider: "anthropic" as const,
+        }));
     } catch (error) {
       console.log(error);
       return [];

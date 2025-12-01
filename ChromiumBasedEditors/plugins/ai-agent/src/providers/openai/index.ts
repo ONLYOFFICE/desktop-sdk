@@ -20,6 +20,7 @@ import {
   convertMessagesToModelFormat,
 } from "./utils";
 import { handleTextMessage, handleToolCall } from "./handlers";
+import { CREATE_TITLE_SYSTEM_PROMPT } from "../Providers.utils";
 
 class OpenAIProvider
   implements
@@ -80,6 +81,29 @@ class OpenAIProvider
     this.tools = convertToolsToModelFormat(tools);
   };
 
+  async createChatName(message: string) {
+    try {
+      if (!this.client) return "";
+
+      const systemMessage: ChatCompletionSystemMessageParam = {
+        role: "system",
+        content: CREATE_TITLE_SYSTEM_PROMPT,
+      };
+
+      const response = await this.client.chat.completions.create({
+        messages: [systemMessage, { role: "user", content: message }],
+        model: this.modelKey,
+        stream: false,
+      });
+
+      const title = response.choices[0].message.content;
+
+      return title ?? message.substring(0, 25);
+    } catch {
+      return "";
+    }
+  }
+
   async *sendMessage(
     messages: ThreadMessageLike[],
     afterToolCall?: boolean,
@@ -102,8 +126,6 @@ class OpenAIProvider
         model: this.modelKey,
         tools: this.tools,
         stream: true,
-
-        max_tokens: 2048,
       });
 
       this.prevMessages.push(...convertedMessage);
@@ -119,25 +141,10 @@ class OpenAIProvider
       let stop = false;
 
       for await (const messageStreamEvent of stream) {
-        if (this.stopStream) {
-          stream.controller.abort();
-
-          this.stopStream = false;
-
-          return;
-        }
         const chunks: ChatCompletionChunk["choices"] =
           messageStreamEvent.choices;
 
         chunks.forEach((chunk) => {
-          if (this.stopStream) {
-            stream.controller.abort();
-
-            this.stopStream = false;
-
-            return;
-          }
-
           if (stop) return;
 
           if (chunk.finish_reason) {
@@ -146,9 +153,16 @@ class OpenAIProvider
             const curMsg = afterToolCall
               ? {
                   ...responseMessage,
-                  content: responseMessage.content.slice(
-                    message?.content.length ?? 0
-                  ),
+                  content:
+                    typeof responseMessage.content === "string"
+                      ? responseMessage.content
+                      : responseMessage.content.filter((part, index) => {
+                          // Keep tool-call parts and new text parts added after tool execution
+                          if (part.type === "tool-call") return true;
+                          // Only keep text parts that were added after the original message
+                          const originalLength = message?.content.length ?? 0;
+                          return index >= originalLength;
+                        }),
                 }
               : responseMessage;
 
@@ -174,6 +188,23 @@ class OpenAIProvider
             responseMessage = handleToolCall(responseMessage, chunk);
           }
         });
+
+        if (this.stopStream) {
+          const providerMsg = convertMessagesToModelFormat([responseMessage]);
+
+          this.prevMessages.push(...providerMsg);
+
+          stream.controller.abort();
+
+          this.stopStream = false;
+
+          yield {
+            isEnd: true,
+            responseMessage,
+          };
+
+          continue;
+        }
 
         if (stop) {
           yield {
@@ -252,7 +283,7 @@ class OpenAIProvider
 
       return true;
     } catch (error) {
-      console.log(error);
+      console.log(JSON.stringify(error));
       const errorObj = error as { code: string };
 
       if (errorObj.code === "invalid_api_key") {
@@ -261,14 +292,15 @@ class OpenAIProvider
           message: "Invalid API Key",
         };
       }
-
-      if (data.apiKey) {
-        return {
-          field: "url",
-          message: "Invalid URL",
-        };
-      }
     }
+
+    if (data.apiKey) {
+      return {
+        field: "url",
+        message: "Invalid URL",
+      };
+    }
+
     return {
       field: "key",
       message: "Empty key",
@@ -284,11 +316,22 @@ class OpenAIProvider
 
     const response: OpenAIModel[] = (await newClient.models.list()).data;
 
-    return response.map((model) => ({
-      id: model.id,
-      name: model.id,
-      provider: "openai" as const,
-    }));
+    return response
+      .filter(
+        (model) =>
+          model.id === "gpt-4.1" ||
+          model.id === "gpt-5" ||
+          model.id === "gpt-5.1-2025-11-13"
+      )
+      .map((model) => ({
+        id: model.id,
+        name:
+          model.id === "gpt-5.1-2025-11-13"
+            ? "GPT-5.1"
+            : model.id.toUpperCase(),
+        provider: "openai" as const,
+      }))
+      .reverse();
   };
 }
 

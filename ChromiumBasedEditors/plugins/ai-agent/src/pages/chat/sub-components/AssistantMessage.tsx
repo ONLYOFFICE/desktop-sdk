@@ -1,19 +1,19 @@
 import {
-  MessagePrimitive,
   ActionBarPrimitive,
   ErrorPrimitive,
   useMessage,
-  type ThreadMessageLike,
+  MessagePrimitive,
 } from "@assistant-ui/react";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
-import DownloadIconUrl from "@/assets/btn-download.svg?url";
+import DownloadIconUrl from "@/assets/btn-save.svg?url";
 import BtnCopyIconUrl from "@/assets/btn-copy.svg?url";
 import BtnCheckIconUrl from "@/assets/checked.svg?url";
 
 import useMessageStore from "@/store/useMessageStore";
 
-import { convertMessagesToMd } from "@/lib/utils";
+import { convertMessagesToMd, getMessageTitleFromMd } from "@/lib/utils";
 
 import { MarkdownText } from "@/components/markdown";
 import { TooltipIconButton } from "@/components/tooltip-icon-button";
@@ -31,25 +31,28 @@ const MessageError = () => {
 };
 
 const AssistantActionBar = () => {
-  const { isStreamRunning } = useMessageStore();
+  const { t } = useTranslation();
+
+  const { isStreamRunning, messages } = useMessageStore();
 
   const message = useMessage();
 
-  const msg: ThreadMessageLike = message;
-
-  const mdValue = convertMessagesToMd([msg]);
+  if (message.status?.type === "incomplete" && message.status?.error) return;
 
   const onDownload = () => {
-    window.AscDesktopEditor.SaveFilenameDialog(
-      "Message.md",
-      (path) => {
-        if (path) {
-          const name = path.split("/").pop() ?? "";
-          window.AscDesktopEditor.openTemplate(path, name);
-        }
-      },
-      mdValue
-    );
+    const parentMessage = messages[Number(message.parentId)];
+
+    const mdValue = convertMessagesToMd([parentMessage, message]);
+
+    const title = getMessageTitleFromMd(mdValue);
+
+    window.AscDesktopEditor.SaveFilenameDialog(`${title}.docx`, (path) => {
+      if (!path) return;
+
+      window.AscDesktopEditor.saveAndOpen(mdValue, 0x5c, path, 0x41, (code) => {
+        if (!code) console.log("Conversion error");
+      });
+    });
   };
 
   return (
@@ -60,7 +63,7 @@ const AssistantActionBar = () => {
       className="col-start-3 row-start-2 ml-3 mt-3 flex gap-[8px]"
     >
       <ActionBarPrimitive.Copy asChild>
-        <TooltipIconButton tooltip="Copy">
+        <TooltipIconButton tooltip={t("CopyToClipboard")}>
           <MessagePrimitive.If copied>
             <IconButton
               iconName={BtnCheckIconUrl}
@@ -75,10 +78,10 @@ const AssistantActionBar = () => {
         </TooltipIconButton>
       </ActionBarPrimitive.Copy>
       <div>
-        <TooltipIconButton tooltip="Download">
+        <TooltipIconButton tooltip={t("Save")}>
           <IconButton
             iconName={DownloadIconUrl}
-            size={20}
+            size={24}
             onClick={onDownload}
             isStroke
           />
@@ -102,7 +105,7 @@ export const AssistantMessage = () => {
         animate={{ y: 0, opacity: 1 }}
         data-role="assistant"
       >
-        <div className="leading-[20px] text-[14px] col-span-2 col-start-2 row-start-1 ml-4 break-words leading-7">
+        <div className="leading-[20px] text-[14px] col-span-2 col-start-2 row-start-1 ml-4 break-words leading-7 text-[var(--chat-message-color)]">
           <MessagePrimitive.Content
             components={{
               Text: MarkdownText,

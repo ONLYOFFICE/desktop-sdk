@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 import type {
   AppendMessage,
@@ -7,6 +7,7 @@ import type {
 } from "@assistant-ui/react";
 
 import { provider, type SendMessageReturnType } from "@/providers";
+import server from "@/servers";
 import { createMessage, updateMessage } from "@/database/messages";
 
 import useMessageStore from "@/store/useMessageStore";
@@ -15,6 +16,7 @@ import useThreadsStore from "@/store/useThreadsStore";
 import useServersStore from "@/store/useServersStore";
 import useProviders from "@/store/useProviders";
 import useModelsStore from "@/store/useModelsStore";
+import { getThread } from "@/database/metadata";
 
 type UseMessagesProps = {
   isReady: boolean;
@@ -43,8 +45,12 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
   const { currentProvider } = useProviders();
   const { currentModel } = useModelsStore();
 
+  const threadIdRef = useRef(threadId);
+
   useEffect(() => {
     if (!isReady) return;
+
+    threadIdRef.current = threadId;
 
     fetchPrevMessages(threadId);
     clearAttachmentFiles();
@@ -57,8 +63,23 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
   const approveToolCall = (allowAlways: boolean) => {
     if (!manageToolData) return;
 
+    const toolCall = manageToolData?.message?.content[manageToolData.idx];
+
+    if (
+      !toolCall ||
+      typeof toolCall !== "object" ||
+      !("type" in toolCall) ||
+      toolCall.type !== "tool-call"
+    )
+      return;
+
+    const toolName = toolCall.toolName;
+
+    const type = server.getServerType(toolName);
+    const name = toolName.replace(type + "_", "");
+
     if (allowAlways) {
-      setAllowAlways();
+      setAllowAlways(true, type, name);
     }
 
     handleToolCall(
@@ -103,7 +124,12 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     )
       return;
 
-    if (checkAllowAlways() || accept || deny) {
+    const toolName = toolCall.toolName;
+
+    const type = server.getServerType(toolName);
+    const name = toolName.replace(type + "_", "");
+
+    if (checkAllowAlways(type, name) || accept || deny) {
       const result = deny
         ? "User deny tool call"
         : await callTools(
@@ -153,6 +179,12 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     if (messages)
       for await (const message of stream) {
         if ("isEnd" in message) {
+          if (threadIdRef.current !== threadId) {
+            setIsStreamRunning(false);
+            setIsRequestRunning(false);
+
+            return;
+          }
           if (message.responseMessage.status?.type === "incomplete") {
             addMessage(message.responseMessage);
 
@@ -191,7 +223,10 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
           initedMessage = true;
         } else {
           updateMessage(messageUID, message);
-          updateLastMessage(message);
+
+          if (threadIdRef.current === threadId) {
+            updateLastMessage(message);
+          }
         }
       }
   };
@@ -224,13 +259,52 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       attachments: message.attachments,
     };
 
-    if (messages.length === 0) {
-      insertThread(message.content[0].text.substring(0, 25));
+    const existingThread = await getThread(threadId);
+
+    if (!existingThread) {
+      let textForTitle = "";
+
+      for (const msg of messages) {
+        // Skip messages with errors
+        if (msg.status?.type === "incomplete" && msg.status?.error) continue;
+
+        textForTitle +=
+          typeof msg.content === "string"
+            ? msg.content
+            : msg.content[0].type === "text"
+            ? msg.content[0].text
+            : "";
+
+        textForTitle += "\n\n";
+      }
+
+      textForTitle += "\n\n" + message.content[0].text;
+
+      provider.createChatName(textForTitle).then(async (title) => {
+        if (!title) return;
+
+        insertThread(title);
+
+        // Save all messages from the store to the database (skip error messages)
+        for (const msg of messages) {
+          // Skip messages with errors
+          if (msg.status?.type === "incomplete" && msg.status?.error) continue;
+
+          await createMessage(threadId, crypto.randomUUID(), msg);
+        }
+
+        // Save the new user message
+        await createMessage(threadId, crypto.randomUUID(), userMessage);
+      });
     } else {
       insertNewMessageToThread();
-    }
 
-    createMessage(threadId, crypto.randomUUID(), userMessage);
+      const createMessages = async () => {
+        await createMessage(threadId, crypto.randomUUID(), userMessage);
+      };
+
+      createMessages();
+    }
 
     addMessage(userMessage);
 

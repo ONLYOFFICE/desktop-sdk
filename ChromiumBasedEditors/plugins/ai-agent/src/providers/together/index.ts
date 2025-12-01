@@ -19,6 +19,7 @@ import {
   convertMessagesToModelFormat,
 } from "./utils";
 import { handleTextMessage, handleToolCall } from "./handlers";
+import { CREATE_TITLE_SYSTEM_PROMPT } from "../Providers.utils";
 
 class TogetherProvider
   implements
@@ -78,6 +79,29 @@ class TogetherProvider
     this.tools = convertToolsToModelFormat(tools);
   };
 
+  async createChatName(message: string) {
+    try {
+      if (!this.client) return "";
+
+      const systemMessage: ChatCompletionSystemMessageParam = {
+        role: "system",
+        content: CREATE_TITLE_SYSTEM_PROMPT,
+      };
+
+      const response = await this.client.chat.completions.create({
+        messages: [systemMessage, { role: "user", content: message }],
+        model: this.modelKey,
+        stream: false,
+      });
+
+      const title = response.choices[0].message?.content;
+
+      return title ?? message.substring(0, 25);
+    } catch {
+      return "";
+    }
+  }
+
   async *sendMessage(
     messages: ThreadMessageLike[],
     afterToolCall?: boolean,
@@ -100,8 +124,6 @@ class TogetherProvider
         model: this.modelKey,
         tools: this.tools,
         stream: true,
-
-        max_tokens: 2048,
       });
 
       this.prevMessages.push(...convertedMessage);
@@ -117,24 +139,9 @@ class TogetherProvider
       let stop = false;
 
       for await (const messageStreamEvent of stream) {
-        if (this.stopStream) {
-          stream.controller.abort();
-
-          this.stopStream = false;
-
-          return;
-        }
         const chunks = messageStreamEvent.choices;
 
         chunks.forEach((chunk) => {
-          if (this.stopStream) {
-            stream.controller.abort();
-
-            this.stopStream = false;
-
-            return;
-          }
-
           if (stop) return;
 
           if (chunk.finish_reason) {
@@ -143,9 +150,16 @@ class TogetherProvider
             const curMsg = afterToolCall
               ? {
                   ...responseMessage,
-                  content: responseMessage.content.slice(
-                    message?.content.length ?? 0
-                  ),
+                  content:
+                    typeof responseMessage.content === "string"
+                      ? responseMessage.content
+                      : responseMessage.content.filter((part, index) => {
+                          // Keep tool-call parts and new text parts added after tool execution
+                          if (part.type === "tool-call") return true;
+                          // Only keep text parts that were added after the original message
+                          const originalLength = message?.content.length ?? 0;
+                          return index >= originalLength;
+                        }),
                 }
               : responseMessage;
 
@@ -172,7 +186,28 @@ class TogetherProvider
           }
         });
 
-        if (stop) {
+        if (this.stopStream) {
+          // Only push to prevMessages if there's actual content
+          const hasContent =
+            typeof responseMessage.content === "string"
+              ? responseMessage.content.length > 0
+              : responseMessage.content.length > 0;
+
+          if (hasContent) {
+            const providerMsg = convertMessagesToModelFormat([responseMessage]);
+            this.prevMessages.push(...providerMsg);
+          }
+
+          stream.controller.abort();
+
+          this.stopStream = false;
+
+          yield {
+            isEnd: true,
+            responseMessage,
+          };
+          continue;
+        } else if (stop) {
           yield {
             isEnd: true,
             responseMessage,
@@ -251,20 +286,21 @@ class TogetherProvider
       console.log(error);
       const errorObj = error as { code: string; status: number };
 
-      if (errorObj.status === 401) {
+      if (errorObj.status === 401 || data.apiKey) {
         return {
           field: "key",
           message: "Invalid API Key",
         };
       }
-
-      if (data.apiKey) {
-        return {
-          field: "url",
-          message: "Invalid URL",
-        };
-      }
     }
+
+    if (data.apiKey) {
+      return {
+        field: "url",
+        message: "Invalid URL",
+      };
+    }
+
     return {
       field: "key",
       message: "Empty key",
@@ -281,11 +317,17 @@ class TogetherProvider
       (m) => m.type === "chat"
     );
 
-    return response.map((model) => ({
-      id: model.id,
-      name: model.display_name ?? model.id,
-      provider: "openai" as const,
-    }));
+    return response
+      .filter(
+        (m) =>
+          // m.id === "Qwen/Qwen3-235B-A22B-fp8-tput" ||
+          m.id === "deepseek-ai/DeepSeek-V3.1"
+      )
+      .map((model) => ({
+        id: model.id,
+        name: model.display_name ?? model.id,
+        provider: "together" as const,
+      }));
   };
 }
 

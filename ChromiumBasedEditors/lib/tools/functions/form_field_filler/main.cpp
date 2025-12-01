@@ -140,6 +140,6 @@ namespace form_field_filler
 		returnValue["toolSystemType"] = "file";
 		returnValue["toolSystemResult"] = U_TO_UTF8(filePath);
 
-		return returnValue.dump();
+		return JSON_serialize(returnValue);
 	}
 }

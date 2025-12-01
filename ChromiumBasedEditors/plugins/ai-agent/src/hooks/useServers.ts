@@ -9,14 +9,32 @@ type UseServersProps = {
 };
 
 const useServers = ({ isReady }: UseServersProps) => {
-  const { initServers, tools } = useServersStore();
+  const { initServers, getTools, tools } = useServersStore();
   const { currentProvider } = useProviders();
 
   useEffect(() => {
     if (!isReady) return;
 
     initServers();
-  }, [isReady, initServers]);
+    getTools();
+
+    setInterval(() => {
+      getTools();
+      // update tools every 5 minutes
+    }, 1000 * 60 * 5);
+  }, [isReady, initServers, getTools]);
+
+  useEffect(() => {
+    const handler = () => {
+      getTools();
+    };
+
+    window.addEventListener("tools-changed", handler);
+
+    return () => {
+      window.removeEventListener("tools-changed", handler);
+    };
+  }, [getTools]);
 
   useEffect(() => {
     if (!tools || !currentProvider) return;

@@ -1,0 +1,247 @@
+.theme-white {
+    /* base colors */
+    --background-normal: #ffffff;
+    --background-normal-element: #f3f3f3;
+    --background-normal-element-light: #f9f9f9;
+    --background-accent-button: #3483db;
+    --background-primary-button: #3483db;
+    --background-scrim: #00000033;
+    --background-scroll-thumb: #e0e0e0;
+
+    --border-divider: #dfdfdf;
+    --border-regular-control: #c0c0c0;
+    --border-control-focus: #848484;
+    --border-error: #f62211;
+    --border-sidebar-icon: #dfdfdf;
+
+    --highlight-button-hover: #e0e0e0;
+    --highlight-button-pressed: #cccccc;
+    --highlight-button-hover-on-active: #d4d4d4;
+    --highlight-button-pressed-on-active: #e1e1e1;
+    --highlight-accent-button-hover: #5293e2;
+    --highlight-accent-button-pressed: #3475c5;
+    --highlight-primary-button-hover: #2b2b2b;
+    --highlight-primary-button-pressed: #2b2b2b;
+    --highlight-scroll-thumb-hover: #cccccc;
+    --highlight-scroll-track-hover: #00000008;
+    --highlight-toolbar-tab-underline-document: #4a87e7;
+
+    --checkbox-check-mark-background: #ffffff;
+    --checkbox-background-checked: #4a87e7;
+    --checkbox-border-normal: #c0c0c0;
+
+    --icon-normal: #000000cc;
+    --icon-success: #009900;
+
+    --text-normal: #000000cc;
+    --text-normal-pressed: #000000cc;
+    --text-secondary: #00000099;
+    --text-tertiary: #00000066;
+    --text-link: #445799;
+    --text-inverse: #ffffff;
+    --text-contrast-background: #ffffff;
+    --text-negative: #991b1b;
+
+    /* components */
+
+    /* layout */
+    --layout-background-color: var(--background-normal);
+
+    /* header */
+    --header-color: var(--text-normal);
+    --header-background-color: var(--background-normal);
+    --header-border-color: var(--border-divider);
+
+    /* chat list */
+    --chat-list-color: var(--text-normal);
+    --chat-list-border-right: var(--border-divider);
+    --chat-list-empty-color: var(--text-tertiary);
+
+    /* chat list item */
+    --chat-list-item-color: var(--text-normal);
+    --chat-list-item-hover-background-color: var(--highlight-button-hover);
+    --chat-list-item-active-background-color: var(--highlight-button-pressed);
+
+    /* icon button */
+    --icon-button-color: var(--icon-normal);
+    --icon-button-background-color: transparent;
+    --icon-button-hover-background-color: var(--highlight-button-hover);
+    --icon-button-pressed-background-color: var(--highlight-button-pressed);
+    --icon-button-hover-on-active-background-color: var(--highlight-button-hover-on-active);
+    --icon-button-pressed-on-active-background-color: var(--highlight-button-pressed-on-active);
+
+    /* button */
+    --button-color: var(--text-contrast-background);
+    --button-background-color: var(--background-accent-button);
+    --button-background-hover-color: var(--highlight-accent-button-hover);
+    --button-background-pressed-color: var(--highlight-accent-button-pressed);
+    --button-border-focus-color: var(--text-contrast-background);
+    --button-shadow-focus: 0px 0px 0px 2px #4781D1BF;
+ 
+    --button-default-color: var(--text-normal);
+    --button-default-background-color: var(--background-normal);
+    --button-default-border-color: var(--highlight-button-pressed);
+    --button-default-hover-background-color: var(--background-normal-element-light);
+    --button-default-pressed-background-color: var(--highlight-button-hover);
+    --button-default-focus-shadow: 0px 0px 0px 2px #4781D180;
+    --button-default-disabled-border-color: var(--border-regular-control);
+    --button-default-disabled-color: var(--text-normal);
+    --button-default-disabled-background-color: var(--background-normal);
+
+    /* input */
+    --input-background-color: var(--background-normal-element);
+    --input-placeholder-color: var(--text-tertiary);
+    --input-color: var(--text-normal);
+    --input-border-color: var(--border-regular-control);
+    --input-hover-background-color: var(--highlight-button-hover);
+    --input-hover-border-color: var(--checkbox-border-normal);
+    --input-active-border-color: var(--background-accent-button);
+    --input-active-background-color: var(--background-normal);
+    --input-error-color: var(--border-error);
+
+    /* tabs */
+    --tabs-color: var(--text-normal);
+    --tabs-border-color: var(--border-divider);
+    --tabs-hover-border-color: var(--checkbox-border-normal);
+    --tabs-active-border-color: var(--background-accent-button);
+
+    /* modal dialog */
+    --modal-dialog-background-color: var(--background-normal);
+    --modal-dialog-footer-border-color: var(--border-divider);
+    --modal-dialog-header-color: var(--text-normal);
+    --modal-dialog-shadows: 0px 8px 16px 0px #040f1b29, 0px 0px 4px 0px #040f1b1f;
+    --modal-dialog-overlay-background: var(--background-scrim);
+
+    /* field container */
+    --field-container-header-color: var(--text-normal);
+    --field-container-error-color: var(--text-negative);
+
+    /* drop down menu */
+    --drop-down-menu-background-color: var(--background-normal);
+    --drop-down-menu-border-color: #0000001a;
+    --drop-down-menu-shadow: 0px 8px 16px 0px #040f1b14, 0px 0px 4px 0px #040f1b0a;
+
+    /* drop down menu item */
+    --drop-down-menu-item-color: var(--text-normal);
+    --drop-down-menu-separator-color: var(--border-divider);
+    --drop-down-menu-item-hover-color: var(--highlight-button-hover);
+    --drop-down-menu-item-active-color: var(--highlight-button-pressed);
+
+    /* radio button */
+    --radio-button-color: var(--checkbox-border-normal);
+    --radio-button-active-color: var(--background-accent-button);
+
+    /* toggle button */
+    --toggle-button-background-color: var(--background-accent-button);
+    --toggle-button-background-hover-color: var(--highlight-accent-button-hover);
+    --toggle-button-off-background-color: var(--checkbox-border-normal);
+    --toggle-button-circle-color: var(--background-normal);
+
+    /* file-items */
+    --file-items-background-color: var(--background-normal);
+    --file-items-color: var(--text-normal);
+    --file-items-ext-color: var(--text-secondary);
+    --file-items-border-color: var(--border-divider);
+    --file-items-chat-background-color: var(--background-normal-element);
+    --file-items-chat-hover-background-color: var(--highlight-button-hover);
+    --file-items-chat-pressed-background-color: var(--highlight-button-pressed);
+
+    /* tooltip */
+    --tooltip-background-color: var(--background-normal);
+    --tooltip-text-color: var(--text-normal);
+    --tooltip-border-color: var(--border-divider);
+    --tooltip-shadow: 0px 1px 4px -1px #00000033;
+
+    /* loader */
+    --loader-border-color: var(--background-accent-button);
+    
+    /* tool fallback */
+    --tool-fallback-color: var(--text-normal);
+
+    /* checkbox */
+    --checkbox-color: var(--checkbox-border-normal);
+    --checkbox-bg-color: var(--background-normal);
+    --checkbox-bg-hover-color: var(--highlight-button-hover);
+    --checkbox-bg-pressed-color: var(--highlight-button-pressed);
+    --checkbox-active-color: var(--background-accent-button);
+    --checkbox-active-hover-color: var(--highlight-accent-button-hover);
+    --checkbox-active-pressed-color: var(--highlight-accent-button-pressed);
+    --checkbox-active-icon-color: var(--background-normal);
+    
+    /* pages */
+
+    /* empty-screen */
+    --empty-screen-color: var(--text-normal);
+    --empty-screen-description-color: var(--text-secondary);
+
+    /* settings */
+    --settings-header-color: var(--text-normal);
+    --settings-description-color: var(--text-tertiary);
+
+    /* ai provider item */
+    --ai-provider-item-color: var(--text-normal);
+    --ai-provider-item-description-color: var(--text-secondary);
+    --ai-provider-item-background-color: var(--background-normal);
+    --ai-provider-item-shadow: 0px 1px 2px 0px #0000000f, 0px 1px 3px 0px #0000001a;
+
+    /* settings servers */
+    --servers-description-color: var(--text-tertiary);
+    --servers-edit-config-json-background-color: var(--background-normal-element-light);
+    --servers-edit-config-json-header-color: var(--text-secondary);
+    --servers-edit-config-json-lang-color: var(--text-tertiary);
+    --servers-edit-config-json-editor-border-color: var(--border-divider);
+    --servers-edit-config-json-editor-background-color: var(--background-normal);
+    --servers-edit-config-buttons-border-color: var(--border-divider);
+
+    --servers-available-tools-border-color: var(--border-divider);
+    --servers-available-tools-header-color: var(--text-normal);
+    --servers-available-tools-item-name-color: var(--text-normal);
+    --servers-available-tools-sub-header-color: var(--text-tertiary);
+    --servers-available-tools-current-tool-color: var(--text-normal);
+    --servers-available-tools-item-background-color: var(--background-normal-element-light);
+    --servers-available-tools-item-hover-background-color: var(--highlight-button-hover);
+    --servers-available-tools-item-active-background-color: var(--highlight-button-pressed);
+    --servers-logs-dialog-border-color: var(--border-divider);
+    --servers-logs-dialog-log-color: var(--text-normal);
+
+    /* chat */
+    --chat-welcome-color: var(--text-normal);
+    --chat-welcome-description-color: var(--text-secondary);
+
+    --chat-composer-background-color: var(--background-normal-element-light);
+    --chat-composer-border-color: var(--border-divider);
+    --chat-composer-hover-border-color: var(--highlight-button-hover);
+    --chat-composer-active-border-color: var(--background-accent-button);
+    --chat-composer-text-color: var(--text-normal);
+    --chat-composer-placeholder-color: var(--text-secondary);
+
+
+    --chat-composer-action-send-color: var(--background-normal);
+    --chat-composer-action-send-background-color: var(--background-accent-button);
+    --chat-composer-action-send-background-hover-color: var(--highlight-accent-button-hover);
+    --chat-composer-action-send-background-pressed-color: var(--highlight-accent-button-pressed);
+
+    --chat-user-message-background: var(--highlight-button-hover);
+    --chat-user-message-color: var(--text-normal);
+    --chat-message-color: var(--text-normal);
+    --chat-message-blockquote-color: var(--border-control-focus);
+    --chat-message-link-color: var(--text-link);
+    --chat-message-divider-color: var(--border-divider);
+    --chat-message-th-color: var(--text-normal);
+    --chat-message-td-color: var(--text-normal);
+    --chat-message-code-block-background-color: var(--background-normal-element-light);
+    --chat-message-code-block-border-color: var(--border-divider);
+    --chat-message-code-block-header-color: var(--text-secondary);
+    --chat-message-code-block-pre-background-color: var(--background-normal);
+    --chat-message-error-color: var(--text-negative);
+    --chat-message-error-border-color: var(--border-error);
+    --chat-message-tool-call-header-color: var(--text-normal);
+    --chat-message-tool-call-name-color: var(--text-normal);
+    --chat-message-tool-call-name-background-color: var(--background-normal-element);
+    --chat-message-tool-call-body-background-color: var(--background-normal-element-light);
+    --chat-message-tool-call-body-color: var(--text-secondary);
+    --chat-message-tool-call-pre-border-color: var(--border-divider);
+    --chat-message-tool-call-pre-background-color: var(--background-normal);
+    --chat-message-tool-call-pre-color: var(--text-normal);
+    --chat-message-analyze-color: var(--text-normal);
+}   

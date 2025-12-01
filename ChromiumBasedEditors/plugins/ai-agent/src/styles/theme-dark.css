@@ -1,247 +1,247 @@
 .theme-dark {
-    --background-normal: #222222;
-    --background-normal-element: #4b4b4b;
-    --background-normal-element-light: #4b4b4b;
-    --background-tabbar: #404040;
-    --background-accent-button: #3483db;
+    /* base colors */
+    --background-normal: #333333;
+    --background-normal-element: #505050;
+    --background-normal-element-light: #404040;
+    --background-accent-button: #486f9e;
     --background-primary-button: #dddddd;
     --background-scrim: #00000099;
-    --background-scroll-thumb: #555555;
-    --background-action-panel: #404040;
-    --background-icon-normal: #404040;
+    --background-scroll-thumb: #404040;
 
-    /* Highlight colors */
-    --highlight-button-hover: #585858;
-    --highlight-button-pressed: #686868;
-    --highlight-accent-button-hover: #5293e2;
-    --highlight-accent-button-pressed: #3475c5;
-    --highlight-primary-button-hover: #e5e5e5;
-    --highlight-primary-button-pressed: #e5e5e5;
-    --highlight-header-button-hover: #00000033;
-    --highlight-text-select: #96c8fd;
-    --highlight-scroll-thumb-hover: #606060;
-    --highlight-scroll-track-hover: #ffffff08;
-    --highlight-sidebar-item-pressed: #EAEAEA;
-    --highlight-toolbar-tab-underline-document: #4a87e7;
-
-    /* Border colors */
-    --border-tabbar: #2a2a2a;
     --border-divider: #505050;
-    --border-regular-control: #585858;
-    --border-control-focus: #cccccc;
+    --border-regular-control: #666666;
+    --border-control-focus: #7d7d7d;
     --border-error: #f62211;
-    --border-sidebar: #2a2a2a;
-    --border-sidebar-item: #ffffff00;
-    --border-sidebar-icon: #585858;
+    --border-sidebar-icon: #666666;
 
-    /* Text colors */
+    --highlight-button-hover: #555555;
+    --highlight-button-pressed: #707070;
+    --highlight-button-hover-on-active: #999999;
+    --highlight-button-pressed-on-active: #707070;
+    --highlight-accent-button-hover: #75a2d6;
+    --highlight-accent-button-pressed: #89afdc;
+    --highlight-primary-button-hover: #fcfcfc;
+    --highlight-primary-button-pressed: #fcfcfc;
+    --highlight-scroll-thumb-hover: #999999;
+    --highlight-scroll-track-hover: #999999;
+    --highlight-toolbar-tab-underline-document: #446995;
+
+    --checkbox-check-mark-background: #333333;
+    --checkbox-background-checked: #dddddd;
+    --checkbox-border-normal: #707070;
+
+    --icon-normal: #ffffff;
+    --icon-success: #009900;
+
     --text-normal: #ffffffcc;
     --text-normal-pressed: #ffffffcc;
     --text-secondary: #ffffff99;
     --text-tertiary: #ffffff66;
-    --text-link: #acbfff;
+    --text-link: #b5e4ff;
     --text-inverse: #333333;
     --text-contrast-background: #ffffff;
-    --text-negative: #f87171;
+    --text-negative: #ffffffcc;
 
-    /* Icon colors */
-    --icon-normal: #ffffffcc;
-    --icon-success: #009900;
-
-    /* Checkbox colors */
-    --chb-check-mark-background: #ffffffcc;
-    --chb-background-normal: #222222;
-    --chb-background-checked: #222222;
-    --chb-border-normal: #585858;
-    --chb-border-checked: #585858;
-
-    /* System colors */
-    --system-background: #EAEAEA;
-    --system-icon: #ffffff;
-    --system-hover: #555555;
-    --system-pressed: #606060;
-    --system-divider: #505050;
-    --system-scroll-track: #222222;
-
-     /* components */
+    /* components */
 
     /* layout */
-    --layout-background-color: #404040;
+    --layout-background-color: var(--background-normal);
 
     /* header */
-    --header-color: #EAEAEA;
-    --header-background-color: #404040;
-    --header-border-color: #4B4B4B;
+    --header-color: var(--text-normal);
+    --header-background-color: var(--background-normal);
+    --header-border-color: var(--border-divider);
 
     /* chat list */
-    --chat-list-color: #EAEAEA;
-    --chat-list-border-right: #4B4B4B;
-    --chat-list-empty-color: #00000066;
+    --chat-list-color: var(--text-normal);
+    --chat-list-border-right: var(--border-divider);
+    --chat-list-empty-color: var(--text-tertiary);
 
     /* chat list item */
-    --chat-list-item-color: #F3F3F3;
-    --chat-list-item-icon-color: #EAEAEA;
-    --chat-list-item-hover-background-color: #585858;
-    --chat-list-item-active-background-color: #686868;
+    --chat-list-item-color: var(--text-normal);
+    --chat-list-item-hover-background-color: var(--highlight-button-hover);
+    --chat-list-item-active-background-color: var(--highlight-button-pressed);
 
     /* icon button */
-    --icon-button-color: #EAEAEA;
+    --icon-button-color: var(--icon-normal);
     --icon-button-background-color: transparent;
-    --icon-button-hover-background-color: #585858;
-    --icon-button-pressed-background-color: #686868;
-    --icon-button-hover-on-active-background-color: #818181;
-    --icon-button-pressed-on-active-background-color: #686868;
+    --icon-button-hover-background-color: var(--highlight-button-hover);
+    --icon-button-pressed-background-color: var(--highlight-button-pressed);
+    --icon-button-hover-on-active-background-color: var(--highlight-button-hover-on-active);
+    --icon-button-pressed-on-active-background-color: var(--highlight-button-pressed-on-active);
 
     /* button */
-    --button-color: #FFFFFF;
-    --button-background-color: #4A87E7;
-    --button-background-hover-color: #2566D5;
-    --button-background-pressed-color: #1E53AE;
-    --button-border-focus-color: #FFFFFF;
+    --button-color: var(--text-contrast-background);
+    --button-background-color: var(--background-accent-button);
+    --button-background-hover-color: var(--highlight-accent-button-hover);
+    --button-background-pressed-color: var(--highlight-accent-button-pressed);
+    --button-border-focus-color: var(--text-contrast-background);
     --button-shadow-focus: 0px 0px 0px 2px #4781D1BF;
-    --button-background-disabled-color: #4B4B4B;
-    --button-disabled-color: #B2B2B2;
-
-    --button-default-color: #EAEAEA;
-    --button-default-background-color: #404040;
-    --button-default-border-color: #E1E1E1;
-    --button-default-hover-background-color:#F9F9F9;
-    --button-default-pressed-background-color:#EAEAEA;
-    --button-default-focus-background-color: 0px 0px 0px 2px #4781D180;
-    --button-default-focus-background-color:#E8E8E8;
-    --button-default-disabled-border-color:#C0C0C0;
-    --button-default-disabled-color:#000000CC;
+ 
+    --button-default-color: var(--text-normal);
+    --button-default-background-color: var(--background-normal);
+    --button-default-border-color: var(--highlight-button-pressed);
+    --button-default-hover-background-color: var(--background-normal-element-light);
+    --button-default-pressed-background-color: var(--highlight-button-hover);
+    --button-default-focus-shadow: 0px 0px 0px 2px #4781D180;
+    --button-default-disabled-border-color: var(--border-regular-control);
+    --button-default-disabled-color: var(--text-normal);
+    --button-default-disabled-background-color: var(--background-normal);
 
     /* input */
-    --input-background-color: #4B4B4B;
-    --input-placeholder-color: #686868;
-    --input-color: #F3F3F3;
-    --input-border-color: #4B4B4B;
-    --input-hover-background-color: #383838;
-    --input-hover-border-color: #CECECE;
-    --input-active-border-color: #4A87E7;
-    --input-active-background-color: #383838;
-    --input-error-color: #991b1b;
+    --input-background-color: var(--background-normal-element);
+    --input-placeholder-color: var(--text-tertiary);
+    --input-color: var(--text-normal);
+    --input-border-color: var(--border-regular-control);
+    --input-hover-background-color: var(--highlight-button-hover);
+    --input-hover-border-color: var(--checkbox-border-normal);
+    --input-active-border-color: var(--background-accent-button);
+    --input-active-background-color: var(--background-normal);
+    --input-error-color: var(--border-error);
 
     /* tabs */
-    --tabs-color: #F3F3F3;
-    --tabs-border-color: #EAEAEA;
-    --tabs-hover-border-color: #CECECE;
-    --tabs-active-border-color: #4A87E7;
+    --tabs-color: var(--text-normal);
+    --tabs-border-color: var(--border-divider);
+    --tabs-hover-border-color: var(--checkbox-border-normal);
+    --tabs-active-border-color: var(--background-accent-button);
 
     /* modal dialog */
-    --modal-dialog-background-color: #404040;
-    --modal-dialog-footer-border-color: #DFDFDF;
-    --modal-dialog-header-color:#F3F3F3;
-    --modal-dialog-close-color: #1C1B1F;
-    --modal-dialog-shadows: 0px 8px 16px 0px #040F1B29, 0px 0px 4px 0px #040F1B1F;
-    --modal-dialog-overlay-background: #7F7F7F1A;
+    --modal-dialog-background-color: var(--background-normal);
+    --modal-dialog-footer-border-color: var(--border-divider);
+    --modal-dialog-header-color: var(--text-normal);
+    --modal-dialog-shadows: 0px 8px 16px 0px #040f1b29, 0px 0px 4px 0px #040f1b1f;
+    --modal-dialog-overlay-background: var(--background-scrim);
 
     /* field container */
-    --field-container-header-color: #F3F3F3;
-    --field-container-error-color: #991b1b;
+    --field-container-header-color: var(--text-normal);
+    --field-container-error-color: var(--text-negative);
 
     /* drop down menu */
-    --drop-down-menu-background-color: #404040;
-    --drop-down-menu-border-color: #0000001A;
-    --drop-down-menu-shadow: 0px 8px 16px 0px #040F1B14, 0px 0px 4px 0px #040F1B0A;
-    
+    --drop-down-menu-background-color: var(--background-normal);
+    --drop-down-menu-border-color: #0000001a;
+    --drop-down-menu-shadow: 0px 8px 16px 0px #040f1b14, 0px 0px 4px 0px #040f1b0a;
+
     /* drop down menu item */
-    --drop-down-menu-item-color: #F3F3F3;
-    --drop-down-menu-separator-color: #585858;
-    --drop-down-menu-item-hover-color: #585858;
-    --drop-down-menu-item-active-color: #686868;
+    --drop-down-menu-item-color: var(--text-normal);
+    --drop-down-menu-separator-color: var(--border-divider);
+    --drop-down-menu-item-hover-color: var(--highlight-button-hover);
+    --drop-down-menu-item-active-color: var(--highlight-button-pressed);
 
     /* radio button */
-    --radio-button-color: #969696;
-    --radio-button-active-color: #4A87E7;
+    --radio-button-color: var(--checkbox-border-normal);
+    --radio-button-active-color: var(--background-accent-button);
 
     /* toggle button */
-    --toggle-button-backround-color: #4A87E7;
-    --toggle-button-off-backround-color: #B2B2B2;
-    --toggle-button-circle-color: #404040;
+    --toggle-button-background-color: var(--background-accent-button);
+    --toggle-button-background-hover-color: var(--highlight-accent-button-hover);
+    --toggle-button-off-background-color: var(--checkbox-border-normal);
+    --toggle-button-circle-color: var(--background-normal);
 
     /* file-items */
-    --file-items-background-color: #404040;
-    --file-items-color: #000000CC;
-    --file-items-ext-color: #00000099;
-    --file-items-border-color: #E0E0E0;
-    --file-items-icon-color: #444444;
-    --file-items-chat-background-color:#EFEFEF;
-    --file-items-chat-hover-background-color:#EAEAEA;
-    --file-items-chat-pressed-background-color:#E1E1E1;
+    --file-items-background-color: var(--background-normal);
+    --file-items-color: var(--text-normal);
+    --file-items-ext-color: var(--text-secondary);
+    --file-items-border-color: var(--border-divider);
+    --file-items-chat-background-color: var(--background-normal-element);
+    --file-items-chat-hover-background-color: var(--highlight-button-hover);
+    --file-items-chat-pressed-background-color: var(--highlight-button-pressed);
 
     /* tooltip */
-    --tooltip-background-color: #cccccc;
-    --tooltip-text-color: #000000CC;
+    --tooltip-background-color: var(--background-normal);
+    --tooltip-text-color: var(--text-normal);
+    --tooltip-border-color: var(--border-divider);
+    --tooltip-shadow: 0px 1px 4px -1px #00000033;
 
     /* loader */
-    --loader-border-color: #4A87E7;
+    --loader-border-color: var(--background-accent-button);
     
     /* tool fallback */
-    --tool-fallback-color: #000000CC;
+    --tool-fallback-color: var(--text-normal);
 
     /* checkbox */
-    --checkbox-color: #969696;
-    --checkbox-active-color: #4A87E7;
-    --сheckbox-active-icon-color: #404040;
+    --checkbox-color: var(--checkbox-border-normal);
+    --checkbox-bg-color: var(--background-normal);
+    --checkbox-bg-hover-color: var(--highlight-button-hover);
+    --checkbox-bg-pressed-color: var(--highlight-button-pressed);
+    --checkbox-active-color: var(--background-accent-button);
+    --checkbox-active-hover-color: var(--highlight-accent-button-hover);
+    --checkbox-active-pressed-color: var(--highlight-accent-button-pressed);
+    --checkbox-active-icon-color: var(--background-normal);
     
     /* pages */
 
     /* empty-screen */
-    --empty-screen-color: #F3F3F3;
-    --empty-screen-description-color: #00000099;
+    --empty-screen-color: var(--text-normal);
+    --empty-screen-description-color: var(--text-secondary);
 
     /* settings */
-    --settings-header-color: #F3F3F3;
-    --settings-description-color: #969696;
+    --settings-header-color: var(--text-normal);
+    --settings-description-color: var(--text-tertiary);
 
     /* ai provider item */
-    --ai-provider-item-color: #000000CC;
-    --ai-provider-item-description-color: #686868;
-    --ai-provider-item-background-color: #404040;
-    --ai-provider-item-icon-color: #1C1B1F;
-    --ai-provider-item-shadow: 0px 1px 2px 0px #0000000F, 0px 1px 3px 0px #0000001A;
+    --ai-provider-item-color: var(--text-normal);
+    --ai-provider-item-description-color: var(--text-secondary);
+    --ai-provider-item-background-color: var(--background-normal);
+    --ai-provider-item-shadow: 0px 1px 2px 0px #0000000f, 0px 1px 3px 0px #0000001a;
+
+    /* settings servers */
+    --servers-description-color: var(--text-tertiary);
+    --servers-edit-config-json-background-color: var(--background-normal-element-light);
+    --servers-edit-config-json-header-color: var(--text-secondary);
+    --servers-edit-config-json-lang-color: var(--text-tertiary);
+    --servers-edit-config-json-editor-border-color: var(--border-divider);
+    --servers-edit-config-json-editor-background-color: var(--background-normal);
+    --servers-edit-config-buttons-border-color: var(--border-divider);
+
+    --servers-available-tools-border-color: var(--border-divider);
+    --servers-available-tools-header-color: var(--text-normal);
+    --servers-available-tools-item-name-color: var(--text-normal);
+    --servers-available-tools-sub-header-color: var(--text-tertiary);
+    --servers-available-tools-current-tool-color: var(--text-normal);
+    --servers-available-tools-item-background-color: var(--background-normal-element-light);
+    --servers-available-tools-item-hover-background-color: var(--highlight-button-hover);
+    --servers-available-tools-item-active-background-color: var(--highlight-button-pressed);
+    --servers-logs-dialog-border-color: var(--border-divider);
+    --servers-logs-dialog-log-color: var(--text-normal);
 
     /* chat */
-    --chat-welcome-color: #F3F3F3;
-    --chat-welcome-description-color: #CECECE;
+    --chat-welcome-color: var(--text-normal);
+    --chat-welcome-description-color: var(--text-secondary);
 
-    --chat-composer-background-color:#4B4B4B;
-    --chat-composer-border-color: #4B4B4B;
-    --chat-composer-hover-border-color: #CECECE;
-    --chat-composer-active-border-color: #4A87E7;
-    --chat-composer-text-color: #CECECE;
-    --chat-composer-placeholder-color: #CECECE;
+    --chat-composer-background-color: var(--background-normal-element-light);
+    --chat-composer-border-color: var(--border-divider);
+    --chat-composer-hover-border-color: var(--highlight-button-hover);
+    --chat-composer-active-border-color: var(--background-accent-button);
+    --chat-composer-text-color: var(--text-normal);
+    --chat-composer-placeholder-color: var(--text-secondary);
 
-    --chat-composer-action-attachments-color: #EAEAEA;
-    --chat-composer-action-servers-color: #EAEAEA;
 
-    --chat-composer-action-send-color: #EAEAEA;
-    --chat-composer-action-send-background-color: #4A87E7;
-    --chat-composer-action-send-background-hover-color: #2566D5;
-    --chat-composer-action-send-background-pressed-color: #1E53AE;
+    --chat-composer-action-send-color: var(--text-contrast-background);
+    --chat-composer-action-send-background-color: var(--background-accent-button);
+    --chat-composer-action-send-background-hover-color: var(--highlight-accent-button-hover);
+    --chat-composer-action-send-background-pressed-color: var(--highlight-accent-button-pressed);
 
-    --chat-user-message-background: #EFEFEF;
-    --chat-message-color: #F3F3F3;
-    --chat-message-blockquote-color: #848484;
-    --chat-message-link-color: #446ECA;
-    --chat-message-divider-color: #4B4B4B;
-    --chat-message-th-color: #000000CC;
-    --chat-message-td-color: #000000CC;
-    --chat-message-code-block-background-color: #F9F9F9;
-    --chat-message-code-block-border-color: #4B4B4B;
-    --chat-message-code-block-header-color: #00000099;
-    --chat-message-code-block-pre-background-color: #404040;
-    --chat-message-error-color: #991b1b;
-    --chat-message-error-border-color: #f62211;
-    --chat-message-tool-call-header-color: #EAEAEA;
-    --chat-message-tool-call-name-color: #000000CC;
-    --chat-message-tool-call-name-background-color: #4B4B4B;
-    --chat-message-tool-call-body-background-color: #F9F9F9;
-    --chat-message-tool-call-body-color:#00000099;
-    --chat-message-tool-call-pre-border-color: #EAEAEA;
-    --chat-message-tool-call-pre-background-color:#404040;
-    --chat-message-tool-call-pre-color:#000000CC;
-    --chat-message-analyze-color: #000000CC;
-}
+    --chat-user-message-background: var(--highlight-button-hover);
+    --chat-user-message-color: var(--text-normal);
+    --chat-message-color: var(--text-normal);
+    --chat-message-blockquote-color: var(--border-control-focus);
+    --chat-message-link-color: var(--text-link);
+    --chat-message-divider-color: var(--border-divider);
+    --chat-message-th-color: var(--text-normal);
+    --chat-message-td-color: var(--text-normal);
+    --chat-message-code-block-background-color: var(--background-normal-element-light);
+    --chat-message-code-block-border-color: var(--border-divider);
+    --chat-message-code-block-header-color: var(--text-secondary);
+    --chat-message-code-block-pre-background-color: var(--background-normal);
+    --chat-message-error-color: var(--text-negative);
+    --chat-message-error-border-color: var(--border-error);
+    --chat-message-tool-call-header-color: var(--text-normal);
+    --chat-message-tool-call-name-color: var(--text-normal);
+    --chat-message-tool-call-name-background-color: var(--background-normal-element);
+    --chat-message-tool-call-body-background-color: var(--background-normal-element-light);
+    --chat-message-tool-call-body-color: var(--text-secondary);
+    --chat-message-tool-call-pre-border-color: var(--border-divider);
+    --chat-message-tool-call-pre-background-color: var(--background-normal);
+    --chat-message-tool-call-pre-color: var(--text-normal);
+    --chat-message-analyze-color: var(--text-normal);
+}   

@@ -589,12 +589,23 @@ QWidget* QAscVideoView::getMainWindow()
 void QAscVideoView::slotVideoAvailableChanged(bool isVideoAvailable)
 {
 	if (m_pInternal->m_bIsPresentationMode && !m_pInternal->m_bIsPresentationModeMediaTypeSended)
-	{
+    {
+#ifndef USE_VLC_LIBRARY
 		m_pInternal->m_bIsPresentationModeMediaTypeSended = true;
+#endif
+        // for libVLC isAudio() may return `true` while the video is buffering,
+        // so this slot might be called several times
 		if (!m_pInternal->m_pPlayer->isAudio())
 		{
+#ifdef USE_VLC_LIBRARY
+            m_pInternal->m_bIsPresentationModeMediaTypeSended = true;
+#endif
 			this->show();
 			Footer()->show();
+			// raise all widgets in order to prevent weird behavior with footer being rendered above the video but still being inactive
+			this->raise();
+			Footer()->raise();
+			Footer()->VolumeControls()->raise();
 		}
 	}
 }

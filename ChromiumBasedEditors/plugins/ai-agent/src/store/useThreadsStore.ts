@@ -9,7 +9,7 @@ import {
 } from "@/database/threads";
 import { readMessages } from "@/database/messages";
 import type { Thread } from "@/lib/types";
-import { convertMessagesToMd } from "@/lib/utils";
+import { convertMessagesToMd, removeSpecialCharacter } from "@/lib/utils";
 
 type UseThreadsStoreProps = {
   threadId: string;
@@ -71,27 +71,17 @@ const useThreadsStore = create<UseThreadsStoreProps>((set, get) => ({
     const thread = thisStore.threads.find((t) => t.threadId === id);
     const messages = await readMessages(id);
 
-    const title = thread?.title || "Chat Export";
+    const title = removeSpecialCharacter(thread?.title || "Chat Export");
 
-    let content = `# ${title}\n\n`;
-    content += `*Exported on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}*\n\n`;
-    content += `---\n\n`;
+    const content = convertMessagesToMd(messages);
 
-    content += convertMessagesToMd(messages);
+    window.AscDesktopEditor.SaveFilenameDialog(`${title}.docx`, (path) => {
+      if (!path) return;
 
-    window.AscDesktopEditor.SaveFilenameDialog(
-      `${title}.md`,
-      (path) => {
-        if (path === "") return;
-
-        const name = path.split("/").pop();
-
-        if (!name) return;
-
-        window.AscDesktopEditor.openTemplate(path, name);
-      },
-      content
-    );
+      window.AscDesktopEditor.saveAndOpen(content, 0x5c, path, 0x41, (code) => {
+        if (!code) console.log("Conversion error");
+      });
+    });
   },
   onRenameThread: (id: string, title: string) => {
     const thisStore = get();

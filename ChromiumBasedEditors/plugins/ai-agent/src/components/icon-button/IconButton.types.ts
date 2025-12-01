@@ -8,4 +8,6 @@ export type IconButtonProps = {
   isTransform?: boolean;
   isActive?: boolean;
   insideElement?: boolean;
+  disableHover?: boolean;
+  noColor?: boolean;
 } & ButtonHTMLAttributes<HTMLButtonElement>;

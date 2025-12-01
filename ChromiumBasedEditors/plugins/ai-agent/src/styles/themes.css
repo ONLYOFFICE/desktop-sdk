@@ -1,3 +1,7 @@
 @import "./theme-light.css";
 @import "./theme-dark.css";
-
+@import "./theme-white.css";
+@import "./theme-gray.css";
+@import "./theme-classic-light.css";
+@import "./theme-night.css";
+@import "./theme-contrast-dark.css";

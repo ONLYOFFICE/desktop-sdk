@@ -3,11 +3,16 @@ import { useTranslation } from "react-i18next";
 
 import MoreIconSvgUrl from "@/assets/more.svg?url";
 import RemoveIconSvgUrl from "@/assets/btn-remove.svg?url";
+import EditIconSvgUrl from "@/assets/btn-edit.svg?url";
+import StatusErrorIconUrl from "@/assets/status.error.svg?url";
 
 import type { TProvider } from "@/lib/types";
 
 import { IconButton } from "@/components/icon-button";
 import { DropdownMenu } from "@/components/dropdown";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/tooltip";
+
+import useProviders from "@/store/useProviders";
 
 import { EditProviderDialog } from "./EditProviderDialog";
 import { DeleteProviderDialog } from "./DeleteProviderDialog";
@@ -17,6 +22,8 @@ type ProviderItemProps = {
 };
 
 const ProviderItem = ({ provider }: ProviderItemProps) => {
+  const { providersModels } = useProviders();
+
   const [editProviderVisible, setEditProviderVisible] = React.useState(false);
   const [deleteProviderVisible, setDeleteProviderVisible] =
     React.useState(false);
@@ -31,38 +38,77 @@ const ProviderItem = ({ provider }: ProviderItemProps) => {
 
   const { t } = useTranslation();
 
+  const hasModels = providersModels.get(provider.name)?.length ?? 0 > 0;
+
   return (
     <>
-      <div className="flex flex-row justify-between gap-[12px] px-[16px] py-[12px] w-[274px] rounded-[8px] bg-[var(--ai-provider-item-background-color)] shadow-[var(--ai-provider-item-shadow)]">
-        <div className="flex flex-col">
-          <p className="font-normal text-[14px] leading-[20px] text-[var(--ai-provider-item-color)]">
-            {provider.name}
-          </p>
+      <div className="flex flex-row justify-between gap-[12px] px-[16px] py-[12px] min-w-[274px] max-w-[312px] flex-1 rounded-[8px] bg-[var(--ai-provider-item-background-color)] shadow-[var(--ai-provider-item-shadow)]">
+        <div className="flex flex-col min-w-0 flex-1">
+          <div className="flex flex-row items-center gap-[4px]">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <p className="font-normal text-[14px] leading-[20px] text-[var(--ai-provider-item-color)] truncate w-fit">
+                  {provider.name}
+                </p>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">{provider.name}</TooltipContent>
+            </Tooltip>
+            {!hasModels && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <IconButton
+                      iconName={StatusErrorIconUrl}
+                      size={16}
+                      disableHover
+                      noColor
+                    />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  {t("NoModelsAvailable")}
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
           <p className="text-[12px] leading-[14px] text-[var(--ai-provider-item-description-color)]">
             {provider.type}
             <br />
             {provider.baseUrl}
           </p>
         </div>
-        <div
-          className="flex items-center justify-end flex-1"
-          ref={containerRef}
-        >
+        <div className="flex items-center justify-end" ref={containerRef}>
           <DropdownMenu
             onOpenChange={setIsOpen}
             trigger={
               <IconButton
                 iconName={MoreIconSvgUrl}
-                color="var(--ai-provider-item-icon-color)"
                 size={20}
                 isActive={isOpen}
               />
             }
             items={[
-              { text: t("Edit"), onClick: () => setEditProviderVisible(true) },
+              {
+                icon: (
+                  <IconButton
+                    iconName={EditIconSvgUrl}
+                    size={20}
+                    disableHover
+                    isStroke
+                  />
+                ),
+                text: t("Edit"),
+                onClick: () => setEditProviderVisible(true),
+              },
               { text: "", onClick: () => {}, isSeparator: true },
               {
-                icon: <IconButton iconName={RemoveIconSvgUrl} size={20} />,
+                icon: (
+                  <IconButton
+                    iconName={RemoveIconSvgUrl}
+                    size={20}
+                    disableHover
+                  />
+                ),
                 text: t("Delete"),
                 onClick: () => setDeleteProviderVisible(true),
               },

@@ -4,10 +4,28 @@ export {};
 
 declare global {
   interface Window {
+    AscSimpleRequest: {
+      createRequest: (options: {
+        url: string;
+        method: string;
+        headers: Record<string, string>;
+        body: string;
+        complete: (e: { responseText: string }) => void;
+        error: (e: { statusCode: number }) => void;
+      }) => void;
+    };
     AscDesktopEditor: {
+      getOfficeFileType: (file: string) => number;
       getToolFunctions: () => string;
       callToolFunction: (name: string, args?: string) => string;
       openTemplate: (file: string, name: string) => void;
+      saveAndOpen: (
+        content: string,
+        type: number,
+        path: string,
+        flags: number,
+        callback: (code: number) => void
+      ) => void;
       OpenFilenameDialog: (
         type: string,
         multiple: boolean,
@@ -21,7 +39,7 @@ declare global {
       SaveFilenameDialog: (
         fileName: string,
         callback: (path: string) => void,
-        content: string
+        content?: string
       ) => void;
     };
     RendererProcessVariable: {

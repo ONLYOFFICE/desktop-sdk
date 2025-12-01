@@ -2432,6 +2432,10 @@ window.AscDesktopEditor.openExternalReference = function(link, callbackError) {\
 window.AscDesktopEditor._openExternalReferenceCallback = callbackError;\n\
 return window.AscDesktopEditor._openExternalReference(link);\n\
 };\n\
+window.AscDesktopEditor.saveAndOpen = function(content, formatSrc, pathDst, formatDst, callback) {\n\
+window.AscDesktopEditor._saveAndOpenCallback = callback;\n\
+return window.AscDesktopEditor._saveAndOpen(content, formatSrc, pathDst, formatDst);\n\
+};\n\
 Object.defineProperty(window.AscDesktopEditor, 'CryptoMode', {\n\
 get: function() { return window.AscDesktopEditor.Property_GetCryptoMode(); },\n\
 set: function(value) { window.AscDesktopEditor.Property_SetCryptoMode(value); }\n\
@@ -3035,7 +3039,7 @@ window._external_process_callback = {};\n\
 				CPluginsManager oPlugins;
 				oPlugins.m_strDirectory = m_sSystemPlugins;
 				oPlugins.m_strUserDirectory = m_sUserPlugins;
-				oPlugins.GetInstalledPlugins();
+				oPlugins.CheckInstalledPlugins();
 
 				int nCount = (int)oPlugins.m_arCryptoModes.size();
 				retval = CefV8Value::CreateArray(nCount);
@@ -4600,6 +4604,13 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			}
 			else if (name == "_createProcess")
 			{
+				std::string sCurrentUrl = CefV8Context::GetCurrentContext()->GetFrame()->GetURL().ToString();
+				if (0 != sCurrentUrl.find("onlyoffice://"))
+				{
+					retval = CefV8Value::CreateInt(-1);
+					return true;
+				}
+
 				if (!m_external_processes)
 					m_external_processes = new NSProcesses::CProcessManager(this);
 
@@ -4713,6 +4724,97 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				}
 
 				RELEASEARRAYOBJECTS(data);
+				return true;
+			}
+			else if (name == "_saveAndOpen")
+			{
+				if (arguments.size() < 4)
+					return true;
+
+				std::string sCurrentUrl = CefV8Context::GetCurrentContext()->GetFrame()->GetURL().ToString();
+				if (0 != sCurrentUrl.find("onlyoffice://") || !arguments[0]->IsString())
+				{
+					std::string sCode = "(function(){window.AscDesktopEditor._saveAndOpenCallback(100);delete window.AscDesktopEditor._saveAndOpenCallback;})();";
+					CefV8Context::GetCurrentContext()->GetFrame()->ExecuteJavaScript(sCode, "", 0);
+					return true;
+				}
+
+				std::wstring sTmpFile = NSFile::CFileBinary::GetTempPath() + L"/temp_save_as";
+				if (!arguments[1]->IsUndefined())
+				{
+					COfficeFileFormatChecker checker;
+					std::wstring sExt = checker.GetExtensionByType(arguments[1]->GetIntValue());
+					if (sExt.empty())
+						sExt = L".txt";
+					sTmpFile += sExt;
+				}
+
+				NSFile::CFileBinary oFileSrc;
+				if (oFileSrc.CreateFile(sTmpFile))
+				{
+					BYTE bom[3] = {0xEF, 0xBB, 0xBF};
+					oFileSrc.WriteFile(bom, 3);
+
+					std::string data = arguments[0]->GetStringValue().ToString();
+					oFileSrc.WriteFile((BYTE*)data.c_str(), (DWORD)data.length());
+					oFileSrc.CloseFile();
+				}
+
+				int nConvertCounter = 1;
+
+				std::string sCode = "(function(){\n\
+	if (!window._external_converter_counter) window._external_converter_counter = 0; }\n\
+	window._external_converter_counter++;\n\
+	window._external_converters = window._external_converters || {};\n\
+	window._external_converters[window._external_converter_counter] = function(path, code){\n\
+	window.AscDesktopEditor._saveAndOpenCallback(code);\n\
+	};\n\
+	return window._external_converter_counter;})();";
+
+				CefRefPtr<CefV8Value> retval;
+				CefRefPtr<CefV8Exception> exception;
+
+				bool bIsEval = CefV8Context::GetCurrentContext()->GetFrame()->GetV8Context()->Eval(sCode,
+#ifndef CEF_2623
+					"", 0,
+#endif
+					retval, exception);
+
+				if (bIsEval && retval->IsInt())
+					nConvertCounter = retval->GetIntValue();
+
+				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("convert_file_external_and_open");
+				message->GetArgumentList()->SetString(0, sTmpFile);
+				NSArgumentList::SetInt64(message->GetArgumentList(), 1, CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
+				message->GetArgumentList()->SetString(2, arguments[2]->GetStringValue());
+				message->GetArgumentList()->SetInt(3, arguments[3]->GetIntValue());
+				message->GetArgumentList()->SetInt(4, nConvertCounter);
+
+				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+				return true;
+			}
+			else if (name == "getOfficeFileType")
+			{
+				if (arguments.size() < 1)
+				{
+					retval = CefV8Value::CreateInt(-1);
+					return true;
+				}
+
+				int nFileType = 0;
+				std::wstring sFileUrl = arguments[0]->GetStringValue().ToWString();
+
+				if (g_pLocalResolver->Check(sFileUrl))
+				{
+					COfficeFileFormatChecker oChecker;
+					bool bIsOfficeFile = oChecker.isOfficeFile(sFileUrl);
+					if (bIsOfficeFile)
+					{
+						nFileType = oChecker.nFileType;
+					}
+				}
+
+				retval = CefV8Value::CreateInt(nFileType);
 				return true;
 			}
 
@@ -5201,11 +5303,16 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				std::wstring path = oFile.GetAttribute(L"path");
 				if (!path.empty())
 				{
-					files.push_back(CRecentFileInfo(path, oFile.GetAttributeInt("type")));
+					files.push_back(CRecentFileInfo(path, oFile.GetAttributeInt("type"), oFile.GetAttribute("url")));
 				}
 			}
 
 			return files;
+		}
+
+		virtual void ExecuteJS(const std::string& code)
+		{
+			CefV8Context::GetCurrentContext()->GetFrame()->ExecuteJavaScript(code, "", 0);
 		}
 
 		// Provide the reference counting implementation for this class.
@@ -5331,7 +5438,7 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 			CefRefPtr<CefV8Handler> handler = pWrapper;
 
-#define EXTEND_METHODS_COUNT 195
+#define EXTEND_METHODS_COUNT 197
 			const char* methods[EXTEND_METHODS_COUNT] = {
 				"Copy",
 				"Paste",
@@ -5602,6 +5709,10 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 				"generateNew",
 				"getGenerationInfo",
+
+				"_saveAndOpen",
+
+				"getOfficeFileType",
 
 				NULL};
 

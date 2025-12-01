@@ -61,6 +61,32 @@ export const readMessages = async (
   });
 };
 
+// Read single message by thread ID and message ID
+export const readMessageById = async (
+  threadId: string,
+  messageId: string
+): Promise<ThreadMessageLike | null> => {
+  const db = chatDB.getDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(["messages"], "readonly");
+    const store = transaction.objectStore("messages");
+    const request = store.get(messageId);
+
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      const result = request.result;
+      
+      // Verify the message belongs to the specified thread
+      if (result && result.threadId === threadId) {
+        resolve(result.message);
+      } else {
+        resolve(null);
+      }
+    };
+  });
+};
+
 // Update message
 export const updateMessage = async (
   messageId: string,

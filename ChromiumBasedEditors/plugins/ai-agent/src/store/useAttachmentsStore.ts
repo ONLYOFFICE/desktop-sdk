@@ -14,6 +14,9 @@ const useAttachmentsStore = create<UseAttachmentsStoreProps>((set, get) => ({
   attachmentFiles: [],
 
   addAttachmentFile: (file: TAttachmentFile) => {
+    if (get().attachmentFiles.length >= 5) {
+      return;
+    }
     set({ attachmentFiles: [...get().attachmentFiles, file] });
   },
   deleteAttachmentFile: (path: string) => {

@@ -1,67 +1,76 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 
+import useRouter from "@/store/useRouter";
+
 import { Navigation } from "./sub-components/Header";
 import { ChatList } from "./sub-components/ChatList";
 
+const getSystemTheme = (system: "dark" | "light") => {
+  if (system === "dark") {
+    return "theme-night";
+  }
+
+  return "theme-white";
+};
+
 const Layout = ({ children }: { children: React.ReactNode }) => {
-  const [theme, setTheme] = React.useState(
-    `theme-${window.RendererProcessVariable?.theme.type ?? "light"}`
-  );
+  const { currentPage } = useRouter();
 
   const { i18n } = useTranslation();
 
+  const [theme, setTheme] = React.useState(() => {
+    if (window.RendererProcessVariable) {
+      if (window.RendererProcessVariable.theme.id === "theme-system") {
+        return getSystemTheme(
+          window.RendererProcessVariable.theme.system as "dark" | "light"
+        );
+      }
+
+      return window.RendererProcessVariable.theme.id;
+    } else {
+      return "theme-light";
+    }
+  });
+
   React.useLayoutEffect(() => {
     if (window.RendererProcessVariable) {
-      const lang =
-        window.RendererProcessVariable.lang ??
-        new URLSearchParams(window.location.search).get("lang");
-      if (lang?.includes("en")) {
-        i18n.changeLanguage("en");
-      } else if (lang?.includes("ru")) {
-        i18n.changeLanguage("ru");
-      } else {
-        i18n.changeLanguage("en");
-      }
-      setTheme(`theme-${window.RendererProcessVariable.theme.type}`);
-    } else {
-      i18n.changeLanguage("en");
-      setTheme("theme-light");
+      i18n.changeLanguage(window.RendererProcessVariable.lang);
     }
 
     window.on_update_plugin_info = (info) => {
-      if (info?.lang?.includes("en")) {
-        i18n.changeLanguage("en");
-      } else if (info?.lang?.includes("ru")) {
-        i18n.changeLanguage("ru");
-      } else {
-        i18n.changeLanguage("en");
+      if (info.lang) {
+        i18n.changeLanguage(info.lang);
       }
-      if (
-        info?.theme === "theme-white" ||
-        info?.theme === "theme-gray" ||
-        info?.theme === "theme-classic-light" ||
-        info?.theme === "theme-light"
-      ) {
-        setTheme("theme-light");
-      } else {
-        setTheme("theme-dark");
+
+      if (info.theme) {
+        if (info.theme === "theme-system") {
+          setTheme(
+            getSystemTheme(
+              window.RendererProcessVariable.theme.system as "dark" | "light"
+            )
+          );
+        } else {
+          setTheme(info.theme);
+        }
       }
     };
   }, [i18n]);
 
+  const isSettings = currentPage === "settings";
+
   return (
-    <div className={`h-dvh ${theme}`}>
+    <div className={`h-[100vh] ${theme}`}>
       <main
         id="app"
-        className="h-dvh bg-[var(--layout-background-color)] flex flex-col"
+        className="h-[100vh] bg-[var(--layout-background-color)] flex flex-col"
       >
         <Navigation />
         <div
           className="flex flex-row flex-1"
-          style={{ height: "calc(100dvh - 56px)" }}
+          style={{ height: "calc(100vh - 56px)" }}
         >
-          <ChatList />
+          {!isSettings ? <ChatList /> : null}
           <div className="w-full">{children}</div>
         </div>
       </main>

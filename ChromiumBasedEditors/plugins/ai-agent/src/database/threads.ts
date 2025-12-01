@@ -1,6 +1,7 @@
 import type { Thread } from "@/lib/types";
 
 import { chatDB } from "./index";
+import { deleteMessagesInThread } from "./messages";
 
 // Create thread
 export const createThread = async (
@@ -125,6 +126,10 @@ export const touchThread = async (threadId: string): Promise<void> => {
 
 // Delete thread
 export const deleteThread = async (threadId: string): Promise<void> => {
+  // First delete all messages associated with this thread
+  await deleteMessagesInThread(threadId);
+
+  // Then delete the thread itself
   const db = chatDB.getDB();
 
   return new Promise((resolve, reject) => {

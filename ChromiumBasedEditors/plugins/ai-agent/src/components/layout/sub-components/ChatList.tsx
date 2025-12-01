@@ -1,7 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 
-import OpenChatListUrl from "@/assets/show-chat.svg?url";
+import OpenChatListUrl from "@/assets/btn-list-search.svg?url";
 import ArrowLeftUrl from "@/assets/btn-previtem.svg?url";
 import SearchUrl from "@/assets/search.svg?url";
 
@@ -46,67 +46,62 @@ const ChatList = () => {
 
   return isOpen ? (
     <div
-      className={`w-[264px] min-w-[264px] h-full max-h-full border-r-[1px] border-[var(--chat-list-border-right)] p-[24px] flex flex-col gap-[${
-        isEmptyList ? 24 : 32
-      }px]`}
-      style={{ maxHeight: "calc(100% - 24px)" }}
+      className="w-[264px] min-w-[264px] h-full max-h-full border-r-[1px] border-[var(--chat-list-border-right)] flex flex-col overflow-y-auto"
+      style={{ maxHeight: "100%" }}
     >
-      <div className="flex items-center justify-between px-[8px]">
-        <h4 className="text-[14px] leading-[20px] font-bold text-[var(--chat-list-color)]">
-          {t("ChatHistory")}
-        </h4>
-        <IconButton
-          iconName={ArrowLeftUrl}
-          size={24}
-          color="var(--chat-list-color)"
-          isStroke
-          onClick={() => setIsOpen(false)}
-        />
-      </div>
-      <div className="flex flex-col" style={{ maxHeight: "100%" }}>
-        {isEmptyList ? (
-          <p className="text-[var(--chat-list-empty-color)] font-normal text-[14px] leading-[20px] w-full text-center">
-            {t("NoChatYet")}
-          </p>
-        ) : (
-          <div
-            className="flex flex-col mt-[24px]"
-            style={{ maxHeight: "calc(100% - 24px)" }}
-          >
+      <div className="sticky top-0 bg-[var(--layout-background-color)] z-10 pt-[24px] px-[24px]">
+        <div className="flex items-center justify-between px-[8px]">
+          <h4 className="text-[14px] leading-[20px] font-bold text-[var(--chat-list-color)]">
+            {t("ChatHistory")}
+          </h4>
+          <IconButton
+            iconName={ArrowLeftUrl}
+            size={24}
+            isStroke
+            onClick={() => setIsOpen(false)}
+          />
+        </div>
+        {!isEmptyList && (
+          <div className="mt-[32px]">
             <Input
               className="w-full"
               type="search"
               placeholder={t("Search")}
               icon={SearchUrl}
-              iconColor=""
               value={searchValue}
               onChange={onChangeSearchValue}
+              onClear={() => setSearchValue("")}
             />
-            <div
-              className="flex flex-col mt-[16px] overflow-y-scroll"
-              style={{ maxHeight: "calc(100% - 24px)" }}
-            >
-              {showingThreads.length ? (
-                showingThreads.map((thread) => {
-                  const isActive = thread.threadId === threadId;
-                  return (
-                    <ChatListItem
-                      key={thread.threadId}
-                      thread={thread}
-                      isActive={isActive}
-                      onSwitchToThread={onSwitchToThread}
-                      setCurrentPage={setCurrentPage}
-                      onRenameThread={onRenameThread}
-                      onDownloadThread={onDownloadThread}
-                    />
-                  );
-                })
-              ) : (
-                <p className="text-[var(--chat-list-empty-color)] font-normal text-[14px] leading-[20px] w-full">
-                  {t("NoChatYet")}
-                </p>
-              )}
-            </div>
+          </div>
+        )}
+      </div>
+      <div className="flex flex-col px-[24px] pb-[24px]">
+        {isEmptyList ? (
+          <p className="text-[var(--chat-list-empty-color)] font-normal text-[14px] leading-[20px] w-full text-center mt-[24px]">
+            {t("NoChatYet")}
+          </p>
+        ) : (
+          <div className="flex flex-col mt-[16px]">
+            {showingThreads.length ? (
+              showingThreads.map((thread) => {
+                const isActive = thread.threadId === threadId;
+                return (
+                  <ChatListItem
+                    key={thread.threadId}
+                    thread={thread}
+                    isActive={isActive}
+                    onSwitchToThread={onSwitchToThread}
+                    setCurrentPage={setCurrentPage}
+                    onRenameThread={onRenameThread}
+                    onDownloadThread={onDownloadThread}
+                  />
+                );
+              })
+            ) : (
+              <p className="text-[var(--chat-list-empty-color)] font-normal text-[14px] leading-[20px] w-full">
+                {t("NoChatYet")}
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -117,8 +112,7 @@ const ChatList = () => {
         <IconButton
           iconName={OpenChatListUrl}
           size={24}
-          color="var(--chat-list-color)"
-          isStroke
+          // isStroke
           onClick={() => {
             setCurrentPage("chat");
             setIsOpen(true);

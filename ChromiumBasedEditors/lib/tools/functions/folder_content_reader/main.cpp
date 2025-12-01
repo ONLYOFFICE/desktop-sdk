@@ -73,7 +73,7 @@ namespace folder_content_reader
 
 		returnValue["status"] = "success";
 
-		std::vector<std::wstring> files = NSDirectory::GetFiles(path);
+		std::vector<std::wstring> files = NSDirectory::GetFiles(path, true);
 
 		json jFiles = json::array();
 
@@ -85,6 +85,6 @@ namespace folder_content_reader
 		returnValue["status"] = "success";
 		returnValue["files"] = jFiles;
 
-		return returnValue.dump();
+		return JSON_serialize(returnValue);
 	}
 }

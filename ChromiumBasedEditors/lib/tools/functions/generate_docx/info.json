@@ -1,0 +1,15 @@
+{
+  "type": "function",
+  "name": "generate_docx",
+  "description": "Use this function if you are asked to generate a textual document (report, article, letter, etc.) based on a description. Input: a detailed description of what needs to be generated.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "description": {
+        "type": "string",
+        "description": "Detailed description of the document to generate, including its topic, structure, tone, and format."
+      }
+    },
+    "required": ["description"]
+  }
+}

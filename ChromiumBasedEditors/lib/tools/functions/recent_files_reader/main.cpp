@@ -37,12 +37,14 @@ namespace recent_files_reader
 			json jObj = json::object();
 			jObj["path"] = U_TO_UTF8((i->Path));
 			jObj["type"] = i->Type;
+			if (!i->Url.empty())
+				jObj["url"] = i->Url;
 			jFiles.push_back(jObj);
 		}
 
 		returnValue["status"] = "success";
 		returnValue["files"] = jFiles;
 
-		return returnValue.dump();
+		return JSON_serialize(returnValue);
 	}
 }

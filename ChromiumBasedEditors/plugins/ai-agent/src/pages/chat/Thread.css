@@ -23,3 +23,9 @@
 .composer-input::placeholder {
     color: var(--chat-composer-placeholder-color);
 }
+
+/* Disable streaming caret/dot */
+.aui-md[data-status="running"]::after,
+.aui-md[data-status="running"] > *:last-child::after {
+  display: none !important;
+}

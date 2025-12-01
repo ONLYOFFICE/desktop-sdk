@@ -28,6 +28,8 @@ export interface BaseProvider<TOOL, MESSAGE, CLIENT> {
 
   setTools(tools: TMCPItem[]): void;
 
+  createChatName(message: string): Promise<string>;
+
   sendMessage(
     messages: ThreadMessageLike[],
     afterToolCall?: boolean

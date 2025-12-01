@@ -19,12 +19,7 @@ const ComposerActionSend = () => {
 
   return isStreamRunning ? (
     <ComposerPrimitive.Cancel asChild>
-      <IconButton
-        iconName={StopIconUrl}
-        size={24}
-        color="var(--chat-composer-action-send-color)"
-        className={BUTTON_STYLES}
-      />
+      <IconButton iconName={StopIconUrl} size={24} className={BUTTON_STYLES} />
     </ComposerPrimitive.Cancel>
   ) : (
     <ThreadPrimitive.If running={false}>

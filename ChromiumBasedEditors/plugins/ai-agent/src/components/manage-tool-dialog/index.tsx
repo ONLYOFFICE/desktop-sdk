@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import useServersStore from "@/store/useServersStore";
@@ -24,10 +24,10 @@ const ManageToolDialog = ({
 
   const [isAllowAlways, setIsAllowAlways] = useState(false);
 
-  const onAllowAction = () => {
+  const onAllowAction = React.useCallback(() => {
     onAllow(isAllowAlways);
     onClose();
-  };
+  }, [onAllow, isAllowAlways, onClose]);
 
   const onDenyAction = () => {
     onDeny();
@@ -35,6 +35,21 @@ const ManageToolDialog = ({
   };
 
   const toolCall = manageToolData?.message?.content[manageToolData.idx];
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        onAllowAction();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onAllowAction]);
 
   if (
     !toolCall ||
@@ -64,12 +79,11 @@ const ManageToolDialog = ({
           <p className="font-[14px] leading-[20px] font-normal text-[var(--tool-fallback-color)]">
             {t("ReviewEachAction")}
           </p>
-          <p className="flex items-center gap-[8px] mt-[24px] font-[14px] leading-[20px] font-normal text-[var(--tool-fallback-color)]">
-            <Checkbox
-              checked={isAllowAlways}
-              onChange={setIsAllowAlways}
-              id="allow-always-checkbox"
-            />
+          <p
+            onClick={() => setIsAllowAlways((val) => !val)}
+            className="cursor-pointer flex items-center gap-[8px] mt-[24px] font-[14px] leading-[20px] font-normal text-[var(--tool-fallback-color)]"
+          >
+            <Checkbox checked={isAllowAlways} id="allow-always-checkbox" />
             {t("AlwaysAllow")}
           </p>
         </div>

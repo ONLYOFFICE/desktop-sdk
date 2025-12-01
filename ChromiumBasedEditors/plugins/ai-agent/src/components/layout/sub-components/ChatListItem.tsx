@@ -5,7 +5,7 @@ import { ReactSVG } from "react-svg";
 import MoreIconSvgUrl from "@/assets/more.svg?url";
 import RemoveIconSvgUrl from "@/assets/btn-remove.svg?url";
 import RenameIconSvgUrl from "@/assets/btn-rename.svg?url";
-import DownloadIconSvgUrl from "@/assets/btn-download.svg?url";
+import DownloadIconSvgUrl from "@/assets/btn-save.svg?url";
 
 import type { Page } from "@/store/useRouter";
 
@@ -26,37 +26,45 @@ type ChatListItemProps = {
   setCurrentPage: (page: Page) => void;
 };
 
+const handleDownloadIconInjection = (svg: SVGSVGElement) => {
+  const path = svg.querySelector("path");
+  if (path) {
+    path.setAttribute("stroke", "var(--icon-button-color)");
+  }
+};
+
+const handleRenameIconInjection = (svg: SVGSVGElement) => {
+  const path = svg.querySelector("path");
+  if (path) {
+    path.setAttribute("fill", "var(--icon-button-color)");
+  }
+};
+
+const handleRemoveIconInjection = (svg: SVGSVGElement) => {
+  const path = svg.querySelector("path");
+  if (path) {
+    path.setAttribute("fill", "var(--icon-button-color)");
+  }
+};
+
 const DownloadIcon = () => (
   <ReactSVG
     src={DownloadIconSvgUrl}
-    beforeInjection={(svg) => {
-      const path = svg.querySelector("path");
-      if (path) {
-        path.setAttribute("stroke", "var(--chat-list-item-icon-color)");
-      }
-    }}
+    beforeInjection={handleDownloadIconInjection}
   />
 );
+
 const RenameIcon = () => (
   <ReactSVG
     src={RenameIconSvgUrl}
-    beforeInjection={(svg) => {
-      const path = svg.querySelector("path");
-      if (path) {
-        path.setAttribute("fill", "var(--chat-list-item-icon-color)");
-      }
-    }}
+    beforeInjection={handleRenameIconInjection}
   />
 );
+
 const RemoveIcon = () => (
   <ReactSVG
     src={RemoveIconSvgUrl}
-    beforeInjection={(svg) => {
-      const path = svg.querySelector("path");
-      if (path) {
-        path.setAttribute("fill", "var(--chat-list-item-icon-color)");
-      }
-    }}
+    beforeInjection={handleRemoveIconInjection}
   />
 );
 
@@ -86,22 +94,22 @@ const ChatListItem = ({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (!isRenameInputVisible) return;
 
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         event.preventDefault();
         setIsRenameInputVisible(false);
         setNewTitle(thread.title); // Reset to original title
-      } else if (event.key === 'Enter') {
+      } else if (event.key === "Enter") {
         event.preventDefault();
         inputRef.current?.blur(); // This will trigger the onBlur event
       }
     };
 
     if (isRenameInputVisible) {
-      document.addEventListener('keydown', handleKeyDown);
+      document.addEventListener("keydown", handleKeyDown);
     }
 
     return () => {
-      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, [isRenameInputVisible, thread.title]);
 
@@ -162,6 +170,7 @@ const ChatListItem = ({
           }}
           autoFocus
           className="w-full"
+          maxLength={128}
         />
       ) : (
         <>
@@ -175,15 +184,15 @@ const ChatListItem = ({
               trigger={
                 <IconButton
                   iconName={MoreIconSvgUrl}
-                  color="var(--ai-provider-item-icon-color)"
                   size={20}
                   isActive={isOpen}
+                  insideElement
                 />
               }
               items={[
                 {
                   icon: <DownloadIcon />,
-                  text: t("Download"),
+                  text: t("Save"),
                   onClick: onDownloadClick,
                 },
                 {

@@ -11,7 +11,12 @@ export type Thread = {
   lastEditDate?: number;
 };
 
-export type ProviderType = "anthropic" | "ollama" | "openai" | "together";
+export type ProviderType =
+  | "anthropic"
+  | "ollama"
+  | "openai"
+  | "together"
+  | "openrouter";
 
 export type Model = {
   id: string;
@@ -34,6 +39,7 @@ export type TAttachmentFile = {
 };
 
 export type TProcess = {
+  stdin: (data: string) => void;
   onprocess: (type: number, message: string) => void;
   end: () => void;
   start: () => void;

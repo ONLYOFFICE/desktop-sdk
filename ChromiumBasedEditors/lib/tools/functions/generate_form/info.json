@@ -1,0 +1,15 @@
+{
+  "type": "function",
+  "name": "generate_form",
+  "description": "Use this function if you are asked to generate a form or document template (contract, any document for filling) based on a description. Input: a detailed description of the desired form or template.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "description": {
+        "type": "string",
+        "description": "Detailed description of the form or template to generate, including purpose, structure."
+      }
+    },
+    "required": ["description"]
+  }
+}

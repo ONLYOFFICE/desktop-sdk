@@ -1,41 +1,67 @@
-import type { TMCPItem, TProcess } from "@/lib/types";
+import type { TMCPItem } from "@/lib/types";
 
 import { DesktopEditorTool } from "./DesktopEditor";
+import { CustomServers } from "./CustomServers";
+import { WebSearch, type WebSearchData } from "./WebSearch";
+
+const ALLOW_ALWAYS_TOOLS = "allowAlwaysTools";
 
 class Servers {
   desktopEditorTool: DesktopEditorTool;
-  customServers: Record<string, Record<string, unknown>>;
-  startedCustomServers: Record<string, string>;
-  customServersProcesses: Record<string, TProcess>;
-  customServersLogs: Record<string, string[]>;
+  customServers: CustomServers;
+  webSearch: WebSearch;
+
+  allowAlways: string[];
 
   constructor() {
     this.desktopEditorTool = new DesktopEditorTool();
-    this.customServers = {};
-    this.startedCustomServers = {};
-    this.customServersProcesses = {};
-    this.customServersLogs = {};
+    this.customServers = new CustomServers();
+    this.webSearch = new WebSearch();
+
+    this.allowAlways =
+      localStorage.getItem(ALLOW_ALWAYS_TOOLS)?.split(",") ?? [];
   }
 
-  init = () => {
-    this.desktopEditorTool.initTools();
+  checkAllowAlways = (type: string, name: string) => {
+    if (type === "web-search") {
+      return true;
+    }
+
+    if (this.allowAlways.includes(`${type}_${name}`)) {
+      return true;
+    }
+
+    return false;
   };
 
-  checkAllowAlways = () => {
-    return this.desktopEditorTool.getAllowAlways();
-  };
+  setAllowAlways = (value: boolean, type: string, name: string) => {
+    if (type === "web-search") {
+      return;
+    }
 
-  setAllowAlways = (value: boolean) => {
-    this.desktopEditorTool.setAllowAlways(value);
+    if (value) {
+      this.allowAlways.push(`${type}_${name}`);
+    } else {
+      this.allowAlways = this.allowAlways.filter(
+        (tool) => tool !== `${type}_${name}`
+      );
+    }
+
+    localStorage.setItem(ALLOW_ALWAYS_TOOLS, this.allowAlways.join(","));
   };
 
   getTools = async () => {
-    const [desktopEditorTools] = await Promise.all([
-      this.desktopEditorTool.getTools(),
-    ]);
+    const [desktopEditorTools, webSearchTools, customServersTools] =
+      await Promise.all([
+        this.desktopEditorTool.getTools(),
+        this.webSearch.getTools(),
+        this.customServers.getTools(),
+      ]);
 
     const items: Record<string, TMCPItem[]> = {
       "desktop-editor": desktopEditorTools,
+      "web-search": webSearchTools,
+      ...customServersTools,
     };
 
     return items;
@@ -50,110 +76,65 @@ class Servers {
       return this.desktopEditorTool.callTools(name, args);
     }
 
-    return this.desktopEditorTool.callTools(name, args);
+    if (type === "web-search") {
+      return await this.webSearch.callTools(name, args);
+    }
 
-    // return this.customServers[type][toolName](args);
+    // Call MCP server tool
+    return await this.customServers.callToolFromMCP(type, name, args);
+  };
+
+  getServerType = (name: string) => {
+    if (name.includes("desktop-editor_")) {
+      return "desktop-editor";
+    }
+
+    if (name.includes("web-search_")) {
+      return "web-search";
+    }
+    return this.customServers.getServerType(name);
   };
 
   setCustomServers = (servers: {
     mcpServers: Record<string, Record<string, unknown>>;
   }) => {
-    this.customServers = servers.mcpServers;
+    this.customServers.setCustomServers(servers);
   };
 
   startCustomServers = () => {
-    const servers: string[] = [];
-    Object.entries(this.customServers).forEach(([type, config]) => {
-      servers.push(type);
-      let command = "";
-      const env: Record<string, string> = {};
-      let args = "";
+    this.customServers.startCustomServers();
+  };
 
-      Object.entries(config).map(([key, value]) => {
-        if (key == "env") {
-          Object.entries(value as Record<string, string>).forEach(([k, v]) => {
-            env[k] = v;
-          });
-        }
+  restartCustomServer = (type: string) => {
+    this.customServers.restartCustomServer(type);
+  };
 
-        if (key === "command") {
-          command = value as string;
-        }
+  deleteCustomServer = (type: string) => {
+    this.customServers.deleteCustomServer(type);
+  };
 
-        if (key == "args") {
-          args = (value as string[]).join(" ");
-        }
-      });
+  getCustomServers = () => {
+    return this.customServers.customServers;
+  };
 
-      const commandLine = command + " " + args;
+  getCustomServersStoped = () => {
+    return this.customServers.stopedCustomServers;
+  };
 
-      if (
-        this.startedCustomServers[type] &&
-        this.startedCustomServers[type] === commandLine
-      ) {
-        return;
-      }
+  getCustomServersLogs = () => {
+    return this.customServers.customServersLogs;
+  };
 
-      if (this.customServersProcesses[type]) {
-        console.log("stop server");
-        // this.customServersProcesses[type].end();
-      }
+  setWebSearchData = (data: WebSearchData) => {
+    this.webSearch.setWebSearchData(data);
+  };
 
-      this.customServersLogs[type] = [
-        `${new Date().toLocaleString()}: ${commandLine}\n`,
-      ];
+  getWebSearchData = () => {
+    return this.webSearch.getWebSearchData();
+  };
 
-      const process = new window.ExternalProcess(commandLine, env);
-
-      process.onprocess = (t: number, message: string) => {
-        switch (t) {
-          case 0: {
-            this.customServersLogs[type].push(
-              `${new Date().toLocaleString()}: ${message}\n`
-            );
-            break;
-          }
-          case 1: {
-            this.customServersLogs[type].push(
-              `${new Date().toLocaleString()}: ${message}\n`
-            );
-            break;
-          }
-          case 2: {
-            this.customServersLogs[type].push(
-              `${new Date().toLocaleString()}: [stop] ${message}\n`
-            );
-            // delete this.customServersProcesses[type];
-            break;
-          }
-          default:
-            break;
-        }
-      };
-
-      this.customServersProcesses[type] = process;
-
-      process.start();
-    });
-
-    Object.keys(this.customServersProcesses).forEach((type) => {
-      if (!servers.includes(type)) {
-        if (this.customServersProcesses[type]) {
-          console.log("stop");
-          // this.customServersProcesses[type]?.end();
-          delete this.customServersProcesses[type];
-        }
-        if (this.customServersLogs[type]) {
-          delete this.customServersLogs[type];
-        }
-        if (this.startedCustomServers[type]) {
-          delete this.startedCustomServers[type];
-        }
-        if (this.customServers[type]) {
-          delete this.customServers[type];
-        }
-      }
-    });
+  getWebSearchEnabled = () => {
+    return this.webSearch.getWebSearchEnabled();
   };
 }
 
