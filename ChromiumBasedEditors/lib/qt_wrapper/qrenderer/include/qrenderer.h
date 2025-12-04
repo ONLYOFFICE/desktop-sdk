@@ -99,6 +99,9 @@ namespace NSQRenderer
 
 		virtual HRESULT get_BrushOffset(double& offsetX, double& offsetY) const override;
 		virtual HRESULT put_BrushOffset(const double& offsetX, const double& offsetY) override;
+		virtual HRESULT get_BrushScale(bool& isScale, double& scaleX, double& scaleY) const override;
+		virtual HRESULT put_BrushScale(bool isScale, const double& scaleX, const double& scaleY) override;
+
 		virtual HRESULT put_BrushGradientColors(LONG* lColors
 												, double* pPositions
 												, LONG nCount) override;
@@ -198,6 +201,7 @@ namespace NSQRenderer
 										  , const double& y
 										  , const double& w
 										  , const double& h) override;
+		virtual HRESULT AddPath(const Aggplus::CGraphicsPath& path) override;
 
 		//-------- Функции для вывода изображений ---------------------------------------------------
 		virtual HRESULT DrawImage(IGrObject* pImage

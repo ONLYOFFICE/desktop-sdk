@@ -479,6 +479,8 @@ namespace NSConversions
 
 				oTransform.translate(dOffsetX, dOffsetY);
 				oTransform.translate(pLogicBrush->OffsetX, pLogicBrush->OffsetY);
+				if (pLogicBrush->IsScale)
+					oTransform.scale(pLogicBrush->ScaleX, pLogicBrush->ScaleY);
 			}
 
 			oTransform.scale(dScaleX, dScaleY);
@@ -1197,6 +1199,23 @@ HRESULT NSQRenderer::CQRenderer::put_BrushOffset(const double& offsetX, const do
 	m_oBrush.OffsetY = offsetY;
 	return S_OK;
 }
+
+HRESULT NSQRenderer::CQRenderer::get_BrushScale(bool& isScale, double& scaleX, double& scaleY) const
+{
+	isScale = m_oBrush.IsScale;
+	scaleX = m_oBrush.ScaleX;
+	scaleY = m_oBrush.ScaleY;
+	return S_OK;
+}
+
+HRESULT NSQRenderer::CQRenderer::put_BrushScale(bool isScale, const double& scaleX, const double& scaleY)
+{
+	m_oBrush.IsScale = isScale;
+	m_oBrush.ScaleX = scaleX;
+	m_oBrush.ScaleY = scaleY;
+	return S_OK;
+}
+
 HRESULT NSQRenderer::CQRenderer::put_BrushGradientColors(LONG *lColors, double *pPositions, LONG nCount)
 {
 #ifdef ENABLE_LOGS
