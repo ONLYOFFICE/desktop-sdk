@@ -97,6 +97,8 @@ namespace NSQRenderer
 									, const double& width
 									, const double& height) override;
 
+		virtual HRESULT get_BrushOffset(double& offsetX, double& offsetY) const override;
+		virtual HRESULT put_BrushOffset(const double& offsetX, const double& offsetY) override;
 		virtual HRESULT put_BrushGradientColors(LONG* lColors
 												, double* pPositions
 												, LONG nCount) override;

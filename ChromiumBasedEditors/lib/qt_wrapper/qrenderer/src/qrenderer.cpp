@@ -441,8 +441,9 @@ namespace NSConversions
 		{
 			if (pLogicBrush && pLogicBrush->Rectable)
 			{
-				oTransform.translate((oPathBounds.left() - pLogicBrush->Rect.X) / nImageWidth,
-				                     (oPathBounds.top() - pLogicBrush->Rect.Y) / nImageHeight);
+				oTransform.translate((oPathBounds.left() - (pLogicBrush->Rect.X + pLogicBrush->OffsetX)) / nImageWidth,
+									 (oPathBounds.top() - (pLogicBrush->Rect.Y + pLogicBrush->OffsetY)) / nImageHeight);
+				oTransform.translate(oPathBounds.left(), oPathBounds.top());
 
 				oTransform.scale(pLogicBrush->Rect.Width / nImageWidth,
 				                 pLogicBrush->Rect.Height / nImageHeight);
@@ -470,13 +471,14 @@ namespace NSConversions
 
 			if (pLogicBrush && pLogicBrush->Rectable)
 			{
-				double dOffsetX = (oPathBounds.left() - pLogicBrush->Rect.X) / nImageWidth;
-				double dOffsetY = (oPathBounds.top() - pLogicBrush->Rect.Y) / nImageHeight;
+				double dOffsetX = (oPathBounds.left() - (pLogicBrush->Rect.X + pLogicBrush->OffsetX)) / nImageWidth;
+				double dOffsetY = (oPathBounds.top() - (pLogicBrush->Rect.Y + pLogicBrush->OffsetY)) / nImageHeight;
 
 				//dOffsetX *= (dDpiX / dTileDpi);
 				//dOffsetY *= (dDpiY / dTileDpi);
 
 				oTransform.translate(dOffsetX, dOffsetY);
+				oTransform.translate(pLogicBrush->OffsetX, pLogicBrush->OffsetY);
 			}
 
 			oTransform.scale(dScaleX, dScaleY);
@@ -1182,6 +1184,19 @@ HRESULT NSQRenderer::CQRenderer::BrushBounds(const double &left
 	return S_OK;
 }
 
+HRESULT NSQRenderer::CQRenderer::get_BrushOffset(double& offsetX, double& offsetY) const
+{
+	offsetX = m_oBrush.OffsetX;
+	offsetY = m_oBrush.OffsetY;
+	return S_OK;
+}
+
+HRESULT NSQRenderer::CQRenderer::put_BrushOffset(const double& offsetX, const double& offsetY)
+{
+	m_oBrush.OffsetX = offsetX;
+	m_oBrush.OffsetY = offsetY;
+	return S_OK;
+}
 HRESULT NSQRenderer::CQRenderer::put_BrushGradientColors(LONG *lColors, double *pPositions, LONG nCount)
 {
 #ifdef ENABLE_LOGS
@@ -1688,6 +1703,34 @@ HRESULT NSQRenderer::CQRenderer::PathCommandTextEx(const std::wstring& wsUnicode
 {
 	SetFont();
 	m_oSimpleGraphicsConverter.PathCommandText2(wsUnicodeText, (const int*)pGids, nGidsCount, m_pFontManager, dX, dY, dW, dH);
+	return S_OK;
+}
+
+HRESULT NSQRenderer::CQRenderer::AddPath(const Aggplus::CGraphicsPath& path)
+{
+	if (path.GetPointCount() == 0)
+		return S_FALSE;
+
+	size_t length = path.GetPointCount() + path.GetCloseCount();
+	std::vector<Aggplus::PointD> points = path.GetPoints(0, length);
+
+	for (size_t i = 0; i < length; i++)
+	{
+		if (path.IsCurvePoint(i))
+		{
+			PathCommandCurveTo(points[i].X, points[i].Y,
+							   points[i + 1].X, points[i + 1].Y,
+							   points[i + 2].X, points[i + 2].Y);
+			i += 2;
+		}
+		else if (path.IsMovePoint(i))
+			PathCommandMoveTo(points[i].X, points[i].Y);
+		else if (path.IsLinePoint(i))
+			PathCommandLineTo(points[i].X, points[i].Y);
+		else
+			PathCommandClose();
+	}
+
 	return S_OK;
 }
 
