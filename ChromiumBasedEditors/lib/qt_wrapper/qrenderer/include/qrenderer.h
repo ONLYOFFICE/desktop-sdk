@@ -253,7 +253,11 @@ namespace NSQRenderer
 		void ResetBaseTransform();
 
 		void PrepareBitBlt(const int& nRasterX, const int& nRasterY, const int& nRasterW, const int& nRasterH,
-						   const double& x, const double& y, const double& w, const double& h, const double& dAngle);
+						   const double& x, const double& y, const double& w, const double& h, const double& dAngle,
+						   const double& tileScaleX, const double& tileScaleY);
+
+		void GetTileScaleX(double& sx) const;
+		void GetTileScaleY(double& sy) const;
 
 		QTransform& GetCoordTransform();
 
@@ -290,6 +294,9 @@ namespace NSQRenderer
 
 		int m_nPixelWidth;
 		int m_nPixelHeight;
+
+		double m_dTileScaleX;
+		double m_dTileScaleY;
 
 		long m_lCurrentCommand;
 		long m_lCurrentClipMode;
