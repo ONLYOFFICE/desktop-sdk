@@ -797,6 +797,15 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
 
 	int nRasterW = (int)(oPagePrintData.WidthPix + 0.5);
 	int nRasterH = (int)(oPagePrintData.HeightPix + 0.5);
+
+	double dTileScaleX = 1.0;
+	double dTileScaleY = 1.0;
+
+	if (oPagePrintData.PageWidth * oPagePrintData.PrintHeightMM > oPagePrintData.PrintWidthMM * oPagePrintData.PageHeight)
+		dTileScaleX = dTileScaleY = oPagePrintData.PageWidth / oPagePrintData.PrintWidthMM;
+	else
+		dTileScaleX = dTileScaleY = oPagePrintData.PageHeight / oPagePrintData.PrintHeightMM;
+
 #ifdef _XCODE
 	// 16 bit align pixPerRow
 	nRasterW += 8;
@@ -853,7 +862,7 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
 		pContext->SaveState();
 
 		pContext->PrepareBitBlt(pNativeRenderer, 0, 0, nRasterW, nRasterH,
-								oPagePrintData.LeftPix, oPagePrintData.TopPix, oPagePrintData.WidthPix, oPagePrintData.HeightPix, oPagePrintData.Angle);
+								oPagePrintData.LeftPix, oPagePrintData.TopPix, oPagePrintData.WidthPix, oPagePrintData.HeightPix, oPagePrintData.Angle, dTileScaleX, dTileScaleY);
 
 		pContext->InitRenderer(pNativeRenderer, m_pFontManager);
 	}

@@ -77,7 +77,8 @@ public:
 	virtual void InitRenderer(void* pRenderer, void* pFontManager);
 
 	virtual void PrepareBitBlt(void* pRenderer, const int& nRasterX, const int& nRasterY, const int& nRasterW, const int& nRasterH,
-							   const double& x, const double& y, const double& w, const double& h, const double& dAngle);
+							   const double& x, const double& y, const double& w, const double& h, const double& dAngle,
+							   const double& tileScaleX, const double& tileScaleY);
 
 	virtual void SetPageOrientation(int nOrientaion);
 

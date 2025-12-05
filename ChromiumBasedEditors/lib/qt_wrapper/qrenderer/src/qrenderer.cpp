@@ -465,14 +465,19 @@ namespace NSConversions
 			double dDpiY = dTileDpi;
 			pRenderer->get_DpiX(&dDpiX);
 			pRenderer->get_DpiY(&dDpiY);
+			double dTileScaleX = 1.0;
+			double dTileScaleY = 1.0;
+			pRenderer->GetTileScaleX(dTileScaleX);
+			pRenderer->GetTileScaleY(dTileScaleY);
 
-			double dScaleX = dDpiX / (dTileDpi * pRenderer->GetCoordTransform().m11());
-			double dScaleY = dDpiY / (dTileDpi * pRenderer->GetCoordTransform().m22());
+
+			double dScaleX = dDpiX / (dTileDpi * pRenderer->GetCoordTransform().m11() * dTileScaleX);
+			double dScaleY = dDpiY / (dTileDpi * pRenderer->GetCoordTransform().m22() * dTileScaleY);
 
 			if (pLogicBrush && pLogicBrush->Rectable)
 			{
-				double dOffsetX = (oPathBounds.left() - (pLogicBrush->Rect.X + pLogicBrush->OffsetX)) / nImageWidth;
-				double dOffsetY = (oPathBounds.top() - (pLogicBrush->Rect.Y + pLogicBrush->OffsetY)) / nImageHeight;
+				double dOffsetX = (oPathBounds.left() - pLogicBrush->Rect.X) / nImageWidth;
+				double dOffsetY = (oPathBounds.top() - pLogicBrush->Rect.Y) / nImageHeight;
 
 				//dOffsetX *= (dDpiX / dTileDpi);
 				//dOffsetY *= (dDpiY / dTileDpi);
@@ -516,6 +521,9 @@ void NSQRenderer::CQRenderer::InitDefaults()
 
 	m_nPixelWidth = 0;
 	m_nPixelHeight = 0;
+
+	m_dTileScaleX = 1.0;
+	m_dTileScaleY = 1.0;
 
 	m_lCurrentCommand = c_nNone;
 	m_oSimpleGraphicsConverter.SetRenderer(this);
@@ -2020,10 +2028,14 @@ void NSQRenderer::CQRenderer::ResetBaseTransform()
 }
 
 void NSQRenderer::CQRenderer::PrepareBitBlt(const int& nRasterX, const int& nRasterY, const int& nRasterW, const int& nRasterH,
-                                            const double& x, const double& y, const double& w, const double& h, const double& dAngle)
+											const double& x, const double& y, const double& w, const double& h, const double& dAngle,
+											const double& tileScaleX, const double& tileScaleY)
 {
 	m_nPixelWidth = nRasterW;
 	m_nPixelHeight = nRasterH;
+
+	m_dTileScaleX = tileScaleX;
+	m_dTileScaleY = tileScaleY;
 
 	int nPhysicalX = 0;
 	int nPhysicalY = 0;
@@ -2078,6 +2090,16 @@ void NSQRenderer::CQRenderer::PrepareBitBlt(const int& nRasterX, const int& nRas
 		m_oPositionTransform.translate(x, y);
 		applyTransform();
 	}
+}
+
+void NSQRenderer::CQRenderer::GetTileScaleX(double& sx) const
+{
+	sx = m_dTileScaleX;
+}
+
+void NSQRenderer::CQRenderer::GetTileScaleY(double& sy) const
+{
+	sy = m_dTileScaleY;
 }
 
 QTransform& NSQRenderer::CQRenderer::GetCoordTransform()

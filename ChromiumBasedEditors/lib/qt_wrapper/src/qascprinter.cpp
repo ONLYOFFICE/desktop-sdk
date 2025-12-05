@@ -262,10 +262,11 @@ void QAscPrinterContext::BitBlt(unsigned char* pBGRA, const int& nRasterX, const
 }
 
 void QAscPrinterContext::PrepareBitBlt(void* pRenderer, const int& nRasterX, const int& nRasterY, const int& nRasterW, const int& nRasterH,
-									   const double& x, const double& y, const double& w, const double& h, const double& dAngle)
+									   const double& x, const double& y, const double& w, const double& h, const double& dAngle,
+									   const double& tileScaleX, const double& tileScaleY)
 {
 	((NSQRenderer::CQRenderer*)pRenderer)->PrepareBitBlt(nRasterX, nRasterY, nRasterW, nRasterH,
-														 x, y, w, h, dAngle);
+														 x, y, w, h, dAngle, tileScaleX, tileScaleY);
 }
 
 void QAscPrinterContext::DrawImage(QPainter* painter, const QImage& image, const QRect& rect, const QRect& rectSrc)
