@@ -427,6 +427,8 @@ public:
 					RELEASEOBJECT(m_pReader);
 					NSDirectory::DeleteDirectory(m_sTempFolder);
 
+					m_pApplicationFonts->GetStreams()->Clear();
+
 					m_pReader = new CPdfFile(m_pApplicationFonts);
 					Open(sTempFile, sRecoveryDir, L"", sPrintParams);
 					return;
@@ -477,6 +479,8 @@ public:
 
 					RELEASEOBJECT(m_pReader);
 					NSDirectory::DeleteDirectory(m_sTempFolder);
+
+					m_pApplicationFonts->GetStreams()->Clear();
 
 					m_pReader = new CPdfFile(m_pApplicationFonts);
 					Open(sTempFile, sRecoveryDir, L"", "");
