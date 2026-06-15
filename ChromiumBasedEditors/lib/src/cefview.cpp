@@ -4925,7 +4925,11 @@ virtual void OnLoadEnd(CefRefPtr<CefBrowser> browser,
 					sGuidA = sGuidA.substr(4);
 				std::wstring sGuid = UTF8_TO_U(sGuidA);
 
-				std::wstring sSrc = (iterExt->isUser ? sUserPluginsPath : sSystemPluginsPath) + L"/" + sGuid + L"/" + UTF8_TO_U(iterExt->sUrl) + m_pParent->m_pInternal->m_pManager->m_pInternal->m_mainPostFix;
+				std::wstring sDirectory = (iterExt->isUser ? sUserPluginsPath : sSystemPluginsPath);
+				if (iterExt->isUser && iterExt->nType == 2)
+					sDirectory = sUserPluginsPath + L"/../addon/sdkjs-plugins";
+
+				std::wstring sSrc = sDirectory + L"/" + sGuid + L"/" + UTF8_TO_U(iterExt->sUrl) + m_pParent->m_pInternal->m_pManager->m_pInternal->m_mainPostFix;
 				NSCommon::url_correct(sSrc);
 				if (iterExt->isOnlyofficeScheme)
 					sSrc = L"onlyoffice://plugin/" + sSrc;
@@ -5372,6 +5376,22 @@ virtual CefRefPtr<CefResourceHandler> GetResourceHandler(
 	}
 #endif
 
+#ifdef USE_ADDON_MODE
+	if (m_pParent->m_pInternal->m_pManager->m_pInternal->m_bIsInstalledAddon && L"file:" == url.substr(0, 5))
+	{
+		std::wstring::size_type pos = url.rfind(L"/editors/sdkjs/");
+		if (std::wstring::npos != pos)
+		{
+			std::wstring sPath = url.substr(pos + 8);
+			std::wstring::size_type pos2 = sPath.find(L"?");
+			if (std::wstring::npos != pos2)
+				sPath = sPath.substr(0, pos2);
+			sPath = m_pParent->m_pInternal->m_pManager->m_oSettings.user_plugins_path + L"/../addon" + sPath;
+			return GetLocalFileRequest(sPath);
+		}
+	}
+#endif
+
 	return nullptr;
 }
 
@@ -5482,6 +5502,10 @@ std::string GetMimeType(const std::wstring& sFile)
 		return "text/html";
 	else if (sExt == L"json")
 		return "application/json";
+	else if (sExt == L"wasm")
+		return "application/wasm";
+	else if (sExt == L"bin")
+		return "application/octet-stream";
 	//else if (sExt == L"ttf")
 	//    return "application/octet-stream";
 	//else if (sExt == L"otf")

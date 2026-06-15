@@ -1371,6 +1371,58 @@ int CAscApplicationManager::CallCommand(const std::wstring& command)
 	return 0;
 }
 
+int CAscApplicationManager::InstallMainAddon(const std::wstring& path)
+{
+#ifndef USE_ADDON_MODE
+	return 1;
+#else
+	std::wstring sOutDir = m_oSettings.user_plugins_path + L"/../addon";
+	if (NSDirectory::Exists(sOutDir))
+		NSDirectory::DeleteDirectory(sOutDir);
+
+	m_pInternal->m_bIsInstalledAddon = false;
+
+	NSDirectory::CreateDirectory(sOutDir);
+	COfficeUtils oCOfficeUtils(NULL);
+	HRESULT hr = oCOfficeUtils.ExtractToDirectory(path, sOutDir, NULL, 0);
+
+	std::wstring sPath = sOutDir + L"/sdkjs/word/sdk-all-min.js";
+	if (hr == S_OK && NSFile::CFileBinary::Exists(sPath))
+	{
+		std::string sAddonVersion = m_pInternal->ReadSdkJSVersionLine(sPath);
+		if (sAddonVersion == m_pInternal->m_sSdkJSVersion)
+		{
+			m_pInternal->m_bIsInstalledAddon = true;
+			return 0;
+		}
+	}
+
+	if (NSDirectory::Exists(sOutDir))
+		NSDirectory::DeleteDirectory(sOutDir);
+	return 1;
+#endif
+}
+int CAscApplicationManager::RemoveMainAddon()
+{
+#ifndef USE_ADDON_MODE
+	return 1;
+#else
+	std::wstring sOutDir = m_oSettings.user_plugins_path + L"/../addon";
+	if (NSDirectory::Exists(sOutDir))
+		NSDirectory::DeleteDirectory(sOutDir);
+	m_pInternal->m_bIsInstalledAddon = false;
+	return 0;
+#endif
+}
+bool CAscApplicationManager::CheckMainAddon()
+{
+#ifndef USE_ADDON_MODE
+	return false;
+#else
+	return m_pInternal->m_bIsInstalledAddon;
+#endif
+}
+
 bool NSCommon::CSystemWindowScale::g_isUseSystemScalingInit = false;
 bool NSCommon::CSystemWindowScale::g_isUseSystemScaling = false;
 

@@ -1743,6 +1743,11 @@ public:
 	// генератор шаблонов
 	CTemplatesCache m_oTemplatesCache;
 
+#ifdef USE_ADDON_MODE
+	bool m_bIsInstalledAddon;
+	std::string m_sSdkJSVersion;
+#endif
+
 public:
 	IMPLEMENT_REFCOUNTING(CAscApplicationManager_Private);
 
@@ -1801,6 +1806,10 @@ public:
 		m_bIsPreloadDiscard = false;
 
 		COfficeUtils::SetAddonFlag(ZLIB_ADDON_FLAG_WINDOWS_SHARED_WRITE);
+
+#ifdef USE_ADDON_MODE
+		m_bIsInstalledAddon = false;
+#endif
 	}
 	virtual ~CAscApplicationManager_Private()
 	{
@@ -1812,6 +1821,61 @@ public:
 		m_oCS_Scripts.DeleteCriticalSection();
 		m_oCS_LocalFiles.DeleteCriticalSection();
 		m_oCS_SystemMessages.DeleteCriticalSection();
+	}
+
+	std::string ReadSdkJSVersionLine(const std::wstring& path)
+	{
+		NSFile::CFileBinary oFile;
+		if (!oFile.OpenFile(path))
+			return "";
+
+		DWORD kMaxRead = 8192;
+		if ((long)kMaxRead > oFile.GetFileSize())
+			kMaxRead = (DWORD)oFile.GetFileSize();
+
+		std::string buf(kMaxRead, '\0');
+		DWORD dwRead = 0;
+		bool bOk = oFile.ReadFile(reinterpret_cast<BYTE*>(&buf[0]), kMaxRead, dwRead);
+		oFile.CloseFile();
+		if (!bOk)
+			return "";
+		buf.resize(dwRead);
+
+		std::size_t b = buf.find("Version:");
+		if (b == std::string::npos)
+			return "";
+
+		std::size_t e = buf.find(')', b);
+		if (e == std::string::npos)
+			return "";
+
+		return buf.substr(b, e - b + 1);
+	}
+
+	void CheckAddonExist()
+	{
+#ifdef USE_ADDON_MODE
+		m_bIsInstalledAddon = false;
+
+		std::wstring sEditorsFolder = m_pMain->m_oSettings.local_editors_path;
+		std::wstring::size_type nPosEditors = sEditorsFolder.rfind(L"web-apps/apps/api/documents/index.html");
+		if (nPosEditors != std::wstring::npos)
+			sEditorsFolder = sEditorsFolder.substr(0, nPosEditors);
+		std::wstring sPathSystem = sEditorsFolder + L"sdkjs/word/sdk-all-min.js";
+
+		m_sSdkJSVersion = ReadSdkJSVersionLine(sPathSystem);
+
+		std::wstring sPath = m_pMain->m_oSettings.user_plugins_path + L"/../addon/sdkjs/word/sdk-all-min.js";
+		if (NSFile::CFileBinary::Exists(sPath))
+			return;
+
+		std::string sAddonVersion = ReadSdkJSVersionLine(sPath);
+
+		if (sAddonVersion != m_sSdkJSVersion)
+			NSDirectory::DeleteDirectory(m_pMain->m_oSettings.user_plugins_path + L"/../addon");
+		else
+			m_bIsInstalledAddon = true;
+#endif
 	}
 
 	std::wstring StartTmpDirectory()

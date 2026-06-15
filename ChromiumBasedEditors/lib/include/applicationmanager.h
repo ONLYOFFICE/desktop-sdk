@@ -327,6 +327,10 @@ public:
 
 	int CallCommand(const std::wstring& command);
 
+	int InstallMainAddon(const std::wstring& path);
+	int RemoveMainAddon();
+	bool CheckMainAddon();
+
 protected:
 	int GenerateNextViewId();
 	virtual CAscDpiChecker* InitDpiChecker();

@@ -12,6 +12,8 @@ CONFIG += plugin
 !disable_protection:DEFINES += FEATURE_ENABLE_PROTECT
 !disable_signatures:DEFINES += FEATURE_ENABLE_SIGNATURE
 
+!disable_addon_mode:DEFINES += USE_ADDON_MODE
+
 CORE_ROOT_DIR = $$PWD/../../../core
 include($$CORE_ROOT_DIR/Common/base.pri)
 include($$CORE_ROOT_DIR/Common/3dParty/icu/icu.pri)
