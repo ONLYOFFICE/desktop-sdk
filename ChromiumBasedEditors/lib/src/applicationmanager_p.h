@@ -2989,6 +2989,11 @@ static std::wstring GetFileUrlParams(const int& nFileFormat, const bool& bIsView
 			sParams += L"&filetype=xps";
 			bViewer = true;
 		}
+		else if (nFileFormat == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_OFD)
+		{
+			sParams += L"&filetype=xps";
+			bViewer = true;
+		}
 		else
 		{
 			sParams += L"&filetype=pdf";

@@ -1008,6 +1008,8 @@ int CAscApplicationManager::GetFileFormatByExtentionForSave(const std::wstring& 
 		nFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX;
 	else if (sName == L"xltx")
 		nFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLTX;
+	else if (sName == L"xls")
+		nFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLS;
 	else if (sName == L"ods")
 		nFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_ODS;
 	else if (sName == L"ots")

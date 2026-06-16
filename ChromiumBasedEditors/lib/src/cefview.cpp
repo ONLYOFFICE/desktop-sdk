@@ -63,6 +63,7 @@
 #include "../../../../core/PdfFile/PdfFile.h"
 #include "../../../../core/DjVuFile/DjVu.h"
 #include "../../../../core/XpsFile/XpsFile.h"
+#include "../../../../core/OFDFile/OFDFile.h"
 
 #include "cefwrapper/monitor_info.h"
 
@@ -371,6 +372,11 @@ public:
 		case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_XPS:
 		{
 			m_pReader = new CXpsFile(m_pApplicationFonts);
+			break;
+		}
+		case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_OFD:
+		{
+			m_pReader = new COFDFile(m_pApplicationFonts);
 			break;
 		}
 		case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_DJVU:
@@ -1638,6 +1644,7 @@ public:
 				arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLTX);
 			}
 
+			arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLS);
 			arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_ODS);
 
 			if (!bEncryption)
@@ -7318,6 +7325,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 			case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA:
 			case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_XPS:
 			case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_DJVU:
+			case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_OFD:
 			{
 				m_pInternal->m_oPrintData.m_pNativePrinter = new CAscNativePrintDocument(m_pInternal->m_sNativeFilePassword);
 				break;
