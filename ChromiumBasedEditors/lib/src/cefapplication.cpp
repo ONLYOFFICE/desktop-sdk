@@ -557,6 +557,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 	}
 
 	pManager->m_pInternal->LocalFiles_Init();
+	pManager->m_pInternal->CheckAddonExist();
 
 	// local files resolver
 	pManager->m_pInternal->m_oLocalFilesResolver.Init(pManager->m_oSettings.fonts_cache_info_path);
