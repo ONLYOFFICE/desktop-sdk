@@ -1866,7 +1866,7 @@ public:
 		m_sSdkJSVersion = ReadSdkJSVersionLine(sPathSystem);
 
 		std::wstring sPath = m_pMain->m_oSettings.user_plugins_path + L"/../addon/sdkjs/word/sdk-all-min.js";
-		if (NSFile::CFileBinary::Exists(sPath))
+		if (!NSFile::CFileBinary::Exists(sPath))
 			return;
 
 		std::string sAddonVersion = ReadSdkJSVersionLine(sPath);
