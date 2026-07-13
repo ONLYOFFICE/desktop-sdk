@@ -148,10 +148,25 @@ HEADERS += \
 SOURCES += \
 	$$AI_TOOLS_PATH/tools.cpp
 
-AI_TOOLS_FUNCS_PATH = $$/AI_TOOLS_PATH/functions
+AI_TOOLS_FUNCS_PATH = $$AI_TOOLS_PATH/functions
 HEADERS += \
-	AI_TOOLS_FUNCS_PATH/internal/base.h \
-	AI_TOOLS_FUNCS_PATH/internal/funcs.h
+	$$AI_TOOLS_FUNCS_PATH/internal/base.h \
+	$$AI_TOOLS_FUNCS_PATH/internal/funcs.h
+
+NATIVE_PLUGINS_PATH = $$PWD/native-plugins
+INCLUDEPATH += $$NATIVE_PLUGINS_PATH/include
+HEADERS += \
+	$$NATIVE_PLUGINS_PATH/include/native_plugin.h \
+	$$NATIVE_PLUGINS_PATH/src/lib_loader.h \
+	$$NATIVE_PLUGINS_PATH/src/plugin_manager.h \
+	$$NATIVE_PLUGINS_PATH/src/plugin_host_renderer.h \
+	$$NATIVE_PLUGINS_PATH/src/plugin_host_browser.h
+SOURCES += \
+	$$NATIVE_PLUGINS_PATH/src/lib_loader.cpp \
+	$$NATIVE_PLUGINS_PATH/src/plugin_manager.cpp \
+	$$NATIVE_PLUGINS_PATH/src/plugin_host_renderer.cpp \
+	$$NATIVE_PLUGINS_PATH/src/plugin_host_browser.cpp
+core_linux:LIBS += -ldl
 
 # crypto ----------------------------------
 LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lCryptoPPLib

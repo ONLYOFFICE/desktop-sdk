@@ -59,6 +59,7 @@
 #include "../crypto_mode.h"
 #include "../../../../../core/DesktopEditor/common/CalculatorCRC32.h"
 #include "./client_renderer_params.h"
+#include "../../native-plugins/src/plugin_host_renderer.h"
 #include "../../../../../core/Common/3dParty/openssl/common/common_openssl.h"
 #include "../../../../../core/OfficeCryptReader/source/ECMACryptFile.h"
 
@@ -1204,6 +1205,30 @@ window._external_process_callback[" + std::to_string(id) + "]._onprocess(" + std
 		virtual bool Execute(const CefString& sMessageName, CefRefPtr<CefV8Value> object, const CefV8ValueList& arguments, CefRefPtr<CefV8Value>& retval, CefString& exception) OVERRIDE
 		{
 			std::string name = sMessageName.ToString();
+
+			// native-plugin JS methods (window.AscDesktopEditor.<name> from plugins)
+			{
+				CRendererPluginHost& oPluginHost = CRendererPluginHost::Instance();
+				if (oPluginHost.Manager().HasJsMethod(name))
+				{
+					std::string sArgsJson = CRendererPluginHost::ArgsToJson(arguments);
+					if (oPluginHost.Manager().IsJsMethodAsync(name))
+					{
+						std::string sCallId;
+						CefRefPtr<CefV8Value> promise = oPluginHost.CreatePendingPromise(sCallId);
+						oPluginHost.Manager().CallJsMethodAsync(name, sArgsJson, new CJsCallResolver(sCallId, &oPluginHost));
+						retval = promise;
+					}
+					else
+					{
+						std::string sOut;
+						oPluginHost.Manager().CallJsMethod(name, sArgsJson, sOut);
+						retval = CefV8Value::CreateString(sOut);
+					}
+					return true;
+				}
+			}
+
 			if (name == "Copy")
 			{
 				CefV8Context::GetCurrentContext()->GetFrame()->Copy();
@@ -5823,6 +5848,9 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 		{
 			message_router_->OnContextCreated(browser, frame, context);
 
+			// load native plugins once (renderer role); registers their JS methods
+			CRendererPluginHost::Instance().Init();
+
 			// add AscEditorNative
 			CefRefPtr<CefV8Value> object = context->GetGlobal();
 
@@ -6129,6 +6157,14 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 			ExtendObject(obj, handler, methods);
 
+			// native-plugin JS methods -> window.AscDesktopEditor.<name>
+			{
+				std::vector<std::string> arPluginMethods;
+				CRendererPluginHost::Instance().Manager().GetJsMethodNames(arPluginMethods);
+				for (size_t i = 0; i < arPluginMethods.size(); ++i)
+					obj->SetValue(arPluginMethods[i], CefV8Value::CreateFunction(arPluginMethods[i], handler), V8_PROPERTY_ATTRIBUTE_NONE);
+			}
+
 			object->SetValue("AscDesktopEditor", obj, V8_PROPERTY_ATTRIBUTE_NONE);
 
 			CefRefPtr<CefFrame> curFrame = context->GetFrame();
@@ -6239,6 +6275,13 @@ sw.getRegistrations = () => Promise.resolve([]);\n\
 		{
 
 			std::string sMessageName = message->GetName().ToString();
+
+			// messages from the browser process -> renderer plugins (OnMessage)
+			{
+				std::string sPluginArg = message->GetArgumentList()->GetSize() > 0 ? message->GetArgumentList()->GetString(0).ToString() : std::string();
+				if (CRendererPluginHost::Instance().Manager().DispatchPluginMessage(sMessageName, sPluginArg))
+					return true;
+			}
 
 			if (sMessageName == "keyboard_layout")
 			{

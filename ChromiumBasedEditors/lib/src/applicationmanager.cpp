@@ -38,6 +38,9 @@
 #include "./cefwrapper/client_resource_handler_async.h"
 #include "./cefwrapper/monitor_info.h"
 
+#include "../native-plugins/src/plugin_manager.h"
+#include "../native-plugins/src/plugin_host_browser.h"
+
 #if defined(_MAC)
 # include "mac_keyboardlayout.h"
 #else
@@ -884,11 +887,45 @@ bool CAscApplicationManager::GetDebugInfoSupport()
 
 void CAscApplicationManager::CloseApplication()
 {
+	m_pInternal->StopNativePlugins();
 	NSResourceHandlerFileAsyncManager::Destroy();
 	this->DestroyCefView(-1);
 	this->m_pInternal->CloseApplication();
 	if (NULL != m_pInternal->m_pApplication)
 		m_pInternal->m_pApplication->Close();
+}
+
+void CAscApplicationManager_Private::StartNativePlugins()
+{
+	if (NULL != m_pNativePluginManager)
+		return;
+	m_pNativePluginHost = new CBrowserPluginHost(m_pMain);
+	m_pNativePluginManager = new NSNativePlugin::CNativePluginManager();
+	m_pNativePluginManager->SetHost(m_pNativePluginHost);
+	m_pNativePluginManager->SetDirectories(m_arNativePluginsDirs);
+	m_pNativePluginManager->LoadAll();
+}
+
+void CAscApplicationManager_Private::StopNativePlugins()
+{
+	if (NULL != m_pNativePluginManager)
+	{
+		m_pNativePluginManager->StopAll();
+		delete m_pNativePluginManager;
+		m_pNativePluginManager = NULL;
+	}
+	if (NULL != m_pNativePluginHost)
+	{
+		delete m_pNativePluginHost;
+		m_pNativePluginHost = NULL;
+	}
+}
+
+bool CAscApplicationManager_Private::NativePluginDispatchMessage(const std::string& sName, const std::string& sArgsJson)
+{
+	if (NULL != m_pNativePluginManager)
+		return m_pNativePluginManager->DispatchPluginMessage(sName, sArgsJson);
+	return false;
 }
 
 NSFonts::IApplicationFonts* CAscApplicationManager::GetApplicationFonts()
@@ -1249,6 +1286,13 @@ std::vector<std::string> CAscApplicationManager::GetRendererStartupProperties()
 	props.push_back("cryptomode=" + std::to_string(m_pInternal->m_nCurrentCryptoMode));
 	props.push_back("system_plugins_path=" + U_TO_UTF8(m_oSettings.system_plugins_path));
 	props.push_back("user_plugins_path=" + U_TO_UTF8(m_oSettings.user_plugins_path));
+	if (!m_pInternal->m_arNativePluginsDirs.empty())
+	{
+		const std::vector<std::wstring>& arNP = m_pInternal->m_arNativePluginsDirs;
+		props.push_back("native-plugins-dir-count=" + std::to_string(arNP.size()));
+		for (size_t i = 0; i < arNP.size(); ++i)
+			props.push_back("native-plugins-dir-" + std::to_string(i) + "=" + U_TO_UTF8(arNP[i]));
+	}
 	props.push_back("cookie_path=" + U_TO_UTF8(m_oSettings.cookie_path));
 	props.push_back("app_data_path=" + U_TO_UTF8(m_oSettings.app_data_path));
 	props.push_back(m_pInternal->m_bDebugInfoSupport ? "debug_mode=true" : "debug_mode=false");

@@ -158,6 +158,10 @@ public:
 
 	void ExecuteInAllFrames(const std::string& sCode, const bool& isMain = true);
 
+	// Methods for browser-host plugins
+	void ExecuteEditorScript(const std::string& sCode);
+	void SendToRenderer(const std::string& sName, const std::string& sArgsJson);
+
 protected:
 	int m_nId;
 	CefViewWrapperType m_eWrapperType;

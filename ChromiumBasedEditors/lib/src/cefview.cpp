@@ -2593,6 +2593,20 @@ public:
 
 		// Check for messages from the client renderer.
 		std::string message_name = message->GetName();
+
+		// native-plugin messages (renderer -> browser)
+		// return true for preventDefault
+		if (m_pParent)
+		{
+			CAscApplicationManager* pMgr = m_pParent->GetAppManager();
+			if (pMgr)
+			{
+				bool bMessagePluginResult = pMgr->m_pInternal->NativePluginDispatchMessage(message_name, args->GetSize() > 0 ? args->GetString(0).ToString() : "");
+				if (bMessagePluginResult)
+					return true;
+			}
+		}
+
 		if (message_name == "EditorType" && !m_bIsEditorTypeSet)
 		{
 			// прокидываем наверх тип редактора
@@ -8170,6 +8184,28 @@ void CCefView::ExecuteInAllFrames(const std::string& sCode, const bool& isMain)
 
 		pFrame->ExecuteJavaScript(sCode, pFrame->GetURL(), 0);
 	}
+}
+
+void CCefView::ExecuteEditorScript(const std::string& sCode)
+{
+	CefRefPtr<CefBrowser> pBrowser = m_pInternal->GetBrowser();
+	if (!pBrowser)
+		return;
+	CefRefPtr<CefFrame> pFrame = pBrowser->GetFrame("frameEditor");
+	if (pFrame)
+		pFrame->ExecuteJavaScript(sCode, pFrame->GetURL(), 0);
+}
+
+void CCefView::SendToRenderer(const std::string& sName, const std::string& sArgsJson)
+{
+	CefRefPtr<CefBrowser> pBrowser = m_pInternal->GetBrowser();
+	if (!pBrowser)
+		return;
+	CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create(sName);
+	message->GetArgumentList()->SetString(0, sArgsJson);
+	CefRefPtr<CefFrame> pMain = pBrowser->GetMainFrame();
+	if (pMain)
+		pMain->SendProcessMessage(PID_RENDERER, message);
 }
 
 // CefViewEditor --------------------------------------------------------------------------

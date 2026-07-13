@@ -596,6 +596,8 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 		NSFile::CFileBinary::Copy(sSystemPlugins + L"/plugins.css", sUserPlugins + L"/plugins.css");
 	}
 
+	pManager->m_pInternal->StartNativePlugins();
+
 	LOGGER_STRING("CApplicationCEF::Init_CEF::end");
 	return 0;
 }

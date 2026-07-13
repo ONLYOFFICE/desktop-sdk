@@ -1594,6 +1594,9 @@ public:
 	}
 };
 
+class CBrowserPluginHost;
+namespace NSNativePlugin { class CNativePluginManager; }
+
 class CAscApplicationManager_Private : public CefBase_Class,
 		public CCookieFoundCallback,
 		public NSThreads::CBaseThread,
@@ -1624,6 +1627,17 @@ public:
 
 	// is ai disabled
 	bool m_bDisableAI;
+
+	// native plugins (loadable DLLs); empty list => none loaded.
+	// Directories are populated inside the SDK; not part of the public API.
+	std::vector<std::wstring> m_arNativePluginsDirs;
+	CBrowserPluginHost* m_pNativePluginHost = NULL;
+	NSNativePlugin::CNativePluginManager* m_pNativePluginManager = NULL;
+
+	void StartNativePlugins();                              // Init_CEF
+	void StopNativePlugins();                               // CloseApplication
+	// Forward an (unhandled) process message to native plugins. Returns true if a plugin handled it.
+	bool NativePluginDispatchMessage(const std::string& sName, const std::string& sArgsJson);
 
 	// логгировать ли урлы
 	bool m_bLoggingBrowserUrls;
