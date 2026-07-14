@@ -9,6 +9,10 @@
 
 #include "include/cef_task.h"
 
+#ifndef JSON_HAS_CPP_11
+#define JSON_HAS_CPP_11
+#endif
+
 #include "../../tools/functions/internal/json.hpp"
 using json = nlohmann::json;
 
