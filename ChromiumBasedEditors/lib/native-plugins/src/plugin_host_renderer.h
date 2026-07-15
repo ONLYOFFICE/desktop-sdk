@@ -16,6 +16,10 @@
 
 #include "include/cef_v8.h"
 
+#if !defined(CEF_2623) && !defined(CEF_VERSION_103)
+#define NATIVE_PLUGIN_ASYNC_JS
+#endif
+
 // Renderer-process host (process singleton). Backs window.AscDesktopEditor plugin
 // methods: sync (returns string) and async (returns a JS Promise resolved later
 // from any thread via IJsCallResolver -> ResolveJsCall).
@@ -32,9 +36,11 @@ public:
 	// Convert a V8 argument list to a JSON array string (the plugin arg contract).
 	static std::string ArgsToJson(const CefV8ValueList& arguments);
 
+#ifdef NATIVE_PLUGIN_ASYNC_JS
 	// Called from Execute() on the V8 thread (context active): creates the pending
 	// Promise, returns it; outCallId identifies it for the resolver.
 	CefRefPtr<CefV8Value> CreatePendingPromise(std::string& sOutCallId);
+#endif
 
 	// IPluginHostRenderer
 	virtual NSNativePlugin::EPluginRole Role() { return NSNativePlugin::EPluginRole::Renderer; }
@@ -43,26 +49,31 @@ public:
 	virtual void SendToBrowser(const std::string& sName, const std::string& sArgsJson);
 	virtual std::string GetParam(const std::string& sKey);
 
+#ifdef NATIVE_PLUGIN_ASYNC_JS
 	// Called by CJsCallResolver from any thread; settles the Promise on TID_RENDERER.
 	void ResolveJsCall(const std::string& sCallId, bool bOk, const std::string& sJson);
 	void SettleOnRenderer(const std::string& sCallId, bool bOk, const std::string& sJson);
+#endif
 
 private:
 	CRendererPluginHost();
 
+	NSNativePlugin::CNativePluginManager m_oManager;
+	bool m_bInited;
+
+#ifdef NATIVE_PLUGIN_ASYNC_JS
 	struct TPending
 	{
 		CefRefPtr<CefV8Value> promise;
 		CefRefPtr<CefV8Context> context;
 	};
-
-	NSNativePlugin::CNativePluginManager m_oManager;
 	std::map<std::string, TPending> m_mapPending;
 	std::mutex m_oMutex;
 	unsigned long long m_nCounter;
-	bool m_bInited;
+#endif
 };
 
+#ifdef NATIVE_PLUGIN_ASYNC_JS
 // IJsCallResolver handed to plugins for async methods.
 class CJsCallResolver : public NSNativePlugin::IJsCallResolver
 {
@@ -76,5 +87,6 @@ private:
 	std::string m_sCallId;
 	CRendererPluginHost* m_pHost;
 };
+#endif
 
 #endif // DESKTOP_SDK_PLUGIN_HOST_RENDERER_H

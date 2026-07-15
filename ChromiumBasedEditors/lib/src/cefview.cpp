@@ -5285,7 +5285,12 @@ virtual CefRefPtr<CefResourceHandler> GetResourceHandler(
 				std::wstring::npos == sResourcePath.find(L"require.js") &&
 				NSFile::CFileBinary::Exists(sResourcePath))
 		{
-			return GetLocalFileRequest(sResourcePath, "window.compareVersions=true;", "");
+			auto ends_with = [](const std::wstring& s, const std::wstring& suffix) {
+				return s.size() >= suffix.size() &&
+					   s.compare(s.size() - suffix.size(), suffix.size(), suffix) == 0;
+			};
+
+			return GetLocalFileRequest(sResourcePath, ends_with(sResourcePath, L".js") ? "window.compareVersions=true;" : "", "");
 		}
 	}
 
@@ -8198,14 +8203,9 @@ void CCefView::ExecuteEditorScript(const std::string& sCode)
 
 void CCefView::SendToRenderer(const std::string& sName, const std::string& sArgsJson)
 {
-	CefRefPtr<CefBrowser> pBrowser = m_pInternal->GetBrowser();
-	if (!pBrowser)
-		return;
 	CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create(sName);
 	message->GetArgumentList()->SetString(0, sArgsJson);
-	CefRefPtr<CefFrame> pMain = pBrowser->GetMainFrame();
-	if (pMain)
-		pMain->SendProcessMessage(PID_RENDERER, message);
+	m_pInternal->SendProcessMessage(PID_RENDERER, message);
 }
 
 // CefViewEditor --------------------------------------------------------------------------

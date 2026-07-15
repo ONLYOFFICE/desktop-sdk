@@ -1214,10 +1214,15 @@ window._external_process_callback[" + std::to_string(id) + "]._onprocess(" + std
 					std::string sArgsJson = CRendererPluginHost::ArgsToJson(arguments);
 					if (oPluginHost.Manager().IsJsMethodAsync(name))
 					{
+#ifdef NATIVE_PLUGIN_ASYNC_JS
 						std::string sCallId;
 						CefRefPtr<CefV8Value> promise = oPluginHost.CreatePendingPromise(sCallId);
 						oPluginHost.Manager().CallJsMethodAsync(name, sArgsJson, new CJsCallResolver(sCallId, &oPluginHost));
 						retval = promise;
+#else
+						// Async JS methods need the Promise API, absent on this CEF (XP).
+						retval = CefV8Value::CreateUndefined();
+#endif
 					}
 					else
 					{

@@ -49,6 +49,7 @@ namespace
 		return json(nullptr);
 	}
 
+#ifdef NATIVE_PLUGIN_ASYNC_JS
 	// Marshals promise resolution onto the renderer thread.
 	class CSettleTask : public CefTask
 	{
@@ -63,9 +64,14 @@ namespace
 		std::string m_sJson;
 		IMPLEMENT_REFCOUNTING(CSettleTask);
 	};
+#endif
 }
 
-CRendererPluginHost::CRendererPluginHost() : m_nCounter(0), m_bInited(false)
+CRendererPluginHost::CRendererPluginHost()
+	: m_bInited(false)
+#ifdef NATIVE_PLUGIN_ASYNC_JS
+	, m_nCounter(0)
+#endif
 {
 }
 
@@ -109,6 +115,7 @@ std::string CRendererPluginHost::ArgsToJson(const CefV8ValueList& arguments)
 	return a.dump();
 }
 
+#ifdef NATIVE_PLUGIN_ASYNC_JS
 CefRefPtr<CefV8Value> CRendererPluginHost::CreatePendingPromise(std::string& sOutCallId)
 {
 	CefRefPtr<CefV8Value> promise = CefV8Value::CreatePromise();
@@ -120,6 +127,7 @@ CefRefPtr<CefV8Value> CRendererPluginHost::CreatePendingPromise(std::string& sOu
 	m_mapPending[sOutCallId] = oPending;
 	return promise;
 }
+#endif
 
 void CRendererPluginHost::RegisterJsMethod(const std::string& sName, bool bAsync)
 {
@@ -136,11 +144,17 @@ void CRendererPluginHost::ExecuteJS(const std::string& sCode)
 void CRendererPluginHost::SendToBrowser(const std::string& sName, const std::string& sArgsJson)
 {
 	CefRefPtr<CefV8Context> ctx = CefV8Context::GetCurrentContext();
-	if (!ctx.get() || !ctx->GetFrame().get())
+	if (!ctx.get())
 		return;
 	CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create(sName);
 	message->GetArgumentList()->SetString(0, sArgsJson);
-	ctx->GetFrame()->SendProcessMessage(PID_BROWSER, message);
+#ifdef CEF_2623
+	if (ctx->GetBrowser().get())
+		ctx->GetBrowser()->SendProcessMessage(PID_BROWSER, message);
+#else
+	if (ctx->GetFrame().get())
+		ctx->GetFrame()->SendProcessMessage(PID_BROWSER, message);
+#endif
 }
 
 std::string CRendererPluginHost::GetParam(const std::string& sKey)
@@ -148,6 +162,7 @@ std::string CRendererPluginHost::GetParam(const std::string& sKey)
 	return CAscRendererProcessParams::getInstance().GetValue(sKey);
 }
 
+#ifdef NATIVE_PLUGIN_ASYNC_JS
 void CRendererPluginHost::ResolveJsCall(const std::string& sCallId, bool bOk, const std::string& sJson)
 {
 	if (CefCurrentlyOn(TID_RENDERER))
@@ -176,3 +191,4 @@ void CRendererPluginHost::SettleOnRenderer(const std::string& sCallId, bool bOk,
 		oPending.promise->RejectPromise(sJson);
 	oPending.context->Exit();
 }
+#endif
