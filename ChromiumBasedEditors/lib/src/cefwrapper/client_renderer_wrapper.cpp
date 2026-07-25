@@ -851,6 +851,7 @@ namespace asc_client_renderer
 		std::wstring m_sSystemPlugins;
 		std::wstring m_sUserPlugins;
 		std::wstring m_sCryptDocumentFolder; // recover
+		std::wstring m_sWriteTempFilePath;   // writeTmpFile / removeTmpFile target
 		std::wstring m_sRecoversFolder;		 // recover
 
 		std::wstring m_sCookiesPath;
@@ -2608,6 +2609,56 @@ window.AscDesktopEditor.DownloadFiles = function(filesSrc, filesDst, callback, p
   window.on_native_download_files = callback;\n\
   window.AscDesktopEditor._DownloadFiles(filesSrc, filesDst, params);\n\
 };\n\
+window.AscDesktopEditor.writeTmpFile = (function() {\n\
+  var CRYPTO_TMP_MAX_BASE64 = 10 * 1024 * 1024;\n\
+  var RAW_CHUNK = ((CRYPTO_TMP_MAX_BASE64 / 4) | 0) * 3;\n\
+  var LUT = null, LUT2 = null, DEC = null, OUT_BUF = null;\n\
+  function b64Init() {\n\
+    var abc = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';\n\
+    LUT = new Uint8Array(64);\n\
+    for (var i = 0; i < 64; i++) LUT[i] = abc.charCodeAt(i);\n\
+    var isLE = 1 === (new Uint8Array(new Uint16Array([1]).buffer))[0];\n\
+    LUT2 = new Uint16Array(4096);\n\
+    for (var v = 0; v < 4096; v++)\n\
+      LUT2[v] = isLE ? (LUT[v >> 6] | (LUT[v & 63] << 8)) : ((LUT[v >> 6] << 8) | LUT[v & 63]);\n\
+    DEC = ('undefined' !== typeof TextDecoder) ? new TextDecoder() : null;\n\
+    OUT_BUF = new ArrayBuffer(CRYPTO_TMP_MAX_BASE64);\n\
+  }\n\
+  function b64Encode(u8) {\n\
+    if (u8.toBase64) return u8.toBase64();\n\
+    if (!LUT2) b64Init();\n\
+    var len = u8.length, main = len - (len % 3);\n\
+    var outLen = (((len + 2) / 3) | 0) * 4;\n\
+    if (outLen > OUT_BUF.byteLength) OUT_BUF = new ArrayBuffer(outLen);\n\
+    var out = new Uint8Array(OUT_BUF, 0, outLen);\n\
+    var out16 = new Uint16Array(OUT_BUF, 0, outLen >> 1);\n\
+    var o = 0, i = 0, x;\n\
+    for (; i < main; i += 3) {\n\
+      x = (u8[i] << 16) | (u8[i + 1] << 8) | u8[i + 2];\n\
+      out16[o++] = LUT2[x >> 12];\n\
+      out16[o++] = LUT2[x & 4095];\n\
+    }\n\
+    if (main < len) {\n\
+      var p = o << 1, b0 = u8[main], has2 = (main + 1 < len), b1 = has2 ? u8[main + 1] : 0;\n\
+      out[p] = LUT[b0 >> 2];\n\
+      out[p + 1] = LUT[((b0 & 3) << 4) | (b1 >> 4)];\n\
+      out[p + 2] = has2 ? LUT[(b1 & 15) << 2] : 61;\n\
+      out[p + 3] = 61;\n\
+    }\n\
+    if (DEC) return DEC.decode(out);\n\
+    var s = '';\n\
+    for (var q = 0; q < outLen; q += 0x8000)\n\
+      s += String.fromCharCode.apply(null, out.subarray(q, Math.min(q + 0x8000, outLen)));\n\
+    return s;\n\
+  }\n\
+  return function(data) {\n\
+    if (!data || 0 === data.length) return window.AscDesktopEditor._writeTmpFile('');\n\
+    var path = '';\n\
+    for (var i = 0; i < data.length; i += RAW_CHUNK)\n\
+      path = window.AscDesktopEditor._writeTmpFile(b64Encode(data.subarray(i, Math.min(i + RAW_CHUNK, data.length))));\n\
+    return path;\n\
+  };\n\
+})();\n\
 window.AscDesktopEditor.SetCryptoMode = function(password, mode, callback) {\n\
   window.on_set_crypto_mode = callback;\n\
   window.AscDesktopEditor._SetCryptoMode(password, mode, callback ? true : false);\n\
@@ -3205,6 +3256,50 @@ resolve([]);\
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("build_crypted_end");
 				message->GetArgumentList()->SetBool(0, arguments[0]->GetBoolValue());
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
+				return true;
+			}
+			else if (name == "_writeTmpFile")
+			{
+				if (arguments.size() < 1)
+				{
+					retval = CefV8Value::CreateString(m_sWriteTempFilePath);
+					return true;
+				}
+
+				std::string sContent = arguments[0]->GetStringValue().ToString();
+				BYTE* pDataDst = NULL;
+				int nLenDst = 0;
+				NSFile::CBase64Converter::Decode(sContent.c_str(), (int)sContent.length(), pDataDst, nLenDst);
+
+				if (m_sWriteTempFilePath.empty())
+				{
+					std::wstring sDirTmp = m_sAppTmpFolder;
+					if (sDirTmp.empty())
+						sDirTmp = NSFile::CFileBinary::GetTempPath();
+					m_sWriteTempFilePath = NSFile::CFileBinary::CreateTempFileWithUniqueName(sDirTmp, L"OO");
+				}
+
+				NSFile::CFileBinary oFile;
+				bool bOpened = NSFile::CFileBinary::Exists(m_sWriteTempFilePath)
+					? oFile.OpenFile(m_sWriteTempFilePath, true)
+					: oFile.CreateFile(m_sWriteTempFilePath);
+				if (bOpened)
+				{
+					oFile.SeekFile((int)oFile.GetFileSize());
+					oFile.WriteFile(pDataDst, (DWORD)nLenDst);
+					oFile.CloseFile();
+				}
+
+				RELEASEARRAYOBJECTS(pDataDst);
+
+				retval = CefV8Value::CreateString(m_sWriteTempFilePath);
+				return true;
+			}
+			else if (name == "removeTmpFile")
+			{
+				if (!m_sWriteTempFilePath.empty() && NSFile::CFileBinary::Exists(m_sWriteTempFilePath))
+					NSFile::CFileBinary::Remove(m_sWriteTempFilePath);
+				m_sWriteTempFilePath = L"";
 				return true;
 			}
 			else if (name == "SetCryptDocumentFolder")
@@ -5874,7 +5969,7 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 			CefRefPtr<CefV8Handler> handler = pWrapper;
 
-#define EXTEND_METHODS_COUNT 202
+#define EXTEND_METHODS_COUNT 204
 			const char* methods[EXTEND_METHODS_COUNT] = {
 				"Copy",
 				"Paste",
@@ -6009,6 +6104,8 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 				"_OpenFileCrypt",
 				"buildCryptedStart",
 				"buildCryptedEnd",
+				"_writeTmpFile",
+				"removeTmpFile",
 				"SetCryptDocumentFolder",
 				"PreloadCryptoImage",
 				"ResaveFile",
