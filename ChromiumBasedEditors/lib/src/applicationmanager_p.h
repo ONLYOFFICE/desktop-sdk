@@ -1760,6 +1760,7 @@ public:
 #ifdef USE_ADDON_MODE
 	bool m_bIsInstalledAddon;
 	std::string m_sSdkJSVersion;
+	std::string m_sAddonVersion;
 #endif
 
 public:
@@ -1870,6 +1871,7 @@ public:
 	{
 #ifdef USE_ADDON_MODE
 		m_bIsInstalledAddon = false;
+		m_sAddonVersion.clear();
 
 		std::wstring sEditorsFolder = m_pMain->m_oSettings.local_editors_path;
 		std::wstring::size_type nPosEditors = sEditorsFolder.rfind(L"web-apps/apps/api/documents/index.html");
@@ -1888,7 +1890,10 @@ public:
 		if (sAddonVersion != m_sSdkJSVersion)
 			NSDirectory::DeleteDirectory(m_pMain->m_oSettings.user_plugins_path + L"/../addon");
 		else
+		{
 			m_bIsInstalledAddon = true;
+			m_sAddonVersion = sAddonVersion;
+		}
 #endif
 	}
 

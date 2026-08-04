@@ -1427,6 +1427,7 @@ int CAscApplicationManager::InstallMainAddon(const std::wstring& path)
 		NSDirectory::DeleteDirectory(sOutDir);
 
 	m_pInternal->m_bIsInstalledAddon = false;
+	m_pInternal->m_sAddonVersion.clear();
 
 	NSDirectory::CreateDirectory(sOutDir);
 	COfficeUtils oCOfficeUtils(NULL);
@@ -1439,6 +1440,7 @@ int CAscApplicationManager::InstallMainAddon(const std::wstring& path)
 		if (sAddonVersion == m_pInternal->m_sSdkJSVersion)
 		{
 			m_pInternal->m_bIsInstalledAddon = true;
+			m_pInternal->m_sAddonVersion = sAddonVersion;
 			return 0;
 		}
 	}
@@ -1457,15 +1459,51 @@ int CAscApplicationManager::RemoveMainAddon()
 	if (NSDirectory::Exists(sOutDir))
 		NSDirectory::DeleteDirectory(sOutDir);
 	m_pInternal->m_bIsInstalledAddon = false;
+    m_pInternal->m_sAddonVersion.clear();
 	return 0;
 #endif
 }
-bool CAscApplicationManager::CheckMainAddon()
+bool CAscApplicationManager::CheckMainAddon(std::string* version) const
 {
 #ifndef USE_ADDON_MODE
 	return false;
 #else
-	return m_pInternal->m_bIsInstalledAddon;
+	if (!m_pInternal->m_bIsInstalledAddon)
+		return false;
+
+	if (version)
+	{
+		version->clear();
+		
+		// Extracts the addon version from the raw version string.
+		// Example: "Version: 9.5.0 (build:132)" -> "9.5.0.132"
+		const std::string& sRaw = m_pInternal->m_sAddonVersion;
+		const std::string sDigits = "0123456789";
+
+		const size_t nVersionStart = sRaw.find_first_of(sDigits);
+		if (std::string::npos == nVersionStart)
+			return true;
+
+		const size_t nVersionEnd = sRaw.find_first_not_of(sDigits + ".", nVersionStart);
+		if (std::string::npos == nVersionEnd)
+		{
+			*version = sRaw.substr(nVersionStart);
+			return true;
+		}
+		*version = sRaw.substr(nVersionStart, nVersionEnd - nVersionStart);
+
+		const size_t nBuildStart = sRaw.find_first_of(sDigits, nVersionEnd);
+		if (std::string::npos != nBuildStart)
+		{
+			const size_t nBuildEnd = sRaw.find_first_not_of(sDigits, nBuildStart);
+			*version += ".";
+			*version += (std::string::npos == nBuildEnd)
+							? sRaw.substr(nBuildStart)
+							: sRaw.substr(nBuildStart, nBuildEnd - nBuildStart);
+		}
+	}
+
+	return true;
 #endif
 }
 
