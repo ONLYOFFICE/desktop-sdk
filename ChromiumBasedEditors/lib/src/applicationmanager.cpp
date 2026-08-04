@@ -1427,6 +1427,7 @@ int CAscApplicationManager::InstallMainAddon(const std::wstring& path)
 		NSDirectory::DeleteDirectory(sOutDir);
 
 	m_pInternal->m_bIsInstalledAddon = false;
+	m_pInternal->m_bIsAddonCompatible = false;
 	m_pInternal->m_sAddonVersion.clear();
 
 	NSDirectory::CreateDirectory(sOutDir);
@@ -1440,6 +1441,7 @@ int CAscApplicationManager::InstallMainAddon(const std::wstring& path)
 		if (sAddonVersion == m_pInternal->m_sSdkJSVersion)
 		{
 			m_pInternal->m_bIsInstalledAddon = true;
+			m_pInternal->m_bIsAddonCompatible = true;
 			m_pInternal->m_sAddonVersion = sAddonVersion;
 			return 0;
 		}
@@ -1459,6 +1461,7 @@ int CAscApplicationManager::RemoveMainAddon()
 	if (NSDirectory::Exists(sOutDir))
 		NSDirectory::DeleteDirectory(sOutDir);
 	m_pInternal->m_bIsInstalledAddon = false;
+    m_pInternal->m_bIsAddonCompatible = false;
     m_pInternal->m_sAddonVersion.clear();
 	return 0;
 #endif
@@ -1504,6 +1507,15 @@ bool CAscApplicationManager::CheckMainAddon(std::string* version) const
 	}
 
 	return true;
+#endif
+}
+
+bool CAscApplicationManager::IsMainAddonCompatible() const
+{
+#ifndef USE_ADDON_MODE
+	return false;
+#else
+	return m_pInternal->m_bIsAddonCompatible;
 #endif
 }
 

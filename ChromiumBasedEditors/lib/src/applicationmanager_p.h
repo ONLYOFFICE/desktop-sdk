@@ -1759,6 +1759,7 @@ public:
 
 #ifdef USE_ADDON_MODE
 	bool m_bIsInstalledAddon;
+	bool m_bIsAddonCompatible;
 	std::string m_sSdkJSVersion;
 	std::string m_sAddonVersion;
 #endif
@@ -1824,6 +1825,7 @@ public:
 
 #ifdef USE_ADDON_MODE
 		m_bIsInstalledAddon = false;
+		m_bIsAddonCompatible = false;
 #endif
 	}
 	virtual ~CAscApplicationManager_Private()
@@ -1871,6 +1873,7 @@ public:
 	{
 #ifdef USE_ADDON_MODE
 		m_bIsInstalledAddon = false;
+		m_bIsAddonCompatible = false;
 		m_sAddonVersion.clear();
 
 		std::wstring sEditorsFolder = m_pMain->m_oSettings.local_editors_path;
@@ -1885,14 +1888,16 @@ public:
 		if (!NSFile::CFileBinary::Exists(sPath))
 			return;
 
-		std::string sAddonVersion = ReadSdkJSVersionLine(sPath);
+		m_sAddonVersion = ReadSdkJSVersionLine(sPath);
+		m_bIsInstalledAddon = true;
 
-		if (sAddonVersion != m_sSdkJSVersion)
-			NSDirectory::DeleteDirectory(m_pMain->m_oSettings.user_plugins_path + L"/../addon");
+		if (m_sAddonVersion != m_sSdkJSVersion)
+		{
+			// NSDirectory::DeleteDirectory(m_pMain->m_oSettings.user_plugins_path + L"/../addon");
+		}
 		else
 		{
-			m_bIsInstalledAddon = true;
-			m_sAddonVersion = sAddonVersion;
+			m_bIsAddonCompatible = true;
 		}
 #endif
 	}
