@@ -4925,7 +4925,7 @@ virtual void OnLoadEnd(CefRefPtr<CefBrowser> browser,
 	if (frame->IsMain())
 	{
 		std::wstring sUrl = m_pParent->GetUrl();
-		if ((0 != sUrl.find(L"file:///")) || !m_pParent->m_pInternal->m_bIsOnlyPassSupport || m_pParent->GetType() == cvwtEditor)
+		if ((0 != sUrl.find(L"file:///") && (0 != sUrl.find(L"onlyoffice://plugin/"))) || !m_pParent->m_pInternal->m_bIsOnlyPassSupport || m_pParent->GetType() == cvwtEditor)
 			return;
 
 		// это стартовая страница. отправляем external плагины
