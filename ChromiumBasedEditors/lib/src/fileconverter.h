@@ -1137,6 +1137,17 @@ public:
 			m_oInfo.m_sSaveJsonParams = L"";
 		}
 
+		if (m_pManager->m_pInternal->m_bIsAddonCompatible)
+		{
+			std::wstring sDirAddon = m_pManager->m_oSettings.user_plugins_path + L"/../addon/sdkjs";
+			if (NSDirectory::Exists(sDirAddon))
+			{
+				oBuilder.WriteString(L"<m_sOverrideSdkJsPath>");
+				oBuilder.WriteEncodeXmlString(sDirAddon);
+				oBuilder.WriteString(L"</m_sOverrideSdkJsPath>");
+			}
+		}
+
 		oBuilder.WriteString(L"</m_sJsonParams>");
 
 		// disable cache

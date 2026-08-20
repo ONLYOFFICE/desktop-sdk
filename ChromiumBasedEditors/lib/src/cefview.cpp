@@ -5403,7 +5403,7 @@ virtual CefRefPtr<CefResourceHandler> GetResourceHandler(
 #endif
 
 #ifdef USE_ADDON_MODE
-	if (m_pParent->m_pInternal->m_pManager->m_pInternal->m_bIsInstalledAddon && L"file:" == url.substr(0, 5))
+	if (m_pParent->m_pInternal->m_pManager->m_pInternal->m_bIsAddonCompatible && L"file:" == url.substr(0, 5))
 	{
 		std::wstring::size_type pos = url.rfind(L"/editors/sdkjs/");
 		if (std::wstring::npos != pos)

@@ -1474,47 +1474,41 @@ bool CAscApplicationManager::CheckMainAddon(std::string* version) const
 	if (!m_pInternal->m_bIsInstalledAddon)
 		return false;
 
+	if (m_pInternal->m_bIsAddonCompatible)
+		return true;
+
 	if (version)
 	{
 		version->clear();
-		
-		// Extracts the addon version from the raw version string.
-		// Example: "Version: 9.5.0 (build:132)" -> "9.5.0.132"
+
+		// "Version: 9.5.0 (build:132)" -> "9.5.0.132"
+		// Every non-digit is a separator; runs of separators collapse into one dot.
 		const std::string& sRaw = m_pInternal->m_sAddonVersion;
-		const std::string sDigits = "0123456789";
+		std::string sResult;
 
-		const size_t nVersionStart = sRaw.find_first_of(sDigits);
-		if (std::string::npos == nVersionStart)
-			return true;
-
-		const size_t nVersionEnd = sRaw.find_first_not_of(sDigits + ".", nVersionStart);
-		if (std::string::npos == nVersionEnd)
+		sResult.reserve(sRaw.length());
+		size_t nParts = 0;
+		bool bSeparator = true;
+		for (const char c : sRaw)
 		{
-			*version = sRaw.substr(nVersionStart);
-			return true;
+			if (c < '0' || c > '9')
+			{
+				bSeparator = true;
+				continue;
+			}
+			if (bSeparator)
+			{
+				if (++nParts > 4)
+					break;
+				if (!sResult.empty())
+					sResult += '.';
+				bSeparator = false;
+			}
+			sResult += c;
 		}
-		*version = sRaw.substr(nVersionStart, nVersionEnd - nVersionStart);
-
-		const size_t nBuildStart = sRaw.find_first_of(sDigits, nVersionEnd);
-		if (std::string::npos != nBuildStart)
-		{
-			const size_t nBuildEnd = sRaw.find_first_not_of(sDigits, nBuildStart);
-			*version += ".";
-			*version += (std::string::npos == nBuildEnd)
-							? sRaw.substr(nBuildStart)
-							: sRaw.substr(nBuildStart, nBuildEnd - nBuildStart);
-		}
+		*version = sResult;
 	}
 
-	return true;
-#endif
-}
-
-bool CAscApplicationManager::IsMainAddonCompatible() const
-{
-#ifndef USE_ADDON_MODE
-	return false;
-#else
 	return m_pInternal->m_bIsAddonCompatible;
 #endif
 }

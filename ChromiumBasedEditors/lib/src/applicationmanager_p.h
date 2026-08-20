@@ -1884,20 +1884,21 @@ public:
 
 		m_sSdkJSVersion = ReadSdkJSVersionLine(sPathSystem);
 
+		m_bIsInstalledAddon = false;
+		m_bIsAddonCompatible = false;
+
 		std::wstring sPath = m_pMain->m_oSettings.user_plugins_path + L"/../addon/sdkjs/word/sdk-all-min.js";
 		if (!NSFile::CFileBinary::Exists(sPath))
 			return;
 
 		m_sAddonVersion = ReadSdkJSVersionLine(sPath);
 		m_bIsInstalledAddon = true;
+		m_bIsAddonCompatible = (m_sAddonVersion == m_sSdkJSVersion) ? true : false;
 
-		if (m_sAddonVersion != m_sSdkJSVersion)
+		if (!m_bIsAddonCompatible)
 		{
-			// NSDirectory::DeleteDirectory(m_pMain->m_oSettings.user_plugins_path + L"/../addon");
-		}
-		else
-		{
-			m_bIsAddonCompatible = true;
+			// remove plugins (used in all processes)
+			NSDirectory::DeleteDirectory(m_pMain->m_oSettings.user_plugins_path + L"/../addon/sdkjs-plugins");
 		}
 #endif
 	}

@@ -330,7 +330,6 @@ public:
 	int InstallMainAddon(const std::wstring& path);
 	int RemoveMainAddon();
 	bool CheckMainAddon(std::string* version = nullptr) const;
-	bool IsMainAddonCompatible() const;
 
 protected:
 	int GenerateNextViewId();
