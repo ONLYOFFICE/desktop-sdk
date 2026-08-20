@@ -1427,6 +1427,8 @@ int CAscApplicationManager::InstallMainAddon(const std::wstring& path)
 		NSDirectory::DeleteDirectory(sOutDir);
 
 	m_pInternal->m_bIsInstalledAddon = false;
+	m_pInternal->m_bIsAddonCompatible = false;
+	m_pInternal->m_sAddonVersion.clear();
 
 	NSDirectory::CreateDirectory(sOutDir);
 	COfficeUtils oCOfficeUtils(NULL);
@@ -1439,6 +1441,8 @@ int CAscApplicationManager::InstallMainAddon(const std::wstring& path)
 		if (sAddonVersion == m_pInternal->m_sSdkJSVersion)
 		{
 			m_pInternal->m_bIsInstalledAddon = true;
+			m_pInternal->m_bIsAddonCompatible = true;
+			m_pInternal->m_sAddonVersion = sAddonVersion;
 			return 0;
 		}
 	}
@@ -1457,15 +1461,55 @@ int CAscApplicationManager::RemoveMainAddon()
 	if (NSDirectory::Exists(sOutDir))
 		NSDirectory::DeleteDirectory(sOutDir);
 	m_pInternal->m_bIsInstalledAddon = false;
+    m_pInternal->m_bIsAddonCompatible = false;
+    m_pInternal->m_sAddonVersion.clear();
 	return 0;
 #endif
 }
-bool CAscApplicationManager::CheckMainAddon()
+bool CAscApplicationManager::CheckMainAddon(std::string* version) const
 {
 #ifndef USE_ADDON_MODE
 	return false;
 #else
-	return m_pInternal->m_bIsInstalledAddon;
+	if (!m_pInternal->m_bIsInstalledAddon)
+		return false;
+
+	if (m_pInternal->m_bIsAddonCompatible)
+		return true;
+
+	if (version)
+	{
+		version->clear();
+
+		// "Version: 9.5.0 (build:132)" -> "9.5.0.132"
+		// Every non-digit is a separator; runs of separators collapse into one dot.
+		const std::string& sRaw = m_pInternal->m_sAddonVersion;
+		std::string sResult;
+
+		sResult.reserve(sRaw.length());
+		size_t nParts = 0;
+		bool bSeparator = true;
+		for (const char c : sRaw)
+		{
+			if (c < '0' || c > '9')
+			{
+				bSeparator = true;
+				continue;
+			}
+			if (bSeparator)
+			{
+				if (++nParts > 4)
+					break;
+				if (!sResult.empty())
+					sResult += '.';
+				bSeparator = false;
+			}
+			sResult += c;
+		}
+		*version = sResult;
+	}
+
+	return m_pInternal->m_bIsAddonCompatible;
 #endif
 }
 

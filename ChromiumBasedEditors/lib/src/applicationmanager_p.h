@@ -1759,7 +1759,9 @@ public:
 
 #ifdef USE_ADDON_MODE
 	bool m_bIsInstalledAddon;
+	bool m_bIsAddonCompatible;
 	std::string m_sSdkJSVersion;
+	std::string m_sAddonVersion;
 #endif
 
 public:
@@ -1823,6 +1825,7 @@ public:
 
 #ifdef USE_ADDON_MODE
 		m_bIsInstalledAddon = false;
+		m_bIsAddonCompatible = false;
 #endif
 	}
 	virtual ~CAscApplicationManager_Private()
@@ -1870,6 +1873,8 @@ public:
 	{
 #ifdef USE_ADDON_MODE
 		m_bIsInstalledAddon = false;
+		m_bIsAddonCompatible = false;
+		m_sAddonVersion.clear();
 
 		std::wstring sEditorsFolder = m_pMain->m_oSettings.local_editors_path;
 		std::wstring::size_type nPosEditors = sEditorsFolder.rfind(L"web-apps/apps/api/documents/index.html");
@@ -1879,16 +1884,22 @@ public:
 
 		m_sSdkJSVersion = ReadSdkJSVersionLine(sPathSystem);
 
+		m_bIsInstalledAddon = false;
+		m_bIsAddonCompatible = false;
+
 		std::wstring sPath = m_pMain->m_oSettings.user_plugins_path + L"/../addon/sdkjs/word/sdk-all-min.js";
 		if (!NSFile::CFileBinary::Exists(sPath))
 			return;
 
-		std::string sAddonVersion = ReadSdkJSVersionLine(sPath);
+		m_sAddonVersion = ReadSdkJSVersionLine(sPath);
+		m_bIsInstalledAddon = true;
+		m_bIsAddonCompatible = (m_sAddonVersion == m_sSdkJSVersion) ? true : false;
 
-		if (sAddonVersion != m_sSdkJSVersion)
-			NSDirectory::DeleteDirectory(m_pMain->m_oSettings.user_plugins_path + L"/../addon");
-		else
-			m_bIsInstalledAddon = true;
+		if (!m_bIsAddonCompatible)
+		{
+			// remove plugins (used in all processes)
+			NSDirectory::DeleteDirectory(m_pMain->m_oSettings.user_plugins_path + L"/../addon/sdkjs-plugins");
+		}
 #endif
 	}
 
