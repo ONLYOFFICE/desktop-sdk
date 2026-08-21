@@ -1137,6 +1137,7 @@ public:
 			m_oInfo.m_sSaveJsonParams = L"";
 		}
 
+#ifdef USE_ADDON_MODE
 		if (m_pManager->m_pInternal->m_bIsAddonCompatible)
 		{
 			std::wstring sDirAddon = m_pManager->m_oSettings.user_plugins_path + L"/../addon/sdkjs";
@@ -1147,6 +1148,7 @@ public:
 				oBuilder.WriteString(L"</m_sOverrideSdkJsPath>");
 			}
 		}
+#endif
 
 		oBuilder.WriteString(L"</m_sJsonParams>");
 
