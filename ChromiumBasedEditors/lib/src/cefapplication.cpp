@@ -571,6 +571,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 	{L"cloud_crypto.xml", L"addons", L"advanced_crypto_data.docx"});
 	pManager->m_pInternal->m_oLocalFilesResolver.AddDir(pManager->m_oSettings.system_plugins_path);
 	pManager->m_pInternal->m_oLocalFilesResolver.AddDir(pManager->m_oSettings.user_plugins_path + L"/../addon");
+	pManager->m_pInternal->m_oLocalFilesResolver.AddDir(pManager->m_oSettings.templates_cache_info_path);
 	std::wstring sTempDirectory = pManager->m_pInternal->StartTmpDirectory();
 
 	pManager->m_pInternal->m_oLocalFilesResolver.AddDir(sTempDirectory);
