@@ -564,6 +564,7 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 	pManager->m_pInternal->m_oLocalFilesResolver.AddDir(pManager->m_oSettings.recover_path);
 #ifdef _MAC
 	pManager->m_pInternal->m_oLocalFilesResolver.AddDir(NSFile::GetProcessDirectory() + L"/../Resources/login");
+	pManager->m_pInternal->m_oLocalFilesResolver.AddDir(NSFile::GetProcessDirectory() + L"/../Resources/providers");
 #else
 	pManager->m_pInternal->m_oLocalFilesResolver.AddDir(NSFile::GetProcessDirectory());
 #endif
