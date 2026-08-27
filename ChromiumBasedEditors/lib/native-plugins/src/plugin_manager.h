@@ -31,6 +31,9 @@ namespace NSNativePlugin
 
 		// empty list -> loads nothing. Each dir holds plugin subfolders; a plugin
 		// is <dir>/<name>/<name><ext> (library named exactly like its folder).
+		// One plugin per name: when the same folder name is found in several
+		// directories, only the copy with the highest INativePlugin::Version()
+		// is started (ties -> the earliest directory in the list).
 		void LoadAll();
 		void StopAll();
 
@@ -55,8 +58,18 @@ namespace NSNativePlugin
 			TLoaded() : pLoader(NULL), pPlugin(NULL), fnDestroy(NULL) {}
 		};
 
-		bool LoadFile(const std::wstring& sAbsPath, const std::string& sName);
+		// Starts the newest of the copies found for one plugin name.
+		bool LoadLatest(const std::string& sName, const std::vector<std::wstring>& arPaths);
+		// Loads a library and creates its plugin WITHOUT starting it (the version
+		// can only be asked of a live instance).
+		bool OpenCandidate(const std::wstring& sAbsPath, const std::string& sName, TLoaded& oOut);
+		// Discards a candidate that was never started (no Stop()).
+		void CloseCandidate(TLoaded& oEntry);
+		bool StartCandidate(const std::string& sName, TLoaded& oEntry);
 		void StopLocked(const std::string& sName);
+
+		// "MAJOR.MINOR" -> comparable key; unparsable / absent counts as 0.0.
+		static int VersionKey(const char* sVersion);
 
 		IPluginHost* m_pHost;
 		std::vector<std::wstring> m_arDirs;

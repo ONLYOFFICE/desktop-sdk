@@ -34,9 +34,51 @@ namespace NSNativePlugin
 	void CNativePluginManager::SetHost(IPluginHost* pHost) { m_pHost = pHost; }
 	void CNativePluginManager::SetDirectories(const std::vector<std::wstring>& arDirs) { m_arDirs = arDirs; }
 
+	// A version part is capped instead of overflowing on absurd input; with this
+	// bound the whole key stays far inside int (9999 * 10000 + 9999).
+	static const int c_nVersionPartMax = 9999;
+
+	static int ReadVersionPart(const char*& p)
+	{
+		int nPart = 0;
+		while (*p >= '0' && *p <= '9')
+		{
+			nPart = nPart * 10 + (*p - '0');
+			if (nPart > c_nVersionPartMax)
+				nPart = c_nVersionPartMax;
+			++p;
+		}
+		return nPart;
+	}
+
+	// "MAJOR.MINOR" (e.g. "1.3") -> one comparable number, MAJOR dominating.
+	// Anything the plugin cannot spell properly reads as 0.0 and loses.
+	int CNativePluginManager::VersionKey(const char* sVersion)
+	{
+		if (NULL == sVersion)
+			return 0;
+		const char* p = sVersion;
+		while (' ' == *p || '\t' == *p)
+			++p;
+		int nMajor = ReadVersionPart(p);
+		int nMinor = 0;
+		if ('.' == *p)
+		{
+			++p;
+			nMinor = ReadVersionPart(p);
+		}
+		return nMajor * (c_nVersionPartMax + 1) + nMinor;
+	}
+
 	void CNativePluginManager::LoadAll()
 	{
 		std::wstring sExt = PlatformExt();
+
+		// Pass 1: collect the copies of every plugin. The same plugin folder may
+		// sit in several configured directories (e.g. shipped with the app and
+		// installed by the user); those copies compete for one slot.
+		std::vector<std::string> arNames; // plugin names in discovery order
+		std::map<std::string, std::vector<std::wstring> > mapCandidates;
 		for (size_t d = 0; d < m_arDirs.size(); ++d)
 		{
 			const std::wstring& sDir = m_arDirs[d];
@@ -53,13 +95,52 @@ namespace NSNativePlugin
 				if (sName.empty())
 					continue;
 				std::wstring sAbsPath = arSubDirs[i] + L"/" + sName + sExt;
-				if (NSFile::CFileBinary::Exists(sAbsPath))
-					LoadFile(sAbsPath, U_TO_UTF8(sName));
+				if (!NSFile::CFileBinary::Exists(sAbsPath))
+					continue;
+
+				std::string sKey = U_TO_UTF8(sName);
+				if (mapCandidates.find(sKey) == mapCandidates.end())
+					arNames.push_back(sKey);
+				mapCandidates[sKey].push_back(sAbsPath);
 			}
 		}
+
+		// Pass 2: one plugin per name, the highest Version() winning.
+		for (size_t i = 0; i < arNames.size(); ++i)
+			LoadLatest(arNames[i], mapCandidates[arNames[i]]);
 	}
 
-	bool CNativePluginManager::LoadFile(const std::wstring& sAbsPath, const std::string& sName)
+	bool CNativePluginManager::LoadLatest(const std::string& sName, const std::vector<std::wstring>& arPaths)
+	{
+		TLoaded oLatest;
+		int nLatestVersion = -1; // below any real version -> the first copy wins ties
+
+		for (size_t i = 0; i < arPaths.size(); ++i)
+		{
+			TLoaded oCandidate;
+			if (!OpenCandidate(arPaths[i], sName, oCandidate))
+				continue;
+
+			int nVersion = VersionKey(oCandidate.pPlugin->Version());
+			if (nVersion > nLatestVersion)
+			{
+				if (NULL != oLatest.pPlugin)
+					CloseCandidate(oLatest); // beaten, and it never ran
+				oLatest = oCandidate;
+				nLatestVersion = nVersion;
+			}
+			else
+			{
+				CloseCandidate(oCandidate);
+			}
+		}
+
+		if (NULL == oLatest.pPlugin)
+			return false;
+		return StartCandidate(sName, oLatest);
+	}
+
+	bool CNativePluginManager::OpenCandidate(const std::wstring& sAbsPath, const std::string& sName, TLoaded& oOut)
 	{
 		CLibLoader* pLoader = new CLibLoader();
 		if (!pLoader->Load(sAbsPath))
@@ -101,19 +182,43 @@ namespace NSNativePlugin
 			return false;
 		}
 
-		{
-			std::lock_guard<std::recursive_mutex> oLock(m_oMutex);
-			pPlugin->SetName(sName); // plugin name == its folder name (the registry key)
-			m_pStarting = pPlugin;
-			pPlugin->Start(m_pHost); // may call host->RegisterJsMethod -> RegisterJsMethod()
-			m_pStarting = NULL;
+		pPlugin->SetName(sName); // plugin name == its folder name (the registry key)
 
-			TLoaded oEntry;
-			oEntry.pLoader = pLoader;
-			oEntry.pPlugin = pPlugin;
-			oEntry.fnDestroy = fnDestroy;
-			m_mapPlugins[sName] = oEntry;
+		oOut.pLoader = pLoader;
+		oOut.pPlugin = pPlugin;
+		oOut.fnDestroy = fnDestroy;
+		return true;
+	}
+
+	void CNativePluginManager::CloseCandidate(TLoaded& oEntry)
+	{
+		// No Stop() here: only Start() spins up anything that would need it.
+		if (NULL != oEntry.pPlugin && NULL != oEntry.fnDestroy)
+			oEntry.fnDestroy(oEntry.pPlugin);
+		if (NULL != oEntry.pLoader)
+		{
+			oEntry.pLoader->Unload();
+			delete oEntry.pLoader;
 		}
+		oEntry = TLoaded();
+	}
+
+	bool CNativePluginManager::StartCandidate(const std::string& sName, TLoaded& oEntry)
+	{
+		std::lock_guard<std::recursive_mutex> oLock(m_oMutex);
+		// A name already taken keeps its plugin (LoadAll called twice): starting a
+		// second one would leak the first and double its threads.
+		if (m_mapPlugins.find(sName) != m_mapPlugins.end())
+		{
+			CloseCandidate(oEntry);
+			return false;
+		}
+
+		m_pStarting = oEntry.pPlugin;
+		oEntry.pPlugin->Start(m_pHost); // may call host->RegisterJsMethod -> RegisterJsMethod()
+		m_pStarting = NULL;
+
+		m_mapPlugins[sName] = oEntry;
 		return true;
 	}
 

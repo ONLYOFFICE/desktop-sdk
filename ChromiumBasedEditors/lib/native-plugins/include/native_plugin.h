@@ -116,6 +116,14 @@ namespace NSNativePlugin
 		virtual void SetName(const std::string& /*sName*/) {}
 		virtual int ApiVersion() = 0;
 
+		// The plugin's OWN version as "MAJOR.MINOR" (e.g. "1.3") — not the host
+		// API version above. When the same plugin folder exists in more than one
+		// of the configured directories, the loader keeps the copy with the
+		// higher version and never starts the other ones. A plugin that does not
+		// override this stays at "0.0" and loses to any versioned copy; equal
+		// versions are resolved by directory order (first configured wins).
+		virtual const char* Version() { return "0.0"; }
+
 		// host->Role() tells the plugin which process it is in; downcast to
 		// IPluginHostRenderer* / IPluginHostBrowser* accordingly.
 		virtual void Start(IPluginHost* pHost) = 0;
