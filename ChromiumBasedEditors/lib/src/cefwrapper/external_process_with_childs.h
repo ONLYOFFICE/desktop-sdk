@@ -276,6 +276,26 @@ namespace NSProcesses
 		}
 
 #ifdef _WIN32
+		// PATH in the registry is usually REG_EXPAND_SZ: it holds %SystemRoot%
+		// and %USERPROFILE% verbatim. Handing those to a child unexpanded gives
+		// it directory names that do not exist, so the very tools we read the
+		// registry for (python, node, git) stay unfindable.
+		std::wstring expandEnvStrings(const std::wstring& value)
+		{
+			if (std::wstring::npos == value.find(L'%'))
+				return value;
+
+			DWORD need = ExpandEnvironmentStringsW(value.c_str(), nullptr, 0);
+			if (0 == need)
+				return value;
+
+			std::vector<wchar_t> buffer(need + 1, 0);
+			if (0 == ExpandEnvironmentStringsW(value.c_str(), &buffer[0], need + 1))
+				return value;
+
+			return std::wstring(&buffer[0]);
+		}
+
 		std::wstring getPathVariable()
 		{
 			std::wstring pathEnv = NSSystemUtils::GetEnvVariable(L"PATH");
@@ -297,7 +317,7 @@ namespace NSProcesses
 						if (RegQueryValueExW(hKey, L"PATH", nullptr, nullptr, (LPBYTE)buffer, &size) == ERROR_SUCCESS)
 						{
 							buffer[charCount - 1] = '\0';
-							userEnv = std::wstring(buffer);
+							userEnv = expandEnvStrings(std::wstring(buffer));
 						}
 						delete [] buffer;
 					}
@@ -321,7 +341,7 @@ namespace NSProcesses
 						if (RegQueryValueExW(hKey, L"PATH", nullptr, nullptr, (LPBYTE)buffer, &size) == ERROR_SUCCESS)
 						{
 							buffer[charCount - 1] = '\0';
-							systemEnv = std::wstring(buffer);
+							systemEnv = expandEnvStrings(std::wstring(buffer));
 						}
 						delete [] buffer;
 					}

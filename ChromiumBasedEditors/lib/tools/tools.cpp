@@ -36,11 +36,42 @@
 #include "./tools.h"
 #include "../../../../core/DesktopEditor/doctrenderer/docbuilder.h"
 #include "../../../../core/DesktopEditor/common/File.h"
+#include "../../../../core/DesktopEditor/common/StringBuilder.h"
 #include "./functions/internal/funcs.h"
 
 #ifdef GetTempPath
 #undef GetTempPath
 #endif
+
+namespace
+{
+	// A tool description may carry {{PLATFORM}} and {{SHELL}}; both are filled
+	// in here, on the way out to the model.
+	//
+	// This is the only spot where that can happen. The answer is known when
+	// this file is compiled, not when info.json is written, and description()
+	// inside each tool's main.cpp is regenerated from info.json by
+	// functions/internal/funcs.py - anything hand-written there is overwritten
+	// on the next run. tools.cpp the generator never touches.
+	//
+	// It matters because nothing else tells the model which machine it is on:
+	// the agent's system prompt does not mention the platform, so without this
+	// a script would be written for the wrong shell and fail on the first try.
+	void SubstitutePlatform(std::string& sDescription)
+	{
+#if defined(_WIN32)
+		NSStringUtils::string_replaceA(sDescription, "{{PLATFORM}}", "Windows");
+		NSStringUtils::string_replaceA(sDescription, "{{SHELL}}", "PowerShell");
+#elif defined(_MAC)
+		// _MAC comes first: macOS defines _LINUX as well.
+		NSStringUtils::string_replaceA(sDescription, "{{PLATFORM}}", "macOS");
+		NSStringUtils::string_replaceA(sDescription, "{{SHELL}}", "zsh");
+#else
+		NSStringUtils::string_replaceA(sDescription, "{{PLATFORM}}", "Linux");
+		NSStringUtils::string_replaceA(sDescription, "{{SHELL}}", "bash");
+#endif
+	}
+}
 
 CAITools::CAITools()
 {
@@ -96,7 +127,9 @@ std::string CAITools::getFunctions()
 
 	for (std::map<std::string, TFuncInstance>::iterator iter = m_funcs->m_funcs.begin(); iter != m_funcs->m_funcs.end(); iter++)
 	{
-		sResult += iter->second.name;
+		std::string sDescription = iter->second.name;
+		SubstitutePlatform(sDescription);
+		sResult += sDescription;
 		sResult += ",";
 	}
 
