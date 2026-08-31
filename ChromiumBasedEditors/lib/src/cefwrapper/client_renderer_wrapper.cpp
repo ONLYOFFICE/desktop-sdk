@@ -54,6 +54,7 @@
 
 #include "../../src/plugins.h"
 #include "../../src/providers.h"
+#include "../plugin_permissions.h"
 
 #include "../../src/additional/renderer.h"
 #include "../crypto_mode.h"
@@ -1203,9 +1204,24 @@ window._external_process_callback[" + std::to_string(id) + "]._onprocess(" + std
 		}
 #endif
 
+		bool IsMethodAllowed(const std::string& sName)
+		{
+			if (!NSPluginPermissions::IsRestrictedMethod(sName))
+				return true;
+
+			CefRefPtr<CefV8Context> context = CefV8Context::GetCurrentContext();
+			if (!context || !context->GetFrame())
+				return false;
+
+			return NSPluginPermissions::IsPrivilegedFrame(context->GetFrame()->GetURL().ToWString(), m_sSystemPlugins, m_sUserPlugins);
+		}
+
 		virtual bool Execute(const CefString& sMessageName, CefRefPtr<CefV8Value> object, const CefV8ValueList& arguments, CefRefPtr<CefV8Value>& retval, CefString& exception) OVERRIDE
 		{
 			std::string name = sMessageName.ToString();
+
+			if (!IsMethodAllowed(name))
+				return true;
 
 			// native-plugin JS methods (window.AscDesktopEditor.<name> from plugins)
 			{
@@ -2275,6 +2291,9 @@ if (main.DisableVersionHistory) main.DisableVersionHistory(); \
 			}
 			else if (name == "execCommand")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				std::string sCommand = arguments[0]->GetStringValue().ToString();
 				std::string sArg = "";
 				if (2 == arguments.size())
@@ -2898,6 +2917,9 @@ resolve([]);\
 			}
 			else if (name == "PluginInstall")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				bool bResult = false;
 
 				CPluginsManager oPlugins;
@@ -3409,6 +3431,10 @@ resolve([]);\
 			else if (name == "RemoveFile")
 			{
 				std::wstring sFile = arguments[0]->GetStringValue();
+
+				if (!g_pLocalResolver->CheckNoFont(sFile))
+					return true;
+
 				if (NSFile::CFileBinary::Exists(sFile))
 					NSFile::CFileBinary::Remove(sFile);
 				return true;
@@ -5019,13 +5045,6 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			}
 			else if (name == "_createProcess")
 			{
-				std::string sCurrentUrl = CefV8Context::GetCurrentContext()->GetFrame()->GetURL().ToString();
-				if (0 != sCurrentUrl.find("onlyoffice://"))
-				{
-					retval = CefV8Value::CreateInt(-1);
-					return true;
-				}
-
 				if (!m_external_processes)
 					m_external_processes = new NSProcesses::CProcessManager(this);
 
