@@ -43,7 +43,7 @@ namespace file_opener
 {\
   \"type\": \"function\",\
   \"name\": \"file_opener\",\
-  \"description\": \"Use this function if you are asked to open a file. Input: a file path. Output: an object describing the result of the operation.\\n\\nReturn value:\\n{\\n\\\"role\\\": \\\"tool\\\", // Required constant field\\n\\\"status\\\": \\\"success\\\" | \\\"error\\\",\\n\\\"error_message\\\": \\\"string | null\\\" // Error details if status = 'error'\\n}\\n\\nExample function call parameter: { \\\"path\\\": \\\"/home/user/document.txt\\\" }\\n\\nExample successful response:\\n{\\n\\\"role\\\": \\\"tool\\\",\\n\\\"status\\\": \\\"success\\\",\\n\\\"error_message\\\": null\\n}\\n\\nExample error response:\\n{\\n\\\"role\\\": \\\"tool\\\",\\n\\\"status\\\": \\\"error\\\",\\n\\\"error_message\\\": \\\"File not found.\\\"\\n}\",\
+  \"description\": \"Show a file to the USER by opening it in an editor window. Input: a file path. Output: only whether the window opened.\\n\\nThis function does NOT read the file: none of its content comes back to you, so calling it teaches you nothing about what is inside. Use it only when the user asked to SEE a file.\\n\\nTo find out what is inside a file, do not call this one:\\n- a text file (.md, .txt, .csv, .json, .log) -> read it with run_script (cat on macOS/Linux, Get-Content on Windows);\\n- a document (.docx, .xlsx, .pptx, .pdf) -> open it with the document tools, which return its text, cells or form fields.\\n\\nReturn value:\\n{\\n\\\"role\\\": \\\"tool\\\", // Required constant field\\n\\\"status\\\": \\\"success\\\" | \\\"error\\\",\\n\\\"error_message\\\": \\\"string | null\\\" // Error details if status = 'error'\\n}\\n\\nExample function call parameter: { \\\"path\\\": \\\"/home/user/document.txt\\\" }\\n\\nExample successful response:\\n{\\n\\\"role\\\": \\\"tool\\\",\\n\\\"status\\\": \\\"success\\\",\\n\\\"error_message\\\": null\\n}\\n\\nExample error response:\\n{\\n\\\"role\\\": \\\"tool\\\",\\n\\\"status\\\": \\\"error\\\",\\n\\\"error_message\\\": \\\"File not found.\\\"\\n}\",\
   \"parameters\": {\
     \"type\": \"object\",\
     \"properties\": {\
@@ -52,7 +52,9 @@ namespace file_opener
         \"description\": \"Path to the file to be opened.\"\
       }\
     },\
-    \"required\": [\"path\"]\
+    \"required\": [\
+      \"path\"\
+    ]\
   }\
 }";
 	}

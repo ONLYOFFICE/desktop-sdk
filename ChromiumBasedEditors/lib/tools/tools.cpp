@@ -45,8 +45,8 @@
 
 namespace
 {
-	// A tool description may carry {{PLATFORM}} and {{SHELL}}; both are filled
-	// in here, on the way out to the model.
+	// A tool description may carry {{PLATFORM}}, {{SHELL}} and {{MATH_HINT}};
+	// all three are filled in here, on the way out to the model.
 	//
 	// This is the only spot where that can happen. The answer is known when
 	// this file is compiled, not when info.json is written, and description()
@@ -62,13 +62,33 @@ namespace
 #if defined(_WIN32)
 		NSStringUtils::string_replaceA(sDescription, "{{PLATFORM}}", "Windows");
 		NSStringUtils::string_replaceA(sDescription, "{{SHELL}}", "PowerShell");
+		NSStringUtils::string_replaceA(sDescription, "{{MATH_HINT}}",
+			"PowerShell has the whole .NET library for arithmetic and dates: "
+			"[math]::Round($x, 2), [datetime]::ParseExact(...), (Get-Date).AddDays(14)");
+		NSStringUtils::string_replaceA(sDescription, "{{READ_HINT}}",
+			"read it with [System.IO.File]::ReadAllText($path), which follows a byte "
+			"order mark when the file has one and assumes UTF-8 when it does not. "
+			"Get-Content without -Encoding reads ANSI and mangles UTF-8, and do not "
+			"try to guess a code page");
 #elif defined(_MAC)
 		// _MAC comes first: macOS defines _LINUX as well.
 		NSStringUtils::string_replaceA(sDescription, "{{PLATFORM}}", "macOS");
 		NSStringUtils::string_replaceA(sDescription, "{{SHELL}}", "zsh");
+		NSStringUtils::string_replaceA(sDescription, "{{MATH_HINT}}",
+			"the shell itself does integer arithmetic only, so use awk for anything "
+			"fractional: awk 'BEGIN{printf \"%.2f\", 250000/29.3*14}'");
+		NSStringUtils::string_replaceA(sDescription, "{{READ_HINT}}",
+			"cat passes the bytes through unchanged, so a UTF-8 file arrives intact; "
+			"a UTF-16 one needs iconv -f UTF-16 -t UTF-8");
 #else
 		NSStringUtils::string_replaceA(sDescription, "{{PLATFORM}}", "Linux");
 		NSStringUtils::string_replaceA(sDescription, "{{SHELL}}", "bash");
+		NSStringUtils::string_replaceA(sDescription, "{{MATH_HINT}}",
+			"the shell itself does integer arithmetic only, so use awk for anything "
+			"fractional: awk 'BEGIN{printf \"%.2f\", 250000/29.3*14}'");
+		NSStringUtils::string_replaceA(sDescription, "{{READ_HINT}}",
+			"cat passes the bytes through unchanged, so a UTF-8 file arrives intact; "
+			"a UTF-16 one needs iconv -f UTF-16 -t UTF-8");
 #endif
 	}
 }

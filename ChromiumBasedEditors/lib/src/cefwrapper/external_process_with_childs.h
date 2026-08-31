@@ -233,14 +233,23 @@ namespace NSProcesses
 			fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 #endif
 
-			while (m_running.load())
+			// The loop must NOT end simply because the process is gone: run() clears
+			// m_running the moment wait() returns, while the child's last output is
+			// often still sitting in the pipe. This poller sleeps 100ms between
+			// looks, and a short script finishes inside that nap - so stopping on
+			// m_running alone dropped the whole output of anything quick. End only
+			// when the pipe is empty AND the process has ended.
+			while (true)
 			{
 #ifdef _WIN32
 				DWORD available = 0;
-				PeekNamedPipe(handle, nullptr, 0, nullptr, &available, nullptr);
+				if (!PeekNamedPipe(handle, nullptr, 0, nullptr, &available, nullptr))
+					break;
 
 				if (available == 0)
 				{
+					if (!m_running.load())
+						break;
 					NSThreads::Sleep(100);
 					continue;
 				}
@@ -253,6 +262,8 @@ namespace NSProcesses
 				{
 					if (errno == EAGAIN || errno == EWOULDBLOCK)
 					{
+						if (!m_running.load())
+							break;
 						NSThreads::Sleep(100);
 						continue;
 					}
