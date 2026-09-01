@@ -24,6 +24,7 @@ public:
 	virtual std::string IsOpen(const std::wstring& sAbsPath);
 	virtual void ExecuteEditorScript(const std::string& sAbsPath, const std::string& sScript);
 	virtual void SendToRenderers(const std::string& sName, const std::string& sArgsJson);
+	virtual std::string ListOpen();
 
 private:
 	CAscApplicationManager* m_pManager;

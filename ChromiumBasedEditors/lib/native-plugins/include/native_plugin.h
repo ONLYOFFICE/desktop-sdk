@@ -101,6 +101,11 @@ namespace NSNativePlugin
 		virtual void ExecuteEditorScript(const std::string& sAbsPath, const std::string& sScript) = 0;
 		// Send a message to all renderer processes.
 		virtual void SendToRenderers(const std::string& sName, const std::string& sArgsJson) = 0;
+		// Every document open in a live editor, as a JSON array of
+		// {"path": <utf8, "" when not saved to disk yet>, "editor":
+		// "word|cell|slide|pdf", "id": <view id>, "modified": bool}.
+		// Defaulted (not pure) so plugins built against API v1 keep compiling.
+		virtual std::string ListOpen() { return "[]"; }
 	};
 
 	class INativePlugin
