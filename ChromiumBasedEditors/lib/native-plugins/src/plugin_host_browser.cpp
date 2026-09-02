@@ -61,6 +61,36 @@ namespace
 		return NULL;
 	}
 
+	// Minimal JSON string escape for the hand-built ListOpen array below
+	// (this file deliberately has no JSON library dependency).
+	std::string JsonEscape(const std::string& s)
+	{
+		std::string r;
+		r.reserve(s.length() + 8);
+		for (size_t i = 0; i < s.length(); ++i)
+		{
+			unsigned char c = (unsigned char)s[i];
+			switch (c)
+			{
+			case '\"': r += "\\\""; break;
+			case '\\': r += "\\\\"; break;
+			case '\n': r += "\\n"; break;
+			case '\r': r += "\\r"; break;
+			case '\t': r += "\\t"; break;
+			default:
+				if (c < 0x20)
+				{
+					char buf[8];
+					sprintf(buf, "\\u%04x", (int)c);
+					r += buf;
+				}
+				else
+					r += (char)c;
+			}
+		}
+		return r;
+	}
+
 	// Run a std::function on the CEF UI thread.
 	class CUITask : public CefTask
 	{
@@ -113,6 +143,44 @@ void CBrowserPluginHost::ExecuteEditorScript(const std::string& sAbsPath, const 
 		if (pEditor)
 			pEditor->ExecuteEditorScript(sCode);
 	});
+}
+
+std::string CBrowserPluginHost::ListOpen()
+{
+	// Same walk as FindEditorView, minus the path comparison. Synchronous to
+	// the caller (a plugin's IPC worker); collected on the UI thread.
+	std::shared_ptr<std::promise<std::string> > pResult = std::make_shared<std::promise<std::string> >();
+	std::future<std::string> oFuture = pResult->get_future();
+
+	CAscApplicationManager* pManager = m_pManager;
+	PostUI([pManager, pResult]()
+	{
+		std::string sOut = "[";
+		if (pManager)
+		{
+			std::vector<int> arIds = pManager->GetViewsId();
+			for (size_t i = 0; i < arIds.size(); ++i)
+			{
+				CCefView* pView = pManager->GetViewById(arIds[i]);
+				if (!pView || pView->GetType() != cvwtEditor)
+					continue;
+				CCefViewEditor* pEditor = (CCefViewEditor*)pView;
+				// An empty path is a document not saved to disk yet: listed so
+				// the caller can tell the user, but not addressable by path.
+				std::string sPath = U_TO_UTF8(pEditor->GetLocalFilePath());
+				if (sOut.length() > 1)
+					sOut += ",";
+				sOut += "{\"path\":\"" + JsonEscape(sPath) + "\",\"editor\":\"" +
+					EditorTypeToString(pEditor->GetEditorType()) + "\",\"id\":" +
+					std::to_string(pView->GetId()) + ",\"modified\":" +
+					(pView->GetModified() ? "true" : "false") + "}";
+			}
+		}
+		sOut += "]";
+		pResult->set_value(sOut);
+	});
+
+	return oFuture.get();
 }
 
 void CBrowserPluginHost::SendToRenderers(const std::string& sName, const std::string& sArgsJson)

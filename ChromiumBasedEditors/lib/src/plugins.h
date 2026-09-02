@@ -40,6 +40,7 @@
 #include "../../../../core/OfficeUtils/src/OfficeUtils.h"
 #include "../../../../core/DesktopEditor/common/StringBuilder.h"
 #include "./utils.h"
+#include "./plugin_permissions.h"
 #include <sstream>
 
 //#include "./plugins_resources.h"
@@ -203,6 +204,9 @@ public:
 		if (sPluginName.empty())
 			return false;
 
+		if (NSPluginPermissions::IsProtectedGuid(sPluginName))
+			return false;
+
 		std::wstring sNew = m_strUserDirectory + L"/" + sPluginName;
 		NSDirectory::DeleteDirectory(sNew);
 		NSDirectory::CreateDirectory(sNew);
@@ -224,6 +228,9 @@ public:
 		std::wstring::size_type pos = sGuid.find(L"{");
 		if (pos != std::wstring::npos && pos != 0)
 			sAdd = sGuid.substr(pos);
+
+		if (NSPluginPermissions::IsProtectedGuid(sAdd))
+			return false;
 
 		std::wstring sPluginDir = m_strUserDirectory + L"/" + sAdd;
 		std::wstring sPluginBackupDir = m_strUserDirectory + L"/backup/" + sAdd;
@@ -250,6 +257,9 @@ public:
 		std::wstring::size_type pos = sGuid.find(L"{");
 		if (pos != std::wstring::npos && pos != 0)
 			sAdd = sGuid.substr(pos);
+
+		if (NSPluginPermissions::IsProtectedGuid(sAdd))
+			return false;
 
 		std::wstring sPluginDir = m_strUserDirectory + L"/" + sAdd;
 

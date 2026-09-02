@@ -37,6 +37,8 @@ import os
 import sys
 from pathlib import Path
 
+LICENSE = "/*\n * Copyright (C) Ascensio System SIA, 2009-2026\n *\n * This program is a free software product. You can redistribute it and/or\n * modify it under the terms of the GNU Affero General Public License (AGPL)\n * version 3 as published by the Free Software Foundation, together with the\n * additional terms provided in the LICENSE file.\n *\n * This program is distributed WITHOUT ANY WARRANTY; without even the implied\n * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For\n * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html\n *\n * You can contact Ascensio System SIA by email at info@onlyoffice.com\n * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,\n * LV-1050, Latvia, European Union.\n *\n * The interactive user interfaces in modified versions of the Program\n * are required to display Appropriate Legal Notices in accordance with\n * Section 5 of the GNU AGPL version 3.\n *\n * No trademark rights are granted under this License.\n *\n * All non-code elements of the Product, including illustrations,\n * icon sets, and technical writing content, are licensed under the\n * Creative Commons Attribution-ShareAlike 4.0 International License:\n * https://creativecommons.org/licenses/by-sa/4.0/legalcode\n *\n * This license applies only to such non-code elements and does not\n * modify or replace the licensing terms applicable to the Program's\n * source code, which remains licensed under the GNU Affero General\n * Public License v3.\n *\n * SPDX-License-Identifier: AGPL-3.0-only\n */\n\n"
+
 def generate_info(folder_path):
   if not os.path.exists(folder_path):
     return False
@@ -56,9 +58,9 @@ def generate_info(folder_path):
 
     info_data = ""
     cpp_data = ""
-    with open(file_cpp, "r") as file:
+    with open(file_cpp, "r", encoding="utf-8") as file:
       cpp_data = file.read()
-    with open(file_info, "r") as file:
+    with open(file_info, "r", encoding="utf-8") as file:
       info_data = file.read().strip()
 
     start = cpp_data.find("std::string description()")
@@ -99,7 +101,10 @@ def generate_header_file(folder_path, output_path="./funcs.h"):
   return
 
 def generate_header_content(cpp_files):
-  content = "#pragma once\n"
+  # The generated header carries the same licence block as every other
+  # source file; without it each run of this script would strip it.
+  content = LICENSE
+  content += "#pragma once\n"
   content += "#include \"./base.h\"\n"
 
   for cpp_file in cpp_files:
