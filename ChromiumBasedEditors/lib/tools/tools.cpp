@@ -76,7 +76,7 @@ namespace
 		NSStringUtils::string_replaceA(sDescription, "{{SHELL}}", "zsh");
 		NSStringUtils::string_replaceA(sDescription, "{{MATH_HINT}}",
 			"the shell itself does integer arithmetic only, so use awk for anything "
-			"fractional: awk 'BEGIN{printf \"%.2f\", 250000/29.3*14}'");
+			"fractional: awk 'BEGIN{printf \\\"%.2f\\\", 250000/29.3*14}'");
 		NSStringUtils::string_replaceA(sDescription, "{{READ_HINT}}",
 			"cat passes the bytes through unchanged, so a UTF-8 file arrives intact; "
 			"a UTF-16 one needs iconv -f UTF-16 -t UTF-8");
@@ -85,7 +85,7 @@ namespace
 		NSStringUtils::string_replaceA(sDescription, "{{SHELL}}", "bash");
 		NSStringUtils::string_replaceA(sDescription, "{{MATH_HINT}}",
 			"the shell itself does integer arithmetic only, so use awk for anything "
-			"fractional: awk 'BEGIN{printf \"%.2f\", 250000/29.3*14}'");
+			"fractional: awk 'BEGIN{printf \\\"%.2f\\\", 250000/29.3*14}'");
 		NSStringUtils::string_replaceA(sDescription, "{{READ_HINT}}",
 			"cat passes the bytes through unchanged, so a UTF-8 file arrives intact; "
 			"a UTF-16 one needs iconv -f UTF-16 -t UTF-8");
