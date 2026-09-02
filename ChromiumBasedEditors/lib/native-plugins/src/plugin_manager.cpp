@@ -22,6 +22,25 @@ namespace NSNativePlugin
 #endif
 	}
 
+	static std::wstring FindPluginLibrary(const std::wstring& sPluginDir, const std::wstring& sName)
+	{
+		std::wstring sPath = sPluginDir + L"/" + sName + PlatformExt();
+		if (NSFile::CFileBinary::Exists(sPath))
+			return sPath;
+
+#ifdef _MAC
+		std::wstring sBundle = sPluginDir + L"/" + sName + L".framework";
+		const wchar_t* arRelative[] = { L"/", L"/Versions/Current/", L"/Versions/A/" };
+		for (size_t i = 0; i < 3; ++i)
+		{
+			sPath = sBundle + arRelative[i] + sName;
+			if (NSFile::CFileBinary::Exists(sPath))
+				return sPath;
+		}
+#endif
+		return L"";
+	}
+
 	CNativePluginManager::CNativePluginManager() : m_pHost(NULL), m_pStarting(NULL)
 	{
 	}
@@ -72,8 +91,6 @@ namespace NSNativePlugin
 
 	void CNativePluginManager::LoadAll()
 	{
-		std::wstring sExt = PlatformExt();
-
 		// Pass 1: collect the copies of every plugin. The same plugin folder may
 		// sit in several configured directories (e.g. shipped with the app and
 		// installed by the user); those copies compete for one slot.
@@ -86,16 +103,16 @@ namespace NSNativePlugin
 				continue;
 
 			// A plugin is a subfolder (one level down); its library is named
-			// EXACTLY like the folder (+ platform ext). Everything else in the
-			// folder is resources / dependent libraries.
+			// EXACTLY like the folder. Everything else in the folder is
+			// resources / dependent libraries.
 			std::vector<std::wstring> arSubDirs = NSDirectory::GetDirectories(sDir);
 			for (size_t i = 0; i < arSubDirs.size(); ++i)
 			{
 				std::wstring sName = NSFile::GetFileName(arSubDirs[i]); // folder name
 				if (sName.empty())
 					continue;
-				std::wstring sAbsPath = arSubDirs[i] + L"/" + sName + sExt;
-				if (!NSFile::CFileBinary::Exists(sAbsPath))
+				std::wstring sAbsPath = FindPluginLibrary(arSubDirs[i], sName);
+				if (sAbsPath.empty())
 					continue;
 
 				std::string sKey = U_TO_UTF8(sName);
