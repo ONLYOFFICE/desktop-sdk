@@ -115,7 +115,8 @@ HEADERS += \
     $$PWD/src/cloud_crypto.h \
     $$PWD/src/crypto_mode.h \
     $$PWD/include/keychain.h \
-    $$PWD/src/utils.h
+    $$PWD/src/utils.h \
+    $$PWD/src/plugin_permissions.h
 
 SOURCES += \
     $$PWD/src/applicationmanager.cpp \
@@ -134,7 +135,7 @@ SOURCES += \
 }
 
 HEADERS += \
-     $$PWD/src/cefwrapper/external_process.h
+     $$PWD/src/cefwrapper/external_process_with_childs.h
 
 SOURCES += \
     $$CORE_ROOT_DIR/Common/OfficeFileFormatChecker2.cpp \
