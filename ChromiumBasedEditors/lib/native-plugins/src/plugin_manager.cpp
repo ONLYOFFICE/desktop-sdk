@@ -28,6 +28,12 @@ namespace NSNativePlugin
 		if (NSFile::CFileBinary::Exists(sPath))
 			return sPath;
 
+#ifndef _WIN32
+		sPath = sPluginDir + L"/lib" + sName + PlatformExt();
+		if (NSFile::CFileBinary::Exists(sPath))
+			return sPath;
+#endif
+
 #ifdef _MAC
 		std::wstring sBundle = sPluginDir + L"/" + sName + L".framework";
 		const wchar_t* arRelative[] = { L"/", L"/Versions/Current/", L"/Versions/A/" };
@@ -102,9 +108,6 @@ namespace NSNativePlugin
 			if (sDir.empty() || !NSDirectory::Exists(sDir))
 				continue;
 
-			// A plugin is a subfolder (one level down); its library is named
-			// EXACTLY like the folder. Everything else in the folder is
-			// resources / dependent libraries.
 			std::vector<std::wstring> arSubDirs = NSDirectory::GetDirectories(sDir);
 			for (size_t i = 0; i < arSubDirs.size(); ++i)
 			{

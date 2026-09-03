@@ -30,7 +30,8 @@ namespace NSNativePlugin
 		void SetDirectories(const std::vector<std::wstring>& arDirs);
 
 		// empty list -> loads nothing. Each dir holds plugin subfolders; a plugin
-		// is <dir>/<name>/<name><ext> (library named exactly like its folder),
+		// is <dir>/<name>/<name><ext> (library named like its folder; on
+		// Linux/macOS <dir>/<name>/lib<name><ext> is accepted as well),
 		// or on macOS the bundle <dir>/<name>/<name>.framework.
 		// One plugin per name: when the same folder name is found in several
 		// directories, only the copy with the highest INativePlugin::Version()
