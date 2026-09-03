@@ -354,7 +354,11 @@ public:
 	virtual void Draw(IRenderer* pRenderer, int nPageIndex)
 	{
 		if (m_pReader)
-			m_pReader->DrawPageOnRenderer(pRenderer, nPageIndex, NULL);
+		{
+			COfficeDrawingPageParams* pParams = new COfficeDrawingPageParams();
+			pParams->SetPrint(true);
+			m_pReader->DrawPageOnRenderer(pRenderer, nPageIndex, NULL, pParams);
+		}
 	}
 
 	virtual void PreOpen(int nFileType)
