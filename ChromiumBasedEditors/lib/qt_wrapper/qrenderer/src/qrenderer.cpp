@@ -2512,6 +2512,12 @@ public:
 	virtual HRESULT BrushBounds(const double& left, const double& top, const double& width, const double& height) override { return S_OK; }
 	virtual HRESULT put_BrushGradientColors(LONG* lColors, double* pPositions, LONG nCount) override { return S_OK; }
 
+	virtual void put_BlendMode(const unsigned int& nBlendMode) override
+	{
+		if (3 != nBlendMode)
+			m_bIsBreak = true;
+	}
+
 	// font -------------------------------------------------------------------------------------
 	virtual HRESULT get_FontName(std::wstring* bsName) override { return S_OK; }
 	virtual HRESULT put_FontName(const std::wstring& bsName) override { return S_OK; }
