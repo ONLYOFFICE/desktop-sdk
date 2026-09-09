@@ -96,6 +96,7 @@ void CCefViewWidgetImpl::SetParentNull(WindowHandleId handle)
 #endif
 
 #include "./cors_resource_hanler.h"
+#include "./nocors_file_downloader.h"
 
 std::wstring GetUrlWithoutProtocol(const std::wstring& url)
 {
@@ -602,7 +603,7 @@ public:
 };
 
 class CAscClientHandler;
-class CCefView_Private : public NSEditorApi::IMenuEventDataBase, public IASCFileConverterEvents, public IASCFileConverterExternalEvents, public CTextDocxConverterCallback//, public virtual CefBaseRefCounted
+class CCefView_Private : public NSEditorApi::IMenuEventDataBase, public IASCFileConverterEvents, public IASCFileConverterExternalEvents, public CTextDocxConverterCallback, public INoCorsFileDownloaderEvents//, public virtual CefBaseRefCounted
 {
 public:
 	class CSystemMessage
@@ -998,6 +999,8 @@ public:
 	std::map<std::wstring, CDownloadFileItem> m_arDownloadedFiles;
 	std::map<std::wstring, std::wstring> m_arDownloadedFilesComplete;
 	int64 m_nDownloadedFilesFrameId;
+	// закачки этих файлов, выполняемые в обход CORS (см. nocors_file_downloader.h)
+	std::vector<CefRefPtr<CNoCorsFileDownloader>> m_arDownloadedFilesRequests;
 
 	// приходил ли хоть раз евент onDocumentModifiedChanged
 	bool m_bIsReceiveOnce_OnDocumentModified;
@@ -1144,10 +1147,86 @@ public:
 		m_pCloudSaveToDrawing = NULL;
 	}
 
+	// AscDesktopEditor.DownloadFiles: качаем файл из browser-процесса.
+	// запрос не привязан к origin страницы => никаких CORS-проверок
+	void StartDownloadFileNoCors(const std::wstring& sUrl, const std::wstring& sPath)
+	{
+		std::wstring sReferrer;
+		CefRefPtr<CefBrowser> browser = GetBrowser();
+		if (browser && browser->GetMainFrame())
+		{
+			std::wstring sMainUrl = browser->GetMainFrame()->GetURL().ToWString();
+			if (0 == sMainUrl.find(L"http://") || 0 == sMainUrl.find(L"https://"))
+				sReferrer = sMainUrl;
+		}
+
+		CefRefPtr<CNoCorsFileDownloader> pDownloader = new CNoCorsFileDownloader(this, sUrl, sPath, sReferrer);
+		m_arDownloadedFilesRequests.push_back(pDownloader);
+		pDownloader->Start();
+	}
+
+	virtual void OnNoCorsFileDownloaded(std::wstring sUrl, std::wstring sPath, bool bIsSuccess) OVERRIDE
+	{
+		for (std::vector<CefRefPtr<CNoCorsFileDownloader>>::iterator iter = m_arDownloadedFilesRequests.begin();
+			 iter != m_arDownloadedFilesRequests.end(); iter++)
+		{
+			if ((*iter)->GetUrl() == sUrl && (*iter)->GetPath() == sPath)
+			{
+				m_arDownloadedFilesRequests.erase(iter);
+				break;
+			}
+		}
+
+		OnDownloadedFileComplete(sUrl, sPath);
+	}
+
+	// перекладываем файл из списка ожидания в список готовых.
+	// когда список ожидания пуст - отправляем результат в renderer
+	// по значению: вызывающий может передать поля элемента m_arDownloadedFiles, который тут же удаляется
+	void OnDownloadedFileComplete(std::wstring sUrl, std::wstring sPath)
+	{
+		std::map<std::wstring, CDownloadFileItem>::iterator find = m_arDownloadedFiles.find(GetUrlWithoutProtocol(sUrl));
+		if (find == m_arDownloadedFiles.end())
+			return;
+
+		m_arDownloadedFilesComplete.insert(std::pair<std::wstring, std::wstring>(find->second.Url, sPath));
+		m_arDownloadedFiles.erase(find);
+
+		if (!m_arDownloadedFiles.empty())
+			return;
+
+		CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_download_files");
+
+		int nIndex = 0;
+		NSArgumentList::SetInt64(message->GetArgumentList(), nIndex++, m_nDownloadedFilesFrameId);
+		m_nDownloadedFilesFrameId = -1;
+
+		for (std::map<std::wstring, std::wstring>::iterator iter = m_arDownloadedFilesComplete.begin();
+			 iter != m_arDownloadedFilesComplete.end(); iter++)
+		{
+			message->GetArgumentList()->SetString(nIndex++, iter->first);
+			message->GetArgumentList()->SetString(nIndex++, iter->second);
+		}
+
+		CefRefPtr<CefBrowser> browser = GetBrowser();
+		if (browser)
+			SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
+
+		m_arDownloadedFilesComplete.clear();
+		m_arDownloadedFiles.clear();
+	}
+
 	void Destroy()
 	{
 		if (m_bIsDestroy)
 			return;
+
+		while (!m_arDownloadedFilesRequests.empty())
+		{
+			CefRefPtr<CNoCorsFileDownloader> pDownloader = m_arDownloadedFilesRequests.back();
+			m_arDownloadedFilesRequests.pop_back();
+			pDownloader->Stop();
+		}
 
 		RELEASEOBJECT(m_pLockRecover);
 
@@ -3846,8 +3925,13 @@ public:
 					frame->ExecuteJavaScript("window.onSystemMessage && window.onSystemMessage({ type : \"operation\", block : true, opType : 0 });", frame->GetURL(), 0);
 			}
 
+			// сначала полностью разбираем список: эмуляция (file://, data:) и реальные закачки.
+			// только потом что-то стартуем - иначе список ожидания может опустеть раньше времени
+			std::vector<CDownloadFileItem> arEmulated;
+			std::vector<CDownloadFileItem> arDownloads;
+
 			for (std::map<std::wstring, CDownloadFileItem>::iterator iter = m_pParent->m_pInternal->m_arDownloadedFiles.begin();
-				 iter != m_pParent->m_pInternal->m_arDownloadedFiles.end(); /*nothing*/)
+				 iter != m_pParent->m_pInternal->m_arDownloadedFiles.end(); iter++)
 			{
 				// могут прийти локальные ссылки, или base64 (наприменр при вставке картинок в зашифрованный файл).
 				// нужно просто имитировать скачку - просто сохранить файлы во временные
@@ -3894,38 +3978,22 @@ public:
 				}
 
 				if (isEmulate)
-				{
-					m_pParent->m_pInternal->m_arDownloadedFilesComplete.insert(std::pair<std::wstring, std::wstring>(iter->second.Url, iter->second.Path));
-					m_pParent->m_pInternal->m_arDownloadedFiles.erase(iter++);
+					arEmulated.push_back(iter->second);
+				else
+					arDownloads.push_back(iter->second);
+			}
 
-					if (m_pParent->m_pInternal->m_arDownloadedFiles.empty())
-					{
-						CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_download_files");
+			for (std::vector<CDownloadFileItem>::iterator iter = arEmulated.begin(); iter != arEmulated.end(); iter++)
+				m_pParent->m_pInternal->OnDownloadedFileComplete(iter->Url, iter->Path);
 
-						int nIndex = 0;
-						NSArgumentList::SetInt64(message->GetArgumentList(), nIndex++, m_pParent->m_pInternal->m_nDownloadedFilesFrameId);
-						m_pParent->m_pInternal->m_nDownloadedFilesFrameId = -1;
-
-						for (std::map<std::wstring, std::wstring>::iterator iterComplete = m_pParent->m_pInternal->m_arDownloadedFilesComplete.begin();
-							 iterComplete != m_pParent->m_pInternal->m_arDownloadedFilesComplete.end(); iterComplete++)
-						{
-							message->GetArgumentList()->SetString(nIndex++, iterComplete->first);
-							message->GetArgumentList()->SetString(nIndex++, iterComplete->second);
-						}
-
-						if (!browser)
-							browser = m_pParent->m_pInternal->GetBrowser();
-						SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
-
-						m_pParent->m_pInternal->m_arDownloadedFilesComplete.clear();
-						m_pParent->m_pInternal->m_arDownloadedFiles.clear();
-						break;
-					}
-					continue;
-				}
-
-				m_pParent->StartDownload(iter->second.Url);
-				iter++;
+			for (std::vector<CDownloadFileItem>::iterator iter = arDownloads.begin(); iter != arDownloads.end(); iter++)
+			{
+				// http(s) качаем сами, из browser-процесса: запрос не привязан к origin страницы,
+				// заголовок Origin не выставляется => сервер не должен отдавать CORS-заголовки
+				if (0 == iter->Url.find(L"http://") || 0 == iter->Url.find(L"https://"))
+					m_pParent->m_pInternal->StartDownloadFileNoCors(iter->Url, iter->Path);
+				else
+					m_pParent->StartDownload(iter->Url);
 			}
 
 			return true;
@@ -5819,41 +5887,15 @@ virtual void OnDownloadUpdated(CefRefPtr<CefBrowser> browser,
 	}
 
 	// проверяем на файлы метода AscDesktopEditor.DownloadFiles
+	// (сюда попадают только не-http(s) ссылки, http(s) качаются в обход CORS - см. StartDownloadFileNoCors)
 	if (!m_pParent->m_pInternal->m_arDownloadedFiles.empty())
 	{
 		std::map<std::wstring, CDownloadFileItem>::iterator findDownloadFile = m_pParent->m_pInternal->m_arDownloadedFiles.find(sUrlOriginalWithoutProtocol);
 		if (findDownloadFile != m_pParent->m_pInternal->m_arDownloadedFiles.end())
 		{
 			if (download_item->IsComplete() || download_item->IsCanceled())
-			{
-				m_pParent->m_pInternal->m_arDownloadedFilesComplete.insert(
-							std::pair<std::wstring, std::wstring>(findDownloadFile->second.Url, findDownloadFile->second.Path));
+				m_pParent->m_pInternal->OnDownloadedFileComplete(findDownloadFile->second.Url, findDownloadFile->second.Path);
 
-				m_pParent->m_pInternal->m_arDownloadedFiles.erase(findDownloadFile);
-
-				if (m_pParent->m_pInternal->m_arDownloadedFiles.empty())
-				{
-					CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_download_files");
-
-					int nIndex = 0;
-					NSArgumentList::SetInt64(message->GetArgumentList(), nIndex++, m_pParent->m_pInternal->m_nDownloadedFilesFrameId);
-					m_pParent->m_pInternal->m_nDownloadedFilesFrameId = -1;
-
-					for (std::map<std::wstring, std::wstring>::iterator iter = m_pParent->m_pInternal->m_arDownloadedFilesComplete.begin();
-						 iter != m_pParent->m_pInternal->m_arDownloadedFilesComplete.end(); iter++)
-					{
-						message->GetArgumentList()->SetString(nIndex++, iter->first);
-						message->GetArgumentList()->SetString(nIndex++, iter->second);
-					}
-
-					if (!browser)
-						browser = m_pParent->m_pInternal->GetBrowser();
-					SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
-
-					m_pParent->m_pInternal->m_arDownloadedFilesComplete.clear();
-					m_pParent->m_pInternal->m_arDownloadedFiles.clear();
-				}
-			}
 			return;
 		}
 	}
