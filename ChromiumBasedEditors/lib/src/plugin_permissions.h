@@ -17,7 +17,11 @@
 namespace NSPluginPermissions
 {
 	static const wchar_t* kPrivilegedPluginGuid = L"{9DC93CDB-B576-4F0C-B55E-FCC9C48DD777}";
-	static const wchar_t* kPrivilegedPluginEntry = L"index.html";
+	static const wchar_t* kPrivilegedPluginEntries[] = {
+		L"index.html",
+		L"mcp-servers.html",
+		NULL
+	};
 
 	inline bool IsRestrictedMethod(const std::string& sName)
 	{
@@ -138,12 +142,15 @@ namespace NSPluginPermissions
 #endif
 		}
 
-		const std::wstring sTail = std::wstring(L"/") + kPrivilegedPluginGuid + L"/" + kPrivilegedPluginEntry;
+		const std::wstring sPluginDir = std::wstring(L"/") + kPrivilegedPluginGuid + L"/";
 
 		for (std::vector<std::wstring>::iterator i = arDirs.begin(); i != arDirs.end(); i++)
 		{
-			if (NSPrivate::IsSamePath(sPath, *i + sTail))
-				return true;
+			for (int j = 0; NULL != kPrivilegedPluginEntries[j]; ++j)
+			{
+				if (NSPrivate::IsSamePath(sPath, *i + sPluginDir + kPrivilegedPluginEntries[j]))
+					return true;
+			}
 		}
 
 		return false;
