@@ -132,7 +132,7 @@ void CPrintData::CalculateImagePaths(bool bIsOpenAsLocal)
 	{
 		if (0 == m_sDocumentUrl.find(wchar_t('/')))
 		{
-			// нужно брать корень сайта
+			// take the site root
 			int nPos = m_sFrameUrl.find(L"//");
 			if (nPos != std::wstring::npos)
 			{
@@ -151,7 +151,7 @@ void CPrintData::CalculateImagePaths(bool bIsOpenAsLocal)
 		}
 		else
 		{
-			// брать место урла
+			// take the folder of the url
 			int nPos = m_sFrameUrl.find_last_of(wchar_t('/'));
 			if (std::wstring::npos != nPos)
 			{
@@ -175,7 +175,7 @@ void CPrintData::CalculateImagePaths(bool bIsOpenAsLocal)
 	{
 		if (0 == m_sThemesUrl.find(wchar_t('/')))
 		{
-			// нужно брать корень сайта
+			// take the site root
 			int nPos = m_sFrameUrl.find(L"//");
 			if (nPos != std::wstring::npos)
 			{
@@ -194,7 +194,7 @@ void CPrintData::CalculateImagePaths(bool bIsOpenAsLocal)
 		}
 		else
 		{
-			// брать место урла
+			// take the folder of the url
 			int nPos = m_sFrameUrl.find(L"/index.html");
 			if (std::wstring::npos != nPos)
 			{
@@ -233,12 +233,12 @@ public:
 
 std::wstring CPrintData::GetImagePath(const std::wstring& sPath)
 {
-	// 1) смотрим в мапе
+	// 1) look in the map
 	std::map<std::wstring, std::wstring>::iterator iFind = m_mapImages.find(sPath);
 	if (iFind != m_mapImages.end())
 		return iFind->second;
 
-	// 2) в мапе нет. смотрим - может путь правильный совсем
+	// 2) not in the map. check - maybe the path is already correct
 	if (NSFile::CFileBinary::Exists(sPath))
 	{
 		m_mapImages.insert(std::pair<std::wstring, std::wstring>(sPath, sPath));
@@ -261,7 +261,7 @@ std::wstring CPrintData::GetImagePath(const std::wstring& sPath)
 		}
 	}
 
-	// 3) смотрим, может это прямая ссылка
+	// 3) check, maybe it is a direct link
 	if (NSFileDownloader::IsNeedDownload(sPath))
 	{
 		std::wstring sFileDownload = this->DownloadImage(sPath);
@@ -270,7 +270,7 @@ std::wstring CPrintData::GetImagePath(const std::wstring& sPath)
 		return sFileDownload;
 	}
 
-	// 4) может это файл файла?
+	// 4) maybe it is a media file of the document?
 	if (0 == sPath.find(L"media/image") || 0 == sPath.find(L"image") ||
 		0 == sPath.find(L"image/display") || 0 == sPath.find(L"display") ||
 		((0 == sPath.find(L"media/") && m_bIsOpenAsLocal)))
@@ -362,7 +362,7 @@ std::wstring CPrintData::GetImagePath(const std::wstring& sPath)
 		}
 	}
 
-	// 5) может это файл темы?
+	// 5) maybe it is a theme file?
 	bool bIsThemesUrl1 = (0 == sPath.find(m_sThemesUrl)) ? true : false;
 	bool bIsThemesUrl2 = (0 == sPath.find(L"theme")) ? true : false;
 	if (!m_sThemesUrl.empty() && (bIsThemesUrl1 || bIsThemesUrl2))
@@ -491,7 +491,7 @@ std::wstring CPrintData::GetImagePath(const std::wstring& sPath)
 		}
 	}
 
-	// ошибка
+	// failure
 	m_mapImages.insert(std::pair<std::wstring, std::wstring>(sPath, sPath));
 	return sPath;
 }
@@ -548,9 +548,9 @@ CPrintData::CPrintContextPageData CPrintData::CheckPrintRotate(NSEditorApi::CAsc
 	int nPrintDpiY;
 	int nPrintOffsetX;
 	int nPrintOffsetY;
-	int nPrintWidthPix; // всей страницы
+	int nPrintWidthPix; // of the whole page
 	int nPrintHeightPix;
-	int nPrintPageWidthPix; // только области печати
+	int nPrintPageWidthPix; // of the print area only
 	int nPrintPageHeightPix;
 
 	pContext->GetLogicalDPI(nPrintDpiX, nPrintDpiY);
@@ -567,16 +567,16 @@ CPrintData::CPrintContextPageData CPrintData::CheckPrintRotate(NSEditorApi::CAsc
 
 	if (settings.PrintableArea)
 	{
-		// печатать нужно только в области печати
-		// приравниваем высоту страницы к высоте области печати
+		// we must print inside the print area only
+		// so make the page size equal to the print area size
 		nPrintWidthPix  = nPrintPageWidthPix;
 		nPrintHeightPix = nPrintPageHeightPix;
-		// обнуляем поправки на непечатаемую область
+		// and drop the offsets for the non-printable area
 		nPrintOffsetX = 0;
 		nPrintOffsetY = 0;
 	}
 
-	// подсчитываем размеры страницы в милиметрах
+	// calculate the page size in millimeters
 	fPrintWidthMM   = 10 * tmp_ONE_INCH * nPrintWidthPix / nPrintDpiX;
 	fPrintHeightMM  = 10 * tmp_ONE_INCH * nPrintHeightPix / nPrintDpiX;
 
@@ -588,7 +588,7 @@ CPrintData::CPrintContextPageData CPrintData::CheckPrintRotate(NSEditorApi::CAsc
 		{
 			if (nPrintWidthPix < dHeightPix || nPrintHeightPix < dWidthPix)
 			{
-				// выбираем лучший вариант по площади
+				// pick the variant with the bigger area
 				double dWidth1  = nPrintWidthPix < dWidthPix ? nPrintWidthPix : dWidthPix;
 				double dHeight1 = nPrintHeightPix < dHeightPix ? nPrintHeightPix : dHeightPix;
 
@@ -609,7 +609,7 @@ CPrintData::CPrintContextPageData CPrintData::CheckPrintRotate(NSEditorApi::CAsc
 			}
 			else
 			{
-				//если не вписывается, но вписывается повернутое
+				//does not fit as is, but fits when rotated
 				dLeftPix    = nPrintWidthPix - (dHeightPix + dWidthPix ) / 2;
 				dTopPix     = nPrintHeightPix / 2 - dHeightPix / 2;
 				dAngle      = tmp_M_PI_2;   //90
@@ -617,7 +617,7 @@ CPrintData::CPrintContextPageData CPrintData::CheckPrintRotate(NSEditorApi::CAsc
 		}
 		else
 		{
-			if (dWidthPix < nPrintWidthPix) //если размеры позволяют, то распологаем по центру
+			if (dWidthPix < nPrintWidthPix) //if the size allows, place it in the center
 				dLeftPix = nPrintWidthPix / 2 - dWidthPix / 2;
 			else
 				dLeftPix = 0;
@@ -628,7 +628,7 @@ CPrintData::CPrintContextPageData CPrintData::CheckPrintRotate(NSEditorApi::CAsc
 	{
 		if (settings.RotateEnable && (fPageWidth / fPageHeight - 1) * (fPrintWidthMM / fPrintHeightMM - 1) < 0)
 		{
-			// переворачиваем
+			// turn it sideways
 			dWidthPix   = nPrintHeightPix;
 			dHeightPix  = nPrintWidthPix;
 			dLeftPix    = nPrintWidthPix / 2 - dWidthPix / 2;
@@ -650,7 +650,7 @@ CPrintData::CPrintContextPageData CPrintData::CheckPrintRotate(NSEditorApi::CAsc
 			bool bRotate = false;
 			if ((fPageWidth / fPageHeight - 1) * ( fPrintWidthMM / fPrintHeightMM - 1) < 0)
 			{
-				// переворачиваем
+				// turn it sideways
 				double dTemp    = fPrintWidthMM;
 				fPrintWidthMM   = fPrintHeightMM;
 				fPrintHeightMM  = dTemp;
@@ -691,13 +691,13 @@ CPrintData::CPrintContextPageData CPrintData::CheckPrintRotate(NSEditorApi::CAsc
 		}
 		else if (settings.RotateEnable)
 		{
-			// проверяем выходит ли картинка за габариты
+			// check whether the picture overflows the bounds
 			if (fPrintWidthMM < fPageWidth || fPrintHeightMM < fPageHeight)
 			{
-				// проверяем выходит ли повернутая картинка за габариты
+				// check whether the rotated picture overflows the bounds
 				if (fPrintHeightMM < fPageWidth || fPrintWidthMM < fPageHeight)
 				{
-					// выбираем, где больше площадь у повернутого или нет
+					// pick whichever has the bigger area - rotated or not
 					float fFitX1 = 0;
 					float fFitY1 = 0;
 					float fFitWidth1 = 0;
@@ -711,7 +711,7 @@ CPrintData::CPrintContextPageData CPrintData::CheckPrintRotate(NSEditorApi::CAsc
 					FitToPage( fPageWidth, fPageHeight, fPrintHeightMM, fPrintWidthMM, fFitX2, fFitY2, fFitWidth2, fFitHeight2 );
 					if (fFitWidth1 * fFitHeight1 < fFitWidth2 * fFitHeight2)
 					{
-						// поворачиваем
+						// rotate it
 						dAngle      = tmp_M_PI_2;   // 90
 						dWidthPix   = nPrintDpiX * fFitWidth2 / (10 * tmp_ONE_INCH);
 						dHeightPix  = nPrintDpiY * fFitHeight2 / (10 * tmp_ONE_INCH);
@@ -729,7 +729,7 @@ CPrintData::CPrintContextPageData CPrintData::CheckPrintRotate(NSEditorApi::CAsc
 				}
 				else
 				{
-					// поворачиваем
+					// rotate it
 					dWidthPix   = nPrintDpiX * fPageWidth / (10 * tmp_ONE_INCH);
 					dHeightPix  = nPrintDpiY * fPageHeight / (10 * tmp_ONE_INCH);
 					dLeftPix    = nPrintWidthPix - (dHeightPix + dWidthPix) / 2;
@@ -741,14 +741,14 @@ CPrintData::CPrintContextPageData CPrintData::CheckPrintRotate(NSEditorApi::CAsc
 			{
 				dWidthPix = nPrintDpiX * fPageWidth / ( 10 * tmp_ONE_INCH );
 				dHeightPix = nPrintDpiY * fPageHeight / ( 10 * tmp_ONE_INCH );
-				dLeftPix = nPrintWidthPix / 2 - dWidthPix / 2; // по центру по горизонтали
-				dTopPix = 0; // сверху по вертикали
+				dLeftPix = nPrintWidthPix / 2 - dWidthPix / 2; // centered horizontally
+				dTopPix = 0; // aligned to the top vertically
 				dAngle = 0;
 			}
 		}
 		else
 		{
-			// проверяем выходит ли картинка за габариты
+			// check whether the picture overflows the bounds
 			if (fPrintWidthMM < fPageWidth || fPrintHeightMM < fPageHeight)
 			{
 				float fFitX = 0;
@@ -765,8 +765,8 @@ CPrintData::CPrintContextPageData CPrintData::CheckPrintRotate(NSEditorApi::CAsc
 			{
 				dWidthPix   = nPrintDpiX * fPageWidth / (10 * tmp_ONE_INCH);
 				dHeightPix  = nPrintDpiY * fPageHeight / (10 * tmp_ONE_INCH);
-				dLeftPix    = nPrintWidthPix / 2 - dWidthPix / 2; // по центру по горизонтали
-				dTopPix     = 0; // сверху по вертикали
+				dLeftPix    = nPrintWidthPix / 2 - dWidthPix / 2; // centered horizontally
+				dTopPix     = 0; // aligned to the top vertically
 			}
 		}
 	}
@@ -829,7 +829,7 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
 
 	IRenderer* pNativeRenderer = (IRenderer*)pContext->GetNativeRenderer();
 #if 0
-	// если хочется проверить печать в растр
+	// enable this if you want to test printing to raster
 	RELEASEINTERFACE(pNativeRenderer);
 #endif
 	if (NULL != pNativeRenderer)
@@ -837,7 +837,7 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
 		IMetafileToRenderter* pNativeRendererChecker = (IMetafileToRenderter*)pContext->GetNativeRendererUnsupportChecker();
 		if (NULL != pNativeRendererChecker)
 		{
-			// проверяем на поддержку. как только рендерер поддержит все команды - GetNativeRendererUnsupportChecker должен вернуть NULL
+			// check for support. once the renderer supports every command - GetNativeRendererUnsupportChecker must return NULL
 			if (NULL == m_pNativePrinter)
 				NSOnlineOfficeBinToPdf::ConvertBufferToRenderer(pPageCommands, nPageCommandsLen, pNativeRendererChecker);
 			else
@@ -845,7 +845,7 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
 
 			if (S_OK == pNativeRendererChecker->m_pRenderer->IsExistAdditionalParam(c_nAdditionalParamBreak))
 			{
-				// убрал throw/catch, так как есть проблемы с исключениями между динамическими библиотеками при статической линковке libstd/libgcc
+				// dropped throw/catch here: exceptions across dynamic libraries misbehave when libstd/libgcc are linked statically
 				RELEASEINTERFACE(pNativeRenderer);
 			}
 		}
@@ -855,7 +855,7 @@ void CPrintData::Print(NSEditorApi::CAscPrinterContextBase* pContext, const CAsc
 	IRenderer* pDrawingRenderer = pNativeRenderer;
 	CBgraFrame* pBgraFrame = NULL;
 
-	// это необходимо, когда страницы чередуются （NativeRenderer/Raster)
+	// this is needed when pages alternate （NativeRenderer/Raster)
 	m_pFontManager->SetTextMatrix(1, 0, 0, 1, 0, 0);
 
 	bool bIsNeedRestore = false;

@@ -165,7 +165,7 @@ public:
 	void CalculateImagePaths(bool bIsOpenAsLocal = false);
 };
 
-// сохранение в PDF/PDFA/images
+// saving to PDF/PDFA/images
 class IASCFileConverterEvents;
 class CCloudPDFSaver : public NSThreads::CBaseThread
 {

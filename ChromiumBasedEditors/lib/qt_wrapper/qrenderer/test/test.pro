@@ -34,7 +34,7 @@ core_linux:include($$CORE_ROOT_DIR/Common/3dParty/icu/icu.pri)
 core_windows:LIBS += -lgdi32 -ladvapi32 -luser32 -lshell32
 core_linux:LIBS += -lz
 
-# в тестовом примере никакого импорта
+# no dll imports in the test sample
 DEFINES += DESKTOP_NO_USE_DYNAMIC_LIBRARY
 
 SOURCES += \

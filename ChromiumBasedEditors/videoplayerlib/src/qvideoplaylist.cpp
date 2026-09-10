@@ -703,7 +703,7 @@ void QVideoPlaylist::LoadCurrent()
 	/*
 	if (0 == nRows)
 	{
-		// файлов нет - показыаем файл диалог
+		// no files - show the file dialog
 		slotButtonAdd();
 		nRows = pModel->rowCount();
 	}

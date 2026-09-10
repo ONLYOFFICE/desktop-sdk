@@ -122,9 +122,9 @@ class CAscPrintSettings
 public:
 	enum PrintMode
 	{
-		pmFit       = 0,    // вписывать по аспекту
-		pmStretch   = 1,    // растягивать
-		pm100       = 2     // печатать как есть
+		pmFit       = 0,    // fit, keeping the aspect ratio
+		pmStretch   = 1,    // stretch
+		pm100       = 2     // print as is
 	};
 
 public:

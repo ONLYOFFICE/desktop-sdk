@@ -262,7 +262,7 @@ void QCefView::UpdateSize()
 	int nH = height();
 
 #if 0
-	// TODO: удалить после релиза 7.4
+	// TODO: remove after the 7.4 release
 	if (CAscApplicationManager::IsUseSystemScaling() && nW > 2 && nH > 2 && m_pCefView && m_pCefView->isDoubleResizeEvent())
 	{
 		// Resolved using window resize event. Fix bug #62086

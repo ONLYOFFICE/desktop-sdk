@@ -117,7 +117,7 @@ public:
 			char* pRealloc = (char*)realloc(m_pData, m_lSize * sizeof(char));
 			if (NULL != pRealloc)
 			{
-				// реаллок сработал
+				// realloc worked
 				m_pData		= pRealloc;
 				m_pDataCur	= m_pData + m_lSizeCur;
 			}
@@ -235,7 +235,7 @@ public:
 public:
 	void Parse(const std::string& sTask)
 	{
-		// убираем }
+		// drop the closing }
 		Task = sTask.substr(0, sTask.length() - 1);
 
 		m_eType = sttSuggest;
@@ -261,12 +261,12 @@ public:
 	int ParseWords()
 	{
 		std::string sWords = CPluginsManager::GetArrayValue(Task, "usrWords");
-		// в этом алгоритме все прокатывает, так как символы -" -[ -] имеют старший байт ноль.
-		// т.е. не мешаются в utf8
+		// this algorithm gets away with it, since the -" -[ -] characters have a zero high byte.
+		// i.e. they never get in the way inside utf8
 		const char* pData = sWords.c_str();
 		const char* pCur = pData;
 
-		// ищем [
+		// look for [
 		while (*pCur != 0 && *pCur != '[')
 		{
 			++pCur;
@@ -277,7 +277,7 @@ public:
 
 		while (*pCur != 0 && *pCur != ']')
 		{
-			// 1) ищем первый "
+			// 1) look for the first "
 			while (*pCur != 0 && *pCur != '\"')
 				++pCur;
 
@@ -288,7 +288,7 @@ public:
 
 			const char* pStart = pCur;
 
-			// 2) ищем второй "
+			// 2) look for the second "
 			while (*pCur != 0 && *pCur != '\"')
 				++pCur;
 
@@ -305,12 +305,12 @@ public:
 	int ParseLanguages()
 	{
 		std::string sLangs = CPluginsManager::GetArrayValue(Task, "usrLang");
-		// в этом алгоритме все прокатывает, так как символы -" -[ -] имеют старший байт ноль.
-		// т.е. не мешаются в utf8
+		// this algorithm gets away with it, since the -" -[ -] characters have a zero high byte.
+		// i.e. they never get in the way inside utf8
 		const char* pData = sLangs.c_str();
 		const char* pCur = pData;
 
-		// ищем [
+		// look for [
 		while (*pCur != 0 && *pCur != '[')
 		{
 			++pCur;
@@ -321,7 +321,7 @@ public:
 
 		while (*pCur != 0)
 		{
-			// 1) ищем первую цифру
+			// 1) look for the first digit
 			while (*pCur != 0 && !is_digit(*pCur))
 				++pCur;
 
@@ -330,7 +330,7 @@ public:
 
 			const char* pStart = pCur;
 
-			// 2) ищем первую не цифру
+			// 2) look for the first non-digit
 			while (*pCur != 0 && is_digit(*pCur))
 				++pCur;
 
@@ -430,7 +430,7 @@ public:
 
 		if (sTask == "clear")
 		{
-			// нужно удалить все задачи для этого редактора
+			// need to drop all pending tasks for this editor
 			std::list<std::string>::iterator iterTask = m_arTask.begin();
 			std::list<int>::iterator iterTaskParent = m_arTaskParent.begin();
 			std::list<int_64_type>::iterator iterTaskParentFrame = m_arTaskParentFrameId.begin();
@@ -660,7 +660,7 @@ public:
 		pEvent->m_nType = ASC_MENU_EVENT_TYPE_CEF_SPELLCHECK;
 		m_pManager->Apply(pEvent);
 
-		// вдруг придет мега запрос
+		// in case a huge request comes in
 		if (m_oItem.GetSize() > 100000)
 			m_oItem.Clear();
 	}

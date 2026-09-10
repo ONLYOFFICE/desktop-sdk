@@ -221,7 +221,7 @@ void QAscPrinterContext::BitBlt(unsigned char* pBGRA, const int& nRasterX, const
 
 		if (bIsPrintToFile)
 		{
-			// обнуляем сдвиги, напечатается и в отрицательных местах
+			// zero out the offsets, the negative areas get printed too
 			nPhysicalX = 0;
 			nPhysicalY = 0;
 		}
@@ -240,7 +240,7 @@ void QAscPrinterContext::BitBlt(unsigned char* pBGRA, const int& nRasterX, const
 
 		if (bIsPrintToFile)
 		{
-			// обнуляем сдвиги, напечатается и в отрицательных местах
+			// zero out the offsets, the negative areas get printed too
 			nPhysicalX = 0;
 			nPhysicalY = 0;
 		}
@@ -275,8 +275,8 @@ void QAscPrinterContext::PrepareBitBlt(void* pRenderer, const int& nRasterX, con
 void QAscPrinterContext::DrawImage(QPainter* painter, const QImage& image, const QRect& rect, const QRect& rectSrc)
 {
 #if 0
-	// нельзя просто печатать весь растр целиком, так как некоторые принтеры
-	// не пропускают столько информации.
+	// we cannot just print the whole raster in one go, some printers
+	// do not accept that much data.
 	painter->drawImage(rect, image, rectSrc);
 #endif
 
@@ -356,11 +356,11 @@ void QAscPrinterContext::InitRenderer(void* pRenderer, void* pFontManager)
 
 void QAscPrinterContext::SetPageOrientation(int nOrientaion)
 {
-	// отключаем это, из-за бага
+	// disabled because of the bug
 	// https://bugzilla.onlyoffice.com/show_bug.cgi?id=59263
-	// в QT ориентрацию нужно создавать ДО newPage(), но так как картинки отправляются отложенно(?)
-	// то смена ориентации влияет на печать картинок (клиппируется по странице в новой ориентации).
-	// похоже на баг в  QT. При переходе на новую версию  QT - пересмотреть.
+	// in QT the orientation has to be set BEFORE newPage(), but since images are sent deferred(?)
+	// switching the orientation affects image printing (they get clipped to the page in the new orientation).
+	// looks like a QT bug. Revisit when moving to a newer QT version.
 
 	//m_oPrinter.setPageOrientation((0 == nOrientaion) ? QPageLayout::Portrait : QPageLayout::Landscape);
 }

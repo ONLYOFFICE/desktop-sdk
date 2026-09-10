@@ -118,13 +118,13 @@
 					
 					if (isPassword)
 					{
-						// изменения зашифрованы
+						// the changes are encrypted
 						objSend.data.push(_data.substr(encryptHeaderLen + nOffset, _data.length - encryptHeaderLen - 2 * nOffset));
 					}
 					else
 					{
-						// пришли незашифрованные данные (даже без хедера - т.е. из клиента без включенного crypto mode)
-						// добавим хедер и отправим расшифровку без пароля (на onSystemMessage этот хедер удалится)
+						// unencrypted data came in (not even a header - i.e. from a client with crypto mode off)
+						// add the header and send it to decryption without a password (onSystemMessage will strip this header)
 						objSend.data.push(decryptHeader + _data.substr(nOffset, _data.length - 2 * nOffset));
 					}
 				}
@@ -212,8 +212,8 @@
 				{
 					if (e.data[i].length >= decryptHeaderLen && e.data[i].substr(0, decryptHeaderLen) == decryptHeader)
 					{
-						// если начало - с decryptHeader - то не зашифровалось ничего (нет пароля).
-						// поэтому убираем все дописки, чтобы поняли все клиенты
+						// if it starts with decryptHeader - then nothing got encrypted (no password).
+						// so strip everything we appended, so that all clients can read it
 						this.encryptData.data[i] = e.data[i].substr(decryptHeaderLen);
 					}
 					else

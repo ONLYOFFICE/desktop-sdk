@@ -425,11 +425,11 @@ void CAscApplicationManager::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 
 		this->LockCS(LOCK_CS_SCRIPT);
 
-		// смотрим, зажат ли этот файл
+		// check whether this file is already locked
 		std::map<std::wstring, std::vector<CEditorFrameId>>::iterator _find = m_pInternal->m_mapLoadedScripts.find(pData->get_Destination());
 		if (_find != m_pInternal->m_mapLoadedScripts.end())
 		{
-			// он качается. нужно записать id в список тех, кто хочет получить скрипт после его загрузки
+			// it is being downloaded. add the id to the list of those waiting for the script once it is loaded
 			CEditorFrameId _id;
 			_id.Url = pData->get_Url();
 			_id.EditorId = pData->get_Id();
@@ -438,7 +438,7 @@ void CAscApplicationManager::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 		}
 		else
 		{
-			// смотрим, есть ли файл на диске
+			// check whether the file is already on disk
 			if (NSFile::CFileBinary::Exists(pData->get_Destination()))
 			{
 				CCefView* pView = this->GetViewById(pData->get_Id());
@@ -450,7 +450,7 @@ void CAscApplicationManager::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 			}
 			else
 			{
-				// создаем список ожидания
+				// create the waiting list
 				std::vector<CEditorFrameId> _arr;
 				CEditorFrameId _id;
 				_id.Url = pData->get_Url();
@@ -685,7 +685,7 @@ std::wstring CAscApplicationManager::GetNewFilePath(const AscEditorType& nFileFo
 	}
 	else
 	{
-		// поддержка en-EN (в документах есть en-GB и en-US)
+		// en-EN support (documents have en-GB and en-US)
 		sPrefix = L"en-US/";
 	}
 
@@ -696,7 +696,7 @@ std::wstring CAscApplicationManager::GetNewFilePath(const AscEditorType& nFileFo
 		sExtension = L"pptx";
 	else if (nFileFormat == AscEditorType::etSpreadsheet)
 		sExtension = L"xlsx";
-	else if (nFileFormat == AscEditorType::etDocumentMasterForm || nFileFormat == AscEditorType::etDocumentMasterOForm /* такого быть не должно, сейчас - только из шаблона */)
+	else if (nFileFormat == AscEditorType::etDocumentMasterForm || nFileFormat == AscEditorType::etDocumentMasterOForm /* this should not happen, for now - only from a template */)
 		sExtension = L"pdf";
 	else if (nFileFormat == AscEditorType::etPdf)
 		sExtension = L"pdf";
@@ -870,7 +870,7 @@ void CAscApplicationManager::SetApplication(CApplicationCEF* pApp)
 {
 	m_pInternal->m_pApplication = pApp;
 
-	// создаем все папки, если надо
+	// create all the folders if needed
 	if (!NSDirectory::Exists(m_oSettings.recover_path))
 		NSDirectory::CreateDirectories(m_oSettings.recover_path);
 }
@@ -935,8 +935,8 @@ NSFonts::IApplicationFonts* CAscApplicationManager::GetApplicationFonts()
 
 void CAscApplicationManager::StartSaveDialog(const std::wstring& sName, unsigned int nId)
 {
-	// в этой реализации - всегда отмена
-	// хочешь пользоваться - пиши враппер
+	// in this implementation it is always a cancel
+	// if you want to use it - write a wrapper
 	this->EndSaveDialog(L"", nId);
 }
 
@@ -1155,7 +1155,7 @@ void CAscApplicationManager::SetCryptoMode(const std::string& sPassword, const i
 	NSAscCrypto::CCryptoMode oCryptoMode;
 	oCryptoMode.Save(m_pInternal->m_cryptoKeyEnc, m_pInternal->m_cryptoKeyDec, m_pInternal->m_mapCrypto, m_oSettings.cookie_path + L"/user.data");
 
-	// не меняем режим для уже открылись
+	// do not change the mode for the already opened ones
 	// m_pInternal->SendCryptoData();
 
 	std::string sCryptoMode = "default";
@@ -1522,7 +1522,7 @@ bool CAscApplicationManager::IsUseSystemScaling()
 }
 double Core_GetMonitorScale(const unsigned int& xDpi, const unsigned int& yDpi)
 {
-	// допустимые значения: 1; 1.25; 1.5; 1.75; 2; 2.25, 2.5; 2.75, 3; 3.5; 4; 4.5; 5;
+	// allowed values: 1; 1.25; 1.5; 1.75; 2; 2.25, 2.5; 2.75, 3; 3.5; 4; 4.5; 5;
 	double dScale = (xDpi + yDpi) / (2 * 96.0);
 	int nCount = (int)((dScale + 0.125) / 0.25);
 	dScale = 0.25 * nCount;

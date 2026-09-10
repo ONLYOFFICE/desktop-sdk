@@ -372,7 +372,7 @@ namespace NSSystem
 			m_nDescriptor = CreateFileW(sFileFull.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, dwFileAttributes, NULL);
 			if (m_nDescriptor != NULL && m_nDescriptor != INVALID_HANDLE_VALUE)
 			{
-				// TODO: проверить/удалить этот код, лок файла работает
+				// TODO: check/remove this code, the file lock works
 				//LARGE_INTEGER lFileSize;
 				//GetFileSizeEx(m_nDescriptor, &lFileSize);
 				//LockFile(m_nDescriptor, 0, 0, lFileSize.LowPart, (DWORD)lFileSize.HighPart);
@@ -443,13 +443,13 @@ namespace NSSystem
 		static LockType IsLockedInternal(const std::wstring& file)
 		{
 			LockType lockType = LockType::ltNone;
-			HANDLE hFile = CreateFileW(file.c_str(),                  // открываемый файл
-			                           GENERIC_READ | GENERIC_WRITE,  // открываем для чтения и записи
-			                           0,                             // для совместного чтения
-			                           NULL,                          // защита по умолчанию
-			                           OPEN_EXISTING,                 // только существующий файл
-			                           FILE_ATTRIBUTE_NORMAL,         // обычный файл
-			                           NULL);                         // атрибутов шаблона нет
+			HANDLE hFile = CreateFileW(file.c_str(),                  // file to open
+			                           GENERIC_READ | GENERIC_WRITE,  // open for reading and writing
+			                           0,                             // no sharing
+			                           NULL,                          // default security
+			                           OPEN_EXISTING,                 // existing file only
+			                           FILE_ATTRIBUTE_NORMAL,         // normal file
+			                           NULL);                         // no template attributes
 			if (hFile == INVALID_HANDLE_VALUE)
 			{
 				DWORD fileAttr = GetFileAttributesW(file.c_str());

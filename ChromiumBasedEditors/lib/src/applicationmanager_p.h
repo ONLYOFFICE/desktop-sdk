@@ -70,7 +70,7 @@
 #ifdef CEF_2623
 #define MESSAGE_IN_BROWSER
 #else
-// с версии выше 74 - убрать определение
+// for versions above 74 - remove this define
 //#define MESSAGE_IN_BROWSER
 #endif
 
@@ -641,7 +641,7 @@ namespace NSSystem
 			return m_sFile;
 		}
 
-		// из .local/share
+		// from .local/share
 		bool SaveFile(const std::wstring& sFile)
 		{
 			DWORD nSection = 10 * 1024 * 1024;
@@ -1289,7 +1289,7 @@ public:
 		}
 		else
 		{
-			// такого быть не должно
+			// should never happen
 			return sFeatures;
 		}
 
@@ -1457,7 +1457,7 @@ protected:
 		}
 		else
 		{
-			// старый код. теперь используется вью портала
+			// old code. the portal view is used now
 			NSNetwork::NSFileTransport::CFileDownloader oDownloader(m_sUrl, false);
 			oDownloader.SetFilePath(m_sDestination);
 
@@ -1610,19 +1610,19 @@ public:
 	CAscKeyboardChecker m_oKeyboardChecker;
 	CTimerKeyboardChecker m_oKeyboardTimer;
 
-	// счетчик всех view
+	// counter of all views
 	int m_nIdCounter;
 
-	// счетчик всех view
+	// counter of all views
 	int m_nWindowCounter;
 
 	// id <=> view
 	std::map<int, CCefView*> m_mapViews;
 
-	// проверка корректного запуска приложения через stdout или лог-файл
+	// checks that the application started correctly - via stdout or a log file
 	std::string m_sLogFile;
 
-	// показывать ли консоль для дебага
+	// whether to show the debug console
 	bool m_bDebugInfoSupport;
 
 	// is ai disabled
@@ -1639,15 +1639,15 @@ public:
 	// Forward an (unhandled) process message to native plugins. Returns true if a plugin handled it.
 	bool NativePluginDispatchMessage(const std::string& sName, const std::string& sArgsJson);
 
-	// логгировать ли урлы
+	// whether to log urls
 	bool m_bLoggingBrowserUrls;
 
 	bool m_bSupportMultiplugins;
 
-	// экспериментальные возможности
+	// experimental features
 	bool m_bExperimentalFeatures;
 
-	// использовать ли внешнюю очередь сообщений
+	// whether to use an external message loop
 	bool m_bIsUseExternalMessageLoop;
 	IExternalMessageLoop* m_pExternalMessageLoop;
 	bool m_bIsExitMessageLoop;
@@ -1658,19 +1658,19 @@ public:
 	// application fonts for all editors
 	NSFonts::IApplicationFonts* m_pApplicationFonts;
 
-	// используется для загрузки скриптов
-	// url <-> все те, кто ждет загрузку этого скрипта. по окончании загрузки - всем отсылается евент
+	// used for loading scripts
+	// url <-> everyone waiting for this script to load. when the load finishes - an event is sent to all of them
 	NSCriticalSection::CRITICAL_SECTION m_oCS_Scripts;
 	std::map<std::wstring, std::vector<CEditorFrameId>> m_mapLoadedScripts;
 
-	// id для вью, который вызвал FileDialog
+	// id of the view that opened the FileDialog
 	int m_nIsCefSaveDialogWait;
 
-	// внутренние скачки (неюзерские)
+	// internal downloads (not user-initiated)
 	std::wstring m_strPrivateDownloadUrl;
 	std::wstring m_strPrivateDownloadPath;
 
-	// мап отмененных загрузок
+	// map of canceled downloads
 	std::map<unsigned int, bool> m_mapCancelDownloads;
 
 	// Recents & recovers
@@ -1678,31 +1678,31 @@ public:
 	std::vector<CAscEditorFileInfo> m_arRecents;
 	std::vector<CAscEditorFileInfo> m_arRecovers;
 
-	// дополнения к ссылкам
+	// extra url params
 	std::wstring m_sAdditionalUrlParams;
 
-	// сообщения, которые отправятся в view после инициализации js контекста
+	// messages that will be sent to the view once the js context is initialized
 	std::vector<NSEditorApi::CAscMenuEvent*> m_arApplyEvents;
 
-	// настройки приложения
+	// application settings
 	std::map<std::string, std::string> m_mapSettings;
 
-	// если ！= -1, то используется для scale всех view
+	// if != -1, used as the scale for all views
 	double m_dForceDisplayScale;
 
-	// флаг для принудительной перегенерации шрифтов (используется при изменении настроек, какие шрифты использовать)
+	// flag to force fonts regeneration (used when the settings for which fonts to use change)
 	bool m_bIsUpdateFontsAttack;
 
 	bool m_bIsUseSpellCheckKeyboardInput;
 
-	// используется только для Linux snap.
+	// used only for Linux snap.
 	std::string m_sLD_LIBRARY_PATH;
 
 	// crypto
 	std::map<std::wstring, int> m_mapOnlyPass;
-	bool m_bCryptoDisableForLocal; // поддерживает ли плагин криптования шифрование локальных файлов
-	bool m_bCryptoDisableForInternalCloud; // поддерживает ли плагин криптования шифрование файлов из нашего облака
-	bool m_bCryptoDisableForExternalCloud; // поддерживает ли плагин криптования шифрование файлов из чужого облака
+	bool m_bCryptoDisableForLocal; // whether the crypto plugin supports encrypting local files
+	bool m_bCryptoDisableForInternalCloud; // whether the crypto plugin supports encrypting files from our own cloud
+	bool m_bCryptoDisableForExternalCloud; // whether the crypto plugin supports encrypting files from a third-party cloud
 
 	std::map<NSAscCrypto::AscCryptoType, NSAscCrypto::CAscCryptoJsonValue> m_mapCrypto;
 	NSAscCrypto::AscCryptoType m_nCurrentCryptoMode;
@@ -1711,50 +1711,50 @@ public:
 
 	NSAscCrypto::CAscKeychain* m_pKeyChain;
 
-	// плагины не для редактора, а для десктопа (на стартовой странице)
+	// plugins not for the editor, but for the desktop app (on the start page)
 	std::vector<CExternalPluginInfo> m_arExternalPlugins;
 
-	// те, кто подключает onlyoffice
+	// those who plug onlyoffice in
 	std::vector<CExternalCloudRegister> m_arExternalClouds;
 
-	// критическая секция для всех системных сообщений всех view
+	// critical section for all system messages of all views
 	NSCriticalSection::CRITICAL_SECTION m_oCS_SystemMessages;
 
-	// настройки для ссылок на редакторы
+	// settings for the editor urls
 	std::wstring m_mainPostFix;
 	std::wstring m_mainLang;
 
-	// ссылки, откуда файл открыт. (для кнопок 'домой' в редакторах)
+	// urls the file was opened from. (for the 'home' buttons in the editors)
 	std::vector<CRecentParent> m_arRecentParents;
 
 	// dpi checker
 	static CAscDpiChecker* m_pDpiChecker;
 
-	// ссылки на нужные классы
+	// pointers to the classes we need
 	CAscApplicationManager* m_pMain;
 	CApplicationCEF* m_pApplication;
 
-	// дополнения к редактору (для внешних подключений)
+	// additions to the editor (for external integrations)
 	CApplicationManagerAdditionalBase* m_pAdditional;
 
-	// логи конвертера
+	// converter logs
 	bool m_bIsEnableConvertLogs;
 
 	bool m_bIsOnlyEditorWindowMode;
 
-	// не даем грузить любые локальные файлы
+	// we don't let any local files be loaded
 	NSSystem::CLocalFilesResolver m_oLocalFilesResolver;
 
-	// json, отправляемый в процесс рендерера
+	// json sent to the renderer process
 	std::wstring m_sRendererJSON;
 
-	// информация о порталах. открытие файлы из рисентов, из редактора - теряется информация о externalclouds
+	// info about the portals. when opening files from recents or from the editor - the externalclouds info is lost
 	CLocalStorageClouds m_oPortalsList;
 
-	// сброс LD_PRELOAD
+	// reset LD_PRELOAD
 	bool m_bIsPreloadDiscard;
 
-	// генератор шаблонов
+	// templates generator
 	CTemplatesCache m_oTemplatesCache;
 
 #ifdef USE_ADDON_MODE
@@ -1931,14 +1931,14 @@ public:
 
 	bool GetEditorPermission()
 	{
-		// разрешение на редактирование
+		// editing permission
 		return m_pAdditional ? m_pAdditional->GetEditorPermission() : true;
 	}
 
-	// исполнить код во всех view
+	// execute code in all views
 	void ExecuteInAllFrames(const std::string& sCode);
 
-	// вызывается, если меняется количество открытых редакторов
+	// called when the number of open editors changes
 	void ChangeEditorViewsCount();
 
 	void CloseApplication()
@@ -1955,7 +1955,7 @@ public:
 		m_oTemplatesCache.Stop();
 	}
 
-	// logout из портала -----------------------------------------------------------------------
+	// logout from the portal ------------------------------------------------------------------
 	void Logout(std::wstring strUrl, CefRefPtr<CefCookieManager> manager)
 	{
 		if (0 == strUrl.find(L"onlyoffice.com"))
@@ -2025,7 +2025,7 @@ public:
 		}
 	}
 
-	// работа с настройками редактора ----------------------------------------------------------
+	// working with editor settings ------------------------------------------------------------
 	void LoadSettings()
 	{
 		m_mapSettings.clear();
@@ -2142,7 +2142,7 @@ public:
 	{
 		if ("--ascdesktop-log-file" == sName)
 		{
-			// stdout для Linux, путь к файлу для Windows
+			// stdout for Linux, a file path for Windows
 			m_sLogFile = sValue;
 			return;
 		}
@@ -2212,7 +2212,7 @@ public:
 		}
 	}
 
-	// вспомогательные функции
+	// helper functions
 	CCefView* GetViewWithMinId()
 	{
 		CCefView* pMinView = NULL;
@@ -2270,10 +2270,10 @@ public:
 		pEvent->Release();
 	}
 
-	// загрузка скриптов ----------------------------------------------------------------------
+	// script loading -------------------------------------------------------------------------
 	virtual void OnLoad(CCefScriptLoader* pLoader, bool error) OVERRIDE
 	{
-		// коллбэк на загрузку скрипта
+		// callback for the script load
 
 		m_pMain->LockCS(LOCK_CS_SCRIPT);
 
@@ -2328,7 +2328,7 @@ public:
 
 		if (i != m_mapLoadedScripts.end())
 		{
-			// другого и быть не может
+			// it can't be anything else
 			NSEditorApi::CAscEditorScript* pData = new NSEditorApi::CAscEditorScript();
 			pData->put_Url(sUrl);
 			pData->put_Destination(sDestination);
@@ -2359,7 +2359,7 @@ public:
 		m_pMain->UnlockCS(LOCK_CS_SCRIPT);
 	}
 
-	// отслеживаем шрифты ---------------------------------------------------------------------
+	// tracking fonts -------------------------------------------------------------------------
 	virtual DWORD ThreadProc()
 	{
 		CApplicationFontsWorker oWorker;
@@ -2410,7 +2410,7 @@ public:
 		return 0;
 	}
 
-	// работа со скачиванием файлов -----------------------------------------------------------
+	// working with file downloads ------------------------------------------------------------
 	std::wstring GetPrivateDownloadUrl()
 	{
 		return m_strPrivateDownloadUrl;
@@ -2431,7 +2431,7 @@ public:
 		return true;
 	}
 
-	// работа с Recents & Recovers ------------------------------------------------------------
+	// working with Recents & Recovers --------------------------------------------------------
 	void LocalFiles_Init()
 	{
 		Recents_Load();
@@ -2938,7 +2938,7 @@ window.AscDesktopEditor.CryptoPassword = \"" + sPass + L"\";\n\
 			}
 		}
 
-		// создаем ключи для режимов
+		// create the keys for the modes
 		bool bIsResave = false;
 
 		// 1) simple
