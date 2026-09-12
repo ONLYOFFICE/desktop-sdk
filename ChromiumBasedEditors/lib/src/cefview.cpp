@@ -1886,7 +1886,7 @@ private:
 	IMPLEMENT_REFCOUNTING(CCefResizeTask);
 };
 
-class CAscClientHandler : public client::ClientHandler, public CCookieFoundCallback, public client::ClientHandler::Delegate, public CefDialogHandler
+class CAscClientHandler : public client::ClientHandler, public CCookieFoundCallback, public CCookieValueCallback, public client::ClientHandler::Delegate, public CefDialogHandler
 {
 public:
 	class CAscCefJSDialogHandler : public CefJSDialogHandler
@@ -2816,6 +2816,29 @@ public:
 				pVisitor->m_arDomains.push_back(args->GetString(i + 1));
 
 			pVisitor->CheckCookiePresent(CefCookieManager::GetGlobalManager(nullptr));
+			return true;
+		}
+		else if (message_name == "get_portal_auth_token")
+		{
+			// [frameId, callbackId, host[:port]] -> "on_portal_auth_token" [frameId, callbackId, found, value]
+			int_64_type nFrameId = NSArgumentList::GetInt64(args, 0);
+			std::string sCallbackId = args->GetString(1).ToString();
+			std::string sDomain = args->GetString(2).ToString();
+
+			if (sDomain.empty())
+			{
+				OnFoundCookieValue(nFrameId, sCallbackId, false, "");
+				return true;
+			}
+
+			CCefCookieValueVisitor* pVisitor = new CCefCookieValueVisitor();
+			pVisitor->m_pCallback       = this;
+			pVisitor->m_nFrameId        = nFrameId;
+			pVisitor->m_sCallbackId     = sCallbackId;
+			pVisitor->m_sDomain         = sDomain;
+			pVisitor->m_sCookieName     = "asc_auth_key";
+
+			pVisitor->FindCookie(CefCookieManager::GetGlobalManager(nullptr));
 			return true;
 		}
 		else if (message_name == "set_cookie")
@@ -5981,6 +6004,9 @@ virtual void OnSetCookie();
 virtual void OnDeleteCookie(bool bIsPresent);
 virtual void OnFoundCookies(std::map<std::string, std::string>& mapValues);
 
+// CCookieValueCallback
+virtual void OnFoundCookieValue(int_64_type nFrameId, const std::string& sCallbackId, bool bFound, const std::string& sValue);
+
 // ClientHandlerDelegate
 virtual void OnBrowserCreated(CefRefPtr<CefBrowser> browser) OVERRIDE {}
 
@@ -6570,6 +6596,18 @@ void CAscClientHandler::OnFoundCookie(bool bIsPresent, std::string sValue)
 	CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_is_cookie_present");
 	message->GetArgumentList()->SetBool(0, bIsPresent);
 	message->GetArgumentList()->SetString(1, sValue);
+	SEND_MESSAGE_TO_RENDERER_PROCESS(m_pParent->m_pInternal->m_handler->GetBrowser(), message);
+}
+void CAscClientHandler::OnFoundCookieValue(int_64_type nFrameId, const std::string& sCallbackId, bool bFound, const std::string& sValue)
+{
+	if (!m_pParent || !m_pParent->m_pInternal || !m_pParent->m_pInternal->m_handler || !m_pParent->m_pInternal->m_handler->GetBrowser())
+		return;
+
+	CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_portal_auth_token");
+	NSArgumentList::SetInt64(message->GetArgumentList(), 0, nFrameId);
+	message->GetArgumentList()->SetString(1, sCallbackId);
+	message->GetArgumentList()->SetBool(2, bFound);
+	message->GetArgumentList()->SetString(3, sValue);
 	SEND_MESSAGE_TO_RENDERER_PROCESS(m_pParent->m_pInternal->m_handler->GetBrowser(), message);
 }
 void CAscClientHandler::OnFoundCookies(std::map<std::string, std::string>& mapValues)

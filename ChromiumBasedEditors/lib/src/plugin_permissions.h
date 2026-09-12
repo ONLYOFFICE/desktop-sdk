@@ -34,6 +34,8 @@ namespace NSPluginPermissions
 			"callToolFunction",
 
 			"getMcpServers",
+
+			"_getPortalAuthToken",
 			NULL
 		};
 

@@ -41,7 +41,10 @@
 #include "include/cef_cookie.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "include/internal/cef_time.h"
+#include "../include/base.h"
 #include <map>
+#include <string>
+#include <vector>
 
 #ifdef CEF_2623
 #include "include/base/cef_bind.h"
@@ -219,6 +222,130 @@ public:
 
 public:
 	IMPLEMENT_REFCOUNTING(CCefCookieVisitor);
+};
+
+// Single cookie value lookup routed back to the requesting frame (getPortalAuthToken).
+class CCookieValueCallback
+{
+public:
+	virtual void OnFoundCookieValue(int_64_type nFrameId, const std::string& sCallbackId, bool bFound, const std::string& sValue) = 0;
+};
+
+class CCefCookieValueVisitor : public CefCookieVisitor
+{
+public:
+	std::string                         m_sDomain;      // host[:port], no scheme
+	std::string                         m_sCookieName;
+
+	int_64_type                         m_nFrameId;
+	std::string                         m_sCallbackId;
+
+	CCookieValueCallback*               m_pCallback;
+
+	bool                                m_bFound;
+	std::string                         m_sValue;
+
+	CCefCookieValueVisitor()
+	{
+		this->AddRef();
+		m_nFrameId = -1;
+		m_pCallback = NULL;
+		m_bFound = false;
+	}
+	~CCefCookieValueVisitor()
+	{
+		// CEF drops its reference after the last Visit (or immediately when nothing matched)
+		if (m_pCallback)
+			m_pCallback->OnFoundCookieValue(m_nFrameId, m_sCallbackId, m_bFound, m_bFound ? m_sValue : "");
+	}
+
+	static std::string GetHost(const std::string& sDomain)
+	{
+		std::string sHost = sDomain;
+		std::string::size_type pos = sHost.find("://");
+		if (std::string::npos != pos)
+			sHost = sHost.substr(pos + 3);
+		pos = sHost.find_first_of("/?#");
+		if (std::string::npos != pos)
+			sHost = sHost.substr(0, pos);
+		pos = sHost.rfind(':');
+		if (std::string::npos != pos && std::string::npos == sHost.find(']', pos))
+			sHost = sHost.substr(0, pos);
+		return sHost;
+	}
+
+	static std::string ToLowerAscii(const std::string& sSrc)
+	{
+		std::string sRes = sSrc;
+		for (std::string::size_type i = 0; i < sRes.length(); ++i)
+		{
+			if (sRes[i] >= 'A' && sRes[i] <= 'Z')
+				sRes[i] = (char)(sRes[i] - 'A' + 'a');
+		}
+		return sRes;
+	}
+
+	// cookie domains are stored lowercased; ".example.com" matches example.com and any subdomain
+	static bool IsDomainMatch(const std::string& sCookieDomainSrc, const std::string& sHostSrc)
+	{
+		std::string sDomain = ToLowerAscii(sCookieDomainSrc);
+		std::string sHost = ToLowerAscii(sHostSrc);
+		if (!sDomain.empty() && '.' == sDomain[0])
+			sDomain = sDomain.substr(1);
+		if (sDomain.empty() || sHost.empty())
+			return false;
+		if (sDomain == sHost)
+			return true;
+		if (sHost.length() > sDomain.length() &&
+			0 == sHost.compare(sHost.length() - sDomain.length(), sDomain.length(), sDomain) &&
+			'.' == sHost[sHost.length() - sDomain.length() - 1])
+			return true;
+		return false;
+	}
+
+	virtual bool Visit(const CefCookie& cookie, int count, int total, bool& deleteCookie)
+	{
+		if (m_bFound)
+			return false;
+
+		std::string sName = CefString(&cookie.name).ToString();
+		if (sName != m_sCookieName)
+			return true;
+
+		std::string sCookieDomain = CefString(&cookie.domain).ToString();
+		if (!IsDomainMatch(sCookieDomain, GetHost(m_sDomain)))
+			return true;
+
+		m_sValue = CefString(&cookie.value).ToString();
+		m_bFound = true;
+		return false;
+	}
+
+	void FindCookie(CefRefPtr<CefCookieManager> manager)
+	{
+		if (!CefCurrentlyOn(TID_IO))
+		{
+#ifdef CEF_VERSION_ABOVE_102
+			CefPostTask(TID_IO, BASE_BIND(&CCefCookieValueVisitor::FindCookie, base::WrapRefCounted(this), manager));
+#else
+			CefPostTask(TID_IO, BASE_BIND(&CCefCookieValueVisitor::FindCookie, this, manager));
+#endif
+			return;
+		}
+
+		std::string sHost = GetHost(m_sDomain);
+		if (!sHost.empty())
+		{
+			// url-scoped visit: exact cookie-domain semantics, includes httpOnly cookies;
+			// non-secure cookies are visible for an https url as well
+			manager->VisitUrlCookies("https://" + m_sDomain + "/", true, this);
+		}
+
+		this->Release();
+	}
+
+public:
+	IMPLEMENT_REFCOUNTING(CCefCookieValueVisitor);
 };
 
 #ifdef CEF_2623
