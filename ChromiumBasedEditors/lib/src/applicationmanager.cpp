@@ -1432,7 +1432,8 @@ int CAscApplicationManager::InstallMainAddon(const std::wstring& path)
 
 	NSDirectory::CreateDirectory(sOutDir);
 	COfficeUtils oCOfficeUtils(NULL);
-	HRESULT hr = oCOfficeUtils.ExtractToDirectory(path, sOutDir, NULL, 0);
+	// the addon brings native code: executables need their permissions and macOS frameworks their symlinks
+	HRESULT hr = oCOfficeUtils.ExtractToDirectory(path, sOutDir, NULL, 0, true, true);
 
 	std::wstring sPath = sOutDir + L"/sdkjs/word/sdk-all-min.js";
 	if (hr == S_OK && NSFile::CFileBinary::Exists(sPath))
