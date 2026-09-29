@@ -8308,6 +8308,9 @@ void CCefViewEditor::SetEditorType(AscEditorType eType)
 }
 AscEditorType CCefViewEditor::GetEditorType()
 {
+	// the application may not store the type (macOS does not): the view knows it itself
+	if (AscEditorType::etUndefined == m_eType && m_pInternal)
+		return (AscEditorType)m_pInternal->m_nEditorType;
 	return m_eType;
 }
 

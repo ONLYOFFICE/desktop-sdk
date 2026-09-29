@@ -36,8 +36,7 @@ namespace
 		{
 		case AscEditorType::etPresentation:        return "slide";
 		case AscEditorType::etSpreadsheet:         return "cell";
-		case AscEditorType::etPdf:
-		case AscEditorType::etDocumentMasterOForm: return "pdf";
+		case AscEditorType::etPdf:                 return "pdf";
 		default:                                   return "word";
 		}
 	}
