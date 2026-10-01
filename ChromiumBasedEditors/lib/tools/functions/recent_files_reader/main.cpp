@@ -54,6 +54,10 @@ namespace recent_files_reader
         \"default\": 10\
       }\
     }\
+  },\
+  \"annotations\": {\
+    \"readOnlyHint\": true,\
+    \"destructiveHint\": false\
   }\
 }";
 	}

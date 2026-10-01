@@ -2,6 +2,8 @@ export type TMCPItem = {
   name: string;
   description: string;
   inputSchema: Record<string, unknown>;
+  // MCP ToolAnnotations: readOnlyHint, destructiveHint, ...
+  annotations?: Record<string, unknown>;
   enabled?: boolean;
 };
 

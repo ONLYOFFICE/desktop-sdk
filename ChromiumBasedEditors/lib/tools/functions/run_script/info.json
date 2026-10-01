@@ -33,5 +33,9 @@
     "required": [
       "script"
     ]
+  },
+  "annotations": {
+    "readOnlyHint": false,
+    "destructiveHint": true
   }
 }

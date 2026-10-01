@@ -13,5 +13,9 @@
     "required": [
       "path"
     ]
+  },
+  "annotations": {
+    "readOnlyHint": true,
+    "destructiveHint": false
   }
 }

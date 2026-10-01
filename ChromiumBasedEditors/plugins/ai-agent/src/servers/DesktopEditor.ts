@@ -40,6 +40,7 @@ export class DesktopEditorTool {
         name: tool.name,
         description: tool.description,
         inputSchema: tool.parameters,
+        annotations: tool.annotations,
       }));
 
       this.setTools(parsedTools);

@@ -98,6 +98,10 @@ namespace run_script
     \"required\": [\
       \"script\"\
     ]\
+  },\
+  \"annotations\": {\
+    \"readOnlyHint\": false,\
+    \"destructiveHint\": true\
   }\
 }";
 	}

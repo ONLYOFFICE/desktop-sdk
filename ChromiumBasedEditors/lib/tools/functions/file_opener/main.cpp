@@ -56,6 +56,10 @@ namespace file_opener
     \"required\": [\
       \"path\"\
     ]\
+  },\
+  \"annotations\": {\
+    \"readOnlyHint\": true,\
+    \"destructiveHint\": false\
   }\
 }";
 	}

@@ -11,5 +11,9 @@
         "default": 10
       }
     }
+  },
+  "annotations": {
+    "readOnlyHint": true,
+    "destructiveHint": false
   }
 }
