@@ -57,7 +57,8 @@ namespace recent_files_reader
   },\
   \"annotations\": {\
     \"readOnlyHint\": true,\
-    \"destructiveHint\": false\
+    \"destructiveHint\": false,\
+    \"openWorldHint\": false\
   }\
 }";
 	}

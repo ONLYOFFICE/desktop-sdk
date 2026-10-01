@@ -59,7 +59,8 @@ namespace file_opener
   },\
   \"annotations\": {\
     \"readOnlyHint\": true,\
-    \"destructiveHint\": false\
+    \"destructiveHint\": false,\
+    \"openWorldHint\": false\
   }\
 }";
 	}
