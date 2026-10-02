@@ -97,10 +97,12 @@ public:
 
 	void Cancel() override;
 
-	void OnData(const void* data, size_t size);
+	void OnData(CefRefPtr<CefURLRequest> request, const void* data, size_t size);
 	void OnComplete(CefRefPtr<CefURLRequest> request);
 
 private:
+	void ReadResponseInfo(CefRefPtr<CefURLRequest> request);
+
 	friend class StreamingURLRequestClient;
 
 	CefRefPtr<CefRequest> m_originalRequest;
@@ -115,6 +117,7 @@ private:
 	int m_pendingBytesToRead;
 
 	bool m_completed;
+	bool m_responseInfoReceived;
 
 	CefRefPtr<CefResourceReadCallback> m_pendingCallback;
 
@@ -142,7 +145,7 @@ public:
 						const void* data,
 						size_t size) override
 	{
-		m_handler->OnData(data, size);
+		m_handler->OnData(request, data, size);
 	}
 
 	void OnRequestComplete(CefRefPtr<CefURLRequest> request) override
@@ -169,6 +172,7 @@ StreamingCORSResourceHandler::StreamingCORSResourceHandler(CefRefPtr<CefRequest>
 	  , m_pendingDataOut(nullptr)
 	  , m_pendingBytesToRead(0)
 	  , m_completed(false)
+	  , m_responseInfoReceived(false)
 	  , m_status(200)
 {
 	std::string url = request->GetURL().ToString();
@@ -231,11 +235,37 @@ bool StreamingCORSResourceHandler::Open(CefRefPtr<CefRequest> request,
 	return true;
 }
 
+static bool IsSkipProxyResponseHeader(const CefString& name)
+{
+	// header names are case-insensitive (and lowercase in HTTP/2)
+	std::string sName = name.ToString();
+	for (char& c : sName)
+	{
+		if (c >= 'A' && c <= 'Z')
+			c += ('a' - 'A');
+	}
+
+	// CORS headers are set by proxy. HeaderMap is a multimap, so the server ones
+	// would be duplicated: "Access-Control-Allow-Origin: *, *" is rejected by CORS check
+	if (0 == sName.find("access-control-"))
+		return true;
+
+	// CefURLRequest returns already decoded body with unknown length (response_length = -1)
+	return (sName == "content-encoding" || sName == "content-length");
+}
+
 void StreamingCORSResourceHandler::GetResponseHeaders(CefRefPtr<CefResponse> response,
 													  int64& response_length,
 													  CefString& redirectUrl)
 {
-	CefResponse::HeaderMap headers = m_headers;
+	std::lock_guard<std::recursive_mutex> lock(m_mutex);
+
+	CefResponse::HeaderMap headers;
+	for (const auto& header : m_headers)
+	{
+		if (!IsSkipProxyResponseHeader(header.first))
+			headers.insert(header);
+	}
 
 	headers.insert(std::make_pair("Access-Control-Allow-Origin", "*"));
 	headers.insert(std::make_pair("Access-Control-Allow-Methods", "*"));
@@ -281,12 +311,32 @@ bool StreamingCORSResourceHandler::Read(void* data_out,
 	return true;
 }
 
-void StreamingCORSResourceHandler::OnData(const void* data, size_t size)
+void StreamingCORSResourceHandler::ReadResponseInfo(CefRefPtr<CefURLRequest> request)
+{
+	// GetResponseHeaders is called right after Open callback,
+	// so response info must be read BEFORE it is continued
+	if (m_responseInfoReceived)
+		return;
+
+	CefRefPtr<CefResponse> resp = request->GetResponse();
+	if (!resp)
+		return;
+
+	m_responseInfoReceived = true;
+	m_status = resp->GetStatus();
+	m_statusText = resp->GetStatusText();
+	m_mimeType = resp->GetMimeType();
+	resp->GetHeaderMap(m_headers);
+}
+
+void StreamingCORSResourceHandler::OnData(CefRefPtr<CefURLRequest> request, const void* data, size_t size)
 {
 	std::lock_guard<std::recursive_mutex> lock(m_mutex);
 
 	// Add to buffer
 	m_buffer.insert(m_buffer.end(), (const char*)data, (const char*)data + size);
+
+	ReadResponseInfo(request);
 
 	// Call Open callback ONLY on first data
 	CALL_AND_CLEAR_CALLBACK(m_openCallback);
@@ -313,13 +363,8 @@ void StreamingCORSResourceHandler::OnComplete(CefRefPtr<CefURLRequest> request)
 
 	CefURLRequest::ErrorCode error = request->GetRequestError();
 
-	if (CefRefPtr<CefResponse> resp = request->GetResponse())
-	{
-		m_status = resp->GetStatus();
-		m_statusText = resp->GetStatusText();
-		m_mimeType = resp->GetMimeType();
-		resp->GetHeaderMap(m_headers);
-	}
+	// response without body (no OnData)
+	ReadResponseInfo(request);
 
 	m_completed = true;
 
