@@ -37,6 +37,7 @@
 #include "./client_renderer.h"
 
 #include <algorithm>
+#include <cstdlib>
 #include <sstream>
 #include <string>
 
@@ -1284,6 +1285,9 @@ window._external_process_callback[" + std::to_string(id) + "]._onprocess(" + std
 			}
 			else if (name == "SetEditorId")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				CefRefPtr<CefV8Value> val = *arguments.begin();
 				if (val->IsValid() && val->IsInt())
 				{
@@ -1298,6 +1302,9 @@ window._external_process_callback[" + std::to_string(id) + "]._onprocess(" + std
 			}
 			else if (name == "LoadJS")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				bool bIsLocal = false;
 				CefRefPtr<CefBrowser> browser = CefV8Context::GetCurrentContext()->GetBrowser();
 
@@ -1537,6 +1544,9 @@ else \n\
 			}
 			else if (name == "LoadFontBase64")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				CefRefPtr<CefV8Value> val = *arguments.begin();
 				CefString fileUrl = val->GetStringValue();
 				std::wstring strUrl = fileUrl.ToWString();
@@ -1619,6 +1629,9 @@ else \n\
 			}
 			else if (name == "SpellCheck")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				int64 frameId = CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier();
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("spell_check_task");
 				message->GetArgumentList()->SetInt(0, (int)m_nEditorId);
@@ -1678,6 +1691,9 @@ else \n\
 			}
 			else if (name == "ConsoleLog")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				LOGGER_STRING2(arguments[0]->GetStringValue().ToString());
 				return true;
 			}
@@ -1791,6 +1807,9 @@ else \n\
 			}
 			else if (name == "SetDocumentName")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				if (IsChartEditor())
 					return true;
 
@@ -1960,7 +1979,7 @@ if (main.DisableVersionHistory) main.DisableVersionHistory(); \
 				{
 					if (NSFile::CFileBinary::Exists(sFileUrl.substr(7)))
 						sFileUrl = sFileUrl.substr(7);
-					else if (NSFile::CFileBinary::Exists(sFileUrl.substr(8)))
+					else if (sFileUrl.length() > 7 && NSFile::CFileBinary::Exists(sFileUrl.substr(8)))
 						sFileUrl = sFileUrl.substr(8);
 				}
 
@@ -2058,6 +2077,9 @@ if (main.DisableVersionHistory) main.DisableVersionHistory(); \
 			}
 			else if (name == "LocalFileCreate")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_create");
 				message->GetArgumentList()->SetInt(0, arguments[0]->GetIntValue());
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
@@ -2065,6 +2087,9 @@ if (main.DisableVersionHistory) main.DisableVersionHistory(); \
 			}
 			else if (name == "LocalFileRecoverFolder")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				m_sLocalFileFolderWithoutFile = arguments[0]->GetStringValue().ToWString();
 
 				m_sLocalFileChanges = m_sLocalFileFolderWithoutFile + L"/changes/changes0.json";
@@ -2094,7 +2119,7 @@ if (main.DisableVersionHistory) main.DisableVersionHistory(); \
 				if (NSFile::CFileBinary::ReadAllTextUtf8A(sUserPath, sUserLog))
 				{
 					NSFile::CFileBinary::Remove(sUserPath);
-					nUserIndex = std::stoi(sUserLog);
+					nUserIndex = (int)strtol(sUserLog.c_str(), NULL, 10);
 					nUserIndex++;
 				}
 
@@ -2112,6 +2137,9 @@ if (main.DisableVersionHistory) main.DisableVersionHistory(); \
 			}
 			else if (name == "LocalFileOpenRecent")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_openrecents");
 				message->GetArgumentList()->SetInt(0, arguments[0]->GetIntValue());
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
@@ -2119,6 +2147,9 @@ if (main.DisableVersionHistory) main.DisableVersionHistory(); \
 			}
 			else if (name == "LocalFileRemoveRecent")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_removerecents");
 				message->GetArgumentList()->SetInt(0, arguments[0]->GetIntValue());
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
@@ -2138,6 +2169,9 @@ if (main.DisableVersionHistory) main.DisableVersionHistory(); \
 			}
 			else if (name == "LocalFileOpenRecover")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_openrecovers");
 				message->GetArgumentList()->SetInt(0, arguments[0]->GetIntValue());
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
@@ -2145,6 +2179,9 @@ if (main.DisableVersionHistory) main.DisableVersionHistory(); \
 			}
 			else if (name == "LocalFileRemoveRecover")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_removerecovers");
 				message->GetArgumentList()->SetInt(0, arguments[0]->GetIntValue());
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
@@ -2158,6 +2195,9 @@ if (main.DisableVersionHistory) main.DisableVersionHistory(); \
 			}
 			else if (name == "_LocalFileTemplates")
 			{
+				if (arguments.size() < 2)
+					return true;
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_templates");
 
 				if (arguments[0]->IsString())
@@ -2181,6 +2221,9 @@ if (main.DisableVersionHistory) main.DisableVersionHistory(); \
 			}
 			else if (name == "LocalFileSaveChanges")
 			{
+				if (arguments.size() < 3)
+					return true;
+
 				std::vector<CefRefPtr<CefV8Value>>::const_iterator iter = arguments.begin();
 
 				CefRefPtr<CefV8Value> param = arguments[0];
@@ -2202,7 +2245,7 @@ if (main.DisableVersionHistory) main.DisableVersionHistory(); \
 						if (!param->IsArray())
 						{
 							fprintf(_file, "\"");
-							fprintf(_file, param->GetStringValue().ToString().c_str());
+							fprintf(_file, "%s", param->GetStringValue().ToString().c_str());
 							fprintf(_file, "\",");
 						}
 						else
@@ -2210,7 +2253,7 @@ if (main.DisableVersionHistory) main.DisableVersionHistory(); \
 							for (int i = 0; i < nCount; ++i)
 							{
 								fprintf(_file, "\"");
-								fprintf(_file, param->GetValue(i)->GetStringValue().ToString().c_str());
+								fprintf(_file, "%s", param->GetValue(i)->GetStringValue().ToString().c_str());
 								fprintf(_file, "\",");
 							}
 						}
@@ -2226,6 +2269,9 @@ if (main.DisableVersionHistory) main.DisableVersionHistory(); \
 			}
 			else if (name == "LocalFileSetOpenChangesCount")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				m_nOpenChangesIndex = arguments[0]->GetIntValue();
 				return true;
 			}
@@ -2236,6 +2282,9 @@ if (main.DisableVersionHistory) main.DisableVersionHistory(); \
 			}
 			else if (name == "LocalFileSave")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("onlocaldocument_onsavestart");
 				message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
 				message->GetArgumentList()->SetString(1, ((arguments.size() > 1) && arguments[1]->IsString()) ? arguments[1]->GetStringValue() : "");
@@ -2253,6 +2302,9 @@ if (main.DisableVersionHistory) main.DisableVersionHistory(); \
 			}
 			else if (name == "LocalFileSetSourcePath")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				m_sLocalFileSrc = arguments[0]->GetStringValue().ToWString();
 				return true;
 			}
@@ -2288,6 +2340,9 @@ if (main.DisableVersionHistory) main.DisableVersionHistory(); \
 			}
 			else if (name == "LocalFileSetSaved")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				// saved -> unsaved перейти не может
 				if (!m_bLocalIsSaved)
 					m_bLocalIsSaved = arguments[0]->GetBoolValue();
@@ -2295,6 +2350,9 @@ if (main.DisableVersionHistory) main.DisableVersionHistory(); \
 			}
 			else if (name == "LocalFileGetImageUrl")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				std::wstring sUrl = GetLocalImageUrl(arguments[0]->GetStringValue().ToWString());
 				retval = CefV8Value::CreateString(sUrl);
 				return true;
@@ -2530,6 +2588,9 @@ if (main.DisableVersionHistory) main.DisableVersionHistory(); \
 			}
 			else if (name == "Logout")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_logout");
 				message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
@@ -2537,6 +2598,9 @@ if (main.DisableVersionHistory) main.DisableVersionHistory(); \
 			}
 			else if (name == "SetDropFiles")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				// разрешения на файлы даются выше
 				CefRefPtr<CefV8Value> val = *arguments.begin();
 				int nCount = val->GetArrayLength();
@@ -2556,6 +2620,9 @@ if (main.DisableVersionHistory) main.DisableVersionHistory(); \
 			}
 			else if (name == "IsImageFile")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				CImageFileFormatChecker oChecker;
 				std::wstring sImageFile = arguments[0]->GetStringValue().ToWString();
 				bool bIsImageFile = oChecker.isImageFile(sImageFile);
@@ -2588,6 +2655,9 @@ if (main.DisableVersionHistory) main.DisableVersionHistory(); \
 			}
 			else if (name == "SetAdvancedOptions")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_setadvancedoptions");
 				message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
@@ -2595,6 +2665,9 @@ if (main.DisableVersionHistory) main.DisableVersionHistory(); \
 			}
 			else if (name == "ApplyAction")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_core_check_info");
 				message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
@@ -3006,6 +3079,8 @@ resolve(typeof value === 'string' ? value : '');\
 						sBaseUrl = sData.substr(pos1 + sBaseUrlStart.length(), pos2 - pos1 - sBaseUrlStart.length());
 
 						auto pos = sBaseUrl.rfind(L"/", sBaseUrl.length() - 2);
+						if (std::wstring::npos == pos)
+							pos = 0;
 						sPluginName = sBaseUrl.substr(pos);
 						sPluginName.erase(std::remove(sPluginName.begin(), sPluginName.end(), L'/'), sPluginName.end());
 
@@ -3071,6 +3146,9 @@ resolve(typeof value === 'string' ? value : '');\
 			}
 			else if (name == "PluginUninstall")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				bool bResult = false;
 
 				CPluginsManager oPlugins;
@@ -3111,6 +3189,9 @@ resolve(typeof value === 'string' ? value : '');\
 			}
 			else if (name == "Sign")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_sign");
 
 				int nSize = (int)arguments.size();
@@ -3124,6 +3205,9 @@ resolve(typeof value === 'string' ? value : '');\
 			}
 			else if (name == "RemoveSignature")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_remove");
 				message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
@@ -3137,6 +3221,9 @@ resolve(typeof value === 'string' ? value : '');\
 			}
 			else if (name == "ViewCertificate")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_signature_viewcertificate");
 				message->GetArgumentList()->SetInt(0, arguments[0]->GetIntValue());
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
@@ -3156,6 +3243,9 @@ resolve(typeof value === 'string' ? value : '');\
 			}
 			else if (name == "_OpenFilenameDialog")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_open_filename_dialog");
 				message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
 				message->GetArgumentList()->SetString(1, std::to_string(CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier()));
@@ -3172,6 +3262,9 @@ resolve(typeof value === 'string' ? value : '');\
 			}
 			else if (name == "startReporter")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_start_reporter");
 				message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
 				message->GetArgumentList()->SetString(1, m_sLocalFileFolder);
@@ -3199,6 +3292,9 @@ resolve(typeof value === 'string' ? value : '');\
 			}
 			else if (name == "sendToReporter")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				// сообщение докладчику
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("send_to_reporter");
 				message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
@@ -3207,6 +3303,9 @@ resolve(typeof value === 'string' ? value : '');\
 			}
 			else if (name == "sendFromReporter")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				// сообщение от докладчика
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("send_from_reporter");
 				message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
@@ -3231,11 +3330,17 @@ resolve(typeof value === 'string' ? value : '');\
 			}
 			else if (name == "SetSupportSign")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				m_bIsSupportSigs = arguments[0]->GetBoolValue();
 				return true;
 			}
 			else if (name == "SetInitFlags")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				int nFlags = arguments[0]->GetIntValue();
 				m_bIsSupportOnlyPass = ((nFlags & 0x01) == 0x01) ? true : false;
 				m_bIsSupportProtect = ((nFlags & 0x02) == 0x02) ? true : false;
@@ -3252,6 +3357,9 @@ resolve(typeof value === 'string' ? value : '');\
 			}
 			else if (name == "_sendSystemMessage")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("send_system_message");
 
 				int64 frameID = CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier();
@@ -3264,6 +3372,9 @@ resolve(typeof value === 'string' ? value : '');\
 			}
 			else if (name == "_GetHash")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("file_get_hash");
 				message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
 				message->GetArgumentList()->SetString(1, (arguments.size() > 1) ? arguments[1]->GetStringValue() : "sha-256");
@@ -3273,6 +3384,9 @@ resolve(typeof value === 'string' ? value : '');\
 			}
 			else if (name == "_CallInAllWindows")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("call_in_all_windows");
 				message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
@@ -3280,6 +3394,9 @@ resolve(typeof value === 'string' ? value : '');\
 			}
 			else if (name == "_OpenFileCrypt")
 			{
+				if (arguments.size() < 2)
+					return true;
+
 				m_sEditorPageDomain = NSCommon::GetBaseDomain(CefV8Context::GetCurrentContext()->GetFrame()->GetURL().ToWString(), true);
 				m_sInternalEditorPageDomain = NSCommon::GetBaseDomain(arguments[1]->GetStringValue().ToWString(), true);
 
@@ -3297,6 +3414,9 @@ resolve(typeof value === 'string' ? value : '');\
 					SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 					return true;
 				}
+
+				if (arguments.size() < 4)
+					return true;
 
 				std::string sContent = arguments[0]->GetStringValue().ToString();
 				BYTE* pDataDst = NULL;
@@ -3319,6 +3439,9 @@ resolve(typeof value === 'string' ? value : '');\
 			}
 			else if (name == "buildCryptedEnd")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("build_crypted_end");
 				message->GetArgumentList()->SetBool(0, arguments[0]->GetBoolValue());
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
@@ -3370,11 +3493,17 @@ resolve(typeof value === 'string' ? value : '');\
 			}
 			else if (name == "SetCryptDocumentFolder")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				m_sCryptDocumentFolder = arguments[0]->GetStringValue().ToWString();
 				return true;
 			}
 			else if (name == "PreloadCryptoImage")
 			{
+				if (arguments.size() < 2)
+					return true;
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("preload_crypto_image");
 				message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
 				message->GetArgumentList()->SetString(1, arguments[1]->GetStringValue());
@@ -3384,6 +3513,9 @@ resolve(typeof value === 'string' ? value : '');\
 			}
 			else if (name == "ResaveFile")
 			{
+				if (arguments.size() < 2)
+					return true;
+
 				std::wstring sFile = /*m_sCryptDocumentFolder + */ arguments[0]->GetStringValue().ToWString();
 				std::string sData = arguments[1]->GetStringValue().ToString();
 
@@ -3415,6 +3547,9 @@ resolve(typeof value === 'string' ? value : '');\
 			}
 			else if (name == "_DownloadFiles")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				std::wstring sDirTmp = m_sCryptDocumentFolder;
 				if (sDirTmp.empty())
 					sDirTmp = m_sLocalFileFolderWithoutFile;
@@ -3474,6 +3609,9 @@ resolve(typeof value === 'string' ? value : '');\
 			}
 			else if (name == "RemoveFile")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				std::wstring sFile = arguments[0]->GetStringValue();
 
 				if (!g_pLocalResolver->CheckNoFont(sFile))
@@ -3485,6 +3623,9 @@ resolve(typeof value === 'string' ? value : '');\
 			}
 			else if (name == "_SetCryptoMode")
 			{
+				if (arguments.size() < 2)
+					return true;
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("set_crypto_mode");
 				message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
 				message->GetArgumentList()->SetInt(1, arguments[1]->GetIntValue());
@@ -3495,6 +3636,9 @@ resolve(typeof value === 'string' ? value : '');\
 			}
 			else if (name == "GetImageFormat")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				std::wstring sFile = arguments[0]->GetStringValue();
 				std::string sExt = "png";
 
@@ -3546,6 +3690,9 @@ resolve(typeof value === 'string' ? value : '');\
 			}
 			else if (name == "_GetAdvancedEncryptedData")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("get_advanced_encrypted_data");
 				NSArgumentList::SetInt64(message->GetArgumentList(), 0, CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
 				message->GetArgumentList()->SetString(1, arguments[0]->GetStringValue());
@@ -3554,6 +3701,9 @@ resolve(typeof value === 'string' ? value : '');\
 			}
 			else if (name == "_SetAdvancedEncryptedData")
 			{
+				if (arguments.size() < 2)
+					return true;
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("set_advanced_encrypted_data");
 				NSArgumentList::SetInt64(message->GetArgumentList(), 0, CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
 				message->GetArgumentList()->SetString(1, arguments[0]->GetStringValue());
@@ -3594,6 +3744,9 @@ resolve(typeof value === 'string' ? value : '');\
 			}
 			else if (name == "CryptoDownloadAs")
 			{
+				if (arguments.size() < 2)
+					return true;
+
 				std::string fileData = arguments[0]->GetStringValue().ToString();
 
 				NSFile::CFileBinary oFileWithChanges;
@@ -3617,6 +3770,9 @@ resolve(typeof value === 'string' ? value : '');\
 			}
 			else if (name == "MediaStart")
 			{
+				if (arguments.size() < 6)
+					return true;
+
 #ifdef NO_SUPPORT_MEDIA_PLAYER
 				return true;
 #endif
@@ -3628,7 +3784,7 @@ resolve(typeof value === 'string' ? value : '');\
 				message->GetArgumentList()->SetDouble(4, arguments[4]->GetDoubleValue());
 				message->GetArgumentList()->SetDouble(5, arguments[5]->GetDoubleValue());
 
-				if (arguments.size() > 6)
+				if (arguments.size() > 11)
 				{
 					message->GetArgumentList()->SetDouble(6, arguments[6]->GetDoubleValue());
 					message->GetArgumentList()->SetDouble(7, arguments[7]->GetDoubleValue());
@@ -3643,6 +3799,9 @@ resolve(typeof value === 'string' ? value : '');\
 			}
 			else if (name == "CallMediaPlayerCommand")
 			{
+				if (0 == arguments.size())
+					return true;
+
 #ifdef NO_SUPPORT_MEDIA_PLAYER
 				return true;
 #endif
@@ -3651,7 +3810,7 @@ resolve(typeof value === 'string' ? value : '');\
 
 				CefRefPtr<CefV8Value> data = arguments[0];
 				// Handle cases when the data object is invalid
-				if (data->IsNull())
+				if (!data->IsObject())
 					return true;
 				// Cmd
 				std::string sCmd = data->GetValue("Cmd")->GetStringValue();
@@ -3660,12 +3819,16 @@ resolve(typeof value === 'string' ? value : '');\
 				{
 					// FrameRect
 					CefRefPtr<CefV8Value> frameRect = data->GetValue("FrameRect");
+					if (!frameRect || !frameRect->IsObject())
+						return true;
 					messageArgs->SetInt(1, frameRect->GetValue("X")->GetIntValue());
 					messageArgs->SetInt(2, frameRect->GetValue("Y")->GetIntValue());
 					messageArgs->SetInt(3, frameRect->GetValue("W")->GetIntValue());
 					messageArgs->SetInt(4, frameRect->GetValue("H")->GetIntValue());
 					// ControlRect
 					CefRefPtr<CefV8Value> controlRect = data->GetValue("ControlRect");
+					if (!controlRect || !controlRect->IsObject())
+						return true;
 					messageArgs->SetInt(5, controlRect->GetValue("X")->GetIntValue());
 					messageArgs->SetInt(6, controlRect->GetValue("Y")->GetIntValue());
 					messageArgs->SetInt(7, controlRect->GetValue("W")->GetIntValue());
@@ -3714,6 +3877,9 @@ resolve(typeof value === 'string' ? value : '');\
 
 			if (name == "GetImageOriginalSize")
 			{
+				if (0 == arguments.size())
+					return true;
+
 #ifdef CEF_2623
 				retval = CefV8Value::CreateObject(NULL);
 #else
@@ -3735,7 +3901,7 @@ resolve(typeof value === 'string' ? value : '');\
 
 					NSStringUtils::string_replace(sUrlFile, L"%20", L" ");
 
-					if (!NSFile::CFileBinary::Exists(sUrlFile))
+					if (!sUrlFile.empty() && !NSFile::CFileBinary::Exists(sUrlFile))
 						sUrlFile = sUrlFile.substr(1);
 				}
 
@@ -3827,6 +3993,9 @@ resolve(typeof value === 'string' ? value : '');\
 			}
 			else if (name == "_AddAudio")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				std::wstring sFile = arguments[0]->GetStringValue().ToWString();
 				std::wstring sExt = NSFile::GetFileExtention(sFile);
 				NSCommon::makeLowerW(sExt);
@@ -3850,6 +4019,9 @@ resolve(typeof value === 'string' ? value : '');\
 			}
 			else if (name == "_AddVideo")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				std::wstring sFile = arguments[0]->GetStringValue().ToWString();
 				std::wstring sExt = NSFile::GetFileExtention(sFile);
 				NSCommon::makeLowerW(sExt);
@@ -3899,7 +4071,7 @@ resolve(typeof value === 'string' ? value : '');\
 				{
 					if (NSFile::CFileBinary::Exists(sFile.substr(7)))
 						sFile = sFile.substr(7);
-					else if (NSFile::CFileBinary::Exists(sFile.substr(8)))
+					else if (sFile.length() > 7 && NSFile::CFileBinary::Exists(sFile.substr(8)))
 						sFile = sFile.substr(8);
 				}
 
@@ -3908,6 +4080,9 @@ resolve(typeof value === 'string' ? value : '');\
 			}
 			else if (name == "_CloudCryptoUpload")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				if (!m_bIsEnableUploadCrypto)
 				{
 					m_bIsEnableUploadCrypto = true;
@@ -3967,6 +4142,9 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
 			}
 			else if (name == "_CloudCryptoUploadPass")
 			{
+				if (arguments.size() < 2)
+					return true;
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("cloud_crypto_upload_pass");
 				message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
 				message->GetArgumentList()->SetString(1, arguments[1]->GetStringValue());
@@ -3987,6 +4165,9 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
 			}
 			else if (name == "getLocalFileSize")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				std::wstring sFile = arguments[0]->GetStringValue().ToWString();
 				long lSize = 0;
 
@@ -4012,6 +4193,9 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
 			}
 			else if (name == "_SaveFilenameDialog")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_save_filename_dialog");
 				message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
 				message->GetArgumentList()->SetString(1, std::to_string(CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier()));
@@ -4024,6 +4208,9 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
 			}
 			else if (name == "_ImportAdvancedEncryptedData")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				std::wstring sFile = arguments[0]->GetStringValue().ToWString();
 
 				COfficeFileFormatChecker oChecker;
@@ -4041,12 +4228,18 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
 			}
 			else if (name == "_ExportAdvancedEncryptedData")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				std::wstring sFile = arguments[0]->GetStringValue().ToWString();
 				NSFile::CFileBinary::Copy(m_sUserPlugins + L"/advanced_crypto_data.docx", sFile);
 				return true;
 			}
 			else if (name == "CompareDocumentUrl" || name == "CompareDocumentFile" || name == "MergeDocumentUrl" || name == "MergeDocumentFile")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_compare_document");
 
 				std::string sFileOrUrlType = "url";
@@ -4106,6 +4299,9 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
 			}
 			else if (name == "CryptoAES_Init")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				std::string sPassword = arguments[0]->GetStringValue().ToString();
 				std::string sSalt = "";
 				if (arguments.size() > 1)
@@ -4124,6 +4320,9 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
 			}
 			else if (name == "CryptoAES_Encrypt")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				std::string sMessage = arguments[0]->GetStringValue().ToString();
 				std::string sOut;
 				NSOpenSSL::AES_Encrypt_desktop_GCM(m_pAES_Key, sMessage, sOut);
@@ -4132,6 +4331,9 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
 			}
 			else if (name == "CryptoAES_Decrypt")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				std::string sMessage = arguments[0]->GetStringValue().ToString();
 				std::string sOut;
 
@@ -4165,6 +4367,9 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
 			}
 			else if (name == "CryproRSA_EncryptPublic")
 			{
+				if (arguments.size() < 2)
+					return true;
+
 				std::string sKey = arguments[0]->GetStringValue().ToString();
 				NSStringUtils::string_replaceA(sKey, "&#xA", "\n");
 				std::string sMessage = arguments[1]->GetStringValue().ToString();
@@ -4175,6 +4380,9 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
 			}
 			else if (name == "CryproRSA_DecryptPrivate")
 			{
+				if (arguments.size() < 2)
+					return true;
+
 				std::string sKey = arguments[0]->GetStringValue().ToString();
 				std::string sMessage = arguments[1]->GetStringValue().ToString();
 				std::string sOut;
@@ -4189,6 +4397,9 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
 			}
 			else if (name == "CryptoGetHash")
 			{
+				if (arguments.size() < 2)
+					return true;
+
 				std::string sMessage = arguments[0]->GetStringValue().ToString();
 				int alg = arguments[1]->GetIntValue();
 				unsigned int data_len = 0;
@@ -4229,6 +4440,9 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
 			}
 			else if (name == "Property_SetCryptoMode")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				m_nIsCryptoModeProperty = arguments[0]->GetIntValue();
 				return true;
 			}
@@ -4242,9 +4456,12 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
 			}
 			else if (name == "CallInFrame")
 			{
+				if (arguments.size() < 2)
+					return true;
+
 				std::string sId = arguments[0]->GetStringValue().ToString();
 				std::string sCode = arguments[1]->GetStringValue().ToString();
-				int64 frameId = (int64)(std::stoull(sId));
+				int64 frameId = (int64)(strtoull(sId.c_str(), NULL, 10));
 				CefRefPtr<CefFrame> frame = CefV8Context::GetCurrentContext()->GetBrowser()->GetFrame(frameId);
 				if (frame)
 					frame->ExecuteJavaScript(sCode, frame->GetURL(), 0);
@@ -4252,6 +4469,9 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
 			}
 			else if (name == "_cloudCryptoCommandMainFrame")
 			{
+				if (arguments.size() < 2)
+					return true;
+
 				std::string sId = arguments[0]->GetStringValue().ToString();
 				std::string sArg = arguments[1]->GetStringValue().ToString();
 
@@ -4276,6 +4496,9 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			}
 			else if (name == "initCryptoWorker")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				std::wstring sId = arguments[0]->GetStringValue().ToWString();
 				NSStringUtils::string_replace(sId, L"asc.", L"");
 				std::wstring sFile = m_sSystemPlugins + L"/" + sId + L"/worker.js";
@@ -4299,6 +4522,9 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			}
 			else if (name == "getDocumentInfo")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				std::wstring sFile = arguments[0]->GetStringValue().ToWString();
 
 				COfficeFileFormatChecker oChecker;
@@ -4318,6 +4544,9 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			}
 			else if (name == "setDocumentInfo")
 			{
+				if (arguments.size() < 3)
+					return true;
+
 				std::wstring sFile = arguments[0]->GetStringValue().ToWString();
 				std::wstring sPassword = arguments[1]->GetStringValue().ToWString();
 				std::wstring sDocinfo = arguments[2]->GetStringValue().ToWString();
@@ -4363,6 +4592,9 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			}
 			else if (name == "isFileSupportCloudCrypt")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				std::wstring sFile = arguments[0]->GetStringValue().ToWString();
 				bool isSupportCrypt = false;
 
@@ -4398,6 +4630,9 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			}
 			else if (name == "isFileCrypt")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				std::wstring sFile = arguments[0]->GetStringValue().ToWString();
 				bool isCrypt = false;
 				COfficeFileFormatChecker oChecker;
@@ -4410,6 +4645,9 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			}
 			else if (name == "Crypto_GetLocalImageBase64")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				// из локальной ссылки делаем base64!!! (для копирования из зашифрованного файла)
 				std::wstring sInput = arguments[0]->GetStringValue().ToWString();
 
@@ -4488,7 +4726,7 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				// проверяем лицензию...
 				if (!bIsStopPaydDesktopFeatures)
 				{
-					int nLicenceType = arguments[0]->GetIntValue();
+					int nLicenceType = arguments.empty() ? 0 : arguments[0]->GetIntValue();
 					if (nLicenceType != 3) // c_oLicenseResult.Success
 						bIsStopPaydDesktopFeatures = true;
 				}
@@ -4598,6 +4836,9 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			}
 			else if (name == "GetOpenedFile")
 			{
+				if (0 == arguments.size())
+					return true;
+
 #ifndef CEF_V8_SUPPORT_TYPED_ARRAYS
 				retval = CefV8Value::CreateUndefined();
 #else
@@ -4657,6 +4898,9 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			}
 			else if (name == "_onConvertFile")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				std::wstring sFolder = arguments[0]->GetStringValue().ToWString();
 
 				if (sFolder.empty())
@@ -4680,6 +4924,9 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			}
 			else if (name == "SetPdfCloudPrintFileInfo")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				std::string sBase64File = arguments[0]->GetStringValue().ToString();
 				m_sCloudNativePrintFile = GetTmpFileFromBase64(sBase64File, m_sAppTmpFolder);
 				return true;
@@ -4749,6 +4996,9 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			}
 			else if (name == "setPortalsList")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("set_portals_list");
 				int nCount = arguments[0]->GetArrayLength();
 				for (int i = 0; i < nCount; ++i)
@@ -4758,6 +5008,9 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			}
 			else if (name == "localSaveToDrawingFormat")
 			{
+				if (arguments.size() < 5)
+					return true;
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("local_save_to_drawing");
 				message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
 				message->GetArgumentList()->SetString(1, arguments[1]->GetStringValue());
@@ -4770,6 +5023,9 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			}
 			else if (name == "localSaveToDrawingFormat2")
 			{
+				if (arguments.size() < 7)
+					return true;
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("local_save_to_drawing_pdf");
 				message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
 				message->GetArgumentList()->SetString(1, arguments[1]->GetStringValue());
@@ -4801,6 +5057,9 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			}
 			else if (name == "emulateCloudPrinting")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				m_bIsPrinting = arguments[0]->GetBoolValue();
 				return true;
 			}
@@ -4815,6 +5074,9 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			}
 			else if (name == "startExternalConvertation")
 			{
+				if (arguments.size() < 2)
+					return true;
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("external_convertation");
 				message->GetArgumentList()->SetString(0, arguments[0]->GetStringValue());
 				message->GetArgumentList()->SetString(1, arguments[1]->GetStringValue());
@@ -4831,6 +5093,9 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			}
 			else if (name == "AddChanges")
 			{
+				if (arguments.size() < 2)
+					return true;
+
 				if (!IsLocalFile(true))
 					return true;
 
@@ -4864,7 +5129,7 @@ window.AscDesktopEditor.CallInFrame(\"" +
 					bIsError = true;
 				}
 
-				std::wstring sRequestPath = arguments[0]->GetStringValue();
+				std::wstring sRequestPath = bIsError ? std::wstring() : arguments[0]->GetStringValue().ToWString();
 
 				if (!bIsError)
 				{
@@ -4903,6 +5168,9 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			}
 			else if (name == "_setViewportSettings")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				m_sViewportSettings = arguments[0]->GetStringValue().ToString();
 				if (m_sViewportSettings.empty())
 					m_sViewportSettings = "{}";
@@ -4915,7 +5183,7 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_open_binary_as_new");
 
 				std::wstring sLocalDir = m_sCryptDocumentFolder;
-				if (!sLocalDir.empty())
+				if (!sLocalDir.empty() && !arguments.empty())
 				{
 					std::string sContent = arguments[0]->GetStringValue().ToString();
 					BYTE* pDataDst = NULL;
@@ -4940,6 +5208,9 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			}
 			else if (name == "onFileLockedClose")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_file_locked_close");
 				message->GetArgumentList()->SetBool(0, arguments[0]->GetBoolValue());
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
@@ -4947,6 +5218,9 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			}
 			else if (name == "LocalFileGetImageUrlCorrect")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				std::wstring sUrl = arguments[0]->GetStringValue().ToWString();
 				std::wstring sUrlFile = sUrl;
 				if (sUrlFile.find(L"file://") == 0)
@@ -4954,7 +5228,7 @@ window.AscDesktopEditor.CallInFrame(\"" +
 					sUrlFile = sUrlFile.substr(7);
 					NSStringUtils::string_replace(sUrlFile, L"%20", L" ");
 
-					if (!NSFile::CFileBinary::Exists(sUrlFile))
+					if (!sUrlFile.empty() && !NSFile::CFileBinary::Exists(sUrlFile))
 						sUrlFile = sUrlFile.substr(1);
 				}
 
@@ -5024,6 +5298,9 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			}
 			else if (name == "callToolFunction")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				CAITools& tools = CAITools::getInstance();
 				if (tools.getWorkDirectory().empty())
 				{
@@ -5038,7 +5315,7 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			}
 			else if (name == "_convertFileExternal")
 			{
-				if (arguments.size() < 2)
+				if (arguments.size() < 3)
 					return true;
 
 				std::wstring sFileUrl = arguments[0]->GetStringValue();
@@ -5056,6 +5333,9 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			}
 			else if (name == "_onConvertFileExternal")
 			{
+				if (arguments.size() < 2)
+					return true;
+
 #ifdef CEF_2623
 				retval = CefV8Value::CreateObject(NULL);
 #else
@@ -5089,6 +5369,9 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			}
 			else if (name == "_createProcess")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				if (!m_external_processes)
 					m_external_processes = new NSProcesses::CProcessManager(this);
 
@@ -5118,6 +5401,9 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			}
 			else if (name == "_endProcess")
 			{
+				if (0 == arguments.size())
+					return true;
+
 				int process_id = arguments[0]->GetIntValue();
 				if (m_external_processes)
 					m_external_processes->End(process_id);
@@ -5125,6 +5411,9 @@ window.AscDesktopEditor.CallInFrame(\"" +
 			}
 			else if (name == "_stdin")
 			{
+				if (arguments.size() < 2)
+					return true;
+
 				int process_id = arguments[0]->GetIntValue();
 				std::string data = arguments[1]->GetStringValue().ToString();
 				if (m_external_processes)
@@ -5507,7 +5796,7 @@ window.AscDesktopEditor._onGetCloudsResponse(" + std::to_string(callerFrameId) +
 
 				NSStringUtils::string_replace(sUrlFile, L"%20", L" ");
 
-				if (!NSFile::CFileBinary::Exists(sUrlFile))
+				if (!sUrlFile.empty() && !NSFile::CFileBinary::Exists(sUrlFile))
 					sUrlFile = sUrlFile.substr(1);
 			}
 
