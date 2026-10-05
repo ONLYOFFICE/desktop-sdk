@@ -1212,7 +1212,13 @@ public:
 
 		if (m_pLocker)
 		{
-			m_pLocker->SaveFile(sLockerSavedPath);
+			// x2t сохранил во временную папку - пишем через хэндл локера.
+			// при ошибке конвертации оригинал не трогаем, ошибку записи (например, отключен сетевой диск) отдаем наверх
+			if (0 == nReturnCode)
+			{
+				if (!m_pLocker->SaveFile(sLockerSavedPath))
+					nReturnCode = 80; // AVS_FILEUTILS_ERROR_CONVERT
+			}
 			m_pLocker = NULL;
 
 			if (NSFile::CFileBinary::Exists(sLockerSavedPath))

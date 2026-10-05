@@ -1044,6 +1044,9 @@ public:
 	// поведение в мерже - как и в compare. тип для возможных таких же режимов.
 	int m_nComparingMode; // -1 - default, 0 - compare, 1 - merge
 
+	// настройки сравнения (json из sdkjs)
+	std::wstring m_sComparingOptions;
+
 	// path template (may be cloud)
 	std::wstring m_sTemplateUrl;
 	std::wstring m_sTemplateName;
@@ -4493,6 +4496,7 @@ public:
 		std::wstring sType = args->GetString(0).ToWString();
 		std::wstring sFile_Url = args->GetString(1).ToWString();
 		std::wstring sCompareType = args->GetString(2).ToWString();
+		m_pParent->m_pInternal->m_sComparingOptions = (args->GetSize() > 3) ? args->GetString(3).ToWString() : L"";
 		std::wstring sUrl = L"ascdesktop://" + sCompareType + L"/" + std::to_wstring(m_pParent->GetId()) + L"/" + sType + L"/" + sFile_Url;
 
 		NSEditorApi::CAscCreateTab* pData = new NSEditorApi::CAscCreateTab();
@@ -6216,6 +6220,10 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
 	{
 		bool bIsSaved = ((0 == nError) && NSFile::CFileBinary::Exists(m_oConverterFromEditor.m_oInfo.m_sFileSrc)) ? true : false;
 
+		// конвертер отработал, но файла нет (например, отключен сетевой диск) - это ошибка сохранения
+		if (0 == nError && !bIsSaved)
+			nError = 80; // AVS_FILEUTILS_ERROR_CONVERT
+
 		if (bIsSaved && !m_oLocalInfo.m_oInfo.m_bIsSaved)
 		{
 			m_oLocalInfo.m_oInfo.m_bIsSaved = true;
@@ -6283,6 +6291,21 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
 					m_bIsSavingCrypto = true;
 				}
 			}
+		}
+		else if (m_pManager->GetEventListener() && m_pCefView != NULL)
+		{
+			// документ не сохранен - отменяем закрытие вкладки/окна/приложения
+			m_bIsSaving = false;
+
+			NSEditorApi::CAscCefMenuEvent* pEvent = m_pCefView->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONSAVE);
+
+			NSEditorApi::CAscDocumentOnSaveData* pData = new NSEditorApi::CAscDocumentOnSaveData();
+			pData->put_Id(m_pCefView->GetId());
+			pData->put_IsCancel(true);
+
+			pEvent->m_pData = pData;
+
+			m_pManager->GetEventListener()->OnEvent(pEvent);
 		}
 	}
 
@@ -6418,6 +6441,7 @@ void CCefView_Private::OnFileConvertToEditor(const int& nError)
 			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create(m_nComparingMode == 0 ? "oncompare_loadend" : "onmerge_loadend");
 			message->GetArgumentList()->SetInt(0, nError);
 			message->GetArgumentList()->SetString(1, m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/compare");
+			message->GetArgumentList()->SetString(2, m_sComparingOptions);
 			SEND_MESSAGE_TO_RENDERER_PROCESS(m_handler->GetBrowser(), message);
 
 			m_oConverterToEditor.m_sComparingFile = L"";
@@ -6428,6 +6452,7 @@ void CCefView_Private::OnFileConvertToEditor(const int& nError)
 
 			m_sComparingFile = L"";
 			m_nComparingFileType = -1;
+			m_sComparingOptions = L"";
 		}
 		return;
 	}
@@ -6828,7 +6853,19 @@ void CCefView::load(const std::wstring& urlInputSrc)
 		m_pInternal->m_sComparingFile = strFile;
 		m_pInternal->m_nComparingFileType = (strType == L"file") ? 0 : 1;
 		m_pInternal->m_nComparingMode = nComparingMode;
-		((CCefViewEditor*)this)->OpenCopyAsRecoverFile(std::stoi(strId));
+
+		int nIdSrc = std::stoi(strId);
+
+		// настройки сравнения - из исходной вкладки
+		m_pInternal->m_sComparingOptions = L"";
+		CCefView* pViewSrc = m_pInternal->m_pManager->GetViewById(nIdSrc);
+		if (pViewSrc)
+		{
+			m_pInternal->m_sComparingOptions = pViewSrc->m_pInternal->m_sComparingOptions;
+			pViewSrc->m_pInternal->m_sComparingOptions = L"";
+		}
+
+		((CCefViewEditor*)this)->OpenCopyAsRecoverFile(nIdSrc);
 		return;
 	}
 	if (0 == urlInput.find(L"ascdesktop://template/"))

@@ -89,6 +89,35 @@ static bool IsSafeCallbackId(const std::string& sId)
 	return true;
 }
 
+// Escapes UTF-8 text for a double-quoted JS string literal.
+// '"' and '\' would break the literal. U+2028/U+2029 (UTF-8: E2 80 A8 / E2 80 A9) are allowed raw in JSON,
+// but before ES2019 (Chrome < 66, XP build: CEF 2623 = Chrome 49) they are line terminators => SyntaxError.
+static std::string EscapeJsStringLiteral(const std::string& sSrc)
+{
+	std::string sDst;
+	sDst.reserve(sSrc.length());
+
+	for (size_t i = 0, len = sSrc.length(); i < len; ++i)
+	{
+		unsigned char c = (unsigned char)sSrc[i];
+
+		if (c == '\\')      sDst += "\\\\";
+		else if (c == '"')  sDst += "\\\"";
+		else if (c == '\n') sDst += "\\n";
+		else if (c == '\r') sDst += "\\r";
+		else if (c == 0xE2 && (i + 2) < len && (unsigned char)sSrc[i + 1] == 0x80 &&
+				 ((unsigned char)sSrc[i + 2] == 0xA8 || (unsigned char)sSrc[i + 2] == 0xA9))
+		{
+			// escape sequence as 6 ascii chars (backslash, 'u', '2', '0', '2', '8' or '9'), not the character itself
+			sDst += ((unsigned char)sSrc[i + 2] == 0xA8) ? "\\u2028" : "\\u2029";
+			i += 2;
+		}
+		else
+			sDst += (char)c;
+	}
+	return sDst;
+}
+
 class CCloudInfo
 {
 public:
@@ -4255,6 +4284,12 @@ if (window.onSystemMessage2) window.onSystemMessage2(e);\n\
 
 				message->GetArgumentList()->SetString(2, sType);
 
+				// comparison options (json string from sdkjs)
+				std::string sOptions = "";
+				if (arguments.size() > 1 && arguments[1]->IsString())
+					sOptions = arguments[1]->GetStringValue().ToString();
+				message->GetArgumentList()->SetString(3, sOptions);
+
 				if (arguments.size() == 4)
 				{
 					std::wstring sLocalDir = m_sCryptDocumentFolder;
@@ -7105,7 +7140,12 @@ else if (window.editor) window.editor.asc_nativePrint(undefined, undefined";
 				else if (sMessageName == "onmerge_loadend")
 					sCodeFunc = "window.onDocumentMerge && window.onDocumentMerge(\"";
 
-				std::string sCode = sCodeFunc + U_TO_UTF8(sFolder) + "\", \"" + sFileData + "\", " + std::to_string(nFileDataLen) + ", " + sImageMap + ");";
+				// comparison options: json => js string literal (sdkjs parses it)
+				std::string sOptions;
+				if (message->GetArgumentList()->GetSize() > 2)
+					sOptions = EscapeJsStringLiteral(message->GetArgumentList()->GetString(2).ToString());
+
+				std::string sCode = sCodeFunc + U_TO_UTF8(sFolder) + "\", \"" + sFileData + "\", " + std::to_string(nFileDataLen) + ", " + sImageMap + ", \"" + sOptions + "\");";
 				_frame->ExecuteJavaScript(sCode, _frame->GetURL(), 0);
 				return true;
 			}
