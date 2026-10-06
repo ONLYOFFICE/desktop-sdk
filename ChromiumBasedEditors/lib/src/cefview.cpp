@@ -79,6 +79,12 @@
 
 #include <algorithm>
 
+#ifdef _MAC
+#include <spawn.h>
+#include <sys/wait.h>
+#include <crt_externs.h>
+#endif
+
 #if defined (_LINUX) && !defined(_MAC)
 #define DONT_USE_NATIVE_FILE_DIALOGS
 #endif
@@ -6481,31 +6487,17 @@ void CCefView_Private::LocalSendTo(const std::wstring& sUrlFile)
 	else
 	{
 #ifdef _MAC
-		std::string sCodeApp = "open -a Mail";
-		if (!sUrlFile.empty())
-		{
-			sCodeApp += " ";
-
-			std::string sUrlFileA = U_TO_UTF8(sUrlFile);
-			NSStringUtils::string_replaceA(sUrlFileA, "\\", "\\\\");
-			NSStringUtils::string_replaceA(sUrlFileA, " ", "\\ ");
-			NSStringUtils::string_replaceA(sUrlFileA, "<", "\\<");
-			NSStringUtils::string_replaceA(sUrlFileA, ">", "\\>");
-			NSStringUtils::string_replaceA(sUrlFileA, "(", "\\(");
-			NSStringUtils::string_replaceA(sUrlFileA, ")", "\\)");
-			NSStringUtils::string_replaceA(sUrlFileA, "[", "\\[");
-			NSStringUtils::string_replaceA(sUrlFileA, "]", "\\]");
-			NSStringUtils::string_replaceA(sUrlFileA, "?", "\\?");
-			NSStringUtils::string_replaceA(sUrlFileA, "!", "\\!");
-			NSStringUtils::string_replaceA(sUrlFileA, "'", "\\'");
-			NSStringUtils::string_replaceA(sUrlFileA, "\"", "\\\"");
-			NSStringUtils::string_replaceA(sUrlFileA, "|", "\\|");
-			NSStringUtils::string_replaceA(sUrlFileA, "&", "\\&");
-
-			sCodeApp += sUrlFileA;
-			sCodeApp += "";
-		}
-		system(sCodeApp.c_str());
+		// No shell: the path is a single argv entry, nothing in it is interpreted
+		// (a file name with `cmd`, $(cmd) or ;cmd ran through system()).
+		std::string sUrlFileA = U_TO_UTF8(sUrlFile);
+		// a relative path gets "./": open can't take it for an option
+		if (!sUrlFileA.empty() && '/' != sUrlFileA[0])
+			sUrlFileA = "./" + sUrlFileA;
+		const char* argv[] = { "/usr/bin/open", "-a", "Mail", sUrlFileA.empty() ? NULL : sUrlFileA.c_str(), NULL };
+		pid_t pid = 0;
+		// environ is not directly reachable from a dylib on macOS: _NSGetEnviron
+		if (0 == posix_spawn(&pid, "/usr/bin/open", NULL, NULL, (char* const*)argv, *_NSGetEnviron()))
+			waitpid(pid, NULL, 0); // open hands the file to Mail and exits at once
 		return;
 #endif
 		if (GetBrowser())
