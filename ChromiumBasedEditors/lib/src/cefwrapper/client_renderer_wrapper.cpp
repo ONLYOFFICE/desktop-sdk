@@ -2887,9 +2887,9 @@ window.AscDesktopEditor.openExternalReference = function(link, callbackError) {\
 window.AscDesktopEditor._openExternalReferenceCallback = callbackError;\n\
 return window.AscDesktopEditor._openExternalReference(link);\n\
 };\n\
-window.AscDesktopEditor.saveAndOpen = function(content, formatSrc, pathDst, formatDst, callback) {\n\
+window.AscDesktopEditor.saveAndOpen = function(content, formatSrc, pathDst, formatDst, callback, isOpen) {\n\
 window.AscDesktopEditor._saveAndOpenCallback = callback;\n\
-return window.AscDesktopEditor._saveAndOpen(content, formatSrc, pathDst, formatDst);\n\
+return window.AscDesktopEditor._saveAndOpen(content, formatSrc, pathDst, formatDst, isOpen !== false);\n\
 };\n\
 Object.defineProperty(window.AscDesktopEditor, 'CryptoMode', {\n\
 get: function() { return window.AscDesktopEditor.Property_GetCryptoMode(); },\n\
@@ -5565,7 +5565,7 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				int nConvertCounter = 1;
 
 				std::string sCode = "(function(){\n\
-	if (!window._external_converter_counter) window._external_converter_counter = 0; }\n\
+	if (!window._external_converter_counter) window._external_converter_counter = 0; \n\
 	window._external_converter_counter++;\n\
 	window._external_converters = window._external_converters || {};\n\
 	window._external_converters[window._external_converter_counter] = function(path, code){\n\
@@ -5585,12 +5585,16 @@ window.AscDesktopEditor.CallInFrame(\"" +
 				if (bIsEval && retval->IsInt())
 					nConvertCounter = retval->GetIntValue();
 
+				// open the result in a new tab after saving (default: true)
+				bool bIsOpen = (arguments.size() > 4 && arguments[4]->IsBool()) ? arguments[4]->GetBoolValue() : true;
+
 				CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("convert_file_external_and_open");
 				message->GetArgumentList()->SetString(0, sTmpFile);
 				NSArgumentList::SetInt64(message->GetArgumentList(), 1, CefV8Context::GetCurrentContext()->GetFrame()->GetIdentifier());
 				message->GetArgumentList()->SetString(2, arguments[2]->GetStringValue());
 				message->GetArgumentList()->SetInt(3, arguments[3]->GetIntValue());
 				message->GetArgumentList()->SetInt(4, nConvertCounter);
+				message->GetArgumentList()->SetBool(5, bIsOpen);
 
 				SEND_MESSAGE_TO_BROWSER_PROCESS(message);
 				return true;

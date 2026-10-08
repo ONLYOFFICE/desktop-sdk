@@ -4704,7 +4704,7 @@ public:
 		pConverter->m_nFrameId = NSArgumentList::GetInt64(args, 1);
 		pConverter->m_nOutputFormat  = args->GetInt(3);
 		pConverter->m_nId = args->GetInt(4);
-		pConverter->m_bIsOpenResult = true;
+		pConverter->m_bIsOpenResult = (args->GetSize() > 5) ? args->GetBool(5) : true;
 
 		m_pParent->m_pInternal->m_arExternalConverters.push_back(pConverter);
 
