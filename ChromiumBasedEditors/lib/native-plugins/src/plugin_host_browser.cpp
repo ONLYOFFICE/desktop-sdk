@@ -14,6 +14,7 @@
 
 #include <vector>
 #include <future>
+#include <chrono>
 #include <functional>
 
 namespace
@@ -101,34 +102,81 @@ namespace
 		IMPLEMENT_REFCOUNTING(CUITask);
 	};
 
-	void PostUI(const std::function<void()>& fn)
+	// False when the task could not be queued (the UI thread is going away).
+	bool PostUI(const std::function<void()>& fn)
 	{
 		if (CefCurrentlyOn(TID_UI))
+		{
 			fn();
-		else
-			CefPostTask(TID_UI, new CUITask(fn));
+			return true;
+		}
+		return CefPostTask(TID_UI, new CUITask(fn));
+	}
+
+	// How long a worker waits for the UI thread to answer, checking every
+	// c_nUiPollMs whether a plugin stop has begun meanwhile.
+	const int c_nUiWaitMs = 30000;
+	const int c_nUiPollMs = 50;
+
+	// The UI thread's answer, or sFallback when it is not coming: a stop began
+	// (the UI thread is the one stopping), the wait ran out, or the task was
+	// dropped unrun (the promise is broken then, and get() throws).
+	std::string WaitForUI(std::future<std::string>& oFuture, const std::atomic<int>& nStopping,
+	                      const std::string& sFallback)
+	{
+		for (int nWaited = 0; nWaited < c_nUiWaitMs; nWaited += c_nUiPollMs)
+		{
+			if (std::future_status::ready == oFuture.wait_for(std::chrono::milliseconds(c_nUiPollMs)))
+			{
+				try
+				{
+					return oFuture.get();
+				}
+				catch (...)
+				{
+					return sFallback;
+				}
+			}
+			if (nStopping > 0)
+				return sFallback;
+		}
+		return sFallback;
 	}
 }
 
-CBrowserPluginHost::CBrowserPluginHost(CAscApplicationManager* pManager) : m_pManager(pManager)
+CBrowserPluginHost::CBrowserPluginHost(CAscApplicationManager* pManager) : m_pManager(pManager), m_nStopping(0)
 {
+}
+
+void CBrowserPluginHost::BeginStop()
+{
+	++m_nStopping;
+}
+
+void CBrowserPluginHost::EndStop()
+{
+	--m_nStopping;
 }
 
 std::string CBrowserPluginHost::IsOpen(const std::wstring& sAbsPath)
 {
+	if (m_nStopping > 0)
+		return "";
+
 	// Synchronous to the caller (IPC worker); resolves on the UI thread.
 	std::shared_ptr<std::promise<std::string> > pResult = std::make_shared<std::promise<std::string> >();
 	std::future<std::string> oFuture = pResult->get_future();
 
 	CAscApplicationManager* pManager = m_pManager;
 	std::string sPath = U_TO_UTF8(sAbsPath); // FindEditorView compares in UTF-8
-	PostUI([pManager, sPath, pResult]()
+	if (!PostUI([pManager, sPath, pResult]()
 	{
 		CCefViewEditor* pEditor = FindEditorView(pManager, sPath);
 		pResult->set_value(pEditor ? EditorTypeToString(pEditor->GetEditorType()) : std::string(""));
-	});
+	}))
+		return "";
 
-	return oFuture.get();
+	return WaitForUI(oFuture, m_nStopping, "");
 }
 
 void CBrowserPluginHost::ExecuteEditorScript(const std::string& sAbsPath, const std::string& sScript)
@@ -146,13 +194,16 @@ void CBrowserPluginHost::ExecuteEditorScript(const std::string& sAbsPath, const 
 
 std::string CBrowserPluginHost::ListOpen()
 {
+	if (m_nStopping > 0)
+		return "[]";
+
 	// Same walk as FindEditorView, minus the path comparison. Synchronous to
 	// the caller (a plugin's IPC worker); collected on the UI thread.
 	std::shared_ptr<std::promise<std::string> > pResult = std::make_shared<std::promise<std::string> >();
 	std::future<std::string> oFuture = pResult->get_future();
 
 	CAscApplicationManager* pManager = m_pManager;
-	PostUI([pManager, pResult]()
+	if (!PostUI([pManager, pResult]()
 	{
 		std::string sOut = "[";
 		if (pManager)
@@ -177,9 +228,10 @@ std::string CBrowserPluginHost::ListOpen()
 		}
 		sOut += "]";
 		pResult->set_value(sOut);
-	});
+	}))
+		return "[]";
 
-	return oFuture.get();
+	return WaitForUI(oFuture, m_nStopping, "[]");
 }
 
 void CBrowserPluginHost::SendToRenderers(const std::string& sName, const std::string& sArgsJson)

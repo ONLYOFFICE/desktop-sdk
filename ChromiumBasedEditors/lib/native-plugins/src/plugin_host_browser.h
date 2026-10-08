@@ -9,6 +9,7 @@
 
 #include "../include/native_plugin.h"
 #include <string>
+#include <atomic>
 
 class CAscApplicationManager;
 
@@ -26,8 +27,16 @@ public:
 	virtual void SendToRenderers(const std::string& sName, const std::string& sArgsJson);
 	virtual std::string ListOpen();
 
+	// Bracket every plugin Stop() made on the UI thread. A plugin's Stop() waits
+	// for its own worker threads, and a worker may itself be waiting here for
+	// the UI thread (IsOpen / ListOpen): in between, those calls answer "nothing
+	// open" at once instead of deadlocking the stop.
+	void BeginStop();
+	void EndStop();
+
 private:
 	CAscApplicationManager* m_pManager;
+	std::atomic<int> m_nStopping;
 };
 
 #endif // DESKTOP_SDK_PLUGIN_HOST_BROWSER_H

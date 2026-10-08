@@ -8,6 +8,7 @@
 
 #include "../../../../../core/DesktopEditor/common/File.h"
 #include "../../../../../core/DesktopEditor/common/Directory.h"
+#include "../../../../../core/DesktopEditor/common/Path.h"
 
 namespace NSNativePlugin
 {
@@ -207,6 +208,7 @@ namespace NSNativePlugin
 		oOut.pLoader = pLoader;
 		oOut.pPlugin = pPlugin;
 		oOut.fnDestroy = fnDestroy;
+		oOut.sPath = sAbsPath;
 		return true;
 	}
 
@@ -247,6 +249,19 @@ namespace NSNativePlugin
 		std::lock_guard<std::recursive_mutex> oLock(m_oMutex);
 		while (!m_mapPlugins.empty())
 			StopLocked(m_mapPlugins.begin()->first);
+	}
+
+	void CNativePluginManager::StopInDirectory(const std::wstring& sDirectory)
+	{
+		std::lock_guard<std::recursive_mutex> oLock(m_oMutex);
+		std::vector<std::string> arNames;
+		for (std::map<std::string, TLoaded>::iterator it = m_mapPlugins.begin(); it != m_mapPlugins.end(); ++it)
+		{
+			if (NSSystemPath::IsPathInDirectory(sDirectory, it->second.sPath))
+				arNames.push_back(it->first);
+		}
+		for (size_t i = 0; i < arNames.size(); ++i)
+			StopLocked(arNames[i]);
 	}
 
 	void CNativePluginManager::StopLocked(const std::string& sName)

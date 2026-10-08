@@ -133,6 +133,9 @@ namespace NSNativePlugin
 		// IPluginHostRenderer* / IPluginHostBrowser* accordingly.
 		virtual void Start(IPluginHost* pHost) = 0;
 		// Must synchronously stop threads/servers before the DLL is unloaded.
+		// Called at shutdown, and also while the application keeps running when
+		// the plugin's folder is about to be deleted (an addon being removed or
+		// replaced).
 		virtual void Stop() = 0;
 
 		// --- renderer JS methods (return true if this plugin handles sName) ---

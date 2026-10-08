@@ -1638,6 +1638,19 @@ public:
 	void StopNativePlugins();                               // CloseApplication
 	// Forward an (unhandled) process message to native plugins. Returns true if a plugin handled it.
 	bool NativePluginDispatchMessage(const std::string& sName, const std::string& sArgsJson);
+	// Lets go of every file in sDirectory that native code holds, so that the
+	// directory can be deleted (an addon being removed or replaced): the native
+	// plugins loaded from it are stopped and unloaded - in this process and in
+	// every renderer - and, built with ADDON_STOP_PROCESSES, the processes
+	// started from it are ended. The renderers do it asynchronously. Nothing is
+	// loaded from it again until the application restarts.
+	void StopNativeCodeInDirectory(const std::wstring& sDirectory);
+	// Brings the addon directory to a state this application can use, before
+	// anything is read or loaded from it: finishes an addon change a previous
+	// run could not complete (see InstallMainAddon / RemoveMainAddon), and drops
+	// an addon installed for another platform. False while the directory is
+	// still not usable (what could not be deleted waits for the next start).
+	bool PrepareAddonDirectory();
 
 	// whether to log urls
 	bool m_bLoggingBrowserUrls;
@@ -1872,6 +1885,8 @@ public:
 	void CheckAddonExist()
 	{
 #ifdef USE_ADDON_MODE
+		bool bAddonUsable = PrepareAddonDirectory();
+
 		m_bIsInstalledAddon = false;
 		m_bIsAddonCompatible = false;
 		m_sAddonVersion.clear();
@@ -1886,6 +1901,9 @@ public:
 
 		m_bIsInstalledAddon = false;
 		m_bIsAddonCompatible = false;
+
+		if (!bAddonUsable)
+			return;
 
 		std::wstring sPath = m_pMain->m_oSettings.user_plugins_path + L"/../addon/sdkjs/word/sdk-all-min.js";
 		if (!NSFile::CFileBinary::Exists(sPath))

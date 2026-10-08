@@ -154,6 +154,8 @@ HEADERS += \
 	$$AI_TOOLS_FUNCS_PATH/internal/base.h \
 	$$AI_TOOLS_FUNCS_PATH/internal/funcs.h
 
+# TODO:
+#DEFINES += ADDON_STOP_PROCESSES
 NATIVE_PLUGINS_PATH = $$PWD/native-plugins
 INCLUDEPATH += $$NATIVE_PLUGINS_PATH/include
 HEADERS += \

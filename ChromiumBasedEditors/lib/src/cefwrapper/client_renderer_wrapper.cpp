@@ -6810,6 +6810,17 @@ sw.getRegistrations = () => Promise.resolve([]);\n\
 
 			std::string sMessageName = message->GetName().ToString();
 
+			// The browser is about to delete a directory (an addon being removed or
+			// replaced): the native plugins this process loaded from it let go of
+			// their libraries. Never handed to the plugins themselves.
+			if (sMessageName == "native_plugins_stop_dir")
+			{
+				std::string sDirectory = message->GetArgumentList()->GetSize() > 0 ? message->GetArgumentList()->GetString(0).ToString() : std::string();
+				if (!sDirectory.empty())
+					CRendererPluginHost::Instance().Manager().StopInDirectory(UTF8_TO_U(sDirectory));
+				return true;
+			}
+
 			// messages from the browser process -> renderer plugins (OnMessage)
 			{
 				std::string sPluginArg = message->GetArgumentList()->GetSize() > 0 ? message->GetArgumentList()->GetString(0).ToString() : std::string();

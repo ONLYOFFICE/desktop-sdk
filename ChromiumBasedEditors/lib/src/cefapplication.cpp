@@ -604,7 +604,12 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 	}
 
 	pManager->m_pInternal->m_arNativePluginsDirs.push_back(pManager->m_oSettings.system_plugins_path + L"/../desktop-sdk-plugins");
+
+#ifdef USE_ADDON_MODE
+	if (pManager->m_pInternal->m_bIsAddonCompatible)
+#endif
 	pManager->m_pInternal->m_arNativePluginsDirs.push_back(pManager->m_oSettings.user_plugins_path + L"/../addon/desktop-sdk-plugins");
+
 	pManager->m_pInternal->StartNativePlugins();
 
 	LOGGER_STRING("CApplicationCEF::Init_CEF::end");

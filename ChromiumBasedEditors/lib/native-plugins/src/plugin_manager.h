@@ -19,7 +19,8 @@ namespace NSNativePlugin
 {
 	// One per process (browser or renderer). Loads plugin DLLs from a directory,
 	// starts them with the given host, dispatches JS-method / message calls, and
-	// supports per-plugin Stop (for future runtime removal) + StopAll on shutdown.
+	// stops them: StopInDirectory when their folder is removed at runtime,
+	// StopAll on shutdown.
 	class CNativePluginManager
 	{
 	public:
@@ -38,6 +39,10 @@ namespace NSNativePlugin
 		// is started (ties -> the earliest directory in the list).
 		void LoadAll();
 		void StopAll();
+		// Stops and unloads every plugin whose library lies inside sDirectory
+		// (e.g. an addon that is being removed), so that its files can be
+		// deleted. Nothing replaces them until the next LoadAll().
+		void StopInDirectory(const std::wstring& sDirectory);
 
 		// --- JS method registry (renderer); called from the host's RegisterJsMethod ---
 		void RegisterJsMethod(const std::string& sName, bool bAsync);
@@ -57,6 +62,7 @@ namespace NSNativePlugin
 			CLibLoader* pLoader;
 			INativePlugin* pPlugin;
 			DestroyNativePluginFn fnDestroy;
+			std::wstring sPath; // the library file it was loaded from
 			TLoaded() : pLoader(NULL), pPlugin(NULL), fnDestroy(NULL) {}
 		};
 
