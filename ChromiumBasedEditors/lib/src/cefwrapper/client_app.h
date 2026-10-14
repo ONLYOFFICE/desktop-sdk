@@ -494,14 +494,26 @@ public:
 #else
 	virtual void OnBrowserCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDictionaryValue> extra_info) OVERRIDE
 	{
+		CAscRendererProcessParams::getInstance().SetXfaViewer(browser->GetIdentifier(),
+			extra_info ? extra_info->GetString("xfa_viewer_url").ToString() : "");
+		if (!extra_info)
+			return;
+
 		std::vector<CefString> arKeys;
 		extra_info->GetKeys(arKeys);
 
 		std::vector<std::string> params;
 		for (std::vector<CefString>::iterator i = arKeys.begin(); i != arKeys.end(); i++)
-			params.push_back(extra_info->GetString(*i).ToString());
+			if (*i != "xfa_viewer_url")
+				params.push_back(extra_info->GetString(*i).ToString());
 
 		CAscRendererProcessParams::getInstance().Check(params);
+	}
+
+	virtual void OnBrowserDestroyed(CefRefPtr<CefBrowser> browser) OVERRIDE
+	{
+		CAscRendererProcessParams::getInstance().SetXfaViewer(browser->GetIdentifier(), "");
+		client::ClientAppRenderer::OnBrowserDestroyed(browser);
 	}
 #endif
 };

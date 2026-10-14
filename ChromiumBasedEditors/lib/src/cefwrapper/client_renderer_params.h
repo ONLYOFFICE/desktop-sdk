@@ -46,6 +46,7 @@ class CAscRendererProcessParams
 private:
     std::map<std::string, std::string> m_params;
     std::map<std::string, std::string> m_props;
+    std::map<int, std::string> m_xfaViewers;
 
 public:
     CAscRendererProcessParams()
@@ -53,6 +54,20 @@ public:
     }
     ~CAscRendererProcessParams()
     {
+    }
+
+    void SetXfaViewer(int id, const std::string& url)
+    {
+        if (!url.empty())
+            m_xfaViewers[id] = url;
+        else
+            m_xfaViewers.erase(id);
+    }
+
+    std::string GetXfaViewer(int id) const
+    {
+        const auto found = m_xfaViewers.find(id);
+        return found == m_xfaViewers.end() ? "" : found->second;
     }
 
     void Check(const std::vector<std::string>& params)

@@ -83,6 +83,8 @@ HEADERS += \
     $$PWD/src/cefwrapper/client_app.h \
     $$PWD/src/cefwrapper/client_renderer.h \
     $$PWD/src/cefwrapper/client_renderer_params.h \
+    $$PWD/src/cefwrapper/xfa_print.h \
+    $$PWD/src/cefwrapper/xfa_viewer.h \
     $$PWD/src/cefwrapper/client_scheme.h \
     $$PWD/src/fileconverter.h \
     $$PWD/src/x2t.h \
