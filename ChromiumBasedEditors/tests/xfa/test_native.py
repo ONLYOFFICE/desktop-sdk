@@ -28,16 +28,16 @@ def wait_for_browser(endpoint, process):
     raise AssertionError('CEF debugging endpoint did not become ready')
 
 
-def edit_text(browser, value):
+def edit_text(browser, value, selector='.xfaLayer input:not([type=checkbox]):not([type=radio])'):
     point = browser.evaluate('''(() => {
-      const field = document.querySelector('.xfaLayer input:not([type=checkbox]):not([type=radio])');
+      const field = document.querySelector(%s);
       field.scrollIntoView({block: 'center'});
       const rect = field.getBoundingClientRect();
       const point = {x: rect.x + rect.width / 2, y: rect.y + rect.height / 2};
       if (document.elementFromPoint(point.x, point.y) !== field)
         throw new Error('The text field cannot receive a mouse click');
       return point;
-    })()''')
+    })()''' % repr(selector))
     for kind in ('mousePressed', 'mouseReleased'):
         browser.call('Input.dispatchMouseEvent', {
             'type': kind, **point, 'button': 'left', 'clickCount': 1})
@@ -52,10 +52,14 @@ def edit_text(browser, value):
 
 
 def run_case(args, directory, outcome):
-    succeeded = outcome == "complete"
+    print_only = outcome == 'print-only'
+    succeeded = outcome in ('complete', 'print-only')
     cancel = outcome == "cancel"
     document = directory / 'source.pdf'
-    document.write_bytes((HERE / 'fixtures/fixed-unicode-multiline.pdf').read_bytes())
+    fixture = 'access-print-only.pdf' if print_only else 'fixed-unicode-multiline.pdf'
+    document.write_bytes((HERE / 'fixtures' / fixture).read_bytes())
+    field = '[xfaName=editableText] input' if print_only else '.xfaLayer input:not([type=checkbox]):not([type=radio])'
+    value_key = 'editableText' if print_only else 'unicodeName'
     viewer = args.viewer.resolve()
     url = viewer.as_uri() + '?' + urllib.parse.urlencode({'file': document.as_uri(), 'readonly': 0})
     output = directory / 'filled.pdf'
@@ -94,7 +98,7 @@ def run_case(args, directory, outcome):
             browser = Browser(endpoint, intercept_downloads=False)
             browser.open(viewer, document)
             value = 'Saved through native CEF download Ω'
-            edit_text(browser, value)
+            edit_text(browser, value, field)
             browser.evaluate('XfaViewer.save()')
             browser.wait('testHost.saved.length === 1')
             assert browser.evaluate('testHost.saved[0]') is succeeded
@@ -104,10 +108,10 @@ def run_case(args, directory, outcome):
                 assert not output.exists()
                 if outcome == 'failed':
                     fallback_file = next(fallback.glob('*.pdf'))
-                    assert dataset_values(fallback_file)['unicodeName'] == value
+                    assert dataset_values(fallback_file)[value_key] == value
                 print('PASS: native ' + outcome + ' download restores save and retains edits')
             else:
-                assert dataset_values(output)['unicodeName'] == value
+                assert dataset_values(output)[value_key] == value
                 deadline = time.monotonic() + 20
                 while not printed.exists() and time.monotonic() < deadline:
                     time.sleep(0.1)
@@ -115,12 +119,18 @@ def run_case(args, directory, outcome):
                 assert len(pdf.pages) == 1
                 text = pdf.pages[0].extract_text()
                 assert 'Saved through native CEF download' in text
-                assert 'First line:' in text and 'Second paragraph' in text
+                if print_only:
+                    assert all(label in text for label in ('PRINT ONLY LABEL', 'PRINT LEFT', 'PRINT RIGHT'))
+                    assert dataset_values(output)['readOnlyText'] == 'Read only value'
+                    assert dataset_values(output)['protectedText'] == 'Protected value'
+                else:
+                    assert 'First line:' in text and 'Second paragraph' in text
                 print('PASS: real Blob download reaches native completion and retains XFA')
-                print('PASS: native PrintToPDF has one page with edited and multiline text')
+                print('PASS: native PrintToPDF preserves print-only objects' if print_only else
+                      'PASS: native PrintToPDF has one page with edited and multiline text')
                 document.write_bytes(output.read_bytes())
                 browser.open(viewer, document)
-                assert browser.evaluate('document.querySelector(".xfaLayer input").value') == value
+                assert browser.evaluate('document.querySelector(%r).value' % field) == value
                 assert browser.evaluate('testHost.modified') is False
                 print('PASS: mouse focus and keyboard editing survive native save and reopening')
             before = browser.evaluate('location.href')
@@ -156,7 +166,7 @@ def main():
     parser.add_argument('--port', type=int, default=9227)
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix='onlyoffice-xfa-native-') as temporary:
-        for outcome in ('complete', 'cancel', 'failed'):
+        for outcome in ('complete', 'cancel', 'failed', 'print-only'):
             directory = Path(temporary) / outcome
             directory.mkdir()
             run_case(args, directory, outcome)

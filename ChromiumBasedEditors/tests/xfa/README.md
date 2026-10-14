@@ -2,7 +2,8 @@
 
 The fixtures contain synthetic fixed and flowed XFA forms. They cover Unicode,
 carriage-return paragraphs, repeated records, text fields, checkboxes, dropdowns,
-and radio groups. Generated PDFs stay outside version control.
+radio groups, per-field access restrictions and objects marked for printing only.
+Generated PDFs stay outside version control.
 
 Run from `ChromiumBasedEditors`. Python requires `pypdf` and `websocket-client`.
 Prepare the viewer dependency and fixtures first:

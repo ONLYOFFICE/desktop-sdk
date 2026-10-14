@@ -200,6 +200,52 @@ def run(browser, viewer, fixtures, output):
     assert browser.evaluate('testHost.modified') is False
     print('PASS: read-only fields and save guard')
 
+    browser.open(viewer, fixtures / 'access-print-only.pdf')
+    assert browser.evaluate('document.querySelector("[xfaName=readOnlyText] input").readOnly')
+    assert browser.evaluate('''(() => {
+      const fields = [...document.querySelectorAll(
+      '.xfaReadOnly select, .xfaReadOnly input[type=checkbox], .xfaDisabled input, .xfaDisabled textarea, .xfaNonInteractive input[type=checkbox]'
+      )];
+      return fields.length === 5 && fields.every(field => field.disabled);
+    })()''')
+    assert browser.evaluate('document.querySelector("[xfaName=editableText] input").disabled') is False
+    assert browser.evaluate('document.querySelector("[xfaName=editableText] input").readOnly') is False
+    assert browser.evaluate('''[...document.querySelectorAll('.xfaLayer :disabled, .xfaLayer [readonly]')]
+      .every(field => getComputedStyle(field).backgroundImage === 'none')''')
+    assert browser.evaluate('document.querySelectorAll(".xfa-print-only").length') == 2
+    assert browser.evaluate('''[...document.querySelectorAll('.xfa-print-only')]
+      .every(element => getComputedStyle(element).display === 'none')''')
+    browser.call('Emulation.setEmulatedMedia', {'media': 'print'})
+    assert browser.evaluate('''[...document.querySelectorAll('.xfa-print-only')]
+      .every(element => getComputedStyle(element).display !== 'none')''')
+    assert browser.evaluate('getComputedStyle(document.querySelector("[xfaName=printField] .xfaLeft")).display') == 'flex'
+    browser.call('Emulation.setEmulatedMedia', {'media': ''})
+    field = 'document.querySelector("[xfaName=readOnlyText] input")'
+    before = browser.evaluate(field + '.value')
+    browser.evaluate(field + '.focus()')
+    browser.call('Input.insertText', {'text': 'Blocked edit'})
+    assert browser.evaluate(field + '.value') == before
+    assert browser.evaluate('getComputedStyle(' + field + ').backgroundColor') == 'rgba(0, 0, 0, 0)'
+    point = browser.evaluate('''(() => {
+      const field = document.querySelector('[xfaName=readOnlyCheck] input');
+      field.scrollIntoView({block: 'center'});
+      const rect = field.getBoundingClientRect();
+      return {x: rect.x + rect.width / 2, y: rect.y + rect.height / 2};
+    })()''')
+    for kind in ('mousePressed', 'mouseReleased'):
+        browser.call('Input.dispatchMouseEvent', {
+            'type': kind, **point, 'button': 'left', 'clickCount': 1})
+    assert browser.evaluate('document.querySelector("[xfaName=readOnlyCheck] input").checked')
+    assert browser.evaluate('testHost.modified') is False
+    editable = 'document.querySelector("[xfaName=editableText] input")'
+    assert browser.evaluate('getComputedStyle(' + editable + ').backgroundColor') == 'rgba(153, 193, 255, 0.3)'
+    browser.evaluate(editable + '.focus()')
+    assert browser.evaluate('getComputedStyle(' + editable + ').backgroundColor') == 'rgba(0, 0, 0, 0)'
+    browser.call('Emulation.setEmulatedMedia', {'media': 'print'})
+    assert browser.evaluate('getComputedStyle(' + editable + ').outlineStyle') == 'none'
+    browser.call('Emulation.setEmulatedMedia', {'media': ''})
+    print('PASS: field access, blocked keyboard edit, print-only content and flex layout')
+
     invalid = output / 'invalid.pdf'
     invalid.write_bytes(b'Invalid PDF test fixture')
     query = urllib.parse.urlencode({'file': invalid.as_uri()})

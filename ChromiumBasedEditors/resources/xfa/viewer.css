@@ -10,11 +10,14 @@ button { padding: 6px 12px; white-space: nowrap; }
 .xfaLayer { position: absolute; }
 .xfaLayer input, .xfaLayer textarea { background: transparent; }
 .xfaLayer :disabled { color: inherit; opacity: 1; }
+.xfaLayer :is(:disabled, [readonly]) { background-image: none; }
 @media screen {
+  .xfa-print-only { display: none; }
   .xfaLayer :is(input, textarea, select):enabled:not([readonly]) { background-color: rgba(153, 193, 255, .3); }
   .xfaLayer :is(input, textarea, select):enabled:not([readonly]):focus { background-color: transparent; outline: 1px solid #3979c6; outline-offset: -1px; }
 }
 @media print {
+  .xfaLayer :focus { outline: none; }
   html, body { background: white; }
   header { display: none; }
   #pages { padding: 0; }

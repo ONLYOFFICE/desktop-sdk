@@ -165,11 +165,18 @@ try {
       annotationStorage: pdf.annotationStorage,
       linkService: { addLinkAttributes(anchor) { anchor.removeAttribute('href'); } },
     });
-    if (readOnly) {
-      sheet.querySelectorAll('input, textarea, select, button').forEach(control => {
+    sheet.querySelectorAll('.xfaPrintOnly').forEach(element => {
+      element.classList.replace('xfaPrintOnly', 'xfa-print-only');
+    });
+    sheet.querySelectorAll('input, textarea, select, button').forEach(control => {
+      const restricted = control.closest('.xfaReadOnly, .xfaNonInteractive');
+      const textControl = control.matches('textarea, input[type=text], input[type=password]');
+      if (readOnly || control.closest('.xfaDisabled') || (restricted && !textControl)) {
         control.disabled = true;
-      });
-    }
+      } else if (restricted) {
+        control.readOnly = true;
+      }
+    });
     const pageStyle = document.createElement('style');
     pageStyle.textContent = '@page xfa' + number + ' { size: ' + viewport.width + 'px ' + viewport.height + 'px; }';
     document.head.append(pageStyle);

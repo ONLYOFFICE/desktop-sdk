@@ -114,3 +114,36 @@ flow_values='<form1><consent>yes</consent><destination>JP</destination><priority
 flow_values+=''.join(f'<entry><description>{xml_value(row)}</description></entry>' for row in rows)
 flow_values+='</form1>'
 write_fixture('flowed-controls-repeat.pdf', flowed, flow_values)
+
+restricted = wrap('''<subform name="Page1" w="540pt" h="720pt"><bind match="none"/>
+  <draw x="0pt" y="0pt" w="500pt" h="24pt"><value><text>SYNTHETIC ACCESS AND PRINT FORM</text></value></draw>
+  <subform name="locked" x="0pt" y="40pt" w="500pt" h="190pt"><bind match="none"/>
+    <field name="readOnlyText" access="readOnly" x="0pt" y="0pt" w="300pt" h="30pt"><ui><textEdit/></ui></field>
+    <field name="readOnlyChoice" access="readOnly" x="0pt" y="50pt" w="300pt" h="30pt">
+      <ui><choiceList open="userControl"/></ui><items><text>First</text><text>Second</text></items>
+    </field>
+    <field name="readOnlyCheck" access="readOnly" x="0pt" y="100pt" w="24pt" h="24pt">
+      <ui><checkButton size="12pt"/></ui><items><text>yes</text><text>no</text></items>
+    </field>
+  </subform>
+  <subform name="protected" x="0pt" y="240pt" w="500pt" h="100pt"><bind match="none"/>
+    <field name="protectedText" access="protected" x="0pt" y="0pt" w="300pt" h="30pt"><ui><textEdit multiLine="1"/></ui></field>
+    <field name="protectedCheck" access="protected" x="0pt" y="50pt" w="24pt" h="24pt">
+      <ui><checkButton size="12pt"/></ui><items><text>yes</text><text>no</text></items>
+    </field>
+  </subform>
+  <field name="nonInteractiveCheck" access="nonInteractive" x="0pt" y="360pt" w="24pt" h="24pt">
+    <ui><checkButton size="12pt"/></ui><items><text>yes</text><text>no</text></items>
+  </field>
+  <field name="editableText" x="0pt" y="410pt" w="300pt" h="30pt"><ui><textEdit/></ui></field>
+  <draw relevant="+print" x="0pt" y="470pt" w="500pt" h="24pt"><value><text>PRINT ONLY LABEL</text></value></draw>
+  <field name="printField" relevant="+print" x="0pt" y="520pt" w="500pt" h="30pt">
+    <caption placement="left" reserve="200pt"><value><text>PRINT LEFT</text></value></caption>
+    <ui><textEdit/></ui>
+  </field>
+</subform>''')
+write_fixture('access-print-only.pdf', restricted, '''<form1>
+  <readOnlyText>Read only value</readOnlyText><readOnlyChoice>Second</readOnlyChoice><readOnlyCheck>yes</readOnlyCheck>
+  <protectedText>Protected value</protectedText><protectedCheck>yes</protectedCheck>
+  <nonInteractiveCheck>yes</nonInteractiveCheck><editableText>Editable value</editableText><printField>PRINT RIGHT</printField>
+</form1>''')
