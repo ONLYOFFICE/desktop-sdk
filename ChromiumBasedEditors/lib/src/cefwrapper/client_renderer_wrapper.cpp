@@ -80,13 +80,30 @@ public:
 				 CefString&) OVERRIDE
 	{
 		const bool print = name == "requestPrint";
-		if (print ? !arguments.empty() :
-			((name != "setModified" && name != "saveFinished") || arguments.size() != 1 || !arguments[0]->IsBool()))
+		const bool ready = name == "ready";
+		if (print)
+		{
+			if (arguments.size() != 2 ||
+				(!arguments[0]->IsDouble() && !arguments[0]->IsInt() && !arguments[0]->IsUInt()) ||
+				(!arguments[1]->IsDouble() && !arguments[1]->IsInt() && !arguments[1]->IsUInt()))
+				return false;
+		}
+		else if (ready)
+		{
+			if (!arguments.empty())
+				return false;
+		}
+		else if ((name != "setModified" && name != "saveFinished") || arguments.size() != 1 || !arguments[0]->IsBool())
 			return false;
 		CefRefPtr<CefFrame> frame = CefV8Context::GetCurrentContext()->GetFrame();
-		CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create(print ? "xfa_print" :
+		CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create(print ? "xfa_print" : ready ? "xfa_ready" :
 			name == "setModified" ? "onDocumentModifiedChanged" : "xfa_save_finished");
-		if (!print)
+		if (print)
+		{
+			message->GetArgumentList()->SetDouble(0, arguments[0]->GetDoubleValue());
+			message->GetArgumentList()->SetDouble(1, arguments[1]->GetDoubleValue());
+		}
+		else if (!ready)
 			message->GetArgumentList()->SetBool(0, arguments[0]->GetBoolValue());
 		frame->SendProcessMessage(PID_BROWSER, message);
 		return true;
@@ -5855,7 +5872,7 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 				{
 					CefRefPtr<CefV8Value> host = CefV8Value::CreateObject(nullptr, nullptr);
 					CefRefPtr<CefV8Handler> handler = new CXfaViewerHandler();
-					for (const char* method : {"setModified", "saveFinished", "requestPrint"})
+					for (const char* method : {"setModified", "saveFinished", "requestPrint", "ready"})
 						host->SetValue(method, CefV8Value::CreateFunction(method, handler), V8_PROPERTY_ATTRIBUTE_READONLY);
 					context->GetGlobal()->SetValue("XfaViewerHost", host, V8_PROPERTY_ATTRIBUTE_READONLY);
 				}

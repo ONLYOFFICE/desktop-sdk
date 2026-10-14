@@ -40,7 +40,11 @@
 #include "include/cef_parser.h"
 #include "include/cef_request_context.h"
 #include "include/cef_request_context_handler.h"
+#include "include/cef_print_handler.h"
 #include "cefwrapper/xfa_viewer.h"
+#if defined(CEF_VERSION_ABOVE_102) && defined(_LINUX) && !defined(_MAC)
+#include "cefwrapper/xfa_print.h"
+#endif
 
 #include "./window_handle.h"
 
@@ -93,31 +97,33 @@ static std::string XfaFileUrl(const std::wstring& path)
 	return url.ToString();
 }
 
-#ifdef CEF_VERSION_ABOVE_102
-class CXfaPrintCallback : public CefPdfPrintCallback
+#if defined(CEF_VERSION_ABOVE_102) && defined(_LINUX) && !defined(_MAC)
+class CXfaPrintHandler : public CefPrintHandler
 {
 public:
-	explicit CXfaPrintCallback(std::function<void(bool)> callback) : m_callback(std::move(callback)) {}
+	void OnPrintStart(CefRefPtr<CefBrowser>) OVERRIDE {}
+	void OnPrintSettings(CefRefPtr<CefBrowser>, CefRefPtr<CefPrintSettings>, bool) OVERRIDE {}
+	void OnPrintReset(CefRefPtr<CefBrowser>) OVERRIDE {}
 
-	void Cancel()
+	bool OnPrintDialog(CefRefPtr<CefBrowser>, bool, CefRefPtr<CefPrintDialogCallback>) OVERRIDE
 	{
-		m_callback = nullptr;
+		return false;
 	}
 
-	void OnPdfPrintFinished(const CefString& path, bool ok) OVERRIDE
+	bool OnPrintJob(CefRefPtr<CefBrowser>, const CefString&, const CefString&, CefRefPtr<CefPrintJobCallback>) OVERRIDE
 	{
-		std::function<void(bool)> callback = std::move(m_callback);
-		if (!ok || !callback)
-			NSFile::CFileBinary::Remove(path.ToWString());
-		if (callback)
-			callback(ok);
+		return false;
 	}
 
-private:
-	std::function<void(bool)> m_callback;
-	IMPLEMENT_REFCOUNTING(CXfaPrintCallback);
+	CefSize GetPdfPaperSize(CefRefPtr<CefBrowser>, int unitsPerInch) OVERRIDE
+	{
+		return CefSize(static_cast<int>(8.5 * unitsPerInch), 11 * unitsPerInch);
+	}
+
+	IMPLEMENT_REFCOUNTING(CXfaPrintHandler);
 };
 #endif
+
 
 #if defined (_LINUX) && !defined(_MAC)
 #define DONT_USE_NATIVE_FILE_DIALOGS
@@ -930,11 +936,9 @@ public:
 	std::string m_sXfaViewerUrl;
 	std::string m_sXfaDownloadUrl;
 	unsigned int m_nXfaDownloadId;
-	void PrintXfa();
-	std::wstring m_sXfaPrintFile;
-	bool m_bXfaPrintPrepared;
-#ifdef CEF_VERSION_ABOVE_102
-	CefRefPtr<CXfaPrintCallback> m_pXfaPrintCallback;
+	void PrintXfa(double width, double height);
+#if defined(CEF_VERSION_ABOVE_102) && defined(_LINUX) && !defined(_MAC)
+	CefRefPtr<CXfaPrintJob> m_pXfaPrintJob;
 #endif
 	std::wstring m_sOpenAsLocalUrl;
 
@@ -1110,7 +1114,6 @@ public:
 
 		m_bIsLoaded = false;
 		m_bIsXfaViewer = false;
-		m_bXfaPrintPrepared = false;
 		m_nXfaDownloadId = 0;
 
 		m_sPrintParameters = "";
@@ -2334,6 +2337,15 @@ public:
 		return false;
 	}
 
+#if defined(CEF_VERSION_ABOVE_102) && defined(_LINUX) && !defined(_MAC)
+	virtual CefRefPtr<CefPrintHandler> GetPrintHandler() OVERRIDE
+	{
+		if (m_pParent->m_pInternal->m_bIsXfaViewer)
+			return new CXfaPrintHandler();
+		return client::ClientHandler::GetPrintHandler();
+	}
+#endif
+
 	virtual CefRefPtr<CefJSDialogHandler> GetJSDialogHandler() OVERRIDE
 	{
 		if (m_pParent->m_pInternal->m_bIsXfaViewer)
@@ -2663,9 +2675,26 @@ public:
 				return false;
 			const std::string name = message->GetName();
 			CefRefPtr<CefListValue> values = message->GetArgumentList();
-			if (name == "xfa_print" && values->GetSize() == 0)
+			if (name == "xfa_ready" && values->GetSize() == 0)
 			{
-				m_pParent->m_pInternal->PrintXfa();
+				if (m_pParent->GetAppManager()->GetEventListener())
+				{
+					NSEditorApi::CAscCefMenuEvent* event = m_pParent->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_EXECUTE_COMMAND);
+					NSEditorApi::CAscExecCommand* data = new NSEditorApi::CAscExecCommand();
+					data->put_Command(L"doc:onready");
+					event->m_pData = data;
+					m_pParent->GetAppManager()->GetEventListener()->OnEvent(event);
+				}
+				return true;
+			}
+			if (name == "xfa_print")
+			{
+				if (values->GetSize() == 2 && values->GetType(0) == VTYPE_DOUBLE && values->GetType(1) == VTYPE_DOUBLE &&
+					values->GetDouble(0) > 0 && values->GetDouble(0) <= 200 &&
+					values->GetDouble(1) > 0 && values->GetDouble(1) <= 200)
+					m_pParent->m_pInternal->PrintXfa(values->GetDouble(0), values->GetDouble(1));
+				else
+					frame->ExecuteJavaScript("window.XfaViewer.printFinished(false)", frame->GetURL(), 0);
 				return true;
 			}
 			if ((name != "onDocumentModifiedChanged" && name != "xfa_save_finished") ||
@@ -4896,15 +4925,11 @@ virtual void OnBeforeClose(CefRefPtr<CefBrowser> browser) OVERRIDE
 {
 	CEF_REQUIRE_UI_THREAD();
 
-#ifdef CEF_VERSION_ABOVE_102
-	if (m_pParent->m_pInternal->m_pXfaPrintCallback)
-		m_pParent->m_pInternal->m_pXfaPrintCallback->Cancel();
-	if (!m_pParent->m_pInternal->m_sXfaPrintFile.empty())
+#if defined(CEF_VERSION_ABOVE_102) && defined(_LINUX) && !defined(_MAC)
+	if (m_pParent->m_pInternal->m_pXfaPrintJob)
 	{
-		m_pParent->m_pInternal->m_oPrintData.Print_End();
-		NSFile::CFileBinary::Remove(m_pParent->m_pInternal->m_sXfaPrintFile);
-		NSDirectory::DeleteDirectory(m_pParent->m_pInternal->m_sXfaPrintFile + L"_files");
-		m_pParent->m_pInternal->m_sXfaPrintFile.clear();
+		m_pParent->m_pInternal->m_pXfaPrintJob->Cancel();
+		m_pParent->m_pInternal->m_pXfaPrintJob = nullptr;
 	}
 #endif
 
@@ -6111,42 +6136,24 @@ CefRefPtr<CefBrowser> CCefView_Private::GetBrowser() const
 		return nullptr;
 	return m_handler->GetBrowser();
 }
-void CCefView_Private::PrintXfa()
+void CCefView_Private::PrintXfa(double width, double height)
 {
-#ifdef CEF_VERSION_ABOVE_102
-	if (!CefCurrentlyOn(TID_UI))
-	{
-		CefPostTask(TID_UI, BASE_BIND(&CCefView_Private::PrintXfa, base::Unretained(this)));
-		return;
-	}
+#if defined(CEF_VERSION_ABOVE_102) && defined(_LINUX) && !defined(_MAC)
+	CEF_REQUIRE_UI_THREAD();
 	CefRefPtr<CefBrowser> browser = GetBrowser();
-	if (!browser)
+	if (!browser || m_pXfaPrintJob)
 		return;
-	if (m_pXfaPrintCallback || !m_sXfaPrintFile.empty())
-	{
-		browser->GetMainFrame()->ExecuteJavaScript("window.XfaViewer.printFinished(true)", m_pCefView->GetUrl(), 0);
-		return;
-	}
-	const std::wstring path = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"XFA_");
-	m_pXfaPrintCallback = new CXfaPrintCallback([this, path](bool ok)
-	{
-		m_pXfaPrintCallback = nullptr;
-		CefRefPtr<CefBrowser> browser = GetBrowser();
-		if (browser)
-			browser->GetMainFrame()->ExecuteJavaScript(ok ? "window.XfaViewer.printFinished(true)" : "window.XfaViewer.printFinished(false)", m_pCefView->GetUrl(), 0);
-		if (!ok)
-			return;
-		m_sXfaPrintFile = path;
-		m_sCloudNativePrintFile = path;
-		m_bXfaPrintPrepared = true;
-		NSEditorApi::CAscMenuEvent* event = new NSEditorApi::CAscMenuEvent(ASC_MENU_EVENT_TYPE_CEF_PRINT_START);
-		m_pCefView->Apply(event);
-	});
-	CefPdfPrintSettings settings;
-	settings.print_background = true;
-	settings.prefer_css_page_size = true;
-	settings.margin_type = PDF_PRINT_MARGIN_NONE;
-	browser->GetHost()->PrintToPDF(path, settings, m_pXfaPrintCallback);
+	m_pXfaPrintJob = new CXfaPrintJob(browser,
+		U_TO_UTF8(NSFile::GetFileName(m_oLocalInfo.m_oInfo.m_sFileSrc)), width, height,
+		[this](bool ok)
+		{
+			m_pXfaPrintJob = nullptr;
+			CefRefPtr<CefBrowser> browser = GetBrowser();
+			if (browser)
+				browser->GetMainFrame()->ExecuteJavaScript(ok ? "window.XfaViewer.printFinished(true)" :
+					"window.XfaViewer.printFinished(false)", m_sXfaViewerUrl, 0);
+		});
+	m_pXfaPrintJob->Show();
 #endif
 }
 void CCefView_Private::LocalFile_End()
@@ -7474,12 +7481,11 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 	}
 	case ASC_MENU_EVENT_TYPE_CEF_PRINT_START:
 	{
-		if (m_pInternal->m_bIsXfaViewer && !m_pInternal->m_bXfaPrintPrepared)
+		if (m_pInternal->m_bIsXfaViewer)
 		{
 			browser->GetMainFrame()->ExecuteJavaScript("window.XfaViewer?.print()", GetUrl(), 0);
 			break;
 		}
-		m_pInternal->m_bXfaPrintPrepared = false;
 		std::string sPrintParameters = m_pInternal->m_sPrintParameters;
 		if (m_pInternal)
 		{
@@ -7544,12 +7550,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 				m_pInternal->m_oPrintData.m_pNativePrinter->PreOpen(nLocalFileSrcFormat);
 
 				std::wstring sTempDirRecover = m_pInternal->m_oLocalInfo.m_oInfo.m_sRecoveryDir;
-				if (!m_pInternal->m_sXfaPrintFile.empty())
-				{
-					sTempDirRecover = m_pInternal->m_sXfaPrintFile + L"_files";
-					NSDirectory::CreateDirectory(sTempDirRecover);
-				}
-				else if (!m_pInternal->m_sCloudNativePrintFile.empty())
+				if (!m_pInternal->m_sCloudNativePrintFile.empty())
 				{
 					sTempDirRecover = NSFile::CFileBinary::CreateTempFileWithUniqueName(NSFile::CFileBinary::GetTempPath(), L"PR_");
 					if (NSFile::CFileBinary::Exists(sTempDirRecover))
@@ -7563,22 +7564,6 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 				m_pInternal->m_oPrintData.m_pNativePrinter->Check(m_pInternal->m_oPrintData.m_arPages);
 				bIsNativePrint = true;
 			}
-		}
-
-		if (m_pInternal->m_bIsXfaViewer &&
-			(!bIsNativePrint || m_pInternal->m_oPrintData.m_arPages.empty() ||
-			 !m_pInternal->m_pManager->GetEventListener()))
-		{
-			m_pInternal->m_oPrintData.Print_End();
-			if (!m_pInternal->m_sXfaPrintFile.empty())
-			{
-				NSFile::CFileBinary::Remove(m_pInternal->m_sXfaPrintFile);
-				NSDirectory::DeleteDirectory(m_pInternal->m_sXfaPrintFile + L"_files");
-				m_pInternal->m_sXfaPrintFile.clear();
-			}
-			m_pInternal->m_sCloudNativePrintFile.clear();
-			browser->GetMainFrame()->ExecuteJavaScript("window.XfaViewer.printFinished(false)", GetUrl(), 0);
-			break;
 		}
 
 		if (!bIsNativePrint)
@@ -7613,13 +7598,6 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 		if (m_pInternal)
 		{
 			m_pInternal->m_oPrintData.Print_End();
-			if (!m_pInternal->m_sXfaPrintFile.empty())
-			{
-				NSFile::CFileBinary::Remove(m_pInternal->m_sXfaPrintFile);
-				NSDirectory::DeleteDirectory(m_pInternal->m_sXfaPrintFile + L"_files");
-				m_pInternal->m_sXfaPrintFile.clear();
-				m_pInternal->m_sCloudNativePrintFile.clear();
-			}
 		}
 		break;
 	}
@@ -8495,14 +8473,13 @@ void CCefViewEditor::OpenLocalFile(const std::wstring& sFilePath, const int& nFi
 
 	m_pInternal->m_oLocalInfo.m_oInfo.m_nCurrentFileFormat = nFileFormat;
 #if defined(CEF_VERSION_ABOVE_102) && defined(_LINUX) && !defined(_MAC)
-	const std::wstring xfaDirectory = GetAppManager()->m_oSettings.app_data_path + L"/editors/xfa/";
+	const std::wstring xfaDirectory = NSFile::GetProcessDirectory() + L"/editors/xfa/";
 	if (nFileFormat == AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDF &&
 		!m_pInternal->m_handler && m_pInternal->m_sCloudCryptSrc.empty() &&
 		NSFile::CFileBinary::Exists(xfaDirectory + L"index.html") &&
 		NSFile::CFileBinary::Exists(xfaDirectory + L"pdfjs/legacy/build/pdf.mjs"))
 	{
-		CPdfFile pdf(GetAppManager()->GetApplicationFonts());
-		if (pdf.LoadFromFile(sFilePath) && pdf.IsDynamicXfa())
+		if (CPdfFile::IsDynamicXfa(sFilePath))
 		{
 			const CefString sourceUrl = XfaFileUrl(sFilePath);
 			const std::wstring additional = !params.empty() ? params : GetAppManager()->m_pInternal->m_sAdditionalUrlParams;

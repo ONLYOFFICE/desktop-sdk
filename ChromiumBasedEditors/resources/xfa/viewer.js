@@ -19,6 +19,7 @@ let ready = false;
 let revision = 0;
 let savedRevision = 0;
 let pendingSave = null;
+let printStyle = null;
 
 function reportModified() {
   const modified = revision !== savedRevision;
@@ -49,7 +50,7 @@ async function save() {
   saveButton.disabled = true;
   status.textContent = 'Saving…';
   try {
-    const bytes = await pdf.saveDocument();
+    const bytes = await (pdf.annotationStorage.size ? pdf.saveDocument() : pdf.getData());
     pendingSave.url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
     const anchor = document.createElement('a');
     anchor.href = pendingSave.url;
@@ -77,18 +78,47 @@ function downloadFinished(success) {
 function print() {
   if (!ready || printButton.disabled) return;
   printButton.disabled = true;
-  if (window.XfaViewerHost) window.XfaViewerHost.requestPrint();
+  if (window.XfaViewerHost) {
+    const first = pages.firstElementChild;
+    window.XfaViewerHost.requestPrint(parseFloat(first.style.width) / 96, parseFloat(first.style.height) / 96);
+  }
   else {
     window.print();
     printFinished(true);
   }
 }
 
-function printFinished(success) {
+function printFinished(success, message = 'Unable to print the form.') {
   printButton.disabled = !ready;
-  if (!success) status.textContent = 'Unable to print the form.';
+  if (success) reportModified();
+  else status.textContent = message;
 }
-window.XfaViewer = Object.freeze({ save, print, downloadFinished, printFinished });
+
+function preparePrint(options) {
+  printStyle?.remove();
+  printStyle = null;
+  if (!options) return;
+  const width = options.width * 96;
+  const height = options.height * 96;
+  const margins = [options.top, options.right, options.bottom, options.left].map(value => value * 96);
+  const areaWidth = width - margins[1] - margins[3];
+  const areaHeight = height - margins[0] - margins[2];
+  const rules = [];
+  for (const [index, sheet] of [...pages.children].entries()) {
+    const originalWidth = parseFloat(sheet.style.width);
+    const originalHeight = parseFloat(sheet.style.height);
+    const scale = Math.min(areaWidth / originalWidth, areaHeight / originalHeight) * options.scale;
+    const x = margins[3] + (areaWidth - originalWidth * scale) / 2 + (options.reverse ? originalWidth * scale : 0);
+    const y = margins[0] + (areaHeight - originalHeight * scale) / 2 + (options.reverse ? originalHeight * scale : 0);
+    rules.push(`@page xfa${index + 1} { size: ${width}px ${height}px; margin: 0; }`);
+    rules.push(`.sheet:nth-child(${index + 1}) { width: ${width}px !important; height: ${height}px !important; }`);
+    rules.push(`.sheet:nth-child(${index + 1}) .sheet-content { width: ${originalWidth}px; height: ${originalHeight}px; transform-origin: 0 0; transform: translate(${x}px, ${y}px) scale(${scale}) rotate(${options.reverse ? 180 : 0}deg); }`);
+  }
+  printStyle = document.createElement('style');
+  printStyle.textContent = '@media print {' + rules.join('\n') + '}';
+  document.head.append(printStyle);
+}
+window.XfaViewer = Object.freeze({ save, print, downloadFinished, printFinished, preparePrint });
 saveButton.addEventListener('click', save);
 printButton.addEventListener('click', print);
 window.addEventListener('keydown', event => {
@@ -123,7 +153,10 @@ try {
     sheet.style.width = viewport.width + 'px';
     sheet.style.height = viewport.height + 'px';
     const layer = document.createElement('div');
-    sheet.append(layer);
+    const content = document.createElement('div');
+    content.className = 'sheet-content';
+    content.append(layer);
+    sheet.append(content);
     pages.append(sheet);
     XfaLayer.render({
       div: layer,
@@ -137,9 +170,9 @@ try {
         control.disabled = true;
       });
     }
-    const printStyle = document.createElement('style');
-    printStyle.textContent = '@page xfa' + number + ' { size: ' + viewport.width + 'px ' + viewport.height + 'px; }';
-    document.head.append(printStyle);
+    const pageStyle = document.createElement('style');
+    pageStyle.textContent = '@page xfa' + number + ' { size: ' + viewport.width + 'px ' + viewport.height + 'px; }';
+    document.head.append(pageStyle);
     sheet.style.page = 'xfa' + number;
   }
   await document.fonts.ready;
@@ -150,3 +183,4 @@ try {
 } catch (error) {
   status.textContent = 'Unable to open the form: ' + error.message;
 }
+window.XfaViewerHost?.ready();

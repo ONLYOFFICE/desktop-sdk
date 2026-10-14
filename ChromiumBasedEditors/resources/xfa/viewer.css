@@ -6,11 +6,15 @@ button { padding: 6px 12px; white-space: nowrap; }
 #status { max-width: 30em; }
 #pages { padding: 20px; }
 .sheet { position: relative; margin: 0 auto 20px; background: white; overflow: hidden; box-shadow: 0 1px 5px #999; }
+.sheet-content { position: relative; width: 100%; height: 100%; }
 .xfaLayer { position: absolute; }
 .xfaLayer input, .xfaLayer textarea { background: transparent; }
 .xfaLayer :disabled { color: inherit; opacity: 1; }
+@media screen {
+  .xfaLayer :is(input, textarea, select):enabled:not([readonly]) { background-color: rgba(153, 193, 255, .3); }
+  .xfaLayer :is(input, textarea, select):enabled:not([readonly]):focus { outline: 1px solid #3979c6; outline-offset: -1px; }
+}
 @media print {
-  @page { margin: 0; }
   html, body { background: white; }
   header { display: none; }
   #pages { padding: 0; }

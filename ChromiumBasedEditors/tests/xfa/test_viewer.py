@@ -15,8 +15,9 @@ import websocket
 
 HERE = Path(__file__).resolve().parent
 HOST = r"""
-window.testHost = {modified: false, saved: [], downloads: [], printed: 0};
+window.testHost = {modified: false, saved: [], downloads: [], printed: 0, ready: false};
 window.XfaViewerHost = {
+  ready() { testHost.ready = true; },
   setModified(value) { testHost.modified = value; },
   saveFinished(value) { testHost.saved.push(value); },
   requestPrint() { testHost.printed++; }
@@ -83,7 +84,7 @@ class Browser:
     def open(self, viewer, document, readonly=False):
         query = urllib.parse.urlencode({'file': document.as_uri(), 'readonly': int(readonly)})
         self.call('Page.navigate', {'url': viewer.as_uri() + '?' + query})
-        self.wait('document.getElementById("print")?.disabled === false')
+        self.wait('testHost.ready === true && document.getElementById("print")?.disabled === false')
 
     def edit_text(self, value):
         self.evaluate('''(() => {
@@ -118,6 +119,13 @@ def run(browser, viewer, fixtures, output):
     assert browser.evaluate('document.querySelectorAll(".xfaLayer input, .xfaLayer textarea").length') == 3
     assert browser.evaluate('testHost.modified') is False
     assert browser.evaluate('document.querySelector(".xfaLayer textarea").value') == dataset_values(fixtures / 'fixed-unicode-multiline.pdf')['notes'].replace('\r', '\n')
+    untouched = output / 'fixed-untouched.pdf'
+    browser.save(untouched)
+    browser.finish(True)
+    assert untouched.read_bytes() == (fixtures / 'fixed-unicode-multiline.pdf').read_bytes()
+    assert browser.evaluate('testHost.modified') is False
+    assert browser.evaluate('testHost.saved.at(-1)') is True
+    print('PASS: saving an untouched form preserves the original PDF bytes')
     value = 'Jörg Nguyễn — new Ω'
     browser.edit_text(value)
     assert browser.evaluate('testHost.modified') is True
@@ -173,6 +181,15 @@ def run(browser, viewer, fixtures, output):
     assert browser.evaluate('document.getElementById("print").disabled') is True
     browser.evaluate('XfaViewer.printFinished(false)')
     assert browser.evaluate('document.getElementById("print").disabled') is False
+    browser.evaluate('XfaViewer.printFinished(false, "Fonts are still loading. Try printing again.")')
+    assert browser.evaluate('document.getElementById("status").textContent') == 'Fonts are still loading. Try printing again.'
+    assert browser.evaluate('document.getElementById("print").disabled') is False
+    browser.evaluate('XfaViewer.print()')
+    assert browser.evaluate('testHost.printed') == 2
+    assert browser.evaluate('document.getElementById("print").disabled') is True
+    browser.evaluate('XfaViewer.printFinished(true)')
+    assert browser.evaluate('document.getElementById("print").disabled') is False
+    assert browser.evaluate('document.getElementById("status").textContent') == ''
     print('PASS: flowed pages, repeated data, checkbox, dropdown, radio, print request')
 
     browser.open(viewer, saved, readonly=True)
@@ -182,6 +199,19 @@ def run(browser, viewer, fixtures, output):
     assert browser.evaluate('testHost.downloads.length') == 0
     assert browser.evaluate('testHost.modified') is False
     print('PASS: read-only fields and save guard')
+
+    invalid = output / 'invalid.pdf'
+    invalid.write_bytes(b'Invalid PDF test fixture')
+    query = urllib.parse.urlencode({'file': invalid.as_uri()})
+    browser.call('Page.navigate', {'url': viewer.as_uri() + '?' + query})
+    browser.wait('testHost.ready === true')
+    assert browser.evaluate('document.getElementById("save").disabled') is True
+    assert browser.evaluate('document.getElementById("print").disabled') is True
+    assert browser.evaluate('document.getElementById("status").textContent.startsWith("Unable to open")')
+    browser.evaluate('XfaViewer.save()')
+    assert browser.evaluate('testHost.saved.at(-1)') is False
+    assert browser.evaluate('testHost.downloads.length') == 0
+    print('PASS: load failure notifies host readiness and keeps actions disabled')
 
 
 def main():

@@ -28,10 +28,34 @@ def wait_for_browser(endpoint, process):
     raise AssertionError('CEF debugging endpoint did not become ready')
 
 
+def edit_text(browser, value):
+    point = browser.evaluate('''(() => {
+      const field = document.querySelector('.xfaLayer input:not([type=checkbox]):not([type=radio])');
+      field.scrollIntoView({block: 'center'});
+      const rect = field.getBoundingClientRect();
+      const point = {x: rect.x + rect.width / 2, y: rect.y + rect.height / 2};
+      if (document.elementFromPoint(point.x, point.y) !== field)
+        throw new Error('The text field cannot receive a mouse click');
+      return point;
+    })()''')
+    for kind in ('mousePressed', 'mouseReleased'):
+        browser.call('Input.dispatchMouseEvent', {
+            'type': kind, **point, 'button': 'left', 'clickCount': 1})
+    assert browser.evaluate('document.activeElement.matches(".xfaLayer input")')
+    for kind in ('keyDown', 'keyUp'):
+        browser.call('Input.dispatchKeyEvent', {
+            'type': kind, 'key': 'a', 'code': 'KeyA',
+            'windowsVirtualKeyCode': 65, 'modifiers': 2})
+    browser.call('Input.insertText', {'text': value})
+    assert browser.evaluate('document.activeElement.value') == value
+    assert browser.evaluate('testHost.modified') is True
+
+
 def run_case(args, directory, outcome):
     succeeded = outcome == "complete"
     cancel = outcome == "cancel"
-    document = HERE / 'fixtures/fixed-unicode-multiline.pdf'
+    document = directory / 'source.pdf'
+    document.write_bytes((HERE / 'fixtures/fixed-unicode-multiline.pdf').read_bytes())
     viewer = args.viewer.resolve()
     url = viewer.as_uri() + '?' + urllib.parse.urlencode({'file': document.as_uri(), 'readonly': 0})
     output = directory / 'filled.pdf'
@@ -70,7 +94,7 @@ def run_case(args, directory, outcome):
             browser = Browser(endpoint, intercept_downloads=False)
             browser.open(viewer, document)
             value = 'Saved through native CEF download Ω'
-            browser.edit_text(value)
+            edit_text(browser, value)
             browser.evaluate('XfaViewer.save()')
             browser.wait('testHost.saved.length === 1')
             assert browser.evaluate('testHost.saved[0]') is succeeded
@@ -94,6 +118,11 @@ def run_case(args, directory, outcome):
                 assert 'First line:' in text and 'Second paragraph' in text
                 print('PASS: real Blob download reaches native completion and retains XFA')
                 print('PASS: native PrintToPDF has one page with edited and multiline text')
+                document.write_bytes(output.read_bytes())
+                browser.open(viewer, document)
+                assert browser.evaluate('document.querySelector(".xfaLayer input").value') == value
+                assert browser.evaluate('testHost.modified') is False
+                print('PASS: mouse focus and keyboard editing survive native save and reopening')
             before = browser.evaluate('location.href')
             browser.evaluate('location.href = "https://example.invalid/blocked"')
             time.sleep(0.2)
