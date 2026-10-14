@@ -1,0 +1,19 @@
+html { background: #e9e9e9; color: #222; font: 14px Arial, sans-serif; }
+body { margin: 0; }
+header { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 12px; padding: 12px 20px; background: #fff; border-bottom: 1px solid #ccc; }
+#filename { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: auto; }
+button { padding: 6px 12px; white-space: nowrap; }
+#status { max-width: 30em; }
+#pages { padding: 20px; }
+.sheet { position: relative; margin: 0 auto 20px; background: white; overflow: hidden; box-shadow: 0 1px 5px #999; }
+.xfaLayer { position: absolute; }
+.xfaLayer input, .xfaLayer textarea { background: transparent; }
+.xfaLayer :disabled { color: inherit; opacity: 1; }
+@media print {
+  @page { margin: 0; }
+  html, body { background: white; }
+  header { display: none; }
+  #pages { padding: 0; }
+  .sheet { margin: 0; box-shadow: none; break-after: page; }
+  .sheet:last-child { break-after: auto; }
+}

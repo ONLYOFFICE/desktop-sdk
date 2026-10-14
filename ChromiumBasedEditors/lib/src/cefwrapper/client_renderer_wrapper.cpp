@@ -59,6 +59,7 @@
 #include "../crypto_mode.h"
 #include "../../../../../core/DesktopEditor/common/CalculatorCRC32.h"
 #include "./client_renderer_params.h"
+#include "./xfa_viewer.h"
 #include "../../../../../core/Common/3dParty/openssl/common/common_openssl.h"
 #include "../../../../../core/OfficeCryptReader/source/ECMACryptFile.h"
 
@@ -68,6 +69,31 @@
 
 #ifndef CEF_VERSION_ABOVE_102
 #include "include/cef_runnable.h"
+#endif
+
+#ifdef CEF_VERSION_ABOVE_102
+class CXfaViewerHandler : public CefV8Handler
+{
+public:
+	bool Execute(const CefString& name, CefRefPtr<CefV8Value>,
+				 const CefV8ValueList& arguments, CefRefPtr<CefV8Value>&,
+				 CefString&) OVERRIDE
+	{
+		const bool print = name == "requestPrint";
+		if (print ? !arguments.empty() :
+			((name != "setModified" && name != "saveFinished") || arguments.size() != 1 || !arguments[0]->IsBool()))
+			return false;
+		CefRefPtr<CefFrame> frame = CefV8Context::GetCurrentContext()->GetFrame();
+		CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create(print ? "xfa_print" :
+			name == "setModified" ? "onDocumentModifiedChanged" : "xfa_save_finished");
+		if (!print)
+			message->GetArgumentList()->SetBool(0, arguments[0]->GetBoolValue());
+		frame->SendProcessMessage(PID_BROWSER, message);
+		return true;
+	}
+
+	IMPLEMENT_REFCOUNTING(CXfaViewerHandler);
+};
 #endif
 
 class CCloudInfo
@@ -5821,6 +5847,22 @@ if (targetElem) { targetElem.dispatchEvent(event); }})();";
 
 		virtual void OnContextCreated(CefRefPtr<client::ClientAppRenderer> app, CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefV8Context> context) OVERRIDE
 		{
+#ifdef CEF_VERSION_ABOVE_102
+			const std::string viewer = CAscRendererProcessParams::getInstance().GetXfaViewer(browser->GetIdentifier());
+			if (!viewer.empty())
+			{
+				if (frame->IsMain() && NSXfaViewer::IsViewerUrl(frame->GetURL().ToString(), viewer))
+				{
+					CefRefPtr<CefV8Value> host = CefV8Value::CreateObject(nullptr, nullptr);
+					CefRefPtr<CefV8Handler> handler = new CXfaViewerHandler();
+					for (const char* method : {"setModified", "saveFinished", "requestPrint"})
+						host->SetValue(method, CefV8Value::CreateFunction(method, handler), V8_PROPERTY_ATTRIBUTE_READONLY);
+					context->GetGlobal()->SetValue("XfaViewerHost", host, V8_PROPERTY_ATTRIBUTE_READONLY);
+				}
+				return;
+			}
+#endif
+
 			message_router_->OnContextCreated(browser, frame, context);
 
 			// add AscEditorNative
@@ -6211,6 +6253,11 @@ sw.getRegistrations = () => Promise.resolve([]);\n\
 
 		virtual void OnContextReleased(CefRefPtr<client::ClientAppRenderer> app, CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefV8Context> context) OVERRIDE
 		{
+#ifdef CEF_VERSION_ABOVE_102
+			if (!CAscRendererProcessParams::getInstance().GetXfaViewer(browser->GetIdentifier()).empty())
+				return;
+#endif
+
 			message_router_->OnContextReleased(browser, frame, context);
 		}
 
