@@ -12,7 +12,7 @@ button { padding: 6px 12px; white-space: nowrap; }
 .xfaLayer :disabled { color: inherit; opacity: 1; }
 @media screen {
   .xfaLayer :is(input, textarea, select):enabled:not([readonly]) { background-color: rgba(153, 193, 255, .3); }
-  .xfaLayer :is(input, textarea, select):enabled:not([readonly]):focus { outline: 1px solid #3979c6; outline-offset: -1px; }
+  .xfaLayer :is(input, textarea, select):enabled:not([readonly]):focus { background-color: transparent; outline: 1px solid #3979c6; outline-offset: -1px; }
 }
 @media print {
   html, body { background: white; }
