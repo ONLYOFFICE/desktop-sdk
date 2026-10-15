@@ -347,7 +347,7 @@ public:
         {
             if (0 == sUrl.find(wchar_t('/')))
             {
-                // нужно брать корень сайта
+                // need to take the site root
                 int nPos = sBaseUrl.find(L"//");
                 if (nPos != std::wstring::npos)
                 {
@@ -366,7 +366,7 @@ public:
             }
             else
             {
-                // брать место урла
+                // take the directory part of the URL
                 int nPos = sBaseUrl.find_last_of(wchar_t('/'));
                 if (std::wstring::npos != nPos)
                 {

@@ -38,6 +38,14 @@
 #include "./cefwrapper/client_resource_handler_async.h"
 #include "./cefwrapper/monitor_info.h"
 
+#include "../native-plugins/src/plugin_manager.h"
+#include "../native-plugins/src/plugin_host_browser.h"
+#include "../../../../core/DesktopEditor/common/Path.h"
+
+#ifndef _WIN32
+#include <stdio.h>
+#endif
+
 #if defined(_MAC)
 # include "mac_keyboardlayout.h"
 #else
@@ -422,11 +430,11 @@ void CAscApplicationManager::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 
 		this->LockCS(LOCK_CS_SCRIPT);
 
-		// смотрим, зажат ли этот файл
+		// check whether this file is already locked
 		std::map<std::wstring, std::vector<CEditorFrameId>>::iterator _find = m_pInternal->m_mapLoadedScripts.find(pData->get_Destination());
 		if (_find != m_pInternal->m_mapLoadedScripts.end())
 		{
-			// он качается. нужно записать id в список тех, кто хочет получить скрипт после его загрузки
+			// it is being downloaded. add the id to the list of those waiting for the script once it is loaded
 			CEditorFrameId _id;
 			_id.Url = pData->get_Url();
 			_id.EditorId = pData->get_Id();
@@ -435,7 +443,7 @@ void CAscApplicationManager::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 		}
 		else
 		{
-			// смотрим, есть ли файл на диске
+			// check whether the file is already on disk
 			if (NSFile::CFileBinary::Exists(pData->get_Destination()))
 			{
 				CCefView* pView = this->GetViewById(pData->get_Id());
@@ -447,7 +455,7 @@ void CAscApplicationManager::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 			}
 			else
 			{
-				// создаем список ожидания
+				// create the waiting list
 				std::vector<CEditorFrameId> _arr;
 				CEditorFrameId _id;
 				_id.Url = pData->get_Url();
@@ -682,7 +690,7 @@ std::wstring CAscApplicationManager::GetNewFilePath(const AscEditorType& nFileFo
 	}
 	else
 	{
-		// поддержка en-EN (в документах есть en-GB и en-US)
+		// en-EN support (documents have en-GB and en-US)
 		sPrefix = L"en-US/";
 	}
 
@@ -693,7 +701,7 @@ std::wstring CAscApplicationManager::GetNewFilePath(const AscEditorType& nFileFo
 		sExtension = L"pptx";
 	else if (nFileFormat == AscEditorType::etSpreadsheet)
 		sExtension = L"xlsx";
-	else if (nFileFormat == AscEditorType::etDocumentMasterForm || nFileFormat == AscEditorType::etDocumentMasterOForm /* такого быть не должно, сейчас - только из шаблона */)
+	else if (nFileFormat == AscEditorType::etDocumentMasterForm || nFileFormat == AscEditorType::etDocumentMasterOForm /* this should not happen, for now - only from a template */)
 		sExtension = L"pdf";
 	else if (nFileFormat == AscEditorType::etPdf)
 		sExtension = L"pdf";
@@ -867,7 +875,7 @@ void CAscApplicationManager::SetApplication(CApplicationCEF* pApp)
 {
 	m_pInternal->m_pApplication = pApp;
 
-	// создаем все папки, если надо
+	// create all the folders if needed
 	if (!NSDirectory::Exists(m_oSettings.recover_path))
 		NSDirectory::CreateDirectories(m_oSettings.recover_path);
 }
@@ -884,11 +892,330 @@ bool CAscApplicationManager::GetDebugInfoSupport()
 
 void CAscApplicationManager::CloseApplication()
 {
+	m_pInternal->StopNativePlugins();
 	NSResourceHandlerFileAsyncManager::Destroy();
 	this->DestroyCefView(-1);
 	this->m_pInternal->CloseApplication();
 	if (NULL != m_pInternal->m_pApplication)
 		m_pInternal->m_pApplication->Close();
+}
+
+void CAscApplicationManager_Private::StartNativePlugins()
+{
+	if (NULL != m_pNativePluginManager)
+		return;
+	m_pNativePluginHost = new CBrowserPluginHost(m_pMain);
+	m_pNativePluginManager = new NSNativePlugin::CNativePluginManager();
+	m_pNativePluginManager->SetHost(m_pNativePluginHost);
+	m_pNativePluginManager->SetDirectories(m_arNativePluginsDirs);
+	m_pNativePluginManager->LoadAll();
+}
+
+void CAscApplicationManager_Private::StopNativePlugins()
+{
+	if (NULL != m_pNativePluginManager)
+	{
+		// the host is deleted right after, so the stop never ends for it
+		if (NULL != m_pNativePluginHost)
+			m_pNativePluginHost->BeginStop();
+		m_pNativePluginManager->StopAll();
+		delete m_pNativePluginManager;
+		m_pNativePluginManager = NULL;
+	}
+	if (NULL != m_pNativePluginHost)
+	{
+		delete m_pNativePluginHost;
+		m_pNativePluginHost = NULL;
+	}
+}
+
+bool CAscApplicationManager_Private::NativePluginDispatchMessage(const std::string& sName, const std::string& sArgsJson)
+{
+	if (NULL != m_pNativePluginManager)
+		return m_pNativePluginManager->DispatchPluginMessage(sName, sArgsJson);
+	return false;
+}
+
+#ifdef ADDON_STOP_PROCESSES
+// ADDON_STOP_PROCESSES: StopNativeCodeInDirectory also ends the processes
+// started from the directory (the AI chat's docbuilder-tools), so a removed or
+// replaced addon lets go of its executable at once. Without it a running
+// executable keeps its file until the application exits, and the addon change
+// is finished at the next start (PrepareAddonDirectory).
+
+// sDirectory in every spelling a process command line may carry it in: ".."
+// resolved, and on Windows also its long and its 8.3 short form - a plugin
+// starts its executable by the short path when the long one has a space in it
+// (aitools-bridge does).
+static std::vector<std::wstring> DirectorySpellings(const std::wstring& sDirectory)
+{
+	std::vector<std::wstring> arResult;
+	std::wstring sNormalized = NSSystemPath::NormalizePath(sDirectory);
+	arResult.push_back(sNormalized);
+#ifdef _WIN32
+	std::wstring sNative = sNormalized;
+	NSStringUtils::string_replace(sNative, L"/", L"\\");
+	typedef DWORD (WINAPI *TPathFn)(LPCWSTR, LPWSTR, DWORD);
+	TPathFn arFns[2] = { GetLongPathNameW, GetShortPathNameW };
+	for (int i = 0; i < 2; ++i)
+	{
+		DWORD nNeed = arFns[i](sNative.c_str(), NULL, 0);
+		if (0 == nNeed)
+			continue;
+		std::vector<wchar_t> aBuffer(nNeed + 1);
+		DWORD nLen = arFns[i](sNative.c_str(), &aBuffer[0], (DWORD)aBuffer.size());
+		if (0 != nLen && nLen < aBuffer.size())
+			arResult.push_back(std::wstring(&aBuffer[0], nLen));
+	}
+#endif
+	return arResult;
+}
+
+// Ends, in the frame it runs in, every process started (window.ExternalProcess)
+// from an executable inside one of arDirectories.
+static std::string EndProcessesScript(const std::vector<std::wstring>& arDirectories)
+{
+	std::string sDirectories;
+	for (size_t i = 0; i < arDirectories.size(); ++i)
+	{
+		std::string sDirectory = U_TO_UTF8(arDirectories[i]);
+		NSStringUtils::string_replaceA(sDirectory, "\\", "\\\\");
+		NSStringUtils::string_replaceA(sDirectory, "\"", "\\\"");
+		if (!sDirectories.empty())
+			sDirectories += ",";
+		sDirectories += "\"" + sDirectory + "\"";
+	}
+#ifdef _WIN32
+	std::string sIgnoreCase = "true";
+#else
+	std::string sIgnoreCase = "false";
+#endif
+
+	return std::string(R"JS((function(dirs, ignoreCase) {
+	var reg = window["_external_process_callback"];
+	var editor = window["AscDesktopEditor"];
+	if (!reg || !editor || !editor["_endProcess"])
+		return;
+	// one spelling for a path: a leading quote dropped, '/' separators, ".." resolved
+	function norm(s) {
+		s = String(s).replace(/^\s+/, "");
+		if (s.charAt(0) === "\"")
+			s = s.substring(1);
+		var parts = s.replace(/\\/g, "/").split("/"), out = [];
+		for (var i = 0; i < parts.length; i++) {
+			if (parts[i] === "..") {
+				if (out.length > 1)
+					out.pop();
+			} else if (parts[i] !== "." && (parts[i] !== "" || i === 0)) {
+				out.push(parts[i]);
+			}
+		}
+		s = out.join("/");
+		return ignoreCase ? s.toLowerCase() : s;
+	}
+	var prefixes = [];
+	for (var i = 0; i < dirs.length; i++) {
+		var d = norm(dirs[i]);
+		prefixes.push(d.charAt(d.length - 1) === "/" ? d : d + "/");
+	}
+	for (var id in reg) {
+		var p = reg[id];
+		if (!p || typeof p.command !== "string")
+			continue;
+		var c = norm(p.command);
+		for (var j = 0; j < prefixes.length; j++) {
+			if (0 === c.indexOf(prefixes[j])) {
+				// not p.end(): that drops the process from the registry first,
+				// and whoever started it would never hear that it stopped
+				editor["_endProcess"](p.id);
+				break;
+			}
+		}
+	}
+})()JS") + "[" + sDirectories + "], " + sIgnoreCase + ");";
+}
+#endif
+
+void CAscApplicationManager_Private::StopNativeCodeInDirectory(const std::wstring& sDirectory)
+{
+#ifdef ADDON_STOP_PROCESSES
+	// The processes: their handles live in the JS of the main view's frames.
+	CCefView* pMainView = GetViewWithMinId();
+	if (NULL != pMainView)
+		pMainView->ExecuteInAllFrames(EndProcessesScript(DirectorySpellings(sDirectory)), true);
+#endif
+
+	// The plugins of every renderer (the host hands the message over on the
+	// CEF UI thread, whichever thread this is).
+	if (NULL != m_pNativePluginHost)
+		m_pNativePluginHost->SendToRenderers("native_plugins_stop_dir", U_TO_UTF8(sDirectory));
+
+	// The plugins of this process.
+	if (NULL != m_pNativePluginManager)
+	{
+		if (NULL != m_pNativePluginHost)
+			m_pNativePluginHost->BeginStop();
+		m_pNativePluginManager->StopInDirectory(sDirectory);
+		if (NULL != m_pNativePluginHost)
+			m_pNativePluginHost->EndStop();
+	}
+
+	// Renderers started from now on are not handed the directory.
+	for (std::vector<std::wstring>::iterator it = m_arNativePluginsDirs.begin(); it != m_arNativePluginsDirs.end(); )
+	{
+		if (NSSystemPath::IsPathInDirectory(sDirectory, *it))
+			it = m_arNativePluginsDirs.erase(it);
+		else
+			++it;
+	}
+}
+
+#ifdef USE_ADDON_MODE
+// What a running application could not finish with the addon directory - on
+// Windows a library still loaded or an executable still running keeps its file
+// - is finished at the next start, before anything is loaded from it:
+//   <addon>.remove  a marker: delete <addon>
+//   <addon>.new     an installed addon waiting to replace <addon>
+static std::wstring AddonDirectory(const CAscApplicationSettings& oSettings)
+{
+	return oSettings.user_plugins_path + L"/../addon";
+}
+static std::wstring AddonRemoveMarker(const std::wstring& sAddon)
+{
+	return sAddon + L".remove";
+}
+static std::wstring AddonStaging(const std::wstring& sAddon)
+{
+	return sAddon + L".new";
+}
+
+// The renderers let go of the addon asynchronously: they are given ~2 s.
+static bool DeleteDirectoryWithRetries(const std::wstring& sDirectory)
+{
+	for (int i = 0; i < 20; ++i)
+	{
+		if (NSDirectory::Exists(sDirectory))
+			NSDirectory::DeleteDirectory(sDirectory);
+		if (!NSDirectory::Exists(sDirectory))
+			return true;
+		NSThreads::Sleep(100);
+	}
+	return false;
+}
+
+static bool RenameDirectory(const std::wstring& sFrom, const std::wstring& sTo)
+{
+#ifdef _WIN32
+	return 0 != MoveFileExW(sFrom.c_str(), sTo.c_str(), 0);
+#else
+	std::string sFromA = U_TO_UTF8(sFrom);
+	std::string sToA = U_TO_UTF8(sTo);
+	return 0 == rename(sFromA.c_str(), sToA.c_str());
+#endif
+}
+
+static void WriteMarker(const std::wstring& sPath)
+{
+	NSFile::CFileBinary oFile;
+	if (oFile.CreateFileW(sPath))
+		oFile.CloseFile();
+}
+
+// The platform this application is built for, in the build_tools spelling.
+// The addon package is chosen for it, and the addon carries native code for it
+// alone: the application writes it into the addon it installs (<addon>/platform)
+// and drops an addon that names another one - left behind by a build for
+// another architecture in the same user profile (x64 replaced by arm64).
+static const char* AddonPlatform()
+{
+#if defined(_WIN32)
+# if defined(_M_ARM64)
+	return "win_arm64";
+# elif defined(_M_X64) || defined(_WIN64)
+	return "win_64";
+# else
+	return "win_32";
+# endif
+#elif defined(__APPLE__)
+# if defined(__aarch64__) || defined(__arm64__)
+	return "mac_arm64";
+# else
+	return "mac_64";
+# endif
+#else
+# if defined(__aarch64__)
+	return "linux_arm64";
+# elif defined(__x86_64__)
+	return "linux_64";
+# else
+	return "linux_32";
+# endif
+#endif
+}
+
+static std::wstring AddonPlatformFile(const std::wstring& sAddon)
+{
+	return sAddon + L"/platform";
+}
+
+static bool WriteAddonPlatform(const std::wstring& sAddon)
+{
+	NSFile::CFileBinary oFile;
+	if (!oFile.CreateFileW(AddonPlatformFile(sAddon)))
+		return false;
+	std::string sPlatform = AddonPlatform();
+	bool bWritten = oFile.WriteFile((const BYTE*)sPlatform.c_str(), (DWORD)sPlatform.length());
+	oFile.CloseFile();
+	return bWritten;
+}
+
+// No file at all is another platform too: the addon was installed by a build
+// that did not write it down, and nothing tells what its native code is for.
+static bool IsAddonForThisPlatform(const std::wstring& sAddon)
+{
+	std::string sPlatform;
+	if (!NSFile::CFileBinary::ReadAllTextUtf8A(AddonPlatformFile(sAddon), sPlatform))
+		return false;
+	while (!sPlatform.empty() && (unsigned char)sPlatform[sPlatform.length() - 1] <= ' ')
+		sPlatform.erase(sPlatform.length() - 1);
+	return sPlatform == AddonPlatform();
+}
+#endif
+
+bool CAscApplicationManager_Private::PrepareAddonDirectory()
+{
+#ifdef USE_ADDON_MODE
+	std::wstring sAddon = AddonDirectory(m_pMain->m_oSettings);
+	std::wstring sMarker = AddonRemoveMarker(sAddon);
+	std::wstring sStaging = AddonStaging(sAddon);
+
+	if (NSFile::CFileBinary::Exists(sMarker))
+	{
+		if (NSDirectory::Exists(sAddon))
+			NSDirectory::DeleteDirectory(sAddon);
+		if (!NSDirectory::Exists(sAddon))
+			NSFile::CFileBinary::Remove(sMarker);
+	}
+
+	if (NSDirectory::Exists(sStaging))
+	{
+		if (NSDirectory::Exists(sAddon))
+			NSDirectory::DeleteDirectory(sAddon);
+		if (!NSDirectory::Exists(sAddon))
+			RenameDirectory(sStaging, sAddon);
+	}
+
+	if (NSDirectory::Exists(sAddon) && !IsAddonForThisPlatform(sAddon))
+	{
+		NSDirectory::DeleteDirectory(sAddon);
+		if (NSDirectory::Exists(sAddon))
+			WriteMarker(sMarker);
+	}
+
+	return !NSFile::CFileBinary::Exists(sMarker) && !NSDirectory::Exists(sStaging);
+#else
+	return true;
+#endif
 }
 
 NSFonts::IApplicationFonts* CAscApplicationManager::GetApplicationFonts()
@@ -898,8 +1225,8 @@ NSFonts::IApplicationFonts* CAscApplicationManager::GetApplicationFonts()
 
 void CAscApplicationManager::StartSaveDialog(const std::wstring& sName, unsigned int nId)
 {
-	// в этой реализации - всегда отмена
-	// хочешь пользоваться - пиши враппер
+	// in this implementation it is always a cancel
+	// if you want to use it - write a wrapper
 	this->EndSaveDialog(L"", nId);
 }
 
@@ -1008,6 +1335,8 @@ int CAscApplicationManager::GetFileFormatByExtentionForSave(const std::wstring& 
 		nFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX;
 	else if (sName == L"xltx")
 		nFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLTX;
+	else if (sName == L"xls")
+		nFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLS;
 	else if (sName == L"ods")
 		nFormat = AVS_OFFICESTUDIO_FILE_SPREADSHEET_ODS;
 	else if (sName == L"ots")
@@ -1116,7 +1445,7 @@ void CAscApplicationManager::SetCryptoMode(const std::string& sPassword, const i
 	NSAscCrypto::CCryptoMode oCryptoMode;
 	oCryptoMode.Save(m_pInternal->m_cryptoKeyEnc, m_pInternal->m_cryptoKeyDec, m_pInternal->m_mapCrypto, m_oSettings.cookie_path + L"/user.data");
 
-	// не меняем режим для уже открылись
+	// do not change the mode for the already opened ones
 	// m_pInternal->SendCryptoData();
 
 	std::string sCryptoMode = "default";
@@ -1247,6 +1576,13 @@ std::vector<std::string> CAscApplicationManager::GetRendererStartupProperties()
 	props.push_back("cryptomode=" + std::to_string(m_pInternal->m_nCurrentCryptoMode));
 	props.push_back("system_plugins_path=" + U_TO_UTF8(m_oSettings.system_plugins_path));
 	props.push_back("user_plugins_path=" + U_TO_UTF8(m_oSettings.user_plugins_path));
+	if (!m_pInternal->m_arNativePluginsDirs.empty())
+	{
+		const std::vector<std::wstring>& arNP = m_pInternal->m_arNativePluginsDirs;
+		props.push_back("native-plugins-dir-count=" + std::to_string(arNP.size()));
+		for (size_t i = 0; i < arNP.size(); ++i)
+			props.push_back("native-plugins-dir-" + std::to_string(i) + "=" + U_TO_UTF8(arNP[i]));
+	}
 	props.push_back("cookie_path=" + U_TO_UTF8(m_oSettings.cookie_path));
 	props.push_back("app_data_path=" + U_TO_UTF8(m_oSettings.app_data_path));
 	props.push_back(m_pInternal->m_bDebugInfoSupport ? "debug_mode=true" : "debug_mode=false");
@@ -1371,6 +1707,132 @@ int CAscApplicationManager::CallCommand(const std::wstring& command)
 	return 0;
 }
 
+int CAscApplicationManager::InstallMainAddon(const std::wstring& path)
+{
+#ifndef USE_ADDON_MODE
+	return 1;
+#else
+	std::wstring sAddon = AddonDirectory(m_oSettings);
+	std::wstring sStaging = AddonStaging(sAddon);
+
+	// The package is unpacked beside the installed addon and checked there, so
+	// a package that does not fit leaves the installed addon as it was.
+	if (NSDirectory::Exists(sStaging))
+		NSDirectory::DeleteDirectory(sStaging);
+	NSDirectory::CreateDirectory(sStaging);
+	COfficeUtils oCOfficeUtils(NULL);
+	// the addon brings native code: executables need their permissions and macOS frameworks their symlinks
+	HRESULT hr = oCOfficeUtils.ExtractToDirectory(path, sStaging, NULL, 0, true, true);
+
+	bool bFits = false;
+	std::string sAddonVersion;
+	std::wstring sPath = sStaging + L"/sdkjs/word/sdk-all-min.js";
+	if (hr == S_OK && NSFile::CFileBinary::Exists(sPath))
+	{
+		sAddonVersion = m_pInternal->ReadSdkJSVersionLine(sPath);
+		bFits = (sAddonVersion == m_pInternal->m_sSdkJSVersion);
+	}
+	// an addon that does not name its platform is dropped at the next start
+	if (!bFits || !WriteAddonPlatform(sStaging))
+	{
+		NSDirectory::DeleteDirectory(sStaging);
+		return 1;
+	}
+
+	// It fits: the installed addon goes. If it cannot go yet, the new one waits
+	// beside it and takes its place at the next start (PrepareAddonDirectory).
+	if (NSDirectory::Exists(sAddon))
+	{
+		m_pInternal->StopNativeCodeInDirectory(sAddon);
+		if (DeleteDirectoryWithRetries(sAddon))
+			RenameDirectory(sStaging, sAddon);
+	}
+	else
+	{
+		RenameDirectory(sStaging, sAddon);
+	}
+	// a removal still pending is superseded by the new addon
+	NSFile::CFileBinary::Remove(AddonRemoveMarker(sAddon));
+
+	m_pInternal->m_bIsInstalledAddon = true;
+	m_pInternal->m_bIsAddonCompatible = true;
+	m_pInternal->m_sAddonVersion = sAddonVersion;
+	return 0;
+#endif
+}
+int CAscApplicationManager::RemoveMainAddon()
+{
+#ifndef USE_ADDON_MODE
+	return 1;
+#else
+	std::wstring sAddon = AddonDirectory(m_oSettings);
+	std::wstring sStaging = AddonStaging(sAddon);
+
+	// an installed addon still waiting for the next start goes too
+	if (NSDirectory::Exists(sStaging))
+		NSDirectory::DeleteDirectory(sStaging);
+
+	if (NSDirectory::Exists(sAddon))
+	{
+		m_pInternal->StopNativeCodeInDirectory(sAddon);
+		// what is still held is deleted at the next start (PrepareAddonDirectory)
+		if (!DeleteDirectoryWithRetries(sAddon))
+			WriteMarker(AddonRemoveMarker(sAddon));
+	}
+
+	m_pInternal->m_bIsInstalledAddon = false;
+	m_pInternal->m_bIsAddonCompatible = false;
+	m_pInternal->m_sAddonVersion.clear();
+	return 0;
+#endif
+}
+bool CAscApplicationManager::CheckMainAddon(std::string* version) const
+{
+#ifndef USE_ADDON_MODE
+	return false;
+#else
+	if (!m_pInternal->m_bIsInstalledAddon)
+		return false;
+
+	if (m_pInternal->m_bIsAddonCompatible)
+		return true;
+
+	if (version)
+	{
+		version->clear();
+
+		// "Version: 9.5.0 (build:132)" -> "9.5.0.132"
+		// Every non-digit is a separator; runs of separators collapse into one dot.
+		const std::string& sRaw = m_pInternal->m_sAddonVersion;
+		std::string sResult;
+
+		sResult.reserve(sRaw.length());
+		size_t nParts = 0;
+		bool bSeparator = true;
+		for (const char c : sRaw)
+		{
+			if (c < '0' || c > '9')
+			{
+				bSeparator = true;
+				continue;
+			}
+			if (bSeparator)
+			{
+				if (++nParts > 4)
+					break;
+				if (!sResult.empty())
+					sResult += '.';
+				bSeparator = false;
+			}
+			sResult += c;
+		}
+		*version = sResult;
+	}
+
+	return m_pInternal->m_bIsAddonCompatible;
+#endif
+}
+
 bool NSCommon::CSystemWindowScale::g_isUseSystemScalingInit = false;
 bool NSCommon::CSystemWindowScale::g_isUseSystemScaling = false;
 
@@ -1380,7 +1842,7 @@ bool CAscApplicationManager::IsUseSystemScaling()
 }
 double Core_GetMonitorScale(const unsigned int& xDpi, const unsigned int& yDpi)
 {
-	// допустимые значения: 1; 1.25; 1.5; 1.75; 2; 2.25, 2.5; 2.75, 3; 3.5; 4; 4.5; 5;
+	// allowed values: 1; 1.25; 1.5; 1.75; 2; 2.25, 2.5; 2.75, 3; 3.5; 4; 4.5; 5;
 	double dScale = (xDpi + yDpi) / (2 * 96.0);
 	int nCount = (int)((dScale + 0.125) / 0.25);
 	dScale = 0.25 * nCount;

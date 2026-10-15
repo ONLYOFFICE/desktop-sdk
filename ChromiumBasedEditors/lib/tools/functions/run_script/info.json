@@ -1,0 +1,41 @@
+{
+  "type": "function",
+  "name": "run_script",
+  "description": "Run a shell script on the user's machine and return what it printed. Use this for anything about the file system - reading a text file (.md, .txt, .csv, .json, .log), listing a folder, finding files by name or date, checking sizes, copying, moving or renaming - by writing a small script instead of looking for a dedicated function. Reading a text file is what this tool is for: print it and it comes back to you in stdout.\n\nThis machine runs {{PLATFORM}}, so write the script for {{SHELL}} and use {{PLATFORM}} path syntax, unless you set `interpreter` to something else yourself. The body is written to a temporary file and handed to the interpreter, so several lines, quoting, pipes and redirection all behave normally. Whatever you need to read back, print on stdout; the output comes back as UTF-8, so accented and non-Latin text survives. To read a text file, {{READ_HINT}}. For calculations, {{MATH_HINT}}. There is no exit code in the answer, so report failures yourself by printing them.\n\nReturn value:\n{\n\"role\": \"tool\", // Required constant field\n\"status\": \"success\" | \"error\",\n\"stdout\": \"string\",\n\"stderr\": \"string\",\n\"timed_out\": false, // true when the script was still running at timeout_ms and was killed\n\"truncated\": false, // true when the output was too long and was cut\n\"error_message\": \"string | null\" // Set when the script could not be run at all\n}\n\nstatus is 'success' when the script ran, whatever it printed on stderr. status is 'error' only when nothing could be started.\n\nExample function call parameter: { \"script\": \"Get-ChildItem -Name\", \"interpreter\": \"powershell\", \"cwd\": \"C:\\\\Users\\\\me\\\\Documents\" }\n\nExample successful response:\n{\n\"role\": \"tool\",\n\"status\": \"success\",\n\"stdout\": \"report.docx\\nnotes.txt\\n\",\n\"stderr\": \"\",\n\"timed_out\": false,\n\"truncated\": false,\n\"error_message\": null\n}\n\nExample error response:\n{\n\"role\": \"tool\",\n\"status\": \"error\",\n\"stdout\": \"\",\n\"stderr\": \"\",\n\"timed_out\": false,\n\"truncated\": false,\n\"error_message\": \"The script could not be written to a temporary file.\"\n}",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "script": {
+        "type": "string",
+        "description": "The script body. It is written to a temporary file and run by the interpreter, so it may span many lines."
+      },
+      "interpreter": {
+        "type": "string",
+        "enum": [
+          "auto",
+          "bash",
+          "sh",
+          "zsh",
+          "powershell",
+          "cmd"
+        ],
+        "description": "Which interpreter runs the script. Leave it out (or pass 'auto') to get {{SHELL}}, which is what this machine uses."
+      },
+      "cwd": {
+        "type": "string",
+        "description": "Directory to run in. Defaults to wherever the editor was started."
+      },
+      "timeout_ms": {
+        "type": "integer",
+        "description": "How long the script may run before it is killed, in milliseconds. Default 30000, maximum 600000."
+      }
+    },
+    "required": [
+      "script"
+    ]
+  },
+  "annotations": {
+    "readOnlyHint": false,
+    "destructiveHint": true
+  }
+}

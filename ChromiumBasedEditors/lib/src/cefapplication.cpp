@@ -557,13 +557,22 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 	}
 
 	pManager->m_pInternal->LocalFiles_Init();
+	pManager->m_pInternal->CheckAddonExist();
 
 	// local files resolver
 	pManager->m_pInternal->m_oLocalFilesResolver.Init(pManager->m_oSettings.fonts_cache_info_path);
 	pManager->m_pInternal->m_oLocalFilesResolver.AddDir(pManager->m_oSettings.recover_path);
+#ifdef _MAC
+	pManager->m_pInternal->m_oLocalFilesResolver.AddDir(NSFile::GetProcessDirectory() + L"/../Resources/login");
+	pManager->m_pInternal->m_oLocalFilesResolver.AddDir(NSFile::GetProcessDirectory() + L"/../Resources/providers");
+#else
+	pManager->m_pInternal->m_oLocalFilesResolver.AddDir(NSFile::GetProcessDirectory());
+#endif
 	pManager->m_pInternal->m_oLocalFilesResolver.AddDir(pManager->m_oSettings.user_plugins_path,
 	{L"cloud_crypto.xml", L"addons", L"advanced_crypto_data.docx"});
 	pManager->m_pInternal->m_oLocalFilesResolver.AddDir(pManager->m_oSettings.system_plugins_path);
+	pManager->m_pInternal->m_oLocalFilesResolver.AddDir(pManager->m_oSettings.user_plugins_path + L"/../addon");
+	pManager->m_pInternal->m_oLocalFilesResolver.AddDir(pManager->m_oSettings.templates_cache_info_path);
 	std::wstring sTempDirectory = pManager->m_pInternal->StartTmpDirectory();
 
 	pManager->m_pInternal->m_oLocalFilesResolver.AddDir(sTempDirectory);
@@ -594,8 +603,16 @@ int CApplicationCEF::Init_CEF(CAscApplicationManager* pManager, int argc, char* 
 		NSFile::CFileBinary::Copy(sSystemPlugins + L"/plugins.css", sUserPlugins + L"/plugins.css");
 	}
 
-	LOGGER_STRING("CApplicationCEF::Init_CEF::end");
+	pManager->m_pInternal->m_arNativePluginsDirs.push_back(pManager->m_oSettings.system_plugins_path + L"/../desktop-sdk-plugins");
 
+#ifdef USE_ADDON_MODE
+	if (pManager->m_pInternal->m_bIsAddonCompatible)
+#endif
+	pManager->m_pInternal->m_arNativePluginsDirs.push_back(pManager->m_oSettings.user_plugins_path + L"/../addon/desktop-sdk-plugins");
+
+	pManager->m_pInternal->StartNativePlugins();
+
+	LOGGER_STRING("CApplicationCEF::Init_CEF::end");
 	return 0;
 }
 

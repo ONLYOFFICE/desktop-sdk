@@ -47,9 +47,9 @@ function createDataTransferItem(kind, type, data) {
 }
 
 function createCustomEvent(type, x, y, c_x, c_y) {
-	/* Есть проблема с пробрасыванием текста в input-элементы
-	т.к. присвоение значения происходит системно, а не через eventListener
-	логирование getData и getAsString показывает, что они не вызываются, поэтому, как решение - самим присваивать значение */
+	/* There is a problem with passing text through to input elements
+	because the value is assigned by the system, not through an eventListener
+	logging getData and getAsString shows they are never called, so the workaround is to assign the value ourselves */
 	let event = new Event(type, { bubbles: true, cancelable: true, composed: true });
 	event.dataTransfer = { dropEffect: 'none', effectAllowed: 'all', files: [], items: [], types: [], data: {},
 		setData: function(type, value) { 
@@ -60,7 +60,7 @@ function createCustomEvent(type, x, y, c_x, c_y) {
 			this.items.push(dtItem);
 		},
 		getData: function(type) {
-			/* Нет чёткого определения для получения текста: требуется text/plain(html), но применимо и просто text/Text, html/Html */
+			/* There is no strict convention for requesting text: text/plain(html) is expected, but plain text/Text, html/Html are used too */
 			let _type = type.toLowerCase(); 
 			if (_type === 'text')
 				_type = 'text/plain';

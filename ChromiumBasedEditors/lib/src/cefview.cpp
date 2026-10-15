@@ -63,6 +63,7 @@
 #include "../../../../core/PdfFile/PdfFile.h"
 #include "../../../../core/DjVuFile/DjVu.h"
 #include "../../../../core/XpsFile/XpsFile.h"
+#include "../../../../core/OFDFile/OFDFile.h"
 
 #include "cefwrapper/monitor_info.h"
 
@@ -77,6 +78,12 @@
 #include <boost/regex.hpp>
 
 #include <algorithm>
+
+#ifdef _MAC
+#include <spawn.h>
+#include <sys/wait.h>
+#include <crt_externs.h>
+#endif
 
 #if defined (_LINUX) && !defined(_MAC)
 #define DONT_USE_NATIVE_FILE_DIALOGS
@@ -95,6 +102,7 @@ void CCefViewWidgetImpl::SetParentNull(WindowHandleId handle)
 #endif
 
 #include "./cors_resource_hanler.h"
+#include "./nocors_file_downloader.h"
 
 std::wstring GetUrlWithoutProtocol(const std::wstring& url)
 {
@@ -353,7 +361,11 @@ public:
 	virtual void Draw(IRenderer* pRenderer, int nPageIndex)
 	{
 		if (m_pReader)
-			m_pReader->DrawPageOnRenderer(pRenderer, nPageIndex, NULL);
+		{
+			COfficeDrawingPageParams* pParams = new COfficeDrawingPageParams();
+			pParams->SetPrint(true);
+			m_pReader->DrawPageOnRenderer(pRenderer, nPageIndex, NULL, pParams);
+		}
 	}
 
 	virtual void PreOpen(int nFileType)
@@ -371,6 +383,11 @@ public:
 		case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_XPS:
 		{
 			m_pReader = new CXpsFile(m_pApplicationFonts);
+			break;
+		}
+		case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_OFD:
+		{
+			m_pReader = new COFDFile(m_pApplicationFonts);
 			break;
 		}
 		case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_DJVU:
@@ -427,6 +444,8 @@ public:
 					RELEASEOBJECT(m_pReader);
 					NSDirectory::DeleteDirectory(m_sTempFolder);
 
+					m_pApplicationFonts->GetStreams()->Clear();
+
 					m_pReader = new CPdfFile(m_pApplicationFonts);
 					Open(sTempFile, sRecoveryDir, L"", sPrintParams);
 					return;
@@ -477,6 +496,8 @@ public:
 
 					RELEASEOBJECT(m_pReader);
 					NSDirectory::DeleteDirectory(m_sTempFolder);
+
+					m_pApplicationFonts->GetStreams()->Clear();
 
 					m_pReader = new CPdfFile(m_pApplicationFonts);
 					Open(sTempFile, sRecoveryDir, L"", "");
@@ -588,7 +609,7 @@ public:
 };
 
 class CAscClientHandler;
-class CCefView_Private : public NSEditorApi::IMenuEventDataBase, public IASCFileConverterEvents, public IASCFileConverterExternalEvents, public CTextDocxConverterCallback//, public virtual CefBaseRefCounted
+class CCefView_Private : public NSEditorApi::IMenuEventDataBase, public IASCFileConverterEvents, public IASCFileConverterExternalEvents, public CTextDocxConverterCallback, public INoCorsFileDownloaderEvents//, public virtual CefBaseRefCounted
 {
 public:
 	class CSystemMessage
@@ -984,6 +1005,8 @@ public:
 	std::map<std::wstring, CDownloadFileItem> m_arDownloadedFiles;
 	std::map<std::wstring, std::wstring> m_arDownloadedFilesComplete;
 	int64 m_nDownloadedFilesFrameId;
+	// закачки этих файлов, выполняемые в обход CORS (см. nocors_file_downloader.h)
+	std::vector<CefRefPtr<CNoCorsFileDownloader>> m_arDownloadedFilesRequests;
 
 	// приходил ли хоть раз евент onDocumentModifiedChanged
 	bool m_bIsReceiveOnce_OnDocumentModified;
@@ -1026,6 +1049,9 @@ public:
 
 	// поведение в мерже - как и в compare. тип для возможных таких же режимов.
 	int m_nComparingMode; // -1 - default, 0 - compare, 1 - merge
+
+	// настройки сравнения (json из sdkjs)
+	std::wstring m_sComparingOptions;
 
 	// path template (may be cloud)
 	std::wstring m_sTemplateUrl;
@@ -1130,10 +1156,86 @@ public:
 		m_pCloudSaveToDrawing = NULL;
 	}
 
+	// AscDesktopEditor.DownloadFiles: качаем файл из browser-процесса.
+	// запрос не привязан к origin страницы => никаких CORS-проверок
+	void StartDownloadFileNoCors(const std::wstring& sUrl, const std::wstring& sPath)
+	{
+		std::wstring sReferrer;
+		CefRefPtr<CefBrowser> browser = GetBrowser();
+		if (browser && browser->GetMainFrame())
+		{
+			std::wstring sMainUrl = browser->GetMainFrame()->GetURL().ToWString();
+			if (0 == sMainUrl.find(L"http://") || 0 == sMainUrl.find(L"https://"))
+				sReferrer = sMainUrl;
+		}
+
+		CefRefPtr<CNoCorsFileDownloader> pDownloader = new CNoCorsFileDownloader(this, sUrl, sPath, sReferrer);
+		m_arDownloadedFilesRequests.push_back(pDownloader);
+		pDownloader->Start();
+	}
+
+	virtual void OnNoCorsFileDownloaded(std::wstring sUrl, std::wstring sPath, bool bIsSuccess) OVERRIDE
+	{
+		for (std::vector<CefRefPtr<CNoCorsFileDownloader>>::iterator iter = m_arDownloadedFilesRequests.begin();
+			 iter != m_arDownloadedFilesRequests.end(); iter++)
+		{
+			if ((*iter)->GetUrl() == sUrl && (*iter)->GetPath() == sPath)
+			{
+				m_arDownloadedFilesRequests.erase(iter);
+				break;
+			}
+		}
+
+		OnDownloadedFileComplete(sUrl, sPath);
+	}
+
+	// перекладываем файл из списка ожидания в список готовых.
+	// когда список ожидания пуст - отправляем результат в renderer
+	// по значению: вызывающий может передать поля элемента m_arDownloadedFiles, который тут же удаляется
+	void OnDownloadedFileComplete(std::wstring sUrl, std::wstring sPath)
+	{
+		std::map<std::wstring, CDownloadFileItem>::iterator find = m_arDownloadedFiles.find(GetUrlWithoutProtocol(sUrl));
+		if (find == m_arDownloadedFiles.end())
+			return;
+
+		m_arDownloadedFilesComplete.insert(std::pair<std::wstring, std::wstring>(find->second.Url, sPath));
+		m_arDownloadedFiles.erase(find);
+
+		if (!m_arDownloadedFiles.empty())
+			return;
+
+		CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_download_files");
+
+		int nIndex = 0;
+		NSArgumentList::SetInt64(message->GetArgumentList(), nIndex++, m_nDownloadedFilesFrameId);
+		m_nDownloadedFilesFrameId = -1;
+
+		for (std::map<std::wstring, std::wstring>::iterator iter = m_arDownloadedFilesComplete.begin();
+			 iter != m_arDownloadedFilesComplete.end(); iter++)
+		{
+			message->GetArgumentList()->SetString(nIndex++, iter->first);
+			message->GetArgumentList()->SetString(nIndex++, iter->second);
+		}
+
+		CefRefPtr<CefBrowser> browser = GetBrowser();
+		if (browser)
+			SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
+
+		m_arDownloadedFilesComplete.clear();
+		m_arDownloadedFiles.clear();
+	}
+
 	void Destroy()
 	{
 		if (m_bIsDestroy)
 			return;
+
+		while (!m_arDownloadedFilesRequests.empty())
+		{
+			CefRefPtr<CNoCorsFileDownloader> pDownloader = m_arDownloadedFilesRequests.back();
+			m_arDownloadedFilesRequests.pop_back();
+			pDownloader->Stop();
+		}
 
 		RELEASEOBJECT(m_pLockRecover);
 
@@ -1634,6 +1736,7 @@ public:
 				arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLTX);
 			}
 
+			arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLS);
 			arFormats.push_back(AVS_OFFICESTUDIO_FILE_SPREADSHEET_ODS);
 
 			if (!bEncryption)
@@ -1792,7 +1895,7 @@ private:
 	IMPLEMENT_REFCOUNTING(CCefResizeTask);
 };
 
-class CAscClientHandler : public client::ClientHandler, public CCookieFoundCallback, public client::ClientHandler::Delegate, public CefDialogHandler
+class CAscClientHandler : public client::ClientHandler, public CCookieFoundCallback, public CCookieValueCallback, public client::ClientHandler::Delegate, public CefDialogHandler
 {
 public:
 	class CAscCefJSDialogHandler : public CefJSDialogHandler
@@ -2532,7 +2635,7 @@ public:
 		{
 			m_bIsDisableResizeOnLoadedOneCall = true;
 			m_pParent->resizeEvent();
-			m_pParent->focus();
+            // m_pParent->focus();
 
 			if (!m_bIsLoaded)
 			{
@@ -2582,6 +2685,20 @@ public:
 
 		// Check for messages from the client renderer.
 		std::string message_name = message->GetName();
+
+		// native-plugin messages (renderer -> browser)
+		// return true for preventDefault
+		if (m_pParent)
+		{
+			CAscApplicationManager* pMgr = m_pParent->GetAppManager();
+			if (pMgr)
+			{
+				bool bMessagePluginResult = pMgr->m_pInternal->NativePluginDispatchMessage(message_name, args->GetSize() > 0 ? args->GetString(0).ToString() : "");
+				if (bMessagePluginResult)
+					return true;
+			}
+		}
+
 		if (message_name == "EditorType" && !m_bIsEditorTypeSet)
 		{
 			// прокидываем наверх тип редактора
@@ -2708,6 +2825,29 @@ public:
 				pVisitor->m_arDomains.push_back(args->GetString(i + 1));
 
 			pVisitor->CheckCookiePresent(CefCookieManager::GetGlobalManager(nullptr));
+			return true;
+		}
+		else if (message_name == "get_portal_auth_token")
+		{
+			// [frameId, callbackId, host[:port]] -> "on_portal_auth_token" [frameId, callbackId, found, value]
+			int_64_type nFrameId = NSArgumentList::GetInt64(args, 0);
+			std::string sCallbackId = args->GetString(1).ToString();
+			std::string sDomain = args->GetString(2).ToString();
+
+			if (sDomain.empty())
+			{
+				OnFoundCookieValue(nFrameId, sCallbackId, false, "");
+				return true;
+			}
+
+			CCefCookieValueVisitor* pVisitor = new CCefCookieValueVisitor();
+			pVisitor->m_pCallback       = this;
+			pVisitor->m_nFrameId        = nFrameId;
+			pVisitor->m_sCallbackId     = sCallbackId;
+			pVisitor->m_sDomain         = sDomain;
+			pVisitor->m_sCookieName     = "asc_auth_key";
+
+			pVisitor->FindCookie(CefCookieManager::GetGlobalManager(nullptr));
 			return true;
 		}
 		else if (message_name == "set_cookie")
@@ -3817,8 +3957,13 @@ public:
 					frame->ExecuteJavaScript("window.onSystemMessage && window.onSystemMessage({ type : \"operation\", block : true, opType : 0 });", frame->GetURL(), 0);
 			}
 
+			// сначала полностью разбираем список: эмуляция (file://, data:) и реальные закачки.
+			// только потом что-то стартуем - иначе список ожидания может опустеть раньше времени
+			std::vector<CDownloadFileItem> arEmulated;
+			std::vector<CDownloadFileItem> arDownloads;
+
 			for (std::map<std::wstring, CDownloadFileItem>::iterator iter = m_pParent->m_pInternal->m_arDownloadedFiles.begin();
-				 iter != m_pParent->m_pInternal->m_arDownloadedFiles.end(); /*nothing*/)
+				 iter != m_pParent->m_pInternal->m_arDownloadedFiles.end(); iter++)
 			{
 				// могут прийти локальные ссылки, или base64 (наприменр при вставке картинок в зашифрованный файл).
 				// нужно просто имитировать скачку - просто сохранить файлы во временные
@@ -3865,38 +4010,22 @@ public:
 				}
 
 				if (isEmulate)
-				{
-					m_pParent->m_pInternal->m_arDownloadedFilesComplete.insert(std::pair<std::wstring, std::wstring>(iter->second.Url, iter->second.Path));
-					m_pParent->m_pInternal->m_arDownloadedFiles.erase(iter++);
+					arEmulated.push_back(iter->second);
+				else
+					arDownloads.push_back(iter->second);
+			}
 
-					if (m_pParent->m_pInternal->m_arDownloadedFiles.empty())
-					{
-						CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_download_files");
+			for (std::vector<CDownloadFileItem>::iterator iter = arEmulated.begin(); iter != arEmulated.end(); iter++)
+				m_pParent->m_pInternal->OnDownloadedFileComplete(iter->Url, iter->Path);
 
-						int nIndex = 0;
-						NSArgumentList::SetInt64(message->GetArgumentList(), nIndex++, m_pParent->m_pInternal->m_nDownloadedFilesFrameId);
-						m_pParent->m_pInternal->m_nDownloadedFilesFrameId = -1;
-
-						for (std::map<std::wstring, std::wstring>::iterator iterComplete = m_pParent->m_pInternal->m_arDownloadedFilesComplete.begin();
-							 iterComplete != m_pParent->m_pInternal->m_arDownloadedFilesComplete.end(); iterComplete++)
-						{
-							message->GetArgumentList()->SetString(nIndex++, iterComplete->first);
-							message->GetArgumentList()->SetString(nIndex++, iterComplete->second);
-						}
-
-						if (!browser)
-							browser = m_pParent->m_pInternal->GetBrowser();
-						SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
-
-						m_pParent->m_pInternal->m_arDownloadedFilesComplete.clear();
-						m_pParent->m_pInternal->m_arDownloadedFiles.clear();
-						break;
-					}
-					continue;
-				}
-
-				m_pParent->StartDownload(iter->second.Url);
-				iter++;
+			for (std::vector<CDownloadFileItem>::iterator iter = arDownloads.begin(); iter != arDownloads.end(); iter++)
+			{
+				// http(s) качаем сами, из browser-процесса: запрос не привязан к origin страницы,
+				// заголовок Origin не выставляется => сервер не должен отдавать CORS-заголовки
+				if (0 == iter->Url.find(L"http://") || 0 == iter->Url.find(L"https://"))
+					m_pParent->m_pInternal->StartDownloadFileNoCors(iter->Url, iter->Path);
+				else
+					m_pParent->StartDownload(iter->Url);
 			}
 
 			return true;
@@ -4373,6 +4502,7 @@ public:
 		std::wstring sType = args->GetString(0).ToWString();
 		std::wstring sFile_Url = args->GetString(1).ToWString();
 		std::wstring sCompareType = args->GetString(2).ToWString();
+		m_pParent->m_pInternal->m_sComparingOptions = (args->GetSize() > 3) ? args->GetString(3).ToWString() : L"";
 		std::wstring sUrl = L"ascdesktop://" + sCompareType + L"/" + std::to_wstring(m_pParent->GetId()) + L"/" + sType + L"/" + sFile_Url;
 
 		NSEditorApi::CAscCreateTab* pData = new NSEditorApi::CAscCreateTab();
@@ -4574,7 +4704,7 @@ public:
 		pConverter->m_nFrameId = NSArgumentList::GetInt64(args, 1);
 		pConverter->m_nOutputFormat  = args->GetInt(3);
 		pConverter->m_nId = args->GetInt(4);
-		pConverter->m_bIsOpenResult = true;
+		pConverter->m_bIsOpenResult = (args->GetSize() > 5) ? args->GetBool(5) : true;
 
 		m_pParent->m_pInternal->m_arExternalConverters.push_back(pConverter);
 
@@ -4900,7 +5030,7 @@ virtual void OnLoadEnd(CefRefPtr<CefBrowser> browser,
 	if (frame->IsMain())
 	{
 		std::wstring sUrl = m_pParent->GetUrl();
-		if ((0 != sUrl.find(L"file:///")) || !m_pParent->m_pInternal->m_bIsOnlyPassSupport || m_pParent->GetType() == cvwtEditor)
+		if ((0 != sUrl.find(L"file:///") && (0 != sUrl.find(L"onlyoffice://plugin/"))) || !m_pParent->m_pInternal->m_bIsOnlyPassSupport || m_pParent->GetType() == cvwtEditor)
 			return;
 
 		// это стартовая страница. отправляем external плагины
@@ -4921,7 +5051,11 @@ virtual void OnLoadEnd(CefRefPtr<CefBrowser> browser,
 					sGuidA = sGuidA.substr(4);
 				std::wstring sGuid = UTF8_TO_U(sGuidA);
 
-				std::wstring sSrc = (iterExt->isUser ? sUserPluginsPath : sSystemPluginsPath) + L"/" + sGuid + L"/" + UTF8_TO_U(iterExt->sUrl) + m_pParent->m_pInternal->m_pManager->m_pInternal->m_mainPostFix;
+				std::wstring sDirectory = (iterExt->isUser ? sUserPluginsPath : sSystemPluginsPath);
+				if (iterExt->isUser && iterExt->nType == 2)
+					sDirectory = sUserPluginsPath + L"/../addon/sdkjs-plugins";
+
+				std::wstring sSrc = sDirectory + L"/" + sGuid + L"/" + UTF8_TO_U(iterExt->sUrl) + m_pParent->m_pInternal->m_pManager->m_pInternal->m_mainPostFix;
 				NSCommon::url_correct(sSrc);
 				if (iterExt->isOnlyofficeScheme)
 					sSrc = L"onlyoffice://plugin/" + sSrc;
@@ -5256,7 +5390,12 @@ virtual CefRefPtr<CefResourceHandler> GetResourceHandler(
 				std::wstring::npos == sResourcePath.find(L"require.js") &&
 				NSFile::CFileBinary::Exists(sResourcePath))
 		{
-			return GetLocalFileRequest(sResourcePath, "window.compareVersions=true;", "");
+			auto ends_with = [](const std::wstring& s, const std::wstring& suffix) {
+				return s.size() >= suffix.size() &&
+					   s.compare(s.size() - suffix.size(), suffix.size(), suffix) == 0;
+			};
+
+			return GetLocalFileRequest(sResourcePath, ends_with(sResourcePath, L".js") ? "window.compareVersions=true;" : "", "");
 		}
 	}
 
@@ -5364,6 +5503,22 @@ virtual CefRefPtr<CefResourceHandler> GetResourceHandler(
 			urlFind = sAppDataPath + L"/webdata/cloud/" + urlFind;
 
 			return GetLocalFileRequest(urlFind);
+		}
+	}
+#endif
+
+#ifdef USE_ADDON_MODE
+	if (m_pParent->m_pInternal->m_pManager->m_pInternal->m_bIsAddonCompatible && L"file:" == url.substr(0, 5))
+	{
+		std::wstring::size_type pos = url.rfind(L"/editors/sdkjs/");
+		if (std::wstring::npos != pos)
+		{
+			std::wstring sPath = url.substr(pos + 8);
+			std::wstring::size_type pos2 = sPath.find(L"?");
+			if (std::wstring::npos != pos2)
+				sPath = sPath.substr(0, pos2);
+			sPath = m_pParent->m_pInternal->m_pManager->m_oSettings.user_plugins_path + L"/../addon" + sPath;
+			return GetLocalFileRequest(sPath);
 		}
 	}
 #endif
@@ -5478,6 +5633,10 @@ std::string GetMimeType(const std::wstring& sFile)
 		return "text/html";
 	else if (sExt == L"json")
 		return "application/json";
+	else if (sExt == L"wasm")
+		return "application/wasm";
+	else if (sExt == L"bin")
+		return "application/octet-stream";
 	//else if (sExt == L"ttf")
 	//    return "application/octet-stream";
 	//else if (sExt == L"otf")
@@ -5761,41 +5920,15 @@ virtual void OnDownloadUpdated(CefRefPtr<CefBrowser> browser,
 	}
 
 	// проверяем на файлы метода AscDesktopEditor.DownloadFiles
+	// (сюда попадают только не-http(s) ссылки, http(s) качаются в обход CORS - см. StartDownloadFileNoCors)
 	if (!m_pParent->m_pInternal->m_arDownloadedFiles.empty())
 	{
 		std::map<std::wstring, CDownloadFileItem>::iterator findDownloadFile = m_pParent->m_pInternal->m_arDownloadedFiles.find(sUrlOriginalWithoutProtocol);
 		if (findDownloadFile != m_pParent->m_pInternal->m_arDownloadedFiles.end())
 		{
 			if (download_item->IsComplete() || download_item->IsCanceled())
-			{
-				m_pParent->m_pInternal->m_arDownloadedFilesComplete.insert(
-							std::pair<std::wstring, std::wstring>(findDownloadFile->second.Url, findDownloadFile->second.Path));
+				m_pParent->m_pInternal->OnDownloadedFileComplete(findDownloadFile->second.Url, findDownloadFile->second.Path);
 
-				m_pParent->m_pInternal->m_arDownloadedFiles.erase(findDownloadFile);
-
-				if (m_pParent->m_pInternal->m_arDownloadedFiles.empty())
-				{
-					CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_download_files");
-
-					int nIndex = 0;
-					NSArgumentList::SetInt64(message->GetArgumentList(), nIndex++, m_pParent->m_pInternal->m_nDownloadedFilesFrameId);
-					m_pParent->m_pInternal->m_nDownloadedFilesFrameId = -1;
-
-					for (std::map<std::wstring, std::wstring>::iterator iter = m_pParent->m_pInternal->m_arDownloadedFilesComplete.begin();
-						 iter != m_pParent->m_pInternal->m_arDownloadedFilesComplete.end(); iter++)
-					{
-						message->GetArgumentList()->SetString(nIndex++, iter->first);
-						message->GetArgumentList()->SetString(nIndex++, iter->second);
-					}
-
-					if (!browser)
-						browser = m_pParent->m_pInternal->GetBrowser();
-					SEND_MESSAGE_TO_RENDERER_PROCESS(browser, message);
-
-					m_pParent->m_pInternal->m_arDownloadedFilesComplete.clear();
-					m_pParent->m_pInternal->m_arDownloadedFiles.clear();
-				}
-			}
 			return;
 		}
 	}
@@ -5880,6 +6013,9 @@ virtual void OnFoundCookie(bool bIsPresent, std::string sValue);
 virtual void OnSetCookie();
 virtual void OnDeleteCookie(bool bIsPresent);
 virtual void OnFoundCookies(std::map<std::string, std::string>& mapValues);
+
+// CCookieValueCallback
+virtual void OnFoundCookieValue(int_64_type nFrameId, const std::string& sCallbackId, bool bFound, const std::string& sValue);
 
 // ClientHandlerDelegate
 virtual void OnBrowserCreated(CefRefPtr<CefBrowser> browser) OVERRIDE {}
@@ -6090,6 +6226,10 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
 	{
 		bool bIsSaved = ((0 == nError) && NSFile::CFileBinary::Exists(m_oConverterFromEditor.m_oInfo.m_sFileSrc)) ? true : false;
 
+		// конвертер отработал, но файла нет (например, отключен сетевой диск) - это ошибка сохранения
+		if (0 == nError && !bIsSaved)
+			nError = 80; // AVS_FILEUTILS_ERROR_CONVERT
+
 		if (bIsSaved && !m_oLocalInfo.m_oInfo.m_bIsSaved)
 		{
 			m_oLocalInfo.m_oInfo.m_bIsSaved = true;
@@ -6157,6 +6297,21 @@ void CCefView_Private::LocalFile_SaveEnd(int nError, const std::wstring& sPass)
 					m_bIsSavingCrypto = true;
 				}
 			}
+		}
+		else if (m_pManager->GetEventListener() && m_pCefView != NULL)
+		{
+			// документ не сохранен - отменяем закрытие вкладки/окна/приложения
+			m_bIsSaving = false;
+
+			NSEditorApi::CAscCefMenuEvent* pEvent = m_pCefView->CreateCefEvent(ASC_MENU_EVENT_TYPE_CEF_ONSAVE);
+
+			NSEditorApi::CAscDocumentOnSaveData* pData = new NSEditorApi::CAscDocumentOnSaveData();
+			pData->put_Id(m_pCefView->GetId());
+			pData->put_IsCancel(true);
+
+			pEvent->m_pData = pData;
+
+			m_pManager->GetEventListener()->OnEvent(pEvent);
 		}
 	}
 
@@ -6292,6 +6447,7 @@ void CCefView_Private::OnFileConvertToEditor(const int& nError)
 			CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create(m_nComparingMode == 0 ? "oncompare_loadend" : "onmerge_loadend");
 			message->GetArgumentList()->SetInt(0, nError);
 			message->GetArgumentList()->SetString(1, m_oLocalInfo.m_oInfo.m_sRecoveryDir + L"/compare");
+			message->GetArgumentList()->SetString(2, m_sComparingOptions);
 			SEND_MESSAGE_TO_RENDERER_PROCESS(m_handler->GetBrowser(), message);
 
 			m_oConverterToEditor.m_sComparingFile = L"";
@@ -6302,6 +6458,7 @@ void CCefView_Private::OnFileConvertToEditor(const int& nError)
 
 			m_sComparingFile = L"";
 			m_nComparingFileType = -1;
+			m_sComparingOptions = L"";
 		}
 		return;
 	}
@@ -6330,31 +6487,17 @@ void CCefView_Private::LocalSendTo(const std::wstring& sUrlFile)
 	else
 	{
 #ifdef _MAC
-		std::string sCodeApp = "open -a Mail";
-		if (!sUrlFile.empty())
-		{
-			sCodeApp += " ";
-
-			std::string sUrlFileA = U_TO_UTF8(sUrlFile);
-			NSStringUtils::string_replaceA(sUrlFileA, "\\", "\\\\");
-			NSStringUtils::string_replaceA(sUrlFileA, " ", "\\ ");
-			NSStringUtils::string_replaceA(sUrlFileA, "<", "\\<");
-			NSStringUtils::string_replaceA(sUrlFileA, ">", "\\>");
-			NSStringUtils::string_replaceA(sUrlFileA, "(", "\\(");
-			NSStringUtils::string_replaceA(sUrlFileA, ")", "\\)");
-			NSStringUtils::string_replaceA(sUrlFileA, "[", "\\[");
-			NSStringUtils::string_replaceA(sUrlFileA, "]", "\\]");
-			NSStringUtils::string_replaceA(sUrlFileA, "?", "\\?");
-			NSStringUtils::string_replaceA(sUrlFileA, "!", "\\!");
-			NSStringUtils::string_replaceA(sUrlFileA, "'", "\\'");
-			NSStringUtils::string_replaceA(sUrlFileA, "\"", "\\\"");
-			NSStringUtils::string_replaceA(sUrlFileA, "|", "\\|");
-			NSStringUtils::string_replaceA(sUrlFileA, "&", "\\&");
-
-			sCodeApp += sUrlFileA;
-			sCodeApp += "";
-		}
-		system(sCodeApp.c_str());
+		// No shell: the path is a single argv entry, nothing in it is interpreted
+		// (a file name with `cmd`, $(cmd) or ;cmd ran through system()).
+		std::string sUrlFileA = U_TO_UTF8(sUrlFile);
+		// a relative path gets "./": open can't take it for an option
+		if (!sUrlFileA.empty() && '/' != sUrlFileA[0])
+			sUrlFileA = "./" + sUrlFileA;
+		const char* argv[] = { "/usr/bin/open", "-a", "Mail", sUrlFileA.empty() ? NULL : sUrlFileA.c_str(), NULL };
+		pid_t pid = 0;
+		// environ is not directly reachable from a dylib on macOS: _NSGetEnviron
+		if (0 == posix_spawn(&pid, "/usr/bin/open", NULL, NULL, (char* const*)argv, *_NSGetEnviron()))
+			waitpid(pid, NULL, 0); // open hands the file to Mail and exits at once
 		return;
 #endif
 		if (GetBrowser())
@@ -6470,6 +6613,18 @@ void CAscClientHandler::OnFoundCookie(bool bIsPresent, std::string sValue)
 	CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_is_cookie_present");
 	message->GetArgumentList()->SetBool(0, bIsPresent);
 	message->GetArgumentList()->SetString(1, sValue);
+	SEND_MESSAGE_TO_RENDERER_PROCESS(m_pParent->m_pInternal->m_handler->GetBrowser(), message);
+}
+void CAscClientHandler::OnFoundCookieValue(int_64_type nFrameId, const std::string& sCallbackId, bool bFound, const std::string& sValue)
+{
+	if (!m_pParent || !m_pParent->m_pInternal || !m_pParent->m_pInternal->m_handler || !m_pParent->m_pInternal->m_handler->GetBrowser())
+		return;
+
+	CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("on_portal_auth_token");
+	NSArgumentList::SetInt64(message->GetArgumentList(), 0, nFrameId);
+	message->GetArgumentList()->SetString(1, sCallbackId);
+	message->GetArgumentList()->SetBool(2, bFound);
+	message->GetArgumentList()->SetString(3, sValue);
 	SEND_MESSAGE_TO_RENDERER_PROCESS(m_pParent->m_pInternal->m_handler->GetBrowser(), message);
 }
 void CAscClientHandler::OnFoundCookies(std::map<std::string, std::string>& mapValues)
@@ -6690,7 +6845,19 @@ void CCefView::load(const std::wstring& urlInputSrc)
 		m_pInternal->m_sComparingFile = strFile;
 		m_pInternal->m_nComparingFileType = (strType == L"file") ? 0 : 1;
 		m_pInternal->m_nComparingMode = nComparingMode;
-		((CCefViewEditor*)this)->OpenCopyAsRecoverFile(std::stoi(strId));
+
+		int nIdSrc = std::stoi(strId);
+
+		// настройки сравнения - из исходной вкладки
+		m_pInternal->m_sComparingOptions = L"";
+		CCefView* pViewSrc = m_pInternal->m_pManager->GetViewById(nIdSrc);
+		if (pViewSrc)
+		{
+			m_pInternal->m_sComparingOptions = pViewSrc->m_pInternal->m_sComparingOptions;
+			pViewSrc->m_pInternal->m_sComparingOptions = L"";
+		}
+
+		((CCefViewEditor*)this)->OpenCopyAsRecoverFile(nIdSrc);
 		return;
 	}
 	if (0 == urlInput.find(L"ascdesktop://template/"))
@@ -7290,6 +7457,7 @@ void CCefView::Apply(NSEditorApi::CAscMenuEvent* pEvent)
 			case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_PDFA:
 			case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_XPS:
 			case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_DJVU:
+			case AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_OFD:
 			{
 				m_pInternal->m_oPrintData.m_pNativePrinter = new CAscNativePrintDocument(m_pInternal->m_sNativeFilePassword);
 				break;
@@ -8136,6 +8304,23 @@ void CCefView::ExecuteInAllFrames(const std::string& sCode, const bool& isMain)
 	}
 }
 
+void CCefView::ExecuteEditorScript(const std::string& sCode)
+{
+	CefRefPtr<CefBrowser> pBrowser = m_pInternal->GetBrowser();
+	if (!pBrowser)
+		return;
+	CefRefPtr<CefFrame> pFrame = pBrowser->GetFrame("frameEditor");
+	if (pFrame)
+		pFrame->ExecuteJavaScript(sCode, pFrame->GetURL(), 0);
+}
+
+void CCefView::SendToRenderer(const std::string& sName, const std::string& sArgsJson)
+{
+	CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create(sName);
+	message->GetArgumentList()->SetString(0, sArgsJson);
+	m_pInternal->SendProcessMessage(PID_RENDERER, message);
+}
+
 // CefViewEditor --------------------------------------------------------------------------
 CCefViewEditor::CCefViewEditor(CCefViewWidgetImpl* parent, int nId) : CCefView(parent, nId)
 {
@@ -8152,6 +8337,9 @@ void CCefViewEditor::SetEditorType(AscEditorType eType)
 }
 AscEditorType CCefViewEditor::GetEditorType()
 {
+	// the application may not store the type (macOS does not): the view knows it itself
+	if (AscEditorType::etUndefined == m_eType && m_pInternal)
+		return (AscEditorType)m_pInternal->m_nEditorType;
 	return m_eType;
 }
 

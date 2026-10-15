@@ -37,6 +37,7 @@
 #include "../../include/applicationmanager.h"
 
 #ifdef WIN32
+#include <vector>
 #include "ShellScalingAPI.h"
 
 typedef HMONITOR (__stdcall *function_MonitorFromWindow)(HWND hwnd, DWORD dwFlags);
@@ -415,25 +416,26 @@ int Core_GetMonitorRawDpi(WindowHandleId handle, unsigned int* uiX, unsigned int
     if (g_monitor_info.m_func_GetDpiForMonitor)
     {
         HMONITOR hMonitor = MonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST);
-        g_monitor_info.m_func_GetDpiForMonitor(hMonitor, MDT_RAW_DPI, uiX, uiY);
+        g_monitor_info.m_func_GetDpiForMonitor(hMonitor, MDT_EFFECTIVE_DPI, uiX, uiY);
         return 0;
     }
     return -1;
 }
 
-struct sEnumInfo
+// Collects monitors in Qt-compatible order:
+// primary monitor is inserted at the front (index 0),
+// all other monitors are appended in enumeration order.
+BOOL CALLBACK CollectMonitorsOrdered(HMONITOR hMonitor, HDC, LPRECT, LPARAM dwData)
 {
-    int iIndex;
-    HMONITOR hMonitor;
-};
-
-BOOL CALLBACK GetMonitorByIndex(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
-{
-    sEnumInfo *info = (sEnumInfo*) dwData;
-    if (--info->iIndex < 0)
+    auto monitors = reinterpret_cast<std::vector<HMONITOR>*>(dwData);
+    MONITORINFO info{};
+    info.cbSize = sizeof(info);
+    if (GetMonitorInfo(hMonitor, &info))
     {
-        info->hMonitor = hMonitor;
-        return FALSE;
+        if (info.dwFlags & MONITORINFOF_PRIMARY)
+            monitors->insert(monitors->begin(), hMonitor);
+        else
+            monitors->push_back(hMonitor);
     }
     return TRUE;
 }
@@ -443,18 +445,17 @@ int Core_GetMonitorRawDpiByIndex(int index, unsigned int* uiX, unsigned int* uiY
     *uiX = 0;
     *uiY = 0;
 
-    sEnumInfo info;
-    info.iIndex = index;
-    info.hMonitor = NULL;
+    std::vector<HMONITOR> monitors;
+    EnumDisplayMonitors(NULL, NULL, CollectMonitorsOrdered, (LPARAM)&monitors);
 
-    EnumDisplayMonitors(NULL, NULL, GetMonitorByIndex, (LPARAM)&info);
-    if (info.hMonitor != NULL)
+    HMONITOR hMonitor = (index >= 0 && index < (int)monitors.size()) ? monitors[index] : NULL;
+    if (hMonitor != NULL)
     {
         if (!CAscApplicationManager::IsUseSystemScaling())
         {
             UINT iuW = 0;
             UINT iuH = 0;
-            if (CDetecterOldSystems::GetDpi(info.hMonitor, iuW, iuH))
+            if (CDetecterOldSystems::GetDpi(hMonitor, iuW, iuH))
             {
                 *uiX = iuW;
                 *uiY = iuH;
@@ -463,7 +464,7 @@ int Core_GetMonitorRawDpiByIndex(int index, unsigned int* uiX, unsigned int* uiY
         }
 
         if (g_monitor_info.m_func_GetDpiForMonitor)
-            g_monitor_info.m_func_GetDpiForMonitor(info.hMonitor, MDT_RAW_DPI, uiX, uiY);
+            g_monitor_info.m_func_GetDpiForMonitor(hMonitor, MDT_EFFECTIVE_DPI, uiX, uiY);
 
         return 0;
     }

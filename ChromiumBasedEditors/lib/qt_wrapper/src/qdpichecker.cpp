@@ -81,32 +81,32 @@ int QDpiChecker::GetMonitorDpi(int nScreenNumber, unsigned int* dx, unsigned int
 		_screen = QApplication::primaryScreen();
 	}
 
-	int nDpiX = _screen->physicalDotsPerInchX();
-	int nDpiY = _screen->physicalDotsPerInchY();
+    int nDpiX = _screen->logicalDotsPerInchX();
+    int nDpiY = _screen->logicalDotsPerInchY();
 
-#ifdef _LINUX
-	if ( QX11Info::isPlatformX11() )
-	{
-		int _x11_dpix = QX11Info::appDpiX(nScreenNumber),
-				_x11_dpiy = QX11Info::appDpiY(nScreenNumber);
+// #ifdef _LINUX
+// 	if ( QX11Info::isPlatformX11() )
+// 	{
+// 		int _x11_dpix = QX11Info::appDpiX(nScreenNumber),
+// 				_x11_dpiy = QX11Info::appDpiY(nScreenNumber);
 
-		if ( nDpiX < _x11_dpix ) nDpiX = _x11_dpix;
-		if ( nDpiY < _x11_dpiy ) nDpiY = _x11_dpiy;
-	}
-#endif
+// 		if ( nDpiX < _x11_dpix ) nDpiX = _x11_dpix;
+// 		if ( nDpiY < _x11_dpiy ) nDpiY = _x11_dpiy;
+// 	}
+// #endif
 
-	QSize size = _screen->size();
-	if (size.width() <= 1600 && size.height() <= 900)
-	{
-		nDpiX = 96;
-		nDpiY = 96;
-	}
+// 	QSize size = _screen->size();
+// 	if (size.width() <= 1600 && size.height() <= 900)
+// 	{
+// 		nDpiX = 96;
+// 		nDpiY = 96;
+// 	}
 
-	if (nDpiX > 150 && nDpiX < 180 && nDpiY > 150 && nDpiY < 180 && size.width() >= 3840 && size.height() >= 2160)
-	{
-		nDpiX = 192;
-		nDpiY = 192;
-	}
+// 	if (nDpiX > 150 && nDpiX < 180 && nDpiY > 150 && nDpiY < 180 && size.width() >= 3840 && size.height() >= 2160)
+// 	{
+// 		nDpiX = 192;
+// 		nDpiY = 192;
+// 	}
 
 	*dx = nDpiX;
 	*dy = nDpiY;

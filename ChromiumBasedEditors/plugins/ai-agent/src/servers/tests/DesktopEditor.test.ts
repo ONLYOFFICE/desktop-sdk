@@ -73,6 +73,25 @@ describe("DesktopEditorTool", () => {
       });
     });
 
+    it("should keep the annotations of a desktop function", () => {
+      const mockTools = [
+        {
+          name: "run_script",
+          description: "Run a script",
+          parameters: { type: "object", properties: {} },
+          annotations: { readOnlyHint: false, destructiveHint: true },
+        },
+      ];
+      mockGetToolFunctions.mockReturnValue(JSON.stringify(mockTools));
+
+      desktopEditor = new DesktopEditorTool();
+
+      expect(desktopEditor.getTools()[0].annotations).toEqual({
+        readOnlyHint: false,
+        destructiveHint: true,
+      });
+    });
+
     it("should handle missing AscDesktopEditor gracefully", () => {
       vi.stubGlobal("window", {});
 

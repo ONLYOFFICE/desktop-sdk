@@ -40,6 +40,7 @@
 #include "../../../../core/OfficeUtils/src/OfficeUtils.h"
 #include "../../../../core/DesktopEditor/common/StringBuilder.h"
 #include "./utils.h"
+#include "./plugin_permissions.h"
 #include <sstream>
 
 //#include "./plugins_resources.h"
@@ -60,6 +61,7 @@ public:
 	std::string sUrl;
 	bool isOnlyofficeScheme;
 	bool isUser;
+	int nType;
 };
 
 class CPluginsManager
@@ -69,6 +71,7 @@ public:
 
 	std::wstring m_strDirectory;
 	std::wstring m_strUserDirectory;
+	std::wstring m_sAddonsDirectory;
 
 	int m_nCryptoMode;
 	std::map<int, std::string> m_arCryptoModes;
@@ -80,7 +83,7 @@ public:
 
 	std::string m_strCryptoPluginAttack;
 
-	// плагин не для редактора, а для главной страницы (для системных сообщенией)
+	// a plugin not for the editor, but for the main page (for system messages)
 	std::vector<CExternalPluginInfo> m_arExternals;
 	bool m_bIsSupportMultiplugins;
 
@@ -94,8 +97,8 @@ public:
 		m_bCryptoDisableForInternalCloud = false;
 		m_bCryptoDisableForExternalCloud = false;
 
-		// Возможность псевдо-обновления системных плагинов
-		// По факту подмена системного на более новый из папки пользователя
+		// Ability to pseudo-update system plugins
+		// In effect, replacing a system plugin with a newer one from the user folder
 		m_isSupportSystemUpdate = true;
 
 		m_bIsSupportMultiplugins = false;
@@ -129,7 +132,7 @@ public:
 		}
 		else
 		{
-			// Поиск плагинов в папке пользователя для возможного восстановления
+			// Search for plugins in the user folder for possible restoration
 			std::wstring sBackupDir = m_strUserDirectory + L"/backup";
 			if (NSDirectory::Exists(sBackupDir))
 			{
@@ -201,6 +204,9 @@ public:
 		if (sPluginName.empty())
 			return false;
 
+		if (NSPluginPermissions::IsProtectedGuid(sPluginName))
+			return false;
+
 		std::wstring sNew = m_strUserDirectory + L"/" + sPluginName;
 		NSDirectory::DeleteDirectory(sNew);
 		NSDirectory::CreateDirectory(sNew);
@@ -208,7 +214,7 @@ public:
 		NSDirectory::CopyDirectory(sTempExt, sNew);
 		NSDirectory::DeleteDirectory(sTemp);
 
-		// Изменить ссылки на v1
+		// Change the links to v1
 		ReplaceHtmlUrls(sNew);
 
 		return true;
@@ -223,6 +229,9 @@ public:
 		if (pos != std::wstring::npos && pos != 0)
 			sAdd = sGuid.substr(pos);
 
+		if (NSPluginPermissions::IsProtectedGuid(sAdd))
+			return false;
+
 		std::wstring sPluginDir = m_strUserDirectory + L"/" + sAdd;
 		std::wstring sPluginBackupDir = m_strUserDirectory + L"/backup/" + sAdd;
 
@@ -231,7 +240,7 @@ public:
 			NSDirectory::CopyDirectory(sPluginBackupDir, sPluginDir);
 			NSDirectory::DeleteDirectory(sPluginBackupDir);
 
-			// Изменить ссылки на v1
+			// Change the links to v1
 			ReplaceHtmlUrls(sPluginDir);
 
 			bResult = true;
@@ -248,6 +257,9 @@ public:
 		std::wstring::size_type pos = sGuid.find(L"{");
 		if (pos != std::wstring::npos && pos != 0)
 			sAdd = sGuid.substr(pos);
+
+		if (NSPluginPermissions::IsProtectedGuid(sAdd))
+			return false;
 
 		std::wstring sPluginDir = m_strUserDirectory + L"/" + sAdd;
 
@@ -321,7 +333,7 @@ private:
 
 			if (sExt == L"html")
 			{
-				// Считаем уровень папки относитьльно локальной v1 (UserDir / PluginName / N / *.html)
+				// Compute the folder depth relative to the local v1 (UserDir / PluginName / N / *.html)
 				std::wstring _sPath = sPath;
 				NSStringUtils::string_replace(_sPath, m_strUserDirectory, L"");
 				NSStringUtils::string_replace(_sPath, L"\\", L"/");
@@ -339,9 +351,9 @@ private:
 
 	std::vector<std::string> GetDirPlugins(std::wstring sDir)
 	{
-		// Системные плагины могут быть тоже обновлены, они будут в папке пользователя
-		// Нужно найти пересечения и удалить старые из списка системных
-		// TODO: пока тест, но надо отрефакторить этот класс, получать списки плагинов в конструкторе, после задания папок
+		// System plugins can also be updated; in that case they will be in the user folder
+		// We need to find the overlaps and remove the outdated ones from the system list
+		// TODO: just a test for now, but this class should be refactored — build the plugin lists in the constructor, after the folders are set
 
 		std::vector<std::string> arPlugins;
 		std::vector<std::wstring> arDir = NSDirectory::GetDirectories(sDir);
@@ -404,20 +416,63 @@ private:
 	std::string ParsePluginDir(const std::wstring& sDir, const bool& bCheckCrypto = false, const bool& bIsBackup = false,
 							   const bool& bIsSupportMacroses = true, const bool& bIsSupportPlugins = true, const bool& isFullInfos = false)
 	{
-		int nSystemPluginsCount = 0;
 		std::vector<std::wstring> _arPlugins;
+		std::vector<int> _arSources; // 0 - system, 1 - user, 2 - addon
+
+		// By default, the addon plugins folder is located next to the user one.
+		// Addon plugins behave exactly like user ones — just in a different folder.
+		if (m_sAddonsDirectory.empty())
+			m_sAddonsDirectory = m_strUserDirectory + L"/../addon/sdkjs-plugins";
+
 		if (bIsSupportPlugins)
 		{
 			if (sDir.empty())
 			{
 				std::vector<std::string> arSysPlugins = GetDirPlugins(m_strDirectory);
-				std::vector<std::string> arUserPlugins = GetDirPlugins(m_strUserDirectory);
+
+				// User plugins are gathered from the user folder and (in addon
+				// mode) from the addon folder. They behave identically; when a guid matches in
+				// different folders, we keep the newer version.
+				std::vector<std::string> arUserPlugins;
+				std::map<std::string, std::wstring> mUserPluginsDir;
+
+				auto appendUserPlugins = [this, &arUserPlugins, &mUserPluginsDir](const std::wstring& sFolder)
+				{
+					if (!NSDirectory::Exists(sFolder))
+						return;
+
+					std::vector<std::string> arGuids = GetDirPlugins(sFolder);
+					for (std::vector<std::string>::iterator i = arGuids.begin(); i != arGuids.end(); i++)
+					{
+						std::map<std::string, std::wstring>::iterator it = mUserPluginsDir.find(*i);
+						if (it == mUserPluginsDir.end())
+						{
+							mUserPluginsDir.insert(std::pair<std::string, std::wstring>(*i, sFolder));
+							arUserPlugins.push_back(*i);
+						}
+						else
+						{
+							std::string sJsonOld, sJsonNew;
+							NSFile::CFileBinary::ReadAllTextUtf8A(it->second + L"/" + UTF8_TO_U((*i)) + L"/config.json", sJsonOld);
+							NSFile::CFileBinary::ReadAllTextUtf8A(sFolder + L"/" + UTF8_TO_U((*i)) + L"/config.json", sJsonNew);
+							if (GetIntVersion(GetStringValue(sJsonNew, "version")) > GetIntVersion(GetStringValue(sJsonOld, "version")))
+								it->second = sFolder;
+						}
+					}
+				};
+
+				appendUserPlugins(m_strUserDirectory);
+#ifdef USE_ADDON_MODE
+				// Only the actual reading of addon plugins is enabled by the define
+				appendUserPlugins(m_sAddonsDirectory);
+#endif
 
 				if (!bIsSupportMacroses)
 				{
+					const std::string sMacrosesGuid = "{E6978D28-0441-4BD7-8346-82FAD68BCA3B}";
 					for (std::vector<std::string>::iterator i = arSysPlugins.begin(); i != arSysPlugins.end(); i++)
 					{
-						if (*i ==  "{E6978D28-0441-4BD7-8346-82FAD68BCA3B}")
+						if (*i == sMacrosesGuid)
 						{
 							arSysPlugins.erase(i);
 							break;
@@ -425,8 +480,9 @@ private:
 					}
 					for (std::vector<std::string>::iterator i = arUserPlugins.begin(); i != arUserPlugins.end(); i++)
 					{
-						if (*i ==  "{E6978D28-0441-4BD7-8346-82FAD68BCA3B}")
+						if (*i == sMacrosesGuid)
 						{
+							mUserPluginsDir.erase(*i);
 							arUserPlugins.erase(i);
 							break;
 						}
@@ -446,7 +502,7 @@ private:
 							NSFile::CFileBinary::ReadAllTextUtf8A(m_strDirectory + L"/" + UTF8_TO_U(sGuidSys) + L"/config.json", sJSONSys);
 
 							std::string sJSONUser;
-							NSFile::CFileBinary::ReadAllTextUtf8A(m_strUserDirectory + L"/" + UTF8_TO_U(sGuidUser) + L"/config.json", sJSONUser);
+							NSFile::CFileBinary::ReadAllTextUtf8A(mUserPluginsDir[sGuidUser] + L"/" + UTF8_TO_U(sGuidUser) + L"/config.json", sJSONUser);
 
 							std::string sVersionSys = GetStringValue(sJSONSys, "version");
 							std::string sVersionUser = GetStringValue(sJSONUser, "version");
@@ -460,6 +516,7 @@ private:
 							}
 							else
 							{
+								mUserPluginsDir.erase(sGuidUser);
 								arUserPlugins.erase(j);
 							}
 							break;
@@ -468,45 +525,51 @@ private:
 					if (bIsAdd)
 					{
 						_arPlugins.push_back(m_strDirectory + L"/" + UTF8_TO_U(sGuidSys));
+						_arSources.push_back(0);
 					}
 				}
 
-				nSystemPluginsCount = (int)_arPlugins.size();
 				for (std::vector<std::string>::iterator j = arUserPlugins.begin(); j != arUserPlugins.end(); j++)
 				{
-					_arPlugins.push_back(m_strUserDirectory + L"/" + UTF8_TO_U((*j)));
+					const std::wstring& sFolder = mUserPluginsDir[*j];
+					_arPlugins.push_back(sFolder + L"/" + UTF8_TO_U((*j)));
+					_arSources.push_back(sFolder == m_sAddonsDirectory ? 2 : 1);
 				}
 			}
 			else
 			{
 				_arPlugins = NSDirectory::GetDirectories(sDir);
-				nSystemPluginsCount = (int)_arPlugins.size();
+				for (size_t i = 0; i < _arPlugins.size(); ++i)
+					_arSources.push_back(0);
 			}
 		}
 
 		std::vector<std::string> arSystem;
 		std::vector<std::string> arUser;
+		std::vector<std::string> arAddon;
 
 		for (size_t i = 0; i < _arPlugins.size(); ++i)
 		{
 			std::string sJson = "";
 			if (NSFile::CFileBinary::ReadAllTextUtf8A(_arPlugins[i] + L"/config.json", sJson))
 			{
-				bool isSystem = i < nSystemPluginsCount ? true : false;
+				int nSource = _arSources[i];
+				bool isSystem = (0 == nSource);
+				bool isAddon = (2 == nSource);
 				if (isFullInfos)
 				{
 					CheckEncryption(sJson, false);
-					bool bIsExternal = CheckExternal(sJson, isSystem);
+					bool bIsExternal = CheckExternal(sJson, isSystem, nSource);
 
 					// check for desktop
 					if (m_bIsSupportMultiplugins && !bIsExternal && NSFile::CFileBinary::ReadAllTextUtf8A(_arPlugins[i] + L"/configDesktop.json", sJson))
 					{
-						CheckExternal(sJson, isSystem);
+						CheckExternal(sJson, isSystem, nSource);
 					}
 				}
 				else
 				{
-					// Получаем GUID
+					// Get the GUID
 					std::string sGuid = "";
 					std::string::size_type pos1 = sJson.find("asc.{");
 					std::string::size_type pos2 = sJson.find('}', pos1);
@@ -519,8 +582,8 @@ private:
 					if (!CheckEncryption(sJson, bCheckCrypto))
 						continue;
 
-					// !!! это надо обсудить, т.к. возможны такие плагины в папке пользователя
-					if (CheckExternal(sJson, i == 0))
+					// !!! this needs to be discussed, since such plugins may exist in the user folder
+					if (CheckExternal(sJson, i == 0, nSource))
 						continue;
 
 					pos1 = sJson.find('{');
@@ -532,12 +595,14 @@ private:
 
 						if (bIsBackup)
 						{
-							// устанавливаем свойство для дальнейших действий
+							// set the property for further actions
 							pos2 = sConfigContent.find_last_of('}');
 							sConfigContent = sConfigContent.substr(0, pos2) + ", \"backup\": true }";
 						}
 
-						if (isSystem)
+						if (isAddon)
+							arAddon.push_back(sConfigContent);
+						else if (isSystem)
 							arSystem.push_back(sConfigContent);
 						else
 							arUser.push_back(sConfigContent);
@@ -546,14 +611,15 @@ private:
 			}
 		}
 
-		auto serializePlugins = [](const std::wstring& dir, const std::vector<std::string>& data) {
+		auto serializePlugins = [](const std::wstring& dir, const std::vector<std::string>& data, const std::string& sType) {
 			std::wstring ret = dir + L"/";
 			if (0 == ret.find('/'))
 				ret = L"file://" + ret;
 			else
 				ret = L"file:///" + ret;
 
-			std::string serializeData = "{ \"url\" : \"" + U_TO_UTF8(ret) + "\", \"pluginsData\" : [";
+			// "type" (system / user / addon) tells which plugin comes from which folder
+			std::string serializeData = "{ \"url\" : \"" + U_TO_UTF8(ret) + "\", \"type\" : \"" + sType + "\", \"pluginsData\" : [";
 
 			int nCount = 0;
 			for (std::vector<std::string>::const_iterator i = data.cbegin(); i != data.cend(); i++)
@@ -573,11 +639,13 @@ private:
 		std::string sPlugins;
 		if (sDir.empty())
 		{
-			sPlugins = serializePlugins(m_strDirectory, arSystem) + "," + serializePlugins(m_strUserDirectory, arUser);
+			sPlugins = serializePlugins(m_strDirectory, arSystem, "system") + "," + serializePlugins(m_strUserDirectory, arUser, "user");
+			if (!arAddon.empty())
+				sPlugins += "," + serializePlugins(m_sAddonsDirectory, arAddon, "addon");
 		}
 		else
 		{
-			sPlugins = serializePlugins(sDir, arSystem);
+			sPlugins = serializePlugins(sDir, arSystem, "user");
 		}
 
 		NSStringUtils::string_replaceA(sPlugins, "\r\n", "");
@@ -631,7 +699,7 @@ private:
 		return true;
 	}
 
-	bool CheckExternal(const std::string& sJson, bool isSystem)
+	bool CheckExternal(const std::string& sJson, bool isSystem, const int& nSource)
 	{
 		if ("desktop-external" == GetStringValue(sJson, "initDataType"))
 		{
@@ -662,6 +730,7 @@ private:
 				info.isUser = isSystem ? false : true;
 				info.sUrl = GetStringValue(sJson, "url");
 				info.isOnlyofficeScheme = (std::string::npos != sJson.find("onlyofficeScheme")) ? true : false;
+				info.nType = nSource;
 
 				m_arExternals.push_back(info);
 			}

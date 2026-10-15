@@ -97,8 +97,8 @@ namespace NSAscCrypto
     class IAscKeyChainListener
     {
     public:
-        // keyEnc - это тот, что хранится на диске
-        // keyDec - это натуральный ключ
+        // keyEnc - this is the one stored on disk
+        // keyDec - this is the plain key
         virtual void OnKeyChainComplete(CCryptoKey& keyEnc, CCryptoKey& keyDec) = 0;
     };
 

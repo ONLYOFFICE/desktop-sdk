@@ -301,6 +301,8 @@ public:
 #ifdef CEF_2623
 			sAppNavigator += " windowsXP";
 #endif
+			if (m_manager->GetDebugInfoSupport())
+				sAppNavigator += " DebugMode";
 
 			command_line->AppendSwitchWithValue("--product-version", sAppNavigator);
 

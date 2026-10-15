@@ -74,6 +74,7 @@ static bool IsFormatSupportCrypto(const int& nFormat)
 	case AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM:
 	case AVS_OFFICESTUDIO_FILE_DOCUMENT_OFORM_PDF:
 	case AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSX:
+	case AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLS:
 	case AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX:
 	case AVS_OFFICESTUDIO_FILE_DOCUMENT_ODT:
 	case AVS_OFFICESTUDIO_FILE_SPREADSHEET_ODS:
@@ -102,9 +103,9 @@ public:
 
 	std::wstring m_sTemplateUrl;
 
-	// чтобы не ждать лишнего времени - грузим страницу и скрипты
-	// ОДНОВРЕМЕННО с конвертацией. поэтому нужен счетчик, чтобы запускать открытие
-	// после и конвертации и после вызова OfflineStart (js)
+	// to avoid extra waiting - we load the page and the scripts
+	// AT THE SAME TIME as the conversion. hence the counter: open only
+	// after both the conversion and the OfflineStart (js) call
 	int m_nCounterConvertion;
 
 	int m_nCurrentFileFormat;
@@ -377,7 +378,7 @@ public:
 	COOXMLVerifier* m_pVerifier;
 	NSFonts::IApplicationFonts* m_pFonts;
 
-	// конвертер запустился для сравнения
+	// the converter was started for a comparison
 	std::wstring m_sComparingFile;
 
 public:
@@ -389,7 +390,7 @@ public:
 
 		m_bIsNativeOpening = false;
 
-		// перешли на новый вьюер => отключили старый
+		// switched to the new viewer => turned the old one off
 		m_bIsNativeSupport = false;
 
 		m_pVerifier = NULL;
@@ -487,7 +488,7 @@ public:
 				pListener->OnEvent(pEvent);
 			}
 
-			// обновили страницу. считаем, что конвертация прошла успешно
+			// the page was just reloaded. treat the conversion as successful
 			m_pEvents->OnFileConvertToEditor(0);
 			return 0;
 		}
@@ -594,7 +595,7 @@ public:
 		sLocalFilePath = CorrectPathW(sLocalFilePath);
 		sDestinationPath = CorrectPathW(sDestinationPath);
 
-		// пустые файлы
+		// empty files
 		if (true)
 		{
 			NSFile::CFileBinary oFileEmptyCheck;
@@ -948,7 +949,7 @@ public:
 	bool m_bIsEditorWithChanges;
 	bool m_bIsWorking; // not m_bIsRunned
 
-	// временный путь для сохранения (чтобы делать локфайл)
+	// temporary save path (so we can go through the lock file)
 	NSSystem::CLocalFileLocker* m_pLocker;
 
 public:
@@ -969,8 +970,8 @@ public:
 	}
 	bool IsWorking()
 	{
-		// эта функция, чтобы знать на ONSAVE - идет ли работа.
-		// m_bIsRunThread сбросится позже
+		// this function is for ONSAVE - to know whether work is still going on.
+		// m_bIsRunThread is reset later
 		return m_bIsWorking;
 	}
 	virtual ~CASCFileConverterFromEditor()
@@ -982,8 +983,8 @@ public:
 	{
 		std::wstring sLocalFilePath = m_oInfo.m_sFileSrc;
 
-		// если true - то делаем архив 123.png.zip
-		// если false - то делаем папку 123.png
+		// if true - we make an archive 123.png.zip
+		// if false - we make a folder 123.png
 		bool bIsAddZipToRasterFormats = false;
 		std::wstring sRasterDictionaryExtract = L"";
 
@@ -1136,6 +1137,19 @@ public:
 			m_oInfo.m_sSaveJsonParams = L"";
 		}
 
+#ifdef USE_ADDON_MODE
+		if (m_pManager->m_pInternal->m_bIsAddonCompatible)
+		{
+			std::wstring sDirAddon = m_pManager->m_oSettings.user_plugins_path + L"/../addon/sdkjs";
+			if (NSDirectory::Exists(sDirAddon))
+			{
+				oBuilder.WriteString(L"<m_sOverrideSdkJsPath>");
+				oBuilder.WriteEncodeXmlString(sDirAddon);
+				oBuilder.WriteString(L"</m_sOverrideSdkJsPath>");
+			}
+		}
+#endif
+
 		oBuilder.WriteString(L"</m_sJsonParams>");
 
 		// disable cache
@@ -1198,7 +1212,13 @@ public:
 
 		if (m_pLocker)
 		{
-			m_pLocker->SaveFile(sLockerSavedPath);
+			// x2t сохранил во временную папку - пишем через хэндл локера.
+			// при ошибке конвертации оригинал не трогаем, ошибку записи (например, отключен сетевой диск) отдаем наверх
+			if (0 == nReturnCode)
+			{
+				if (!m_pLocker->SaveFile(sLockerSavedPath))
+					nReturnCode = 80; // AVS_FILEUTILS_ERROR_CONVERT
+			}
 			m_pLocker = NULL;
 
 			if (NSFile::CFileBinary::Exists(sLockerSavedPath))
@@ -1431,13 +1451,13 @@ public:
 
 		if (m_nOutputFormat == AVS_OFFICESTUDIO_FILE_OTHER_HTMLZIP)
 		{
-			// html полностью сделали на клиенте
+			// the html was fully built on the client
 			NSFile::CFileBinary::Copy(m_sRecoverFolder + L"/EditorWithChanges.bin", m_sOutputPath);
 		}
 		else
 		{
-			// если true - то делаем архив 123.png.zip
-			// если false - то делаем папку 123.png
+			// if true - we make an archive 123.png.zip
+			// if false - we make a folder 123.png
 			bool bIsAddZipToRasterFormats = false;
 			std::wstring sRasterDictionaryExtract = L"";
 

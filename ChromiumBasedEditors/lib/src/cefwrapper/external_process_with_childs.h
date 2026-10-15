@@ -233,14 +233,23 @@ namespace NSProcesses
 			fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 #endif
 
-			while (m_running.load())
+			// The loop must NOT end simply because the process is gone: run() clears
+			// m_running the moment wait() returns, while the child's last output is
+			// often still sitting in the pipe. This poller sleeps 100ms between
+			// looks, and a short script finishes inside that nap - so stopping on
+			// m_running alone dropped the whole output of anything quick. End only
+			// when the pipe is empty AND the process has ended.
+			while (true)
 			{
 #ifdef _WIN32
 				DWORD available = 0;
-				PeekNamedPipe(handle, nullptr, 0, nullptr, &available, nullptr);
+				if (!PeekNamedPipe(handle, nullptr, 0, nullptr, &available, nullptr))
+					break;
 
 				if (available == 0)
 				{
+					if (!m_running.load())
+						break;
 					NSThreads::Sleep(100);
 					continue;
 				}
@@ -253,6 +262,8 @@ namespace NSProcesses
 				{
 					if (errno == EAGAIN || errno == EWOULDBLOCK)
 					{
+						if (!m_running.load())
+							break;
 						NSThreads::Sleep(100);
 						continue;
 					}
@@ -276,6 +287,26 @@ namespace NSProcesses
 		}
 
 #ifdef _WIN32
+		// PATH in the registry is usually REG_EXPAND_SZ: it holds %SystemRoot%
+		// and %USERPROFILE% verbatim. Handing those to a child unexpanded gives
+		// it directory names that do not exist, so the very tools we read the
+		// registry for (python, node, git) stay unfindable.
+		std::wstring expandEnvStrings(const std::wstring& value)
+		{
+			if (std::wstring::npos == value.find(L'%'))
+				return value;
+
+			DWORD need = ExpandEnvironmentStringsW(value.c_str(), nullptr, 0);
+			if (0 == need)
+				return value;
+
+			std::vector<wchar_t> buffer(need + 1, 0);
+			if (0 == ExpandEnvironmentStringsW(value.c_str(), &buffer[0], need + 1))
+				return value;
+
+			return std::wstring(&buffer[0]);
+		}
+
 		std::wstring getPathVariable()
 		{
 			std::wstring pathEnv = NSSystemUtils::GetEnvVariable(L"PATH");
@@ -297,7 +328,7 @@ namespace NSProcesses
 						if (RegQueryValueExW(hKey, L"PATH", nullptr, nullptr, (LPBYTE)buffer, &size) == ERROR_SUCCESS)
 						{
 							buffer[charCount - 1] = '\0';
-							userEnv = std::wstring(buffer);
+							userEnv = expandEnvStrings(std::wstring(buffer));
 						}
 						delete [] buffer;
 					}
@@ -321,7 +352,7 @@ namespace NSProcesses
 						if (RegQueryValueExW(hKey, L"PATH", nullptr, nullptr, (LPBYTE)buffer, &size) == ERROR_SUCCESS)
 						{
 							buffer[charCount - 1] = '\0';
-							systemEnv = std::wstring(buffer);
+							systemEnv = expandEnvStrings(std::wstring(buffer));
 						}
 						delete [] buffer;
 					}

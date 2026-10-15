@@ -122,9 +122,9 @@ class CAscPrintSettings
 public:
 	enum PrintMode
 	{
-		pmFit       = 0,    // вписывать по аспекту
-		pmStretch   = 1,    // растягивать
-		pm100       = 2     // печатать как есть
+		pmFit       = 0,    // fit, keeping the aspect ratio
+		pmStretch   = 1,    // stretch
+		pm100       = 2     // print as is
 	};
 
 public:
@@ -326,6 +326,10 @@ public:
 	bool RemoveRecentByViewId(const int& viewId);
 
 	int CallCommand(const std::wstring& command);
+
+	int InstallMainAddon(const std::wstring& path);
+	int RemoveMainAddon();
+	bool CheckMainAddon(std::string* version = nullptr) const;
 
 protected:
 	int GenerateNextViewId();

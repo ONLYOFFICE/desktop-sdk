@@ -12,6 +12,8 @@ CONFIG += plugin
 !disable_protection:DEFINES += FEATURE_ENABLE_PROTECT
 !disable_signatures:DEFINES += FEATURE_ENABLE_SIGNATURE
 
+!disable_addon_mode:DEFINES += USE_ADDON_MODE
+
 CORE_ROOT_DIR = $$PWD/../../../core
 include($$CORE_ROOT_DIR/Common/base.pri)
 include($$CORE_ROOT_DIR/Common/3dParty/icu/icu.pri)
@@ -19,7 +21,9 @@ include($$CORE_ROOT_DIR/Common/3dParty/icu/icu.pri)
 DEFINES += \
     PDFFILE_USE_DYNAMIC_LIBRARY \
     DJVU_USE_DYNAMIC_LIBRARY \
-	XPS_USE_DYNAMIC_LIBRARY
+    XPS_USE_DYNAMIC_LIBRARY \
+    OFD_USE_DYNAMIC_LIBRARY
+
 
 DEFINES += DESKTOP_USE_DYNAMIC_LIBRARY_BUILDING
 
@@ -111,7 +115,8 @@ HEADERS += \
     $$PWD/src/cloud_crypto.h \
     $$PWD/src/crypto_mode.h \
     $$PWD/include/keychain.h \
-    $$PWD/src/utils.h
+    $$PWD/src/utils.h \
+    $$PWD/src/plugin_permissions.h
 
 SOURCES += \
     $$PWD/src/applicationmanager.cpp \
@@ -130,7 +135,7 @@ SOURCES += \
 }
 
 HEADERS += \
-     $$PWD/src/cefwrapper/external_process.h
+     $$PWD/src/cefwrapper/external_process_with_childs.h
 
 SOURCES += \
     $$CORE_ROOT_DIR/Common/OfficeFileFormatChecker2.cpp \
@@ -144,10 +149,27 @@ HEADERS += \
 SOURCES += \
 	$$AI_TOOLS_PATH/tools.cpp
 
-AI_TOOLS_FUNCS_PATH = $$/AI_TOOLS_PATH/functions
+AI_TOOLS_FUNCS_PATH = $$AI_TOOLS_PATH/functions
 HEADERS += \
-	AI_TOOLS_FUNCS_PATH/internal/base.h \
-	AI_TOOLS_FUNCS_PATH/internal/funcs.h
+	$$AI_TOOLS_FUNCS_PATH/internal/base.h \
+	$$AI_TOOLS_FUNCS_PATH/internal/funcs.h
+
+# TODO:
+#DEFINES += ADDON_STOP_PROCESSES
+NATIVE_PLUGINS_PATH = $$PWD/native-plugins
+INCLUDEPATH += $$NATIVE_PLUGINS_PATH/include
+HEADERS += \
+	$$NATIVE_PLUGINS_PATH/include/native_plugin.h \
+	$$NATIVE_PLUGINS_PATH/src/lib_loader.h \
+	$$NATIVE_PLUGINS_PATH/src/plugin_manager.h \
+	$$NATIVE_PLUGINS_PATH/src/plugin_host_renderer.h \
+	$$NATIVE_PLUGINS_PATH/src/plugin_host_browser.h
+SOURCES += \
+	$$NATIVE_PLUGINS_PATH/src/lib_loader.cpp \
+	$$NATIVE_PLUGINS_PATH/src/plugin_manager.cpp \
+	$$NATIVE_PLUGINS_PATH/src/plugin_host_renderer.cpp \
+	$$NATIVE_PLUGINS_PATH/src/plugin_host_browser.cpp
+core_linux:LIBS += -ldl
 
 # crypto ----------------------------------
 LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH -lCryptoPPLib
@@ -242,4 +264,4 @@ core_linux {
     LIBS += -lX11 -lX11-xcb -lxkbcommon-x11 -lxkbcommon
 }
 
-ADD_DEPENDENCY(graphics, kernel, UnicodeConverter, kernel_network, PdfFile, XpsFile, DjVuFile, hunspell, ooxmlsignature, doctrenderer)
+ADD_DEPENDENCY(graphics, kernel, UnicodeConverter, kernel_network, PdfFile, XpsFile, DjVuFile, OFDFile, hunspell, ooxmlsignature, doctrenderer)
