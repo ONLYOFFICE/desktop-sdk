@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.60.0",
-    "@assistant-ui/react": "^0.11.0",
+    "@assistant-ui/react": "^0.11.58",
     "@assistant-ui/react-ai-sdk": "^1.1.0",
     "@assistant-ui/react-markdown": "^0.11.0",
     "@codemirror/lang-json": "^6.0.2",
